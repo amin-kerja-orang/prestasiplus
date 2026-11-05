@@ -323,3 +323,38 @@ describe('reward_settings on a second run', () => {
     expect(rejected).toEqual([{ legacy_id: '2:flat_quiz_reward', reason: 'DUPLICATE_KEY' }])
   })
 })
+
+// A database loaded by the ETL from before the DM-48 move, which is what UAT holds.
+describe('a database loaded before the DM-48 values moved', () => {
+  it('releases the three old rows, keeps them, and the legacy count equals what the run loaded', async () => {
+    const source = (await h.q<{ legacy_source: string }>(`select legacy_source from gamification_settings where key = 'reward_budget_sen_month'`))[0]!.legacy_source
+    for (const key of ['flat_quiz_reward', 'current_session_year', 'games_award_syiling']) {
+      await h.env.pool.query(
+        `insert into gamification_settings (key, value, label, legacy_source, legacy_id) values ($1, 1, 'Lama', $2, $3)
+         on conflict (key) do update set legacy_source = excluded.legacy_source, legacy_id = excluded.legacy_id`,
+        [key, source, `1:${key}`],
+      )
+    }
+    const applied = await h.run('apply', { groups })
+    expect(applied.report.status).toBe('succeeded')
+    const legacy = await h.q<{ key: string }>(`select key from gamification_settings where legacy_source = $1 order by key`, [source])
+    expect(legacy).toEqual([{ key: 'reward_budget_sen_month' }])
+    const kept = await h.q<{ key: string; legacy_id: string | null }>(
+      `select key, legacy_id from gamification_settings where key = any($1::text[]) order by key`,
+      [['current_session_year', 'flat_quiz_reward', 'games_award_syiling']],
+    )
+    expect(kept).toEqual([
+      { key: 'current_session_year', legacy_id: null },
+      { key: 'flat_quiz_reward', legacy_id: null },
+      { key: 'games_award_syiling', legacy_id: null },
+    ])
+  }, 120_000)
+
+  it('a re-run does not overwrite reward_settings once an admin has saved it', async () => {
+    const [user] = await h.q<{ id: string }>(`select id::text from users order by id limit 1`)
+    await h.env.pool.query(`update reward_settings set coins_per_correct = 7, updated_by = $1::bigint`, [user!.id])
+    expect((await h.run('apply', { groups })).report.status).toBe('succeeded')
+    expect((await h.q<{ coins_per_correct: number }>(`select coins_per_correct from reward_settings`))[0]!.coins_per_correct).toBe(7)
+    await h.env.pool.query(`update reward_settings set updated_by = null`)
+  }, 120_000)
+})

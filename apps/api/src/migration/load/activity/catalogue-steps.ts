@@ -14,6 +14,7 @@ import type { LegacyRow } from '../../kit/upsert'
 import {
   challengeDifficulty,
   isPlatformChallenge,
+  MOVED_SETTING_KEYS,
   REWARD_SETTING_KEYS,
   SETTING_KEYS,
   settingEntries,
@@ -222,6 +223,15 @@ export function challengesStep(a: ActivityContext): AnyEntityStep {
 
 // ---------------------------------------------------------------- gamification settings
 
+/**
+ * A database loaded before the DM-48 values moved holds their `gamification_settings` rows under this source. Nothing loads or reads them now,
+ * so verify would count them against `loaded`: they lose the legacy pair and stay in place. Idempotent; both setting steps call it, as either can
+ * have no row to load.
+ */
+async function releaseMovedSettings(db: BatchContext['db'], source: string): Promise<void> {
+  await db.query(`UPDATE gamification_settings SET legacy_source = NULL, legacy_id = NULL WHERE legacy_source = $1 AND key = ANY($2::text[])`, [source, [...MOVED_SETTING_KEYS]])
+}
+
 /** The source column that is not a DM-48 value becomes a key/value row; legacy id `<row id>:<key>`. */
 export function settingsStep(a: ActivityContext): AnyEntityStep {
   const entity = 'gamification_settings'
@@ -232,6 +242,7 @@ export function settingsStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readExpanded<SettingEntry>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row, SETTING_KEYS)),
     keyOf: (e: Expanded<SettingEntry>) => e.key,
     async load(rows: Expanded<SettingEntry>[], ctx: BatchContext): Promise<BatchResult> {
+      await releaseMovedSettings(ctx.db, ctx.source)
       let items: { legacyId: string; key: string; values: Record<string, unknown> }[] = []
       for (const e of rows) {
         const legacyId = `${e.row.id}:${e.entry.key}`
@@ -257,6 +268,7 @@ export function settingsStep(a: ActivityContext): AnyEntityStep {
 /**
  * The DM-48 values of the source row go to the `reward_settings` singleton (DM-38), which has no legacy columns: the ids go to `etl_id_map`
  * (verify counts `idmap`), legacy id `<row id>:<key>`. A second source row naming a key already loaded is DUPLICATE_KEY.
+ * A row an admin has saved (`updated_by` set) keeps the admin's values. A rollback of this run does not restore the row: its values stay.
  */
 export function rewardSettingsStep(a: ActivityContext): AnyEntityStep {
   const entity = 'reward_settings'
@@ -267,6 +279,7 @@ export function rewardSettingsStep(a: ActivityContext): AnyEntityStep {
     extract: (after) => readExpanded<SettingEntry<RewardSettingKey>>(a.pool, { table: 'reward_settings', columns }, after, a.pageSize, (row) => settingEntries(row, REWARD_SETTING_KEYS)),
     keyOf: (e: Expanded<SettingEntry<RewardSettingKey>>) => e.key,
     async load(rows: Expanded<SettingEntry<RewardSettingKey>>[], ctx: BatchContext): Promise<BatchResult> {
+      await releaseMovedSettings(ctx.db, ctx.source)
       const known = await ctx.db.query<{ legacy_id: string }>(`SELECT legacy_id FROM etl_id_map WHERE legacy_source = $1 AND entity = $2`, [ctx.source, entity])
       const owner = new Map(known.rows.map((r) => [r.legacy_id.split(':')[1] as string, r.legacy_id]))
       const items: { legacyId: string; values: RewardSettingValues }[] = []
@@ -291,7 +304,7 @@ export function rewardSettingsStep(a: ActivityContext): AnyEntityStep {
       let updated = 0
       for (const { values } of items) {
         const column = quoteIdent(values.column)
-        const res = await ctx.db.query(`UPDATE reward_settings SET ${column} = $1, updated_at = $2::timestamptz WHERE id = 1 AND ${column} IS DISTINCT FROM $1`, [values.value, values.updated_at])
+        const res = await ctx.db.query(`UPDATE reward_settings SET ${column} = $1, updated_at = $2::timestamptz WHERE id = 1 AND updated_by IS NULL AND ${column} IS DISTINCT FROM $1`, [values.value, values.updated_at])
         updated += res.rowCount ?? 0
       }
       await ctx.idMap.registerMany(entity, items.map((i) => [i.legacyId, '1'] as const))

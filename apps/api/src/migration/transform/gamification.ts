@@ -160,6 +160,9 @@ export function transformAchievement(row: Staged): Outcome<AchievementValues> {
 export const SETTING_KEYS = ['reward_budget_sen_month'] as const
 export type SettingKey = (typeof SETTING_KEYS)[number]
 
+/** The V2 columns the old ETL loaded into `gamification_settings` and that now go to `reward_settings` (DM-38). */
+export const MOVED_SETTING_KEYS = ['flat_quiz_reward', 'current_session_year', 'games_award_syiling'] as const
+
 /** Label of the key: the same text the v2 seed uses (the staged row has no label). */
 export const SETTING_LABELS: Readonly<Record<SettingKey, string>> = {
   reward_budget_sen_month: 'Sub-had nilai-kos tebus per pelajar per bulan (sen) — RM3',

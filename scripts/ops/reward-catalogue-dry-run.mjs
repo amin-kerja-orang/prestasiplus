@@ -9,7 +9,7 @@
 //
 // Read-only by construction: every statement runs inside one READ ONLY transaction that is rolled back, so the server refuses a write even
 // if a statement here tried one. Prints counts and catalogue titles only: no pupil data is selected, and DATABASE_URL is never printed.
-// Run on UAT by the designated UAT developer only.
+// Run on UAT by the designated UAT developer only, after migration 0229 is applied: it reads `rewards.cost_value_sen`.
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
