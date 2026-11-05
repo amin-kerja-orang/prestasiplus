@@ -167,6 +167,22 @@ describe('Auto AR from the answer store', () => {
     const p1 = views.find((v) => v.configId === auto && v.studentId === 'p1')
     expect(p1).toMatchObject({ tov: 40, etr: 80, targets: [53, 66, 80], actuals: [75, 75, 75] })
   })
+
+  it('the per-student path lists only that pupil; teacher and school scopes still list the whole Auto class', async () => {
+    w.answers.addMany('p1', 4, 3, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
+    w.answers.addMany('p2', 3, 1, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
+    w.repo.addEntry(auto, 'p1', { tov: 40, etr: 80 })
+    const ofP1 = (await w.facts.entriesOfStudent('p1', { kind: 'platform' })).filter((v) => v.configId === auto)
+    expect(ofP1.map((v) => v.studentId)).toEqual(['p1'])
+    const ofP1Teacher = await w.facts.entriesOfStudent('p1', { kind: 'teacher', teacherId: 't1' })
+    expect(ofP1Teacher.every((v) => v.studentId === 'p1')).toBe(true)
+    const ofP1School = await w.facts.entriesOfStudent('p1', { kind: 'school', schoolId: 's1' })
+    expect(ofP1School.every((v) => v.studentId === 'p1')).toBe(true)
+    const names = (v: { configId: string; studentId: string }[]) => v.filter((x) => x.configId === auto).map((x) => x.studentId).sort()
+    expect(names(await w.facts.entriesInScope({ kind: 'teacher', teacherId: 't1' }))).toEqual(['p1', 'p2', 'p3'])
+    expect(names(await w.facts.entriesInScope({ kind: 'school', schoolId: 's1' }))).toEqual(['p1', 'p2', 'p3'])
+    expect(names(await w.facts.entriesOfClasses(['c1']))).toEqual(['p1', 'p2', 'p3'])
+  })
 })
 
 describe('writes belong to the owning teacher', () => {

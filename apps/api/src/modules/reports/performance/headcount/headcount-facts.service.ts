@@ -39,7 +39,7 @@ export class HeadcountFactsService implements HeadcountFacts {
       const schools = await this.repo.schoolOfConfigs(mine)
       visible = mine.filter((c) => schools.get(c.id) === scope.schoolId)
     }
-    return this.views(visible, await this.repo.entriesOfStudent(studentId, visible))
+    return this.views(visible, await this.repo.entriesOfStudent(studentId, visible), studentId)
   }
 
   private configsOf(scope: HeadcountScope): Promise<HeadcountConfigRecord[]> {
@@ -51,15 +51,21 @@ export class HeadcountFactsService implements HeadcountFacts {
   /**
    * Entry views. An Auto config also lists its class members that hold no entry row (their AR comes from the answer store
    * and they count like the pupils of the teacher's table); a Manual config lists entry rows only.
+   * `onlyStudentId` (the per-student path) limits the Auto roster expansion to that pupil, so classmates never leak.
    */
-  private async views(configs: readonly HeadcountConfigRecord[], found: readonly HeadcountEntryRecord[]): Promise<HeadcountEntryView[]> {
+  private async views(
+    configs: readonly HeadcountConfigRecord[],
+    found: readonly HeadcountEntryRecord[],
+    onlyStudentId?: string,
+  ): Promise<HeadcountEntryView[]> {
     const byId = new Map(configs.map((c) => [c.id, c]))
     const autoConfigs = configs.filter((c) => c.mode === 'auto')
     const members = autoConfigs.length === 0 ? new Map<string, string[]>() : await this.ports.classes.membersOf([...new Set(autoConfigs.map((c) => c.classroomId))])
-    const entries: HeadcountEntryRecord[] = [...found]
+    const entries: HeadcountEntryRecord[] = onlyStudentId === undefined ? [...found] : found.filter((e) => e.studentId === onlyStudentId)
     const have = new Set(found.map((e) => `${e.configId}:${e.studentId}`))
     for (const c of autoConfigs) {
       for (const studentId of members.get(c.classroomId) ?? []) {
+        if (onlyStudentId !== undefined && studentId !== onlyStudentId) continue
         if (!have.has(`${c.id}:${studentId}`)) {
           entries.push({ configId: c.id, studentId, marks: resolveMarks(null, c), rsRecordedAt: null, dropped: false, own: { tov: null, etr: null } })
         }
