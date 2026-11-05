@@ -24,7 +24,8 @@ import { textOfQuestion } from './duplicates'
 import { INTAKE_AUDIT, MAX_STIMULI_PER_BATCH, WORKFLOW_MESSAGES } from './workflow.constants'
 
 const TX = { timeout: 20_000, maxWait: 10_000 } as const
-const WORD = { diagram: 'Rajah', passage: 'Petikan', table: 'Jadual' } as const
+/** Default label words = OPT-JENIS-RANGSANGAN labels (docs/prd/r1/40-cross-cutting.md, DM-70). */
+const WORD = { diagram: 'Rajah', passage: 'Petikan', table: 'Jadual', graph: 'Graf', map: 'Peta', infographic: 'Carta / Infografik', image: 'Imej / Gambar' } as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.stimulusNotFound })
 const inUse = (): ApiError => ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.stimulusInUse })
