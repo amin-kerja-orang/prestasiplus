@@ -43015,6 +43015,17 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
                 }
               },
               "required": [
@@ -43101,6 +43112,38 @@
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            },
+            "maxItems": 8,
+            "description": "S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy."
           }
         },
         "additionalProperties": false
@@ -43188,6 +43231,15 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isDistractor": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -43254,6 +43306,25 @@
               "null"
             ],
             "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
+          },
+          "usedInPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            },
+            "description": "S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none."
           }
         },
         "required": [
@@ -79670,11 +79741,11 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64,
-              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
               "example": "1042"
             },
             "required": true,
-            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
             "name": "id",
             "in": "path"
           },
@@ -79720,7 +79791,7 @@
             }
           },
           "401": {
-            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
