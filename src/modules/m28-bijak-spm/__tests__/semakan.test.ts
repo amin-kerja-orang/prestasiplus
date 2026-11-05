@@ -232,7 +232,7 @@ describe('SelfMarkControl: stepper', () => {
     expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 3 })
   })
 
-  it('a change made during a save is saved after it, but not once the control has unmounted', async () => {
+  it('a change made during a save is saved after it, also when the control unmounts meanwhile', async () => {
     let settle: () => void = () => undefined
     const save = vi.fn().mockImplementation(() => new Promise<void>((r) => (settle = r)))
     mountControl(part({ awarded: 0 }), save)
@@ -246,7 +246,8 @@ describe('SelfMarkControl: stepper', () => {
     wrapper = null
     settle()
     await flushPromises()
-    expect(save).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save).toHaveBeenLastCalledWith({ partId: 'p1', mark: 2 })
   })
 
   it('a refreshed part does not overwrite a change that is still waiting', async () => {
@@ -257,14 +258,17 @@ describe('SelfMarkControl: stepper', () => {
     expect(text('[data-testid="selfmark-value"]')).toBe('2 / 4')
   })
 
-  it('a change still waiting is not sent after the control unmounts (it could be another sitting by then)', async () => {
+  it('a change still waiting is saved at once when the control unmounts (e.g. a filter tab hides it)', async () => {
     const save = mountControl(part({ awarded: 0 }))
     ;(q('[data-testid="selfmark-inc"]') as HTMLButtonElement).click()
     await flushPromises()
     wrapper!.unmount()
     wrapper = null
+    await flushPromises()
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(save).toHaveBeenCalledWith({ partId: 'p1', mark: 1 })
     await autosave()
-    expect(save).not.toHaveBeenCalled()
+    expect(save).toHaveBeenCalledTimes(1)
   })
 
   it('falls back to a plain BM message for an error without text', async () => {
@@ -708,9 +712,11 @@ describe('ResultPage Semakan', () => {
     expect(server.getResult).toHaveBeenLastCalledWith(7, 'a0')
     expect(text('[data-testid="selfmark-value"]')).toBe('0 / 4')
     expect(text('[data-testid="selfmark-state"]')).toBe('Belum dimarkah')
-    // The change made on the earlier sitting is never sent to the new one (no flush on unmount; the leave guard warns instead).
+    // The change made on the earlier sitting is flushed to THAT sitting, never to the new one.
     await autosave()
-    expect(server.selfMark).not.toHaveBeenCalled()
+    expect(server.selfMark).toHaveBeenCalledTimes(1)
+    expect(server.selfMark).toHaveBeenCalledWith(7, 'a1', { partId: 'p1', mark: 3 })
+    expect(text('[data-testid="selfmark-value"]')).toBe('0 / 4')
 
     await router.push('/spm/bijak')
     await flushPromises()
@@ -749,6 +755,38 @@ describe('ResultPage Semakan', () => {
     expect(pick('pb', 'selfmark-value').textContent).toContain('1 / 4')
     expect(pick('pb', 'selfmark-state').textContent).toContain('Belum disahkan')
     expect(server.selfMark).toHaveBeenCalledTimes(1)
+  })
+
+  it('saves of two parts run one after the other, so a late response never resets the other part', async () => {
+    const a = part({ partId: 'pa' })
+    const b = part({ partId: 'pb' })
+    const twoParts = (pa: ReviewPart, pb: ReviewPart, score: number) => {
+      const r = resultOf(pa, score)
+      r.questions[0]!.parts = [pa, pb]
+      return r
+    }
+    server.getResult.mockResolvedValue(view(twoParts(a, b, 0)))
+    let settleA: (v: unknown) => void = () => undefined
+    server.selfMark
+      .mockImplementationOnce(() => new Promise((r) => (settleA = r)))
+      .mockResolvedValueOnce({
+        result: twoParts(part({ partId: 'pa', awarded: 1, status: 'separa', selfMarked: true }), part({ partId: 'pb', awarded: 2, status: 'separa', selfMarked: true }), 3),
+      })
+    await render()
+    const control = (id: string) => q(`[data-testid="selfmark-${id}"]`)!
+    const pick = (id: string, sel: string) => control(id).querySelector<HTMLElement>(`[data-testid="${sel}"]`)!
+    pick('pa', 'selfmark-inc').click()
+    await autosave() // pa's save is in flight
+    pick('pb', 'selfmark-inc').click()
+    pick('pb', 'selfmark-inc').click()
+    await autosave() // pb waits for pa
+    expect(server.selfMark).toHaveBeenCalledTimes(1)
+    settleA({ result: twoParts(part({ partId: 'pa', awarded: 1, status: 'separa', selfMarked: true }), part({ partId: 'pb' }), 1) })
+    await flushPromises()
+    expect(server.selfMark).toHaveBeenCalledTimes(2)
+    expect(server.selfMark).toHaveBeenLastCalledWith(7, 'a1', { partId: 'pb', mark: 2 })
+    expect(pick('pa', 'selfmark-value').textContent).toContain('1 / 4')
+    expect(pick('pb', 'selfmark-value').textContent).toContain('2 / 4')
   })
 })
 
