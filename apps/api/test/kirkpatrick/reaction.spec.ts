@@ -200,11 +200,14 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
       mood.all = { happy: 3, okay: 1, sad: 1, stressed: 0 }
       mood.week = { happy: 1, okay: 0, sad: 1, stressed: 0 }
       const data = await reaction(adminA)
+      // Every active pupil of the own school (the world pupils and the seeded demo ones), counted from the database.
+      const inSchool = (await t.db.query<{ n: number }>(`select count(*)::int as n from users u where u.is_active and u.school_id = $1 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [w.schoolA]))[0]?.n as number
+      expect(inSchool).toBeGreaterThanOrEqual(4)
       expect(data.mood).toEqual({
         positivePct: 80,
         checkIns: 5,
         engaged: 1,
-        pupils: 4,
+        pupils: inSchool,
         last7Days: 2,
         rows: [
           { mood: 'Gembira', count: 3, pct: 60 },
@@ -215,7 +218,7 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
       })
       // All time and the last 7 days, both for the pupils in scope (never null).
       expect(mood.calls).toHaveLength(2)
-      expect(mood.calls.every((c) => Array.isArray(c.ids) && c.ids.length === 4)).toBe(true)
+      expect(mood.calls.every((c) => Array.isArray(c.ids) && c.ids.length === inSchool)).toBe(true)
       const windowed = mood.calls.find((c) => c.window !== undefined)
       // Clock is 2026-10-19 09:00 MYT: the window starts at 00:00 MYT of 2026-10-13 (today minus 6) and ends now.
       expect(windowed?.window?.from.toISOString()).toBe('2026-10-12T16:00:00.000Z')
@@ -252,7 +255,13 @@ describe('GET /api/kirkpatrick/reaction (S2, API-RPT-11, FR-GUR-11-3) and the sc
         '/kirkpatrick/export-pdf',
         `/kirkpatrick/students/${w.ids.p1}`,
       ]
-      for (const who of [adminA, adminB]) for (const path of paths) expect((await who.get(path)).status, path).toBe(200)
+      // Each school_admin opens a pupil of the OWN school (the other school's pupil is 404, asserted below).
+      for (const [who, pupil] of [[adminA, w.ids.p1], [adminB, w.ids.pb]] as const) {
+        for (const path of paths) {
+          const target = path.startsWith('/kirkpatrick/students/') ? `/kirkpatrick/students/${pupil}` : path
+          expect((await who.get(target)).status, target).toBe(200)
+        }
+      }
       const own = (await adminA.get('/kirkpatrick/filter-options')).body.data
       expect(own.schools).toEqual([{ id: w.schoolA, name: expect.any(String) }])
     })
