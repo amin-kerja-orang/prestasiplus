@@ -4,7 +4,7 @@
  * Bahagian, Pengesahan; the live "Semakan Kontrak" panel; save as a new version (AC-39.4); the
  * Pengesahan tab verifies the contract (US-39). `?baharu=1` opens an empty Draf (K1 "Baharu").
  */
-import type { BijakBlueprintVersionItem, BijakBlueprintView, BijakUnitRefView } from '@pp/contract'
+import type { BijakBlueprintVersionItem, BijakBlueprintView, BijakUnitRefView, BijakVerificationCheck } from '@pp/contract'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
@@ -17,6 +17,7 @@ import {
   DsPillNav,
   DsSplit,
   DsDialog,
+  DsText,
   useConfirm,
   type PillItem,
 } from '@/ds'
@@ -35,7 +36,8 @@ import {
   type ContractForm,
 } from '../domain/form'
 import { gapText, REVIEW_BADGE } from '../domain/review'
-import { errorsOf, incompleteOf, issueFromProblem, validateForm, type Issue } from '../domain/validate'
+import { errorsOf, incompleteOf, issueFromProblem, issuesFromFields, validateForm, type Issue } from '../domain/validate'
+import { failingGates, type GateRow } from '../domain/verify'
 import { KONTRAK_ROUTES, KontrakError } from '../server/api'
 import { kontrakServer } from '../server/client'
 
@@ -89,7 +91,22 @@ watch([() => route.params.subjek, () => route.params.kertas, () => route.query.b
 /* -------------------------------------------------------------------------- issues, tabs */
 const refused = ref<Issue[]>([])
 const issues = computed(() => (status.value === 'ready' ? validateForm(form.value) : []))
-const problemCount = computed(() => errorsOf(issues.value).length + incompleteOf(issues.value).length)
+/* FR-ADM-Q16.4, 16-20: "Belum lengkap untuk Disahkan ({n})" counts the Syarat Disahkan of the saved head, the same rows as the Pengesahan tab. */
+const check = ref<BijakVerificationCheck | null>(null)
+watch(
+  () => [view.value?.subject, view.value?.kertas, view.value?.version, reloadKey.value],
+  async () => {
+    const asked = view.value
+    if (!asked) {
+      check.value = null
+      return
+    }
+    const answer = await api.verification(asked.subject, asked.kertas).catch(() => null)
+    if (view.value === asked) check.value = answer?.check ?? null
+  },
+)
+const failing = computed<GateRow[] | null>(() => (check.value ? failingGates(check.value, form.value) : null))
+const problemCount = computed(() => errorsOf(issues.value).length + (failing.value?.length ?? incompleteOf(issues.value).length))
 
 const tab = computed(() => String(route.query.paparan ?? 'umum'))
 const sectionIndex = computed(() => {
@@ -131,6 +148,10 @@ async function gotoIssue(i: { section: number | null; part: string; target: stri
   const key = i.section === null ? 'umum' : `bahagian-${i.section + 1}`
   if (tab.value !== key) await router.replace(tabTo(key))
   await focusTarget(i.target)
+}
+async function gotoGate(g: GateRow): Promise<void> {
+  if (g.goto) await gotoIssue(g.goto)
+  else await router.replace(tabTo('pengesahan'))
 }
 
 /* -------------------------------------------------------------------------- banners */
@@ -213,7 +234,7 @@ async function commit(): Promise<void> {
     }
   } catch (e) {
     if (e instanceof KontrakError && e.kind === 'invalid') {
-      await showSummary(e.problems.map((p) => issueFromProblem(p, form.value.sections)))
+      await showSummary([...e.problems.map((p) => issueFromProblem(p, form.value.sections)), ...issuesFromFields(e.fields)])
     } else if (e instanceof KontrakError && e.kind === 'conflict') {
       conflict.value = true
       saveError.value = e.message
@@ -407,7 +428,7 @@ const poolReason = 'Simpan dahulu'
           <template #description>
             <ul class="mt-1 flex flex-col gap-1">
               <li v-for="e in summaryIssues" :key="e.id">
-                <UButton variant="link" color="error" class="h-auto min-h-11 justify-start p-0 text-start whitespace-normal" :label="e.message" @click="gotoIssue(e)" />
+                <UButton variant="link" color="error" class="h-auto min-h-11 justify-start p-0 text-start whitespace-normal" @click="gotoIssue(e)"><DsText as="span" variant="body" tone="error">{{ e.message }}</DsText></UButton>
               </li>
             </ul>
           </template>
@@ -422,12 +443,14 @@ const poolReason = 'Simpan dahulu'
             :subject-name="subjectName"
             :kertas="kertas"
             :is-new="isNew"
+            :dirty="dirty"
             :issues="issues"
             :retire-error="retireError"
             :dependent-papers="view?.dependentPaperCount ?? 0"
             :reference="view?.reference ?? []"
             @edit="(i) => router.replace(tabTo(`bahagian-${i + 1}`))"
             @retire="retire"
+            @open-verification="router.replace(tabTo('pengesahan'))"
           />
           <SectionEditor
             v-else-if="activeSection >= 0 && form.sections[activeSection]"
@@ -456,11 +479,12 @@ const poolReason = 'Simpan dahulu'
             :reload-key="reloadKey"
             @verified="onVerified"
             @goto="gotoIssue"
+            @checked="(c) => (check = c)"
           />
         </div>
         <template #aside>
           <div id="contract-check-anchor">
-            <ContractCheckPanel :form="form" :issues="issues" @goto="gotoIssue" />
+            <ContractCheckPanel :form="form" :issues="issues" :failing="failing" @goto="gotoIssue" @gate="gotoGate" />
           </div>
         </template>
       </DsSplit>

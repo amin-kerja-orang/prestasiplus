@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { DsFormField, DsFormSection, DsNativeSelect, useConfirm } from '@/ds'
 
-import { emptySection, questionRange, type ContractForm } from '../domain/form'
+import { answerLine, emptySection, questionRange, type ContractForm, type SourceTag } from '../domain/form'
 import { fieldId, sectionStatus, type Issue } from '../domain/validate'
 import NumField from './NumField.vue'
 import SourceBadge from './SourceBadge.vue'
@@ -17,23 +17,36 @@ const props = defineProps<{
   subjectName: string
   kertas: number
   isNew: boolean
+  /** The form differs from the saved head. Verification acts on the saved head only. */
+  dirty: boolean
   issues: readonly Issue[]
   retireError: string
   dependentPapers: number
   reference: { title: string; items: string[] }[]
 }>()
 const form = defineModel<ContractForm>('form', { required: true })
-const emit = defineEmits<{ edit: [index: number]; retire: [] }>()
+const emit = defineEmits<{ edit: [index: number]; retire: []; 'open-verification': [] }>()
 
 const MAX = 20
 const confirm = useConfirm()
 const errAt = (name: string): string | undefined =>
   props.issues.find((i) => i.level === 'error' && i.target === fieldId(null, name))?.message
 const budgetSum = computed(() => form.value.sections.reduce((n, s) => n + (s.markBudget ?? 0), 0))
-const statusItems = [
+/** Decision 3: nothing to verify on a new contract or on unsaved edits. Same text as the Sahkan block of the Pengesahan tab. */
+const verifyBlocked = computed(() => props.isNew || props.dirty)
+const statusItems = computed(() => [
   { label: 'Draf', value: 'Draf' },
   { label: 'Spec', value: 'Spec' },
-]
+  { label: 'Disahkan', value: 'Disahkan', disabled: verifyBlocked.value },
+])
+/** FR-ADM-Q16.2: `Disahkan` opens the Pengesahan tab and never writes the value; only `Sahkan` there does. */
+function setSource(value: string | number): void {
+  if (value === 'Disahkan') {
+    if (!verifyBlocked.value) emit('open-verification')
+    return
+  }
+  form.value.source = value as SourceTag
+}
 
 /** "Boleh tanda auto": null = not stated (never a conformance failure, PIPE AC-06.5). */
 const autoItems = [
@@ -58,8 +71,7 @@ function statusOf(i: number): { text: string; color: 'success' | 'warning' | 'er
 
 function summary(i: number): string {
   const s = form.value.sections[i]!
-  const rule = s.ruleType === 'all' ? 'Jawab semua' : `Jawab ${s.chooseN ?? '?'} soalan sahaja`
-  return `${questionRange(form.value.sections, i)} - ${s.markBudget ?? 0} markah - ${rule}`
+  return `${questionRange(form.value.sections, i)} - ${s.markBudget ?? 0} markah - ${answerLine(s)}`
 }
 
 const letter = (i: number): string => `Bahagian ${String.fromCharCode(65 + (i % 26))}`
@@ -99,7 +111,7 @@ async function retire(): Promise<void> {
 <template>
   <div class="flex min-w-0 flex-col gap-6">
     <DsFormSection title="Maklumat Kertas" icon="file-text" :columns="2">
-      <div>
+      <div :id="fieldId(null, 'subject')" tabindex="-1">
         <p class="text-label text-default">Subjek</p>
         <p class="mt-2 text-body">{{ subjectName }}</p>
       </div>
@@ -122,13 +134,18 @@ async function retire(): Promise<void> {
           <NumField :id="f.id" v-model="form.totalMarks" :min="1" :invalid="f.invalid" :describedby="f.describedby" />
         </template>
       </DsFormField>
+      <DsFormField native :for="fieldId(null, 'question-count')" label="Bilangan soalan dalam kertas" :error="errAt('question-count')">
+        <template #default="f">
+          <NumField :id="f.id" v-model="form.questionCount" :min="1" :max="200" :invalid="f.invalid" :describedby="f.describedby" />
+        </template>
+      </DsFormField>
       <div v-if="form.source === 'Disahkan'">
         <p class="text-label text-default">Sumber</p>
         <div class="mt-2"><SourceBadge source="Disahkan" /></div>
       </div>
-      <DsFormField v-else native :for="fieldId(null, 'status')" label="Sumber">
+      <DsFormField v-else native :for="fieldId(null, 'status')" label="Sumber" :hint="verifyBlocked ? 'Simpan perubahan dahulu.' : undefined">
         <template #default="f">
-          <DsNativeSelect :id="f.id" v-model="form.source" :items="statusItems" />
+          <DsNativeSelect :id="f.id" :model-value="form.source" :items="statusItems" :aria-describedby="f.describedby" data-testid="kontrak-source" @update:model-value="setSource" />
         </template>
       </DsFormField>
       <div class="sm:col-span-2">

@@ -6,10 +6,11 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsPanel } from '@/ds'
+import { DsPanel, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import type { ContractForm } from '../domain/form'
+import type { GateRow } from '../domain/verify'
 import {
   errorsOf,
   incompleteOf,
@@ -18,14 +19,27 @@ import {
 } from '../domain/validate'
 import SumMeter from './SumMeter.vue'
 
-const props = defineProps<{ form: ContractForm; issues: readonly Issue[] }>()
-const emit = defineEmits<{ goto: [issue: Issue] }>()
+const props = defineProps<{
+  form: ContractForm
+  issues: readonly Issue[]
+  /**
+   * FR-ADM-Q16.4, 16-20: the failing rows of the saved head's Syarat Disahkan, the same list as the Pengesahan tab (evidence and
+   * unreviewed values included). Null when there is no check to read (a new contract): the form's own list stands in.
+   */
+  failing?: readonly GateRow[] | null
+}>()
+const emit = defineEmits<{ goto: [issue: Issue]; gate: [row: GateRow] }>()
 
 const wide = useMedia('(min-width: 1280px)', true)
 const errors = computed(() => errorsOf(props.issues))
 const incomplete = computed(() => incompleteOf(props.issues))
 const warnings = computed(() => props.issues.filter((i) => i.level === 'warning'))
-const problemCount = computed(() => errors.value.length + incomplete.value.length)
+const missing = computed(() =>
+  props.failing
+    ? props.failing.map((g) => ({ id: g.key, message: g.label, details: g.details, open: () => emit('gate', g) }))
+    : incomplete.value.map((e) => ({ id: e.id, message: e.message, details: [] as string[], open: () => emit('goto', e) })),
+)
+const problemCount = computed(() => errors.value.length + missing.value.length)
 const open = ref(errors.value.length > 0)
 watch(
   () => errors.value.length,
@@ -119,27 +133,30 @@ const title = computed(() => (wide.value ? 'Semakan Kontrak' : `Semakan Kontrak 
               color="error"
               class="h-auto min-h-11 justify-start p-0 text-start text-caption whitespace-normal"
               icon="i-ph-warning-circle"
-              :label="e.message"
               @click="emit('goto', e)"
-            />
+            >
+              <DsText as="span" variant="caption" tone="error">{{ e.message }}</DsText>
+            </UButton>
           </li>
         </ul>
       </section>
 
-      <section v-if="incomplete.length" aria-labelledby="check-incomplete">
+      <section v-if="missing.length" aria-labelledby="check-incomplete">
         <h3 id="check-incomplete" class="text-label text-highlighted">
-          Belum lengkap untuk Disahkan ({{ incomplete.length }})
+          Belum lengkap untuk Disahkan ({{ missing.length }})
         </h3>
         <ul class="mt-1 flex flex-col gap-1" data-testid="check-incomplete">
-          <li v-for="e in incomplete" :key="e.id">
+          <li v-for="e in missing" :key="e.id">
             <UButton
               variant="link"
               color="warning"
               class="h-auto min-h-11 justify-start p-0 text-start text-caption whitespace-normal"
               icon="i-ph-minus-circle"
-              :label="e.message"
-              @click="emit('goto', e)"
-            />
+              @click="e.open()"
+            >
+              <DsText as="span" variant="caption" tone="warning">{{ e.message }}</DsText>
+            </UButton>
+            <DsText v-for="d in e.details" :key="d" variant="caption" tone="muted" wrap="anywhere">{{ d }}</DsText>
           </li>
         </ul>
       </section>

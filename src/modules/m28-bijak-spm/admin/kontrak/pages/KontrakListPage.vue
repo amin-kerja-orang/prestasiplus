@@ -11,6 +11,8 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
 import {
+  DsBadge,
+  DsCallout,
   DsDataTable,
   DsDialog,
   DsFilterBar,
@@ -29,7 +31,7 @@ import SourceBadge from '../components/SourceBadge.vue'
 import SharedBanner from '../components/SharedBanner.vue'
 import { KONTRAK_ROUTES } from '../server/api'
 import { kontrakServer } from '../server/client'
-import { REVIEW_BADGE } from '../domain/review'
+import { NO_EVIDENCE_BADGE, REVIEW_BADGE } from '../domain/review'
 import { bodyName } from '../domain/verify'
 
 type Row = BijakBlueprintView & {
@@ -43,6 +45,13 @@ const api = kontrakServer()
 const router = useRouter()
 /** V2 empty state (K10, cloud-student-mechanism 3.4); the create button is "Baharu" as there. */
 const EMPTY_FIRST = 'Tiada kontrak lagi. Cipta kontrak pertama menggunakan butang "Baharu" di atas.'
+/** [PROPOSED] Copy with no PRD source: the `Baharu` Subjek list could not be read, or holds nothing (no Subjek has its DSKP loaded). */
+const PROPOSED_COPY = {
+  subjectsLoadFailed: 'Tidak dapat memuatkan senarai subjek. Sila cuba semula.',
+  noSubjects: 'Tiada subjek yang DSKP-nya telah dimuatkan. Kontrak tidak boleh dicipta.',
+} as const
+/** OPT-KERTAS (PRD30 16-02). */
+const KERTAS_OPTIONS = [1, 2, 3, 4] as const
 const flash = useFlash()
 const { data, error, loading, reload } = useApi(() => api.list())
 
@@ -118,7 +127,7 @@ const columns: TableColumn<Row>[] = [
   { accessorKey: 'durationMin', header: 'Tempoh' },
   { accessorKey: 'totalMarks', header: 'Markah' },
   { accessorKey: 'bahagian', header: 'Bahagian' },
-  { accessorKey: 'source', header: 'Status' },
+  { accessorKey: 'source', header: 'Status', meta: { width: 'md' } },
   { accessorKey: 'pengesahan', header: 'Pengesahan' },
   { id: 'actions', header: 'Tindakan' },
 ]
@@ -169,17 +178,24 @@ function actionsOf(r: Row): RowAction[] {
 /* ------------------------------------------------------------------ Baharu (Kontrak Baharu dialog) */
 const addOpen = ref(false)
 const subjects = ref<{ code: string; name: string }[]>([])
+const subjectsState = ref<'loading' | 'error' | 'ready'>('loading')
 const add = reactive({ subject: '', kertas: '' })
 const addTried = ref(false)
+async function loadSubjects(): Promise<void> {
+  subjectsState.value = 'loading'
+  try {
+    subjects.value = await api.subjectOptions()
+    subjectsState.value = 'ready'
+  } catch {
+    subjects.value = []
+    subjectsState.value = 'error'
+  }
+}
 watch(addOpen, async (o) => {
   if (!o) return
   Object.assign(add, { subject: '', kertas: '' })
   addTried.value = false
-  try {
-    subjects.value = await api.subjectOptions()
-  } catch {
-    subjects.value = []
-  }
+  await loadSubjects()
 })
 const existing = computed(() =>
   all.value.find((r) => r.subject === add.subject && String(r.kertas) === add.kertas),
@@ -233,8 +249,7 @@ function proceed(): void {
         </DsNativeSelect>
         <DsNativeSelect v-model="draft.kertas" aria-label="Kertas" class="md:w-36" data-testid="kontrak-kertas">
           <option value="">Semua Kertas</option>
-          <option value="1">Kertas 1</option>
-          <option value="2">Kertas 2</option>
+          <option v-for="k in KERTAS_OPTIONS" :key="k" :value="String(k)">Kertas {{ k }}</option>
         </DsNativeSelect>
         <DsNativeSelect v-model="draft.source" aria-label="Status" class="md:w-40" data-testid="kontrak-status">
           <option value="">Semua Status</option>
@@ -290,6 +305,7 @@ function proceed(): void {
             <span v-if="row.original.needsReview && row.original.reviewPapers.length > 0" class="text-caption text-muted" data-testid="review-count">
               {{ row.original.reviewPapers.length }} kertas terjejas
             </span>
+            <DsBadge v-if="row.original.evidenceCount === 0" tone="warning" icon="warning-circle" :label="NO_EVIDENCE_BADGE" data-testid="no-evidence" />
           </div>
         </template>
         <template #pengesahan-cell="{ row }"><span class="text-body break-words">{{ row.original.pengesahan }}</span></template>
@@ -334,6 +350,7 @@ function proceed(): void {
               <span v-if="(row as Row).needsReview && (row as Row).reviewPapers.length > 0" class="text-caption text-muted" data-testid="review-count">
                 {{ (row as Row).reviewPapers.length }} kertas terjejas
               </span>
+              <DsBadge v-if="(row as Row).evidenceCount === 0" tone="warning" icon="warning-circle" :label="NO_EVIDENCE_BADGE" data-testid="no-evidence" />
             </div>
           </div>
         </template>
@@ -345,7 +362,9 @@ function proceed(): void {
 
     <DsDialog v-model:open="addOpen" title="Kontrak Baharu" size="sm">
       <form id="kontrak-add-form" class="flex flex-col gap-4" novalidate @submit.prevent="proceed">
-        <DsFormField native for="add-subject" label="Subjek" required :error="addTried && !add.subject ? 'Pilih subjek.' : undefined">
+        <DsLoadError v-if="subjectsState === 'error'" :message="PROPOSED_COPY.subjectsLoadFailed" variant="inline" testid="add-subjects-error" @retry="loadSubjects" />
+        <DsCallout v-else-if="subjectsState === 'ready' && !subjects.length" tone="warning" :description="PROPOSED_COPY.noSubjects" data-testid="add-subjects-empty" />
+        <DsFormField native for="add-subject" label="Subjek" required :error="addTried && !add.subject ? 'Sila pilih subjek.' : undefined">
           <template #default="f">
             <DsNativeSelect :id="f.id" v-model="add.subject" blank :invalid="f.invalid" data-testid="add-subject">
               <option v-for="s in subjects" :key="s.code" :value="s.code">{{ s.name }}</option>
@@ -355,8 +374,7 @@ function proceed(): void {
         <DsFormField native for="add-kertas" label="Kertas" required :error="addTried && !add.kertas ? 'Pilih kertas.' : undefined">
           <template #default="f">
             <DsNativeSelect :id="f.id" v-model="add.kertas" blank :invalid="f.invalid" data-testid="add-kertas">
-              <option value="1">Kertas 1</option>
-              <option value="2">Kertas 2</option>
+              <option v-for="k in KERTAS_OPTIONS" :key="k" :value="String(k)">Kertas {{ k }}</option>
             </DsNativeSelect>
           </template>
         </DsFormField>
@@ -366,14 +384,14 @@ function proceed(): void {
           variant="subtle"
           icon="i-ph-warning-circle"
           role="alert"
-          description="Kontrak untuk subjek dan kertas ini sudah wujud."
+          description="Kontrak untuk subjek/kertas ini sudah wujud."
           :actions="[{ label: 'Buka kontrak', color: 'neutral', variant: 'soft', class: 'min-h-11', to: editTo(existing) }]"
           data-testid="add-exists"
         />
       </form>
       <template #footer>
         <UButton color="neutral" variant="soft" class="min-h-11" label="Batal" @click="addOpen = false" />
-        <UButton type="submit" form="kontrak-add-form" class="min-h-11" label="Teruskan" data-testid="add-continue" />
+        <UButton type="submit" form="kontrak-add-form" class="min-h-11" label="Teruskan" :disabled="subjectsState !== 'ready' || !subjects.length" data-testid="add-continue" />
       </template>
     </DsDialog>
   </DsPage>

@@ -16,7 +16,7 @@ import type {
 import { computed, ref, watch } from 'vue'
 
 import { useFlash } from '@/composables/useFlash'
-import { DsDialog, DsFormField, DsLoadError, DsPanel, useConfirm } from '@/ds'
+import { DsDialog, DsFormField, DsLoadError, DsPanel, DsStack, DsText, useConfirm } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -54,6 +54,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   verified: [view: BijakBlueprintView]
   goto: [target: { section: number | null; part: string; target: string }]
+  /** Fresh answer of `GET .../verification`, so the page's "Belum lengkap untuk Disahkan" follows an evidence change. */
+  checked: [check: BijakVerificationCheck]
 }>()
 
 const flash = useFlash()
@@ -76,6 +78,7 @@ async function load(): Promise<void> {
     state.value = st
     evidence.value = ev
     checkedAt.value = Date.now()
+    emit('checked', st.check)
   } catch {
     loadError.value = true
   }
@@ -333,6 +336,8 @@ const evidenceLabel = computed(() => evidence.value.filter((e) => e.origin === '
       </DsPanel>
 
       <DsPanel title="Syarat Disahkan">
+        <DsStack gap="sm">
+        <DsText v-if="failing.length" variant="label" data-testid="gates-failing">Belum lengkap untuk Disahkan ({{ failing.length }})</DsText>
         <ul class="flex flex-col gap-2" data-testid="gates">
           <li
             v-for="g in gates"
@@ -364,6 +369,7 @@ const evidenceLabel = computed(() => evidence.value.filter((e) => e.origin === '
             />
           </li>
         </ul>
+        </DsStack>
       </DsPanel>
 
       <DsPanel title="Sahkan Kontrak">
