@@ -6304,9 +6304,9 @@
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/nav/user-nav.ts",
-      "approved_by_card": null
+      "approved_by_card": "S5-T09"
     },
     {
       "key": "user-nav|latih-tubi",

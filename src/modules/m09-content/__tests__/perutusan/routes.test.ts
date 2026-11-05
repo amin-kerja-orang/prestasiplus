@@ -41,6 +41,15 @@ describe('M09 perutusan routes (S5-T09)', () => {
     expect(roles['perutusan-mine']).toEqual(['school_admin', 'admin'])
   })
 
+  it('tab title is the page name (formatTabTitle adds the brand)', () => {
+    expect(routes.map((r) => r.meta?.title)).toEqual([
+      'Perutusan Rasmi',
+      'Tulis Perutusan',
+      'Perutusan Saya',
+      'Perutusan',
+    ])
+  })
+
   it('uses the user layout, auth access and module M09 with the list header', () => {
     for (const r of routes) {
       expect(r.meta).toMatchObject({ layout: 'user', access: 'auth', module: 'M09', v2: true })

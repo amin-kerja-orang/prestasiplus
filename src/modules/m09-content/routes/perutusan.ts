@@ -6,8 +6,6 @@ import type { RouteRecordRaw } from 'vue-router'
  * gets no Perutusan in R1); writers: school admin and Admin Pusat. Order matters: `tulis` and `saya`
  * are declared before the numeric-only `:id` route. Names are the canonical-map keys.
  */
-const TAB_TITLE = 'PRESTASIPLUS - Platform Latih Tubi Nasional'
-
 const READERS = ['teacher', 'school_admin', 'admin'] as ['teacher', 'school_admin', 'admin']
 const WRITERS = ['school_admin', 'admin'] as ['school_admin', 'admin']
 
@@ -18,7 +16,7 @@ const meta = (
   layout: 'user' as const,
   access: 'auth' as const,
   roles,
-  title: TAB_TITLE,
+  title: header.title,
   header,
   module: 'M09' as const,
   v2: true as const,

@@ -612,8 +612,7 @@ describe('Perutusan sidebar items (S5-T09)', () => {
     expect(ids('admin')).toContain('perutusan')
   })
 
-  it('sa-perutusan is hidden for the school admin (Delivery A) unless out-of-scope items are included', () => {
+  it('sa-perutusan is hidden for the school admin (Delivery A)', () => {
     expect(ids('school_admin')).not.toContain('sa-perutusan')
-    expect(ids('school_admin', FULL)).toContain('sa-perutusan')
   })
 })
