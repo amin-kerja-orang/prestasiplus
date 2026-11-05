@@ -3,6 +3,26 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 import { z } from '../../zod'
 import { envelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
+import { IdSchema } from '../../common/ids'
+import {
+  GuruSetBankQuerySchema,
+  GuruSetBankResponseSchema,
+  GuruSetBankStimulusSchema,
+  GuruSetBankUnitSchema,
+  GuruSetCopyRequestSchema,
+  GuruSetDeleteResultSchema,
+  GuruSetListQuerySchema,
+  GuruSetListResponseSchema,
+  GuruSetListSchema,
+  GuruSetResultsQuerySchema,
+  GuruSetResultsResponseSchema,
+  GuruSetResultsSchema,
+  GuruSetStatusRequestSchema,
+  GuruSetStatusSchema,
+  GuruSetUpsertRequestSchema,
+  QuestionSetRowSchema,
+  QuestionSetSchema,
+} from './schema'
 import {
   DskpBidangCreateRequestSchema,
   DskpBidangInlineErrorSchema,
@@ -27,6 +47,17 @@ import {
 
 /** Components contributed by BE-18 (question sets, papers and DSKP half; spread into COMPONENT_SCHEMAS). */
 export const QUESTION_SETS_COMPONENT_SCHEMAS = {
+  GuruSetStatus: GuruSetStatusSchema,
+  GuruSetUpsertRequest: GuruSetUpsertRequestSchema,
+  GuruSetStatusRequest: GuruSetStatusRequestSchema,
+  GuruSetCopyRequest: GuruSetCopyRequestSchema,
+  QuestionSetRow: QuestionSetRowSchema,
+  QuestionSet: QuestionSetSchema,
+  GuruSetList: GuruSetListSchema,
+  GuruSetResults: GuruSetResultsSchema,
+  GuruSetBankStimulus: GuruSetBankStimulusSchema,
+  GuruSetBankUnit: GuruSetBankUnitSchema,
+  GuruSetDeleteResult: GuruSetDeleteResultSchema,
   QuestionSetStudentItem: QuestionSetStudentItemSchema,
   QuestionSetStudentList: QuestionSetStudentListSchema,
   QuestionSetPaperFields: QuestionSetPaperFieldsSchema,
@@ -79,6 +110,7 @@ const download = (contentType: string, fileName: string, description: string) =>
 
 /** Registers the BE-18 question set, paper, template and DSKP endpoints. */
 export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
+  registerGuruQuestionSetsPaths(registry)
   registry.registerPath({
     method: 'get',
     path: '/set-soalan-saya',
@@ -180,6 +212,132 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
       429: rateLimited,
       401: unauthorized,
       403: teacherOnly,
+    },
+  })
+}
+
+const setId = z.object({ id: IdSchema })
+const notFoundSet = err('NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher\'s set).')
+const teacherOnlySets = err('FORBIDDEN ("Anda tidak dibenarkan melakukan tindakan ini."): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.')
+const setFields = err('VALIDATION_ERROR with fields: title, subjectId, educationLevelId, questionIds (also "Soalan dalam kumpulan rangsangan mesti dipilih bersama." and non-approved ids), classroomIds (also "Pilih sekurang-kurangnya satu kelas sebelum menerbitkan." and a class that is not own), status.')
+const setLocked = err('CONFLICT "Soalan tidak boleh diubah kerana pelajar telah menjawab set ini." when the question list changes while a pupil has an attempt; title and classes still save.')
+
+/** API-GUR-16 (S6-T14, R1-GUR-8b): teacher Set Soalan. All routes are `@Roles` teacher, own sets only. */
+function registerGuruQuestionSetsPaths(registry: OpenAPIRegistry): void {
+  const tags = ['question-sets']
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/question-sets',
+    tags,
+    summary: 'Own sets, newest update first, with counters (API-GUR-16)',
+    request: { query: GuruSetListQuerySchema },
+    responses: { 200: json(GuruSetListResponseSchema, '`{ data: { rows, counters, summary }, meta }`.'), 401: unauthorized, 403: teacherOnlySets },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/question-sets/bank',
+    tags,
+    summary: 'Bank picker: approved and servable question units (API-GUR-16)',
+    description: 'Newest first, 50 units per call by cursor. A stimulus group is one unit and is never split. Must be matched before `/guru/question-sets/{id}`.',
+    request: { query: GuruSetBankQuerySchema },
+    responses: {
+      200: json(GuruSetBankResponseSchema, '`{ data: { units, nextCursor } }`; an empty page shows "Tiada soalan sepadan. Laraskan penapis di atas.".'),
+      401: unauthorized,
+      403: teacherOnlySets,
+      422: err('VALIDATION_ERROR fields.q "Taip sekurang-kurangnya 2 aksara."'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/question-sets',
+    tags,
+    summary: 'Create a set (draft or published)',
+    description: 'Toast "Draf disimpan." or "Set diterbitkan.".',
+    request: { headers: [csrf], body: body(GuruSetUpsertRequestSchema) },
+    responses: { 201: json(envelopeOf(QuestionSetSchema), 'The created set.'), 401: unauthorized, 403: teacherOnlySets, 422: setFields },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/question-sets/{id}',
+    tags,
+    summary: 'Set detail for the "Urus" form',
+    request: { params: setId },
+    responses: { 200: json(envelopeOf(QuestionSetSchema), 'The set with questionIds, classroomIds and locked.'), 401: unauthorized, 403: teacherOnlySets, 404: notFoundSet },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/guru/question-sets/{id}',
+    tags,
+    summary: 'Update a set (same body as create)',
+    request: { headers: [csrf], params: setId, body: body(GuruSetUpsertRequestSchema) },
+    responses: {
+      200: json(envelopeOf(QuestionSetSchema), 'The updated set.'),
+      401: unauthorized,
+      403: teacherOnlySets,
+      404: notFoundSet,
+      409: setLocked,
+      422: setFields,
+    },
+  })
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/guru/question-sets/{id}',
+    tags,
+    summary: 'Delete a set (attempt records stay for Prestasi)',
+    description: 'Toast "Set dipadam.".',
+    request: { headers: [csrf], params: setId },
+    responses: { 200: json(envelopeOf(GuruSetDeleteResultSchema), '`{ data: { deleted: 1 } }`.'), 401: unauthorized, 403: teacherOnlySets, 404: notFoundSet },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/question-sets/{id}/status',
+    tags,
+    summary: 'Terbitkan / Jadikan Draf',
+    description: 'Toast "Set diterbitkan." or "Set dijadikan draf.". Publishing needs at least one class.',
+    request: { headers: [csrf], params: setId, body: body(GuruSetStatusRequestSchema) },
+    responses: {
+      200: json(envelopeOf(QuestionSetSchema), 'The set with its new status.'),
+      401: unauthorized,
+      403: teacherOnlySets,
+      404: notFoundSet,
+      422: err('VALIDATION_ERROR fields.status, or fields.classroomIds "Pilih sekurang-kurangnya satu kelas sebelum menerbitkan."'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/question-sets/{id}/copy',
+    tags,
+    summary: 'Salin Set ke Kelas: a draft copy titled "{title} (Salinan)"',
+    description: 'All questions are copied; the copy is assigned to the chosen own classes only. Toast "Set disalin.".',
+    request: { headers: [csrf], params: setId, body: body(GuruSetCopyRequestSchema) },
+    responses: {
+      201: json(envelopeOf(QuestionSetSchema), 'The draft copy.'),
+      401: unauthorized,
+      403: teacherOnlySets,
+      404: notFoundSet,
+      422: err('VALIDATION_ERROR fields.classroomIds "Sila pilih kelas sasaran." (empty, or a class that is not own).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/question-sets/{id}/results',
+    tags,
+    summary: 'Hasil: per-attempt results, newest first, 25 per page',
+    request: { params: setId, query: GuruSetResultsQuerySchema },
+    responses: {
+      200: json(GuruSetResultsResponseSchema, '`{ data: { summary, rows }, meta }`; empty rows show "Belum ada pelajar menjawab set ini.".'),
+      401: unauthorized,
+      403: teacherOnlySets,
+      404: notFoundSet,
     },
   })
 }

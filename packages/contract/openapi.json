@@ -19415,6 +19415,10 @@
           "academicYear": {
             "type": "integer"
           },
+          "year": {
+            "type": "integer",
+            "description": "S6-T14: Tahun Sesi, the same value as academicYear (additive alias)."
+          },
           "description": {
             "type": [
               "string",
@@ -19483,11 +19487,75 @@
               "null"
             ],
             "maxLength": 2000
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "S6-T14: Tahun Sesi; absent = current calendar year (MYT)."
           }
         },
         "required": [
           "name",
           "subjectId",
+          "educationLevel"
+        ],
+        "description": "Legacy create body (name max 255, subjectId required). R1 clients and the R1 handlers use ClassUpsertRequest."
+      },
+      "ClassUpsertRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "educationLevel": {
+            "type": "string",
+            "enum": [
+              "tahun-1",
+              "tahun-2",
+              "tahun-3",
+              "tahun-4",
+              "tahun-5",
+              "tahun-6",
+              "tingkatan-1",
+              "tingkatan-2",
+              "tingkatan-3",
+              "tingkatan-4",
+              "tingkatan-5"
+            ]
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional (\"Subjek (pilihan)\"); null or empty = no subject."
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2020,
+            "maximum": 2100,
+            "description": "Tahun Sesi; absent = current calendar year (MYT)."
+          },
+          "schoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional; when absent, null or empty the class takes the own school of the caller (none if the caller has none). Only that school is accepted; any other or unknown school gives fields.schoolId."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
           "educationLevel"
         ]
       },
@@ -44064,6 +44132,504 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "GuruSetStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "published"
+        ],
+        "description": "`scheduled` exists in the table but is never produced or offered."
+      },
+      "GuruSetUpsertRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "educationLevelId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"Tingkatan (pilihan)\"; null or absent = none."
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "classroomIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "default": []
+          },
+          "status": {
+            "$ref": "#/components/schemas/GuruSetStatus"
+          }
+        },
+        "required": [
+          "title",
+          "subjectId",
+          "questionIds",
+          "status"
+        ]
+      },
+      "GuruSetStatusRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/GuruSetStatus"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "GuruSetCopyRequest": {
+        "type": "object",
+        "properties": {
+          "classroomIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "classroomIds"
+        ],
+        "description": "The dialog \"Salin Set ke Kelas\" sends a one-element array. Own classes only."
+      },
+      "QuestionSetRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GuruSetStatus"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "educationLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "siap": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils who finished the set (\"{n} siap\")."
+          },
+          "classrooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "subjectId",
+          "subjectName",
+          "educationLevelId",
+          "questionCount",
+          "siap",
+          "classrooms",
+          "updatedAt"
+        ]
+      },
+      "QuestionSet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GuruSetStatus"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "classroomIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "locked": {
+            "type": "boolean",
+            "description": "true once any pupil has an attempt: the question list cannot change."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "subjectId",
+          "educationLevelId",
+          "questionIds",
+          "classroomIds",
+          "locked",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "GuruSetList": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionSetRow"
+            }
+          },
+          "counters": {
+            "type": "object",
+            "properties": {
+              "published": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "\"Diterbitkan\"."
+              },
+              "draft": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "\"Draf\"."
+              },
+              "participation": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "\"Penyertaan\": pupils with at least one completed attempt on any set of the teacher."
+              }
+            },
+            "required": [
+              "published",
+              "draft",
+              "participation"
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "siap": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "siap"
+            ]
+          }
+        },
+        "required": [
+          "rows",
+          "counters",
+          "summary"
+        ]
+      },
+      "GuruSetResults": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "penyertaan": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "skorPurata": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Mean of the per-attempt percentages, whole number rounded half up; null without attempts."
+              },
+              "jumlahPercubaan": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "penyertaan",
+              "skorPurata",
+              "jumlahPercubaan"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "pupil": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                },
+                "correct": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "correct / total * 100 with one decimal on the wire; the screen shows it rounded half up."
+                },
+                "attemptedAt": {
+                  "$ref": "#/components/schemas/Timestamp"
+                }
+              },
+              "required": [
+                "pupil",
+                "correct",
+                "total",
+                "accuracy",
+                "attemptedAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "rows"
+        ]
+      },
+      "GuruSetBankStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/QuestionStimulusKind"
+          },
+          "label": {
+            "type": "string"
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "body": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionRichText"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tableData": {
+            "$ref": "#/components/schemas/QuestionStimulusTable"
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "caption",
+          "body",
+          "alt",
+          "sourceCitation",
+          "tableData",
+          "imageId"
+        ]
+      },
+      "GuruSetBankUnit": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "question",
+              "group"
+            ]
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "description": "A group is one unit: all its members, ticked together."
+          },
+          "preview": {
+            "type": "string",
+            "description": "Up to 120 characters; \"...\" appended when cut."
+          },
+          "subject": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "stimulus": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GuruSetBankStimulus"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "questionIds",
+          "preview",
+          "subject",
+          "level",
+          "difficulty",
+          "stimulus"
+        ]
+      },
+      "GuruSetDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
         ]
       },
       "QuestionSetStudentItem": {
@@ -74504,6 +75070,66 @@
           "removed"
         ]
       },
+      "GuruSetListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GuruSetList"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "GuruSetBankResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "units": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GuruSetBankUnit"
+                }
+              },
+              "nextCursor": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "units",
+              "nextCursor"
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "description": "Approved and servable questions only, newest first, 50 units per call."
+      },
+      "GuruSetResultsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GuruSetResults"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
       "IntakeExtractionRunEnvelope": {
         "type": "object",
         "properties": {
@@ -92781,14 +93407,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ClassCreateRequest"
+                "$ref": "#/components/schemas/ClassUpsertRequest"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "The created class.",
+            "description": "The created class (toast \"Kelas dicipta.\").",
             "content": {
               "application/json": {
                 "schema": {
@@ -92825,8 +93451,129 @@
               }
             }
           },
+          "409": {
+            "description": "CONFLICT \"Nama kelas sudah digunakan.\" (per teacher and Tahun Sesi, case-insensitive, trimmed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "422": {
-            "description": "VALIDATION_ERROR with fields: name, subjectId, educationLevel, schoolId, description.",
+            "description": "VALIDATION_ERROR with fields: name, educationLevel, subjectId, year, schoolId, description. A teacher with no school: \"Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/classes/{id}": {
+      "put": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Edit an own class (API-GUR-03)",
+        "description": "Same body as create. Another teacher's or an unknown class answers 404. Toast \"Kelas dikemaskini.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated class.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/TeacherClass"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown class or not owned by the caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Nama kelas sudah digunakan.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: name, educationLevel, subjectId, year, schoolId, description.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92843,7 +93590,9 @@
         "tags": [
           "classes"
         ],
-        "summary": "Join-QR payload of an own class (bare body)",
+        "summary": "DEPRECATED: join-QR payload of an own class (bare body)",
+        "deprecated": true,
+        "description": "Removed in R1: answers 404 for every role (join code and QR dropped, API-GUR-04). Path kept until the handler is removed.",
         "parameters": [
           {
             "schema": {
@@ -109508,6 +110257,782 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Own sets, newest update first, with counters (API-GUR-16)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: { rows, counters, summary }, meta }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruSetListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Create a set (draft or published)",
+        "description": "Toast \"Draf disimpan.\" or \"Set diterbitkan.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruSetUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: title, subjectId, educationLevelId, questionIds (also \"Soalan dalam kumpulan rangsangan mesti dipilih bersama.\" and non-approved ids), classroomIds (also \"Pilih sekurang-kurangnya satu kelas sebelum menerbitkan.\" and a class that is not own), status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets/bank": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Bank picker: approved and servable question units (API-GUR-16)",
+        "description": "Newest first, 50 units per call by cursor. A stimulus group is one unit and is never split. Must be matched before `/guru/question-sets/{id}`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "levelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: { units, nextCursor } }`; an empty page shows \"Tiada soalan sepadan. Laraskan penapis di atas.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruSetBankResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.q \"Taip sekurang-kurangnya 2 aksara.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets/{id}": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Set detail for the \"Urus\" form",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The set with questionIds, classroomIds and locked.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Update a set (same body as create)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruSetUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Soalan tidak boleh diubah kerana pelajar telah menjawab set ini.\" when the question list changes while a pupil has an attempt; title and classes still save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: title, subjectId, educationLevelId, questionIds (also \"Soalan dalam kumpulan rangsangan mesti dipilih bersama.\" and non-approved ids), classroomIds (also \"Pilih sekurang-kurangnya satu kelas sebelum menerbitkan.\" and a class that is not own), status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Delete a set (attempt records stay for Prestasi)",
+        "description": "Toast \"Set dipadam.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: { deleted: 1 } }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruSetDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets/{id}/status": {
+      "post": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Terbitkan / Jadikan Draf",
+        "description": "Toast \"Set diterbitkan.\" or \"Set dijadikan draf.\". Publishing needs at least one class.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruSetStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The set with its new status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.status, or fields.classroomIds \"Pilih sekurang-kurangnya satu kelas sebelum menerbitkan.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets/{id}/copy": {
+      "post": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Salin Set ke Kelas: a draft copy titled \"{title} (Salinan)\"",
+        "description": "All questions are copied; the copy is assigned to the chosen own classes only. Toast \"Set disalin.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruSetCopyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The draft copy.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSet"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.classroomIds \"Sila pilih kelas sasaran.\" (empty, or a class that is not own).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-sets/{id}/results": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Hasil: per-attempt results, newest first, 25 per page",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Absent = \"Semua Kelas\"."
+            },
+            "required": false,
+            "description": "Absent = \"Semua Kelas\".",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: { summary, rows }, meta }`; empty rows show \"Belum ada pelajar menjawab set ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruSetResultsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher (@Roles teacher; an admin has no own sets); or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
             "content": {
               "application/json": {
                 "schema": {
