@@ -13,7 +13,7 @@ import { useRouter } from 'vue-router'
 
 import { api, isApiError } from '@/api'
 import { useFlash } from '@/composables/useFlash'
-import { DsLoadError } from '@/ds'
+import { DsCluster, DsHeading, DsLoadError, DsStack, DsText } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { moduleMessage } from '../lib/generic-server-text'
@@ -178,23 +178,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6" data-testid="teacher-profile-edit-page">
-    <div v-if="state === 'loading'" class="flex flex-col gap-4" role="status" aria-busy="true" data-testid="teacher-profile-loading">
+  <DsStack gap="section" class="mx-auto w-full max-w-3xl" data-testid="teacher-profile-edit-page">
+    <DsStack v-if="state === 'loading'" gap="md" role="status" aria-busy="true" data-testid="teacher-profile-loading">
       <USkeleton class="h-64 w-full" />
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
+    </DsStack>
 
     <DsLoadError v-else-if="state === 'error'" :message="loadError || undefined" testid="teacher-profile-error" @retry="load" />
 
     <template v-else>
-      <form class="flex flex-col gap-4 md:gap-6" novalidate data-testid="teacher-profile-form" @submit.prevent="save">
+      <DsStack as="form" gap="section" novalidate data-testid="teacher-profile-form" @submit.prevent="save">
         <UCard data-testid="teacher-card-personal">
-          <div class="flex flex-col gap-4">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <DsStack gap="md">
+            <DsCluster gap="xs">
               <UIcon name="i-ph-user-circle" class="size-5" aria-hidden="true" />
-              Maklumat Peribadi
-            </h2>
+              <DsHeading :level="2" variant="subheading">Maklumat Peribadi</DsHeading>
+            </DsCluster>
 
             <UFormField label="Nama Penuh *" :error="errors.name">
               <UInput v-model="form.name" type="text" name="name" size="lg" class="w-full" data-testid="teacher-name-input" />
@@ -233,25 +233,25 @@ onBeforeUnmount(() => {
                 data-testid="teacher-ic-input"
               />
             </UFormField>
-          </div>
+          </DsStack>
         </UCard>
 
         <UCard data-testid="teacher-card-school">
-          <div class="flex flex-col gap-2">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <DsStack gap="xs">
+            <DsCluster gap="xs">
               <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />
-              Sekolah
-            </h2>
-            <p class="text-body break-words text-highlighted" data-testid="teacher-school-name">{{ schoolName || '—' }}</p>
-          </div>
+              <DsHeading :level="2" variant="subheading">Sekolah</DsHeading>
+            </DsCluster>
+            <DsText variant="body" tone="highlighted" wrap="anywhere" data-testid="teacher-school-name">{{ schoolName || '—' }}</DsText>
+          </DsStack>
         </UCard>
 
         <UCard data-testid="teacher-card-professional">
-          <div class="flex flex-col gap-4">
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+          <DsStack gap="md">
+            <DsCluster gap="xs">
               <UIcon name="i-ph-graduation-cap" class="size-5" aria-hidden="true" />
-              Maklumat Profesional
-            </h2>
+              <DsHeading :level="2" variant="subheading">Maklumat Profesional</DsHeading>
+            </DsCluster>
 
             <UFormField label="Subjek Utama" :error="errors.subject">
               <UInput v-model="form.subject" type="text" name="subject" placeholder="cth: Matematik, Sains" size="lg" class="w-full" data-testid="teacher-subject-input" />
@@ -283,10 +283,10 @@ onBeforeUnmount(() => {
                 data-testid="teacher-experience-input"
               />
             </UFormField>
-          </div>
+          </DsStack>
         </UCard>
 
-        <div class="flex items-center justify-between gap-3" data-testid="teacher-profile-actions">
+        <DsCluster gap="sm" justify="between" data-testid="teacher-profile-actions">
           <UButton color="neutral" variant="soft" size="lg" class="min-h-11" data-testid="teacher-cancel" @click="cancel">Batal</UButton>
           <UButton
             type="submit"
@@ -299,21 +299,21 @@ onBeforeUnmount(() => {
             data-testid="teacher-save"
             >{{ saving ? 'Menyimpan...' : 'Simpan Profil' }}</UButton
           >
-        </div>
-      </form>
+        </DsCluster>
+      </DsStack>
 
       <UCard data-testid="teacher-card-public">
-        <div class="flex flex-col gap-3">
-          <div>
-            <h2 class="flex items-center gap-2 text-subheading text-highlighted">
+        <DsStack gap="sm">
+          <DsStack gap="none">
+            <DsCluster gap="xs">
               <UIcon name="i-ph-share-network" class="size-5" aria-hidden="true" />
-              Profil Awam Anda
-            </h2>
-            <p class="text-caption text-muted">Kongsi profil anda dengan guru-guru lain di platform.</p>
-          </div>
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <UInput :model-value="publicUrl" readonly size="lg" class="min-w-0 flex-1" aria-label="Pautan profil awam" data-testid="teacher-public-url" />
-            <div class="flex items-center gap-2">
+              <DsHeading :level="2" variant="subheading">Profil Awam Anda</DsHeading>
+            </DsCluster>
+            <DsText variant="caption">Kongsi profil anda dengan guru-guru lain di platform.</DsText>
+          </DsStack>
+          <DsCluster gap="xs" stack-below="sm">
+            <UInput :model-value="publicUrl" readonly size="lg" class="min-w-0" aria-label="Pautan profil awam" data-testid="teacher-public-url" />
+            <DsCluster gap="xs" :wrap="false">
               <UButton
                 color="primary"
                 variant="soft"
@@ -327,11 +327,11 @@ onBeforeUnmount(() => {
               <UButton :to="publicPath" target="_blank" color="neutral" variant="soft" size="lg" icon="i-ph-arrow-square-out" class="min-h-11" data-testid="teacher-view"
                 >Lihat</UButton
               >
-            </div>
-          </div>
-          <p v-if="manual" class="text-caption text-muted" role="status" data-testid="teacher-copy-manual">Salin pautan secara manual.</p>
-        </div>
+            </DsCluster>
+          </DsCluster>
+          <DsText v-if="manual" variant="caption" role="status" data-testid="teacher-copy-manual">Salin pautan secara manual.</DsText>
+        </DsStack>
       </UCard>
     </template>
-  </div>
+  </DsStack>
 </template>

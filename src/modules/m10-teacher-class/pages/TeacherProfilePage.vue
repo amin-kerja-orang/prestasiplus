@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { api } from '@/api'
-import { DsLoadError } from '@/ds'
+import { DsCluster, DsDefinitionList, DsHeading, DsLoadError, DsStack, DsText } from '@/ds'
 
 import { moduleMessage } from '../lib/generic-server-text'
 
@@ -61,40 +61,37 @@ watch(id, load, { immediate: true })
 </script>
 
 <template>
-  <section class="mx-auto flex w-full max-w-3xl flex-col gap-4 md:gap-6" data-testid="teacher-public-page">
+  <DsStack as="section" gap="section" class="mx-auto w-full max-w-3xl" data-testid="teacher-public-page">
     <USkeleton v-if="state === 'loading'" class="h-48 w-full" role="status" aria-busy="true" data-testid="teacher-public-loading" />
 
     <DsLoadError v-else-if="state === 'error'" :message="errorText || undefined" testid="teacher-public-error" @retry="load" />
 
     <template v-else-if="card">
       <UCard data-testid="teacher-public-hero">
-        <div class="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-start">
+        <DsCluster gap="sm" stack-below="sm" class="text-center sm:text-start">
           <UAvatar :alt="card.name" size="3xl" aria-hidden="true" />
-          <div class="min-w-0">
-            <h2 class="max-w-full text-heading break-words text-highlighted" data-testid="teacher-public-name">{{ card.name }}</h2>
-          </div>
-        </div>
+          <DsHeading :level="2" variant="heading" wrap="anywhere" data-testid="teacher-public-name">{{ card.name }}</DsHeading>
+        </DsCluster>
       </UCard>
 
       <UCard data-testid="teacher-public-about">
-        <div class="flex flex-col gap-2">
-          <h2 class="text-subheading text-highlighted">Tentang</h2>
-          <p v-if="card.bio?.trim()" class="text-body break-words whitespace-pre-line text-highlighted" data-testid="teacher-public-bio">{{ card.bio }}</p>
-          <p v-else class="text-body text-muted" data-testid="teacher-public-bio-empty">Guru ini belum menulis bio.</p>
-        </div>
+        <DsStack gap="xs">
+          <DsHeading :level="2" variant="subheading">Tentang</DsHeading>
+          <DsText v-if="card.bio?.trim()" variant="body" tone="highlighted" wrap="anywhere" class="whitespace-pre-line" data-testid="teacher-public-bio">{{ card.bio }}</DsText>
+          <DsText v-else variant="body" tone="muted" data-testid="teacher-public-bio-empty">Guru ini belum menulis bio.</DsText>
+        </DsStack>
       </UCard>
 
       <UCard data-testid="teacher-public-professional">
-        <div class="flex flex-col gap-3">
-          <h2 class="text-subheading text-highlighted">Maklumat Profesional</h2>
-          <dl class="flex flex-col gap-3">
-            <div v-for="row in rows" :key="row.key" class="flex min-h-11 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <dt class="text-label text-muted">{{ row.label }}</dt>
-              <dd class="min-w-0 text-body break-words text-highlighted sm:text-end" :data-testid="`teacher-public-${row.key}`">{{ row.value }}</dd>
-            </div>
-          </dl>
-        </div>
+        <DsStack gap="sm">
+          <DsHeading :level="2" variant="subheading">Maklumat Profesional</DsHeading>
+          <DsDefinitionList :items="rows">
+            <template v-for="row in rows" :key="row.key" #[`value-${row.key}`]>
+              <span :data-testid="`teacher-public-${row.key}`">{{ row.value }}</span>
+            </template>
+          </DsDefinitionList>
+        </DsStack>
       </UCard>
     </template>
-  </section>
+  </DsStack>
 </template>

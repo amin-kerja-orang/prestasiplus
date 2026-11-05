@@ -9,6 +9,8 @@
  */
 import { computed } from 'vue'
 
+import { DsCluster, DsDefinitionList, DsHeading, DsStack, DsText } from '@/ds'
+
 import type { Role, UserMe } from '../api'
 
 const props = defineProps<{ user: UserMe }>()
@@ -46,44 +48,32 @@ const profileLink = computed(() => (isTeacher.value ? '/guru/profil/edit' : '/pr
 
 <template>
   <UCard data-testid="account-panel">
-    <div class="flex flex-col gap-4">
-      <div class="flex items-center gap-3">
+    <DsStack gap="md">
+      <DsCluster gap="sm" :wrap="false">
         <UAvatar :src="user.avatarUrl || undefined" :alt="user.name" size="lg" aria-hidden="true" />
-        <div class="min-w-0">
-          <h2 class="text-subheading text-highlighted" data-testid="account-title">Tetapan Akaun</h2>
-          <p class="max-w-full text-caption break-words text-muted" data-testid="account-name">
-            {{ user.name }} · {{ roleLabel }}
-          </p>
-        </div>
-      </div>
+        <DsStack gap="none" class="min-w-0">
+          <DsHeading :level="2" variant="subheading" data-testid="account-title">Tetapan Akaun</DsHeading>
+          <DsText variant="caption" wrap="anywhere" data-testid="account-name">{{ user.name }} · {{ roleLabel }}</DsText>
+        </DsStack>
+      </DsCluster>
 
-      <dl class="flex flex-col gap-3" data-testid="account-rows">
-        <div
-          v-for="row in rows"
-          :key="row.key"
-          class="flex min-h-11 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-        >
-          <dt class="text-label text-muted">{{ row.label }}</dt>
-          <dd
-            class="min-w-0 text-body break-all text-highlighted sm:text-end"
-            :data-testid="`account-${row.key}`"
-          >
-            {{ row.value }}
-          </dd>
-        </div>
-      </dl>
+      <DsDefinitionList :items="rows" data-testid="account-rows">
+        <template v-for="row in rows" :key="row.key" #[`value-${row.key}`]>
+          <span :data-testid="`account-${row.key}`">{{ row.value }}</span>
+        </template>
+      </DsDefinitionList>
 
-      <p class="text-caption text-muted" data-testid="account-note">
+      <DsText variant="caption" data-testid="account-note">
         <template v-if="isPupil">
           Untuk menukar e-mel, telefon atau sekolah, hubungi guru atau pentadbir sekolah anda.
         </template>
         <template v-else>
           Untuk menukar maklumat akaun, buka
-          <UButton :to="profileLink" variant="link" color="primary" class="p-0" data-testid="account-note-link"
+          <UButton :to="profileLink" variant="link" color="primary" data-testid="account-note-link"
             >Profil Saya</UButton
           >.
         </template>
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
   </UCard>
 </template>
