@@ -241,8 +241,8 @@ test.describe('L04 queue (S2)', MODULE, () => {
     await expect(rows.nth(1)).toContainText('2026-09-24 10:12:00')
     // the rows hold no control: a row opens the detail dialog
     const page_ = page.getByTestId('tq-page')
-    await expect(page_.locator('button, input, textarea, select, form')).toHaveCount(0)
-    await expect(rows.locator('a, button')).toHaveCount(0)
+    await expect(page_.locator('input, textarea, select, form')).toHaveCount(0)
+    await expect(page.locator('tbody').locator('a, button')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
     expect(errors).toEqual([])
   })

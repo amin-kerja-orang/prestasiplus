@@ -240,17 +240,17 @@ test.describe('S1 list', MODULE, () => {
     await expect(page.getByTestId('tk-total')).toHaveText('Jumlah tiket: 1')
   })
 
-  test('E2E-M22-08 tabs: order, labels, hrefs, no counts', async ({ page, loginAs, gotoApp }) => {
+  test('E2E-M22-08 tabs: order, labels with counts, hrefs', async ({ page, loginAs, gotoApp }) => {
     await loginAs(PELAJAR2)
     await openS1(page, gotoApp)
     const tabs = page.getByTestId('tk-tabs').getByRole('link')
     expect(await tabs.allInnerTexts()).toEqual([
-      'Semua',
-      'Dibuka',
-      'Dalam Proses',
-      'Menunggu Balas',
-      'Selesai',
-      'Ditutup',
+      'Semua (1)',
+      'Dibuka (1)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
     ])
     const hrefs = await tabs.evaluateAll((els) => els.map((e) => e.getAttribute('href')))
     expect(hrefs).toEqual([
@@ -515,7 +515,7 @@ test.describe('S2 queue', MODULE, () => {
   test.describe('tickets-extra', () => {
     test.use(EXTRA)
 
-    test('E2E-M22-26 "Ya" only on #6, raw status pills', async ({ page, loginAs, gotoApp }) => {
+    test('E2E-M22-26 "Ya" only on #6, status labels', async ({ page, loginAs, gotoApp }) => {
       test.skip(viewportWidth(page) < 1280, 'E2E-M22-26 runs at 1280 only')
       await loginAs(ADMIN)
       await openS2(page, gotoApp)
@@ -525,7 +525,7 @@ test.describe('S2 queue', MODULE, () => {
       await expect(yes).toHaveCount(1)
       await expect(yes).toContainText('Kata laluan tidak boleh ditukar')
       await expect(yes).toContainText('Selesai')
-      await expect(rows.filter({ hasText: 'menunggu_balas' })).toHaveCount(1)
+      await expect(rows.filter({ hasText: 'Menunggu Balas' })).toHaveCount(1)
     })
 
     test('E2E-M22-32 chips: present statuses, vocabulary order, counts, total', async ({
@@ -554,7 +554,7 @@ test.describe('S2 queue', MODULE, () => {
         .getByRole('link', { name: /^Selesai/ })
         .click()
       await expect(page).toHaveURL(/\/admin\/tiket\?status=selesai$/)
-      await expect(page.getByTestId('tq-row')).toHaveCount(1)
+      await expect(page.locator('tbody tr, [data-ds="data-table-cards"] > li')).toHaveCount(1)
       await expect(page.getByTestId('tq-chips').getByRole('link').first()).toHaveText('Semua (9)')
       await expect(
         page.getByTestId('tq-chips').getByRole('link', { name: /^Selesai/ }),
