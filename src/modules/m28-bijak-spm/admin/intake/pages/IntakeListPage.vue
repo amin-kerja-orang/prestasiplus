@@ -4,7 +4,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge, useConfirm, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge, DsText, useConfirm, type CardField } from '@/ds'
 
 import { bijakAdminServer } from '../../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../../server/errors'
@@ -235,6 +235,12 @@ const COLUMNS: TableColumn<Row>[] = [
         >
           Batalkan
         </UButton>
+      </template>
+      <template #card="{ row }">
+        <DsText variant="label" tone="highlighted" wrap="anywhere">{{ asRow(row).title }}</DsText>
+        <DsText variant="caption" tone="muted" data-testid="batch-card-status">
+          {{ intakeBadge(asRow(row)).label }} · {{ asRow(row).questionCount }} soalan
+        </DsText>
       </template>
       <template #card-actions="{ row }">
         <UButton :to="intakeReviewPath(asRow(row).id)" variant="outline" color="neutral">

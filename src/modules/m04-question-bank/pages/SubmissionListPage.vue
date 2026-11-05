@@ -80,7 +80,7 @@ const { data, error, reload } = useApi(
 )
 
 // The tiles ignore the filter (FR-ADM-Q12.1), so they load once and survive a failed list.
-const { data: counts, error: countsError } = useApi((signal) => fetchSubmissionCounts(signal))
+const { data: counts, error: countsError, reload: reloadCounts } = useApi((signal) => fetchSubmissionCounts(signal))
 
 const firstLoad = computed(() => data.value === null && error.value === null && !invalidStatus.value)
 const errorText = computed(() =>
@@ -111,8 +111,12 @@ const countItems = computed<StatItem[]>(() => [
   { key: 'done', label: 'Selesai', value: tile(counts.value?.done), icon: 'check-circle', accent: 'win' },
 ])
 
+async function reloadAll(): Promise<void> {
+  await Promise.all([reload(), reloadCounts()])
+}
+
 async function submitFilter(): Promise<void> {
-  if (status.value === applied.value) await reload()
+  if (status.value === applied.value) await reloadAll()
   else
     await router.push({
       path: SUBMISSIONS_PATH,
@@ -228,7 +232,7 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
       :message="errorText"
       testid="submissions-error"
       retry-testid="submissions-retry"
-      @retry="reload()"
+      @retry="reloadAll"
     />
 
     <DsDataTable

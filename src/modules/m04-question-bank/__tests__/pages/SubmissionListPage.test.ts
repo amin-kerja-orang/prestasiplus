@@ -206,6 +206,16 @@ describe('SubmissionListPage (R1-ADM-Q-12)', () => {
     expect(api.fetchSubmissionCounts).toHaveBeenCalledTimes(1)
   })
 
+  it('Cuba Semula also reads the tiles again', async () => {
+    api.fetchSubmissionItems.mockRejectedValueOnce(new Error('network'))
+    api.fetchSubmissionCounts.mockRejectedValueOnce(new Error('network'))
+    const w = await render()
+    expect(w.get('[data-testid=submissions-count-all]').text()).toBe('-Jumlah')
+    await w.get('[data-testid=submissions-retry]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid=submissions-count-all]').text()).toBe('6Jumlah')
+  })
+
   it('shows a dash on the tiles when they fail, with the list still there', async () => {
     api.fetchSubmissionCounts.mockRejectedValue(new Error('network'))
     const w = await render()
