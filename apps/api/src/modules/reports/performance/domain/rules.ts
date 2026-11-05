@@ -38,16 +38,25 @@ export const accuracyOf = (score: number, max: number): number => round(capPerce
 
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 
-/** BR-M08-18: index = 1 - p, 2 decimals. */
+/** BR-M08-18: index = 1 - p, 2 decimals. Shown as a number only (R1-GUR-6); it no longer decides the Tahap. */
 export function difficultyIndex(correct: number, attempts: number): number {
   return attempts === 0 ? 0 : round(1 - correct / attempts, 2)
 }
 
-export function difficultyLevel(index: number): DifficultyLevel {
-  if (index > 0.7) return 'Sukar'
-  if (index <= 0.3) return 'Mudah'
-  return 'Sederhana'
+/**
+ * Tahap Kesukaran on the WHOLE-NUMBER % betul (R1-GUR-6, DV-GUR-6-1, AC-GUR-6-11): > 70 Mudah, 40 to 70 Sederhana, < 40 Sukar.
+ * `accuracy` is the percentage (0 to 100); it is rounded to one decimal (the wire value) and then half up to a whole number,
+ * so the badge always agrees with the number the screen shows (70.4 shows 70, Sederhana; 70.5 shows 71, Mudah).
+ */
+export function difficultyLevel(accuracy: number): DifficultyLevel {
+  const whole = Math.round(round(accuracy, 1))
+  if (whole > 70) return 'Mudah'
+  if (whole >= 40) return 'Sederhana'
+  return 'Sukar'
 }
+
+/** Group size of the 27 percent upper and lower groups: g = max(1, ceil(0.27 x N)) (R1 decision D113, PRD 20 R1-GUR-6). */
+export const discriminationGroupSize = (n: number, share: number): number => Math.max(1, Math.ceil(round(share * n, 6)))
 
 export type DiscriminationStatus = 'Sangat Baik' | 'Baik' | 'Sederhana' | 'Lemah'
 
