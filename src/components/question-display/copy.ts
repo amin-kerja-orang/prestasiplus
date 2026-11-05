@@ -11,7 +11,6 @@ export const qdCopy = {
   essayChoiceAria: 'Karangan',
   essayChoiceTopicsAria: 'Pilih satu tajuk',
   essayChoiceHint: 'Pilih satu tajuk dahulu.',
-  over: 'melebihi had',
   imageFailed: 'Rajah tidak dapat dimuatkan.',
   retry: 'Cuba lagi',
   report: 'Lapor',
@@ -39,6 +38,9 @@ export const kindFallbackCaption: Record<string, string> = {
   map: 'Rajah',
   graph: 'Graf',
   table: 'Jadual',
+  image: 'Gambar',
+  infographic: 'Infografik',
+  passage: 'Petikan',
 }
 
 /** Marks in brackets, then the unit word. */
@@ -67,16 +69,24 @@ export function wordCountLabel(n: number): string {
   return `${n} patah perkataan`
 }
 export function wordTargetLabel(n: number, min: number, max: number): string {
-  return `${n} patah perkataan · sasaran ${min}–${max}`
+  return `${n} / ${min}-${max} patah perkataan`
+}
+/** 46 2.2.1: hint above the maximum (never blocks, never truncates). */
+export function overLabel(max: number): string {
+  return `Jawapan melebihi ${max} patah perkataan.`
+}
+/** 46 2.2.1: hint below the minimum. */
+export function shortLabel(n: number, min: number): string {
+  return `Jawapan terlalu pendek (${n} patah perkataan; minimum ${min}).`
 }
 export function chipLabel(label: string): string {
   return `Lihat ${label}`
 }
-export function visibleSummary(x: number, total = 7): string {
+export function visibleSummary(x: number, total = 6): string {
   return `Dilihat murid di ${x} daripada ${total} aktiviti`
 }
 export function notServedLine(reason: string): string {
-  return `Tidak dihidangkan kerana ${reason}.`
+  return `Tidak disajikan kerana ${reason}.`
 }
 /**
  * "Sumber: {text}" under a stimulus (FR-PA-37, 46 section 2.4). Stored citations often already carry

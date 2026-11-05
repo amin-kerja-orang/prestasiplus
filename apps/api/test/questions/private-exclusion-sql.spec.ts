@@ -1,6 +1,3 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
 import { Prisma } from '../../src/db/generated/client'
@@ -13,10 +10,16 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import { StructuredListingRepository } from '../../src/modules/practice/reads/writes/listing.repository'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { QuestionSetsService } from '../../src/modules/classes/question-sets/question-sets.service'
-import { BANK_VISIBLE_SQL, isBankVersion } from '../../src/modules/questions/learner-visibility'
-import { BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { BANK_VISIBLE_SQL, isBankVersion, SPM_SERVABLE_SQL } from '../../src/modules/questions/learner-visibility'
+import { assertPersonalHasNoGroupOrStimulus, BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { QuestionBankAdapter } from '../../src/modules/questions/workflow/bank-adapter'
 import { QuestionsService } from '../../src/modules/questions/questions.service'
-import { databankLaneConds, janaEligibleScope } from '../../src/modules/questions/serving/filters'
+import { QuestionBankBuilderSource } from '../../src/modules/exam/builder/question-bank.source'
+import { SectionPoolService } from '../../src/modules/exam/builder/section-pool.service'
+import { pupilMayReadQuestionImageSql } from '../../src/modules/files/question-image-access'
+import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.repository'
+import { QUESTION_SERVED } from '../../src/modules/questions/served-rule'
+import { databankLaneConds, filterOf as servabilityFilterOf, janaEligibleScope } from '../../src/modules/questions/serving/filters'
 import { AnalyticsRepository } from '../../src/modules/reports/analytics/analytics.repository'
 
 /**
@@ -136,17 +139,87 @@ describe('DM-42: private questions are absent from the counts and reports of oth
   })
 })
 
-describe('DM-42: the files whose reads need a database or a builder port carry the predicate', () => {
-  const root = join(__dirname, '../../src/modules')
-  const files = [
-    'exam/builder/question-bank.source.ts', // candidates() + servableVersions() + servableCurrent(): the exam builder sources
-    'exam/builder/section-pool.service.ts',
-    'files/question-image-access.ts',
-  ]
-  it.each(files)('%s uses BANK_VISIBLE_SQL', (file) => {
-    const text = readFileSync(join(root, file), 'utf8')
-    expect(text).toContain('BANK_VISIBLE_SQL')
-    expect(text.split('BANK_VISIBLE_SQL').length - 1).toBeGreaterThanOrEqual(file.endsWith('question-bank.source.ts') ? 4 : 2)
+describe('DM-42: the exam builder pools, the pupil image rule and the chapter counts carry the predicate (SQL capture)', () => {
+  it('QuestionBankBuilderSource.candidates, servableVersions and servableCurrent', async () => {
+    const { sqls, prisma } = capture()
+    const builder = { subjectByCode: () => Promise.resolve({ id: 1n }) }
+    const source = new QuestionBankBuilderSource(prisma, {} as never, builder as never) as unknown as {
+      candidates(scope: unknown): Promise<string[]>
+      servableVersions(p: unknown[]): Promise<unknown>
+      servableCurrent(ids: bigint[]): Promise<unknown>
+    }
+    await run(
+      () => source.candidates({ subject: 'MATEMATIK', kertas: 1 }),
+      () => source.servableVersions([{ id: 1n, versionNo: 1 }]),
+      () => source.servableCurrent([1n]),
+    )
+    expect(sqls).toHaveLength(3)
+    for (const q of sqls) expect(q).toContain(BANK)
+  })
+
+  it('SectionPoolService.subjectOf', async () => {
+    const { sqls, prisma } = capture()
+    const svc = new SectionPoolService(prisma, {} as never) as unknown as { subjectOf(id: bigint): Promise<unknown> }
+    await run(() => svc.subjectOf(1n))
+    expect(sqls).toHaveLength(1)
+    expect(sqls[0]).toContain(BANK)
+  })
+
+  it('the pupil image rule A reads the live bank version only', () => {
+    expect(pupilMayReadQuestionImageSql(1n, 2n, 'tok').sql).toContain(BANK)
+  })
+
+  it('curriculum chapterQuestionCounts counts bank questions only, in the WHERE and in the servable FILTER; the delete guard counts every version', async () => {
+    const { sqls, prisma } = capture()
+    const repo = new CurriculumRepository(prisma)
+    await run(
+      () => repo.chapterQuestionCounts([1n]),
+      () => repo.chapterQuestionVersionCount(1n),
+    )
+    expect(sqls[0]!.split(BANK).length - 1).toBe(2)
+    expect(sqls[1]).not.toContain('visibility')
+  })
+})
+
+describe('DM-42: one definition cannot be used without the bank predicate', () => {
+  it('SPM_SERVABLE_SQL carries BANK_VISIBLE_SQL itself, and so does the served lock', () => {
+    expect(SPM_SERVABLE_SQL.sql).toContain(BANK)
+    expect(QUESTION_SERVED.sql).toContain(`sv.visibility = 'bank'`)
+  })
+
+  it('servability reads (scopeSql) and the evaluate twin: a private row is never in a surface', () => {
+    const repo = new QuestionsRepository({ client: {} } as never)
+    expect(repo.scopeSql({ status: 'approved', active: true, spmPool: true }, false).where.sql.split(BANK).length - 1).toBeGreaterThanOrEqual(2)
+  })
+
+  it('every servability surface reads through scope(), so the servability reads (hub counts) exclude private rows; rules.ts is never run on one', () => {
+    const repo = new QuestionsRepository({ client: {} } as never)
+    for (const activity of ['latih_tubi_spm', 'databank', 'bab'] as const) {
+      const where = repo.scopeSql({ ...servabilityFilterOf(activity), status: 'approved', active: true }, false).where.sql
+      expect(where, activity).toContain(BANK)
+    }
+  })
+
+  it('a group member or a stimulus link on a personal question is refused at the write path (the group and stimulus reads can then never meet one)', () => {
+    const draft = (over: Record<string, unknown> = {}) => ({ stimulusIds: [] as bigint[], parts: [] as never[], ...over })
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: 'teacher_private', groupId: 3n, draft: draft() })).toThrow(/group member/)
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: 'teacher_private', draft: draft({ stimulusIds: [4n] }) })).toThrow(/stimulus/)
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: 'teacher_private', draft: draft({ parts: [{ children: [{ stimulusId: 5n, children: [] }] }] }) })).toThrow(/stimulus/)
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: 'teacher_private', draft: draft() })).not.toThrow()
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: 'bank', groupId: 3n, draft: draft({ stimulusIds: [4n] }) })).not.toThrow()
+    expect(() => assertPersonalHasNoGroupOrStimulus({ visibility: undefined, groupId: 3n, draft: draft() })).not.toThrow()
+  })
+
+  it('repository writes call the guard: create with a group, rewrite and new version of a private question with a stimulus', async () => {
+    const client = {
+      question: { create: () => Promise.resolve({ id: 1n }) },
+      questionVersion: { findUnique: () => Promise.resolve({ id: 1n, visibility: 'teacher_private' }) },
+    }
+    const repo = new QuestionsRepository({ client } as never)
+    const version = { visibility: 'teacher_private', stimulusIds: [], parts: [], status: 'approved' }
+    await expect(repo.create({ sourceType: 'manual', createdById: null, groupId: 9n, groupPosition: 1, now: new Date(), version } as never)).rejects.toThrow(/group member/)
+    await expect(repo.rewriteVersion('1', 1, { stimulusIds: [7n], parts: [] } as never, new Date())).rejects.toThrow(/stimulus/)
+    await expect(repo.addVersion('1', 2, { stimulusIds: [7n], parts: [] } as never, new Date())).rejects.toThrow(/stimulus/)
   })
 })
 
@@ -266,5 +339,47 @@ describe('DM-42: the pupil Set Soalan does not serve a private question, and one
     expect(isBankVersion({ visibility: 'bank' })).toBe(true)
     expect(isBankVersion({})).toBe(true)
     expect(isBankVersion({ visibility: 'teacher_private' })).toBe(false)
+  })
+})
+
+describe('DM-42 (R-1 nits): report resolution never acts on a private question; Guru removeOwn still deletes its own bank question', () => {
+  it('QuestionBankAdapter deactivate/reactivate answer false for a private question and touch nothing', async () => {
+    const acted: string[] = []
+    const priv = { id: '5', version: { visibility: 'teacher_private' } }
+    const repo = {
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => Promise.resolve(opts?.bankOnly === true ? null : priv),
+      deactivate: () => (acted.push('deactivate'), Promise.resolve(true)),
+      reactivate: () => (acted.push('reactivate'), Promise.resolve(true)),
+    }
+    const adapter = Object.create(QuestionBankAdapter.prototype) as QuestionBankAdapter
+    Object.assign(adapter, { repo })
+    expect(await adapter.deactivate('5')).toBe(false)
+    expect(await adapter.reactivate('5')).toBe(false)
+    expect(acted).toEqual([])
+  })
+
+  it('a bank question is still deactivated by the same adapter', async () => {
+    const acted: string[] = []
+    const repo = { get: () => Promise.resolve({ id: '6', version: { visibility: 'bank' } }), deactivate: () => (acted.push('deactivate'), Promise.resolve(true)) }
+    const adapter = Object.create(QuestionBankAdapter.prototype) as QuestionBankAdapter
+    Object.assign(adapter, { repo })
+    expect(await adapter.deactivate('6')).toBe(true)
+    expect(acted).toEqual(['deactivate'])
+  })
+
+  it('Guru removeOwn deletes the teacher\'s own bank question (the admin guard is not on this path)', async () => {
+    const calls: string[] = []
+    const svc = Object.create(QuestionsService.prototype) as QuestionsService
+    const repo = {
+      ownerOf: () => Promise.resolve('7'),
+      get: (_id: string, _v: string, opts?: { bankOnly?: boolean }) => (calls.push(opts?.bankOnly === true ? 'get:bankOnly' : 'get'), Promise.resolve({ id: '9', version: { visibility: 'bank' } })),
+      lock: () => Promise.resolve(true),
+      deletionBlock: () => Promise.resolve(null),
+      remove: () => (calls.push('remove'), Promise.resolve(true)),
+    }
+    Object.assign(svc, { repo, prisma: { transaction: (fn: () => unknown) => fn() }, overview: undefined })
+    await expect(svc.removeOwn('9', '7')).resolves.toBeUndefined()
+    expect(calls).toContain('remove')
+    expect(calls).not.toContain('get:bankOnly')
   })
 })
