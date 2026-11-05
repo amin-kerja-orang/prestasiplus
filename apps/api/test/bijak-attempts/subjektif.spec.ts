@@ -111,6 +111,40 @@ describe('Kertas Subjektif sitting (paper surface subjektif)', () => {
     for (const p of out.result.questions.flatMap((q) => q.parts)) expect(p.scheme).toBeUndefined()
   })
 
+  it('self-mark after "Tunjuk Skema Pemarkahan" (?scheme=1) keeps the scheme in its response', async () => {
+    const id = await sitSubjektif()
+    const res = await me.post(`/api/bijak/attempts/${id}/self-mark?scheme=1`, { partId: SEL_B, mark: 1 })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const parts = BijakAttemptSelfMarkResultSchema.parse(res.body.data).result.questions.flatMap((q) => q.parts)
+    expect(parts.every((p) => p.scheme !== undefined)).toBe(true)
+  })
+
+  it('an automatically marked part of a subjektif attempt answers 409 (46 section 3.4)', async () => {
+    t.papers.patch = { surface: 'subjektif' }
+    const id = await startAttempt(me, PAPER.sejK2, 'latihan')
+    expect((await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: `k-${id}`, changes: [] })).status).toBe(200)
+    const res = await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: 'sej2-q2-a', mark: 1 }) // the mapping part, marked automatically
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.' })
+  })
+
+  it('Cuba Lagi starts another subjektif latihan sitting; history shows the kind subjektif', async () => {
+    const id = await sitSubjektif()
+    const retry = await me.post(`/api/bijak/attempts/${id}/retry`, {})
+    expect(retry.status, JSON.stringify(retry.body)).toBe(201)
+    expect(await row(retry.body.data.attemptId)).toEqual({ paper_kind: 'subjektif', mode: 'latihan', duration_min: 0, deadline_at: null })
+    const history = await me.get('/api/bijak/history')
+    expect(history.status).toBe(200)
+    expect(history.body.data.find((h: { attemptId: string }) => h.attemptId === id)).toMatchObject({ kind: 'subjektif', mode: 'latihan' })
+  })
+
+  it('"Mula" again resumes the open subjektif sitting', async () => {
+    t.papers.patch = { surface: 'subjektif' }
+    const first = await startAttempt(me, PAPER.sainsK2, 'latihan')
+    const again = await me.post('/api/bijak/attempts', { paperId: PAPER.sainsK2, mode: 'exam' })
+    expect(again.body.data.attemptId).toBe(first)
+  })
+
   it('is paid at Hantar like an exam sitting (46 section 3.6, B6), although its mode is latihan', async () => {
     await sitSubjektif()
     expect(t.reward.calls).toHaveLength(1)

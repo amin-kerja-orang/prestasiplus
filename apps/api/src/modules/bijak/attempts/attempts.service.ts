@@ -337,7 +337,7 @@ export class BijakAttemptsService {
    * replaces its earlier figures). The reward given at submit is NOT repeated; D94: a mark that raises the best-N total pays the gain through
    * `reward.awardSelfMark` (2 syiling and 10 XP per mark of the net gain over the highest paid total, once per level, capped at the maximum), the stored result's coins stay as at submit.
    */
-  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest): Promise<BijakAttemptSelfMarkResult> {
+  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest, withScheme = false): Promise<BijakAttemptSelfMarkResult> {
     await this.owned(auth.userId, id)
     const events: ClosedEvent[] = []
     const out = await this.prisma.transaction(async (): Promise<BijakAttemptSelfMarkResult> => {
@@ -384,8 +384,8 @@ export class BijakAttemptsService {
         attemptMax: result.max,
         provisional: result.provisional,
         pendingReview: result.pendingReview,
-        // The scheme of a Kertas Subjektif attempt is fetched only with GET /result?scheme=1.
-        result: withholdScheme(row, result, false),
+        // A Kertas Subjektif attempt carries its scheme only when the request says it was revealed (`?scheme=1`, AC-MUR-13-21).
+        result: withholdScheme(row, result, withScheme),
       }
     }, TX)
     await this.emit(events)

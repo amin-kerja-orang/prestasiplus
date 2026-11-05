@@ -177,8 +177,10 @@ export class BijakAttemptsController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(BijakAttemptSelfMarkRequestSchema)) body: BijakAttemptSelfMarkRequest,
     @Req() req: AuthedRequest,
+    @Query('scheme') scheme?: string,
   ) {
-    return ok(await this.attempts.selfMark(authOf(req), id, body))
+    // `?scheme=1`: the pupil already pressed "Tunjuk Skema Pemarkahan" on a Kertas Subjektif attempt, so the response keeps the scheme.
+    return ok(await this.attempts.selfMark(authOf(req), id, body, scheme === '1'))
   }
 
   /** R1-B15: "Cuba Lagi" - a new blank sitting of the same paper. */
