@@ -435,7 +435,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'penguasaan', label: 'Penguasaan', to: '/penguasaan', fa: 'fa-layer-group', color: 'text-purple-500', roles: SA_ },
   { kind: 'item', id: 'laporan-soalan', label: 'Laporan Soalan', to: '/laporan-soalan', fa: 'fa-flag', color: 'text-red-400', roles: SA_ },
   { kind: 'item', id: 'liga', label: 'Liga Pertandingan', to: '/liga', fa: 'fa-trophy', color: 'text-yellow-500', roles: SA_ },
-  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: A },
 
   // ── Pembelajaran ──
   { kind: 'section', id: 'sec-pembelajaran', label: 'Pembelajaran', text: 'text-blue-700', rule: 'from-blue-300', roles: SA_ },
@@ -750,6 +750,11 @@ const SETTINGS_ID = 'tetapan-peribadi'
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
   'laporan-mingguan',
 ])
+/**
+ * Admin Sekolah menu items whose page exists but whose sidebar link is hidden in Delivery A
+ * (AC-SH-2): Perutusan is reached from the dashboard card "Lihat semua".
+ */
+const SCHOOL_ADMIN_HIDDEN_IDS: ReadonlySet<string> = new Set(['sa-perutusan'])
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -803,11 +808,15 @@ export function navFor(
   // With the v2 prototype scope on (D43), role-access-matrix.md governs the menu instead, so the
   // Release 1.0 list is skipped there (it would hide matrix screens such as Laporan Mingguan).
   // The student loses the items with no student screen (STUDENT_HIDDEN_IDS) in both modes.
+  // Delivery A (AC-SH-2): the page works, the school admin's sidebar link stays hidden in both modes.
+  const hiddenForRole = (entry: NavEntry): boolean =>
+    entry.kind === 'item' && role === 'school_admin' && SCHOOL_ADMIN_HIDDEN_IDS.has(entry.id)
   const inScope = (entry: NavEntry): boolean =>
     options.includeOutOfScope === true ||
-    isPrototypeScopeOn() ||
-    entry.kind !== 'item' ||
-    (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
+    (!hiddenForRole(entry) &&
+      (isPrototypeScopeOn() ||
+        entry.kind !== 'item' ||
+        (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))))
   const visible = scopeEntries(
     withoutKeluargaAngkat(withoutAlesa(entries))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
