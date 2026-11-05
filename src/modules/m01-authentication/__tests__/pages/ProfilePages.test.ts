@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
+import { DRAFT_NOTICE_BM, loadDraft, saveDraft } from '@/lib/draft'
 import { useFlashStore } from '@/stores/flash'
 import { useSessionStore } from '@/stores/session'
 
@@ -231,6 +232,73 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     const w = await render(ProfileEditPage)
     expect(w.get('[data-testid=profile-back]').attributes('href')).toBe('/profile')
     expect(w.get('[data-testid=profile-save]').text()).toBe('Simpan Profil')
+  })
+})
+
+describe('S8 save lock and draft keep (FR-ERR-10, FR-ERR-8, AC-ERR-5)', () => {
+  const ROUTE = 'm01.profile.edit'
+  const save = (w: VueWrapper) => w.get('[data-testid=profile-save]')
+
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('sends one request for two presses and shows Menyimpan... disabled with aria-busy until it settles', async () => {
+    let finish: (v: unknown) => void = () => undefined
+    apiMocks.updateProfile.mockReturnValue(new Promise((r) => (finish = r)))
+    const w = await render(ProfileEditPage)
+    void w.get('[data-testid=profile-form]').trigger('submit')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    expect(apiMocks.updateProfile).toHaveBeenCalledTimes(1)
+    expect(save(w).attributes('disabled')).toBeDefined()
+    expect(save(w).attributes('aria-busy')).toBe('true')
+    expect(save(w).text()).toContain('Menyimpan...')
+    finish({ data: USER, status: 'ok' })
+    await flushPromises()
+    expect(save(w).attributes('disabled')).toBeUndefined()
+    expect(save(w).text()).toBe('Simpan Profil')
+  })
+
+  it('saves the text fields as a draft after the debounce, never the picture or a password', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = await render(ProfileEditPage)
+      await w.get('[data-testid=profile-name-input]').setValue('Nama Suntingan')
+      expect(loadDraft(ROUTE)).toBeNull()
+      vi.advanceTimersByTime(500)
+      expect(loadDraft(ROUTE)).toEqual({
+        name: 'Nama Suntingan',
+        phone: '0123456789',
+        bio: 'Suka belajar',
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restores a stored draft with the exact notice, and a successful save clears it', async () => {
+    useSessionStore().setSession({
+      token: 't',
+      remember: false,
+      expiresAt: '2099-01-01T00:00:00+08:00',
+      user: USER,
+    })
+    saveDraft(ROUTE, null, { name: 'Dari Draf', phone: '', bio: 'Bio draf' })
+    apiMocks.updateProfile.mockResolvedValue({ data: USER, status: 'ok' })
+    const w = await render(ProfileEditPage, USER, Promise.resolve({ ...USER, name: 'Dari Server' }))
+    expect(w.get('[data-testid=draft-restored-notice]').text()).toBe(DRAFT_NOTICE_BM)
+    expect(DRAFT_NOTICE_BM).toBe('Terdapat kerja yang belum disimpan daripada sesi sebelum ini.')
+    expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
+      'Dari Draf',
+    )
+    expect((w.get('[data-testid=profile-bio-input]').element as HTMLTextAreaElement).value).toBe(
+      'Bio draf',
+    )
+    expect(loadDraft(ROUTE)).not.toBeNull() // kept until the profile is saved
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(loadDraft(ROUTE)).toBeNull()
+    expect(w.find('[data-testid=draft-restored-notice]').exists()).toBe(false)
   })
 })
 

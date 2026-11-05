@@ -14,6 +14,8 @@
  * AC-ERR-3 (429 countdown) needs the M01 login page to render DsLoadError; it is covered at unit
  * level by src/ds/__tests__/load-error-rate-limit.test.ts.
  */
+import type { Page } from '@playwright/test'
+
 import { account, expectNoHScroll } from '../api/helpers'
 import { expect, gotoApi, test } from '../fixtures/api'
 
@@ -75,6 +77,101 @@ test.describe('401 return URL (AC-ERR-2, ERR-AUTH-01)', () => {
     await gotoApi(page, '/login?kembali=%2F%2Fevil.example')
     await expect(page.getByTestId('login-form')).toBeVisible()
     await expect(page.getByTestId('login-session-expired')).toHaveCount(0)
+  })
+})
+
+/** Signs the seed pupil in through the real form and waits until the app has left /login. */
+async function signInPupil(page: Page): Promise<{ user: string; pass: string }> {
+  const { user, pass } = account('student')
+  await gotoApi(page, '/login')
+  const form = page.getByTestId('login-form')
+  await form.getByLabel('Alamat Email').fill(user)
+  await form.getByLabel('Kata Laluan').fill(pass)
+  await form.getByRole('button', { name: 'Log Masuk' }).click()
+  await expect(page).not.toHaveURL(/\/login(\?|$)/, { timeout: 20_000 })
+  return { user, pass }
+}
+
+/** In-app navigation (no reload), as in the AC-ERR-2 test above. */
+async function goInApp(page: Page, path: string): Promise<void> {
+  await page.evaluate((to) => {
+    window.history.pushState({}, '', to)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, path)
+}
+
+test.describe('save controls (AC-ERR-5, AC-ERR-2 draft)', () => {
+  test('@api AC-ERR-5 a double click on Simpan Profil sends one PUT /api/me and shows Menyimpan...', async ({
+    page,
+  }) => {
+    await signInPupil(page)
+    await goInApp(page, '/profile/edit')
+    const phone = page.getByTestId('profile-phone-input')
+    await expect(phone).toBeVisible({ timeout: 20_000 })
+
+    // Slow the save down so the pending label can be seen. The value is re-sent unchanged, so the
+    // shared seed account is not altered.
+    const puts: string[] = []
+    page.on('request', (req) => {
+      if (req.method() === 'PUT' && new URL(req.url()).pathname === '/api/me') puts.push(req.url())
+    })
+    await page.route('**/api/me', async (route) => {
+      if (route.request().method() !== 'PUT') return route.continue()
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      return route.continue()
+    })
+    await phone.fill(await phone.inputValue())
+    const save = page.getByTestId('profile-save')
+    await save.dblclick()
+    await expect(save).toHaveText('Menyimpan...')
+    await expect(save).toHaveAttribute('aria-busy', 'true')
+    await expect(save).toBeDisabled()
+    await expectNoHScroll(page)
+    await expect(save).toHaveText('Simpan Profil', { timeout: 20_000 })
+    expect(puts, 'PUT /api/me requests for one double click').toHaveLength(1)
+  })
+
+  test('@api AC-ERR-2 an unsaved profile edit survives a 401 and is restored after login with the notice', async ({
+    page,
+  }) => {
+    const { user, pass } = await signInPupil(page)
+    await goInApp(page, '/profile/edit')
+    const name = page.getByTestId('profile-name-input')
+    await expect(name).toBeVisible({ timeout: 20_000 })
+    const edited = 'Suntingan Ujian E2E'
+    await name.fill(edited)
+    await page.waitForTimeout(800) // the draft debounce is 500 ms
+
+    let expired = false
+    await page.route('**/api/**', async (route) => {
+      const url = new URL(route.request().url())
+      if (expired || url.pathname.startsWith('/api/auth/') || route.request().method() !== 'GET') {
+        return route.continue()
+      }
+      expired = true
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'Unauthenticated.' } }),
+      })
+    })
+    // Same page with a query: a navigation that makes the app refresh /api/me, which answers 401.
+    await goInApp(page, '/profile/edit?sesi=1')
+    await expect(page).toHaveURL(/\/login\?kembali=%2Fprofile%2Fedit/, { timeout: 20_000 })
+    await expect(page.getByTestId('login-session-expired')).toHaveText(EXPIRED)
+    await expectNoHScroll(page)
+
+    await page.unroute('**/api/**')
+    const again = page.getByTestId('login-form')
+    await again.getByLabel('Alamat Email').fill(user)
+    await again.getByLabel('Kata Laluan').fill(pass)
+    await again.getByRole('button', { name: 'Log Masuk' }).click()
+    await expect(page).toHaveURL(/\/profile\/edit/, { timeout: 20_000 })
+    await expect(page.getByTestId('draft-restored-notice')).toHaveText(
+      'Terdapat kerja yang belum disimpan daripada sesi sebelum ini.',
+    )
+    await expect(page.getByTestId('profile-name-input')).toHaveValue(edited)
+    await expectNoHScroll(page)
   })
 })
 

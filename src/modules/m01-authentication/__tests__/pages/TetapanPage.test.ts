@@ -66,14 +66,11 @@ describe('TetapanPage', () => {
     ).toBe('04:30')
     const faith = w.get('[data-testid="tetapan-faith"]')
     expect(faith.text()).toContain('— Tidak nyatakan —')
-    expect(selectOf(w).props('items').map((o: { label: string }) => o.label)).toEqual([
-      '— Tidak nyatakan —',
-      'Islam',
-      'Hindu',
-      'Buddha',
-      'Kristian',
-      'Tiada',
-    ])
+    expect(
+      selectOf(w)
+        .props('items')
+        .map((o: { label: string }) => o.label),
+    ).toEqual(['— Tidak nyatakan —', 'Islam', 'Hindu', 'Buddha', 'Kristian', 'Tiada'])
   })
 
   it('shows a loaded non-null faith as selected', async () => {
@@ -82,17 +79,21 @@ describe('TetapanPage', () => {
     expect(w.get('[data-testid="tetapan-faith"]').text()).toContain('Buddha')
   })
 
-  it('disables the button while saving and keeps its label', async () => {
+  it('disables the button while saving, shows "Menyimpan..." with aria-busy, and sends one request for two presses', async () => {
     let finish: (v: unknown) => void = () => undefined
     apiMocks.saveSettings.mockReturnValue(new Promise((r) => (finish = r)))
     const w = await render()
+    void w.get('form').trigger('submit')
     await w.get('form').trigger('submit')
     const btn = w.get('[data-testid="tetapan-submit"]')
+    expect(apiMocks.saveSettings).toHaveBeenCalledTimes(1)
     expect((btn.element as HTMLButtonElement).disabled).toBe(true)
-    expect(btn.text()).toContain('Simpan Tetapan')
+    expect(btn.attributes('aria-busy')).toBe('true')
+    expect(btn.text()).toContain('Menyimpan...')
     finish({ data: DEFAULTS, status: 'ok' })
     await flushPromises()
     expect((btn.element as HTMLButtonElement).disabled).toBe(false)
+    expect(btn.text()).toContain('Simpan Tetapan')
   })
 
   it('keeps the time inputs enabled whatever the checkbox (no dependency)', async () => {
