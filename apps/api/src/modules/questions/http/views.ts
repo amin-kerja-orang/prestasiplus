@@ -105,6 +105,8 @@ function flatBase(q: QuestionView) {
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,
+    textbookRef: v.textbookRef,
+    rejectionReason: v.rejectionReason,
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
     kbat: v.kbat,
     tagReview: v.tagReview,

@@ -37,7 +37,7 @@
     "body": {
       "error": {
         "code": "FORBIDDEN",
-        "message": "This action is unauthorized."
+        "message": "Anda tidak dibenarkan melakukan tindakan ini."
       }
     }
   },
@@ -49,7 +49,7 @@
     "body": {
       "error": {
         "code": "UNAUTHORIZED",
-        "message": "Unauthenticated."
+        "message": "Sesi anda telah tamat. Sila log masuk semula."
       }
     }
   },
@@ -61,7 +61,7 @@
     "body": {
       "error": {
         "code": "NOT_FOUND",
-        "message": "Not Found."
+        "message": "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"
       }
     }
   },
@@ -73,7 +73,7 @@
     "body": {
       "error": {
         "code": "FORBIDDEN",
-        "message": "This action is unauthorized."
+        "message": "Anda tidak dibenarkan melakukan tindakan ini."
       }
     }
   }

@@ -272,6 +272,34 @@ describe('admin subjects and education levels', () => {
       expectError(await admin.patch('/api/admin/education-levels/99999999/active', { isActive: true }), 'NOT_FOUND', 'Tahap Pendidikan tidak dijumpai.')
     })
 
+    it('S4-T05 FR-ADM-C03.3a: a Darjah level is never made active (409, nothing written); deactivating and editing an inactive one stay allowed', async () => {
+      const refused = 'Darjah tidak boleh diaktifkan. Hanya Tingkatan 1 hingga 5 digunakan.'
+      const activePrimary = 'select count(*) n from education_levels where stage = $1 and is_active'
+      const d2 = await idOf(t.db, 'education_levels', 'D2')
+      // PATCH active: activating is refused, deactivating is fine.
+      expectError(await admin.patch(`/api/admin/education-levels/${d2}/active`, { isActive: true }), 'CONFLICT', refused)
+      expect(await count(t.db, activePrimary, ['primary'])).toBe(0)
+      expect(parseData(await admin.patch(`/api/admin/education-levels/${d2}/active`, { isActive: false }), CurriculumActiveStateSchema)).toEqual({ id: d2, isActive: false })
+      // POST: a new level is created active, so a primary one is refused.
+      const before = await count(t.db, 'select count(*) n from education_levels')
+      expectError(await admin.post('/api/admin/education-levels', levelWrite({ code: 'TU9', stage: 'primary', curriculum: 'KSSR' })), 'CONFLICT', refused)
+      expect(await count(t.db, 'select count(*) n from education_levels')).toBe(before)
+      // PUT: moving an active Tingkatan to the primary stage is refused; editing the inactive Darjah is allowed.
+      const t4 = await idOf(t.db, 'education_levels', 'T4')
+      expectError(await admin.put(`/api/admin/education-levels/${t4}`, { name: 'Tingkatan 4', nameEn: 'Form 4', code: 'T4', stage: 'primary', curriculum: 'KSSM' }), 'CONFLICT', refused)
+      expect(await count(t.db, activePrimary, ['primary'])).toBe(0)
+      const edited = parseStatus(await admin.put(`/api/admin/education-levels/${d2}`, { name: 'Darjah 2', nameEn: 'Year 2', code: 'D2', stage: 'primary', curriculum: 'KSSR', order: 2 }), CurriculumEducationLevelSchema, 200)
+      expect(edited.data).toMatchObject({ id: d2, code: 'D2', stage: 'primary', isActive: false })
+    })
+
+    it('S4-T05 DM-13: the database itself refuses an active primary level (check constraint, also for writes outside the API)', async () => {
+      const d3 = await idOf(t.db, 'education_levels', 'D3')
+      await expect(t.db.query('update education_levels set is_active = true where id = $1', [d3])).rejects.toThrow(/ck_education_levels_no_active_primary/)
+      await expect(
+        t.db.query(`insert into education_levels (code, name, name_en, stage, curriculum, is_active) values ('DX', 'Darjah X', 'Year X', 'primary', 'KSSR', true)`),
+      ).rejects.toThrow(/ck_education_levels_no_active_primary/)
+    })
+
     it('#12 409 while the level has subjects, chapters or DSKP nodes (nothing deleted); an empty level is deleted; 404 afterwards', async () => {
       const id = await idOf(t.db, 'education_levels', 'D1')
       const counts = async () => ({

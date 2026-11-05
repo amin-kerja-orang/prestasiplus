@@ -410,10 +410,11 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(AccountPlatformStatsSchema.parse(first.body.data)).toEqual({ questionCount: 0, subjectCount: 0, levelCount: 0 })
 
       await t.db.query(`create table subjects (id serial primary key, is_active boolean not null)`)
-      await t.db.query(`create table education_levels (id serial primary key, is_active boolean not null)`)
+      await t.db.query(`create table education_levels (id serial primary key, is_active boolean not null, stage text not null default 'lower_secondary')`)
       await t.db.query(`create table questions (id serial primary key, live_version_no int)`)
       await t.db.query(`insert into subjects (is_active) values (true), (true), (false)`)
-      await t.db.query(`insert into education_levels (is_active) values (true), (false)`)
+      // An active primary (Darjah) row, as on UAT before U-OP-03, never counts (FR-X3-2, S4-T05).
+      await t.db.query(`insert into education_levels (is_active, stage) values (true, 'lower_secondary'), (false, 'lower_secondary'), (true, 'primary')`)
       await t.db.query(`insert into questions (live_version_no) values (1), (null), (2)`)
       const base = AccountPlatformStatsSchema.parse((await t.http().get('/api/public/stats')).body.data)
       expect(base).toEqual({ questionCount: 2, subjectCount: 2, levelCount: 1 })

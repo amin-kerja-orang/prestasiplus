@@ -19,7 +19,7 @@ export const SPM_MESSAGES = {
   walkthroughImageInvalid: 'Gambar tidak sah.',
   walkthroughEmpty: 'Sila masukkan soalan atau muat naik gambar soalan.',
   /** Default Laravel-style copy of the mock for an unknown code or a mock that is not the caller's. */
-  notFound: 'Not Found.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Module-specific error code of `GET /spm-mocks/{id}/result` on an `in_progress` mock (HTTP 409). */
