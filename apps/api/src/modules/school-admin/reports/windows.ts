@@ -1,6 +1,7 @@
 import type { SchoolAdminDskpStatus, SchoolAdminUsagePeriod } from '@pp/contract'
 
 import { DAY_MS, mytDayStart } from '../../reports/analytics/domain/rules'
+import { xsAccuracy } from '../xs-queries'
 
 /**
  * Pure window, label and rounding rules of the school admin reports (BE-21 Part B). No database, no clock: the caller passes
@@ -38,20 +39,59 @@ export function usageWindow(period: SchoolAdminUsagePeriod, now: number): { from
   return { from: now - (period === '7days' ? 7 : 30) * DAY_MS, to: now }
 }
 
-/** Session mode to the usage mode label: Bab, Ulang Kaji, Tracking A, PKSK; every other mode is Latihan. */
+/**
+ * Stored `practice_answers.mode` / `practice_sessions.mode` to the usage mode label, from the master table "Pupil activity ->
+ * stored `mode`" (40 section X11). Mapped: `chapter` Bab, `revision` Ulang Kaji, `tracking_a` (and legacy `ramalan`) Tracking A,
+ * `pksk` PKSK, `simulasi` Bijak, `subjektif` Subjektif, `game` Permainan, `question_set` Set Soalan, `mission` Misi. Every other
+ * mode, and an unknown one, is Latihan. No document names a stored mode for the label "Drill" (it is an engine name in 46, not a
+ * mode), so it is left unmapped; `kuiz`, `battle`, `audio_kbat` and `structured` have no label in the set either.
+ */
+const MODE_LABELS: Readonly<Record<string, string>> = {
+  chapter: 'Bab',
+  revision: 'Ulang Kaji',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  pksk: 'PKSK',
+  simulasi: 'Bijak',
+  subjektif: 'Subjektif',
+  game: 'Permainan',
+  question_set: 'Set Soalan',
+  mission: 'Misi',
+}
+
 export function modeLabelOf(mode: string): string {
-  switch (mode) {
-    case 'chapter':
-      return 'Bab'
-    case 'revision':
-      return 'Ulang Kaji'
-    case 'ramalan':
-      return 'Tracking A'
-    case 'pksk':
-      return 'PKSK'
-    default:
-      return 'Latihan'
-  }
+  return Object.hasOwn(MODE_LABELS, mode) ? (MODE_LABELS[mode] as string) : 'Latihan'
+}
+
+/**
+ * "Pecahan Aktiviti" label of a stored mode: the OPT-MODE-SESI register (40 section X11), team lead ruling 1 on #485. Legacy
+ * `ramalan` reads as Tracking A. An unknown mode is "Latih Tubi". This is a different, finer list than the Statistik
+ * `modeLabelOf` (R1-AS-46 only says "mode labels as R1-AS-48"; the card S6-T09 (g) fixes the coarser Statistik set), so both stay.
+ */
+const REGISTER_LABELS: Readonly<Record<string, string>> = {
+  latih_tubi: 'Latih Tubi',
+  random: 'Latih Tubi Rawak',
+  chapter: 'Soalan by Chapter',
+  revision: 'Ulang Kaji',
+  remedial: 'Remedial',
+  mission: 'Misi Harian',
+  question_set: 'Set Soalan Guru',
+  pksk: 'PKSK',
+  databank: 'Databank Soalan',
+  kuiz: 'Simulasi - Kuiz',
+  simulasi: 'Bijak SPM',
+  tracking_a: 'Tracking A',
+  ramalan: 'Tracking A',
+  subjektif: 'Subjektif',
+  structured: 'Soalan Berstruktur',
+  battle: 'Battle',
+  audio_kbat: 'Audio KBAT',
+  game: 'Permainan',
+  past_year: 'Tahun Lepas',
+}
+
+export function registerModeLabelOf(mode: string): string {
+  return Object.hasOwn(REGISTER_LABELS, mode) ? (REGISTER_LABELS[mode] as string) : 'Latih Tubi'
 }
 
 // --- activity --------------------------------------------------------------------------------------------------------------
@@ -83,6 +123,17 @@ const MONTHS_MS = [
   'November',
   'Disember',
 ] as const
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'] as const
+
+/** Short BM month name ("Okt"). */
+export const monthShort = (ym: YearMonth): string => MONTHS_SHORT[ym.month - 1] as string
+
+/** The 12 months Jan to Dec of a year, ascending. */
+export const monthsOfYear = (year: number): YearMonth[] => Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1 }))
+
+/** Days in a month. */
+export const daysInMonth = (ym: YearMonth): number => new Date(Date.UTC(ym.year, ym.month, 0)).getUTCDate()
 
 const MONTH_KEY = /^(\d{4})-(0[1-9]|1[0-2])$/
 
@@ -130,9 +181,8 @@ export const minuteOf = (now: number): number => Math.floor(now / 60_000) * 60_0
 
 export const round1 = (n: number): number => Math.round(n * 10) / 10
 
-/** `correct / answered x 100`, 1 decimal, never above 100; null when nothing was answered. */
-export const accuracyOf = (correct: number, answered: number): number | null =>
-  answered > 0 ? Math.min(100, round1((correct / answered) * 100)) : null
+/** XS-5 (`xs-queries.ts` owns the rule): `correct / answered x 100`, 1 decimal half up, never above 100; null when nothing was answered. */
+export const accuracyOf = xsAccuracy
 
 /** `round(part / whole x 100)`; 0 without a whole. */
 export const participationOf = (part: number, whole: number): number => (whole > 0 ? Math.round((part / whole) * 100) : 0)
@@ -149,8 +199,14 @@ export function dskpStatusOf(pct: number | null): SchoolAdminDskpStatus {
   return pct >= 75 ? 'mahir' : pct >= 50 ? 'sederhana' : 'lemah'
 }
 
-/** T4 or T5, case-insensitive; anything else is T4. */
-export const tingkatanOf = (raw: string | undefined): 't4' | 't5' => (raw?.trim().toLowerCase() === 't5' ? 't5' : 't4')
+export const HEATMAP_LEVELS = ['t1', 't2', 't3', 't4', 't5'] as const
+export type HeatmapLevel = (typeof HEATMAP_LEVELS)[number]
+
+/** T1 to T5, case-insensitive; null for anything else (the caller then takes the highest level with content). */
+export function tingkatanOf(raw: string | undefined): HeatmapLevel | null {
+  const v = raw?.trim().toLowerCase()
+  return (HEATMAP_LEVELS as readonly string[]).includes(v ?? '') ? (v as HeatmapLevel) : null
+}
 
 // --- class list ------------------------------------------------------------------------------------------------------------
 

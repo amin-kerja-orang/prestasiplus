@@ -17,6 +17,9 @@ export const pct0 = (n: number): string => `${formatNumber(n)}%`
 export const pct1 = (n: number | null): string =>
   n === null ? NO_DATA : `${formatNumber(n, { decimals: 1 })}%`
 
+/** Whole-number percent, half up ("78%"), from the one-decimal wire value; the dash when null (screens show whole numbers, decision 11). */
+export const pctWhole = (n: number | null): string => (n === null ? NO_DATA : `${formatCount(Math.floor(n + 0.5))}%`)
+
 /** One decimal without a unit (Purata/Pelajar). */
 export const dec1 = (n: number): string => formatNumber(n, { decimals: 1 })
 
@@ -27,6 +30,9 @@ export function monthLabel(month: string): string {
   const n = Number(m[2])
   return n >= 1 && n <= 12 ? `${monthName(n)} ${m[1] as string}` : month
 }
+
+/** The month name of a label such as "Oktober 2026" ("Oktober"). */
+export const monthNameOf = (label: string): string => label.split(' ')[0] ?? label
 
 /** FR-M27-86: "25 Sep 2026, 03:40 PM" in Asia/Kuala_Lumpur (Laravel `M` English abbreviations). */
 export const generatedAtLabel = (iso: string): string =>

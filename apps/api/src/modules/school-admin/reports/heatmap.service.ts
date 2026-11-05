@@ -5,16 +5,17 @@ import { idToString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
 import type { CurriculumNode } from '../../curriculum/curriculum.repository'
 import { SchoolPopulation } from './population'
-import { dskpStatusOf, pooledPct, tingkatanOf } from './windows'
+import { dskpStatusOf, HEATMAP_LEVELS, pooledPct, tingkatanOf, type HeatmapLevel } from './windows'
 
-/** T4 and T5 are the M03 levels of grade 10 and 11. */
-const GRADE_OF = { t4: 10, t5: 11 } as const
-const NAME_OF = { t4: 'Tingkatan 4', t5: 'Tingkatan 5' } as const
+/** T1 to T5 are the M03 levels of grade 7 to 11 (XS-1: `users.grade` 7..11). */
+const GRADE_OF = { t1: 7, t2: 8, t3: 9, t4: 10, t5: 11 } as const
+const NAME_OF = { t1: 'Tingkatan 1', t2: 'Tingkatan 2', t3: 'Tingkatan 3', t4: 'Tingkatan 4', t5: 'Tingkatan 5' } as const
+const NUMBER_OF = { t1: 1, t2: 2, t3: 3, t4: 4, t5: 5 } as const
 
 const byName = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name, 'ms', { sensitivity: 'base' })
 
 /**
- * S2 DSKP heatmap (mock `heatmap`). The structure is the real DSKP tree of BE-08 (`curriculum_nodes`: grouping = bidang, with the
+ * S2 DSKP heatmap (mock `heatmap`), levels T1 to T5. The structure is the real DSKP tree of BE-08 (`curriculum_nodes`: grouping = bidang, with the
  * sp nodes below its units and sks), the latest edition of each subject.
  *
  * Per-SP results are NOT available (BE-21 OQ-2, LEAD decision): a practice answer carries subject, chapter and topic but no SP id,
@@ -30,22 +31,31 @@ export class HeatmapService {
   ) {}
 
   async heatmap(schoolId: string, query: { subjectId?: string | undefined; tingkatan?: string | undefined }): Promise<SchoolAdminDskpHeatmap> {
-    const code = tingkatanOf(query.tingkatan)
     const school = await this.population.school(schoolId)
+    // FR-AS-47-1: only the levels that have content are offered; the default is the highest of them (T4 when none has any).
+    const content = new Map<HeatmapLevel, { withSp: { id: string; name: string; key: bigint }[]; bySubject: Map<bigint, CurriculumNode[]> }>()
+    for (const code of HEATMAP_LEVELS) {
+      const lvl = await this.curriculum.levelForGrade(GRADE_OF[code])
+      if (!lvl) continue
+      const nodes = await this.curriculum.dskpNodes(lvl.id)
+      const bySubject = new Map<bigint, CurriculumNode[]>()
+      for (const n of nodes) bySubject.set(n.subjectId, [...(bySubject.get(n.subjectId) ?? []), n])
+      const active = await this.curriculum.subjects({ active: true, educationLevelId: lvl.id })
+      const withSp = active
+        .filter((s) => (bySubject.get(s.id) ?? []).some((n) => n.kind === 'sp'))
+        .map((s) => ({ id: idToString(s.id), name: s.name, key: s.id }))
+        .sort(byName)
+      if (withSp.length > 0) content.set(code, { withSp, bySubject })
+    }
+    const offered = HEATMAP_LEVELS.filter((c) => content.has(c))
+    const asked = tingkatanOf(query.tingkatan)
+    const code: HeatmapLevel = asked !== null && offered.includes(asked) ? asked : (offered.at(-1) ?? 't4')
     const level = { code, name: NAME_OF[code] }
-    const lvl = await this.curriculum.levelForGrade(GRADE_OF[code])
-    const empty: SchoolAdminDskpHeatmap = { school, subjects: [], subject: null, level, caption: null, bidang: [] }
-    if (!lvl) return empty
-
-    const nodes = await this.curriculum.dskpNodes(lvl.id)
-    const bySubject = new Map<bigint, CurriculumNode[]>()
-    for (const n of nodes) bySubject.set(n.subjectId, [...(bySubject.get(n.subjectId) ?? []), n])
-
-    const active = await this.curriculum.subjects({ active: true, educationLevelId: lvl.id })
-    const withSp = active
-      .filter((s) => (bySubject.get(s.id) ?? []).some((n) => n.kind === 'sp'))
-      .map((s) => ({ id: idToString(s.id), name: s.name, key: s.id }))
-      .sort(byName)
+    const levels = offered.map((c) => ({ code: c, name: NAME_OF[c] }))
+    const empty: SchoolAdminDskpHeatmap = { school, subjects: [], subject: null, level, levels, caption: null, bidang: [] }
+    const here = content.get(code)
+    if (!here) return empty
+    const { withSp, bySubject } = here
     const chosen = withSp.find((s) => s.id === query.subjectId) ?? withSp[0] ?? null
     if (!chosen) return empty
 
@@ -72,7 +82,8 @@ export class HeatmapService {
       subjects: withSp.map(({ id, name }) => ({ id, name })),
       subject: { id: chosen.id, name: chosen.name },
       level,
-      caption: `KSSM ${chosen.name} Tingkatan ${code === 't4' ? 4 : 5}`,
+      levels,
+      caption: `KSSM ${chosen.name} Tingkatan ${NUMBER_OF[code]}`,
       bidang,
     }
   }

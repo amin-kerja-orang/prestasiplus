@@ -1,14 +1,15 @@
 <script setup lang="ts">
 /**
  * S2 filter card (FR-M27-59; PROPOSED, pattern of M08 S8 and the M18 level pills; restyle spec AS-47). A GET
- * filter: the select "Subjek" submits on change; the level pills "Tingkatan 4" (default) and "Tingkatan 5"
- * are links that keep the chosen subject. The select lists only the subjects with at least one SP at the
- * level; there is no "all" option. Deviation: it is not a `DsFilterBar`, because that bar adds "Cari" and
+ * filter: the select "Subjek" submits on change; the level pills "Tingkatan 1" to "Tingkatan 5" are links
+ * that keep the chosen subject, offered only for the levels with content (FR-AS-47-1; the API sends them
+ * and defaults to the highest). The select lists only the subjects with at least one SP at the level; there
+ * is no "all" option. Deviation: it is not a `DsFilterBar`, because that bar adds "Cari" and
  * "Set Semula" buttons the live screen does not have (the filters apply on change).
  */
 import { computed } from 'vue'
 
-import type { HeatmapLevelCode } from '../../api/school-admin'
+import type { HeatmapLevelCode, HeatmapLevelName } from '../../api/school-admin'
 import { DsPanel, DsPillNav, type PillItem } from '@/ds'
 
 const props = defineProps<{
@@ -16,23 +17,20 @@ const props = defineProps<{
   /** The subject id the select shows ('' when the requested id has no SP at the level). */
   subjectId: number | ''
   level: HeatmapLevelCode
+  /** The levels with content (FR-AS-47-1), ascending. */
+  levels: { code: HeatmapLevelCode; name: HeatmapLevelName }[]
 }>()
 
 const emit = defineEmits<{ subject: [id: number] }>()
 
-const LEVELS = [
-  { code: 't4', query: 'T4', label: 'Tingkatan 4' },
-  { code: 't5', query: 'T5', label: 'Tingkatan 5' },
-] as const
-
 const levelItems = computed<PillItem<HeatmapLevelCode>[]>(() =>
-  LEVELS.map((l) => ({
+  props.levels.map((l) => ({
     key: l.code,
-    label: l.label,
+    label: l.name,
     to: {
       query: {
         ...(props.subjectId === '' ? {} : { subjectId: String(props.subjectId) }),
-        tingkatan: l.query,
+        tingkatan: l.code.toUpperCase(),
       },
     },
   })),

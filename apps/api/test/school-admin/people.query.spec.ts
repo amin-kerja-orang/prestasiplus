@@ -31,6 +31,15 @@ describe('people.query: list and export query parsing (pure)', () => {
     expect(JSON.stringify(parsed)).not.toContain('99')
   })
 
+  it('level T1..T5 is the grade 7..11; anything else is ignored; classroomId is a numeric id or ignored (FR-AS-51-1)', () => {
+    expect(parseListQuery({ level: 'T1' })).toMatchObject({ grade: 7 })
+    expect(parseExportQuery({ level: ' T5 ' })).toEqual({ grade: 11 })
+    for (const v of ['', 'T0', 'T6', 'D4', 't4', 'T44', ['T4'], 4, undefined]) expect('grade' in parseExportQuery({ level: v })).toBe(false)
+    expect(parseListQuery({ classroomId: '42', level: 'T4', page: '2' })).toEqual({ classroomId: '42', grade: 10, page: 2 })
+    expect(parseExportQuery({ classroomId: ' 42 ' })).toEqual({ classroomId: '42' })
+    for (const v of ['', 'abc', '1; drop table users', '-1', ['1'], undefined]) expect('classroomId' in parseExportQuery({ classroomId: v })).toBe(false)
+  })
+
   it('names the export file from the Malaysia date', () => {
     expect(mytDateOf('2026-10-21T09:00:00+08:00')).toBe('2026-10-21')
     expect(exportFileName('guru', '2026-10-21T09:00:00+08:00')).toBe('users-guru-2026-10-21.csv')

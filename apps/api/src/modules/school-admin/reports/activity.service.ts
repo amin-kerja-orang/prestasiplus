@@ -6,9 +6,8 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { ClassesPorts, ClassesRepository } from '../../classes'
 import { DAY_MS, byName, ddmm, dayKey, rangeOf, statusOf } from '../../reports/analytics/domain/rules'
 import { WalletService } from '../../wallet'
-import { K_COHORT } from '../school-admin.constants'
 import { SchoolPopulation, type PupilFact } from './population'
-import { accuracyOf, activityWindow } from './windows'
+import { accuracyOf, activityWindow, registerModeLabelOf, round1 } from './windows'
 
 /** At most this many teacher question-stat reads run at the same time. */
 const STATS_POOL = 8
@@ -34,13 +33,15 @@ const stamp = (d: Date | null) => (d === null ? null : toMytTimestamp(d))
  * `ReportService`: only the pure rules (`rangeOf`, `mytDayStart` through `activityWindow`, `statusOf`) are shared. The
  * platform-only figures (`score`, `structuredScore`, `schoolName`, the schools list) never exist here.
  *
- * Sources: pupils from the users owner, sessions and answers from BE-20's `AnalyticsRepository` (completed non-test sessions,
- * clean answer log), class names from `ClassesRepository` (own-school classes only), teacher question counts from the
+ * Sources: pupils (XS-1), teachers (XS-3), "practised" and active pupils (XS-2), answers (XS-4) and accuracy (XS-5, pooled) from
+ * `XsQueries` through `SchoolPopulation`; session counts, trend and seconds from BE-20's `AnalyticsRepository` (completed non-test
+ * sessions: they stay session counts, a separately named figure); class names from `ClassesRepository` (own-school classes only), teacher question counts from the
  * `ClassesPorts` question provider, coins from BE-11's `WalletService.balancesOf` (the current balance, as the mock; one batched read; no SQL on wallet
  * tables). Struktur, Battle and Permainan have no source in this build and stay 0 (as BE-20).
  *
- * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 when
- * fewer than `K_COHORT` pupils contributed answers.
+ * Privacy: the per-pupil rows are in the contract and stay (the route is `no-store`); the school pupil accuracy tile is 0 with
+ * no answers (no minimum cohort on this staff screen, PO decision 2026-11-05, #503 batch 3; the tile and the pupil row accuracy are non-nullable in the contract: 0 stands
+ * for "no data" there until the contract part of S6-T03 makes them nullable).
  */
 @Injectable()
 export class ActivityService {
@@ -60,23 +61,22 @@ export class ActivityService {
     const [pupils, teachers] = await Promise.all([this.population.pupils(schoolId), this.population.teachers(schoolId)])
     const ids = pupils.map((p) => p.id)
 
-    const rows = await this.population.sessions(ids, w.from, w.to)
+    const [rows, totals, answered, score] = await Promise.all([
+      this.population.sessions(ids, w.from, w.to),
+      this.population.answerTotals(schoolId, w.from, w.to),
+      this.population.tallyByPupil(schoolId, w.from, w.to),
+      this.population.sessionScore(ids, w.from, w.to),
+    ])
+    const perMode = new Map<string, number>()
     const perDay = new Map<string, number>()
-    const per = new Map<string, { sessions: number; correct: number; questions: number }>()
+    const per = new Map<string, { sessions: number }>()
     let quiz = 0
-    let correct = 0
-    let questions = 0
-    const contributing = new Set<string>()
     for (const r of rows) {
       quiz += r.sessions
-      correct += r.correct
-      questions += r.questions
-      if (r.questions > 0) contributing.add(r.userId)
+      perMode.set(registerModeLabelOf(r.mode), (perMode.get(registerModeLabelOf(r.mode)) ?? 0) + r.sessions)
       perDay.set(r.day, (perDay.get(r.day) ?? 0) + r.sessions)
-      const p = per.get(r.userId) ?? { sessions: 0, correct: 0, questions: 0 }
+      const p = per.get(r.userId) ?? { sessions: 0 }
       p.sessions += r.sessions
-      p.correct += r.correct
-      p.questions += r.questions
       per.set(r.userId, p)
     }
 
@@ -86,21 +86,22 @@ export class ActivityService {
       trend.push({ label: ddmm(day), value: perDay.get(dayKey(day)) ?? 0 })
     }
 
-    const [stats, practised, seconds, classNames] = await Promise.all([
-      this.population.stats(ids),
-      this.population.practised(ids),
+    const [allTime, practised, seconds, classNames] = await Promise.all([
+      this.population.tallyByPupil(schoolId, null, null),
+      this.population.practised(schoolId),
       this.population.seconds(ids, w.from, w.to),
       this.classNamesOf(schoolId, ids),
     ])
 
-    // Pills use the all-time answer log, as BE-20 (statusOf: answers > 0 is "aktif", else a login, else never).
-    const base = pupils.map((p) => ({ p, status: statusOf(stats.get(p.id)?.answers ?? 0, p.lastLoginAt) }))
+    // Pills use the all-time answer rows (XS-4, all modes; statusOf: answers > 0 is "aktif", else a login, else never).
+    // Every pill is sorted by "Soalan" (XS-4 answers of the window) descending, ties by name, then cut to the Top 200 (R1-AS-48).
+    const soalan = (id: string): number => answered.get(id)?.answered ?? 0
+    const base = pupils
+      .map((p) => ({ p, status: statusOf(allTime.get(p.id)?.answered ?? 0, p.lastLoginAt) }))
+      .sort((a, b) => soalan(b.p.id) - soalan(a.p.id) || byName(a.p, b.p))
     const buckets = {
       semua: base.slice(0, PILL_MAX),
-      aktif: base
-        .filter((b) => b.status === 'aktif')
-        .sort((a, b) => (per.get(b.p.id)?.sessions ?? 0) - (per.get(a.p.id)?.sessions ?? 0) || byName(a.p, b.p))
-        .slice(0, PILL_MAX),
+      aktif: base.filter((b) => b.status === 'aktif').slice(0, PILL_MAX),
       loginSahaja: base.filter((b) => b.status === 'login').slice(0, PILL_MAX),
       belumLogin: base.filter((b) => b.status === 'never').slice(0, PILL_MAX),
     }
@@ -109,13 +110,14 @@ export class ActivityService {
 
     const coins = await this.coinsOf([...shown, ...teachers.map((t) => t.id)])
     const rowOf = (p: PupilFact): SchoolAdminActivityPupilRow => {
-      const u = per.get(p.id)
+      const u = answered.get(p.id)
       return {
         userId: p.id,
         name: p.name,
         className: classNames.get(p.id) ?? null,
-        sessions: u?.sessions ?? 0,
-        accuracy: u ? (accuracyOf(u.correct, u.questions) ?? 0) : 0,
+        sessions: per.get(p.id)?.sessions ?? 0,
+        answers: u?.answered ?? 0,
+        accuracy: u ? (accuracyOf(u.correct, u.answered) ?? 0) : 0,
         seconds: seconds.get(p.id) ?? 0,
         coins: coins.get(p.id) ?? 0,
         lastLoginAt: stamp(p.lastLoginAt),
@@ -146,9 +148,21 @@ export class ActivityService {
         teachersLogged,
         practised: practised.size,
         activity: quiz,
+        // "Skor Purata" (R1-AS-48): mean of per-session accuracy, a separately named measure, never "Ketepatan".
+        skorPurata: score.sessions > 0 ? round1((score.ratioSum / score.sessions) * 100) : null,
       },
       trend,
-      breakdown: { quiz, structured: 0, battle: 0, game: 0 },
+      breakdown: {
+        quiz,
+        structured: 0,
+        battle: 0,
+        game: 0,
+        // Ruling 1: one row per OPT-MODE-SESI label with a count above 0, biggest first.
+        modes: [...perMode.entries()]
+          .filter(([, count]) => count > 0)
+          .map(([label, count]) => ({ label, count }))
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ms', { sensitivity: 'base' })),
+      },
       topPupils: pupils
         .map((p) => ({ userId: p.id, name: p.name, activities: per.get(p.id)?.sessions ?? 0 }))
         .filter((p) => p.activities > 0)
@@ -171,7 +185,7 @@ export class ActivityService {
           total: pupils.length,
           practised: practised.size,
           sessions: quiz,
-          accuracy: contributing.size >= K_COHORT ? (accuracyOf(correct, questions) ?? 0) : 0,
+          accuracy: totals.accuracy ?? 0,
         },
       },
     }
@@ -201,7 +215,8 @@ export class ActivityService {
     coins: Map<string, number>,
     headcount: Set<string>,
   ): Promise<SchoolAdminActivityReport['teachers']> {
-    const sorted = [...teachers].sort(byName)
+    // Sorted by last login descending, a teacher who never logged in last, ties by name (R1-AS-48 Guru tab).
+    const sorted = [...teachers].sort((a, b) => (b.lastLoginAt?.getTime() ?? -Infinity) - (a.lastLoginAt?.getTime() ?? -Infinity) || byName(a, b))
     const stats = await mapPool(sorted, STATS_POOL, (t) => this.ports.questions.statsOf(t.id))
     return sorted.map((t, i) => ({
       userId: t.id,

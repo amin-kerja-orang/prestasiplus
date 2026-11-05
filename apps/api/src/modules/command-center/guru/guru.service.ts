@@ -22,7 +22,7 @@ import { buildLiveData } from './live-data.builder'
 
 /**
  * GURU slice (routes 12 to 17). OWNER: guru implementer. The viewer set S is `repo.teacherStudentIds(viewer.userId)`
- * (active non-test members of the viewer's active classrooms). Windows: `guruWindows(clock.now())` from `shared/windows.ts`
+ * (XS-1 teacher scope: active non-test members of the viewer's active classrooms whose account is active and not suspended). Windows: `guruWindows(clock.now())` from `shared/windows.ts`
  * (week = 7 calendar days). Bodies are bare (no `{ data }`). Add builders as `guru/*.builder.ts`.
  */
 @Injectable()

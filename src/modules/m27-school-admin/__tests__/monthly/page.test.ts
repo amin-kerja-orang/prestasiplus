@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
  * M27 S5 "Laporan Bulanan" component tests (SRS M27 Part B v1.8 FR-M27-44, 81…87; AC-M27-23.1…23.4, 24.1…24.4)
- * against a mocked client: heading and month links, the four cards, "Statistik Bulanan", subject boxes, the
- * footer and the print button, the empty month and the error states.
+ * and R1-AS-50 against a mocked client: heading and month links, the eight cards, the daily and yearly trends,
+ * "Statistik Bulanan", the subject section (always rendered), the footer and the print button and title, the empty
+ * month and the error states.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -23,6 +24,14 @@ vi.mock('../../api/school-admin', async (importActual) => ({
   fetchMonthlyReport: api.fetchMonthlyReport,
 }))
 
+const MONTHS12 = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis']
+const yearly = (year: number, sessions: Record<number, number> = {}): MonthlyReport['yearly'] => ({
+  year,
+  months: MONTHS12.map((label, i) => ({ month: `${String(year)}-${String(i + 1).padStart(2, '0')}`, label, sessions: sessions[i + 1] ?? 0 })),
+})
+const daily = (days: number, answers: Record<number, number> = {}): MonthlyReport['daily'] =>
+  Array.from({ length: days }, (_, i) => ({ day: i + 1, answers: answers[i + 1] ?? 0 }))
+
 function report(over: Partial<MonthlyReport> = {}): MonthlyReport {
   return {
     school: { id: 1, name: 'SMK Contoh Ujian' },
@@ -38,7 +47,11 @@ function report(over: Partial<MonthlyReport> = {}): MonthlyReport {
       perPupil: 206,
       accuracy: 61.44,
       sessions: 82,
+      teachers: 12,
+      busiestMonth: { month: '2026-09', label: 'Sep', sessions: 82 },
     },
+    daily: daily(30, { 2: 400, 15: 834 }),
+    yearly: yearly(2026, { 8: 30, 9: 82 }),
     months: [
       {
         month: '2026-08',
@@ -61,11 +74,11 @@ function report(over: Partial<MonthlyReport> = {}): MonthlyReport {
     ],
     total: { answers: 1434, correct: 766, accuracy: 53.4 },
     subjects: {
-      strongest: { name: 'Sejarah', accuracy: 71.25, answers: 400, pupils: 5 },
-      weakest: { name: 'Kimia', accuracy: 40, answers: 100, pupils: 3 },
+      strongest: { name: 'Sejarah', accuracy: 71.25, answers: 400, pupils: 5, sessions: 12 },
+      weakest: { name: 'Kimia', accuracy: 40, answers: 100, pupils: 3, sessions: 3 },
       rows: [
-        { name: 'Sejarah', accuracy: 71.25, answers: 400, pupils: 5 },
-        { name: 'Kimia', accuracy: 40, answers: 100, pupils: 3 },
+        { name: 'Sejarah', accuracy: 71.25, answers: 400, pupils: 5, sessions: 12 },
+        { name: 'Kimia', accuracy: 40, answers: 100, pupils: 3, sessions: 3 },
       ],
     },
     generatedAt: '2026-09-25T15:40:00+08:00',
@@ -86,13 +99,18 @@ const EMPTY_MONTH: Partial<MonthlyReport> = {
     perPupil: 0,
     accuracy: null,
     sessions: 0,
+    teachers: 12,
+    busiestMonth: null,
   },
+  daily: daily(31),
+  yearly: yearly(2026),
   months: [],
   total: null,
   subjects: { strongest: null, weakest: null, rows: [] },
 }
 
 let router: Router
+const mounted: VueWrapper[] = []
 
 async function mountPage(
   data: MonthlyReport | ApiError,
@@ -107,6 +125,7 @@ async function mountPage(
   await router.push(url)
   await router.isReady()
   const wrapper = mount(LaporanBulananPage, { global: { plugins: [router] } })
+  mounted.push(wrapper)
   await flushPromises()
   return wrapper
 }
@@ -121,6 +140,8 @@ beforeEach(() => {
   usePageMeta().reset()
 })
 afterEach(() => {
+  // The page listens to beforeprint / afterprint on window: unmount so no page of an earlier test reacts.
+  for (const w of mounted.splice(0)) w.unmount()
   vi.restoreAllMocks()
 })
 
@@ -192,20 +213,75 @@ describe('heading and month links (FR-M27-81; AC-M27-23.1, 23.3)', () => {
   })
 })
 
-describe('cards (FR-M27-82, 83; AC-M27-23.2, 23.4)', () => {
-  it('shows four cards in order with the sub-lines', async () => {
+describe('cards (R1-AS-50, FR-AS-50-2; AC-AS-50-2, 50-3)', () => {
+  it('shows the eight cards in order with the PRD sub-lines', async () => {
     const w = await mountPage(report())
-    const labels = texts(w, 'lb-card-label')
-    expect(labels).toEqual(['Penglibatan', 'Soalan Dijawab', 'Ketepatan', 'Sesi Latihan'])
-    expect(texts(w, 'lb-card-value')).toEqual(['60%', '1,234', '61.4%', '82'])
-    expect(texts(w, 'lb-card-sub')).toEqual(['6 aktif / 10 daftar', '206 soalan/pelajar'])
+    expect(texts(w, 'lb-card-label')).toEqual([
+      'Pelajar Berdaftar',
+      'Kadar Penglibatan',
+      'Soalan Dijawab',
+      'Ketepatan',
+      'Guru',
+      'Soalan / Pelajar Aktif',
+      'Bulan Paling Aktif',
+      'Sesi Latihan',
+    ])
+    expect(texts(w, 'lb-card-value')).toEqual(['10', '60%', '1,234', '61%', '12', '206', 'Sep', '82'])
+    expect(texts(w, 'lb-card-sub')).toEqual([
+      '6 aktif',
+      'daripada pelajar daftar',
+      'sepanjang September',
+      'purata jawapan betul',
+      'berdaftar',
+      'purata kedalaman penggunaan',
+      '82 sesi',
+    ])
   })
 
-  it('shows "0%", "0", "—", "0" and no section below for a month without answers', async () => {
+  it('names the shown month in "sepanjang {bulan}"', async () => {
+    const w = await mountPage(report({ month: '2026-08', label: 'Ogos 2026' }))
+    expect(texts(w, 'lb-card-sub')).toContain('sepanjang Ogos')
+  })
+
+  it('a month without answers: Ketepatan and Bulan Paling Aktif show the dash, the note shows and every section stays', async () => {
     const w = await mountPage(report(EMPTY_MONTH))
-    expect(texts(w, 'lb-card-value')).toEqual(['0%', '0', '—', '0'])
-    expect(has(w, 'lb-table-title')).toBe(false)
-    expect(has(w, 'lb-subjects')).toBe(false)
+    expect(texts(w, 'lb-card-value')).toEqual(['10', '0%', '0', '—', '12', '0', '—', '0'])
+    expect(text(w, 'lb-empty-note')).toBe('Tiada data untuk bulan ini.')
+    for (const id of ['lb-daily', 'lb-yearly', 'lb-table-section', 'lb-subjects']) expect(has(w, id), id).toBe(true)
+  })
+
+  it('shows no empty note for a month with answers', async () => {
+    const w = await mountPage(report())
+    expect(has(w, 'lb-empty-note')).toBe(false)
+  })
+})
+
+describe('Trend Harian and Trend Penggunaan Bulanan (FR-AS-50-2, 50-5)', () => {
+  it('draws the daily chart with one entry per day of the month and the yearly chart titled with the year', async () => {
+    const w = await mountPage(report())
+    expect(text(w, 'lb-daily')).toContain('Trend Harian')
+    const dailyTable = text(w, 'lb-daily-chart')
+    expect(dailyTable).toContain('Trend Harian')
+    expect(w.findAll('[data-testid="lb-daily-chart"] tbody tr')).toHaveLength(30)
+    expect(text(w, 'lb-yearly')).toContain('Trend Penggunaan Bulanan 2026')
+    const rows = w.findAll('[data-testid="lb-yearly-chart"] tbody tr').map((r) => r.findAll('td').map((c) => c.text()))
+    expect(rows.map((r) => r[0])).toEqual(MONTHS12)
+    expect(rows[8]?.[1]).toBe('82')
+  })
+
+  it('passes every 5th label rule and the chosen month index to the charts', async () => {
+    const w = await mountPage(report())
+    const charts = w.findAllComponents({ name: 'DsChart' })
+    const dailyChart = charts.find((c) => c.attributes('data-testid') === 'lb-daily-chart')
+    const yearChart = charts.find((c) => c.attributes('data-testid') === 'lb-yearly-chart')
+    expect((dailyChart?.props() as Record<string, unknown>).tickEvery).toBe(5)
+    expect((yearChart?.props() as Record<string, unknown>).highlightIndex).toBe(8)
+  })
+
+  it('renders both charts for an empty month', async () => {
+    const w = await mountPage(report(EMPTY_MONTH))
+    expect(w.findAll('[data-testid="lb-daily-chart"] tbody tr')).toHaveLength(31)
+    expect(w.findAll('[data-testid="lb-yearly-chart"] tbody tr')).toHaveLength(12)
   })
 })
 
@@ -247,8 +323,8 @@ describe('Statistik Bulanan (FR-M27-84; AC-M27-24.1, 24.2)', () => {
   })
 })
 
-describe('Prestasi Mengikut Subjek (FR-M27-85; AC-M27-24.3)', () => {
-  it('shows the two boxes and one row per subject', async () => {
+describe('Prestasi Mengikut Subjek (R1-AS-50, FR-AS-50-3)', () => {
+  it('shows the two boxes and one row per subject as "{n} sesi · {x}%"', async () => {
     const w = await mountPage(report())
     expect(text(w, 'lb-subjects-title')).toBe('Prestasi Mengikut Subjek')
     expect(text(w, 'lb-strongest')).toContain('SUBJEK TERKUAT')
@@ -258,14 +334,20 @@ describe('Prestasi Mengikut Subjek (FR-M27-85; AC-M27-24.3)', () => {
     expect(text(w, 'lb-weakest-name')).toBe('Kimia')
     expect(text(w, 'lb-weakest-figure')).toBe('40.0% (100 soalan)')
     expect(texts(w, 'lb-subject-name')).toEqual(['Sejarah', 'Kimia'])
-    expect(texts(w, 'lb-subject-figure')).toEqual([
-      '71.3% · 400 soalan · 5 pelajar',
-      '40.0% · 100 soalan · 3 pelajar',
-    ])
+    expect(texts(w, 'lb-subject-figure')).toEqual(['12 sesi · 71%', '3 sesi · 40%'])
+    expect(has(w, 'lb-subjects-empty')).toBe(false)
+  })
+
+  it('always renders, with "Tiada aktiviti latihan pada bulan ini." and no rows, for an empty month', async () => {
+    const w = await mountPage(report(EMPTY_MONTH))
+    expect(text(w, 'lb-subjects-title')).toBe('Prestasi Mengikut Subjek')
+    expect(text(w, 'lb-subjects-empty')).toBe('Tiada aktiviti latihan pada bulan ini.')
+    expect(w.findAll('[data-testid="lb-subject-row"]')).toHaveLength(0)
+    expect(has(w, 'lb-strongest')).toBe(false)
   })
 
   it('shows one subject in both boxes', async () => {
-    const only = { name: 'Sejarah', accuracy: 60, answers: 10, pupils: 2 }
+    const only = { name: 'Sejarah', accuracy: 60, answers: 10, pupils: 2, sessions: 4 }
     const w = await mountPage(
       report({ subjects: { strongest: only, weakest: only, rows: [only] } }),
     )
@@ -288,6 +370,25 @@ describe('footer and print (FR-M27-86; AC-M27-24.4)', () => {
     expect(button.text()).toBe('Cetak / PDF')
     await button.trigger('click')
     expect(print).toHaveBeenCalledTimes(1)
+  })
+
+  it('prints A4 portrait without the app chrome: the report is the print sheet, buttons and month links are print:hidden (FR-AS-50-4)', async () => {
+    const w = await mountPage(report())
+    expect(w.get('[data-testid="lb-sheet"]').attributes('data-ds')).toBe('print-sheet')
+    expect(w.get('[data-testid="lb-print"]').classes()).toContain('print:hidden')
+    expect(w.get('[data-testid="lb-prev"]').element.parentElement?.className).toContain('print:hidden')
+    expect(text(w, 'lb-print-title')).toBe('Laporan Bulanan — September 2026')
+    expect(w.get('[data-testid="lb-print-title"]').classes()).toEqual(expect.arrayContaining(['hidden', 'print:block']))
+  })
+
+  it('sets the document title "Laporan Bulanan — {Bulan} {tahun}" while printing and restores it afterwards', async () => {
+    document.title = 'Laporan Bulanan - PRESTASIPLUS'
+    const w = await mountPage(report())
+    window.dispatchEvent(new Event('beforeprint'))
+    expect(document.title).toBe('Laporan Bulanan — September 2026')
+    window.dispatchEvent(new Event('afterprint'))
+    expect(document.title).toBe('Laporan Bulanan - PRESTASIPLUS')
+    expect(w.exists()).toBe(true)
   })
 })
 
@@ -348,6 +449,8 @@ describe('month hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
       perPupil: 15,
       accuracy: null,
       sessions: 1,
+      teachers: 3,
+      busiestMonth: null,
     },
     months: [],
     total: null,
@@ -369,8 +472,9 @@ describe('month hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
   it('http mode, no answers at all: keeps "Tiada aktiviti direkodkan buat masa ini"', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     const w = await mountPage(report({ ...EMPTY_MONTH }))
-    // FR-M27-83: a month without answers renders the cards only, so the table section is absent.
-    expect(has(w, 'lb-table-empty')).toBe(false)
+    // FR-AS-50-3: a month without answers still renders every section, with the plain empty copy.
+    expect(text(w, 'lb-table-empty')).toContain(EMPTY)
+    expect(text(w, 'lb-table-empty')).not.toContain(COHORT)
   })
 
   it('http mode, a shown month with rows: no hidden-month copy', async () => {

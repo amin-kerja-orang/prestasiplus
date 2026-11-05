@@ -3,8 +3,9 @@
  * S3 Murid tab (FR-M27-72; restyle spec AS-48): heading "Senarai Murid ({n}) — Top 200", pills "Semua",
  * "Aktif", "Login Sahaja", "Belum Login" (each lists its own pupils, up to 200), the search "Cari
  * murid...", the tiles "Jumlah Murid", "Pernah Latihan", "Jumlah Sesi", "Purata Ketepatan" and a
- * `DsDataTable` "#", "Nama", "Kelas", "Sesi", "Ketepatan", "Masa", "Syiling", "Login Terakhir" (cards below
- * `md`). No "Sekolah" column and no school select; a search with no match shows no rows.
+ * `DsDataTable` "#", "Nama", "Kelas", "Sesi", "Soalan", "Status" ("Pernah Akses" or "Belum Akses"), "Login
+ * Terakhir" (R1-AS-48 field table; the server sorts by Soalan descending; cards below
+ * `md`), 25 per page. No "Sekolah" column and no school select; a search with no match shows "Tiada rekod sepadan.".
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
@@ -12,9 +13,12 @@ import { computed, ref } from 'vue'
 import { DsDataTable, DsPillNav, DsStatRow, type CardField, type PillItem, type StatItem } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
-import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
+import { accuracy, count, lastLogin, matches, NO_DATA } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
+
+/** FR-AS-48-5: the Top 200 list is paginated 25 per page. */
+const PAGE_SIZE = 25
 
 type Filter = 'semua' | 'aktif' | 'loginSahaja' | 'belumLogin'
 const filter = ref<Filter>('semua')
@@ -35,9 +39,8 @@ interface Row extends Record<string, unknown> {
   name: string
   kelas: string
   sessions: string
-  accuracy: string
-  time: string
-  coins: string
+  answers: string
+  status: string
   last: string
 }
 
@@ -50,9 +53,8 @@ const rows = computed<Row[]>(() =>
       name: r.name,
       kelas: r.className ?? '-',
       sessions: count(r.sessions),
-      accuracy: accuracy(r.accuracy),
-      time: duration(r.seconds),
-      coins: count(r.coins),
+      answers: count(r.answers),
+      status: r.lastLoginAt === null ? 'Belum Akses' : 'Pernah Akses',
       last: lastLogin(r.lastLoginAt),
     })),
 )
@@ -62,17 +64,15 @@ const columns: TableColumn<Row>[] = [
   { id: 'name', accessorKey: 'name', header: 'Nama' },
   { id: 'kelas', accessorKey: 'kelas', header: 'Kelas' },
   { id: 'sessions', accessorKey: 'sessions', header: 'Sesi' },
-  { id: 'accuracy', accessorKey: 'accuracy', header: 'Ketepatan' },
-  { id: 'time', accessorKey: 'time', header: 'Masa' },
-  { id: 'coins', accessorKey: 'coins', header: 'Syiling' },
+  { id: 'answers', accessorKey: 'answers', header: 'Soalan' },
+  { id: 'status', accessorKey: 'status', header: 'Status' },
   { id: 'last', accessorKey: 'last', header: 'Login Terakhir' },
 ]
 const cardFields: CardField[] = [
   { key: 'kelas', label: 'Kelas' },
   { key: 'sessions', label: 'Sesi' },
-  { key: 'accuracy', label: 'Ketepatan' },
-  { key: 'time', label: 'Masa' },
-  { key: 'coins', label: 'Syiling' },
+  { key: 'answers', label: 'Soalan' },
+  { key: 'status', label: 'Status' },
   { key: 'last', label: 'Login Terakhir' },
 ]
 
@@ -127,10 +127,10 @@ const tiles = computed<StatItem[]>(() => [
       :data="rows"
       :columns="columns"
       caption="Senarai murid"
-      empty-label="Tiada murid"
+      empty-title="Tiada rekod sepadan."
       card-title="name"
       :card-fields="cardFields"
-      :page-size="Math.max(1, rows.length)"
+      :page-size="PAGE_SIZE"
       data-testid="la-murid-table"
     >
       <template #name-cell="{ row }">
@@ -144,14 +144,11 @@ const tiles = computed<StatItem[]>(() => [
       <template #sessions-cell="{ row }">
         <span data-testid="la-murid-sesi">{{ row.original.sessions }}</span>
       </template>
-      <template #accuracy-cell="{ row }">
-        <span data-testid="la-murid-ketepatan">{{ row.original.accuracy }}</span>
+      <template #answers-cell="{ row }">
+        <span data-testid="la-murid-soalan">{{ row.original.answers }}</span>
       </template>
-      <template #time-cell="{ row }">
-        <span class="whitespace-nowrap" data-testid="la-murid-masa">{{ row.original.time }}</span>
-      </template>
-      <template #coins-cell="{ row }">
-        <span data-testid="la-murid-syiling">{{ row.original.coins }}</span>
+      <template #status-cell="{ row }">
+        <span data-testid="la-murid-status">{{ row.original.status }}</span>
       </template>
       <template #last-cell="{ row }">
         <span class="whitespace-nowrap" data-testid="la-murid-last">{{ row.original.last }}</span>

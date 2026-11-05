@@ -44,7 +44,7 @@ const TILE_LABELS = [
   'Purata Ketepatan',
 ]
 const FOOTNOTE =
-  'Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.'
+  'Ketepatan dipaparkan sebagai “—” kerana belum ada soalan dijawab dalam tempoh ini.'
 const PERIODS = ['today', '7days', '30days'] as const
 type Period = (typeof PERIODS)[number]
 

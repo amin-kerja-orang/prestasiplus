@@ -91,7 +91,7 @@ async function listOf<T>(userId: number, url: string) {
       totalPages: number
       from: number | null
       to: number | null
-      counts?: { total: number; active: number; inactive: number }
+      counts?: { total: number; active: number; inactive: number; xs?: number; notCounted?: number }
       displayed?: number
     }
   }>(userId, url)
@@ -289,7 +289,9 @@ describe('#3 DSKP heatmap (S2; BR-M27-24, 25)', () => {
 
   it('falls back to the default subject and level for unknown values', async () => {
     const base = await data<SchoolDskpHeatmap>(P2, `${BASE}/dskp-heatmap`)
-    expect(base.level.code).toBe('t4')
+    // FR-AS-47-1: the default is the highest level with content, and only those levels are offered.
+    expect(base.levels.length).toBeGreaterThan(0)
+    expect(base.level.code).toBe(base.levels.at(-1)?.code)
     const odd = await data<SchoolDskpHeatmap>(
       P2,
       `${BASE}/dskp-heatmap?subjectId=999999&tingkatan=X9`,
@@ -313,10 +315,17 @@ describe('#5 monthly report (S5; BR-M27-28, 29)', () => {
       perPupil: 0,
       accuracy: null,
       sessions: 0,
+      teachers: 0,
+      busiestMonth: null,
     })
     expect(m.months).toEqual([])
     expect(m.total).toBeNull()
     expect(m.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
+    // Every section is still present (FR-AS-50-3).
+    expect(m.daily).toHaveLength(30)
+    expect(m.daily.every((d) => d.answers === 0)).toBe(true)
+    expect(m.yearly.year).toBe(2026)
+    expect(m.yearly.months).toHaveLength(12)
     expect(m.generatedAt).toBe('2026-09-25T15:40:00+08:00')
   })
 
@@ -346,8 +355,13 @@ describe('#5 monthly report (S5; BR-M27-28, 29)', () => {
       const acc = m.subjects.rows.map((r) => r.accuracy)
       expect(m.subjects.strongest?.accuracy).toBe(Math.max(...acc))
       expect(m.subjects.weakest?.accuracy).toBe(Math.min(...acc))
-      expect(acc).toEqual([...acc].sort((a, b) => b - a))
+      // R1-AS-50: the rows are the top 10 by sessions descending.
+      const sess = m.subjects.rows.map((r) => r.sessions)
+      expect(sess).toEqual([...sess].sort((a, b) => b - a))
+      expect(m.subjects.rows.length).toBeLessThanOrEqual(10)
     }
+    expect(m.daily.reduce((n, d) => n + d.answers, 0)).toBe(answers)
+    expect(m.yearly.months.map((x) => x.label)).toEqual(['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis'])
     // The 12 month window ends with the shown month and lists months in ascending order.
     expect(m.months.map((r) => r.month)).toEqual([...m.months.map((r) => r.month)].sort())
     expect(m.months.every((r) => r.month <= '2026-09' && r.month >= '2025-10')).toBe(true)
@@ -409,7 +423,11 @@ describe('#6 and #10 lists (S6, S7; BR-M27-30, 36)', () => {
       isActive: true,
       pageSize: 1,
     }).total
-    expect(r.meta.counts).toEqual({ total, active, inactive: total - active })
+    const xs = users
+      .adminList({ role: 'student', schoolId: S1, isActive: true, pageSize: total })
+      .rows.filter((u) => u.grade !== null && u.grade >= 7 && u.grade <= 11).length
+    // FR-AS-51-2: xs = XS-1, notCounted = the listed pupils XS-1 leaves out.
+    expect(r.meta.counts).toEqual({ total, active, inactive: total - active, xs, notCounted: total - xs })
     expect(r.meta.totalItems).toBe(total)
     expect(r.meta.from).toBe(1)
     expect(r.meta.to).toBe(r.data.length)
@@ -429,6 +447,22 @@ describe('#6 and #10 lists (S6, S7; BR-M27-30, 36)', () => {
       `${BASE}/pelajar?school_id=${String(S1)}&role=teacher`,
     )
     expect(p1.data).toEqual([])
+  })
+
+  it('filters by level T1..T5 and by class; the card totals are kept (FR-AS-51-1)', async () => {
+    const all = await listOf<SchoolPupilRow>(P2, `${BASE}/pelajar?page=1`)
+    const members = classrooms.memberIds('classroom', 2001).filter((id) => users.get(id)?.schoolId === S1)
+    const byClass = await listOf<SchoolPupilRow>(P2, `${BASE}/pelajar?classroomId=2001`)
+    expect(byClass.meta.totalItems).toBe(members.length)
+    expect(byClass.data.every((r) => members.includes(r.id))).toBe(true)
+    expect(byClass.meta.counts).toEqual(all.meta.counts)
+    const t5 = await listOf<SchoolPupilRow>(P2, `${BASE}/pelajar?level=T5`)
+    expect(t5.data.every((r) => r.gradeLabel === 'Tingkatan 5')).toBe(true)
+    expect((await listOf<SchoolPupilRow>(P2, `${BASE}/pelajar?level=T9`)).meta.totalItems).toBe(
+      all.meta.totalItems,
+    )
+    const csv = await call<string>(P2, `${BASE}/pelajar/export.csv?classroomId=2001`)
+    expect(csv.status).toBe(200)
   })
 
   it('filters by status and name or e-mail (case-insensitive) and keeps the card totals', async () => {
@@ -667,7 +701,8 @@ describe('#16 classes (S8; BR-M27-35)', () => {
   it('P2 lists the classroom classes of the school by name with the owner figures', async () => {
     const r = await call<SchoolClassList>(P2, `${BASE}/kelas`)
     expect(r.status).toBe(200)
-    const own = classrooms.list({ schoolId: S1, kind: 'classroom' })
+    // FR-AS-53-1: the active classes only; the tile equals the rows.
+    const own = classrooms.list({ schoolId: S1, kind: 'classroom', isActive: true })
     expect(r.body.meta.totalItems).toBe(own.length)
     expect(r.body.meta.displayed).toBe(own.length)
     expect(r.body.tiles.activeClasses).toBe(
@@ -683,11 +718,17 @@ describe('#16 classes (S8; BR-M27-35)', () => {
       key: 'classroom:2001',
       kind: 'classroom',
       link: '/prestasi/kelas/2001',
-      members: classrooms.memberCount('classroom', 2001),
+      // FR-AS-53-2: XS-1 pupils (active, Tingkatan 1-5, of the school) with an active enrolment.
+      members: classrooms.memberIds('classroom', 2001).filter((id) => {
+        const u = users.get(id)
+        return u?.schoolId === S1 && u.isActive && u.grade !== null && u.grade >= 7 && u.grade <= 11
+      }).length,
       teacherName: users.get(GURU)?.name,
     })
+    expect(JSON.stringify(r.body)).not.toContain('joinCode')
     for (const row of r.body.data) {
       expect(classrooms.get('classroom', row.id)?.schoolId).toBe(S1)
+      expect(row.isActive).toBe(true)
       expect(row.levelLabel).toMatch(/^(Tingkatan|Darjah) \d$/)
     }
   })

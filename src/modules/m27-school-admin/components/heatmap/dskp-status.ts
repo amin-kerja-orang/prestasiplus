@@ -1,28 +1,24 @@
 /**
- * S2 tile and legend styles and labels by status (SRS M27 FR-M27-61…63; colours of the M08 SP map,
+ * S2 tile and legend labels by status (R1-AS-47: band names of OPT-HEATBAND; colours of the M08 SP map,
  * FR-M08-52). Copied here: the M08 module exports no public entry for them.
  */
 
 import type { DskpStatus, HeatmapSp } from '../../api/school-admin'
 
-/** Status word of the tile `title` (FR-M27-63). */
-export const STATUS_LABEL: Readonly<Record<DskpStatus, string>> = {
-  mahir: 'Mahir',
-  sederhana: 'Sederhana',
-  lemah: 'Lemah',
-  belum: 'Belum cuba',
+/** The band names of OPT-HEATBAND (AC-AS-47-6): the tooltip and the legend use the same words. */
+export const BAND_LABEL: Readonly<Record<DskpStatus, string>> = {
+  mahir: 'Mahir (75%+)',
+  sederhana: 'Sederhana (50-74%)',
+  lemah: 'Lemah (<50%)',
+  belum: 'Belum Cuba',
 }
 
-/** FR-M27-62, in this order. */
-export const LEGEND: readonly { status: DskpStatus; label: string }[] = [
-  { status: 'mahir', label: 'Mahir (75%+)' },
-  { status: 'sederhana', label: 'Sederhana (50-74%)' },
-  { status: 'lemah', label: 'Lemah (<50%)' },
-  { status: 'belum', label: 'Belum Cuba' },
-]
+/** The one legend, on one line (AC-AS-47-3), in this order. */
+export const LEGEND: readonly { status: DskpStatus; label: string }[] = (
+  ['mahir', 'sederhana', 'lemah', 'belum'] as const
+).map((status) => ({ status, label: BAND_LABEL[status] }))
 
-/** FR-M27-63: "{code}: {title} — {status}" plus " · {n} cuba · {p}% betul" when answered. */
+/** AC-AS-47-1: "{kod SP}: {tajuk} — {band} ({n} jawapan)". */
 export function tileTitle(sp: HeatmapSp): string {
-  const base = `${sp.code}: ${sp.title} — ${STATUS_LABEL[sp.status]}`
-  return sp.pct === null ? base : `${base} · ${String(sp.answered)} cuba · ${String(sp.pct)}% betul`
+  return `${sp.code}: ${sp.title} — ${BAND_LABEL[sp.status]} (${String(sp.answered)} jawapan)`
 }

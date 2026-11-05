@@ -2,11 +2,12 @@ import { SchoolAdminActivityReportSchema, SchoolAdminDashboardSchema, SchoolAdmi
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, type Api, type SchoolAdminTestApp } from './helpers'
-import { addPupil, addRole, addTeacher, managedPupilCount, managedTeacherCount, suspend } from './reports-fixtures'
+import { addPupil, addRole, addTeacher, xsPupilCount, xsTeacherCount, suspend } from './reports-fixtures'
 
 /**
- * SW6-04: the people counted by S1 (statistik-penggunaan), S3 (laporan-aktiviti) and S5 (laporan-bulanan) are the S0 / S6 / S7
- * managed population (FR-M27-50, BR-M27-22): no peer school admin, and inactive or suspended pupils counted like S0 counts them.
+ * SW6-04, changed by S6-T03: the people counted by S0 (dashboard), S1 (statistik-penggunaan), S3 (laporan-aktiviti) and S5
+ * (laporan-bulanan) are XS-1 pupils (active, not suspended, Tingkatan 1-5) and XS-3 teachers (no peer school admin). An inactive
+ * (pending or deactivated) or suspended pupil is no longer counted (it used to be, as "managed accounts"); Senarai Pelajar still lists it.
  * DB spec: needs Docker/Testcontainers.
  */
 describe('school-admin reports count the same people as the dashboard', () => {
@@ -29,14 +30,15 @@ describe('school-admin reports count the same people as the dashboard', () => {
     await t.close()
   })
 
-  it('S1, S3 and S5 pupil and teacher counts equal the S0 cards and the S6 / S7 totals', async () => {
+  it('S1, S3 and S5 pupil and teacher counts equal the S0 cards, the XS-1 / XS-3 definitions and the S7 teacher total', async () => {
     const d = SchoolAdminDashboardSchema.parse((await admin.get('/admin-sekolah/dashboard')).body.data)
     const pelajar = await admin.get('/admin-sekolah/pelajar')
     const guru = await admin.get('/admin-sekolah/guru')
-    expect(d.cards.pupils).toBe(pelajar.body.meta.counts.total)
+    // Changed: the pupil list total still counts every pupil with a status chip; the card counts XS-1 only (2 fewer here).
+    expect(pelajar.body.meta.counts.total - d.cards.pupils).toBeGreaterThanOrEqual(2)
     expect(d.cards.teachers).toBe(guru.body.meta.counts.total)
-    expect(d.cards.pupils).toBe(await managedPupilCount(t.db, s1))
-    expect(d.cards.teachers).toBe(await managedTeacherCount(t.db, s1))
+    expect(d.cards.pupils).toBe(await xsPupilCount(t.db, s1))
+    expect(d.cards.teachers).toBe(await xsTeacherCount(t.db, s1))
 
     const usage = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage')).body.data)
     expect(usage.tiles.pupils).toBe(d.cards.pupils)
@@ -52,13 +54,14 @@ describe('school-admin reports count the same people as the dashboard', () => {
     expect(monthly.cards.registered).toBe(d.cards.pupils)
   })
 
-  it('the dual-role teacher is in no report list, the inactive and the suspended pupil are', async () => {
+  it('the dual-role teacher is in no report list, and neither are the inactive and the suspended pupil (XS-1)', async () => {
     const activity = SchoolAdminActivityReportSchema.parse((await admin.get('/admin-sekolah/laporan-aktiviti')).body.data)
     const teacherNames = activity.teachers.map((x) => x.name)
     expect(teacherNames).toContain('Guru Biasa Tambahan')
     expect(teacherNames).not.toContain('Guru Dwi Peranan')
     const pupilNames = activity.pupils.semua.map((x) => x.name)
-    expect(pupilNames).toContain('Murid Tidak Aktif')
-    expect(pupilNames).toContain('Murid Digantung')
+    // Changed from toContain: XS-1 counts active, non-suspended accounts only.
+    expect(pupilNames).not.toContain('Murid Tidak Aktif')
+    expect(pupilNames).not.toContain('Murid Digantung')
   })
 })

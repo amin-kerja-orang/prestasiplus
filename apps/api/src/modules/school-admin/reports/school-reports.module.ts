@@ -14,6 +14,7 @@ import { MonthlyService } from './monthly.service'
 import { SchoolPopulation } from './population'
 import { SchoolReportsController } from './school-reports.controller'
 import { UsageService } from './usage.service'
+import { XsQueries } from '../xs-queries'
 
 /**
  * The five school reports and the class list of the Admin Sekolah (BE-21 Part B). No tables of its own: pupils and teachers come
@@ -23,6 +24,8 @@ import { UsageService } from './usage.service'
 @Module({
   imports: [ThrottleModule, ClassesModule, CurriculumModule, AnalyticsReportsModule, SchoolsModule, UsersModule, WalletModule],
   controllers: [SchoolReportsController],
-  providers: [SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService],
+  providers: [XsQueries, SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService],
+  // S6-T03: the cross-screen numbers XS-1..8 (`../xs-queries.ts`) are provided here once and exported to SchoolAdminModule (dashboard).
+  exports: [XsQueries],
 })
 export class SchoolReportsModule {}

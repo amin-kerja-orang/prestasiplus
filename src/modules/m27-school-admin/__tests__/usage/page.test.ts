@@ -263,7 +263,7 @@ describe('empty states and footnote (FR-M27-55, 56; AC 16.2…16.4)', () => {
     expect(text(w, 'su-empty-text')).toBe('Tiada aktiviti latihan dalam tempoh 30 Hari yang lepas.')
     expect(text(w, 'su-tile-accuracy')).toContain('—')
     expect(text(w, 'su-footnote')).toBe(
-      'Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.',
+      'Ketepatan dipaparkan sebagai “—” kerana belum ada soalan dijawab dalam tempoh ini.',
     )
   })
 
@@ -346,7 +346,7 @@ describe('accuracy hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
   const HIDDEN = usage({
     tiles: { ...usage().tiles, activePupils: 3, sessions: 4, answers: 40, accuracy: null },
   })
-  const GENUINE = 'Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.'
+  const GENUINE = 'Ketepatan dipaparkan sebagai “—” kerana belum ada soalan dijawab dalam tempoh ini.'
   const COHORT = 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
 
   it('http mode, answers but no accuracy: the footnote names the 5-pupil rule', async () => {
@@ -356,7 +356,7 @@ describe('accuracy hidden by the 5-pupil rule (SW7-04, DV-M27-25)', () => {
     expect(text(w, 'su-tile-accuracy')).toContain('—')
   })
 
-  it('http mode, genuinely no sessions: keeps "belum ada sesi latihan direkodkan"', async () => {
+  it('http mode, genuinely no sessions: keeps "belum ada soalan dijawab dalam tempoh ini"', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     const w = await mountPage(usage({ tiles: EMPTY_TILES, modes: [] }))
     expect(text(w, 'su-footnote')).toBe(GENUINE)

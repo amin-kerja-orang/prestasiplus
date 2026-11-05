@@ -2,7 +2,8 @@
 /**
  * S8 table (FR-M27-112, 113, 115; PROPOSED, D23): columns "#", "Kelas" (name, a link to M08 S5
  * `/prestasi/kelas/{id}`; an inactive class carries the badge "Tidak Aktif"), "Subjek" ("Tiada Subjek"),
- * "Tingkatan", "Guru", "Murid", "Kod Kelas". Empty: "Tiada kelas dijumpai" and "Sila cipta kelas
+ * "Tingkatan", "Guru", "Murid" (R1-AS-53: the number links to Senarai Pelajar filtered by the class, FR-AS-53-3;
+ * the class code column is gone, FR-AS-53-5). Empty: "Tiada kelas dijumpai" and "Sila cipta kelas
  * terlebih dahulu". Staff table from `md`, a card list below; paging is server side (25 per page).
  */
 import type { TableColumn } from '@nuxt/ui'
@@ -13,6 +14,7 @@ import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField } fro
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
+import { PUPIL_LIST_PATH } from '../users/users-format'
 
 const props = defineProps<{
   rows: SchoolClassRow[]
@@ -33,7 +35,8 @@ interface Item extends Record<string, unknown> {
   level: string
   teacher: string
   members: string
-  code: string
+  /** Senarai Pelajar filtered by this class. */
+  membersLink: string
   isActive: boolean
   link: string
 }
@@ -47,7 +50,7 @@ const items = computed<Item[]>(() =>
     level: c.levelLabel,
     teacher: c.teacherName ?? '-',
     members: formatCount(c.members),
-    code: c.joinCode ?? '-',
+    membersLink: `${PUPIL_LIST_PATH}?classroomId=${String(c.id)}`,
     isActive: c.isActive,
     link: c.link,
   })),
@@ -60,14 +63,12 @@ const columns: TableColumn<Item>[] = [
   { accessorKey: 'level', header: 'Tingkatan' },
   { accessorKey: 'teacher', header: 'Guru' },
   { accessorKey: 'members', header: 'Murid' },
-  { accessorKey: 'code', header: 'Kod Kelas' },
 ]
 const cardFields: CardField[] = [
   { key: 'subject', label: 'Subjek' },
   { key: 'level', label: 'Tingkatan' },
   { key: 'teacher', label: 'Guru' },
   { key: 'members', label: 'Murid' },
-  { key: 'code', label: 'Kod Kelas' },
 ]
 
 function open(row: Item): void {
@@ -126,10 +127,40 @@ function open(row: Item): void {
       <span data-testid="kl-teacher">{{ row.original.teacher }}</span>
     </template>
     <template #members-cell="{ row }">
-      <span data-testid="kl-members">{{ row.original.members }}</span>
+      <RouterLink
+        :to="row.original.membersLink"
+        class="inline-flex min-h-11 items-center text-label text-highlighted"
+        data-testid="kl-members"
+        @click.stop
+        >{{ row.original.members }}</RouterLink
+      >
     </template>
-    <template #code-cell="{ row }">
-      <span class="whitespace-nowrap" data-testid="kl-code">{{ row.original.code }}</span>
+    <!-- Below `md`: the default card, with "Murid" as the same link. -->
+    <template #card="{ row }">
+      <UButton
+        type="button"
+        color="neutral"
+        variant="link"
+        class="h-auto min-h-11 justify-start p-0 text-start text-label whitespace-normal"
+        :label="row.name"
+        @click="open(row)"
+      />
+      <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
+        <div v-for="f in cardFields" :key="f.key" class="min-w-0">
+          <dt class="text-caption text-muted">{{ f.label }}</dt>
+          <dd class="tabular text-body break-words whitespace-normal">
+            <RouterLink
+              v-if="f.key === 'members'"
+              :to="row.membersLink"
+              class="inline-flex min-h-11 items-center text-label text-highlighted"
+              data-testid="kl-members"
+              @click.stop
+              >{{ row.members }}</RouterLink
+            >
+            <template v-else>{{ row[f.key] }}</template>
+          </dd>
+        </div>
+      </dl>
     </template>
   </DsDataTable>
 </template>

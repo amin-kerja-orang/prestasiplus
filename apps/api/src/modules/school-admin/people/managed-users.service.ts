@@ -18,6 +18,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { RateLimiter } from '../../../common/throttle'
+import { XsQueries } from '../xs-queries'
 import { isOverloadError } from '../../auth/auth.errors'
 import { PasswordService } from '../../auth/password.service'
 import { ClassesRepository } from '../../classes'
@@ -74,7 +75,8 @@ export interface ListPage {
   rows: UserRecord[]
   total: number
   page: number
-  counts: ManagedCounts
+  /** School totals plus the cross-screen figure: `xs` = XS-1 (pupils) or XS-3 (teachers); `notCounted` (pupils) = listed pupils XS-1 leaves out. */
+  counts: ManagedCounts & { xs: number; notCounted?: number }
 }
 
 export interface CreatedAccount {
@@ -107,24 +109,35 @@ export class ManagedUsersService {
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(RateLimiter) private readonly limiter: RateLimiter,
+    @Inject(XsQueries) private readonly xs: XsQueries,
   ) {}
 
   // --- reads --------------------------------------------------------------------------------------
 
   async list(ctx: PeopleCtx, kind: PeopleKind, q: PeopleListQuery): Promise<ListPage> {
     const schoolId = ctx.actor.schoolId
-    const [page, counts] = await this.guard(() =>
+    const [page, base, xs] = await this.guard(() =>
       Promise.all([
         this.users.listBySchoolRole(schoolId, kind.role, {
           ...(q.isActive !== undefined ? { isActive: q.isActive } : {}),
           ...(q.search !== undefined ? { search: q.search } : {}),
+          ...this.pupilFilters(kind, q),
           page: q.page,
           pageSize: SCHOOL_ADMIN_PAGE_SIZE,
         }),
         this.users.countsBySchoolRole(schoolId, kind.role),
+        kind.role === 'student' ? this.xs.pupilCount({ kind: 'school', schoolId }) : this.xs.teacherCount(schoolId),
       ]),
     )
+    // R1-AS-51 FR-AS-51-2 / R1-AS-52 FR-AS-52-1: "{n} pelajar" = XS-1, "{n} guru" = XS-3; the pupils XS-1 leaves out are a separate figure.
+    const counts = kind.role === 'student' ? { ...base, xs, notCounted: Math.max(0, base.total - xs) } : { ...base, xs }
     return { ...page, counts }
+  }
+
+  /** The Tingkatan and class filters apply to pupils only; the teacher list ignores them. */
+  private pupilFilters(kind: PeopleKind, q: PeopleExportQuery): { grade?: number; classroomId?: string } {
+    if (kind.role !== 'student') return {}
+    return { ...(q.grade !== undefined ? { grade: q.grade } : {}), ...(q.classroomId !== undefined ? { classroomId: q.classroomId } : {}) }
   }
 
   listEnvelope(page: ListPage) {
@@ -149,6 +162,7 @@ export class ManagedUsersService {
       this.users.exportBySchoolRole(ctx.actor.schoolId, kind.role, {
         ...(q.isActive !== undefined ? { isActive: q.isActive } : {}),
         ...(q.search !== undefined ? { search: q.search } : {}),
+        ...this.pupilFilters(kind, q),
       }),
     )
     const fileName = exportFileName(kind.csvRole, toMytTimestamp(this.clock.now()))
@@ -157,7 +171,7 @@ export class ManagedUsersService {
         ...this.auditBase(ctx, kind.audit.exported),
         targetType: 'school',
         targetId: ctx.actor.schoolId,
-        details: { fileName, rowCount: users.length, isActiveFilter: q.isActive === undefined ? null : q.isActive ? 1 : 0, searched: q.search !== undefined },
+        details: { fileName, rowCount: users.length, isActiveFilter: q.isActive === undefined ? null : q.isActive ? 1 : 0, searched: q.search !== undefined, ...(kind.role === 'student' ? { levelFilter: q.grade !== undefined, classFilter: q.classroomId !== undefined } : {}) },
       }),
     )
     return { users, school, fileName }

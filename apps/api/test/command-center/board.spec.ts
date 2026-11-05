@@ -77,7 +77,7 @@ describe('GET /admin/command-center/live-data', () => {
     expect(d.kirk.t2Accuracy).toBe(d.accuracy)
     expect(d.kirk.t3Active).toBe(5)
     const students = await t.db.query<{ c: number }>(
-      `select count(*)::int c from users u where u.is_active and (u.grade is null or u.grade >= 7) and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
+      `select count(*)::int c from users u where u.is_active and not u.is_suspended and u.grade between 7 and 11 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
     )
     expect(d.totalStudents).toBe(students[0]?.c)
   })

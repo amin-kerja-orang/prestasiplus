@@ -6,10 +6,11 @@ import { currentSubscriptionStatus } from '../../src/modules/school-admin/dashbo
 import { emptyView } from './helpers'
 
 const wrap = (performance: ReturnType<typeof performanceBlock>) => performance
+const NO_XS = { answered: 0, accuracy: null }
 
 describe('dashboard mapper: BE-19 view into the dashboard performance block', () => {
   it('the empty view is the empty aggregate: null accuracy (never 0 %), both levels at 0, no distribution', () => {
-    const p = wrap(performanceBlock(emptyView()))
+    const p = wrap(performanceBlock(emptyView(), NO_XS))
     expect(p.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
     expect(p.levels).toEqual([
       { code: 't4', name: 'Tingkatan 4', accuracy: 0 },
@@ -21,7 +22,7 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
     expect(p.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
   })
 
-  it('passes BE-19 figures through untouched when every group has 5 or more pupils', () => {
+  it('passes BE-19 figures through untouched when every group has 5 or more pupils; practice questions and accuracy are the XS-4 / XS-5 figures', () => {
     const p = performanceBlock(
       emptyView({
         stats: { students: 30, sessions: 41, answered: 600, accuracy: 72.5 },
@@ -35,15 +36,17 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
           { grade: 'B', count: 15, pct: 60 },
         ],
       }),
+      { answered: 640, accuracy: 71.3 },
     )
-    expect(p.practice).toEqual({ accuracy: 72.5, sessions: 41, questions: 600 })
+    // S6-T03: `questions` and `accuracy` come from XsQueries (640 / 71.3), not from the S10 view (600 / 72.5); `sessions` stays BE-19's.
+    expect(p.practice).toEqual({ accuracy: 71.3, sessions: 41, questions: 640 })
     expect(p.levels.map((l) => l.accuracy)).toEqual([70.1, 75])
     expect(p.total).toBe(25)
     // BE-19's headcount GPS; the grade is the nearest grade point (3.4 is point 3, B+).
     expect(p.gps).toEqual({ value: 3.4, grade: 'B+', band: 'Baik', entries: 25 })
   })
 
-  it('k = 5: a level, a grade cell, the GPS and the whole practice block under 5 pupils are suppressed', () => {
+  it('no minimum cohort on this staff screen: small levels, grade cells and the practice block are shown (PO decision 2026-11-05, #503 batch 3)', () => {
     const p = performanceBlock(
       emptyView({
         stats: { students: 4, sessions: 9, answered: 90, accuracy: 55 },
@@ -56,20 +59,19 @@ describe('dashboard mapper: BE-19 view into the dashboard performance block', ()
           { grade: 'B', count: 5, pct: 50 },
         ],
       }),
+      { answered: 90, accuracy: 55 },
     )
-    expect(p.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
-    expect(p.levels.map((l) => l.accuracy)).toEqual([0, 80])
+    expect(p.practice).toEqual({ accuracy: 55, sessions: 9, questions: 90 })
+    expect(p.levels.map((l) => l.accuracy)).toEqual([60, 80])
     expect(p.distribution).toEqual([
-      { grade: 'A', count: 0, pct: 0 },
+      { grade: 'A', count: 4, pct: 50 },
       { grade: 'B', count: 5, pct: 50 },
     ])
-    expect(p.total).toBe(5)
-    // BE-19 already empties the GPS below 5 graded pupils: the neutral block comes through as null / 0.
-    expect(p.gps).toEqual({ value: null, grade: null, band: null, entries: 0 })
+    expect(p.total).toBe(9)
   })
 
   it('the block never carries a name and parses inside the dashboard schema', () => {
-    const p = performanceBlock(emptyView({ stats: { students: 9, sessions: 3, answered: 30, accuracy: 50 } }))
+    const p = performanceBlock(emptyView({ stats: { students: 9, sessions: 3, answered: 30, accuracy: 50 } }), { answered: 30, accuracy: 50 })
     const shape = SchoolAdminDashboardSchema.shape.performance
     expect(shape.safeParse(p).success).toBe(true)
   })

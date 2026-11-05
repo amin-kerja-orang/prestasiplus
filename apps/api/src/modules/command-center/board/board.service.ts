@@ -11,6 +11,7 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
+import { xsAccuracy } from '../../school-admin/xs-queries'
 import { notFound } from '../http/errors'
 import type { Viewer } from '../http/viewer'
 import { CommandCenterRepository, type LoginRow } from '../shared/command-center.repository'
@@ -31,8 +32,12 @@ const ROLE_ORDER = ['student', 'teacher', 'parent', 'admin', 'school_admin'] as 
 const ROLE_SHOWN = ['admin', 'school_admin', 'teacher', 'parent', 'student'] as const
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
-/** correct / answers as a percentage with one decimal; 0 when nothing was answered. */
-const accuracyOf = (correct: number, answers: number): number => (answers === 0 ? 0 : Math.round((correct / answers) * 1000) / 10)
+/**
+ * XS-5 (`xsAccuracy`): pooled correct / answers, one decimal half up, never above 100. Without answers it is 0 because every
+ * accuracy field of the board contract is a non-nullable `pct` (the contract part of S6-T03 makes them nullable, "—" in the UI).
+ * The school row `accuracy` is already nullable and is null for a school without answers.
+ */
+const accuracyOf = (correct: number, answers: number): number => xsAccuracy(correct, answers) ?? 0
 
 /** Half away from zero. */
 function weekChangeOf(week: number, last: number): number {

@@ -15,6 +15,7 @@ import type {
   DskpStatus,
   HeatmapBidang,
   HeatmapLevelCode,
+  HeatmapLevelName,
   SchoolDskpHeatmap,
 } from '../../api/school-admin'
 import { peopleOf } from './school-people'
@@ -22,16 +23,16 @@ import { schoolRefOf } from './school-info'
 import type { SchoolViewer } from './school-scope'
 
 /** M10 BR-M10-03: `tingkatan-n` has level id 6 + n. */
-const LEVEL: Readonly<
-  Record<HeatmapLevelCode, { levelId: number; name: 'Tingkatan 4' | 'Tingkatan 5'; n: number }>
-> = {
-  t4: { levelId: 10, name: 'Tingkatan 4', n: 4 },
-  t5: { levelId: 11, name: 'Tingkatan 5', n: 5 },
+const CODES: readonly HeatmapLevelCode[] = ['t1', 't2', 't3', 't4', 't5']
+const levelOf = (code: HeatmapLevelCode): { levelId: number; name: HeatmapLevelName; n: number } => {
+  const n = CODES.indexOf(code) + 1
+  return { levelId: 6 + n, name: `Tingkatan ${String(n)}` as HeatmapLevelName, n }
 }
 
-/** BR-M27-25: levels are T4 and T5; anything else is T4. */
-export function parseLevel(raw: string | undefined): HeatmapLevelCode {
-  return raw?.toUpperCase() === 'T5' ? 't5' : 't4'
+/** FR-AS-47-1: T1 to T5, case-insensitive; anything else is null (the highest level with content is then used). */
+export function parseLevel(raw: string | undefined): HeatmapLevelCode | null {
+  const v = raw?.trim().toLowerCase()
+  return CODES.find((c) => c === v) ?? null
 }
 
 /** BR-M27-24: percent half up, status on the shown integer. */
@@ -46,8 +47,14 @@ export function buildSchoolDskpHeatmap(
   viewer: SchoolViewer,
   query: { subjectId?: string | undefined; tingkatan?: string | undefined },
 ): SchoolDskpHeatmap {
-  const level = parseLevel(query.tingkatan)
-  const { levelId, name, n } = LEVEL[level]
+  const hasContent = (levelId: number): boolean =>
+    dskp.bidang({ educationLevelId: levelId }).some((b) => dskp.sk(b.id).some((k) => dskp.sp(k.id).length > 0))
+  // FR-AS-47-1: only the levels with content are offered; the default is the highest of them (T4 when none has any).
+  const offered = CODES.filter((c) => hasContent(levelOf(c).levelId))
+  const wanted = parseLevel(query.tingkatan)
+  const level: HeatmapLevelCode = wanted !== null && offered.includes(wanted) ? wanted : (offered.at(-1) ?? 't4')
+  const levels = offered.map((c) => ({ code: c, name: levelOf(c).name }))
+  const { levelId, name, n } = levelOf(level)
 
   // Bidang of the level with at least one SP, grouped by subject (BR-M27-25).
   const bidangRows = dskp.bidang({ educationLevelId: levelId })
@@ -73,6 +80,7 @@ export function buildSchoolDskpHeatmap(
       subjects,
       subject: null,
       level: { code: level, name },
+      levels,
       caption: null,
       bidang: [],
     }
@@ -117,6 +125,7 @@ export function buildSchoolDskpHeatmap(
     subjects,
     subject,
     level: { code: level, name },
+    levels,
     caption: `KSSM ${subject.name} Tingkatan ${String(n)}`,
     bidang,
   }

@@ -23,7 +23,8 @@ const BASE = '/api/admin-sekolah'
 // --- shared ------------------------------------------------------------------------------------
 
 export type UsagePeriod = 'today' | '7days' | '30days'
-export type HeatmapLevelCode = 't4' | 't5'
+export type HeatmapLevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
+export type HeatmapLevelName = `Tingkatan ${1 | 2 | 3 | 4 | 5}`
 export type DskpStatus = 'mahir' | 'sederhana' | 'lemah' | 'belum'
 
 export interface SchoolRef {
@@ -97,7 +98,9 @@ export interface SchoolDskpHeatmap {
   /** Subjects with at least one SP at the level, by name. */
   subjects: { id: number; name: string }[]
   subject: { id: number; name: string } | null
-  level: { code: HeatmapLevelCode; name: 'Tingkatan 4' | 'Tingkatan 5' }
+  level: { code: HeatmapLevelCode; name: HeatmapLevelName }
+  /** The Tingkatan levels that have content, ascending; the default level is the last one. */
+  levels: { code: HeatmapLevelCode; name: HeatmapLevelName }[]
   /** "KSSM {Subjek} Tingkatan {n}"; null without a subject. */
   caption: string | null
   bidang: HeatmapBidang[]
@@ -123,6 +126,8 @@ export interface ActivityPupilRow {
   name: string
   className: string | null
   sessions: number
+  /** "Soalan": XS-4 answers of the window; the Murid tab sorts by it, descending. */
+  answers: number
   /** correct / answered x 100, one decimal, never above 100. */
   accuracy: number
   seconds: number
@@ -143,9 +148,9 @@ export interface ActivityTeacherRow {
 }
 
 /**
- * The M17 `StatsReport` (SRS M17 §7 #18) in the school scope (BR-M27-26): no `schools`, no `overview.score` /
- * `structuredScore` ("Skor Purata" and "Struktur" are never rendered), no `schoolName` on the rows and
- * `tiles` without the `schools` group.
+ * The M17 `StatsReport` (SRS M17 §7 #18) in the school scope (BR-M27-26): no `schools`, no platform
+ * `overview.score` / `structuredScore`, no `schoolName` on the rows and `tiles` without the `schools` group.
+ * `overview.skorPurata` is the school's own "Skor Purata" (R1-AS-48), the mean of per-session accuracy.
  */
 export interface SchoolActivityReport {
   range: 7 | 30 | 90
@@ -160,9 +165,18 @@ export interface SchoolActivityReport {
     teachersLogged: number
     practised: number
     activity: number
+    /** "Skor Purata": mean of per-session accuracy, one decimal; null = "—". Never labelled "Ketepatan". */
+    skorPurata: number | null
   }
   trend: { label: string; value: number }[]
-  breakdown: { quiz: number; structured: number; battle: number; game: number }
+  breakdown: {
+    quiz: number
+    structured: number
+    battle: number
+    game: number
+    /** "Pecahan Aktiviti": sessions per OPT-MODE-SESI label, only counts above 0, biggest first. */
+    modes: { label: string; count: number }[]
+  }
   topPupils: { userId: number; name: string; activities: number }[]
   teachersNeverLogged: { userId: number; name: string; email: string }[]
   teachers: ActivityTeacherRow[]
@@ -202,6 +216,8 @@ export interface MonthlySubjectRow {
   accuracy: number
   answers: number
   pupils: number
+  /** Completed sessions of the subject in the shown month ("{n} sesi"). */
+  sessions: number
 }
 
 export interface MonthlyMonthRow {
@@ -237,13 +253,22 @@ export interface MonthlyReport {
     /** One decimal; null = "—". */
     accuracy: number | null
     sessions: number
+    /** XS-3 teachers ("Guru", "berdaftar"). */
+    teachers: number
+    /** The month of the shown year with the most sessions ("Bulan Paling Aktif"); null without a session in the year. */
+    busiestMonth: { month: string; label: string; sessions: number } | null
   }
+  /** One entry per day of the shown month (answers of that day); always present. */
+  daily: { day: number; answers: number }[]
+  /** "Trend Penggunaan Bulanan {tahun}": sessions per month, Jan to Dis of the shown year. */
+  yearly: { year: number; months: { month: string; label: string; sessions: number }[] }
   /** Empty for a month without answers; ascending by month. */
   months: MonthlyMonthRow[]
   total: { answers: number; correct: number; accuracy: number | null } | null
   subjects: {
     strongest: MonthlySubjectRow | null
     weakest: MonthlySubjectRow | null
+    /** Top 10 by sessions descending; strongest / weakest are over all subjects by accuracy. */
     rows: MonthlySubjectRow[]
   }
   /** ISO 8601 (+08:00), the request minute. */
@@ -291,13 +316,25 @@ export interface SchoolTeacherRow {
 
 /** `meta` of #6 and #10: cards ignore the filters. */
 export interface SchoolUserListMeta {
-  counts: { total: number; active: number; inactive: number }
+  counts: {
+    total: number
+    active: number
+    inactive: number
+    /** XS-1 (pupils) / XS-3 (teachers): the figure shown as "{n} pelajar" / "{n} guru". */
+    xs?: number
+    /** Pupils only: listed pupils XS-1 leaves out (pending, suspended or deactivated). */
+    notCounted?: number
+  }
 }
 
 export interface SchoolUserListQuery {
   /** `1` or `0`; anything else = all. */
   isActive?: boolean | string | null
   search?: string | null
+  /** Pupils only: Tingkatan `T1`..`T5`. */
+  level?: string | null
+  /** Pupils only: a class id; the pupils actively enrolled in it. */
+  classroomId?: string | null
   page?: number | null
   signal?: AbortSignal
 }
@@ -305,6 +342,8 @@ export interface SchoolUserListQuery {
 const userListQuery = (o: SchoolUserListQuery) => ({
   is_active: o.isActive === true ? '1' : o.isActive === false ? '0' : o.isActive,
   search: o.search,
+  level: o.level || undefined,
+  classroomId: o.classroomId || undefined,
   page: o.page,
 })
 
@@ -324,10 +363,15 @@ export const fetchSchoolTeachers = (o: SchoolUserListQuery = {}) =>
 
 /** #17 `GET /api/admin-sekolah/pelajar/export.csv` ("Eksport CSV", S6): `users-pelajar-{yyyy-mm-dd}.csv`. */
 export const downloadPupilsCsv = (
-  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'signal'> = {},
+  o: Pick<SchoolUserListQuery, 'isActive' | 'search' | 'level' | 'classroomId' | 'signal'> = {},
 ) =>
   api.blob(`${BASE}/pelajar/export.csv`, {
-    query: { is_active: userListQuery(o).is_active, search: o.search },
+    query: {
+      is_active: userListQuery(o).is_active,
+      search: o.search,
+      level: userListQuery(o).level,
+      classroomId: userListQuery(o).classroomId,
+    },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -485,9 +529,8 @@ export interface SchoolClassRow {
   /** "Tingkatan n" / "Darjah n". */
   levelLabel: string
   teacherName: string | null
-  /** Active enrolments (may include pupils of another school). */
+  /** XS-1 pupils of the school with an active enrolment in the class. */
   members: number
-  joinCode: string | null
   isActive: boolean
   /** `/prestasi/kelas/{id}`. */
   link: string

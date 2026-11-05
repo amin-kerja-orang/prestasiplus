@@ -30,10 +30,14 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     s2 = await schoolIdOf(t.db, 'DEMO002')
     const t4 = await addLevel(t.db, 'T4', 'Tingkatan 4', 10)
     const t5 = await addLevel(t.db, 'T5', 'Tingkatan 5', 11)
+    const t1 = await addLevel(t.db, 'T1', 'Tingkatan 1', 7)
+    // T2 and T3 exist as levels but have no subject with an SP: they are not offered.
+    await addLevel(t.db, 'T2', 'Tingkatan 2', 8)
+    await addLevel(t.db, 'T3', 'Tingkatan 3', 9)
     mat = await addSubject(t.db, 'MATHM', 'Matematik Ujian')
     bm = await addSubject(t.db, 'BMHM', 'Bahasa Ujian')
     const kosong = await addSubject(t.db, 'KOSONGHM', 'Kosong Ujian')
-    for (const [subject, level] of [[mat, t4], [mat, t5], [bm, t4], [kosong, t4]] as const) {
+    for (const [subject, level] of [[mat, t4], [mat, t5], [bm, t4], [kosong, t4], [bm, t1]] as const) {
       await t.db.query(`insert into subject_levels (subject_id, education_level_id) values ($1::bigint, $2::bigint)`, [subject, level])
     }
     // Matematik T4: one bidang -> unit -> sk -> two SP; a second bidang with one SP. Bahasa T4: one bidang, one SP. Kosong: no SP.
@@ -56,6 +60,12 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     const k5 = await node(t.db, { subject: mat, level: t5, kind: 'sk', code: '5.1', title: 'SK Lima', parent: u5 })
     await node(t.db, { subject: mat, level: t5, kind: 'sp', code: '5.1.1', title: 'SP Lima', parent: k5 })
 
+    // Bahasa T1 has one SP only.
+    const g1 = await node(t.db, { subject: bm, level: t1, kind: 'grouping', code: 'g1', title: 'Bidang Satu', order: 1 })
+    const u1t = await node(t.db, { subject: bm, level: t1, kind: 'unit', code: '1.0', title: 'Unit T1', parent: g1 })
+    const k1 = await node(t.db, { subject: bm, level: t1, kind: 'sk', code: '1.1', title: 'SK T1', parent: u1t })
+    await node(t.db, { subject: bm, level: t1, kind: 'sp', code: '1.1.1', title: 'SP T1', parent: k1 })
+
     // Pupils with practice in Matematik: the heatmap must still show 0/0 (no SP link exists).
     for (let i = 1; i <= 5; i++) {
       const p = await addPupil(t.db, s1, `Murid Peta ${i}`)
@@ -69,14 +79,26 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     await t.close()
   })
 
-  it('default: T4, the first subject by name, the real DSKP structure with every SP belum (0/0, pct null)', async () => {
+  it('default: the highest Tingkatan with content (T5), offering only the levels with content (T1, T4, T5; not T2 or T3)', async () => {
     const res = await admin.get('/admin-sekolah/dskp-heatmap')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(res.headers['cache-control']).toBe('no-store')
     const h = SchoolAdminDskpHeatmapSchema.parse(res.body.data)
     expect(h.school).toEqual({ id: s1, name: 'SMK Demo Satu' })
+    expect(h.level).toEqual({ code: 't5', name: 'Tingkatan 5' })
+    expect(h.levels).toEqual([
+      { code: 't1', name: 'Tingkatan 1' },
+      { code: 't4', name: 'Tingkatan 4' },
+      { code: 't5', name: 'Tingkatan 5' },
+    ])
+    expect(h.subjects.map((s) => s.name)).toEqual(['Matematik Ujian'])
+    expect(h.caption).toBe('KSSM Matematik Ujian Tingkatan 5')
+    expect(h.bidang.map((b) => b.name)).toEqual(['Bidang Lima'])
+  })
+
+  it('T4: Kosong has no SP so it is not offered; the first subject by name with every SP belum (0/0, pct null)', async () => {
+    const h = SchoolAdminDskpHeatmapSchema.parse((await admin.get('/admin-sekolah/dskp-heatmap?tingkatan=T4')).body.data)
     expect(h.level).toEqual({ code: 't4', name: 'Tingkatan 4' })
-    // Kosong Ujian has no SP so it is not offered; Bahasa comes before Matematik.
     expect(h.subjects.map((s) => s.name)).toEqual(['Bahasa Ujian', 'Matematik Ujian'])
     expect(h.subject).toEqual({ id: bm, name: 'Bahasa Ujian' })
     expect(h.caption).toBe('KSSM Bahasa Ujian Tingkatan 4')
@@ -85,8 +107,15 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     for (const sp of h.bidang.flatMap((b) => b.sp)) expect(sp).toMatchObject({ answered: 0, correct: 0, pct: null, status: 'belum' })
   })
 
+  it('T1 is served when it has content', async () => {
+    const h = SchoolAdminDskpHeatmapSchema.parse((await admin.get('/admin-sekolah/dskp-heatmap?tingkatan=t1')).body.data)
+    expect(h.level).toEqual({ code: 't1', name: 'Tingkatan 1' })
+    expect(h.caption).toBe('KSSM Bahasa Ujian Tingkatan 1')
+    expect(h.bidang[0]?.sp.map((s) => s.code)).toEqual(['1.1.1'])
+  })
+
   it('subjectId selects a subject; bidang and SP keep their printed order', async () => {
-    const h = SchoolAdminDskpHeatmapSchema.parse((await admin.get(`/admin-sekolah/dskp-heatmap?subjectId=${mat}`)).body.data)
+    const h = SchoolAdminDskpHeatmapSchema.parse((await admin.get(`/admin-sekolah/dskp-heatmap?subjectId=${mat}&tingkatan=T4`)).body.data)
     expect(h.subject?.id).toBe(mat)
     expect(h.bidang.map((b) => b.name)).toEqual(['Nombor dan Operasi', 'Ukuran'])
     expect(h.bidang[0]?.sp.map((s) => s.code)).toEqual(['1.1.1', '1.1.2'])
@@ -95,15 +124,16 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     for (const sp of h.bidang.flatMap((b) => b.sp)) expect(sp.status).toBe('belum')
   })
 
-  it('an unknown subjectId falls back to the first subject; tingkatan T5 / t5 switches level; anything else is T4', async () => {
-    const unknown = SchoolAdminDskpHeatmapSchema.parse((await admin.get('/admin-sekolah/dskp-heatmap?subjectId=999999')).body.data)
+  it('an unknown subjectId falls back to the first subject; tingkatan is case-insensitive; a level without content or an invalid value is the default level', async () => {
+    const unknown = SchoolAdminDskpHeatmapSchema.parse((await admin.get('/admin-sekolah/dskp-heatmap?tingkatan=T4&subjectId=999999')).body.data)
     expect(unknown.subject?.id).toBe(bm)
     const t5 = SchoolAdminDskpHeatmapSchema.parse((await admin.get(`/admin-sekolah/dskp-heatmap?tingkatan=t5`)).body.data)
     expect(t5.level).toEqual({ code: 't5', name: 'Tingkatan 5' })
     expect(t5.subjects.map((s) => s.name)).toEqual(['Matematik Ujian'])
-    expect(t5.caption).toBe('KSSM Matematik Ujian Tingkatan 5')
-    const odd = SchoolAdminDskpHeatmapSchema.parse((await admin.get('/admin-sekolah/dskp-heatmap?tingkatan=T9')).body.data)
-    expect(odd.level.code).toBe('t4')
+    for (const q of ['T9', 'T2', 'T3', '']) {
+      const odd = SchoolAdminDskpHeatmapSchema.parse((await admin.get(`/admin-sekolah/dskp-heatmap?tingkatan=${q}`)).body.data)
+      expect(odd.level.code, q).toBe('t5')
+    }
   })
 
   it('a school-B admin gets school B in the envelope and never the pupils of school A', async () => {

@@ -32,7 +32,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
       return { title: 'Pelajar Berdaftar', students: rows }
     }
     case 'today': {
-      const pairs = await deps.repo.pairTally({ from: w.today.from, to: ctx.now, studentIds: ctx.ids, includeInactive: true })
+      const pairs = await deps.repo.pairTally({ from: w.today.from, to: ctx.now, studentIds: ctx.ids })
       const rows = pairs
         .filter((p) => ctx.byId.has(p.userId))
         .sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime() || cmpId(a.userId, b.userId))
@@ -48,7 +48,7 @@ export async function buildDrill(deps: GuruDeps, ctx: GuruContext, type: Command
       return { title: filter === 'aktiviti' ? 'Aktiviti Hari Ini' : 'Soalan Dijawab', students: rows }
     }
     case 'subjects': {
-      const tally = await deps.repo.subjectTally({ to: ctx.now, studentIds: ctx.ids, includeInactive: true })
+      const tally = await deps.repo.subjectTally({ to: ctx.now, studentIds: ctx.ids })
       const rows = tally.map((t) => ({
         subject: subjectLabel(t.code, t.name),
         answered: t.answers,

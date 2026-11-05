@@ -2,9 +2,12 @@ import { ErrorBodySchema, SchoolAdminUsageSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { managedPupilCount, managedTeacherCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession } from './reports-fixtures'
+import { xsPupilCount, xsTeacherCount, addPupil, addPupilsWithSessions, addSchoolAdmin, addSession } from './reports-fixtures'
 
-/** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
+/**
+ * The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers.
+ * S6-T03: answers, active pupils and accuracy are XS-4 / XS-2 / XS-5 over practice_answers, so every seeded session also writes its answers (`answers: true`).
+ */
 describe('GET /admin-sekolah/usage', () => {
   let t: SchoolAdminTestApp
   let admin: Api
@@ -33,8 +36,8 @@ describe('GET /admin-sekolah/usage', () => {
     expect(u.label).toBe('30 Hari')
     expect(u.school).toEqual({ id: s1, name: 'SMK Demo Satu' })
     expect(u.tiles).toMatchObject({
-      pupils: await managedPupilCount(t.db, s1),
-      teachers: await managedTeacherCount(t.db, s1),
+      pupils: await xsPupilCount(t.db, s1),
+      teachers: await xsTeacherCount(t.db, s1),
       activePupils: 0,
       sessions: 0,
       answers: 0,
@@ -53,13 +56,13 @@ describe('GET /admin-sekolah/usage', () => {
   })
 
   it('computes the tiles and the modes (sorted by sessions, then label) and respects the window edges', async () => {
-    const ids = await addPupilsWithSessions(t.db, s1, 5, { mode: 'chapter', questions: 10, correct: 8, completedAt: '2026-10-19T08:00:00+08:00' })
-    await addSession(t.db, ids[0] as string, { mode: 'revision', questions: 10, correct: 4, completedAt: '2026-10-18T10:00:00+08:00' })
-    await addSession(t.db, ids[1] as string, { mode: 'random', questions: 10, correct: 10, completedAt: '2026-10-18T11:00:00+08:00' })
+    const ids = await addPupilsWithSessions(t.db, s1, 5, { answers: true, mode: 'chapter', questions: 10, correct: 8, completedAt: '2026-10-19T08:00:00+08:00' })
+    await addSession(t.db, ids[0] as string, { answers: true, mode: 'revision', questions: 10, correct: 4, completedAt: '2026-10-18T10:00:00+08:00' })
+    await addSession(t.db, ids[1] as string, { answers: true, mode: 'random', questions: 10, correct: 10, completedAt: '2026-10-18T11:00:00+08:00' })
     // Outside the 7-day window but inside 30 days.
-    await addSession(t.db, ids[2] as string, { mode: 'random', questions: 20, correct: 0, completedAt: '2026-10-05T10:00:00+08:00' })
+    await addSession(t.db, ids[2] as string, { answers: true, mode: 'random', questions: 20, correct: 0, completedAt: '2026-10-05T10:00:00+08:00' })
     // Before the 30-day window: never counted.
-    await addSession(t.db, ids[3] as string, { mode: 'random', questions: 50, correct: 0, completedAt: '2026-08-01T10:00:00+08:00' })
+    await addSession(t.db, ids[3] as string, { answers: true, mode: 'random', questions: 50, correct: 0, completedAt: '2026-08-01T10:00:00+08:00' })
 
     const today = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage?period=today')).body.data)
     expect(today.tiles).toMatchObject({ sessions: 5, answers: 50, activePupils: 5 })
@@ -72,22 +75,33 @@ describe('GET /admin-sekolah/usage', () => {
 
     const month = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage')).body.data)
     expect(month.tiles).toMatchObject({ sessions: 8, answers: 90, activePupils: 5 })
-    const pupils = await managedPupilCount(t.db, s1)
+    const pupils = await xsPupilCount(t.db, s1)
     expect(month.tiles.participationPct).toBe(Math.round((5 / pupils) * 100))
   })
 
-  it('a mode answered by fewer than 5 pupils keeps its session count but hides its accuracy', async () => {
+  it('a mode answered by fewer than 5 pupils shows its accuracy too (no minimum cohort for staff)', async () => {
     const month = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage')).body.data)
-    expect(month.modes.find((m) => m.label === 'Ulang Kaji')).toEqual({ label: 'Ulang Kaji', sessions: 1, accuracy: null })
+    expect(month.modes.find((m) => m.label === 'Ulang Kaji')).toEqual({ label: 'Ulang Kaji', sessions: 1, accuracy: 40 })
   })
 
-  it('a school with fewer than 5 contributing pupils shows no accuracy at all', async () => {
+  it('labels the stored session modes of the X11 table (Set Soalan, Misi, Tracking A, PKSK) and Latihan for the rest', async () => {
+    // practice_sessions.mode allows 10 values today (ck_practice_sessions_mode); the other labels (Bijak, Subjektif, Permainan) are covered in windows.spec.
+    const [p] = await addPupilsWithSessions(t.db, s1, 1, { answers: true, mode: 'random', questions: 2, correct: 1, completedAt: '2026-10-19T08:30:00+08:00' }, 'Murid Mod')
+    for (const mode of ['question_set', 'mission', 'ramalan', 'pksk', 'latih_tubi', 'remedial']) {
+      await addSession(t.db, p as string, { answers: true, mode, questions: 2, correct: 1, completedAt: '2026-10-19T08:30:00+08:00' })
+    }
+    const today = SchoolAdminUsageSchema.parse((await admin.get('/admin-sekolah/usage?period=today')).body.data)
+    const sessions = Object.fromEntries(today.modes.map((m) => [m.label, m.sessions]))
+    expect(sessions).toMatchObject({ Bab: 5, 'Set Soalan': 1, Misi: 1, 'Tracking A': 1, PKSK: 1, Latihan: 3 })
+  })
+
+  it('a school with fewer than 5 contributing pupils still shows its accuracy', async () => {
     const p = await addPupil(t.db, s2, 'Murid Kecil Satu')
-    await addSession(t.db, p, { mode: 'chapter', questions: 10, correct: 9, completedAt: '2026-10-19T08:00:00+08:00' })
+    await addSession(t.db, p, { answers: true, mode: 'chapter', questions: 10, correct: 9, completedAt: '2026-10-19T08:00:00+08:00' })
     const after = SchoolAdminUsageSchema.parse((await adminB.get('/admin-sekolah/usage')).body.data)
     expect(after.school.id).toBe(s2)
-    expect(after.tiles).toMatchObject({ sessions: 1, answers: 10, activePupils: 1, accuracy: null })
-    expect(after.modes).toEqual([{ label: 'Bab', sessions: 1, accuracy: null }])
+    expect(after.tiles).toMatchObject({ sessions: 1, answers: 10, activePupils: 1, accuracy: 90 })
+    expect(after.modes).toEqual([{ label: 'Bab', sessions: 1, accuracy: 90 }])
   })
 
   it('a school-B admin never sees school A rows, and a schoolId in the query is ignored', async () => {
@@ -97,7 +111,7 @@ describe('GET /admin-sekolah/usage', () => {
     expect(b.tiles.answers).toBe(10)
     const a = SchoolAdminUsageSchema.parse((await admin.get(`/admin-sekolah/usage?schoolId=${s2}`)).body.data)
     expect(a.school.id).toBe(s1)
-    expect(a.tiles.sessions).toBe(8)
+    expect(a.tiles.sessions).toBe(15)
   })
 
   it('401 without a session; 403 for admin, teacher and student', async () => {
