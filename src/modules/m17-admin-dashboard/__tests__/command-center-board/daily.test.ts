@@ -291,6 +291,6 @@ describe('S3 Admin Sekolah alias never calls the admin-only school drill (S6-T07
     await d.toggle(7)
     expect(api.fetchCcSchoolDrill).not.toHaveBeenCalled()
     expect(d.state.value).toBeNull()
-    vi.restoreAllMocks()
+    // The useSession spy is restored by the file-level afterEach (vi.restoreAllMocks).
   })
 })
