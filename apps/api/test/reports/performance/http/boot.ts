@@ -93,8 +93,8 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
   const at = new Date(SUBMITTED)
   pupils.forEach((userId, i) => {
     answers.addPupil({ id: userId, schoolId: schools.demo1 })
-    answers.add({ userId, subjectId: '1', questionId: 'q1', mode: 'simulasi', isCorrect: i % 3 !== 0, answeredAt: at })
-    if (i < 2) answers.add({ userId, subjectId: '1', questionId: 'q2', mode: 'simulasi', isCorrect: false, answeredAt: at })
+    answers.add({ userId, subjectId: '1', questionId: 'q1', mode: 'simulasi', isCorrect: i % 3 !== 0, answeredAt: at, sessionId: `ses${String(i)}` })
+    if (i < 2) answers.add({ userId, subjectId: '1', questionId: 'q2', mode: 'simulasi', isCorrect: false, answeredAt: at, sessionId: `ses${String(i)}` })
     const attemptId = `att${i}`
     bijak.addSitting(sitting({ userId, attemptId, schoolId: schools.demo1, score: 6 + (i % 3), maxScore: 10, submittedAt: SUBMITTED }))
     bijak.addItem(
@@ -118,6 +118,13 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
     .add({ id: classId, schoolId: schools.demo1, teacherId: ids['guru@demo.test'] as string, teacherName: 'Guru Demo', name: '4 Amanah' }, pupils)
     .add({ id: otherClassId, schoolId: schools.demo2, teacherId: null, name: '4 Cekap' }, [])
 
+  // The class and school figures read the shared answer store (S10-T01/T07): one answered session per pupil
+  // (5 answers, 3 right; no question id, so the item analysis does not see them and the item rows above share the session), plus a test row that must never be counted. The pupils join the class here so the class figures see them.
+  pupils.forEach((userId, i) => {
+    answers.addPupil({ id: userId, schoolId: schools.demo1, classroomIds: [classId] })
+    answers.addMany(userId, 5, 3, { mode: 'latih_tubi', subjectId: '1', answeredAt: SUBMITTED, sessionId: `ses${String(i)}`, questionId: undefined })
+  })
+  answers.add({ userId: pupils[0] as string, mode: 'latih_tubi', subjectId: '1', isCorrect: true, answeredAt: SUBMITTED, sessionId: 'sestest', isTest: true })
   // Question content of the pupil's own item analysis: q1 and q2 are live questions; q3 is archived (not registered).
   const content = new InMemoryQuestionContent().add({ questionId: 'q1', explanation: 'Penjelasan q1' }).add({ questionId: 'q2' })
   // The pupil `saya` answered q1 wrong in two modes (Pemulihan), q2 once wrong (Isyarat Awal), q3 (archived) twice wrong, q4 right then wrong (Pengukuhan).

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S14 `/peta-belajar` "Peta Belajar — PRESTASIPLUS" (M03-T4; FR-M03-80..90, BR-14/15). Hero with the
- * subject label, stat tiles (`md` and up) and a static bar, the selectors card (7 subject pills,
+ * subject label, stat tiles (`md` and up) and a static bar, the selectors card (one pill per active subject,
  * Tingkatan 1 to 5 chips in one row) and the map: above 768 px a vertical path with a dot per node and
  * islands alternating right/left, at 768 px and below islands centred with no path or dots.
  * The server serves the effective subject and grade (defaults, fallback to Tingkatan 4).
@@ -105,7 +105,7 @@ const shownGrade = computed(() =>
             :data-active="s.code === map.subject ? 'true' : 'false'"
             data-testid="map-subject-pill"
           >
-            {{ s.emoji }} {{ s.label }}
+            {{ s.emoji ? `${s.emoji} ${s.label}` : s.label }}
           </UButton>
         </nav>
         <nav
