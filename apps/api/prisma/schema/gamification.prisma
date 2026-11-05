@@ -293,6 +293,8 @@ model Reward {
   description           String?
   denominationRm        Decimal  @map("denomination_rm") @db.Decimal(10, 2)
   tokenCost             Int      @map("token_cost")
+  /// DM-77: real cost in sen; 0 = a digital gift, which never uses the session budget (48 GAME-21).
+  costValueSen          Int      @default(0) @map("cost_value_sen")
   iconEmoji             String?  @map("icon_emoji")
   stockQuantity         Int?     @map("stock_quantity")
   maxPerMonthPerStudent Int?     @map("max_per_month_per_student") @db.SmallInt
@@ -323,32 +325,36 @@ model Reward {
 /// A token redemption with the reward's title, vendor, icon, value and cost copied at purchase time (G-18).
 /// `voucher_code` is the deliverable: a secret, never logged.
 model RewardRedemption {
-  id                 BigInt    @id @default(autoincrement())
-  userId             BigInt    @map("user_id")
-  rewardId           BigInt?   @map("reward_id")
-  rewardTitle        String    @map("reward_title")
-  rewardVendor       String    @map("reward_vendor")
-  rewardIcon         String?   @map("reward_icon")
-  denominationRm     Decimal   @map("denomination_rm") @db.Decimal(10, 2)
-  tokenCost          Int       @map("token_cost")
+  id                   BigInt    @id @default(autoincrement())
+  userId               BigInt    @map("user_id")
+  rewardId             BigInt?   @map("reward_id")
+  rewardTitle          String    @map("reward_title")
+  rewardVendor         String    @map("reward_vendor")
+  rewardIcon           String?   @map("reward_icon")
+  denominationRm       Decimal   @map("denomination_rm") @db.Decimal(10, 2)
+  tokenCost            Int       @map("token_cost")
+  /// DM-77: the reward's `token_cost` at the time of redemption.
+  tokenCostSnapshot    Int       @map("token_cost_snapshot")
+  /// DM-77: the reward's `cost_value_sen` at the time of redemption; the session budget (DM-48) sums it.
+  costValueSenSnapshot Int       @map("cost_value_sen_snapshot")
   /// pending_parent_consent, pending_admin, delivered, cancelled (check).
-  status             String
-  stockReserved      Boolean   @default(false) @map("stock_reserved")
+  status               String
+  stockReserved        Boolean   @default(false) @map("stock_reserved")
   /// The parent approval routes are not built in B1 (UD-3); the column stays for the data model.
-  parentDecisionById BigInt?   @map("parent_decision_by_id")
-  parentDecidedAt    DateTime? @map("parent_decided_at") @db.Timestamptz(6)
-  voucherCode        String?   @map("voucher_code")
-  deliveredAt        DateTime? @map("delivered_at") @db.Timestamptz(6)
-  expiresAt          DateTime? @map("expires_at") @db.Timestamptz(6)
-  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  parentDecisionById   BigInt?   @map("parent_decision_by_id")
+  parentDecidedAt      DateTime? @map("parent_decided_at") @db.Timestamptz(6)
+  voucherCode          String?   @map("voucher_code")
+  deliveredAt          DateTime? @map("delivered_at") @db.Timestamptz(6)
+  expiresAt            DateTime? @map("expires_at") @db.Timestamptz(6)
+  cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(6)
   /// admin, parent (check).
-  cancelledBy        String?   @map("cancelled_by")
+  cancelledBy          String?   @map("cancelled_by")
   /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
-  clientUuid         String?   @map("client_uuid") @db.Uuid
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  legacySource       String?   @map("legacy_source")
-  legacyId           String?   @map("legacy_id")
+  clientUuid           String?   @map("client_uuid") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource         String?   @map("legacy_source")
+  legacyId             String?   @map("legacy_id")
 
   reward Reward? @relation(fields: [rewardId], references: [id], onDelete: SetNull, map: "fk_reward_redemptions_reward_id")
 

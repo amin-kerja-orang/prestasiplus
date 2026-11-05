@@ -13,6 +13,7 @@ export interface LockedReward {
   iconEmoji: string | null
   denominationRm: number
   tokenCost: number
+  costValueSen: number
   stockQuantity: number | null
   maxPerMonthPerStudent: number | null
   isActive: boolean
@@ -135,7 +136,7 @@ export class ShopRepository {
   /** Reads one reward and locks its row until the transaction ends (null when absent). */
   async lockReward(id: bigint): Promise<LockedReward | null> {
     const rows = await this.db.$queryRaw<LockedReward[]>`
-      SELECT id, title, vendor, icon_emoji AS "iconEmoji", denomination_rm::float8 AS "denominationRm", token_cost AS "tokenCost",
+      SELECT id, title, vendor, icon_emoji AS "iconEmoji", denomination_rm::float8 AS "denominationRm", token_cost AS "tokenCost", cost_value_sen AS "costValueSen",
              stock_quantity AS "stockQuantity", max_per_month_per_student::int AS "maxPerMonthPerStudent",
              is_active AS "isActive", requires_parent_consent AS "requiresParentConsent"
         FROM rewards WHERE id = ${id} FOR UPDATE`
@@ -167,6 +168,8 @@ export class ShopRepository {
     rewardIcon: string | null
     denominationRm: number
     tokenCost: number
+    tokenCostSnapshot: number
+    costValueSenSnapshot: number
     status: string
     stockReserved: boolean
     clientUuid: string | null

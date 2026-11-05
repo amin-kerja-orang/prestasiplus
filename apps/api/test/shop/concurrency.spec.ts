@@ -98,7 +98,7 @@ describe('M15 concurrency (BE-23, AC1)', () => {
       await ticket(null)
       await ticket(KEY)
       await expect(ticket(KEY)).rejects.toThrow(/uq_draw_tickets_user_id_client_uuid/)
-      const redemption = (key: string | null) => t.db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status, client_uuid) values ($1, 'Hadiah', 'Vendor', 1, 1, 'pending_admin', $2)`, [u, key])
+      const redemption = (key: string | null) => t.db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, client_uuid) values ($1, 'Hadiah', 'Vendor', 1, 1, 1, 0, 'pending_admin', $2)`, [u, key])
       await redemption(null)
       await redemption(null)
       await redemption(KEY)
