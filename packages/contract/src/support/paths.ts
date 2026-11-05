@@ -95,11 +95,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     tags: ['support'],
     summary: 'Admin support queue',
     description:
-<<<<<<< HEAD
       'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` and `meta.counts` cover the role-filtered tickets, whatever the status filter; `meta.counts` has all five statuses in vocabulary order; `meta.matched` counts the rows matching both filters. A row has no body, no e-mail and no user id.',
-=======
-      'Admin only. Newest first (createdAt desc, then id desc), 25 per page with `page`. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets; `meta.matched` counts the rows matching the filters. A row has no body, no e-mail and no user id.',
->>>>>>> origin/feature/v3-bijak-r1
     request: { query: SupportQueueQuerySchema },
     responses: { 200: json(SupportQueueResponseSchema, 'Queue rows with meta.total and meta.counts.'), 401: unauthorized, 403: adminOnly },
   })
