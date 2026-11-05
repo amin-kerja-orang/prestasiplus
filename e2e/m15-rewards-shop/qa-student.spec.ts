@@ -89,10 +89,13 @@ test.describe('M15 QA student rows', MODULE, () => {
     const buy = page.getByTestId('draw-buy')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('1000')
     await buy.click()
+    await expectNoHorizontalScroll(page) // the confirm dialog is open
+    await page.getByTestId('draw-confirm-buy').click()
     await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1/2')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('950')
     await expect(buy).toBeEnabled()
     await buy.click()
+    await page.getByTestId('draw-confirm-buy').click()
     await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 2/2')
     await expect(page.getByTestId('cabutan-balance')).toHaveText('900')
     await expect(buy).toBeDisabled()

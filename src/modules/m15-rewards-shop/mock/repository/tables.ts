@@ -9,7 +9,7 @@
 
 import { defineTable, floor, maxPlusOne, ID_RANGES } from '@/mock/define'
 
-import type { HadiahRedemption, HadiahReward, MysteryBoxOpening } from './types'
+import type { DrawTicketKey, HadiahRedemption, HadiahReward, MysteryBoxOpening } from './types'
 
 export const rewardsTable = defineTable<HadiahReward>({
   name: 'hadiah.rewards',
@@ -29,8 +29,16 @@ export const openingsTable = defineTable<MysteryBoxOpening>({
   indexes: ['userId'],
 })
 
+/** DM-78: the idempotency key of a ticket press, unique per (user, key). */
+export const ticketKeysTable = defineTable<DrawTicketKey>({
+  name: 'hadiah.ticketKeys',
+  ids: floor({ start: ID_RANGES.usersRuntimeFloor }),
+  indexes: ['userId'],
+})
+
 export const M15_TABLES = {
   rewards: rewardsTable,
   redemptions: redemptionsTable,
   openings: openingsTable,
+  ticketKeys: ticketKeysTable,
 }

@@ -55,6 +55,14 @@ function clientUuidOf(body: unknown): string | null {
 
 const DIGITS = /^\d+$/
 
+/** "Keputusan Cabutan" lists this many drawn draws (ruling N6). */
+const RESULTS_LIMIT = 10
+
+/** The first given name only: no surname, school or class (48 rule 8; `10-murid.md` 4.3). */
+function firstGivenName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? ''
+}
+
 /**
  * Student side of M15 (SRS M15 section 7 #9 to #13, #19, #20). Every coin or token movement goes through
  * `WalletService` inside ONE transaction with the shop write, with a per-movement idempotency key.
@@ -168,7 +176,7 @@ export class ShopService {
 
   async cabutan(userId: string): Promise<RewardCabutanView> {
     const now = this.clock.now()
-    const [{ currentSyiling }, all] = await Promise.all([this.wallet.summary(userId), this.repo.openDraws()])
+    const [{ currentSyiling }, all, drawn] = await Promise.all([this.wallet.summary(userId), this.repo.openDraws(), this.repo.drawnDraws(RESULTS_LIMIT)])
     const open = all
       .filter((d) => drawStillOpen(d.closesAt, now))
       .sort((a, b) => {
@@ -179,7 +187,12 @@ export class ShopService {
         const db = mytDay(b.closesAt)
         return da === db ? (a.id < b.id ? -1 : 1) : da < db ? -1 : 1
       })
-    const owned = await this.repo.ticketCounts(idFromString(userId), open.map((d) => d.id))
+    const me = idFromString(userId)
+    const [owned, sold, names] = await Promise.all([
+      this.repo.ticketCounts(me, open.map((d) => d.id)),
+      this.repo.ticketTotals(open.map((d) => d.id)),
+      this.repo.userNames([...new Set(drawn.flatMap((d) => d.winners.map((w) => w.userId)))]),
+    ])
     return {
       syilingBalance: currentSyiling,
       draws: open.map((d) => ({
@@ -189,8 +202,14 @@ export class ShopService {
         ticketCostSyiling: d.ticketCostSyiling,
         maxTicketsPerStudent: d.maxTicketsPerStudent,
         ticketsOwned: owned.get(d.id) ?? 0,
+        ticketsSold: sold.get(d.id) ?? 0,
         closesAt: d.closesAt === null ? null : mytDay(d.closesAt),
         prizePool: d.prizes.map((p) => ({ label: p.label, valueSen: p.valueSen, qty: p.qty })),
+      })),
+      results: drawn.map((d) => ({
+        id: idToString(d.id),
+        title: d.title,
+        winners: d.winners.map((w) => ({ prize: w.drawPrize.label, name: firstGivenName(names.get(w.userId) ?? ''), isYou: w.userId === me })),
       })),
     }
   }

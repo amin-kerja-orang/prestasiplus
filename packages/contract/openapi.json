@@ -7951,6 +7951,11 @@
             "type": "integer",
             "minimum": 0
           },
+          "ticketsSold": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tickets sold in this draw to all pupils (\"Jumlah tiket terjual\", the published odds line)."
+          },
           "closesAt": {
             "allOf": [
               {
@@ -7978,8 +7983,53 @@
           "ticketCostSyiling",
           "maxTicketsPerStudent",
           "ticketsOwned",
+          "ticketsSold",
           "closesAt",
           "prizePool"
+        ]
+      },
+      "RewardCabutanWinner": {
+        "type": "object",
+        "properties": {
+          "prize": {
+            "type": "string",
+            "description": "Label of the prize line the winner took."
+          },
+          "name": {
+            "type": "string",
+            "description": "The first given name only: no surname, school or class."
+          },
+          "isYou": {
+            "type": "boolean",
+            "description": "True for the caller's own win: the page shows \"Anda menang!\"."
+          }
+        },
+        "required": [
+          "prize",
+          "name",
+          "isYou"
+        ]
+      },
+      "RewardCabutanResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "winners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardCabutanWinner"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "winners"
         ]
       },
       "RewardCabutanView": {
@@ -7994,11 +8044,18 @@
             "items": {
               "$ref": "#/components/schemas/RewardCabutanDraw"
             }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardCabutanResult"
+            }
           }
         },
         "required": [
           "syilingBalance",
-          "draws"
+          "draws",
+          "results"
         ]
       },
       "RewardTicketBought": {
@@ -82345,11 +82402,11 @@
         "tags": [
           "rewards"
         ],
-        "summary": "Cabutan Bertuah: open draws",
-        "description": "Only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id.",
+        "summary": "Cabutan Bertuah: open draws and results (API-GAME-08)",
+        "description": "draws: only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id; each carries ticketsOwned (the caller) and ticketsSold (all pupils). results (\"Keputusan Cabutan\"): drawn draws only, newest 10 by drawn time, never cancelled draws; winners in prize order then slot, shown by first given name; the caller's own win has isYou true.",
         "responses": {
           "200": {
-            "description": "Open draws with the caller ticket counts.",
+            "description": "Open draws with the caller ticket counts, and the latest results.",
             "content": {
               "application/json": {
                 "schema": {

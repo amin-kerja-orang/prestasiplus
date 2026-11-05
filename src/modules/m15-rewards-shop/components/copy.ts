@@ -33,6 +33,19 @@ export const DRAW_COPY = {
   /** PROPOSED (FN-M15-7.1.3/7.1.4). */
   buy: '🎟️ Beli Tiket',
   buying: 'Memproses…',
+  /** Confirm dialog B-056a (48 GAME-22; 10 R1-MUR-22): "Batal" is the safe default. */
+  confirmTitle: 'Beli tiket cabutan?',
+  confirmBody: (price: number, balance: number): string =>
+    `${String(price)} syiling akan ditolak daripada baki anda (${String(balance)} syiling).`,
+  confirmBuy: 'Beli Tiket',
+  confirmCancel: 'Batal',
+  /** Published odds on the card (48 GAME-22 "Fairness text"). */
+  fairEqual: 'Setiap tiket mempunyai peluang yang sama.',
+  ticketsSold: (sold: number): string => `Jumlah tiket terjual: ${String(sold)}`,
+  coinNote: 'Tiket dibeli dengan syiling yang anda kumpul, bukan wang.',
+  /** Past draws (FR-MUR-22-3; ruling N6: drawn draws only, newest 10). */
+  resultsHeading: 'Keputusan Cabutan',
+  youWon: 'Anda menang!',
 } as const
 
 /** Shared error convention (FR-G-10); M15 adds no further error copy. */

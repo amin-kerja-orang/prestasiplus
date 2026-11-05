@@ -51,7 +51,7 @@ import {
 } from '../../api/types'
 import { nowMs } from '../repository/clock'
 import { hadiahRepo } from '../repository/hadiah'
-import { balanceOf, buyTicket, listOpenDraws, ticketsOwned } from '../repository/m14-seam'
+import { balanceOf, buyTicket, listOpenDraws, ticketsOwned, ticketsSold } from '../repository/m14-seam'
 import { mysteryBoxRepo } from '../repository/mystery-box'
 import { M15Error, type HadiahRedemption } from '../repository/types'
 import { refusal } from './admin'
@@ -146,10 +146,12 @@ function listCabutan(req: MockRequest): MockResponse {
     ticketCostSyiling: d.ticketCostSyiling,
     maxTicketsPerStudent: d.maxTicketsPerStudent,
     ticketsOwned: ticketsOwned(d.id, userId),
+    ticketsSold: ticketsSold(d.id),
     closesAt: d.closesAt,
     prizePool: d.prizePool.map((p) => ({ label: p.label, valueSen: p.valueSen, qty: p.qty })),
   }))
-  const data: CabutanView = { syilingBalance: balanceOf(userId).syilingBalance, draws }
+  // The mock has no `drawn` state (M14 draws are draft | open | closed), so there is no result to list.
+  const data: CabutanView = { syilingBalance: balanceOf(userId).syilingBalance, draws, results: [] }
   return ok(data)
 }
 
@@ -157,7 +159,11 @@ function buyCabutanTicket(req: MockRequest): MockResponse {
   const userId = sessionUserId(req)
   const drawId = Number(req.params.drawId)
   try {
-    const syilingBalance = buyTicket(drawId, userId)
+    const key =
+      typeof req.body === 'object' && req.body !== null
+        ? (req.body as { clientUuid?: unknown }).clientUuid
+        : undefined
+    const syilingBalance = buyTicket(drawId, userId, typeof key === 'string' ? key : undefined)
     const data: TicketBought = {
       drawId,
       ticketsOwned: ticketsOwned(drawId, userId),

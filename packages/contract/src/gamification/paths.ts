@@ -42,7 +42,9 @@ import {
   RewardBulkRequestSchema,
   RewardBulkResultSchema,
   RewardCabutanDrawSchema,
+  RewardCabutanResultSchema,
   RewardCabutanViewSchema,
+  RewardCabutanWinnerSchema,
   RewardCancelResultSchema,
   RewardCategorySchema,
   RewardDeliverRequestSchema,
@@ -199,6 +201,8 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardMysteryBoxesView: RewardMysteryBoxesViewSchema,
   RewardMysteryBoxOpened: RewardMysteryBoxOpenedSchema,
   RewardCabutanDraw: RewardCabutanDrawSchema,
+  RewardCabutanWinner: RewardCabutanWinnerSchema,
+  RewardCabutanResult: RewardCabutanResultSchema,
   RewardCabutanView: RewardCabutanViewSchema,
   RewardTicketBought: RewardTicketBoughtSchema,
   RewardTicketRequest: RewardTicketRequestSchema,
@@ -761,9 +765,10 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/cabutan',
     tags: ['rewards'],
-    summary: 'Cabutan Bertuah: open draws',
-    description: 'Only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id.',
-    responses: { 200: json(envelopeOf(RewardCabutanViewSchema), 'Open draws with the caller ticket counts.'), 401: UNAUTHORIZED },
+    summary: 'Cabutan Bertuah: open draws and results (API-GAME-08)',
+    description:
+      'draws: only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id; each carries ticketsOwned (the caller) and ticketsSold (all pupils). results ("Keputusan Cabutan"): drawn draws only, newest 10 by drawn time, never cancelled draws; winners in prize order then slot, shown by first given name; the caller\'s own win has isYou true.',
+    responses: { 200: json(envelopeOf(RewardCabutanViewSchema), 'Open draws with the caller ticket counts, and the latest results.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({

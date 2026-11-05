@@ -354,6 +354,12 @@ test.describe('M15 S7 Cabutan Bertuah', MODULE, () => {
       })
       await gotoApp('/cabutan')
       await page.getByTestId('draw-buy').click()
+      // B-056a: the confirm dialog opens on "Batal"; the ticket is bought only after "Beli Tiket".
+      await expect(page.getByTestId('draw-confirm-body')).toHaveText(
+        '50 syiling akan ditolak daripada baki anda (256 syiling).',
+      )
+      await expect(page.getByTestId('draw-confirm-cancel')).toBeFocused()
+      await page.getByTestId('draw-confirm-buy').click()
       await expect(page.getByTestId('cabutan-balance')).toHaveText('206')
       await expect(page.getByTestId('draw-owned')).toHaveText('Tiket anda: 1/10')
       const ledger = await mock.hook<{ type: string; description: string; amount: number }[]>(

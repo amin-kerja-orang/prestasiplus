@@ -399,15 +399,35 @@ export const RewardCabutanDrawSchema = z
     ticketCostSyiling: count,
     maxTicketsPerStudent: z.number().int().min(1),
     ticketsOwned: count,
+    ticketsSold: count.meta({ description: 'Tickets sold in this draw to all pupils ("Jumlah tiket terjual", the published odds line).' }),
     closesAt: DateOnlySchema.nullable(),
     prizePool: z.array(GamificationDrawPrizeSchema),
   })
   .meta({ id: 'RewardCabutanDraw' })
 export type RewardCabutanDraw = z.infer<typeof RewardCabutanDrawSchema>
 
-/** Open draws only (`status` open and `closesAt` today or later in Malaysia time, or null), by closing date (null last) then id. */
+/** One winner of a drawn draw, as a pupil may see it (FR-MUR-22-3; 48 rule 8). */
+export const RewardCabutanWinnerSchema = z
+  .object({
+    prize: z.string().meta({ description: 'Label of the prize line the winner took.' }),
+    name: z.string().meta({ description: 'The first given name only: no surname, school or class.' }),
+    isYou: z.boolean().meta({ description: 'True for the caller\'s own win: the page shows "Anda menang!".' }),
+  })
+  .meta({ id: 'RewardCabutanWinner' })
+export type RewardCabutanWinner = z.infer<typeof RewardCabutanWinnerSchema>
+
+/** One entry of "Keputusan Cabutan": a drawn draw with its winners in prize order then slot. */
+export const RewardCabutanResultSchema = z
+  .object({ id: IdSchema, title: z.string(), winners: z.array(RewardCabutanWinnerSchema) })
+  .meta({ id: 'RewardCabutanResult' })
+export type RewardCabutanResult = z.infer<typeof RewardCabutanResultSchema>
+
+/**
+ * `draws`: open draws only (`status` open and `closesAt` today or later in Malaysia time, or null), by closing date
+ * (null last) then id. `results`: drawn draws only (never cancelled), newest 10, newest first.
+ */
 export const RewardCabutanViewSchema = z
-  .object({ syilingBalance: count, draws: z.array(RewardCabutanDrawSchema) })
+  .object({ syilingBalance: count, draws: z.array(RewardCabutanDrawSchema), results: z.array(RewardCabutanResultSchema) })
   .meta({ id: 'RewardCabutanView' })
 export type RewardCabutanView = z.infer<typeof RewardCabutanViewSchema>
 
