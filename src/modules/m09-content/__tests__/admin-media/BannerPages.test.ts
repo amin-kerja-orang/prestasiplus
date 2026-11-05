@@ -363,11 +363,21 @@ describe('BannerFormPage edit (S11)', () => {
   })
 
   it('a stored PROMOTIONAL / LEGACY / PARENT row shows each stored code as an extra option and saves them unchanged (D-6)', async () => {
-    api.fetchAdminBanner.mockResolvedValue(
-      banner(6, { bannerType: 'PROMOTIONAL', linkType: 'LEGACY', targetAudience: 'PARENT' }),
-    )
-    api.updateBanner.mockResolvedValue({ data: banner(6), status: 'Banner berjaya dikemaskini.' })
-    const { wrapper: w } = await form('edit', 6)
+    const stored = banner(6, {
+      title: 'Banner Enam',
+      description: 'Penerangan enam.',
+      imageUrl: 'https://example.test/enam.png',
+      bannerType: 'PROMOTIONAL',
+      linkType: 'LEGACY',
+      targetAudience: 'PARENT',
+      displayOrder: 6,
+      startDate: '2026-03-04',
+      endDate: '2026-09-30',
+      isActive: true,
+    })
+    api.fetchAdminBanner.mockResolvedValue(stored)
+    api.updateBanner.mockResolvedValue({ data: stored, status: 'Banner berjaya dikemaskini.' })
+    const { wrapper: w, router } = await form('edit', 6)
     for (const [id, code] of [
       ['banner-type', 'PROMOTIONAL'],
       ['banner-link-type', 'LEGACY'],
@@ -383,14 +393,63 @@ describe('BannerFormPage edit (S11)', () => {
     }
     await t(w, 'banner-form').trigger('submit')
     await flushPromises()
-    expect(api.updateBanner).toHaveBeenCalledWith(
-      6,
-      expect.objectContaining({
-        bannerType: 'PROMOTIONAL',
-        linkType: 'LEGACY',
-        targetAudience: 'PARENT',
-      }),
-    )
+    expect(api.updateBanner).toHaveBeenCalledTimes(1)
+    expect(api.updateBanner).toHaveBeenCalledWith(6, {
+      title: 'Banner Enam',
+      description: 'Penerangan enam.',
+      imageUrl: 'https://example.test/enam.png',
+      bannerType: 'PROMOTIONAL',
+      linkType: 'LEGACY',
+      targetAudience: 'PARENT',
+      displayOrder: 6,
+      startDate: '2026-03-04',
+      endDate: '2026-09-30',
+      isActive: true,
+    })
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Banner berjaya dikemaskini.' })
+    expect(router.currentRoute.value.path).toBe('/admin/banners')
+  })
+
+  it('a stored FEATURE / NONE / STUDENT row (the card example) saves unchanged with the exact stored body', async () => {
+    const stored = banner(8, {
+      title: 'Banner Lapan',
+      description: null,
+      imageUrl: null,
+      bannerType: 'FEATURE',
+      linkType: 'NONE',
+      targetAudience: 'STUDENT',
+      displayOrder: 8,
+      startDate: '2026-01-05',
+      endDate: null,
+      isActive: true,
+    })
+    api.fetchAdminBanner.mockResolvedValue(stored)
+    api.updateBanner.mockResolvedValue({ data: stored, status: 'Banner berjaya dikemaskini.' })
+    const { wrapper: w, router } = await form('edit', 8)
+    expect(val(w, 'banner-type')).toBe('FEATURE')
+    expect(val(w, 'banner-link-type')).toBe('none')
+    expect(val(w, 'banner-audience')).toBe('student')
+    expect(
+      t(w, 'banner-type')
+        .findAll('option')
+        .map((o) => o.text()),
+    ).toContain('FEATURE')
+    await t(w, 'banner-form').trigger('submit')
+    await flushPromises()
+    expect(api.updateBanner).toHaveBeenCalledWith(8, {
+      title: 'Banner Lapan',
+      description: null,
+      imageUrl: null,
+      bannerType: 'FEATURE',
+      linkType: 'NONE',
+      targetAudience: 'STUDENT',
+      displayOrder: 8,
+      startDate: '2026-01-05',
+      endDate: null,
+      isActive: true,
+    })
+    expect(useFlashStore().pending).toEqual({ type: 'success', message: 'Banner berjaya dikemaskini.' })
+    expect(router.currentRoute.value.path).toBe('/admin/banners')
   })
 
   it.each([

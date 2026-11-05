@@ -417,6 +417,25 @@ describe('AdminNoteFormPage (M09 S6/S7, DV-M09-01)', () => {
     expect(useFlashStore().pending?.message).toBe('Nota tidak dijumpai.')
   })
 
+  it.each(['FORMULA', 'RINGKASAN', 'LENGKAP', 'TIPS_TRICKS'] as const)(
+    'edit: a stored %s note PUTs its type and a changed grade (D-1)',
+    async (type) => {
+      api.fetchAdminNote.mockResolvedValue({ ...NOTE, noteType: type, grade: 'TINGKATAN_4' })
+      api.updateAdminNote.mockResolvedValue({ data: NOTE, status: 'Nota berjaya dikemaskini.' })
+      const w = await mountAt(AdminNoteFormPage, '/form', { mode: 'edit', id: '1' })
+      expect(el<HTMLSelectElement>(w, 'note-type').value).toBe(type)
+      await t(w, 'note-grade').setValue('TINGKATAN_5')
+      await t(w, 'admin-note-form').trigger('submit')
+      await flushPromises()
+      expect(api.updateAdminNote).toHaveBeenCalledTimes(1)
+      expect(api.updateAdminNote).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ noteType: type, grade: 'TINGKATAN_5' }),
+      )
+      expect(router.currentRoute.value.path).toBe('/admin/notes')
+    },
+  )
+
   it('edit: a non-numeric id returns to the list with the flash, without calling the API', async () => {
     api.fetchAdminNote.mockClear()
     useFlashStore().clear()
