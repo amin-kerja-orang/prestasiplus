@@ -199,9 +199,10 @@ describe('B-HTTP-08: the subject card equals the sum of the subject detail (one 
     expect(bank.count({ subjectId: '1' })).toBe(59)
   })
 
-  it('the public count uses the same rule: mcq, learner-visible level, offered levels T4 and T5 only', () => {
+  it('the public count uses the same rule: mcq, learner-visible level, offered levels (active, not primary: T1 to T5)', () => {
     expect(QUESTION_COUNT_SQL).toContain("v.type = 'mcq'")
-    expect(QUESTION_COUNT_SQL).toContain("ol.code IN ('T4', 'T5')")
+    expect(QUESTION_COUNT_SQL).toContain("ol.stage <> 'primary' AND ol.is_active")
+    expect(QUESTION_COUNT_SQL).not.toContain('ol.code IN')
     expect(QUESTION_COUNT_SQL).toContain(PRIMARY)
     // The card lists active subjects and offers the levels linked to the subject: the public count joins both, so it is the sum of the cards.
     expect(QUESTION_COUNT_SQL).toContain('sj.is_active')
