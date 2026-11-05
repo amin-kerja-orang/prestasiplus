@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage } from '@/ds'
+import { DsCluster, DsEmptyState, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { formatDate, formatDateKey, formatDateTime } from '@/lib/time/format'
 
@@ -162,16 +162,16 @@ const groups = computed(() => {
           </li>
         </ul>
       </div>
-      <div v-if="total > PAGE_SIZE" class="flex justify-center" data-testid="s17-pager">
+      <DsCluster v-if="total > PAGE_SIZE" justify="center" data-testid="s17-pager">
         <UPagination
           :page="page"
           :total="total"
           :items-per-page="PAGE_SIZE"
+          :sibling-count="0"
           size="lg"
-          :ui="{ list: 'flex-wrap justify-center' }"
           @update:page="goPage"
         />
-      </div>
+      </DsCluster>
     </section>
   </DsPage>
 </template>
