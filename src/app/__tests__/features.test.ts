@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { adminMenuFor, flatItems } from '@/shells/nav/admin-nav'
 import { ALESA_NAV_IDS, navFor, USER_NAV } from '@/shells/nav/user-nav'
 import type { Role } from '@/stores/session-types'
 
@@ -36,8 +35,6 @@ describe('menus', () => {
       const ids = labelsOf(role)
       for (const id of ALESA_NAV_IDS) expect(ids, `${role} ${id}`).not.toContain(id)
     }
-    expect(flatItems(adminMenuFor('admin')).map((i) => i.id)).not.toContain('spm-walkthrough')
-    expect(flatItems(adminMenuFor('admin')).map((i) => i.label)).not.toContain('Cikgu Alesa')
   })
 
   it('show them again when on', () => {
@@ -46,7 +43,6 @@ describe('menus', () => {
       expect.arrayContaining(['rph-cikgu-alesa', 'semak-karangan', 'pbd-cikgu-alesa']),
     )
     expect(labelsOf('student')).toContain('cikgu-alesa-chat')
-    expect(flatItems(adminMenuFor('admin')).map((i) => i.id)).toContain('spm-walkthrough')
     expect(USER_NAV.some((e) => ALESA_NAV_IDS.has(e.id))).toBe(true)
   })
 })

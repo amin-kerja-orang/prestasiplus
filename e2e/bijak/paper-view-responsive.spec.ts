@@ -7,7 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell } from '../support'
+import { expectNoHorizontalScroll } from '../support'
 import { HTTP_MODE, PAPER_ID } from './bijak-flow'
 
 test.skip(HTTP_MODE, 'mock-only')
@@ -43,9 +43,8 @@ test.describe('PaperView surfaces responsive @bijak', () => {
 
   test('admin preview (24 px indent) and student view drawer @bijak', async ({ page, loginAs, gotoApp }) => {
     await loginAs('admin@demo.test')
-    await gotoApp('/admin/command-center')
-    if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
-    await page.locator('[data-testid=pentadbiran-nav]:visible').getByRole('link', { name: 'Pembina Kertas' }).click()
+    // S0-T07: Pembina Kertas has no sidebar entry (Set Builder replaces it in the menu); open it by URL.
+    await gotoApp('/admin/spm/kertas')
     await expect(page.getByTestId('papers-page')).toBeVisible()
     await page.getByTestId('paper-new').click()
     await page.getByTestId('new-subject').selectOption({ label: 'Matematik' })

@@ -95,5 +95,7 @@ export const AUDIT_ACTIONS = {
   HEADCOUNT_CONFIG_CREATED: 'headcount.config.created',
   HEADCOUNT_CONFIGS_AUTO_SETUP: 'headcount.configs.auto_setup',
   HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
+  // S0-T10 Kawalan Ciri: detail { key, old, new }.
+  FEATURE_FLAG_TOGGLED: 'feature_flag.toggled',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]
