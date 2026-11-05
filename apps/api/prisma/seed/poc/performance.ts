@@ -112,7 +112,7 @@ export const performanceSeed: SeedModule = {
       }
     }
 
-    await seedTimeline(prisma, pupils, now)
+    await seedTimeline(prisma, pupils, now, ctx.date)
   },
 }
 
@@ -126,7 +126,7 @@ const TIMELINE_POSTS = [
   { title: 'Azam tahun ini', category: 'cerita', eventDate: null, story: 'Mahu naik satu gred bagi Bahasa Melayu sebelum peperiksaan akhir tahun.' },
 ] as const
 
-async function seedTimeline(prisma: Parameters<SeedModule['run']>[0]['prisma'], pupils: Map<string, bigint>, now: Date): Promise<void> {
+async function seedTimeline(prisma: Parameters<SeedModule['run']>[0]['prisma'], pupils: Map<string, bigint>, now: Date, date: (iso: string) => Date): Promise<void> {
   const userId = pupils.get('pelajar@demo.test')
   if (userId === undefined) return
   for (const [i, post] of TIMELINE_POSTS.entries()) {
@@ -139,7 +139,7 @@ async function seedTimeline(prisma: Parameters<SeedModule['run']>[0]['prisma'], 
         userId,
         title: post.title,
         category: post.category,
-        eventDate: post.eventDate === null ? null : new Date(post.eventDate + 'T00:00:00.000Z'),
+        eventDate: post.eventDate === null ? null : date(post.eventDate + 'T00:00:00.000Z'),
         story: post.story,
         isTest: false,
         createdAt: at,

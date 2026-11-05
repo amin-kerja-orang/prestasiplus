@@ -59,7 +59,7 @@ export const pkskSeed: SeedModule = {
       const pkg = await prisma.pkskPackage.findFirst({ where: { name: g.packageName } })
       if (!user || !pkg) continue
       if ((await prisma.pkskAccess.count({ where: { userId: user.id } })) > 0) continue
-      const at = new Date(g.grantedAt)
+      const at = ctx.date(g.grantedAt)
       await prisma.pkskAccess.create({
         data: { userId: user.id, packageId: pkg.id, grantedById: null, grantedAt: at, expiresAt: null, status: 'active', createdAt: at, updatedAt: at },
       })
@@ -69,7 +69,7 @@ export const pkskSeed: SeedModule = {
     if (!student) return
     if ((await prisma.pkskExamAttempt.count({ where: { userId: student.id } })) === 0) {
       for (const a of ATTEMPTS) {
-        const at = new Date(a.completedAt)
+        const at = ctx.date(a.completedAt)
         await prisma.pkskExamAttempt.create({
           data: {
             userId: student.id,
@@ -91,7 +91,7 @@ export const pkskSeed: SeedModule = {
       const key = { userId: student.id, level: 'T1', domainId: domain.id }
       await prisma.pkskMastery.upsert({
         where: { userId_level_domainId: key },
-        create: { ...key, masteryPct: pct, createdAt: new Date(MASTERY_AT), updatedAt: new Date(MASTERY_AT) },
+        create: { ...key, masteryPct: pct, createdAt: ctx.date(MASTERY_AT), updatedAt: ctx.date(MASTERY_AT) },
         update: {},
       })
     }

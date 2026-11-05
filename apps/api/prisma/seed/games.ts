@@ -107,8 +107,6 @@ const SB_ROWS: readonly (readonly [state: string, n: number, aktifPct: number, s
 ]
 export const GAMES_SEED_SB_WEEKS = ['2026-09-21', '2026-09-14', '2026-09-07', '2026-08-31'] as const
 
-const at = (iso: string): Date => new Date(iso)
-
 async function userId(prisma: PrismaClient, email: string): Promise<bigint | null> {
   const u = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } })
   return u?.id ?? null
@@ -204,14 +202,14 @@ async function seedLeagues(ctx: SeedContext): Promise<void> {
     const league = await prisma.league.create({
       data: {
         name: plan.name, type: plan.type, scope: plan.scope, subjectId: subject?.id ?? null, gameMode: 'mixed', scoringMethod: 'total_score',
-        startDate: at(`${plan.startDate}T00:00:00.000Z`), endDate: at(`${plan.endDate}T00:00:00.000Z`), maxSchools: null,
-        inviteCode: plan.inviteCode, creatorId, status: plan.status, isTest: false, createdAt: at(plan.createdAt),
+        startDate: ctx.date(`${plan.startDate}T00:00:00.000Z`), endDate: ctx.date(`${plan.endDate}T00:00:00.000Z`), maxSchools: null,
+        inviteCode: plan.inviteCode, creatorId, status: plan.status, isTest: false, createdAt: ctx.date(plan.createdAt),
       },
     })
     await prisma.leagueClassLevel.createMany({ data: plan.classLevels.map((level) => ({ leagueId: league.id, level })) })
     for (const code of plan.schools) {
       const schoolId = await schoolIdByCode(prisma, code)
-      if (schoolId !== null) await prisma.leagueSchool.create({ data: { leagueId: league.id, schoolId, joinedAt: at('2026-03-31T09:00:00+08:00') } })
+      if (schoolId !== null) await prisma.leagueSchool.create({ data: { leagueId: league.id, schoolId, joinedAt: ctx.date('2026-03-31T09:00:00+08:00') } })
     }
     const perLevel = new Map<string, number>()
     for (const s of plan.standings) {
@@ -235,7 +233,7 @@ async function seedSekolahBersaing(ctx: SeedContext): Promise<void> {
     return schoolId === undefined ? [] : [{ schoolId, aktifPct, streakAvg, notaPer10 }]
   })
   for (const week of GAMES_SEED_SB_WEEKS) {
-    const weekStart = at(`${week}T00:00:00.000Z`)
+    const weekStart = ctx.weekDate(`${week}T00:00:00.000Z`)
     for (const [i, p] of placed.entries()) {
       const rank = i + 1
       if (await prisma.sekolahBersaingWeek.findUnique({ where: { weekStart_rank: { weekStart, rank } } })) continue
