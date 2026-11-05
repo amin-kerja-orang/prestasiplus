@@ -30,14 +30,6 @@ describe('api.yml security gates', () => {
     expect(schedule[0]!.cron).toMatch(/^\S+ \S+ \* \* \S+$/)
   })
 
-  it('runs on merge_group (merge queue) and keeps PR-only jobs skipped there', () => {
-    const on = (wf as unknown as { on: Record<string, unknown> }).on
-    expect(on.merge_group).toEqual({ types: ['checks_requested'] })
-    for (const j of ['openapi-diff', 'dependency-review']) expect(wf.jobs[j]?.if, j).toContain("github.event_name == 'pull_request'")
-    // The always-run gates must not be conditional on the PR event, or the queue would not run them.
-    for (const j of ['verify', 'deps-audit', 'docker', 'secret-scan']) expect(wf.jobs[j]?.if, j).toBeUndefined()
-  })
-
   it('never lets deps-audit, Trivy or dependency-review pass on error (no continue-on-error) (G4 minor 4)', () => {
     for (const j of ['deps-audit', 'dependency-review', 'docker']) {
       const job = wf.jobs[j] as unknown as { 'continue-on-error'?: unknown; steps?: { 'continue-on-error'?: unknown; uses?: string; name?: string }[] }

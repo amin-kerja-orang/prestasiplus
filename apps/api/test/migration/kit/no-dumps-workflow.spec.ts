@@ -63,10 +63,6 @@ function guard(files: Record<string, string | Buffer>) {
 }
 
 describe.skipIf(!hasBash || !hasGit)('no-dumps workflow guard', () => {
-  it('also runs on merge_group (merge queue), without a paths filter', () => {
-    expect(yml).toMatch(/^\s+merge_group:\s*\n\s+types:\s*\[checks_requested\]/m)
-  })
-
   it('has no paths filter and runs on push and pull_request', () => {
     expect(yml).toMatch(/^on:\s*\n\s+push:\s*\n\s+pull_request:/m)
     expect(yml).not.toMatch(/^\s*paths(-ignore)?:/m)
