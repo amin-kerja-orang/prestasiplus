@@ -20,9 +20,9 @@ const props = defineProps<{
   paths: MonitoringPaths
 }>()
 
-/** Paged at 20 rows (FN-M11-3.4.x). */
-const pageSize = ref(20)
-const PAGE_SIZES = [10, 20, 50]
+/** Paged at 25 rows (R1-AS-10). */
+const pageSize = ref(25)
+const PAGE_SIZES = [10, 25, 50]
 
 const tahapStyle = (t: TahapKey) => TAHAP[t]
 /** DsProgress has no neutral tone; the empty bar is not drawn, so the fallback is never seen. */
@@ -33,7 +33,7 @@ const barTone = (t: TahapKey) => {
 const isStudent = computed(() => props.kind === 'student')
 const sectionId = computed(() => (isStudent.value ? 'section-pelajar' : 'section-guru'))
 const title = computed(() =>
-  isStudent.value ? 'Analisis Penglibatan Pelajar T4/T5' : 'Analisis Penglibatan Guru',
+  isStudent.value ? 'Analisis Penglibatan Pelajar' : 'Analisis Penglibatan Guru',
 )
 const activeLabel = computed(() => (isStudent.value ? 'Aktif' : 'Login'))
 
@@ -180,13 +180,7 @@ const LEGEND: readonly [UiColor, string][] = [
       ><details>
         <summary class="cursor-pointer text-label text-highlighted">Legenda</summary>
         <p class="mt-4 flex flex-wrap items-center gap-2 text-body text-muted">
-          <DsBadge
-            v-for="[color, label] in LEGEND"
-            :key="label"
-            :tone="color"
-           
-            :label="label"
-          />
+          <DsBadge v-for="[color, label] in LEGEND" :key="label" :tone="color" :label="label" />
           <DsBadge v-if="!isStudent" tone="neutral" label="Tiada Guru (0 daftar)" />
         </p></details
     ></DsPanel>

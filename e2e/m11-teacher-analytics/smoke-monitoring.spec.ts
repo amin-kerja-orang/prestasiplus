@@ -429,7 +429,7 @@ test.describe('M11 S3 Detail Sekolah (guru 5)', MODULE, () => {
     await expect(tid(page, 'mon-warning')).toHaveCount(0)
     await expect(tid(page, 'mon-teachers')).toContainText('Senarai Guru (0)')
     await expect(tid(page, 'mon-teachers-empty')).toHaveText(
-      'Tiada guru berdaftar untuk sekolah ini.',
+      'Belum ada guru berdaftar di sekolah ini.',
     )
     await expectNoHorizontalScroll(page)
   })

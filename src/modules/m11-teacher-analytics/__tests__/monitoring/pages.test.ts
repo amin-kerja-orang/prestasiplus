@@ -8,6 +8,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
+import { useSessionStore } from '@/stores'
 
 import type {
   MonitoringOverview,
@@ -490,7 +491,7 @@ describe('S2 Monitoring Penglibatan', () => {
     expect(tid('mon-guide-show')?.exists()).toBe(true)
   })
 
-  it('filters: no Reset by default; Tapis navigates with the query and a dummy token; Reset then shows', async () => {
+  it('filters: no Reset by default; Tapis navigates with the query and no token (D-M11-5); Reset then shows', async () => {
     await mountAt(MonitoringPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
     expect(tid('active-filters-reset')?.exists()).toBe(false)
     await tid('mon-period')?.setValue('7d')
@@ -498,7 +499,7 @@ describe('S2 Monitoring Penglibatan', () => {
     await flushPromises()
     expect(router.currentRoute.value.path).toBe('/guru/monitoring')
     expect(router.currentRoute.value.query).toMatchObject({ period: '7d', state: '', tahap: '' })
-    expect(typeof router.currentRoute.value.query._token).toBe('string')
+    expect(router.currentRoute.value.query).not.toHaveProperty('_token')
     expect(api.fetchMonitoringOverview).toHaveBeenLastCalledWith(
       { period: '7d', state: '', tahap: '' },
       expect.anything(),
@@ -685,7 +686,7 @@ describe('S3 Detail Sekolah', () => {
     api.fetchSchoolDetail.mockResolvedValue(school({ teachers: [] }))
     await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/940', { schoolId: 940 })
     expect(tid('mon-teachers')?.text()).toContain('Senarai Guru (0)')
-    expect(tid('mon-teachers-empty')?.text()).toBe('Tiada guru berdaftar untuk sekolah ini.')
+    expect(tid('mon-teachers-empty')?.text()).toBe('Belum ada guru berdaftar di sekolah ini.')
   })
 
   it('404 and 403 render the in-place error outcome and no page body', async () => {
@@ -916,5 +917,185 @@ describe('S5 Detail Guru', () => {
     )
     expect(tid('mon-suggestion-low')?.exists()).toBe(false)
     expect(tid('mon-suggestion-answered')?.exists()).toBe(false)
+  })
+})
+
+// --- R1-GUR-10 / R1-AS-10 (S6-T08) --------------------------------------------------------------
+
+function login(schoolId: number | null, role: 'teacher' | 'school_admin' = 'teacher') {
+  useSessionStore().setSession({
+    token: 't',
+    remember: false,
+    expiresAt: '2099-01-01T00:00:00+08:00',
+    user: { id: 2, role, schoolId, landingPath: '/dashboard' } as never,
+  })
+}
+
+describe('FR-GUR-10-1 / AC-GUR-10-1 Guru index is the own-school detail', () => {
+  beforeEach(() => {
+    api.fetchSchoolDetail.mockResolvedValue(school())
+  })
+
+  it('reads the school from the session (string id), shows the banner and drill links under /guru/monitoring', async () => {
+    login(8080)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    expect(api.fetchSchoolDetail).toHaveBeenCalledTimes(1)
+    expect(api.fetchSchoolDetail).toHaveBeenCalledWith('8080', expect.anything())
+    expect(tid('mon-scope-banner')?.text()).toBe('Data ditapis untuk sekolah anda sahaja.')
+    expect(tid('mon-school-name')?.text()).toBe('SMK Contoh')
+    expect(tid('mon-student-link')?.attributes('href')).toBe(
+      '/guru/monitoring/sekolah/8080/pelajar/1',
+    )
+    expect(tid('mon-teacher-link')?.attributes('href')).toMatch(
+      /^\/guru\/monitoring\/sekolah\/8080\/guru\/\d+$/,
+    )
+    // no national-overview parts and no Negeri filter
+    expect(tid('mon-filters')?.exists()).toBe(false)
+    expect(tid('mon-kpis')?.exists()).toBe(false)
+    expect(wrapper?.text()).not.toContain('Negeri')
+  })
+
+  it('never asks for another school: only the session school id is fetched', async () => {
+    login(8080)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    const ids = api.fetchSchoolDetail.mock.calls.map((c) => c[0])
+    expect(ids).toEqual(['8080'])
+  })
+
+  it('a session without a school shows the error state and fetches nothing', async () => {
+    login(null)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring', { basePath: '/guru/monitoring' })
+    expect(api.fetchSchoolDetail).not.toHaveBeenCalled()
+    expect(tid('mon-error')?.exists()).toBe(true)
+  })
+
+  it('the detail route with an explicit school id shows no banner', async () => {
+    login(8080)
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
+    expect(tid('mon-scope-banner')?.exists()).toBe(false)
+  })
+})
+
+describe('FR-GUR-10-2 labels and teacher pill counts', () => {
+  beforeEach(() => {
+    api.fetchSchoolDetail.mockResolvedValue(school())
+  })
+
+  it('teacher pills carry "(n)" equal to the rows each lists; no "T4/T5" anywhere', async () => {
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
+    const pills = tid('mon-teacher-pills')
+      ?.findAll('button')
+      .map((b) => b.text())
+    const rows = all('mon-teacher-row').length
+    expect(pills).toEqual(['Semua (2)', 'Pernah Login (1)', 'Belum Login (1)'])
+    expect(rows).toBe(2)
+    expect(valuesIn('mon-school-cards')).toHaveLength(5)
+    expect(wrapper?.text()).toContain('Senarai Pelajar')
+    expect(wrapper?.text()).not.toMatch(/T4\/T5/)
+    expect(wrapper?.text()).toContain('Pelajar')
+  })
+
+  it('FR-GUR-10-7: the pupil card shows "Aktiviti Terakhir"', async () => {
+    await mountAt(MonitoringSchoolPage, '/guru/monitoring/sekolah/8080', { schoolId: 8080 })
+    expect(wrapper?.text()).toContain('Aktiviti Terakhir')
+  })
+})
+
+describe('FR-AS-10-1 / FR-AS-10-6 school-admin mount', () => {
+  beforeEach(() => {
+    api.fetchMonitoringOverview.mockResolvedValue(overview())
+  })
+  const AS = { basePath: '/admin-sekolah/monitoring' }
+
+  it('AC-AS-10-6: no Negeri/Tahap selects; Tempoh, Tapis and Reset stay; the query has no state/tahap/_token', async () => {
+    await mountAt(MonitoringPage, '/admin-sekolah/monitoring?state=Johor&tahap=Rendah', AS)
+    expect(tid('mon-state')?.exists()).toBe(false)
+    expect(tid('mon-tahap')?.exists()).toBe(false)
+    expect(tid('mon-period')?.exists()).toBe(true)
+    expect(api.fetchMonitoringOverview).toHaveBeenLastCalledWith(
+      { period: '', state: '', tahap: '' },
+      expect.anything(),
+    )
+    await tid('mon-period')?.setValue('7d')
+    await tid('mon-filters')?.trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ period: '7d' })
+    expect(api.fetchMonitoringOverview).toHaveBeenLastCalledWith(
+      { period: '7d', state: '', tahap: '' },
+      expect.anything(),
+    )
+  })
+
+  it('the guru/admin overview keeps Negeri and Tahap and sends state/tahap', async () => {
+    await mountAt(MonitoringPage, '/admin/monitoring?state=Johor&tahap=Rendah', {
+      basePath: '/admin/monitoring',
+    })
+    expect(tid('mon-state')?.exists()).toBe(true)
+    expect(tid('mon-tahap')?.exists()).toBe(true)
+    expect(api.fetchMonitoringOverview).toHaveBeenLastCalledWith(
+      { period: '', state: 'Johor', tahap: 'Rendah' },
+      expect.anything(),
+    )
+  })
+
+  it('FR-AS-10-1: seven KPIs in the V2 order and copy; no "Pernah Aktif" / "Purata/Pelajar"', async () => {
+    await mountAt(MonitoringPage, '/admin-sekolah/monitoring', AS)
+    expect(valuesIn('mon-kpis')).toEqual(['57', '4,158', '35.2%', '472,371', '522', '277', '53.1%'])
+    const text = tid('mon-kpis')?.text() ?? ''
+    for (const label of [
+      'Jumlah Sekolah',
+      'Pelajar Berdaftar',
+      '1,462 pernah aktif',
+      'Min. 1 soalan dijawab',
+      'Purata 323.1/pelajar aktif',
+      'Akaun bertaraf guru',
+      'Sejak penjejakan log masuk dimulakan',
+      '277 / 522 guru',
+    ])
+      expect(text).toContain(label)
+    expect(text).not.toContain('Pernah Aktif')
+    expect(text).not.toContain('Purata/Pelajar')
+    expect(wrapper?.text()).not.toMatch(/T4\/T5/)
+  })
+
+  it('FR-AS-10-1: Tracking Mingguan shows the last 12 weeks only, labelled M1..M12', async () => {
+    const weeks = Array.from({ length: 32 }, (_, i) => ({
+      k: i + 1,
+      from: '01/01',
+      to: '07/01',
+    }))
+    const base = overview()
+    api.fetchMonitoringOverview.mockResolvedValue({
+      ...base,
+      weeks,
+      weekly: [
+        {
+          schoolId: 940,
+          name: 'SMK Satu',
+          code: 'ABC1',
+          cells: weeks.map((w) => ({ k: w.k, count: w.k, cls: 'up', best: w.k === 32 })),
+          trend: 'up',
+          best: { k: 32, count: 32 },
+        },
+      ],
+    })
+    await mountAt(MonitoringPage, '/admin-sekolah/monitoring', AS)
+    const heads = all('mon-week-head').map((h) => h.text())
+    expect(heads).toHaveLength(12)
+    expect(heads[0]).toBe('M1')
+    expect(heads[11]).toBe('M12')
+    expect(all('mon-weekly-cell')).toHaveLength(12)
+    expect(tid('mon-weekly-best')?.text().replace(/ {2,}/g, ' ')).toBe('M12 32')
+    expect(tid('mon-weekly')?.text()).toContain('12 minggu terakhir')
+  })
+})
+
+describe('FR-GUR-10-8 / R1-AS-10 labels', () => {
+  it('the overview has no "T4/T5" in the KPI, table title or subtitle', async () => {
+    api.fetchMonitoringOverview.mockResolvedValue(overview())
+    await mountAt(MonitoringPage, '/admin/monitoring', { basePath: '/admin/monitoring' })
+    expect(wrapper?.text()).not.toMatch(/T4\/T5/)
+    expect(tid('mon-table-student')?.text()).toContain('Analisis Penglibatan Pelajar')
+    expect(valuesIn('mon-kpis')).toHaveLength(9)
   })
 })

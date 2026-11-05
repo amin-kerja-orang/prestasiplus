@@ -2,6 +2,7 @@ import type { RouteLocationNormalized, RouteRecordRaw } from 'vue-router'
 
 import { isHttpMode } from '@/api/mode'
 import type { LayoutMode } from '@/app/router/meta'
+import { useSessionStore } from '@/stores'
 import type { Role } from '@/stores/session-types'
 
 /**
@@ -25,6 +26,12 @@ interface MountOptions {
   prefix: string
   layout: LayoutMode
   roles: readonly Role[]
+  /**
+   * The index route renders the school detail of the viewer's own school instead of the national
+   * overview (R1-GUR-10, FR-GUR-10-1). An admin opening it goes to `adminRedirect`.
+   */
+  ownSchool?: boolean
+  adminRedirect?: string
 }
 
 // http mode: ids are strings on the wire (never parsed), kept as-is; mock mode keeps numbers
@@ -33,7 +40,14 @@ const routeId = (route: RouteLocationNormalized, key: string): number | string =
   return isHttpMode() ? String(value) : Number(value)
 }
 
-export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions): RouteRecordRaw[] {
+export function monitoringRoutes({
+  name,
+  prefix,
+  layout,
+  roles,
+  ownSchool = false,
+  adminRedirect = '/admin/monitoring',
+}: MountOptions): RouteRecordRaw[] {
   const meta = {
     layout,
     access: 'auth' as const,
@@ -42,20 +56,30 @@ export function monitoringRoutes({ name, prefix, layout, roles }: MountOptions):
     v2: true,
   }
   return [
-    {
-      path: prefix,
-      name,
-      component: () => import('../pages/MonitoringPage.vue'),
-      props: () => ({ basePath: prefix }),
-      meta: {
-        ...meta,
-        title: 'Monitoring Penglibatan Sekolah - Admin',
-        header: {
-          title: 'Monitoring Penglibatan',
-          subtitle: 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform',
+    ownSchool
+      ? {
+          path: prefix,
+          name,
+          component: () => import('../pages/MonitoringSchoolPage.vue'),
+          props: () => ({ basePath: prefix }),
+          // An admin has the national overview under `/admin/monitoring` (R1-ADM-M-03).
+          beforeEnter: () => (useSessionStore().user?.role === 'admin' ? adminRedirect : true),
+          meta: { ...meta, title: 'Detail Sekolah', header: { title: 'Detail Sekolah' } },
+        }
+      : {
+          path: prefix,
+          name,
+          component: () => import('../pages/MonitoringPage.vue'),
+          props: () => ({ basePath: prefix }),
+          meta: {
+            ...meta,
+            title: 'Monitoring Penglibatan Sekolah - Admin',
+            header: {
+              title: 'Monitoring Penglibatan',
+              subtitle: 'Pantau penglibatan sekolah & pelajar dalam platform',
+            },
+          },
         },
-      },
-    },
     {
       path: `${prefix}/sekolah/:schoolId(\\d+)`,
       name: `${name}-sekolah`,
@@ -94,6 +118,7 @@ const routes: RouteRecordRaw[] = [
     prefix: '/guru/monitoring',
     layout: 'admin',
     roles: ['teacher', 'admin'],
+    ownSchool: true,
   }),
   ...monitoringRoutes({
     name: 'admin-sekolah-monitoring',

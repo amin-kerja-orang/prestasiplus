@@ -5,7 +5,9 @@
  * for the school-admin alias), and every link inside is built from it.
  *
  * Filters live in the query (`period`, `state`, `tahap`); the filter form submits to the same prefix
- * with a dummy `_token` as live does (SEC-M11-01). Auto-refresh reloads the data every 300 s.
+ * (no CSRF token in the URL, D-M11-5). On the school-admin mount (`/admin-sekolah/…`, one school) only
+ * Tempoh is offered and `state` / `tahap` are never sent (R1-AS-10, FR-AS-10-6). Auto-refresh reloads
+ * the data every 300 s.
  *
  * Layout (Portal Pentadbiran admin pattern): header row (subtitle + actions), filter toolbar, KPI strip,
  * the sections in tabs, then the guide.
@@ -60,10 +62,12 @@ const paths = computed(() => monitoringPaths(props.basePath))
 
 const one = (v: unknown) =>
   typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : ''
+/** The school-admin mount sees one school: no Negeri / Tahap filter (DV-AS-10-2). */
+const schoolAdmin = computed(() => props.basePath.startsWith('/admin-sekolah/'))
 const query = computed<MonitoringFilterQuery>(() => ({
   period: one(route.query.period),
-  state: one(route.query.state),
-  tahap: one(route.query.tahap),
+  state: schoolAdmin.value ? '' : one(route.query.state),
+  tahap: schoolAdmin.value ? '' : one(route.query.tahap),
 }))
 
 const { data, error, loading, reload } = useApi(
@@ -75,13 +79,10 @@ const refresh = useAutoRefresh(() => {
   void reload()
 })
 
-/** The dummy `_token` of the live GET form (SEC-M11-01; not a real secret). */
-const DUMMY_TOKEN = 'demo-csrf-token'
-
 async function apply(next: MonitoringFilterQuery) {
   const failure = await router.push({
     path: paths.value.overview,
-    query: { ...next, _token: DUMMY_TOKEN },
+    query: schoolAdmin.value ? { period: next.period } : { ...next },
   })
   if (isNavigationFailure(failure, NavigationFailureType.duplicated)) void reload()
   refresh.restart()
@@ -119,7 +120,7 @@ const FORM_ID = 'mon-filters-form'
 const filters = useMonitoringFilters(query, (next) => void apply(next))
 /** Reset is a link to the bare prefix on live (FR-M11-32). */
 const resetFilters = () => void router.push(paths.value.overview)
-const SUBTITLE = 'Pantau penglibatan sekolah & pelajar T4/T5 dalam platform'
+const SUBTITLE = 'Pantau penglibatan sekolah & pelajar dalam platform'
 
 const tab = ref<TabKey>('pelajar')
 const TAB_OF: Record<string, string> = {
@@ -173,13 +174,25 @@ async function goto(sectionId: string) {
           <option v-for="[value, label] in PERIODS" :key="value" :value="value">{{ label }}</option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Negeri" class="w-full md:min-w-0 md:flex-1">
+      <DsFormField
+        v-if="!schoolAdmin"
+        v-slot="{ id }"
+        native
+        label="Negeri"
+        class="w-full md:min-w-0 md:flex-1"
+      >
         <DsNativeSelect :id="id" v-model="filters.state.value" name="state" data-testid="mon-state">
           <option value="">Semua Negeri</option>
           <option v-for="s in STATES" :key="s" :value="s">{{ s }}</option>
         </DsNativeSelect>
       </DsFormField>
-      <DsFormField v-slot="{ id }" native label="Tahap" class="w-full md:min-w-0 md:flex-1">
+      <DsFormField
+        v-if="!schoolAdmin"
+        v-slot="{ id }"
+        native
+        label="Tahap"
+        class="w-full md:min-w-0 md:flex-1"
+      >
         <DsNativeSelect :id="id" v-model="filters.tahap.value" name="tahap" data-testid="mon-tahap">
           <option value="">Semua Tahap</option>
           <option v-for="t in TAHAPS" :key="t" :value="t">{{ t }}</option>
@@ -219,7 +232,7 @@ async function goto(sectionId: string) {
     </p>
 
     <template v-if="data">
-      <MonitoringKpis :kpi="data.kpi" />
+      <MonitoringKpis :kpi="data.kpi" :school-admin="schoolAdmin" />
       <DsPillNav
         id="mon-tabs"
         :items="TABS"

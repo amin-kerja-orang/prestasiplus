@@ -38,9 +38,12 @@ import {
 } from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
 
-const props = withDefaults(defineProps<{ schoolId: EntityId; userId: EntityId; basePath?: string }>(), {
-  basePath: MONITORING_BASE,
-})
+const props = withDefaults(
+  defineProps<{ schoolId: EntityId; userId: EntityId; basePath?: string }>(),
+  {
+    basePath: MONITORING_BASE,
+  },
+)
 const paths = computed(() => monitoringPaths(props.basePath))
 const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
 const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
@@ -57,29 +60,33 @@ const cards = computed<StatItem[]>(() => {
   return [
     {
       key: 'students',
-      label: 'Pelajar T4/T5',
+      label: 'Pelajar',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap', accent: 'friend',
+      icon: 'i-ph-graduation-cap',
+      accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pelajar Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle', accent: 'win',
+      icon: 'i-ph-check-circle',
+      accent: 'win',
       valueTone: 'success',
     },
     {
       key: 'pct',
       label: '% Aktif',
       value: pct(c.pct),
-      icon: 'i-ph-percent', accent: 'action',
+      icon: 'i-ph-percent',
+      accent: 'action',
       valueTone: 'primary',
     },
     {
       key: 'attention',
       label: 'Perlu Perhatian',
       value: count(c.needAttention),
-      icon: 'i-ph-warning', accent: 'heat',
+      icon: 'i-ph-warning',
+      accent: 'heat',
     },
   ]
 })

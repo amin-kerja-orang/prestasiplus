@@ -2013,6 +2013,17 @@
       "name": null,
       "status": "canonical",
       "sector": "S6",
+      "component": "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue",
+      "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
+      "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "${prefix}| #2",
+      "path": "${prefix}",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
       "component": "src/modules/m11-teacher-analytics/pages/MonitoringPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
       "template": true,
@@ -2578,7 +2589,7 @@
       "approved_by_card": null
     },
     {
-      "key": "${prefix}| #2",
+      "key": "${prefix}| #3",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -10324,16 +10335,6 @@
       "approved_by_card": null
     },
     {
-      "name": "RewardSetting",
-      "table": "reward_settings",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/prisma/schema/gamification.prisma",
-      "approved_by_card": "S7-T05",
-      "dm": "DM-48",
-      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
-    },
-    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -10348,6 +10349,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48"
     },
     {
       "name": "User",

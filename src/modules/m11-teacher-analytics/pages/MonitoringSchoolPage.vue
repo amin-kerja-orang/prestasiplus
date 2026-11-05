@@ -9,16 +9,20 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import type { EntityId } from '@/api'
+import { useSessionStore } from '@/stores'
 
 import {
   DsBadge,
   DsBreadcrumb,
+  DsCallout,
   DsDataTable,
   DsLoadError,
   DsPage,
   DsPanel,
   DsPillNav,
+  DsStack,
   DsStatRow,
+  DsText,
   type PillItem,
   type StatItem,
 } from '@/ds'
@@ -42,17 +46,33 @@ import {
 } from '../components/monitoring/monitoring-paths'
 import { useMonitoringPage } from '../components/monitoring/use-monitoring-page'
 
-const props = withDefaults(defineProps<{ schoolId: EntityId; basePath?: string }>(), {
+/**
+ * Without a `schoolId` the page is the Guru index (R1-GUR-10, FR-GUR-10-1): it shows the viewer's own
+ * school from the session and never takes another school id.
+ */
+const props = withDefaults(defineProps<{ schoolId?: EntityId; basePath?: string }>(), {
+  schoolId: undefined,
   basePath: MONITORING_BASE,
+})
+const session = useSessionStore()
+const ownSchool = computed(() => props.schoolId === undefined)
+/** http ids are strings on the wire (never parsed); the session id is a number. */
+const sid = computed<EntityId | undefined>(() => {
+  if (props.schoolId !== undefined) return props.schoolId
+  const own = session.user?.schoolId
+  return own === null || own === undefined ? undefined : String(own)
 })
 const paths = computed(() => monitoringPaths(props.basePath))
 const statusColor = (s: StudentStatus) => STATUS_COLOR[s]
 const statusLabel = (s: StudentStatus) => STATUS_LABEL[s]
 
 const { data, error, blocked, reload } = useMonitoringPage(
-  (signal) => fetchSchoolDetail(props.schoolId, { signal }),
-  () => props.schoolId,
-  (d) => `${d.school.name} - Monitoring`,
+  (signal) =>
+    sid.value === undefined
+      ? Promise.reject(new Error('Tiada sekolah untuk akaun ini.'))
+      : fetchSchoolDetail(sid.value, { signal }),
+  () => sid.value,
+  (d) => (ownSchool.value ? 'Detail Sekolah' : `${d.school.name} - Monitoring`),
 )
 
 type StudentFilter = 'all' | 'active' | 'login' | 'never'
@@ -99,11 +119,16 @@ const studentPills = computed<PillItem<StudentFilter>[]>(() => [
   { key: 'login', label: 'Login sahaja' },
   { key: 'never', label: 'Belum login' },
 ])
-const TEACHER_PILLS: PillItem<TeacherFilter>[] = [
-  { key: 'all', label: 'Semua' },
-  { key: 'login', label: 'Pernah Login' },
-  { key: 'never', label: 'Belum Login' },
-]
+/** FR-GUR-10-2: the counts equal the rows each pill lists. */
+const teacherPills = computed<PillItem<TeacherFilter>[]>(() => {
+  const all = data.value?.teachers ?? []
+  const login = all.filter((t) => t.loggedIn).length
+  return [
+    { key: 'all', label: `Semua (${count(all.length)})` },
+    { key: 'login', label: `Pernah Login (${count(login)})` },
+    { key: 'never', label: `Belum Login (${count(all.length - login)})` },
+  ]
+})
 
 const cards = computed<StatItem[]>(() => {
   const c = data.value?.cards
@@ -111,7 +136,7 @@ const cards = computed<StatItem[]>(() => {
   return [
     {
       key: 'students',
-      label: 'Pelajar T4/T5',
+      label: 'Pelajar',
       value: count(c.students),
       icon: 'i-ph-graduation-cap',
       accent: 'friend',
@@ -171,15 +196,15 @@ const teacherColumns: TableColumn<TeacherRow>[] = [
   { id: 'lastLogin', header: 'Login Terakhir', accessorKey: 'lastLoginAt' },
   { id: 'createdAt', header: 'Daftar', accessorKey: 'createdAt' },
 ]
-/** Both lists are paged at 20 rows (FN-M11-4.1.x). */
-const PAGE_SIZES = [10, 20, 50]
-const studentPageSize = ref(20)
-const teacherPageSize = ref(20)
+/** Both lists are paged at 25 rows (R1-GUR-10 pupil table). */
+const PAGE_SIZES = [10, 25, 50]
+const studentPageSize = ref(25)
+const teacherPageSize = ref(25)
 const tab = ref('pelajar')
 const TABS = computed(() => [
   {
     value: 'pelajar',
-    label: 'Pelajar T4/T5',
+    label: 'Pelajar',
     icon: 'i-ph-graduation-cap',
     slot: 'pelajar' as const,
   },
@@ -200,6 +225,13 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
       <DsBreadcrumb
         :items="monitoringCrumbs(paths, data?.school.name ?? '')"
         data-testid="mon-crumbs"
+      />
+
+      <DsCallout
+        v-if="ownSchool"
+        tone="info"
+        title="Data ditapis untuk sekolah anda sahaja."
+        data-testid="mon-scope-banner"
       />
 
       <DsLoadError v-if="error" testid="mon-error" @retry="reload" />
@@ -267,7 +299,6 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
               <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 class="flex items-center gap-2 text-heading text-highlighted">
                   <UIcon name="i-ph-graduation-cap" class="size-6 text-primary-t" />Senarai Pelajar
-                  T4/T5
                 </h2>
                 <DsPillNav
                   :items="studentPills"
@@ -315,7 +346,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   :data="studentData"
                   :columns="studentColumns"
                   caption="Senarai pelajar"
-                  empty-title="Tiada pelajar"
+                  empty-title="Belum ada pelajar aktif di sekolah ini."
                 >
                   <template #no-cell="{ row }">
                     <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
@@ -334,7 +365,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         v-if="row.original.answers > 0 || paths.kirkpatrickStudent(row.original.id)"
                         :to="
                           row.original.answers > 0
-                            ? paths.student(schoolId, row.original.id)
+                            ? paths.student(sid as EntityId, row.original.id)
                             : (paths.kirkpatrickStudent(row.original.id) ?? '')
                         "
                         :class="[
@@ -407,7 +438,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                             "
                             :to="
                               (row as StudentRow).answers > 0
-                                ? paths.student(schoolId, (row as StudentRow).id)
+                                ? paths.student(sid as EntityId, (row as StudentRow).id)
                                 : (paths.kirkpatrickStudent((row as StudentRow).id) ?? '')
                             "
                             class="line-clamp-2 text-label text-primary-t"
@@ -442,6 +473,12 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                             {{ dmyHm((row as StudentRow).lastLoginAt) }}
                           </dd>
                         </div>
+                        <DsStack gap="none">
+                          <DsText as="dt" variant="body" tone="muted">Aktiviti Terakhir</DsText>
+                          <DsText as="dd" variant="label" tabular>{{
+                            dmyHm((row as StudentRow).lastActivityAt)
+                          }}</DsText>
+                        </DsStack>
                       </dl>
                     </div>
                   </template>
@@ -459,7 +496,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                 </h2>
                 <DsPillNav
                   v-if="data.teachers.length > 0"
-                  :items="TEACHER_PILLS"
+                  :items="teacherPills"
                   :active="teacherFilter"
                   label="Penapis guru"
                   testid-prefix="mon-tpill"
@@ -473,7 +510,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                 class="py-6 text-center text-body text-muted"
                 data-testid="mon-teachers-empty"
               >
-                Tiada guru berdaftar untuk sekolah ini.
+                Belum ada guru berdaftar di sekolah ini.
               </p>
               <div v-else data-testid="mon-teacher-scroller">
                 <DsDataTable
@@ -491,7 +528,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   <template #name-cell="{ row }">
                     <div class="flex min-w-48 flex-col gap-1" data-testid="mon-teacher-row">
                       <RouterLink
-                        :to="paths.teacher(schoolId, row.original.id)"
+                        :to="paths.teacher(sid as EntityId, row.original.id)"
                         class="line-clamp-2 text-label text-primary-t"
                         data-testid="mon-teacher-link"
                         >{{ row.original.name }}</RouterLink
@@ -522,7 +559,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                       <div class="flex items-start justify-between gap-3">
                         <div class="flex min-w-0 flex-col gap-1">
                           <RouterLink
-                            :to="paths.teacher(schoolId, (row as TeacherRow).id)"
+                            :to="paths.teacher(sid as EntityId, (row as TeacherRow).id)"
                             class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as TeacherRow).name }}</RouterLink
                           >
