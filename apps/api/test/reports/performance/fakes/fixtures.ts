@@ -7,11 +7,12 @@ import { PerformancePorts } from '../../../../src/modules/reports/performance/po
 import {
   AnalyticsService,
   ClassPerformanceService,
+  ItemAnalysisMeService,
   ItemAnalysisService,
   SchoolPerformanceService,
   StudentPerformanceService,
 } from '../../../../src/modules/reports/performance/services'
-import { InMemoryAnswerFacts } from './in-memory-answer-facts'
+import { InMemoryAnswerFacts, InMemoryQuestionContent } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
 import { InMemoryPupilRoster } from './in-memory-pupil-roster'
@@ -84,6 +85,7 @@ export interface World {
   practice: InMemoryPracticeRead
   spMap: InMemorySpMap
   answers: InMemoryAnswerFacts
+  content: InMemoryQuestionContent
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
   directory: InMemoryDirectory
@@ -96,6 +98,7 @@ export interface World {
   school: SchoolPerformanceService
   klass: ClassPerformanceService
   items: ItemAnalysisService
+  mine: ItemAnalysisMeService
 }
 
 /** A fresh world: fakes wired into the real services. */
@@ -107,13 +110,15 @@ export function world(): World {
   const facts = new InMemoryHeadcountFacts()
   const answers = new InMemoryAnswerFacts()
   const practice = new InMemoryPracticeRead()
+  const content = new InMemoryQuestionContent()
   const spMap = new InMemorySpMap()
-  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, spMap)
+  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, content, spMap)
   const clock = new FixedClock(NOW)
   return {
     practice,
     spMap,
     answers,
+    content,
     bijak,
     classes,
     directory,
@@ -126,5 +131,6 @@ export function world(): World {
     school: new SchoolPerformanceService(ports, directory, clock, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),
     items: new ItemAnalysisService(ports, directory, clock, facts),
+    mine: new ItemAnalysisMeService(ports, directory),
   }
 }

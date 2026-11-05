@@ -78,6 +78,34 @@ const withRowClasses = (payload: object): object => {
   return rows ? { ...payload, rows: rows.map((r) => ({ classes: [], ...r })) } : payload
 }
 
+/** S10-T03 added `tingkatanOptions` and `questionsTested` to the school item analysis. */
+AFTER_CAPTURE['item-analysis-school'] = { tingkatanOptions: ['T4', 'T5'], questionsTested: 2 }
+/** Fields added by S10-T02 inside nested objects (the capture is never hand-edited): the same shapes the API now answers. */
+const S10_T02: Record<string, (v: unknown) => unknown> = {
+  headcounts: (row) => ({ ...(row as object), teacherName: 'Guru Contoh', entryStatus: 'active', statusReason: null }),
+  'headcounts-dashboard': (v) => ({
+    ...(v as { configs: object[] }),
+    configs: (v as { configs: object[] }).configs.map((c) => ({ ...c, mode: 'auto', teacherName: 'Guru Contoh' })),
+  }),
+  'headcount-detail': (v) => {
+    const d = v as { config: object; chips: object; rows: object[] }
+    return {
+      ...d,
+      config: { ...d.config, mode: 'auto', defaultTov: null, defaultEtr: null },
+      chips: { ...d.chips, onTrackPct: 0 },
+      rows: d.rows.map((r) => ({ ...r, rs: null, rsRecordedAt: null, status: 'none', statusReason: null, entryStatus: 'active', projection: null })),
+    }
+  },
+  'headcount-student': (v) => {
+    const d = v as { sections: object[] }
+    return {
+      ...d,
+      sections: d.sections.map((s) => ({ ...s, mode: 'auto', statusReason: null, entryStatus: 'active', jurang: null, unjuran: null, keyakinan: null })),
+    }
+  },
+}
+const afterCapture = (name: string, v: unknown): unknown => S10_T02[name]?.(v) ?? v
+
 const CASES: [string, z.ZodType][] = [
   ['analytics-me', PerformanceAnalyticsSchema],
   ['analytics-classes', PerformanceClassAnalyticsSchema],
@@ -108,7 +136,7 @@ const LISTS: [string, z.ZodType][] = [
 
 describe('BE-19 contract parses payloads captured from the m08 mock', () => {
   it.each(CASES)('%s', (name, schema) => {
-    const captured = name === 'analytics-classes' ? withRowClasses(load(name) as object) : (load(name) as object)
+    const captured = (name === 'analytics-classes' ? withRowClasses(load(name) as object) : afterCapture(name, load(name))) as object
     const r = schema.safeParse({ ...captured, ...AFTER_CAPTURE[name] })
     expect(r.success ? 'ok' : JSON.stringify(r.error.issues.slice(0, 5))).toBe('ok')
   })
@@ -117,7 +145,7 @@ describe('BE-19 contract parses payloads captured from the m08 mock', () => {
     const rows = load(name) as unknown[]
     expect(rows.length).toBeGreaterThan(0)
     for (const row of rows) {
-      const r = schema.safeParse(row)
+      const r = schema.safeParse(afterCapture(name, row))
       expect(r.success ? 'ok' : JSON.stringify(r.error.issues.slice(0, 5))).toBe('ok')
     }
   })
