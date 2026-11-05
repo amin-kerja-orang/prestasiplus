@@ -61,6 +61,7 @@ model PracticeSession {
   @@index([userId, startedAt(sort: Desc)], map: "ix_practice_sessions_user_id_started_at")
   @@index([userId, status], map: "ix_practice_sessions_user_id_status")
   @@index([subjectId], map: "ix_practice_sessions_subject_id")
+  @@index([questionSetId, status], map: "ix_practice_sessions_question_set_id_status")
   @@map("practice_sessions")
 }
 
