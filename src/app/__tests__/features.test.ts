@@ -86,13 +86,16 @@ describe('isKeluargaAngkatOn / whenKeluargaAngkat', () => {
     expect(whenKeluargaAngkat([1, 2])).toEqual([1, 2])
   })
 
-  it('the menu drops the item and the Killer Features heading once it is empty while off', () => {
+  it('the menu drops the item; the Killer Features heading stays for Laporan Soalan (S5-T06)', () => {
     for (const role of ROLES) {
       const ids = labelsOf(role)
       expect(ids, role).not.toContain('mohon-keluarga-angkat')
     }
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
-    expect(navFor('student', 'sidebar').map((e) => e.id)).not.toContain('sec-killer')
+    const sidebar = navFor('student', 'sidebar').map((e) => e.id)
+    expect(sidebar).toContain('sec-killer')
+    expect(sidebar).toContain('laporan-soalan')
+    expect(sidebar).not.toContain('mohon-keluarga-angkat')
     expect(navFor('student', 'drawer').map((e) => e.id)).not.toContain('mohon-keluarga-angkat')
   })
 

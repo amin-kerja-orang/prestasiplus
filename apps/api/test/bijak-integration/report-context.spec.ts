@@ -68,11 +68,11 @@ const rows = () => t.db.query<{ attempt_id: string | null; paper_id: string | nu
 const fieldsOf = (res: { body: unknown }) => (res.body as { error: { fields: Record<string, string> } }).error.fields
 
 describe('the report stores the paper and the attempt it came from (R1-18.1)', () => {
-  it('a report from a practice session (no attempt) stores no paper; one without any context is 422 (REQ-B-031)', async () => {
+  it('a report from a practice session (no attempt) stores no paper; one without any context is 403 (REQ-B-031, FR-MUR-54-5)', async () => {
     await serve()
     const refusal = await report(student, {})
-    expect(refusal.status).toBe(422)
-    expect(fieldsOf(refusal)).toEqual({ context: M.contextRequired })
+    expect(refusal.status).toBe(403)
+    expect((refusal.body as { error: { code: string; message: string } }).error).toMatchObject({ code: 'FORBIDDEN', message: M.contextRequired })
     expect(await rows()).toHaveLength(0)
     expect((await report(student, { quizSessionId: await practiceSession(student.userId, qid) })).status).toBe(201)
     expect((await rows())[0]).toMatchObject({ attempt_id: null, paper_id: null, paper_label: null })
@@ -86,8 +86,13 @@ describe('the report stores the paper and the attempt it came from (R1-18.1)', (
     expect(await rows()).toEqual([{ attempt_id: attemptId, paper_id: paperId, paper_label: 'Kertas konteks laporan (1449/1)', reporter: expect.any(String) }])
   })
 
-  it('a paperId that matches the attempt is accepted; a second report from another attempt refreshes the row (one per version)', async () => {
+  it('a paperId that matches the attempt is accepted on a first report; a second report of the same question version is 409 and keeps one row', async () => {
     await serve()
+    const again = await report(student, { attemptId, paperId })
+    expect(again.status).toBe(409)
+    expect((again.body as { error: { message: string } }).error.message).toBe(M.duplicate)
+    expect(await rows()).toHaveLength(1)
+    await t.db.query('delete from question_reports')
     expect((await report(student, { attemptId, paperId })).status).toBe(201)
     expect(await rows()).toHaveLength(1)
   })

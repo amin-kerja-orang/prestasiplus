@@ -17,6 +17,7 @@ import { fetchTopics } from '../api/student-curriculum'
 import {
   ALL_GRADES,
   EMPTY_TOPICS,
+  EMPTY_TOPICS_BODY,
   GRADE_CHIPS,
   LOAD_ERROR,
   SUBJECT_CHIPS,
@@ -102,7 +103,7 @@ const loaded = computed(() => data.value !== null)
         class="rounded-card bg-default p-6 shadow-lift"
         data-testid="topics-empty"
       >
-        <DsEmptyState icon="books" :title="EMPTY_TOPICS" />
+        <DsEmptyState icon="books" :title="EMPTY_TOPICS" :description="EMPTY_TOPICS_BODY" />
       </div>
 
       <div
