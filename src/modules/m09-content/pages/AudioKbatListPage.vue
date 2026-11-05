@@ -148,6 +148,7 @@ function reset(): void {
     <DsEmptyState
       v-else-if="data && data.data.length === 0"
       :title="LIST_COPY.empty"
+      :description="LIST_COPY.emptyBody"
       icon="headphones"
       data-testid="audio-empty"
     />

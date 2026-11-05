@@ -4,31 +4,57 @@
  * FN-M04-4.2.1..4.2.6). Read-only: back link, header card (pills, "ID: #n", stimulus box with line
  * breaks kept, meta line), "Bahagian Soalan (n sub-soalan)" with one card per sub-question and the
  * "Edit Soalan" (M10 teacher form) / "Balik ke Senarai" actions. An unknown id is the standard 404.
+ *
+ * `portal="guru"` (S6-T17, R1-GUR-44b) is the teacher mount at `/guru/soalan-berstruktur/:id`: API-GUR-26,
+ * the stimulus once ("Rangsangan"), "Sub-Soalan ({n})" with "Skema Jawapan", no admin-only fields.
  */
 import { computed, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { useApi, useRouteExists } from '@/composables'
+import { useApi, usePageMeta, useRouteExists } from '@/composables'
 import { DsBackLink, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchStructuredQuestion } from '../api/structured'
+import {
+  fetchGuruStructuredQuestion,
+  type GuruStructuredDetail,
+} from '../api/structured-guru'
+import StructuredGuruDetail from '../components/StructuredGuruDetail.vue'
 import { formatEnDate } from '../lib/audit-format'
-import { STRUCTURED_LIST_PATH, structuredEditPath } from '../lib/audit-routes'
-import { kbatLabel, partLabelText } from '../lib/structured-options'
+import {
+  GURU_STRUCTURED_LIST_PATH,
+  STRUCTURED_LIST_PATH,
+  structuredEditPath,
+} from '../lib/audit-routes'
+import { GURU_BACK_LABEL, kbatLabel, partLabelText } from '../lib/structured-options'
 import { LOAD_ERROR, isNotFound } from '../lib/ui-errors'
 
-const props = defineProps<{ id: number }>()
+const props = withDefaults(defineProps<{ id: number; portal?: 'admin' | 'guru' }>(), {
+  portal: 'admin',
+})
+const guru = props.portal === 'guru'
+const listPath = guru ? GURU_STRUCTURED_LIST_PATH : STRUCTURED_LIST_PATH
+const backLabel = guru ? GURU_BACK_LABEL : 'Kembali ke senarai'
+// R1-GUR-44b: the tab title carries the id, "Soalan Berstruktur #{id}" (the route meta title is static).
+if (guru) usePageMeta().setTitle(`Soalan Berstruktur #${String(props.id)}`)
 // DV: the M10 teacher edit form is not routed yet, so "Edit Soalan" is hidden until it is.
 const { routeExists } = useRouteExists()
 
 const {
-  data: question,
+  data: loaded,
   error,
   reload,
-} = useApi(
-  (signal) => fetchStructuredQuestion(props.id, { signal }),
+} = useApi<Awaited<ReturnType<typeof fetchStructuredQuestion>> | GuruStructuredDetail>(
+  (signal) =>
+    guru
+      ? fetchGuruStructuredQuestion(props.id, { signal })
+      : fetchStructuredQuestion(props.id, { signal }),
   () => props.id,
 )
+const question = computed(() =>
+  guru ? null : (loaded.value as Awaited<ReturnType<typeof fetchStructuredQuestion>> | null),
+)
+const gq = computed(() => (guru ? (loaded.value as GuruStructuredDetail | null) : null))
 
 /** An unknown id is the standard 404 page; other load failures keep the red box. */
 const notFound = computed(() => isNotFound(error.value))
@@ -46,8 +72,8 @@ watch(
   <DsPage class="max-w-5xl" data-testid="structured-detail">
     <template #breadcrumb>
       <DsBackLink
-        :to="STRUCTURED_LIST_PATH"
-        label="Kembali ke senarai"
+        :to="listPath"
+        :label="backLabel"
         data-testid="structured-back"
       />
     </template>
@@ -60,12 +86,14 @@ watch(
       @retry="reload()"
     />
 
-    <div v-else-if="!question" class="flex flex-col gap-4" data-testid="structured-detail-skeleton">
+    <div v-else-if="!loaded" class="flex flex-col gap-4" data-testid="structured-detail-skeleton">
       <USkeleton class="h-56 w-full" />
       <USkeleton class="h-32 w-full" />
     </div>
 
-    <template v-else>
+    <StructuredGuruDetail v-else-if="gq" :detail="gq" />
+
+    <template v-else-if="question">
       <DsPanel data-testid="structured-header">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="flex flex-wrap gap-2">

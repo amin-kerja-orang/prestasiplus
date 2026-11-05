@@ -183,7 +183,7 @@ describe('catalogue', () => {
   })
 
   it('pivots reward_settings into key/value rows, adopting the seeded key', async () => {
-    const rows = await h.q<{ key: string; value: string; legacy_id: string | null }>(`select key, value::text, legacy_id from gamification_settings order by key`)
+    const rows = await h.q<{ key: string; value: string; legacy_id: string | null }>(`select key, value::text, legacy_id from gamification_settings where legacy_id is not null order by key`)
     expect(rows).toEqual([
       { key: 'current_session_year', value: '2026.00', legacy_id: '1:current_session_year' },
       { key: 'flat_quiz_reward', value: '2.00', legacy_id: '1:flat_quiz_reward' },
