@@ -473,6 +473,18 @@ describe('401 policy (FR-M01-14)', () => {
     expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?y=2' })
   })
 
+  it('a 401 with no session does not navigate: /login?redirect= keeps its return path', async () => {
+    installTransport(fakeTransport(() => ({})))
+    const router = testRouter()
+    connectUnauthorizedRedirect(router)
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+    await useSessionStore().handleUnauthorized()
+    await settle()
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+  })
+
   it('a 401 with no session (storage already cleared) does not mark kembali: the guard keeps redirect', async () => {
     installTransport(fakeTransport(() => ({})))
     const router = testRouter()
