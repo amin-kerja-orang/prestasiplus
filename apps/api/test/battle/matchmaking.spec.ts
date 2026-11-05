@@ -262,13 +262,16 @@ describe('battle matchmaking (FR-GM-01.1, 01.5, 01.9)', () => {
       expect((await rows<{ mode: string }>(`select mode from battles where id = $1`, [m.battle_uuid]))[0]?.mode).toBe('school_battle')
     })
 
-    it('Battle Sekolah: a pupil with no school is never matched with a human, only the robot', async () => {
+    it('Battle Sekolah: a pupil with no school is refused with 422 {}, no queue entry and no daily count; Quick Match still works', async () => {
       await rows(`update users set school_id = null where lower(email) = lower($1)`, [STUDENT_G10_D])
       try {
-        const qa = await startQueue(a, s.math, {}, '/battle/school-battle')
-        const qe = await startQueue(e, s.math, {}, '/battle/school-battle')
-        expect(await matched(e, qe)).toEqual({ status: 'waiting' })
-        expect(await matched(a, qa)).toEqual({ status: 'waiting' })
+        await setting('battle_daily_max', 1)
+        const res = await e.post('/battle/school-battle', { question_type: 'biasa', subject_id: s.math })
+        expect(res.status).toBe(422)
+        expect(parse(BattleEmptyBodySchema, res)).toEqual({})
+        expect((await rows(`select 1 from battle_queues`)).length).toBe(0)
+        expect((await rows(`select 1 from battles`)).length).toBe(0)
+        expect((await e.post('/battle/quick-match', { question_type: 'biasa', subject_id: s.math })).status).toBe(200)
       } finally {
         await rows(`update users set school_id = 1 where lower(email) = lower($1)`, [STUDENT_G10_D])
       }

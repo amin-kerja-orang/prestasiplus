@@ -194,7 +194,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     path: '/battle/school-battle',
     tags: [BATTLE_TAGS.battle],
     summary: 'Join the school-battle queue (M16-03)',
-    description: `${startDescription('school-battle')}\nSame body and answers as M16-02; a human opponent must be from another school, so a pupil with no school is never matched with a human.`,
+    description: `${startDescription('school-battle')}\nSame body and answers as M16-02; a human opponent must be from another school. A caller with no school is refused with 422.`,
     request: { headers: [csrf], body: body(BattleStartRequestSchema) },
     responses: {
       200: json(BattleStartResponseSchema, 'A waiting queue owned by the caller (mode school_battle).'),
