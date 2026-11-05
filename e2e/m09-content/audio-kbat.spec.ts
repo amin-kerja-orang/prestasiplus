@@ -130,8 +130,9 @@ test.describe('M09 S21 Audio KBAT student list', MODULE, () => {
     expect(bg).not.toBe('rgb(255, 255, 255)')
     await expectTouchTarget(submit)
 
-    await expect(page.getByTestId('audio-empty')).toHaveText(
-      'Belum ada set Audio KBAT yang approved.',
+    await expect(page.getByTestId('audio-empty')).toContainText('Belum ada audio diterbitkan')
+    await expect(page.getByTestId('audio-empty')).toContainText(
+      'Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan.',
     )
     await page.getByTestId('filter-level').selectOption({ label: 'Tingkatan 4' })
     await page.getByTestId('filter-subject').selectOption({ label: 'Bahasa Melayu' })

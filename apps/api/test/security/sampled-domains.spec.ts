@@ -61,6 +61,13 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
     await t.close()
   })
 
+  /** S6-T06: the Bab, SP, TP and Aras of the seed subject and level, where it has chapters or DSKP nodes (the conditional rule of D112). */
+  async function dskpFieldsOf(subject: string, level: string): Promise<Record<string, unknown>> {
+    const chapter = (await t.db.query<{ id: string }>(`select id::text from chapters where subject_id = $1 and education_level_id = $2 and is_active and in_tree order by id limit 1`, [subject, level]))[0]
+    const sp = (await t.db.query<{ id: string }>(`select id::text from curriculum_nodes where kind = 'sp' and subject_id = $1 and education_level_id = $2 order by id limit 1`, [subject, level]))[0]
+    return { ...(chapter ? { chapterId: chapter.id } : {}), ...(sp ? { spIds: [sp.id], tp: 3, cognitiveLevel: 'memahami' } : {}) }
+  }
+
   // --- b. cross-user / cross-school ids are 404 ------------------------------------------------
 
   describe('b. a cross-user or cross-school id is 404 (never 403, never 200)', () => {
@@ -143,6 +150,8 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
         correctAnswer: 1,
         subjectId,
         educationLevelId: levelId,
+        // S6-T06: the DSKP fields apply where the seed subject and level have chapters or DSKP nodes; the 404 checks below do not need a 201 body to differ.
+        ...(await dskpFieldsOf(subjectId, levelId)),
       })
       expect(created.status, JSON.stringify(created.body)).toBe(201)
       const id = created.body.data.id as string

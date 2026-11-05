@@ -8,7 +8,7 @@ import { PracticePorts } from './ports'
 import { PracticeController } from './practice.controller'
 import { PracticeRepository } from './practice.repository'
 import { PracticeService } from './practice.service'
-import { PracticeStartPlanner } from './start.planner'
+import { PracticeStartPlanner, RemedialSelector } from './start.planner'
 
 /**
  * Practice (M05 write path, BE-12): start, check-answer, submit and the caller's own history, plus the
@@ -19,7 +19,7 @@ import { PracticeStartPlanner } from './start.planner'
 @Module({
   imports: [ThrottleModule, CurriculumModule, SubscriptionsModule],
   controllers: [PracticeController],
-  providers: [PracticeRepository, PracticeStartPlanner, PracticeService, PracticePorts, PracticeAggregateService],
-  exports: [PracticeRepository, PracticePorts, PracticeAggregateService, PracticeService],
+  providers: [PracticeRepository, PracticeStartPlanner, RemedialSelector, PracticeService, PracticePorts, PracticeAggregateService],
+  exports: [PracticeRepository, PracticePorts, RemedialSelector, PracticeAggregateService, PracticeService],
 })
 export class PracticeModule {}
