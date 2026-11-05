@@ -20,7 +20,7 @@ describe('group members (D90)', () => {
   it('a group holds 1..n questions; 0 is a draft group (DM-01, AC-QA-07)', () => {
     expect(isComplete([])).toBe(false)
     expect(memberIssues([])).toEqual([GROUP_MEMBER_MESSAGES.needsOne])
-    expect(GROUP_MEMBER_MESSAGES.needsOne).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
+    expect(GROUP_MEMBER_MESSAGES.needsOne).toBe('Kumpulan belum mempunyai soalan.')
     expect(isComplete([m('1')])).toBe(true)
     expect(memberIssues([m('1')])).toEqual([])
   })

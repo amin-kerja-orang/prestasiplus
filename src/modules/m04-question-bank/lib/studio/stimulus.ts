@@ -79,9 +79,11 @@ export function stimulusFormOf(s: WireStimulus): StimulusForm {
 
 /** The BM message of what stops the stimulus being saved (the API's kind rules), or null. */
 export function stimulusIssue(f: StimulusForm): string | null {
+  if (f.label.trim() === '') return 'Sila isi label rangsangan.'
   if (f.kind === 'passage' && f.body.trim() === '') return STIMULUS_MESSAGES_BM.passage
   if (f.kind === 'table' && parseTable(f.tableText) === null && f.imageToken === null) return STIMULUS_MESSAGES_BM.table
   if (IMAGE_KINDS.includes(f.kind) && f.imageToken === null) return STIMULUS_MESSAGES_BM.image
+  if (IMAGE_KINDS.includes(f.kind) && f.alt.trim() === '') return 'Sila isi teks alternatif untuk imej ini.'
   return null
 }
 

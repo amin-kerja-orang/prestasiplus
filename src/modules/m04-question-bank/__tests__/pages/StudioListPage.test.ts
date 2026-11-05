@@ -12,6 +12,8 @@ const studio = vi.hoisted(() => ({
   studioAvailable: vi.fn(() => true),
   STUDIO_UNAVAILABLE: 'Studio hanya tersedia apabila sistem disambungkan ke pelayan sebenar.',
   fetchStudioList: vi.fn(),
+  createStimulus: vi.fn(),
+  createGroup: vi.fn(),
   fetchServabilityBatch: vi.fn(),
   moveQuestionStatus: vi.fn(),
   editAsDraft: vi.fn(),
@@ -21,7 +23,7 @@ const studio = vi.hoisted(() => ({
   fetchStudioQuestion: vi.fn(),
   fetchGroup: vi.fn(),
 }))
-const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn() }))
+const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
 const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn() }))
@@ -72,6 +74,7 @@ beforeEach(() => {
     notFound: [],
   })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
+  lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
   summaryApi.fetchQuestionSummary.mockReset().mockResolvedValue(null)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
@@ -99,7 +102,48 @@ describe('StudioListPage (S1 to S6)', () => {
     const tiles = t(w, 'studio-tiles').text().replace(/\s+/g, ' ')
     for (const word of ['Draf', 'Menunggu Semakan', 'Diterbitkan', 'Diarkibkan']) expect(tiles).toContain(word)
     expect(tiles).toContain('20')
-    expect(t(w, 'studio-create').attributes('href')).toBe('/admin/studio/questions/create')
+    expect(t(w, 'studio-create').text()).toContain('Cipta baharu')
+  })
+
+  describe('Cipta baharu (FR-ADM-QE2.1)', () => {
+    const body = (id: string): HTMLElement => document.querySelector(`[data-testid="${id}"]`) as HTMLElement
+    const set = async (id: string, v: string): Promise<void> => {
+      const el = body(id) as HTMLInputElement
+      el.value = v
+      el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }))
+      await flushPromises()
+    }
+
+    it('offers Soalan tunggal and Kumpulan rangsangan', async () => {
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      expect(body('studio-start-single').getAttribute('href')).toBe('/admin/studio/questions/create')
+      expect(body('studio-start-group').textContent).toContain('Kumpulan rangsangan')
+    })
+
+    it('a group asks Subjek and Tingkatan first, then creates with its first stimulus and opens its page', async () => {
+      studio.createStimulus.mockResolvedValue({ data: { id: '70' }, status: 'ok' })
+      studio.createGroup.mockResolvedValue({ data: { id: '9' }, status: 'ok' })
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      body('studio-start-group').click()
+      await flushPromises()
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(document.body.textContent).toContain('Sila pilih subjek.')
+      expect(document.body.textContent).toContain('Sila pilih tahap pendidikan.')
+      expect(studio.createGroup).not.toHaveBeenCalled()
+      await set('studio-start-subject', '3')
+      await set('studio-start-level', '7')
+      await set('studio-start-stimulus-label', 'Petikan 1')
+      await set('studio-start-stimulus-body', 'Teks petikan.')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], subjectId: '3', educationLevelId: '7', kertas: null })
+      expect(router.currentRoute.value.path).toBe('/admin/studio/groups/9')
+    })
   })
 
   it('asks the API for 25 per page and passes the supported filters', async () => {

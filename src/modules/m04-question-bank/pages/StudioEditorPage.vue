@@ -337,6 +337,7 @@ async function save(): Promise<void> {
         :status="status"
         :dirty="dirty"
         :unsupported="unsupported.length > 0"
+        :in-group="draft.groupId !== null"
         @changed="load"
         @refused="fieldProblems = $event"
       />
@@ -409,7 +410,9 @@ async function save(): Promise<void> {
       <!-- Langkah 3 -->
       <DsStack id="studio-section-rangsangan" as="section">
         <DsFormSection title="Langkah 3 Rangsangan (stimulus)" description="Satu rangsangan dikongsi oleh semua soalan yang merujuknya. Ia dipaparkan sekali." icon="book-open-text">
-          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly" @changed="groupView = $event" />
+          <!-- FR-ADM-QE2.2: a saved member shows the stimulus read-only; the group is changed on its own page. -->
+          <UButton v-if="edit && draft.groupId !== null" :to="`/admin/studio/groups/${draft.groupId}`" color="neutral" variant="soft" data-testid="studio-open-group">Buka kumpulan</UButton>
+          <StudioGroupEditor v-model:group-id="draft.groupId" v-model:pending="pendingGroup" :current-question-id="props.id ?? null" :subject-id="draft.subjectId || null" :disabled="readOnly || (edit && draft.groupId !== null)" @changed="groupView = $event" />
         </DsFormSection>
       </DsStack>
 

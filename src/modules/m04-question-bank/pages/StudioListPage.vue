@@ -18,8 +18,10 @@ import {
   DsCallout,
   DsCluster,
   DsDataTable,
+  DsDialog,
   DsEmptyState,
   DsFilterBar,
+  DsFormField,
   DsGrid,
   DsLoadError,
   DsNativeSelect,
@@ -38,9 +40,11 @@ import {
 
 import { useMedia } from '@/ds/useMedia'
 
-import { fetchSubjects } from '../api/lookups'
+import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { fetchQuestionSummary } from '../api/questions'
 import {
+  createGroup,
+  createStimulus,
   editAsDraft,
   EditAsDraftRefused,
   fetchGroup,
@@ -53,9 +57,11 @@ import {
   type StudioRow,
 } from '../api/studio'
 import StudioPreview from '../components/studio/StudioPreview.vue'
+import StudioStimulusEditor from '../components/studio/StudioStimulusEditor.vue'
 import { excerpt, sourceLabel } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
 import { hydrate, blankDraft, type StudioDraft } from '../lib/studio/draft'
+import { blankStimulus, stimulusIssue, toCreateBody, type StimulusForm } from '../lib/studio/stimulus'
 import type { GroupView } from '../lib/studio/group-members'
 import {
   ARCHIVE_DIALOG,
@@ -148,6 +154,57 @@ const list = useApi(
   [...KEYS.map((k) => () => route.query[k]), () => route.query.page, () => route.query.per_page],
 )
 const subjects = useApi((signal) => (available ? fetchSubjects({ signal }) : Promise.resolve(null)))
+
+/**
+ * FR-ADM-QE2.1: `Cipta baharu` offers `Soalan tunggal` and `Kumpulan rangsangan`. A group is always scoped and starts with its
+ * first stimulus (API-Q-08 needs 1 to 3; decision 2 on #428), then opens on its own page.
+ */
+const startOpen = ref(false)
+const startGroup = ref(false)
+const groupForm = ref({ subjectId: '', educationLevelId: '', kertas: '' })
+const groupStimulus = ref<StimulusForm>(blankStimulus())
+const groupErrors = ref<Record<string, string>>({})
+const groupProblems = ref<string[]>([])
+const groupBusy = ref(false)
+const levels = useApi((signal) => (available ? fetchEducationLevels({ signal }) : Promise.resolve(null)))
+const levelOptions = computed(() => levels.data.value?.data ?? [])
+
+function openStart(): void {
+  startGroup.value = false
+  groupForm.value = { subjectId: '', educationLevelId: '', kertas: '' }
+  groupStimulus.value = blankStimulus()
+  groupErrors.value = {}
+  groupProblems.value = []
+  startOpen.value = true
+}
+
+async function createNewGroup(): Promise<void> {
+  const f = groupForm.value
+  const errors: Record<string, string> = {}
+  if (f.subjectId === '') errors.subjectId = 'Sila pilih subjek.'
+  if (f.educationLevelId === '') errors.educationLevelId = 'Sila pilih tahap pendidikan.'
+  groupErrors.value = errors
+  const issue = stimulusIssue(groupStimulus.value)
+  groupProblems.value = issue === null ? [] : [issue]
+  if (Object.keys(errors).length > 0 || issue !== null) return
+  groupBusy.value = true
+  try {
+    const stim = await createStimulus(toCreateBody(groupStimulus.value))
+    const g = await createGroup({
+      label: groupStimulus.value.label.trim(),
+      stimulusIds: [stim.data.id],
+      subjectId: f.subjectId,
+      educationLevelId: f.educationLevelId,
+      kertas: f.kertas === '' ? null : f.kertas,
+    })
+    startOpen.value = false
+    await router.push(`/admin/studio/groups/${g.data.id}`)
+  } catch (err) {
+    groupProblems.value = errorLines(err)
+  } finally {
+    groupBusy.value = false
+  }
+}
 
 /** The KPI strip by Subjek (plan S2-T01, copied from `BankPage.vue`; data API-Q-01 `/summary`). A failed read just hides it. */
 const summary = useApi((signal) => (available ? fetchQuestionSummary({ signal }) : Promise.resolve(null)))
@@ -447,7 +504,7 @@ const cardFields: CardField[] = [
 <template>
   <DsPage subtitle="Bank soalan kanonikal - cipta, semak, terbit" data-testid="studio-list-page">
     <template #actions>
-      <UButton :to="CREATE_PATH" icon="i-ph-plus" class="min-h-11 shrink-0" data-testid="studio-create">Cipta baharu</UButton>
+      <UButton type="button" icon="i-ph-plus" class="min-h-11 shrink-0" aria-haspopup="dialog" data-testid="studio-create" @click="openStart">Cipta baharu</UButton>
     </template>
 
     <DsCallout v-if="!available" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
@@ -603,5 +660,41 @@ const cardFields: CardField[] = [
     </template>
 
     <StudioPreview v-model:open="previewOpen" :group="previewGroup" :draft="previewDraft" :question-id="previewId" :unsupported="previewUnsupported" />
+    <DsDialog v-model:open="startOpen" title="Cipta baharu" data-testid="studio-start">
+      <DsStack gap="md">
+        <DsCluster v-if="!startGroup" gap="sm">
+          <UButton :to="CREATE_PATH" color="primary" data-testid="studio-start-single">Soalan tunggal</UButton>
+          <UButton type="button" color="neutral" variant="soft" data-testid="studio-start-group" @click="startGroup = true">Kumpulan rangsangan</UButton>
+        </DsCluster>
+        <DsStack v-else as="form" gap="md" data-testid="studio-start-form" @submit.prevent="createNewGroup">
+          <DsFormField v-slot="{ id }" native label="Subjek" for="studio-start-subject" required :error="groupErrors.subjectId">
+            <DsNativeSelect :id="id" v-model="groupForm.subjectId" placeholder="Pilih subjek" data-testid="studio-start-subject">
+              <option v-for="o in subjectOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField v-slot="{ id }" native label="Tingkatan" for="studio-start-level" required :error="groupErrors.educationLevelId">
+            <DsNativeSelect :id="id" v-model="groupForm.educationLevelId" placeholder="Pilih Tingkatan" data-testid="studio-start-level">
+              <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField v-slot="{ id }" native label="Kertas (pilihan)" for="studio-start-kertas">
+            <DsNativeSelect :id="id" v-model="groupForm.kertas" data-testid="studio-start-kertas">
+              <option value="">—</option>
+              <option value="1">Kertas 1</option>
+              <option value="2">Kertas 2</option>
+              <option value="3">Kertas 3</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <StudioStimulusEditor v-model="groupStimulus" testid="studio-start-stimulus" />
+          <DsStack v-if="groupProblems.length > 0" gap="2xs" role="alert" data-testid="studio-start-problems">
+            <DsText v-for="p in groupProblems" :key="p" variant="body" tone="error">{{ p }}</DsText>
+          </DsStack>
+          <DsCluster gap="sm">
+            <UButton type="submit" color="primary" :loading="groupBusy" data-testid="studio-start-create">Cipta kumpulan</UButton>
+            <UButton type="button" color="neutral" variant="soft" data-testid="studio-start-cancel" @click="startOpen = false">Batal</UButton>
+          </DsCluster>
+        </DsStack>
+      </DsStack>
+    </DsDialog>
   </DsPage>
 </template>

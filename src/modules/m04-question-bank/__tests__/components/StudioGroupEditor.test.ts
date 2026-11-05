@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 
@@ -18,8 +19,21 @@ const api = vi.hoisted(() => ({
   setGroupMembers: vi.fn(),
   searchQuestions: vi.fn(),
   uploadStudioImage: vi.fn(),
+  submitGroupForReview: vi.fn(),
+  publishGroup: vi.fn(),
+  editGroupAsDraft: vi.fn(),
+  discardGroupDraft: vi.fn(),
+  retireGroup: vi.fn(),
+  moveGroupMember: vi.fn(),
 }))
 vi.mock('../../api/studio', () => api)
+const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)))
+vi.mock('@/ds', async (load) => ({ ...(await load<typeof import('@/ds')>()), useConfirm: () => confirmMock }))
+const lookups = vi.hoisted(() => ({
+  fetchSubjects: vi.fn(() => Promise.resolve({ data: [{ id: 3, name: 'Matematik' }], meta: {} })),
+  fetchEducationLevels: vi.fn(() => Promise.resolve({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })),
+}))
+vi.mock('../../api/lookups', () => lookups)
 
 const stimulus = { id: '70', kind: 'diagram', label: 'Rajah 1', caption: null, alt: 'Segi tiga', body: null, tableData: null, sourceCitation: null, imageId: 'abcdefghijklmnopqrstuv' }
 const member = (id: string, status = 'draft') => ({ id, numberLabel: id, stem: `Berdasarkan Rajah 1, apakah S${id}?`, status, servable: status === 'approved' })
@@ -32,6 +46,7 @@ async function render(groupId: string | null = '5', props: Record<string, unknow
   wrapper = mount(StudioGroupEditor, {
     props: { groupId, 'onUpdate:groupId': (v: string | null) => void wrapper?.setProps({ groupId: v }), currentQuestionId: '11', ...props },
     attachTo: document.body,
+    global: { plugins: [createRouter({ history: createMemoryHistory(), routes: [{ path: '/:p(.*)', component: { template: '<div />' } }] })] },
   })
   await flushPromises()
   return wrapper
@@ -86,7 +101,7 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     await t(w, 'member-11-remove').trigger('click')
     await t(w, 'member-12-remove').trigger('click')
     await t(w, 'member-13-remove').trigger('click')
-    expect(t(w, 'issues').text()).toBe('Kumpulan perlu sekurang-kurangnya 1 soalan.')
+    expect(t(w, 'issues').text()).toBe('Kumpulan belum mempunyai soalan.')
     await t(w, 'discard').trigger('click')
     expect(order(w)).toEqual(['11', '12', '13'])
     expect(has(w, 'issues')).toBe(false)
@@ -149,6 +164,7 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     api.setGroupStimuli.mockResolvedValue({ data: detail(), status: 'ok' })
     const w = await render()
     await t(w, 'add-stimulus').trigger('click')
+    await w.get('[data-testid="studio-group-adding-label"]').setValue('Petikan 2')
     await t(w, 'adding-save').trigger('click')
     expect(api.createStimulus).not.toHaveBeenCalled()
     expect(t(w, 'problems').text()).toContain('Petikan mesti mempunyai teks.')
@@ -164,15 +180,17 @@ describe('StudioGroupEditor on the stimulus API (T32, D90)', () => {
     api.createGroup.mockResolvedValue({ data: detail(['11'], 'Kumpulan ini kini hanya mempunyai 1 soalan.'), status: 'Kumpulan rangsangan berjaya dicipta.' })
     const w = await render(null)
     expect(t(w, 'create').attributes('disabled')).toBeUndefined()
+    await w.get('[data-testid="studio-group-new-label"]').setValue('Petikan 1')
     await w.get('[data-testid="studio-group-new-body"]').setValue('Petikan tentang pasar tani.')
     await t(w, 'create').trigger('click')
     await flushPromises()
-    expect(api.createGroup).toHaveBeenCalledWith({ label: null, stimulusIds: ['70'], questionIds: ['11'] })
+    expect(api.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], questionIds: ['11'] })
     expect(w.emitted('update:groupId')?.[0]).toEqual(['5'])
   })
 
   it('on a question that is not saved yet nothing is created: the stimulus waits for the save (D93, no orphan group)', async () => {
     const w = await render(null, { currentQuestionId: null })
+    await w.get('[data-testid="studio-group-new-label"]').setValue('Petikan 1')
     await w.get('[data-testid="studio-group-new-body"]').setValue('Petikan tentang pasar tani.')
     await t(w, 'create').trigger('click')
     await flushPromises()
@@ -297,5 +315,110 @@ describe('StudioGroupEditor question search and the read limit (REQ-B-061)', () 
     await vi.advanceTimersByTimeAsync(350)
     vi.useRealTimers()
     expect(api.searchQuestions).toHaveBeenCalledTimes(2)
+  })
+
+  describe('group actions (FR-QA-04..06, 50)', () => {
+    const scoped = (over: Record<string, unknown> = {}) => ({ ...detail(), subjectId: '3', educationLevelId: '7', kertas: '1', draftOfGroupId: null, ...over })
+    const withMembers = (...statuses: ['draft' | 'review' | 'approved', boolean][]) =>
+      statuses.map(([status, servable], i) => ({ ...member(String(11 + i), status), servable }))
+    const act = (props: Record<string, unknown> = {}) => render('5', { actions: true, ...props })
+
+    it('shows the scope read-only, and no action bar in the wizard', async () => {
+      api.fetchGroup.mockResolvedValue(scoped())
+      const w = await act()
+      expect(t(w, 'scope').text()).toBe('Subjek: Matematik · Tingkatan: Tingkatan 4 · Kertas: 1')
+      w.unmount()
+      const inWizard = await render('5')
+      expect(has(inWizard, 'actions')).toBe(false)
+    })
+
+    it('all Draf: submit is offered, publish is disabled; submit moves the group and reads it again (AC-QA-50)', async () => {
+      api.fetchGroup.mockResolvedValue(scoped({ members: withMembers(['draft', false], ['draft', false]) }))
+      api.submitGroupForReview.mockResolvedValue({ data: { affected: 2, failed: [] }, status: 'ok' })
+      const w = await act()
+      expect(t(w, 'publish').attributes('disabled')).toBeDefined()
+      expect(t(w, 'publish').attributes('title')).toBe('Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.')
+      await t(w, 'submit').trigger('click')
+      await flushPromises()
+      expect(api.submitGroupForReview).toHaveBeenCalledWith('5')
+      expect(t(w, 'notice').text()).toBe('Kumpulan dihantar untuk semakan.')
+    })
+
+    it('publish names each member the gate refused', async () => {
+      api.fetchGroup.mockResolvedValue(scoped({ members: withMembers(['review', false]) }))
+      api.publishGroup.mockRejectedValue(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'x', details: { gate: [{ questionId: '11', message: 'Soalan 1: Sila pilih Bab.' }] } }))
+      const w = await act()
+      await t(w, 'publish').trigger('click')
+      await flushPromises()
+      expect(t(w, 'problems').text()).toContain('Soalan 1: Sila pilih Bab.')
+    })
+
+    it('a served group shows the banner; Sunting kumpulan opens the copy; the copy offers Buang draf', async () => {
+      api.fetchGroup.mockResolvedValue(scoped({ members: withMembers(['approved', true]) }))
+      api.editGroupAsDraft.mockResolvedValue({ data: { id: '9' }, status: 'Draf kumpulan #9 dicipta.' })
+      const opened: string[] = []
+      const w = await act({ onOpen: (id: string) => opened.push(id) })
+      expect(t(w, 'served-banner').text()).toContain('Tekan `Sunting kumpulan`')
+      await t(w, 'copy').trigger('click')
+      await flushPromises()
+      expect(opened).toEqual(['9'])
+      w.unmount()
+      api.fetchGroup.mockResolvedValue(scoped({ id: '9', draftOfGroupId: '5', members: withMembers(['draft', false]) }))
+      api.discardGroupDraft.mockResolvedValue(undefined)
+      const opened2: string[] = []
+      const c = await act({ onOpen: (id: string) => opened2.push(id) })
+      expect(has(c, 'served-banner')).toBe(false)
+      await t(c, 'discard-copy').trigger('click')
+      await flushPromises()
+      expect(api.discardGroupDraft).toHaveBeenCalledWith('5')
+      expect(opened2).toEqual(['5'])
+    })
+
+    it('Arkibkan asks first and names the affected papers (AC-QA-05)', async () => {
+      api.fetchGroup.mockResolvedValue(scoped())
+      api.retireGroup.mockResolvedValue({ archived: 3, affectedPapers: [{ id: '1', title: 'Kertas A' }] })
+      confirmMock.mockResolvedValueOnce(false)
+      const w = await act()
+      await t(w, 'retire').trigger('click')
+      await flushPromises()
+      expect(api.retireGroup).not.toHaveBeenCalled()
+      await t(w, 'retire').trigger('click')
+      await flushPromises()
+      expect(t(w, 'notice').text()).toBe('3 soalan diarkibkan. Kertas Terbit terjejas: Kertas A.')
+    })
+
+    it('removing a member that names a figure asks with the figure (FR-ADM-QE2.7)', async () => {
+      api.fetchGroup.mockResolvedValue(scoped())
+      const w = await act()
+      await t(w, 'member-11-remove').trigger('click')
+      await flushPromises()
+      expect(confirmMock).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Keluarkan soalan daripada kumpulan?', message: 'Soalan ini menyebut Rajah 1. Tanpa kumpulan ia tidak akan dipaparkan kepada murid.' }))
+      expect(order(w)).toEqual(['12', '13'])
+    })
+
+    it('Bubarkan asks first', async () => {
+      api.fetchGroup.mockResolvedValue(scoped())
+      confirmMock.mockResolvedValueOnce(false)
+      const w = await act()
+      await t(w, 'dissolve').trigger('click')
+      await flushPromises()
+      expect(confirmMock).toHaveBeenLastCalledWith(expect.objectContaining({ title: 'Bubarkan kumpulan ini?', message: 'Soalan ahli kekal, tanpa rangsangan bersama.' }))
+      expect(api.dissolveGroup).not.toHaveBeenCalled()
+    })
+
+    it('Pindah picks a group of the same Subjek and moves in one call; a refusal shows the server text (AC-QA-06)', async () => {
+      api.fetchGroup.mockResolvedValue(scoped())
+      api.listGroups.mockResolvedValue(page([groupRow('5', 'Sendiri'), groupRow('8', 'Rajah 2')]))
+      api.moveGroupMember.mockRejectedValue(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Soalan dalam satu kumpulan mesti sama subjek.' }))
+      const w = await act()
+      await t(w, 'member-11-move').trigger('click')
+      await flushPromises()
+      expect(api.listGroups).toHaveBeenLastCalledWith(expect.objectContaining({ subjectId: '3' }))
+      expect(document.querySelector('[data-testid="studio-move-to-5"]')).toBeNull()
+      ;(document.querySelector('[data-testid="studio-move-to-8"]') as HTMLElement).click()
+      await flushPromises()
+      expect(api.moveGroupMember).toHaveBeenCalledWith('5', '11', '8')
+      expect(t(w, 'problems').text()).toContain('Soalan dalam satu kumpulan mesti sama subjek.')
+    })
   })
 })

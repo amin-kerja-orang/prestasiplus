@@ -53,6 +53,8 @@ const props = defineProps<{
   dirty: boolean
   /** The editor cannot hold this question (a mode it does not know): no "Edit sebagai draf". */
   unsupported: boolean
+  /** The question is a member of a stimulus group: review and publish go through the group (FR-QA-03, 50). */
+  inGroup?: boolean
 }>()
 const emit = defineEmits<{ changed: []; refused: [fields: Record<string, string>] }>()
 
@@ -68,6 +70,12 @@ const notServed = ref<{ label: string; reason: string }[]>([])
 const refusalEl = ref<{ focus: () => void } | null>(null)
 
 const buttons = computed(() => statusButtons(props.status))
+/** FR-QA-03, 50: a member moves through review and publish with its group. */
+const groupTitle = (action: StatusAction): string | undefined => {
+  if (!props.inGroup) return undefined
+  if (action === 'approved') return 'Terbitkan melalui kumpulan.'
+  return action === 'review' ? 'Hantar melalui kumpulan.' : undefined
+}
 const rows = computed(() => (report.value ? servedRows(report.value) : []))
 const unservedCount = computed(() => rows.value.filter((r) => !r.served).length)
 const stateText = computed(() => {
@@ -177,7 +185,8 @@ async function run(action: StatusAction): Promise<void> {
         :variant="b.primary ? 'solid' : 'soft'"
         class="min-h-11"
         :loading="busy === b.action"
-        :disabled="busy !== null || (b.action !== 'archived' && waitForSave) || (b.action === 'edit-as-draft' && unsupported)"
+        :disabled="busy !== null || (b.action !== 'archived' && waitForSave) || (b.action === 'edit-as-draft' && unsupported) || groupTitle(b.action) !== undefined"
+        :title="groupTitle(b.action)"
         :data-testid="`studio-action-${b.action}`"
         @click="run(b.action)"
       >

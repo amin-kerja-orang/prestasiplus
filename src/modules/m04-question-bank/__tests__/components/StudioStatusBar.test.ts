@@ -32,7 +32,7 @@ const REPORT = {
 
 let wrapper: VueWrapper | null = null
 let confirmSpy: ReturnType<typeof vi.spyOn>
-const mountBar = async (props: { status: string; dirty?: boolean; unsupported?: boolean }) => {
+const mountBar = async (props: { status: string; dirty?: boolean; unsupported?: boolean; inGroup?: boolean }) => {
   wrapper = mount(StudioStatusBar, { props: { questionId: '9', dirty: false, unsupported: false, ...props }, attachTo: document.body })
   await flushPromises()
   return wrapper
@@ -157,5 +157,13 @@ describe('StudioStatusBar', () => {
     const w = await mountBar({ status: 'draft', dirty: true })
     expect(t(w, 'studio-action-review').attributes('disabled')).toBeDefined()
     expect(t(w, 'studio-status-unsaved').text()).toBe('Simpan draf dahulu — perubahan belum disimpan.')
+  })
+
+  it('a group member cannot be submitted or published alone (FR-QA-03, 50)', async () => {
+    const w = await mountBar({ status: 'draft', inGroup: true })
+    expect(t(w, 'studio-action-review').attributes('disabled')).toBeDefined()
+    expect(t(w, 'studio-action-review').attributes('title')).toBe('Hantar melalui kumpulan.')
+    const r = await mountBar({ status: 'review', inGroup: true })
+    expect(t(r, 'studio-action-approved').attributes('title')).toBe('Terbitkan melalui kumpulan.')
   })
 })

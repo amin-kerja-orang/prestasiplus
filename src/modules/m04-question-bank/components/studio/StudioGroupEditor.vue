@@ -2,29 +2,42 @@
 /**
  * The shared stimulus of a question (D90, T13) on the stimulus API (T32). A figure, passage or table that several questions
  * refer to ("Rajah 1" for S1 and S2) is ONE group: stored once, shown once with every member under it, no marks. The author
- * creates the group from a saved question (a stimulus plus at least one more question), edits its stimuli (1 to 3), and adds,
- * removes and reorders its members; member changes are saved together. A group with a served member is read-only here.
+ * creates the group from a saved question, edits its stimuli (1 to 3), and adds, removes and reorders its members; member
+ * changes are saved together. On its own page (`actions`) it also moves as one unit: submit, publish, draft copy, archive
+ * and moving a member (FR-QA-04..06, 50; API-Q-04, API-Q-31..34).
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
-import { DsCallout, DsCluster, DsFormField, DsHeading, DsLoadError, DsStack, DsSurface, DsText } from '@/ds'
+import { DsBadge, DsCallout, DsCluster, DsFormField, DsHeading, DsLoadError, DsStack, DsSurface, DsText, useConfirm } from '@/ds'
 
+import { isApiError } from '@/api'
+
+import { fetchEducationLevels, fetchSubjects } from '../../api/lookups'
 import {
   addGroupMember,
   createGroup,
   createStimulus,
+  discardGroupDraft,
   listGroups,
   dissolveGroup,
+  editGroupAsDraft,
   fetchGroup,
+  moveGroupMember,
+  publishGroup,
+  retireGroup,
   setGroupMembers,
   searchQuestions,
   setGroupStimuli,
+  submitGroupForReview,
   updateStimulus,
   type GroupListRow,
   type QuestionPick,
 } from '../../api/studio'
 import {
   addMember,
+  figureNamed,
+  GROUP_COPY,
+  groupState,
   type GroupView,
   memberIssues,
   moveMember,
@@ -42,20 +55,24 @@ import {
   type StimulusForm,
 } from '../../lib/studio/stimulus'
 import { FILTER_DEBOUNCE_MS, listLoadMessage } from '../../lib/list-load'
+import { statusBadge, statusTone } from '../../lib/studio/status'
 import { errorLines, LOAD_ERROR } from '../../lib/ui-errors'
+import StudioMoveMemberPicker from './StudioMoveMemberPicker.vue'
 import StudioStimulusEditor from './StudioStimulusEditor.vue'
 
-const props = withDefaults(defineProps<{ disabled?: boolean; currentQuestionId?: string | null; subjectId?: string | null; testid?: string }>(), {
+const props = withDefaults(defineProps<{ disabled?: boolean; currentQuestionId?: string | null; subjectId?: string | null; testid?: string; actions?: boolean }>(), {
   disabled: false,
   currentQuestionId: null,
   subjectId: null,
   testid: 'studio-group',
+  actions: false,
 })
 const groupId = defineModel<string | null>('groupId', { required: true })
 /** Create page only (no question id yet): the stimulus waits here and the page creates it with the question (D93, UX-13). */
 const pending = defineModel<PendingGroup | null>('pending', { default: null })
 const deferred = ref(false)
-const emit = defineEmits<{ changed: [view: GroupView | null] }>()
+const emit = defineEmits<{ changed: [view: GroupView | null]; open: [groupId: string] }>()
+const confirm = useConfirm()
 
 const view = ref<GroupView | null>(null)
 const members = ref<GroupMember[]>([])
@@ -85,6 +102,35 @@ const locked = computed(() => props.disabled)
 const savedMembers = computed(() => view.value?.members ?? [])
 const dirty = computed(() => planMembers(savedMembers.value, members.value) !== null)
 const issues = computed(() => memberIssues(members.value))
+const state = computed(() => groupState(savedMembers.value))
+const isCopy = computed(() => (view.value?.draftOfGroupId ?? null) !== null)
+const moving = ref<GroupMember | null>(null)
+const moveOpen = ref(false)
+/** Subjek, Tingkatan and Kertas of the group, read-only under the heading (FR-ADM-QE2.1). */
+const names = ref<{ subjects: Record<string, string>; levels: Record<string, string> }>({ subjects: {}, levels: {} })
+const scopeLine = computed(() => {
+  const v = view.value
+  if (!v || !v.subjectId) return ''
+  const parts = [`Subjek: ${names.value.subjects[v.subjectId] ?? '—'}`, `Tingkatan: ${names.value.levels[v.educationLevelId ?? ''] ?? '—'}`]
+  if (v.kertas) parts.push(`Kertas: ${v.kertas}`)
+  return parts.join(' · ')
+})
+watch(
+  () => props.actions,
+  async (on) => {
+    if (!on) return
+    try {
+      const [s, l] = await Promise.all([fetchSubjects(), fetchEducationLevels()])
+      names.value = {
+        subjects: Object.fromEntries(s.data.map((x) => [String(x.id), x.name])),
+        levels: Object.fromEntries(l.data.map((x) => [String(x.id), x.name])),
+      }
+    } catch {
+      // The line then reads a dash; the group itself still works.
+    }
+  },
+  { immediate: true },
+)
 const stimulusFull = computed(() => (view.value?.stimuli.length ?? 0) >= 3)
 
 function adopt(next: GroupView | null): void {
@@ -99,8 +145,17 @@ function adopt(next: GroupView | null): void {
 /** The group; the group read carries the number and stem of each member (T49), so no per-question reads. */
 async function read(id: string): Promise<GroupView> {
   const g = await fetchGroup(id)
-  const list: GroupMember[] = g.members.map((m) => ({ id: m.id, numberLabel: m.numberLabel ?? '', stem: m.stem }))
-  return { id: g.id, stimuli: g.stimuli, members: list, warning: g.warning ?? null }
+  const list: GroupMember[] = g.members.map((m) => ({ id: m.id, numberLabel: m.numberLabel ?? '', stem: m.stem, status: m.status, servable: m.servable }))
+  return {
+    id: g.id,
+    stimuli: g.stimuli,
+    members: list,
+    warning: g.warning ?? null,
+    subjectId: g.subjectId ?? null,
+    educationLevelId: g.educationLevelId ?? null,
+    kertas: g.kertas ?? null,
+    draftOfGroupId: g.draftOfGroupId ?? null,
+  }
 }
 
 let seq = 0
@@ -295,10 +350,99 @@ async function saveMembers(): Promise<void> {
 async function dissolve(): Promise<void> {
   const v = view.value
   if (!v) return
+  const ok = await confirm({ title: GROUP_COPY.dissolveTitle, message: GROUP_COPY.dissolveBody, tone: 'error' })
+  if (!ok) return
   if (await run(() => dissolveGroup(v.id))) {
     groupId.value = null
     adopt(null)
   }
+}
+
+/** Runs a group action that answers without a flash; the refusal, or each member a publish gate refused, is shown. */
+async function act<T>(call: () => Promise<T>): Promise<T | null> {
+  busy.value = true
+  notice.value = ''
+  problems.value = []
+  try {
+    return await call()
+  } catch (err) {
+    const gate = isApiError(err) ? (err.details as { gate?: { message: string }[] } | undefined)?.gate : undefined
+    problems.value = gate && gate.length > 0 ? gate.map((g) => g.message) : errorLines(err)
+    return null
+  } finally {
+    busy.value = false
+  }
+}
+
+/** FR-QA-50: every `Draf` member to `Menunggu Semakan` in one transaction. */
+async function submitAll(): Promise<void> {
+  const v = view.value
+  if (!v) return
+  const res = await act(() => submitGroupForReview(v.id))
+  if (res) {
+    notice.value = GROUP_COPY.submitted
+    await reload()
+  }
+}
+
+/** API-Q-31; on a draft copy the live group answers, and the copy no longer exists. */
+async function publishAll(): Promise<void> {
+  const v = view.value
+  if (!v) return
+  const res = await act(() => publishGroup(v.id))
+  if (!res) return
+  notice.value = res.status
+  if (res.data.id !== v.id) emit('open', res.data.id)
+  else await reload()
+}
+
+/** FR-QA-04: the served group keeps serving; the author goes on in its draft copy. */
+async function startCopy(): Promise<void> {
+  const v = view.value
+  if (!v) return
+  const res = await act(() => editGroupAsDraft(v.id))
+  if (res) {
+    notice.value = res.status
+    emit('open', res.data.id)
+  }
+}
+
+async function discardCopy(): Promise<void> {
+  const from = view.value?.draftOfGroupId
+  if (!from) return
+  const res = await act(async () => {
+    await discardGroupDraft(from)
+    return true
+  })
+  if (res) emit('open', from)
+}
+
+/** FR-QA-05: all members in one transaction. The API names the Terbit papers in its answer (no read before it), so they show after. */
+async function retireAll(): Promise<void> {
+  const v = view.value
+  if (!v) return
+  const n = savedMembers.value.length
+  const ok = await confirm({ title: GROUP_COPY.retireTitle, message: `${String(n)} soalan dalam kumpulan ini akan diarkibkan.`, tone: 'error' })
+  if (!ok) return
+  const res = await act(() => retireGroup(v.id))
+  if (!res) return
+  const papers = res.affectedPapers.map((p) => p.title).join(', ')
+  notice.value = papers === '' ? `${String(res.archived)} soalan diarkibkan.` : `${String(res.archived)} soalan diarkibkan. Kertas Terbit terjejas: ${papers}.`
+  await reload()
+}
+
+function startMove(m: GroupMember): void {
+  moving.value = m
+  moveOpen.value = true
+}
+
+/** FR-QA-06: one call; a target of another Subjek answers with the server text. */
+async function moveTo(toGroupId: string): Promise<void> {
+  const v = view.value
+  const m = moving.value
+  moveOpen.value = false
+  if (!v || !m) return
+  if (await act(() => moveGroupMember(v.id, m.id, toGroupId))) await reload()
 }
 
 function up(id: string): void {
@@ -307,8 +451,18 @@ function up(id: string): void {
 function down(id: string): void {
   members.value = moveMember(members.value, id, 1)
 }
-function drop(id: string): void {
-  members.value = removeMember(members.value, id)
+/** FR-ADM-QE2.7: a stem that names a figure asks with that name; the change is kept until `Simpan susunan`. */
+async function drop(id: string): Promise<void> {
+  const m = members.value.find((x) => x.id === id)
+  const figure = figureNamed(m?.stem ?? '')
+  const ok = await confirm({
+    title: GROUP_COPY.removeTitle,
+    message: figure === null ? '' : `Soalan ini menyebut ${figure}. Tanpa kumpulan ia tidak akan dipaparkan kepada murid.`,
+    confirmLabel: GROUP_COPY.removeConfirm,
+    cancelLabel: 'Batal',
+    tone: 'error',
+  })
+  if (ok) members.value = removeMember(members.value, id)
 }
 function discard(): void {
   members.value = [...savedMembers.value]
@@ -439,7 +593,18 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
     <!-- The group -->
     <template v-else>
       <DsText variant="body" tone="muted" :data-testid="`${testid}-id`">Kumpulan #{{ view.id }}</DsText>
+      <DsText v-if="actions && scopeLine" variant="caption" tone="muted" :data-testid="`${testid}-scope`">{{ scopeLine }}</DsText>
       <DsText v-if="view.warning" variant="caption" tone="warning" :data-testid="`${testid}-warning`">{{ view.warning }}</DsText>
+      <DsCallout v-if="actions && state.served && !isCopy" tone="info" :data-testid="`${testid}-served-banner`">{{ GROUP_COPY.servedBanner }}</DsCallout>
+
+      <DsCluster v-if="actions" gap="sm" :data-testid="`${testid}-actions`">
+        <UButton v-if="state.canSubmit" type="button" color="primary" variant="soft" :loading="busy" :disabled="locked" :data-testid="`${testid}-submit`" @click="submitAll">Hantar kumpulan untuk semakan</UButton>
+        <UButton type="button" color="primary" :loading="busy" :disabled="locked || !state.canPublish" :title="state.canPublish ? undefined : GROUP_COPY.publishNotReady" :data-testid="`${testid}-publish`" @click="publishAll">Terbitkan kumpulan</UButton>
+        <UButton v-if="state.served && !isCopy" type="button" color="neutral" variant="soft" :loading="busy" :disabled="locked" :data-testid="`${testid}-copy`" @click="startCopy">Sunting kumpulan</UButton>
+        <UButton v-if="isCopy" type="button" color="neutral" variant="soft" :loading="busy" :disabled="locked" :data-testid="`${testid}-discard-copy`" @click="discardCopy">Buang draf kumpulan</UButton>
+        <UButton :to="`/admin/studio/questions/create?kumpulan=${view.id}`" color="neutral" variant="soft" :data-testid="`${testid}-add-question`">Tambah soalan</UButton>
+        <UButton v-if="!isCopy" type="button" color="error" variant="soft" :loading="busy" :disabled="locked" :data-testid="`${testid}-retire`" @click="retireAll">Arkibkan kumpulan</UButton>
+      </DsCluster>
 
       <DsStack as="section" gap="md" aria-label="Rangsangan kumpulan">
         <DsStack v-for="(s, i) in view.stimuli" :key="s.id" gap="sm" :data-testid="`${testid}-stimulus-${s.id}`">
@@ -480,7 +645,9 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
               </DsText>
               <UButton type="button" color="neutral" variant="soft" aria-label="Naikkan" :disabled="locked || i === 0" :data-testid="`${testid}-member-${m.id}-up`" @click="up(m.id)" >Naik</UButton>
               <UButton type="button" color="neutral" variant="soft" aria-label="Turunkan" :disabled="locked || i === members.length - 1" :data-testid="`${testid}-member-${m.id}-down`" @click="down(m.id)" >Turun</UButton>
-              <UButton type="button" color="error" variant="soft" aria-label="Keluarkan daripada kumpulan" :disabled="locked" :data-testid="`${testid}-member-${m.id}-remove`" @click="drop(m.id)">Keluarkan</UButton>
+              <DsBadge v-if="actions && m.status" :label="statusBadge(m.status)" :tone="statusTone(m.status)" :data-testid="`${testid}-member-${m.id}-status`" />
+              <UButton v-if="actions" type="button" color="neutral" variant="soft" :disabled="locked" :data-testid="`${testid}-member-${m.id}-move`" @click="startMove(m)">Pindah ke kumpulan lain</UButton>
+              <UButton type="button" color="error" variant="soft" aria-label="Buang daripada kumpulan" :disabled="locked" :data-testid="`${testid}-member-${m.id}-remove`" @click="drop(m.id)">Buang</UButton>
             </DsCluster>
           </DsSurface>
         </DsStack>
@@ -509,6 +676,7 @@ const preview = (m: GroupMember): string => (m.stem.length > 90 ? `${m.stem.slic
       </DsStack>
     </template>
 
+    <StudioMoveMemberPicker v-if="actions && view" v-model:open="moveOpen" :from-group-id="view.id" :subject-id="view.subjectId ?? subjectId" :member-label="moving ? preview(moving) : ''" @pick="moveTo" />
     <DsText v-if="notice" variant="body" tone="success" role="status" :data-testid="`${testid}-notice`">{{ notice }}</DsText>
     <DsStack v-if="problems.length > 0" gap="2xs" role="alert" :data-testid="`${testid}-problems`">
       <DsText v-for="p in problems" :key="p" variant="body" tone="error">{{ p }}</DsText>

@@ -36,10 +36,10 @@ const form = defineModel<StimulusForm>({ required: true })
     <DsFormField label="Gambar (pilihan)">
       <StudioImageField v-model="form.imageToken" :testid="`${testid}-image`" :disabled="disabled" />
     </DsFormField>
-    <DsFormField v-slot="{ id }" native label="Penerangan gambar (teks alternatif)" :for="`${testid}-alt`">
+    <DsFormField v-slot="{ id }" native label="Teks alternatif" :for="`${testid}-alt`">
       <UInput :id="id" v-model="form.alt" :disabled="disabled" maxlength="1000" :data-testid="`${testid}-alt`" />
     </DsFormField>
-    <DsFormField v-slot="{ id }" native label="Sumber (pilihan)" :for="`${testid}-source`">
+    <DsFormField v-slot="{ id }" native label="Sumber petikan (pilihan)" :for="`${testid}-source`">
       <UInput :id="id" v-model="form.sourceCitation" :disabled="disabled" maxlength="300" :data-testid="`${testid}-source`" />
     </DsFormField>
   </DsStack>

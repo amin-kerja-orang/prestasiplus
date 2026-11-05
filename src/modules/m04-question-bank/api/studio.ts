@@ -46,8 +46,13 @@ export interface GroupDetail {
   questionIds: string[]
   /** T49: the members in published order, one short form each (no per-question reads). */
   members: GroupMemberSummary[]
-  /** D93: BM warning while the group has fewer than 2 questions; null otherwise. */
+  /** D93: BM warning while the group has no question; null otherwise. */
   warning?: string | null | undefined
+  subjectId?: string | null
+  educationLevelId?: string | null
+  kertas?: string | null
+  /** S1-T01: the served group this draft copy will replace. */
+  draftOfGroupId?: string | null
 }
 
 export function fetchStudioDskp(subjectId: string, educationLevelId: string, signal?: AbortSignal): Promise<StudioDskp> {
@@ -96,7 +101,7 @@ export const updateStimulus = (id: string, body: StimulusUpdateRequest): Promise
 export const fetchGroup = (id: string, signal?: AbortSignal): Promise<GroupDetail> =>
   api.get<GroupDetail>(`/api/stimulus-groups/${id}`, signal ? { signal } : {})
 
-export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds?: string[] }): Promise<Flash<GroupDetail>> =>
+export const createGroup = (body: { label?: string | null; stimulusIds: string[]; questionIds?: string[]; subjectId?: string; educationLevelId?: string; kertas?: string | null }): Promise<Flash<GroupDetail>> =>
   api.post<Flash<GroupDetail>>('/api/stimulus-groups', { body, raw: true })
 
 export const setGroupStimuli = (id: string, stimulusIds: string[]): Promise<Flash<GroupDetail>> =>
@@ -117,6 +122,29 @@ export const setGroupMembers = (id: string, questionIds: string[]): Promise<Flas
 
 export const reorderGroupMembers = (id: string, questionIds: string[]): Promise<Flash<GroupDetail>> =>
   api.put<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/members/order`, { body: { questionIds }, raw: true })
+
+/** API-Q-04, group form: every `Draf` member goes to `Menunggu Semakan` in one transaction. */
+export const submitGroupForReview = (groupId: string): Promise<Flash<{ affected: number; failed: unknown[] }>> =>
+  api.post<Flash<{ affected: number; failed: unknown[] }>>('/api/questions/bulk-action', { body: { action: 'review', groupId }, raw: true })
+
+/** API-Q-31 `Terbitkan kumpulan`; on a draft copy the answer is the live group, as the copy is gone after the swap. */
+export const publishGroup = (id: string): Promise<Flash<GroupDetail>> =>
+  api.post<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/publish`, { raw: true })
+
+/** API-Q-32 `Sunting kumpulan`: the draft copy of a served group. */
+export const editGroupAsDraft = (id: string): Promise<Flash<GroupDetail>> =>
+  api.post<Flash<GroupDetail>>(`/api/stimulus-groups/${id}/edit-as-draft`, { raw: true })
+
+/** API-Q-32 `Buang draf kumpulan`: `id` is the served group whose copy goes. */
+export const discardGroupDraft = (id: string): Promise<void> => api.delete<void>(`/api/stimulus-groups/${id}/draft`)
+
+/** API-Q-33 `Arkibkan kumpulan`: every member archived in one transaction. */
+export const retireGroup = (id: string): Promise<{ archived: number; affectedPapers: { id: string; title: string }[] }> =>
+  api.post<{ archived: number; affectedPapers: { id: string; title: string }[] }>(`/api/stimulus-groups/${id}/retire`, { body: { confirm: true } })
+
+/** API-Q-34 `Pindah ke kumpulan lain`: one call; the member goes to the end of the other group. */
+export const moveGroupMember = (id: string, questionId: string, toGroupId: string): Promise<{ from: GroupDetail; to: GroupDetail }> =>
+  api.post<{ from: GroupDetail; to: GroupDetail }>(`/api/stimulus-groups/${id}/members/${questionId}/move`, { body: { toGroupId } })
 
 /** Creates a question directly inside a group (appended at the end). */
 export const createQuestionInGroup = (id: string, body: Record<string, unknown>): Promise<Flash<StudioQuestionDetail>> =>
