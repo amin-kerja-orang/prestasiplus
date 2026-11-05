@@ -21,7 +21,7 @@ import type {
 } from '@pp/contract'
 
 export type KontrakErrorKind =
-  | 'invalid' // 422 BLUEPRINT_INVALID: problems
+  | 'invalid' // 422 BLUEPRINT_INVALID: problems; 422 VALIDATION_ERROR with `fields`
   | 'verification' // 422 VERIFICATION_FAILED: check
   | 'shortage' // 422 SHORTAGE: shortages
   | 'no_blueprint'
@@ -37,6 +37,8 @@ export class KontrakError extends Error {
   readonly warnings: BijakBlueprintWarning[]
   readonly check: BijakVerificationCheck | null
   readonly shortages: BijakGenerateShortage[]
+  /** 422 VALIDATION_ERROR: message per field of the write body (`subject`, `sections.N.compulsory`, `sections.N.rule.n`, ...). */
+  readonly fields: Readonly<Record<string, string>>
   constructor(
     readonly kind: KontrakErrorKind,
     message: string,
@@ -45,6 +47,7 @@ export class KontrakError extends Error {
       warnings?: BijakBlueprintWarning[]
       check?: BijakVerificationCheck | null
       shortages?: BijakGenerateShortage[]
+      fields?: Readonly<Record<string, string>>
     } = {},
   ) {
     super(message)
@@ -52,6 +55,7 @@ export class KontrakError extends Error {
     this.warnings = extra.warnings ?? []
     this.check = extra.check ?? null
     this.shortages = extra.shortages ?? []
+    this.fields = extra.fields ?? {}
   }
 }
 

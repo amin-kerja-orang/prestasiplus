@@ -14,5 +14,8 @@ const GAP_LABELS: Record<BijakReviewPaper['gaps'][number], string> = {
   level_share: 'Nisbah Tingkatan',
 }
 
+/** FR-ADM-Q16.5 (PRD30 16-xx): a contract with no evidence is marked with this text. A separate mark: REVIEW_BADGE keeps its meaning. */
+export const NO_EVIDENCE_BADGE = 'perlu semakan'
+
 /** "Markah, TP" for one paper's gaps. */
 export const gapText = (gaps: readonly BijakReviewPaper['gaps'][number][]): string => gaps.map((g) => GAP_LABELS[g] ?? g).join(', ')

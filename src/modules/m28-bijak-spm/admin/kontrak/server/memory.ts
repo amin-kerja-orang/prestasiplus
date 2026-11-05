@@ -6,6 +6,7 @@
  * generator's solver); it is only there so the screens have honest numbers to show.
  * Loaded by a dynamic import behind the env check (see ./client), so the http build never has it.
  */
+import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import type {
   BijakBlueprintAdminCreate,
   BijakBlueprintAdminVersionInput,
@@ -116,6 +117,7 @@ function sectionView(subject: string, s: SectionInput, position: number, seededU
     label: s.label,
     markBudget: s.markBudget,
     questionCount: s.questionCount,
+    marksPerQuestion: s.marksPerQuestion ?? null,
     compulsory: s.compulsory ?? false,
     instruction: instructionOf(s),
     rule: s.rule,
@@ -165,6 +167,7 @@ function viewOf(
     source,
     code: input.code,
     durationMin: input.durationMin,
+    questionCount: input.questionCount ?? null,
     instructions: input.instructions ?? [],
     totalMarks: sections.reduce((n, s) => n + s.markBudget, 0),
     sections,
@@ -298,20 +301,39 @@ export class MockKontrakServer implements KontrakApi {
     return this.viewOfHead(this.rec(subject, kertas))
   }
 
+  /** As `assertRuleBounds` of the API: 422 VALIDATION_ERROR with `fields`, before the content check. */
+  private checkRuleBounds(input: Input): void {
+    const fields: Record<string, string> = {}
+    input.sections.forEach((s, i) => {
+      if (s.rule.type !== 'choose') return
+      if (s.rule.n > s.questionCount) fields[`sections.${i}.rule.n`] = MSG.chooseNRange
+      if (s.compulsory === true) fields[`sections.${i}.compulsory`] = MSG.compulsoryChoose
+    })
+    const first = Object.values(fields)[0]
+    if (first !== undefined) throw new KontrakError('invalid', first, { fields })
+  }
+
   private checkInput(input: Input): void {
     const problems: BijakBlueprintProblem[] = []
     const sum = input.sections.reduce((n, s) => n + s.markBudget, 0)
     if (input.totalMarks !== undefined && input.totalMarks !== sum)
       problems.push({ code: 'TOTAL_MISMATCH', expected: input.totalMarks, actual: sum })
     input.sections.forEach((s, i) => {
-      if (s.rule.type === 'choose' && s.questionCount < s.rule.n)
-        problems.push({ code: 'CHOOSE_N_RANGE', sectionPosition: i + 1, expected: s.rule.n, actual: s.questionCount })
+      if (!s.marksPerQuestion) return
+      const offered = s.rule.type === 'all' ? s.markBudget : (s.markBudget / s.rule.n) * s.questionCount
+      const sum = s.marksPerQuestion.reduce((n, mark) => n + mark, 0)
+      if (s.marksPerQuestion.length !== s.questionCount)
+        problems.push({ code: 'MARKS_PER_QUESTION', sectionPosition: i + 1, expected: s.questionCount, actual: s.marksPerQuestion.length })
+      else if (sum !== offered) problems.push({ code: 'MARKS_PER_QUESTION', sectionPosition: i + 1, expected: offered, actual: sum })
     })
     if (problems.length) throw new KontrakError('invalid', 'Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.', { problems })
   }
 
   async create(body: BijakBlueprintAdminCreate): Promise<BijakBlueprintView> {
     await tick()
+    this.checkRuleBounds(body)
+    // FR-ADM-Q16.7, as the API: no T4 or T5 unit, no contract.
+    if (!UNITS[body.subject]?.length) throw new KontrakError('invalid', MSG.dskpNotLoaded, { fields: { subject: MSG.dskpNotLoaded } })
     const k = this.key(body.subject, body.kertas)
     const old = this.recs.get(k)
     if (old && !old.retired) throw new KontrakError('conflict', 'Kontrak untuk subjek dan kertas ini sudah wujud.')
@@ -328,6 +350,7 @@ export class MockKontrakServer implements KontrakApi {
   async saveVersion(subject: string, kertas: number, body: Input): Promise<BijakBlueprintView> {
     await tick()
     const r = this.rec(subject, kertas)
+    this.checkRuleBounds(body)
     this.checkInput(body)
     const prev = r.versions[r.versions.length - 1]!
     const h = structuralKey(body)
@@ -437,7 +460,7 @@ export class MockKontrakServer implements KontrakApi {
     const blueprintProblems: BijakBlueprintProblem[] = validateForm(form)
       .filter((i) => i.level === 'error' && i.code !== 'REQUIRED')
       .map((i) => ({
-        code: (['TOTAL_MISMATCH', 'CHOOSE_N_RANGE', 'SLOT_OVERLAP', 'SLOT_GAP', 'PROFILE_SHAPE', 'TP_COUNTS', 'MARKS_BAND', 'QUOTA_SUM', 'QUOTA_UNIT', 'LEVEL_SHARE', 'KBAT_RANGE', 'KBAT_TOTAL'].includes(i.code)
+        code: (['TOTAL_MISMATCH', 'CHOOSE_N_RANGE', 'COMPULSORY_CHOOSE', 'MARKS_PER_QUESTION', 'SLOT_OVERLAP', 'SLOT_GAP', 'PROFILE_SHAPE', 'TP_COUNTS', 'MARKS_BAND', 'QUOTA_SUM', 'QUOTA_UNIT', 'LEVEL_SHARE', 'KBAT_RANGE', 'KBAT_TOTAL'].includes(i.code)
           ? i.code
           : 'PROFILE_SHAPE') as BijakBlueprintProblem['code'],
         ...(i.section !== null ? { sectionPosition: i.section + 1 } : {}),
@@ -601,7 +624,8 @@ export class MockKontrakServer implements KontrakApi {
 
   async subjectOptions(): Promise<{ code: string; name: string }[]> {
     await tick()
-    return SUBJECTS.map((s) => ({ code: s.code, name: s.name }))
+    // FR-ADM-Q16.7, as `GET /admin/bijak/subjects`: only subjects with a T4 or T5 unit.
+    return SUBJECTS.filter((s) => UNITS[s.code]?.length).map((s) => ({ code: s.code, name: s.name }))
   }
 }
 

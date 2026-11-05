@@ -46,6 +46,8 @@ export interface FormSection {
   chooseN: number | null
   questionCount: number | null
   markBudget: number | null
+  /** Field 16-18 "Markah setiap soalan" as typed (`parseMarksList` reads it); '' = no list. */
+  marksPerQuestion: string
   allowedModes: string[]
   profileKind: ProfileKind | null
   groups: FormGroup[]
@@ -62,6 +64,8 @@ export interface ContractForm {
   code: string
   durationMin: number | null
   totalMarks: number | null
+  /** Field 16-19 "Bilangan soalan dalam kertas" (DM-57 `blueprints.question_count`); null = not stated. */
+  questionCount: number | null
   /** The status the author can pick (Draf or Spec); a Disahkan head is shown, never written. */
   source: SourceTag
   notes: string
@@ -93,6 +97,7 @@ export function emptySection(label: string): FormSection {
     chooseN: null,
     questionCount: null,
     markBudget: null,
+    marksPerQuestion: '',
     allowedModes: [],
     profileKind: null,
     groups: [],
@@ -110,6 +115,7 @@ export function emptyForm(): ContractForm {
     code: '',
     durationMin: null,
     totalMarks: null,
+    questionCount: null,
     source: 'Draf',
     notes: '',
     instructions: '',
@@ -126,6 +132,7 @@ export function formFromView(v: BijakBlueprintView): ContractForm {
     code: v.code,
     durationMin: v.durationMin,
     totalMarks: v.totalMarks,
+    questionCount: v.questionCount ?? null,
     source: v.source,
     notes: v.notes ?? '',
     instructions: v.instructions.join('\n'),
@@ -159,6 +166,7 @@ export function formFromView(v: BijakBlueprintView): ContractForm {
           chooseN: s.rule.type === 'choose' ? s.rule.n : null,
           questionCount: s.questionCount,
           markBudget: s.markBudget,
+          marksPerQuestion: s.marksPerQuestion?.join(',') ?? '',
           allowedModes: [...s.allowedModes],
           profileKind: s.profile?.kind ?? null,
           groups,
@@ -185,6 +193,36 @@ export function unitRefOf(u: BijakUnitRefView): { kind: 'unit'; nodeId: string }
 
 const int = (n: number | null): number => (n === null || Number.isNaN(n) ? 0 : Math.trunc(n))
 
+const MARK_MAX = 1000
+const MARKS_LIST_MAX = 500
+
+/**
+ * Field 16-18 as a list. Blank = no list. One number = that mark for each of the M questions (PRD30 16-18). Otherwise a comma list,
+ * one mark per question. 'invalid' = not whole numbers from 1 to 1000, or more than 500 of them (the contract's limits).
+ */
+export function parseMarksList(text: string, m: number | null): number[] | null | 'invalid' {
+  const trimmed = text.trim()
+  if (!trimmed) return null
+  const parts = trimmed.split(',').map((p) => p.trim())
+  if (parts.length > MARKS_LIST_MAX || parts.some((p) => !/^\d+$/.test(p))) return 'invalid'
+  const list = parts.map(Number)
+  if (list.some((n) => n < 1 || n > MARK_MAX)) return 'invalid'
+  if (list.length === 1 && m !== null && m > 1) return m > MARKS_LIST_MAX ? 'invalid' : Array.from({ length: m }, () => list[0]!)
+  return list
+}
+
+/** The list of a section, or null when there is none or it cannot be read (validation refuses that case before a save). */
+export function marksListOf(s: Pick<FormSection, 'marksPerQuestion' | 'questionCount'>): number[] | null {
+  const list = parseMarksList(s.marksPerQuestion, s.questionCount)
+  return list === 'invalid' ? null : list
+}
+
+/** FR-ADM-Q16.8, FR-QA-25: the derived line "Jawab {n} daripada {m}"; Jawab Semua answers all of them. */
+export function answerLine(s: Pick<FormSection, 'ruleType' | 'chooseN' | 'questionCount'>): string {
+  const m = s.questionCount ?? '?'
+  return `Jawab ${s.ruleType === 'all' ? m : (s.chooseN ?? '?')} daripada ${m}`
+}
+
 /** The write body (`POST .../versions` and `POST /admin/blueprints`), built explicitly. */
 export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
   const lines = f.instructions
@@ -204,6 +242,7 @@ export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
         ? { t4: f.levelShare.t4, t5: f.levelShare.t5 }
         : null,
     sections: f.sections.map((s) => {
+      const marksPerQuestion = marksListOf(s)
       const groups = s.profileKind
         ? s.groups.map((g) => {
             const counts = Object.entries(g.tpCounts)
@@ -225,6 +264,7 @@ export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
         label: s.label.trim(),
         markBudget: int(s.markBudget),
         questionCount: int(s.questionCount),
+        ...(marksPerQuestion ? { marksPerQuestion } : {}),
         compulsory: s.compulsory,
         ...(s.instruction.trim() ? { instruction: s.instruction.trim() } : {}),
         rule: s.ruleType === 'all' ? { type: 'all' as const } : { type: 'choose' as const, n: int(s.chooseN) },
@@ -253,6 +293,7 @@ export function toInput(f: ContractForm): BijakBlueprintAdminVersionInput {
   if (f.source !== 'Disahkan') out.source = f.source
   const total = f.totalMarks
   if (total !== null) out.totalMarks = total
+  if (f.questionCount !== null) out.questionCount = f.questionCount
   return out
 }
 

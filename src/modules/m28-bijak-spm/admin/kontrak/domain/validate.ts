@@ -4,11 +4,12 @@
  * blocks Sahkan; `warning` is informational (KBAT_TP_BAND, AC-37.5). The server repeats the check
  * (422 BLUEPRINT_INVALID) and its problems map onto the same issue shape (`issueFromProblem`).
  */
-import type { BijakBlueprintProblem } from '@pp/contract'
+import { BIJAK_BUILDER_MESSAGES as MSG, type BijakBlueprintProblem } from '@pp/contract'
 
 import {
   groupSize,
   offeredMarks,
+  parseMarksList,
   unitLabel,
   type ContractForm,
   type FormSection,
@@ -43,9 +44,13 @@ export function problemMessage(
   const l = ctx.label ?? ''
   switch (code) {
     case 'TOTAL_MISMATCH':
-      return `Jumlah markah bahagian (${ctx.x}) tidak sama dengan jumlah markah kertas (${ctx.y}).`
+      return `Jumlah markah (${ctx.y}) mesti sama dengan jumlah markah bahagian (${ctx.x}).`
     case 'CHOOSE_N_RANGE':
-      return `${l}: bilangan soalan (${ctx.x}) kurang daripada bilangan dipilih (${ctx.y}).`
+      return MSG.chooseNRange
+    case 'COMPULSORY_CHOOSE':
+      return MSG.compulsoryChoose
+    case 'MARKS_PER_QUESTION':
+      return MSG.marksPerQuestionMismatch
     case 'SLOT_OVERLAP':
       return `${l}: kumpulan slot bertindih pada slot ${ctx.a} - ${ctx.b}.`
     case 'SLOT_GAP':
@@ -110,17 +115,20 @@ export function incompleteMessage(code: string, label: string): string {
 
 /** Where a server problem lands in the editor. */
 function partOf(code: string): SectionPart {
-  if (['CHOOSE_N_RANGE', 'MARKS_BAND', 'MODES', 'REQUIRED'].includes(code)) return 'struktur'
+  if (['CHOOSE_N_RANGE', 'COMPULSORY_CHOOSE', 'MARKS_PER_QUESTION', 'MARKS_BAND', 'MODES', 'REQUIRED'].includes(code)) return 'struktur'
   if (['SLOT_OVERLAP', 'SLOT_GAP', 'PROFILE_SHAPE', 'PROFILE_SINGLE', 'TP_COUNTS', 'LADDER_DOWN', 'TP_ORDER'].includes(code))
     return 'profil'
   if (['KBAT_RANGE', 'KBAT_TP_BAND', 'KBAT_TOTAL'].includes(code)) return 'kbat'
   return 'kuota'
 }
 
-const targetOf = (section: number | null, part: SectionPart | 'umum'): string =>
+/** The field a section problem is about, when it is not the first one of its part. */
+const FIELD_OF_CODE: Record<string, string> = { CHOOSE_N_RANGE: 'n', COMPULSORY_CHOOSE: 'compulsory', MARKS_PER_QUESTION: 'marks-list' }
+
+const targetOf = (section: number | null, part: SectionPart | 'umum', code = ''): string =>
   section === null
     ? fieldId(null, part === 'kbat' ? 'kbat' : 'jumlah')
-    : fieldId(section, part === 'struktur' ? 'label' : part)
+    : fieldId(section, FIELD_OF_CODE[code] ?? (part === 'struktur' ? 'label' : part))
 
 export function issueFromProblem(
   p: BijakBlueprintProblem,
@@ -144,9 +152,26 @@ export function issueFromProblem(
     code,
     section: idx,
     part,
-    target: targetOf(idx, part),
+    target: targetOf(idx, part, code),
     message,
   }
+}
+
+/** The screen field of a 422 `fields` key of the write body, when it has one. */
+const FIELD_OF_KEY: Record<string, string> = { compulsory: 'compulsory', 'rule.n': 'n', marksPerQuestion: 'marks-list', markBudget: 'budget', questionCount: 'm', label: 'label', instruction: 'instruction' }
+const PAPER_FIELD_OF_KEY: Record<string, string> = { subject: 'subject', code: 'code', durationMin: 'duration', totalMarks: 'jumlah', questionCount: 'question-count', notes: 'notes' }
+
+/**
+ * A 422 VALIDATION_ERROR of a write (`error.fields`: `subject`, `sections.N.compulsory`, `sections.N.rule.n`, ...) on the issue shape, so
+ * the save summary shows each refusal with a link to its field. N is the 0-based index of the body's `sections`.
+ */
+export function issuesFromFields(fields: Readonly<Record<string, string>>): Issue[] {
+  return Object.entries(fields).map(([key, message]) => {
+    const m = /^sections\.(\d+)\.(.+)$/.exec(key)
+    const section = m ? Number(m[1]) : null
+    const name = m ? (FIELD_OF_KEY[m[2]!.replace(/\.\d+$/, '')] ?? 'label') : (PAPER_FIELD_OF_KEY[key] ?? 'jumlah')
+    return { id: `fld-${key}`, level: 'error', code: 'VALIDATION_ERROR', section, part: section === null ? 'umum' : 'struktur', target: fieldId(section, name), message }
+  })
 }
 
 /** Derived T4 : T5 split of a section's quota lines (T1-T3 bucket excluded). */
@@ -176,6 +201,12 @@ export function quotaSum(s: FormSection): QuotaSum {
   return { sum, target, basis: s.quotaBasis }
 }
 
+const INSTRUCTION_MAX = 500
+const MARK_BUDGET_MAX = 1000
+const CODE_MAX = 32
+const DURATION_MAX = 600
+const PAPER_QUESTIONS_MAX = 200
+
 function sectionIssues(f: ContractForm, i: number): Issue[] {
   const s = f.sections[i]!
   const label = labelOf(s, i)
@@ -192,18 +223,30 @@ function sectionIssues(f: ContractForm, i: number): Issue[] {
   }
 
   // --- Struktur
-  if (!s.label.trim()) push('error', 'REQUIRED', 'struktur', fieldId(i, 'label'), problemMessage('REQUIRED', { label, unit: 'Label bahagian' }))
+  if (!s.label.trim()) push('error', 'REQUIRED', 'struktur', fieldId(i, 'label'), 'Label bahagian diperlukan.')
+  if (s.instruction.trim().length > INSTRUCTION_MAX)
+    push('error', 'INSTRUCTION_LENGTH', 'struktur', fieldId(i, 'instruction'), 'Arahan tidak boleh melebihi 500 aksara.')
   const m = s.questionCount
   if (m === null || m < 1)
     push('error', 'REQUIRED', 'struktur', fieldId(i, 'm'), problemMessage('REQUIRED', { label, unit: 'Bilangan soalan' }))
-  if (s.markBudget === null)
-    push('error', 'REQUIRED', 'struktur', fieldId(i, 'budget'), problemMessage('REQUIRED', { label, unit: 'Belanjawan markah' }))
+  if (s.markBudget === null || s.markBudget < 0 || s.markBudget > MARK_BUDGET_MAX)
+    push('error', 'REQUIRED', 'struktur', fieldId(i, 'budget'), 'Markah tidak sah.')
   if (s.ruleType === 'choose') {
     const n = s.chooseN
-    if (n === null || n < 1)
-      push('error', 'REQUIRED', 'struktur', fieldId(i, 'n'), problemMessage('REQUIRED', { label, unit: 'Bilangan dijawab (N)' }))
-    else if (m !== null && m < n)
-      push('error', 'CHOOSE_N_RANGE', 'struktur', fieldId(i, 'm'), problemMessage('CHOOSE_N_RANGE', { label, x: m, y: n }))
+    if (n === null || n < 1 || (m !== null && m < n))
+      push('error', 'CHOOSE_N_RANGE', 'struktur', fieldId(i, 'n'), problemMessage('CHOOSE_N_RANGE', {}))
+    // FR-QA-41: `Wajib dijawab` and `Pilih N` exclude each other.
+    if (s.compulsory) push('error', 'COMPULSORY_CHOOSE', 'struktur', fieldId(i, 'compulsory'), problemMessage('COMPULSORY_CHOOSE', {}))
+  }
+  // 16-18: one mark per offered question, so a Pilih N list adds up to the marks offered, not the budget (exam-core `sectionProblems`).
+  const marks = parseMarksList(s.marksPerQuestion, m)
+  if (marks !== null) {
+    const offered = offeredMarks(s)
+    const wrong =
+      marks === 'invalid' ||
+      (m !== null && m >= 1 && marks.length !== m) ||
+      (offered !== null && marks.reduce((sum, mark) => sum + mark, 0) !== offered)
+    if (wrong) push('error', 'MARKS_PER_QUESTION', 'struktur', fieldId(i, 'marks-list'), problemMessage('MARKS_PER_QUESTION', {}))
   }
 
   // --- Profil
@@ -321,10 +364,12 @@ function sectionIssues(f: ContractForm, i: number): Issue[] {
 /** Every problem of the form, paper level first. */
 export function validateForm(f: ContractForm): Issue[] {
   const out: Issue[] = []
-  if (!f.code.trim())
-    out.push({ id: 'req-code', level: 'error', code: 'REQUIRED', section: null, part: 'umum', target: fieldId(null, 'code'), message: 'Kod kertas diperlukan.' })
-  if (f.durationMin === null || f.durationMin < 1)
-    out.push({ id: 'req-duration', level: 'error', code: 'REQUIRED', section: null, part: 'umum', target: fieldId(null, 'duration'), message: 'Tempoh (minit) diperlukan.' })
+  if (!f.code.trim() || f.code.trim().length > CODE_MAX)
+    out.push({ id: 'req-code', level: 'error', code: 'REQUIRED', section: null, part: 'umum', target: fieldId(null, 'code'), message: 'Kod kertas tidak sah. Contoh: 1449/1.' })
+  if (f.durationMin === null || f.durationMin < 1 || f.durationMin > DURATION_MAX)
+    out.push({ id: 'req-duration', level: 'error', code: 'REQUIRED', section: null, part: 'umum', target: fieldId(null, 'duration'), message: 'Tempoh mesti antara 1 dan 300 minit.' })
+  if (f.questionCount !== null && (f.questionCount < 1 || f.questionCount > PAPER_QUESTIONS_MAX))
+    out.push({ id: 'question-count', level: 'error', code: 'QUESTION_COUNT', section: null, part: 'umum', target: fieldId(null, 'question-count'), message: 'Bilangan soalan tidak sah.' })
   if (f.sections.length === 0)
     out.push({ id: 'req-sections', level: 'error', code: 'REQUIRED', section: null, part: 'umum', target: fieldId(null, 'bahagian'), message: 'Sekurang-kurangnya satu Bahagian diperlukan.' })
 

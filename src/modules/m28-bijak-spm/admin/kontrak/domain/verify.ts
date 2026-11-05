@@ -87,6 +87,11 @@ export function gateRows(check: BijakVerificationCheck, form: ContractForm): Gat
   ]
 }
 
+/** FR-ADM-Q16.4, 16-20: the failing rows; their number is the n of "Belum lengkap untuk Disahkan ({n})". */
+export function failingGates(check: BijakVerificationCheck, form: ContractForm): GateRow[] {
+  return gateRows(check, form).filter((g) => !g.ok)
+}
+
 export const PADANAN: Record<
   BijakEvidenceLine['status'],
   { word: string; color: 'success' | 'error' | 'warning'; icon: string }

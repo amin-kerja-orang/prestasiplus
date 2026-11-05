@@ -36,7 +36,7 @@ describe('Semakan Kontrak: paper totals', () => {
   it('flags section budgets that do not add up to the paper total', () => {
     const f = form([section()], { totalMarks: 100 })
     const e = errorsOf(validateForm(f)).find((i) => i.code === 'TOTAL_MISMATCH')
-    expect(e?.message).toBe('Jumlah markah bahagian (45) tidak sama dengan jumlah markah kertas (100).')
+    expect(e?.message).toBe('Jumlah markah (100) mesti sama dengan jumlah markah bahagian (45).')
   })
 
   it('accepts a matching total and keeps Save open (only incompleteness is left)', () => {

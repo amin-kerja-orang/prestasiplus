@@ -49,6 +49,8 @@ export function kontrakErrorFrom(e: unknown): unknown {
   const msg = e.message && !/^HTTP \d+$/.test(e.message) ? e.message : ''
   if (e.status === 422 && e.code === 'BLUEPRINT_INVALID')
     return new KontrakError('invalid', msg, { problems: d?.problems ?? [], warnings: d?.warnings ?? [] })
+  if (e.status === 422 && e.code === API_ERROR_CODES.VALIDATION_ERROR && Object.keys(e.fields ?? {}).length > 0)
+    return new KontrakError('invalid', msg, { fields: e.fields })
   if (e.status === 422 && e.code === 'VERIFICATION_FAILED')
     return new KontrakError('verification', msg, { check: d?.check ?? null })
   if (e.status === 422 && e.code === 'SHORTAGE')

@@ -11,6 +11,8 @@ import type {
   BijakPoolPreview,
 } from '@pp/contract'
 
+import { BIJAK_BUILDER_MESSAGES } from '@pp/contract'
+
 import type { AdminPaperSummary, BuilderQuestion, PaperEditorData } from '../../../domain/admin-types'
 import { addUnit, checkPaper, removeUnit, unitsOf } from '../../../domain/paper-builder'
 import { kontrakServer } from '../../kontrak/server/client'
@@ -302,7 +304,7 @@ export class MockBuilderServer implements BuilderApi {
 
   async publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
     if (options.override && (options.reason ?? '').trim().length < 5)
-      throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
+      throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.overrideReasonRequired)
     const a = await this.a()
     const lines = await this.overridable(await a.getPaperEditor(id))
     if (lines.length && !options.override) {

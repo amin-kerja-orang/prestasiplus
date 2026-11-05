@@ -116,6 +116,13 @@ export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh
 /** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
 export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
+/**
+ * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The registry seeds every head as
+ * Spec, so the mock names the pairs whose earlier version is taken as Disahkan and serving; the Jana Kertas flow has something to run on.
+ */
+const SERVING_CONTRACTS: ReadonlySet<string> = new Set(['MAT/1', 'SN/1'])
+const servesPupils = (b: { subject: string; kertas: number }): boolean => SERVING_CONTRACTS.has(`${b.subject}/${b.kertas}`)
+
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
   private readonly now: () => number
@@ -291,16 +298,15 @@ export class BijakServer implements BijakApi {
     }[]
   > {
     await this.tick()
-    return BLUEPRINTS.map((b) => ({
+    return BLUEPRINTS.filter(servesPupils).map((b) => ({
       subject: b.subject,
       subjectName: subjectName(b.subject),
       kertas: b.kertas,
-      source: b.source,
+      source: 'Disahkan',
       code: b.code,
       durationMin: b.durationMin,
       sections: b.sections.map((s) => ({ label: s.label, take: s.take })),
-      canGenerate: b.source !== 'Draf',
-      ...(b.source === 'Draf' ? { unavailableReason: 'NO_BLUEPRINT' as const } : {}),
+      canGenerate: true,
     }))
   }
 
@@ -316,7 +322,7 @@ export class BijakServer implements BijakApi {
   ): Promise<GenerateOutcome> {
     await this.tick()
     const bp = BLUEPRINTS.find((b) => b.subject === subject && b.kertas === kertas)
-    if (!bp || bp.source === 'Draf') return { ok: false, reason: 'no_blueprint' }
+    if (!bp || !servesPupils(bp)) return { ok: false, reason: 'no_blueprint' }
     const unitsByPool = new Map<string, PoolUnit[]>()
     for (const s of bp.sections) {
       unitsByPool.set(
