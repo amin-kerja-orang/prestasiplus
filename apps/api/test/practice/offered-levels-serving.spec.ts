@@ -40,12 +40,25 @@ describe('latih_tubi mode (was random, ERR-PRAC-07)', () => {
     for (const q of s.questions) expect(t.bank.get(q.id).educationLevelId).toBe(t5)
   })
 
-  // Latih Tubi (the only mode that takes a levelId once random is gone, ERR-PRAC-07) is still limited to the SPM levels
-  // (start.planner latihTubiLevelIds, TODO S4-T06 PR3), so a T1 level is refused until that twin follows offeredLevels.
-  it('refuses a T1 level for latih_tubi until the SPM-level limit is lifted', async () => {
-    const res = await pelajar.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: t1 })
-    expect(res.status).toBe(422)
-    expect(res.body.error.fields.levelId).toBe('Nilai tidak sah.')
+  // S4-T06: Latih Tubi follows `offeredLevels` (active, non-primary), so T1 starts like T5; a level that is not offered is refused.
+  it('starts at a T1 level (the base offers T1 to T5)', async () => {
+    const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: t1 })
+    expect(s.questions).toHaveLength(5)
+    for (const q of s.questions) expect(t.bank.get(q.id).educationLevelId).toBe(t1)
+  })
+
+  it('refuses an inactive secondary level (not offered)', async () => {
+    const [row] = await t.db.query<{ id: string }>(
+      `insert into education_levels (code, name, name_en, stage, curriculum, sort_order, is_active, grade, created_at, updated_at)
+       values ('TXI', 'Tingkatan tidak aktif', 'Inactive form', 'upper_secondary', 'KSSM', 99, false, 10, now(), now()) returning id::text`,
+    )
+    try {
+      const res = await pelajar.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, difficulty: 3, levelId: row!.id })
+      expect(res.status).toBe(422)
+      expect(res.body.error.fields.levelId).toBe('Nilai tidak sah.')
+    } finally {
+      await t.db.query(`delete from education_levels where id = $1`, [row!.id])
+    }
   })
 
   it('refuses a primary level (not offered)', async () => {
