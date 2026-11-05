@@ -12,6 +12,7 @@ import {
   QuestionPartSchema,
   QuestionWritePartSchema,
   QuestionPublicPartSchema,
+  QuestionSchemeRulesSchema,
   QuestionStatusSchema,
   QuestionStimulusGroupSchema,
 } from './parts'
@@ -333,6 +334,8 @@ export const QuestionSchema = z
     textbookRef: QuestionTextbookRefSchema.nullable().optional(),
     /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
     rejectionReason: z.string().nullable().optional(),
+    /** DM-54: question-level scheme rules (deductions, zeroIf); null = none. */
+    schemeRules: QuestionSchemeRulesSchema.nullable().optional(),
   })
   .meta({ id: 'Question' })
 
@@ -458,6 +461,8 @@ const baseInput = z.object({
   stimulusGroupId: IdSchema.nullable().optional(),
   /** DM-56 Rujukan buku teks; null clears it, omitted keeps it. */
   textbookRef: QuestionTextbookRefSchema.nullable().optional(),
+  /** DM-54 scheme v2 question-level rules; null clears it, omitted keeps it. */
+  schemeRules: QuestionSchemeRulesSchema.nullable().optional(),
 })
 
 /**
@@ -987,3 +992,5 @@ export const QUESTION_TYPE_LEAF_MODES: Record<QuestionTypeCode, readonly string[
   drawing: ['drawing'],
   table_fill: ['table_fill'],
 }
+
+export type QuestionSchemeRules = z.infer<typeof QuestionSchemeRulesSchema>

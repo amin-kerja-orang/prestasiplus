@@ -610,3 +610,6 @@ const PublicBranch = <C extends z.ZodType>(children: C) =>
 export const QuestionPublicPartSchema = z
   .union([PublicLeaf, PublicBranch(z.union([PublicLeaf, PublicBranch(PublicLeaf)]))])
   .meta({ id: 'QuestionPublicPart' })
+
+/** S1-T09a (API-Q-30): the v2 key schemas, exported for the validate route. */
+export { PointsKeyV2 as QuestionSchemeV2PointsKeySchema, RubricKeyV2 as QuestionSchemeV2RubricKeySchema }

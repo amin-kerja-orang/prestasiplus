@@ -10,6 +10,7 @@ import type {
   QuestionCurriculumTagSchema,
   QuestionPart,
   QuestionPublicSchema,
+  QuestionSchemeRules,
   QuestionStatus,
   QuestionUpdateRequestSchema,
 } from '@pp/contract'
@@ -135,6 +136,8 @@ export interface QuestionVersionRecord {
   difficultyLevel: number | null
   /** DM-56: Rujukan buku teks; null when none. */
   textbookRef: TextbookRef | null
+  /** DM-54: question-level scheme rules (deductions, zeroIf); null when none. */
+  schemeRules?: QuestionSchemeRules | null
   /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
   rejectionReason: string | null
   sourcePage: number | null

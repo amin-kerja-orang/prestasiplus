@@ -35,6 +35,9 @@ export const QUESTIONS_LIST_LIMIT = {
   per: 'user',
 } as const satisfies RateLimitSpec
 
+/** Live scheme validation (API-Q-30) is a read the editor calls while typing: the read ceiling of the list, in its own per-user bucket. */
+export const QUESTIONS_SCHEME_VALIDATE_LIMIT = { ...QUESTIONS_LIST_LIMIT, bucket: 'questions-scheme-validate' } as const satisfies RateLimitSpec
+
 /**
  * Admin routes of the question bank (SRS M04 #1 to #7): the `admin` role only (Admin Pusat). CSRF on
  * every mutation is enforced by the session guard. `summary` and `bulk-action` are declared before
@@ -123,6 +126,14 @@ export class AdminQuestionsController {
   @Get(':id')
   async get(@Param('id') id: string) {
     return ok(detailView(await this.questions.getAdmin(id)))
+  }
+
+  /** API-Q-30: validates a scheme v2 body against a stored leaf. Read-only (nothing is saved), so no audit row. `partId` is the label path (`(a).(i)`), or `_` for a leaf that has no label. */
+  @Post(':id/parts/:partId/scheme/validate')
+  @HttpCode(200)
+  @RateLimit(QUESTIONS_SCHEME_VALIDATE_LIMIT)
+  async validateScheme(@Param('id') id: string, @Param('partId') partId: string, @Body() body: unknown) {
+    return ok(await this.questions.validateScheme(id, partId, body))
   }
 
   @Post()
