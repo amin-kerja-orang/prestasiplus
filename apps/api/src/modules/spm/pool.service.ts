@@ -27,6 +27,14 @@ const poolFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'm
  */
 export const databankFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('databank', { subjectId }), status: 'approved', active: true })
 
+/**
+ * The same for the Latih Tubi SPM hub total: the serving definition of the Latih Tubi draw (`filterOf('latih_tubi_spm')`, which
+ * follows `GROUP_SURFACES`: singles only while the surface is not a group surface, whole groups once it is).
+ */
+export const latihTubiFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('latih_tubi_spm', { subjectId }), status: 'approved', active: true })
+
+type CountedActivity = 'databank' | 'latih_tubi_spm'
+
 /** First window of a draw is `n * DRAW_OVER`; it widens x4 (same seed, so the same prefix) while records are refused. */
 const DRAW_OVER = 2
 const DRAW_ROUNDS = 3
@@ -104,18 +112,28 @@ export class SpmPoolService {
    * The Databank count of a subject: units the Databank draw can serve (see `databankFilter`). Cached like `cells` (same TTL, single
    * flight, dropped when a question event moves `generation`).
    */
-  async databankCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+  databankCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+    return this.unitsOf('databank', subjectId, options)
+  }
+
+  /** The Latih Tubi SPM total of a subject: units the Latih Tubi draw can serve (see `latihTubiFilter`); cached like `databankCount`. */
+  latihTubiCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+    return this.unitsOf('latih_tubi_spm', subjectId, options)
+  }
+
+  private async unitsOf(activity: CountedActivity, subjectId: string, options: { fresh?: boolean }): Promise<number> {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
     const generation = this.generation()
-    const hit = this.databankCache.get(subjectId)
+    const key = `${activity}:${subjectId}`
+    const hit = this.databankCache.get(key)
     if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.n
-    const flight = `${subjectId}:${String(generation)}`
+    const flight = `${key}:${String(generation)}`
     const running = this.databankInflight.get(flight)
     if (running) return running
     const load = (async () => {
-      const n = await this.questions.unitCount(databankFilter(subjectId))
-      if (ttl > 0) this.databankCache.set(subjectId, { until: now + ttl, n, generation })
+      const n = await this.questions.unitCount(activity === 'databank' ? databankFilter(subjectId) : latihTubiFilter(subjectId))
+      if (ttl > 0) this.databankCache.set(key, { until: now + ttl, n, generation })
       return n
     })()
     this.databankInflight.set(flight, load)

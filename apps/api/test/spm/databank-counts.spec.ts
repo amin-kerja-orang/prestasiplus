@@ -6,7 +6,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { GROUP_SURFACES, QuestionsRepository, QuestionsService, servabilityFilterOf } from '../../src/modules/questions'
-import { databankFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
+import { databankFilter, latihTubiFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
 import { addQuestion, bootSpmApp, type SpmTestApp } from './helpers'
 
 let t: SpmTestApp
@@ -40,6 +40,7 @@ async function addSecondLeaf(questionId: string): Promise<void> {
 }
 
 /** The Databank serving filter with `databank` ADDED to the group surfaces (what B3 will make of `GROUP_SURFACES`). */
+const withLtGroups = (subject: string) => ({ ...servabilityFilterOf('latih_tubi_spm', { subjectId: subject }, [...GROUP_SURFACES, 'latih_tubi_spm']), status: 'approved' as const, active: true })
 const withGroups = (subject: string) => ({ ...servabilityFilterOf('databank', { subjectId: subject }, [...GROUP_SURFACES, 'databank']), status: 'approved' as const, active: true })
 
 beforeAll(async () => {
@@ -111,6 +112,32 @@ async function ungroupedSingles(sej: string): Promise<number> {
   )
   return Number(rows[0]?.n)
 }
+
+describe('Latih Tubi SPM hub total follows the serving rule', () => {
+  it('[CI] AC-MUR-13-13 a group of 3 counts as 1, an incomplete group 0, a multi-leaf question 0 (group surface on)', async () => {
+    await t.db.query('delete from questions')
+    const geo = await subjectId('GEO')
+    await addQuestion(t.db, { subject: 'GEO', level: 'T4' })
+    const three = [await addQuestion(t.db, { subject: 'GEO', level: 'T4' }), await addQuestion(t.db, { subject: 'GEO', level: 'T4' }), await addQuestion(t.db, { subject: 'GEO', level: 'T4' })]
+    await groupOf(three)
+    const gappy = [await addQuestion(t.db, { subject: 'GEO', level: 'T4' }), await addQuestion(t.db, { subject: 'GEO', level: 'T4', status: 'draft' })]
+    await groupOf(gappy)
+    const multi = await addQuestion(t.db, { subject: 'GEO', level: 'T4' })
+    await addSecondLeaf(multi)
+    expect(await repo.unitCount(withLtGroups(geo))).toBe(2)
+    expect(await repo.unitCount({ ...withLtGroups(geo), idIn: three })).toBe(1)
+    expect(await repo.unitCount({ ...withLtGroups(geo), idIn: gappy })).toBe(0)
+    expect(await repo.unitCount({ ...withLtGroups(geo), idIn: [multi] })).toBe(0)
+  })
+
+  it('[CI] AC-MUR-13-13 the hub total (API and service) equals what the draw serves and follows GROUP_SURFACES', async () => {
+    const geo = await subjectId('GEO')
+    const served = await repo.unitCount(latihTubiFilter(geo))
+    expect(await pool.latihTubiCount(geo, { fresh: true })).toBe(served)
+    // Groups off: ungrouped single-leaf only (1 solo). Groups on: the complete group counts once more.
+    expect(served).toBe(GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 1)
+  })
+})
 
 describe('Databank count cache', () => {
   it('[CI] AC-MUR-13-10 the cached count rises by 1 on the next load after a question event', async () => {

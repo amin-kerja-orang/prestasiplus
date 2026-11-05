@@ -94,9 +94,9 @@ export class SpmHubService {
     return this.questions.count({ subjectId, status: 'approved', active: true, type: 'structured' })
   }
 
-  /** Pool sizes of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
+  /** Latih Tubi totals (units the Latih Tubi draw serves, a group once) of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
   private async poolSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
-    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.count(s.subjectId))
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.latihTubiCount(s.subjectId))
     return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
   }
 
@@ -169,7 +169,7 @@ export class SpmHubService {
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: countOf(facts),
+      total: await this.pool.latihTubiCount(s.subjectId),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),

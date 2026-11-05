@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { databankFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
+import { databankFilter, latihTubiFilter, SpmPoolService } from '../../src/modules/spm/pool.service'
 import { OverviewCache } from '../../src/modules/questions/serving/overview-cache'
 
 describe('Databank count scope (pure)', () => {
@@ -8,6 +8,15 @@ describe('Databank count scope (pure)', () => {
     const f = databankFilter('7')
     expect(f).toMatchObject({ subjectId: '7', type: 'mcq', spmPool: true, status: 'approved', active: true })
     // Whatever GROUP_SURFACES says, the shape is the draw's: whole groups or ungrouped, never the Mock's single-leaf flag.
+    expect(f.singleMcqLeaf).toBeUndefined()
+    expect(f.wholeGroups === true || f.ungrouped === true).toBe(true)
+  })
+})
+
+describe('Latih Tubi hub total scope (pure)', () => {
+  it('[CI] AC-MUR-13-13 is the serving definition of the Latih Tubi draw, never the Mock single-leaf flag', () => {
+    const f = latihTubiFilter('7')
+    expect(f).toMatchObject({ subjectId: '7', type: 'mcq', spmPool: true, status: 'approved', active: true })
     expect(f.singleMcqLeaf).toBeUndefined()
     expect(f.wholeGroups === true || f.ungrouped === true).toBe(true)
   })
@@ -42,5 +51,16 @@ describe('Databank count single-flight (pure)', () => {
     releases.forEach((r) => r())
     expect(await before).toBe(1)
     expect(await after).toBe(2)
+  })
+
+  it('[CI] AC-MUR-13-13 Databank and Latih Tubi totals are cached apart', async () => {
+    let calls = 0
+    const repo = { unitCount: () => Promise.resolve(++calls) }
+    const cache = new OverviewCache({ now: () => new Date(0) } as never, {} as never)
+    const pool = new SpmPoolService(repo as never, { get: () => '600' } as never, { now: () => new Date(0) } as never, cache)
+    expect(await pool.databankCount('1')).toBe(1)
+    expect(await pool.latihTubiCount('1')).toBe(2)
+    expect(await pool.databankCount('1')).toBe(1)
+    expect(await pool.latihTubiCount('1')).toBe(2)
   })
 })
