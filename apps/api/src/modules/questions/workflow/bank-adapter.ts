@@ -138,12 +138,13 @@ export class QuestionBankAdapter implements QuestionBankPort {
     })
   }
 
-  deactivate(id: string): Promise<boolean> {
-    return this.repo.deactivate(id)
+  // DM-42: a report resolution (admin) never acts on a personal question: it is unknown here, so the call is a no-op that answers false.
+  async deactivate(id: string): Promise<boolean> {
+    return (await this.repo.get(id, 'latest', BANK_ONLY)) !== null && this.repo.deactivate(id)
   }
 
-  reactivate(id: string): Promise<boolean> {
-    return this.repo.reactivate(id)
+  async reactivate(id: string): Promise<boolean> {
+    return (await this.repo.get(id, 'latest', BANK_ONLY)) !== null && this.repo.reactivate(id)
   }
 
   /**
