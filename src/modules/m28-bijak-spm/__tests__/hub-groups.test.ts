@@ -24,7 +24,7 @@ const PAPERS = [
 ]
 
 let wrapper: VueWrapper | null = null
-beforeEach(async () => {
+beforeEach(() => {
   vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }))
   // Constant subject list: a subject with no listed paper must not appear in the filter.
   server.subjects.mockReturnValue([{ code: 'FIZ', name: 'Fizik' }])
