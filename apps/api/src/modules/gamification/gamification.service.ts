@@ -11,6 +11,7 @@ import type {
   GamificationMasteryRow,
   GamificationReferral,
   GamificationShareCards,
+  GuruGlobalChallenge,
 } from '@pp/contract'
 import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
@@ -245,6 +246,27 @@ export class GamificationService {
       }
     })
     return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length } }
+  }
+
+  /**
+   * S6 reader (card S6-T07, read-only): the active challenges in the display order with how many of the given
+   * pupils completed each one today (Malaysia day; test completions left out). Writes nothing.
+   */
+  async challengesForTeacher(pupilIds: readonly string[]): Promise<GuruGlobalChallenge[]> {
+    const db = this.repo.handle()
+    const day = mytDay(this.clock.now())
+    const [active, counts] = await Promise.all([this.repo.challenges(db, true), this.repo.completionCountsOn(db, day, pupilIds.map((p) => idFromString(p)))])
+    return active.map((c) => ({
+      id: c.id,
+      title: c.title,
+      description: c.description,
+      target: c.targetValue,
+      rewardSyiling: c.rewardSyiling,
+      rewardXp: c.rewardXp,
+      difficulty: c.difficulty as GuruGlobalChallenge['difficulty'],
+      icon: c.icon,
+      completedToday: counts.get(c.id) ?? 0,
+    }))
   }
 
   /**

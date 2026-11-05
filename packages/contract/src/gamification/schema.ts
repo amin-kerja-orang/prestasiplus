@@ -150,6 +150,22 @@ export const GamificationChallengeProgressSchema = z
   .meta({ id: 'GamificationChallengeProgress' })
 export type GamificationChallengeProgress = z.infer<typeof GamificationChallengeProgressSchema>
 
+/** A platform daily challenge as a teacher sees it (S6 Misi Harian "Global" rows): read-only, with today's completions among the teacher's pupils. Service return type; no route. */
+export const GuruGlobalChallengeSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    description: z.string(),
+    target: z.number().int().min(1),
+    rewardSyiling: count,
+    rewardXp: count,
+    difficulty: GamificationDifficultySchema,
+    icon: z.string(),
+    completedToday: count.meta({ description: 'Distinct pupils of the teacher who completed it today (Malaysia day), test rows excluded.' }),
+  })
+  .meta({ id: 'GuruGlobalChallenge' })
+export type GuruGlobalChallenge = z.infer<typeof GuruGlobalChallengeSchema>
+
 /** Subject mastery (read from the practice module); only subjects with at least one answer. */
 export const GamificationMasteryRowSchema = z
   .object({
