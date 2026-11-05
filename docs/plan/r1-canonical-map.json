@@ -13808,7 +13808,7 @@
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/src/modules/exam/builder/builder.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S3-T06"
     },
     {
       "key": "GET /api/admin/papers/:p/review",
