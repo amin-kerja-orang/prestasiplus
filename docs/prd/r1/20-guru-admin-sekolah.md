@@ -626,14 +626,14 @@ Route `/guru/misi-harian`. API: API-GUR-11 (list, create, delete). Data addition
 | Subjek | select | Yes | "-- Pilih subjek --" | OPT-SUBJEK (every active subject); the mission draw of FR-GUR-44a-10 uses it | "Sila pilih subjek." | none | `missions.subject_id` | API-GUR-11 |
 
 - "Misi Baru" shows the form; "Cipta Misi" saves (busy "Menyimpan...") and shows the toast "Misi dicipta." List order: date descending, then created descending. Card layout as in the Screen specification.
-- Delete: only own missions, after CF-07. A Global row (an S7 challenge) shows the badge "Global" and has no delete control [lead to confirm: whether a delete request for a challenge id keeps an explicit 403 "Misi global tidak boleh dipadam."]. Deleting keeps rewards already paid. The once-only target reward of a TEACHER mission is recorded in `mission_rewards` (DM-88).
+- Delete: only own missions, after CF-07. A Global row (an S7 challenge) shows the badge "Global" and has no delete control; a delete request for it (id `challenge-<id>`) answers 403 "Misi global tidak boleh dipadam.". Deleting keeps rewards already paid. The once-only target reward of a TEACHER mission is recorded in `mission_rewards` (DM-88).
 - Reward rule: the reward is paid once per pupil when the pupil reaches the sasaran of the mission (completed count derived from `practice_sessions.mission_id`).
 - Empty: "Belum ada misi" / "Cipta misi harian pertama untuk pelajar anda." with the button "Cipta Misi".
 
 **Requirements added by this spec**
 - **FR-GUR-2b-5** The mission form validates the seven fields as in the table (Subjek is required and is the Subjek used by the mission draw, FR-GUR-44a-10); a Global row cannot be deleted by a teacher; the reward of a teacher mission is paid once per pupil (DM-88).
 - **AC-GUR-2b-5** Given Sasaran Soalan 0, when "Cipta Misi" is pressed, then "Sasaran soalan mesti antara 1 dan 1000." shows and no mission is created.
-- **AC-GUR-2b-6** Given an active S7 challenge shown in the list as a Global row, when the teacher looks at its card, then no "Padam" control shows; a direct delete request is refused [lead to confirm: status and message].
+- **AC-GUR-2b-6** Given an active S7 challenge shown in the list as a Global row, when the teacher looks at its card, then no "Padam" control shows; a direct delete request answers 403 "Misi global tidak boleh dipadam.".
 - **AC-GUR-2b-7** Given a mission with sasaran 10 and reward 10, when a pupil reaches 10 answers twice on the same day, then the reward is paid once.
 - **AC-GUR-2b-8** Given the form with Subjek left at "-- Pilih subjek --", when "Cipta Misi" is pressed, then "Sila pilih subjek." shows and no mission is created.
 
