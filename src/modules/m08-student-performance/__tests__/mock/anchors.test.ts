@@ -125,28 +125,28 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
     expect(s1.distribution.reduce((a, d) => a + d.count, 0)).toBe(744)
   })
 
-  it('the 16 subject rows of discovery A.2 (entries, GPS, On Track, Below, Tiada Sasaran), GPS ascending', () => {
+  it('the 16 subject rows (entries, GPS, On Track, Below, Tiada Sasaran with computed targets), GPS ascending', () => {
     expect(
       s1.subjects
         .slice(0, 16)
         .map((r) => [r.name, r.entries, r.gps, r.onTrack, r.below, r.noTarget]),
     ).toEqual([
-      ['Tasawwur Islam', 7, 0.29, 0, 0, 7],
-      ['Pendidikan Islam', 48, 0.98, 0, 1, 47],
-      ['Prinsip Perakaunan', 5, 1.4, 0, 3, 2],
-      ['Ekonomi', 28, 1.86, 9, 7, 12],
-      ['Biologi', 23, 1.96, 19, 4, 0],
-      ['Fizik', 2, 2.5, 1, 0, 1],
-      ['Bahasa Inggeris', 37, 2.57, 13, 16, 8],
-      ['Sains', 131, 2.79, 74, 36, 21],
-      ['Bahasa Melayu', 109, 2.84, 22, 4, 83],
-      ['Kimia', 56, 3.21, 8, 4, 44],
-      ['Pendidikan Moral', 9, 3.44, 3, 2, 4],
-      ['Sejarah', 101, 3.56, 27, 34, 40],
+      ['Tasawwur Islam', 7, 0.29, 4, 3, 0],
+      ['Pendidikan Islam', 48, 0.98, 45, 3, 0],
+      ['Prinsip Perakaunan', 5, 1.4, 5, 0, 0],
+      ['Ekonomi', 28, 1.86, 26, 2, 0],
+      ['Biologi', 23, 1.96, 22, 1, 0],
+      ['Fizik', 2, 2.5, 2, 0, 0],
+      ['Bahasa Inggeris', 37, 2.57, 36, 1, 0],
+      ['Sains', 131, 2.79, 125, 6, 0],
+      ['Bahasa Melayu', 109, 2.84, 101, 8, 0],
+      ['Kimia', 56, 3.21, 49, 4, 3],
+      ['Pendidikan Moral', 9, 3.44, 6, 3, 0],
+      ['Sejarah', 101, 3.56, 95, 6, 0],
       ['Matematik Tambahan', 3, 3.67, 3, 0, 0],
       ['Sains Komputer', 1, 4, 1, 0, 0],
-      ['Matematik', 100, 4.54, 24, 28, 48],
-      ['Perniagaan', 84, 7.15, 7, 61, 16],
+      ['Matematik', 100, 4.54, 94, 6, 0],
+      ['Perniagaan', 84, 7.15, 75, 9, 0],
     ])
     expect(s1.subjects.map((r) => r.grade).slice(0, 3)).toEqual(['A+', 'A', 'A'])
   })
@@ -170,11 +170,11 @@ describe('S1 for the school admin (own school, INFERRED)', () => {
       ['D', 1],
       ['G', 1],
     ])
-    // 3 On Track (3001 Kimia, 3003 Kimia, 3001 BM 2025) and 3 Below: the designed configs only.
+    // Computed targets (HC-2): 1 On Track and 2 Below of the designed configs.
     expect([
       s1.subjects.reduce((a, r) => a + r.onTrack, 0),
       s1.subjects.reduce((a, r) => a + r.below, 0),
-    ]).toEqual([3, 3])
+    ]).toEqual([1, 2])
   })
 })
 
