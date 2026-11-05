@@ -69,6 +69,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S10-T06 | FR-X2-0 | CI | Pass | 2026-11-05 | team-dd/R-1 | check-http-build.test.mjs |
 
 ## Sprint 5
 
