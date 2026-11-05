@@ -227,6 +227,39 @@ describe('AC8 / AC-18.3 repository reads leave out Mod Pelajar rows by default',
     if (!stats.has(ids.maju)) expect(last.has(ids.maju)).toBe(false)
   })
 
+  it('sessionAccuracyBySchool: mean of session accuracy per school, completed non-test sessions of active Tingkatan 1-5 pupils (S7-T02)', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const guru = await userIdByEmail(t.db, 'guru@demo.test')
+    const school = (await t.db.query<{ id: string }>(`select school_id::text as id from users where id = $1`, [ids.pelajar]))[0]?.id as string
+    const session = { mode: 'random', subject: w.subject.math, coins: 0, completedAt: '2026-10-10T10:00:00+08:00' }
+    expect(await repo.sessionAccuracyBySchool()).toEqual([])
+
+    // Unequal sessions: the mean is (50 + 90 + 40) / 3 = 60, the pooled figure would be 11 / 17.
+    await insert({ ...session, user: ids.pelajar, count: 2, correct: 1 })
+    await insert({ ...session, user: ids.pelajar, count: 10, correct: 9 })
+    await insert({ ...session, user: ids.maju, count: 5, correct: 2 })
+    // Never counted: test rows, unfinished sessions, an empty session, a staff member's session.
+    await insert({ ...session, user: ids.pelajar, count: 10, correct: 0, isTest: true })
+    await insert({ ...session, user: ids.pelajar, count: 10, correct: 0, status: 'in_progress', completedAt: null })
+    await insert({ ...session, user: ids.pelajar, count: 0, correct: 0 })
+    await insert({ ...session, user: guru, count: 10, correct: 0 })
+    const board = await repo.sessionAccuracyBySchool()
+    expect(board).toHaveLength(1)
+    expect(board[0]).toMatchObject({ schoolId: school, pupils: 2, sessions: 3 })
+    expect(board[0]?.accuracy).toBeCloseTo(60, 6)
+
+    const without = async (sql: string) => {
+      await t.db.query(sql, [ids.maju])
+      const rows = await repo.sessionAccuracyBySchool()
+      await t.db.query(`update users set grade = 11, is_active = true, school_id = $2 where id = $1`, [ids.maju, school])
+      return rows[0]?.pupils
+    }
+    expect(await without(`update users set grade = 6 where id = $1`)).toBe(1) // Darjah
+    expect(await without(`update users set grade = null where id = $1`)).toBe(1)
+    expect(await without(`update users set is_active = false where id = $1`)).toBe(1)
+    expect(await without(`update users set school_id = null where id = $1`)).toBe(1)
+  })
+
   it('queue and mastery reads return the stored rows in BR-14 order and by subject', async () => {
     const repo = t.app.get(PracticeRepository)
     await t.db.query(

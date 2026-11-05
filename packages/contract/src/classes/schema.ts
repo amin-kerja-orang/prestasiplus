@@ -38,9 +38,9 @@ export const classJoinedText = (name: string): string => `Berjaya menyertai kela
 
 /** Generic texts of the mock guards (401, 403, 404 on a malformed or unknown route). */
 export const CLASS_GUARD_MESSAGES = {
-  unauthenticated: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
+  unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
+  forbidden: 'Anda tidak dibenarkan melakukan tindakan ini.',
+  notFound: 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?',
 } as const
 
 /** Required trimmed text: blank or missing gives `message`; over `max` gives `maxMessage`. */

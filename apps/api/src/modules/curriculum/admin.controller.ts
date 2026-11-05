@@ -109,6 +109,12 @@ export class AdminCurriculumController {
     return ok(await this.admin.tree(query))
   }
 
+  /** API-DSKP-11 (S4-T02): DSKP load report per Subjek x Tingkatan, live counts; read only, not rate limited. */
+  @Get('dskp')
+  async dskpReport(@Query(new BoundedQueryPipe()) query: unknown) {
+    return ok(await this.admin.dskpReport(query))
+  }
+
   @Get('chapters/:id')
   async getChapter(@Param('id') id: string) {
     return ok(await this.admin.getChapter(id))

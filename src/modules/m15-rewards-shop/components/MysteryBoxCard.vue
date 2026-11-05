@@ -24,6 +24,11 @@ function submit(): void {
 const art = computed<Art3DName>(() =>
   props.box.rarity === 'legendary' ? 'trophy' : props.box.rarity === 'rare' ? 'rocket' : 'party',
 )
+/** A stored code reads in sentence case on a badge (v2-design-language 3.3 rule 4). */
+const ribbonLabel = computed(() => {
+  const code = props.box.rarity ?? ''
+  return code.charAt(0).toUpperCase() + code.slice(1)
+})
 const ribbonColor = computed(() =>
   props.box.rarity === 'legendary' ? 'warning' : props.box.rarity === 'rare' ? 'info' : 'primary',
 )
@@ -42,7 +47,7 @@ const ribbonColor = computed(() =>
           :color="ribbonColor"
           variant="solid"
           :data-testid="`box-${String(box.id)}-ribbon`"
-          >{{ box.rarity }}</UBadge
+          >{{ ribbonLabel }}</UBadge
         >
       </div>
       <DsArt3D :name="art" size="hero" float />
