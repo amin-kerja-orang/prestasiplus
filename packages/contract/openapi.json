@@ -57983,6 +57983,11 @@
           "isActive": {
             "type": "boolean"
           },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Approved, active PKSK questions of the domain over both levels; a question tagged T1 and T4 counts once."
+          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -58000,6 +58005,7 @@
           "nameEn",
           "order",
           "isActive",
+          "questionCount",
           "createdAt",
           "updatedAt"
         ]
@@ -58321,6 +58327,60 @@
           "sessionId": {
             "$ref": "#/components/schemas/PracticeSessionId"
           },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored correct."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of answers scored (the set size)."
+          },
+          "review": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "selectedIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C (essay) answer or a blank."
+                },
+                "correctIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "Null for a Bahagian C question."
+                },
+                "isCorrect": {
+                  "type": "boolean"
+                },
+                "explanation": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "questionId",
+                "selectedIndex",
+                "correctIndex",
+                "isCorrect",
+                "explanation"
+              ]
+            },
+            "description": "Revealed only after the answers are scored and stored; the served set never carries it."
+          },
           "gamification": {
             "type": "object",
             "properties": {
@@ -58352,6 +58412,9 @@
         "required": [
           "masteryPct",
           "sessionId",
+          "correct",
+          "total",
+          "review",
           "gamification"
         ]
       },
@@ -114009,7 +114072,7 @@
           "pksk"
         ],
         "summary": "The 15 PKSK domains",
-        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta.",
+        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta. Each domain carries `questionCount` (approved, active questions over both levels, each counted once); no question text.",
         "responses": {
           "200": {
             "description": "The domains.",
@@ -114546,7 +114609,7 @@
           "pksk"
         ],
         "summary": "Submit a domain practice set",
-        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; the response carries correct, total and a per-question review (selectedIndex, correctIndex, isCorrect, explanation), revealed only after scoring and storing; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
         "parameters": [
           {
             "schema": {
