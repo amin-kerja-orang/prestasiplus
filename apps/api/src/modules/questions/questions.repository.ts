@@ -3,19 +3,19 @@ import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
-import { idFromString, idToString } from '../../db/ids'
+import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
-import { kbatOf, missingLeafSql, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
+import { adminFilterConds, bi, likePattern } from './admin-filter'
+import { kbatOf, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
 import { paperHeld, QUESTION_SERVED_BY_PAPER } from './served-rule'
 import { isQuestionStatus } from './status'
+import { STRUCTURED_LEVEL_CODES } from './structured-visibility'
 import { partsFromRows, type PartDraft, StoredKeyError } from './tree'
 import type {
   AdminListFilter,
   GroupCountBy,
-  GuruListFilter,
-  Page,
   QuestionFilter,
   QuestionRecord,
   GateFacts,
@@ -174,6 +174,26 @@ const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma
   AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
 )`
 
+/** Every stimulus a version shows (own links, part links, its group's); aliases `v`, `q`. Selects `sid`. */
+const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
+               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
+               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`
+
+/**
+ * R1-GUR-44b (FR-X1-4f): what the teacher structured list may show. It starts from what a pupil is served (`isStructuredVisible`: active, approved,
+ * structured, level T4 or T5) and is stricter than it: a source that is taken down and a question whose figure or table is missing
+ * (`mediaResolvedSql`, the approve-gate rule) are left out too. Aliases `q`, `v`; `v` is the LIVE version (`SERVED_FROM_SQL`), so a newer
+ * draft does not hide a question pupils still get.
+ */
+const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
+const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
+  Prisma.sql`q.is_active`,
+  Prisma.sql`v.status = 'approved'`,
+  Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = v.education_level_id AND gl.code IN (${Prisma.join([...STRUCTURED_LEVEL_CODES])}))`,
+  NOT_SOURCE_TAKEN_DOWN_SQL,
+  mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`),
+]
+
 /** Most ids `eligibleIds` returns (it throws beyond it) and the cap of one keyset page. */
 export const ELIGIBLE_IDS_MAX = 5000
 /** Largest draw one `sampleIds` call returns (a guard; real draws are tens of ids). */
@@ -234,15 +254,6 @@ const groupGapCountSql = (groupId: Prisma.Sql): Prisma.Sql =>
 export const groupCompleteSql = (groupId: Prisma.Sql): Prisma.Sql =>
   Prisma.sql`(EXISTS (SELECT 1 FROM stimulus_group_stimuli wgs WHERE wgs.group_id = ${groupId}) AND ${groupGapCountSql(groupId)} = 0)`
 
-/** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
-function bi(text: string): bigint | null {
-  try {
-    return idFromString(text)
-  } catch {
-    return null
-  }
-}
-
 /** The PKSK tags of a question (`pksk_domain` code and `pksk_level`), or null when it carries no domain tag. */
 function pkskOf(tags: readonly { kind: string; code: string }[]): { domainCode: string; level: 'T1' | 'T4' } | null {
   const domain = tags.find((t) => t.kind === 'pksk_domain')
@@ -285,8 +296,6 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     tableData: row.tableData ?? null,
   }
 }
-
-const likePattern = (s: string): string => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 
 /**
  * The only doorway to the question tables (ADR-0014, data model G-12). Other cards (BE-12 practice,
@@ -620,22 +629,6 @@ export class QuestionsRepository {
     })
   }
 
-  async listOwn(filter: GuruListFilter): Promise<Page<QuestionRecord>> {
-    const owner = bi(filter.ownerId)
-    if (owner === null) return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
-    // One raw filter for rows and total (no primary-level question, before pagination): the page and `total` always agree.
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
-    const where = Prisma.sql`q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
-    const offset = (filter.page - 1) * filter.pageSize
-    const [totals, ids] = await Promise.all([
-      this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
-    ])
-    const total = totals[0]?.n ?? 0
-    const records = await this.hydrate(ids.map((r) => r.id), 'latest')
-    return { rows: records, page: filter.page, pageSize: filter.pageSize, total }
-  }
-
   // --- reads for the service (admin, structured, counts) ------------------------------------------
 
   /** Admin list over the LATEST version: ids of one page (newest first), the total and `counts` per status. */
@@ -663,90 +656,13 @@ export class QuestionsRepository {
   }
 
   private adminConds(f: AdminListFilter): Prisma.Sql[] {
-    const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
-    const id = (text: string | undefined, column: Prisma.Sql): void => {
-      if (text === undefined) return
-      const key = bi(text)
-      conds.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`${column} = ${key}`)
-    }
-    id(f.subjectId, Prisma.sql`v.subject_id`)
-    id(f.educationLevelId, Prisma.sql`v.education_level_id`)
-    if (f.difficultyLevel !== undefined) {
-      const n = /^[1-5]$/.test(f.difficultyLevel) ? Number(f.difficultyLevel) : null
-      // Level 5 includes TP 6 (the flat wire clamps 6 to 5).
-      conds.push(n === null ? Prisma.sql`FALSE` : n === 5 ? Prisma.sql`v.difficulty_tp >= 5` : Prisma.sql`v.difficulty_tp = ${n}`)
-    }
-    if (f.status) conds.push(Prisma.sql`v.status = ${f.status}`)
-    if (f.dskpFilter !== undefined) {
-      const tagged = Prisma.sql`EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id)`
-      conds.push(f.dskpFilter === 'tagged' ? tagged : f.dskpFilter === 'untagged' ? Prisma.sql`NOT ${tagged}` : Prisma.sql`FALSE`)
-    }
-    if (f.tagReview) conds.push(Prisma.sql`v.tag_review`)
-    if (f.missing !== undefined) conds.push(missingLeafSql(f.missing))
-    if (f.complianceFilter !== undefined) {
-      const c = f.complianceFilter
-      conds.push(
-        c === 'verified'
-          ? Prisma.sql`q.live_version_no = v.version_no AND v.status = 'approved'`
-          : c === 'draft'
-            ? Prisma.sql`v.status <> 'approved'`
-            : c === 'missing_source'
-              ? Prisma.sql`v.source_file_id IS NULL`
-              : c === 'verified_generated'
-                ? Prisma.sql`q.source_type = 'ai_variant' AND v.status = 'approved'`
-                : Prisma.sql`FALSE`,
-      )
-    }
-    if (f.sourceFilter !== undefined) {
-      // The v2 store has no textbook / dskp / trial / marking_scheme source: only ai_generated exists on the wire.
-      conds.push(f.sourceFilter === 'ai_generated' ? Prisma.sql`q.source_type = 'ai_variant'` : Prisma.sql`FALSE`)
-    }
-    // V2 Studio filters (D79). Tahun, Negeri and Jenis read the source paper of the version; Kertas is the trailing digit of the
-    // version's paper code (how the paper builder reads it). A question without the value never matches.
-    if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
-    if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
-    if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-    if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
-    if (f.search !== undefined && f.search.trim() !== '') {
-      const like = likePattern(f.search.trim())
-      conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
-    }
-    // S1-T07 (API-Q-01, FR-ADM-Q03.8). `q` = a question id when all digits (AC-QA-47), else the stem text; ANDed with `search` when both come.
-    if (f.q !== undefined && f.q.trim() !== '') {
-      const text = f.q.trim()
-      const like = likePattern(text)
-      const key = /^\d{1,18}$/.test(text) ? BigInt(text) : null
-      // One table: the id is read from the version row (`v.question_id`), so the id path keeps the plan of the text path (min 3 characters, in the schema).
-      conds.push(
-        key === null
-          ? Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`
-          : Prisma.sql`(v.question_id = ${key} OR v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`,
-      )
-    }
-    if (f.tingkatan !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM education_levels tl WHERE tl.id = v.education_level_id AND tl.code = ${f.tingkatan})`)
-    if (f.chapter !== undefined) conds.push(f.chapter === 'none' ? Prisma.sql`v.chapter_id IS NULL` : Prisma.sql`v.chapter_id = ${BigInt(f.chapter)}`)
-    id(f.unit, Prisma.sql`v.unit_node_id`)
-    if (f.source !== undefined) {
-      // OPT-SUMBER-SOALAN: Manual, Import (PDF/DOCX), Kiriman Guru, CSV. `csv` is the stored `excel`; `guru` = created by a teacher.
-      conds.push(
-        f.source === 'guru'
-          ? Prisma.sql`EXISTS (SELECT 1 FROM user_roles gr WHERE gr.user_id = q.created_by_id AND gr.role = 'teacher')`
-          : Prisma.sql`q.source_type = ${f.source === 'csv' ? 'excel' : f.source}`,
-      )
-    }
-    // D12: the OPEN flag (not dismissed) of the LIVE approved version, as the work-list and the pupil draws read it, not of the version the list shows.
-    if (f.flag !== undefined) {
-      conds.push(
-        Prisma.sql`EXISTS (SELECT 1 FROM question_versions lv WHERE lv.question_id = q.id AND lv.version_no = q.live_version_no AND lv.status = 'approved' AND lv.stimulus_flag = ${f.flag} AND lv.flag_dismissed_at IS NULL)`,
-      )
-    }
-    if (f.rejected !== undefined) conds.push(f.rejected === 'true' ? Prisma.sql`v.rejection_reason IS NOT NULL` : Prisma.sql`v.rejection_reason IS NULL`)
-    return conds
+    return adminFilterConds(f)
   }
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
     const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+    if (filter.served === true) conds.push(...GURU_STRUCTURED_SERVED_SQL)
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
       [filter.educationLevelId, Prisma.sql`v.education_level_id`],
@@ -766,14 +682,23 @@ export class QuestionsRepository {
             : Prisma.sql`v.cognitive_level = ${n}`,
       )
     }
-    const from = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
+    const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
     const offset = (filter.page - 1) * filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY q.id ASC LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
+  }
+
+  /** True when the question is a structured one the teacher mount may show (the list's `served` rule applied to one id). */
+  async isStructuredServed(id: string): Promise<boolean> {
+    const key = bi(id)
+    if (key === null) return false
+    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return rows.length > 0
   }
 
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */
@@ -805,19 +730,6 @@ export class QuestionsRepository {
       if (r.subject_id !== null) bySubject.set(idToString(r.subject_id), { total: r.total, published: r.published })
     }
     return { total, bySubject }
-  }
-
-  /** Counts of one owner questions per latest-version status. */
-  async ownerStatusCounts(ownerId: string): Promise<Record<QuestionStatus, number>> {
-    const counts = NO_STATUS_COUNTS()
-    const owner = bi(ownerId)
-    if (owner === null) return counts
-    const rows = await this.db.$queryRaw<{ status: string; n: number }[]>`
-      SELECT v.status AS status, count(*)::int AS n
-      FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE q.created_by_id = ${owner} AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
-    for (const r of rows) if (isQuestionStatus(r.status)) counts[r.status] = r.n
-    return counts
   }
 
   /** The owner of a question (decimal id) or `undefined` when the question does not exist. */
@@ -987,9 +899,7 @@ export class QuestionsRepository {
              EXISTS (SELECT 1 FROM intake_items di JOIN duplicate_links dl ON dl.item_id = di.id
                       WHERE di.question_id = q.id AND dl.decision = 'pending' AND dl.kind IN ('exact', 'near')) AS duplicate_open,
              ii.low_fields, ii.confirmed_fields,
-             ${mediaResolvedSql(Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
-               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
-               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`, Prisma.sql`v.import_issues`)} AS media_ok
+             ${mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`)} AS media_ok
         FROM question_versions v
         JOIN questions q ON q.id = v.question_id
         LEFT JOIN intake_items ii ON ii.id = v.intake_item_id

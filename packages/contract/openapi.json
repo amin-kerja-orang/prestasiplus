@@ -4204,17 +4204,27 @@
         "type": "object",
         "properties": {
           "email": {
-            "type": "string",
-            "minLength": 1
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "string"
           },
           "whatsappNumber": {
             "type": "string",
-            "minLength": 1
+            "deprecated": true
           }
         },
         "required": [
           "email",
-          "whatsappNumber"
+          "phone",
+          "whatsapp",
+          "hours"
         ],
         "additionalProperties": false
       },
@@ -9152,6 +9162,54 @@
           "message": {
             "type": "string",
             "minLength": 1
+          },
+          "questionKey": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "New header only: the `question_key` of the row (cut at 40 characters)."
+          },
+          "field": {
+            "type": "string",
+            "description": "New header only: the column the message is about (`medan` of the error CSV)."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "KEY_REQUIRED",
+              "KEY_NOT_CONSECUTIVE",
+              "KEY_DUPLICATE",
+              "TYPE_INVALID",
+              "TYPE_STUDIO_ONLY",
+              "SUBJECT_UNKNOWN",
+              "TINGKATAN_INVALID",
+              "BAHASA_INVALID",
+              "SCRIPT_INVALID",
+              "KERTAS_INVALID",
+              "KERTAS_REQUIRED",
+              "NUMBER_LABEL_INVALID",
+              "UNIT_REQUIRED",
+              "UNIT_UNKNOWN",
+              "SP_REQUIRED",
+              "SP_TOO_MANY",
+              "SP_UNKNOWN",
+              "TP_REQUIRED",
+              "TP_RANGE",
+              "ARAS_REQUIRED",
+              "ARAS_INVALID",
+              "KBAT_INVALID",
+              "CHAPTER_MISMATCH",
+              "TOPIC_INVALID",
+              "DIFFICULTY_INVALID",
+              "PROMPT_SHORT",
+              "PROMPT_LONG",
+              "OPTIONS_BLANK",
+              "OPTIONS_MIN",
+              "OPTION_LONG",
+              "CORRECT_REQUIRED",
+              "MARKS_MIN",
+              "MARKS_MAX"
+            ],
+            "description": "New header only: stable error code (`kod_ralat` of the error CSV)."
           }
         },
         "required": [
@@ -9290,6 +9348,13 @@
             "type": "string",
             "minLength": 1,
             "description": "BM flash text for the success message."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "New header only: \"Kolum {nama} tidak dikenali dan diabaikan.\" per unknown header cell. Not stored in the history."
           }
         },
         "required": [
@@ -9313,7 +9378,7 @@
           "csvFile": {
             "type": "string",
             "format": "binary",
-            "description": "CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level."
+            "description": "CSV file, UTF-8, at most 2 MB and 500 data rows (BM, code or legacy header; or the JSON field `csv` with the file text, limited to the default 100 kb JSON body)."
           }
         },
         "required": [
@@ -9327,7 +9392,7 @@
             "type": "integer",
             "minimum": 0
           },
-          "failed": {
+          "errors": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/QuestionImportFailure"
@@ -9336,7 +9401,7 @@
         },
         "required": [
           "imported",
-          "failed"
+          "errors"
         ],
         "additionalProperties": false
       },
@@ -9974,7 +10039,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04."
+            "description": "JPG, PNG or WebP (GIF and SVG refused), at most 2 MB. Storage: BE-04."
           }
         },
         "required": [
@@ -28316,7 +28381,8 @@
               "null"
             ],
             "minimum": 1,
-            "maximum": 11
+            "maximum": 11,
+            "description": "Tingkatan 1-11. Accepted and ignored by the server for every role (API-AUTH-09)."
           },
           "schoolId": {
             "type": [
@@ -28325,7 +28391,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
+            "description": "School id. Accepted and ignored by the server for every role (API-AUTH-09).",
             "example": "1042"
           }
         },
@@ -41386,6 +41452,212 @@
           "subCount"
         ]
       },
+      "GuruStructuredRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Position in the full ordered list (1-based): page offset + index."
+          },
+          "textExcerpt": {
+            "type": "string"
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string",
+            "description": "KBAT chip text from the question cognitive level: \"LOTS 1\", \"LOTS 2\", \"MOTS 3\", \"HOTS 4\" to \"HOTS 6\"; empty when the question has no level."
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the part marks."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "textExcerpt",
+          "level",
+          "subject",
+          "kbat",
+          "subCount",
+          "marks",
+          "status"
+        ]
+      },
+      "GuruStructuredSub": {
+        "type": "object",
+        "properties": {
+          "partLabel": {
+            "type": "string"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 for a branch (a part that only groups its children)."
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ],
+            "description": "Bloom level of the part (Taksonomi Bloom), if set."
+          },
+          "modelAnswer": {
+            "type": "string",
+            "description": "\"Skema Jawapan\"."
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "partLabel",
+          "questionText",
+          "marks",
+          "cognitiveLevel",
+          "modelAnswer",
+          "depth"
+        ]
+      },
+      "GuruStructuredDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionNamedRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "kbat": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "review"
+            ]
+          },
+          "stimulus": {
+            "type": "string",
+            "description": "The stimulus text, once, above all the sub-questions."
+          },
+          "stimulusImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Always null this round: the file read rule has no teacher branch for a question picture."
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuruStructuredSub"
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "level",
+          "kbat",
+          "status",
+          "stimulus",
+          "stimulusImage",
+          "totalMarks",
+          "subCount",
+          "subQuestions",
+          "createdAt"
+        ]
+      },
       "QuestionStructuredSub": {
         "type": "object",
         "properties": {
@@ -41714,7 +41986,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -41763,38 +42038,32 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
-            "type": "boolean"
-          },
-          "options": {
-            "type": [
-              "array",
-              "null"
-            ],
-            "items": {
-              "type": "string"
-            }
-          },
-          "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 3
-          },
-          "explanation": {
+          "rejectionReason": {
             "type": [
               "string",
               "null"
             ]
           },
-          "source": {
+          "editable": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "explanation": {
             "type": [
               "string",
               "null"
@@ -41817,12 +42086,20 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt"
+        ]
+      },
+      "GuruSubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
         ]
       },
       "QuestionGuruDetail": {
@@ -41832,7 +42109,10 @@
             "$ref": "#/components/schemas/Id"
           },
           "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+            "type": "string",
+            "enum": [
+              "mcq"
+            ]
           },
           "questionText": {
             "type": "string"
@@ -41881,28 +42161,28 @@
             "type": "boolean"
           },
           "status": {
-            "$ref": "#/components/schemas/QuestionStatus"
+            "$ref": "#/components/schemas/GuruSubmissionStatus"
           },
           "statusLabel": {
             "type": "string"
           },
-          "isActive": {
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "editable": {
             "type": "boolean"
           },
           "options": {
-            "type": [
-              "array",
-              "null"
-            ],
+            "type": "array",
             "items": {
               "type": "string"
             }
           },
           "correctAnswer": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "minimum": 0,
             "maximum": 3
           },
@@ -41912,138 +42192,38 @@
               "null"
             ]
           },
-          "source": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
-          "questionImage": {
-            "type": [
-              "string",
-              "null"
+          "chapterId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
             ]
           },
-          "optionImages": {
+          "spIds": {
             "type": "array",
             "items": {
-              "type": [
-                "string",
-                "null"
-              ]
+              "$ref": "#/components/schemas/Id"
             }
           },
-          "tfAnswer": {
+          "tp": {
             "type": [
-              "boolean",
+              "integer",
               "null"
-            ]
+            ],
+            "minimum": 1,
+            "maximum": 6
           },
-          "correctAnswerText": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "altAnswers": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "modelAnswer": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "language": {
-            "type": "string",
-            "enum": [
-              "bm",
-              "en"
-            ]
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "textDirection": {
-            "type": "string",
-            "enum": [
-              "ltr",
-              "rtl"
-            ]
-          },
-          "curriculumChapterId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "curriculumTopicId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "dskpSpId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "usage": {
-            "type": "object",
-            "properties": {
-              "attempts": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "correct": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "accuracy": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100
-              }
-            },
-            "required": [
-              "attempts",
-              "correct",
-              "accuracy"
-            ]
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
           }
         },
         "required": [
@@ -42059,59 +42239,84 @@
           "dskpTagged",
           "status",
           "statusLabel",
-          "isActive",
+          "rejectionReason",
+          "editable",
           "options",
           "correctAnswer",
           "explanation",
-          "source",
           "createdAt",
-          "questionImage",
-          "optionImages",
-          "tfAnswer",
-          "correctAnswerText",
-          "altAnswers",
-          "modelAnswer",
-          "language",
-          "scriptType",
-          "textDirection",
-          "curriculumChapterId",
-          "curriculumTopicId",
-          "dskpSpId",
-          "usage"
+          "chapterId",
+          "spIds",
+          "tp",
+          "cognitiveLevel"
         ]
       },
       "QuestionGuruCreateRequest": {
         "type": "object",
         "properties": {
-          "educationLevelId": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
           "subjectId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 64
           },
-          "questionType": {
-            "$ref": "#/components/schemas/QuestionType"
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
           },
           "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
           },
           "questionText": {
             "type": "string",
@@ -42123,27 +42328,7 @@
             "minItems": 4,
             "maxItems": 4,
             "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "text": {
-                      "type": "string"
-                    }
-                  }
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "optionText": {
-                      "type": "string"
-                    }
-                  }
-                }
-              ]
+              "type": "string"
             }
           },
           "correctAnswer": {
@@ -42155,175 +42340,6 @@
                 "type": "string"
               }
             ]
-          },
-          "tfAnswer": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "correctAnswerText": {
-            "type": "string"
-          },
-          "altAnswers": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "modelAnswer": {
-            "type": "string"
-          },
-          "explanation": {
-            "type": "string"
-          },
-          "questionImageUrl": {
-            "type": "string"
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "curriculumChapterId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "curriculumTopicId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "dskpSpId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "maxLength": 64
-          },
-          "scriptType": {
-            "type": "string",
-            "enum": [
-              "rumi",
-              "arab",
-              "jawi",
-              "mixed"
-            ]
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionPart"
-            },
-            "minItems": 1
-          },
-          "tag": {
-            "$ref": "#/components/schemas/QuestionCurriculumTag"
-          }
-        },
-        "required": [
-          "educationLevelId",
-          "subjectId",
-          "questionType",
-          "difficultyLevel",
-          "questionText"
-        ]
-      },
-      "QuestionGuruUpdateRequest": {
-        "type": "object",
-        "properties": {
-          "questionText": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2000
-          },
-          "difficultyLevel": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "easy",
-                  "medium",
-                  "hard"
-                ]
-              },
-              {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 5
-              }
-            ]
-          },
-          "options": {
-            "type": "array",
-            "minItems": 4,
-            "maxItems": 4,
-            "items": {
-              "type": "object",
-              "required": [
-                "id",
-                "optionText"
-              ],
-              "properties": {
-                "id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 3
-                },
-                "optionText": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 500
-                }
-              }
-            }
           },
           "correctOptionId": {
             "anyOf": [
@@ -42339,51 +42355,132 @@
             "type": [
               "string",
               "null"
-            ]
-          },
-          "questionImageFileId": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            ]
-          },
-          "optionImageFileIds": {
-            "type": "array",
-            "items": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Id"
-                },
-                {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              ]
-            },
-            "maxItems": 4
-          },
-          "removeQuestionImage": {
-            "type": "boolean"
-          },
-          "removeOptionImage": {
-            "type": "array",
-            "items": {
-              "type": "boolean"
-            },
-            "maxItems": 4
+            ],
+            "maxLength": 2000
           }
         },
         "required": [
-          "questionText"
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
+        ]
+      },
+      "QuestionGuruUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "mcq"
+            ],
+            "default": "mcq"
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "correctOptionId": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "questionText",
+          "options"
         ]
       },
       "QuestionPublic": {
@@ -42819,6 +42916,17 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
                 }
               },
               "required": [
@@ -42905,6 +43013,38 @@
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "pattern": "^[A-H]$"
+                },
+                "body": {
+                  "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "S1-T01 (API-Q-08, DM-52): public token of a `question_image` file (as `Stimulus.imageId`); null or absent = no picture."
+                },
+                "isDistractor": {
+                  "type": "boolean",
+                  "description": "S1-T01 (API-Q-08, DM-52): the option is a distractor (\"Pengganggu\"); absent = false."
+                }
+              },
+              "required": [
+                "label",
+                "body"
+              ]
+            },
+            "maxItems": 8,
+            "description": "S1-T01 (API-Q-08): replaces the whole bank (send every row to keep it; `[]` clears). A letter that a leaf key of a member uses cannot be dropped (422 `optionBank`, AC-QA-10). A served group answers 409 like the stimuli change: edit it as a draft copy."
           }
         },
         "additionalProperties": false
@@ -42992,6 +43132,15 @@
                 },
                 "body": {
                   "$ref": "#/components/schemas/QuestionRichText"
+                },
+                "imageId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "isDistractor": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -43058,6 +43207,25 @@
               "null"
             ],
             "description": "BM warning while the group has 0 questions (a draft group); null otherwise. The write went through."
+          },
+          "usedInPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            },
+            "description": "S1-T01 (API-Q-08, ruling #685): the Terbit papers that place the group or any of its members, by paper id. Read only; the retire confirm dialog (API-Q-33) names them. Empty when none."
           }
         },
         "required": [
@@ -72259,6 +72427,24 @@
           "state": {
             "$ref": "#/components/schemas/IntakeItemState"
           },
+          "source": {
+            "type": "string",
+            "enum": [
+              "guru"
+            ],
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+          },
+          "kirimanStatus": {
+            "type": "string",
+            "enum": [
+              "Pending",
+              "Processing",
+              "Selesai",
+              "Ditolak",
+              "Jumlah"
+            ],
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+          },
           "batchId": {
             "$ref": "#/components/schemas/Id"
           },
@@ -76087,10 +76273,10 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 404 \"Konfigurasi sokongan tidak dijumpai.\" (the mock would fail with a generic error).",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.",
         "responses": {
           "200": {
-            "description": "E-mail and WhatsApp number.",
+            "description": "E-mail, phone, WhatsApp number and hours (empty strings when not set).",
             "content": {
               "application/json": {
                 "schema": {
@@ -76103,16 +76289,6 @@
                   "required": [
                     "data"
                   ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "NOT_FOUND \"Konfigurasi sokongan tidak dijumpai.\"",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -83049,7 +83225,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -83105,7 +83281,79 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\" Also fields.defaultSubjectId \"Sila pilih subjek.\", fields.defaultEducationLevelId \"Sila pilih tahap pendidikan.\", fields.defaultDifficultyLevel \"Sila pilih tahap kesukaran.\". Row failures (200/201 body, not 422): \"Baris tidak lengkap.\", \"Jawapan betul mesti A, B, C atau D.\", \"Jawapan betul merujuk pilihan yang kosong.\", \"Subjek tidak sah.\", \"Tahap pendidikan tidak sah.\", \"Tahap kesukaran mesti 1 hingga 5.\", \"Markah mesti nombor bulat sekurang-kurangnya 1.\".",
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.\" (more than 2,000 data rows, whole file refused), \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\" Also fields.defaultSubjectId \"Sila pilih subjek.\", fields.defaultEducationLevelId \"Sila pilih tahap pendidikan.\", fields.defaultDifficultyLevel \"Sila pilih tahap kesukaran.\". Row failures (200/201 body, not 422): \"Baris tidak lengkap.\", \"Jawapan betul mesti A, B, C atau D.\", \"Jawapan betul merujuk pilihan yang kosong.\", \"Subjek tidak sah.\", \"Tahap pendidikan tidak sah.\", \"Tahap kesukaran mesti 1 hingga 5.\", \"Markah mesti nombor bulat sekurang-kurangnya 1.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-imports/{id}/errors": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-imports"
+        ],
+        "summary": "Error report of one import run (CSV)",
+        "description": "Admin only. A file, not JSON: `laporan-ralat-import.csv`, text/csv, CRLF, columns `baris, question_key, medan, kod_ralat, mesej`, one line per stored row error. It holds no cell of the uploaded file but the question key and the values the Q-11 messages name ({key}, {kod}, {label}), each cut at 40 characters; every cell is neutralised against spreadsheet formulas. Declared after `/question-imports/template`.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The error report file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"laporan-ralat-import.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id, or a segment that does not match the route).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83174,8 +83422,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV template (same file as the admin template)",
-        "description": "Teacher or admin. `template-import-soalan.csv`, text/csv with Content-Disposition attachment; the same bytes as GET /question-imports/template. A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV template (templat-soalan.csv)",
+        "description": "Teacher or admin. `templat-soalan.csv`, text/csv with Content-Disposition attachment: the header `subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan` and the example row (44-F3). A static path: it matches before `/guru/questions/{id}`.",
         "responses": {
           "200": {
             "description": "The template file.",
@@ -83225,8 +83473,8 @@
           "question-workflow",
           "guru-question-import"
         ],
-        "summary": "Guru CSV contribution (same import service, no defaults)",
-        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv or .txt, up to 5 MB). Same parser and template as the admin import but no form defaults: each row must carry subject_id, education_level_id and difficulty_level; extra caps question text up to 2000 and each option up to 500 characters. Valid rows are created as `review` questions owned by the caller (D54a; the mock says pending_review) and each counts as a contribution; bad rows are listed ordered by file row. Answers 200 (not 201) with { data: { imported, failed } } and no flash. Row messages as the admin import plus \"Soalan tidak boleh melebihi 2000 aksara.\" and \"Pilihan jawapan tidak boleh melebihi 500 aksara.\". A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "summary": "Guru CSV contribution (items of one guru intake batch)",
+        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv only, UTF-8, up to 2 MB and 500 data rows) or JSON `{ csv }` (the JSON path is limited to the default 100 kb body parser). Rows are matched by column NAME (`subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a..d,jawapan,penerangan`); each valid row becomes an item of ONE `source = guru` intake batch, shown as \"Menunggu Semakan\" (S6-T06, D113); bad rows are listed in `errors` ordered by file row and never block the valid ones. Answers 200 with { data: { imported, errors: [{ row, message }] } }. 422 `fields.csvFile`: \"Sila pilih fail.\", \"Jenis fail tidak disokong. Format dibenarkan: CSV.\", \"Fail melebihi saiz maksimum 2 MB.\", \"Fail melebihi 500 baris.\", \"Lajur wajib tiada: ...\". A static path: it matches before `/guru/questions/{id}`.",
         "parameters": [
           {
             "schema": {
@@ -83290,7 +83538,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\"",
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Fail melebihi 2,000 baris. Pecahkan fail kepada beberapa bahagian.\" (more than 2,000 data rows, whole file refused), \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -83424,7 +83672,7 @@
           "diagram-audit"
         ],
         "summary": "Questions flagged as needing a diagram",
-        "description": "Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
+        "description": "Admin, teacher and school admin (the whole bank, same data for all three). Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
         "parameters": [
           {
             "schema": {
@@ -83485,7 +83733,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -83504,7 +83752,7 @@
           "diagram-audit"
         ],
         "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
         "parameters": [
           {
             "schema": {
@@ -83588,7 +83836,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) or \"Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.\".",
+            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) \"Fail mesti berupa imej (jpg, png atau webp).\" (wrong type) or \"Saiz imej tidak boleh melebihi 2 MB.\" (over 2 MB).",
             "content": {
               "application/json": {
                 "schema": {
@@ -102963,7 +103211,7 @@
           "account"
         ],
         "summary": "Update own profile",
-        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone and bio. `grade`, `schoolId` and `role` are accepted and ignored for every role (API-AUTH-09). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
         "parameters": [
           {
             "schema": {
@@ -103032,7 +103280,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\"; school \"The selected school id is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\" and school \"The selected school id is invalid.\" when the value has the wrong type (a valid value is ignored). Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
             "content": {
               "application/json": {
                 "schema": {
@@ -107536,6 +107784,188 @@
           },
           "403": {
             "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/structured-questions": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher list of approved structured questions (20 per page, newest first)",
+        "description": "API-GUR-26, read-only. Teacher or Admin Pusat. Only approved, live, active questions a pupil is served; a question that needs a figure it lacks is left out. `meta.totalItems` is the dataset count. `status=review` answers an empty page.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "approved",
+                "review"
+              ],
+              "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists."
+            },
+            "required": false,
+            "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GuruStructuredRow"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/structured-questions/{id}": {
+      "get": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Teacher detail of an approved structured question",
+        "description": "No admin-only fields. A question that is not approved, not served or unknown is 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
             "content": {
               "application/json": {
                 "schema": {
@@ -126434,6 +126864,36 @@
             "required": false,
             "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana (nothing needs attention), needs_review = Perlu semakan (any unconfirmed low field, needsManual, or an open exact or near duplicate entry), accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua (a person linked it as a duplicate). NOT a question status (D54a).",
             "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "guru"
+              ],
+              "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422."
+            },
+            "required": false,
+            "description": "S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422.",
+            "name": "source",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Pending",
+                "Processing",
+                "Selesai",
+                "Ditolak",
+                "Jumlah"
+              ],
+              "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND."
+            },
+            "required": false,
+            "description": "S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND.",
+            "name": "kirimanStatus",
             "in": "query"
           },
           {

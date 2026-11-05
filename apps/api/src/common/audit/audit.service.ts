@@ -130,7 +130,7 @@ export class AuditService {
     await this.recordWithId(event)
   }
 
-  /** `record` that also returns the id of the new row (decimal string): the regroup undo (S1-T07, API-Q-36) takes that id. */
+  /** `record`, and the decimal-string id of the new row (for a response that names its audit entry). */
   async recordWithId(event: AuditEventInput): Promise<string> {
     const detail: Record<string, unknown> = {
       ...((sanitizeDetails(event.details ?? {}) as Record<string, unknown>) ?? {}),
@@ -139,6 +139,7 @@ export class AuditService {
     const secret = this.config.get('SESSION_SECRET', { infer: true }) as string
     const db = event.tx ?? this.prisma.client
     const row = await db.auditEvent.create({
+      select: { id: true },
       data: {
         action: event.action,
         actorUserId: toBigInt(event.actorUserId, 'actorUserId'),
@@ -152,7 +153,6 @@ export class AuditService {
         ipHash: event.ip ? hashIp(event.ip, secret) : null,
         isTest: event.isTest ?? false,
       },
-      select: { id: true },
     })
     return row.id.toString()
   }
