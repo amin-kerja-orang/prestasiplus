@@ -170,7 +170,9 @@ const hasPicture = computed(
 const caption = computed(() =>
   realTable.value ? s.value.caption : (s.value.caption ?? (s.value.title ? undefined : kindFallbackCaption[s.value.kind])),
 )
-const alt = computed(() => s.value.alt ?? s.value.caption ?? kindFallbackCaption[s.value.kind] ?? '')
+const alt = computed(
+  () => s.value.alt ?? s.value.caption ?? s.value.label ?? s.value.title ?? kindFallbackCaption[s.value.kind] ?? qdCopy.figureFallback,
+)
 const ratio = computed(() =>
   s.value.width && s.value.height ? `${s.value.width} / ${s.value.height}` : '4 / 3',
 )
@@ -305,8 +307,8 @@ function retry(): void {
           type="button"
           color="neutral"
           variant="ghost"
-          class="size-full min-h-11"
-          :style="{ position: 'absolute', inset: 0, padding: 0, borderRadius: 0, opacity: 0 }"
+          class="size-full min-h-11 bg-transparent hover:bg-transparent"
+          :style="{ position: 'absolute', inset: 0, padding: 0, borderRadius: 0 }"
           aria-haspopup="dialog"
           :aria-label="alt"
           data-testid="stimulus-zoom-open"

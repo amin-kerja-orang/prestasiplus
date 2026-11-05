@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { qdCopy, wordCountLabel, wordTargetLabel } from './copy'
+import { overLabel, qdCopy, shortLabel, wordCountLabel, wordTargetLabel } from './copy'
 import type { EssayChoiceValue, EssayTopic } from './types'
 import { countWords } from './words'
 
@@ -43,7 +43,10 @@ const emit = defineEmits<{
 const isChoice = computed(() => props.mode === 'essay_choice')
 const text = computed(() => (isChoice.value ? (props.choice?.text ?? '') : props.modelValue))
 const words = computed(() => countWords(text.value))
-const over = computed(() => !isChoice.value && !!props.wordLimit && words.value > props.wordLimit)
+const maxWords = computed(() => props.wordLimit ?? props.range?.max)
+const over = computed(() => !!maxWords.value && words.value > maxWords.value)
+/** Below the range minimum: a hint only, once the pupil has started writing. */
+const tooShort = computed(() => !!props.range && words.value > 0 && words.value < props.range.min)
 const needTopic = computed(() => isChoice.value && !props.choice?.topic)
 const counter = computed(() =>
   isChoice.value && props.range
@@ -115,7 +118,15 @@ function pick(id: string): void {
       data-testid="word-count"
     >
       <UIcon v-if="over" name="i-ph-warning" class="size-4" aria-hidden="true" />
-      {{ counter }}<template v-if="over"> · {{ qdCopy.over }}</template>
+      {{ counter }}
+    </p>
+    <p
+      v-if="over || tooShort"
+      class="text-caption text-error"
+      role="status"
+      data-testid="word-hint"
+    >
+      {{ over ? overLabel(maxWords as number) : shortLabel(words, range!.min) }}
     </p>
   </div>
 </template>
