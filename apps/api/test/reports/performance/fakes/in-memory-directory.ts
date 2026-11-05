@@ -1,12 +1,25 @@
 import type { DirectoryPort, PupilRef, SchoolRef } from '../../../../src/modules/reports/performance/ports'
 
+/** A teacher account of the fake. Defaults: approved, active, not suspended, not a school admin (the XS-3 population). */
+export interface FakeTeacher {
+  id: string
+  name: string
+  schoolId: string
+  /** Waiting for approval (`pending_school_id` set): "Guru Menunggu", not XS-3. */
+  pending?: boolean
+  isActive?: boolean
+  isSuspended?: boolean
+  /** Also holds the school-admin role: not XS-3. */
+  isSchoolAdmin?: boolean
+}
+
 /** In-memory `DirectoryPort`. All names are fictitious. */
 export class InMemoryDirectory implements DirectoryPort {
   private readonly pupils = new Map<string, PupilRef>()
   private readonly schoolRows = new Map<string, SchoolRef>()
   private readonly subjectIds = new Map<string, string>()
   private readonly subjectNames = new Map<string, { code: string; name: string }>()
-  private readonly teachers = new Map<string, { id: string; name: string; schoolId: string }>()
+  private readonly teachers = new Map<string, FakeTeacher>()
 
   addSchool(s: Partial<SchoolRef> & Pick<SchoolRef, 'id'>): this {
     this.schoolRows.set(s.id, { name: `Sekolah ${s.id}`, code: null, type: 'SMK', district: 'Daerah A', state: 'Negeri A', ...s })
@@ -25,14 +38,23 @@ export class InMemoryDirectory implements DirectoryPort {
     return this
   }
 
-  addTeacher(id: string, name: string, schoolId: string): this {
-    this.teachers.set(id, { id, name, schoolId })
+  addTeacher(id: string, name: string, schoolId: string, flags: Partial<Omit<FakeTeacher, 'id' | 'name' | 'schoolId'>> = {}): this {
+    this.teachers.set(id, { id, name, schoolId, ...flags })
     return this
   }
 
   /** Synchronous school of a pupil (the answer fake derives its school filter from it). */
   schoolOf(id: string): string | null {
     return this.pupils.get(id)?.schoolId ?? null
+  }
+
+  /** Every pupil and teacher account, for the XS fake (`InMemoryXsCounts`). */
+  get pupilList(): PupilRef[] {
+    return [...this.pupils.values()]
+  }
+
+  get teacherList(): FakeTeacher[] {
+    return [...this.teachers.values()]
   }
 
   get schoolList(): SchoolRef[] {
@@ -65,12 +87,6 @@ export class InMemoryDirectory implements DirectoryPort {
   }
   async pupilIdsOfSchool(schoolId: string): Promise<string[]> {
     return [...this.pupils.values()].filter((p) => p.schoolId === schoolId).map((p) => p.id)
-  }
-  async countPupils(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    return new Map(schoolIds.map((id) => [id, [...this.pupils.values()].filter((p) => p.schoolId === id).length]))
-  }
-  async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    return new Map(schoolIds.map((id) => [id, [...this.teachers.values()].filter((t) => t.schoolId === id).length]))
   }
   async subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>> {
     return new Map(ids.flatMap((i) => (this.subjectNames.has(i) ? [[i, this.subjectNames.get(i)!] as const] : [])))
