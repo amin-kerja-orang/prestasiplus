@@ -4,7 +4,7 @@
  * stimulus groups on add/remove (D90), the review (blockers) and the student view. Nothing here
  * ships in the http build (see `./client`).
  */
-import { BIJAK_BUILDER_MESSAGES, BIJAK_SET_BUILDER_PROPOSED, bijakDefaultLevelScope, bijakNegeriOptions } from '@pp/contract'
+import { BIJAK_BUILDER_MESSAGES, BIJAK_SET_BUILDER_PROPOSED, bijakDefaultLevelScope, bijakNegeriOptions, bijakNegeriSlug } from '@pp/contract'
 import type {
   BijakBuilderPoolUnit,
   BijakBuilderSourceFilters,
@@ -76,7 +76,7 @@ const originOf = (id: string): { year: number; negeri: string } => ({
 })
 const originMatches = (id: string, years: readonly number[], negeri: readonly string[]): boolean => {
   const o = originOf(id)
-  return (!years.length || years.includes(o.year)) && (!negeri.length || negeri.some((n) => n.toLowerCase() === o.negeri.toLowerCase()))
+  return (!years.length || years.includes(o.year)) && (!negeri.length || negeri.some((n) => bijakNegeriSlug(n) === bijakNegeriSlug(o.negeri)))
 }
 const filtersOf = (ids: readonly string[]): BijakBuilderSourceFilters => ({
   years: [...new Set(ids.map((id) => originOf(id).year))].sort((a, b) => b - a),

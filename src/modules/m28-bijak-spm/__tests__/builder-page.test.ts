@@ -153,6 +153,37 @@ describe('SetBuilderPage', () => {
     expect(m.publish).toHaveBeenCalledWith('p1')
   })
 
+  it('a unit removed is gone with its control, so it cannot be removed twice (UX-50)', async () => {
+    const after = editor(paper({ sections: [{ id: 's1', label: 'Bahagian A', markBudget: 10, questionCount: 3, rule: { type: 'all' }, questionIds: ['q1'] }] }))
+    const { m, api } = stub({ removePlacement: vi.fn().mockResolvedValue({ editor: after, changed: [] }) })
+    const w = await render(api)
+    await w.get('[data-testid="remove-g1"]').trigger('click')
+    await flushPromises()
+    expect(m.removePlacement).toHaveBeenCalledTimes(1)
+    expect(w.find('[data-testid="remove-g1"]').exists()).toBe(false)
+    expect(w.find('[data-testid="remove-g2"]').exists()).toBe(false)
+    expect(w.find('[data-testid="remove-q1"]').exists()).toBe(true)
+  })
+
+  it('a unit already placed cannot be added again; a whole group is added once (UX-50)', async () => {
+    const row = (id: string) => ({ id, preview: `P ${id}`, marks: 2, kind: 'objektif', topic: 'T', status: 'terbit', kertas: 2, subject: 'MAT' })
+    const pool = {
+      units: [
+        { questionIds: ['q1'], questions: [row('q1')], marks: 2, eligible: true, reasons: [], placed: true },
+        { groupId: 'g9', questionIds: ['n1', 'n2'], questions: [row('n1'), row('n2')], marks: 4, eligible: true, reasons: [], placed: false },
+      ],
+      total: 2,
+      totalPages: 1,
+    }
+    const { m, api } = stub({ pool: vi.fn().mockResolvedValue(pool) })
+    const w = await render(api)
+    expect(w.get('[data-testid="pool-add-q1"]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="pool-add-g9"]').trigger('click')
+    await flushPromises()
+    expect(m.addPlacement).toHaveBeenCalledTimes(1)
+    expect(m.addPlacement).toHaveBeenCalledWith('p1', 's1', 'n1')
+  })
+
   it('a published set is locked: no bank, no Terbitkan, Tarik balik and Salin set present', async () => {
     const ed = editor(paper({ status: 'terbit' }))
     const { m, api } = stub({ getEditor: vi.fn().mockResolvedValue(ed) })

@@ -144,6 +144,20 @@ describe('Jana set (FR-ADM-Q13.2, API-BIJAK-11)', () => {
     expect(m.generate).not.toHaveBeenCalled()
   })
 
+  it('a scaled size above 100 is refused like the API refuses it; a contract total above 100 is sent as no count', async () => {
+    const big = preview({ contractTotal: 150, publishedTotal: 200, eligibleTotal: 200 })
+    const { api } = stub({ poolPreview: vi.fn().mockResolvedValue(big) })
+    const { w } = await render(api)
+    await pick(w, 'gen-subject', 'SEJ')
+    await pick(w, 'gen-kertas', '1')
+    expect(w.get('[data-testid="generate-form"]').text()).not.toContain('Bilangan soalan mesti antara 1 dan 100.')
+    await w.get('[data-testid="gen-count"]').setValue('101')
+    expect(w.get('[data-testid="generate-form"]').text()).toContain('Bilangan soalan mesti antara 1 dan 100.')
+    expect(w.get('[data-testid="gen-submit"]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="gen-count"]').setValue('100')
+    expect(w.get('[data-testid="generate-form"]').text()).not.toContain('Bilangan soalan mesti antara 1 dan 100.')
+  })
+
   it('the pool counts questions and groups, and warns (FR-ADM-Q13.3)', async () => {
     const { api } = stub({ poolPreview: vi.fn().mockResolvedValue(preview({ eligibleTotal: 40 })) })
     const { w } = await render(api)

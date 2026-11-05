@@ -92,7 +92,9 @@ const requested = computed(() => Number(genCount.value))
 const countError = computed(() => {
   if (!pool.value) return undefined
   if (!Number.isInteger(requested.value) || requested.value < 1) return t.countRange
-  return requested.value > contractTotal.value ? t.countAbove(contractTotal.value) : undefined
+  if (requested.value > contractTotal.value) return t.countAbove(contractTotal.value)
+  // The contract total itself is sent as no count, so only a scaled size has the ceiling of 100.
+  return requested.value > 100 && requested.value !== contractTotal.value ? t.countRange : undefined
 })
 /** The size sent: the contract total is the default, so it is left out. */
 const scaledCount = computed(() => (pool.value && !countError.value && requested.value < contractTotal.value ? requested.value : undefined))

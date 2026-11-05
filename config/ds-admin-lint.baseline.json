@@ -1291,11 +1291,6 @@
       "pp/ds-no-ui-duplicate": 5,
       "pp/ds-icon-names": 1
     },
-    "src/modules/m28-bijak-spm/admin/builder/components/PaperQuestionOps.vue": {
-      "pp/ds-no-raw-html": 20,
-      "pp/ds-no-class-attr": 25,
-      "pp/ds-icon-names": 4
-    },
     "src/modules/m28-bijak-spm/admin/builder/components/PaperReferenceEditor.vue": {
       "pp/ds-no-raw-html": 12,
       "pp/ds-no-class-attr": 25,
