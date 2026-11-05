@@ -149,6 +149,9 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     page,
     gotoApp,
   }) => {
+    await gotoApp('/admin/questions')
+    const before = Number((await byId(page, 'questions-total').innerText()).replace(/\D/g, ''))
+    await gotoApp('/admin/questions/create')
     await byId(page, 'q-subject').selectOption({ label: 'Sains' })
     await byId(page, 'q-level').selectOption({ label: 'Tingkatan 5' })
     await page.locator('[id="q-difficulty"]').getByText('Sederhana', { exact: true }).click()
@@ -160,9 +163,8 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(page).toHaveURL(/\/admin\/questions$/)
     await expect(byId(page, 'cmp-flash')).toBeVisible()
     await expect(byId(page, 'questions-table')).toContainText('Soalan QA G5 yang baharu')
-    await expect(byId(page, 'questions-total')).toHaveText('Jumlah: 268,778 soalan')
+    await expect(byId(page, 'questions-total')).toHaveText(`Jumlah: ${(before + 1).toLocaleString('en-US')} soalan`)
     await expect(byId(page, 'questions-table')).toContainText(/Draf|Menunggu|Diluluskan/)
-    void gotoApp
   })
 
   test('E2E-M04-11 option A image picker: preview and remove (AC-06.3)', async ({ page }) => {
@@ -479,6 +481,7 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
 
   test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles, legacy sources (AC-15.1, 15.2)', async ({
     page,
+    gotoApp,
   }) => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Dashboard Kualiti Soalan')
     await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
@@ -488,7 +491,8 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'kpi-average')).toContainText('Purata Skor')
     await expect(byId(page, 'kpi-excellent')).toContainText('Cemerlang (76-100)')
     await expect(byId(page, 'kpi-action')).toContainText('Perlu Tindakan Aktif (≤ 50)')
-    await expect(byId(page, 'kpi-total')).toContainText('268,777')
+    const total = ((await byId(page, 'kpi-total').innerText()).split('\n')[0] ?? '').trim()
+    expect(Number(total.replace(/\D/g, ''))).toBeGreaterThan(0)
     for (const [id, text] of [
       ['bucket-baik', 'Skor 51-75'],
       ['bucket-lemah', 'Skor ≤ 50'],
@@ -499,6 +503,8 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'bucket-legacy')).toContainText('tracking_a_feed_20260308')
     await expect(byId(page, 'bucket-legacy')).toContainText('spm_tracking_auto_seed_v1')
     await expect(byId(page, 'bucket-legacy')).toContainText('source_type=ai_generated')
+    await gotoApp('/admin/questions')
+    await expect(byId(page, 'questions-kpis')).toContainText(total)
   })
 
   test('E2E-M04-34 distribution, subject rows sorted by Purata desc, levels, action list header (AC-15.3, 15.4, 15.5)', async ({

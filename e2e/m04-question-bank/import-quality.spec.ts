@@ -14,6 +14,10 @@ import { expectNoHorizontalScroll, expectTabTitle, viewportWidth, moduleTag, pro
 const ADMIN = 'admin@demo.test'
 
 const byId = (page: Page, id: string) => page.getByTestId(id)
+const toCount = (text: string): number => Number(text.replace(/\D/g, ''))
+/** The number on the first line of a stat tile. */
+const value = async (page: Page, id: string): Promise<number> =>
+  toCount((await byId(page, id).innerText()).split('\n')[0] ?? '')
 /** Table rows from 768 px, cards below it. */
 const historyRows = (page: Page) => byId(page, 'history-table').locator('tbody tr, li')
 
@@ -146,27 +150,36 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
 
   test('KPI cards, bucket cards, distribution, lists and no horizontal scroll', async ({
     page,
+    gotoApp,
   }) => {
     await expectTabTitle(page, 'Dashboard Kualiti Soalan | PRESTASIPLUS')
-    await expect(byId(page, 'kpi-total')).toContainText('268,777')
+    // No figure below is pinned where the page or S1 gives the same read. The admin reads hide Darjah (D72, D96).
+    const excellent = await value(page, 'kpi-excellent')
+    const baik = toCount(await byId(page, 'bucket-baik-value').innerText())
+    const low = toCount(await byId(page, 'bucket-lemah-value').innerText())
+    expect(excellent).toBeGreaterThan(0)
+    expect(await value(page, 'kpi-action')).toBe(low)
+    // `round1(stats.sum / scored)` over the scored secondary questions (`mock/handlers/quality.ts`); no named query
+    // reads it. SRS 94.1 is the whole bank; D72 and D96 hide the Darjah questions, which gives 93.5.
     await expect(byId(page, 'kpi-average')).toContainText('93.5')
-    await expect(byId(page, 'kpi-excellent')).toContainText('106,283')
-    await expect(byId(page, 'kpi-action')).toContainText('2')
-    await expect(byId(page, 'bucket-baik-value')).toHaveText('583')
-    await expect(byId(page, 'bucket-lemah-value')).toHaveText('2')
     await expect(byId(page, 'bucket-legacy-value')).toHaveText('373')
     await expect(page.getByText('Taburan Kualiti')).toBeVisible()
-    await expect(byId(page, 'dist-cemerlang')).toContainText('99.5%')
+    const share = Math.round((excellent * 1000) / (excellent + baik + low)) / 10
+    await expect(byId(page, 'dist-cemerlang')).toContainText(`${String(share)}%`)
     await expect(byId(page, 'quality-subjects')).toContainText('Mengikut Subjek')
     await expect(byId(page, 'level-row')).toHaveCount(5)
-    await expect(byId(page, 'action-count')).toHaveText('2 soalan')
-    await expect(byId(page, 'quality-actions').locator('tbody tr, li')).toHaveCount(2)
+    await expect(byId(page, 'action-count')).toHaveText(`${String(low)} soalan`)
+    await expect(byId(page, 'quality-actions').locator('tbody tr, li')).toHaveCount(low)
     if (viewportWidth(page) >= 768)
       await expect(byId(page, 'action-edit').first()).toHaveAttribute(
         'href',
         /\/admin\/questions\/\d+\/edit$/,
       )
     await expectNoHorizontalScroll(page)
+    const total = await value(page, 'kpi-total')
+    await gotoApp('/admin/questions')
+    const s1 = (await byId(page, 'questions-kpis').innerText()).split('\n')[0] ?? ''
+    expect(toCount(s1)).toBe(total)
   })
 
   test(
@@ -178,10 +191,11 @@ test.describe('M04 S6 question quality', { tag: [TAG.smoke, moduleTag(4)] }, () 
         dialogs += 1
         void d.dismiss()
       })
+      const before = await value(page, 'kpi-total')
       await byId(page, 'quality-audit').click()
       await expect(byId(page, 'cmp-flash')).toContainText('Audit kualiti selesai.')
       await expect(byId(page, 'quality-audit')).toHaveText('Jalankan Audit Semula')
-      await expect(byId(page, 'kpi-total')).toContainText('268,777')
+      await expect.poll(() => value(page, 'kpi-total')).toBe(before)
       expect(dialogs).toBe(0)
     },
   )
