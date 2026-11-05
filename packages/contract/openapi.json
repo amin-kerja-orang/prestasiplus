@@ -29609,6 +29609,10 @@
       "SchoolAdminUsageQuery": {
         "type": "object",
         "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+          },
           "period": {
             "type": "string",
             "description": "today | 7days | 30days. Any other value (or none) means 30days."
@@ -29720,6 +29724,10 @@
       "SchoolAdminActivityQuery": {
         "type": "object",
         "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+          },
           "range": {
             "type": "string",
             "description": "7 | 30 | 90 (days, today included). Any other value (or none) means 30."
@@ -30135,6 +30143,10 @@
       "SchoolAdminHeatmapQuery": {
         "type": "object",
         "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+          },
           "subjectId": {
             "type": "string",
             "description": "Subject id (digits). Unknown or absent = the first subject by name."
@@ -30308,6 +30320,10 @@
       "SchoolAdminMonthlyQuery": {
         "type": "object",
         "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+          },
           "bulan": {
             "type": "string",
             "description": "YYYY-MM. A future or invalid value (or none) means the current month."
@@ -30559,6 +30575,10 @@
       "SchoolAdminClassListQuery": {
         "type": "object",
         "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+          },
           "level": {
             "type": "string",
             "description": "A level slug present in the school, e.g. tingkatan-4. Unknown = all."
@@ -112811,7 +112831,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112829,8 +112849,18 @@
           "school-admin"
         ],
         "summary": "School usage statistics (S1)",
-        "description": "Window: today = 00:00 Malaysia time to now; 7days / 30days = the last N x 24 hours. An unknown period is 30days. Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "description": "Window: today = 00:00 Malaysia time to now; 7days / 30days = the last N x 24 hours. An unknown period is 30days. school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when absent or malformed, NOT_FOUND when no such school).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.",
+            "name": "schoolId",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -112872,7 +112902,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112890,8 +112920,18 @@
           "school-admin"
         ],
         "summary": "Activity report (S3)",
-        "description": "The M17 statistics report in the school scope, window = 00:00 Malaysia time of (today - range + 1 days) to now. An unknown range is 30. Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "description": "The M17 statistics report in the school scope, window = 00:00 Malaysia time of (today - range + 1 days) to now. An unknown range is 30. school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when absent or malformed, NOT_FOUND when no such school).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.",
+            "name": "schoolId",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -112933,7 +112973,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112951,8 +112991,18 @@
           "school-admin"
         ],
         "summary": "Monthly report (S5)",
-        "description": "12-month series and subject strengths. A future or invalid bulan gives the current month; a month without data returns the empty shape (months [], total null, accuracy null, no strongest / weakest). Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "description": "12-month series and subject strengths. A future or invalid bulan gives the current month; a month without data returns the empty shape (months [], total null, accuracy null, no strongest / weakest). school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when absent or malformed, NOT_FOUND when no such school).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.",
+            "name": "schoolId",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -112994,7 +113044,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -113012,8 +113062,18 @@
           "school-admin"
         ],
         "summary": "DSKP heatmap of the school pupils (S2)",
-        "description": "Per SP, pooled over the school pupils (sum correct / sum answered). Unknown query values fall back to the defaults (first subject by name, T4). Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "description": "Per SP, pooled over the school pupils (sum correct / sum answered). Unknown query values fall back to the defaults (first subject by name, T4). school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when absent or malformed, NOT_FOUND when no such school).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.",
+            "name": "schoolId",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -113065,7 +113125,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -113083,8 +113143,18 @@
           "school-admin"
         ],
         "summary": "Class list of the school (S8)",
-        "description": "Classroom classes of the school, active and inactive, by name A to Z (Malay collation) then id; 25 per page. Body is {data, meta, tiles, levels}: tiles and levels are top-level extras next to data / meta. Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "description": "Classroom classes of the school, active and inactive, by name A to Z (Malay collation) then id; 25 per page. Body is {data, meta, tiles, levels}: tiles and levels are top-level extras next to data / meta. school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when absent or malformed, NOT_FOUND when no such school).",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school to read (required for admin: 422 fields.schoolId when absent or malformed, 404 when unknown). Ignored for school_admin.",
+            "name": "schoolId",
+            "in": "query"
+          },
           {
             "schema": {
               "type": "string",
@@ -113138,7 +113208,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -113211,7 +113281,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -113420,7 +113490,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -113922,7 +113992,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -114097,7 +114167,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -114180,7 +114250,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
             "content": {
               "application/json": {
                 "schema": {
@@ -114705,7 +114775,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId \"The school id is required.\"; scope=district without district and state -> fields.district \"The district and state are required.\"; scope=state without a state -> fields.state \"The state is required.\"; any other scope -> fields.scope \"The scope must be school, district or state.\".",
+            "description": "VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId \"Sila pilih sekolah.\"; scope=district without district and state -> fields.district \"The district and state are required.\"; scope=state without a state -> fields.state \"The state is required.\"; any other scope -> fields.scope \"The scope must be school, district or state.\".",
             "content": {
               "application/json": {
                 "schema": {

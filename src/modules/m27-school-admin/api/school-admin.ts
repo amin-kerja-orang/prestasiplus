@@ -15,10 +15,24 @@
  * M27-T1b and M27-T1d; their client functions are here so every screen builds against one file.
  */
 
-import { api, type ListResult } from '@/api'
+import { api, isApiError, type ListResult } from '@/api'
 import type { UserMe } from '@/modules/m01-authentication'
 
 const BASE = '/api/admin-sekolah'
+
+/**
+ * API-ADM-22: the five read reports (`usage`, `laporan-aktiviti`, `laporan-bulanan`, `dskp-heatmap`, `kelas`) also
+ * answer Admin Pusat, who names the school with `?schoolId=` (the M17 central views, R1-ADM-M-07). The school
+ * admin sends no `schoolId`; the school is the session's.
+ */
+
+/** M-07 empty copy of a central view whose school has no data (PRD-30 R1-ADM-M-07). */
+export const CENTRAL_EMPTY = 'Tiada data untuk sekolah ini.'
+
+/** A central view whose school is unknown (404) or whose `schoolId` the API refuses (422): the M-07 empty copy. */
+export function isSchoolDataMissing(error: unknown): boolean {
+  return isApiError(error) && (error.status === 404 || error.status === 422)
+}
 
 // --- shared ------------------------------------------------------------------------------------
 
@@ -66,9 +80,11 @@ export interface SchoolUsage {
 }
 
 /** #2 `GET /api/admin-sekolah/usage?period=` (S1). An unknown period gives `30days`. */
-export const fetchSchoolUsage = (o: { period?: string | null; signal?: AbortSignal } = {}) =>
+export const fetchSchoolUsage = (
+  o: { period?: string | null; schoolId?: number | string | null; signal?: AbortSignal } = {},
+) =>
   api.get<SchoolUsage>(`${BASE}/usage`, {
-    query: { period: o.period },
+    query: { period: o.period, schoolId: o.schoolId },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -108,11 +124,12 @@ export const fetchSchoolDskpHeatmap = (
   o: {
     subjectId?: number | null
     tingkatan?: string | null
+    schoolId?: number | string | null
     signal?: AbortSignal
   } = {},
 ) =>
   api.get<SchoolDskpHeatmap>(`${BASE}/dskp-heatmap`, {
-    query: { subjectId: o.subjectId, tingkatan: o.tingkatan },
+    query: { subjectId: o.subjectId, tingkatan: o.tingkatan, schoolId: o.schoolId },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -187,10 +204,10 @@ export interface SchoolActivityReport {
 
 /** #4 `GET /api/admin-sekolah/laporan-aktiviti?range=` (S3). */
 export const fetchSchoolActivityReport = (
-  o: { range?: number | null; signal?: AbortSignal } = {},
+  o: { range?: number | null; schoolId?: number | string | null; signal?: AbortSignal } = {},
 ) =>
   api.get<SchoolActivityReport>(`${BASE}/laporan-aktiviti`, {
-    query: { range: o.range },
+    query: { range: o.range, schoolId: o.schoolId },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
@@ -251,9 +268,11 @@ export interface MonthlyReport {
 }
 
 /** #5 `GET /api/admin-sekolah/laporan-bulanan?bulan=YYYY-MM` (S5). Invalid or future gives the current month. */
-export const fetchMonthlyReport = (o: { bulan?: string | null; signal?: AbortSignal } = {}) =>
+export const fetchMonthlyReport = (
+  o: { bulan?: string | null; schoolId?: number | string | null; signal?: AbortSignal } = {},
+) =>
   api.get<MonthlyReport>(`${BASE}/laporan-bulanan`, {
-    query: { bulan: o.bulan },
+    query: { bulan: o.bulan, schoolId: o.schoolId },
     ...(o.signal ? { signal: o.signal } : {}),
   })
 
