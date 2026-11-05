@@ -104,7 +104,7 @@ describe('entry points other modules call (AC2, card open question 3)', () => {
   })
 
   describe('canEarnSyiling and onGameResult (BE-44/BE-45 doorway)', () => {
-    const setGames = (v: number) => t.db.query(`update gamification_settings set value = $1 where key = 'games_award_syiling'`, [v])
+    const setGames = (v: number) => t.db.query(`update reward_settings set mini_games_give_coins = $1`, [v === 1])
 
     it('XP always, syiling only while games_award_syiling = 1 and coins are enabled', async () => {
       const u = await bareUser(t, 'Permainan')

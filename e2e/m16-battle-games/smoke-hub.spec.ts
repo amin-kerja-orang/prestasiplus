@@ -14,6 +14,7 @@ import {
   moduleTag,
   provisional,
 } from '../support'
+import { expectAdminHeader, shellMain } from './helpers'
 
 const expect = baseExpect.configure({ timeout: Number(process.env.E2E_EXPECT_MS) || 10_000 })
 
@@ -68,11 +69,8 @@ test.describe('M16 S6 hub', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan')
-    await expectTabTitle(page, 'Permainan | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Zona Permainan')
-    await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
-      'Selamat datang kembali',
-    )
+    await expectTabTitle(page, 'Zona Permainan | PRESTASIPLUS')
+    await expectAdminHeader(page, 'Zona Permainan')
     await expect(page.getByTestId('hub-h1')).toHaveText('🎮 Zona Permainan')
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText('🌙')
     await expect(page.getByTestId('hub-open-rooms-empty')).toContainText(
@@ -176,7 +174,7 @@ test.describe('M16 S6 hub', MODULE, () => {
     await gotoApp('/permainan')
     await expect(grid(page).locator('h3')).toHaveCount(18)
     await expectNoHorizontalScroll(page)
-    const small = await page.getByTestId('shell-user-main').evaluate((main) => {
+    const small = await shellMain(page).evaluate((main) => {
       const bad: string[] = []
       const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT)
       for (let n = walker.nextNode(); n; n = walker.nextNode()) {

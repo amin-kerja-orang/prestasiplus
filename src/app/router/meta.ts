@@ -5,7 +5,7 @@
  * - `layout`: `'bare'` (no shell);
  * - `access`: `'auth'` (a session is required; public pages must say `access: 'public'`);
  * - `roles`: any logged-in role;
- * - `onForbidden`: `'landing'`.
+ * - `onForbidden`: `'403'` (the error page renders in place; `'landing'` must be asked for).
  */
 
 import type { RouteLocationNormalized } from 'vue-router'
