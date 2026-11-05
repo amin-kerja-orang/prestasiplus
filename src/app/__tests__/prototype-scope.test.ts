@@ -128,6 +128,8 @@ describe('isPathInScope', () => {
       '/guru',
       '/guru/command-center/classroom/3',
       '/guru/remedial-progress',
+      '/guru/misi-harian',
+      '/guru/misi-harian/cipta',
       '/guru/kelas/cipta',
       // S6-T14: Set Soalan (teacher), reached from the Dashboard tile "Set Soalan".
       '/guru/set-soalan',
@@ -148,7 +150,6 @@ describe('isPathInScope', () => {
     }
     for (const path of [
       '/dashboard',
-      '/guru/misi-harian',
       '/guru/soalan-guru',
       '/guru/databank',
       '/guru/laporan-mingguan',

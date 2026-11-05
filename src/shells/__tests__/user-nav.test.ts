@@ -17,7 +17,6 @@ import {
   type BottomNavLink,
   type NavEntry,
   type NavItem,
-  ROLE_HIDDEN_IDS,
 } from '../nav/user-nav'
 import { OUT_OF_SCOPE_ROUTES, isOutOfScope } from '../nav/out-of-scope'
 import { SHELL_ICON_FALLBACKS, shellIcon } from '../shared/shell-icons'
@@ -485,14 +484,14 @@ describe('navFor (role filter: hidden, not disabled)', () => {
   it('S6-T14: /guru/set-soalan is not out of scope, yet no menu shows a Set Soalan item', () => {
     expect(isOutOfScope('/guru/set-soalan')).toBe(false)
     expect(OUT_OF_SCOPE_ROUTES.some((r) => r.to === '/guru/set-soalan')).toBe(false)
-    expect([...ROLE_HIDDEN_IDS].sort()).toEqual(['guru-set-soalan', 't-set-soalan'])
     // The entries stay as data (the route exists) but are hidden for every role, on every surface.
+    const HIDDEN = ['t-set-soalan', 'guru-set-soalan']
     const dataIds = new Set(ALL_ITEMS.map((i) => i.id))
-    for (const id of ROLE_HIDDEN_IDS) expect(dataIds.has(id), id).toBe(true)
+    for (const id of HIDDEN) expect(dataIds.has(id), id).toBe(true)
     for (const role of ROLES.concat('admin')) {
       for (const surface of ['sidebar', 'drawer'] as const) {
         const rendered = items(navFor(role, surface)).map((i) => i.id)
-        for (const id of ROLE_HIDDEN_IDS) expect(rendered, `${role} ${surface} ${id}`).not.toContain(id)
+        for (const id of HIDDEN) expect(rendered, `${role} ${surface} ${id}`).not.toContain(id)
         expect(
           items(navFor(role, surface)).filter((i) => i.to === '/guru/set-soalan'),
           `${role} ${surface}`,

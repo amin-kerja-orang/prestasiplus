@@ -70,7 +70,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
 
   // ── Portal Guru, bukan baris matriks 1.0
   { to: '/amaran', module: 'M27 Amaran Awal (Guru)', reason: 'Amaran Awal hanya baris Admin Sekolah (L54, /amaran/sekolah)' },
-  { to: '/guru/misi-harian', ...GURU_TOOLS },
   { to: '/guru/verify-soalan-struktur', ...GURU_TOOLS },
   { to: '/guru/verify-soalan-mcq', ...GURU_TOOLS },
   { to: '/guru/kehadiran-digital', ...GURU_TOOLS },
