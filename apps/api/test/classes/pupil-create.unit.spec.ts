@@ -24,6 +24,18 @@ describe('usernameStem (D113)', () => {
     expect(usernameStem("Ali bin Abu-Bakar (Jr.)")).toBe('ali.bin.abubakar.jr')
     expect(usernameStem('名前')).toBe('pelajar')
   })
+
+  it('caps the stem at 40 characters, cutting at a word boundary when possible', () => {
+    const long = 'Muhammad Aiman Hakimi bin Abdul Rahman bin Ahmad Zulkifli'
+    const stem = usernameStem(long)
+    expect(stem).toBe('muhammad.aiman.hakimi.bin.abdul.rahman')
+    expect(stem.length).toBeLessThanOrEqual(40)
+    // a single very long word is cut mid-word
+    expect(usernameStem('a'.repeat(60))).toBe('a'.repeat(40))
+    // exactly 40 characters stays whole
+    const exact = `${'b'.repeat(19)} ${'c'.repeat(20)}`
+    expect(usernameStem(exact)).toBe(`${'b'.repeat(19)}.${'c'.repeat(20)}`)
+  })
 })
 
 describe('skorPurataOf (AC-GUR-41-6)', () => {

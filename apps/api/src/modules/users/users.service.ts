@@ -260,6 +260,9 @@ export class UsersService {
     within: (userId: string, username: string) => Promise<void>,
   ): Promise<{ id: string; username: string }> {
     let icParts: { hash: string; masked: string } | null = null
+    // Known limits of the IC duplicate check: it is a PRE-check only (racy: `users.ic_hash` has no unique index, so two
+    // parallel creates with one IC can both pass), and it looks across ALL schools, as the PRD's 409 requires. The route's
+    // rate limit bounds the abuse; a unique index would need a migration and a data clean-up first.
     if (input.ic !== undefined) {
       icParts = this.ic.parts(input.ic)
       if (icParts === null) throw invalid({ ic: GURU_STUDENT_MESSAGES.ic })

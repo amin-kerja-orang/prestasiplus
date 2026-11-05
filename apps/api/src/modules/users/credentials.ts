@@ -12,7 +12,13 @@ export function generatePassword(): string {
   return out
 }
 
-/** Username stem of a pupil name (D113): each word lower-cased to ASCII a-z0-9 (diacritics folded), words joined by ".". */
+/** Longest username stem before the 2-digit suffix. */
+export const USERNAME_STEM_MAX = 40
+
+/**
+ * Username stem of a pupil name (D113): each word lower-cased to ASCII a-z0-9 (diacritics folded), words joined by ".",
+ * at most `USERNAME_STEM_MAX` characters, cut at a word boundary when a whole word fits (else mid-word, for one long word).
+ */
 export function usernameStem(name: string): string {
   const words = name
     .normalize('NFD')
@@ -21,7 +27,16 @@ export function usernameStem(name: string): string {
     .split(/\s+/)
     .map((w) => w.replace(/[^a-z0-9]/g, ''))
     .filter((w) => w !== '')
-  return words.length > 0 ? words.join('.') : 'pelajar'
+  if (words.length === 0) return 'pelajar'
+  const full = words.join('.')
+  if (full.length <= USERNAME_STEM_MAX) return full
+  let out = ''
+  for (const w of words) {
+    const next = out === '' ? w : `${out}.${w}`
+    if (next.length > USERNAME_STEM_MAX) break
+    out = next
+  }
+  return out !== '' ? out : (words[0] as string).slice(0, USERNAME_STEM_MAX)
 }
 
 /** Two-digit suffixes 01..99 appended to a stem, in order. */
