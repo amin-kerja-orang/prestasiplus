@@ -16246,6 +16246,16 @@
       "approved_by_card": null
     },
     {
+      "key": "DELETE /api/timeline/:p",
+      "method": "DELETE",
+      "path": "/api/timeline/:id",
+      "api_id": "API-RPT-15",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/timeline/timeline.controllers.ts",
+      "approved_by_card": "S10-T08"
+    },
+    {
       "key": "GET /api/amaran/schools/:p",
       "method": "GET",
       "path": "/api/amaran/schools/:id",

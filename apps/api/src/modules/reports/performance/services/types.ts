@@ -11,6 +11,7 @@ import type {
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
   PerformanceRankingSchema,
+  PerformanceTimelineEntrySchema,
   PerformanceTimelinePostSchema,
   PerformanceSchoolItemAnalysisSchema,
   PerformanceSchoolSchema,
@@ -51,3 +52,4 @@ export type PerformanceRanking = z.infer<typeof PerformanceRankingSchema>
 export type PerformanceLeaderboard = z.infer<typeof PerformanceLeaderboardSchema>
 export type PerformancePublicProfile = z.infer<typeof PerformancePublicProfileSchema>
 export type PerformanceTimelinePost = z.infer<typeof PerformanceTimelinePostSchema>
+export type PerformanceTimelineEntry = z.infer<typeof PerformanceTimelineEntrySchema>

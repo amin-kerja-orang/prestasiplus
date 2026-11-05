@@ -181,6 +181,15 @@ export const timelineRepo = defineRepository({
     create(input: Omit<TimelinePostRow, 'id'>): TimelinePostRow {
       return transaction(() => store.insert(input))
     },
+    /** Deletes a post of `userId` (R1-MUR-39 Padam); false when it is not that user's post. */
+    removeOwn(userId: number, id: number): boolean {
+      return transaction(() => {
+        const row = store.query({ where: { userId, id } }).rows[0]
+        if (!row) return false
+        store.remove(id)
+        return true
+      })
+    },
   }),
 })
 

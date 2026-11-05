@@ -294,16 +294,16 @@ describe('SWP-1 TimelinePage "Profil Awam Anda"', () => {
     api.fetchTimeline.mockResolvedValue(TL)
   })
 
-  it('hides the whole public-profile box when the scope keeps the profile away from the role', async () => {
+  it('always shows the public-profile box to a pupil, whatever the prototype scope (R1-MUR-39, FR-MUR-39 "Profil Awam Anda")', async () => {
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
     session.role = 'student'
     const w = await mountAt(TimelinePage, '/timeline', '/timeline')
     expect(w.find('[data-testid=timeline-page]').exists()).toBe(true)
     expect(w.find('[data-testid=add-post]').exists()).toBe(true)
-    expect(w.find('[data-testid=public-profile-box]').exists()).toBe(false)
-    expect(w.find('[data-testid=public-url]').exists()).toBe(false)
-    expect(w.find('[data-testid=copy-url]').exists()).toBe(false)
-    expect(w.text()).not.toContain('Profil Awam Anda')
+    expect(w.find('[data-testid=public-profile-box]').exists()).toBe(true)
+    expect(w.get('[data-testid=public-url]').attributes('href')).toBe(`${window.location.origin}/pelajar/47`)
+    expect(w.find('[data-testid=copy-url]').exists()).toBe(true)
+    expect(w.text()).toContain('Profil Awam Anda')
   })
 
   it('shows the link and the copy button when the role may open the profile', async () => {
@@ -316,15 +316,9 @@ describe('SWP-1 TimelinePage "Profil Awam Anda"', () => {
     expect(w.find('[data-testid=copy-url]').exists()).toBe(true)
   })
 
-  it('shows the box with the scope off (the e2e build) and hides it when the route is not built', async () => {
+  it('shows the box with the scope off (the e2e build)', async () => {
     session.role = 'student'
     const w = await mountAt(TimelinePage, '/timeline', '/timeline')
     expect(w.find('[data-testid=public-profile-box]').exists()).toBe(true)
-    w.unmount()
-    wrapper = null
-
-    api.fetchTimeline.mockResolvedValue({ profileUrl: '/tidak-wujud/47', posts: [] })
-    const w2 = await mountAt(TimelinePage, '/timeline', '/timeline')
-    expect(w2.find('[data-testid=public-profile-box]').exists()).toBe(false)
   })
 })

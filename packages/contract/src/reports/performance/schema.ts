@@ -578,9 +578,50 @@ export const PerformanceTimelinePostSchema = z
   })
   .meta({ id: 'PerformanceTimelinePost' })
 
+/**
+ * One row of the pupil's feed (R1-MUR-39, API-RPT-14): a finished practice session, a badge earned, or a manual post.
+ * `at` is the event time in Malaysia time (a post: its `createdAt`). Level-ups are not in R1.
+ */
+export const PerformanceTimelineEntrySchema = z
+  .discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('session'),
+      id: z.string().min(1),
+      at: TimestampSchema,
+      subjectName: z.string(),
+      correct: z.number().int().min(0),
+      answered: z.number().int().min(0),
+      accuracy: z.number().int().min(0).max(100),
+    }),
+    z.object({
+      kind: z.literal('badge'),
+      id: z.string().min(1),
+      at: TimestampSchema,
+      name: z.string(),
+      icon: z.string(),
+    }),
+    z.object({
+      kind: z.literal('post'),
+      id: IdSchema,
+      at: TimestampSchema,
+      post: PerformanceTimelinePostSchema,
+    }),
+  ])
+  .meta({ id: 'PerformanceTimelineEntry' })
+
+/** `entries` is the feed (newest first, at most 100); `posts` stays for older clients (the own posts only). */
 export const PerformanceTimelineSchema = z
-  .object({ profileUrl: z.string(), posts: z.array(PerformanceTimelinePostSchema) })
+  .object({
+    profileUrl: z.string(),
+    posts: z.array(PerformanceTimelinePostSchema),
+    entries: z.array(PerformanceTimelineEntrySchema),
+  })
   .meta({ id: 'PerformanceTimeline' })
+
+/** `{ data }` of `DELETE /timeline/{id}` (status 200). */
+export const PerformanceTimelineDeleteResultSchema = z
+  .object({ deleted: z.literal(1) })
+  .meta({ id: 'PerformanceTimelineDeleteResult' })
 
 export const PERFORMANCE_TIMELINE_LIMITS = {
   titleMax: 150,

@@ -42,6 +42,8 @@ import {
   PerformanceTimelineCategorySchema,
   PerformanceTimelineCreateRequestSchema,
   PerformanceTimelinePostSchema,
+  PerformanceTimelineDeleteResultSchema,
+  PerformanceTimelineEntrySchema,
   PerformanceTimelineSchema,
   PerformanceTrendSchema,
   PerformanceUserRefSchema,
@@ -70,7 +72,9 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceClassItemAnalysis: PerformanceClassItemAnalysisSchema,
   PerformanceTimelineCategory: PerformanceTimelineCategorySchema,
   PerformanceTimelinePost: PerformanceTimelinePostSchema,
+  PerformanceTimelineEntry: PerformanceTimelineEntrySchema,
   PerformanceTimeline: PerformanceTimelineSchema,
+  PerformanceTimelineDeleteResult: PerformanceTimelineDeleteResultSchema,
   PerformanceTimelineCreateRequest: PerformanceTimelineCreateRequestSchema,
   PerformancePublicProfile: PerformancePublicProfileSchema,
   PerformanceRankingQuery: PerformanceRankingQuerySchema,
@@ -238,7 +242,15 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     {},
     { query: PerformanceLeaderboardQuerySchema },
   )
-  get('/timeline', 'Own timeline (S16)', PerformanceTimelineSchema, {})
+  registry.registerPath({
+    method: 'get',
+    path: '/timeline',
+    tags: ['performance'],
+    summary: 'Own timeline feed (S16, API-RPT-14)',
+    description:
+      'Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).',
+    responses: { 200: json(envelopeOf(PerformanceTimelineSchema), 'Own timeline.'), 401: E401 },
+  })
 
   registry.registerPath({
     method: 'post',
@@ -261,6 +273,21 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       422: err(
         'VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus "(and N more error(s))".',
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/timeline/{id}',
+    tags: ['performance'],
+    summary: 'Delete an own timeline post (API-RPT-15)',
+    description: 'Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil\'s post is the same 404 as an unknown id.',
+    request: { params: idParam('id'), headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(PerformanceTimelineDeleteResultSchema), 'Deleted.'),
+      401: E401,
+      403: E403CSRF,
+      404: E404('unknown post id, or a post of another user'),
     },
   })
 
