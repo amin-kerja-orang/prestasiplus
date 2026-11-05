@@ -21,6 +21,7 @@ import type {
   Mastery,
   PracticeSubject,
   Progress,
+  RemedialSuggestions,
   RevisionOverview,
   RevisionSubject,
   SubjectConfig,
@@ -923,5 +924,46 @@ describe('#23 stays served beside the new routes', () => {
       coins: 26,
       answered: 84,
     })
+  })
+})
+
+describe('API-PRAC-08 remedial suggestions (S5-T07; FR-MUR-12-2, FR-MUR-12-4, FR-MUR-12-8)', () => {
+  const url = '/api/practice/remedial-suggestions'
+
+  it('pelajar: MATH is below 60 (10 answers, 40 %, target 60); no completed drill', async () => {
+    expect(await data<RemedialSuggestions>(PELAJAR, url)).toEqual({
+      completed: [],
+      needed: [
+        { subjectCode: 'MATH', subjectName: 'Matematik', answered: 10, accuracy: 40, target: 60 },
+      ],
+    })
+  })
+
+  it('pelajarmaju: one completed MATH drill "Set 1" with whole-number before / after and a negative delta', async () => {
+    const r = await data<RemedialSuggestions>(MAJU, url)
+    expect(r.needed).toEqual([])
+    expect(r.completed).toEqual([
+      {
+        subjectCode: 'MATH',
+        subjectName: 'Matematik',
+        setNo: 1,
+        questionCount: 7,
+        before: 77,
+        after: 43,
+        delta: -34,
+        at: '2026-09-25T10:00:00+08:00',
+      },
+    ])
+  })
+
+  it('pelajar2 (the empty-state e2e pupil) has no suggestions and no assigned test', async () => {
+    expect(await data<RemedialSuggestions>(PELAJAR2, url)).toEqual({ completed: [], needed: [] })
+    expect(await data<unknown[]>(PELAJAR2, '/api/remedial-tests/mine')).toEqual([])
+  })
+
+  it('a pupil with 0 answers and the staff roles get empty lists, not an error', async () => {
+    for (const u of [PELAJAR2, ADMIN, GURU, ADMIN_SEKOLAH]) {
+      expect(await data<RemedialSuggestions>(u, url), String(u)).toEqual({ completed: [], needed: [] })
+    }
   })
 })

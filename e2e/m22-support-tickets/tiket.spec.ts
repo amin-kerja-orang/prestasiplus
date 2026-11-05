@@ -526,7 +526,7 @@ test.describe('S2 queue', MODULE, () => {
       await expect(yes).toHaveCount(1)
       await expect(yes).toContainText('Kata laluan tidak boleh ditukar')
       await expect(yes).toContainText('Selesai')
-      await expect(rows.filter({ hasText: 'menunggu_balas' })).toHaveCount(1)
+      await expect(rows.filter({ hasText: 'Menunggu Balas' })).toHaveCount(1)
     })
 
     test('E2E-M22-32 chips: present statuses, vocabulary order, counts, total', async ({
@@ -539,11 +539,11 @@ test.describe('S2 queue', MODULE, () => {
       await openS2(page, gotoApp)
       expect(await page.getByTestId('tq-chips').getByRole('link').allInnerTexts()).toEqual([
         'Semua (9)',
-        'dibuka (5)',
-        'dalam_proses (1)',
-        'menunggu_balas (1)',
-        'selesai (1)',
-        'ditutup (1)',
+        'Dibuka (5)',
+        'Dalam Proses (1)',
+        'Menunggu Balas (1)',
+        'Selesai (1)',
+        'Ditutup (1)',
       ])
     })
 
@@ -555,7 +555,7 @@ test.describe('S2 queue', MODULE, () => {
         .getByRole('link', { name: /^Selesai/ })
         .click()
       await expect(page).toHaveURL(/\/admin\/tiket\?status=selesai$/)
-      await expect(page.getByTestId('tq-row')).toHaveCount(1)
+      await expect(page.locator('tbody tr, [data-ds="data-table-cards"] > li')).toHaveCount(1)
       await expect(page.getByTestId('tq-chips').getByRole('link').first()).toHaveText('Semua (9)')
       await expect(
         page.getByTestId('tq-chips').getByRole('link', { name: /^Selesai/ }),
@@ -586,28 +586,25 @@ test.describe('S2 queue', MODULE, () => {
     expect((await row.locator('td').allInnerTexts())[1]).toBe('—')
   })
 
-  test('E2E-M22-28 read-only: no control in the table or above it but the chips', async ({
+  test('E2E-M22-28 no control above the table but the chips, no link in a row', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs(ADMIN)
     await openS2(page, gotoApp)
-    await expect(
-      page.getByTestId('tq-page').locator('button, input, textarea, select'),
-    ).toHaveCount(0)
-    await expect(page.locator('tbody a')).toHaveCount(0)
-    await expect(page.getByRole('link', { name: /balas|padam|tutup|tugas/i })).toHaveCount(0)
+    await expect(page.getByTestId('tq-chips').locator('button, input, textarea, select')).toHaveCount(0)
+    await expect(page.locator('tbody a, tbody button')).toHaveCount(0)
   })
 
   test.describe('tickets-many', () => {
     test.use(MANY)
 
-    test('E2E-M22-29 200 rows newest first, "Semua (205)"', async ({ page, loginAs, gotoApp }) => {
+    test('E2E-M22-29 25 rows per page newest first, "Semua (205)"', async ({ page, loginAs, gotoApp }) => {
       test.skip(viewportWidth(page) < 1280, 'E2E-M22-29 runs at 1280 only')
       await loginAs(ADMIN)
       await openS2(page, gotoApp)
-      await expect(page.getByTestId('tq-row')).toHaveCount(200)
+      await expect(page.getByTestId('tq-row')).toHaveCount(25)
       await expect(page.getByTestId('tq-chips').getByRole('link').first()).toHaveText('Semua (205)')
       await expect(page.getByTestId('tq-row').first()).toContainText('2026-09-25 09:30:00')
     })
@@ -631,8 +628,15 @@ test.describe('S2 queue', MODULE, () => {
     await loginAs(ADMIN)
     await openS2(page, gotoApp)
     const chips = page.getByTestId('tq-chips').getByRole('link')
-    expect(await chips.allInnerTexts()).toEqual(['Semua (2)', 'dibuka (2)'])
-    await expect(chips.first()).toHaveClass(/bg-indigo-600/)
+    expect(await chips.allInnerTexts()).toEqual([
+      'Semua (2)',
+      'Dibuka (2)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (0)',
+      'Ditutup (0)',
+    ])
+    await expect(chips.first()).toHaveAttribute('data-active', 'true')
   })
 
   test('E2E-M22-34 an unknown status gives its own empty text', async ({

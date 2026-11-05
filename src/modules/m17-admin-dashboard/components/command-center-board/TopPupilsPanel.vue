@@ -3,9 +3,9 @@
  * "Top Pelajar Minggu Ini" (FR-M17-29, FN-M17-3.3.6): up to 5 rows - rank, pupil link to S7,
  * "{n} jwb · {acc}%".
  */
-import { DsEmptyState, DsListRow, DsStack, DsText, formatCount, formatPercent } from '@/ds'
+import { DsEmptyState, DsListRow, DsStack, DsText, formatCount } from '@/ds'
 
-import type { CcTopStudent } from '../../api/command-center-board'
+import { accuracyText, type CcTopStudent } from '../../api/command-center-board'
 import { ccPaths } from '../command-center/cc-paths'
 import { S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
@@ -36,7 +36,7 @@ const paths = ccPaths(props.basePath)
         <template #meta
           ><span class="flex flex-col items-end" data-testid="cc-top-pupil-stat"
             ><span>{{ formatCount(s.answersCount) }} jwb</span
-            ><span class="text-caption text-muted">{{ formatPercent(s.accuracy) }}</span></span
+            ><span class="text-caption text-muted">{{ accuracyText(s.accuracy) }}</span></span
           ></template
         >
       </DsListRow>

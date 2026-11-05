@@ -124,6 +124,7 @@ const headerTitle = (s: StartSessionResponse): string => chapterQuizTitle(s.chap
     :back-url="listUrl"
     :labels="{ ...LATIH_TUBI_LABELS, back: 'Senarai Bab' }"
     retry="restart"
+    confirm-exit
     :report="{ source: 'latihan' }"
   />
   <!-- The same loading look as the runner while the level is looked up (no blank page). -->

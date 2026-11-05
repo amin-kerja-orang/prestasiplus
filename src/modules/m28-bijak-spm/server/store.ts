@@ -182,6 +182,11 @@ export class BijakServer implements BijakApi {
 
   /* --------------------------------------------------------------------------- papers */
 
+  /** H-C5 / H-A13: the paper places no question, or one the bank no longer serves. */
+  private placesUnserved(def: PaperDef): boolean {
+    return def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))
+  }
+
   private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind } {
     const fixed = PAPERS.find((p) => p.id === id)
     if (fixed) return { ...fixed, kind: 'pilihan' }
@@ -271,6 +276,7 @@ export class BijakServer implements BijakApi {
         compulsory: !!s.compulsory,
         ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),
       })),
+      unavailable: this.placesUnserved(def),
     }
   }
 
@@ -321,7 +327,7 @@ export class BijakServer implements BijakApi {
       return { attemptId: keep.id }
     }
     // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
-    if (def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+    if (this.placesUnserved(def)) {
       throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'

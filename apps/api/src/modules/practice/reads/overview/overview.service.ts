@@ -21,10 +21,13 @@ import { QuestionsRepository } from '../../../questions'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
 import { StreakService, WalletService } from '../../../wallet'
-import { OFFERED_LEVEL_CODES } from '../../rules'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
-import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
+import { DASHBOARD_LEVEL_CODES, bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, pooledAccuracy, round, weekEndMyt, weekStartMyt } from './rules'
+
+/** An open window over the answer store (all time) for the pooled accuracy. */
+const ALL_TIME_FROM = new Date(0)
+const ALL_TIME_TO = new Date('9999-12-31T00:00:00Z')
 
 /** The caller of a read: own data only (card AC4), in the mode (real or Mod Pelajar) of the request. */
 export interface Reader {
@@ -54,6 +57,9 @@ export const subjectView = (s: SubjectWithLevels, bank: BankFacts, offeredIds: r
   const n = bank.practice(id, offeredIds)
   return { id, code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color, isCore: s.isCore, approvedCount: n, bankCount: n }
 }
+
+/** The Bab-mode level shown first when the subject offers it; otherwise the first offered level. */
+const DEFAULT_CHAPTER_LEVEL_CODE = 'T4'
 
 /**
  * Overview reads of M05 (SRS section 7 #1, #2, #3, #7, #8): the dashboard (S1), the practice subjects (S2, S3)
@@ -130,9 +136,10 @@ export class OverviewService {
     const now = this.clock.now()
     const from = weekStartMyt(now)
     const to = weekEndMyt(from)
-    const [subjects, levels, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
+    const [subjects, levels, offeredIds, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent, pooled, activePackage] = await Promise.all([
       this.curriculum.subjects({ active: true }),
       this.curriculum.levels({ active: true }),
+      this.offeredIds(),
       this.bankFacts(),
       this.users.get(who.userId),
       this.subscriptions.trial(who.userId, now),
@@ -145,8 +152,10 @@ export class OverviewService {
       this.activeBanners(who.role, now),
       this.latestArticles(),
       this.recentQuestions(),
+      this.repo.answerFigures(who.userId, ALL_TIME_FROM, ALL_TIME_TO, who.isTest),
+      this.subscriptions.activePackage(who.userId, now),
     ])
-    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
     const subjectStats = views
       .map((v) => ({
         id: v.id,
@@ -166,6 +175,8 @@ export class OverviewService {
       streak: { count: streak.current, practisedToday: streak.lastActivityDate === mytDay(now) },
       wallet: { coins: wallet.currentSyiling, points: wallet.xp, level: wallet.level, levelProgressPct: wallet.levelProgressPct },
       week: { sessions: weekSessions, accuracyPct: Math.round(pct(week.correct, week.answered)) },
+      accuracyPct: pooledAccuracy(pooled.correct, pooled.answered),
+      package: activePackage,
       banners,
       // BE-23 (challenges, badges) has not merged: nothing to show yet (open question).
       quests: [],
@@ -181,7 +192,17 @@ export class OverviewService {
         activeLevels: levels.length,
         approvedQuestions: bank.count(),
       },
-      levelPills: levels.map((l) => ({ code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count: bank.count({ levelId: idToString(l.id) }) })),
+      // FR-MUR-2-11, D91: Tingkatan 1-5 only; each count is the Latih Tubi figure the subject chips use (`bank.practice` per subject that offers the level, summed).
+      levelPills: levels
+        .filter((l) => DASHBOARD_LEVEL_CODES.includes(l.code))
+        .map((l) => {
+          const levelId = idToString(l.id)
+          const count = subjects.reduce(
+            (n, s) => (this.offeredOf(s, levels, offeredIds).some((o) => idToString(o.id) === levelId) ? n + bank.practice(idToString(s.id), [levelId]) : n),
+            0,
+          )
+          return { code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count }
+        }),
       recentQuestions: recent,
       difficultyChart: bank.difficultyChart(),
       subjectStats,
@@ -236,8 +257,8 @@ export class OverviewService {
   // --- S2 / S3 --------------------------------------------------------------------------------------
 
   async subjects(): Promise<PracticeReadSubject[]> {
-    const [subjects, levels, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.bankFacts()])
-    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const [subjects, levels, offeredIds, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.offeredIds(), this.bankFacts()])
+    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
   }
 
   async subjectConfig(who: Reader, code: string): Promise<PracticeReadSubjectConfig> {
@@ -262,22 +283,30 @@ export class OverviewService {
 
   // --- S4 / S5 --------------------------------------------------------------------------------------
 
-  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
+  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number; levels: { id: string; code: string; name: string; chapterCount: number; questionCount: number }[] }[]> {
     const subjects = await this.curriculum.subjects({ active: true })
     const out = []
-    const levels = await this.curriculum.levels()
-    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels) }))
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels, offeredIds) }))
     // One chapter read per pair, then ONE question count over every chapter id.
     const { byPair, counts } = await this.practiceChaptersOf(perSubject.flatMap(({ s, offered }) => offered.map((l) => ({ subject: s, levelId: l.id }))))
     for (const { s, offered } of perSubject) {
       const chapterCount = offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`)?.length ?? 0), 0)
       // BR-15: subjects with at least one chapter at an offered level.
       if (chapterCount === 0) continue
+      // FR-MUR-9-5 (S5-T02): the levels that have chapters, each with its own counts (the page filters by the chosen level).
+      const levelRows = offered
+        .map((l) => {
+          const chapters = byPair.get(`${s.id}:${l.id}`) ?? []
+          return { id: idToString(l.id), code: l.code, name: l.name, chapterCount: chapters.length, questionCount: chapters.reduce((m, c) => m + (counts.get(idToString(c.id)) ?? 0), 0) }
+        })
+        .filter((l) => l.chapterCount > 0)
       out.push({
         code: s.code,
         name: s.name,
         icon: s.icon,
         color: s.color,
+        levels: levelRows,
         chapterCount,
         // FR-M05-58, D91, V2 section 2.3 (R1E2E-09): the tile counts what the chapter draw can serve (chaptered, ungrouped, approved),
         // the sum of the per-chapter counts, not Q-PRACTICE(subject).
@@ -297,9 +326,10 @@ export class OverviewService {
       name: p.level.name,
       count: p.chapters.reduce((n, c) => n + (counts.get(idToString(c.id)) ?? 0), 0),
     }))
-    // Default: the first offered level; an unknown, non-offered or non-numeric `levelId` falls back to it.
+    // Default: Tingkatan 4 when the subject offers it, otherwise the first offered level (S4-T06 keeps T4 as the Bab-mode default now that T1..T3 are offered).
+    // An unknown, non-offered or non-numeric `levelId` falls back to it.
     const asked = levelIdQuery !== undefined && /^\d+$/.test(levelIdQuery.trim()) ? BigInt(levelIdQuery.trim()).toString() : undefined
-    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel[0]
+    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel.find((p) => p.level.code === DEFAULT_CHAPTER_LEVEL_CODE) ?? perLevel[0]
     const chapters: PracticeReadChapterSubjectDetail['chapters'] = []
     if (shown) {
       const ids = shown.chapters.map((c) => idToString(c.id))
@@ -344,12 +374,18 @@ export class OverviewService {
 
   /** BR-11: the subject's level links at Darjah 1 to 4 (by code), in level order. */
   private async offeredLevels(subject: SubjectWithLevels) {
-    return this.offeredOf(subject, await this.curriculum.levels())
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    return this.offeredOf(subject, levels, offeredIds)
   }
 
-  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>) {
+  /** S4-T06: the level ids offered (active, non-primary, `offeredLevels`), read once per request by the callers. */
+  private async offeredIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).map((l) => l.id))
+  }
+
+  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>, offeredIds: ReadonlySet<string>) {
     const linked = new Set(subject.educationLevelIds.map(idToString))
-    return levels.filter((l) => linked.has(idToString(l.id)) && OFFERED_LEVEL_CODES.includes(l.code))
+    return levels.filter((l) => linked.has(idToString(l.id)) && offeredIds.has(idToString(l.id)))
   }
 
   /**
