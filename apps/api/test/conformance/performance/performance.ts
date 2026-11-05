@@ -1,6 +1,7 @@
 import type { ActorRole, HttpClient, Scenario, ScenarioContext } from '@pp/contract-tests'
 
 import { dataOf, errorOf, expectError, listOf } from '../helpers'
+import { schoolIdByCode } from '../users/users'
 
 /**
  * Prestasi, Analitik and Analisa Item (BE-19 slice, US-33): the 12 routes over the Bijak aggregate.
@@ -350,9 +351,11 @@ const headcountScenarios: Scenario[] = [
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
+      // S6-T13 PM-24: the admin lists ONE school, so the list needs ?schoolId=
+      const school = await schoolIdByCode(await ctx.as('admin'), 'DEMO001')
       for (const role of ['admin', 'teacher', 'school_admin'] as ActorRole[]) {
         const who = await ctx.as(role)
-        for (const path of ['/headcounts', '/headcounts/dashboard', '/headcounts/form-options']) {
+        for (const path of [`/headcounts?schoolId=${school}`, '/headcounts/dashboard', '/headcounts/form-options']) {
           const res = await who.request('GET', path)
           ctx.expectStatus(res, 200)
           noStore(ctx, res, path)

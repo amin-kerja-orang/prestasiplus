@@ -18,6 +18,8 @@ const as: Record<string, Client> = {}
 const who = ['guru', 'guru2', 'adminsekolah', 'admin2', 'admin', 'pelajar', 'pelajar2', 'ibubapa'] as const
 const MSG = PERFORMANCE_HEADCOUNT_MESSAGES
 const UNKNOWN = '987654321'
+let s1 = ''
+let s2 = ''
 // requestId is unique per request by design; the privacy assertion is on everything else.
 const noReq = (b: unknown): unknown => {
   const c = structuredClone(b) as { error?: { requestId?: unknown } }
@@ -28,6 +30,9 @@ const noReq = (b: unknown): unknown => {
 beforeAll(async () => {
   w = await bootHeadcountWorld()
   for (const k of who) as[k] = await loginAs(w, `${k}@demo.test`)
+  const school = async (code: string): Promise<string> => (await w.db.query<{ id: string }>(`select id::text as id from schools where code = $1`, [code]))[0]?.id ?? ''
+  s1 = await school('DEMO001')
+  s2 = await school('DEMO002')
 }, 180_000)
 afterAll(async () => {
   await w?.close()
@@ -311,19 +316,59 @@ describe('privacy 9 and 10: one 404 for unknown and not visible', () => {
     expect(noReq(fromOther.body)).toEqual(noReq(unknown.body))
   })
 
-  it('list and dashboard: a teacher sees own configs, a school admin the own school, an admin all; the "Guru" name is listed', async () => {
-    const list = async (k: string) => parseData(await (as[k] as Client).get('/api/headcounts'), z.array(PerformanceHeadcountListItemSchema))
+  it('list and dashboard: a teacher sees own configs, a school admin the own school, an admin one school (schoolId); the "Guru" name is listed', async () => {
+    const list = async (k: string, q = '') => parseData(await (as[k] as Client).get(`/api/headcounts${q}`), z.array(PerformanceHeadcountListItemSchema))
     const mine = await list('guru')
     expect(mine.some((c) => c.id === cfg)).toBe(true)
     expect(mine.every((c) => c.teacherName !== '')).toBe(true)
     expect(await list('guru2')).toEqual([])
     expect((await list('adminsekolah')).some((c) => c.id === cfg)).toBe(true)
     expect((await list('admin2')).some((c) => c.id === cfg)).toBe(false)
-    expect((await list('admin')).some((c) => c.id === cfg)).toBe(true)
+    expect((await list('admin', `?schoolId=${s1}`)).some((c) => c.id === cfg)).toBe(true)
+    expect((await list('admin', `?schoolId=${s2}`)).some((c) => c.id === cfg)).toBe(false)
     const dash = async (k: string) => parseData(await (as[k] as Client).get('/api/headcounts/dashboard'), PerformanceHeadcountDashboardSchema).configs
     expect((await dash('adminsekolah')).some((c) => c.id === cfg)).toBe(true)
     expect((await dash('admin2')).some((c) => c.id === cfg)).toBe(false)
     expect((await dash('admin')).some((c) => c.id === cfg)).toBe(true)
+  })
+
+  describe('S6-T13 PM-24: the central list (admin + schoolId)', () => {
+    const list = async (k: string, q = '') => (as[k] as Client).get(`/api/headcounts${q}`)
+
+    it('admin with a valid schoolId gets exactly the list of that school\'s admin', async () => {
+      const central = await list('admin', `?schoolId=${s1}`)
+      const own = await list('adminsekolah')
+      expect(central.status).toBe(200)
+      noStore(central)
+      expect(central.body).toEqual(own.body)
+      expect(parseData(central, z.array(PerformanceHeadcountListItemSchema)).some((c) => c.id === cfg)).toBe(true)
+      expect((await list('admin', `?schoolId=${s2}`)).body).toEqual((await list('admin2')).body)
+    })
+
+    it('admin without schoolId, or with an empty, malformed or repeated one: 422 fields.schoolId "Sila pilih sekolah."', async () => {
+      for (const q of ['', '?schoolId=', '?schoolId=abc', '?schoolId=0', '?schoolId=01', '?schoolId=-3', `?schoolId=${s1}&schoolId=${s2}`, '?schoolId=99999999999999999999']) {
+        const e = expectError(await list('admin', q), 'VALIDATION_ERROR')
+        expect(Object.keys(e.fields ?? {}), q).toEqual(['schoolId'])
+        expect(e.fields?.schoolId, q).toBe('Sila pilih sekolah.')
+        expect(e.message, q).toBe('Sila pilih sekolah.')
+      }
+    })
+
+    it('admin with an unknown school: 404', async () => {
+      expectError(await list('admin', `?schoolId=${UNKNOWN}`), 'NOT_FOUND')
+    })
+
+    it('a school admin passing another school id (or junk) still gets the own list', async () => {
+      const own = await list('adminsekolah')
+      expect((await list('adminsekolah', `?schoolId=${s2}`)).body).toEqual(own.body)
+      expect((await list('adminsekolah', '?schoolId=abc')).body).toEqual(own.body)
+      expect((await list('admin2', `?schoolId=${s1}`)).body).toEqual((await list('admin2')).body)
+    })
+
+    it('a teacher ignores schoolId and a pupil stays 403', async () => {
+      expect((await list('guru', `?schoolId=${s2}`)).body).toEqual((await list('guru')).body)
+      expectError(await list('pelajar', `?schoolId=${s1}`), 'FORBIDDEN')
+    })
   })
 
   it('a school admin or admin who can see the config is 403 on every write; another school\'s admin gets the 404', async () => {

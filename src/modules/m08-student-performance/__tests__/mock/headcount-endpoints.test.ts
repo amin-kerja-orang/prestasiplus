@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
+import { users } from '@/modules/m01-authentication/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
@@ -160,13 +161,26 @@ describe('#12 list', () => {
     expect(list.find((c) => c.id === 502)?.mode).toBe('manual')
   })
 
-  it('admin lists every config, the school admin the configs of the own school; each has "Guru"', async () => {
-    const all = await get<HeadcountListItem[]>(ADMIN, '/api/headcounts')
-    expect(all.map((c) => c.id)).toEqual(expect.arrayContaining([213, 501]))
+  it('admin lists the configs of the schoolId named, the school admin those of the own school; each has "Guru"', async () => {
     const own = await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts')
     expect(own.map((c) => c.id)).toContain(501)
     expect(own.map((c) => c.id)).not.toContain(213)
-    for (const c of [...all, ...own]) expect(c.teacherName).not.toBe('')
+    const schoolId = users.get(ADMIN_SEKOLAH)?.schoolId
+    const central = await get<HeadcountListItem[]>(ADMIN, `/api/headcounts?schoolId=${String(schoolId)}`)
+    expect(central).toEqual(own)
+    for (const c of central) expect(c.teacherName).not.toBe('')
+    // a school admin's own school wins over any schoolId it sends
+    const forced = await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts?schoolId=abc')
+    expect(forced).toEqual(own)
+  })
+
+  it('admin without a valid schoolId is 422 "Sila pilih sekolah.", an unknown school is 404 (S6-T13 PM-24)', async () => {
+    for (const q of ['', '?schoolId=', '?schoolId=abc', '?schoolId=0', '?schoolId=01']) {
+      const r = await call<ErrorBody>(runtime, ADMIN, 'GET', `/api/headcounts${q}`)
+      expect(r.status, q).toBe(422)
+      expect(r.body.error.fields?.schoolId, q).toBe('Sila pilih sekolah.')
+    }
+    expect((await call<ErrorBody>(runtime, ADMIN, 'GET', '/api/headcounts?schoolId=987654321')).status).toBe(404)
   })
 })
 
