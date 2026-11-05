@@ -38,6 +38,7 @@ import { ClassesRepository, type ClassRecord } from './classes.repository'
 import { gradeOfSlug, levelLabelOfGrade } from './level-slug'
 import { ClassesPorts } from './ports'
 import { invalid, parseStrict, tryParseStrict } from './strict-body'
+import type { TeacherQuestionStats } from './ports'
 import type { ClassEnrolment, ClassJoinedClass, TeacherChapterOption, TeacherStudent, TeacherTopicOption } from './types'
 
 const notFound = (message?: string): ApiError => ApiError.of('NOT_FOUND', message ? { message } : {})
@@ -299,7 +300,7 @@ export class ClassesService {
     const [students, counts, stats, hasMission] = await Promise.all([
       this.repo.teacherStudentIds(actor.userId),
       this.repo.memberCounts(active.map((c) => c.id)),
-      this.ports.questions.statsOf(actor.userId),
+      this.submissionStats(actor.userId),
       this.ports.missions.hasMission(actor.userId),
     ])
     return {
@@ -418,11 +419,17 @@ export class ClassesService {
     return { id: idToString(row.id), topicNumber: row.topicNumber, name: row.name }
   }
 
+  /** The teacher's own submissions (S6-T06); a provider without them answers with the bank counters. */
+  private submissionStats(teacherId: string): Promise<TeacherQuestionStats> {
+    const q = this.ports.questions
+    return q.submissionStatsOf ? q.submissionStatsOf(teacherId) : q.statsOf(teacherId)
+  }
+
   // --- contributions and gallery (S21) --------------------------------------------------------------------
 
   /** `GET /guru/contributions`: counters from the question bank port (zeros until BE-09), the eight tiers, the subject breakdown. */
   async contributions(actor: ClassActor): Promise<TeacherContributions> {
-    const stats = await this.ports.questions.statsOf(actor.userId)
+    const stats = await this.submissionStats(actor.userId)
     const named = [...stats.bySubject].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
     const rest = named.slice(CONTRIBUTION_BREAKDOWN_TOP).reduce((sum, r) => sum + r.count, 0)
     const breakdown = named.slice(0, CONTRIBUTION_BREAKDOWN_TOP)
