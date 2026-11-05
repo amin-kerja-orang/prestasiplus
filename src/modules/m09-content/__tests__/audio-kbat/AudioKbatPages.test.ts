@@ -115,7 +115,10 @@ describe('AudioKbatListPage (S21)', () => {
     expect(w.get('h1').text()).toBe('Audio KBAT')
     expect(w.text()).toContain('Ujian Mendengar')
     expect(w.text()).toContain('Set ini tidak dirawak supaya audio kekal selari')
-    expect(t(w, 'audio-empty').text()).toBe('Belum ada set Audio KBAT yang approved.')
+    expect(t(w, 'audio-empty').text()).toContain('Belum ada audio diterbitkan')
+    expect(t(w, 'audio-empty').text()).toContain(
+      'Audio KBAT akan muncul di sini selepas dimuat naik dan diterbitkan.',
+    )
     expect((subject(w).props('items') as { label: string }[]).map((o) => o.label)).toEqual([
       'Semua Subjek',
       'Bahasa Melayu',
@@ -192,6 +195,23 @@ describe('AudioKbatPlayerPage (provisional)', () => {
     expect(t(w, 'result-score').text()).toBe('1')
     expect(t(w, 'result-total').text()).toBe('2')
     expect(w.find('[data-testid=player-submit]').exists()).toBe(false)
+  })
+
+  it('a missing audio file shows an error with a retry that remounts the player (FR-MUR-27-2)', async () => {
+    api.fetchAudioSet.mockResolvedValue(SET)
+    const w = await mountPlayer()
+    expect(w.find('[data-testid=section-audio-error]').exists()).toBe(false)
+    await w.get('audio').trigger('error')
+    await flushPromises()
+    expect(w.get('[data-testid=section-audio-error]').text()).toContain(
+      'Fail audio tidak dapat dimuatkan.',
+    )
+    expect(w.findAll('audio')).toHaveLength(0)
+    const retry = w.findAll('button').find((b) => b.text() === 'Cuba Semula')
+    await retry?.trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid=section-audio-error]').exists()).toBe(false)
+    expect(w.findAll('audio')).toHaveLength(1)
   })
 
   it('shows the server message on a failed submit and keeps the form', async () => {

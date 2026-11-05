@@ -25,7 +25,11 @@ const rich = (ms: string | null, en: string | null): { ms: string; en?: string }
 
 // --- rows -> tree ---------------------------------------------------------------------------------
 
-export function partsFromRows(rows: readonly PartRow[], options: readonly PartOption[], keys: readonly AnswerKey[]): QuestionPart[] {
+/**
+ * `lenient` (the servability read only): a leaf with NO `answer_keys` row is returned with `key` undefined instead of failing, so the indicator can
+ * say `no_key` / `no_scheme` (S1-T07) instead of the read answering 500. Every other reader keeps the strict parse and never sees such a leaf.
+ */
+export function partsFromRows(rows: readonly PartRow[], options: readonly PartOption[], keys: readonly AnswerKey[], lenient = false): QuestionPart[] {
   const children = new Map<string, PartRow[]>()
   for (const row of rows) {
     const k = row.parentPartId === null ? '' : idToString(row.parentPartId)
@@ -45,12 +49,12 @@ export function partsFromRows(rows: readonly PartRow[], options: readonly PartOp
           return { label: row.label, prompt: rich(row.promptMs, row.promptEn), children: build(idToString(row.id)) } as QuestionPart
         }
         if (kids && kids.length > 0) throw new StoredKeyError(idToString(row.id))
-        return leafFromRow(row, (optionsOf.get(row.id) ?? []).slice().sort((a, b) => a.position - b.position), keyOf.get(row.id))
+        return leafFromRow(row, (optionsOf.get(row.id) ?? []).slice().sort((a, b) => a.position - b.position), keyOf.get(row.id), lenient)
       })
   return build('')
 }
 
-function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undefined): QuestionLeaf {
+function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undefined, lenient = false): QuestionLeaf {
   const candidate: Record<string, unknown> = {
     label: row.label,
     prompt: rich(row.promptMs, row.promptEn),
@@ -77,7 +81,10 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if ((row.mode === 'essay' || row.mode === 'essay_choice') && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
   if (row.mode === 'essay_choice') candidate.topics = row.topics
   const parsed = QuestionLeafPartSchema.safeParse(candidate)
-  if (!parsed.success) throw new StoredKeyError(idToString(row.id))
+  if (!parsed.success) {
+    if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
+    throw new StoredKeyError(idToString(row.id))
+  }
   return parsed.data as QuestionLeaf
 }
 
