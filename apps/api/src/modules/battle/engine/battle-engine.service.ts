@@ -18,6 +18,19 @@ import type { BattleParams } from './battle-params'
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QueueMode = 'quick_match' | 'school_battle'
 
+/** How long both players see the key and the points of a closed round before the next one opens (48 GAME-01 timers: 3 s). */
+export const BATTLE_REVEAL_MS = 3000
+
+export interface BattleTiming {
+  /** N: seconds a question lasts (`battle_question_seconds`); points are scored against it. */
+  questionSeconds: number
+  /** `battle_grace_seconds`: an answer inside it still counts, as s = N. */
+  graceSeconds: number
+  /** N + grace in ms: the answer window of a round. */
+  limitMs: number
+  revealMs: number
+}
+
 export interface BattleSide {
   id: string
   schoolId: string | null
@@ -43,9 +56,14 @@ export class BattleEngine {
     return this.ports.answers.record(gameAnswerEntry({ userId: a.userId, attemptId: a.battleId, questionId: a.questionId, gameKey: 'battle', position: a.position, isCorrect: a.isCorrect, answeredAt: a.answeredAt }))
   }
 
-  /** How long a question lasts, grace included (48 section 3.3): `battle_grace_seconds` is read per answer. */
-  async questionLimitMs(): Promise<number> {
-    return (BATTLE_RULES.questionSeconds + (await this.settings.get('battle_grace_seconds'))) * 1000
+  /**
+   * The round clock (48 GAME-01 timers): N = `battle_question_seconds`, the grace `battle_grace_seconds` and the reveal. An
+   * answer window is N + grace long; both settings are read per call, so an admin change reaches the next evaluation.
+   */
+  async timing(): Promise<BattleTiming> {
+    const questionSeconds = await this.settings.get('battle_question_seconds')
+    const graceSeconds = await this.settings.get('battle_grace_seconds')
+    return { questionSeconds, graceSeconds, limitMs: (questionSeconds + graceSeconds) * 1000, revealMs: BATTLE_REVEAL_MS }
   }
 
   /** The chip used when a start carries no `question_count` (`battle_questions_default`: 5, 10, 15 or 20). */
@@ -114,6 +132,7 @@ export class BattleEngine {
     const levelId = await this.deps.levelIdOfGrade(args.ownerGrade)
     const ids = args.questionIds === undefined ? await this.draw(params, args.ownerGrade, args.drawStream) : args.questionIds
     if (ids === null) throw rawInvalid(BATTLE_MESSAGES.poolTooSmall)
+    const now = this.clock.now()
     const row = await this.prisma.client.battle.create({
       data: {
         mode: args.mode,
@@ -125,7 +144,9 @@ export class BattleEngine {
         isTest,
         questionCount: params.questionCount,
         countsForRanking: b !== null,
-        createdAt: this.clock.now(),
+        createdAt: now,
+        // 48 GAME-01 timers: round 1 opens when the battle becomes active.
+        roundStartedAt: now,
         participants: {
           create: [
             { side: 'A', userId: idFromString(a.id), schoolId: a.schoolId === null ? null : idFromString(a.schoolId), isBot: false, isTest },

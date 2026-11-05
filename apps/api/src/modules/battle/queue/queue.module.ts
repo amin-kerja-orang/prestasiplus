@@ -15,5 +15,6 @@ import { QueueService } from './queue.service'
   imports: [ThrottleModule, BattleCoreModule, BattleEngineModule],
   controllers: [QueueController, QueueCancelController, InvitationsController],
   providers: [QueueService, InvitationsService, ForfeitService],
+  exports: [ForfeitService],
 })
 export class BattleQueueModule {}

@@ -21634,13 +21634,12 @@
           "index": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10
+            "maximum": 20
           },
           "total": {
-            "type": "number",
-            "enum": [
-              10
-            ]
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 20
           },
           "question": {
             "allOf": [
@@ -21658,14 +21657,20 @@
           "secondsLeft": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 15
+            "maximum": 60
           },
           "roundEndsAt": {
             "type": "string",
             "format": "date-time",
             "pattern": "\\+08:00$",
-            "description": "While active: when the caller's question times out, grace included (48 section 3.3).",
+            "description": "While active: when the current phase ends (answering: the window incl. grace, 48 section 3.3; reveal: the next round opens).",
             "example": "2026-10-16T09:30:00+08:00"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/BattleArenaPhase"
+          },
+          "reveal": {
+            "$ref": "#/components/schemas/BattleArenaReveal"
           },
           "result": {
             "$ref": "#/components/schemas/BattleArenaResult"
@@ -21681,6 +21686,92 @@
           "total",
           "question",
           "secondsLeft"
+        ],
+        "additionalProperties": false
+      },
+      "BattleArenaPhase": {
+        "type": "string",
+        "enum": [
+          "answering",
+          "reveal",
+          "finished"
+        ]
+      },
+      "BattleArenaReveal": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "correctOptionId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "you": {
+            "type": "object",
+            "properties": {
+              "optionId": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 3,
+                "description": "The option the side picked; null for a timeout."
+              },
+              "correct": {
+                "type": "boolean"
+              },
+              "points": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            },
+            "required": [
+              "optionId",
+              "correct",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          "opponent": {
+            "type": "object",
+            "properties": {
+              "optionId": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 3,
+                "description": "The option the side picked; null for a timeout."
+              },
+              "correct": {
+                "type": "boolean"
+              },
+              "points": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            },
+            "required": [
+              "optionId",
+              "correct",
+              "points"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "index",
+          "correctOptionId",
+          "you",
+          "opponent"
         ],
         "additionalProperties": false
       },
@@ -21702,8 +21793,8 @@
           "seconds": {
             "type": "number",
             "minimum": 0,
-            "maximum": 15,
-            "description": "Seconds used, 0..15; floor(seconds) is scored."
+            "maximum": 60,
+            "description": "Seconds used, 0..`battle_question_seconds` (at most 60); floor(seconds) is scored. The server clock can only make it slower."
           }
         },
         "required": [
@@ -21744,10 +21835,7 @@
             "type": "object",
             "properties": {
               "answered": {
-                "type": "boolean",
-                "enum": [
-                  true
-                ]
+                "type": "boolean"
               },
               "correct": {
                 "type": "boolean"
@@ -21758,9 +21846,7 @@
               }
             },
             "required": [
-              "answered",
-              "correct",
-              "score"
+              "answered"
             ],
             "additionalProperties": false
           },
