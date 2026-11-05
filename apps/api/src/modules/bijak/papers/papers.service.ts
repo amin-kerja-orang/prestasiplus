@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type {
   BijakBlueprintContract,
+  BijakCoverUnavailableReason,
   BijakGenerateRequest,
   BijakGenerateResult,
   BijakPaperCover,
@@ -15,7 +16,7 @@ import { toStandard } from '../../exam/blueprints/blueprint-standard'
 import { shortageToWire } from '../../exam/builder/standard'
 import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-core.adapter'
 import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
-import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, pinKey } from './ports'
+import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, placesUnservable } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
 import { generationSeed, levelScopeAllows, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
@@ -95,23 +96,25 @@ export class PapersService {
     // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
     // REQ-B-058: a pinned version that is taken down refuses a new sitting too, so the paper is not offered either (one read for the whole list).
     const down = await this.takenDownOf(papers)
-    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)) && !down.has(pinKey({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))))
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || !placesUnservable(this.pinsOf(p), info, down))
     const marked = await this.withPinned(info, listed)
     return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {
     const paper = await this.visiblePaper(userId, paperId)
-    const [subjects, info, progress] = await Promise.all([
+    const [subjects, info, progress, down] = await Promise.all([
       this.repo.subjectsByIds([paper.subjectId]),
       this.infoFor([paper]),
       this.ports.progressSource.progressFor(userId, [idToString(paper.id)]),
+      this.takenDownOf([paper]),
     ])
     const marked = await this.withPinned(info, [paper])
     // S3-T07: the paper Kuiz is refused (404) for an out-of-scope curated paper unless the pupil has an own open sitting (`kuiz.service.ts`
     // `visiblePaper`); the cover then omits the action. Sent only when false so every other cover is unchanged.
     const inScope = paper.kind !== 'pilihan' || levelScopeAllows(paper.levelScope, await this.repo.gradeOf(userId))
     const kuizAvailable = inScope || progress.get(idToString(paper.id))?.attemptId !== undefined
+    const unavailableReason = this.coverUnavailableReason(paper, info, down)
     return {
       ...this.summary(paper, subjects, marked, progress),
       ...(kuizAvailable ? {} : { kuizAvailable: false }),
@@ -130,6 +133,8 @@ export class PapersService {
           ...(rule.type === 'choose' ? { chooseN: rule.n } : {}),
         }
       }),
+      unavailable: unavailableReason !== null,
+      ...(unavailableReason ? { unavailableReason } : {}),
     }
   }
 
@@ -317,8 +322,19 @@ export class PapersService {
     return ok
   }
 
+  private pinsOf(paper: PaperWithTree): PinRef[] {
+    return paper.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))
+  }
+
+  /** Null when a new sitting can start: the same answer `BijakPapersAttemptSource.resolveForAttempt` gives (`not_eligible`), before any click. */
+  private coverUnavailableReason(paper: PaperWithTree, info: Info, down: ReadonlySet<string>): BijakCoverUnavailableReason | null {
+    const pins = this.pinsOf(paper)
+    if (pins.length === 0) return 'NO_QUESTIONS'
+    return placesUnservable(pins, info, down) ? 'QUESTION_WITHDRAWN' : null
+  }
+
   private async takenDownOf(papers: readonly PaperWithTree[]): Promise<ReadonlySet<string>> {
-    const pins: PinRef[] = papers.flatMap((p) => p.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo }))))
+    const pins = papers.flatMap((p) => this.pinsOf(p))
     return pins.length === 0 ? new Set() : this.ports.questionSource.takenDownPins(pins)
   }
 
