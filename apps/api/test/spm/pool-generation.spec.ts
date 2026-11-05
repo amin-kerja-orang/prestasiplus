@@ -53,15 +53,21 @@ describe('Databank count single-flight (pure)', () => {
     expect(await after).toBe(2)
   })
 
-  it('[CI] AC-MUR-13-13 Databank and Latih Tubi totals are cached apart', async () => {
-    let calls = 0
-    const repo = { unitCount: () => Promise.resolve(++calls) }
+  it('[CI] AC-MUR-13-13 the Latih Tubi total is the sum of its cells: one statement, one cache', async () => {
+    let cellCalls = 0
+    const repo = {
+      unitCount: () => Promise.resolve(99),
+      unitCountsByLevelTp: () => {
+        cellCalls++
+        return Promise.resolve([{ levelId: '4', tp: 1, n: 2 }, { levelId: '5', tp: 3, n: 1 }])
+      },
+    }
     const cache = new OverviewCache({ now: () => new Date(0) } as never, {} as never)
     const pool = new SpmPoolService(repo as never, { get: () => '600' } as never, { now: () => new Date(0) } as never, cache)
-    expect(await pool.databankCount('1')).toBe(1)
-    expect(await pool.latihTubiCount('1')).toBe(2)
-    expect(await pool.databankCount('1')).toBe(1)
-    expect(await pool.latihTubiCount('1')).toBe(2)
+    expect(await pool.latihTubiCount('1')).toBe(3)
+    expect((await pool.latihTubiCells('1')).reduce((a, c) => a + c.n, 0)).toBe(3)
+    expect(cellCalls).toBe(1)
+    expect(await pool.databankCount('1')).toBe(99)
   })
 })
 

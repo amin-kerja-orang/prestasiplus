@@ -33,7 +33,6 @@ export const databankFilter = (subjectId: string): QuestionFilter => ({ ...serva
  */
 export const latihTubiFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('latih_tubi_spm', { subjectId }), status: 'approved', active: true })
 
-type CountedActivity = 'databank' | 'latih_tubi_spm'
 
 /** First window of a draw is `n * DRAW_OVER`; it widens x4 (same seed, so the same prefix) while records are refused. */
 const DRAW_OVER = 2
@@ -107,24 +106,24 @@ export class SpmPoolService {
    * flight, dropped when a question event moves `generation`).
    */
   databankCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
-    return this.unitsOf('databank', subjectId, options)
+    return this.databankUnits(subjectId, options)
   }
 
-  /** The Latih Tubi SPM total of a subject: units the Latih Tubi draw can serve (see `latihTubiFilter`); cached like `databankCount`. */
-  latihTubiCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
-    return this.unitsOf('latih_tubi_spm', subjectId, options)
+  /** The Latih Tubi SPM total of a subject: the sum of `latihTubiCells`, ONE statement and ONE cache, so total and breakdowns are equal by construction. */
+  async latihTubiCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+    return countOf(await this.latihTubiCells(subjectId, options))
   }
 
   /**
-   * The Latih Tubi cells of a subject by (level, difficulty) in UNITS (see `latihTubiFilter`): they sum to `latihTubiCount`, because a
-   * group sits in one bucket (the level and TP of its first member, `unitCountsByLevelTp`). Cached like `latihTubiCount`.
+   * The Latih Tubi cells of a subject by (level, difficulty) in UNITS (see `latihTubiFilter`): they sum to `latihTubiCount` (which is their sum), because a
+   * group sits in one bucket (the level and TP of its first member, `unitCountsByLevelTp`). Cached like `databankCount`.
    */
-  async latihTubiCells(subjectId: string): Promise<PoolCell[]> {
+  async latihTubiCells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
     const generation = this.generation()
     const hit = this.unitCellsCache.get(subjectId)
-    if (ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
+    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
     const flight = `${subjectId}:${String(generation)}`
     const running = this.unitCellsInflight.get(flight)
     if (running) return running
@@ -141,19 +140,18 @@ export class SpmPoolService {
     }
   }
 
-  private async unitsOf(activity: CountedActivity, subjectId: string, options: { fresh?: boolean }): Promise<number> {
+  private async databankUnits(subjectId: string, options: { fresh?: boolean }): Promise<number> {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
     const generation = this.generation()
-    const key = `${activity}:${subjectId}`
-    const hit = this.databankCache.get(key)
+    const hit = this.databankCache.get(subjectId)
     if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.n
-    const flight = `${key}:${String(generation)}`
+    const flight = `${subjectId}:${String(generation)}`
     const running = this.databankInflight.get(flight)
     if (running) return running
     const load = (async () => {
-      const n = await this.questions.unitCount(activity === 'databank' ? databankFilter(subjectId) : latihTubiFilter(subjectId))
-      if (ttl > 0) this.databankCache.set(key, { until: now + ttl, n, generation })
+      const n = await this.questions.unitCount(databankFilter(subjectId))
+      if (ttl > 0) this.databankCache.set(subjectId, { until: now + ttl, n, generation })
       return n
     })()
     this.databankInflight.set(flight, load)

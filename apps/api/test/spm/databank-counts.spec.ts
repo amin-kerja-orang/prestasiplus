@@ -134,6 +134,7 @@ describe('Latih Tubi SPM hub total follows the serving rule', () => {
     const geo = await subjectId('GEO')
     const served = await repo.unitCount(latihTubiFilter(geo))
     expect(await pool.latihTubiCount(geo, { fresh: true })).toBe(served)
+    expect((await pool.latihTubiCells(geo, { fresh: true })).reduce((a, c) => a + c.n, 0)).toBe(served)
     // Groups off: ungrouped single-leaf only (1 solo). Groups on: the complete group counts once more.
     expect(served).toBe(GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 1)
   })
@@ -177,8 +178,22 @@ describe('Latih Tubi breakdowns count units like the total', () => {
     await t.db.query('update stimulus_groups set education_level_id = null where id = $1::bigint', [group])
 
     // The service: breakdown cells equal the hub total under the live surfaces.
-    const cells = await pool.latihTubiCells(bio)
+    const cells = await pool.latihTubiCells(bio, { fresh: true })
     expect(cells.reduce((a, c) => a + c.n, 0)).toBe(await pool.latihTubiCount(bio, { fresh: true }))
+  })
+
+  it('[CI] AC-MUR-13-13 members with NULL group_position tie-break on the lowest question id', async () => {
+    await t.db.query('delete from questions')
+    const bio = await subjectId('BIO')
+    const a = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 3 })
+    const b = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 5 })
+    await groupOf([b, a])
+    await t.db.query('update questions set group_position = null where id = any($1::bigint[])', [[a, b]])
+    const lowest = BigInt(a) < BigInt(b) ? a : b
+    const tp = (await t.db.query<{ tp: number }>(`select v.difficulty_tp tp from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1::bigint`, [lowest]))[0]!.tp
+    const rows = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ tp, n: 1 })
   })
 })
 
