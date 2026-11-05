@@ -1,4 +1,4 @@
-import type { HttpResponse, ScenarioContext } from '@pp/contract-tests'
+import type { HttpClient, HttpResponse, ScenarioContext } from '@pp/contract-tests'
 
 /** The scenarios below run on the API only: they need a cookie session with CSRF, a file part or seeded data. */
 export const API_ONLY = ['api'] as const
@@ -34,4 +34,13 @@ let sequence = 0
 export function nextTag(prefix: string): string {
   sequence += 1
   return `${prefix}${String(sequence).padStart(4, '0')}`
+}
+
+/**
+ * The teacher puts the pupil into the class through `PUT /guru/students/:id` (same school), so no scenario depends on
+ * the pupil-side join route. The pupil id is read from the pupil's own `GET /me`.
+ */
+export async function enrolPupil(ctx: ScenarioContext, teacher: HttpClient, student: HttpClient, classroomId: unknown): Promise<void> {
+  const studentId = String(dataOf(await student.request('GET', '/me')).id)
+  ctx.expectStatus(await teacher.request('PUT', `/guru/students/${studentId}`, { body: { classroomId: String(classroomId) } }), 200)
 }
