@@ -27,6 +27,7 @@ import type { Request } from 'express'
 import type { Observable } from 'rxjs'
 
 import { ApiError } from '../../../../common/errors/api-error'
+import { Roles } from '../../../../common/guards/decorators'
 import { NoStoreInterceptor } from '../../../../common/http'
 import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
@@ -35,7 +36,7 @@ import { Actor, AdminOnly, actorOf, type WorkflowActor } from '../actor'
 import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, WORKFLOW_ADMIN_WRITE_LIMIT } from '../quality/limits'
 import { type DiagramAuditFilters, DiagramAuditService, type DiagramKind } from './diagram-audit.service'
 
-const EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+const EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
 
 function parseKind(value: string): DiagramKind {
   if ((DIAGRAM_AUDIT_KINDS as readonly string[]).includes(value)) return value as DiagramKind
@@ -74,7 +75,7 @@ export class DiagramImageInterceptor implements NestInterceptor {
       return await this.inner.intercept(ctx, next)
     } catch (err) {
       if (err instanceof PayloadTooLargeException) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileType } })
+        throw ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileSize } })
       }
       if (err instanceof BadRequestException) {
         throw ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileRequired } })
@@ -94,6 +95,7 @@ interface UploadedImage {
 /** The MIME / extension / size check of the mock (#24). Returns the bytes, or throws the 422. */
 function checkedBytes(file: UploadedImage | undefined): Buffer {
   const required = ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileRequired } })
+  const tooLarge = ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileSize } })
   const wrongType = ApiError.of('VALIDATION_ERROR', { fields: { image: DIAGRAM_AUDIT_MESSAGES.fileType } })
   if (!file?.buffer || file.buffer.length === 0) throw required
   const name = file.originalname ?? ''
@@ -102,12 +104,16 @@ function checkedBytes(file: UploadedImage | undefined): Buffer {
   if (mime !== '' && !mime.startsWith('image/')) throw required
   if (mime === '' && !EXTENSIONS.includes(ext)) throw required
   if (mime !== '' && !(DIAGRAM_AUDIT_IMAGE_MIME_TYPES as readonly string[]).includes(mime)) throw wrongType
-  if (!EXTENSIONS.includes(ext) || file.buffer.length > QUESTION_WORKFLOW_IMAGE_MAX_BYTES) throw wrongType
+  if (!EXTENSIONS.includes(ext)) throw wrongType
+  if (file.buffer.length > QUESTION_WORKFLOW_IMAGE_MAX_BYTES) throw tooLarge
   return file.buffer
 }
 
-/** Diagram audit, S11. Admin Pusat only. */
-@AdminOnly()
+/**
+ * Diagram audit, S11. The list is open to admin, teacher and school admin (whole bank); image and dismiss are
+ * Admin Pusat only (the teacher upload is S6-T18 part 2).
+ */
+@Roles('admin', 'teacher', 'school_admin')
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 @Controller('diagram-audit')
@@ -115,6 +121,7 @@ export class DiagramAuditController {
   constructor(@Inject(DiagramAuditService) private readonly audit: DiagramAuditService) {}
 
   @Get()
+  @Roles('admin', 'teacher', 'school_admin')
   async list(@Query() query: Record<string, unknown>) {
     const filters: DiagramAuditFilters = {}
     const subjectId = filterId(query.subjectId)
@@ -128,7 +135,9 @@ export class DiagramAuditController {
     return this.audit.list(filters)
   }
 
+  // Admin only in S6-T18 part 1; the teacher upload (a reviewed replacement, not `uploadImage`) is S6-T18 part 2.
   @Post(':kind/:id/image')
+  @AdminOnly()
   @HttpCode(200)
   @RateLimit(WORKFLOW_ADMIN_WRITE_LIMIT)
   @UseInterceptors(DiagramImageInterceptor)
@@ -149,6 +158,7 @@ export class DiagramAuditController {
   }
 
   @Post(':kind/:id/dismiss')
+  @AdminOnly()
   @HttpCode(200)
   @RateLimit(WORKFLOW_ADMIN_WRITE_LIMIT)
   dismiss(@Actor() actor: WorkflowActor, @Param('kind') kind: string, @Param('id') id: string) {

@@ -389,9 +389,9 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'diagram-audit'],
     summary: 'Questions flagged as needing a diagram',
     description:
-      'Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.',
+      'Admin, teacher and school admin (the whole bank, same data for all three). Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.',
     request: { query: DiagramAuditQuerySchema },
-    responses: { 200: json(DiagramAuditResponseSchema, 'Both lists with aggregates.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+    responses: { 200: json(DiagramAuditResponseSchema, 'Both lists with aggregates.'), 401: UNAUTHORIZED, 403: err('FORBIDDEN "This action is unauthorized." (role is not admin, teacher or school admin).') },
   })
 
   registry.registerPath({
@@ -399,7 +399,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     path: '/diagram-audit/{kind}/{id}/image',
     tags: ['question-workflow', 'diagram-audit'],
     summary: 'Attach a diagram image and clear the flag',
-    description: `Admin only. multipart/form-data \`image\` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: "${DIAGRAM_AUDIT_MESSAGES.uploaded}".`,
+    description: `Admin only. multipart/form-data \`image\` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: "${DIAGRAM_AUDIT_MESSAGES.uploaded}".`,
     request: { params: z.object({ kind: DiagramAuditKindSchema, id: IdSchema }), headers: [csrf], body: multipart(DiagramAuditImageRequestSchema) },
     responses: {
       200: json(DiagramAuditMutationSchema, 'Image attached; status is the flash text.'),
@@ -407,7 +407,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_ADMIN_WRITE,
       404: err('NOT_FOUND "Not Found." (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).'),
       422: err(
-        `VALIDATION_ERROR fields.image "${DIAGRAM_AUDIT_MESSAGES.fileRequired}" (missing or not an image) or "${DIAGRAM_AUDIT_MESSAGES.fileType}".`,
+        `VALIDATION_ERROR fields.image "${DIAGRAM_AUDIT_MESSAGES.fileRequired}" (missing or not an image) "${DIAGRAM_AUDIT_MESSAGES.fileType}" (wrong type) or "${DIAGRAM_AUDIT_MESSAGES.fileSize}" (over 2 MB).`,
       ),
     },
   })

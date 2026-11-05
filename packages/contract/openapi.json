@@ -9710,7 +9710,7 @@
           "image": {
             "type": "string",
             "format": "binary",
-            "description": "JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04."
+            "description": "JPG, PNG or WebP (GIF and SVG refused), at most 2 MB. Storage: BE-04."
           }
         },
         "required": [
@@ -81638,7 +81638,7 @@
           "diagram-audit"
         ],
         "summary": "Questions flagged as needing a diagram",
-        "description": "Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
+        "description": "Admin, teacher and school admin (the whole bank, same data for all three). Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
         "parameters": [
           {
             "schema": {
@@ -81699,7 +81699,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school admin).",
             "content": {
               "application/json": {
                 "schema": {
@@ -81718,7 +81718,7 @@
           "diagram-audit"
         ],
         "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
         "parameters": [
           {
             "schema": {
@@ -81802,7 +81802,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) or \"Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.\".",
+            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) \"Fail mesti berupa imej (jpg, png atau webp).\" (wrong type) or \"Saiz imej tidak boleh melebihi 2 MB.\" (over 2 MB).",
             "content": {
               "application/json": {
                 "schema": {

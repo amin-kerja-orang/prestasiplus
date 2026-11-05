@@ -52,14 +52,22 @@ describe('diagram audit (BE-10 AC 7 area, BR-M04-19)', () => {
   })
 
   describe('roles', () => {
-    it('401 without a session and 403 for teacher, school admin and student on every route', async () => {
+    it('401 without a session; the list is open to teacher and school admin, the writes are admin only', async () => {
       expectError(await t.http().get('/api/diagram-audit'), 'UNAUTHORIZED')
       expectError(await t.http().post('/api/diagram-audit/mcq/201/dismiss'), 'UNAUTHORIZED')
-      for (const who of [c.teacher, c.schoolAdmin, c.student]) {
-        expectError(await who.get('/api/diagram-audit'), 'FORBIDDEN')
+      const adminList = await c.admin.get('/api/diagram-audit')
+      expect(adminList.status).toBe(200)
+      for (const who of [c.teacher, c.schoolAdmin]) {
+        const res = await who.get('/api/diagram-audit')
+        expect(res.status).toBe(200)
+        expect(res.body).toEqual(adminList.body)
         expectError(await who.post('/api/diagram-audit/mcq/201/dismiss'), 'FORBIDDEN')
+        // Teacher upload is S6-T18 part 2; in part 1 the image route stays admin only.
         expectError(await who.post('/api/diagram-audit/mcq/201/image'), 'FORBIDDEN')
       }
+      expectError(await c.student.get('/api/diagram-audit'), 'FORBIDDEN')
+      expectError(await c.student.post('/api/diagram-audit/mcq/201/dismiss'), 'FORBIDDEN')
+      expectError(await c.student.post('/api/diagram-audit/mcq/201/image'), 'FORBIDDEN')
     })
 
     it('a write without CSRF is 403 CSRF_INVALID', async () => {
@@ -170,20 +178,20 @@ describe('diagram audit (BE-10 AC 7 area, BR-M04-19)', () => {
       expect(res.body.error.fields).toEqual({ image: DIAGRAM_AUDIT_MESSAGES.fileRequired })
     })
 
-    it('SVG, GIF, a wrong extension, a disguised file and an image over 2 MB are 422 with the type message', async () => {
-      const cases: [string, { data: Buffer; name: string; type: string }][] = [
-        ['svg', { data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), name: 'rajah.svg', type: 'image/svg+xml' }],
-        ['gif', { data: Buffer.from('GIF89a\u0001\u0000\u0001\u0000', 'latin1'), name: 'rajah.gif', type: 'image/gif' }],
-        ['extension', { data: makePng(), name: 'rajah.bmp', type: 'image/png' }],
-        ['bytes', { data: Buffer.from('bukan gambar sebenar'), name: 'rajah.png', type: 'image/png' }],
-        ['svg as png', { data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), name: 'rajah.png', type: 'image/png' }],
-        ['html as png', { data: Buffer.from('<html><script>alert(1)</script></html>'), name: 'rajah.png', type: 'image/png' }],
-        ['size', { data: makePng({ padTo: 2 * 1024 * 1024 + 4096 }), name: 'besar.png', type: 'image/png' }],
+    it('SVG, GIF, a wrong extension, a disguised file and an image over 2 MB are 422 (type or size message)', async () => {
+      const cases: [string, { data: Buffer; name: string; type: string }, string][] = [
+        ['svg', { data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'), name: 'rajah.svg', type: 'image/svg+xml' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['gif', { data: Buffer.from('GIF89a\u0001\u0000\u0001\u0000', 'latin1'), name: 'rajah.gif', type: 'image/gif' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['extension', { data: makePng(), name: 'rajah.bmp', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['bytes', { data: Buffer.from('bukan gambar sebenar'), name: 'rajah.png', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['svg as png', { data: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'), name: 'rajah.png', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['html as png', { data: Buffer.from('<html><script>alert(1)</script></html>'), name: 'rajah.png', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileType],
+        ['size', { data: makePng({ padTo: 3 * 1024 * 1024 }), name: 'besar.png', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileSize],
       ]
-      for (const [label, file] of cases) {
+      for (const [label, file, message] of cases) {
         const res = await upload(raw, '/api/diagram-audit/mcq/202/image', file)
         expect(res.status, label).toBe(422)
-        expect(res.body.error.fields, label).toEqual({ image: DIAGRAM_AUDIT_MESSAGES.fileType })
+        expect(res.body.error.fields, label).toEqual({ image: message })
       }
       expect(await count(t.db, 'select count(*) n from diagram_audit_resolutions where question_id = 202')).toBe(0)
       expect(t.fake.questions.get('202')!.diagramFileId).toBeNull()

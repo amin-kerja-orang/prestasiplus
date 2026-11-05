@@ -4,6 +4,7 @@ import { ErrorBodySchema } from '../../common/error'
 import { buildOpenApiDocument } from '../../openapi'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS } from '../paths'
 import {
+  DIAGRAM_AUDIT_IMAGE_MIME_TYPES,
   DIAGRAM_AUDIT_MESSAGES,
   DiagramAuditImageRequestSchema,
   DiagramAuditKindSchema,
@@ -369,11 +370,15 @@ describe('diagram audit', () => {
 
   it('validates the image part', () => {
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.png', { type: 'image/png' }) })).toBe(true)
-    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.webp', { type: 'image/webp' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(false)
+    expect(DIAGRAM_AUDIT_IMAGE_MIME_TYPES).toEqual(['image/jpeg', 'image/png', 'image/webp'])
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['<svg/>'], 'rajah.svg', { type: 'image/svg+xml' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, { image: new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'besar.png', { type: 'image/png' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, {})).toBe(false)
-    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Fail mesti berupa imej (jpg, png atau webp).')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileSize).toBe('Saiz imej tidak boleh melebihi 2 MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.submittedForReview).toBe('Gambar dihantar untuk semakan.')
   })
 
   it('answers image and dismiss with needsDiagram false and the flash', () => {
