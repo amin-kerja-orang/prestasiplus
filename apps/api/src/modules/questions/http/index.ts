@@ -1,5 +1,6 @@
 export { AdminQuestionsController } from './admin.controller'
 export { StructuredQuestionsController } from './structured.controller'
+export { GuruStructuredQuestionsController } from './guru-structured.controller'
 export { GuruQuestionsController } from './guru.controller'
 export { StimuliController } from './stimuli.controller'
 export { QuestionAudit } from './audit'

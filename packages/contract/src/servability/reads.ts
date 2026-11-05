@@ -1,5 +1,5 @@
 import { z } from '../zod'
-import { listEnvelopeOf } from '../common/envelope'
+import { listEnvelopeOf, ListMetaSchema } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
@@ -54,31 +54,40 @@ export const ServabilityOverviewActivitySchema = z
   .meta({ id: 'ServabilityOverviewActivity' })
 
 /**
- * The hub "Kandungan SPM" (Panel `/spm`, R1-21.1 / P1): one card per lane the screen exists for. V2 prints six lanes in this order;
- * R1 builds two (Databank Soalan, Bijak SPM), so the other four (Tracking A, Subjektif, Kertas Subjektif, Latih Tubi) are not
- * returned until their screens exist (no link to a missing screen). Titles, descriptions and attention labels are V2's own text
- * (docs/discovery/cloud-student-mechanism.md 3.0; BIJAK-SPM-cloud.md 3.10 for the Bijak SPM label). V2 prints the six labels in
- * the lane order, which gives `tidak boleh ditanda` to Databank Soalan (the McqGate lane) and `tiada kunci jawapan` to Bijak SPM.
+ * The hub "SPM" (`/admin/spm`, R1-ADM-Q-01): one card per lane, in the PRD order (FR-ADM-Q01.1). The screen hides a card whose route
+ * does not exist (FR-ADM-Q01.4), so the API returns all six. Titles and descriptions are V2's own text. `attentionLabel` is printed
+ * after the count; it is empty on Kertas Subjektif, whose attention rule is still open (see `attentionOpen` on the card). Subjektif has
+ * a second line, "{n} tiada kunci jawapan".
  */
-export const SERVABILITY_HUB_LANES = ['databank', 'bijak-spm'] as const
+export const SERVABILITY_HUB_LANES = ['databank', 'tracking-a', 'subjektif', 'bijak-spm', 'kertas-subjektif', 'latih-tubi'] as const
 export const ServabilityHubLaneSchema = z.enum(SERVABILITY_HUB_LANES).meta({ id: 'ServabilityHubLane' })
 export type ServabilityHubLane = z.infer<typeof ServabilityHubLaneSchema>
 
 export const SERVABILITY_HUB_CARDS: Readonly<Record<ServabilityHubLane, { title: string; description: string; attentionLabel: string }>> = {
   databank: { title: 'Databank Soalan', description: 'Bank soalan objektif SPM mengikut subjek.', attentionLabel: 'tidak boleh ditanda' },
+  'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
+  subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
   'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
+  'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+  'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
 }
 
-/** Hub texts around the cards (V2 `hub.tsx`): intro line, the all-clear badge and the card button. */
+/** Hub texts around the cards (FR-ADM-Q01.1): title, intro line, the all-clear badge and the card button. */
 export const SERVABILITY_HUB_COPY = {
-  title: 'Kandungan SPM',
-  intro: 'Setiap kad ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
+  title: 'SPM',
+  intro: 'Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.',
   allGood: 'Semua elok',
   open: 'Buka senarai',
 } as const
 
 /** Sentence of a lane page that is asked for a page past the window. [PROPOSED]: V2 has no such limit (it pages the whole lane). */
 export const SERVABILITY_LANE_WINDOW_MS = 'Halaman terlalu jauh. Gunakan Tapis atau Cari untuk mengecilkan senarai.'
+
+/** One attention line of a hub card or a lane: the count and the full sentence, e.g. "20 set tidak lengkap". */
+export const ServabilityLaneAttentionSchema = z
+  .strictObject({ count: z.number().int().min(1), text: z.string() })
+  .meta({ id: 'ServabilityLaneAttention' })
+export type ServabilityLaneAttention = z.infer<typeof ServabilityLaneAttentionSchema>
 
 /**
  * One hub card. `total` and `attention` are measured on the rows of the lane the card opens (one scope, `GET .../lanes/{lane}`
@@ -92,6 +101,9 @@ export const ServabilityHubCardSchema = z
     total: z.number().int().min(0).meta({ description: 'Rows of the lane (Databank: MCQs of Databank subjects, any status; Bijak SPM: pilihan papers, any status).' }),
     attention: z.number().int().min(0).meta({ description: 'Lane rows that carry at least one reason (`attention.length > 0`).' }),
     attentionLabel: z.string().meta({ description: 'V2 label printed after the count: "{attention} {attentionLabel}", or "Semua elok" when 0.' }),
+    attentionLines: z.array(ServabilityLaneAttentionSchema).optional().meta({ description: 'The attention lines of the card; empty when nothing needs attention.' }),
+    attentionOpen: z.literal(true).optional().meta({ description: 'No attention rule is decided for this lane yet: show neither a count nor "Semua elok".' }),
+    failed: z.literal(true).optional().meta({ description: 'This card could not be computed; the other cards stay (SR-3).' }),
   })
   .meta({ id: 'ServabilityHubCard' })
 export type ServabilityHubCard = z.infer<typeof ServabilityHubCardSchema>
@@ -103,7 +115,7 @@ export const ServabilityOverviewSchema = z
     computedAt: TimestampSchema.meta({
       description: 'When these counts were computed (H-A21). Always sent: the overview is cached for 5 minutes and refreshed in the background after a question event or when the cache is older; show this time next to the counts.',
     }),
-    cards: z.array(ServabilityHubCardSchema).meta({ description: 'The hub cards in V2 order (R1: Databank Soalan, then Bijak SPM).' }),
+    cards: z.array(ServabilityHubCardSchema).meta({ description: 'The hub cards in the PRD order.' }),
   })
   .meta({ id: 'ServabilityOverview' })
 export type ServabilityOverview = z.infer<typeof ServabilityOverviewSchema>
@@ -118,7 +130,7 @@ export const ServabilityLaneQuerySchema = z
   .object({
     subjectId: IdSchema.optional(),
     status: z.string().trim().max(20).optional(),
-    search: z.string().trim().max(100).optional(),
+    search: z.string().trim().max(100, 'Carian tidak boleh melebihi 100 aksara.').optional(),
     page: z.coerce.number().int().min(1).max(SERVABILITY_LANE_WINDOW).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(25),
   })
@@ -133,16 +145,23 @@ export const ServabilityLaneSubjectSchema = z.strictObject({ id: IdSchema, name:
 
 /**
  * A lane page is the list envelope plus `subjects`: the options of the lane's `Subjek` filter (REQ-C-020), in subject order, whatever
- * the current filters are (Databank: the subjects on the Databank list; Bijak SPM: the subjects that have a pilihan paper).
+ * the current filters are. `count` is the lane's items under the current filters, so with no filter it equals the hub card's `total`
+ * (API-BIJAK-12); on Latih Tubi it counts questions while `meta.totalItems` counts the cells. `attention` repeats the hub card's lines.
+ * Both are optional only until the backend part of S3-T03 sends them.
  */
 export const servabilityLaneListOf = <T extends z.ZodType>(row: T) =>
-  listEnvelopeOf(row).extend({ subjects: z.array(ServabilityLaneSubjectSchema).meta({ description: 'The options of the `Subjek` filter of this lane.' }) })
+  listEnvelopeOf(row).extend({
+    subjects: z.array(ServabilityLaneSubjectSchema).meta({ description: 'The options of the `Subjek` filter of this lane.' }),
+    count: z.number().int().min(0).optional().meta({ description: 'Items of the lane under the current filters.' }),
+    attention: z.array(ServabilityLaneAttentionSchema).optional().meta({ description: 'The attention lines of the hub card of this lane.' }),
+  })
 
 /** Lane "Databank Soalan": one bank question per row; `attention` are the reasons it is not served in the Databank (empty = served). */
 export const ServabilityDatabankRowSchema = z
   .strictObject({
     questionId: IdSchema,
-    title: z.string().meta({ description: 'Stem, at most 90 characters.' }),
+    title: z.string().meta({ description: 'Stem, at most 120 characters.' }),
+    meta: z.string().optional().meta({ description: 'Meta line of the row.', example: '#451518 · Sains · Tingkatan 4 · 4 pilihan' }),
     subject: ServabilityLaneSubjectSchema.nullable(),
     status: z.string().meta({ description: 'Lifecycle code of the latest version.' }),
     attention: z.array(ServabilityReasonSchema),
@@ -173,6 +192,60 @@ export const ServabilityPaperRowSchema = z
   })
   .meta({ id: 'ServabilityPaperRow' })
 export type ServabilityPaperRow = z.infer<typeof ServabilityPaperRowSchema>
+
+/** Row actions of a lane (field 02-06): `Pratonton`, `Salin`, `Sunting`. */
+export const SERVABILITY_LANE_ACTIONS = ['preview', 'copy', 'edit'] as const
+
+/**
+ * A row of the Tracking A, Subjektif and Kertas Subjektif lanes (S3-T03). `id` is the set, question or paper id; `attention` holds the
+ * full BM sentences, empty when nothing is wrong (the screen shows "—").
+ */
+export const ServabilityLaneRowSchema = z
+  .strictObject({
+    id: IdSchema,
+    title: z.string(),
+    meta: z.string().meta({ example: '#1 · ramalan · 8 soalan' }),
+    status: z.string(),
+    attention: z.array(z.string()),
+    actions: z.array(z.enum(SERVABILITY_LANE_ACTIONS)),
+  })
+  .meta({ id: 'ServabilityLaneRow' })
+export type ServabilityLaneRow = z.infer<typeof ServabilityLaneRowSchema>
+
+/** The switch state of a Latih Tubi cell, shown as a badge (`Dibuka`, `Ditutup`); it is edited in Kawalan Ciri only. */
+export const SERVABILITY_LATIH_TUBI_SWITCH_LABELS = { open: 'Dibuka', closed: 'Ditutup' } as const
+
+/** The Perhatian sentence of an incomplete Tracking A set. `available` counts servable questions and groups (D90). */
+export const trackingSetAttentionMs = (filled: number, size: number, available: number): string =>
+  `Hanya ${String(filled)} daripada ${String(size)} soalan — ${String(available)} tersedia untuk diisi`
+
+/** The Perhatian text of a Latih Tubi cell. */
+export const latihTubiCellAttentionMs = (n: number): string => `${String(n)} tidak boleh ditanda`
+
+/**
+ * Lane "Latih Tubi" (FR-ADM-Q02.4): one row per subject x Tingkatan. It carries counts, not a question, so `actions` is always empty.
+ * `total` = approved active questions of the cell; `servable` = what the Latih Tubi draw can serve of them.
+ */
+export const ServabilityLatihTubiCellSchema = z
+  .strictObject({
+    id: z.string().meta({ description: 'Stable key of the cell: `{subjectId}:{levelId}`.' }),
+    title: z.string().meta({ example: 'Sains · Tingkatan 4' }),
+    meta: z.string().meta({ example: '#12 · 40 soalan' }),
+    status: z.enum(['open', 'closed']).meta({ description: 'The `latih-tubi` switch.' }),
+    attention: z.array(z.string()),
+    actions: z.array(z.enum(SERVABILITY_LANE_ACTIONS)).max(0),
+    subject: ServabilityLaneSubjectSchema,
+    level: ServabilityLaneSubjectSchema.nullable(),
+    servable: z.number().int().min(0),
+    total: z.number().int().min(0),
+  })
+  .meta({ id: 'ServabilityLatihTubiCell' })
+export type ServabilityLatihTubiCell = z.infer<typeof ServabilityLatihTubiCellSchema>
+
+/** The Latih Tubi lane page: the list envelope with `meta.switchEnabled`, the Kawalan Ciri key `latih-tubi`. A key with no row is ON (FR-ADM-N06.4). */
+export const ServabilityLatihTubiLaneSchema = servabilityLaneListOf(ServabilityLatihTubiCellSchema).extend({
+  meta: ListMetaSchema.extend({ switchEnabled: z.boolean() }),
+})
 
 /**
  * REQ-A-018 / AC-04.3, AC-04.4 (V2 question detail "Dilihat murid di"): one published paper that carries the question, and whether pupils
