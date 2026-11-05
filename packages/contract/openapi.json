@@ -55389,6 +55389,14 @@
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "servableCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "topics": {
             "type": "array",
             "items": {
@@ -56370,6 +56378,162 @@
           "nodes"
         ]
       },
+      "CurriculumBulkChapterRequest": {
+        "type": "object",
+        "properties": {
+          "chapterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Bab to set.",
+            "example": "1042"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 64
+          },
+          "filter": {
+            "$ref": "#/components/schemas/QuestionFilter"
+          },
+          "dryRun": {
+            "type": "boolean"
+          },
+          "expectedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "chapterId"
+        ],
+        "additionalProperties": false
+      },
+      "CurriculumBulkChapterResult": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "eligible": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "refused": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "applied": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cap": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capped": {
+            "type": "boolean"
+          },
+          "dryRun": {
+            "type": "boolean"
+          },
+          "auditId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "matched",
+          "eligible",
+          "refused",
+          "applied",
+          "cap",
+          "remaining",
+          "capped",
+          "dryRun",
+          "auditId"
+        ]
+      },
+      "CurriculumChapterCoverageQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        }
+      },
+      "CurriculumChapterCoverageRow": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "levelCode": {
+            "type": "string"
+          },
+          "approved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "withChapter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "withoutChapter": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subjectId",
+          "subjectName",
+          "levelCode",
+          "approved",
+          "withChapter",
+          "withoutChapter"
+        ]
+      },
+      "CurriculumChapterCoverage": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurriculumChapterCoverageRow"
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
       "PracticeMode": {
         "type": "string",
         "enum": [
@@ -56382,7 +56546,9 @@
           "mission",
           "remedial",
           "question_set",
-          "pksk"
+          "pksk",
+          "databank",
+          "tracking_a"
         ]
       },
       "PracticeStartMode": {
@@ -89810,6 +89976,218 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/curriculum/chapter-coverage": {
+      "get": {
+        "tags": [
+          "curriculum-admin"
+        ],
+        "summary": "Bab coverage of approved questions per Subjek x Tingkatan (API-DSKP-10)",
+        "description": "The counts behind the work-list \"Soalan tanpa Bab\" (the list itself is `GET /questions` with `chapter=none`). 422 when an id is not a positive integer.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per offered Subjek x Tingkatan: approved, withChapter, withoutChapter (live, active, approved versions).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CurriculumChapterCoverage"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not an admin, or CSRF_INVALID on a mutating call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND with message \"Subjek tidak dijumpai. or Tahap Pendidikan tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/curriculum/questions/bulk-chapter": {
+      "post": {
+        "tags": [
+          "curriculum-admin"
+        ],
+        "summary": "Set the Bab of many questions (API-DSKP-09)",
+        "description": "Strict body: exactly one of `ids` (1 to 64) or `filter` (with subjectId and educationLevelId), else 422; `expectedCount` is required unless `dryRun` and is compared with `matched` (409 when it differs, nothing written). Sets `chapter_id` in place on the live approved version when the Bab subject and level equal the question's; no new version, no status change. At most 10,000 rows per run (`cap`); a larger match reports `remaining` and `capped`. Counts-only audit row `curriculum.questions.bulk_chapter`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurriculumBulkChapterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Counts of the run; with dryRun nothing is written and auditId is null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CurriculumBulkChapterResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: not an admin, or CSRF_INVALID on a mutating call.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND with message \"Bab tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the live matched count differs from expectedCount (details.expected, details.actual); nothing is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (Laravel-style copy, e.g. \"The selected :attribute is invalid.\")",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
