@@ -59,6 +59,7 @@ const sessionChart = computed(() => classSessionSeries(data.value?.trend ?? []))
 const hasActivity = computed(() => (data.value?.trend ?? []).some((p) => p.activeStudents > 0 || p.sessions > 0))
 
 // One V3 layout (R1-GUR-4): the figures come from the single answer store in every mode; "Purata Masa/Sesi" is the finished sessions' own seconds.
+// No finished session (API null) shows "0m": SRS FR-M08-33 ("0m" when none), like "0%" for accuracy; asserted in class-pages.test.ts.
 const minutes = (n: number | null): string => `${formatNumber(n ?? 0, { decimals: 1, dropZeroFraction: true })}m`
 
 const stats = computed<StatSpec[]>(() => {

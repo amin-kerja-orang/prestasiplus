@@ -79,11 +79,16 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
     const [row] = await t.db.query<{ id: string }>(`insert into topics (chapter_id, name) values ($1::bigint, $2) returning id::text`, [chapterOf.get(tp.chapterId)!, tp.name])
     topicOf.set(tp.id, row!.id)
   }
+  // `practice_answers.session_id` is a foreign key, so every answer-linked session id needs a row. These rows exist only
+  // for that key: they are 'in_progress' with no completed_at (the table requires status completed <=> completed_at set),
+  // so `sessionDurations` (finished sessions only) never sees them. The finished sessions it counts come only from
+  // `seed.sessions`, which is exactly what the in-memory fake receives: one row per finished session on both adapters.
+  // Mode and the other answer-side reads only use `ps.mode`, so they are unaffected by the status.
   const sessionOf = new Map<string, string>()
   for (const a of seed.answers) {
     if (a.sessionId === undefined || sessionOf.has(a.sessionId)) continue
     const [row] = await t.db.query<{ id: string }>(
-      `insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at, is_test) values ($1::bigint, $2, 1, 'completed', $3::timestamptz, $3::timestamptz, false) returning id::text`,
+      `insert into practice_sessions (user_id, mode, question_count, status, started_at, is_test) values ($1::bigint, $2, 1, 'in_progress', $3::timestamptz, false) returning id::text`,
       [userOf.get(a.userId)!, MODE_IN[a.mode] ?? a.mode, a.answeredAt.toISOString()],
     )
     sessionOf.set(a.sessionId, row!.id)

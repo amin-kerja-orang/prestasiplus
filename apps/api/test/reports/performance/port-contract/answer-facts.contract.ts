@@ -20,7 +20,10 @@ export interface AnswerFactsSeed {
     isTest?: boolean
     levelCode?: string
   }[]
-  /** Practice session rows for `sessionDurations` (the answers above carry their own session ids). */
+  /**
+   * The finished-session rows `sessionDurations` reads. The answers above only carry session ids (a key, not a finished
+   * session), so a real-DB factory must store those as unfinished placeholders: only these rows are ever counted.
+   */
   sessions?: {
     userId: string
     subjectId: string
@@ -188,6 +191,9 @@ export function describeAnswerFactsPort(
     })
 
     it('sessionDurations: finished, non-test sessions only; seconds and count per pupil; filters by mode, subject and window', async () => {
+      // Only seed.sessions count. User 1 has 5 rows: completed 600 (latih_tubi, subj 1, 09-22), 90 (simulasi, subj 2, 09-28),
+      // 1000 (battle, subj 1, 09-23) = 3 sessions / 1690 s; the in_progress and the is_test rows are left out.
+      // User 2 has one completed 300 s. Session ids sA..sE on the answers are not durations, so they add nothing.
       const port = await make(SEED)
       const of = async (q: Parameters<AnswerFactsPort['sessionDurations']>[0]): Promise<[string, number, number][]> =>
         (await port.sessionDurations(q)).map((r) => [r.userId, r.sessions, r.seconds])
