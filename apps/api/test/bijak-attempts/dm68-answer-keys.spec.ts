@@ -79,6 +79,17 @@ describe('DM-68 answer keys', () => {
     expect((bad.body as { error: { fields: Record<string, string> } }).error.fields).toHaveProperty(`answers.${PART}.topicId`)
   })
 
+  it('a topicId on a leaf without topicIds is dropped; a valid one on a leaf with topicIds is kept', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    expect((await save(id, [change(OTHER, { topicId: 'tajuk-1', text: 'a' })])).status).toBe(200)
+    const dropped = await storedAnswer(id, OTHER)
+    expect(dropped).toMatchObject({ text: 'a' })
+    expect(dropped).not.toHaveProperty('topicId')
+    expect(dropped).not.toHaveProperty('choice')
+    expect((await save(id, [change(PART, { topicId: 'tajuk-1', text: 'b' })])).status).toBe(200)
+    expect(await storedAnswer(id, PART)).toMatchObject({ topicId: 'tajuk-1', choice: 'tajuk-1' })
+  })
+
   it('an open essay_choice answer that holds its topic in choice is still read and marked', async () => {
     const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
     expect((await save(id, [change(PART, { choice: 'tajuk-1', text: 'Vakuol menyimpan air.' })])).status).toBe(200)
