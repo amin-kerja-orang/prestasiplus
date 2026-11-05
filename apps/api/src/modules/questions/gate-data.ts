@@ -24,7 +24,7 @@ export function missingRequiredFieldsOf(stem: string | null, parts: readonly Que
 }
 
 /** What the builder reads of a version (a stored one, or a draft that is not stored yet). */
-export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'paperCode'>
+export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'difficultyLevel' | 'paperCode'>
 
 export function gateDataOf(
   record: { id: string; version: GateVersion },
@@ -49,5 +49,10 @@ export function gateDataOf(
     lastEditedByAi: facts.lastEditedByAi,
     paperCode: v.paperCode ?? null,
     spmBound,
+    difficultyLevel: v.difficultyLevel,
+    stem: v.stemMs,
+    hasDskpNodes: facts.hasDskpNodes,
+    hasChapters: facts.hasChapters,
+    spOutsideUnit: facts.spOutsideUnit,
   }
 }
