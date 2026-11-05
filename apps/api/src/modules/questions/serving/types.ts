@@ -37,6 +37,8 @@ export interface ServabilityFacts {
   subject: SubjectFact | null
   /** The stimulus group of the live question, or null. */
   group: StimulusGroupRecord | null
+  /** S1-T06 (FR-QA-01): set when the question's stimulus group is not complete: the number of members not yet servable (not approved or not active). */
+  groupIncomplete?: number
   /** Every stimulus linked to the live version or to one of its leaves, as the kuiz reads it (`ownStimuliOf`, so the kuiz and this report agree). */
   linkedAssets: ReadonlyMap<string, OwnStimulus>
   /**

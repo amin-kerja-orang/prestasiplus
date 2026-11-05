@@ -91,6 +91,7 @@ async function render(): Promise<void> {
 }
 
 beforeEach(() => {
+  sessionStorage.clear() // pp.qd.pos.{attemptId} (S8-T04) must not carry a position between tests
   resetStimulusOpen()
   Element.prototype.scrollTo = vi.fn()
   server.getAttemptView.mockReset()

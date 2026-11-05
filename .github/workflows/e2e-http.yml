@@ -85,6 +85,11 @@ jobs:
             -e "s|^IC_HASH_KEY=.*|IC_HASH_KEY=$(openssl rand -hex 32)|" \
             .env.api
           grep -q '^POSTGRES_USER=pp' .env.db && grep -q '^POSTGRES_DB=prestasiplus' .env.db
+          # The compose db published on loopback by compose.http.yaml; job-local password, masked in the log.
+          e2e_db_url="postgresql://pp:${db_pw}@127.0.0.1:55433/prestasiplus"
+          echo "::add-mask::${db_pw}"
+          echo "::add-mask::${e2e_db_url}"
+          echo "E2E_DATABASE_URL=${e2e_db_url}" >> "$GITHUB_ENV"
 
       # The migrate job (compose.http.yaml) runs the demo seed (poc profile) and then the T26 local/E2E seed
       # (`--profile=e2e`, E2E_SEED=1). BIJAK_POC_QUESTIONS stays false (the PoC papers are not served, R1-B07 / T36).

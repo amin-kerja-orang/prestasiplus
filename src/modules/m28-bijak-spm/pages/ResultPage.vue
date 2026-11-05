@@ -48,6 +48,17 @@ const server = bijakServer()
 const toast = useToast()
 const attemptId = computed(() => String(route.params.attemptId))
 
+/**
+ * Set by AttemptPage only after the automatic submit at 0 (AC-PA-21). Read once at setup, then
+ * dropped from the URL so a reload does not show the banner again.
+ */
+const autoSubmitNote = route.query.auto === '1'
+if (autoSubmitNote) {
+  const query = { ...route.query }
+  delete query.auto
+  void router.replace({ query })
+}
+
 const { data, error } = useApi(() => server.getResult(user.value, attemptId.value), attemptId)
 
 const filter = ref<'semua' | 'perhatian'>('semua')
@@ -327,7 +338,16 @@ const home = computed(() => landingPath.value || '/dashboard')
       />
 
       <UAlert
-        v-if="data.attempt.status === 'auto_submitted'"
+        v-if="autoSubmitNote"
+        color="info"
+        variant="soft"
+        icon="i-ph-timer"
+        title="Masa tamat. Jawapan anda telah dihantar secara automatik."
+        data-testid="auto-submit-banner"
+      />
+
+      <UAlert
+        v-if="data.attempt.status === 'auto_submitted' && !autoSubmitNote"
         color="info"
         variant="soft"
         icon="i-ph-timer"

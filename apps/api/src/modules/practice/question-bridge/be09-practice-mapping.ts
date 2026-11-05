@@ -30,18 +30,25 @@ export const tpsOfDifficulty = (difficulty: number): number[] => (difficulty >= 
 /** The SQL shape of what `servableMcq` accepts (one text MCQ leaf, no stimulus, key names an option): counts and draws agree with serving. */
 export const PRACTICE_SHAPE = { minOptions: 1, maxOptions: 8 } as const
 
+export interface ServableOptions {
+  /** True only on a surface in `GROUP_SURFACES`; false (default) is the text-only rule of today. */
+  allowStimulus?: boolean
+}
+
 export type Refusal = { ok: false; reason: string }
 
 /** The single MCQ leaf of a servable version, or why it is refused. */
-export function servableMcq(record: QuestionRecord): { ok: true; leaf: McqLeaf } | Refusal {
+export function servableMcq(record: QuestionRecord, { allowStimulus = false }: ServableOptions = {}): { ok: true; leaf: McqLeaf } | Refusal {
   const v = record.version
   if (v.type !== 'mcq') return { ok: false, reason: `type ${v.type} is not served by practice` }
   if (v.parts.length !== 1) return { ok: false, reason: 'an MCQ must have exactly one part' }
   const only = v.parts[0] as QuestionPart
   if (!isLeaf(only) || only.mode !== 'mcq') return { ok: false, reason: 'the only part is not an MCQ leaf' }
-  if (record.groupId !== null || v.stimulusIds.length > 0 || only.stimulusId != null)
-    return { ok: false, reason: 'a stimulus cannot be shown on the practice screen' }
-  if (only.options.some((o) => o.imageId != null)) return { ok: false, reason: 'an option image cannot be shown' }
+  if (!allowStimulus) {
+    if (record.groupId !== null || v.stimulusIds.length > 0 || only.stimulusId != null)
+      return { ok: false, reason: 'a stimulus cannot be shown on the practice screen' }
+    if (only.options.some((o) => o.imageId != null)) return { ok: false, reason: 'an option image cannot be shown' }
+  }
   if (!only.options.some((o) => o.label === only.key.correct)) return { ok: false, reason: 'the key names no option' }
   return { ok: true, leaf: only }
 }
@@ -53,8 +60,9 @@ export function servableMcq(record: QuestionRecord): { ok: true; leaf: McqLeaf }
 export function toPracticeQuestion(
   record: QuestionRecord,
   contributor: PracticeQuestion['contributor'],
+  { allowStimulus = false, group = null }: ServableOptions & { group?: PracticeQuestion['stimulusGroup'] | null } = {},
 ): PracticeQuestion | null {
-  const m = servableMcq(record)
+  const m = servableMcq(record, { allowStimulus })
   if (!m.ok) return null
   const v = record.version
   const stem = v.stemMs ?? ''
@@ -76,8 +84,11 @@ export function toPracticeQuestion(
     // Contract: `hasDskp` = the question is linked to a curriculum chapter.
     hasDskp: v.chapterId !== null,
     contributor,
-    options: m.leaf.options.map((o) => ({ label: o.label, text: o.body.ms })),
+    options: m.leaf.options.map((o) => (allowStimulus && o.imageId != null ? { label: o.label, text: o.body.ms, imageId: o.imageId } : { label: o.label, text: o.body.ms })),
     correctLabel: m.leaf.key.correct,
     explanation: v.explanationMs,
+    // Only on a surface that allows it (S1-T06): today's output keeps exactly its fields.
+    ...(allowStimulus && v.stemImageId != null ? { stemImageId: v.stemImageId } : {}),
+    ...(allowStimulus && record.groupId !== null && group != null ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group } : {}),
   }
 }

@@ -27,6 +27,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
       subjectId: tag.subjectId,
       educationLevelId: tag.educationLevelId,
       difficultyLevel: 2,
+      cognitiveLevel: 'mengaplikasi',
       tag: { unitId: tag.unitId, spIds: [tag.spId], tp: 3 },
     }) as const
 
@@ -53,6 +54,9 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     )
     const [ch] = await t.db.query<{ id: string }>('select id::text from chapters where subject_id = $1::bigint and education_level_id = $2::bigint limit 1', [row!.subject_id, row!.education_level_id])
     tag = { subjectId: row!.subject_id, educationLevelId: row!.education_level_id, unitId: row!.unit_node_id, spId: row!.sp, chapterId: ch!.id }
+    // S1-T02: NO_CHAPTER binds only where the Subjek + Tingkatan has chapters. These tests need chapterless approvals (Latihan Bab then reports `no_chapter`), so the
+    // chapters of this subject and level leave the tree; a test that wants a Bab sets `chapter_id` directly.
+    await t.db.query('update chapters set in_tree = false where subject_id = $1::bigint and education_level_id = $2::bigint', [tag.subjectId, tag.educationLevelId])
   })
   afterAll(async () => {
     await t.close()
@@ -69,7 +73,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const bab = report?.activities.find((a) => a.activity === 'bab')
     expect(bab?.served).toBe(false)
     expect(bab?.reasons[0]?.code).toBe('no_chapter')
-    expect(bab?.reasons[0]?.message).toBe('Belum dipautkan kepada bab — pilih Bab di borang soalan.') // the exact BM sentence the admin reads
+    expect(bab?.reasons[0]?.message).toBe('Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.') // the exact BM sentence the admin reads
     expect(report?.servedCount).toBeGreaterThan(0)
     expect(report?.servedCount).toBeLessThan(report?.total ?? 0)
   })
@@ -79,7 +83,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const id = await review({
       questionType: 'essay',
       questionText: 'Isikan jadual yang berikut.',
-      parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
+      parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, cognitiveLevel: 'mengaplikasi', mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
     })
     const before = await events(id)
     const e = await failure(wf.transition(id, 'approved', actorOf(c.admin)))
@@ -97,11 +101,11 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     const id = await review({
       questionType: 'essay',
       questionText: 'Isikan jadual yang berikut (dibetulkan).',
-      parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
+      parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, cognitiveLevel: 'mengaplikasi', mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
     })
     await failure(wf.transition(id, 'approved', actorOf(c.admin)))
     // Fixed: the unservable table_fill leaf is replaced by a short-answer leaf the Bijak bridge serves.
-    const fixed = { ...base(), questionType: 'essay', questionText: 'Soalan jawapan pendek selepas dibetulkan.', parts: [{ label: '(a)', prompt: { ms: 'Jawab' }, mode: 'short_text', marks: 2, key: { kind: 'accepted', values: ['x'] } }] }
+    const fixed = { ...base(), questionType: 'essay', questionText: 'Soalan jawapan pendek selepas dibetulkan.', parts: [{ label: '(a)', prompt: { ms: 'Jawab' }, cognitiveLevel: 'mengaplikasi', mode: 'short_text', marks: 2, key: { kind: 'accepted', values: ['x'] } }] }
     await questions.update(id, fixed as never, { userId: c.admin.userId, role: 'admin' })
     expect((await wf.transition(id, 'approved', actorOf(c.admin))).to).toBe('approved')
   })
@@ -113,7 +117,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
     questionText: label,
     cognitiveLevel: 'mengaplikasi',
     kertas: '2',
-    parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
+    parts: [{ label: '(a)', prompt: { ms: 'Isi jadual' }, cognitiveLevel: 'mengaplikasi', mode: 'table_fill', marks: 2, key: { kind: 'mapping', cells: { r1: ['x'] } } }],
   })
 
   it('bulk approve: a question unservable everywhere is skipped with the BM reasons and nothing changes; a servable one in the same call is approved', async () => {
@@ -162,7 +166,7 @@ describe('AC-05.3 Terbitkan: notice when unservable somewhere, refused when unse
       'servability.simulasi_paper': 'Simulasi (kertas): Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
       'servability.simulasi_kuiz': 'Simulasi Kuiz: Bentuk soalan ini tidak dipaparkan di Simulasi Kuiz.',
       'servability.jana_kertas': 'Jana Kertas: Tidak dihidangkan kerana mod isi jadual (table_fill) belum disokong.',
-      'servability.bab': 'Latihan Bab: Belum dipautkan kepada bab — pilih Bab di borang soalan.',
+      'servability.bab': 'Latihan Bab: Bab belum dipaut - tidak disajikan dalam Soalan by Chapter.',
     })
     expect(await t.bank.getStatus(bad)).toMatchObject({ status: 'review', liveVersionNo: null })
     expect(await events(bad)).toBe(before)

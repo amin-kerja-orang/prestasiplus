@@ -51,7 +51,7 @@ export class QuestionAudit {
   }
 
   /** Ids of the questions changed (ids only, at most 200). */
-  bulk(actor: HttpActor, action: string, requested: number, affected: number, ids: readonly string[] = []): Promise<void> {
-    return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, requested, affected, ids: ids.slice(0, 200) })
+  bulk(actor: HttpActor, action: string, requested: number, affected: number, ids: readonly string[] = [], extra: Record<string, unknown> = {}): Promise<void> {
+    return this.write(AUDIT_ACTIONS.QUESTION_BULK_ACTION, actor, null, { action, requested, affected, ids: ids.slice(0, 200), ...extra })
   }
 }
