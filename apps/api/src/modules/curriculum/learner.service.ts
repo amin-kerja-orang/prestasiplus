@@ -93,9 +93,9 @@ export class CurriculumLearnerService {
   ): Promise<{ chapter: LearnerChapter; grade: GradeCode; subject: LegacySubjectCode }[]> {
     let practiceCodes: string[] | undefined
     if (subjectCode) {
-      const code = PRACTICE_CODE[subjectCode as LegacySubjectCode]
-      if (code === undefined) return [] // an unknown subject code matches nothing (BR-13)
-      practiceCodes = [code]
+      // Own keys only: `constructor`, `toString` or `__proto__` must not resolve to an inherited property of the object.
+      if (!Object.hasOwn(PRACTICE_CODE, subjectCode)) return [] // an unknown subject code matches nothing (BR-13)
+      practiceCodes = [PRACTICE_CODE[subjectCode as LegacySubjectCode]]
     }
     const chapters = await this.repo.learnerChapters({ levelIds: levels.map((l) => BigInt(l.id)), ...(practiceCodes ? { subjectCodes: practiceCodes } : {}) })
     const gradeOf = new Map(levels.map((l) => [l.id, l.gradeKey]))

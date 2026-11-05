@@ -327,6 +327,18 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect((await map('?subject=')).subject).toBe('MATEMATIK')
     })
 
+    it('an inherited property name (constructor, toString, __proto__, hasOwnProperty) is an unknown subject: 200 with no topics, kept as typed', async () => {
+      for (const subject of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+        const res = await student.get(`/api/learning-map?subject=${subject}`)
+        expect(res.status, subject).toBe(200)
+        const d = parseData(res, CurriculumLearningMapSchema)
+        expect([d.subject, d.topics, d.stats], subject).toEqual([subject, [], { done: 0, total: 0, progress: 0 }])
+      }
+      const topicsRes = await student.get('/api/topics?subject=constructor')
+      expect(topicsRes.status).toBe(200)
+      expect(topicsRes.body.data).toEqual([])
+    })
+
     it('serves other combinations (Tingkatan 1 Sains), all open, in chapter order', async () => {
       const d = await map('?subject=SAINS&grade=TINGKATAN_1')
       const rows = await expected('T1', 'SCI')

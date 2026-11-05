@@ -25,9 +25,12 @@ export const LEGACY_SUBJECT_CODES = Object.freeze(
   Object.keys(PRACTICE_CODE) as LegacySubjectCode[],
 )
 
+/** A Map, not an object: a practice code such as `constructor` or `__proto__` never resolves to an inherited property. */
+const LEGACY_OF_PRACTICE_CODE: ReadonlyMap<string, LegacySubjectCode> = new Map(LEGACY_SUBJECT_CODES.map((c) => [PRACTICE_CODE[c], c]))
+
 /** Reverse of `PRACTICE_CODE` (S4-T06): the learner subject code of a subject's practice code, or `undefined` outside the 8 legacy codes. */
 export function legacySubjectOfPracticeCode(practiceCode: string): LegacySubjectCode | undefined {
-  return LEGACY_SUBJECT_CODES.find((c) => PRACTICE_CODE[c] === practiceCode)
+  return LEGACY_OF_PRACTICE_CODE.get(practiceCode)
 }
 
 export const GRADE_CODES: readonly GradeCode[] = Object.freeze([
