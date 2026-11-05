@@ -241,7 +241,7 @@ export class QuestionImportsService {
       }
       if (!chapterMap.has(numberKey(String(c.chapterNumber)))) chapterMap.set(numberKey(String(c.chapterNumber)), { id: c.id.toString(), topics })
     }
-    return { subjectId: subjectId.toString(), levelId: levelId.toString(), hasDskpNodes: nodes.length > 0, spmBound, units, sps, chapters: chapterMap }
+    return { subjectId: subjectId.toString(), levelId: levelId.toString(), hasDskpNodes: nodes.some((n) => n.kind === 'sp'), spmBound, units, sps, chapters: chapterMap }
   }
 
   /** Creates the valid rows and stores the run in ONE transaction: nothing partial is kept on an error. */
