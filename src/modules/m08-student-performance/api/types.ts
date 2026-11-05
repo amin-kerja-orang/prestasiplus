@@ -14,6 +14,8 @@ export type Trend = 'up' | 'down' | 'stable'
 /** Analitik Adaptif class rows: 'new' = answers only in the last 7 days (BARU); 'none' = no answers (Belum Bermula). */
 export type ClassTrend = Trend | 'new'
 export type ClassRiskLevel = RiskLevel | 'none'
+/** Tingkatan 1 to 5, lower case (`/prestasi/tingkatan/t1..t5`). */
+export type LevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
 
 // ---------------------------------------------------------------------------------------------
 // #1 GET /api/performance/school (S1)
@@ -63,7 +65,7 @@ export interface SchoolPerformance {
     achievementPct: number | null
   }[]
   levels: {
-    code: 't4' | 't5'
+    code: LevelCode
     accuracy: number
     classes: number
     students: number
@@ -85,7 +87,7 @@ export interface SchoolPerformance {
 // ---------------------------------------------------------------------------------------------
 
 export interface LevelCard {
-  code: 't4' | 't5'
+  code: LevelCode
   name: string
   classes: number
   students: number
@@ -108,7 +110,7 @@ export interface LevelClassRow {
 }
 
 export interface LevelDetail {
-  code: 't4' | 't5'
+  code: LevelCode
   name: string
   classes: number
   students: number
@@ -126,14 +128,15 @@ export interface LevelDetail {
     answered: number
     accuracy: number
   }[]
+  /** Murid Berisiko (R1-AS-4): whole-number accuracy below 50 or no answer in the last 7 days; 10 rows. */
   atRisk: {
     userId: number
     name: string
     className: string
-    checkpoint: number
-    ar: number
-    target: number
-    gap: number
+    answered: number
+    /** null when the pupil has no answer. */
+    accuracy: number | null
+    lastAnsweredAt: string | null
   }[]
 }
 
@@ -150,6 +153,15 @@ export interface ClassCard {
   year: number
   joinCode: string
   isActive: boolean
+}
+
+/** `GET /api/performance/classes/aggregate` (R1-GUR-4, FR-GUR-4-7): the cards plus the two aggregate sections. */
+export interface ClassesAggregate {
+  classes: ClassCard[]
+  /** Pelajar Terbaik: top 10 with at least 5 answers. */
+  topStudents: { userId: number; name: string; answered: number; accuracy: number }[]
+  /** Prestasi Mengikut Subjek: accuracy descending. */
+  subjects: { subjectId: number; name: string; answered: number; accuracy: number }[]
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -491,7 +503,8 @@ export interface ClassDashboard {
     accuracy: number
     sessions: number
     answered: number
-    avgMinutes: number
+    /** Purata Masa/Sesi in minutes (one decimal); null when no session has finished. */
+    avgMinutes: number | null
     active7d: number
   }
   headcount: {
@@ -504,6 +517,7 @@ export interface ClassDashboard {
     avgEtr: number | null
   } | null
   attention: { userId: number; name: string; sessions: number; accuracy: number | null }[]
+  /** 30 MYT days, oldest first, zero-filled (R1-GUR-4). */
   trend: { date: string; sessions: number; avgAccuracy: number; activeStudents: number }[]
   ranking: {
     rank: number
