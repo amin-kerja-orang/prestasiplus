@@ -25,7 +25,7 @@ import {
   StimulusGroup,
 } from '../../../components/question-display'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
-import { formatClock, isAnswered } from '../domain/paper-model'
+import { formatClock, isAnswered, leavesOf } from '../domain/paper-model'
 import type { AttemptPaperView, GroupView, PartAnswer, QuestionView } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
@@ -124,6 +124,13 @@ let autosave: Autosave | null = null
 let tick: ReturnType<typeof setInterval> | undefined
 
 const confirmBack = ref<{ $el: HTMLElement } | null>(null)
+const exitBack = ref<{ $el: HTMLElement } | null>(null)
+const exitContent = {
+  onOpenAutoFocus: (e: Event): void => {
+    e.preventDefault()
+    exitBack.value?.$el.focus()
+  },
+}
 /** Focus starts on the safe choice of the dialog (46 section 2.8). */
 const dialogContent = {
   onOpenAutoFocus: (e: Event): void => {
@@ -138,18 +145,7 @@ const subjectName = computed(
 )
 const totalMarks = computed(() => (view.value?.sections ?? []).reduce((n, s) => n + s.effectiveMarks, 0))
 
-function leafIds(q: QuestionView): string[] {
-  if (q.mcq) return [q.id]
-  const out: string[] = []
-  const walk = (parts: NonNullable<QuestionView['parts']>): void => {
-    for (const p of parts) {
-      if (p.children?.length) walk(p.children)
-      else out.push(p.id)
-    }
-  }
-  walk(q.parts ?? [])
-  return out
-}
+const leafIds = (q: QuestionView): string[] => (q.mcq ? [q.id] : leavesOf(q.parts ?? []).map((l) => l.id))
 const allLeaves = computed(() => questions.value.flatMap(leafIds))
 const blankLeaves = computed(() => allLeaves.value.filter((id) => !isAnswered(answers.value[id])).length)
 const progress = computed(() =>
@@ -240,7 +236,10 @@ async function openSitting(): Promise<void> {
 }
 
 function enter(): void {
-  if (paperId.value) void openSitting()
+  if (paperId.value) {
+    tick ??= setInterval(() => (now.value = Date.now()), 1000)
+    void openSitting()
+  }
   else {
     dispose()
     view.value = null
@@ -250,7 +249,6 @@ function enter(): void {
 watch(paperId, enter)
 onMounted(() => {
   enter()
-  tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
 })
 onBeforeUnmount(() => {
@@ -424,7 +422,7 @@ const saveText = computed(
               icon="i-ph-timer"
               class="tabular"
               data-testid="clock"
-              ><span class="sr-only">Masa berlalu </span>{{ formatClock(elapsed) }}</UBadge
+              >Masa berlalu {{ formatClock(elapsed) }}</UBadge
             >
           </div>
         </div>
@@ -565,10 +563,16 @@ const saveText = computed(
       v-model:open="confirmExit"
       title="Keluar daripada percubaan?"
       description="Jawapan anda disimpan."
+      :content="exitContent"
     >
       <template #footer>
         <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-          <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmExit = false"
+          <UButton
+            ref="exitBack"
+            color="neutral"
+            variant="soft"
+            class="min-h-11"
+            @click="confirmExit = false"
             >Kekal</UButton
           >
           <UButton class="min-h-11" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>

@@ -30,6 +30,12 @@ const attemptId = computed(() => String(route.params.attemptId))
 
 const { data, error, reload } = useApi(() => server.getResult(user.value, attemptId.value), attemptId)
 /** Before Hantar & Semak the server answers 409 (`not_submitted`): the button stays disabled. */
+const missing = computed(() => {
+  const code = (error.value as { code?: string } | null)?.code
+  if (code === 'not_found' || code === 'forbidden') return true
+  const a = data.value?.attempt
+  return !!a && (a.paperId !== String(route.params.paperId) || a.paperKind !== 'subjektif')
+})
 const notSubmitted = computed(() => (error.value as { code?: string } | null)?.code === 'not_submitted')
 
 /* ----------------------------------------------------------------------- the scheme */
@@ -52,6 +58,7 @@ watch(attemptId, () => {
 async function toggleScheme(): Promise<void> {
   if (shown.value) {
     shown.value = false
+    withScheme.value = null
     return
   }
   if (schemeLoading.value || !data.value) return
@@ -98,15 +105,28 @@ onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : t
 async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
   // Once the scheme is shown the answer keeps it (`?scheme=1`); hidden, the answer has none.
   const out = await server.selfMark(user.value, attemptId.value, body, shown.value)
+  // ONE latest result: the scheme-stripped copy is always kept, so hide and show both read the latest marks.
+  refreshed.value = stripScheme(out.result)
   if (shown.value) withScheme.value = out.result
-  else refreshed.value = out.result
+}
+
+function stripScheme(r: AttemptResult): AttemptResult {
+  return {
+    ...r,
+    questions: r.questions.map((q) => ({
+      ...q,
+      parts: q.parts.map((p) => {
+        const rest = { ...p, points: [], scheme: { marks: p.marks } } as ReviewPart
+        delete rest.suggestion
+        return rest
+      }),
+    })),
+  }
 }
 
 /* --------------------------------------------------------------------------- the view */
 const paper = computed(() => data.value?.paper)
 const questionMap = computed(() => new Map<string, QuestionView>((paper.value?.questions ?? []).map((q) => [q.id, q])))
-const sectionLabel = (id: string): string =>
-  result.value?.sections.find((s) => s.sectionId === id)?.label ?? ''
 const ownStimuli = (id: string): StimulusDef[] => {
   const q = questionMap.value.get(id)
   return q?.stimuli ?? (q?.stemImage ? [q.stemImage] : [])
@@ -146,7 +166,17 @@ const answerText = (p: PartResult): string[] =>
     data-testid="subjektif-semakan"
   >
     <DsEmptyState
-      v-if="notSubmitted"
+      v-if="missing"
+      title="Kertas ini tidak dijumpai."
+      icon="i-ph-file-x"
+      data-testid="paper-not-found"
+    >
+      <template #actions>
+        <UButton to="/kertas-subjektif" class="min-h-11">Kembali ke Kertas Subjektif</UButton>
+      </template>
+    </DsEmptyState>
+    <DsEmptyState
+      v-else-if="notSubmitted"
       title="Semakan belum tersedia"
       description="Hantar & Semak dahulu untuk melihat skema."
       icon="i-ph-lock-key"
@@ -281,9 +311,6 @@ const answerText = (p: PartResult): string[] =>
                     :suggestion="review(p).suggestion!"
                     :max="p.marks"
                   />
-                  <p class="text-label text-highlighted" data-testid="selfmark-heading">
-                    Markah dinilai sendiri ({{ sectionLabel(q.sectionId) }}):
-                  </p>
                   <SelfMarkControl
                     :key="attemptId"
                     :part="review(p)"

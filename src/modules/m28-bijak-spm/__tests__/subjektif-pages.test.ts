@@ -233,6 +233,12 @@ describe('screen 2: the sitting', () => {
   })
 })
 
+/** The stepper saves 500 ms after the last change. */
+const settle = async (): Promise<void> => {
+  await new Promise((r) => setTimeout(r, 650))
+  await flushPromises()
+}
+
 /* ------------------------------------------------------------------------------ Semakan */
 const SCHEME_TEXT = 'Rujukan skema rahsia'
 function semakanView(withScheme = false) {
@@ -240,7 +246,7 @@ function semakanView(withScheme = false) {
     ? { marks: 4, explanation: SCHEME_TEXT }
     : { marks: 4 }
   return {
-    attempt: { id: 'a1', subject: 'SEJ', kertas: 2, status: 'submitted', title: 'T' },
+    attempt: { id: 'a1', paperId: 'p1', paperKind: 'subjektif', subject: 'SEJ', kertas: 2, status: 'submitted', title: 'T' },
     paper: {
       attempt: {},
       sections: [],
@@ -347,11 +353,11 @@ describe('screen 3: Semakan', () => {
 
   it('self-mark: without the scheme it does not ask for it; after the press it passes withScheme', async () => {
     await render('/kertas-subjektif/p1/semakan/a1')
-    expect(text('[data-testid=selfmark-heading]')).toBe('Markah dinilai sendiri (Bahagian A):')
+    expect(document.body.textContent).toContain('Markah kendiri:')
+    expect(document.body.textContent).not.toContain('Markah dinilai sendiri')
     ;(q('[data-testid=selfmark-inc]') as HTMLElement).click()
     await flushPromises()
-    ;(q('[data-testid=selfmark-save]') as HTMLElement).click()
-    await flushPromises()
+    await settle()
     expect(server.selfMark).toHaveBeenLastCalledWith(7, 'a1', { partId: 'q1a', mark: 2 }, false)
     expect(text('[data-testid=total]')).toBe('2 / 4')
     expect(document.body.textContent).not.toContain('Markah sementara')
@@ -360,10 +366,28 @@ describe('screen 3: Semakan', () => {
     await flushPromises()
     ;(q('[data-testid=selfmark-inc]') as HTMLElement).click()
     await flushPromises()
-    ;(q('[data-testid=selfmark-save]') as HTMLElement).click()
-    await flushPromises()
+    await settle()
     expect(server.selfMark).toHaveBeenLastCalledWith(7, 'a1', { partId: 'q1a', mark: 2 }, true)
     expect(document.body.textContent).toContain(SCHEME_TEXT)
+  })
+
+  it('a self-mark made while the scheme is shown still counts after Sembunyi (total and banner)', async () => {
+    await render('/kertas-subjektif/p1/semakan/a1')
+    ;(q('[data-testid=scheme-toggle]') as HTMLElement).click()
+    await flushPromises()
+    ;(q('[data-testid=selfmark-inc]') as HTMLElement).click()
+    await settle()
+    expect(text('[data-testid=total]')).toBe('2 / 4')
+    ;(q('[data-testid=scheme-toggle]') as HTMLElement).click()
+    await flushPromises()
+    expect(text('[data-testid=total]')).toBe('2 / 4')
+    expect(document.body.textContent).not.toContain('Markah sementara')
+    expect(document.body.textContent).not.toContain(SCHEME_TEXT)
+  })
+
+  it('a paper id that does not match the attempt shows the not-found state', async () => {
+    await render('/kertas-subjektif/other/semakan/a1')
+    expect(q('[data-testid=paper-not-found]')).not.toBeNull()
   })
 
   it('before Hantar & Semak the button is disabled with its title and nothing is fetched with the scheme', async () => {
