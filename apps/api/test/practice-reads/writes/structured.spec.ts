@@ -347,6 +347,118 @@ describe('AC1 GET /api/practice/structured', () => {
     expect((await list(student)).data.map((c) => c.id)).toContain(anyn)
   })
 
+  describe('S5-T11 learner visibility (NOT_FLAGGED_SQL, MEDIA_RESOLVED_SQL) applies to the page and the total alike', () => {
+    const liveVersion = async (id: string) =>
+      (await t.db.query<{ id: string }>('select v.id::text id from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = $1', [id]))[0]?.id as string
+
+    it('a normal set is listed and counted', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis normal' })
+      try {
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = $1', [ok])
+      }
+    })
+
+    it('a set whose live version is flagged (stimulus_missing) is not listed and not counted; a dismissed flag or stem_duplicated lists again', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const flagged = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis flagged' })
+      try {
+        await t.db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where id = $1`, [await liveVersion(flagged)])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        await t.db.query(`update question_versions set flag_dismissed_at = now() where id = $1`, [await liveVersion(flagged)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+        await t.db.query(`update question_versions set flag_dismissed_at = null, stimulus_flag = 'stem_duplicated' where id = $1`, [await liveVersion(flagged)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, flagged]])
+      }
+    })
+
+    it('a set with a picture stimulus without its file, or a legacy_image_unresolved import hold, is not listed and not counted; fixing both lists them', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const noFile = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis nofile' })
+      const held = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis held' })
+      const sid = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('diagram', 'Rajah zzvis') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)', [await liveVersion(noFile), sid])
+        await t.db.query(`update question_versions set import_issues = '[{"code": "legacy_image_unresolved"}]'::jsonb where id = $1`, [await liveVersion(held)])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        await t.db.query(`update stimuli set kind = 'passage', body_ms = 'Petikan zzvis' where id = $1`, [sid])
+        await t.db.query(`update question_versions set import_issues = null where id = $1`, [await liveVersion(held)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(3)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, noFile, held]])
+        await t.db.query('delete from question_version_stimuli where stimulus_id = $1', [sid])
+        await t.db.query('delete from stimuli where id = $1', [sid])
+      }
+    })
+
+    it('REQ-B-076: a set whose source paper is taken down is not listed and not counted; lifting the takedown lists it again', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const taken = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis taken' })
+      const src = (await t.db.query<{ id: string }>(`insert into source_papers (rights_status) values ('own') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('update question_versions set source_paper_id = $1 where id = $2', [src, await liveVersion(taken)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+        await t.db.query('update source_papers set takedown_at = now() where id = $1', [src])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        await t.db.query('update source_papers set takedown_at = null where id = $1', [src])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, taken]])
+        await t.db.query('update question_versions set source_paper_id = null where id = $1', [await liveVersion(taken)])
+        await t.db.query('delete from source_papers where id = $1', [src])
+      }
+    })
+
+    it('a PKSK set (pksk_domain tag, M07 only) is not listed and not counted', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const pksk = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis pksk' })
+      try {
+        await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pksk_domain', 'zzvis')`, [pksk])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, pksk]])
+        await t.db.query(`delete from question_tags where question_id = $1 and kind = 'pksk_domain'`, [pksk])
+      }
+    })
+
+    it('LEARNER_LEVEL: a set of an inactive level the pupil holds is not listed and not counted; active again lists it', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const other = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis level' })
+      const lvl = await liveVersion(other)
+      const t4 = (await t.db.query<{ id: string }>(`select id::text id from education_levels where code = 'T4'`))[0]?.id as string
+      const t5row = (await t.db.query<{ id: string; stage: string; is_active: boolean }>(`select id::text id, stage, is_active from education_levels where code = 'T5'`))[0] as { id: string; stage: string; is_active: boolean }
+      const t5 = t5row.id
+      try {
+        await t.db.query('update question_versions set education_level_id = $1 where id = $2', [t5, lvl])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+        await t.db.query('update education_levels set is_active = false where id = $1', [t5])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        // (An active primary-stage level cannot exist: ck_education_levels_no_active_primary, so inactive is the reachable case.)
+        await t.db.query('update education_levels set is_active = $2 where id = $1', [t5, t5row.is_active])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+      } finally {
+        await t.db.query(`update education_levels set is_active = $2, stage = $3 where id = $1`, [t5, t5row.is_active, t5row.stage])
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, other]])
+        await t.db.query('update question_versions set education_level_id = $1 where id = $2', [t4, lvl])
+      }
+    })
+  })
+
   it('author and school: a teacher creator shows name and school, any other creator "Guru Pakar"', async () => {
     const teacherId = await userIdOf(t.db, 'guru@demo.test')
     const teacher = (await t.db.query<{ name: string; school: string | null }>(
