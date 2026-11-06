@@ -192,7 +192,7 @@ interface Normalized {
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
-  kertas?: '1' | '2' | '3' | null | undefined
+  kertas?: '1' | '2' | '3' | '4' | null | undefined
   /** A source paper code stored verbatim (intake); wins over `kertas`. */
   paperCode?: string | null | undefined
   /** Who writes: image files must be theirs (or the actor is an admin) when they are new to the question. */
@@ -529,6 +529,8 @@ export class QuestionsService {
         failed.push(failure)
       }
     }
+    // A bulk hard delete removes served questions: tell the pool and Databank caches (the status moves above invalidate in `setStatus`).
+    if (action === 'delete' && affected > 0) this.overview?.invalidate()
     // `skipped` is present only when a row was skipped (additive on the wire).
     return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }

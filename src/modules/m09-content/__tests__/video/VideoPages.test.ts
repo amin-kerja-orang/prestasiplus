@@ -308,6 +308,73 @@ describe('VideoListPage (S17)', () => {
     expect(w.find('[data-testid="video-add"]').exists()).toBe(false)
   })
 
+  describe('choosing a category (AC-GUR-7-1, AC-AS-7-1)', () => {
+    const LIBRARY = [
+      card(1, { title: 'Ceramah satu', category: 'ceramah', categoryLabel: 'Ceramah' }),
+      card(2, { title: 'Ceramah dua', category: 'ceramah', categoryLabel: 'Ceramah' }),
+      card(3, { title: 'Tips satu', category: 'tips-spm', categoryLabel: 'Tips SPM' }),
+    ]
+    const facets = {
+      total: 3,
+      categories: [
+        { code: 'ceramah', label: 'Ceramah', count: 2 },
+        { code: 'tips-spm', label: 'Tips SPM', count: 1 },
+      ],
+      subjects: [],
+    }
+
+    /** A small API stand-in: the list is filtered by the `category` the page sends. */
+    function serve() {
+      api.fetchVideos.mockImplementation((q: { category?: string }) => {
+        const rows = LIBRARY.filter((v) => q.category === undefined || v.category === q.category)
+        const base = listResult(rows)
+        return Promise.resolve({ ...base, meta: { ...base.meta, facets } })
+      })
+    }
+    const titles = (w: VueWrapper) => w.findAll('[data-testid="video-card"]').map((c) => c.text())
+    const pill = (w: VueWrapper, code: string) =>
+      w.get(`[data-testid="video-category-pill"][data-code="${code}"]`)
+
+    it.each(['teacher', 'school_admin'] as const)(
+      '%s: the pills show 2 and 1; clicking the first lists exactly its 2 videos',
+      async (role) => {
+        login(role)
+        serve()
+        const w = await mountAt(VideoListPage, '/page')
+        expect(titles(w)).toHaveLength(3)
+        expect(w.findAll('[data-testid="video-category-pill"]').map((p) => p.text())).toEqual([
+          'Semua (3)',
+          'Ceramah (2)',
+          'Tips SPM (1)',
+        ])
+
+        await pill(w, 'ceramah').trigger('click')
+        await flushPromises()
+
+        expect(router.currentRoute.value.fullPath).toBe('/video?category=ceramah')
+        expect(api.fetchVideos).toHaveBeenLastCalledWith(
+          expect.objectContaining({ category: 'ceramah' }),
+          expect.anything(),
+        )
+        const shown = titles(w)
+        expect(shown).toHaveLength(2)
+        expect(shown[0]).toContain('Ceramah satu')
+        expect(shown[1]).toContain('Ceramah dua')
+        expect(pill(w, 'ceramah').classes()).not.toEqual(pill(w, 'tips-spm').classes())
+      },
+    )
+
+    it('school admin: a category is chosen and no "Tambah Video" button exists', async () => {
+      login('school_admin')
+      serve()
+      const w = await mountAt(VideoListPage, '/page?category=tips-spm')
+      expect(titles(w)).toHaveLength(1)
+      expect(titles(w)[0]).toContain('Tips satu')
+      expect(w.find('[data-testid="video-add"]').exists()).toBe(false)
+      expect(w.text()).not.toContain('Tambah Video')
+    })
+  })
+
   it('submitting the search pushes ?search and keeps the filters', async () => {
     login()
     const w = await mountAt(VideoListPage, '/page?category=tutorial')

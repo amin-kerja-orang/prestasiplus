@@ -5665,6 +5665,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "maxRewarded": {
+            "type": "integer",
+            "minimum": 0
+          },
           "registerUrl": {
             "type": "string",
             "minLength": 1
@@ -5704,6 +5708,7 @@
           "code",
           "rewardReferrer",
           "rewardReferee",
+          "maxRewarded",
           "registerUrl",
           "whatsappUrl",
           "telegramUrl",
@@ -14072,7 +14077,8 @@
               },
               "yearsAvailable": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Distinct exam years among servable papers or questions. Absent while there is no year source."
               },
               "trackingAQuestions": {
                 "type": "integer",
@@ -14083,7 +14089,6 @@
             "required": [
               "totalQuestions",
               "subjectCount",
-              "yearsAvailable",
               "trackingAQuestions"
             ],
             "additionalProperties": false
@@ -14109,13 +14114,19 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Visible structured sets across the Subjektif subjects."
+              },
+              "kertasSubjektif": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Published papers with surface subjektif (level_scope is not applied); the Kertas Subjektif chip."
               }
             },
             "required": [
               "databank",
               "latihTubi",
               "trackingA",
-              "subjektifSets"
+              "subjektifSets",
+              "kertasSubjektif"
             ],
             "additionalProperties": false
           },
@@ -29630,6 +29641,11 @@
             "maxItems": 3,
             "description": "The first 3 Perutusan posts visible to the caller (content owner BE-24)."
           },
+          "pendingTeachers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teachers waiting for the school admin to approve them (\"Guru Menunggu\"); equals the length of GET /admin-sekolah/guru/pending."
+          },
           "cards": {
             "type": "object",
             "properties": {
@@ -29835,6 +29851,7 @@
           "school",
           "roleLabel",
           "perutusan",
+          "pendingTeachers",
           "cards",
           "performance"
         ]
@@ -30845,13 +30862,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {
@@ -30903,9 +30921,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [
@@ -31938,7 +31959,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed."
           }
         },
         "required": [
@@ -40744,6 +40765,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ]
           },
@@ -41281,6 +41303,7 @@
           "1",
           "2",
           "3",
+          "4",
           null
         ]
       },
@@ -48402,7 +48425,8 @@
             "enum": [
               "1",
               "2",
-              "3"
+              "3",
+              "4"
             ]
           },
           "jenis": {
@@ -50151,6 +50175,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -50202,6 +50227,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -60964,6 +60990,18 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
               }
             ]
           },
@@ -65570,7 +65608,8 @@
           "ramalan",
           "mission",
           "remedial",
-          "question_set"
+          "question_set",
+          "databank"
         ]
       },
       "PracticeSessionId": {
@@ -65759,7 +65798,7 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target."
           },
           "chapterId": {
             "type": "string",
@@ -69398,6 +69437,28 @@
             "type": "integer",
             "minimum": 0,
             "description": "\"{marks} markah\"."
+          },
+          "bestScore": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "awarded": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "awarded",
+              "max"
+            ],
+            "additionalProperties": false,
+            "description": "The caller's best attempt on this set (highest awarded total); null when there is no attempt."
           }
         },
         "required": [
@@ -69414,7 +69475,8 @@
           "subQuestionCount",
           "levelName",
           "parts",
-          "marks"
+          "marks",
+          "bestScore"
         ],
         "additionalProperties": false
       },
@@ -69498,6 +69560,11 @@
               "additionalProperties": false
             },
             "description": "The \"Subjek\" options (without \"Semua Subjek\"): plain list by name; SPM variants in the FR-M05-134 order."
+          },
+          "pendingSchemeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sets in the current filter (q, subject, KBAT; ignoring `markable`) with no usable scheme: the \"{n} soalan untuk pilihan ini masih menunggu skema pemarkahan...\" notice."
           }
         },
         "required": [
@@ -69507,7 +69574,8 @@
           "totalPages",
           "scope",
           "track",
-          "subjectOptions"
+          "subjectOptions",
+          "pendingSchemeCount"
         ],
         "additionalProperties": {}
       },
@@ -69957,10 +70025,11 @@
           "Cemerlang",
           "Sederhana",
           "Rendah",
+          "Tiada",
           "Kritikal",
           "Tiada Langsung"
         ],
-        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0."
+        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced."
       },
       "AnalyticsLevel": {
         "type": "string",
@@ -82684,6 +82753,18 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
               }
             ]
           },
@@ -82918,6 +82999,18 @@
                 ]
               },
               {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
+              },
+              {
                 "type": "null"
               }
             ],
@@ -83074,6 +83167,18 @@
                 "type": "number",
                 "enum": [
                   2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
                 ]
               },
               {
@@ -89114,7 +89219,7 @@
           "gamification"
         ],
         "summary": "Rujuk Kawan: referral code, share links and stats",
-        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.",
+        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here; the amounts and the cap are the settings referral_referrer_syiling, referral_referee_syiling and referral_max_rewarded.",
         "responses": {
           "200": {
             "description": "Referral data.",
@@ -95711,7 +95816,7 @@
           "spm"
         ],
         "summary": "SPM hub (M06-01): totals, module chips and the caller practice stats",
-        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is 0. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
+        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
         "responses": {
           "200": {
             "description": "Hub figures.",
@@ -101947,7 +102052,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial). A question_set has no attempt cap in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102838,7 +102943,7 @@
           "practice-reads"
         ],
         "summary": "Own corrections: first attempt versus later attempt per question (S11)",
-        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
@@ -102953,10 +103058,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20."
+              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12."
             },
             "required": false,
-            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20.",
+            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12.",
             "name": "page",
             "in": "query"
           },
@@ -102978,6 +103083,33 @@
             "required": false,
             "description": "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored.",
             "name": "track",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search."
+            },
+            "required": false,
+            "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1",
+                "true",
+                "false"
+              ],
+              "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all."
+            },
+            "required": false,
+            "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all.",
+            "name": "markable",
             "in": "query"
           }
         ],
@@ -116297,7 +116429,8 @@
               "enum": [
                 "1",
                 "2",
-                "3"
+                "3",
+                "4"
               ]
             },
             "required": false,
@@ -116474,7 +116607,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 4) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {
@@ -138738,7 +138871,7 @@
           "intake-files"
         ],
         "summary": "Upload one or more PDF files to a submission",
-        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 30 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
         "parameters": [
           {
             "schema": {

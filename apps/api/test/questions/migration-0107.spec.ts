@@ -31,7 +31,7 @@ describe('migration 0107 question paper kertas index', () => {
     await make('k2', 'MATH/2')
     await make('k2sp', 'MATH/2 ' + String.fromCharCode(9) + ' ')
     await make('k3', 'MATH/3')
-    await make('k4', 'MATH/4') // not a Kertas 1 to 3
+    await make('k4', 'MATH/4') // a valid Kertas 4 since 0124
     await make('nodigit', 'MATH') // a code without a digit
     await make('none', null)
   })
@@ -42,7 +42,7 @@ describe('migration 0107 question paper kertas index', () => {
   it('the partial expression index exists with the same expression text as the repository', async () => {
     const idx = await t.db.query<{ indexdef: string }>(`select indexdef from pg_indexes where indexname = 'ix_question_versions_paper_kertas'`)
     expect(idx).toHaveLength(1)
-    expect(idx[0]!.indexdef).toContain(`'/([1-3])[[:space:]]*$'`)
+    expect(idx[0]!.indexdef).toContain(`'/([1-4])[[:space:]]*$'`)
     expect(idx[0]!.indexdef).toMatch(/WHERE \(?paper_code IS NOT NULL\)?/)
   })
 
@@ -67,7 +67,7 @@ describe('migration 0107 question paper kertas index', () => {
         if (prepare) await tx.$executeRawUnsafe(prepare)
         return JSON.stringify(await tx.$queryRawUnsafe(explain))
       })
-    const cond = `substring(v.paper_code from '/([1-3])[[:space:]]*$') = %P%`
+    const cond = `substring(v.paper_code from '/([1-4])[[:space:]]*$') = %P%`
     const from = `FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const literal = await plan(`EXPLAIN (FORMAT JSON) SELECT q.id ${from} WHERE ${cond.replace('%P%', `'2'`)}`)
     const bound = await plan(`EXPLAIN (FORMAT JSON) EXECUTE kert('2')`, `PREPARE kert(text) AS SELECT q.id ${from} WHERE ${cond.replace('%P%', '$1')}`)
