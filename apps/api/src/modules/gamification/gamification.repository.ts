@@ -488,11 +488,26 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
+  /** Serialises the referrals of one referrer (the cap count and the insert). `NO KEY UPDATE` does not block rows that only reference the user. */
+  async lockReferrer(db: Db, referrerId: string): Promise<void> {
+    await db.$queryRaw`SELECT id FROM users WHERE id = ${idFromString(referrerId)} FOR NO KEY UPDATE`
+  }
+
+  /** What the referrer was paid for referrals: the ledger rows keyed by the user's referees (a referee's own bonus is not counted). */
+  async referralSyilingEarned(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ total: bigint | null }[]>`
+      SELECT COALESCE(SUM(l.amount), 0)::bigint AS total
+      FROM coin_ledger l
+      JOIN referrals r ON r.referrer_id = l.user_id AND l.source_id = 'referral:' || r.referee_id::text
+      WHERE l.user_id = ${idFromString(userId)} AND l.source = 'referral' AND l.type = 'bonus' AND l.is_test = false`
+    return Number(rows[0]?.total ?? 0)
+  }
+
   /** True when this call stored the referral (a person is referred once: unique referee). */
-  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; at: Date }): Promise<boolean> {
+  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; rewarded: boolean; at: Date }): Promise<boolean> {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at)
-      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, true, ${row.at}::timestamptz, ${row.at}::timestamptz)
+      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, ${row.rewarded}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (referee_id) DO NOTHING
       RETURNING id`
     return rows.length === 1

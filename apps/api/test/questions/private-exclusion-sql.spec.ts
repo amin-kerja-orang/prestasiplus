@@ -126,7 +126,7 @@ describe('DM-42: private questions are absent from the counts and reports of oth
     for (const s of o.sqls) expect(s).toContain(BANK)
 
     const l = capture()
-    await run(() => new StructuredListingRepository(l.prisma).page({ levelIds: ['1'], subjectIds: null, subjectOrder: false, kbat: null, limit: 10, offset: 0 } as never))
+    await run(() => new StructuredListingRepository(l.prisma).page({ levelIds: ['1'], subjectIds: null, subjectOrder: false, kbat: null, q: null, markable: false, limit: 10, offset: 0 } as never))
     expect(l.sqls).toHaveLength(2)
     for (const s of l.sqls) expect(s).toContain(BANK)
 

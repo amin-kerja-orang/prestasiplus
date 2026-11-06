@@ -313,7 +313,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Analisis Item',
       'Bantuan',
       'Tiket Bantuan',
-      'Gambar Rajah',
     ])
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
@@ -401,7 +400,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Panduan',
       'Bantuan',
       'Tiket Bantuan',
-      'Gambar Rajah',
     ])
   })
 

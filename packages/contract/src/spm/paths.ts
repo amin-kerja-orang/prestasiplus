@@ -152,7 +152,7 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
     tags: ['spm'],
     summary: 'SPM hub (M06-01): totals, module chips and the caller practice stats',
     description:
-      '`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is 0. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
+      '`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
     responses: { 200: json(envelopeOf(SpmOverviewSchema), 'Hub figures.'), 401: UNAUTHORIZED },
   })
 
