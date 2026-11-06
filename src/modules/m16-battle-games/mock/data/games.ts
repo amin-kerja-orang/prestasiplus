@@ -77,9 +77,36 @@ export const KR_ROUNDS = 10
 export const BENTENG_HP = 100
 export const BENTENG_DAMAGE = 20
 export const MATHRACE_STEPS = 20
+/** Papan Bijak (48 GAME-02, copy of the API): 200 rounds x players end a game nobody finished; the 30 s roll and 20 s answer clocks. */
+export const PB_MAX_ROUNDS = 200
+export const PB_ROLL_MS = 30_000
+export const PB_ANSWER_MS = 20_000
+/**
+ * Room settings at their API defaults (48 section 2; the M14 mock catalogue does not hold these keys): robots join a waiting
+ * Papan Bijak room after 30 s, a waiting room closes after 15 minutes, a seat is absent after 30 s (+ the 5 s poll write
+ * gap) and 3 timeouts in a row remove it.
+ */
+export const ROOM_BOT_FALLBACK_S = 30
+export const ROOM_WAITING_MIN = 15
+export const ROOM_ABSENT_S = 30
+export const ROOM_SEEN_GAP_MS = 5_000
+export const ROOM_ABSENT_TIMEOUTS = 3
 export const CROSSWORD_WORDS = 8
 
-/** The M14 ledger rates of the room games (BR-M16-28): benteng 8 / 35, perang fakta win 10, mathrace 5. */
+/**
+ * The one reward formula of 48 section 3.4 (API `gameReward` with the settings defaults): xp = 10 per correct + 20 win /
+ * 10 draw / 5 play; syiling = 1 per correct (`coins_per_correct` default) + 5 for a win. Papan Bijak uses it.
+ */
+export const GAME_REWARD_DEFAULTS = {
+  xpPerCorrect: 10,
+  winXp: 20,
+  drawXp: 10,
+  playXp: 5,
+  winBonusSyiling: 5,
+  coinsPerCorrect: 1,
+} as const
+
+/** The M14 ledger rates of the other room games (BR-M16-28): benteng 8 / 35, perang fakta win 10, mathrace 5. */
 export const ROOM_COINS = {
   bentengPlay: 8,
   bentengWin: 35,

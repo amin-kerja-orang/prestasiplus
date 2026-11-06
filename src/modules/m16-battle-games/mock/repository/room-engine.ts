@@ -20,6 +20,7 @@ import {
   CROSSWORD_WORDS,
   KR_ROUNDS,
   MATHRACE_STEPS,
+  PB_MAX_ROUNDS,
   PF_ROUNDS,
   ROOM_SUBJECTS,
 } from '../data/games'
@@ -79,6 +80,7 @@ export function emptyState(humanId: number): RoomState {
     qIds: [],
     cursor: 0,
     humanId,
+    startHumans: 0,
     awaiting: null,
     pendingQ: null,
     board: [],
@@ -136,9 +138,11 @@ export function startGame(
 ): EngineOut {
   const c: Ctx = { room, players: players.map((x) => ({ ...x })), s: emptyState(humanId), prng, p }
   const pool = prng.fresh(`m16:room:${room.code}:pool`)
+  c.s.startHumans = c.players.filter((x) => !x.isBot).length
   switch (room.game) {
     case 'papan-bijak': {
-      c.s.qIds = drawPool(room, 40, pool)
+      // 48 GAME-02 (#1010): with 0 quiz tiles no question is ever asked, so none is drawn.
+      c.s.qIds = quizTiles === 0 ? [] : drawPool(room, 40, pool)
       c.s.board = buildBoard(quizTiles, prng.fresh(`m16:room:${room.code}:board`))
       for (const pl of c.players) c.s.positions[key(pl)] = 1
       c.s.total = BOARD_SIZE
@@ -297,11 +301,62 @@ export function applyTimeout(
     p,
   }
   if (room.game === 'perang-fakta' && c.s.awaiting === 'answer') return pfAdvance(c, false)
+  // Papan Bijak: a roll that ran out rolls itself; a question that ran out is a wrong answer (the token goes back).
+  if (room.game === 'papan-bijak' && c.s.awaiting === 'roll') return pbRoll(c)
+  if (room.game === 'papan-bijak' && c.s.awaiting === 'answer' && c.s.pendingQ !== null) {
+    return pbAnswer(c, {
+      type: 'answer',
+      questionId: c.s.pendingQ,
+      optionId: null,
+      value: undefined,
+      seconds: 15,
+    })
+  }
   if (room.game === 'teka-silang-kata') {
     c.s.winnerId = topWinner(c, (x) => x.points)
     return finish(c)
   }
   throw new M16Error('CONFLICT', 'Tiada jam untuk permainan ini.')
+}
+
+/**
+ * A human left a Papan Bijak game in play and a robot took the seat (ruling 50, while 2 or more humans remain). `players`
+ * already hold the robot; `remap` maps the leaver's key to the robot's. When the room was waiting for the leaver, the
+ * robot plays that turn at once (a quiz tile is answered with the platform accuracy `p`).
+ */
+export function handOverSeat(
+  room: EngineRoom,
+  players: EnginePlayer[],
+  state: RoomState,
+  remap: Record<string, string>,
+  leaver: number,
+  prng: PrngRegistry,
+  p: number,
+): EngineOut {
+  const c: Ctx = { room, players: players.map((x) => ({ ...x })), s: structuredClone(state), prng, p }
+  const m = (k: string): string => remap[k] ?? k
+  const mapKeys = <T,>(rec: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(Object.entries(rec).map(([k, v]) => [m(k), v]))
+  const s = c.s
+  s.positions = mapKeys(s.positions)
+  s.meter = mapKeys(s.meter)
+  if (s.presence) s.presence = Object.fromEntries(Object.entries(s.presence).filter(([k]) => k !== String(leaver)))
+  s.humanId = Number(m(String(s.humanId)))
+  if (s.winnerId !== null) s.winnerId = Number(m(String(s.winnerId)))
+  if (state.humanId !== leaver) return { state: s, players: c.players, finished: false }
+  if (s.awaiting === 'answer') {
+    // The leaver stood on a quiz tile: the robot answers it with the platform accuracy.
+    const pl = human(c)
+    if (draw(c).next() < c.p) pl.correct += 1
+    else s.positions[key(pl)] = s.meter[key(pl)] ?? 1
+    s.pendingQ = null
+    s.awaiting = null
+    s.turn += 1
+  } else {
+    s.awaiting = null
+    s.pendingQ = null
+  }
+  return pbRun(c)
 }
 
 type Answer = Extract<RoomAction, { type: 'answer' }>
@@ -376,16 +431,34 @@ function pbMove(c: Ctx, pl: EnginePlayer, dice: number): 'quiz' | 'moved' {
   return 'moved'
 }
 
+/** 48 GAME-02 FR-GM-02.5: points = 10 x correct, plus 50 for the winner. */
+export const pbPoints = (correct: number, won: boolean): number => correct * 10 + (won ? 50 : 0)
+
+/**
+ * AC-GM-02.4: the points of a Papan Bijak game that ends without the engine settling it (the last human wins by
+ * default). Same formula as `pbSettle`: the winner gets 10 x correct + 50, everyone else 10 x correct.
+ */
+export function pbSettleDefault(players: EnginePlayer[], winnerId: number | null): EnginePlayer[] {
+  return players.map((pl) => ({ ...pl, points: pbPoints(pl.correct, pl.userId === winnerId) }))
+}
+
 function pbSettle(c: Ctx): EngineOut {
   for (const pl of c.players) {
-    pl.points = pl.correct * 10 + (pl.userId === c.s.winnerId ? 50 : 0)
+    pl.points = pbPoints(pl.correct, pl.userId === c.s.winnerId)
   }
   return finish(c)
+}
+
+/** 48 GAME-02: after 200 rounds x players the highest tile wins; equal highest tiles are a draw. */
+function pbSafety(c: Ctx): EngineOut {
+  c.s.winnerId = topWinner(c, (x) => c.s.positions[key(x)] ?? 1)
+  return pbSettle(c)
 }
 
 function pbRun(c: Ctx): EngineOut {
   for (let i = 0; i < 600; i++) {
     if (c.s.winnerId !== null) return pbSettle(c)
+    if (c.s.turn >= PB_MAX_ROUNDS * c.players.length) return pbSafety(c)
     const pl = c.players[c.s.turn % c.players.length] as EnginePlayer
     if (!pl.isBot) {
       // R2: every human seat is awaited on its own turn; `humanId` is the seat the room waits for.
