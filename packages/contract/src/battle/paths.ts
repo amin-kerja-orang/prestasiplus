@@ -29,6 +29,7 @@ import {
   BattlePodiumEntrySchema,
   BattlePollChallengerResponseSchema,
   BattlePollMatchResponseSchema,
+  BattleQueueCancelledSchema,
   BattleQuestionTypeSchema,
   BattleRawErrorSchema,
   BattleSchoolDetailSchema,
@@ -70,6 +71,7 @@ export const BATTLE_COMPONENT_SCHEMAS = {
   BattleStartResponse: BattleStartResponseSchema,
   BattleChallenger: BattleChallengerSchema,
   BattlePollMatchResponse: BattlePollMatchResponseSchema,
+  BattleQueueCancelled: BattleQueueCancelledSchema,
   BattleAcceptChallengerResponse: BattleAcceptChallengerResponseSchema,
   BattlePollChallengerResponse: BattlePollChallengerResponseSchema,
   BattleSearchQuery: BattleSearchQuerySchema,
@@ -127,14 +129,14 @@ const csrf = z.object({
 const queueParams = z.object({ queueId: IdSchema.meta({ description: 'Queue id (decimal string).' }) })
 const uuidParams = z.object({ uuid: IdSchema })
 
-const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
+const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk semula." (no valid session).')
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 /** 403 of M16-02 and M16-03: an empty body `{}` (SPM below grade 10), or the CSRF error body. */
 const FORBIDDEN_EMPTY = json(
   z.union([BattleEmptyBodySchema, ErrorBodySchema]),
   'Empty body `{}` (SPM requested below Tingkatan 4; the text is not sent), or CSRF_INVALID (ErrorBody).',
 )
-const ADMIN_ONLY = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
+const ADMIN_ONLY = err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin).')
 
 const SEARCH_NOTE =
   'D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.'
@@ -209,6 +211,22 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       404: raw('{error:"Tiada lawan dijumpai."}: nobody can be picked as the opponent.'),
       422: raw('{error:"Soalan tidak mencukupi."}.'),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/battle/queue/{queueId}/cancel',
+    tags: [BATTLE_TAGS.battle],
+    summary: 'Cancel a queue entry (API-GAME-14)',
+    description:
+      'The "Batal" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil\'s entry, an unknown id and an entry that already has its battle answer 404.',
+    request: { params: queueParams, headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(BattleQueueCancelledSchema), 'Cancelled.'),
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Giliran tidak dijumpai.".'),
     },
   })
 
@@ -339,7 +357,10 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(BattleInviteAcceptResponseSchema, 'The battle was created.'),
       401: UNAUTHORIZED,
-      403: CSRF_INVALID,
+      403: json(
+        z.union([BattleRawErrorSchema, ErrorBodySchema]),
+        '`{error:"Anda belum mempunyai akses PKSK PRO"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).',
+      ),
       404: raw('{error:"Cabaran tidak dijumpai."}.'),
       422: raw('{error:"Soalan tidak mencukupi."}.'),
     },
@@ -388,7 +409,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     summary: 'Battle lobby data (M16-15)',
     description:
       'Grade label: "Darjah n" for grades 1 to 6, "Tingkatan n" for 7 to 11, "" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.',
-    responses: { 200: json(envelopeOf(BattleLobbySchema), 'Lobby data.'), 401: UNAUTHORIZED },
+    responses: { 200: json(envelopeOf(BattleLobbySchema), 'Lobby data. `pkskAccess` is the PKSK grant of the caller per level.'), 401: UNAUTHORIZED },
   })
 
   registerRoute(registry, {
@@ -524,7 +545,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(envelopeOf(BattleTournamentCreatedSchema), 'Created.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID.'),
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin), or CSRF_INVALID.'),
       422: err('VALIDATION_ERROR with fields.'),
     },
   })

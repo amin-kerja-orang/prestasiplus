@@ -21,10 +21,12 @@ import type {
   Mastery,
   PracticeSubject,
   Progress,
+  RemedialSuggestions,
   RevisionOverview,
   RevisionSubject,
   SubjectConfig,
 } from '../../api/types'
+import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
 
@@ -144,6 +146,14 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.trial).toEqual({ active: true, used: 50, limit: 50, remaining: 0 })
     expect(d.revisionTotal).toBe(72)
     expect(d.week).toEqual({ sessions: 0, accuracyPct: 0 })
+  })
+
+  it('mock parity: the gamification dashboard serves the record the Kombo card reads (FR-MUR-2-3)', async () => {
+    const d = await dash(PELAJAR)
+    const g = await data<{ wallet: { streak: { current: number; best: number } } }>(PELAJAR, '/api/gamification/dashboard')
+    const best = g.wallet.streak
+    expect(best.current).toBe(d.streak.count)
+    expect(best.best).toBeGreaterThanOrEqual(best.current)
   })
 
   it.each([
@@ -292,17 +302,31 @@ describe('#1 GET /api/dashboard (S1)', () => {
     }
   })
 
-  it('"Soalan Terkini": the 5 newest approved questions (BR-29), text cut at 100 characters, no practice anchor', async () => {
+  it('"Soalan Terkini" (FR-MUR-2-8): the 5 newest servable questions of the own form, text cut at 140 characters + "…", a figure field, no answer key', async () => {
     const d = await dash(PELAJAR)
-    expect(d.recentQuestions).toHaveLength(5)
+    expect(d.recentQuestions.length).toBeGreaterThan(0)
+    expect(d.recentQuestions.length).toBeLessThanOrEqual(5)
     const created = d.recentQuestions.map((q) => q.createdAt)
     expect([...created].sort().reverse()).toEqual(created)
+    const grade = users.get(PELAJAR)?.grade ?? null
     for (const q of d.recentQuestions) {
-      expect(q.text.length).toBeLessThanOrEqual(103)
-      if (q.text.length > 100) expect(q.text.endsWith('...')).toBe(true)
+      expect(q.text.length).toBeLessThanOrEqual(141)
+      if (q.text.length > 140) expect(q.text.endsWith('…')).toBe(true)
+      expect(q.text.endsWith('...')).toBe(false)
       expect(q.subjectName).not.toBe('')
       expect(q.levelCode).not.toBe('')
+      if (grade !== null && grade >= 7) expect(q.levelCode).toBe(`T${String(grade - 6)}`)
       expect(q.difficulty).toBeGreaterThanOrEqual(1)
+      expect(q.figureThumbUrl === null || q.figureThumbUrl.startsWith('/api/files/')).toBe(true)
+      expect(Object.keys(q).sort()).toEqual([
+        'createdAt',
+        'difficulty',
+        'figureThumbUrl',
+        'id',
+        'levelCode',
+        'subjectName',
+        'text',
+      ])
       expect(Number(q.id) < 600_001 || Number(q.id) > 600_065).toBe(true) // numeric in the mock
     }
   })
@@ -340,23 +364,16 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(Object.values(c.difficultyStats).reduce((a, b) => a + b, 0)).toBe(641)
   })
 
-  it('a random session at a Darjah level is rejected (422 on levelId), at Tingkatan 4 it starts (D72, BR-11)', async () => {
+  it('a start with a legacy mode (random) is 422 "Mod tidak sah." (S5-T03, N-5)', async () => {
     const token = setUser(MAJU).token
-    const d1 = await request(runtime, 'POST', '/api/practice/sessions', token, {
-      mode: 'random',
-      subjectCode: 'MATH',
-      levelId: 1,
-      count: 5,
-    })
-    expect(d1.status).toBe(422)
-    expect(JSON.stringify(d1.body)).toContain('levelId')
-    const t4 = await request(runtime, 'POST', '/api/practice/sessions', token, {
+    const res = await request(runtime, 'POST', '/api/practice/sessions', token, {
       mode: 'random',
       subjectCode: 'MATH',
       levelId: 10,
       count: 5,
     })
-    expect(t4.status).toBe(201)
+    expect(res.status).toBe(422)
+    expect(JSON.stringify(res.body)).toContain('Mod tidak sah.')
   })
 
   it('#3 BM: D1–D4 counts 958 / 2,540 / 805 / 530 = 4,833 and the difficulty splits (BR-12), Darjah offered', async () => {
@@ -915,5 +932,46 @@ describe('#23 stays served beside the new routes', () => {
       coins: 26,
       answered: 84,
     })
+  })
+})
+
+describe('API-PRAC-08 remedial suggestions (S5-T07; FR-MUR-12-2, FR-MUR-12-4, FR-MUR-12-8)', () => {
+  const url = '/api/practice/remedial-suggestions'
+
+  it('pelajar: MATH is below 60 (10 answers, 40 %, target 60); no completed drill', async () => {
+    expect(await data<RemedialSuggestions>(PELAJAR, url)).toEqual({
+      completed: [],
+      needed: [
+        { subjectCode: 'MATH', subjectName: 'Matematik', answered: 10, accuracy: 40, target: 60 },
+      ],
+    })
+  })
+
+  it('pelajarmaju: one completed MATH drill "Set 1" with whole-number before / after and a negative delta', async () => {
+    const r = await data<RemedialSuggestions>(MAJU, url)
+    expect(r.needed).toEqual([])
+    expect(r.completed).toEqual([
+      {
+        subjectCode: 'MATH',
+        subjectName: 'Matematik',
+        setNo: 1,
+        questionCount: 7,
+        before: 77,
+        after: 43,
+        delta: -34,
+        at: '2026-09-25T10:00:00+08:00',
+      },
+    ])
+  })
+
+  it('pelajar2 (the empty-state e2e pupil) has no suggestions and no assigned test', async () => {
+    expect(await data<RemedialSuggestions>(PELAJAR2, url)).toEqual({ completed: [], needed: [] })
+    expect(await data<unknown[]>(PELAJAR2, '/api/remedial-tests/mine')).toEqual([])
+  })
+
+  it('a pupil with 0 answers and the staff roles get empty lists, not an error', async () => {
+    for (const u of [PELAJAR2, ADMIN, GURU, ADMIN_SEKOLAH]) {
+      expect(await data<RemedialSuggestions>(u, url), String(u)).toEqual({ completed: [], needed: [] })
+    }
   })
 })

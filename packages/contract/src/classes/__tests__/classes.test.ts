@@ -6,8 +6,6 @@ import { CLASSES_COMPONENT_SCHEMAS } from '../paths'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
-  ClassJoinRequestSchema,
-  ClassJoinResponseSchema,
   ClassQrDataSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
@@ -24,7 +22,6 @@ import {
   GURU_STUDENT_MESSAGES,
   guruStudentCreatedMessage,
   TeacherTopicCreateRequestSchema,
-  classJoinedText,
 } from '../schema'
 
 const klass = {
@@ -162,17 +159,7 @@ describe('chapters and topics', () => {
   })
 })
 
-describe('join', () => {
-  it('trims the code and rejects a blank one with the mock message', () => {
-    expect(ClassJoinRequestSchema.parse({ classCode: ' abc123 ' }).classCode).toBe('abc123')
-    expect(fieldsOf(ClassJoinRequestSchema.safeParse({ classCode: '   ' }))).toEqual({ classCode: CLASS_MESSAGES.classCode })
-    expect(fieldsOf(ClassJoinRequestSchema.safeParse({}))).toEqual({ classCode: CLASS_MESSAGES.classCode })
-  })
-  it('parses the 201 body with its message', () => {
-    const body = { data: { classroomId: '501' }, message: classJoinedText('Kelas Contoh 4A') }
-    expect(ClassJoinResponseSchema.parse(body).message).toBe('Berjaya menyertai kelas Kelas Contoh 4A.')
-    expect(ClassJoinResponseSchema.safeParse({ data: { classroomId: '501' } }).success).toBe(false)
-  })
+describe('error body', () => {
   it('parses the 422 error body shape', () => {
     const e = { error: { code: 'VALIDATION_ERROR', message: CLASS_MESSAGES.classCode, fields: { classCode: CLASS_MESSAGES.classCode } } }
     expect(ErrorBodySchema.safeParse(e).success).toBe(true)
@@ -201,7 +188,6 @@ describe('OpenAPI document', () => {
       ['/guru/contributions', 'get'],
       ['/guru/galeri-rajah', 'get'],
       ['/kelas-saya', 'get'],
-      ['/kelas-saya/join', 'post'],
     ]
     for (const [path, method] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
   })

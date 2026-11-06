@@ -305,7 +305,7 @@ const itemCommon = {
   state: IntakeItemStateSchema,
   confidenceBand: IntakeConfidenceBandSchema,
   uploader: IntakeActorRefSchema.meta({ description: 'Owner of the batch. A Guru only ever sees own items.' }),
-  question: IntakeAcceptedQuestionSchema.nullable().meta({ description: 'Set once the item is accepted.' }),
+  question: IntakeAcceptedQuestionSchema.nullable().meta({ description: 'Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept).' }),
   duplicates: z.array(IntakeDuplicateEntrySchema).max(50).meta({ description: 'Findings and decisions, oldest first. `variant` entries do not affect `state`.' }),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
@@ -375,6 +375,9 @@ export type IntakeItem = z.infer<typeof IntakeItemSchema>
 
 export const INTAKE_ITEM_PAGE_SIZE_MAX = 100
 
+/** OPT-KIRIMAN-STATUS display keys (40 OPT-KIRIMAN-STATUS, 30 FR-ADM-Q12.1) accepted as `kirimanStatus`. */
+export const INTAKE_KIRIMAN_STATUSES = ['Pending', 'Processing', 'Selesai', 'Ditolak', 'Jumlah'] as const
+
 /**
  * Filters of the review queue (card: status, batch, subject, uploader, confidence band, duplicate flag;
  * AC-07.2). `state` is the item review state (the card says "status"; the word is avoided so it is not
@@ -386,6 +389,11 @@ export const IntakeItemListQuerySchema = z
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(INTAKE_ITEM_PAGE_SIZE_MAX).default(20),
     state: IntakeItemStateSchema.optional(),
+    source: z.enum(['guru']).optional().meta({ description: 'S1-T08: `guru` = items of teacher submissions (batch `source = guru`) only. Omitted = every item. Any other value is 422.' }),
+    kirimanStatus: z.enum(INTAKE_KIRIMAN_STATUSES).optional().meta({
+      description:
+        'S1-T08 (FR-ADM-Q12.1, OPT-KIRIMAN-STATUS): display filter of Kiriman Guru, mapped by the server. Pending = item generated, needs_review or duplicate; Processing = accepted, question not Diluluskan; Selesai = accepted, question Diluluskan; Ditolak = rejected; Jumlah = no filter. Combined with `state` by AND.',
+    }),
     batchId: IdSchema.optional(),
     subject: z.string().min(1).max(32).optional(),
     uploaderId: IdSchema.optional().meta({ description: 'Admin Pusat only; ignored for a Guru.' }),
@@ -395,6 +403,7 @@ export const IntakeItemListQuerySchema = z
     }),
   })
   .meta({ id: 'IntakeItemListQuery', description: '[PROPOSED] Filters of GET /intake/items. Order: newest batch first, then paper order.' })
+export type IntakeKirimanStatus = (typeof INTAKE_KIRIMAN_STATUSES)[number]
 export type IntakeItemListQuery = z.infer<typeof IntakeItemListQuerySchema>
 
 export const IntakeItemStateCountsSchema = z

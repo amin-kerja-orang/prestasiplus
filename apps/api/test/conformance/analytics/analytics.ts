@@ -152,7 +152,7 @@ export const analyticsScenarios: Scenario[] = [
       for (const who of [teacher, schoolAdmin]) {
         const isTeacher = who === teacher
         ctx.expectStatus(await who.request('GET', `/monitoring/schools/${own}`), 200)
-        // A teacher opens own-class pupils only (other scenarios may have enrolled this pupil): the school detail says which.
+        // A teacher opens every pupil of the own school (R1-GUR-10); the school detail lists the pupil either way.
         const listed = rowsIn(dataOf(await who.request('GET', `/monitoring/schools/${own}`)).students).some((r) => String(r.id) === pupil)
         const student = await who.request('GET', `/monitoring/schools/${own}/students/${pupil}`)
         if (isTeacher && !listed) expectError(ctx, student, 404, 'NOT_FOUND')

@@ -67,19 +67,19 @@ export function defaultTier(tiers: readonly Tier[]): Tier {
 }
 
 /**
- * BR-M14-08: after a credit, the highest active tier with `minSyiling` ≤ `currentSyiling`, if it is
- * higher than the current tier; never down.
+ * GAME-17 (FR-GM-17.2, replaces the balance rule of BR-M14-08): the highest active tier with
+ * `minSyiling` ≤ the lifetime syiling, if it is higher than the current tier; never down.
  */
 export function upgradedTier(
   tiers: readonly Tier[],
   currentKey: TierKey,
-  currentSyiling: number,
+  lifetimeSyiling: number,
 ): TierKey {
   const current = tiers.find((t) => t.tierName === currentKey)
   const floorMin = current ? current.minSyiling : Number.NEGATIVE_INFINITY
   let best: Tier | null = null
   for (const t of activeTiers(tiers)) {
-    if (t.minSyiling <= currentSyiling && t.minSyiling > floorMin) best = t
+    if (t.minSyiling <= lifetimeSyiling && t.minSyiling > floorMin) best = t
   }
   return best ? best.tierName : currentKey
 }
@@ -91,15 +91,15 @@ export function nextTierOf(tiers: readonly Tier[], currentKey: TierKey): Tier | 
   return activeTiers(tiers).find((t) => t.minSyiling > min) ?? null
 }
 
-/** BR-M14-06: pct with 1 decimal, capped at 100. */
+/** BR-M14-06 on the lifetime total (AC-GM-17.6): pct with 1 decimal, capped at 100. */
 export function nextTierProgress(
-  currentSyiling: number,
+  lifetimeSyiling: number,
   next: Tier,
 ): { pct: number; need: number } {
-  const raw = next.minSyiling > 0 ? (currentSyiling / next.minSyiling) * 100 : 100
+  const raw = next.minSyiling > 0 ? (lifetimeSyiling / next.minSyiling) * 100 : 100
   return {
     pct: Math.min(100, Math.round(raw * 10) / 10),
-    need: Math.max(0, next.minSyiling - currentSyiling),
+    need: Math.max(0, next.minSyiling - lifetimeSyiling),
   }
 }
 
@@ -155,10 +155,11 @@ export type SessionMode =
   | 'question_set'
   | 'pksk'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
 
-export const SPM_MODES: readonly string[] = ['past_year', 'latih_tubi', 'ramalan']
+export const SPM_MODES: readonly string[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
 /** BR-M14-16: achievements are evaluated after these modes only. */
 export const PRACTICE_MODES: readonly string[] = ['random', 'chapter', 'revision']
 
@@ -173,6 +174,7 @@ export function isSpmMode(mode: string): boolean {
 export function sessionCredit(mode: string): { source: string; prefix: string } {
   switch (mode) {
     case 'past_year':
+    case 'databank':
       return { source: 'quiz_spm', prefix: 'SPM Tahun Lepas' }
     case 'latih_tubi':
       return { source: 'quiz_spm', prefix: 'Latih Tubi SPM' }
@@ -191,6 +193,7 @@ export function teacherMirrorLabel(mode: string): string {
     case 'latih_tubi':
       return 'Latih Tubi SPM'
     case 'past_year':
+    case 'databank':
       return 'SPM Tahun Lepas'
     case 'ramalan':
       return 'Ramalan SPM'
@@ -201,12 +204,12 @@ export function teacherMirrorLabel(mode: string): string {
   }
 }
 
-/** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id (seed). */
+/** 48 GAME-24: 8 characters of [A-Z0-9] for a new code, deterministic from the user id (seed). */
 export function referralCodeFor(userId: number, salt = 0): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let h = (Math.imul(userId ^ 0x5bd1e995, 0x27d4eb2d) + Math.imul(salt + 1, 0x165667b1)) >>> 0
   let out = ''
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0
     h = (h ^ (h >>> 12)) >>> 0
     out += alphabet[h % alphabet.length]

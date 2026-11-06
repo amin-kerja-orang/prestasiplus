@@ -16,8 +16,7 @@ export const TAHAP_BANDS: readonly TahapBand[] = [
   { key: 'Cemerlang', colour: '#15803d' },
   { key: 'Sederhana', colour: '#ea580c' },
   { key: 'Rendah', colour: '#dc2626' },
-  { key: 'Kritikal', colour: '#991b1b' },
-  { key: 'Tiada Langsung', colour: '#6b7280' },
+  { key: 'Tiada', colour: '#6b7280' },
 ]
 
 /** FN-M11-3.2.1 "Negeri" options (the states that have schools with users, INFERRED). */

@@ -1,6 +1,6 @@
 /**
  * M16-T1 seed: the documented figures of SRS M16 v1.6 §6.10, §6.11 against the computed stores
- * (battles 168 / 0 / 66, windows, standings, leagues, Sekolah Bersaing, the M11 port).
+ * (battles 168 / 0 / 66, windows, standings, leagues, the M11 port).
  */
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -12,7 +12,6 @@ import {
   battles,
   gameResults,
   leagues,
-  sekolahBersaing,
   standings,
   tournaments,
 } from '../../mock'
@@ -180,22 +179,12 @@ describe('leagues, tournaments and Sekolah Bersaing seeds', () => {
     expect(leagues.schoolCount(2)).toBe(2)
     expect(leagues.count('Q-LEAGUE-OPEN')).toBe(1)
     expect(leagues.list(900002)).toMatchObject({ mine: [], open: [{ id: 1 }] })
-    expect(leagues.get(2, 900002)?.standings.T4?.[0]).toMatchObject({
+    expect(leagues.get(2)?.standings.T4?.[0]).toMatchObject({
       schoolId: 8090,
       peserta: 8,
       skor: 2935,
       purata: 77.2,
     })
-  })
-
-  it.each([
-    ['2026-09-21', 49],
-    ['2026-09-14', 48],
-    ['2026-09-07', 48],
-    ['2026-08-31', 48],
-    ['2025-01-06', 0],
-  ])('Q-SB-WEEK(%s) = %i', (week, count) => {
-    expect(sekolahBersaing.view(week).count).toBe(count)
   })
 })
 

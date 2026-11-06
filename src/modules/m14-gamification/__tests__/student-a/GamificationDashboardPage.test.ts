@@ -6,9 +6,12 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { ApiError } from '@/api'
 
 import GamificationDashboardPage from '../../pages/GamificationDashboardPage.vue'
-import { dashboard, wallet } from './fixtures'
+import { dashboard, ledgerRow, wallet } from './fixtures'
 
-const api = vi.hoisted(() => ({ fetchGamificationDashboard: vi.fn() }))
+const api = vi.hoisted(() => ({
+  fetchGamificationDashboard: vi.fn(),
+  fetchGamificationTransactions: vi.fn(),
+}))
 vi.mock('../../api', () => api)
 
 let w: VueWrapper | undefined
@@ -30,6 +33,10 @@ const all = (id: string) => w!.findAll(`[data-testid="${id}"]`)
 beforeEach(() => {
   vi.clearAllMocks()
   api.fetchGamificationDashboard.mockResolvedValue(dashboard())
+  api.fetchGamificationTransactions.mockResolvedValue({
+    data: Array.from({ length: 12 }, (_, i) => ledgerRow(100 - i)),
+    meta: { currentSyiling: 256, type: '' },
+  })
 })
 afterEach(() => {
   w?.unmount()
@@ -49,6 +56,19 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(t('s11-next-pct').text()).toBe('51.2%')
     expect(t('s11-next-need').text()).toBe('Perlu 244 syiling lagi')
     expect(t('s11-next-bar').attributes('data-value')).toContain('51.2')
+  })
+
+  it('next-tier progress runs on lifetime syiling, not the balance (AC-MUR-28-1, AC-GM-17.6)', async () => {
+    api.fetchGamificationDashboard.mockResolvedValue(
+      dashboard({ wallet: wallet({ currentSyiling: 74, totalSyilingEarned: 374 }) }),
+    )
+    await mountPage()
+    expect(t('s11-tier-name').text()).toBe('Gangsa Tier')
+    expect(t('s11-hero-syiling').text()).toBe('74')
+    expect(t('s11-next-figures').text()).toBe('374 / 500')
+    expect(t('s11-next-pct').text()).toBe('74.8%')
+    expect(t('s11-next-need').text()).toBe('Perlu 126 syiling lagi')
+    expect(t('s11-next-bar').attributes('data-value')).toContain('74.8')
   })
 
   it('hero buttons target S12, S13 and M15 rewards (AC-04.3)', async () => {
@@ -78,7 +98,7 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(w!.find('[data-testid="s11-next-tier"]').exists()).toBe(false)
   })
 
-  it('lists the first 4 challenges and the latest 6 rows (AC-05.1, 05.2)', async () => {
+  it('lists the first 4 challenges and the latest 10 of 12 rows (AC-05.1, AC-MUR-28-5)', async () => {
     await mountPage()
     expect(all('s11-challenge')).toHaveLength(4)
     expect(all('s11-challenge-difficulty')[0]!.text()).toBe('Mudah')
@@ -86,11 +106,29 @@ describe('S11 dashboard (AC-M14-04, 05)', () => {
     expect(all('s11-challenge-progress')[0]!.text()).toBe('0/3')
     expect(all('s11-challenge-reward')[0]!.text()).toBe('+15')
     expect(t('s11-challenges-all').attributes('href')).toBe('/gamification/challenges')
-    expect(all('s11-recent-row')).toHaveLength(6)
+    expect(all('s11-recent-row')).toHaveLength(10)
     expect(all('s11-recent-row')[0]!.text()).toContain('Cabaran selesai: Penjelajah Topik')
     expect(all('s11-recent-row')[0]!.text()).toContain('+25')
     expect(all('s11-recent-row')[0]!.text()).toContain('yang lepas')
     expect(t('s11-recent-all').attributes('href')).toBe('/gamification/history')
+  })
+
+  it('no transactions: "Tiada transaksi." and no row (AC-MUR-28-3)', async () => {
+    api.fetchGamificationDashboard.mockResolvedValue(dashboard({ recent: [] }))
+    api.fetchGamificationTransactions.mockResolvedValue({
+      data: [],
+      meta: { currentSyiling: 0, type: '' },
+    })
+    await mountPage()
+    expect(t('s11-recent-empty').text()).toBe('Tiada transaksi.')
+    expect(all('s11-recent-row')).toHaveLength(0)
+  })
+
+  it('a failed ledger read keeps the rows of the dashboard read and no error shows', async () => {
+    api.fetchGamificationTransactions.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }))
+    await mountPage()
+    expect(all('s11-recent-row').length).toBe(dashboard().recent.length)
+    expect(w!.find('[data-testid="s11-recent-empty"]').exists()).toBe(false)
   })
 
   it('mastery rows use the 2-decimal accuracy and the bonus suffix (AC-05.3)', async () => {

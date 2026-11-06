@@ -76,6 +76,8 @@ export const MODE_CODES: readonly PracticeMode[] = [
   'remedial',
   'question_set',
   'pksk',
+  // S3-T07: appended, so the indices of the seeded modes do not move.
+  'databank',
 ]
 
 /** Question lists of designed sessions, planned lazily (class 228). */

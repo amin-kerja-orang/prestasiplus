@@ -12,7 +12,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const ACHIEVEMENT_PRACTICE_MODES = ['random', 'chapter', 'revision'] as const
 
 /** All modes (share cards count every completed session). */
-const ALL_MODES = ['random', 'chapter', 'revision', 'mission', 'remedial', 'question_set', 'past_year', 'latih_tubi', 'ramalan', 'pksk'] as const
+const ALL_MODES = ['random', 'chapter', 'revision', 'mission', 'remedial', 'question_set', 'past_year', 'databank', 'latih_tubi', 'ramalan', 'pksk'] as const
 
 /**
  * M14 `PracticeFactsProvider` over the M05 owner's read doorway (`PracticeRepository`; the gamification module never

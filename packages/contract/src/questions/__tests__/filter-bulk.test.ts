@@ -12,7 +12,7 @@ describe('Studio list filters (R1-21.5, D79): Tahun, Negeri, Kertas, Jenis', () 
     expect([...QUESTION_JENIS]).toEqual(['sebenar', 'percubaan', 'modul', 'topikal', 'latihan'])
   })
   it('refuse a malformed value with the BM filter message', () => {
-    const r = QuestionListQuerySchema.safeParse({ tahun: '24', kertas: '4', jenis: 'ujian' })
+    const r = QuestionListQuerySchema.safeParse({ tahun: '24', kertas: '5', jenis: 'ujian' })
     expect(issues(r)).toEqual({ tahun: QUESTION_MESSAGES.filterInvalid, kertas: QUESTION_MESSAGES.filterInvalid, jenis: QUESTION_MESSAGES.filterInvalid })
   })
 })
