@@ -172,6 +172,13 @@ export function generatedLedgerUser(key: number, facets: Pick<LedgerRow, LedgerF
 }
 
 const pick = <T>(list: readonly T[], h: number): T => list[h % list.length] as T
+
+/**
+ * The 10 challenges observed on live (ids 1-10), frozen for the generated `daily_challenge` rows (D12).
+ * Challenges added later (Kombo 10, id 11) never appear in generated history: `h % length` would
+ * reshuffle every generated row, and the history would show a challenge that was not observed.
+ */
+const OBSERVED_CHALLENGES = SEED_CHALLENGES.filter((c) => c.id <= 10)
 const PB = 'Jawab betul dalam Papan Bijak 🎲'
 
 function deriveLedger(
@@ -207,7 +214,7 @@ function deriveLedger(
       }
     }
     case 'daily_challenge': {
-      const ch = pick(SEED_CHALLENGES, h)
+      const ch = pick(OBSERVED_CHALLENGES, h)
       const old = OLD_CHALLENGE_REWARDS[ch.title]
       if (old !== undefined && generatedLedgerTime(key) < Date.parse('2026-03-01T00:00:00+08:00')) {
         return { ...bal(old), description: `Cabaran: ${ch.title}`, refId: null }
