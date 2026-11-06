@@ -157,7 +157,8 @@ const BADGE_BOOK = { label: 'Latihan', icon: 'fa-book', color: '#6B7280' }
 /** §6.10 "Session types" (PROPOSED COPY except `past_year` / `latih_tubi`, OBSERVED). */
 const BADGES: Readonly<Record<PracticeMode, HistoryItem['badge']>> = {
   past_year: BADGE_BOOK,
-  databank: BADGE_BOOK,
+  // Existing copy of the contract (`PRACTICE_READS_HISTORY_BADGES.databank`, S5-T15, 10 OPT-MODE-SESI): "Databank SPM".
+  databank: { label: 'Databank SPM', icon: 'fa-book', color: '#6B7280' },
   latih_tubi: BADGE_BOOK,
   random: BADGE_BOOK,
   chapter: { label: 'Bab', icon: 'fa-layer-group', color: '#0D9488' },

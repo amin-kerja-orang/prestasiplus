@@ -21,7 +21,7 @@ export const ALL_MODES: readonly PracticeMode[] = [...PRACTICE_MODES, ...SPM_MOD
 export const isMode = (v: unknown): v is PracticeMode =>
   typeof v === 'string' && (ALL_MODES as readonly string[]).includes(v)
 
-/** Legacy stored modes (mirror of `LEGACY_PRACTICE_MODES` of the contract). Only `random` is refused at start for now: `past_year` / `ramalan` stay startable until the Databank / Tracking A cards move their pages. */
+/** Legacy stored modes (mirror of `LEGACY_PRACTICE_MODES` of the contract). Only `random` is refused at start for now: `past_year` / `ramalan` stay startable for old clients (the Tracking A page still starts `ramalan`; the Databank page starts `databank`). */
 export const LEGACY_PRACTICE_MODES: readonly PracticeMode[] = ['random', 'past_year', 'ramalan']
 const REFUSED_AT_START: readonly PracticeMode[] = ['random']
 

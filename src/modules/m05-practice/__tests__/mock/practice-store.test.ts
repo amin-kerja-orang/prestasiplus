@@ -788,7 +788,7 @@ describe('write path (BR-31)', () => {
   it('S3-T07: the past_year type (Tahun Lepas pill) lists legacy past_year and new databank sessions; stats cover every mode', async () => {
     await spyM14()
     const ids = questions.practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: 2, seed: 'db' }).map((q) => q.id)
-    const done = (mode: string, startedAt: string, completedAt: string) =>
+    const done = (mode: SessionRow['mode'], startedAt: string, completedAt: string) =>
       practice.completeSession({
         userId: 3,
         mode,
