@@ -12,12 +12,14 @@
  */
 import type { ButtonProps } from '@nuxt/ui'
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
-import { useApi, useClickOutside } from '@/composables'
+import { useApi, useClickOutside, useSession } from '@/composables'
 import { DsArt3D, DsIconChip, DsPage, DsLoadError } from '@/ds'
 
 import {
+  BATTLE_QUESTION_COUNT_DEFAULT,
+  BATTLE_QUESTION_COUNTS,
   fetchBattleLobby,
   fetchInvitations,
   type BattleInvitation,
@@ -27,15 +29,18 @@ import {
 import ChallengeFriendModal from '../components/battle/ChallengeFriendModal.vue'
 import InvitationsModal from '../components/battle/InvitationsModal.vue'
 import {
+  BATTLE_MSG,
   canStart,
   matchParams,
   pkskBlocked,
   pkskNoGrant,
   type BattleSelection,
 } from '../components/battle/battle-lib'
-import { useBattleSearch } from '../composables/useBattleSearch'
+import { lastStartRequest, useBattleSearch } from '../composables/useBattleSearch'
 
 const router = useRouter()
+const route = useRoute()
+const { user } = useSession()
 /** Close button of the error alert: a 44px target with the test id (extra attrs reach the button). */
 const errorClose = {
   class: 'min-h-11 min-w-11',
@@ -50,6 +55,7 @@ const sel = reactive<BattleSelection>({
   pkskDomainId: null,
   pkskLevel: null,
   spmSubjectId: null,
+  questionCount: BATTLE_QUESTION_COUNT_DEFAULT,
 })
 const showMore = ref(false)
 const showSpmTip = ref(false)
@@ -59,6 +65,8 @@ const invitations = ref<BattleInvitation[]>([])
 
 const search = useBattleSearch({
   onMatched: (uuid) => void router.push(`/battle/arena/${uuid}`),
+  // a session without a school id (null) is a pupil with no school
+  hasSchool: () => user.value?.schoolId != null,
 })
 
 const coreSubjects = computed(() => lobby.value?.subjects.filter((s) => s.core) ?? [])
@@ -75,7 +83,8 @@ const hideVisibility = computed(
   () =>
     search.phase.value === 'searching' ||
     search.phase.value === 'incoming' ||
-    search.phase.value === 'waiting',
+    search.phase.value === 'waiting' ||
+    search.phase.value === 'robot',
 )
 
 function setType(type: QuestionType): void {
@@ -150,6 +159,12 @@ function onWaiting(event: Event): void {
 const testHooks = import.meta.env.VITE_TEST_HOOKS === 'true'
 onMounted(async () => {
   if (testHooks) window.addEventListener('m16:battle-waiting', onWaiting)
+  // "Main Lagi" (result screen): the same Quick Match / Battle Sekolah search again
+  if (route.query.again === '1') {
+    const again = lastStartRequest()
+    void router.replace({ path: route.path })
+    if (again !== null) void search.start(again.mode, again.params)
+  }
   try {
     const res = await fetchInvitations()
     const list = (res.body as { invitations?: BattleInvitation[] } | null)?.invitations
@@ -194,7 +209,20 @@ onBeforeUnmount(() => {
         :close="errorClose"
         data-testid="battle-error"
         @update:open="search.clearError()"
-      />
+      >
+        <template v-if="search.canRetry.value" #actions>
+          <UButton
+            color="neutral"
+            variant="soft"
+            size="lg"
+            class="min-h-11"
+            data-testid="battle-retry"
+            @click="void search.retry()"
+          >
+            {{ BATTLE_MSG.retry }}
+          </UButton>
+        </template>
+      </UAlert>
 
       <UCard>
         <div class="flex items-center justify-between gap-4">
@@ -394,6 +422,30 @@ onBeforeUnmount(() => {
             </UButton>
           </div>
         </div>
+
+        <!-- Bilangan Soalan (48 GAME-01: chips 5, 10, 15, 20) -->
+        <DsStack gap="md" data-testid="battle-count">
+          <DsSpacer />
+          <DsStack gap="xs">
+            <DsText variant="label" tone="muted">{{ BATTLE_MSG.questionCount }}</DsText>
+            <DsGrid :cols="4" gap="xs">
+              <UButton
+                v-for="n in BATTLE_QUESTION_COUNTS"
+                :key="n"
+                size="lg"
+                block
+                :color="sel.questionCount === n ? 'primary' : 'neutral'"
+                :variant="sel.questionCount === n ? 'solid' : 'soft'"
+                class="min-h-12"
+                :aria-pressed="sel.questionCount === n"
+                :data-testid="`battle-count-${n}`"
+                @click="sel.questionCount = n"
+              >
+                {{ n }}
+              </UButton>
+            </DsGrid>
+          </DsStack>
+        </DsStack>
       </UCard>
 
       <!-- Searching / incoming / waiting -->
@@ -423,6 +475,12 @@ onBeforeUnmount(() => {
             Batal
           </UButton>
         </div>
+      </UCard>
+      <UCard v-else-if="search.phase.value === 'robot'" data-testid="battle-robot">
+        <DsStack gap="xs" align="center" class="text-center">
+          <DsArt3D name="bolt" size="hero" float />
+          <DsText variant="body" tone="highlighted" role="status">{{ BATTLE_MSG.robotOverlay }}</DsText>
+        </DsStack>
       </UCard>
       <UCard
         v-else-if="search.phase.value === 'incoming' && search.challenger.value"
