@@ -26494,6 +26494,960 @@
         ],
         "additionalProperties": false
       },
+      "MarketplaceProductStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "draft",
+          "rejected"
+        ]
+      },
+      "MarketplaceSellerStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "active",
+          "suspended",
+          "banned"
+        ]
+      },
+      "MarketplaceSellerAction": {
+        "type": "string",
+        "enum": [
+          "approve",
+          "verify",
+          "suspend",
+          "ban"
+        ]
+      },
+      "MarketplaceAdminProductCreate": {
+        "type": "object",
+        "properties": {
+          "sellerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Seller id, or null for \"PRESTASIPLUS Official\" (P12-02). A missing key or blank id is 422 \"Penjual diperlukan.\". Must be an `active` seller."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "categoryId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "RM 0.01 to 100000, decimal string."
+          },
+          "originalPrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "Optional; when given it must be greater than `price`."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "new",
+              "used"
+            ]
+          },
+          "stockStatus": {
+            "type": "string",
+            "enum": [
+              "available",
+              "out_of_stock"
+            ]
+          },
+          "shippingMethod": {
+            "type": "string",
+            "enum": [
+              "pickup",
+              "postage",
+              "cod",
+              "free"
+            ]
+          },
+          "shippingFee": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "RM 0 to 1000, decimal string; null clears."
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft",
+              "rejected"
+            ],
+            "description": "Default `active`."
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "maxItems": 5,
+            "description": "Up to 5 `FileRef.url` values of files uploaded with `POST /api/files?purpose=marketplace_image`. Position follows array order; the first is \"Utama\"."
+          }
+        },
+        "required": [
+          "sellerId",
+          "name",
+          "categoryId",
+          "price",
+          "condition",
+          "stockStatus",
+          "shippingMethod"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductUpdate": {
+        "type": "object",
+        "properties": {
+          "sellerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Seller id, or null for \"PRESTASIPLUS Official\" (P12-02). A missing key or blank id is 422 \"Penjual diperlukan.\". Must be an `active` seller."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "categoryId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "price": {
+            "type": "string",
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "RM 0.01 to 100000, decimal string."
+          },
+          "originalPrice": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "Optional; when given it must be greater than `price`."
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "condition": {
+            "type": "string",
+            "enum": [
+              "new",
+              "used"
+            ]
+          },
+          "stockStatus": {
+            "type": "string",
+            "enum": [
+              "available",
+              "out_of_stock"
+            ]
+          },
+          "shippingMethod": {
+            "type": "string",
+            "enum": [
+              "pickup",
+              "postage",
+              "cod",
+              "free"
+            ]
+          },
+          "shippingFee": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{1,7}(\\.\\d{1,2})?$",
+            "description": "RM 0 to 1000, decimal string; null clears."
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "draft",
+              "rejected"
+            ]
+          },
+          "newImages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "maxItems": 5,
+            "description": "Files to append (same rules as `images` on create)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductListQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Substring of the name, case-insensitive; trimmed and cut to 100 characters."
+          },
+          "categoryId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/Id"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/MarketplaceProductStatus"
+              }
+            ]
+          },
+          "page": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,8}$",
+            "description": "Positive integer, default 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerListQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/MarketplaceSellerStatus"
+              }
+            ]
+          },
+          "page": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{0,8}$",
+            "description": "Positive integer, default 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "$ref": "#/components/schemas/MarketplaceMoney"
+          },
+          "originalPrice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "thumbnailUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "description": "Image at the lowest position; null shows the placeholder."
+          },
+          "sellerId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "sellerName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "\"PRESTASIPLUS Official\" for a platform product."
+          },
+          "categoryId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "categoryName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "condition": {
+            "$ref": "#/components/schemas/MarketplaceCondition"
+          },
+          "stockStatus": {
+            "$ref": "#/components/schemas/MarketplaceStockStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceProductStatus"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "price",
+          "originalPrice",
+          "thumbnailUrl",
+          "sellerId",
+          "sellerName",
+          "categoryId",
+          "categoryName",
+          "condition",
+          "stockStatus",
+          "status",
+          "views",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "$ref": "#/components/schemas/MarketplaceMoney"
+          },
+          "originalPrice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "thumbnailUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "description": "Image at the lowest position; null shows the placeholder."
+          },
+          "sellerId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "sellerName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "\"PRESTASIPLUS Official\" for a platform product."
+          },
+          "categoryId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "categoryName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "condition": {
+            "$ref": "#/components/schemas/MarketplaceCondition"
+          },
+          "stockStatus": {
+            "$ref": "#/components/schemas/MarketplaceStockStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceProductStatus"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "shippingMethod": {
+            "$ref": "#/components/schemas/MarketplaceShippingMethod"
+          },
+          "shippingFee": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "location": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductImage"
+            },
+            "maxItems": 5
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "price",
+          "originalPrice",
+          "thumbnailUrl",
+          "sellerId",
+          "sellerName",
+          "categoryId",
+          "categoryName",
+          "condition",
+          "stockStatus",
+          "status",
+          "views",
+          "createdAt",
+          "description",
+          "shippingMethod",
+          "shippingFee",
+          "location",
+          "images",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductStats": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerStats": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "pending"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "shopName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2
+          },
+          "ownerMasked": {
+            "type": "string",
+            "description": "The owner account name with each word cut to its first letter and \"***\" (never the full name)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceSellerStatus"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "`verified_at` is not null (the tick set by `Sahkan`)."
+          },
+          "productCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "All the seller's products, any status."
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceSellerAction"
+            },
+            "description": "The transitions allowed now (same as `marketplaceSellerActions`)."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "shopName",
+          "initial",
+          "ownerMasked",
+          "status",
+          "verified",
+          "productCount",
+          "actions",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "shopName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2
+          },
+          "ownerMasked": {
+            "type": "string",
+            "description": "The owner account name with each word cut to its first letter and \"***\" (never the full name)."
+          },
+          "status": {
+            "$ref": "#/components/schemas/MarketplaceSellerStatus"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "`verified_at` is not null (the tick set by `Sahkan`)."
+          },
+          "productCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "All the seller's products, any status."
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceSellerAction"
+            },
+            "description": "The transitions allowed now (same as `marketplaceSellerActions`)."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "verifiedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "whatsappClicks": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "shopName",
+          "initial",
+          "ownerMasked",
+          "status",
+          "verified",
+          "productCount",
+          "actions",
+          "createdAt",
+          "description",
+          "phone",
+          "whatsapp",
+          "verifiedAt",
+          "whatsappClicks"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/MarketplaceAdminProductStats"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "stats"
+        ],
+        "additionalProperties": {}
+      },
+      "MarketplaceAdminSellerListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/MarketplaceAdminSellerStats"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "stats"
+        ],
+        "additionalProperties": {}
+      },
+      "MarketplaceAdminProductListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAdminProductRow"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MarketplaceAdminProductListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminProductResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceAdminProductDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminDeleted": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAdminSellerRow"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MarketplaceAdminSellerListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceAdminSellerDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceAdminSellerOptionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceAdminSellerOption"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
       "KeluargaAngkatCategory": {
         "type": "string",
         "enum": [
@@ -61579,7 +62533,8 @@
           "cms_image",
           "audio_kbat",
           "cms_screenshot",
-          "timeline_photo"
+          "timeline_photo",
+          "marketplace_image"
         ]
       },
       "FileRef": {
@@ -111768,6 +112723,1202 @@
         }
       }
     },
+    "/admin/marketplace/products": {
+      "get": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Admin product list (P2-12)",
+        "description": "All products whatever their status or seller status (not the pupil visibility rule). Filters combine with AND: `q` (name substring), `categoryId`, `status` (active=Aktif, draft=Draf, rejected=Ditolak). Newest first, 20 per page. `meta.totalItems` is the \"{n} produk dijumpai\" count; `meta.stats` are the global stat cards (`Jumlah Produk`, `Aktif`), never the filtered query.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 400,
+              "description": "Substring of the name, case-insensitive; trimmed and cut to 100 characters."
+            },
+            "required": false,
+            "description": "Substring of the name, case-insensitive; trimmed and cut to 100 characters.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                },
+                {
+                  "$ref": "#/components/schemas/Id"
+                }
+              ]
+            },
+            "required": false,
+            "name": "categoryId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                },
+                {
+                  "$ref": "#/components/schemas/MarketplaceProductStatus"
+                }
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d{0,8}$",
+              "description": "Positive integer, default 1."
+            },
+            "required": false,
+            "description": "Positive integer, default 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rows with ListMeta and stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminProductListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields.<name>`: sellerId \"Penjual diperlukan.\" (also an unknown or non-active seller, [PROPOSED] \"Penjual tidak sah.\"); name \"Nama produk diperlukan.\"; categoryId \"Kategori diperlukan.\"; originalPrice \"Harga asal mesti lebih besar daripada harga.\"; images / newImages \"Maksimum 5 gambar.\" (more than 5 in total) and \"Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.\" (not a stored marketplace_image file). Ranges: name <= 120, price 0.01..100000, description <= 2000, shippingFee 0..1000, location <= 100. Unknown keys: \"The <key> field is not allowed.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Create a product",
+        "description": "Generates a unique `slug` (name + 5 random characters). `sellerId: null` is the official seller; any other seller must be `active`. `status` defaults to `active`. Images are `FileRef.url` values of `marketplace_image` uploads (stored as given). Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketplaceAdminProductCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created product.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminProductResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields.<name>`: sellerId \"Penjual diperlukan.\" (also an unknown or non-active seller, [PROPOSED] \"Penjual tidak sah.\"); name \"Nama produk diperlukan.\"; categoryId \"Kategori diperlukan.\"; originalPrice \"Harga asal mesti lebih besar daripada harga.\"; images / newImages \"Maksimum 5 gambar.\" (more than 5 in total) and \"Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.\" (not a stored marketplace_image file). Ranges: name <= 120, price 0.01..100000, description <= 2000, shippingFee 0..1000, location <= 100. Unknown keys: \"The <key> field is not allowed.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/products/{id}": {
+      "get": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Admin product detail (edit form)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Product id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Product id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The product with its images by position.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminProductResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Update a product (partial)",
+        "description": "Only the keys sent change; `null` clears an optional field. `Nyahaktif` is `{status:\"draft\"}` and `Aktifkan` is `{status:\"active\"}`. `newImages` are appended (total at most 5). The slug never changes. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Product id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Product id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarketplaceAdminProductUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated product.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminProductResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields.<name>`: sellerId \"Penjual diperlukan.\" (also an unknown or non-active seller, [PROPOSED] \"Penjual tidak sah.\"); name \"Nama produk diperlukan.\"; categoryId \"Kategori diperlukan.\"; originalPrice \"Harga asal mesti lebih besar daripada harga.\"; images / newImages \"Maksimum 5 gambar.\" (more than 5 in total) and \"Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.\" (not a stored marketplace_image file). Ranges: name <= 120, price 0.01..100000, description <= 2000, shippingFee 0..1000, location <= 100. Unknown keys: \"The <key> field is not allowed.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Delete a product",
+        "description": "Hard delete; images and reviews cascade and the stored image files are removed. No order-based block (there is no order table). Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Product id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Product id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deleted id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminDeleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/products/{id}/images/{imageId}": {
+      "delete": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Delete one product image",
+        "description": "Its own action (D-M20-01): it never touches the product fields. The other images keep their positions. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Product id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Product id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Image id; must belong to the product, else 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Image id; must belong to the product, else 404.",
+            "name": "imageId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The product after the delete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminProductResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/seller-options": {
+      "get": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Seller select of the product form (P12-02)",
+        "description": "The official seller first (`id` null, \"PRESTASIPLUS Official (Admin)\"), then the `active` sellers by shop name.",
+        "responses": {
+          "200": {
+            "description": "Options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerOptionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers": {
+      "get": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Admin seller list (P2-13)",
+        "description": "Filter `status` (pending=Pending, active=Aktif, suspended=Digantung, banned=Diharamkan). Newest first, 20 per page. `meta.totalItems` is the \"{n} penjual dijumpai\" count; `meta.stats` are global (`Jumlah Penjual`, `Aktif`, `Menunggu Pengesahan`).",
+        "parameters": [
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                },
+                {
+                  "$ref": "#/components/schemas/MarketplaceSellerStatus"
+                }
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d{0,8}$",
+              "description": "Positive integer, default 1."
+            },
+            "required": false,
+            "description": "Positive integer, default 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of sellers with ListMeta and stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields.<name>`: sellerId \"Penjual diperlukan.\" (also an unknown or non-active seller, [PROPOSED] \"Penjual tidak sah.\"); name \"Nama produk diperlukan.\"; categoryId \"Kategori diperlukan.\"; originalPrice \"Harga asal mesti lebih besar daripada harga.\"; images / newImages \"Maksimum 5 gambar.\" (more than 5 in total) and \"Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.\" (not a stored marketplace_image file). Ranges: name <= 120, price 0.01..100000, description <= 2000, shippingFee 0..1000, location <= 100. Unknown keys: \"The <key> field is not allowed.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers/{id}": {
+      "get": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Admin seller detail (\"Semak Penjual\")",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Seller id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Seller id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers/{id}/approve": {
+      "post": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Luluskan penjual",
+        "description": "pending or suspended -> active. Any other starting status is 409. The seller's products leave the pupil Marketplace at once on suspend and ban. No body. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Seller id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Seller id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seller after the transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Perubahan status ini tidak dibenarkan daripada status semasa.\": the action is not allowed from the seller's current status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers/{id}/verify": {
+      "post": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Sahkan penjual",
+        "description": "active and not yet verified: sets `verified_at` (status unchanged). Any other starting status is 409. The seller's products leave the pupil Marketplace at once on suspend and ban. No body. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Seller id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Seller id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seller after the transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Perubahan status ini tidak dibenarkan daripada status semasa.\": the action is not allowed from the seller's current status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers/{id}/suspend": {
+      "post": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Gantung penjual",
+        "description": "active -> suspended. Any other starting status is 409. The seller's products leave the pupil Marketplace at once on suspend and ban. No body. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Seller id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Seller id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seller after the transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Perubahan status ini tidak dibenarkan daripada status semasa.\": the action is not allowed from the seller's current status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/marketplace/sellers/{id}/ban": {
+      "post": {
+        "tags": [
+          "marketplace-admin"
+        ],
+        "summary": "Haramkan penjual",
+        "description": "pending, active or suspended -> banned (terminal); atomic. Any other starting status is 409. The seller's products leave the pupil Marketplace at once on suspend and ban. No body. Audited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Seller id. A non-numeric value answers 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Seller id. A non-numeric value answers 404.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The seller after the transition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceAdminSellerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": every role except admin (teacher, pupil, school_admin, ppd_officer).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown or non-numeric id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Perubahan status ini tidak dibenarkan daripada status semasa.\": the action is not allowed from the seller's current status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mohon-keluarga-angkat": {
       "post": {
         "tags": [
@@ -139504,7 +141655,7 @@
           "files"
         ],
         "summary": "Upload one file",
-        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
+        "description": "multipart/form-data, one part `file`; query `purpose`. The type is decided from the content (magic bytes), never the name or header. Raster images are stored with metadata (EXIF GPS, text chunks) removed, so `size` is the stored size. Role per purpose: avatar any signed-in role; bijak_photo student; question_image admin or teacher; cms_image admin; audio_kbat admin (mp3, m4a, wav, ogg, 20 MB); cms_screenshot admin; timeline_photo none (written only by POST /timeline, so POST /files answers 403); marketplace_image admin (JPG, PNG, WebP, 2 MB). Limits per purpose are in FILE_PURPOSE_RULES (avatar 2048 KB jpeg/png/webp; bijak_photo 5 MB jpeg/png), capped by MAX_UPLOAD_MB. A wrong type or an oversize file is 422 `fields.file`. Rate limited per user.",
         "parameters": [
           {
             "schema": {
@@ -139613,7 +141764,7 @@
           "files"
         ],
         "summary": "Download a file",
-        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
+        "description": "Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); marketplace_image any signed-in user; timeline_photo as avatar: the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a file written under Mod Pelajar: the owner and admin only); audio_kbat and cms_screenshot admin only, fail closed (students play audio only through GET /audio-kbat-sets/{id}/sections/{no}/audio); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.",
         "parameters": [
           {
             "schema": {
