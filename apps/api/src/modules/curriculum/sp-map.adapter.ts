@@ -15,7 +15,9 @@ import type { SpMapPort, SpSubjectTree, SpTagRow } from '../reports/performance/
  *   ancestor (Tajuk DSKP, e.g. "Kemahiran Membaca", "Ubahan"), or else its nearest `sk`, or null. A level with no
  *   SP nodes (T1-T3 hold units only, D115) or a null level yields no subject.
  * - `spOf`: the SP tags (`question_version_sp_nodes`) of each question's latest approved version. A question
- *   tagged only to a Bab, or with no approved version, has no row (AC-MUR-DK-3).
+ *   tagged only to a Bab, or with no approved version, has no row (AC-MUR-DK-3). "Latest approved" is chosen on
+ *   purpose, as the port documents it: it equals `questions.live_version_no` for normal data. `spOf` does not filter by
+ *   level or subject; the consumer counts only tags whose SP is in the level's tree.
  *
  * Bound as `SP_MAP_PORT` by `CurriculumModule`. `PerformanceModule` imports that module, so `PerformancePorts`
  * picks the adapter up through its optional `SP_MAP_PORT` injection.
