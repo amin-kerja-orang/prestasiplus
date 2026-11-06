@@ -51,6 +51,8 @@ import {
   PerformanceTimelineCategorySchema,
   PerformanceTimelineCreateRequestSchema,
   PerformanceTimelinePostSchema,
+  PerformanceTimelineDeleteResultSchema,
+  PerformanceTimelineEntrySchema,
   PerformanceTimelineSchema,
   PerformanceTrendSchema,
   PerformanceUserRefSchema,
@@ -84,7 +86,9 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceClassItemAnalysis: PerformanceClassItemAnalysisSchema,
   PerformanceTimelineCategory: PerformanceTimelineCategorySchema,
   PerformanceTimelinePost: PerformanceTimelinePostSchema,
+  PerformanceTimelineEntry: PerformanceTimelineEntrySchema,
   PerformanceTimeline: PerformanceTimelineSchema,
+  PerformanceTimelineDeleteResult: PerformanceTimelineDeleteResultSchema,
   PerformanceTimelineCreateRequest: PerformanceTimelineCreateRequestSchema,
   PerformancePublicProfile: PerformancePublicProfileSchema,
   PerformanceRankingQuery: PerformanceRankingQuerySchema,
@@ -274,7 +278,15 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     {},
     { query: PerformanceLeaderboardQuerySchema },
   )
-  get('/timeline', 'Own timeline (S16)', PerformanceTimelineSchema, {})
+  registry.registerPath({
+    method: 'get',
+    path: '/timeline',
+    tags: ['performance'],
+    summary: 'Own timeline feed (S16, API-RPT-14)',
+    description:
+      'Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).',
+    responses: { 200: json(envelopeOf(PerformanceTimelineSchema), 'Own timeline.'), 401: E401 },
+  })
 
   registry.registerPath({
     method: 'post',
@@ -297,6 +309,21 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       422: err(
         'VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus "(and N more error(s))".',
       ),
+    },
+  })
+
+  registry.registerPath({
+    method: 'delete',
+    path: '/timeline/{id}',
+    tags: ['performance'],
+    summary: 'Delete an own timeline post (API-RPT-15)',
+    description: 'Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil\'s post is the same 404 as an unknown id.',
+    request: { params: idParam('id'), headers: [csrf] },
+    responses: {
+      200: json(envelopeOf(PerformanceTimelineDeleteResultSchema), 'Deleted.'),
+      401: E401,
+      403: E403CSRF,
+      404: E404('unknown post id, or a post of another user'),
     },
   })
 
@@ -342,10 +369,22 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       undefined,
       'headcount',
     )
-  hc(
+  // S6-T13 PM-24 (ruling 6 on #491): Admin Pusat lists ONE school's configs (the same list as that school's admin).
+  get(
     '/headcounts',
     'Own headcount configs (S12), newest first',
     z.array(PerformanceHeadcountListItemSchema),
+    { 403: E403(STAFF) },
+    {
+      query: z.object({
+        schoolId: z.string().optional().meta({
+          description:
+            'Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.',
+        }),
+      }),
+    },
+    'teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); admin without schoolId: all configs, as before; admin with schoolId: VALIDATION_ERROR fields.schoolId "Sila pilih sekolah." when empty, repeated or malformed, NOT_FOUND when no such school. No 422 is listed here so the conformance smoke still picks the teacher list.',
+    'headcount',
   )
   hc('/headcounts/dashboard', 'Headcount dashboard (S13)', PerformanceHeadcountDashboardSchema)
   hc(

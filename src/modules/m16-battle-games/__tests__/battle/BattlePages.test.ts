@@ -16,6 +16,7 @@ const api = vi.hoisted(() => ({
   fetchStudentStandings: vi.fn(),
   startBattle: vi.fn(),
   pollMatch: vi.fn(),
+  cancelQueue: vi.fn(),
   searchOpponent: vi.fn(),
   sendInvite: vi.fn(),
 }))
@@ -183,6 +184,23 @@ describe('S1 lobby', () => {
     )
     expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
     await byId('battle-error-close').trigger('click')
+    expect(byId('battle-error').exists()).toBe(false)
+  })
+
+  it('"Batal" while searching cancels the queue entry and is idle at once, even if cancel rejects', async () => {
+    api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 41 } })
+    api.cancelQueue.mockRejectedValue(new Error('net'))
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-quick-match').trigger('click')
+    await flushPromises()
+    expect(byId('battle-searching').exists()).toBe(true)
+    await byId('battle-cancel').trigger('click')
+    expect(api.cancelQueue).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue.mock.calls[0]?.[0]).toBe(41)
+    await flushPromises()
+    expect(byId('battle-searching').exists()).toBe(false)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
     expect(byId('battle-error').exists()).toBe(false)
   })
 
