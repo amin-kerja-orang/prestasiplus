@@ -103,11 +103,20 @@ export interface ExtractedPaper {
   warnings: string[]
 }
 
+/** Intake Kertas (S1-T03: 1..4). Paper-builder blueprints stay 1 | 2 (S3 rule). */
+export type IntakeKertas = 1 | 2 | 3 | 4
+
+/** Parses a form/query value into an IntakeKertas; anything else falls back to `fallback`. */
+export function toIntakeKertas(v: unknown, fallback: IntakeKertas = 2): IntakeKertas {
+  const n = Number(v)
+  return n === 1 || n === 2 || n === 3 || n === 4 ? n : fallback
+}
+
 export interface ExtractInput {
   pages: PageText[]
   images?: PageImage[]
   subject: SubjectCode
-  kertas: 1 | 2
+  kertas: IntakeKertas
 }
 
 /** Provider-agnostic extraction (ADR 0019). Real providers run server-side. */
@@ -137,7 +146,7 @@ export const COPYRIGHT_OPTIONS = [
 
 export interface IntakeMeta {
   subject: SubjectCode
-  kertas: 1 | 2
+  kertas: IntakeKertas
   year: number
   paperType: string
   source: string
