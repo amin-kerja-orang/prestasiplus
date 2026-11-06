@@ -69,6 +69,8 @@ export interface DayFacts {
   sessions: readonly DaySession[]
   /** Distinct M03 chapters of today's answered questions. */
   chapterIds: readonly number[]
+  /** Longest run of consecutive correct answers inside one session today (S7-T04 part 14); 0 when absent. */
+  bestCombo?: number
 }
 
 /** What BR-M14-16 reads (lifetime, the current session included). */
@@ -153,26 +155,33 @@ export interface EngineResult {
   date: string
 }
 
+/** Session modes written by games and Battle (FR-GM-19.4); mirrors the API `GAME_SESSION_MODES`. */
+export const GAME_SESSION_MODES: readonly string[] = ['game', 'battle']
+
 /** BR-M14-12 metric values for today. */
 export function dayMetrics(day: DayFacts, streakCurrent: number): Record<string, number> {
   let correct = 0
   let bestAccuracy = 0
   let bestCorrect = 0
   let seconds = 0
+  let counted = 0
   for (const s of day.sessions) {
+    if (GAME_SESSION_MODES.includes(s.mode)) continue // FR-GM-19.4: a game session counts toward no challenge
+    counted += 1
     correct += s.correct
     seconds += s.timeSpent
     bestCorrect = Math.max(bestCorrect, s.correct)
     if (s.total > 0) bestAccuracy = Math.max(bestAccuracy, Math.floor((s.correct / s.total) * 100))
   }
   return {
-    sessions: day.sessions.length,
+    sessions: counted,
     correct,
     bestAccuracy,
     bestCorrectInSession: bestCorrect,
     chapters: new Set(day.chapterIds).size,
     minutes: Math.floor(seconds / 60),
     streak: streakCurrent,
+    bestCombo: day.bestCombo ?? 0,
   }
 }
 

@@ -31,7 +31,16 @@ export const DEFAULT_METRIC_BY_TYPE = {
   topic_variety: 'chapters',
   streak: 'streak',
   time_spent: 'minutes',
+  /** S7-T04 part 14 (R 4): selectable only now that the evaluator exists (FR-ADM-P2-03.3). */
+  combo: 'best_combo',
 } as const
+
+/**
+ * FR-GM-19.4: sessions of these modes are game sessions and never count toward a challenge. Practice sessions never
+ * carry them (the session check has no game value); this is the guard on the port's `mode`. Same codes as
+ * `GAME_ANSWER_MODES` of the practice module (AnswerLogPort registry), which cannot be imported from here.
+ */
+export const GAME_SESSION_MODES: readonly string[] = ['game', 'battle']
 
 export const RARITY_LABELS = { common: 'Biasa', rare: 'Jarang', epic: 'Epik', legendary: 'Legenda' } as const
 export const RARITY_COLORS = { common: '#9ca3af', rare: '#3b82f6', epic: '#8b5cf6', legendary: '#f59e0b' } as const

@@ -33,6 +33,11 @@ export interface PracticeMasteryFact {
 
 export interface PracticeFactsProvider {
   dayFacts(userId: string, date: string): Promise<PracticeDayFacts>
+  /**
+   * `best_combo` (R 4): the longest run of consecutive correct answers inside ONE practice session of the Malaysia
+   * day `date` (decimal `YYYY-MM-DD`); runs of different sessions are never summed. Game answers are not counted.
+   */
+  bestCombo(userId: string, date: string): Promise<number>
   /** Per subject answer counters of the user (all time). */
   mastery(userId: string): Promise<readonly PracticeMasteryFact[]>
   /** Completed sessions, all modes (`all`, share cards) and the practice modes only (`practice`, achievement progress). */
@@ -44,6 +49,9 @@ export interface PracticeFactsProvider {
 export class NoPracticeFacts implements PracticeFactsProvider {
   async dayFacts(): Promise<PracticeDayFacts> {
     return { sessions: [], chapterIds: [] }
+  }
+  async bestCombo(): Promise<number> {
+    return 0
   }
   async mastery(): Promise<readonly PracticeMasteryFact[]> {
     return []

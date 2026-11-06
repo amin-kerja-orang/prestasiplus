@@ -88,7 +88,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
       const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
       const sum = Number((await t.db.query<{ n: string }>(`select sum(total_syiling_earned)::text n from wallets`))[0]!.n)
-      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 10, completedToday: 0 })
+      expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 11, completedToday: 0 })
       expect(d.tierDistribution.map((x) => x.key)).toEqual(['bronze', 'gold', 'platinum', 'silver'])
       expect(d.tierDistribution.reduce((a, x) => a + x.count, 0)).toBe(wallets)
       expect(d.top10.map((x) => x.rank)).toEqual(d.top10.map((_, i) => i + 1))
@@ -198,8 +198,9 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   describe('challenges (S3)', () => {
     it('GET lists every challenge (active or not) by (sortOrder, id) without the internal metric', async () => {
       const list = dataOf<Record<string, unknown>[]>(await admin.get('/admin/gamification/challenges'))
-      expect(list).toHaveLength(10)
-      list.forEach((c) => GamificationAdminChallengeSchema.parse(c))
+      expect(list).toHaveLength(11)
+      list.forEach((c) => GamificationAdminChallengeSchema.parse(c)) // Kombo 10 parses: the contract enum has `combo`
+      expect(list.filter((c) => c.challengeType === 'combo').map((c) => c.title)).toEqual(['Kombo 10'])
       expect(list.every((c) => !('metric' in c))).toBe(true)
       expect(list.slice(0, 4).map((c) => c.title)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik'])
     })
@@ -225,6 +226,23 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       fail(await admin.put(`/admin/gamification/challenges/${c.id}`, CHALLENGE_BODY), 404, 'NOT_FOUND', 'Cabaran tidak dijumpai.')
       expect(await auditCount('gamification.challenge.created')).toBeGreaterThanOrEqual(1)
       expect(await auditCount('gamification.challenge.deleted')).toBeGreaterThanOrEqual(1)
+    })
+
+    it('combo is a selectable type (S7-T04 part 14): create sets metric best_combo, update to it resets the metric; kombo stays unknown', async () => {
+      const created = await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'combo', targetValue: 10 })
+      expect(created.status).toBe(201)
+      const c = GamificationAdminChallengeSchema.parse(dataOf(created))
+      expect(c.challengeType).toBe('combo')
+      const metric = async () => (await t.db.query<{ metric: string }>(`select metric from challenges where id = $1`, [c.id]))[0]!.metric
+      expect(await metric()).toBe('best_combo')
+      await admin.put(`/admin/gamification/challenges/${c.id}`, { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'quiz_count' })
+      expect(await metric()).toBe('sessions')
+      const back = await admin.put(`/admin/gamification/challenges/${c.id}`, { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'combo', targetValue: 12 })
+      expect(back.status).toBe(200)
+      expect(await metric()).toBe('best_combo')
+      const bad = fail(await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, challengeType: 'kombo' }), 422, 'VALIDATION_ERROR', 'Sila lengkapkan semua medan wajib.')
+      expect(bad.fields).toEqual({ challengeType: 'Medan ini tidak sah.' })
+      await admin.del(`/admin/gamification/challenges/${c.id}`)
     })
 
     it('every field is required; an unknown type or difficulty and a zero target are 422 with the mock copy', async () => {

@@ -245,6 +245,22 @@ export const SEED_CHALLENGES: readonly DailyChallenge[] = [
     sortOrder: 10,
     isActive: true,
   },
+  // S7-T04 part 14 (D12: the mock mirrors the API seed). Progress is the longest correct run in one session today (M05 answers).
+  // Difficulty and icon are a D9 deviation (not observed).
+  {
+    id: 11,
+    icon: '🔥',
+    title: 'Kombo 10',
+    description: 'Capai kombo 10 jawapan betul',
+    challengeType: 'combo',
+    metric: 'bestCombo',
+    targetValue: 10,
+    rewardSyiling: 120,
+    rewardXp: 200,
+    difficulty: 'medium',
+    sortOrder: 8,
+    isActive: true,
+  },
 ]
 
 /** BR-M14-12: default metric of a challenge created at runtime (#27), by its type. */
@@ -254,6 +270,7 @@ export const DEFAULT_METRIC_BY_TYPE = {
   topic_variety: 'chapters',
   streak: 'streak',
   time_spent: 'minutes',
+  combo: 'bestCombo',
 } as const
 
 /** Older reward values of the "Cabaran: {title}" rows of February 2026 (ledger sample). */
