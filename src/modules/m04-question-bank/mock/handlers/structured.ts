@@ -15,6 +15,7 @@ import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   int,
   notFound,
+  validationError,
   ok,
   pageParams,
   paged,
@@ -26,6 +27,12 @@ import {
 
 import type { StructuredDetail, StructuredRow } from '../../api/structured'
 import type { GuruStructuredDetail, GuruStructuredRow } from '../../api/structured-guru'
+import {
+  GURU_SUBMISSION_PREFIX,
+  guruSubmissions,
+  submissionCreatedAt,
+  type GuruSubmission,
+} from '../repository/guru-structured'
 import { structuredRepo } from '../repository/structured'
 import type { StructuredQuestion } from '../repository/types'
 import { adminOnly, excerpt, nameLookup, queryFilterId, userRef } from './workflow-common'
@@ -92,7 +99,99 @@ function toGuruRow(
     subCount: q.subQuestions.length,
     marks: q.totalMarks,
     status: 'approved',
+    source: 'question',
+    editable: false,
   }
+}
+
+/** Row of an own submission (`g{n}` id, status `review`, or `rejected` once returned, editable until the admin accepts it). */
+function toSubmissionRow(
+  r: GuruSubmission,
+  number: number,
+  names: ReturnType<typeof nameLookup>,
+): GuruStructuredRow {
+  return {
+    id: r.id,
+    number,
+    textExcerpt: excerpt(r.stimulus || (r.parts[0]?.text ?? ''), STRUCTURED_EXCERPT_LENGTH),
+    level: names.level(r.educationLevelId),
+    subject: names.subject(r.subjectId),
+    kbat: r.cognitiveLevel ? kbatChip(COGNITIVE_INDEX[r.cognitiveLevel]) : '',
+    subCount: r.parts.length,
+    marks: r.parts.reduce((sum, p) => sum + p.marks, 0),
+    status: r.rejectionReason ? 'rejected' : 'review',
+    source: 'submission',
+    editable: r.editable,
+  }
+}
+
+const COGNITIVE_INDEX = {
+  mengingat: 1,
+  memahami: 2,
+  mengaplikasi: 3,
+  menganalisis: 4,
+  menilai: 5,
+  mencipta: 6,
+} as const
+
+function toSubmissionDetail(
+  r: GuruSubmission,
+  names: ReturnType<typeof nameLookup>,
+): GuruStructuredDetail {
+  const row = toSubmissionRow(r, 1, names)
+  return {
+    id: r.id,
+    subject: row.subject,
+    level: row.level,
+    kbat: row.kbat,
+    status: row.status,
+    stimulus: r.stimulus,
+    // A `blob:mock/` reference (mock-mode upload, D22) cannot load: no image.
+    stimulusImage:
+      r.stimulusImageId && !r.stimulusImageId.startsWith('blob:mock/')
+        ? `/api/files/${r.stimulusImageId}`
+        : null,
+    totalMarks: row.marks,
+    subCount: row.subCount,
+    subQuestions: r.parts.map((p, i) => ({
+      partLabel: String.fromCharCode(97 + i),
+      questionText: p.text,
+      marks: p.marks,
+      cognitiveLevel: p.cognitiveLevel,
+      modelAnswer: p.scheme,
+      depth: 0,
+    })),
+    createdAt: submissionCreatedAt(r),
+    source: 'submission',
+    editable: r.editable,
+    form: {
+      subjectId: r.subjectId,
+      educationLevelId: r.educationLevelId,
+      chapterId: r.chapterId,
+      spIds: r.spIds,
+      tp: r.tp,
+      cognitiveLevel: r.cognitiveLevel,
+      difficultyLevel: r.difficultyLevel,
+      stimulusImageId: r.stimulusImageId,
+      rejectionReason: r.rejectionReason,
+    },
+  }
+}
+
+/** The approved questions in [start, start + limit) of the filtered, newest-first list. */
+function approvedWindow(
+  filter: { subjectId?: number; educationLevelId?: number },
+  start: number,
+  limit: number,
+): { rows: StructuredQuestion[]; total: number } {
+  const first = Math.floor(start / GURU_PAGE_SIZE) + 1
+  const a = structuredRepo.visible({ ...filter, page: first, pageSize: GURU_PAGE_SIZE })
+  const b =
+    start % GURU_PAGE_SIZE === 0
+      ? { rows: [] as StructuredQuestion[] }
+      : structuredRepo.visible({ ...filter, page: first + 1, pageSize: GURU_PAGE_SIZE })
+  const from = start % GURU_PAGE_SIZE
+  return { rows: [...a.rows, ...b.rows].slice(from, from + limit), total: a.total }
 }
 
 function toGuruDetail(
@@ -108,8 +207,11 @@ function toGuruDetail(
     totalMarks: q.totalMarks,
     subCount: q.subQuestions.length,
     createdAt: q.createdAt,
+    source: 'question',
+    editable: false,
+    form: null,
     stimulus: q.stimulus,
-    // The real endpoint serves no question picture this round.
+    // The real endpoint serves no question picture of an approved question.
     stimulusImage: null,
     subQuestions: [...q.subQuestions]
       .sort((a, b) => a.order - b.order)
@@ -127,33 +229,43 @@ function toGuruDetail(
 export const structuredRoutes: RouteDef[] = [
   route('GET', '/api/guru/structured-questions', [teacherRead], (req) => {
     const page = pageParams(req.query, { pageSize: GURU_PAGE_SIZE })
-    // `review` (the caller's own submissions) has no source yet: an empty page.
-    if (queryString(req.query, 'status') === 'review') return paged({ rows: [], total: 0 }, page)
+    const status = queryString(req.query, 'status')
+    // Like the BE's zod enum: any other status is a 422 on `status`.
+    if (status !== undefined && status !== '' && status !== 'approved' && status !== 'review')
+      return validationError({ status: 'Invalid option: expected one of "approved"|"review"' })
     const subjectId = queryFilterId(req.query, 'subjectId')
     const educationLevelId = queryFilterId(req.query, 'educationLevelId')
-    const result = structuredRepo.visible({
+    const filter = {
       ...(subjectId !== undefined ? { subjectId } : {}),
       ...(educationLevelId !== undefined ? { educationLevelId } : {}),
-      page: page.page,
-      pageSize: GURU_PAGE_SIZE,
-    })
-    const names = nameLookup()
+    }
+    // Ruling B on #493: no status = own submissions first (newest first), then approved questions;
+    // `approved` = approved only; `review` = the caller's own submissions only.
+    const own =
+      status === 'approved' ? [] : guruSubmissions.listOwn(req.session?.userId ?? 0, filter)
     const offset = (page.page - 1) * GURU_PAGE_SIZE
-    return paged(
-      { rows: result.rows.map((q, i) => toGuruRow(q, offset + i + 1, names)), total: result.total },
-      page,
-    )
+    const ownRows = own.slice(offset, offset + GURU_PAGE_SIZE)
+    const approved =
+      status === 'review'
+        ? { rows: [] as StructuredQuestion[], total: 0 }
+        : approvedWindow(filter, Math.max(0, offset - own.length), GURU_PAGE_SIZE - ownRows.length)
+    const names = nameLookup()
+    const rows = [
+      ...ownRows.map((r, i) => toSubmissionRow(r, offset + i + 1, names)),
+      ...approved.rows.map((q, i) => toGuruRow(q, offset + ownRows.length + i + 1, names)),
+    ]
+    return paged({ rows, total: own.length + approved.total }, page)
   }),
-  route(
-    'GET',
-    '/api/guru/structured-questions/:id',
-    [teacherRead],
-    (req) => {
-      const q = structuredRepo.getVisible(req.params.id as number)
-      return q ? ok(toGuruDetail(q, nameLookup())) : notFound()
-    },
-    { params: { id: int() } },
-  ),
+  route('GET', '/api/guru/structured-questions/:id', [teacherRead], (req) => {
+    const id = String(req.params.id)
+    if (id.startsWith(GURU_SUBMISSION_PREFIX)) {
+      // Another teacher's submission is a 404 (AC-GUR-44b-6).
+      const own = guruSubmissions.getOwn(req.session?.userId ?? 0, id)
+      return own ? ok(toSubmissionDetail(own, nameLookup())) : notFound()
+    }
+    const q = /^\d+$/.test(id) ? structuredRepo.getVisible(Number(id)) : null
+    return q ? ok(toGuruDetail(q, nameLookup())) : notFound()
+  }),
   route('GET', '/api/structured-questions', [adminOnly], (req) => {
     const page = pageParams(req.query, { pageSize: PAGE_SIZE })
     const subjectId = queryFilterId(req.query, 'subjectId')

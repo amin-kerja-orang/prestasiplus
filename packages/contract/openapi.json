@@ -4949,7 +4949,7 @@
           },
           "claimed": {
             "type": "boolean",
-            "description": "True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "True when the reward was claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5207,7 +5207,7 @@
           "claimed": {
             "type": "integer",
             "minimum": 0,
-            "description": "Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "Rewards claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5266,6 +5266,13 @@
           "rewardXp": {
             "type": "integer",
             "minimum": 0
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" Absent when there is nothing to tell, and always absent on a replay."
           }
         },
         "required": [
@@ -9873,6 +9880,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9881,7 +9892,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -9943,6 +9955,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9951,7 +9967,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -10143,9 +10160,7 @@
           },
           "needsDiagram": {
             "type": "boolean",
-            "enum": [
-              false
-            ]
+            "description": "false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image)."
           }
         },
         "required": [
@@ -21013,6 +21028,21 @@
           }
         ]
       },
+      "BattleQueueCancelled": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "additionalProperties": false
+      },
       "BattleAcceptChallengerResponse": {
         "type": "object",
         "properties": {
@@ -21419,6 +21449,9 @@
               "$ref": "#/components/schemas/BattleLobbyPkskDomain"
             }
           },
+          "pkskAccess": {
+            "$ref": "#/components/schemas/PkskAccess"
+          },
           "spmSubjects": {
             "type": "array",
             "items": {
@@ -21431,9 +21464,25 @@
           "gradeLabel",
           "spmUnlocked",
           "subjects",
-          "pkskDomains"
+          "pkskDomains",
+          "pkskAccess"
         ],
         "additionalProperties": false
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
       },
       "BattleArenaOption": {
         "type": "object",
@@ -67109,21 +67158,6 @@
           "updatedAt"
         ]
       },
-      "PkskAccess": {
-        "type": "object",
-        "properties": {
-          "T1": {
-            "type": "boolean"
-          },
-          "T4": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "T1",
-          "T4"
-        ]
-      },
       "PkskDashboardDomain": {
         "type": "object",
         "properties": {
@@ -68591,14 +68625,21 @@
           },
           "text": {
             "type": "string",
-            "maxLength": 103,
-            "description": "Cut at 100 characters plus \"...\" (BR-29)."
+            "maxLength": 141,
+            "description": "Cut at 140 characters plus \"…\" (FR-MUR-2-8)."
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
           "levelCode": {
             "type": "string"
+          },
+          "figureThumbUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8)."
           }
         },
         "required": [
@@ -68607,7 +68648,8 @@
           "difficulty",
           "text",
           "createdAt",
-          "levelCode"
+          "levelCode",
+          "figureThumbUrl"
         ],
         "additionalProperties": false
       },
@@ -81517,7 +81559,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -81950,7 +81992,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -83010,7 +83052,7 @@
                   "status"
                 ],
                 "additionalProperties": false,
-                "description": "Set once the item is accepted."
+                "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
               },
               "duplicates": {
                 "type": "array",
@@ -90330,7 +90372,7 @@
           "gamification"
         ],
         "summary": "Daily challenges with progress",
-        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.",
+        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion is written by the session-completed hook (idempotent per user, challenge and Malaysia day) and pays nothing; `claimed` and `meta.claimed` come from the claims of the current Malaysia day (API-GAME-11).",
         "responses": {
           "200": {
             "description": "Challenges with meta.",
@@ -90361,7 +90403,7 @@
           "gamification"
         ],
         "summary": "Claim the reward of a completed daily challenge (API-GAME-11)",
-        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.",
+        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). Order: Mod Pelajar 403, unknown or inactive challenge 404, a claim of the day exists (same clientUuid: 200 with the stored result and nothing written; otherwise 409 CHALLENGE_CLAIMED), the clientUuid sits on another claim of the user 409 CONFLICT (details.reason IDEMPOTENCY_MISMATCH), progress below the target 409 CHALLENGE_NOT_DONE. The result may carry `notices`. The body is optional. Success is 200, not 201.",
         "parameters": [
           {
             "schema": {
@@ -90438,7 +90480,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge).",
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge, or the challenge is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -90448,7 +90490,7 @@
             }
           },
           "409": {
-            "description": "CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
+            "description": "CONFLICT details.reason IDEMPOTENCY_MISMATCH (the clientUuid is already used by another claim of the user); CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
             "content": {
               "application/json": {
                 "schema": {
@@ -93614,7 +93656,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. A `stimulus_image` value starting with `https://` is fetched instead (before the import transaction; https only, port 443, resolved address must be public and is pinned, no redirects, 5 s connect and 10 s total timeout, 2 MB streamed cap, type by magic bytes, at most 100 distinct URLs per file else 422 on `fields.csvFile`); any other scheme is a row error. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -94140,8 +94182,8 @@
           "question-workflow",
           "diagram-audit"
         ],
-        "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "summary": "Attach a diagram image (admin) or submit one for review (teacher)",
+        "description": "Admin and teacher (school admin is refused). multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash \"Gambar rajah berjaya dimuat naik.\". Teacher (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: \"Gambar dihantar untuk semakan.\" } and the list row then has pendingReview true. One open image per stimulus group.",
         "parameters": [
           {
             "schema": {
@@ -94185,7 +94227,7 @@
         },
         "responses": {
           "200": {
-            "description": "Image attached; status is the flash text.",
+            "description": "Image attached (admin) or submitted for review (teacher); status is the flash text.",
             "content": {
               "application/json": {
                 "schema": {
@@ -94205,7 +94247,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94216,6 +94258,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Gambar untuk soalan ini sedang menunggu semakan.\" (teacher: the question's stimulus group already has an open image) or \"Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.\" (the question has no stimulus group).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106043,6 +106095,110 @@
         }
       }
     },
+    "/battle/queue/{queueId}/cancel": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Cancel a queue entry (API-GAME-14)",
+        "description": "The \"Batal\" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil's entry, an unknown id and an entry that already has its battle answer 404.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleQueueCancelled"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Giliran tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/battle/accept-challenger/{queueId}": {
       "post": {
         "tags": [
@@ -106632,11 +106788,18 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "`{error:\"Anda belum mempunyai akses PKSK PRO\"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleRawError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -106886,7 +107049,7 @@
         "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
         "responses": {
           "200": {
-            "description": "Lobby data.",
+            "description": "Lobby data. `pkskAccess` is the PKSK grant of the caller per level.",
             "content": {
               "application/json": {
                 "schema": {
