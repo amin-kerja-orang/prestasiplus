@@ -27,6 +27,7 @@ import {
 } from '../tables/tables'
 import {
   challengeProgress,
+  GAME_SESSION_MODES,
   dayMetrics,
   settleSession,
   type DaySession,
@@ -95,11 +96,20 @@ function dayFacts(
       timeSpent: s.timeSpent,
     }))
   if (current) sessions.push(current)
-  const chapterIds = reads
-    .answersOn(userId, date)
-    .map((a) => a.chapterId)
-    .filter((c): c is number => c !== null)
-  return { sessions, chapterIds }
+  const answers = reads.answersOn(userId, date)
+  const chapterIds = answers.map((a) => a.chapterId).filter((c): c is number => c !== null)
+  // best_combo (R 4): the longest run of correct answers inside ONE session among today's answers (MYT day, so a
+  // session crossing midnight is split); answers without a session and those of game sessions are ignored.
+  const gameSessions = new Set(sessions.filter((s) => GAME_SESSION_MODES.includes(s.mode)).map((s) => s.sessionId))
+  const runs = new Map<string, number>()
+  let bestCombo = 0
+  for (const a of answers) {
+    if (!a.sessionId || gameSessions.has(a.sessionId)) continue
+    const run = a.isCorrect ? (runs.get(a.sessionId) ?? 0) + 1 : 0
+    runs.set(a.sessionId, run)
+    if (run > bestCombo) bestCombo = run
+  }
+  return { sessions, chapterIds, bestCombo }
 }
 
 /** Consecutive days before `date` whose completions covered every active challenge. */

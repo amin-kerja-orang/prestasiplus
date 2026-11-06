@@ -245,7 +245,7 @@ export const SEED_CHALLENGES: readonly DailyChallenge[] = [
     sortOrder: 10,
     isActive: true,
   },
-  // S7-T04 part 14 (D12: the mock mirrors the API seed). Listing only: the mock has no best_combo evaluator, progress stays 0.
+  // S7-T04 part 14 (D12: the mock mirrors the API seed). Progress is the longest correct run in one session today (M05 answers).
   // Difficulty and icon are a D9 deviation (not observed).
   {
     id: 11,

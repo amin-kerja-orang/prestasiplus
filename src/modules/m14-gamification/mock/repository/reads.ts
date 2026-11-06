@@ -43,6 +43,8 @@ export interface PracticeSessionFact {
 }
 
 export interface PracticeAnswerFact {
+  /** M05 `AnswerRow.sessionId`; absent/null for an answer outside a session (S7-T04 part 14, best_combo). */
+  sessionId?: string | null
   subjectId: number | null
   chapterId: number | null
   isCorrect: boolean
@@ -138,6 +140,7 @@ function toAnswer(r: Loose, what: string): PracticeAnswerFact {
     )
   }
   return {
+    sessionId: typeof r.sessionId === 'string' ? r.sessionId : null,
     chapterId: r.chapterId as number | null,
     subjectId: r.subjectId as number | null,
     isCorrect: r.isCorrect as boolean,
