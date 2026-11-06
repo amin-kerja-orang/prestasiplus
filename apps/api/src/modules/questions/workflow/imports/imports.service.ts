@@ -1,6 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  FILE_PURPOSE_RULES,
+  QUESTION_IMPORT_CODE_ROW_MESSAGES as CODE_MSG,
+  cappedText,
   QUESTION_IMPORT_ERROR_CSV_HEADER,
+  QUESTION_IMPORT_MESSAGE_MAX,
   QUESTION_IMPORT_MAX_ROWS,
   QUESTION_IMPORT_MESSAGES as MSG,
   QUESTION_IMPORT_MIME_TYPES,
@@ -26,6 +30,8 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CurriculumRepository } from '../../../curriculum'
+import { inspectUpload } from '../../../files/content-inspect'
+import { FILE_STORAGE, FilesService, type FileStorage } from '../../../files'
 import { QuestionsRepository, StimuliService } from '../../index'
 import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
@@ -43,6 +49,7 @@ import {
   type GuruCsvRow,
   type GuruSpRef,
 } from './guru-csv'
+import { IMPORT_ZIP } from './imports.constants'
 import {
   buildCsv,
   type CodeLookups,
@@ -56,7 +63,9 @@ import {
   numberKey,
   parseCsv,
   planImport,
+  readZipFiles,
   resolveSubjectLevel,
+  ZipRefusedError,
 } from './csv'
 
 /** What the controller hands over from multer (memory storage). */
@@ -115,6 +124,8 @@ export class QuestionImportsService {
     @Inject(GuruSubmissionsService) private readonly guruSubmissions: GuruSubmissionsService,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(StimuliService) private readonly stimuli: StimuliService,
+    @Inject(FilesService) private readonly files: FilesService,
+    @Inject(FILE_STORAGE) private readonly storage: FileStorage,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
@@ -161,17 +172,18 @@ export class QuestionImportsService {
 
   // --- admin import ----------------------------------------------------------------------------
 
-  async importAdmin(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown) {
+  async importAdmin(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown, zipFile?: UploadedCsv) {
     const fields: Record<string, string> = {}
     const text = readFile(file, fields)
+    const images = readImages(zipFile, fields)
     const lookups = await this.lookups()
     const defaults = parseDefaults(body, lookups, fields)
     if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
 
     const records = parseCsv(text as string)
-    const plan = planImport(records, await this.withCodes(lookups, records, defaults), defaults)
+    const plan = planImport(records, await this.withCodes(lookups, records, defaults, images.status), defaults)
     refuseUnusable(plan)
-    const run = await this.execute(actor, file as UploadedCsv, plan, defaults, 'draft', null)
+    const run = await this.execute(actor, file as UploadedCsv, plan, defaults, 'draft', null, images.bytes)
     return {
       data: runView(run),
       status: MSG.imported(run.importedCount, run.failedCount),
@@ -247,7 +259,7 @@ export class QuestionImportsService {
    * The code maps and curriculum facts the new header needs (read-only through `CurriculumRepository`), for the Subjek + Tingkatan the file
    * names. A legacy file or one over the row cap gets none (nothing is planned from it).
    */
-  private async withCodes(lookups: ImportLookups, records: CsvRecord[], defaults: ImportDefaults): Promise<ImportLookups> {
+  private async withCodes(lookups: ImportLookups, records: CsvRecord[], defaults: ImportDefaults, images?: ReadonlyMap<string, 'ok' | 'bad'>): Promise<ImportLookups> {
     const [header, ...data] = records
     if (!header || isLegacyHeader(header) || data.length > QUESTION_IMPORT_MAX_ROWS) return lookups
     const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
@@ -277,7 +289,7 @@ export class QuestionImportsService {
       const id = rec.cells[gi as number] ?? ''
       if (id !== '' && !groups.has(id)) groups.set(id, await this.usableGroup(id))
     }
-    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts, groups } }
+    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts, groups, ...(images === undefined ? {} : { images }) } }
   }
 
   /** A group a `group_id` row may join: it exists, is not a draft copy and no member is shown to pupils; else null. */
@@ -330,10 +342,24 @@ export class QuestionImportsService {
    * (the same create as every other row), then the group (`createGroup`, which takes its Subjek, Tingkatan and Kertas from the members) or, for a
    * `group_id` row, `addMember` on the existing group. Any `ApiError` is the caller's cue to skip the whole group.
    */
-  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review'): Promise<void> {
+  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review', zipBytes: ReadonlyMap<string, Buffer>, stored: string[], runKeys: string[]): Promise<void> {
     const bank = this.ports.questionBank
     const stimulusIds: string[] = []
     for (const s of group.stimuli) {
+      // The image is stored in memory through the files module (purpose `question_image`, type decided from the bytes); no temp file.
+      let imageFileId: string | undefined
+      if (s.imageName !== null) {
+        const bytes = zipBytes.get(s.imageName)
+        if (bytes === undefined) throw ApiError.of('VALIDATION_ERROR', { fields: { stimulus_image: CODE_MSG.stimulusImage } })
+        const file = await this.files.storeManaged({ ownerUserId: actor.userId, purpose: 'question_image', bytes })
+        // The object's key is recorded at once: files are not transactional, so a rollback of the rows must be followed by deleting the objects.
+        const row = await this.prisma.client.file.findUnique({ where: { publicId: file.publicId }, select: { storageKey: true } })
+        if (row !== null) {
+          stored.push(row.storageKey)
+          runKeys.push(row.storageKey)
+        }
+        imageFileId = file.publicId
+      }
       const made = await this.stimuli.createStimulus({
         kind: s.kind as StimulusCreateRequest['kind'],
         label: s.label,
@@ -342,6 +368,7 @@ export class QuestionImportsService {
         ...(s.alt === null ? {} : { alt: s.alt }),
         ...(s.sourceCitation === null ? {} : { sourceCitation: s.sourceCitation }),
         ...(s.tableData === null ? {} : { tableData: s.tableData }),
+        ...(imageFileId === undefined ? {} : { imageFileId }),
       })
       stimulusIds.push(made.result.id)
     }
@@ -366,8 +393,12 @@ export class QuestionImportsService {
     defaults: ImportDefaults,
     status: 'draft',
     templateVersion: string | null,
+    zipBytes: ReadonlyMap<string, Buffer> = new Map(),
   ): Promise<QuestionImport> {
     const bank = this.ports.questionBank
+    // Keys of every image object stored during this run. On ANY failure of the transaction (an error out of the callback or of the commit) they are
+    // all deleted: the rows go with the rollback, the objects would not.
+    const runKeys: string[] = []
     return this.prisma.transaction(async () => {
       for (const row of plan.rows) {
         const input: ImportedQuestionInput = { ...row.input, createdById: actor.userId, status }
@@ -375,20 +406,29 @@ export class QuestionImportsService {
         const id = await bank.create(input)
         await this.workflow.recordCreation(id, status, actor, 1)
       }
+      // Order of work: the single (ungrouped) questions above are created FIRST, then the groups below, whatever their place in the file. A group
+      // can fail and be rolled back to its savepoint, so the questions made before it are kept; ids and creation times therefore do not follow
+      // the file order across single questions and groups (the order inside a group is `group_order`).
       // A group is created whole or skipped whole (45 section 3.2): a savepoint per group keeps what the rest of the import made.
       const failures = [...plan.failures]
       let imported = plan.rows.length
       let failed = plan.failedQuestions
       for (const group of plan.groups) {
         await this.prisma.client.$executeRaw`SAVEPOINT import_group`
+        const stored: string[] = []
         try {
-          await this.createGroup(actor, group, status)
+          await this.createGroup(actor, group, status, zipBytes, stored, runKeys)
           await this.prisma.client.$executeRaw`RELEASE SAVEPOINT import_group`
           imported += group.members.length
         } catch (err) {
           if (!(err instanceof ApiError)) throw err
+          // Files are not transactional: the rows of this group's images are rolled back below, but their stored objects would stay, so the
+          // objects are deleted by key (a rolled-back group leaves neither a reference nor an orphan object).
+          await this.deleteObjects(stored)
           await this.prisma.client.$executeRaw`ROLLBACK TO SAVEPOINT import_group`
-          const text = Object.values(err.fields ?? {})[0] ?? err.message
+          // The service text is BM and mostly fixed, but it can echo a file value: it is capped like every echoed value. The cap is 200
+          // characters, not 40, because 40 would cut the sentence itself ("Subjek dan Tingkatan ahli mesti sama dengan kumpulan.").
+          const text = cappedText(Object.values(err.fields ?? {})[0] ?? err.message, QUESTION_IMPORT_MESSAGE_MAX)
           failures.push({
             row: group.line,
             message: questionImportRowPrefix(group.line) + text,
@@ -415,7 +455,15 @@ export class QuestionImportsService {
           updatedAt: this.clock.now(),
         },
       })
-    }, IMPORT_TX)
+    }, IMPORT_TX).catch(async (err: unknown) => {
+      await this.deleteObjects(runKeys)
+      throw err
+    })
+  }
+
+  /** Deletes stored objects by key; never throws (a missing key is not an error). */
+  private async deleteObjects(keys: readonly string[]): Promise<void> {
+    for (const key of keys) await this.storage.delete(key).catch(() => undefined)
   }
 }
 
@@ -506,4 +554,36 @@ export function runView(row: QuestionImport): QuestionImportRun {
     createdAt,
     createdMonth: createdAt.slice(0, 7),
   }
+}
+
+/**
+ * The optional `zipFile` of the admin import: the files of the ZIP by base name, each marked `ok` (JPG, PNG or WebP by its bytes, within 2 MB, the
+ * `question_image` rule and the same content inspection as `POST /files`) or `bad`. A non-ZIP, an empty file or a breached bomb limit is a 422 on
+ * `zipFile` with ERR-REQ-01 (30 has no text for them). Nothing is stored here; the images of a valid group are stored when the group is created.
+ */
+function readImages(zip: UploadedCsv | undefined, fields: Record<string, string>): { status: Map<string, 'ok' | 'bad'>; bytes: Map<string, Buffer> } {
+  const none = { status: new Map<string, 'ok' | 'bad'>(), bytes: new Map<string, Buffer>() }
+  if (zip === undefined) return none
+  if (zip.size === 0 || zip.size > IMPORT_ZIP.maxBytes || zip.buffer.length === 0) {
+    fields.zipFile = CODE_MSG.requestInvalid
+    return none
+  }
+  let files: Map<string, Buffer | null>
+  try {
+    files = readZipFiles(zip.buffer, IMPORT_ZIP)
+  } catch (err) {
+    if (!(err instanceof ZipRefusedError)) throw err
+    fields.zipFile = CODE_MSG.requestInvalid
+    return none
+  }
+  const rule = FILE_PURPOSE_RULES.question_image
+  const out = { status: new Map<string, 'ok' | 'bad'>(), bytes: new Map<string, Buffer>() }
+  for (const [name, bytes] of files) {
+    const inspected = bytes === null || bytes.length > rule.maxBytes ? null : inspectUpload(bytes)
+    if (bytes !== null && inspected !== null && (rule.mimes as readonly string[]).includes(inspected.mime)) {
+      out.status.set(name, 'ok')
+      out.bytes.set(name, bytes)
+    } else out.status.set(name, 'bad')
+  }
+  return out
 }

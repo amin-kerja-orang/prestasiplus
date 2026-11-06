@@ -123,6 +123,7 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
   const subjectBack = new Map(subjects.map((s, i) => [s, String(i + 1)]))
   const chapterBack = back(chapterOf)
   const topicBack = back(topicOf)
+  const sessionBack = back(sessionOf)
   const scope = (q: AnswerFactsQuery): AnswerFactsQuery => ({
     ...q,
     ...(q.userIds ? { userIds: q.userIds.map((u) => userOf.get(u) ?? '0') } : {}),
@@ -146,6 +147,14 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
     sessionDurations: async (q) => (await real.sessionDurations(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
     sessionCounts: async (q) =>
       (await real.sessionCounts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)!, subjectId: r.subjectId === null ? null : (subjectBack.get(r.subjectId) ?? r.subjectId) })),
+    sessionFacts: async (q) =>
+      (await real.sessionFacts({ ...q, userIds: q.userIds.map((u) => userOf.get(u) ?? '0'), modes: q.modes.map((m) => MODE_IN[m] ?? m) })).map((r) => ({
+        ...r,
+        userId: userBack.get(r.userId)!,
+        sessionKey: r.sessionKey.startsWith('s:') ? `s:${sessionBack.get(r.sessionKey.slice(2)) ?? r.sessionKey.slice(2)}` : r.sessionKey,
+        subjectId: subjectBack.get(r.subjectId) ?? r.subjectId,
+        mode: MODE_OUT[r.mode] ?? r.mode,
+      })),
     spInfo: async (q) =>
       (await real.spInfo({ topicIds: q.topicIds.map((x) => topicOf.get(x) ?? '0'), chapterIds: q.chapterIds.map((x) => chapterOf.get(x) ?? '0') })).map((r) => ({
         ...r,
