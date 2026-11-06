@@ -20,7 +20,7 @@ describe('POST /api/gamification/challenges/{id}/claim', () => {
   let emptyId: string
   const id: Record<string, string> = {}
   const reward: Record<string, { syiling: number; xp: number }> = {}
-  const TITLES = ['Mula Hari Ini', 'Kilat Matematik', 'Si Tepat', 'Penjelajah Topik', 'Jawab 5 Betul', 'Latihan 10 Minit', 'Ketepatan 90%', 'Rajin Berlatih']
+  const TITLES = ['Mula Hari Ini', 'Kilat Matematik', 'Si Tepat', 'Penjelajah Topik', 'Jawab 5 Betul', 'Latihan 10 Minit', 'Ketepatan 90%', 'Rajin Berlatih', 'Kombo 10']
 
   const claimsOf = (userId: string) =>
     t.db.query<{ challenge_id: string; myt_date: string; reward_syiling: number; reward_xp: number; client_uuid: string | null }>(
@@ -228,5 +228,41 @@ describe('POST /api/gamification/challenges/{id}/claim', () => {
     expect(await ledgerOf(t, u)).toEqual([])
     expect(await walletOf(t, u)).toBeUndefined()
     expect(await claimsOf(u)).toEqual([])
+  })
+
+  it('best_combo (S7-T04 part 14): settleChallenges writes the completion once the combo reaches the target; the claim credits exactly once', async () => {
+    const day = '2026-10-19'
+    const key = 'Kombo 10'
+    const sourceId = `challenge:${id[key]}:${day}`
+    const completions = () => t.db.query(`select 1 from challenge_completions where user_id = $1 and challenge_id = $2`, [studentId, id[key]])
+    const credits = async () => (await ledgerOf(t, studentId)).filter((x) => x.source_id === sourceId)
+    try {
+      // a combo below the target completes nothing and the claim is refused
+      t.facts.combo = 9
+      expect((await t.gamification.settleChallenges(studentId, { isTest: false })).completedIds).not.toContain(id[key])
+      expect(await completions()).toHaveLength(0)
+      fail(await claim(student, key), 409, 'CHALLENGE_NOT_DONE', 'Cabaran belum selesai.')
+      // the practice reaches the target: the completion row is written, still no credit
+      t.facts.combo = 10
+      expect((await t.gamification.settleChallenges(studentId, { isTest: false })).completedIds).toContain(id[key])
+      expect(await completions()).toHaveLength(1)
+      expect(await credits()).toHaveLength(0)
+      // the claim credits exactly once
+      const before = await walletOf(t, studentId)
+      const first = await claim(student, key)
+      expect(first.status, JSON.stringify(first.body)).toBe(200)
+      const r = reward[key]!
+      expect(first.body.data).toMatchObject({ claimed: true, rewardSyiling: r.syiling, rewardXp: r.xp })
+      const rows = await credits()
+      expect(rows).toHaveLength(1)
+      expect(rows[0]).toMatchObject({ type: 'earn', source: 'challenge', amount: r.syiling })
+      expect((await walletOf(t, studentId))!.current_syiling).toBe((before?.current_syiling ?? 0) + r.syiling)
+      // a second claim gives no second credit
+      fail(await claim(student, key), 409, 'CHALLENGE_CLAIMED', 'Ganjaran sudah dituntut.')
+      expect(await credits()).toHaveLength(1)
+      expect((await claimsOf(studentId)).filter((c) => c.challenge_id === id[key])).toHaveLength(1)
+    } finally {
+      t.facts.combo = 0
+    }
   })
 })
