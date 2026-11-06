@@ -5,8 +5,12 @@
  * filtered by the tab), the "Lihat semua" toggle of the active subject, one tab per practised subject and
  * the pane of the active one. A viewer without an SP record sees only the block with 0 cards (PROPOSED,
  * OQ-M08-08). `showAllWeakTopics` is kept when the tab changes (FR-M08-46).
+ *
+ * R1-MUR-5: one tab per subject that has an SP map (also without answers); the open tab is the `tab` query
+ * (the subject code, 0A.6), else the first subject with an answer, else the first (FR-MUR-5-8).
  */
 import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { DsIconChip, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
@@ -14,21 +18,30 @@ import { fetchAnalytics } from '../api/performance'
 import SubjectPane from '../components/analitik/SubjectPane.vue'
 import WeakTopicCard from '../components/analitik/WeakTopicCard.vue'
 import { usePhIcon } from '../lib/icons'
-import { TOP_WEAK_LIMIT } from '../lib/analitik'
+import { TOP_WEAK_LIMIT, defaultTab, tabAccuracy } from '../lib/analitik'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
 const { data, error, reload } = useRouteData((signal) => fetchAnalytics({ signal }))
 const loadFailed = computed(() => isLoadError(error.value))
 const icon = usePhIcon()
 
-/** The first subject is active on load. */
-const activeId = ref<number | null>(null)
+const route = useRoute()
+const router = useRouter()
 const showAll = ref(false)
 
+/** `?tab=` holds the subject code; an unknown code falls back to the default tab. */
+const tabCode = computed(() => {
+  const raw = route.query.tab
+  const v = Array.isArray(raw) ? raw[0] : raw
+  return typeof v === 'string' ? v : ''
+})
 const active = computed(() => {
   const subjects = data.value?.subjects ?? []
-  return subjects.find((s) => s.subjectId === activeId.value) ?? subjects[0] ?? null
+  return subjects.find((s) => s.code === tabCode.value) ?? defaultTab(subjects)
 })
+function openTab(code: string): void {
+  void router.push({ query: { ...route.query, tab: code } })
+}
 const trendOfCode = (code: string) =>
   data.value?.subjects.find((s) => s.code === code)?.trend ?? 'stable'
 
@@ -138,10 +151,10 @@ function collapseLeave(el: Element, done: () => void): void {
             :variant="s.subjectId === active.subjectId ? 'solid' : 'soft'"
             :aria-pressed="s.subjectId === active.subjectId"
             :data-testid="`tab-${s.subjectId}`"
-            @click="activeId = s.subjectId"
+            @click="openTab(s.code)"
           >
             {{ s.name }}
-            <span class="text-caption">{{ Math.round(s.accuracy) }}%</span>
+            <span v-if="tabAccuracy(s)" class="text-caption">{{ tabAccuracy(s) }}</span>
           </UButton>
         </div>
         <SubjectPane :key="active.subjectId" :subject="active" />

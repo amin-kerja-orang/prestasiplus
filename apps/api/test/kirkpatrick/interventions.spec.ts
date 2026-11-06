@@ -123,7 +123,7 @@ describe('GET/POST /api/kirkpatrick/interventions (AC 3, 4, 7)', () => {
       }
     })
 
-    it('an unknown pupil, a non-pupil, a pupil outside the scope and a bad id all give the same typed 422', async () => {
+    it('an unknown pupil, a non-pupil, a pupil outside the scope and a bad id all give the same 404 and create nothing', async () => {
       const refusals = [
         [teacherA, '987654321'],
         [teacherA, w.ids.teacherA], // not a pupil
@@ -135,12 +135,11 @@ describe('GET/POST /api/kirkpatrick/interventions (AC 3, 4, 7)', () => {
         [adminB, w.ids.p1],
         [teacherC, w.ids.p1],
       ] as const
-      for (const [who, id] of refusals) {
-        const res = await who.post('/kirkpatrick/interventions', body(id))
-        expect(fieldsOf(res), id).toEqual({ studentId: 'Pelajar tidak dijumpai.' })
-        expect(KirkpatrickInterventionRefusalSchema.parse(res.body).error.message).toBe('Pelajar tidak dijumpai.')
-      }
-      expect(fieldsOf(await teacherA.post('/kirkpatrick/interventions', { ...body('1'), studentId: 9876543210123 }))).toEqual({ studentId: 'Pelajar tidak dijumpai.' })
+      const count = async () => (await t.db.query<{ n: number }>(`select count(*)::int as n from interventions`))[0]?.n
+      const before = await count()
+      for (const [who, id] of refusals) errorIs(await who.post('/kirkpatrick/interventions', body(id)), 404, 'NOT_FOUND')
+      errorIs(await teacherA.post('/kirkpatrick/interventions', { ...body('1'), studentId: 9876543210123 }), 404, 'NOT_FOUND')
+      expect(await count()).toBe(before)
     })
 
     it('stage order: field checks, then the pupil, then the calendar date', async () => {
@@ -148,8 +147,8 @@ describe('GET/POST /api/kirkpatrick/interventions (AC 3, 4, 7)', () => {
       expect(fieldsOf(badDate)).toEqual({ actionDate: 'Tarikh tidak sah.' })
       expect(KirkpatrickInterventionRefusalSchema.parse(badDate.body).error.message).toBe('Tarikh tidak sah.')
       expect(fieldsOf(await teacherA.post('/kirkpatrick/interventions', body(w.ids.p1, { actionDate: '15/10/2026' })))).toEqual({ actionDate: 'Tarikh tidak sah.' })
-      // Both wrong: the pupil is reported, not the date.
-      expect(fieldsOf(await teacherA.post('/kirkpatrick/interventions', body(w.ids.pb, { actionDate: '2026-02-30' })))).toEqual({ studentId: 'Pelajar tidak dijumpai.' })
+      // Both wrong: the pupil is reported (404), not the date.
+      errorIs(await teacherA.post('/kirkpatrick/interventions', body(w.ids.pb, { actionDate: '2026-02-30' })), 404, 'NOT_FOUND')
       // A field error beats the pupil check.
       expect(fieldsOf(await teacherA.post('/kirkpatrick/interventions', body(w.ids.pb, { alertType: 'x' })))).toEqual({ alertType: 'Medan ini tidak sah.' })
     })

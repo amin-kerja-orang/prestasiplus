@@ -45,6 +45,10 @@ export interface FeedbackAggregates {
   npsTeacher: number
   npsAdmin: number
   nps: number
+  /** NPS 9-10. */
+  promoters: number
+  /** NPS 0-6. */
+  detractors: number
 }
 
 const isInt = (v: unknown, lo: number, hi: number): v is number =>
@@ -119,6 +123,8 @@ export const feedbackRepo = defineRepository({
         let npsSum = 0
         let satSum = 0
         let count = 0
+        let promoters = 0
+        let detractors = 0
         const by = {
           student: [0, 0],
           teacher: [0, 0],
@@ -129,6 +135,8 @@ export const feedbackRepo = defineRepository({
           npsSum += r.nps
           satSum += r.satisfaction
           count++
+          if (r.nps >= 9) promoters++
+          else if (r.nps <= 6) detractors++
           const bucket =
             r.role === 'student'
               ? by.student
@@ -149,6 +157,8 @@ export const feedbackRepo = defineRepository({
           npsTeacher: mean1(by.teacher[0], by.teacher[1]),
           npsAdmin: mean1(by.admin[0], by.admin[1]),
           nps: mean1(npsSum, count),
+          promoters,
+          detractors,
         }
       },
     }
