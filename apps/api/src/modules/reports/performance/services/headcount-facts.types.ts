@@ -36,10 +36,11 @@ export type HeadcountScope =
 
 export interface HeadcountFacts {
   /**
-   * Entries of one student, across the configs visible to the given scope: the entry-holding configs and those of the pupil's own
-   * classes (as `GET /headcounts/me` and the teacher's class table), so an Auto pupil with no entry row is listed for staff too.
+   * Entries of one student, across the configs visible to the given scope: the entry-holding configs (any year) and those of the
+   * pupil's own classes in `classYear` (as `GET /headcounts/me` and the teacher's class table), so an Auto pupil with no entry row
+   * is listed for staff too.
    */
-  entriesOfStudent(studentId: string, scope: HeadcountScope): Promise<HeadcountEntryView[]>
+  entriesOfStudent(studentId: string, scope: HeadcountScope, classYear: number): Promise<HeadcountEntryView[]>
   /** Entries of the pupils in these classrooms. */
   entriesOfClasses(classroomIds: readonly string[]): Promise<HeadcountEntryView[]>
   /** Entries of a platform, school or teacher scope. */

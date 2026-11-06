@@ -251,10 +251,12 @@ export class HeadcountService {
     if (!pupil || !pupil.isStudent) throw ApiError.of('NOT_FOUND')
     // The pupil's configs: those holding an entry row AND those of the pupil's own classes. A class pupil needs no entry row to be on
     // a config (the teacher's table lists the whole roster; an Auto pupil's AR comes from the answer store), so neither path may
-    // depend on one (AC-CHAIN-5: an Auto pupil with no entry row had no section).
+    // depend on one (AC-CHAIN-5: an Auto pupil with no entry row had no section). Membership is today's, so only the class configs of
+    // the current MYT year are derived from it; entry-holding configs of any year stay.
     const classIds = (await this.ports.classes.classIdsOfStudent(userId)) ?? []
     const byEntry = await this.repo.configsByIds(await this.repo.configIdsOfStudent(userId))
-    const byClass = classIds.length === 0 ? [] : await this.repo.configsOfClassrooms(classIds)
+    const year = this.currentYear()
+    const byClass = classIds.length === 0 ? [] : (await this.repo.configsOfClassrooms(classIds)).filter((c) => c.academicYear === year)
     const own = [...new Map([...byEntry, ...byClass].map((c) => [c.id, c])).values()]
     let visible: HeadcountConfigRecord[]
     if (ctx.role === 'admin') {

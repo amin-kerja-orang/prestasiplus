@@ -172,11 +172,11 @@ describe('Auto AR from the answer store', () => {
     w.answers.addMany('p1', 4, 3, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
     w.answers.addMany('p2', 3, 1, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
     w.repo.addEntry(auto, 'p1', { tov: 40, etr: 80 })
-    const ofP1 = (await w.facts.entriesOfStudent('p1', { kind: 'platform' })).filter((v) => v.configId === auto)
+    const ofP1 = (await w.facts.entriesOfStudent('p1', { kind: 'platform' }, 2026)).filter((v) => v.configId === auto)
     expect(ofP1.map((v) => v.studentId)).toEqual(['p1'])
-    const ofP1Teacher = await w.facts.entriesOfStudent('p1', { kind: 'teacher', teacherId: 't1' })
+    const ofP1Teacher = await w.facts.entriesOfStudent('p1', { kind: 'teacher', teacherId: 't1' }, 2026)
     expect(ofP1Teacher.every((v) => v.studentId === 'p1')).toBe(true)
-    const ofP1School = await w.facts.entriesOfStudent('p1', { kind: 'school', schoolId: 's1' })
+    const ofP1School = await w.facts.entriesOfStudent('p1', { kind: 'school', schoolId: 's1' }, 2026)
     expect(ofP1School.every((v) => v.studentId === 'p1')).toBe(true)
     const names = (v: { configId: string; studentId: string }[]) => v.filter((x) => x.configId === auto).map((x) => x.studentId).sort()
     expect(names(await w.facts.entriesInScope({ kind: 'teacher', teacherId: 't1' }))).toEqual(['p1', 'p2', 'p3'])
@@ -193,14 +193,14 @@ describe('per-student reads of a class pupil without an entry row (AC-CHAIN-5 it
     w.repo.configs.find((c) => c.id === auto)!.defaultTov = 40
     w.repo.configs.find((c) => c.id === auto)!.defaultEtr = 80
     for (const scope of [{ kind: 'teacher', teacherId: 't1' }, { kind: 'school', schoolId: 's1' }, { kind: 'platform' }] as const) {
-      const views = await w.facts.entriesOfStudent('p2', scope)
+      const views = await w.facts.entriesOfStudent('p2', scope, 2026)
       const p2 = views.find((v) => v.configId === auto)
       expect(p2, scope.kind).toMatchObject({ studentId: 'p2', tov: 40, etr: 80, actuals: [75, 75, 75] })
       expect(views.every((v) => v.studentId === 'p2')).toBe(true)
     }
     // A foreign teacher's and a foreign school's scope still see nothing of this pupil.
-    expect(await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't2' })).toEqual([])
-    expect(await w.facts.entriesOfStudent('p2', { kind: 'school', schoolId: 's2' })).toEqual([])
+    expect(await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't2' }, 2026)).toEqual([])
+    expect(await w.facts.entriesOfStudent('p2', { kind: 'school', schoolId: 's2' }, 2026)).toEqual([])
   })
 
   it('staff GET /headcount/students/:id: a class pupil with no entry row has the Auto and the Manual section, the same line as the teacher table', async () => {
@@ -218,11 +218,25 @@ describe('per-student reads of a class pupil without an entry row (AC-CHAIN-5 it
     expect(await status(w.service.student(ctx('sa2', 'school_admin', 's2'), 'p2'))).toBe(404)
   })
 
+  it('a class config of a previous year is not derived from today\'s membership; a previous-year entry row still counts', async () => {
+    // S-2's question on #1066: a pupil who joined the class this year gets no previous-year card or section from class membership.
+    const past = w.repo.addConfig({ teacherId: 't1', classroomId: 'c1', mode: 'auto', subjectId: '2', academicYear: 2025 }).id
+    const pastManual = w.repo.addConfig({ teacherId: 't1', classroomId: 'c1', mode: 'manual', subjectId: '3', academicYear: 2025 }).id
+    expect((await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't1' }, 2026)).map((v) => v.configId)).not.toContain(past)
+    const sections = (await w.service.student(ctx('t1', 'teacher'), 'p2')).sections.map((x) => x.configId)
+    expect(sections).not.toContain(past)
+    expect(sections).not.toContain(pastManual)
+    // A pupil holding an entry row on the previous-year config keeps it (AC-M08-14.2, the previous-year card).
+    w.repo.addEntry(pastManual, 'p1', { tov: 40, etr: 80 })
+    expect((await w.facts.entriesOfStudent('p1', { kind: 'teacher', teacherId: 't1' }, 2026)).map((v) => v.configId)).toContain(pastManual)
+    expect((await w.service.student(ctx('t1', 'teacher'), 'p1')).sections.map((x) => x.configId)).toContain(pastManual)
+  })
+
   it('a dropped pupil is still left out of both per-student reads', async () => {
     w.repo.addEntry(auto, 'p2', { tov: 40, etr: 80 })
     await w.service.dropStudents(wctx('t1', 'teacher'), auto, { action: 'drop', studentIds: ['p2'] })
     expect((await w.service.student(ctx('t1', 'teacher'), 'p2')).sections.map((s) => s.configId)).toEqual([manual])
-    expect((await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't1' })).filter((v) => !v.dropped).map((v) => v.configId)).not.toContain(auto)
+    expect((await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't1' }, 2026)).filter((v) => !v.dropped).map((v) => v.configId)).not.toContain(auto)
   })
 })
 
