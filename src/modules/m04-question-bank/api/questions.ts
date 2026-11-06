@@ -32,7 +32,8 @@ export type ComplianceStatus = 'verified' | 'pending_mapping' | 'quarantined' | 
 export type SourceType = 'textbook' | 'dskp' | 'trial' | 'marking_scheme' | 'ai_generated'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
-export type QuestionLanguage = 'bm' | 'en'
+/** Wire tokens of `language` (60 API-Q-03); `bm` is an input alias of `ms` on the server and is never read back. */
+export type QuestionLanguage = 'ms' | 'en' | 'ms+en'
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review' | 'publish'
 
 /**
@@ -150,6 +151,8 @@ export interface Question {
   difficultyLevel: number
   questionType: QuestionType
   questionText: string
+  /** English stem (DM-50); null or absent when none. */
+  questionTextEn?: string | null
   questionImage: string | null
   /** MCQ: 4 strings ("" allowed for C/D from an import); `null` for the other types and PKSK rows. */
   options: string[] | null
@@ -241,6 +244,8 @@ export interface QuestionInputBody {
   /** Create only (a saved question keeps its type). */
   questionType?: QuestionType
   questionText: string
+  /** English stem; null or blank clears it, absent keeps it. */
+  questionTextEn?: string | null
   dskpSpId?: number | string | null
   /** Bab (chapter) id; '' or null clears it on edit, absent keeps it. */
   curriculumChapterId?: number | string | null
@@ -381,6 +386,7 @@ export function toQuestionJson(
       input.curriculumChapterId === null || input.curriculumChapterId === '' ? null : String(input.curriculumChapterId)
   }
   if (input.language !== undefined) body.language = input.language
+  if (input.questionTextEn !== undefined) body.questionTextEn = input.questionTextEn
   if (input.pointsValue !== undefined && input.pointsValue !== null && input.pointsValue !== '') {
     body.pointsValue = Number(input.pointsValue)
   }

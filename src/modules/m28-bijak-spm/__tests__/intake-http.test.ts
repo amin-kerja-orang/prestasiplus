@@ -51,6 +51,7 @@ const summary: Omit<WireBatchDetail, 'files'> = {
   pageCount: 2,
   itemCount: 0,
   reviewedCount: 0,
+  targetPaperId: null,
   createdAt: T0,
   updatedAt: T0,
   submittedAt: null,

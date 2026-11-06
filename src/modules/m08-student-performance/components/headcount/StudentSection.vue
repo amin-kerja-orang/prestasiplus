@@ -95,7 +95,21 @@ const draft = computed(() => props.pupil && props.section.entryStatus === 'draft
 /** "Jurang: +40": ETR - TOV, "—" when either is missing (HC-1). */
 const jurangText = computed(() => {
   const j = props.section.jurang
-  return j === null ? DASH : selisihText(j)
+  if (j === null) return DASH
+  return j === 0 ? '0' : selisihText(j)
+})
+
+/**
+ * AC-MUR-3-2: "Sasaran tercapai" when the latest AR is at least the ETR (RS), else "Belum capai sasaran";
+ * `null` (nothing shown) when there is no AR or no ETR to compare.
+ */
+const goalText = computed(() => {
+  const etr = props.section.etr
+  const latest = [...props.section.rows].reverse().find((r) => r.ar !== null)
+  if (etr === null || !latest || latest.ar === null) return null
+  return latest.ar >= etr
+    ? { text: 'Sasaran tercapai', color: 'success' as const }
+    : { text: 'Belum capai sasaran', color: 'warning' as const }
 })
 
 const recorded = computed(() => {
@@ -260,6 +274,13 @@ const rowTestId =(r: Row, i: number): string =>
             :label="`Jurang: ${jurangText}`"
           />
           <UBadge
+            v-if="pupil && goalText"
+            :color="goalText.color"
+            variant="subtle"
+            data-testid="chip-goal"
+            :label="goalText.text"
+          />
+          <UBadge
             v-if="section.rs"
             color="neutral"
             variant="soft"
@@ -329,15 +350,21 @@ const rowTestId =(r: Row, i: number): string =>
         <span v-else class="text-caption text-muted">{{ row.original.note }}</span>
       </template>
       <template #status-cell="{ row }">
-        <UIcon
+        <UBadge
           v-if="row.original.kind === 'otr' && row.original.tone === 'on'"
-          name="i-ph-check-circle"
-          class="size-5 text-success"
+          color="success"
+          variant="subtle"
+          icon="i-ph-check-circle"
+          label="On Track"
+          data-testid="row-status"
         />
-        <UIcon
+        <UBadge
           v-else-if="row.original.kind === 'otr' && row.original.tone === 'below'"
-          name="i-ph-arrow-down"
-          class="size-5 text-error"
+          color="error"
+          variant="subtle"
+          icon="i-ph-arrow-down"
+          label="Below"
+          data-testid="row-status"
         />
         <span v-else class="text-dimmed">{{ DASH }}</span>
       </template>

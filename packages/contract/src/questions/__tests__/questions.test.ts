@@ -68,7 +68,7 @@ const question = {
   modelAnswer: null,
   explanation: 'Penjelasan fiksyen.',
   aiExplanation: null,
-  language: 'bm',
+  language: 'ms',
   pointsValue: 1,
   status: 'approved',
   isActive: true,
@@ -178,6 +178,31 @@ describe('create and update requests (mock validation copy)', () => {
     expect(QuestionCreateRequestSchema.safeParse({ ...b, status: 'rejected' }).success).toBe(false)
     expect(QuestionUpdateRequestSchema.safeParse(base).success).toBe(true)
     expect(QuestionUpdateRequestSchema.safeParse({ difficultyLevel: 2 }).success).toBe(false)
+  })
+})
+
+describe('language tokens and English twins (S1-T09b, 60 API-Q-03)', () => {
+  const base = { subjectId: '3', educationLevelId: '10', difficultyLevel: '3', questionText: 'Soalan contoh fiksyen.', questionType: 'true_false' }
+  it.each(['ms', 'en', 'ms+en', 'bm'])('accepts %s on input', (language) => {
+    expect(QuestionCreateRequestSchema.safeParse({ ...base, language }).success).toBe(true)
+    expect(QuestionUpdateRequestSchema.safeParse({ ...base, language }).success).toBe(true)
+  })
+  it('refuses another token with the Bahasa message', () => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...base, language: 'ms_en' })
+    expect(r.success).toBe(false)
+    expect(r.error?.issues[0]?.message).toBe(QUESTION_MESSAGES.language)
+  })
+  it('outputs ms, en and ms+en but never bm', () => {
+    for (const language of ['ms', 'en', 'ms+en']) expect(QuestionSchema.safeParse({ ...question, language }).success).toBe(true)
+    expect(QuestionSchema.safeParse({ ...question, language: 'bm' }).success).toBe(false)
+  })
+  it('carries the English stem on create, update and read, blank allowed (a draft saves with it empty)', () => {
+    const body = { ...base, questionTextEn: 'Sample English question.' }
+    expect(QuestionCreateRequestSchema.parse(body).questionTextEn).toBe('Sample English question.')
+    expect(QuestionCreateRequestSchema.parse({ ...base, language: 'ms+en', questionTextEn: '' }).questionTextEn).toBe('')
+    expect(QuestionCreateRequestSchema.parse({ ...base, language: 'ms+en', questionTextEn: null }).questionTextEn).toBeNull()
+    expect(QuestionUpdateRequestSchema.parse(body).questionTextEn).toBe('Sample English question.')
+    expect(QuestionSchema.parse({ ...question, questionTextEn: 'Sample English question.' }).questionTextEn).toBe('Sample English question.')
   })
 })
 

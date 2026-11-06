@@ -15,4 +15,5 @@ export type {
   TeacherProfileRecord,
 } from './classes.repository'
 export { ClassesPorts, type TeacherMissionsProvider, type TeacherQuestionStats, type TeacherQuestionsProvider } from './ports'
+export { gradeOfLevel } from './classes.mapper'
 export { slugOfGrade, gradeOfSlug, levelLabelOfGrade } from './level-slug'

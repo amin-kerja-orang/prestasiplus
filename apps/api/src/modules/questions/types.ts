@@ -104,6 +104,8 @@ export interface StimulusRecord {
   alt: string | null
   /** R1-T07: figure caption. */
   caption?: string | null
+  /** DM-50: English twin of the caption. */
+  captionEn?: string | null
   /** R1-T07: source line of a passage or picture. */
   sourceCitation?: string | null
   /** R1-T07: table grid as stored (`{ head, rows }` for a `table`); unvalidated JSON, read defensively by the consumers. */

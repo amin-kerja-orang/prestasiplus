@@ -42,6 +42,8 @@ model IntakeBatch {
   items   IntakeItem[]
   stimuli IntakeStimulus[]
   runs    IntakeExtractionRun[]
+  /// DM-45: draft papers imported from this batch (papers.source_batch_id).
+  papers  Paper[]
 
   @@index([ownerUserId, status], map: "ix_intake_batches_owner_user_id_status")
   @@index([status, createdAt], map: "ix_intake_batches_status_created_at")
