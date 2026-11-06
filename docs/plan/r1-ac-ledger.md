@@ -136,6 +136,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
 | S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
 | S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
+| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-06 | team-bb/S-2 | unit/analitik-pelajar.spec.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter; UAT: 0 SP tags, #924) |
+| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S4-T02 | AC-ADM-C04.1 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-load.spec.ts |
+| S4-T02 | AC-ADM-C04.3 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-report.spec.ts; SubjectDskpReportTab.test.ts; nodes-per-in-scope-subject.spec.ts |
+| S5-T04 | AC-MUR-2-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | dashboard-prestasi-parity.spec.ts |
 
 ## Sprint 5
 
