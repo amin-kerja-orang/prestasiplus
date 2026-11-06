@@ -728,6 +728,43 @@ describe('Perlumbaan Matematik pool wrap (GAME-05, DOC DEFECT 63: per-player res
   })
 })
 
+describe('pool wrap stream names (ruling 56, GAME-05)', () => {
+  /** Plays wrong answers for `n` questions and returns the names of the `pool` streams the engine asked for. */
+  function wrapNames(game: 'papan-bijak' | 'perlumbaan-matematik', humans: number, n: number, leaveAt?: number): string[] {
+    const names: string[] = []
+    const streams = (name: string): Prng => {
+      if (name.includes(':pool')) names.push(name)
+      return prngStream(name)
+    }
+    const r = room(game)
+    let o = startGame({ room: r, players: players(humans, false), humanId: HOST, seed: 'seed-s', pool: pool(40), quizTiles: 35, p: 0, nowMs: T0, streams })
+    for (let i = 0; i < n; i++) {
+      if (i === leaveAt) {
+        o = skipSeat({ room: r, players: o.players.slice(1), state: o.state, leaver: HOST, leaverIndex: 0, oldCount: humans, p: 0, nowMs: T0, streams })
+      }
+      // The acting seat rolls (Papan Bijak) or answers wrong.
+      const action: RoomPlayAction = o.state.awaiting === 'roll' ? { type: 'roll' } : answerWrong(o.state)
+      o = applyAction({ room: r, players: o.players, state: o.state, action, p: 0, nowMs: T0, streams })
+      if (o.finished) break
+    }
+    return names
+  }
+
+  it('Perlumbaan Matematik asks for m16:room:<code>:<seed>:<humanId>:pool1', () => {
+    expect(wrapNames('perlumbaan-matematik', 2, 45)).toEqual(['m16:room:AB12CD:seed-s:10:pool1'])
+  })
+
+  it('after a skipSeat handover the next Perlumbaan wrap is keyed by the new acting human', () => {
+    expect(wrapNames('perlumbaan-matematik', 3, 45, 5)).toEqual(['m16:room:AB12CD:seed-s:11:pool1'])
+  })
+
+  it('Papan Bijak keeps the shared m16:room:<code>:<seed>:pool1 (no humanId)', () => {
+    const names = wrapNames('papan-bijak', 2, 200)
+    expect(names.length).toBeGreaterThan(0)
+    expect(names[0]).toBe('m16:room:AB12CD:seed-s:pool1')
+  })
+})
+
 describe('Kuiz Relay (10 rounds, two teams)', () => {
   const r = room('kuiz-relay')
 

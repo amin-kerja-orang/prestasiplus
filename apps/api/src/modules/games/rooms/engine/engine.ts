@@ -55,6 +55,8 @@ const nextQ = (c: Ctx): string => {
   // Ruling 56, FR-GM-02.4 (Papan Bijak): when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
   // GAME-05 (DOC DEFECT 63, lead ruling a): Perlumbaan Matematik does the same per player, so the stream is keyed by the player
   // whose cursor it is (the acting human seat); no question repeats until that player's pool is used up.
+  // Known limit: after a host handover (leave / skipSeat) the new acting human inherits the cursor and the already-shuffled qIds
+  // mid-pass, so their no-repeat guarantee counts from the inherited cursor; the cursor is deliberately not reset (replay, state shape).
   if (
     (c.room.game === 'papan-bijak' || c.room.game === 'perlumbaan-matematik') &&
     c.s.qIds.length > 0 &&
