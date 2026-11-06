@@ -238,7 +238,7 @@ test.describe('M16 S1-S5 battle', MODULE, () => {
       await quick(page).click()
       await expect(page.getByTestId('battle-searching')).toContainText('Mencari Lawan...')
       await expect(page.getByTestId('battle-searching')).toContainText(
-        'Menunggu pelajar sama darjah & subjek',
+        'Menunggu pelajar sama tingkatan & subjek',
       )
       await expect(timer(page)).toHaveText('0:00')
       expect((await mock.lastRequest('/api/battle/quick-match'))?.body).toEqual({

@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { BATTLE_MESSAGES } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
-import { idFromString } from '../../../db/ids'
+import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { BattleEngine, isUuid } from '../engine'
 import { rawConflict, rawNotFound } from '../raw-response'
@@ -18,7 +18,7 @@ export class ForfeitService {
 
   async forfeit(userId: string, uuid: string): Promise<{ success: true }> {
     if (!isUuid(uuid)) throw rawNotFound(BATTLE_MESSAGES.battleNotFound)
-    const done = await this.prisma.transaction(async () => {
+    await this.prisma.transaction(async (tx) => {
       const mine = await this.prisma.client.battleParticipant.findFirst({ where: { battleId: uuid, userId: idFromString(userId), isBot: false } })
       if (!mine) throw rawNotFound(BATTLE_MESSAGES.battleNotFound)
       await this.prisma.client.$queryRaw`SELECT id FROM battles WHERE id = ${uuid}::uuid FOR UPDATE`
@@ -28,9 +28,12 @@ export class ForfeitService {
       const side = mine.side as 'A' | 'B'
       const winner: 'A' | 'B' = side === 'A' ? 'B' : 'A'
       await this.prisma.client.battle.update({ where: { id: uuid }, data: { status: 'forfeited', winner, finishedAt: this.clock.now() } })
-      return { side, winner, correct: mine.correct, total: battle.answered, isTest: battle.isTest }
+      const other = await this.prisma.client.battleParticipant.findFirst({ where: { battleId: uuid, side: winner } })
+      const common = { tx, battleId: uuid, startedAt: battle.createdAt, winner, forfeited: true, robotsOnly: other?.isBot ?? true, total: battle.answered, isTest: battle.isTest }
+      // 48 section 3.4 rule 1: the opponent gets the win XP, the one who left nothing. A robot gets nothing at all.
+      if (other && !other.isBot && other.userId !== null) await this.engine.report({ ...common, userId: idToString(other.userId), side: winner, correct: other.correct })
+      await this.engine.report({ ...common, userId, side, correct: mine.correct })
     })
-    await this.engine.reportSafely({ userId, side: done.side, winner: done.winner, forfeited: true, correct: done.correct, total: done.total, isTest: done.isTest })
     return { success: true }
   }
 }

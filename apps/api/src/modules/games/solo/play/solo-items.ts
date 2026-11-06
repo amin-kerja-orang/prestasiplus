@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { GamesSoloGame } from '@pp/contract'
 
 import type { Prng } from '../../../../db/prng'
-import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
+import { GameQuestions, type ServedQuestion, shuffled } from '../../core/game-questions.service'
 import { secretRng } from './secret-rng'
 import { MEMORY_PAIRS, SOLO_INFO, SUSUN_MAX_ANSWER, susunPoints } from './solo.rules'
 
@@ -28,17 +28,7 @@ export interface BuiltSolo {
 
 const CARD_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 
-/** Fisher-Yates over a copy, drawing from `rng`. */
-export function shuffled<T>(list: readonly T[], rng: Prng): T[] {
-  const out = [...list]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = rng.int(0, i)
-    const tmp = out[i] as T
-    out[i] = out[j] as T
-    out[j] = tmp
-  }
-  return out
-}
+export { shuffled }
 
 const difficultyOf = (s: ServedQuestion): number => Math.max(1, s.difficultyTp ?? 1)
 const fourOptions = (s: ServedQuestion): boolean => s.question.options.length === 4
@@ -71,11 +61,12 @@ export class SoloItemBuilder {
   constructor(@Inject(GameQuestions) private readonly questions: GameQuestions) {}
 
   /** `levelIds` is one education level for the four question games and levels D1..D4 for Kad Memori. */
-  async build(game: GamesSoloGame, levelIds: readonly string[], rng: Prng, secret: Prng = secretRng()): Promise<BuiltSolo> {
+  async build(game: GamesSoloGame, levelIds: readonly string[], rng: Prng, userId: string, secret: Prng = secretRng()): Promise<BuiltSolo> {
     const info = SOLO_INFO[game]
     if (game === 'kad-memori') return this.memory(levelIds, rng, secret)
     const first = levelIds[0]
-    const drawn = first === undefined ? [] : await this.questions.sample({ educationLevelId: first }, info.items * info.oversample, rng)
+    const fourOnly = game === 'cabaran-kilat' || game === 'tembak-jawapan' ? { exactOptions: 4 } : {}
+    const drawn = first === undefined ? [] : await this.questions.draw({ educationLevelId: first, ...fourOnly }, info.items * info.oversample, rng, userId)
     switch (game) {
       case 'betul-salah':
         return this.betulSalah(drawn.slice(0, info.items), secret)

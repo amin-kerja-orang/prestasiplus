@@ -7,16 +7,14 @@
  *                      (copies BE-23 semantics, credits through `WalletService`) but `canEarnSyiling` is FALSE until
  *                      BE-23 merges, because the `games_award_syiling` setting (seed 0) lives in BE-23. On the
  *                      BE-23 merge the lead rebinds this port to `GamificationService` (provideRewards).
- * - `weeklyPractice`   BE-13 (weekly practice ranking). Default: empty board.
- * - `platformAccuracy` BE-13 (platform answer accuracy, the bots' `p`). Default: the mock's fallback (0).
+ * - `platformAccuracy` The robots' chance of a correct answer, `p`. Default: the setting `battle_bot_accuracy_pct` (48 section 3.6).
  * - `battle`           BE-44 (`BattleReadService.hasBattled`). Default: false.
- * - `botPool`          bot picker. Default: students of the host's school (school-scoped; a platform-wide pick needs a BE-05 read).
  */
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
-import { BOT_ACCURACY_FALLBACK } from '../games.constants'
-import { SchoolBotPool } from './bot-pool'
+import { AnswerLogPort, type AnswerLogEntry } from '../../practice/answer-log.port'
+import { GameSettingsService } from './game-settings.service'
 import { WalletGameRewards } from './wallet-rewards'
 
 /* ---------------------------------------------------------------------------------------- rewards */
@@ -26,19 +24,36 @@ export interface GameResultInput {
   /** M14 game token: `papan_bijak`, `benteng_ilmu`, `perang_fakta`, `mathrace`, `jutawan`, `roda_nasib`, `betul_salah`, `cabaran_kilat`... */
   game: string
   event: string
-  /** Absent for `papan_bijak`: the port uses the tier rates. */
+  /** What the result asks for, from `rewardNow`; the port applies `games_award_syiling` and the caps. */
   coins?: number
-  /** Always 0 for games (BR-M16-28). */
+  /** From `rewardNow` (FR-GM-00.3); 0 for Roda Nasib. */
   xp: number
   correct?: number
   total?: number
   detail?: Record<string, unknown>
   key?: string
+  /**
+   * The game session of this result (DM-87). With it, `GamificationService` records the one reward event of the
+   * session and pupil and applies the daily caps; without it (Roda Nasib) the result stays on `key`.
+   */
+  session?: GameResultSession
 }
+
+export interface GameResultSession {
+  /** `game_rooms.session_id` or the solo session uuid. */
+  id: string
+  /** The game key of 48 section 3.5 (`betul-salah`), not the M14 token: the ledger source is `game:<game key>`. */
+  gameKey: string
+}
+
+/** Which daily cap of 48 section 3.4 rule 4 reduced a reward. */
+export type GameRewardCapReason = 'xp_cap' | 'syiling_cap' | 'xp_and_syiling_cap'
 
 export interface GameResultOutcome {
   coinsCredited: number
   xpAdded: number
+  /** Only for a result with `session`: the cap that reduced it, or null. */
+  cappedReason?: GameRewardCapReason | null
 }
 
 export interface GameRewardsPort {
@@ -52,40 +67,23 @@ export interface GameRewardsPort {
    * still returns `{0, 0}` for `isTest` as a second guard.
    */
   onGameResult(userId: string, input: GameResultInput, options: { tx?: TxClient; isTest: boolean }): Promise<GameResultOutcome>
-}
-
-/* ---------------------------------------------------------------------------- weekly practice board */
-
-export interface WeeklyPracticeRow {
-  rank: number
-  userId: string
-  name: string
-  sesi: number
-  betul: number
-  tepat: number
-}
-
-export interface WeeklyPracticeSource {
-  /** The weekly practice ranking of `[weekStart, weekEnd]` (is_test rows excluded by the source). `me` null when unranked. */
-  week(userId: string, weekStart: Date, weekEnd: Date): Promise<{ me: { rank: number; betul: number } | null; rows: WeeklyPracticeRow[] }>
-}
-
-export class NoWeeklyPractice implements WeeklyPracticeSource {
-  async week(): Promise<{ me: null; rows: [] }> {
-    return { me: null, rows: [] }
-  }
+  /** The first result of a session and pupil (DM-87), for a result read again later; null when no reward event exists. */
+  firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null>
 }
 
 /* ------------------------------------------------------------------------------ platform accuracy */
 
 export interface PlatformAccuracySource {
-  /** Platform answer accuracy 0..1 (the bots' probability of a correct answer). */
+  /** The robots' probability of a correct answer, 0..1. */
   accuracy(): Promise<number>
 }
 
-export class FallbackPlatformAccuracy implements PlatformAccuracySource {
+/** Read per call, so a saved change applies to the next answer (48 section 2). */
+export class RobotAccuracySetting implements PlatformAccuracySource {
+  constructor(private readonly settings: GameSettingsService) {}
+
   async accuracy(): Promise<number> {
-    return BOT_ACCURACY_FALLBACK
+    return (await this.settings.get('battle_bot_accuracy_pct')) / 100
   }
 }
 
@@ -102,29 +100,25 @@ export class NoBattle implements BattleReadPort {
   }
 }
 
-/* --------------------------------------------------------------------------------------- bot pool */
+/* ------------------------------------------------------------------------------------------ answers */
 
-export interface BotCandidate {
-  id: string
-  /** Display name only (D54(d)). */
-  name: string
-  grade: number | null
-}
-
-export interface BotPickInput {
-  /** The room host: its school scopes the pool. */
-  hostId: string
-  /** Whether a candidate's grade fits the room (use `gradeFits`). */
-  fits: (grade: number | null) => boolean
-  /** User ids already in the room (and the host). */
-  exclude: readonly string[]
-  /** Named PRNG stream, e.g. `games:bot:<roomCode>:<n>`. */
-  stream: string
-}
-
-export interface BotPoolPort {
-  /** One fictitious student of a fitting grade not in `exclude`, or null when none exists. Deterministic per stream. */
-  pick(input: BotPickInput): Promise<BotCandidate | null>
+/**
+ * FR-GM-00.5, 48 section 3.5: the row of one answered or timed-out bank question. Marks follow `isCorrect`, a timeout is
+ * not correct. The pupil's pick and seconds stay in the per-game logs. Mod Pelajar writes no row at all: callers skip it.
+ */
+export function gameAnswerEntry(a: { userId: string; attemptId: string; questionId: string; gameKey: string; position: number; isCorrect: boolean; answeredAt: Date }): AnswerLogEntry {
+  return {
+    userId: a.userId,
+    attemptId: a.attemptId,
+    questionId: a.questionId,
+    partRef: `${a.gameKey}#${String(a.position)}`,
+    mode: a.gameKey === 'battle' ? 'battle' : 'game',
+    isCorrect: a.isCorrect,
+    marksAwarded: a.isCorrect ? 1 : 0,
+    marksMax: 1,
+    answeredAt: a.answeredAt,
+    isTest: false,
+  }
 }
 
 /* -------------------------------------------------------------------------------------- the holder */
@@ -132,31 +126,28 @@ export interface BotPoolPort {
 @Injectable()
 export class GamesPorts {
   private rewardsPort: GameRewardsPort
-  private weeklySource: WeeklyPracticeSource = new NoWeeklyPractice()
-  private accuracySource: PlatformAccuracySource = new FallbackPlatformAccuracy()
+  private accuracySource: PlatformAccuracySource
   private battlePort: BattleReadPort = new NoBattle()
-  private botPoolPort: BotPoolPort
   private readonly bound = new Set<string>()
 
-  constructor(@Inject(WalletGameRewards) rewards: WalletGameRewards, @Inject(SchoolBotPool) bots: SchoolBotPool) {
+  constructor(
+    @Inject(WalletGameRewards) rewards: WalletGameRewards,
+    @Inject(GameSettingsService) settings: GameSettingsService,
+    /** The one writer of `practice_answers` (S5-T15); joins the caller's transaction. */
+    @Inject(AnswerLogPort) readonly answers: AnswerLogPort,
+  ) {
     this.rewardsPort = rewards
-    this.botPoolPort = bots
+    this.accuracySource = new RobotAccuracySetting(settings)
   }
 
   get rewards(): GameRewardsPort {
     return this.rewardsPort
-  }
-  get weeklyPractice(): WeeklyPracticeSource {
-    return this.weeklySource
   }
   get platformAccuracy(): PlatformAccuracySource {
     return this.accuracySource
   }
   get battle(): BattleReadPort {
     return this.battlePort
-  }
-  get botPool(): BotPoolPort {
-    return this.botPoolPort
   }
 
   private once(name: string): void {
@@ -170,11 +161,6 @@ export class GamesPorts {
     this.rewardsPort = port
   }
   /** BE-13. */
-  provideWeeklyPractice(source: WeeklyPracticeSource): void {
-    this.once('weekly practice source')
-    this.weeklySource = source
-  }
-  /** BE-13. */
   providePlatformAccuracy(source: PlatformAccuracySource): void {
     this.once('platform accuracy source')
     this.accuracySource = source
@@ -183,9 +169,5 @@ export class GamesPorts {
   provideBattle(port: BattleReadPort): void {
     this.once('battle port')
     this.battlePort = port
-  }
-  provideBotPool(port: BotPoolPort): void {
-    this.once('bot pool')
-    this.botPoolPort = port
   }
 }

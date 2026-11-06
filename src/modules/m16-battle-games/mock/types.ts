@@ -267,10 +267,14 @@ export interface RoomState {
   total: number
   /** The question pool drawn at start. */
   qIds: number[]
+  /** Papan Bijak: the room's seed, a part of the reshuffle stream names (ruling 56). */
+  seed?: string
   /** Next unused pool index. */
   cursor: number
   /** The viewer whose action is awaited (the host). */
   humanId: number
+  /** Humans seated at the start (standings are written only when 2 or more started, 48 GAME-R). */
+  startHumans?: number
   awaiting: 'roll' | 'answer' | null
   /** The pending question id. */
   pendingQ: number | null
@@ -290,6 +294,12 @@ export interface RoomState {
   teamScores: Record<string, number>
   winnerId: number | null
   mvpId: number | null
+  /** Papan Bijak: users who left the game in play and count for standings (jumlah + 1 at a settled finish, rulings 50.3/50.4). */
+  leavers?: number[]
+  /** Papan Bijak: per human seat, the last poll (ms) and the consecutive timeouts (ruling 49). */
+  presence?: Record<string, { polledMs: number | null; timeouts: number }>
+  /** Papan Bijak: the reward each staying human got at the finish, by user id (`result.reward` of the viewer). */
+  rewards?: Record<string, { xp: number; syiling: number; capped: boolean; reason: null }>
   /** Draw counter of the room's dice and bot streams. */
   draws: number
   /** When the current round began (ms; Perang Fakta round clock, BR-M16-20). Null before the start. */

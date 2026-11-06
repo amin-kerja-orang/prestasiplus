@@ -547,7 +547,7 @@ describe('re-G4 minors', () => {
   it('battle: a rejected read is not cached (the next call re-reads), a resolved one is', async () => {
     const clock = new FixedClock(new Date('2026-10-19T01:00:00Z'))
     const count = vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(7)
-    const deps = new BattleDeps({} as never, {} as never, {} as never, { count } as never, {} as never, clock)
+    const deps = new BattleDeps({} as never, {} as never, {} as never, { count } as never, {} as never, {} as never, {} as never, clock)
     await expect(deps.spmPoolCount('1')).rejects.toThrow('db down')
     await expect(deps.spmPoolCount('1')).resolves.toBe(7)
     await expect(deps.spmPoolCount('1')).resolves.toBe(7)
@@ -574,6 +574,8 @@ describe('re-G4 minors', () => {
       { subjects: async () => [{ id: 1n, code: 'MATH', name: 'Matematik' }, { id: 2n, code: 'BI', name: 'English' }] } as never,
       {} as never,
       clock,
+      {} as never,
+      {} as never,
     )
     const caller = { userId: '1' } as never
     const pages = await Promise.all([svc.page(caller, '10'), svc.page(caller, '10'), svc.page(caller, '10')])

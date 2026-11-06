@@ -53,6 +53,7 @@ import {
   GamesQuickMatchStartResponseSchema,
   GamesRoomActionRequestSchema,
   GamesRoomAnswerActionSchema,
+  GamesRoomLeaveActionSchema,
   GamesRoomRollActionSchema,
   GamesRoomCodeResultSchema,
   GamesRoomCreateRequestSchema,
@@ -140,6 +141,7 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesRoomResult: GamesRoomResultSchema,
   GamesRoomView: GamesRoomViewSchema,
   GamesRoomRollAction: GamesRoomRollActionSchema,
+  GamesRoomLeaveAction: GamesRoomLeaveActionSchema,
   GamesRoomAnswerAction: GamesRoomAnswerActionSchema,
   GamesRoomActionRequest: GamesRoomActionRequestSchema,
   GamesQuickMatchStartRequest: GamesQuickMatchStartRequestSchema,
@@ -266,6 +268,8 @@ const NO_STORE_HEADERS = {
 const noStore = (schema: z.ZodType, description: string) => ({ ...json(schema, description), headers: NO_STORE_HEADERS })
 
 const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
+const PAGES_OFF = 'Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.'
+const PAGE_OFF_404 = 'NOT_FOUND (the route does not exist in R1, FR-GM-00.1).'
 
 const TAGS = ['games']
 
@@ -285,7 +289,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Permainan hub: open rooms and chips (M16-22)',
     description:
-      'Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.',
+      'Up to 6 newest waiting rooms with a free seat whose match mode fits the caller\'s Tingkatan (any school), newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.',
     responses: { 200: noStore(envelopeOf(GamesHubSchema), 'Open rooms and chips; Cache-Control: no-store.'), 401: UNAUTHORIZED },
   })
 
@@ -295,7 +299,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Lobby of a room game (M16-23)',
     description:
-      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
+      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first given name with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
     request: { params: GameParam },
     responses: { 200: json(envelopeOf(GamesLobbySchema), 'Lobby.'), 401: UNAUTHORIZED, 404: err(GAME_404) },
   })
@@ -328,14 +332,15 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Join a waiting room by code (M16-25)',
     description:
-      'Every refusal is 404 "Bilik tidak dijumpai." (blank code, unknown room, other game, not waiting, full, grade not allowed by the match mode). Already a player: 200 with the same code, no second row.',
+      'Checked in this order (FR-GM-R.2): the room exists (404 "Bilik tidak dijumpai.": blank or malformed code, unknown room, other game, closed room, a waiting room past room_waiting_minutes), it has not started (409 "Permainan sudah dimulakan."), it has a free seat (409 "Bilik sudah penuh."), the Tingkatan fits the match mode (403 "Tindakan tidak sah."). Already a player: 200 with the same code, no second row.',
     request: { params: GameParam, headers: [csrf], body: body(GamesRoomJoinRequestSchema) },
     responses: {
       429: RATE_LIMITED,
       200: noStore(envelopeOf(GamesRoomCodeResultSchema), 'Joined (or already a player); Cache-Control: no-store.'),
       401: UNAUTHORIZED,
-      403: CSRF_INVALID,
-      404: err('NOT_FOUND "Bilik tidak dijumpai." for every refusal, or "Permainan tidak dijumpai." (unknown game).'),
+      403: FORBIDDEN_CSRF_OR('"Tindakan tidak sah." (AC-GM-R.6: the Tingkatan is not allowed by the match mode)'),
+      404: err('NOT_FOUND "Bilik tidak dijumpai." (unknown, closed or past room_waiting_minutes), or "Permainan tidak dijumpai." (unknown game).'),
+      409: err('CONFLICT "Permainan sudah dimulakan." (ERR-GAME-09: playing or finished) or "Bilik sudah penuh." (ERR-GAME-08: no free seat).'),
     },
   })
 
@@ -367,7 +372,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Hanya hos boleh memulakan permainan." (caller is not the host)'),
       404: err('NOT_FOUND "Bilik tidak dijumpai." or "Permainan tidak dijumpai.".'),
-      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting), "Pemain belum mencukupi." (below the minimum players) or "Soalan tidak mencukupi." (question pool).'),
+      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting) or "Pemain belum mencukupi." (below the minimum players).'),
+      422: err('VALIDATION_ERROR "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 
@@ -377,13 +383,13 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Roll the dice or answer (M16-28)',
     description:
-      'Only the room human (the host) acts; every other player is a bot. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.',
+      'Roll and answer: only the room human (the host) acts; every other player is a bot. {type:\'leave\'} (Keluar): any seated player. Waiting: a non-host frees the seat; the host leaving closes the room (status closed, the others see it closed). Playing: the seat is forfeited with 0 XP and no reward and no standing; the leaver\'s seat is taken over by a robot or skipped per the setting games_room_bots_enabled; the game ends when fewer than the minimum players remain (the host leaving counts the same way): the last present human wins by default, and with nobody present it ends unsettled; the leaver\'s jumlah is written only in settle. A seated human who times out 3 times is removed, polled or not (rulings 49 and 50, 48 section 3.6). A finished or closed room answers its view unchanged. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.',
     request: { params: RoomParams, headers: [csrf], body: body(GamesRoomActionRequestSchema) },
     responses: {
       429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The room after the action.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the room human)'),
+      403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the seat on turn)'),
       404: err('NOT_FOUND "Bilik tidak dijumpai." or "Permainan tidak dijumpai.".'),
       409: err('CONFLICT "Permainan belum bermula.", "Bukan giliran anda untuk gulung dadu.", "Tiada soalan untuk dijawab." or "Tiada jam untuk permainan ini.".'),
       422: err(
@@ -415,7 +421,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/papan-bijak/quick-match/poll',
     tags: TAGS,
     summary: 'Poll the quick match (M16-30)',
-    description: 'RAW body, polled every 3 s. The third poll matches and creates the room (host = caller, 4 seats, one bot).',
+    description: 'RAW body, polled every 3 s. A poll first looks for another pupil searching with the same subject and match mode (same Tingkatan for same_grade, same level for same_level; Mod Pelajar and normal users never meet): then one room is made with the polling pupil as host and both seated as players. Otherwise the third poll matches and creates the room (host = caller, 4 seats, one bot).',
     responses: { 200: json(GamesQuickMatchPollResponseSchema, 'Search state.'), 401: UNAUTHORIZED },
   })
 
@@ -444,7 +450,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the keyless items of the game.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
-      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
+      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11; or "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 
@@ -625,8 +631,9 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/games/pertandingan',
     tags: TAGS,
     summary: 'Weekly competition board (M16-40)',
-    description: '`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
-    responses: { 200: json(envelopeOf(GamesWeeklyCompetitionSchema), 'Weekly board.'), 401: UNAUTHORIZED },
+    deprecated: true,
+    description: PAGES_OFF,
+    responses: { 200: json(envelopeOf(GamesWeeklyCompetitionSchema), 'Not served in R1.'), 401: UNAUTHORIZED, 404: err(PAGE_OFF_404) },
   })
 
   registry.registerPath({
@@ -634,8 +641,9 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/games/uji-minda',
     tags: TAGS,
     summary: 'Uji Minda placeholder (M16-41)',
-    description: 'Constant `{ data: { challenge: null } }`.',
-    responses: { 200: json(envelopeOf(GamesUjiMindaSchema), 'No challenge.'), 401: UNAUTHORIZED },
+    deprecated: true,
+    description: PAGES_OFF,
+    responses: { 200: json(envelopeOf(GamesUjiMindaSchema), 'Not served in R1.'), 401: UNAUTHORIZED, 404: err(PAGE_OFF_404) },
   })
 
   // ---- leagues -----------------------------------------------------------------------------------------------------

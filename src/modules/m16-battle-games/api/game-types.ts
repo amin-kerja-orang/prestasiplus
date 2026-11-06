@@ -67,6 +67,10 @@ export interface RoomView {
   status: RoomStatus
   /** A number in the mock; a string on the real API (contract `IdSchema`), as `state.humanId`. */
   host: { id: EntityId; name: string }
+  /** A waiting room below its minimum with robots on: seconds until robots may join, from creation (48 GAME-R); absent otherwise. */
+  robotInSeconds?: number
+  /** The caller has already answered the question the room awaits now (contract `youAnswered`); absent otherwise. */
+  youAnswered?: true
   players: {
     id: number
     name: string
@@ -106,11 +110,23 @@ export interface RoomView {
     winnerName: string | null
     mvpId: number | null
     scores: { userId: number; name: string; points: number; correct: number }[]
+    /** What the game gave the caller (48 section 3.4); absent for a seat that did not play or a forfeit. */
+    reward?: RoomReward
   }
+}
+
+/** Contract `GamesReward`: `reason` says what held the reward back (a daily cap, or the pace guard that credits nothing). */
+export interface RoomReward {
+  xp: number
+  syiling: number
+  capped: boolean
+  reason: 'xp_cap' | 'syiling_cap' | 'xp_and_syiling_cap' | 'pace_guard' | null
 }
 
 export type RoomActionBody =
   | { type: 'roll' }
+  /** `Keluar` (48 GAME-R). */
+  | { type: 'leave' }
   | {
       type: 'answer'
       questionId: number

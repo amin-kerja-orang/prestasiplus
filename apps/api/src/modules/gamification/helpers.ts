@@ -1,4 +1,5 @@
 import { toMytTimestamp } from '../../common/time/myt'
+import type { GameRewardCapReason } from '../games'
 import { MASTERY_LABELS, MASTERY_THRESHOLDS } from './gamification.constants'
 import type { TierRecord } from './gamification.repository'
 
@@ -24,6 +25,23 @@ export const initialOf = (name: string): string => [...name.trim()][0]?.toUpperC
 
 /** The Malaysia calendar day before `day` (`YYYY-MM-DD`, no time zone involved). */
 export const previousDay = (day: string): string => new Date(Date.parse(`${day}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+
+/**
+ * 48 section 3.4 rule 4: what a game result may still credit today. `earned` is what the pupil's reward events hold for
+ * the Malaysia day; the part over a cap is not credited, and a reason is given only when a cap took something away.
+ */
+export function capGameReward(
+  wanted: { xp: number; syiling: number },
+  earned: { xp: number; syiling: number },
+  caps: { xp: number; syiling: number },
+): { xp: number; syiling: number; cappedReason: GameRewardCapReason | null } {
+  const xp = Math.min(wanted.xp, Math.max(0, caps.xp - earned.xp))
+  const syiling = Math.min(wanted.syiling, Math.max(0, caps.syiling - earned.syiling))
+  const xpCapped = xp < wanted.xp
+  const syilingCapped = syiling < wanted.syiling
+  const cappedReason = xpCapped && syilingCapped ? 'xp_and_syiling_cap' : xpCapped ? 'xp_cap' : syilingCapped ? 'syiling_cap' : null
+  return { xp, syiling, cappedReason }
+}
 
 /** Share-link text as the live hrefs carry it: spaces become `%20`, everything else is raw. */
 export const shareEncode = (s: string): string => s.replace(/ /g, '%20')
