@@ -1,9 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   PERFORMANCE_HEADCOUNT_MESSAGES,
+  PerformanceHeadcountArRequestSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountCreateRequestSchema,
+  PerformanceHeadcountDefaultsRequestSchema,
   PerformanceHeadcountDropRequestSchema,
+  PerformanceHeadcountSettingsRequestSchema,
+  PerformanceHeadcountTovRequestSchema,
 } from '@pp/contract'
 import type { z } from 'zod'
 
@@ -13,9 +17,10 @@ import { CLOCK, mytDay, type Clock } from '../../../../db/clock'
 import type { TxClient } from '../../../../db/client'
 import { PrismaService } from '../../../../db/prisma.service'
 import { viewerSchoolId } from '../domain/access-policy'
-import { compareIds } from '../domain/rules'
+import { compareIds, round } from '../domain/rules'
 import { DIRECTORY_PORT, PerformancePorts, type DirectoryPort } from '../ports'
 import type { Ctx } from '../services/types'
+import { autoArOf, withAutoAr } from './headcount.auto-ar'
 import { csvOf } from './headcount.csv'
 import {
   HeadcountRepository,
@@ -23,7 +28,7 @@ import {
   type HeadcountEntryRecord,
   type NewHeadcountConfig,
 } from './headcount.repository'
-import { blankSlots } from './headcount.rules'
+import { resolveMarks } from './headcount.rules'
 import {
   dashboardItem,
   detailOf,
@@ -78,6 +83,26 @@ function fieldsOf(error: z.ZodError): Record<string, string> {
   return fields
 }
 
+/** Every issue of a failed contract parse by its full path (`marks.2.value`): the screens flag the row. */
+function deepFields(error: z.ZodError): Record<string, string> {
+  const fields: Record<string, string> = {}
+  for (const issue of error.issues) {
+    const key = issue.path.length === 0 ? '_' : issue.path.map(String).join('.')
+    fields[key] ??= issue.message
+  }
+  return fields
+}
+
+/** Pupils of a write must be live roster members of the config (unknown and dropped ones are 422). */
+function rosterFields(userIds: readonly string[], key: string, lines: readonly RosterLine[]): Record<string, string> {
+  const live = new Set(lines.filter((l) => !l.dropped).map((l) => l.studentId))
+  const fields: Record<string, string> = {}
+  userIds.forEach((u, i) => {
+    if (!live.has(u)) fields[`${key}.${String(i)}.userId`] = MSG.studentsInvalid
+  })
+  return fields
+}
+
 const asRecord = (body: unknown): Record<string, unknown> =>
   typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {}
 
@@ -91,10 +116,10 @@ function isUniqueViolation(err: unknown): boolean {
 const CODE = /^[DT][1-6]$/
 
 /**
- * Headcount (TOV / RS) routes of M08 (BE-19): 7 reads and 5 writes. Roles admin, teacher and school_admin only (the controller
- * guards that). Scope: a teacher sees the own configs; a school admin the configs of the own school; an admin all. An
- * unknown config and a config outside the scope are ONE outcome, 404 NOT_FOUND (generic BM default) (OQ-3): no existence leak. The list and the
- * dashboard are the teacher's own configs (admin and school admin get empty ones, as in the mock).
+ * Headcount (TOV / RS) routes of M08 (BE-19, S10-T02). Reads: roles admin, teacher, school_admin and, for the two `me` routes,
+ * student. Scope: a teacher sees the own configs; a school admin the configs of the own school; an admin all. An unknown
+ * config and a config outside the scope are ONE outcome, 404 NOT_FOUND (generic BM default) (OQ-3): no existence leak.
+ * Writes: the owning teacher only. A school admin or admin who can see the config gets 403, one who cannot gets the same 404.
  */
 @Injectable()
 export class HeadcountService {
@@ -109,18 +134,69 @@ export class HeadcountService {
 
   // --- reads -----------------------------------------------------------------------------
 
+  /** The configs a caller lists: teacher own, school admin the own school, admin all. */
+  private async configsInScope(ctx: Ctx): Promise<HeadcountConfigRecord[]> {
+    if (ctx.role === 'teacher') return this.repo.configsOfTeacher(ctx.userId)
+    if (ctx.role === 'school_admin') {
+      const school = viewerSchoolId(ctx)
+      return school === null ? [] : this.repo.configsOfSchool(school)
+    }
+    if (ctx.role === 'admin') return this.repo.allConfigs()
+    return []
+  }
+
   async list(ctx: Ctx): Promise<HeadcountListItem[]> {
-    if (ctx.role !== 'teacher') return []
-    const configs = await this.repo.configsOfTeacher(ctx.userId)
+    const configs = await this.configsInScope(ctx)
     const { infos, rosters } = await this.assemble(configs)
     return configs.map((c) => listItem(infos.get(c.id) as ConfigInfo, rosters.get(c.id) ?? []))
   }
 
   async dashboard(ctx: Ctx): Promise<{ configs: HeadcountDashboardConfig[] }> {
-    if (ctx.role !== 'teacher') return { configs: [] }
-    const configs = await this.repo.configsOfTeacher(ctx.userId)
+    const configs = await this.configsInScope(ctx)
     const { infos, rosters } = await this.assemble(configs)
     return { configs: configs.map((c) => dashboardItem(infos.get(c.id) as ConfigInfo, rosters.get(c.id) ?? [])) }
+  }
+
+  // --- the pupil's own view (API-RPT-08) -------------------------------------------------
+
+  /** The pupil's configs of the current MYT calendar year, by class membership (not only entry rows). A dropped pupil sees none. */
+  private async ownConfigs(ctx: Ctx): Promise<{ configs: HeadcountConfigRecord[]; infos: Map<string, ConfigInfo>; rosters: Map<string, RosterLine[]> }> {
+    const classIds = (await this.ports.classes.classIdsOfStudent(ctx.userId)) ?? []
+    const year = this.currentYear()
+    const all = (await this.repo.configsOfClassrooms(classIds)).filter((c) => c.academicYear === year)
+    const { infos, rosters } = await this.assemble(all)
+    const configs = all.filter((c) => (rosters.get(c.id) ?? []).some((l) => l.studentId === ctx.userId && !l.dropped))
+    // Newest first, ties by id descending (same order as the staff list).
+    configs.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime() || -compareIds(a.id, b.id))
+    return { configs, infos, rosters }
+  }
+
+  async listOwn(ctx: Ctx): Promise<HeadcountListItem[]> {
+    const { configs, infos, rosters } = await this.ownConfigs(ctx)
+    return configs.map((c) => {
+      const lines = rosters.get(c.id) ?? []
+      return listItem(infos.get(c.id) as ConfigInfo, lines, lines.find((l) => l.studentId === ctx.userId))
+    })
+  }
+
+  /** Own line of one config (omitted `configId`: the config last updated). A foreign or unknown config is 404; no classmate data. */
+  async detailOwn(ctx: Ctx, configId: string | undefined): Promise<HeadcountStudent> {
+    const pupil = (await this.directory.users([ctx.userId])).get(ctx.userId)
+    if (!pupil) throw ApiError.of('NOT_FOUND')
+    const { configs, infos, rosters } = await this.ownConfigs(ctx)
+    let chosen: HeadcountConfigRecord | undefined
+    if (configId !== undefined) {
+      chosen = configs.find((c) => c.id === configId)
+      if (!chosen) throw ApiError.of('NOT_FOUND')
+    } else chosen = configs[0]
+    const school = pupil.schoolId === null ? null : ((await this.directory.school(pupil.schoolId))?.name ?? null)
+    const sections = chosen
+      ? (() => {
+          const line = (rosters.get(chosen.id) ?? []).find((l) => l.studentId === ctx.userId) as RosterLine
+          return [sectionOf(infos.get(chosen.id) as ConfigInfo, line, school)]
+        })()
+      : []
+    return { student: { id: pupil.id, name: pupil.name, school }, sections }
   }
 
   async formOptions(ctx: Ctx): Promise<HeadcountFormOptions> {
@@ -181,13 +257,21 @@ export class HeadcountService {
       return c ? [c] : []
     })
     const infos = await this.describe(used)
+    // Auto configs: the pupil's own live AR (the same query as every other reader).
+    const auto = await autoArOf(this.ports, used, () => [userId])
     const school = pupil.schoolId === null ? null : ((await this.directory.school(pupil.schoolId))?.name ?? null)
     const sections = entries
       .sort((a, b) => compareIds(a.configId, b.configId))
       .map((e) =>
         sectionOf(
           infos.get(e.configId) as ConfigInfo,
-          { studentId: userId, name: pupil.name, marks: e.marks, rsRecordedAt: e.rsRecordedAt, dropped: false },
+          {
+            studentId: userId,
+            name: pupil.name,
+            marks: auto.has(e.configId) ? withAutoAr(e.marks, auto.get(e.configId)?.get(userId) ?? null) : e.marks,
+            rsRecordedAt: e.rsRecordedAt,
+            dropped: false,
+          },
           school,
         ),
       )
@@ -197,6 +281,7 @@ export class HeadcountService {
   // --- writes ----------------------------------------------------------------------------
 
   async create(ctx: HeadcountWriteCtx, body: unknown): Promise<{ id: string }> {
+    if (ctx.role !== 'teacher') throw ApiError.of('FORBIDDEN')
     const raw = asRecord(body)
     const parsed = PerformanceHeadcountCreateRequestSchema.safeParse(raw)
     const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
@@ -204,7 +289,7 @@ export class HeadcountService {
 
     // A field without a schema error is a non-empty string, so it can be checked even when another field failed.
     if (fields.classroomId === undefined) {
-      const classes = ctx.role === 'teacher' ? await this.ports.classes.classesForTeacher(ctx.userId) : []
+      const classes = await this.ports.classes.classesForTeacher(ctx.userId)
       const own = classes.some((c) => c.kind === 'classroom' && c.id === raw.classroomId)
       // A foreign, an unknown and an inactive class give the same message.
       if (!own) fields.classroomId = MSG.classInvalid
@@ -255,6 +340,7 @@ export class HeadcountService {
 
   /** BR-M08-21: one Auto config (3 OTRs) per own active class of the chosen levels that has a subject. Idempotent. */
   async autoSetup(ctx: HeadcountWriteCtx, body: unknown): Promise<{ created: number }> {
+    if (ctx.role !== 'teacher') throw ApiError.of('FORBIDDEN')
     const parsed = PerformanceHeadcountAutoSetupRequestSchema.safeParse(asRecord(body))
     if (!parsed.success) throw invalid(fieldsOf(parsed.error))
     const ids: string[] = []
@@ -267,8 +353,6 @@ export class HeadcountService {
     const levels = await this.repo.levelsByIdOrCode(ids, codes)
     const known = new Set(levels.flatMap((l) => [l.id, l.code]))
     if (![...ids, ...codes].every((v) => known.has(v))) throw invalid({ levels: MSG.levelInvalid })
-    if (ctx.role !== 'teacher') return { created: 0 }
-
     const bySlug = new Map(levels.map((l) => [l.code.toLowerCase(), l.id]))
     const classes = (await this.ports.classes.classesForTeacher(ctx.userId)).filter(
       (c) => c.kind === 'classroom' && c.subjectId !== null && bySlug.has(c.levelSlug),
@@ -312,7 +396,7 @@ export class HeadcountService {
   }
 
   async dropStudents(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<{ updated: number }> {
-    const { config, lines } = await this.open(ctx, id)
+    const { config, lines } = await this.openOwn(ctx, id)
     const raw = asRecord(body)
     const parsed = PerformanceHeadcountDropRequestSchema.safeParse(raw)
     const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
@@ -338,7 +422,7 @@ export class HeadcountService {
   }
 
   async reset(ctx: HeadcountWriteCtx, id: string): Promise<{ reset: true }> {
-    const { config } = await this.open(ctx, id)
+    const { config } = await this.openOwn(ctx, id)
     await this.prisma.transaction(async (tx) => {
       const entries = await this.repo.resetMarks(config.id, this.clock.now())
       await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_CONFIG_RESET, ctx, config.id, { entries })
@@ -347,12 +431,118 @@ export class HeadcountService {
   }
 
   async remove(ctx: HeadcountWriteCtx, id: string): Promise<{ deleted: true }> {
-    const { config } = await this.open(ctx, id)
+    const { config } = await this.openOwn(ctx, id)
     await this.prisma.transaction(async (tx) => {
       await this.repo.deleteConfig(config.id)
       await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_CONFIG_DELETED, ctx, config.id, {})
     })
     return { deleted: true }
+  }
+
+  // --- S10-T02 writes (API-RPT-10, API-RPT-16): the owning teacher only ------------------------
+
+  /** Key-in AR of one checkpoint (Manual only). Auto config or a checkpoint outside 1..activeOtrs is 404. */
+  async saveAr(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<HeadcountDetail> {
+    const { config, lines } = await this.openOwn(ctx, id)
+    const raw = asRecord(body)
+    if (config.mode === 'auto') throw ApiError.of('NOT_FOUND')
+    if (typeof raw.checkpoint === 'number' && Number.isInteger(raw.checkpoint) && (raw.checkpoint < 1 || raw.checkpoint > config.activeOtrs)) {
+      throw ApiError.of('NOT_FOUND')
+    }
+    const parsed = PerformanceHeadcountArRequestSchema.safeParse(raw)
+    if (!parsed.success) throw invalid(deepFields(parsed.error))
+    if (parsed.data.checkpoint > config.activeOtrs) throw ApiError.of('NOT_FOUND')
+    const fields = rosterFields(parsed.data.marks.map((m) => m.userId), 'marks', lines)
+    if (Object.keys(fields).length > 0) throw invalid(fields)
+    // The last value of a repeated pupil wins.
+    const byPupil = new Map(parsed.data.marks.map((m) => [m.userId, m.value === null ? null : round(m.value, 1)]))
+    await this.prisma.transaction(async () => {
+      await this.repo.saveActuals(
+        config.id,
+        parsed.data.checkpoint,
+        [...byPupil].map(([studentId, value]) => ({ studentId, value })),
+        this.clock.now(),
+      )
+    })
+    return this.detail(ctx, id, undefined)
+  }
+
+  /** Edit TOV / ETR / RS rows. Only the keys present in a row are written; null clears. */
+  async saveTov(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<HeadcountDetail> {
+    const { config, lines } = await this.openOwn(ctx, id)
+    const parsed = PerformanceHeadcountTovRequestSchema.safeParse(asRecord(body))
+    if (!parsed.success) throw invalid(deepFields(parsed.error))
+    const fields = rosterFields(parsed.data.rows.map((r) => r.userId), 'rows', lines)
+    const now = this.clock.now()
+    const today = mytDay(now)
+    const stored = await this.repo.rsOf(config.id, parsed.data.rows.map((r) => r.userId))
+    const one = (v: number | null | undefined): number | null | undefined => (v === undefined || v === null ? v : round(v, 1))
+    const out = parsed.data.rows.map((r, i) => {
+      const had = stored.get(r.userId)
+      const rs = one(r.rs)
+      const row: { studentId: string; tov?: number | null; etr?: number | null; rs?: number | null; rsRecordedAt?: Date | null } = { studentId: r.userId }
+      const tov = one(r.tov)
+      const etr = one(r.etr)
+      if (tov !== undefined) row.tov = tov
+      if (etr !== undefined) row.etr = etr
+      if (rs !== undefined) row.rs = rs
+      if (r.rsRecordedAt !== undefined && r.rsRecordedAt !== null && r.rsRecordedAt > today) {
+        fields[`rows.${String(i)}.rsRecordedAt`] = MSG.rsDateFuture
+      }
+      const hadRs = had?.rs ?? null
+      const effectiveRs = rs !== undefined ? rs : hadRs
+      if (effectiveRs === null && r.rsRecordedAt !== undefined && r.rsRecordedAt !== null) {
+        fields[`rows.${String(i)}.rsRecordedAt`] ??= MSG.rsDateNeedsRs
+      }
+      if (effectiveRs === null) {
+        // No RS: no record date either; an RS cleared with null clears its date.
+        if (rs === null || had?.rsRecordedAt != null) row.rsRecordedAt = null
+      } else if (r.rsRecordedAt !== undefined && r.rsRecordedAt !== null) {
+        row.rsRecordedAt = new Date(`${r.rsRecordedAt}T00:00:00+08:00`)
+      } else if (r.rsRecordedAt === null || (rs !== undefined && (hadRs === null || had?.rsRecordedAt == null))) {
+        // First RS save (or no stored date): today in MYT.
+        row.rsRecordedAt = new Date(`${today}T00:00:00+08:00`)
+      }
+      return row
+    })
+    if (Object.keys(fields).length > 0) throw invalid(fields)
+    await this.prisma.transaction(async () => {
+      await this.repo.saveEntryValues(config.id, out, now)
+    })
+    return this.detail(ctx, id, undefined)
+  }
+
+  /** Tetapan: Bilangan OTR 2..5. Lowering below a checkpoint that has AR marks asks CF-05 (409) and, confirmed, deletes them. */
+  async saveSettings(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<HeadcountDetail> {
+    const { config } = await this.openOwn(ctx, id)
+    const parsed = PerformanceHeadcountSettingsRequestSchema.safeParse(asRecord(body))
+    if (!parsed.success) throw invalid(deepFields(parsed.error))
+    const n = Number(parsed.data.activeOtrs)
+    if (n !== config.activeOtrs) {
+      await this.prisma.transaction(async (tx) => {
+        // CF-05 check and delete in ONE transaction, so a concurrent Key-in cannot be deleted unasked. An Auto config has no
+        // keyed AR to protect (its AR is derived), so it is trimmed without the prompt.
+        if (config.mode !== 'auto' && n < config.activeOtrs && parsed.data.confirm !== true) {
+          const above = await this.repo.firstCheckpointAbove(config.id, n)
+          if (above !== null) throw ApiError.of('CONFLICT', { message: MSG.otrLoweringConfirm(n + 1) })
+        }
+        const deleted = await this.repo.setActiveOtrs(config.id, n, this.clock.now())
+        await this.record(tx, AUDIT_ACTIONS.HEADCOUNT_CONFIG_OTRS_CHANGED, ctx, config.id, { from: config.activeOtrs, to: n, marksDeleted: deleted })
+      })
+    }
+    return this.detail(ctx, id, undefined)
+  }
+
+  /** "Simpan Sasaran": the class defaults of one config (API-RPT-16). */
+  async saveDefaults(ctx: HeadcountWriteCtx, id: string, body: unknown): Promise<HeadcountDetail> {
+    const { config } = await this.openOwn(ctx, id)
+    const parsed = PerformanceHeadcountDefaultsRequestSchema.safeParse(asRecord(body))
+    if (!parsed.success) throw invalid(deepFields(parsed.error))
+    const v = (x: number | null): number | null => (x === null ? null : round(x, 1))
+    await this.prisma.transaction(async () => {
+      await this.repo.setDefaults(config.id, { defaultTov: v(parsed.data.defaultTov), defaultEtr: v(parsed.data.defaultEtr) }, this.clock.now())
+    })
+    return this.detail(ctx, id, undefined)
   }
 
   // --- internals -------------------------------------------------------------------------
@@ -394,6 +584,13 @@ export class HeadcountService {
     return { config, info: infos.get(config.id) as ConfigInfo, lines: rosters.get(config.id) ?? [] }
   }
 
+  /** Write guard: the owning teacher. A school admin or admin who may read the config gets 403, anyone else the 404. */
+  private async openOwn(ctx: Ctx, id: string): Promise<{ config: HeadcountConfigRecord; info: ConfigInfo; lines: RosterLine[] }> {
+    const opened = await this.open(ctx, id)
+    if (ctx.role !== 'teacher') throw ApiError.of('FORBIDDEN')
+    return opened
+  }
+
   private async mayUse(ctx: Ctx, config: HeadcountConfigRecord): Promise<boolean> {
     switch (ctx.role) {
       case 'admin':
@@ -432,12 +629,17 @@ export class HeadcountService {
           mode: c.mode,
           activeOtrs: c.activeOtrs,
           teacherName: teachers.get(c.teacherId)?.name ?? '',
+          defaultTov: c.defaultTov,
+          defaultEtr: c.defaultEtr,
         },
       ]),
     )
   }
 
-  /** Names and rosters for a set of configs. Roster = active class members plus the pupils holding an entry. */
+  /**
+   * Names and rosters for a set of configs. Roster = active class members plus the pupils holding an entry. Marks come from the
+   * one assembler (`resolveMarks`: defaults, computed OTR targets); an Auto config then reads the AR from the answer store.
+   */
   private async assemble(configs: readonly HeadcountConfigRecord[]): Promise<{ infos: Map<string, ConfigInfo>; rosters: Map<string, RosterLine[]> }> {
     const infos = await this.describe(configs)
     const rosters = new Map<string, RosterLine[]>()
@@ -451,14 +653,19 @@ export class HeadcountService {
     for (const e of entries) idsOf.get(e.configId)?.add(e.studentId)
     const everyone = new Set<string>()
     for (const set of idsOf.values()) for (const s of set) everyone.add(s)
-    const users = await this.directory.users([...everyone])
+    const [users, auto] = await Promise.all([
+      this.directory.users([...everyone]),
+      autoArOf(this.ports, configs, (id) => [...(idsOf.get(id) ?? [])]),
+    ])
     for (const c of configs) {
       const lines = [...(idsOf.get(c.id) ?? [])].sort(compareIds).map((studentId): RosterLine => {
         const e = entryOf.get(`${c.id}:${studentId}`)
+        const base = e?.marks ?? resolveMarks(null, c)
+        const ar = auto.get(c.id)
         return {
           studentId,
           name: users.get(studentId)?.name ?? `Murid ${studentId}`,
-          marks: e?.marks ?? { tov: null, targets: blankSlots(c.activeOtrs), actuals: blankSlots(c.activeOtrs), etr: null, rs: null },
+          marks: ar === undefined ? base : withAutoAr(base, ar.get(studentId) ?? null),
           rsRecordedAt: e?.rsRecordedAt ?? null,
           dropped: e?.dropped ?? false,
         }

@@ -30,8 +30,10 @@ import {
   GamesKeylessQuestionSchema,
   GamesLeagueCreateRequestSchema,
   GamesLeagueDetailSchema,
-  GamesLeagueIdResultSchema,
-  GamesLeagueJoinRequestSchema,
+  GamesLeagueEnrolRequestSchema,
+  GAMES_LEAGUE_LEVEL_IDS,
+  gamesClassLevelToLevelId,
+  gamesLevelIdToClassLevel,
   GamesLeagueListSchema,
   GamesLobbySchema,
   GamesQuickMatchCancelResponseSchema,
@@ -46,7 +48,6 @@ import {
   GamesRoomJoinRequestSchema,
   GamesRoomViewSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
   GamesSoloCheckRequestSchema,
   GamesSoloCheckResponseSchema,
@@ -708,10 +709,12 @@ describe('leagues (M16-46 to M16-49)', () => {
     name: 'Liga Fiktif',
     type: 'friendly',
     scope: 'school',
-    game_mode: 'mixed',
-    scoring_method: 'total_score',
-    start_date: '2026-04-01',
-    end_date: '2026-04-30',
+    mode: 'mixed',
+    scoring: 'total_score',
+    schoolLimit: 100,
+    levelIds: [4],
+    start: '2026-04-01',
+    end: '2026-04-30',
   }
 
   it('parses the list {mine, open} and keeps the BM labels of the mock', () => {
@@ -724,52 +727,69 @@ describe('leagues (M16-46 to M16-49)', () => {
     expect(GAMES_LEAGUE_LABELS.scoring.wins).toBe('Bilangan Kemenangan')
   })
 
-  it('create: valid body; top-level message is the first field message', () => {
+  it('create (60 section 2.17.9): valid body; messages and paths use the new names', () => {
     ok(GamesLeagueCreateRequestSchema, create)
-    ok(GamesLeagueCreateRequestSchema, { ...create, subject_id: '5', class_levels: ['T4', 'T5'], max_schools: 2 })
-    ok(GamesLeagueCreateRequestSchema, { ...create, end_date: create.start_date })
-    for (const field of ['name', 'type', 'scope', 'game_mode', 'scoring_method', 'start_date', 'end_date'] as const) {
+    ok(GamesLeagueCreateRequestSchema, { ...create, subjectId: '5', levelIds: [4, 5], schoolLimit: 2 })
+    ok(GamesLeagueCreateRequestSchema, { ...create, end: create.start })
+    for (const field of ['name', 'type', 'scope', 'mode', 'scoring', 'schoolLimit', 'levelIds', 'start', 'end'] as const) {
       const { [field]: _omit, ...rest } = create
       void _omit
       expect(firstIssue(GamesLeagueCreateRequestSchema, rest)).toEqual({ message: 'Sila lengkapkan semua medan wajib.', path: field })
     }
+    // The old snake_case names are gone, with no alias.
+    const { mode: _m, ...noMode } = create
+    void _m
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...noMode, game_mode: 'mixed' }).path).toBe('mode')
+    ok(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(100) })
     expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: '   ' }).message).toBe('Sila lengkapkan semua medan wajib.')
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(256) }).message).toBe('Sila lengkapkan semua medan wajib.')
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, start_date: '31/03/2026' }).message).toBe('Sila lengkapkan semua medan wajib.')
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, end_date: '2026-03-31' })).toEqual({
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, name: 'x'.repeat(101) }).message).toBe('Sila lengkapkan semua medan wajib.')
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, start: '31/03/2026' }).message).toBe('Sila lengkapkan semua medan wajib.')
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, levelIds: [] }).message).toBe('Sila lengkapkan semua medan wajib.')
+    for (const field of ['type', 'scope', 'mode', 'scoring'] as const) {
+      expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, [field]: 'bogus' })).toEqual({ message: 'Format tidak sah.', path: field })
+    }
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, type: 'tournament' })).toEqual({ message: 'Format tidak sah.', path: 'type' })
+    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, end: '2026-03-31' })).toEqual({
       message: 'Tarikh tamat mesti selepas tarikh mula.',
-      path: 'end_date',
+      path: 'end',
     })
-    for (const max_schools of [1, 501, 2.5]) {
-      expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, max_schools })).toEqual({
+    for (const schoolLimit of [1, 501, 2.5, null]) {
+      expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, schoolLimit })).toEqual({
         message: 'Had sekolah mesti antara 2 dan 500.',
-        path: 'max_schools',
+        path: 'schoolLimit',
       })
     }
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, class_levels: ['T6'] }).message).toBe('Tingkatan tidak sah.')
-    expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, class_levels: ['D0'] }).path).toContain('class_levels')
-  })
-
-  it('create and join answer { id }; join takes invite_code', () => {
-    ok(GamesLeagueIdResultSchema, { id: '7' })
-    rejected(GamesLeagueIdResultSchema, { id: '' })
-    ok(GamesLeagueJoinRequestSchema, { invite_code: ' rmu4vcbs ' })
-    rejected(GamesLeagueJoinRequestSchema, {})
-    for (const m of [
-      GAMES_MESSAGES.leagueInviteInvalid,
-      GAMES_MESSAGES.leagueEnded,
-      GAMES_MESSAGES.leagueNeedsSchool,
-      GAMES_MESSAGES.leagueAlreadyIn,
-      GAMES_MESSAGES.leagueFull,
-    ]) {
-      ok(ErrorBodySchema, { error: { code: 'VALIDATION_ERROR', message: m, fields: { invite_code: m } } })
+    for (const levelIds of [[0], [6], [1.5], ['T4'], 'T4', [1, 2, 3, 4, 5, 1]]) {
+      expect(firstIssue(GamesLeagueCreateRequestSchema, { ...create, levelIds }).message).toBe('Tingkatan tidak sah.')
     }
-    expect(GAMES_MESSAGES.leagueInviteInvalid).toBe('Kod jemputan tidak sah.')
-    expect(GAMES_MESSAGES.leagueNeedsSchool).toBe('Anda perlu mempunyai sekolah untuk menyertai liga ini.')
-    expect(GAMES_MESSAGES.leagueNotFound).toBe('Liga tidak dijumpai.')
   })
 
-  it('detail: card fields without the count, invite code, share url, canJoin, schools, standings by level', () => {
+  it('levelIds 1..5 map to T1..T5 through the one shared mapper', () => {
+    expect(GAMES_LEAGUE_LEVEL_IDS.map(gamesLevelIdToClassLevel)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+    expect(['T1', 'T5'].map(gamesClassLevelToLevelId)).toEqual([1, 5])
+  })
+
+  it('enrol takes schoolIds (API-ADM-25) and its refusals sit under schoolIds', () => {
+    expect(GAMES_MESSAGES.leagueSchoolsPick).toBe('Sila pilih sekolah.')
+    expect(GAMES_MESSAGES.leagueSchoolFormat).toBe('Format sekolah tidak sah.')
+    ok(GamesLeagueEnrolRequestSchema, { schoolIds: ['8078', '8080'] })
+    rejected(GamesLeagueEnrolRequestSchema, {})
+    rejected(GamesLeagueEnrolRequestSchema, { schoolIds: [] })
+    rejected(GamesLeagueEnrolRequestSchema, { schoolIds: [5] })
+    ok(GamesLeagueEnrolRequestSchema, { schoolIds: Array.from({ length: 500 }, (_, i) => String(i + 1)) })
+    rejected(GamesLeagueEnrolRequestSchema, { schoolIds: Array.from({ length: 501 }, (_, i) => String(i + 1)) })
+    rejected(GamesLeagueEnrolRequestSchema, { schoolIds: ['1'], inviteCode: 'X' })
+    for (const m of [GAMES_MESSAGES.leagueEnded, GAMES_MESSAGES.leagueAlreadyIn, GAMES_MESSAGES.leagueFull]) {
+      ok(ErrorBodySchema, { error: { code: 'VALIDATION_ERROR', message: m, fields: { schoolIds: m } } })
+    }
+    expect(GAMES_MESSAGES.leagueEnded).toBe('Liga ini sudah tamat.')
+    expect(GAMES_MESSAGES.leagueAlreadyIn).toBe('Sekolah ini sudah menyertai liga ini.')
+    expect(GAMES_MESSAGES.leagueFull).toBe('Liga ini sudah penuh.')
+    expect(GAMES_MESSAGES.leagueNotFound).toBe('Liga tidak dijumpai.')
+    for (const gone of ['leagueInviteInvalid', 'leagueNeedsSchool']) expect(GAMES_MESSAGES).not.toHaveProperty(gone)
+  })
+
+  it('detail: card fields without the count, invite code, share url and canJoin; schools, standings by level', () => {
     const { schools: _count, ...cardFields } = card
     void _count
     const detail = {
@@ -777,9 +797,6 @@ describe('leagues (M16-46 to M16-49)', () => {
       scoringLabel: 'Jumlah Markah',
       creatorName: 'Cikgu Fiktif',
       classLevels: ['T4', 'T5'],
-      inviteCode: 'TEST2026',
-      shareUrl: 'https://wa.me/?text=Jom+sertai',
-      canJoin: false,
       schools: [{ id: '8078', name: 'SMK Rekaan' }],
       standings: {
         T4: [{ rank: 1, schoolId: '8078', name: 'SMK Rekaan', ppdState: 'Daerah Rekaan, Negeri Rekaan', peserta: 8, skor: 2935.0, purata: 77.2 }],
@@ -788,7 +805,7 @@ describe('leagues (M16-46 to M16-49)', () => {
     ok(GamesLeagueDetailSchema, detail)
     ok(GamesLeagueDetailSchema, { ...detail, standings: {} }) // only levels with rows
     rejected(GamesLeagueDetailSchema, { ...detail, schools: 3 })
-    rejected(GamesLeagueDetailSchema, { ...detail, inviteCode: 'abc' })
+    for (const extra of [{ inviteCode: 'TEST2026' }, { shareUrl: 'https://wa.me/?text=x' }, { canJoin: false }]) rejected(GamesLeagueDetailSchema, { ...detail, ...extra })
     rejected(GamesLeagueDetailSchema, { ...detail, standings: { T9: [] } })
   })
 })
@@ -812,21 +829,11 @@ describe('Sekolah Bersaing live board (API-AS-14, S7-T02)', () => {
     for (const accuracy of [0, 50, 100, 69.6]) ok(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
     for (const accuracy of [-1, 100.1, 69.65]) rejected(GamesSekolahBersaingBoardSchema, [{ ...row, accuracy }])
   })
-})
 
-describe('Sekolah Bersaing (M16-50)', () => {
-  const row = { rank: 1, schoolName: 'SK Rekaan', state: 'Negeri Rekaan', aktifPct: 61.5, streakAvg: 3.2, notaPer10: 4.1, anonymous: false }
-
-  it('parses a week and an empty week', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [row] })
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 0, rows: [] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 2, rows: [row] })
-  })
-
-  it('D54(d): an anonymous row shows "Sekolah anonim", never the school name', () => {
-    ok(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, schoolName: 'Sekolah anonim', anonymous: true }] })
-    rejected(GamesSekolahBersaingSchema, { weekStart: '2026-09-21', count: 1, rows: [{ ...row, anonymous: true }] })
-    expect(GAMES_MESSAGES.sekolahAnonymous).toBe('Sekolah anonim')
+  it('the route has no week parameter and documents 403', () => {
+    const op = doc.paths['/sekolah-bersaing']!.get!
+    expect(op.parameters ?? []).toEqual([])
+    expect(Object.keys(op.responses).sort()).toEqual(['200', '401', '403'])
   })
 })
 
@@ -895,14 +902,15 @@ describe('openapi registration', () => {
     'GET /leagues',
     'POST /leagues',
     'POST /leagues/join',
+    'POST /leagues/{id}/schools',
     'GET /leagues/{id}',
     'GET /sekolah-bersaing',
     'GET /admin/games',
     'PUT /admin/games/settings',
   ]
 
-  it('registers exactly the 29 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(29)
+  it('registers exactly the 30 routes of the card under the games tag', () => {
+    expect(gamesOps).toHaveLength(30)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
@@ -922,7 +930,7 @@ describe('openapi registration', () => {
 
   it('every mutation takes the X-CSRF-Token header and declares 403', () => {
     const mutations = gamesOps.filter((o) => o.method !== 'get')
-    expect(mutations).toHaveLength(16)
+    expect(mutations).toHaveLength(17)
     for (const { key, op } of mutations) {
       expect(op.parameters?.some((p) => p.in === 'header' && p.name === 'X-CSRF-Token'), key).toBe(true)
       expect(op.responses['403'], key).toBeDefined()
@@ -936,7 +944,7 @@ describe('openapi registration', () => {
 
   it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
     const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
-    expect(writes).toHaveLength(17)
+    expect(writes).toHaveLength(18)
     for (const { key, op } of writes) {
       const r = op.responses['429']
       expect(r, key).toBeDefined()
@@ -981,6 +989,17 @@ describe('openapi registration', () => {
     for (const code of ['404', '409', '422']) expect(JSON.stringify(checkOp?.responses[code]), code).toContain('[PROPOSED]')
   })
 
+  it('AC-GM-15.2, FR-GM-15.1: league create and enrol are admin only; join is closed (403 for every role)', () => {
+    for (const key of ['POST /leagues', 'POST /leagues/{id}/schools']) {
+      const op = gamesOps.find((o) => o.key === key)?.op
+      expect(JSON.stringify(op?.responses['403']), key).toMatch(/Anda tidak dibenarkan melakukan tindakan ini\./)
+    }
+    const join = gamesOps.find((o) => o.key === 'POST /leagues/join')?.op
+    expect(Object.keys(join?.responses ?? {})).not.toContain('200')
+    expect(JSON.stringify(join?.responses['403'])).toMatch(/Anda tidak dibenarkan melakukan tindakan ini\./)
+    expect(JSON.stringify(gamesOps.find((o) => o.key === 'POST /leagues/{id}/schools')?.op.responses['422'])).toContain('schoolIds')
+  })
+
   it('M16-51 and M16-52 are admin only: 403 "Anda tidak dibenarkan melakukan tindakan ini."', () => {
     for (const key of ['GET /admin/games', 'PUT /admin/games/settings']) {
       const op = gamesOps.find((o) => o.key === key)?.op
@@ -996,7 +1015,8 @@ describe('openapi registration', () => {
     expect(status('POST /games/jutawan/start')).toContain('200')
     expect(status('POST /games/jutawan/start')).not.toContain('201')
     expect(status('POST /games/{game}/rooms/join')).toContain('200')
-    expect(status('POST /leagues/join')).toContain('200')
+    expect(status('POST /leagues/join')).not.toContain('200')
+    expect(status('POST /leagues/{id}/schools')).toContain('200')
   })
 
   it('raw routes declare raw bodies and raw error bodies; the others use { data } and { error }', () => {
@@ -1038,7 +1058,8 @@ describe('openapi registration', () => {
     expect(names('GET /games/jutawan')).toEqual(['query:darjah'])
     expect(names('POST /games/jutawan/{sessionId}/answer')).toEqual(['header:X-CSRF-Token', 'path:sessionId'])
     expect(names('GET /leagues/{id}')).toEqual(['path:id'])
-    expect(names('GET /sekolah-bersaing')).toEqual(['query:week'])
+    expect(names('POST /leagues/{id}/schools')).toEqual(['header:X-CSRF-Token', 'path:id'])
+    expect(names('GET /sekolah-bersaing')).toEqual([])
     expect(op('POST /games/{game}/rooms').requestBody).toBeDefined()
     expect(op('POST /games/{game}/rooms/{code}/start').requestBody).toBeUndefined()
     expect(op('POST /papan-bijak/quick-match/cancel').requestBody).toBeUndefined()

@@ -8,6 +8,7 @@ import { isApiError } from '@/api'
 import { isGenericServerText } from '../generic-server-text'
 
 export const BANNERS_PATH = '/admin/banners'
+export const ADMIN_VIDEOS_PATH = '/admin/videos'
 export const AUDIO_PATH = '/admin/audio-kbat'
 export const SCREENSHOTS_PATH = '/admin/tools/screenshots'
 export const AUDIO_TEMPLATE_PATH = '/admin/audio-kbat/template'
@@ -22,10 +23,15 @@ export const MEDIA_ROUTES = {
   audioTemplate: 'm09.admin.audio.template',
   audioTemplateWord: 'm09.admin.audio.template-word',
   screenshots: 'm09.admin.screenshots',
+  videoList: 'm09.admin.videos.list',
 } as const
 
 /** Exact observed copy (SRS §8.1) and the placeholders of §8.2. */
 export const COPY = {
+  confirmDeleteVideo: 'Padam video ini?',
+  confirmDeleteYes: 'Ya, Padam',
+  confirmCancel: 'Batal',
+  videosEmpty: 'Tiada video dijumpai.',
   bannerNotFound: 'Banner tidak dijumpai.',
   confirmDeleteBanner: 'Adakah anda pasti mahu padam banner ini?',
   /** Placeholder (no live equivalent): shown when a page's data cannot be loaded. */

@@ -94,13 +94,14 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
     })
   })
 
-  // S4-T06 (DM-16): the learner Topik is a tree chapter of an offered level (Tingkatan 1 to 5) whose subject is one of the 8 legacy
-  // codes; the expectations are computed from the tables, so they hold on any seed that has chapters for the levels.
+  // S4-T06 (DM-16): the learner Topik is a tree chapter of an offered level (Tingkatan 1 to 5) of any ACTIVE subject (D11; the 8 legacy
+  // codes keep their legacy learner code, any other subject is its own code); the expectations are computed from the tables, so they hold on any seed that has chapters for the levels.
   const LEGACY: Record<string, string> = {
     MATEMATIK: 'MATH', BAHASA_MELAYU: 'BM', BAHASA_INGGERIS: 'BI', SAINS: 'SCI',
     PENDIDIKAN_ISLAM: 'PI', PENDIDIKAN_MORAL: 'PM', SEJARAH: 'SEJ', GEOGRAFI: 'GEO',
   }
   const PRACTICE_CODES = Object.values(LEGACY)
+  const learnerCode = (code: string): string => Object.keys(LEGACY).find((k) => LEGACY[k] === code) ?? code
   type Row = { id: string; name: string; code: string; level: string; chapter_number: number | null; description: string | null }
   /** Expected Topik rows in the served order: level order, subject order, chapter number (null last), id. */
   const expected = (level?: string, practiceCode?: string): Promise<Row[]> =>
@@ -108,9 +109,9 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       `select c.id::text, c.name, s.code, l.code as level, c.chapter_number, c.description
          from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id
         where c.in_tree and c.is_active and s.is_active and l.is_active and l.stage <> 'primary'
-          and s.code = any($1::text[]) and ($2::text is null or l.code = $2) and ($3::text is null or s.code = $3)
+          and ($1::text is null or l.code = $1) and ($2::text is null or s.code = $2)
         order by l.sort_order, l.id, s.sort_order, s.id, c.chapter_number nulls last, c.id`,
-      [PRACTICE_CODES, level ?? null, practiceCode ?? null],
+      [level ?? null, practiceCode ?? null],
     )
 
   describe('GET /topics (AC7, BR-13)', () => {
@@ -131,8 +132,8 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(items[0]).toEqual({
         id: first.id,
         gradeLevel: `TINGKATAN_${first.level.slice(1)}`,
-        subject: Object.keys(LEGACY).find((k) => LEGACY[k] === first.code),
-        subjectLabel: Object.keys(LEGACY).find((k) => LEGACY[k] === first.code)!.replaceAll('_', ' '),
+        subject: learnerCode(first.code),
+        subjectLabel: learnerCode(first.code).replaceAll('_', ' '),
         name: first.name,
         description: first.description,
         subtopicCount: subs.length,
@@ -167,15 +168,25 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(await topics('?gradeLevel=NOPE&subject=SAINS')).toEqual([])
     })
 
-    it('a subject outside the 8 legacy codes (Kimia, Fizik, ...) is not listed; the card count is the active topics of the chapter', async () => {
+    it('every active subject is listed (D11), also outside the 8 legacy codes, under its own code; the card count is the active topics of the chapter', async () => {
       const all = await topics()
       const ids = new Set(all.map((c) => c.id))
-      const outside = await t.db.query<{ id: string }>(
-        `select c.id::text from chapters c join subjects s on s.id = c.subject_id where c.in_tree and not (s.code = any($1::text[]))`,
+      const outside = await t.db.query<{ id: string; code: string; level: string }>(
+        `select c.id::text, s.code, l.code as level from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id
+          where c.in_tree and c.is_active and s.is_active and l.is_active and l.stage <> 'primary' and not (s.code = any($1::text[]))`,
         [PRACTICE_CODES],
       )
       expect(outside.length).toBeGreaterThan(0)
-      expect(outside.some((r) => ids.has(r.id))).toBe(false)
+      expect(outside.every((r) => ids.has(r.id))).toBe(true)
+      const kimia = outside[0]!
+      const card = all.find((c) => c.id === kimia.id)!
+      expect([card.subject, card.gradeLevel]).toEqual([kimia.code, `TINGKATAN_${kimia.level.slice(1)}`])
+      // The filter is the subject's own code, for its level.
+      const own = await topics(`?gradeLevel=${card.gradeLevel}&subject=${kimia.code}`)
+      expect(own.map((c) => c.id)).toEqual((await expected(kimia.level, kimia.code)).map((r) => r.id))
+      expect(own.every((c) => c.subject === kimia.code)).toBe(true)
+      // A legacy practice code typed as a learner code (MATH) is not a learner code.
+      expect(await topics('?subject=MATH')).toEqual([])
       const total = await t.db.query<{ n: string }>(
         `select count(*)::text n from topics tp where tp.is_active and tp.chapter_id = any($1::bigint[])`,
         [all.map((c) => c.id)],
@@ -235,15 +246,22 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(detail.gradeLevel).toBe('TINGKATAN_1')
     })
 
-    it('a Darjah chapter, a chapter of a subject outside the 8 codes, an out-of-tree or inactive chapter is 404 "Topik tidak dijumpai."', async () => {
+    it('a Darjah chapter, an out-of-tree or inactive chapter is 404 "Topik tidak dijumpai."', async () => {
       const rows = await t.db.query<{ id: string }>(
-        `(select c.id::text from chapters c join education_levels l on l.id = c.education_level_id where l.stage = 'primary' order by c.id limit 1)
-         union all
-         (select c.id::text from chapters c join subjects s on s.id = c.subject_id where c.in_tree and not (s.code = any($1::text[])) order by c.id limit 1)`,
+        `(select c.id::text from chapters c join education_levels l on l.id = c.education_level_id where l.stage = 'primary' order by c.id limit 1)`,
+      )
+      expect(rows.length).toBe(1)
+      for (const r of rows) expectError(await student.get(`/api/topics/${r.id}`), 'NOT_FOUND', 'Topik tidak dijumpai.')
+    })
+
+    it('a chapter of a subject outside the 8 legacy codes opens: subject and practiceCode are the subject code, the label comes from it', async () => {
+      const [r] = await t.db.query<{ id: string; code: string }>(
+        `select c.id::text, s.code from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id
+          where c.in_tree and c.is_active and s.is_active and l.is_active and l.stage <> 'primary' and not (s.code = any($1::text[])) order by c.id limit 1`,
         [PRACTICE_CODES],
       )
-      expect(rows.length).toBe(2)
-      for (const r of rows) expectError(await student.get(`/api/topics/${r.id}`), 'NOT_FOUND', 'Topik tidak dijumpai.')
+      const d = parseData(await student.get(`/api/topics/${r!.id}`), CurriculumTopicDetailLearnerSchema)
+      expect([d.subject, d.practiceCode, d.subjectLabel]).toEqual([r!.code, r!.code, r!.code.replaceAll('_', ' ')])
     })
 
     it('the practice code map covers all 8 subjects (BR-16)', async () => {
@@ -280,9 +298,9 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
     })
 
-    it('lists the 7 subject pills with the observed colours; Geografi is not a pill', async () => {
+    it('lists the 7 known pills first with the observed colours, then every other active subject (Geografi too) by name with no emoji', async () => {
       const d = await map()
-      expect(d.subjects.map((s) => [s.code, s.label, s.emoji, s.color])).toEqual([
+      expect(d.subjects.slice(0, 7).map((s) => [s.code, s.label, s.emoji, s.color])).toEqual([
         ['MATEMATIK', 'Matematik', '🔢', '#3B82F6'],
         ['BAHASA_MELAYU', 'Bahasa Melayu', '📝', '#10B981'],
         ['BAHASA_INGGERIS', 'Bahasa Inggeris', '🇬🇧', '#8B5CF6'],
@@ -291,6 +309,10 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
         ['PENDIDIKAN_MORAL', 'Pend. Moral', '🤝', '#F97316'],
         ['SEJARAH', 'Sejarah', '🏛️', '#EF4444'],
       ])
+      const rows = await t.db.query<{ code: string; name: string }>(`select code, name from subjects where is_active order by sort_order, id`)
+      const legacy = new Set(['MATH', 'BM', 'BI', 'SCI', 'PI', 'PM', 'SEJ'])
+      const rest = rows.filter((r) => !legacy.has(r.code))
+      expect(d.subjects.slice(7).map((s) => [s.label, s.emoji, s.color])).toEqual(rest.map((r) => [r.name, '', '']))
     })
 
     it('accepts every offered grade (TINGKATAN_1 to 5); anything else (a Darjah included, or a lower-case code) is served as TINGKATAN_4 (BR-15, D72)', async () => {
@@ -325,6 +347,20 @@ describe('learner reads (AC1, AC7, AC8, AC9)', () => {
       // The S14 filter is exact: a lower-case code is unknown. An empty subject is the default.
       expect((await map('?subject=matematik')).topics).toEqual([])
       expect((await map('?subject=')).subject).toBe('MATEMATIK')
+    })
+
+    it('Peta Belajar accepts any active subject code, exact match (a subject outside the 8 legacy codes)', async () => {
+      const [r] = await t.db.query<{ code: string }>(
+        `select s.code from chapters c join subjects s on s.id = c.subject_id join education_levels l on l.id = c.education_level_id
+          where c.in_tree and c.is_active and s.is_active and l.code = 'T4' and not (s.code = any($1::text[])) order by c.id limit 1`,
+        [PRACTICE_CODES],
+      )
+      expect(r, 'seed has a non-legacy subject with T4 chapters').toBeDefined()
+      const d = await map(`?subject=${r!.code}&grade=TINGKATAN_4`)
+      const rows = await expected('T4', r!.code)
+      expect(rows.length).toBeGreaterThan(0)
+      expect([d.subject, d.topics.map((x) => x.name)]).toEqual([r!.code, rows.map((x) => x.name)])
+      expect((await map(`?subject=${r!.code.toLowerCase()}&grade=TINGKATAN_4`)).topics).toEqual([])
     })
 
     it('an inherited property name (constructor, toString, __proto__, hasOwnProperty) is an unknown subject: 200 with no topics, kept as typed', async () => {
