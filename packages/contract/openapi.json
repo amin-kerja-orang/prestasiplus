@@ -68598,14 +68598,21 @@
           },
           "text": {
             "type": "string",
-            "maxLength": 103,
-            "description": "Cut at 100 characters plus \"...\" (BR-29)."
+            "maxLength": 141,
+            "description": "Cut at 140 characters plus \"…\" (FR-MUR-2-8)."
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
           "levelCode": {
             "type": "string"
+          },
+          "figureThumbUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8)."
           }
         },
         "required": [
@@ -68614,7 +68621,8 @@
           "difficulty",
           "text",
           "createdAt",
-          "levelCode"
+          "levelCode",
+          "figureThumbUrl"
         ],
         "additionalProperties": false
       },
