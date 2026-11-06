@@ -103,6 +103,18 @@ describe('GET /practice/sessions: the caller\'s own completed sessions', () => {
     expect(res.headers['cache-control']).toContain('no-store')
   })
 
+  it('S3-T07: the past_year type (Tahun Lepas pill) lists legacy past_year and new databank sessions, and counts both in the total', async () => {
+    const s = await spmHistory()
+    const d = await insert({ user: ids.pelajar, mode: 'databank', subject: w.subject.bm, count: 10, correct: 6, coins: 6, completedAt: '2026-10-14T10:00:00+08:00' })
+    const res = await pelajar.get('/api/practice/sessions?modes=past_year,databank,latih_tubi,ramalan&type=past_year')
+    expect(res.status).toBe(200)
+    expect(res.body.data.map((r: { id: string }) => r.id)).toEqual([d, s.s2, s.s1])
+    expect(res.body.meta).toMatchObject({ totalItems: 3, activeType: 'past_year' })
+    // an old client that sends modes without databank still gets the legacy rows only
+    const old = await pelajar.get('/api/practice/sessions?modes=past_year,latih_tubi,ramalan&type=past_year')
+    expect(old.body.data).toHaveLength(2)
+  })
+
   it('"type" narrows the rows only; the stats keep covering every mode in modes', async () => {
     await spmHistory()
     const res = await pelajar.get('/api/practice/sessions?modes=past_year,latih_tubi,ramalan&type=past_year')

@@ -25,6 +25,15 @@ export interface SubjectFact {
   databankListed: boolean
 }
 
+/** One stimulus the live version shows (own, part or group), with the facts `mediaResolvedSql` reads. S1-T06 (FR-X1-4f). */
+export interface MediaStimulusFact {
+  kind: string
+  hasFile: boolean
+  hasTableData: boolean
+  bodyMs: string | null
+  bodyEn: string | null
+}
+
 /**
  * Everything the rules need about one question, loaded in batch by `ServabilityService` and handed to the pure `evaluate`.
  * `live` is the version pupils are served (null while none is live); `latest` is the newest version (the status reason when
@@ -39,6 +48,11 @@ export interface ServabilityFacts {
   group: StimulusGroupRecord | null
   /** S1-T06 (FR-QA-01): set when the question's stimulus group is not complete: the number of members not yet servable (not approved or not active). */
   groupIncomplete?: number
+  /**
+   * S1-T06 (FR-X1-4f): every stimulus the live version shows (own links, part links, its group's) and the `import_issues` codes of the live version:
+   * the facts of `mediaResolvedSql`. Left out (undefined) by hand-made facts that do not exercise the media rule.
+   */
+  media?: { stimuli: readonly MediaStimulusFact[]; importIssueCodes: readonly string[] }
   /** Every stimulus linked to the live version or to one of its leaves, as the kuiz reads it (`ownStimuliOf`, so the kuiz and this report agree). */
   linkedAssets: ReadonlyMap<string, OwnStimulus>
   /**

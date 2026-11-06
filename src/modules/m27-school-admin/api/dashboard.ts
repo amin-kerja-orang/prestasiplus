@@ -38,6 +38,8 @@ export interface SchoolDashboard {
   school: { id: number; name: string; state: string; ppd: string | null; code: string | null }
   roleLabel: string
   perutusan: DashboardPerutusan[]
+  /** Teachers waiting for approval ("Guru Menunggu"); the callout shows only when above 0. */
+  pendingTeachers: number
   cards: {
     pupils: number
     teachers: number

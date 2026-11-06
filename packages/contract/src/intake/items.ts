@@ -305,7 +305,7 @@ const itemCommon = {
   state: IntakeItemStateSchema,
   confidenceBand: IntakeConfidenceBandSchema,
   uploader: IntakeActorRefSchema.meta({ description: 'Owner of the batch. A Guru only ever sees own items.' }),
-  question: IntakeAcceptedQuestionSchema.nullable().meta({ description: 'Set once the item is accepted.' }),
+  question: IntakeAcceptedQuestionSchema.nullable().meta({ description: 'Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept).' }),
   duplicates: z.array(IntakeDuplicateEntrySchema).max(50).meta({ description: 'Findings and decisions, oldest first. `variant` entries do not affect `state`.' }),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,

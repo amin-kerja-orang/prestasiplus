@@ -433,6 +433,7 @@ const SOURCE_LABEL: Readonly<Record<string, string>> = {
   chapter: 'Latihan Bab',
   revision: 'Ulang Kaji',
   past_year: 'Soalan Tahun Lepas',
+  databank: 'Soalan Tahun Lepas',
   ramalan: 'Ramalan',
   mission: 'Misi',
   remedial: 'Ujian Remedial',

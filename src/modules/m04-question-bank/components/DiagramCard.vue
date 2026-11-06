@@ -5,7 +5,7 @@
  * image, icon submit, no confirm) and "Dismiss" (no confirm). Both calls clear the flag; the page then
  * reloads with the API `status` as the flash (FR-M04-100, FR-M04-101).
  * S6-T18: the file is checked before sending (jpg/png/webp, 2 MB, all roles); Dismiss is admin only
- * (`canDismiss`) and upload is admin only (`canUpload`); `item.pendingReview` shows the chip "Menunggu Semakan".
+ * (`canDismiss`); upload is for admin and teacher (`canUpload`) and is hidden while `item.pendingReview`; `item.pendingReview` shows the chip "Menunggu Semakan".
  */
 import { ref } from 'vue'
 
@@ -115,7 +115,7 @@ async function dismiss(): Promise<void> {
 
       <div class="flex flex-col gap-2 sm:w-72 sm:shrink-0">
         <form
-          v-if="canUpload"
+          v-if="canUpload && !item.pendingReview"
           method="post"
           class="flex items-center gap-2"
           @submit.prevent="upload"

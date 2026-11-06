@@ -112,7 +112,16 @@ export type BijakAttemptPhoto = z.infer<typeof BijakAttemptPhotoSchema>
  */
 export const BijakAttemptPartAnswerSchema = z
   .strictObject({
-    choice: z.string().optional().meta({ description: 'MCQ option id, or a letter for match_letter.' }),
+    choice: z.string().optional().meta({
+      description: 'MCQ option id, or a letter for match_letter. An open essay_choice answer may hold its topic id here (DM-68: still read).',
+    }),
+    choices: z.array(z.string()).optional().meta({ description: 'DM-68: the option ids picked in an mcq_multi part.' }),
+    gaps: z.record(z.string(), z.string()).optional().meta({ description: 'DM-68: the text per gap of a cloze part, by gap id.' }),
+    cells: z.record(z.string(), z.string()).optional().meta({ description: 'DM-68: the text per cell of a table_fill part, by cell id.' }),
+    topicId: z.string().optional().meta({ description: 'DM-68: the topic picked in an essay_choice part; it must be one of the topics of that part.' }),
+    revealed: z.boolean().optional().meta({
+      description: 'DM-68: this part was opened by "Semak" in Mod Latihan. Set by the server and never cleared; a value sent by a client is ignored.',
+    }),
     steps: z.array(z.string()).optional().meta({ description: 'Working lines (LaTeX).' }),
     final: z.string().optional().meta({ description: 'Final answer (LaTeX).' }),
     unit: z.string().optional(),
@@ -585,7 +594,10 @@ export const BijakAttemptPartResultSchema = z
     }),
     suggestion: BijakAttemptSuggestionSchema.optional(),
     answer: BijakAttemptPartAnswerSchema,
-    scheme: BijakAttemptSchemeSchema,
+    scheme: BijakAttemptSchemeSchema.optional().meta({
+      description:
+        'The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` ("Tunjuk Skema Pemarkahan", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too.',
+    }),
   })
   .meta({ id: 'BijakAttemptPartResult' })
 export type BijakAttemptPartResult = z.infer<typeof BijakAttemptPartResultSchema>
