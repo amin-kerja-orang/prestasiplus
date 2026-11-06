@@ -197,11 +197,12 @@ describe('achievements: triggers, battle_wins, count (S7-T04 part 16)', () => {
       await setMin('Sahabat Belajar', 1)
       try {
         const code = (await t.gamification.referral(referrer)).code
-        const friend = await bareUser(t, 'Kawan Rujukan')
+        const friend = await bareStudent(t, 'Kawan Rujukan')
         expect(await t.gamification.applyReferral(friend, code, { isTest: false })).toEqual({ applied: true })
-        expect((await unlockRows(referrer)).map((r) => r.name)).toEqual(['Sahabat Belajar'])
-        expect((await achievementRows(referrer)).map((r) => r.description)).toEqual(['Pencapaian: Sahabat Belajar'])
-        // The referee earns the 25 only: nothing is evaluated for them.
+        // The reward is now 100 (not 50), which also takes a fresh referrer's lifetime total over "Pengumpul Syiling".
+        expect((await unlockRows(referrer)).map((r) => r.name).sort()).toEqual(['Pengumpul Syiling', 'Sahabat Belajar'])
+        expect((await achievementRows(referrer)).map((r) => r.description).sort()).toEqual(['Pencapaian: Pengumpul Syiling', 'Pencapaian: Sahabat Belajar'])
+        // The referee earns nothing (referral_referee_syiling = 0) and nothing is evaluated for them.
         expect(await unlockRows(friend)).toEqual([])
       } finally {
         await setMin('Sahabat Belajar', 3)
