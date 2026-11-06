@@ -336,6 +336,34 @@ describe('MysteryResultModal', () => {
     const closed = mount(MysteryResultModal, { props: { result: null }, global: { stubs } })
     expect(closed.find('[data-testid="box-result"]').exists()).toBe(false)
   })
+
+  it('shows one "Lencana baru: {name}!" line per unlocked badge, none when absent or empty', () => {
+    const stubs = { DsDialog: { template: '<section><slot /></section>' } }
+    const base = { boxName: 'Kotak Gangsa', coins: 12, xp: 4 }
+    const two = mount(MysteryResultModal, {
+      props: {
+        result: {
+          ...base,
+          achievementsUnlocked: [
+            { code: '13', name: 'Ahli Kotak Misteri' },
+            { code: '5', name: 'Pengumpul Syiling' },
+          ],
+        } as MysteryBoxOpened,
+      },
+      global: { stubs },
+    })
+    expect(two.findAll('[data-testid="box-result-badge"]').map((l) => l.text())).toEqual([
+      'Lencana baru: Ahli Kotak Misteri!',
+      'Lencana baru: Pengumpul Syiling!',
+    ])
+    for (const result of [base, { ...base, achievementsUnlocked: [] }]) {
+      const none = mount(MysteryResultModal, {
+        props: { result: result as MysteryBoxOpened },
+        global: { stubs },
+      })
+      expect(none.find('[data-testid="box-result-badge"]').exists()).toBe(false)
+    }
+  })
 })
 
 describe('S7 CabutanPage', () => {

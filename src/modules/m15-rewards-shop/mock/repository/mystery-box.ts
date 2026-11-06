@@ -13,7 +13,7 @@ import { defineRepository } from '@/mock/repository'
 
 import { MYSTERY_BOXES } from '../data/mystery-boxes'
 import { nowMs } from './clock'
-import { addXp, balanceOf, creditSyiling, debitTokens } from './m14-seam'
+import { addXp, awardBadges, balanceOf, creditSyiling, debitTokens } from './m14-seam'
 import { openingsTable } from './tables'
 import { M15Error, type MysteryBox, type MysteryBoxOpening } from './types'
 
@@ -29,6 +29,8 @@ export interface OpeningResult {
   box: MysteryBox
   tokenBalance: number
   syilingBalance: number
+  /** Badges this opening unlocked (BR-M14-16 "Ahli Kotak Misteri"); empty when none. */
+  achievementsUnlocked: { code: string; name: string }[]
 }
 
 export const mysteryBoxRepo = defineRepository({
@@ -99,7 +101,9 @@ export const mysteryBoxRepo = defineRepository({
           refId: ref,
         })
         if (xp > 0) addXp(userId, xp, 'mystery_box')
+        // The balances are those after the opening; a badge's reward is its own ledger row.
         const after = balanceOf(userId)
+        const achievementsUnlocked = awardBadges(userId)
         // A refused opening keeps the hook's result for the next call.
         if (forced) nextResult = null
         return {
@@ -107,6 +111,7 @@ export const mysteryBoxRepo = defineRepository({
           box,
           tokenBalance: after.tokenBalance,
           syilingBalance: after.syilingBalance,
+          achievementsUnlocked,
         }
       })
     },

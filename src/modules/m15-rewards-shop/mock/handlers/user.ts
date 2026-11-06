@@ -120,6 +120,7 @@ function openBox(req: MockRequest): MockResponse {
       xp: r.opening.xp,
       tokenBalance: r.tokenBalance,
       syilingBalance: r.syilingBalance,
+      ...(r.achievementsUnlocked.length > 0 ? { achievementsUnlocked: r.achievementsUnlocked } : {}),
     }
     return ok(data)
   } catch (e) {

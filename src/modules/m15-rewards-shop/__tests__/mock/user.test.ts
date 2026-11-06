@@ -183,7 +183,8 @@ describe('#10, #11 mystery box (BR-M15-17, BR-M15-18)', () => {
       syilingBalance: before.currentSyiling + 7,
     })
     const after = wallet.summary(PELAJAR)
-    expect(after.xp).toBe(before.xp + 3)
+    // + 5 XP of #5 "Pengumpul Syiling": the seeded pelajar holds 370 syiling and no badge row
+    expect(after.xp).toBe(before.xp + 3 + 5)
     expect(
       coinLedger.forUser(PELAJAR).some((row) => row.description === 'Kotak Misteri: Kotak Gangsa'),
     ).toBe(true)
@@ -226,6 +227,32 @@ describe('#10, #11 mystery box (BR-M15-17, BR-M15-18)', () => {
       PELAJAR,
     )
     expect(list.body.data.history).toHaveLength(10)
+  })
+
+  it('the 10th opening unlocks #13 "Ahli Kotak Misteri" once: achievementsUnlocked, one ledger row, none after', async () => {
+    wallet.setFields(PELAJAR, { tokens: 1000 })
+    const open = async () => {
+      m15Hooks.m15MysteryNext({ coins: 1, xp: 1 })
+      const r = await call<{ data: MysteryBoxOpened }>(
+        'POST',
+        '/api/gamification/mystery-boxes/1/open',
+        PELAJAR,
+      )
+      expect(r.status).toBe(200)
+      return r.body.data
+    }
+    const unlocked: string[][] = []
+    for (let i = 0; i < 11; i++) {
+      unlocked.push(((await open()).achievementsUnlocked ?? []).map((b) => b.code))
+    }
+    // opening 1: the seeded pelajar (370 syiling, no badge row) also gets #5; openings 2-9 and 11: nothing
+    expect(unlocked[0]).toEqual(['5'])
+    expect(unlocked.map((u) => u.includes('13'))).toEqual(
+      [...Array(9).fill(false), true, false] as boolean[],
+    )
+    const rows = coinLedger.forUser(PELAJAR).filter((r) => r.description === 'Pencapaian: Ahli Kotak Misteri')
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ source: 'achievement', amount: 30 })
   })
 
   it('validates the hook input', () => {

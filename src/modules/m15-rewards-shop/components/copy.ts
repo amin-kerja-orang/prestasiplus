@@ -20,6 +20,8 @@ export const BOX_COPY = {
   opening: 'Membuka…',
   /** PROPOSED (FN-M15-6.2.3). */
   close: 'Tutup',
+  /** FR-GM-25 / AC-GM-25.1: one line per badge the opening unlocked. */
+  newBadge: (name: string): string => `Lencana baru: ${name}!`,
   /** PROPOSED (FN-M15-6.2.4). */
   historyHeading: 'Sejarah Kotak Misteri',
 } as const

@@ -7,7 +7,7 @@
  * so an M14 refusal rolls back the M15 write too (BR-M15-21).
  */
 
-import { draws, M14Error, wallet, type Draw } from '@/modules/m14-gamification/mock'
+import { draws, gamification, M14Error, wallet, type Draw } from '@/modules/m14-gamification/mock'
 
 import { M15Error } from './types'
 
@@ -49,6 +49,15 @@ export function creditSyiling(
 
 export function addXp(userId: number, n: number, source: string): void {
   wallet.addXp(userId, n, { source })
+}
+
+/**
+ * FR-GM-25.2 "Kotak Misteri": M14 evaluates the badges after an opening and returns the ones it
+ * unlocked now (`{code, name}`, the contract's `AchievementUnlocked`); their reward is M14's own
+ * ledger row.
+ */
+export function awardBadges(userId: number): { code: string; name: string }[] {
+  return gamification.awardBadges(userId)
 }
 
 /** Test hook support (`setWallet`, XR-M15-08): the M14 repository owns it. */

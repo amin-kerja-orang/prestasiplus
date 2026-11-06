@@ -4,7 +4,7 @@
  * `sm`, centred modal from `sm`. "Tutup" and the scrim close it. The sticker stamps in and stays
  * still under reduced motion.
  */
-import { DsArt3D, DsDialog, DsSticker } from '@/ds'
+import { DsArt3D, DsDialog, DsSticker, DsText } from '@/ds'
 
 import type { MysteryBoxOpened } from '../api'
 import { BOX_COPY } from './copy'
@@ -35,6 +35,14 @@ function onOpen(value: boolean): void {
       <DsSticker art="coin">
         <span data-testid="box-result-reward">+{{ result.coins }} 🪙 · +{{ result.xp }} XP</span>
       </DsSticker>
+      <DsText
+        v-for="badge in result.achievementsUnlocked ?? []"
+        :key="badge.code"
+        variant="label"
+        tone="highlighted"
+        data-testid="box-result-badge"
+        >{{ BOX_COPY.newBadge(badge.name) }}</DsText
+      >
     </div>
     <template #footer>
       <UButton size="xl" class="min-h-14" data-testid="box-result-close" @click="emit('close')">

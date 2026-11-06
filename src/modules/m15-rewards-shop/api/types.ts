@@ -225,6 +225,12 @@ export interface MysteryBoxesView {
   history: MysteryBoxHistoryItem[]
 }
 
+/** A badge an action unlocked; equal to `AchievementUnlockedSchema` of `packages/contract` (`code` is the achievement id as text). */
+export interface AchievementUnlocked {
+  code: string
+  name: string
+}
+
 /** #11 data. */
 export interface MysteryBoxOpened {
   openingId: number
@@ -235,6 +241,8 @@ export interface MysteryBoxOpened {
   xp: number
   tokenBalance: number
   syilingBalance: number
+  /** Badges this opening unlocked; absent when none. */
+  achievementsUnlocked?: AchievementUnlocked[]
 }
 
 export interface PrizeLineView {
