@@ -186,6 +186,12 @@ describe('stimulus kinds: image, diagram, map, infographic, graph carry a file t
     expect(s).not.toHaveProperty('image')
   })
 
+  it('image with passage text (a teacher structured item accepted with a stimulus text and a picture) is served with BOTH', () => {
+    const g = group([stim({ kind: 'image', id: '72', bodyMs: 'Rajah menunjukkan sebuah segi tiga.', assetFileId: '89' })])
+    const s = map([mcq()], { groupId: '9' }, g, media({ '89': 'tok89' })).group?.stimulus
+    expect(s).toMatchObject({ kind: 'image', text: 'Rajah menunjukkan sebuah segi tiga.', image: { url: '/api/files/tok89' } })
+  })
+
   it('table -> a real table from tableData ({head, rows}, {headers, rows}, rows of rows)', () => {
     const want = { head: ['Tahun', 'Peristiwa'], rows: [['1957', 'Merdeka']] }
     for (const tableData of [

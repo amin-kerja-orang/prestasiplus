@@ -167,6 +167,7 @@ export class PracticeService {
         wrongTimes: wrong.get(q.id) ?? 0,
         hasDskp: q.hasDskp,
         contributor: q.contributor ? { name: q.contributor.name, profileUrl: q.contributor.profileUrl } : null,
+        ...(q.referenceUrl ? { referenceUrl: q.referenceUrl } : {}),
         options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
       })),
       ...(s.mode === 'revision' && revisionMeta ? { revisionMeta } : {}),
