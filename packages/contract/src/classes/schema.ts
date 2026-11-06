@@ -178,9 +178,9 @@ export const TeacherStudentsMetaSchema = z
   .object({
     count: z.number().int().min(0).meta({ description: 'Matches before the 200-row cap of the school tab.' }),
     schoolSet: z.boolean().meta({ description: 'Whether the teacher profile has a school (BR-M10-30).' }),
-    page: z.number().int().min(1).optional().meta({ description: 'Current page (25 per page). Absent until the roster API pages (S6-T10 pelajar).' }),
-    pageSize: z.number().int().min(1).optional(),
-    totalPages: z.number().int().min(1).optional(),
+    page: z.number().int().min(1).meta({ description: 'Current page (25 per page).' }),
+    pageSize: z.number().int().min(1),
+    totalPages: z.number().int().min(1),
   })
   .meta({ id: 'TeacherStudentsMeta' })
 
