@@ -69412,6 +69412,28 @@
             "type": "integer",
             "minimum": 0,
             "description": "\"{marks} markah\"."
+          },
+          "bestScore": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "awarded": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "awarded",
+              "max"
+            ],
+            "additionalProperties": false,
+            "description": "The caller's best attempt on this set (highest awarded total); null when there is no attempt."
           }
         },
         "required": [
@@ -69428,7 +69450,8 @@
           "subQuestionCount",
           "levelName",
           "parts",
-          "marks"
+          "marks",
+          "bestScore"
         ],
         "additionalProperties": false
       },
@@ -69512,6 +69535,11 @@
               "additionalProperties": false
             },
             "description": "The \"Subjek\" options (without \"Semua Subjek\"): plain list by name; SPM variants in the FR-M05-134 order."
+          },
+          "pendingSchemeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sets in the current filter (q, subject, KBAT; ignoring `markable`) with no usable scheme: the \"{n} soalan untuk pilihan ini masih menunggu skema pemarkahan...\" notice."
           }
         },
         "required": [
@@ -69521,7 +69549,8 @@
           "totalPages",
           "scope",
           "track",
-          "subjectOptions"
+          "subjectOptions",
+          "pendingSchemeCount"
         ],
         "additionalProperties": {}
       },
@@ -101998,7 +102027,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial). A question_set has no attempt cap in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -103004,10 +103033,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20."
+              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12."
             },
             "required": false,
-            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20.",
+            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12.",
             "name": "page",
             "in": "query"
           },
@@ -103029,6 +103058,33 @@
             "required": false,
             "description": "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored.",
             "name": "track",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search."
+            },
+            "required": false,
+            "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1",
+                "true",
+                "false"
+              ],
+              "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all."
+            },
+            "required": false,
+            "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all.",
+            "name": "markable",
             "in": "query"
           }
         ],
