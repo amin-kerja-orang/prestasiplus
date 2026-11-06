@@ -63,11 +63,10 @@ const TREE = {
 export class PapersRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Published curated papers (Kertas Pilihan), oldest first. */
-  listPublishedPilihan(): Promise<PaperWithTree[]> {
+  /** Published curated papers of one surface (DM-23: `simulasi` = Kertas Pilihan, `subjektif` = Kertas Subjektif), oldest first. */
+  listPublishedPilihan(surface: 'simulasi' | 'subjektif' = 'simulasi'): Promise<PaperWithTree[]> {
     return this.prisma.client.paper.findMany({
-      // Kertas Subjektif papers (`surface = 'subjektif'`, S3-T06) have their own pupil list; the Bijak hub lists the others.
-      where: { kind: 'pilihan', status: 'published', surface: { not: 'subjektif' } },
+      where: { kind: 'pilihan', status: 'published', surface },
       include: TREE,
       orderBy: { id: 'asc' },
     })
@@ -138,9 +137,10 @@ export class PapersRepository {
   async hubSubjects(grade: number | null): Promise<SubjectRef[]> {
     const [bp, papers] = await Promise.all([
       this.prisma.client.blueprint.findMany({ where: { status: 'active' }, select: { subjectId: true } }),
+      // Kertas Subjektif papers (DM-23) have their own lane; they do not put a subject on the Bijak hub.
+      // Same level rule as the list (S3-T07): only the papers in the pupil's form, so no subject shows with zero papers.
       this.prisma.client.paper.findMany({
-        // Same predicate as the list (S3-T07): no Kertas Subjektif, and only the papers in the pupil's form, so no subject shows with zero papers.
-        where: { kind: 'pilihan', status: 'published', surface: { not: 'subjektif' } },
+        where: { kind: 'pilihan', status: 'published', surface: 'simulasi' },
         select: { subjectId: true, levelScope: true },
       }),
     ])

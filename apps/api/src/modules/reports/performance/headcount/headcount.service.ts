@@ -8,11 +8,13 @@ import {
   PerformanceHeadcountDropRequestSchema,
   PerformanceHeadcountSettingsRequestSchema,
   PerformanceHeadcountTovRequestSchema,
+  REPORT_SCOPE_MESSAGES,
 } from '@pp/contract'
 import type { z } from 'zod'
 
 import { AUDIT_ACTIONS, AuditService } from '../../../../common/audit'
 import { ApiError } from '../../../../common/errors/api-error'
+import { isIdString } from '../../../../db/ids'
 import { CLOCK, mytDay, type Clock } from '../../../../db/clock'
 import type { TxClient } from '../../../../db/client'
 import { PrismaService } from '../../../../db/prisma.service'
@@ -145,8 +147,23 @@ export class HeadcountService {
     return []
   }
 
-  async list(ctx: Ctx): Promise<HeadcountListItem[]> {
-    const configs = await this.configsInScope(ctx)
+  /**
+   * S6-T13 PM-24: Admin Pusat who sends `schoolId` lists the configs of that ONE school (422 `fields.schoolId` when malformed,
+   * 404 when unknown), the same list as that school's admin. Without `schoolId` the admin list is unchanged (all configs).
+   * Other roles ignore `schoolId`.
+   */
+  private async centralConfigs(rawSchoolId: unknown): Promise<HeadcountConfigRecord[]> {
+    const raw = typeof rawSchoolId === 'string' ? rawSchoolId.trim() : ''
+    if (!/^[1-9]\d{0,18}$/.test(raw) || !isIdString(raw)) {
+      const message = REPORT_SCOPE_MESSAGES.schoolIdRequired
+      throw ApiError.of('VALIDATION_ERROR', { message, fields: { schoolId: message } })
+    }
+    if (!(await this.directory.school(raw))) throw ApiError.of('NOT_FOUND')
+    return this.repo.configsOfSchool(raw)
+  }
+
+  async list(ctx: Ctx, rawSchoolId?: unknown): Promise<HeadcountListItem[]> {
+    const configs = ctx.role === 'admin' && rawSchoolId !== undefined ? await this.centralConfigs(rawSchoolId) : await this.configsInScope(ctx)
     const { infos, rosters } = await this.assemble(configs)
     return configs.map((c) => listItem(infos.get(c.id) as ConfigInfo, rosters.get(c.id) ?? []))
   }

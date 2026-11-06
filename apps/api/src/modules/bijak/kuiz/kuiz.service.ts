@@ -363,7 +363,8 @@ export class KuizService {
   private async visiblePaper(userId: string, paperId: string) {
     if (!isIdString(paperId)) throw kuizPaperNotFound()
     const paper = await this.papers.findPaper(idFromString(paperId))
-    if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
+    // A Kertas Subjektif paper (DM-23) is not a Kuiz paper: the same 404 as an unknown one.
+    if (!paper || paper.status !== 'published' || paper.surface === 'subjektif') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
     // S3-T07: a curated paper outside the pupil's form (`level_scope`) is hidden from the list and answers the same 404 here.
     // A pupil with their own open sitting on it (re-scoped or promoted mid-sitting) keeps it, like the resume in `attempts.service.ts`.
