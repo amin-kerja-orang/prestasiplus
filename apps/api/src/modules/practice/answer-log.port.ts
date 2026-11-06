@@ -16,6 +16,7 @@ import type { TxClient } from '../../db/client'
 import { idFromString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { PracticePorts, type PracticeQuestion, versionKey } from './ports'
+import { selectedLabelOf } from './rules'
 
 /** The 19 values of the registry (OPT-MODE-SESI, check `ck_practice_answers_mode`). */
 export const ANSWER_MODES = [
@@ -90,7 +91,7 @@ export interface AnswerLogEntry {
   answeredAt: Date
   /** True in Mod Pelajar (INV-30); the caller sets it, the port never infers it. */
   isTest: boolean
-  /** Optional pass-through: the option label chosen (`A`..`H`), null when none. */
+  /** Optional pass-through: the option label chosen (`A`..`H`), or the sorted labels of an `mcq_multi` answer joined by commas (`A,C`); null when none. */
   selectedLabel?: string | null
   /** Optional pass-through: the version the pupil was served; when given it is the served version for the dimensions. */
   questionVersionNo?: number | null
@@ -163,8 +164,14 @@ export function validateAnswerEntry(entry: AnswerLogEntry): void {
   // A marked part is correct only when marksAwarded = marksMax; a part still waiting for a mark is not correct.
   const correct = entry.marksAwarded !== null && entry.marksAwarded === entry.marksMax
   if (entry.isCorrect !== correct) throw new Error('AnswerLogPort: isCorrect must be true exactly when marksAwarded equals marksMax (false while marksAwarded is null)')
-  if (entry.selectedLabel != null && (typeof entry.selectedLabel !== 'string' || !/^[A-H]$/.test(entry.selectedLabel))) {
-    throw new Error('AnswerLogPort: selectedLabel must be null or a letter A to H')
+  // DM-44 (migration 0262): one letter A-H, or the sorted, unique labels of an `mcq_multi` answer joined by commas ("A,C").
+  if (
+    entry.selectedLabel != null &&
+    (typeof entry.selectedLabel !== 'string' ||
+      !/^[A-H](,[A-H]){0,7}$/.test(entry.selectedLabel) ||
+      selectedLabelOf(entry.selectedLabel.split(',')) !== entry.selectedLabel)
+  ) {
+    throw new Error('AnswerLogPort: selectedLabel must be null, a letter A to H, or sorted unique letters joined by commas')
   }
   if (entry.timeSeconds != null && (!Number.isInteger(entry.timeSeconds) || entry.timeSeconds < 0 || entry.timeSeconds > 2147483647)) {
     throw new Error('AnswerLogPort: timeSeconds must be null or a non-negative integer')

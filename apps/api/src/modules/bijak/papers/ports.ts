@@ -30,6 +30,12 @@ export interface PinRef {
 }
 /** Key of a pin in the set `takenDownPins` returns. */
 export const pinKey = (r: PinRef): string => `${r.questionId}@${String(r.versionNo)}`
+/**
+ * The one new-sitting rule for placed questions (H-A13, REQ-B-058): the paper places a question, the bank serves every one and no pinned version is taken down.
+ * `served` holds the ids the question port returned; `takenDown` is what `takenDownPins` returned. The list, the cover and the start all ask this.
+ */
+export const placesUnservable = (pins: readonly PinRef[], served: { has(id: string): boolean }, takenDown: ReadonlySet<string>): boolean =>
+  pins.length === 0 || pins.some((pin) => !served.has(pin.questionId) || takenDown.has(pinKey(pin)))
 
 export interface BijakQuestionInfo {
   /** Decimal-string question id. */

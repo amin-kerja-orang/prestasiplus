@@ -3,7 +3,7 @@
 import { DsPanel } from '@/ds'
 
 import type { Results } from '../../../api/types'
-import { gps, mean, pct, plain } from '../common/kirkpatrick-format'
+import { gps, mean, plain, accuracyPct } from '../common/kirkpatrick-format'
 
 defineProps<{ roi: Results['roi'] }>()
 
@@ -33,7 +33,7 @@ const STEPS = [
         <div>
           <p class="text-body text-muted">Ketepatan Aktif</p>
           <p class="tabular text-subheading text-highlighted" data-testid="roi-accuracy">
-            {{ pct(roi.accuracy) }}
+            {{ accuracyPct(roi.accuracy) }}
           </p>
         </div>
         <div>

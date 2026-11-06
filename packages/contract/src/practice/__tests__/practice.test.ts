@@ -6,6 +6,7 @@ import { PRACTICE_COMPONENT_SCHEMAS } from '../paths'
 import {
   CheckAnswerRequestSchema,
   CheckAnswerResponseSchema,
+  LEGACY_PRACTICE_MODES,
   PRACTICE_ERRORS,
   PRACTICE_ERROR_CODES,
   PRACTICE_MODES,
@@ -49,14 +50,24 @@ const keysOf = (v: unknown): string[] =>
 
 describe('start request', () => {
   it('accepts mock-shaped bodies for each mode', () => {
-    expect(StartSessionRequestSchema.safeParse({ mode: 'random', subjectCode: 'MATH', levelId: '2', difficulty: null, count: 10 }).success).toBe(true)
+    expect(StartSessionRequestSchema.safeParse({ mode: 'latih_tubi', subjectCode: 'MATH', levelId: '2', difficulty: 1, count: 10 }).success).toBe(true)
     expect(StartSessionRequestSchema.safeParse({ mode: 'chapter', chapterId: '88', count: 5, clientUuid: SESSION_ID }).success).toBe(true)
-    expect(StartSessionRequestSchema.safeParse({ mode: 'ramalan', subjectCode: 'BM', year: 2025, setNo: 1 }).success).toBe(true)
     expect(StartSessionRequestSchema.safeParse({ mode: 'latih_tubi', subjectCode: 'SEJ', targetQuestionId: '9', count: 1 }).success).toBe(true)
   })
 
   it('rejects pksk, unknown modes, bad ids and bad uuids', () => {
     expect(PRACTICE_START_MODES).not.toContain('pksk')
+    // S5-T03: the three legacy values stay in the read / check list; only `random` is refused at start.
+    expect(LEGACY_PRACTICE_MODES).toEqual(['random', 'past_year', 'ramalan'])
+    for (const m of LEGACY_PRACTICE_MODES) expect(PRACTICE_MODES).toContain(m)
+    expect(PRACTICE_START_MODES).not.toContain('random')
+    expect(StartSessionRequestSchema.safeParse({ mode: 'random', subjectCode: 'MATH', count: 5 }).success).toBe(false)
+    // past_year and ramalan stay startable until the Databank (S3-T07 and others) and Tracking A cards switch the m06-spm
+    // pages to `databank` / `tracking_a` (the card's grep condition); then they leave PRACTICE_START_MODES.
+    expect(PRACTICE_START_MODES).toContain('past_year')
+    expect(PRACTICE_START_MODES).toContain('ramalan')
+    expect(StartSessionRequestSchema.safeParse({ mode: 'past_year', subjectCode: 'SEJ', count: 5 }).success).toBe(true)
+    expect(StartSessionRequestSchema.safeParse({ mode: 'ramalan', subjectCode: 'BM', year: 2025, setNo: 1 }).success).toBe(true)
     // S5-T15: stored modes now, but not startable until the planner (S5-T03) has a case for them.
     expect(PRACTICE_START_MODES).not.toContain('databank')
     expect(PRACTICE_START_MODES).not.toContain('tracking_a')
@@ -68,10 +79,11 @@ describe('start request', () => {
       { mode: 'pksk' },
       { mode: 'battle' },
       { subjectCode: 'MATH' },
-      { mode: 'random', count: 'ten' },
-      { mode: 'random', difficulty: 6 },
+      { mode: 'latih_tubi', count: 'ten' },
+      { mode: 'latih_tubi', difficulty: 6 },
+      { mode: 'latih_tubi', difficulty: 0 },
       { mode: 'chapter', chapterId: 12 },
-      { mode: 'random', clientUuid: 'not-a-uuid' },
+      { mode: 'latih_tubi', clientUuid: 'not-a-uuid' },
     ]) {
       expect(StartSessionRequestSchema.safeParse(bad).success).toBe(false)
     }

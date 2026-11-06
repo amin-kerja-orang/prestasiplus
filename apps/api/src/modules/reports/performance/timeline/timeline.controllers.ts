@@ -3,10 +3,12 @@ import {
   type ExecutionContext,
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
   Injectable,
+  Param,
   Post,
   Req,
   UploadedFiles,
@@ -19,7 +21,7 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { NoStoreInterceptor, ok } from '../../../../common/http'
 import type { RequestWithAuth } from '../../../../common/scope'
 import { RateLimit, RateLimitGuard, type RateLimitSpec } from '../../../../common/throttle'
-import { ctxOf, overloadTo429 } from '../http/request'
+import { ctxOf, overloadTo429, SafeIdPipe } from '../http/request'
 import { TimelineUploadInterceptor } from './timeline-upload.interceptor'
 import { mayPost, TimelineService } from './timeline.service'
 import type { RawPhoto } from './timeline.validation'
@@ -86,5 +88,13 @@ export class TimelineController {
   async create(@Body() body: unknown, @UploadedFiles() parts: PhotoParts | undefined, @Req() req: Req) {
     const photos = [...(parts?.photos ?? []), ...(parts?.['photos[]'] ?? [])].map((f) => ({ buffer: f.buffer }))
     return ok(await overloadTo429(async () => this.timeline.create(ctxOf(req), body, photos)))
+  }
+
+  /** Own post only (API-RPT-15). Same guards and rate bucket as POST; answers `{ deleted: 1 }` (200). */
+  @Delete(':id')
+  @RateLimit(WRITE)
+  @UseGuards(TimelineWriteGuard)
+  async remove(@Param('id', SafeIdPipe) id: string, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.timeline.remove(ctxOf(req), id)))
   }
 }
