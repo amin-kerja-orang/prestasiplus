@@ -32,6 +32,12 @@ export function unitsOf(ids: readonly string[], groupOf: GroupOf): Unit[] {
   return units
 }
 
+/** FR-QA-41: what `effectiveMarks` ranks. Under `Pilih N` a group is ONE choice unit worth the sum of its members. Same rule as `exam/builder/paper-check.ts`. */
+export function unitMarksOf(rule: BuilderSectionSpec['rule'], ids: readonly string[], marksOf: (questionId: string) => number, groupOf: GroupOf): number[] {
+  if (rule.type !== 'choose') return ids.map(marksOf)
+  return unitsOf(ids, groupOf).map((u) => u.ids.reduce((n, id) => n + marksOf(id), 0))
+}
+
 /** Adds a question; when it belongs to a group, the whole group is added in published order. */
 export function addUnit(
   ids: readonly string[],
@@ -125,7 +131,7 @@ export function checkPaper(input: CheckInput): PaperCheck {
     const ids = sections[i]?.questionIds ?? []
     const secErrors: string[] = []
     const notes: string[] = []
-    const marks = effectiveMarks(spec.rule, ids.map(marksOf))
+    const marks = effectiveMarks(spec.rule, unitMarksOf(spec.rule, ids, marksOf, groupOf))
     if (ids.length !== spec.questionCount)
       secErrors.push(
         ids.length < spec.questionCount
@@ -135,7 +141,7 @@ export function checkPaper(input: CheckInput): PaperCheck {
     if (marks !== spec.markBudget)
       secErrors.push(`Markah ${marks} tidak sama dengan bajet ${spec.markBudget}`)
     if (spec.rule.type === 'choose') {
-      const marksList = ids.map(marksOf)
+      const marksList = unitMarksOf(spec.rule, ids, marksOf, groupOf)
       if (new Set(marksList).size > 1)
         notes.push('Soalan pilihan sepatutnya sama markah supaya pilihan adil')
     }

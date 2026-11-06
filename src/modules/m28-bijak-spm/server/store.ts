@@ -1352,6 +1352,10 @@ export class BijakServer implements BijakApi {
     return this.ops.sectionPool(id, sectionId, query)
   }
 
+  bankUnits(subject: SubjectCode, kertas: number) {
+    return this.ops.bankUnits(subject, kertas)
+  }
+
   previewQuestions(ids: string[]) {
     return this.ops.previewQuestions(ids)
   }
