@@ -10,8 +10,11 @@ import { OcrModule } from '../../ocr'
 import { AI_EXTRACTOR } from './ai-extractor'
 import { IntakeFilesController, IntakeUploadGuard } from './intake-files.controller'
 import { IntakeFilesConfig } from './intake-files.config'
+import { GuruDiagramService } from './guru-diagram.service'
 import { GuruSubmissionsService } from './guru-submissions.service'
 import { IntakeFilesService } from './intake-files.service'
+import { SourcePapersController } from './source-papers.controller'
+import { SourcePapersService } from './source-papers.service'
 import { IntakeExtractionInput } from './intake-extraction-input'
 import { IntakeFiguresService } from './intake-figures.service'
 import { IntakeProcessingService } from './intake-processing.service'
@@ -26,12 +29,14 @@ import { IntakeUploadService } from './intake-upload.service'
  */
 @Module({
   imports: [AiExtractionModule, AuditModule, FilesModule, JobsModule, OcrModule, ThrottleModule],
-  controllers: [IntakeFilesController],
+  controllers: [IntakeFilesController, SourcePapersController],
   providers: [
     FilesConfig, // pure settings reader (INTAKE_MAX_FILE_MB); FilesModule does not export its instance
     IntakeFilesConfig,
     IntakeFilesService,
+    SourcePapersService, // S2-T09
     GuruSubmissionsService,
+    GuruDiagramService,
     IntakeUploadService,
     IntakeUploadGuard,
     IntakeUploadInterceptor,
@@ -41,6 +46,6 @@ import { IntakeUploadService } from './intake-upload.service'
     // BE-36: the real adapter (mock unless AI_PROVIDER says otherwise). DisabledAiExtractor stays exported for tests that want a dead port.
     { provide: AI_EXTRACTOR, useExisting: AiExtractorAdapter },
   ],
-  exports: [IntakeFilesService, GuruSubmissionsService, IntakeUploadService, IntakeFiguresService, IntakeProcessingService, IntakeExtractionInput, AI_EXTRACTOR],
+  exports: [IntakeFilesService, GuruSubmissionsService, GuruDiagramService, IntakeUploadService, IntakeFiguresService, IntakeProcessingService, IntakeExtractionInput, AI_EXTRACTOR],
 })
 export class IntakeFilesModule {}

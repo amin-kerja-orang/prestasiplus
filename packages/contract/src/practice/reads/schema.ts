@@ -35,6 +35,8 @@ export const PRACTICE_READS_MESSAGES = {
   invalidAnswer: 'Jawapan tidak sah.',
   /** Answer text over the limit; the mock builds it from `STRUCTURED_MAX_ANSWER_CHARS`. */
   answerTooLong: (max: number) => `Jawapan tidak boleh melebihi ${String(max)} aksara.`,
+  /** `GET /practice/structured`: `q` over the limit (422). */
+  searchTooLong: (max: number) => `Carian tidak boleh melebihi ${String(max)} aksara.`,
 } as const
 
 // ---------------------------------------------------------------------------------------------
@@ -43,8 +45,10 @@ export const PRACTICE_READS_MESSAGES = {
 
 /** History page size (BR-21): fixed, `pageSize` is not accepted. */
 export const PRACTICE_READS_HISTORY_PAGE_SIZE = 15
-/** Structured list page size (BR-23): fixed. */
-export const PRACTICE_READS_STRUCTURED_PAGE_SIZE = 20
+/** Structured list page size (ruling R9, R1-MUR-17): fixed at 12. */
+export const PRACTICE_READS_STRUCTURED_PAGE_SIZE = 12
+/** Longest `q` search text of the structured list (FR-MUR-17). */
+export const PRACTICE_READS_STRUCTURED_SEARCH_MAX = 100
 /** Upper bound of one structured answer text (mock "INFERRED"). */
 export const PRACTICE_READS_STRUCTURED_MAX_ANSWER_CHARS = 5000
 /** KBAT levels of the structured list (1-2 LOTS, 3 MOTS, 4-6 HOTS, BR-23). */
@@ -188,9 +192,13 @@ export const PracticeReadRecentQuestionSchema = z
     id: IdSchema,
     subjectName: z.string(),
     difficulty: z.number().int().min(1).max(5),
-    text: z.string().max(103).meta({ description: 'Cut at 100 characters plus "..." (BR-29).' }),
+    text: z.string().max(141).meta({ description: 'Cut at 140 characters plus "…" (FR-MUR-2-8).' }),
     createdAt: TimestampSchema,
     levelCode: z.string(),
+    figureThumbUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8).' }),
   })
   .meta({ id: 'PracticeReadRecentQuestion' })
 
@@ -215,8 +223,32 @@ export const PracticeReadDashboardSchema = z
     wallet: z.strictObject({ coins: count(), points: count(), level: count(), levelProgressPct: percent() }),
     week: z.strictObject({
       sessions: count(),
-      accuracyPct: z.number().int().min(0).max(100).meta({ description: 'Correct / answered this Monday-Sunday week, integer (BR-25).' }),
+      accuracyPct: z
+        .number()
+        .int()
+        .min(0)
+        .max(100)
+        .meta({ description: 'Legacy (S5-T04): correct / answered this Monday-Sunday week, integer (BR-25). The Ketepatan tile reads the top-level `accuracyPct`.' }),
     }),
+    accuracyPct: z
+      .number()
+      .min(0)
+      .max(100)
+      .refine((n) => Math.round(n * 10) / 10 === n, { message: 'At most one decimal.' })
+      .nullable()
+      .meta({
+        description:
+          "The pupil's pooled accuracy: correct / answered x 100 over `practice_answers`, all modes and all time, rounded to one decimal (a whole number has no fraction, e.g. 75, 66.7); null when there are 0 answers (FR-MUR-2-2, FR-MUR-2-13, decision 11).",
+      }),
+    package: z
+      .strictObject({
+        name: z.string(),
+        validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).meta({ description: 'Malaysia calendar day, YYYY-MM-DD.' }),
+      })
+      .nullable()
+      .meta({
+        description: 'The active package (Pakej SPM Aktif; `SubscriptionService.activePackage`, same rule as `isSubscribed`); null when none (FR-MUR-2-4, DM-35).',
+      }),
     banners: z.array(PracticeReadBannerSchema),
     quests: z.array(PracticeReadQuestSchema),
     questsCompleted: count(),
@@ -279,6 +311,20 @@ export const PracticeReadChapterSubjectSchema = z
     color: z.string(),
     chapterCount: count(),
     questionCount: count(),
+    levels: z
+      .array(
+        z.strictObject({
+          id: IdSchema,
+          code: z.string().min(1),
+          name: z.string(),
+          chapterCount: count(),
+          questionCount: count(),
+        }),
+      )
+      .meta({
+        description:
+          'S5-T02 (FR-MUR-9-5): the offered levels of this subject that have at least one chapter with a servable question, with their own counts. `chapterCount` and `questionCount` above are the sums over these levels.',
+      }),
   })
   .meta({ id: 'PracticeReadChapterSubject' })
 
@@ -345,6 +391,40 @@ export const PracticeReadRevisionSubjectSchema = z
     count: count().meta({ description: '0 is a 200: the screen then goes back to the overview with an info flash (FR-M05-72).' }),
   })
   .meta({ id: 'PracticeReadRevisionSubject' })
+
+// ---------------------------------------------------------------------------------------------
+// GET /practice/remedial-suggestions (S5-T07, API-PRAC-08, R1-MUR-12)
+// ---------------------------------------------------------------------------------------------
+
+export const PracticeReadRemedialCompletedSchema = z
+  .strictObject({
+    subjectCode: z.string().min(1),
+    subjectName: z.string(),
+    setNo: z.number().int().min(1).meta({ description: '"Set {n}": per-subject ordinal of the completed revision drills by completed_at ascending.' }),
+    questionCount: count(),
+    before: percent().nullable().meta({ description: 'Whole number: pooled subject accuracy over the answers given before the drill started ("Sebelum"); null when the pupil had no answers in the subject before it.' }),
+    after: percent().nullable().meta({ description: 'Whole number: the drill accuracy ("Selepas"); null when the session had no questions.' }),
+    delta: z.number().int().min(-100).max(100).nullable().meta({ description: 'after - before; null unless both sides exist. The sign and colour are the client concern (FR-MUR-12-4).' }),
+    at: TimestampSchema,
+  })
+  .meta({ id: 'PracticeReadRemedialCompleted' })
+
+export const PracticeReadRemedialNeededSchema = z
+  .strictObject({
+    subjectCode: z.string().min(1),
+    subjectName: z.string(),
+    answered: count().meta({ description: '"{n} soalan": the pupil answer rows of the subject (sum of attempts, not distinct questions).' }),
+    accuracy: percent().meta({ description: 'Whole number, half up, pooled correct / answered over all non-test modes; always below `target`.' }),
+    target: z.literal(60),
+  })
+  .meta({ id: 'PracticeReadRemedialNeeded' })
+
+export const PracticeReadRemedialSuggestionsSchema = z
+  .strictObject({
+    completed: z.array(PracticeReadRemedialCompletedSchema).meta({ description: 'Completed non-test revision sessions, newest 20 first.' }),
+    needed: z.array(PracticeReadRemedialNeededSchema).meta({ description: 'Subjects below 60 whose drill has at least one servable question; BR-01 order. Empty for staff roles and for a pupil with no answers.' }),
+  })
+  .meta({ id: 'PracticeReadRemedialSuggestions' })
 
 // ---------------------------------------------------------------------------------------------
 // GET /practice/progress
@@ -506,9 +586,11 @@ export const PracticeReadStructuredTrackSchema = z.enum(['bahasa']).meta({ id: '
 export const PracticeReadStructuredListQuerySchema = z.object({
   subjectId: z.string().optional().meta({ description: 'Subject filter. An empty value is no filter; an unknown or non-numeric value matches nothing (200, empty list).' }),
   kbatLevel: z.string().optional().meta({ description: '1 to 6. An empty value is no filter; any other value matches nothing (200, empty list).' }),
-  page: z.string().optional().meta({ description: 'Page number; a missing or invalid value means page 1. The page size is fixed at 20.' }),
+  page: z.string().optional().meta({ description: 'Page number; a missing or invalid value means page 1. The page size is fixed at 12.' }),
   scope: z.string().optional().meta({ description: "'spm' selects the SPM variant (Subjektif). Any other value is ignored." }),
   track: z.string().optional().meta({ description: "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored." }),
+  q: z.string().max(PRACTICE_READS_STRUCTURED_SEARCH_MAX).optional().meta({ description: 'Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search.' }),
+  markable: z.enum(['0', '1', 'true', 'false']).optional().meta({ description: "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all." }),
 })
 
 export const PracticeReadStructuredDetailQuerySchema = z.object({
@@ -534,6 +616,10 @@ export const PracticeReadStructuredCardSchema = z
     levelName: z.string().meta({ description: 'M03 level name, e.g. "Tingkatan 5".' }),
     parts: count().meta({ description: '"{parts} bahagian": the top-level parts.' }),
     marks: count().meta({ description: '"{marks} markah".' }),
+    bestScore: z
+      .strictObject({ awarded: count(), max: count() })
+      .nullable()
+      .meta({ description: "The caller's best attempt on this set (highest awarded total); null when there is no attempt." }),
   })
   .meta({ id: 'PracticeReadStructuredCard' })
 
@@ -543,6 +629,7 @@ export const PracticeReadStructuredListMetaSchema = ListMetaSchema.extend({
   subjectOptions: z
     .array(z.strictObject({ id: IdSchema, name: z.string() }))
     .meta({ description: 'The "Subjek" options (without "Semua Subjek"): plain list by name; SPM variants in the FR-M05-134 order.' }),
+  pendingSchemeCount: count().meta({ description: 'Sets in the current filter (q, subject, KBAT; ignoring `markable`) with no usable scheme: the "{n} soalan untuk pilihan ini masih menunggu skema pemarkahan..." notice.' }),
 }).meta({ id: 'PracticeReadStructuredListMeta' })
 
 export const PracticeReadStructuredListResponseSchema = z

@@ -115,6 +115,21 @@ export function rejectChallenger(
   )
 }
 
+/**
+ * API-GAME-14 `POST /api/battle/queue/{queueId}/cancel`: the owner's "Batal" of a waiting queue entry
+ * (`{cancelled: true}`; a repeat cancel answers the same; 404 when the entry is already matched or is
+ * not the caller's).
+ */
+export function cancelQueue(
+  queueId: BattleQueueId,
+  options: Signal = {},
+): Promise<{ cancelled: true }> {
+  return api.post<{ cancelled: true }>(
+    `/api/battle/queue/${encodeURIComponent(String(queueId))}/cancel`,
+    withSignal(options),
+  )
+}
+
 /** #7 `GET /api/battle/search-opponent?q=` (from 2 characters). */
 export function searchOpponent(
   q: string,
@@ -281,14 +296,9 @@ export function fetchLeagues(
   return api.get<{ mine: LeagueCard[]; open: LeagueCard[] }>('/api/leagues', withSignal(options))
 }
 
-/** #47 `POST /api/leagues` (422 with `fields`). */
-export function createLeague(body: LeagueBody): Promise<{ id: number }> {
-  return api.post<{ id: number }>('/api/leagues', { body })
-}
-
-/** #48 `POST /api/leagues/join` (422 with the message under `invite_code`). */
-export function joinLeague(inviteCode: string): Promise<{ id: number }> {
-  return api.post<{ id: number }>('/api/leagues/join', { body: { invite_code: inviteCode } })
+/** #47 `POST /api/leagues` (Admin Pusat; 422 with `fields`; answers the league detail). */
+export function createLeague(body: LeagueBody): Promise<LeagueDetail> {
+  return api.post<LeagueDetail>('/api/leagues', { body })
 }
 
 /** #49 `GET /api/leagues/{id}` (404 for an unknown id). */
@@ -296,13 +306,7 @@ export function fetchLeague(id: number, options: Signal = {}): Promise<LeagueDet
   return api.get<LeagueDetail>(`/api/leagues/${String(id)}`, withSignal(options))
 }
 
-/** #50 `GET /api/sekolah-bersaing?week=` (any `week`; an invalid value shows the current week). */
-export function fetchSekolahBersaing(
-  week?: string,
-  options: Signal = {},
-): Promise<SekolahBersaingResult> {
-  return api.get<SekolahBersaingResult>('/api/sekolah-bersaing', {
-    ...(week === undefined ? {} : { query: { week } }),
-    ...withSignal(options),
-  })
+/** API-AS-14 `GET /api/sekolah-bersaing`: the live board in rank order (school admin and admin only, 403 otherwise). */
+export function fetchSekolahBersaing(options: Signal = {}): Promise<SekolahBersaingResult> {
+  return api.get<SekolahBersaingResult>('/api/sekolah-bersaing', withSignal(options))
 }

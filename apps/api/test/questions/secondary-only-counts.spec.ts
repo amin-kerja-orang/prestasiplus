@@ -8,6 +8,7 @@ import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.re
 import { CurriculumLearnerService } from '../../src/modules/curriculum/learner.service'
 import { DEFAULT_MAP_GRADE } from '../../src/modules/curriculum/rules'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
+import { QuestionsRepository } from '../../src/modules/questions'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { subjectView } from '../../src/modules/practice/reads/overview/overview.service'
 
@@ -61,6 +62,7 @@ describe('B-HTTP-01/02: learner topics and the learning map are Tingkatan only',
     const repo = {
       offeredLevels: () => Promise.resolve(offered),
       learnerChapters: (f: { levelIds: bigint[] }) => (asked.push(f.levelIds), Promise.resolve([])),
+      subjects: () => Promise.resolve([]),
     }
     const ports = { topicProgress: { topicProgress: () => Promise.resolve(new Map()) } }
     const svc = new CurriculumLearnerService(repo as never, ports as never)
@@ -97,7 +99,8 @@ describe('B-HTTP-03: every question count shown to users leaves out primary leve
     const queries: string[] = []
     const repo = new OverviewRepository({ client: rawClient(queries) } as never)
     await repo.bankMatrix()
-    await repo.newestPublishedMcqIds(5)
+    // FR-MUR-2-8: the newest-list SQL is the shared servable scope (`scopeSql`, learner-visible) over this repo's ordered read.
+    await repo.newestIdsOf(new QuestionsRepository({ client: rawClient([]) } as never).scopeSql({ status: 'approved', active: true }, true), 60)
     await repo.chapterQuestionCounts(['1', '2'])
     expect(queries).toHaveLength(3)
     for (const q of queries) {
@@ -199,9 +202,10 @@ describe('B-HTTP-08: the subject card equals the sum of the subject detail (one 
     expect(bank.count({ subjectId: '1' })).toBe(59)
   })
 
-  it('the public count uses the same rule: mcq, learner-visible level, offered levels T4 and T5 only', () => {
+  it('the public count uses the same rule: mcq, learner-visible level, offered levels (active, not primary: T1 to T5)', () => {
     expect(QUESTION_COUNT_SQL).toContain("v.type = 'mcq'")
-    expect(QUESTION_COUNT_SQL).toContain("ol.code IN ('T4', 'T5')")
+    expect(QUESTION_COUNT_SQL).toContain("ol.stage <> 'primary' AND ol.is_active")
+    expect(QUESTION_COUNT_SQL).not.toContain('ol.code IN')
     expect(QUESTION_COUNT_SQL).toContain(PRIMARY)
     // The card lists active subjects and offers the levels linked to the subject: the public count joins both, so it is the sum of the cards.
     expect(QUESTION_COUNT_SQL).toContain('sj.is_active')
