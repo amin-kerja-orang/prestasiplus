@@ -47,8 +47,13 @@ export function creditSyiling(
   return wallet.creditSyiling(userId, n, meta).currentSyiling
 }
 
-export function addXp(userId: number, n: number, source: string): void {
-  wallet.addXp(userId, n, { source })
+/** XR-M15-02: a `spend` row; the caller has checked the balance first. */
+export function debitSyiling(
+  userId: number,
+  n: number,
+  meta: { source: string; description: string; refId: string },
+): number {
+  return wallet.debitSyiling(userId, n, meta).currentSyiling
 }
 
 /** Test hook support (`setWallet`, XR-M15-08): the M14 repository owns it. */

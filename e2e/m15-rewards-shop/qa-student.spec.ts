@@ -128,18 +128,19 @@ test.describe('M15 QA student rows', MODULE, () => {
     page,
     gotoApp,
     loginAs,
+    mock,
   }) => {
     await loginAs(PELAJAR)
+    await mock.hook('setWallet', PELAJAR_ID, { syiling: 40 })
     await gotoApp('/gamification/mystery-box')
-    for (const id of [1, 2, 3, 4]) {
-      const btn = page.getByTestId(`box-${String(id)}-btn`)
-      await expect(btn).toBeDisabled()
-      const [fg, bg] = await btn.evaluate((el) => {
-        const s = getComputedStyle(el)
-        return [s.color, s.backgroundColor]
-      })
-      expect(contrast(parseRgb(fg), parseRgb(bg))).toBeGreaterThanOrEqual(4.5)
-    }
+    const btn = page.getByTestId('box-btn')
+    await expect(btn).toBeDisabled()
+    await expect(btn).toHaveText('Syiling Tidak Cukup')
+    const [fg, bg] = await btn.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return [s.color, s.backgroundColor]
+    })
+    expect(contrast(parseRgb(fg), parseRgb(bg))).toBeGreaterThanOrEqual(4.5)
   })
 
   // B06 (79b5fa2dc) replaced the dark hero gradients by plain cards, so the check is readability on

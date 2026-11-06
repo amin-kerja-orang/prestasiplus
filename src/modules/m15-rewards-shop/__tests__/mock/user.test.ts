@@ -131,107 +131,258 @@ describe('#9 redemption rule (BR-M15-05…07, hook m15Redeem)', () => {
   })
 })
 
-describe('#10, #11 mystery box (BR-M15-17, BR-M15-18)', () => {
-  it('lists the four observed boxes with the viewer token balance and no history', async () => {
-    wallet.setFields(PELAJAR, { tokens: 7 })
+describe('#10, #11 mystery box on the 0222 model (S7-T07 P8)', () => {
+  let n = 0
+  const uuid = () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`
+  const open = (as = PELAJAR, clientUuid: string | null = uuid(), id = 5) =>
+    call<{ data: MysteryBoxOpened }>(
+      'POST',
+      `/api/gamification/mystery-boxes/${String(id)}/open`,
+      as,
+      clientUuid === null ? {} : { clientUuid },
+    )
+  const view = async (as = PELAJAR) =>
+    (await call<{ data: MysteryBoxesView }>('GET', '/api/gamification/mystery-boxes', as)).body.data
+  const SEVEN_LABELS = [
+    '10 syiling',
+    '25 syiling',
+    '60 syiling',
+    '1 token',
+    '150 syiling',
+    '3 token',
+    '500 syiling — jackpot!',
+  ]
+
+  // N5 first: a box nobody can win is refused before any debit or opening row.
+  it('N5: every prize at stock 0 gives 409 BOX_UNAVAILABLE; no debit, no ledger row, no opening; GET says available:false', async () => {
+    wallet.setFields(PELAJAR, { syiling: 80 })
+    m15Hooks.m15SetMysteryBox({ stocks: Object.fromEntries(SEVEN_LABELS.map((l) => [l, 0])) })
+    const ledger = coinLedger.forUser(PELAJAR).length
+    const r = await open()
+    expect(r.status).toBe(409)
+    expect(codeOf(r)).toBe('BOX_UNAVAILABLE')
+    expect((r.body as unknown as { error: { message: string } }).error.message).toBe(
+      'Kotak tidak tersedia buat masa ini.',
+    )
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(80)
+    expect(coinLedger.forUser(PELAJAR)).toHaveLength(ledger)
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(0)
+    const v = await view()
+    expect(v).toMatchObject({ available: false })
+    expect(v.box?.prizes).toEqual([])
+  })
+
+  it('N5: an inactive box is 404 "Kotak tidak dijumpai." and GET shows box:null; nothing is written', async () => {
+    wallet.setFields(PELAJAR, { syiling: 80 })
+    m15Hooks.m15SetMysteryBox({ isActive: false })
+    const r = await open()
+    expect(r.status).toBe(404)
+    expect((r.body as unknown as { error: { message: string } }).error.message).toBe(
+      'Kotak tidak dijumpai.',
+    )
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(80)
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(0)
+    expect(await view()).toMatchObject({ box: null, available: false })
+  })
+
+  it('lists the one box (id 5, cost 50) with seven prizes totalling 100, the daily numbers and an empty history; no XP', async () => {
+    wallet.setFields(PELAJAR, { syiling: 12 })
     const r = await call<{ data: MysteryBoxesView }>(
       'GET',
       '/api/gamification/mystery-boxes',
       PELAJAR,
     )
     expect(r.status).toBe(200)
-    expect(r.body.data.tokenBalance).toBe(7)
-    expect(r.body.data.history).toEqual([])
-    expect(
-      r.body.data.boxes.map((b) => [b.id, b.name, b.costTokens, b.coinMin, b.coinMax]),
-    ).toEqual([
-      [1, 'Kotak Gangsa', 2, 1, 20],
-      [2, 'Kotak Perak', 5, 10, 50],
-      [3, 'Kotak Emas', 10, 25, 150],
-      [4, 'Kotak Legenda', 25, 100, 500],
+    const v = r.body.data
+    expect(v).toMatchObject({
+      available: true,
+      syilingBalance: 12,
+      dailyMax: 5,
+      openedToday: 0,
+      history: [],
+    })
+    expect(v).not.toHaveProperty('tokenBalance')
+    expect(v.box).toMatchObject({ id: 5, label: 'Kotak Misteri', costSyiling: 50 })
+    expect(v.box?.prizes.map((p) => [p.label, p.chance])).toEqual([
+      ['10 syiling', 40],
+      ['25 syiling', 25],
+      ['60 syiling', 15],
+      ['1 token', 10],
+      ['150 syiling', 6],
+      ['3 token', 3],
+      ['500 syiling — jackpot!', 1],
     ])
     expect((await call('GET', '/api/gamification/mystery-boxes', null)).status).toBe(401)
-  })
-
-  it('refuses below the cost (409 INSUFFICIENT_TOKENS) and an unknown box (404); nothing is written', async () => {
-    wallet.setFields(PELAJAR, { tokens: 1 })
-    const r = await call('POST', '/api/gamification/mystery-boxes/1/open', PELAJAR)
-    expect(r.status).toBe(409)
-    expect(codeOf(r)).toBe('INSUFFICIENT_TOKENS')
-    expect((await call('POST', '/api/gamification/mystery-boxes/9/open', PELAJAR)).status).toBe(404)
-    expect(wallet.summary(PELAJAR).tokenBalance).toBe(1)
     expect(mysteryBox.openingsCount(PELAJAR)).toBe(0)
   })
 
-  it('opens a box: M14 debits tokens, credits coins with the ledger text and XP; the opening is stored', async () => {
-    wallet.setFields(PELAJAR, { tokens: 30 })
+  it('opens at 80 syiling and cost 50: 30 plus the prize; ledger rows spend -50 and earn; the opening is stored', async () => {
+    wallet.setFields(PELAJAR, { syiling: 80 })
     const before = wallet.summary(PELAJAR)
-    m15Hooks.m15MysteryNext({ coins: 7, xp: 3 })
-    const r = await call<{ data: MysteryBoxOpened }>(
-      'POST',
-      '/api/gamification/mystery-boxes/1/open',
-      PELAJAR,
-    )
+    m15Hooks.m15MysteryNext({ label: '25 syiling' })
+    const r = await open()
     expect(r.status).toBe(200)
     expect(r.body.data).toMatchObject({
-      boxId: 1,
-      boxName: 'Kotak Gangsa',
-      icon: '📦',
-      coins: 7,
-      xp: 3,
-      tokenBalance: 28,
-      syilingBalance: before.currentSyiling + 7,
+      boxId: 5,
+      boxName: 'Kotak Misteri',
+      prize: { label: '25 syiling', kind: 'syiling', amount: 25 },
+      syilingBalance: 80 - 50 + 25,
+      tokenBalance: before.tokenBalance,
     })
     const after = wallet.summary(PELAJAR)
-    expect(after.xp).toBe(before.xp + 3)
-    expect(
-      coinLedger.forUser(PELAJAR).some((row) => row.description === 'Kotak Misteri: Kotak Gangsa'),
-    ).toBe(true)
-    expect(mysteryBox.openingsCount(PELAJAR)).toBe(1)
-    const list = await call<{ data: MysteryBoxesView }>(
-      'GET',
-      '/api/gamification/mystery-boxes',
-      PELAJAR,
+    expect(after.xp).toBe(before.xp)
+    const rows = coinLedger.forUser(PELAJAR).filter((row) => row.source === 'mystery_box')
+    expect(rows.map((row) => [row.type, row.amount, row.description])).toEqual(
+      expect.arrayContaining([
+        ['spend', -50, 'Kotak Misteri: Kotak Misteri'],
+        ['earn', 25, 'Kotak Misteri: 25 syiling'],
+      ]),
     )
-    expect(list.body.data.history).toEqual([
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(1)
+    const v = await view()
+    expect(v.openedToday).toBe(1)
+    expect(v.history).toEqual([
       {
         id: r.body.data.openingId,
-        boxId: 1,
-        boxName: 'Kotak Gangsa',
-        coins: 7,
-        xp: 3,
+        boxId: 5,
+        boxName: 'Kotak Misteri',
+        prizeLabel: '25 syiling',
+        prizeKind: 'syiling',
+        prizeAmount: 25,
         createdAt: '2026-09-25T15:40:00+08:00',
       },
     ])
   })
 
-  it('draws coins and xp inside the box ranges when no result is fixed, and lists at most 10', async () => {
-    wallet.setFields(PELAJAR, { tokens: 1000 })
-    for (let i = 0; i < 12; i++) {
-      const r = await call<{ data: MysteryBoxOpened }>(
-        'POST',
-        '/api/gamification/mystery-boxes/4/open',
-        PELAJAR,
-      )
-      expect(r.body.data.coins).toBeGreaterThanOrEqual(100)
-      expect(r.body.data.coins).toBeLessThanOrEqual(500)
-      expect(r.body.data.xp).toBeGreaterThanOrEqual(25)
-      expect(r.body.data.xp).toBeLessThanOrEqual(100)
-    }
-    expect(wallet.summary(PELAJAR).tokenBalance).toBe(1000 - 12 * 25)
-    expect(mysteryBox.openingsCount(PELAJAR)).toBe(12)
-    const list = await call<{ data: MysteryBoxesView }>(
-      'GET',
-      '/api/gamification/mystery-boxes',
-      PELAJAR,
+  it('a token prize moves tokens only', async () => {
+    wallet.setFields(PELAJAR, { syiling: 80, tokens: 1 })
+    m15Hooks.m15MysteryNext({ label: '3 token' })
+    const r = await open()
+    expect(r.body.data).toMatchObject({
+      prize: { label: '3 token', kind: 'token', amount: 3 },
+      tokenBalance: 4,
+      syilingBalance: 30,
+    })
+    expect(
+      coinLedger.forUser(PELAJAR).some((row) => row.source === 'mystery_box' && row.type === 'earn'),
+    ).toBe(false)
+  })
+
+  it('refuses below the cost (409 INSUFFICIENT_BALANCE) and ids 1 to 4, 9 (404); nothing is written', async () => {
+    wallet.setFields(PELAJAR, { syiling: 20 })
+    const r = await open()
+    expect(r.status).toBe(409)
+    expect(codeOf(r)).toBe('INSUFFICIENT_BALANCE')
+    expect((r.body as unknown as { error: { message: string } }).error.message).toBe(
+      'Baki syiling tidak mencukupi.',
     )
-    expect(list.body.data.history).toHaveLength(10)
+    for (const id of [1, 2, 3, 4, 9]) expect((await open(PELAJAR, uuid(), id)).status).toBe(404)
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(20)
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(0)
+  })
+
+  it('a missing or bad clientUuid is 422', async () => {
+    wallet.setFields(PELAJAR, { syiling: 80 })
+    const r = await open(PELAJAR, null)
+    expect(r.status).toBe(422)
+    expect((await open(PELAJAR, 'bukan-uuid')).status).toBe(422)
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(80)
+  })
+
+  it('the same clientUuid twice makes one opening and one debit and answers the first opening', async () => {
+    wallet.setFields(PELAJAR, { syiling: 120 })
+    const key = uuid()
+    const a = await open(PELAJAR, key)
+    const b = await open(PELAJAR, key)
+    expect(b.status).toBe(200)
+    expect(b.body.data.openingId).toBe(a.body.data.openingId)
+    expect(b.body.data.prize).toEqual(a.body.data.prize)
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(1)
+    expect(
+      coinLedger.forUser(PELAJAR).filter((row) => row.source === 'mystery_box' && row.type === 'spend'),
+    ).toHaveLength(1)
+  })
+
+  it('5 opens pass and the 6th is 429 MYSTERY_DAILY_LIMIT with the balance unchanged; the next Malaysia day passes again', async () => {
+    wallet.setFields(PELAJAR, { syiling: 600 })
+    m15Hooks.m15SetMysteryBox({ stocks: {} })
+    for (let i = 0; i < 5; i++) expect((await open()).status).toBe(200)
+    const before = wallet.summary(PELAJAR).currentSyiling
+    const r = await open()
+    expect(r.status).toBe(429)
+    expect(codeOf(r)).toBe('MYSTERY_DAILY_LIMIT')
+    expect((r.body as unknown as { error: { message: string } }).error.message).toBe(
+      'Had kotak hari ini telah dicapai. Cuba lagi esok.',
+    )
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(before)
+    expect((await view()).openedToday).toBe(5)
+    // The next Malaysia day, through the repository (a session issued at the project clock would have expired). The
+    // shared clock is put back so no other test inherits it.
+    const offset = runtime.clock.getOffset()
+    try {
+      runtime.clock.advance(9 * 3600_000) // 00:40 the next day
+      expect(mysteryBox.open(PELAJAR, 5, uuid()).opening.boxId).toBe(5)
+      expect(mysteryBox.view(PELAJAR).openedToday).toBe(1)
+    } finally {
+      runtime.clock.setOffset(offset)
+    }
+  })
+
+  it('a prize with stock 1 drops to 0 when won and is then left out; the chances are renormalised to one decimal', async () => {
+    m15Hooks.m15SetMysteryBox({ stocks: { '10 syiling': 1, '25 syiling': 0 } })
+    const v0 = await view()
+    expect(v0.box?.prizes.map((p) => p.label)).not.toContain('25 syiling')
+    expect(v0.box?.prizes.find((p) => p.label === '10 syiling')?.chance).toBe(
+      Math.round((40 / 75) * 1000) / 10,
+    )
+    wallet.setFields(PELAJAR, { syiling: 200 })
+    m15Hooks.m15MysteryNext({ label: '10 syiling' })
+    expect((await open()).status).toBe(200)
+    const v1 = await view()
+    expect(v1.box?.prizes.map((p) => p.label)).not.toContain('10 syiling')
+    expect(v1.box?.prizes.reduce((sum, p) => sum + p.chance, 0)).toBeCloseTo(100, 0)
+  })
+
+  it('draws a weighted prize from the seeded stream and lists at most 10 openings', async () => {
+    wallet.setFields(PELAJAR, { syiling: 100_000 })
+    m15Hooks.m15SetMysteryBox({ dailyMax: 20 })
+    for (let i = 0; i < 12; i++) {
+      const r = await open()
+      expect(SEVEN_LABELS).toContain(r.body.data.prize.label)
+    }
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(12)
+    expect((await view()).history).toHaveLength(10)
+  })
+
+  it('an opening made before P8 reads with null prize fields and its retired box name', async () => {
+    mysteryBox.seedOpenings([
+      {
+        id: 15301,
+        userId: PELAJAR,
+        boxId: 2,
+        prizeLabel: null,
+        prizeKind: null,
+        prizeAmount: null,
+        clientUuid: null,
+        createdAt: '2026-09-24T10:00:00+08:00',
+      },
+    ])
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(1)
+    expect((await view()).history[0]).toMatchObject({
+      boxId: 2,
+      boxName: 'Kotak Perak',
+      prizeLabel: null,
+      prizeKind: null,
+      prizeAmount: null,
+    })
   })
 
   it('validates the hook input', () => {
-    expect(() => m15Hooks.m15MysteryNext({ coins: 0, xp: 1 })).toThrow(RangeError)
-    expect(() => m15Hooks.m15MysteryNext({ coins: 1, xp: -1 })).toThrow(RangeError)
+    expect(() => m15Hooks.m15MysteryNext({ label: '' })).toThrow(RangeError)
+    expect(() => m15Hooks.m15SetMysteryBox({ costSyiling: 0 })).toThrow(RangeError)
+    expect(() => m15Hooks.m15SetMysteryBox({ stocks: { Tiada: 1 } })).toThrow(RangeError)
   })
+
 })
 
 describe('#12, #13 Cabutan Bertuah over M14 draws (BR-M15-19)', () => {

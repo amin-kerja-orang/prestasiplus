@@ -9,19 +9,34 @@ export const SHOP_COPY = {
   emptyBody: 'Hadiah akan ditambah tidak lama lagi. Tunggu ya!',
 } as const
 
+/** Kotak Misteri (48 GAME-23, 10-murid R1-MUR-35). Exact BM; `{n}` etc. are filled by the helpers below. */
 export const BOX_COPY = {
   heading: '📦 Kotak Misteri',
   sub: 'Buka kotak & menang ganjaran rawak — nasib baik menanti!',
-  chip: '🎫 Token Anda:',
-  token: 'Token',
-  locked: '🔒 Token Tidak Cukup',
-  /** PROPOSED (FN-M15-6.2.1). */
+  cost: (n: number) => `Kos satu kotak ${String(n)} syiling`,
+  balance: 'Baki syiling anda:',
+  oddsHeading: 'Peluang ganjaran',
+  oddsPrize: 'Ganjaran',
+  oddsChance: 'Peluang',
+  disclaimer:
+    'Purata ganjaran lebih rendah daripada kos kotak — main untuk keseronokan, bukan untuk mengumpul syiling.',
+  short: (n: number) => `Anda perlu ${String(n)} syiling lagi untuk membuka kotak.`,
+  collect: 'Kumpul syiling',
+  /** PROPOSED: the disabled open button while the balance is short. */
+  shortButton: 'Syiling Tidak Cukup',
+  daily: 'Had kotak hari ini telah dicapai. Cuba lagi esok.',
+  /** PROPOSED (N5): no prize can be won, or no box is active. */
+  unavailable: 'Kotak tidak tersedia buat masa ini.',
   open: 'Buka Kotak',
   opening: 'Membuka…',
-  /** PROPOSED (FN-M15-6.2.3). */
+  confirmTitle: 'Buka kotak?',
+  confirmBody: (cost: number, balance: number) =>
+    `${String(cost)} syiling akan ditolak daripada baki anda (${String(balance)} syiling).`,
+  cancel: 'Batal',
+  won: (prize: string) => `Tahniah! Anda dapat ${prize}.`,
   close: 'Tutup',
-  /** PROPOSED (FN-M15-6.2.4). */
-  historyHeading: 'Sejarah Kotak Misteri',
+  historyHeading: 'Kotak yang telah dibuka',
+  historyEmpty: 'Anda belum membuka sebarang kotak.',
 } as const
 
 export const DRAW_COPY = {
