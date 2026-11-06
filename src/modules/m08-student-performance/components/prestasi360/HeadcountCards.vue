@@ -6,7 +6,7 @@
  * No card: the pupil's own empty copy "Belum ada sasaran headcount daripada cikgu untuk sesi {year}." (FR-MUR-4-6, S10-T01 part 2).
  * The cards are the pupil's own `GET /headcounts/me` figures (one computation, HC-SPEC; the API reads the shared headcount facts).
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsText } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { useCanOpen } from '../../lib/route-access'
@@ -41,9 +41,9 @@ const chipText = (chip: Chip): string =>
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Headcount — Prestasi SPM
       </h2>
-      <p v-if="cards.length === 0" class="text-body text-muted" data-testid="headcount-empty">
+      <DsText v-if="cards.length === 0" variant="body" tone="muted" data-testid="headcount-empty">
         Belum ada sasaran headcount daripada cikgu untuk sesi {{ year }}.
-      </p>
+      </DsText>
       <div v-else class="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <article
           v-for="c in cards"

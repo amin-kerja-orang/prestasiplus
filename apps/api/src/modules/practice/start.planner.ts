@@ -164,6 +164,7 @@ export class PracticeStartPlanner {
       case 'revision':
         return this.revision(plan, userId, req)
       case 'past_year':
+      case 'databank':
         return this.pastYear(plan, userId, req, now)
       case 'latih_tubi':
         return this.latihTubi(plan, userId, req, now)
@@ -199,10 +200,10 @@ export class PracticeStartPlanner {
   }
 
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
-  private async serve(ids: readonly string[], activity?: PracticeDrillActivity): Promise<PracticeQuestion[]> {
+  private async serve(ids: readonly string[], activity?: PracticeDrillActivity, allowPrivate = false): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
     // `activity` is the drill surface (S1-T06): only a drill whose surface allows it serves figures and whole groups; the rest stay text-only.
-    const live = await this.ports.questions.live(unique, activity)
+    const live = await this.ports.questions.live(unique, activity, { allowPrivate })
     const out: PracticeQuestion[] = []
     for (const id of unique) {
       const q = live.get(id)
@@ -353,7 +354,8 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, missionId: req.missionId, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    // DM-42: the one mode that may serve a personal question (the assignment draw only adds the mission owner's).
+    const served = await this.serve(res.questionIds, undefined, true)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId,
