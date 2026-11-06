@@ -10,7 +10,12 @@ import { schools } from '@/modules/m02-users-schools/mock'
 
 import type { Winner } from '../types'
 
-export type M16ErrorCode = 'NOT_FOUND' | 'FORBIDDEN' | 'VALIDATION_ERROR' | 'CONFLICT'
+export type M16ErrorCode =
+  | 'NOT_FOUND'
+  | 'FORBIDDEN'
+  | 'VALIDATION_ERROR'
+  | 'CONFLICT'
+  | 'DAILY_LIMIT'
 
 /** A refused M16 write (nothing is written). Handlers map `code` to the §7 error responses. */
 export class M16Error extends Error {
@@ -64,10 +69,23 @@ export const nowIso = (): string => toIsoMyt(m16Now())
 
 export const ARENA_QUESTIONS = 10
 export const QUESTION_SECONDS = 15
+/** The grace after the question time (invisible to the pupil) and the reveal between rounds. */
+export const GRACE_SECONDS = 3
+export const REVEAL_MS = 3000
+/** Quick Match and Battle Sekolah battles per pupil per MYT day (`battle_daily_max`). */
+export const DAILY_MAX = 20
+export const DAILY_LIMIT_MESSAGE = 'Had battle hari ini telah dicapai. Cuba lagi esok.'
 
 /** Winner of a battle: higher total; equal non-zero = seri (null); 0-0 = player B (DV-M16-35). */
 export function winnerOf(scoreA: number, scoreB: number): Winner {
   if (scoreA === 0 && scoreB === 0) return 'B'
+  if (scoreA > scoreB) return 'A'
+  if (scoreB > scoreA) return 'B'
+  return null
+}
+
+/** Winner of a LIVE battle: equal totals, 0-0 included, are a draw (48 GAME-01; the seeds keep DV-M16-35). */
+export function liveWinnerOf(scoreA: number, scoreB: number): Winner {
   if (scoreA > scoreB) return 'A'
   if (scoreB > scoreA) return 'B'
   return null

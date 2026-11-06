@@ -39,6 +39,14 @@ export interface BattleRow {
   questionIds: number[]
   /** Seed rows (stored job figures DC-M16-03 already include them). */
   seeded: boolean
+  /** The battle's question count (5, 10, 15 or 20); absent on seed rows (10). */
+  questionCount?: number
+  /** The opponent is "Robot PrestasiPlus" (48 GAME-01). */
+  robot?: boolean
+  /** When the current round opened (epoch ms); the answering window runs from here. */
+  roundStartMs?: number
+  /** While set and in the future, the round just closed is on its 3 s reveal (epoch ms). */
+  revealUntilMs?: number | null
 }
 
 export type QueueStatus = 'waiting' | 'incoming_challenge' | 'matched' | 'expired' | 'abandoned'
@@ -52,6 +60,8 @@ export interface SimSpec {
   afterPolls?: number
   /** `error`: the HTTP status the polls answer. */
   status?: number
+  /** `match`: the opponent is the robot (the matched poll carries `robot: true`). */
+  robot?: boolean
 }
 
 export interface Challenger {
@@ -82,6 +92,7 @@ export interface BattleQueueRow {
   lastPolledAtMs: number
   createdAtMs: number
   sim: SimSpec
+  questionCount?: number
   /** A join request on this queue (`POST /api/battle/join-queue`), DV-M16-06. */
   joiner: { userId: number; outcome: JoinOutcome } | null
 }
@@ -99,6 +110,7 @@ export interface BattleInvitationRow {
   pkskTargetLevel: PkskLevel | null
   status: InvitationStatus
   createdAtMs: number
+  questionCount?: number
 }
 
 /** DATA-M16-04 BattleAnswer (arena, provisional). */
