@@ -31,7 +31,8 @@ import { setKontrakServerForTests } from '../admin/kontrak/server/client'
 import { kontrakErrorFrom } from '../admin/kontrak/server/http'
 import { MockKontrakServer } from '../admin/kontrak/server/memory'
 import adminKontrakRoutes from '../routes/admin-kontrak'
-import { BijakServer } from '../server/store'
+import { BLUEPRINTS } from '../data/registry'
+import { servesPupils } from '../server/store'
 
 function section(over: Partial<FormSection> = {}): FormSection {
   return { ...emptyForm().sections[0]!, label: 'Bahagian A', questionCount: 5, markBudget: 18, ...over }
@@ -209,9 +210,9 @@ describe('one Kontrak status in both mocks (D12)', () => {
     const admin = await new MockKontrakServer().list()
     const registry = servingPairs(admin.filter((v) => v.source === 'Disahkan' && v.servesStudents))
     expect(registry).toEqual(['MAT/1', 'SN/1'])
-    const pupil = await new BijakServer().listContracts()
+    // The pupil mock serves a contract only when `servesPupils` holds on its registry row (pupil Jana was removed by #849).
+    const pupil = BLUEPRINTS.filter(servesPupils).map((b) => ({ subject: b.subject, kertas: b.kertas }))
     expect(servingPairs(pupil)).toEqual(registry)
-    expect(pupil.every((c) => c.source === 'Disahkan')).toBe(true)
   })
 })
 
@@ -281,15 +282,9 @@ describe('Mocks answer as the API', () => {
     expect(saved.sections[0]!.marksPerQuestion).toEqual([3, 3, 3, 5, 4])
   })
 
-  it('never lists a Spec row to a pupil (API-BIJAK-02, D76)', async () => {
-    const rows = await new BijakServer().listContracts()
-    expect(rows.length).toBeGreaterThan(0)
-    expect(rows.every((r) => r.source === 'Disahkan' && r.canGenerate && !('unavailableReason' in r))).toBe(true)
-  })
-
-  it('refuses to generate from a contract the pupil list does not show', async () => {
-    const out = await new BijakServer().generatePaper(1, 'SEJ', 2)
-    expect(out).toEqual({ ok: false, reason: 'no_blueprint' })
+  it('never serves a Spec row to a pupil (API-BIJAK-02, D76)', () => {
+    expect(BLUEPRINTS.some((b) => !servesPupils(b))).toBe(true)
+    expect(BLUEPRINTS.filter(servesPupils).every((b) => b.source === 'Disahkan')).toBe(true)
   })
 
   it('asks for the override reason in the contract words (decision 31)', async () => {
