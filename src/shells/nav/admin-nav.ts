@@ -212,7 +212,6 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
     lagi: lagi(null, 101, 'text-fuchsia-500'),
   }),
   item('monitoring', 'Monitoring', '/admin/monitoring', 'fa-binoculars', 'text-teal-500', {
-    alias: ['/guru/monitoring'],
     lagi: lagi(null, 103, 'text-teal-500'),
   }),
   group(

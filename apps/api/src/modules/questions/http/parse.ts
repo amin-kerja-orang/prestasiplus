@@ -147,7 +147,7 @@ export function parseAdminList(raw: unknown): AdminListFilter {
 function filterV2Fields(d: {
   tahun?: string | undefined
   negeri?: string | undefined
-  kertas?: '1' | '2' | '3' | undefined
+  kertas?: '1' | '2' | '3' | '4' | undefined
   jenis?: AdminListFilter['jenis'] | undefined
   tingkatan?: AdminListFilter['tingkatan'] | undefined
   chapter?: string | undefined
@@ -198,8 +198,8 @@ export function parseStructuredList(raw: unknown): StructuredListFilter {
   }
 }
 
-/** `GET /guru/structured-questions`: 20 per page, `status` approved (default) or review. */
-export function parseGuruStructuredList(raw: unknown): { filter: StructuredListFilter; status: 'approved' | 'review' } {
+/** `GET /guru/structured-questions`: 20 per page, `status` approved, review (own submissions) or omitted (both). */
+export function parseGuruStructuredList(raw: unknown): { filter: StructuredListFilter; status: 'approved' | 'review' | 'all' } {
   const fields = newFields()
   const q = cleanQuery(raw, ['page', 'subjectId', 'educationLevelId', 'status'], fields)
   const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
@@ -215,7 +215,7 @@ export function parseGuruStructuredList(raw: unknown): { filter: StructuredListF
   if (Object.keys(fields).length > 0 || !parsed.success) throw invalid(fields)
   const d = parsed.data
   return {
-    status: d.status ?? 'approved',
+    status: d.status ?? 'all',
     filter: {
       page: d.page,
       pageSize: GURU_STRUCTURED_PAGE_SIZE,

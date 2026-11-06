@@ -1,12 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
   INTAKE_FILE_MESSAGES,
+  INTAKE_MAX_RETRIES,
+  INTAKE_RETRYABLE_PAGE_CODES,
   type IntakeBatchCreate,
   type IntakeBatchDetail,
   type IntakeBatchListQuery,
   type IntakeBatchSummary,
   type IntakeFileProgress,
   type IntakePageList,
+  type IntakeRetryResult,
 } from '@pp/contract'
 
 import { AUDIT_ACTIONS } from '../../../common/audit'
@@ -19,7 +22,8 @@ import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
 import { JobsService } from '../../jobs'
-import { INTAKE_JOB_ENTITY, IntakeFilesConfig } from './intake-files.config'
+import { WORKFLOW_JOB_ENTITY, WORKFLOW_JOB_TYPE } from '../workflow/workflow.constants'
+import { INTAKE_JOB_ENTITY, INTAKE_JOB_TYPES, IntakeFilesConfig } from './intake-files.config'
 import { isAdmin, parseId, visibleBatches } from './intake-access'
 import {
   bboxFromJson,
@@ -109,7 +113,7 @@ export class IntakeFilesService {
     return this.prisma.transaction(async (tx) => {
       if (!isAdmin(auth)) {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`intake:user:${auth.userId}`}, 0))`
-        // Active = still being processed, or finished (`ready_for_review`) but not yet handled by the admin: an office-only batch is never
+        // Active = still being processed, or finished (`ready_for_review` or `selesai_dengan_ralat`) but not yet handled by the admin: an office-only batch is never
         // processed, so it would otherwise bypass the limit. Handled = it has items and every one is accepted or rejected.
         const open = await tx.intakeBatch.count({
           where: {
@@ -119,7 +123,7 @@ export class IntakeFilesService {
             files: { some: {} },
             OR: [
               { status: { in: ['submitted', 'processing'] } },
-              { status: 'ready_for_review', OR: [{ items: { none: {} } }, { items: { some: { reviewState: { notIn: ['accepted', 'rejected'] } } } }] },
+              { status: { in: ['ready_for_review', 'selesai_dengan_ralat'] }, OR: [{ items: { none: {} } }, { items: { some: { reviewState: { notIn: ['accepted', 'rejected'] } } } }] },
             ],
           },
         })
@@ -264,6 +268,120 @@ export class IntakeFilesService {
       await this.record(AUDIT_ACTIONS.INTAKE_BATCH_CANCELLED, auth, id, who, { files: files.length }, tx)
     })
     return this.detail(auth, id)
+  }
+
+  // ---- retry (S1-T04, API-Q-26) ------------------------------------------------------------------
+
+  /** POST /intake/files/{id}/retry: runs the failed pages of one file again (+1 `retry_count`). */
+  async retryFile(auth: AuthContext, idText: string): Promise<IntakeRetryResult> {
+    const id = parseId(idText)
+    if (id === null) throw ApiError.of('NOT_FOUND')
+    const file = await this.prisma.client.intakeFile.findFirst({ where: { id, batch: visibleBatches(auth) }, select: { batchId: true } })
+    if (!file) throw ApiError.of('NOT_FOUND')
+    const { attempt, retriesLeft } = await this.prisma.transaction((tx) => this.retryInBatch(tx, auth, file.batchId, new Map([[id, 'all']]), false))
+    return { attempt, retriesLeft }
+  }
+
+  /** POST /intake/batches/{id}/retry: runs the failed pages of every file that has some (+1 `retry_count` on each). */
+  async retryBatch(auth: AuthContext, idText: string): Promise<IntakeRetryResult> {
+    const id = parseId(idText)
+    if (id === null) throw ApiError.of('NOT_FOUND')
+    const batch = await this.prisma.client.intakeBatch.findFirst({ where: { id, ...visibleBatches(auth) }, select: { id: true } })
+    if (!batch) throw ApiError.of('NOT_FOUND')
+    const { attempt, retriesLeft } = await this.prisma.transaction((tx) => this.retryInBatch(tx, auth, id, 'every-file', false))
+    return { attempt, retriesLeft }
+  }
+
+  /**
+   * The one retry path (file route, batch route and `extract` with `pages[]`). Under the batch row lock: the batch must be finished
+   * (`ready_for_review`, `selesai_dengan_ralat` or `failed`; a cancelled one is final, 409) and no file may still be processing (409). Every
+   * file to re-run must have a retry left, else the whole call is refused with ERR-INT-11 and nothing changes. The failed pages that a retry
+   * can fix (`INTAKE_RETRYABLE_PAGE_CODES`) go back to `pending`, the file back to `processing` with `retry_count` + 1 (the breaker starts again),
+   * the page jobs are queued under a key that carries the retry count, and the batch goes back to `processing`. When the batch already
+   * has extracted items (or `withRun`), a pages run is queued too, so the re-read pages are extracted when OCR has finished.
+   */
+  async retryInBatch(
+    tx: TxClient,
+    auth: AuthContext,
+    batchId: bigint,
+    wanted: Map<bigint, number[] | 'all'> | 'every-file',
+    withRun: boolean,
+  ): Promise<IntakeRetryResult & { pages: Array<{ fileId: bigint; pageNo: number }>; runId: bigint | null }> {
+    const locked = await tx.$queryRaw<{ status: string }[]>`SELECT status FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
+    const status = locked[0]?.status
+    if (status === undefined) throw ApiError.of('NOT_FOUND')
+    if (status !== 'ready_for_review' && status !== 'selesai_dengan_ralat' && status !== 'failed') throw ApiError.of('CONFLICT')
+
+    const files = await tx.intakeFile.findMany({
+      where: { batchId },
+      orderBy: { id: 'asc' },
+      select: { id: true, status: true, sha256: true, retryCount: true, pageCount: true },
+    })
+    if (files.some((f) => f.status === 'uploaded' || f.status === 'processing')) throw ApiError.of('CONFLICT')
+
+    const retryable: string[] = [...INTAKE_RETRYABLE_PAGE_CODES]
+    const plan: Array<{ file: (typeof files)[number]; pageNos: number[] }> = []
+    for (const file of files) {
+      const want = wanted === 'every-file' ? 'all' : wanted.get(file.id)
+      if (want === undefined) continue
+      const failed = await tx.intakePage.findMany({
+        where: { intakeFileId: file.id, ocrStatus: 'failed', errorCode: { in: retryable }, ...(want === 'all' ? {} : { pageNo: { in: want } }) },
+        orderBy: { pageNo: 'asc' },
+        select: { pageNo: true },
+      })
+      if (failed.length > 0) plan.push({ file, pageNos: failed.map((p) => p.pageNo) })
+    }
+    if (plan.length === 0) throw ApiError.of('CONFLICT') // nothing a retry can fix
+    // The limit is checked for every file before any is changed: one exhausted file refuses the whole call (ERR-INT-11).
+    if (plan.some((p) => p.file.retryCount >= INTAKE_MAX_RETRIES)) {
+      throw ApiError.of('CONFLICT', { message: INTAKE_FILE_MESSAGES.retryExhausted })
+    }
+
+    const pages: Array<{ fileId: bigint; pageNo: number }> = []
+    let attempt = 0
+    for (const { file, pageNos } of plan) {
+      const next = file.retryCount + 1
+      attempt = Math.max(attempt, next)
+      await tx.intakePage.updateMany({
+        where: { intakeFileId: file.id, pageNo: { in: pageNos }, ocrStatus: 'failed' },
+        data: { ocrStatus: 'pending', errorCode: null },
+      })
+      await tx.intakeFile.update({ where: { id: file.id }, data: { status: 'processing', errorCode: null, retryCount: next } })
+      for (const pageNo of pageNos) {
+        pages.push({ fileId: file.id, pageNo })
+        await this.jobs.enqueue(
+          {
+            type: INTAKE_JOB_TYPES.page,
+            idempotencyKey: `${INTAKE_JOB_TYPES.page}:${file.sha256}:${idToString(file.id)}:${pageNo}:r${next}`,
+            entityType: INTAKE_JOB_ENTITY,
+            entityId: idToString(file.id),
+            payload: { intakeFileId: idToString(file.id), pageNo },
+          },
+          tx,
+        )
+      }
+    }
+
+    // A batch that already has items gets its re-read pages extracted too (`selesai_dengan_ralat` is decided when that run ends).
+    const hadItems = withRun || (await tx.intakeExtractionRun.count({ where: { batchId, state: 'succeeded', itemCount: { gt: 0 } } })) > 0
+    let runId: bigint | null = null
+    if (hadItems) {
+      const run = await tx.intakeExtractionRun.create({ data: { batchId, requestedById: idFromString(auth.userId) } })
+      const job = await this.jobs.enqueue(
+        {
+          type: WORKFLOW_JOB_TYPE,
+          idempotencyKey: `${WORKFLOW_JOB_TYPE}:${run.id}`,
+          entityType: WORKFLOW_JOB_ENTITY,
+          entityId: idToString(batchId),
+          payload: { runId: idToString(run.id), wait: 0, pages: pages.map((p) => ({ fileId: idToString(p.fileId), pageNo: p.pageNo })) },
+        },
+        tx,
+      )
+      await tx.intakeExtractionRun.update({ where: { id: run.id }, data: { jobId: idFromString(job.id) } })
+      runId = run.id
+    }
+    await tx.intakeBatch.update({ where: { id: batchId }, data: { status: 'processing', statusReason: null } })
+    return { attempt, retriesLeft: INTAKE_MAX_RETRIES - attempt, pages, runId }
   }
 
   // ---- pages -----------------------------------------------------------------------------------

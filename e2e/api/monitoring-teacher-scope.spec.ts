@@ -1,7 +1,7 @@
 /**
- * @api M11 S2 on the REAL API: a teacher's overview and export count the pupils of the own classes, the same pupils S3
- * lists, while the school admin of that school keeps the whole school. Read-only. Runs at 375 / 768 / 1280
- * (playwright.http.config.ts) on the demo seed: `guru@demo.test` has one class (DEMO4S) in DEMO001, a school with more pupils.
+ * @api M11 S2 on the REAL API: a teacher's overview, export and school detail cover the whole own school (R1-GUR-10, S6-T08),
+ * equal to the school admin's figures; another school is 404. Read-only. Runs at 375 / 768 / 1280
+ * (playwright.http.config.ts) on the demo seed: `guru@demo.test` and the school admin share DEMO001.
  *
  * Env: E2E_DEMO_PASSWORD (or the BIJAK_<ROLE>_PASS variables).
  */
@@ -35,7 +35,7 @@ async function read<T>(page: Page, path: string): Promise<T> {
 test.describe('M11 S2 teacher scope @api', () => {
   test.setTimeout(60_000)
 
-  test('a teacher S2 counts and export equal the S3 list, and the school admin keeps the whole school @api', async ({
+  test('a teacher sees the whole own school, equal to the school admin; another school is 404 @api', async ({
     browser,
     page,
   }, info) => {
@@ -46,18 +46,25 @@ test.describe('M11 S2 teacher scope @api', () => {
     expect(schoolId, 'the own school').toBeTruthy()
     const detail = await read<Detail>(page, `/api/monitoring/schools/${schoolId!}`)
 
-    expect(detail.students.length, 'the seeded class has pupils').toBeGreaterThan(0)
+    expect(detail.students.length, 'the school has pupils').toBeGreaterThan(0)
     expect(overview.kpi.students).toBe(detail.students.length)
     expect(overview.kpi.engaged).toBe(detail.cards.engaged)
     expect(overview.kpi.answers).toBe(detail.cards.answers)
-    expect(overview.kpi.teachers).toBe(1)
+    expect(overview.kpi.teachers).toBe(detail.cards.teachers)
     expect(overview.studentRows.map((r) => r.schoolId)).toEqual([schoolId])
 
     const exported = await read<{ rows: Row[] }>(page, '/api/monitoring/export?format=csv')
     expect(exported.rows.map((r) => r.registered)).toEqual([detail.students.length])
 
+    // Another school is 404 for the teacher.
+    const other = Number(schoolId) + 1_000_000
+    expect((await page.request.get(`/api/monitoring/schools/${other}`)).status()).toBe(404)
+
     await page.goto('/guru/monitoring')
-    await expect(page.getByTestId('mon-kpis')).toBeVisible({ timeout: 20_000 })
+    // R1-GUR-10: `/guru/monitoring` is the school detail of the own school (banner, header), not the national overview.
+    await expect(page.getByTestId('mon-school-header')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('mon-scope-banner')).toBeVisible()
+    await expect(page.getByTestId('mon-kpis')).toHaveCount(0)
     await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
     await expectNoHScroll(page)
 
@@ -71,10 +78,11 @@ test.describe('M11 S2 teacher scope @api', () => {
       const whole = await read<Overview>(adminPage, '/api/monitoring/overview')
       const wholeDetail = await read<Detail>(adminPage, `/api/monitoring/schools/${schoolId!}`)
       expect(whole.kpi.students).toBe(wholeDetail.students.length)
-      // The whole school holds other classes too: the teacher's view is narrower, and every own pupil is in it.
-      expect(whole.kpi.students).toBeGreaterThan(overview.kpi.students)
-      const everyone = new Set(wholeDetail.students.map((s) => s.id))
-      for (const s of detail.students) expect(everyone.has(s.id)).toBe(true)
+      // The teacher sees exactly what the school admin sees.
+      expect(whole.kpi).toEqual(overview.kpi)
+      expect(wholeDetail.cards).toEqual(detail.cards)
+      expect(wholeDetail.students.map((s) => s.id).sort()).toEqual(detail.students.map((s) => s.id).sort())
+      expect(whole.teacherRows).toEqual(overview.teacherRows)
     } finally {
       await peer.close()
     }

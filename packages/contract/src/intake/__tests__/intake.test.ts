@@ -526,9 +526,14 @@ describe('edit (PATCH)', () => {
 })
 
 describe('accept, reject, duplicate, extract', () => {
-  it('extract and accept take an empty body only', () => {
+  it('extract takes an empty body or pages[] of { fileId, pageNo } only', () => {
     expect(ok(IntakeExtractRequestSchema, {})).toBe(true)
-    expect(ok(IntakeExtractRequestSchema, { provider: 'openai', pages: [] })).toBe(false)
+    expect(ok(IntakeExtractRequestSchema, { pages: [{ fileId: '12', pageNo: 3 }] })).toBe(true)
+    expect(ok(IntakeExtractRequestSchema, { provider: 'openai' })).toBe(false)
+    expect(ok(IntakeExtractRequestSchema, { provider: 'openai', pages: [{ fileId: '12', pageNo: 3 }] })).toBe(false)
+    expect(ok(IntakeExtractRequestSchema, { pages: [] })).toBe(false)
+    expect(ok(IntakeExtractRequestSchema, { pages: [{ fileId: '12', pageNo: 0 }] })).toBe(false)
+    expect(ok(IntakeExtractRequestSchema, { pages: [{ fileId: '12', pageNo: 3, extra: 1 }] })).toBe(false)
   })
 
   it('reject needs a non-blank reason', () => {
@@ -700,6 +705,8 @@ describe('OpenAPI registration', () => {
     'get /intake/batches/{id}',
     'post /intake/batches/{id}/files',
     'post /intake/batches/{id}/cancel',
+    'post /intake/batches/{id}/retry', // S1-T04
+    'post /intake/files/{id}/retry', // S1-T04
     'get /intake/files/{id}/pages',
     'get /intake/files/{id}/pages/{n}/image',
     'get /intake/files/{id}/pages/{n}/thumb',

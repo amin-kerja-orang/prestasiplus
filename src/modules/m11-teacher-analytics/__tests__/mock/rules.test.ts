@@ -29,11 +29,13 @@ describe('tahap (BR-M11-12)', () => {
     [60.1, 'Cemerlang'],
     [60, 'Sederhana'],
     [20, 'Sederhana'],
+    [20.1, 'Sederhana'],
     [19.99, 'Rendah'],
+    [19.9, 'Rendah'],
     [5, 'Rendah'],
-    [4.99, 'Kritikal'],
-    [0.1, 'Kritikal'],
-    [0, 'Tiada Langsung'],
+    [4.99, 'Rendah'],
+    [0.1, 'Rendah'],
+    [0, 'Tiada'],
   ] as const)('%s%% is %s', (p, tahap) => {
     expect(tahapOf(p)).toBe(tahap)
   })

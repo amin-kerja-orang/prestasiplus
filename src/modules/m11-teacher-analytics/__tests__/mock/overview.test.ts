@@ -84,10 +84,10 @@ describe('KPIs (FR-M11-35/36, BR-M11-09; E2E-M11-22/23/51)', () => {
     expect(o.kpi.answers).toBe(472371)
   })
 
-  it('state=Selangor & tahap=Kritikal: the tahap filter leaves the KPIs alone', async () => {
-    const o = await overview('?state=Selangor&tahap=Kritikal')
+  it('state=Selangor & tahap=Rendah: the tahap filter leaves the KPIs alone', async () => {
+    const o = await overview('?state=Selangor&tahap=Rendah')
     expect(kpiOf(o).slice(1)).toEqual([4042, 1424, 35.2, 460858, 323.6, 517, 273, 52.8])
-    expect(o.studentRows.map((r) => r.schoolId)).toEqual([8102, 8107])
+    expect(o.studentRows.map((r) => r.schoolId)).toEqual([8087, 8102, 8107])
     expect(o.teacherRows).toHaveLength(10)
     expect(o.weekly).toHaveLength(21)
   })
@@ -101,13 +101,13 @@ describe('KPIs (FR-M11-35/36, BR-M11-09; E2E-M11-22/23/51)', () => {
   })
 
   it('characterisation: Selangor has 25 schools with users today (observed 28)', async () => {
-    expect((await overview('?state=Selangor&tahap=Kritikal')).kpi.schools).toBe(25)
+    expect((await overview('?state=Selangor&tahap=Rendah')).kpi.schools).toBe(25)
   })
 
   // Observed 28 (E2E-M11-23); the M01 / M02 users allocation puts 25 Selangor schools in the register. The
   // total 57 and Johor's 7 hold. Owner: M02 (XR-M11-02/03). Flips to a pass when the allocation is fixed.
   it.fails('Selangor "Jumlah Sekolah" is the observed 28 (M02 allocation gap)', async () => {
-    expect((await overview('?state=Selangor&tahap=Kritikal')).kpi.schools).toBe(28)
+    expect((await overview('?state=Selangor&tahap=Rendah')).kpi.schools).toBe(28)
   })
 
   it('state=Johor: 7 · 84 · 37 · 44% · 10,418 · 281.6 · 2 · 1 · 50%', async () => {
@@ -152,11 +152,11 @@ describe('student table (FR-M11-38, BR-M11-12/13/34; E2E-M11-24)', () => {
     })
   })
 
-  it('tahap counts 8 / 7 / 1 / 2 / 15', async () => {
+  it('tahap counts 8 / 7 / 3 / 15', async () => {
     const o = await overview()
     const count = (t: string) => o.studentRows.filter((r) => r.tahap === t).length
-    expect(['Cemerlang', 'Sederhana', 'Rendah', 'Kritikal', 'Tiada Langsung'].map(count)).toEqual([
-      8, 7, 1, 2, 15,
+    expect(['Cemerlang', 'Sederhana', 'Rendah', 'Tiada'].map(count)).toEqual([
+      8, 7, 3, 15,
     ])
   })
 
@@ -194,7 +194,7 @@ describe('student table (FR-M11-38, BR-M11-12/13/34; E2E-M11-24)', () => {
 
   it('tahap filter keeps only that tahap in the student table (BR-M11-14)', async () => {
     const o = await overview('?tahap=Rendah')
-    expect(o.studentRows.map((r) => r.schoolId)).toEqual([8087])
+    expect(o.studentRows.map((r) => r.schoolId)).toEqual([8087, 8102, 8107])
     expect(o.teacherRows).toHaveLength(13)
   })
 
@@ -234,7 +234,7 @@ describe('teacher table (FR-M11-41; E2E-M11-25)', () => {
 
   it('the teacher table ignores the period and the tahap', async () => {
     const all = await overview()
-    const filtered = await overview('?period=7d&tahap=Kritikal')
+    const filtered = await overview('?period=7d&tahap=Rendah')
     expect(filtered.teacherRows).toEqual(all.teacherRows)
   })
 })
@@ -297,24 +297,24 @@ describe('weekly tracking (FR-M11-43, BR-M11-15; E2E-M11-26/27)', () => {
 
   it('the weekly table ignores the period and the tahap, not the state', async () => {
     const all = await overview()
-    expect((await overview('?period=7d&tahap=Kritikal')).weekly).toEqual(all.weekly)
+    expect((await overview('?period=7d&tahap=Rendah')).weekly).toEqual(all.weekly)
     expect((await overview('?state=Selangor')).weekly).toHaveLength(21)
   })
 })
 
 describe('signals (FR-M11-45…48, BR-M11-16; E2E-M11-28/29)', () => {
-  it('default: best 940, 987, 995; 18 attention; 17 suggestions', async () => {
+  it('default: best 940, 987, 995; 18 attention; 15 suggestions', async () => {
     const o = await overview()
     expect(o.signals.best.map((s) => s.schoolId)).toEqual([940, 987, 995])
     expect(o.signals.attention.map((s) => [s.schoolId, s.kind])).toEqual([
       [8087, 'rendah'],
-      [8102, 'kritikal'],
-      [8107, 'kritikal'],
+      [8102, 'rendah'],
+      [8107, 'rendah'],
       ...[
         7780, 8030, 8198, 8228, 8277, 8300, 8302, 8308, 8767, 8772, 8965, 9167, 9681, 9801, 9806,
       ].map((id) => [id, 'tiada']),
     ])
-    expect(o.signals.suggestions).toHaveLength(17)
+    expect(o.signals.suggestions).toHaveLength(15)
   })
 
   it('Nota: 8277 has 16 logged-in teachers on the S2 table (its S3 card shows 17), 8300 has 1', async () => {
@@ -326,30 +326,27 @@ describe('signals (FR-M11-45…48, BR-M11-16; E2E-M11-28/29)', () => {
     ])
   })
 
-  it('suggestion templates: 2 motivasi (Kritikal), 2 handsOn, 13 hubungi', async () => {
+  it('suggestion templates: 2 handsOn, 13 hubungi, no motivasi (four Tahap bands)', async () => {
     const o = await overview()
     const n = (k: string) => o.signals.suggestions.filter((s) => s.kind === k).length
-    expect([n('motivasi'), n('handsOn'), n('hubungi')]).toEqual([2, 2, 13])
-    expect(
-      o.signals.suggestions.filter((s) => s.kind === 'motivasi').map((s) => s.schoolId),
-    ).toEqual([8102, 8107])
+    expect([n('motivasi'), n('handsOn'), n('hubungi')]).toEqual([0, 2, 13])
   })
 
-  it('period lists: 7d 1 / 32 / 31 (best 8284), 30d 1 / 32 / 31, 3m 2 / 29 / 26', async () => {
+  it('period lists: 7d 1 / 32 / 27 (best 8284), 30d 1 / 32 / 27, 3m 2 / 29 / 22', async () => {
     const lens = (o: MonitoringOverview) => [
       o.signals.best.length,
       o.signals.attention.length,
       o.signals.suggestions.length,
     ]
     const d7 = await overview('?period=7d')
-    expect(lens(d7)).toEqual([1, 32, 31])
+    expect(lens(d7)).toEqual([1, 32, 27])
     expect(d7.signals.best[0]?.schoolId).toBe(8284)
     const first = d7.signals.attention[0]
     expect([first?.schoolId, first?.engaged, first?.registered, first?.pct]).toEqual([
       8080, 12, 184, 6.5,
     ])
-    expect(lens(await overview('?period=30d'))).toEqual([1, 32, 31])
-    expect(lens(await overview('?period=3m'))).toEqual([2, 29, 26])
+    expect(lens(await overview('?period=30d'))).toEqual([1, 32, 27])
+    expect(lens(await overview('?period=3m'))).toEqual([2, 29, 24])
   })
 })
 
@@ -374,10 +371,10 @@ describe('#7 export (PROPOSED) and the guards', () => {
     const e = await dataAs<MonitoringExport>(
       runtime,
       ADMIN,
-      '/api/monitoring/export?format=csv&state=Selangor&tahap=Kritikal',
+      '/api/monitoring/export?format=csv&state=Selangor&tahap=Rendah',
     )
     expect(e.filename).toBe('monitoring-penglibatan.csv')
-    expect(e.rows.map((r) => r.schoolId)).toEqual([8102, 8107])
+    expect(e.rows.map((r) => r.schoolId)).toEqual([8087, 8102, 8107])
     const all = await dataAs<MonitoringExport>(runtime, ADMIN, '/api/monitoring/export?format=pdf')
     expect(all.filename).toBe('monitoring-penglibatan.pdf')
     expect(all.rows).toHaveLength(33)
