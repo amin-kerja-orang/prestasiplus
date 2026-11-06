@@ -26,6 +26,7 @@ import {
 } from '@/theme/admin-shell-ui'
 import { uiLocale } from '@/theme/locale-ms'
 
+import DsBadge from './DsBadge.vue'
 import DsBrandLogo from './DsBrandLogo.vue'
 import DsCallout from './DsCallout.vue'
 import DsConfirmHost from './DsConfirmHost.vue'
@@ -83,7 +84,7 @@ const flashText = computed(() => {
 /** Menu items; the sub-group indent applies to the expanded sidebar only (the rail keeps one column). */
 const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
   props.groups.map((g) => [
-    { label: g.label, type: 'label' as const, value: g.key },
+    ...(g.label ? [{ label: g.label, type: 'label' as const, value: g.key }] : []),
     ...g.rows.map((r) =>
       r.kind === 'sub'
         ? { label: r.label, type: 'label' as const, value: `sub:${r.label}`, class: adminNavSubLabel }
@@ -94,6 +95,7 @@ const navItemsFor = (collapsed: boolean): NavigationMenuItem[][] =>
             active: r.active,
             value: `${g.key}:${r.id}`,
             ...(r.nested && !collapsed ? { class: adminNavNestedLink } : {}),
+            ...(r.badge ? { dsBadge: r.badge } : {}),
           },
     ),
   ])
@@ -189,14 +191,33 @@ const accountMenu = computed(() =>
               <template #item-leading="{ item }">
                 <span
                   v-if="item.icon"
-                  class="grid size-7 shrink-0 place-items-center rounded-md"
+                  class="relative grid size-7 shrink-0 place-items-center rounded-md"
                   :class="chipOf(item.value)"
-                  ><UIcon :name="item.icon" class="size-4"
-                /></span>
+                  ><UIcon :name="item.icon" class="size-4" />
+                  <!-- Icon rail: the label and its pill are hidden, so a dot and a screen-reader name carry the badge. -->
+                  <template v-if="item.dsBadge && collapsed">
+                    <span
+                      class="absolute end-0 top-0 size-2 rounded-full bg-error"
+                      aria-hidden="true"
+                      data-testid="pentadbiran-nav-badge-dot"
+                    />
+                    <span class="sr-only" data-testid="pentadbiran-nav-badge-sr"
+                      >{{ item.label }} {{ item.dsBadge }}</span
+                    >
+                  </template></span
+                >
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="item.label">{{ item.label }}</span></template
-              >
+                ><span class="truncate" :title="item.label">{{ item.label }}</span
+                ><DsBadge
+                  v-if="item.dsBadge"
+                  :label="String(item.dsBadge)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-2"
+                  data-testid="pentadbiran-nav-badge"
+              /></template>
             </UNavigationMenu>
           </template>
 
