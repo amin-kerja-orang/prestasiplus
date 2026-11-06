@@ -180,16 +180,15 @@ function go(next: { subject_id?: string; education_level_id?: string; flag?: str
     </DsStack>
     <DsCluster v-if="undoable" gap="sm" data-testid="regroup-undo-bar">
       <DsText variant="body" role="status">Kumpulan #{{ undoable.groupId }} dicipta.</DsText>
-      <UButton type="button" color="neutral" variant="soft" class="min-h-11" :disabled="busy" data-testid="regroup-undo" @click="undo">Buat asal</UButton>
+      <UButton type="button" color="neutral" variant="soft" :disabled="busy" data-testid="regroup-undo" @click="undo">Buat asal</UButton>
     </DsCluster>
     <DsCluster v-if="selectedRows.length > 0" gap="sm" data-testid="regroup-group-bar">
       <template v-if="figureRows.length > 1">
-        <label class="sr-only" for="regroup-figure">Baris rajah</label>
-        <select id="regroup-figure" v-model="figureId" class="min-h-11 rounded-md border border-default bg-default px-2" data-testid="regroup-figure">
+        <DsNativeSelect id="regroup-figure" v-model="figureId" aria-label="Baris rajah" data-testid="regroup-figure">
           <option v-for="f in figureRows" :key="f.questionId" :value="f.questionId">#{{ f.questionId }}</option>
-        </select>
+        </DsNativeSelect>
       </template>
-      <UButton type="button" class="min-h-11" :disabled="busy || !canGroup" data-testid="regroup-group" @click="group">Kumpulkan</UButton>
+      <UButton type="button" :disabled="busy || !canGroup" data-testid="regroup-group" @click="group">Kumpulkan</UButton>
       <DsText v-if="runNotConsecutive" variant="caption" tone="warning" data-testid="regroup-not-consecutive">{{ REGROUP_COPY.notConsecutive }}</DsText>
     </DsCluster>
 

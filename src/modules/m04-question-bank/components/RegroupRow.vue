@@ -6,7 +6,7 @@
  */
 import { ref } from 'vue'
 
-import { DsCluster, DsStack, DsSurface, DsText } from '@/ds'
+import { DsCluster, DsNativeSelect, DsStack, DsSurface, DsText } from '@/ds'
 
 import { listStimuliToAttach, type StimulusPick } from '../api/questions'
 import { DIAGRAMS_PATH } from '../lib/audit-routes'
@@ -43,18 +43,14 @@ const pickable = (f: string): boolean => f === 'stimulus_missing' || f === 'figu
   <DsSurface as="li" level="soft" padding="sm" shadow="none" :data-testid="`regroup-row-${row.questionId}`">
     <DsStack gap="xs">
       <DsCluster gap="sm">
-        <label class="inline-flex min-h-11 min-w-11 items-center justify-center">
-          <input
-            type="checkbox"
-            class="size-5"
-            :checked="selected === true"
-            :disabled="busy === true"
-            :aria-label="`Pilih soalan ${row.questionId}`"
-            :data-testid="`regroup-select-${row.questionId}`"
-            @change="emit('toggle', row.questionId)"
-          />
-        </label>
-        <DsText variant="body" class="min-w-0 flex-1" data-testid="regroup-stem">{{ row.stemExcerpt }}</DsText>
+        <UCheckbox
+          :model-value="selected === true"
+          :disabled="busy === true"
+          :aria-label="`Pilih soalan ${row.questionId}`"
+          :data-testid="`regroup-select-${row.questionId}`"
+          @update:model-value="emit('toggle', row.questionId)"
+        />
+        <DsText variant="body" wrap="anywhere" data-testid="regroup-stem">{{ row.stemExcerpt }}</DsText>
       </DsCluster>
       <DsCluster gap="sm">
         <DsText variant="caption" tone="muted">{{ row.subject }}</DsText>
@@ -68,7 +64,7 @@ const pickable = (f: string): boolean => f === 'stimulus_missing' || f === 'figu
           type="button"
           color="neutral"
           variant="soft"
-          class="min-h-11"
+         
           :disabled="busy === true"
           :data-testid="`regroup-dismiss-${row.questionId}`"
           @click="emit('dismiss', row)"
@@ -80,7 +76,7 @@ const pickable = (f: string): boolean => f === 'stimulus_missing' || f === 'figu
             type="button"
             color="neutral"
             variant="soft"
-            class="min-h-11"
+           
             :aria-expanded="picking"
             :disabled="busy === true"
             :data-testid="`regroup-attach-${row.questionId}`"
@@ -88,23 +84,22 @@ const pickable = (f: string): boolean => f === 'stimulus_missing' || f === 'figu
           >
             Lampirkan rangsangan
           </UButton>
-          <UButton :to="DIAGRAMS_PATH" color="neutral" variant="soft" class="min-h-11" :data-testid="`regroup-upload-${row.questionId}`">Muat naik gambar</UButton>
+          <UButton :to="DIAGRAMS_PATH" color="neutral" variant="soft" :data-testid="`regroup-upload-${row.questionId}`">Muat naik gambar</UButton>
         </template>
       </DsCluster>
       <DsCluster v-if="picking" gap="sm" :data-testid="`regroup-picker-${row.questionId}`">
         <DsText v-if="loadFailed" variant="caption" tone="error" role="alert" :data-testid="`regroup-picker-error-${row.questionId}`">Maaf, berlaku ralat. Sila cuba semula.</DsText>
         <template v-else>
-          <label class="sr-only" :for="`regroup-pick-${row.questionId}`">Rangsangan</label>
-          <select
+          <DsNativeSelect
             :id="`regroup-pick-${row.questionId}`"
             v-model="choice"
-            class="min-h-11 min-w-0 flex-1 rounded-md border border-default bg-default px-2"
+            aria-label="Rangsangan"
             :data-testid="`regroup-pick-${row.questionId}`"
           >
             <option value="">Rangsangan</option>
             <option v-for="s in choices" :key="s.id" :value="s.id">#{{ s.id }} {{ s.label }}</option>
-          </select>
-          <UButton type="button" class="min-h-11" :disabled="choice === '' || busy === true" :data-testid="`regroup-pick-go-${row.questionId}`" @click="attach">
+          </DsNativeSelect>
+          <UButton type="button" :disabled="choice === '' || busy === true" :data-testid="`regroup-pick-go-${row.questionId}`" @click="attach">
             Lampirkan rangsangan
           </UButton>
         </template>
