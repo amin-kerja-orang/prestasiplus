@@ -55577,6 +55577,110 @@
           "createdAt"
         ]
       },
+      "PerformanceTimelineEntry": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "subjectName": {
+                "type": "string"
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "subjectName",
+              "correct",
+              "answered",
+              "accuracy"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "badge"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "name",
+              "icon"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "post"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "post": {
+                "$ref": "#/components/schemas/PerformanceTimelinePost"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "post"
+            ]
+          }
+        ]
+      },
       "PerformanceTimeline": {
         "type": "object",
         "properties": {
@@ -55588,11 +55692,32 @@
             "items": {
               "$ref": "#/components/schemas/PerformanceTimelinePost"
             }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelineEntry"
+            }
           }
         },
         "required": [
           "profileUrl",
-          "posts"
+          "posts",
+          "entries"
+        ]
+      },
+      "PerformanceTimelineDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
         ]
       },
       "PerformanceTimelineCreateRequest": {
@@ -122539,10 +122664,11 @@
         "tags": [
           "performance"
         ],
-        "summary": "Own timeline (S16)",
+        "summary": "Own timeline feed (S16, API-RPT-14)",
+        "description": "Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).",
         "responses": {
           "200": {
-            "description": "Own timeline (S16)",
+            "description": "Own timeline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -122641,6 +122767,87 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus \"(and N more error(s))\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/timeline/{id}": {
+      "delete": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Delete an own timeline post (API-RPT-15)",
+        "description": "Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil's post is the same 404 as an unknown id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimelineDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown post id, or a post of another user",
             "content": {
               "application/json": {
                 "schema": {
