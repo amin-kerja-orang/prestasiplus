@@ -609,7 +609,12 @@ export const roomsRepo = defineRepository({
           prng,
           botAccuracy(),
         )
-        return applyOut(room, out, m16Now(), true) // the new seat's clock starts now
+        // Only the seat the room waited for restarts the clock; a skip of another seat leaves the running clock alone.
+        if (st.humanId === seat.userId) return applyOut(room, out, m16Now(), true)
+        const kept = applyOut(room, out)
+        return store.update(kept.id, {
+          state: { ...(kept.state as RoomState), roundStartedMs: st.roundStartedMs },
+        })
       }
       if (left.length >= 2) {
         const rng = prng.fresh(`m16:room:${room.id}:swap:${String(st.draws)}`)

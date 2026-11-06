@@ -471,4 +471,21 @@ describe('Papan Bijak with the room robots off (rulings 50.1, 53)', () => {
       restore()
     }
   })
+
+  it('3 humans, robots off: skipping a seat that is not on turn keeps the running clock (25 s elapsed, 5 s left)', async () => {
+    m16Hooks.roomRobots({ enabled: false })
+    try {
+      const started = await startRoom([GUEST, THIRD], 0)
+      expect(started.state.humanId).toBe(HOST) // the host rolls first
+      advance(25)
+      expect((await view(started.code, HOST)).state.roundSecondsLeft).toBe(5)
+      expect((await act(started.code, THIRD, { type: 'leave' })).status).toBe(200)
+      const v = await view(started.code, HOST)
+      expect(v.status).toBe('playing')
+      expect(v.state.humanId).toBe(HOST)
+      expect(v.state.roundSecondsLeft).toBe(5)
+    } finally {
+      restore()
+    }
+  })
 })
