@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
- * Admin Pusat central views of the school reports (R1-ADM-M-07; PM-12, 13, 15, 21, 22, 23, 27, 28;
+ * Admin Pusat central views of the school reports (R1-ADM-M-07; PM-12, 13, 15, 21, 22, 23, 24, 27, 28;
  * `/admin/laporan-sekolah/{view}`). One component, the `view` prop picks the report (Decided D-T13-1).
  *
  * Top to bottom: the required field `Sekolah` (the M02 school picker; placeholder "Pilih sekolah", error
  * "Sila pilih sekolah." after the field is cleared or submitted empty), then the EXISTING school page for the
  * chosen school (no second model: AC-ADM-M07.1). The M27 pages read through `?schoolId=` (API-ADM-22); the Amaran
- * pages read `GET /api/amaran/schools/:id`. `analisa-item` opens the M08 school page of the chosen school.
+ * pages read `GET /api/amaran/schools/:id`; PM-24 mounts the M08 Headcount list (`GET /api/headcounts?schoolId=`),
+ * read-only. `analisa-item` opens the M08 school page of the chosen school.
  * A school the API does not know (404 / 422) shows "Tiada data untuk sekolah ini." in the school page.
  */
 import { computed, ref, watch } from 'vue'
@@ -20,6 +21,7 @@ import {
   StatistikPenggunaanPage,
 } from '@/modules/m27-school-admin'
 import { DsPage, DsStack } from '@/ds'
+import { HeadcountListPage } from '@/modules/m08-student-performance'
 import { AdminSchoolPicker, type SchoolSummary } from '@/modules/m02-users-schools'
 
 import type { CentralReportView } from '../routes/laporan'
@@ -54,6 +56,7 @@ const SCHOOL_PAGES = {
   'dskp-heatmap': DskpHeatmapPage,
   'amaran-awal': AmaranSekolahPage,
   'laporan-bulanan': LaporanBulananPage,
+  headcount: HeadcountListPage,
 } as const
 
 const schoolPage = computed(() =>

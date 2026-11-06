@@ -2761,6 +2761,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/laporan-sekolah/headcount|m17.laporan-sekolah.headcount",
+      "path": "/admin/laporan-sekolah/headcount",
+      "name": "m17.laporan-sekolah.headcount",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": "S6-T13"
+    },
+    {
       "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",
       "path": "/admin/laporan-sekolah/analisa-item",
       "name": "m17.laporan-sekolah.analisa-item",
