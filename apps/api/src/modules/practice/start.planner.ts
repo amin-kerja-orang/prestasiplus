@@ -163,6 +163,7 @@ export class PracticeStartPlanner {
       case 'revision':
         return this.revision(plan, userId, req)
       case 'past_year':
+      case 'databank':
         return this.pastYear(plan, userId, req, now)
       case 'latih_tubi':
         return this.latihTubi(plan, userId, req, now)

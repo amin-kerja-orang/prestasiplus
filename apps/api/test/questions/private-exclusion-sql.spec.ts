@@ -95,6 +95,14 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
     for (const s of sqls.filter((x) => x.includes('latest_version_no') && !x.includes('education_levels WHERE stage'))) expect(s).toContain(BANK)
   })
 
+  it('structuredIds (listed and served) and isStructuredServed carry the bank predicate (FR-GUR-44a-9)', async () => {
+    const { sqls, prisma } = capture()
+    const repo = new QuestionsRepository(prisma)
+    await run(() => repo.structuredIds({ served: false } as never), () => repo.structuredIds({ served: true } as never), () => repo.isStructuredServed('1'))
+    expect(sqls.length).toBeGreaterThanOrEqual(3)
+    for (const s of sqls) expect(s).toContain(BANK)
+  })
+
   it('Databank lane, Jana scope and the Bijak pool', async () => {
     expect(Prisma.join(databankLaneConds(), ' AND ').sql).toContain(BANK)
     expect(janaEligibleScope().where.sql).toContain(BANK)
