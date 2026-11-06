@@ -5,9 +5,8 @@ import { GamificationService } from './gamification.service'
 
 /**
  * XR-M14-02(b) / BR-M14-19: M01's registration hook -> `GamificationService.applyReferral`, inside the registration
- * transaction. A real sign-up, so `isTest` is false. A pending teacher is a created account like any other and is
- * treated the same (the docs are silent; recorded as a deviation). `applyReferral` pays nothing for an empty,
- * unknown, own or already-used code.
+ * transaction. A real sign-up, so `isTest` is false. A teacher or parent registration is skipped (48 GAME-24: new
+ * pupils only). `applyReferral` pays nothing for an empty, unknown, own or already-used code, or a referrer that is not a pupil.
  *
  * A referral is a bonus: it runs in a SAVEPOINT (`referral_apply`, the pattern of `evaluateAchievementsSafely`). If it
  * throws (a rule or a database error, which leaves the transaction aborted until the rollback), the work it did is
@@ -21,7 +20,8 @@ export class GamificationRegistrationHook implements RegistrationHook {
   constructor(@Inject(GamificationService) private readonly gamification: GamificationService) {}
 
   async onRegistered(event: RegisteredEvent): Promise<void> {
-    if (event.referralCode === null) return
+    // GAME-24: only a new pupil's sign-up can be rewarded; a teacher or parent registration pays nothing.
+    if (event.referralCode === null || event.role !== 'student') return
     const { tx } = event
     await tx.$executeRaw`SAVEPOINT referral_apply`
     try {
