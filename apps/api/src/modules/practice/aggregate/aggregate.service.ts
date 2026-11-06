@@ -4,7 +4,7 @@ import type { TxClient } from '../../../db/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { Prisma } from '../../../db/generated/client'
-import type { BijakAttemptAggregateInput, BijakAttemptAggregatePort } from './types'
+import { ATTEMPT_START_TYPES, type AttemptStartType, type BijakAttemptAggregateInput, type BijakAttemptAggregatePort } from './types'
 
 const SOURCE = 'bijak'
 const MAX_FIGURE = 99999.99
@@ -18,7 +18,7 @@ export interface AggregateRow {
   attemptId: string
   userId: string
   paperId: string | null
-  startType: 'pilihan' | 'jana' | null
+  startType: AttemptStartType | null
   subjectCode: string
   kertas: number
   mode: 'exam' | 'latihan'
@@ -117,7 +117,7 @@ interface Checked {
   paperId: bigint | null
   score: number
   max: number
-  startType: 'pilihan' | 'jana' | null
+  startType: AttemptStartType | null
   startedAt: Date | null
   submittedAt: Date | null
   durationSec: number | null
@@ -135,7 +135,7 @@ function validate(input: BijakAttemptAggregateInput): Checked {
   if (input.status !== 'submitted' && input.status !== 'auto_submitted') bad('status')
   if (typeof input.provisional !== 'boolean' || typeof input.regraded !== 'boolean') bad('flags')
   const paperKind = input.paperKind ?? null
-  if (paperKind !== null && paperKind !== 'pilihan' && paperKind !== 'jana') bad('paperKind')
+  if (paperKind !== null && !ATTEMPT_START_TYPES.includes(paperKind)) bad('paperKind')
   const paperId = input.paperId === null ? null : decimalId(input.paperId, 'paperId')
   const score = checkFigure(input.score, 'score')
   const max = checkFigure(input.max, 'max')

@@ -49,8 +49,8 @@ const keysOf = (v: unknown): string[] =>
 const diff = { '1': 0, '2': 12, '3': 30, '4': 8, '5': 0 }
 
 const overview = {
-  stats: { totalQuestions: 20529, subjectCount: 19, yearsAvailable: 0, trackingAQuestions: 747 },
-  modules: { databank: 14673, latihTubi: 14673, trackingA: 747, subjektifSets: 210 },
+  stats: { totalQuestions: 20529, subjectCount: 19, trackingAQuestions: 747 },
+  modules: { databank: 14673, latihTubi: 14673, trackingA: 747, subjektifSets: 210, kertasSubjektif: 3 },
   me: { sessions: 4, avgAccuracy: 62.5, coins: 40, answered: 120 },
 }
 

@@ -584,6 +584,8 @@ export interface PaperCover extends PaperSummary {
   }[]
   /** PO decision 12 (API-BIJAK-02): a new sitting would be refused. */
   unavailable?: boolean
+  /** S3-T07: false when the paper is outside the pupil's form and the pupil has no open sitting on it, so the Kuiz action is hidden. Absent means available. */
+  kuizAvailable?: boolean
 }
 
 export interface Shortage {

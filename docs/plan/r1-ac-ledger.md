@@ -48,8 +48,14 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S8-T04 | AC-PA-21 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-21 (warning once at every width; at 0 submits with auto:true; offline at 0 locks, banner, submits on reconnect); result-auto-banner.test.ts::AC-PA-21: auto=1 shows "Masa tamat. Jawapan anda telah dihantar secara automatik." once |
+| S8-T04 | AC-PA-22 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-22 (3 blank: "Anda belum menjawab 3 soalan." then "Hantar jawapan anda sekarang?"; focus starts on the safe button; Esc chooses the safe button) |
+| S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
+| S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
+| S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
+| S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
 
 ## Sprint 1
 
@@ -78,6 +84,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
 | S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S7-T02 | AC-AS-45-1 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-1: the mean of session accuracy per school, in order, with the register name and state; sekolah-bersaing.test.ts::AC-AS-45-1: A rank 1 with a success 80% pill and 5, B rank 2 with a warning 60% pill and 3; rules.test.ts::AC-AS-45-1: ranks by accuracy, with the row shape of the contract |
+| S7-T02 | AC-AS-45-2 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31); sekolah-bersaing.test.ts::AC-AS-45-2: an empty board shows both exact lines and no table; rules.test.ts::AC-AS-45-2: no session anywhere is an empty board |
+| S7-T02 | AC-AS-45-3 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-3: 40 schools give exactly 30 rows; rules.test.ts::AC-AS-45-3: cuts 40 schools to the top 30 |
+| S7-T02 | AC-AS-45-6 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name; sekolah-bersaing.test.ts::AC-AS-45-6: the colour follows the rounded value; rules.test.ts::AC-AS-45-6: breaks ties by pupils, then sessions, then name |
 
 ## Sprint 2
 
@@ -106,6 +116,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T02 | AC-MUR-9-4 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::a pupil whose own form has no chapter question sees the data-empty state (AC-MUR-9-4) |
 | S5-T02 | AC-MUR-9-10 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::AC-MUR-9-10: 7 servable questions enable only "5 soalan"; the others carry the title |
 | S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
+| S5-T07 | AC-MUR-12-1 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-2 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-3 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts, pages.test.ts |
+| S5-T07 | AC-MUR-12-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | qa-g5-guards-responsive.spec.ts |
+| S5-T07 | AC-MUR-12-5 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
+| S5-T07 | AC-MUR-12-6 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
 
 ## Sprint 4
 
@@ -125,8 +141,19 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
 | S5-T04 | AC-MUR-2-11 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood-command-center.spec.ts::Guru Command Center "Mood Pelajar" counts 1 for Tertekan; mood-command-center.spec.ts::the Mood Pelajar drill lists the pupil; mood-command-center.spec.ts::the Admin Sekolah "Aktiviti Harian" mood panel counts it for the school; mood-command-center.spec.ts::and no other school |
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
+| S10-T06 | FR-X2-0 | CI | Pass | 2026-11-05 | team-dd/R-1 | check-http-build.test.mjs |
 | S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
 | S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
+| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-06 | team-bb/S-2 | unit/analitik-pelajar.spec.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter; UAT: 0 SP tags, #924) |
+| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S4-T02 | AC-ADM-C04.1 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-load.spec.ts |
+| S4-T02 | AC-ADM-C04.3 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-report.spec.ts; SubjectDskpReportTab.test.ts; nodes-per-in-scope-subject.spec.ts |
+| S5-T04 | AC-MUR-2-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | dashboard-prestasi-parity.spec.ts |
+| S5-T08 | AC-AS-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::school_admin picks a category, only its videos show, no "Tambah Video"; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 |
+| S5-T08 | AC-GUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::choosing a category: the pills show 2 and 1, clicking the first lists exactly its 2 videos; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 exactly 2 listed, pill counts 2 and 1 |
+| S5-T08 | AC-GUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::AC-GUR-7-2 a teacher saves a video with title, category and valid URL and it is listed under that category; VideoPages.test.ts::teacher adds a video (category sent) |
+| S5-T08 | AC-MUR-8-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | kelas-saya.spec.ts::the teacher adds the pupil (PUT /guru/students/:id), then the class is in the pupil's next Kelas Saya, join route 404; KelasSayaPelajarPage.test.ts::no join field or "Sertai" with or without a class |
 
 ## Sprint 5
 
@@ -151,6 +178,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S5-T14 | AC-AS-A1-1 | CI | Pass | 2026-11-05 | team-dd/S-5 | ProfilePages.test.ts |
+| S5-T14 | AC-AS-A1-4 | CI | Pass | 2026-11-05 | team-dd/S-5 | ProfilePages.test.ts |
+| S5-T14 | AC-AS-A2-1 | CI | Pass | 2026-11-05 | team-dd/S-5 | TetapanPage.test.ts |
+| S5-T14 | AC-AS-A2-3 | CI | Pass | 2026-11-05 | team-dd/S-5 | TetapanPage.test.ts |
+| S5-T14 | AC-AS-A2-4 | CI | Pass | 2026-11-05 | team-dd/S-5 | TetapanPage.test.ts |
+| S5-T14 | AC-AS-A3-6 | CI | Pass | 2026-11-05 | team-dd/S-5 | PanduanPage.test.ts |
 
 ## Sprint 9
 
