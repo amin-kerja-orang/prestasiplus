@@ -10632,6 +10632,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           }
         },
         "required": [
@@ -10817,6 +10831,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           },
           "instructions": {
             "type": "array",
@@ -12689,7 +12717,74 @@
             "$ref": "#/components/schemas/BijakAttemptPartAnswer"
           },
           "scheme": {
-            "$ref": "#/components/schemas/BijakAttemptScheme"
+            "type": "object",
+            "properties": {
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correctOption": {
+                "type": "string",
+                "description": "MCQ: the correct option id."
+              },
+              "correctLetter": {
+                "type": "string",
+                "description": "match_letter: the correct letter."
+              },
+              "acceptedText": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "accepted: the accepted answers as text."
+              },
+              "rubric": {
+                "type": "object",
+                "properties": {
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakAttemptRubricBand"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "finalDisplay": {
+                "type": "string",
+                "description": "LaTeX of the model final answer."
+              },
+              "unit": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "marks"
+            ],
+            "additionalProperties": false,
+            "description": "The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too."
           }
         },
         "required": [
@@ -12701,8 +12796,7 @@
           "status",
           "confidence",
           "points",
-          "answer",
-          "scheme"
+          "answer"
         ],
         "additionalProperties": false
       },
@@ -93384,7 +93478,24 @@
           "bijak-papers"
         ],
         "summary": "Kertas Pilihan: published curated papers with the caller progress",
-        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. `surface` (DM-23, S3-T06) defaults to `simulasi` (Kertas Pilihan, unchanged); `surface=subjektif` lists the published Kertas Subjektif papers (rows carry `surface`, `examBoard`, the typed Jumlah Markah as `marks`, and the code `K{kertas}` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "simulasi",
+                "subjektif"
+              ],
+              "default": "simulasi",
+              "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23)."
+            },
+            "required": false,
+            "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23).",
+            "name": "surface",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Published papers with the caller progress.",
@@ -94487,7 +94598,7 @@
           "bijak-attempts"
         ],
         "summary": "The result page with full schemes (after submit only)",
-        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
+        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. A Kertas Subjektif attempt (paperKind subjektif, S3-T06) carries no scheme text unless read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21): each part then has no `scheme`, no `suggestion` and empty `points`. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
         "parameters": [
           {
             "schema": {
@@ -94501,6 +94612,19 @@
             "description": "Attempt id (opaque; a UUID on the backend).",
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ],
+              "description": "Kertas Subjektif only: include the scheme."
+            },
+            "required": false,
+            "description": "Kertas Subjektif only: include the scheme.",
+            "name": "scheme",
+            "in": "query"
           }
         ],
         "responses": {
@@ -94757,7 +94881,7 @@
           "bijak-attempts"
         ],
         "summary": "Semakan: record the pupil own mark (\"Markah kendiri\") for one part",
-        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt whose scheme is points or rubric (selfMarkable in the result); another part gives 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\" or \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
+        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt (else 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\") whose scheme is points or rubric, or that the grader left belum_dimarkah (selfMarkable in the result; 46 section 3.4, K20); an automatically marked part gives 409 CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The response result of a Kertas Subjektif attempt carries no scheme text unless the request has `?scheme=1` (the pupil already pressed \"Tunjuk Skema Pemarkahan\"). The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
         "parameters": [
           {
             "schema": {
@@ -94844,7 +94968,7 @@
             }
           },
           "409": {
-            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed).",
+            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed), or CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\" (an automatically marked part).",
             "content": {
               "application/json": {
                 "schema": {
