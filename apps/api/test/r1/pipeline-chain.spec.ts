@@ -815,7 +815,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     it('the admin generates a draft from the approved pool; a pupil cannot generate (404) and never sees the draft', async () => {
       const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 3 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const id = res.body.data.paperId as string
+      const id = res.body.data.id as string
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [id]))[0]!.status).toBe('draft')
       for (const who of [pupil, pupil5]) {
         expect((await who.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 3 })).status).toBe(404)
@@ -827,7 +827,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // R1-20.2 (exact-or-refuse): a Disahkan Kontrak whose pool cannot fill a section gives 422 SHORTAGE with the shortage list in BM, never a
     // short paper and no paper row; the admin sees the same shortfall in "Pratonton kolam".
     it('a short pool is refused with SHORTAGE and the shortfall (no paper is made); the admin preview names it', async () => {
-      const need = 5
+      // The same Kontrak serves 6b (kertas 1-4 only: the admin generator refuses kertas above 4, S3-T02), so it carries the 6b KBAT quota of 3 marks.
+      const need = 4
       const create = await admin.post('/api/admin/blueprints', {
         subject: 'MAT',
         kertas: 4,
@@ -844,7 +845,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
             rule: { type: 'all' },
             profile: { kind: 'bahagian', groups: [{ from: 1, to: need, tpMin: 1, tpMax: 6 }] },
             quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: need }] },
-            kbatMarks: 0,
+            kbatMarks: 3,
           },
         ],
       })
@@ -882,42 +883,6 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     const kbatIds: string[] = []
     const plainIds: string[] = []
 
-    const makeKontrak = async (kertas: number, code: string, count: number, kbatMarks: number): Promise<void> => {
-      const pool = `MAT${String(kertas)}-A`
-      const create = await admin.post('/api/admin/blueprints', {
-        subject: 'MAT',
-        kertas,
-        source: 'Spec',
-        code,
-        durationMin: 30,
-        instructions: ['Jawab semua soalan.'],
-        sections: [
-          {
-            label: 'Bahagian A',
-            pool,
-            markBudget: count,
-            questionCount: count,
-            rule: { type: 'all' },
-            profile: { kind: 'bahagian', groups: [{ from: 1, to: count, tpMin: 1, tpMax: 6 }] },
-            quota: { basis: 'questions', lines: [{ unit: { kind: 'unit', nodeId: fx.unit }, value: count }] },
-            kbatMarks,
-          },
-        ],
-      })
-      expect(create.status, JSON.stringify(create.body)).toBe(201)
-      const ev = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/evidence`, {
-        kind: 'lpm_format',
-        body: 'lpm',
-        year: 2025,
-        paperCode: `1449/${String(kertas)}`,
-        values: { durationMin: 30, totalMarks: count, sections: [{ position: 1, markBudget: count, rule: { type: 'all' }, questionCount: count }] },
-      })
-      expect(ev.status, JSON.stringify(ev.body)).toBe(201)
-      const ok = await admin.post(`/api/admin/blueprints/MAT/${String(kertas)}/verify`, { note: 'Struktur disemak dengan dokumen format LPM.' })
-      expect(ok.status, JSON.stringify(ok.body)).toBe(200)
-      expect(ok.body.data).toMatchObject({ source: 'Disahkan', servesStudents: true })
-    }
-
     const kbatMarksOf = async (paperId: string): Promise<{ questions: number; kbat: number; total: number }> => {
       const [row] = await db.query<{ questions: string; kbat: string; total: string }>(
         `select count(distinct pl.question_id) questions,
@@ -947,22 +912,20 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(levels.filter((r) => r.kbat).map((r) => r.id).sort()).toEqual([...kbatIds].sort())
     })
 
-    // The section pool a question may carry must exist in an active Kontrak of its subject, so both Kontrak are made before the pools are tagged.
-    // MAT kertas 5: 3 KBAT marks out of 4 (reachable). MAT kertas 6: 5 KBAT marks out of 5 (the pool holds only 3 KBAT questions).
-    it('two Disahkan Kontrak with a KBAT quota are made, and the questions are tagged to their pools MAT5-A and MAT6-A', async () => {
-      await makeKontrak(5, 'MAT/E2E-K', 4, 3)
-      await makeKontrak(6, 'MAT/E2E-K2', 5, 5)
+    // The section pool a question may carry must exist in an active Kontrak of its subject: the Disahkan Kontrak MAT kertas 4 of describe 6 (3 KBAT marks
+    // out of 4) has the pool MAT4-A, empty until here. The admin generator takes kertas 1-4 only (S3-T02), so this one Kontrak serves both cases below.
+    it('the questions are tagged to the pool MAT4-A of the Disahkan Kontrak with a KBAT quota', async () => {
       for (const id of [...kbatIds, ...plainIds]) {
-        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT5-A', 'MAT6-A'] })
+        const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT4-A'] })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
-        expect(res.body.data.pools).toEqual(['MAT5-A', 'MAT6-A'])
+        expect(res.body.data.pools).toEqual(['MAT4-A'])
       }
     })
 
     it('a Disahkan Kontrak asks for 3 KBAT marks out of 4: the generated paper has exactly 4 questions and exactly 3 KBAT marks', async () => {
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 5 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const paperId = res.body.data.paperId as string
+      const paperId = res.body.data.id as string
       expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('pilihan')
       expect(await kbatMarksOf(paperId)).toEqual({ questions: 4, kbat: 3, total: 4 })
       // the KBAT questions are exactly the three of the pool (all of them), plus one non-KBAT
@@ -972,11 +935,14 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('an unreachable KBAT quota is refused with SHORTAGE (kind kbat), never a paper that misses the quota', async () => {
+      // Take one KBAT question out of the pool: 2 KBAT questions are left for a quota of 3 KBAT marks.
+      const untag = await admin.put(`/api/admin/section-pools/${kbatIds[0]!}`, { pools: [] })
+      expect(untag.status, JSON.stringify(untag.body)).toBe(200)
       const before = Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 6 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
-      expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 5, have: 3 })])
+      expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 3, have: 2 })])
       expect(Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)).toBe(before)
     })
   })
