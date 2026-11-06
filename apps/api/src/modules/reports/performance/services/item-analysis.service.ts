@@ -14,7 +14,6 @@ import {
 import { COUNTED_MODES, ITEM_TINGKATAN_CODES, REDACTED_ID, SCHOOL_QUESTION_CAP } from '../domain/constants'
 import { canSeeName, isStaff, meetsCohort, nameFor } from '../domain/privacy'
 import {
-  capPercent,
   compareIds,
   difficultyIndex,
   difficultyLevel,
@@ -225,7 +224,7 @@ export class ItemAnalysisService {
           name: subjectNameOf(subjectId),
           pupils: ok ? p : 0,
           questions: ok ? new Set(list.map((r) => r.questionId).filter((id) => id !== '0')).size : 0,
-          accuracy: ok ? round(capPercent(pct(good, n)), 1) : 0,
+          accuracy: ok ? xsAccuracy(good, n) ?? 0 : 0,
           wrong: ok ? n - good : 0,
         }
       })
@@ -373,7 +372,7 @@ export class ItemAnalysisService {
       .map((q) => {
         const facts = bijak.get(q.questionId) ?? []
         const first = facts[0]
-        const accuracy = round(capPercent(pct(q.correct, q.attempts)), 1)
+        const accuracy = xsAccuracy(q.correct, q.attempts) ?? 0
         const index = difficultyIndex(q.correct, q.attempts)
         const pop = popularWrong(facts)
         return {
