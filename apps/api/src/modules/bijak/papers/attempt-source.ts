@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { idFromString, idToString } from '../../../db/ids'
 import { PapersRepository } from './papers.repository'
-import { BijakPapersPorts } from './ports'
+import { BijakPapersPorts, placesUnservable } from './ports'
 import { ruleOf } from './rules'
 import { bijakCodeOf } from './subject-codes'
 
@@ -95,12 +95,11 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
     const info = await this.ports.questionSource.getMany([...new Set(questionIds)])
-    if (questionIds.some((q) => !info.has(q))) return { ok: false, reason: 'not_eligible' }
-    // REQ-B-058: the check above only looks at the LIVE version. A NEW sitting is also refused when the version a placement PINNED has been
+    // `info` only knows the LIVE version (H-A13). REQ-B-058: a NEW sitting is also refused when the version a placement PINNED has been
     // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
     // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
     const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
-    if ((await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
+    if (placesUnservable(pins, info, await this.ports.questionSource.takenDownPins(pins))) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const code = subject ? bijakCodeOf(subject.code) : ''
