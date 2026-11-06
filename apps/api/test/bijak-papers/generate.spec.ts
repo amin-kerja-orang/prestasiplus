@@ -53,7 +53,7 @@ describe('POST /api/bijak/papers/generate is removed (404 for every caller); the
     const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2, title: 'Set Ujian' })
     expect([201, 422], JSON.stringify(res.body)).toContain(res.status)
     if (res.status === 201) {
-      const id = (res.body.data as { paperId: string }).paperId
+      const id = (res.body.data as { id: string }).id
       expect((await t.db.query<{ status: string }>(`select status from papers where id = $1`, [id]))[0]?.status).toBe('draft')
     } else expect(res.body.error.code).toBe('SHORTAGE')
     expect((await student.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2 })).status).toBe(403)
