@@ -385,8 +385,9 @@ export class GuruSubmissionsService {
     try {
       image = await this.checkImage(userId, body.stimulusImageId)
     } catch (e) {
-      if (!(e instanceof ApiError)) throw e
-      Object.assign(extra, e.fields ?? {})
+      // Only a field error (422 with `fields`) joins the form errors; any other failure is rethrown, never swallowed.
+      if (!(e instanceof ApiError) || e.fields === undefined) throw e
+      Object.assign(extra, e.fields)
     }
     const { subject, level, chapterKey, spKeys, spCodes } = await this.resolveTags(body, extra)
     const stimulus = body.stimulus?.trim() ?? ''
@@ -596,7 +597,7 @@ export class GuruSubmissionsService {
       return sub ? [{ item, sub }] : []
     })
     // The real state, as for the single MCQ (`guruStatusOf`): an accepted item whose question is published is `approved`; a returned or
-    // pending one is `review` (a returned one with its reason). An accepted item is not editable.
+    // pending one is `review`, a returned one is `rejected` (with its reason in the detail form). An accepted item is not editable.
     const questionIds = items.flatMap((i) => (i.questionId === null ? [] : [i.questionId]))
     const questions = questionIds.length === 0 ? [] : await db.question.findMany({ where: { id: { in: questionIds } }, select: { id: true, liveVersionNo: true, latestVersionNo: true } })
     const latest = new Map(
@@ -630,7 +631,7 @@ export class GuruSubmissionsService {
         rejectReason: item.rejectReason,
         question: q ? { liveVersionNo: q.liveVersionNo, latestStatus: lv?.status ?? null, latestRejectionReason: lv?.rejectionReason ?? null } : null,
       })
-      const status = state.status === 'approved' ? ('approved' as const) : ('review' as const)
+      const status = state.status === 'approved' ? ('approved' as const) : state.status === 'rejected' ? ('rejected' as const) : ('review' as const)
       return {
         row: {
           id: wireId,

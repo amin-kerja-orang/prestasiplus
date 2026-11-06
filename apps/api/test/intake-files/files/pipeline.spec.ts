@@ -43,7 +43,7 @@ describe('digital and scanned PDFs (AC1)', () => {
 
     const detail = await getBatch(teacher, batch.id)
     expect(detail.status).toBe('ready_for_review')
-    expect(detail.statusLabel).toBe('Sedia untuk semakan')
+    expect(detail.statusLabel).toBe('Selesai')
     expect(detail.files.map((f) => f.status)).toEqual(['done', 'done'])
     expect(detail.files.map((f) => f.progress)).toEqual([
       { total: 2, done: 2, failed: 0 },

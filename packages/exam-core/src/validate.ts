@@ -26,6 +26,8 @@ export const BLUEPRINT_PROBLEM_CODES = [
   'KBAT_RANGE',
   'KBAT_TOTAL',
   'MODES',
+  'COMPULSORY_CHOOSE',
+  'MARKS_PER_QUESTION',
 ] as const
 export type BlueprintProblemCode = (typeof BLUEPRINT_PROBLEM_CODES)[number]
 
@@ -78,6 +80,15 @@ function sectionProblems(
     if (n < 1 || n > M) push({ code: 'CHOOSE_N_RANGE', expected: M, actual: n })
     else if (s.markBudget % n !== 0)
       push({ code: 'CHOOSE_N_RANGE', expected: Math.floor(s.markBudget / n) * n, actual: s.markBudget })
+    // FR-QA-41: a choice inside a compulsory question is the `essay_choice` leaf, not a section rule.
+    if (s.compulsory) push({ code: 'COMPULSORY_CHOOSE' })
+  }
+
+  // DM-57: one mark per OFFERED question, so a choose-N list adds up to the marks offered, not the budget.
+  if (s.marksPerQuestion) {
+    const sum = s.marksPerQuestion.reduce((total, mark) => total + mark, 0)
+    if (s.marksPerQuestion.length !== M) push({ code: 'MARKS_PER_QUESTION', expected: M, actual: s.marksPerQuestion.length })
+    else if (sum !== offered) push({ code: 'MARKS_PER_QUESTION', expected: offered, actual: sum })
   }
 
   const valid = opts.validModes ?? ANSWER_MODES

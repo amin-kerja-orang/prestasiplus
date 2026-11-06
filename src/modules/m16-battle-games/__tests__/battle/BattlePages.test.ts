@@ -16,6 +16,7 @@ const api = vi.hoisted(() => ({
   fetchStudentStandings: vi.fn(),
   startBattle: vi.fn(),
   pollMatch: vi.fn(),
+  cancelQueue: vi.fn(),
   searchOpponent: vi.fn(),
   sendInvite: vi.fn(),
 }))
@@ -110,6 +111,36 @@ describe('S1 lobby', () => {
     expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
   })
 
+  it('PKSK with no grant shows the no-access state and no picker (R1-MUR-19)', async () => {
+    api.fetchBattleLobby.mockResolvedValue({ ...lobby(), pkskAccess: { T1: false, T4: false } })
+    await mountPage(BattleLobbyPage)
+    await byId('battle-type-pksk').trigger('click')
+    const state = byId('battle-pksk-no-access')
+    expect(state.text()).toContain('Anda belum mempunyai akses PKSK PRO')
+    expect(state.text()).toContain(
+      'Akses PKSK diberikan oleh pentadbir sekolah anda. Hubungi guru atau pentadbir sekolah untuk mengaktifkan pakej.',
+    )
+    expect(wrapper!.findAll('[data-testid="battle-domain"]')).toHaveLength(0)
+    expect(byId('battle-level-t1').exists()).toBe(false)
+    for (const id of ['battle-quick-match', 'battle-challenge', 'battle-school-battle']) {
+      expect(byId(id).attributes('disabled')).toBeDefined()
+    }
+  })
+
+  it('PKSK with a grant for one level blocks only the other level', async () => {
+    api.fetchBattleLobby.mockResolvedValue({ ...lobby(), pkskAccess: { T1: true, T4: false } })
+    await mountPage(BattleLobbyPage)
+    await byId('battle-type-pksk').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(false)
+    await wrapper!.findAll('[data-testid="battle-domain"]')[0]!.trigger('click')
+    await byId('battle-level-t4').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(true)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeDefined()
+    await byId('battle-level-t1').trigger('click')
+    expect(byId('battle-pksk-no-access').exists()).toBe(false)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
+  })
+
   it('SPM below Tingkatan 4 only toggles the tooltip and keeps the type', async () => {
     await mountPage(BattleLobbyPage)
     await byId('battle-type-spm').trigger('click')
@@ -153,6 +184,23 @@ describe('S1 lobby', () => {
     )
     expect(byId('battle-error').text()).toBe('Ralat dari server. Sila cuba lagi.')
     await byId('battle-error-close').trigger('click')
+    expect(byId('battle-error').exists()).toBe(false)
+  })
+
+  it('"Batal" while searching cancels the queue entry and is idle at once, even if cancel rejects', async () => {
+    api.startBattle.mockResolvedValue({ status: 200, headers: {}, body: { queue_id: 41 } })
+    api.cancelQueue.mockRejectedValue(new Error('net'))
+    await mountPage(BattleLobbyPage)
+    await wrapper!.findAll('[data-testid="battle-subject"]')[2]!.trigger('click')
+    await byId('battle-quick-match').trigger('click')
+    await flushPromises()
+    expect(byId('battle-searching').exists()).toBe(true)
+    await byId('battle-cancel').trigger('click')
+    expect(api.cancelQueue).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue.mock.calls[0]?.[0]).toBe(41)
+    await flushPromises()
+    expect(byId('battle-searching').exists()).toBe(false)
+    expect(byId('battle-quick-match').attributes('disabled')).toBeUndefined()
     expect(byId('battle-error').exists()).toBe(false)
   })
 

@@ -4949,7 +4949,7 @@
           },
           "claimed": {
             "type": "boolean",
-            "description": "True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "True when the reward was claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5207,7 +5207,7 @@
           "claimed": {
             "type": "integer",
             "minimum": 0,
-            "description": "Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "Rewards claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5266,6 +5266,13 @@
           "rewardXp": {
             "type": "integer",
             "minimum": 0
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" Absent when there is nothing to tell, and always absent on a replay."
           }
         },
         "required": [
@@ -9873,6 +9880,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9881,7 +9892,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -9943,6 +9955,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9951,7 +9967,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -10143,9 +10160,7 @@
           },
           "needsDiagram": {
             "type": "boolean",
-            "enum": [
-              false
-            ]
+            "description": "false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image)."
           }
         },
         "required": [
@@ -21047,6 +21062,21 @@
           }
         ]
       },
+      "BattleQueueCancelled": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "additionalProperties": false
+      },
       "BattleAcceptChallengerResponse": {
         "type": "object",
         "properties": {
@@ -21453,6 +21483,9 @@
               "$ref": "#/components/schemas/BattleLobbyPkskDomain"
             }
           },
+          "pkskAccess": {
+            "$ref": "#/components/schemas/PkskAccess"
+          },
           "spmSubjects": {
             "type": "array",
             "items": {
@@ -21465,9 +21498,25 @@
           "gradeLabel",
           "spmUnlocked",
           "subjects",
-          "pkskDomains"
+          "pkskDomains",
+          "pkskAccess"
         ],
         "additionalProperties": false
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
       },
       "BattleArenaOption": {
         "type": "object",
@@ -48729,8 +48778,10 @@
             "type": "string",
             "enum": [
               "approved",
-              "review"
-            ]
+              "review",
+              "rejected"
+            ],
+            "description": "`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned (\"Ditolak\"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value."
           },
           "source": {
             "type": "string",
@@ -49177,8 +49228,10 @@
             "type": "string",
             "enum": [
               "approved",
-              "review"
-            ]
+              "review",
+              "rejected"
+            ],
+            "description": "`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned (\"Ditolak\"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value."
           },
           "stimulus": {
             "type": "string",
@@ -67139,21 +67192,6 @@
           "updatedAt"
         ]
       },
-      "PkskAccess": {
-        "type": "object",
-        "properties": {
-          "T1": {
-            "type": "boolean"
-          },
-          "T4": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "T1",
-          "T4"
-        ]
-      },
       "PkskDashboardDomain": {
         "type": "object",
         "properties": {
@@ -68621,14 +68659,21 @@
           },
           "text": {
             "type": "string",
-            "maxLength": 103,
-            "description": "Cut at 100 characters plus \"...\" (BR-29)."
+            "maxLength": 141,
+            "description": "Cut at 140 characters plus \"…\" (FR-MUR-2-8)."
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
           "levelCode": {
             "type": "string"
+          },
+          "figureThumbUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8)."
           }
         },
         "required": [
@@ -68637,7 +68682,8 @@
           "difficulty",
           "text",
           "createdAt",
-          "levelCode"
+          "levelCode",
+          "figureThumbUrl"
         ],
         "additionalProperties": false
       },
@@ -75171,6 +75217,40 @@
           },
           "updatedAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "levelScope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5",
+              null
+            ],
+            "description": "S3-T02 `Dilihat murid` column; null = not restricted. Always sent by the server."
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "negeri": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "negeri",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "description": "S3-T02 origin of the placed questions per Negeri (`source_papers.exam_board`), largest first; empty when none is known."
           }
         },
         "required": [
@@ -75259,6 +75339,26 @@
             "pattern": "\\+08:00$",
             "description": "Time of the latest publish; absent while the paper has never been published.",
             "example": "2026-10-16T09:30:00+08:00"
+          },
+          "levelScope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5",
+              null
+            ],
+            "description": "S3-T02 `Dilihat murid` (`papers.level_scope`); null = not restricted (a paper older than PO decision item 6). Always sent by the server."
+          },
+          "sourceBatchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S3-T02, FR-ADM-Q07.7: present on a draft imported from an intake batch (DM-45, filled by S1-T10): `Terbitkan` is then offered only from the preview. Absent on every other paper.",
+            "example": "1042"
           }
         },
         "required": [
@@ -75329,6 +75429,14 @@
           "pinned": {
             "type": "boolean",
             "description": "R1-T48 / REQ-C-017 (V2 \"Disematkan\"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed."
+          },
+          "servable": {
+            "type": "boolean",
+            "description": "S3-T02, FR-ADM-Q14.7, API-BIJAK-10 (g): on a question placed on this paper in the editor, false when pupils cannot be served it (chip `Tidak disajikan`, blocks Terbit). A Terbit paper serves its pinned version, so it reads true there (AC-ADM-Q14.3). Absent on a candidate that is not placed."
+          },
+          "notServedReason": {
+            "type": "string",
+            "description": "S3-T02: the BM reason of `Dilihat murid di` (tooltip of `Tidak disajikan`); present when `servable` is false."
           }
         },
         "required": [
@@ -76176,6 +76284,15 @@
             "type": "string",
             "maxLength": 200,
             "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "S3-T02 `Dilihat murid`; omitted = the default from the contract."
           }
         },
         "required": [
@@ -76363,7 +76480,10 @@
               "RULE_NOT_IN_CONTRACT",
               "RULE_N_EXCEEDS_QUESTIONS",
               "SECTION_NOT_IN_CONTRACT",
-              "SECTION_EMPTY"
+              "SECTION_EMPTY",
+              "CHOICE_UNITS_UNEQUAL",
+              "COMPULSORY_CHOOSE",
+              "MARKS_NOT_IN_CONTRACT"
             ],
             "description": "Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question). S3-T01: under a Disahkan Kontrak nothing is overridable; INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT come with overridable false there."
           },
@@ -77933,6 +78053,22 @@
             "maxLength": 40,
             "description": "DSKP unit node id."
           },
+          "tahun": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100,
+            "description": "S3-T02 `Tahun` (14-01): the year of the source paper."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive."
+          },
           "page": {
             "type": "integer",
             "minimum": 1
@@ -78013,6 +78149,32 @@
           "kertas": {
             "type": "integer",
             "minimum": 1
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
           }
         },
         "required": [
@@ -79214,6 +79376,50 @@
             "items": {
               "$ref": "#/components/schemas/BijakPoolPreviewSection"
             }
+          },
+          "groupTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S3-T02, FR-ADM-Q13.3: stimulus groups among the eligible questions; the pool counts questions and groups. Always sent by the server."
+          },
+          "contractTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S3-T02: questions of the contract, the most a set may ask for (FR-ADM-Q13.2). Always sent by the Jana set preview."
+          },
+          "filters": {
+            "type": "object",
+            "properties": {
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "description": "OPT-TAHUN: years present in the data, descending."
+              },
+              "negeri": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "OPT-NEGERI-KERTAS: values present in the data, in the order of the list."
+              }
+            },
+            "required": [
+              "years",
+              "negeri"
+            ],
+            "additionalProperties": false,
+            "description": "S3-T02: the values the Tahun and Negeri filters offer for this subject and kertas. Always sent by the Jana set preview."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "S3-T02: the default of `Dilihat murid` from this contract. Always sent by the Jana set preview."
           }
         },
         "required": [
@@ -79315,7 +79521,49 @@
           "kertas": {
             "type": "integer",
             "minimum": 1,
+            "maximum": 4,
+            "description": "OPT-KERTAS.",
             "example": 2
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "`Tajuk set`. Omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\"."
+          },
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100
+            },
+            "maxItems": 30,
+            "description": "`Tahun`: the source paper year, any of them. Omitted or empty = all."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 30,
+            "description": "`Negeri`: the source paper exam board, any of them, case-insensitive. Omitted or empty = all."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "`Bilangan soalan`, from 1 to 100 and at most the contract total, default the contract total (omitted when the contract total is above 100). A smaller count scales the contract sections by largest remainder (ties to the earlier section) and never splits a stimulus group (FR-ADM-Q13.2, PO decision item 5). Above the total: 422 `fields.count`."
+          },
+          "levelScope": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5",
+              "t4_t5"
+            ],
+            "description": "`Dilihat murid`; omitted = the default from the contract."
           }
         },
         "required": [
@@ -79327,15 +79575,15 @@
       "BijakDraftGenerateResult": {
         "type": "object",
         "properties": {
-          "paperId": {
+          "id": {
             "$ref": "#/components/schemas/Id"
           }
         },
         "required": [
-          "paperId"
+          "id"
         ],
         "additionalProperties": false,
-        "description": "A draft pilihan paper; never published automatically."
+        "description": "A draft pilihan paper; never published automatically (API-BIJAK-11: `{ data: { id } }`)."
       },
       "BijakBlueprintInvalidError": {
         "type": "object",
@@ -81345,7 +81593,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -81778,7 +82026,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -82375,9 +82623,34 @@
       },
       "IntakeExtractRequest": {
         "type": "object",
-        "properties": {},
+        "properties": {
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "pageNo": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                }
+              },
+              "required": [
+                "fileId",
+                "pageNo"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 500,
+            "description": "Failed pages to run again: `{ fileId, pageNo }`. Omit for the first extraction."
+          }
+        },
         "additionalProperties": false,
-        "description": "[PROPOSED] Empty object. Input comes from the stored batch; the request cannot carry content or a provider choice."
+        "description": "Optional `pages[]` to retry failed pages. Input otherwise comes from the stored batch; the request cannot carry content or a provider choice."
       },
       "IntakeItemPatch": {
         "type": "object",
@@ -82838,7 +83111,7 @@
                   "status"
                 ],
                 "additionalProperties": false,
-                "description": "Set once the item is accepted."
+                "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
               },
               "duplicates": {
                 "type": "array",
@@ -83381,10 +83654,11 @@
           "submitted",
           "processing",
           "ready_for_review",
+          "selesai_dengan_ralat",
           "failed",
           "cancelled"
         ],
-        "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED]."
+        "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Selesai, selesai_dengan_ralat = Selesai dengan ralat (S1-T04), failed = Gagal, cancelled = Dibatalkan [PROPOSED]."
       },
       "IntakeFileStatus": {
         "type": "string",
@@ -83682,6 +83956,13 @@
             "type": "string",
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
           },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 \"Pengecaman teks mengambil masa terlalu lama.\") or why it waits; null when there is none. S1-T04."
+          },
           "paperType": {
             "anyOf": [
               {
@@ -83852,6 +84133,13 @@
           "statusLabel": {
             "type": "string",
             "description": "BM label of `status` (INTAKE_BATCH_STATUS_LABELS)."
+          },
+          "statusReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 \"Pengecaman teks mengambil masa terlalu lama.\") or why it waits; null when there is none. S1-T04."
           },
           "paperType": {
             "anyOf": [
@@ -84033,6 +84321,29 @@
         ],
         "additionalProperties": false,
         "description": "[PROPOSED] The files stored by one upload request, in upload order."
+      },
+      "IntakeRetryResult": {
+        "type": "object",
+        "properties": {
+          "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "description": "The retry just started (1..3). For a batch retry: the highest among the files re-run."
+          },
+          "retriesLeft": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Retries still allowed after this one (0..2). For a batch retry: the lowest among the files re-run."
+          }
+        },
+        "required": [
+          "attempt",
+          "retriesLeft"
+        ],
+        "additionalProperties": false,
+        "description": "S1-T04 (API-Q-26): the retry counter after a retry call."
       },
       "IntakeBbox": {
         "type": "object",
@@ -84243,10 +84554,11 @@
           "submitted",
           "processing",
           "ready_for_review",
+          "selesai_dengan_ralat",
           "failed",
           "cancelled"
         ],
-        "description": "[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, failed, cancelled."
+        "description": "[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, selesai_dengan_ralat, failed, cancelled."
       },
       "IntakeDashboardTagField": {
         "type": "string",
@@ -84517,7 +84829,7 @@
               "succeeded": {
                 "type": "integer",
                 "minimum": 0,
-                "description": "Submissions of the month that reached ready_for_review."
+                "description": "Submissions of the month that reached ready_for_review or selesai_dengan_ralat."
               },
               "failed": {
                 "type": "integer",
@@ -85527,6 +85839,30 @@
           "meta"
         ]
       },
+      "BijakBuilderSourceFilters": {
+        "type": "object",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "OPT-TAHUN: years present in the data, descending."
+          },
+          "negeri": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "OPT-NEGERI-KERTAS: values present in the data, in the order of the list."
+          }
+        },
+        "required": [
+          "years",
+          "negeri"
+        ],
+        "additionalProperties": false
+      },
       "IntakeExtractionRunEnvelope": {
         "type": "object",
         "properties": {
@@ -85638,6 +85974,17 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/IntakeUploadResult"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeRetryResultEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeRetryResult"
           }
         },
         "required": [
@@ -90134,7 +90481,7 @@
           "gamification"
         ],
         "summary": "Daily challenges with progress",
-        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.",
+        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion is written by the session-completed hook (idempotent per user, challenge and Malaysia day) and pays nothing; `claimed` and `meta.claimed` come from the claims of the current Malaysia day (API-GAME-11).",
         "responses": {
           "200": {
             "description": "Challenges with meta.",
@@ -90165,7 +90512,7 @@
           "gamification"
         ],
         "summary": "Claim the reward of a completed daily challenge (API-GAME-11)",
-        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.",
+        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). Order: Mod Pelajar 403, unknown or inactive challenge 404, a claim of the day exists (same clientUuid: 200 with the stored result and nothing written; otherwise 409 CHALLENGE_CLAIMED), the clientUuid sits on another claim of the user 409 CONFLICT (details.reason IDEMPOTENCY_MISMATCH), progress below the target 409 CHALLENGE_NOT_DONE. The result may carry `notices`. The body is optional. Success is 200, not 201.",
         "parameters": [
           {
             "schema": {
@@ -90242,7 +90589,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge).",
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge, or the challenge is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -90252,7 +90599,7 @@
             }
           },
           "409": {
-            "description": "CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
+            "description": "CONFLICT details.reason IDEMPOTENCY_MISMATCH (the clientUuid is already used by another claim of the user); CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
             "content": {
               "application/json": {
                 "schema": {
@@ -93418,7 +93765,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. A `stimulus_image` value starting with `https://` is fetched instead (before the import transaction; https only, port 443, resolved address must be public and is pinned, no redirects, 5 s connect and 10 s total timeout, 2 MB streamed cap, type by magic bytes, at most 100 distinct URLs per file else 422 on `fields.csvFile`); any other scheme is a row error. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -93944,8 +94291,8 @@
           "question-workflow",
           "diagram-audit"
         ],
-        "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "summary": "Attach a diagram image (admin) or submit one for review (teacher)",
+        "description": "Admin and teacher (school admin is refused). multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash \"Gambar rajah berjaya dimuat naik.\". Teacher (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: \"Gambar dihantar untuk semakan.\" } and the list row then has pendingReview true. One open image per stimulus group.",
         "parameters": [
           {
             "schema": {
@@ -93989,7 +94336,7 @@
         },
         "responses": {
           "200": {
-            "description": "Image attached; status is the flash text.",
+            "description": "Image attached (admin) or submitted for review (teacher); status is the flash text.",
             "content": {
               "application/json": {
                 "schema": {
@@ -94009,7 +94356,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94020,6 +94367,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Gambar untuk soalan ini sedang menunggu semakan.\" (teacher: the question's stimulus group already has an open image) or \"Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.\" (the question has no stimulus group).",
             "content": {
               "application/json": {
                 "schema": {
@@ -105847,6 +106204,110 @@
         }
       }
     },
+    "/battle/queue/{queueId}/cancel": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Cancel a queue entry (API-GAME-14)",
+        "description": "The \"Batal\" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil's entry, an unknown id and an entry that already has its battle answer 404.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleQueueCancelled"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Giliran tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/battle/accept-challenger/{queueId}": {
       "post": {
         "tags": [
@@ -106436,11 +106897,18 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "`{error:\"Anda belum mempunyai akses PKSK PRO\"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleRawError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -106690,7 +107158,7 @@
         "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
         "responses": {
           "200": {
-            "description": "Lobby data.",
+            "description": "Lobby data. `pkskAccess` is the PKSK grant of the caller per level.",
             "content": {
               "application/json": {
                 "schema": {
@@ -118623,10 +119091,10 @@
                 "approved",
                 "review"
               ],
-              "description": "Omitted: approved questions, then the caller's own `review` submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions only. Never another teacher's."
+              "description": "Omitted: approved questions, then the caller's own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher's."
             },
             "required": false,
-            "description": "Omitted: approved questions, then the caller's own `review` submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions only. Never another teacher's.",
+            "description": "Omitted: approved questions, then the caller's own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher's.",
             "name": "status",
             "in": "query"
           },
@@ -131447,7 +131915,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: candidate pool of a section (units, groups whole)",
-        "description": "Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Each unit says eligible (with BM reasons) and placed. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Only units eligible for the section are listed (FR-ADM-Q14.4), each says placed. `tahun` and `negeri` filter on the source paper; a group matches as one unit. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -131507,6 +131975,34 @@
           {
             "schema": {
               "type": "integer",
+              "minimum": 1900,
+              "maximum": 2100,
+              "description": "S3-T02 `Tahun` (14-01): the year of the source paper."
+            },
+            "required": false,
+            "description": "S3-T02 `Tahun` (14-01): the year of the source paper.",
+            "name": "tahun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive."
+            },
+            "required": false,
+            "description": "S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive.",
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
               "minimum": 1
             },
             "required": false,
@@ -131526,7 +132022,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Units (paged).",
+            "description": "Units (paged), with the values the Tahun and Negeri filters offer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -131540,11 +132036,15 @@
                     },
                     "meta": {
                       "$ref": "#/components/schemas/ListMeta"
+                    },
+                    "filters": {
+                      "$ref": "#/components/schemas/BijakBuilderSourceFilters"
                     }
                   },
                   "required": [
                     "data",
-                    "meta"
+                    "meta",
+                    "filters"
                   ]
                 }
               }
@@ -131581,7 +132081,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (q, level, unit, page, pageSize) or invalid section.",
+            "description": "VALIDATION_ERROR with fields (q, level, unit, tahun, negeri, page, pageSize) or invalid section.",
             "content": {
               "application/json": {
                 "schema": {
@@ -131599,7 +132099,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: Pratonton kolam for a subject and kertas (shortage report)",
-        "description": "Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage. Uses the head blueprint (Spec or Disahkan). 404 when there is none. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage, over the questions that match `years` and `negeri`, for a set of `count` questions. Uses the head blueprint (Spec or Disahkan). 404 when there is none. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -131618,6 +132118,50 @@
             },
             "required": true,
             "name": "kertas",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2100
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all."
+            },
+            "required": false,
+            "description": "S3-T02 `Tahun` (13-08, repeated parameter); empty = all.",
+            "name": "years",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "maxItems": 30,
+              "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all."
+            },
+            "required": false,
+            "description": "S3-T02 `Negeri` (13-09, repeated parameter); empty = all.",
+            "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total."
+            },
+            "required": false,
+            "description": "S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.",
+            "name": "count",
             "in": "query"
           }
         ],
@@ -131671,7 +132215,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (subject, kertas).",
+            "description": "VALIDATION_ERROR with fields (subject, kertas, years, negeri, count).",
             "content": {
               "application/json": {
                 "schema": {
@@ -134500,7 +135044,7 @@
             }
           },
           "422": {
-            "description": "NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas).",
+            "description": "NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas, title, years, negeri, count, levelScope).",
             "content": {
               "application/json": {
                 "schema": {
@@ -138919,7 +139463,7 @@
           "intake"
         ],
         "summary": "Enqueue extraction of a batch (idempotent)",
-        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Idempotent per batch: a new request enqueues a run (202); a request while a run is queued or running returns that run (202); a request after a succeeded run returns it unchanged (200, no new items, no cost). After a failed run the same request retries and creates no duplicate items. When BE-36 reports the monthly budget exhausted the run stays `queued` with `reason.code` AI_BUDGET_EXHAUSTED and resumes when the cap is raised (202, not an error). A file whose hash was already imported by ANOTHER finished batch is refused before any provider call: 409 CONFLICT \"Kertas sama sudah diimport\"; `details.batchId` names the earlier batch ONLY when that batch is in the scope of the caller (a Guru is never told about another teacher batch), otherwise `details` is omitted and the message is the same. A batch that cannot be extracted yet (no stored file, a file still being processed, a manual batch) is 409 CONFLICT \"Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.\" [PROPOSED]. The request body is empty; the pages come from the stored batch.",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Idempotent per batch: a new request enqueues a run (202); a request while a run is queued or running returns that run (202); a request after a succeeded run returns it unchanged (200, no new items, no cost). After a failed run the same request retries and creates no duplicate items. When BE-36 reports the monthly budget exhausted the run stays `queued` with `reason.code` AI_BUDGET_EXHAUSTED and resumes when the cap is raised (202, not an error). A file whose hash was already imported by ANOTHER finished batch is refused before any provider call: 409 CONFLICT \"Kertas sama sudah diimport\"; `details.batchId` names the earlier batch ONLY when that batch is in the scope of the caller (a Guru is never told about another teacher batch), otherwise `details` is omitted and the message is the same. A batch that cannot be extracted yet (no stored file, a file still being processed, a manual batch) is 409 CONFLICT \"Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.\" [PROPOSED]. The request body is empty for the first extraction. With `pages: [{ fileId, pageNo }]` (S1-T04, \"Cuba lagi\" on failed pages) only pages that failed OCR (a retry can fix) are re-run, the succeeded-run shortcut is skipped, the batch may be `selesai_dengan_ralat` or `failed`, a page that did not fail is 422 `fields.pages`, `retry_count` of each file named goes up by 1 and the 4th retry is 409 ERR-INT-11. The new items are the ones of those pages only.",
         "parameters": [
           {
             "schema": {
@@ -140516,7 +141060,7 @@
               "$ref": "#/components/schemas/IntakeBatchStatus"
             },
             "required": false,
-            "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
+            "description": "Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Selesai, selesai_dengan_ralat = Selesai dengan ralat (S1-T04), failed = Gagal, cancelled = Dibatalkan [PROPOSED].",
             "name": "status",
             "in": "query"
           },
@@ -140865,6 +141409,210 @@
           },
           "409": {
             "description": "CONFLICT: the batch has already finished (ready_for_review or failed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/files/{id}/retry": {
+      "post": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Retry the failed pages of one file",
+        "description": "S1-T04 (API-Q-26, ERR-INT-05/11). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Re-runs the pages of the file that failed with OCR_TIMEOUT, OCR_FAILED, RENDER_FAILED and adds 1 to `intake_files.retry_count` (3 retries per file; the same counter as the batch retry and `extract` with `pages[]`). The batch goes back to `processing`. The request body is empty. 404 for an unknown id or another teacher's batch.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The retry was started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeRetryResultEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown file, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT, told apart by `message`: ERR-INT-11 \"Fail ini gagal diproses berulang kali. Sila hubungi sokongan.\" (a file to re-run already used its 3 retries; nothing is re-run), or the generic conflict (the file or batch is still being processed, is cancelled, or has no failed page a retry can fix: OCR_TIMEOUT, OCR_FAILED, RENDER_FAILED).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/retry": {
+      "post": {
+        "tags": [
+          "intake-files"
+        ],
+        "summary": "Retry the failed pages of every file of a submission",
+        "description": "S1-T04 (API-Q-26, ERR-INT-05/11). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. Re-runs the failed pages of every file that has some and adds 1 to the `retry_count` of each of those files. The response carries the highest `attempt` and the lowest `retriesLeft` among them. If any file to re-run already used its 3 retries the whole call is refused (409 ERR-INT-11) and nothing is re-run. The request body is empty.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The retry was started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeRetryResultEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown batch, or one outside the caller scope (the two are not told apart; never 403 on an id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT, told apart by `message`: ERR-INT-11 \"Fail ini gagal diproses berulang kali. Sila hubungi sokongan.\" (a file to re-run already used its 3 retries; nothing is re-run), or the generic conflict (the file or batch is still being processed, is cancelled, or has no failed page a retry can fix: OCR_TIMEOUT, OCR_FAILED, RENDER_FAILED).",
             "content": {
               "application/json": {
                 "schema": {
