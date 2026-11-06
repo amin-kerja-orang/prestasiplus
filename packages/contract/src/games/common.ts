@@ -159,14 +159,16 @@ export const GAMES_MESSAGES = {
   leagueRequired: 'Sila lengkapkan semua medan wajib.',
   leagueEndBeforeStart: 'Tarikh tamat mesti selepas tarikh mula.',
   leagueMaxSchools: 'Had sekolah mesti antara 2 dan 500.',
+  leagueFormat: 'Format tidak sah.',
   leagueSubject: 'Mata pelajaran tidak sah.',
   leagueClassLevels: 'Tingkatan tidak sah.',
-  leagueInviteInvalid: 'Kod jemputan tidak sah.',
   leagueEnded: 'Liga ini sudah tamat.',
-  leagueNeedsSchool: 'Anda perlu mempunyai sekolah untuk menyertai liga ini.',
-  leagueAlreadyIn: 'Sekolah anda sudah menyertai liga ini.',
+  leagueAlreadyIn: 'Sekolah ini sudah menyertai liga ini.',
   leagueFull: 'Liga ini sudah penuh.',
   leagueNotFound: 'Liga tidak dijumpai.',
+  /** ERR-REQ-11 / ERR-REQ-14 for the enrol body. */
+  leagueSchoolsPick: 'Sila pilih sekolah.',
+  leagueSchoolFormat: 'Format sekolah tidak sah.',
   quizTiles: 'Nilai mesti antara 0 dan 38.',
 } as const
 
