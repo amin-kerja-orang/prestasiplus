@@ -34,8 +34,8 @@ describe('admin question list rows: kertas and numberLabel', () => {
     expect(list.find((r) => r.id === bare)).toMatchObject({ kertas: null, numberLabel: null })
   })
 
-  it('the kertas follows the trailing digit of the paper code: 1, 2, 3; another digit or none is null', async () => {
-    for (const [code, kertas] of [['MATH/1', '1'], ['1449/2', '2'], ['SEJ/3', '3'], ['1449/4', null], ['SPM2023', null]] as const) {
+  it('the kertas follows the trailing digit of the paper code: 1 to 4; another digit or none is null', async () => {
+    for (const [code, kertas] of [['MATH/1', '1'], ['1449/2', '2'], ['SEJ/3', '3'], ['1449/4', '4'], ['1449/5', null], ['SPM2023', null]] as const) {
       const id = await make({ questionText: `Soalan untuk kod kertas ${code} dalam ujian.` })
       await t.db.query(`update question_versions set paper_code = $2 where question_id = $1`, [id, code])
       expect((await rows()).find((r) => r.id === id)?.kertas, code).toBe(kertas)

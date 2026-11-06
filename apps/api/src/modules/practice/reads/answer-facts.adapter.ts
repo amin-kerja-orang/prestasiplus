@@ -14,6 +14,8 @@ import type {
   QuestionContentPort,
   SessionCountRow,
   SessionDurationRow,
+  SessionFactRow,
+  SessionFactsQuery,
   SpInfo,
   WeeklyFactRow,
 } from '../../reports/performance/ports'
@@ -206,6 +208,36 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
        GROUP BY GROUPING SETS ((b.user_id), (b.user_id, b.subject_id))
        ORDER BY b.user_id, b.subject_id NULLS FIRST`
     return rows.map((r) => ({ userId: idToString(r.userId), subjectId: r.subjectId === null ? null : idToString(r.subjectId), sessions: num(r.sessions) }))
+  }
+
+  async sessionFacts(q: SessionFactsQuery): Promise<SessionFactRow[]> {
+    if (q.modes.length === 0 || q.userIds.length === 0 || q.limit <= 0) return []
+    // One row per (pupil, session key): the same key rule as `sessionCounts`; the subject is the one with most answers.
+    const limit = Math.min(Math.floor(q.limit), 1000)
+    const rows = await this.db.$queryRaw<
+      { userId: bigint; sessionKey: string; subjectId: bigint; mode: string; answered: bigint; correct: bigint; finishedAt: Date }[]
+    >`
+      WITH base AS (
+        SELECT a.user_id, coalesce(a.subject_id, 0) AS subject_id, a.is_correct, a.answered_at, ${MODE} AS mode,
+               coalesce('s:' || a.session_id::text, 'n:' || ${MODE} || ':' || to_char(a.answered_at AT TIME ZONE ${MYT}, 'YYYY-MM-DD')) AS skey
+          ${this.from}
+         WHERE ${this.where({ userIds: q.userIds, modes: q.modes, to: q.to })})
+      SELECT b.user_id AS "userId", b.skey AS "sessionKey",
+             (mode() WITHIN GROUP (ORDER BY b.subject_id))::bigint AS "subjectId", max(b.mode) AS mode,
+             count(*)::bigint AS answered, (count(*) FILTER (WHERE b.is_correct))::bigint AS correct, max(b.answered_at) AS "finishedAt"
+        FROM base b
+       GROUP BY b.user_id, b.skey
+       ORDER BY max(b.answered_at) DESC, b.skey DESC
+       LIMIT ${limit}`
+    return rows.map((r) => ({
+      userId: idToString(r.userId),
+      sessionKey: r.sessionKey,
+      subjectId: idToString(r.subjectId),
+      mode: r.mode,
+      answered: num(r.answered),
+      correct: num(r.correct),
+      finishedAt: r.finishedAt,
+    }))
   }
 
   async spInfo(q: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]> {

@@ -250,6 +250,24 @@ export function describeAnswerFactsPort(
       expect(await port.sessionCounts({ userIds: [] })).toEqual([])
     })
 
+    it('sessionFacts: one row per session, newest first, subject and totals of the session, test rows and unlisted modes left out', async () => {
+      const port = await make(SEED)
+      const rows = await port.sessionFacts({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'], limit: 10 })
+      // sA (3 real answers, 2 right; the Mod Pelajar row is not read), sB (Sunday 23:30 MYT), sC (Monday 00:30 MYT); sD is a game mode.
+      expect(rows.map((r) => [r.sessionKey, r.subjectId, r.mode, r.answered, r.correct, r.finishedAt.toISOString()])).toEqual([
+        ['s:sC', '2', 'simulasi', 1, 1, at('2026-09-28T00:30:00+08:00').toISOString()],
+        ['s:sB', '1', 'simulasi', 1, 0, at('2026-09-27T23:30:00+08:00').toISOString()],
+        ['s:sA', '1', 'latih_tubi', 3, 2, at('2026-09-23T09:00:00+08:00').toISOString()],
+      ])
+      expect(rows.every((r) => r.userId === '1')).toBe(true)
+      expect((await port.sessionFacts({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'], limit: 2 })).map((r) => r.sessionKey)).toEqual(['s:sC', 's:sB'])
+      expect((await port.sessionFacts({ userIds: ['1'], modes: ['latih_tubi', 'simulasi'], to: at('2026-09-28T00:00:00+08:00'), limit: 10 })).map((r) => r.sessionKey)).toEqual(['s:sB', 's:sA'])
+      // Another pupil's rows are never returned for this pupil.
+      expect((await port.sessionFacts({ userIds: ['2'], modes: ['latih_tubi'], limit: 10 })).map((r) => r.sessionKey)).toEqual(['s:sE'])
+      expect(await port.sessionFacts({ userIds: ['1'], modes: [], limit: 10 })).toEqual([])
+      expect(await port.sessionFacts({ userIds: [], modes: ['latih_tubi'], limit: 10 })).toEqual([])
+    })
+
     it('spInfo: topic name with the chapter code, chapter name without a code, subject and level', async () => {
       const port = await make(SEED)
       const info = await port.spInfo({ topicIds: ['100'], chapterIds: ['50', '51'] })

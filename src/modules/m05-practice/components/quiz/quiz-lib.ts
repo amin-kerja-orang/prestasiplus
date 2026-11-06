@@ -100,6 +100,21 @@ export function safeHref(url: string | null | undefined): string | null {
   return /^https?:\/\//i.test(url) || /^\/(?![/\\])/.test(url) ? url : null
 }
 
+/**
+ * The "Rujukan" link of a personal question (FR-GUR-44a-9): an absolute http(s) address only. Unlike `safeHref`
+ * an internal path is refused, and so are whitespace, control characters and credentials (`user:pass@`).
+ * Keep in sync with `isHttpUrl` in packages/contract/src/classes/teacher-tools/schema.ts.
+ */
+export function isHttpUrl(url: string | null | undefined): url is string {
+  if (!url || !/^https?:\/\/\S+$/i.test(url) || /[\x00-\x1f\x7f]/.test(url)) return false
+  try {
+    const u = new URL(url)
+    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname !== '' && u.username === '' && u.password === ''
+  } catch {
+    return false
+  }
+}
+
 export type StartErrorPlan =
   | { kind: 'pricing' }
   | { kind: 'not-found' }

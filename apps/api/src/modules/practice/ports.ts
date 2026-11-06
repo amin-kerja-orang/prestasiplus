@@ -47,6 +47,8 @@ export interface PracticeQuestion {
   hasDskp: boolean
   /** Teacher who wrote the question ("Soalan oleh:"), else null. */
   contributor: { name: string; profileUrl: string | null } | null
+  /** The teacher's "Rujukan" link (FR-GUR-44a-9): set only for a private (personal) question served in a mission; a bank question has none. */
+  referenceUrl?: string | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
   options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
   /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */
@@ -99,9 +101,10 @@ export interface PracticeQuestionSource {
   chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]>
   /**
    * The LIVE version of each id that is eligible for practice NOW (`eligibleForPractice`: published, active).
-   * An ineligible or unknown id is omitted, so it is never served (AC 4).
+   * An ineligible or unknown id is omitted, so it is never served (AC 4). A teacher's personal question (DM-42) is omitted too, unless the
+   * caller is a mission session (`allowPrivate`): Ulang Kaji, Buka Soalan Sama and every other mode never serve one.
    */
-  live(ids: readonly string[], activity?: PracticeDrillActivity): Promise<ReadonlyMap<string, PracticeQuestion>>
+  live(ids: readonly string[], activity?: PracticeDrillActivity, opts?: { allowPrivate?: boolean }): Promise<ReadonlyMap<string, PracticeQuestion>>
   /**
    * The ids among `ids` that the SPM activities (Databank, Latih Tubi SPM, Mock K1) may serve NOW: the same rule as a draw with
    * `spmPool: true` (`SPM_SERVABLE_SQL`: offered level, active subject and subject-level, not PKSK, approved and active). A single

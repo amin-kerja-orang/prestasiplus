@@ -3,6 +3,7 @@ import { SERVABILITY_ACTIVITIES, SERVABILITY_REASON_MS } from '@pp/contract'
 
 import { SERVABLE_STATUSES, evaluate, evaluateAll } from '../../src/modules/questions/serving'
 import type { ServabilityFacts } from '../../src/modules/questions/serving'
+import { mediaUnresolved } from '../../src/modules/questions/serving/rules'
 import type { QuestionRecord } from '../../src/modules/questions'
 
 /** Unit (no DB): the pure rules over hand-made facts. The parity against the real readers is `servability-parity.spec.ts`. */
@@ -164,5 +165,52 @@ describe('servability rules (pure)', () => {
     const draft = record({ liveVersionNo: null }, { status: 'draft' })
     const r = evaluate(facts({ live: null, latest: draft }), 'bab').reasons[0]
     expect(r?.message).toBe(SERVABILITY_REASON_MS.not_approved)
+  })
+})
+
+/** S1-T06 (FR-X1-4f): JS twin of MEDIA_RESOLVED_SQL; the SQL half is `media-serving.spec.ts` (CI). */
+describe('media rule twin (S1-T06)', () => {
+  const stim = (over: Partial<import('../../src/modules/questions/serving').MediaStimulusFact> = {}) => ({ kind: 'image', hasFile: true, hasTableData: false, bodyMs: null, bodyEn: null, ...over })
+  const withMedia = (stimuli: ReturnType<typeof stim>[], importIssueCodes: string[] = []) => facts({ media: { stimuli, importIssueCodes } })
+
+  it('a passage body of only tabs/newlines is NOT blank (Postgres btrim strips spaces only); only spaces are blank', () => {
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '\n', bodyEn: '\t' })], importIssueCodes: [] })).toBe(false)
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '   ', bodyEn: null })], importIssueCodes: [] })).toBe(true)
+  })
+
+  it('a single question whose image stimulus has no file gets image_missing on every activity but the pinned paper', () => {
+    const f = withMedia([stim({ hasFile: false })])
+    for (const a of SERVABILITY_ACTIVITIES.filter((x) => x !== 'simulasi_paper')) {
+      const r = evaluate(f, a)
+      expect(r.served, a).toBe(false)
+      expect(r.reasons.map((x) => x.code), a).toContain('image_missing')
+      expect(r.reasons.find((x) => x.code === 'image_missing')?.message).toBe('Imej belum dimuat naik — muat naik di borang sunting.')
+    }
+  })
+
+  it('a group with one stimulus lacking its file gives the reason to every member (each member carries the group stimuli)', () => {
+    const groupStimuli = [stim(), stim({ kind: 'diagram', hasFile: false })]
+    for (let i = 0; i < 2; i++) expect(codes(withMedia(groupStimuli), 'latih_tubi_spm')).toContain('image_missing')
+  })
+
+  it('resolved media gives no reason: files present, a table with a grid or a pipe body, a passage with text', () => {
+    const ok = withMedia([
+      stim(),
+      stim({ kind: 'table', hasFile: false, hasTableData: true }),
+      stim({ kind: 'table', hasFile: false, bodyMs: 'A | B' }),
+      stim({ kind: 'table', hasFile: true }),
+      stim({ kind: 'passage', bodyEn: 'Text' }),
+    ])
+    expect(codes(ok, 'databank')).not.toContain('image_missing')
+  })
+
+  it('an empty table, an empty passage and a legacy_image_unresolved hold are unresolved', () => {
+    expect(codes(withMedia([stim({ kind: 'table', hasFile: false, bodyMs: 'no grid' })]), 'bab')).toContain('image_missing')
+    expect(codes(withMedia([stim({ kind: 'passage', bodyMs: '  ' })]), 'bab')).toContain('image_missing')
+    expect(codes(withMedia([], ['legacy_image_unresolved']), 'bab')).toContain('image_missing')
+  })
+
+  it('facts without media (hand-made) are not judged', () => {
+    expect(codes(facts(), 'databank')).not.toContain('image_missing')
   })
 })

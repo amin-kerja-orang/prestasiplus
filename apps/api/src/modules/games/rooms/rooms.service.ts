@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { Inject, Injectable } from '@nestjs/common'
 import {
   GamesRoomActionRequestSchema,
@@ -340,8 +342,10 @@ export class RoomsService {
         p: await this.botAccuracy(),
         nowMs: now.getTime(),
       })
-      await this.repo.updateRoom(room.code, { status: 'playing', startedAt: now }, now)
-      const started: RoomRow = { ...room, status: 'playing', startedAt: now }
+      // DM-67: every `waiting` to `playing` is a new play of the room, with its own attempt id.
+      const sessionId = randomUUID()
+      await this.repo.updateRoom(room.code, { status: 'playing', sessionId, startedAt: now }, now)
+      const started: RoomRow = { ...room, status: 'playing', sessionId, startedAt: now }
       const done = await this.applyOut(tx, started, players, out)
       return this.viewOf(caller, done.room, done.players)
     })
