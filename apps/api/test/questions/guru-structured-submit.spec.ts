@@ -360,7 +360,7 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     const make = async (stem: string, parts: QuestionPart[]): Promise<string> =>
       (await svc.create(mcqInput(tag, { questionType: 'essay', questionText: stem, status: 'approved', tag: tagBody(tag, 3), parts }), admin)).id
     const leaf = (label: string, marks: number): QuestionPart =>
-      ({ label, prompt: rich(`Soalan ${label}`), mode: 'short_text', marks, cognitiveLevel: 'mengaplikasi', key: { kind: 'accepted', values: [`jawapan ${label}`] } }) as QuestionPart
+      ({ label, prompt: rich(`Soalan ${label}`), mode: 'essay', marks, cognitiveLevel: 'mengaplikasi', key: { kind: 'points', marks, points: [{ id: 'p', code: 'K', label: `jawapan ${label}`, marks }] } }) as QuestionPart
     const ids = {
       one: await make('Satu bahagian dari guru.', [leaf('(a)', 4)]),
       two: await make('Dua bahagian dari guru.', [leaf('(a)', 2), leaf('(b)', 3)]),
