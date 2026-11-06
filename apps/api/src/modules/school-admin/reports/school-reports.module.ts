@@ -8,11 +8,11 @@ import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
 import { WalletModule } from '../../wallet'
 import { ActivityService } from './activity.service'
-import { ClassesService } from './classes.service'
+import { AdminClassesService, ClassesService } from './classes.service'
 import { HeatmapService } from './heatmap.service'
 import { MonthlyService } from './monthly.service'
 import { SchoolPopulation } from './population'
-import { SchoolReportsController } from './school-reports.controller'
+import { AdminClassesController, SchoolReportsController } from './school-reports.controller'
 import { UsageService } from './usage.service'
 import { XsQueries } from '../xs-queries'
 
@@ -23,8 +23,8 @@ import { XsQueries } from '../xs-queries'
  */
 @Module({
   imports: [ThrottleModule, ClassesModule, CurriculumModule, AnalyticsReportsModule, SchoolsModule, UsersModule, WalletModule],
-  controllers: [SchoolReportsController],
-  providers: [XsQueries, SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService],
+  controllers: [SchoolReportsController, AdminClassesController],
+  providers: [XsQueries, SchoolPopulation, UsageService, ActivityService, MonthlyService, HeatmapService, ClassesService, AdminClassesService],
   // S6-T03: the cross-screen numbers XS-1..8 (`../xs-queries.ts`) are provided here once and exported to SchoolAdminModule (dashboard).
   exports: [XsQueries],
 })
