@@ -14077,7 +14077,8 @@
               },
               "yearsAvailable": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Distinct exam years among servable papers or questions. Absent while there is no year source."
               },
               "trackingAQuestions": {
                 "type": "integer",
@@ -14088,7 +14089,6 @@
             "required": [
               "totalQuestions",
               "subjectCount",
-              "yearsAvailable",
               "trackingAQuestions"
             ],
             "additionalProperties": false
@@ -14114,13 +14114,19 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Visible structured sets across the Subjektif subjects."
+              },
+              "kertasSubjektif": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Published papers with surface subjektif (level_scope is not applied); the Kertas Subjektif chip."
               }
             },
             "required": [
               "databank",
               "latihTubi",
               "trackingA",
-              "subjektifSets"
+              "subjektifSets",
+              "kertasSubjektif"
             ],
             "additionalProperties": false
           },
@@ -95791,7 +95797,7 @@
           "spm"
         ],
         "summary": "SPM hub (M06-01): totals, module chips and the caller practice stats",
-        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is 0. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
+        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
         "responses": {
           "200": {
             "description": "Hub figures.",
