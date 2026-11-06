@@ -273,6 +273,38 @@ describe('exam (AC 8, 9)', () => {
     expect(world.mastery).toHaveLength(0)
   })
 
+  it('AC-MUR-19-5 atomicity: an answer-port failure partway rolls back the attempt, the rows and the served-set take; the retry succeeds', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1')
+    const a = seedQuestions(world, 'PKSK_INSANIAH', 'T1', 3)
+    await student.exam(STUDENT, 'T1')
+    const body = { answers: a.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const loads = structuredClone(world.examLoads)
+    expect(loads).toHaveLength(1)
+    world.failAnswerLog = true
+    await expect(student.submitExam(STUDENT, 'T1', body)).rejects.toThrow('forced failure')
+    expect(world.attempts).toHaveLength(0)
+    expect(world.answerRows).toHaveLength(0)
+    expect(world.examLoads).toEqual(loads) // the take rolled back with the failure: the same set is still open
+    world.failAnswerLog = false
+    const res = await student.submitExam(STUDENT, 'T1', body)
+    expect(world.attempts).toHaveLength(1)
+    expect(world.answerRows).toHaveLength(3)
+    expect(world.answerRows.every((r) => r.attemptId === res.id)).toBe(true)
+    expect(world.examLoads).toHaveLength(0)
+  })
+
+  it('Mod Pelajar: exam answer rows carry isTest true', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1')
+    const a = seedQuestions(world, 'PKSK_INSANIAH', 'T1', 2)
+    const tester = { ...STUDENT, isTest: true }
+    await student.exam(tester, 'T1')
+    await student.submitExam(tester, 'T1', { answers: a.map((q) => ({ questionId: q.id, optionIndex: 0 })) })
+    expect(world.answerRows).toHaveLength(2)
+    expect(world.answerRows.every((r) => r.isTest === true)).toBe(true)
+  })
+
   it('AC-MUR-19-5: one pksk answer row per answer through the port, keyed by the decimal attempt id', async () => {
     const { student, world } = buildWorld()
     grant(world, '10', 'T1')

@@ -92,6 +92,8 @@ export interface World {
   subscribed: Set<string>
   /** Throw in the practice port after recording (rollback test). */
   failPractice: boolean
+  /** Throw in the answer port on the 2nd record call (exam atomicity test). */
+  failAnswerLog: boolean
   nextId: number
 }
 
@@ -146,6 +148,7 @@ export function buildWorld() {
     audits: [],
     subscribed: new Set(),
     failPractice: false,
+    failAnswerLog: false,
     nextId: 1000,
   }
 
@@ -399,6 +402,7 @@ export function buildWorld() {
 
   const answerLog = {
     record: (e: AnswerLogEntry) => {
+      if (world.failAnswerLog && world.answerRows.length >= 1) return Promise.reject(new Error('forced failure on the 2nd answer row'))
       world.answerRows.push(e)
       return Promise.resolve({ id: String(world.answerRows.length), created: true })
     },
