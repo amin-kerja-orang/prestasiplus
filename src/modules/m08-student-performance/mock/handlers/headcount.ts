@@ -26,17 +26,21 @@ import {
   type RouteDef,
 } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
+import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type { HeadcountFormOptions, HeadcountMode, HeadcountSort } from '../../api/headcount-types'
-import { PERFORMANCE_HEADCOUNT_MESSAGES } from '@pp/contract'
+import { PERFORMANCE_HEADCOUNT_MESSAGES, REPORT_SCOPE_MESSAGES } from '@pp/contract'
 
 import { MARK_RANGE_ERROR } from '../../lib/headcount/otr'
 import { headcountRepo } from '../repository/headcount'
 import {
   configSchoolId,
   csvOf,
+  ownConfigsOf,
+  ownListItem,
+  ownStudentOf,
   dashboardItem,
   detailOf,
   levelNameOf,
@@ -49,6 +53,8 @@ import type { HeadcountConfigRow } from '../repository/headcount-types'
 import { FORBIDDEN, NOT_FOUND, ownClasses, viewerOf, type Viewer } from './common'
 
 const guard = requireRole('admin', 'teacher', 'school_admin')
+/** API-RPT-08 (S10-T09): the pupil's own views; staff get 403. */
+const pupilGuard = requireRole('student')
 
 /** §9: may the viewer open / change this config? */
 function mayUse(viewer: Viewer, c: HeadcountConfigRow): boolean {
@@ -146,8 +152,45 @@ function markOf(v: unknown): number | null | undefined {
 const sortOf = (raw: string | undefined): HeadcountSort => (raw === 'name' ? 'name' : 'ranking')
 
 export const headcountRoutes: RouteDef[] = [
+  // API-RPT-08, declared before `:id` and `students/:userId`.
+  route('GET', '/api/headcounts/me', [pupilGuard], (req) => {
+    const viewer = viewerOf(req)
+    return ok(ownConfigsOf(viewer.id).map((c) => ownListItem(c, viewer.id)))
+  }),
+
+  route('GET', '/api/headcounts/me/detail', [pupilGuard], (req) => {
+    const viewer = viewerOf(req)
+    const raw = queryString(req.query, 'configId')
+    let config: HeadcountConfigRow | undefined
+    if (raw !== undefined && raw !== '') {
+      const id = toInt(raw)
+      config = id === undefined ? undefined : ownConfigsOf(viewer.id).find((c) => c.id === id)
+      // A foreign or unknown config is one outcome (404), never a 403: existence does not leak.
+      if (!config) return NOT_FOUND()
+    } else {
+      config = ownConfigsOf(viewer.id)[0]
+    }
+    const out = ownStudentOf(viewer.id, config)
+    return out ? ok(out) : NOT_FOUND()
+  }),
+
   route('GET', '/api/headcounts', [guard], (req) => {
     const viewer = viewerOf(req)
+    if (viewer.role === 'admin' && req.query.schoolId !== undefined) {
+      // S6-T13 PM-24 (as the API): an admin who sends `?schoolId=` lists that ONE school (422 malformed, 404 unknown)
+      const raw = queryString(req.query, 'schoolId')
+      if (raw === undefined || !/^[1-9]\d{0,18}$/.test(raw)) {
+        return validationError({ schoolId: REPORT_SCOPE_MESSAGES.schoolIdRequired })
+      }
+      const schoolId = Number(raw)
+      if (!schools.get(schoolId)) return NOT_FOUND()
+      return ok(
+        headcountRepo
+          .configs()
+          .filter((c) => configSchoolId(c) === schoolId)
+          .map(listItem),
+      )
+    }
     return ok(listedConfigs(viewer).map(listItem))
   }),
 

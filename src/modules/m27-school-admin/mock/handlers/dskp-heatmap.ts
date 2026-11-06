@@ -3,12 +3,12 @@
 import { ok, queryString, route, type RouteDef } from '@/mock/define'
 
 import { buildSchoolDskpHeatmap } from '../read-models/dskp-heatmap'
-import { requireSchoolAdminWithSchool, schoolOf } from '../read-models/school-scope'
+import { reportSchoolOf, requireSchoolAdminOrAdminReport } from '../read-models/school-scope'
 
 export const dskpHeatmapRoutes: RouteDef[] = [
-  route('GET', '/api/admin-sekolah/dskp-heatmap', [requireSchoolAdminWithSchool], (req) =>
+  route('GET', '/api/admin-sekolah/dskp-heatmap', [requireSchoolAdminOrAdminReport], (req) =>
     ok(
-      buildSchoolDskpHeatmap(schoolOf(req), {
+      buildSchoolDskpHeatmap(reportSchoolOf(req), {
         subjectId: queryString(req.query, 'subjectId'),
         tingkatan: queryString(req.query, 'tingkatan'),
       }),

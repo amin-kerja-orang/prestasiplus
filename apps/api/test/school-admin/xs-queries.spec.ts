@@ -13,8 +13,10 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { PrismaService } from '../../src/db/prisma.service'
 import { AuthModule } from '../../src/modules/auth'
 import { CommandCenterModule } from '../../src/modules/command-center'
+import { AnswerFactsAdapter } from '../../src/modules/practice/reads/answer-facts.adapter'
 import { CommandCenterRepository } from '../../src/modules/command-center/shared/command-center.repository'
 import { SchoolAdminModule, SCHOOL_PERFORMANCE_PORT } from '../../src/modules/school-admin'
 import { XS_ALL_TIME, XsQueries, xsAccuracy } from '../../src/modules/school-admin/xs-queries'
@@ -71,8 +73,8 @@ async function session(userId: string, mode: string, status: 'completed' | 'in_p
 /** `n` answers one second apart from `AT`, the first `correct` correct, on questions `firstQuestion` .. `firstQuestion + n - 1` (no foreign key on question_id yet). */
 async function answers(userId: string, n: number, correct: number, firstQuestion: number, o: { sessionId?: string; isTest?: boolean } = {}): Promise<void> {
   await t.db.query(
-    `insert into practice_answers (user_id, session_id, question_id, is_correct, answered_at, is_test)
-     select $1::bigint, $2::uuid, $3::bigint + g - 1, g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6 from generate_series(1, $7::int) g`,
+    `insert into practice_answers (user_id, session_id, question_id, is_correct, answered_at, is_test, mode)
+     select $1::bigint, $2::uuid, $3::bigint + g - 1, g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6, 'latih_tubi' from generate_series(1, $7::int) g`,
     [userId, o.sessionId ?? null, firstQuestion, correct, AT, o.isTest ?? false, n],
   )
 }
@@ -323,7 +325,7 @@ describe('XsQueries edge cases', () => {
   const mk = async (name: string, grade: number | null, o: { role?: 'student' | 'teacher'; isActive?: boolean } = {}) =>
     (await createUser(t.db, { role: o.role ?? 'student', schoolId: e, name, grade, ...(o.isActive === undefined ? {} : { isActive: o.isActive }) })).id
   const answerAt = async (userId: string, at: string, q: number) =>
-    t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1::bigint, $2::bigint, true, $3::timestamptz)`, [userId, q, at])
+    t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1::bigint, $2::bigint, true, $3::timestamptz, 'latih_tubi')`, [userId, q, at])
 
   beforeAll(async () => {
     e = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Fixture XS Tepi', 'SMK') returning id::text`))[0]?.id as string
@@ -361,12 +363,18 @@ describe('XsQueries edge cases', () => {
     expect((await repo.teachersOfSchool(e)).map((x) => x.id).sort()).toEqual([...r.ids].sort())
   })
 
-  // Lead ruling (#479). Enable after PR #544 (AnswerFactsPort) merges. The exact assertion to add, on the fixture school above:
-  //   const facts = await port.answerFacts(<the fixture school's XS-1 pupil ids>, {})   // AnswerFactsPort.answerFacts
-  //   const answered = facts.length; const correct = facts.filter((f) => f.isCorrect).length
-  //   expect(answered).toBe((await xs.answerTotals(SCHOOL())).answered)            // 24
-  //   expect(xsAccuracy(correct, answered)).toBe((await xs.answerTotals(SCHOOL())).accuracy)   // 62.5
-  it.todo('XS-4/XS-5 equal the AnswerFactsPort sums (enable after #544 merges)')
+  // Lead ruling (#479): XS-4/XS-5 agree with the shared S10-T01 reader (AnswerFactsPort, #544) on the same pupils.
+  it('XS-4/XS-5 equal the AnswerFactsPort sums of the XS-1 pupils', async () => {
+    const port = new AnswerFactsAdapter(t.app.get(PrismaService, { strict: false }))
+    const { ids } = await xs.pupils(SCHOOL())
+    const facts = await port.answerFacts({ userIds: ids })
+    const answered = facts.reduce((n, f) => n + f.attempts, 0)
+    const correct = facts.reduce((n, f) => n + f.correct, 0)
+    const totals = await xs.answerTotals(SCHOOL())
+    expect(answered).toBeGreaterThan(0)
+    expect(answered).toBe(totals.answered)
+    expect(xsAccuracy(correct, answered)).toBe(totals.accuracy)
+  })
 
   it('a pupil enrolled in two classes of the same teacher is counted once', async () => {
     const tc = await createUser(t.db, { role: 'teacher', schoolId: e, name: 'Tepi Guru Dua Kelas' })
@@ -408,8 +416,8 @@ describe('Laporan Bulanan on XS-4 (a month with answers but no completed session
     const ids: string[] = []
     const put = async (userId: string, n: number, correct: number, at: string, sessionId: string | null = null) =>
       t.db.query(
-        `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at)
-         select $1::bigint, $2::uuid, $3::bigint, g <= $4, $5::timestamptz + (g || ' seconds')::interval from generate_series(1, $6::int) g`,
+        `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at, mode)
+         select $1::bigint, $2::uuid, $3::bigint, g <= $4, $5::timestamptz + (g || ' seconds')::interval, 'latih_tubi' from generate_series(1, $6::int) g`,
         [userId, sessionId, subject, correct, at, n],
       )
     for (let i = 1; i <= 5; i++) {

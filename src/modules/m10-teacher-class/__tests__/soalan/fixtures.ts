@@ -2,7 +2,11 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import type { ContributedQuestion, ContributedQuestionDetail, Contributions } from '../../api/types'
 
-export function makeRouter(): Router {
+/** `extra` registers more stub routes (the Alat Soalan targets); `meta` sets route meta by path. */
+export function makeRouter(
+  extra: string[] = [],
+  meta: Record<string, Record<string, unknown>> = {},
+): Router {
   const stub = { template: '<div />' }
   return createRouter({
     history: createMemoryHistory(),
@@ -14,6 +18,7 @@ export function makeRouter(): Router {
       { path: '/guru/soalan/:id/edit', component: stub },
       { path: '/admin/audio-kbat', component: stub },
       { path: '/admin/audio-kbat/create', component: stub },
+      ...extra.map((path) => ({ path, component: stub, meta: meta[path] ?? {} })),
     ],
   })
 }
@@ -37,23 +42,23 @@ export function summary(overrides: Partial<Contributions> = {}): Contributions {
 
 export function question(overrides: Partial<ContributedQuestion> = {}): ContributedQuestion {
   return {
-    id: 522425,
+    id: '522425',
     questionType: 'mcq',
     questionText: 'Pilih ayat yang betul?',
-    subjectId: 1,
+    subjectId: '1',
     subjectName: 'Bahasa Melayu',
-    educationLevelId: 6,
-    levelName: 'Darjah 6',
+    educationLevelId: '11',
+    levelName: 'Tingkatan 5',
     difficultyLevel: 4,
     difficultyLabel: 'Sukar',
     dskpTagged: true,
     status: 'approved',
     statusLabel: 'Diluluskan',
-    isActive: true,
+    rejectionReason: null,
+    editable: false,
     options: ['Satu', 'Dua', 'Tiga', 'Empat'],
     correctAnswer: 2,
     explanation: 'Kerana tiga.',
-    source: 'textbook_content_rebuild',
     createdAt: '2026-05-02T10:00:00+08:00',
     ...overrides,
   }
@@ -64,19 +69,10 @@ export function detail(
 ): ContributedQuestionDetail {
   return {
     ...question(),
-    questionImage: null,
-    optionImages: [null, null, null, null],
-    tfAnswer: null,
-    correctAnswerText: null,
-    altAnswers: [],
-    modelAnswer: null,
-    language: 'ms',
-    scriptType: 'rumi',
-    textDirection: 'ltr',
-    curriculumChapterId: null,
-    curriculumTopicId: null,
-    dskpSpId: null,
-    usage: { attempts: 0, correct: 0, accuracy: 0 },
+    chapterId: null,
+    spIds: [],
+    tp: null,
+    cognitiveLevel: null,
     ...overrides,
   }
 }
