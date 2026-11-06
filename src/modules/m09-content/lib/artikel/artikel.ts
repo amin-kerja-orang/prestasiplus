@@ -8,13 +8,15 @@ import { CATEGORY_OPTIONS } from '../admin-articles-notes'
 export { queryPage, queryText } from '../admin-articles-notes'
 
 export const ARTIKEL_PATH = '/artikel'
-export const ARTIKEL_PAGE_SIZE = 18
+export const ARTIKEL_PAGE_SIZE = 12
+/** FR-MUR-20-5: the search box takes at most this many characters. */
+export const ARTIKEL_SEARCH_MAX = 100
 
 export const ARTIKEL_COPY = {
   headerTitle: 'Artikel',
   headerSubtitle: 'Tips belajar, berita pendidikan, motivasi dan panduan',
   hotHeading: 'Artikel Paling Hangat',
-  searchPlaceholder: 'Cari artikel...',
+  searchPlaceholder: 'Cari',
   guestSearchPlaceholder: 'Cari artikel menarik...',
   all: 'Semua',
   pickCategory: 'Pilih Kategori:',
@@ -29,7 +31,7 @@ export const ARTIKEL_COPY = {
   breadcrumbDashboard: 'Dashboard',
   breadcrumbArtikel: 'Artikel',
   featuredChip: 'Pilihan',
-  readers: 'Pembaca',
+  readers: 'bacaan',
   likes: 'Suka',
   shareTitle: 'Kongsi Artikel Ini 🎉',
   shareBody: 'Kongsi dengan kawan-kawan supaya mereka pun dapat belajar!',

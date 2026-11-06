@@ -126,9 +126,9 @@ export interface AnswerSpec {
 export async function addAnswers(db: TestDatabase, userId: string, spec: AnswerSpec): Promise<void> {
   if (spec.attempts <= 0) return
   await db.query(
-    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test)
+    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test, mode)
      select $1::bigint, $2::bigint, $3::bigint, $4::bigint, g <= $6::int,
-            timestamptz '2026-10-18 10:00+08' + (g || ' seconds')::interval, $7::boolean
+            timestamptz '2026-10-18 10:00+08' + (g || ' seconds')::interval, $7::boolean, 'latih_tubi'
        from generate_series(1, $5::int) g`,
     [userId, spec.questionId ?? null, spec.subjectId, spec.chapterId, spec.attempts, spec.correct, spec.isTest ?? false],
   )
