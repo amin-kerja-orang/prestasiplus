@@ -116,6 +116,49 @@ describe('PKSK HTTP (BE-42)', () => {
     expect((await get(other, '/pksk/levels/T1/exam-attempts')).status).toBe(403)
   })
 
+  it('expired grant: 403 FORBIDDEN on set, submit, exam and exam-attempts with no question text (AC-MUR-19-1)', async () => {
+    const s = await as('pelajar2@demo.test')
+    const userId = await idOf('pelajar2@demo.test')
+    const [q] = seedQuestions(world.world, 'PKSK_MATH', 'T1', 2)
+    await db.query(`insert into pksk_accesses (user_id, package_id, expires_at) values ($1::bigint, 1, date '2000-01-01')`, [userId])
+    try {
+      const answers = [{ questionId: q?.id, optionIndex: 0 }]
+      const calls = [
+        await get(s, '/pksk/levels/T1/domains/PKSK_MATH'),
+        await post(s, '/pksk/levels/T1/domains/PKSK_MATH/practice-sessions', { answers }),
+        await get(s, '/pksk/levels/T1/exam'),
+        await post(s, '/pksk/levels/T1/exam-attempts', { answers }),
+      ]
+      for (const res of calls) {
+        expect(res.status, JSON.stringify(res.body)).toBe(403)
+        expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')
+        expect(JSON.stringify(res.body)).not.toContain(q?.text as string)
+      }
+    } finally {
+      await db.query(`delete from pksk_accesses where user_id = $1::bigint`, [userId])
+    }
+  })
+
+  it('practice submit takes only the served set, once, against the real load row', async () => {
+    const s = await as('pelajar@demo.test')
+    const extra = seedQuestions(world.world, 'PKSK_SCI', 'T1', 12)
+    const set = (await get(s, '/pksk/levels/T1/domains/PKSK_SCI')).body.data.questions as { id: string }[]
+    const served = new Set(set.map((q) => q.id))
+    const guessed = extra.find((q) => !served.has(q.id))
+    const url = '/pksk/levels/T1/domains/PKSK_SCI/practice-sessions'
+    const bad = await post(s, url, { answers: [{ questionId: guessed?.id, optionIndex: 0 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.message).toBe('Jawapan tidak sah.')
+    expect(JSON.stringify(bad.body)).not.toMatch(/review|correctIndex|Penjelasan/)
+    const body = { answers: set.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const ok = await post(s, url, body)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    expect(ok.body.data.review).toHaveLength(set.length)
+    const again = await post(s, url, body)
+    expect(again.status).toBe(422)
+    expect(again.body.data).toBeUndefined()
+  })
+
   it('admin routes: 403 for a student, packages list for admin', async () => {
     const s = await as('pelajar@demo.test')
     for (const path of ['/admin/pksk-questions', '/admin/pksk-access', '/admin/pksk-access/stats', '/pksk-packages']) expect((await get(s, path)).status, path).toBe(403)

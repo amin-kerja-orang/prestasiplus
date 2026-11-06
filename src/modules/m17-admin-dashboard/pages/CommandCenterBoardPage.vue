@@ -10,7 +10,7 @@
 import { computed } from 'vue'
 
 import { isAlesaAiOn } from '@/app/features'
-import { DsEmptyState, DsGrid, DsGridItem, DsPage } from '@/ds'
+import { DsGrid, DsGridItem, DsLoadError, DsPage } from '@/ds'
 
 import AlesaPanel from '../components/command-center-board/AlesaPanel.vue'
 import { boardPaths, S2_COPY } from '../components/command-center-board/board-copy'
@@ -30,7 +30,7 @@ import CcBoardFrame from '../components/frame/CcBoardFrame.vue'
 const props = withDefaults(defineProps<{ alias?: boolean }>(), { alias: false })
 
 const paths = computed(() => boardPaths(props.alias))
-const { data, unavailable } = useLiveBoard()
+const { data, loadError, retry } = useLiveBoard()
 // ALESA AI is hidden unless VITE_ALESA_AI=on (D73): no panel, and the footer drops "Powered by ALESA AI".
 const alesaOn = isAlesaAiOn()
 </script>
@@ -41,13 +41,7 @@ const alesaOn = isAlesaAiOn()
       <BoardHeader :school="alias" />
 
       <div class="flex min-w-0 flex-col gap-4" data-testid="cc-body">
-        <DsEmptyState
-          v-if="unavailable"
-          size="sm"
-          icon="plugs"
-          :title="S2_COPY.unavailable"
-          data-testid="cc-unavailable"
-        />
+        <DsLoadError v-if="loadError" testid="cc-load-error" @retry="retry" />
 
         <BoardKpis :data="data" :school="alias" />
 
