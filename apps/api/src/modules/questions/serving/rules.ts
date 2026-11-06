@@ -1,3 +1,5 @@
+// DM-42: this JS twin never sees a personal (teacher_private) question: every record it evaluates comes from a read through `QuestionsRepository.scope()`
+// (bank-only SQL) or a `bankOnly` by-id read, so it has no private reason; `private-exclusion-sql.spec.ts` proves the surfaces' SQL.
 /**
  * R1-B03 (lite): where is a bank question served to pupils, and if not, why. PURE: no database, no clock. `ServabilityService`
  * loads the facts in batch; `evaluate` applies the rules.

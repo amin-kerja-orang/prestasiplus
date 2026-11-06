@@ -15,6 +15,22 @@ import { Prisma } from '../../db/generated/client'
 export const SERVABLE_STATUS = 'approved' as const
 export const SERVABLE_VERSION_SQL = Prisma.sql`v.status = ${Prisma.raw(`'${SERVABLE_STATUS}'`)}`
 
+/**
+ * DM-42 (S6-T16, migration 0127): a teacher's personal question (Soalan & Rujukan) is a `question_versions` row with
+ * `visibility = 'teacher_private'`; it is served by the mission draw only. EVERY served or counted read of the bank (lists, counts,
+ * draws, pickers, reports) adds this predicate (alias `v` = the version read). Reads by id (`get`, `getMany`, `hydrate`) do not:
+ * a mission answer must still find its private question. The literal is inlined (no bound value) so the partial index and the
+ * static-text specs keep working.
+ */
+export const BANK_VISIBILITY = 'bank' as const
+export const BANK_VISIBLE_SQL = Prisma.sql`v.visibility = ${Prisma.raw(`'${BANK_VISIBILITY}'`)}`
+
+/**
+ * The JS twin of `BANK_VISIBLE_SQL`, the ONE definition for records already in memory (the practice source, the remedial pool, the by-id
+ * `bankOnly` read). A version that does not carry the field (an older fixture) is a bank version.
+ */
+export const isBankVersion = (version: { visibility?: string | undefined }): boolean => version.visibility === undefined || version.visibility === BANK_VISIBILITY
+
 /** M07 PKSK questions are served by M07 only. */
 export const NOT_PKSK_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 
@@ -89,4 +105,5 @@ export const ALL_LEAVES_KEYED_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM questio
 /** R1-T08 follow-up (REQ-B-013): the question's subject is active (a deactivated subject offers no question to pupils or to the paper builder). */
 export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
 
-export const SPM_SERVABLE_SQL = Prisma.sql`(${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.stage <> 'primary' AND ol.is_active) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
+// DM-42: the bank predicate is part of the definition, so a caller of SPM_SERVABLE_SQL alone can never serve a personal question.
+export const SPM_SERVABLE_SQL = Prisma.sql`(${BANK_VISIBLE_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.stage <> 'primary' AND ol.is_active) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
