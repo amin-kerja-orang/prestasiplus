@@ -153,6 +153,16 @@ describe('practice sessions and answers (AC1)', () => {
     expect(one?.legacy_content_hash).toMatch(/^[0-9a-f]{64}$/)
   })
 
+  it('copies the imported session mode onto every migrated answer (never NULL)', async () => {
+    const rows = await h.q<{ legacy_id: string; mode: string }>(
+      `select a.legacy_id, a.mode from practice_answers a where a.legacy_source = 'cloud' and a.mode is distinct from (select s.mode from practice_sessions s where s.id = a.session_id)
+         and a.session_id is not null`,
+    )
+    expect(rows).toEqual([])
+    const [n] = await h.q<{ n: string }>(`select count(*)::text as n from practice_answers where legacy_source = 'cloud' and session_id is not null`)
+    expect(Number(n?.n)).toBeGreaterThan(0)
+  })
+
   it('maps the real .cloud practice modes and counts spm and battle by name', async () => {
     const rows = await h.q<{ legacy_id: string; mode: string }>(
       `select legacy_id, mode from practice_sessions where legacy_source = 'cloud' and legacy_id in ('1004','1005','1006','1007') order by legacy_id`,

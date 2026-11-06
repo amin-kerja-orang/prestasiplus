@@ -56,9 +56,9 @@ export class GroupMembers {
 
   /**
    * Makes `ordered` the members of the group, in that order. Adds, removals and reordering in one call; an unchanged list is a no-op.
-   * Returns the members after the change.
+   * Returns the members after the change. `opts.regroup` lifts the served lock for ADDED members only (the regroup route, API-Q-24).
    */
-  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false): Promise<string[]> {
+  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false, opts: { regroup?: boolean } = {}): Promise<string[]> {
     await this.lock(groupId)
     // A draft copy stages its members in `draft_members` (S1-T01 part 3c); they reach the live group only through the swap (`swap = true`: the
     // publish of the copy, the one path that may change the members of a served group).
@@ -90,7 +90,8 @@ export class GroupMembers {
       if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
-      if (f.served && !swap) throw conflict(M.memberServed)
+      // S1-T07 (45 6.6.3): the regroup (`regroup: true`) is the only caller that may add a question shown to pupils; the normal routes keep DM-04.
+      if (f.served && !swap && opts.regroup !== true) throw conflict(M.memberServed)
     }
     // The group's own scope (DM-51): an added member must match a non-null Subjek / Tingkatan / Kertas of the group.
     for (const q of added) {
@@ -154,7 +155,7 @@ export class GroupMembers {
    * question has the group's subject and a compatible kertas, and returns its position (the end). The question is not in the group yet, so
    * it is not counted; it can be served at once only when it is created already approved (an admin shortcut), which does not bind the group.
    */
-  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<number> {
+  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<number> {
     await this.lock(groupId).catch(() => {
       throw fail({ stimulusGroupId: M.groupInvalid })
     })
@@ -171,7 +172,7 @@ export class GroupMembers {
    * A member's subject or kertas changes (PUT /api/questions on a grouped question): it must still fit the other members, else the group
    * would hold two subjects (or two kertas). The only member of a group may change freely. Runs inside the edit transaction.
    */
-  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<void> {
+  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<void> {
     await this.lock(groupId)
     this.assertScope(await this.repo.groupScope(groupId), { subjectId, levelId, kertas }, 'subjectId')
     this.assertFits(await this.repo.memberTraits(groupId, questionId), subjectId, kertas, 'subjectId')
@@ -188,7 +189,7 @@ export class GroupMembers {
     if (group.kertas !== null && member.kertas !== null && String(group.kertas) !== member.kertas) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }
 
-  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | null, field: string): void {
+  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | '4' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | '4' | null, field: string): void {
     if (others.some((o) => o.subjectId !== subjectId)) throw fail({ [field]: M.memberMixed })
     if (kertas !== null && others.some((o) => o.kertas !== null && o.kertas !== kertas)) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }

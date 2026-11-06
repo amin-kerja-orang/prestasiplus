@@ -21,6 +21,8 @@ const info: ConfigInfo = {
   mode: 'auto',
   activeOtrs: 2,
   teacherName: 'Guru Contoh',
+  defaultTov: null,
+  defaultEtr: null,
 }
 
 const line = (studentId: string, name: string, over: Partial<RosterLine['marks']> = {}, dropped = false): RosterLine => ({
@@ -49,6 +51,9 @@ describe('list and dashboard', () => {
       mode: 'auto',
       activeOtrs: 2,
       students: 3,
+      teacherName: 'Guru Contoh',
+      entryStatus: 'active',
+      statusReason: null,
     })
   })
 
@@ -90,7 +95,7 @@ describe('detail', () => {
 
   it('chips and averages leave the dropped pupil out; total = shown rows', () => {
     const d = detailOf(info, lines, 'ranking')
-    expect(d.chips).toEqual({ onTrack: 1, below: 1, empty: 1, total: 3 })
+    expect(d.chips).toEqual({ onTrack: 1, below: 1, empty: 1, total: 3, onTrackPct: 50 })
     expect(d.averages).toEqual({ tov: 50, otrs: [60, 70], ars: [57.5, 75], etr: 80 })
     expect(d.rows.filter((r) => !r.dropped)).toHaveLength(d.chips.total)
   })
@@ -118,8 +123,9 @@ describe('pupil section (S15)', () => {
     expect(s.chart.labels).toEqual(['TOV', 'OTR1', 'OTR2', 'ETR', 'RS'])
     expect(s.chart.target).toEqual([50, 60, 70, 80, null])
     expect(s.chart.actual).toEqual([50, 65, 75, null, null])
-    expect(s.chart.projection).toEqual([null, null, 75, 85, null])
-    expect(s.projection).toMatchObject({ value: 85, variant: 'green' })
+    expect(s.chart.projection).toEqual([null, null, 75, 80, null])
+    expect(s.projection).toMatchObject({ value: 80, variant: 'green', confidence: 'Sederhana' })
+    expect(s).toMatchObject({ jurang: 30, unjuran: 80, keyakinan: 'Sederhana', mode: 'auto', entryStatus: 'active', statusReason: null })
   })
 
   it('a pupil with no marks has no projection or prediction and status none', () => {

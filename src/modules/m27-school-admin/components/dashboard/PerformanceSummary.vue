@@ -3,20 +3,28 @@
  * S0 "Ringkasan Prestasi" card (FR-M27-31…37; restyle spec AS-2): title and subtitle, then four panels (GPS
  * SEKOLAH, AMARAN AWAL, LATIHAN, TINGKATAN) and the grade chart. 4 panels per row at 1280, 2 at 768, 1 at
  * 375 (FR-M27-25). AMARAN AWAL is rendered when the M18 risk read answers (`risk` not null; XR-M27-08
- * resolved). The TINGKATAN panel is the link to `/prestasi/tingkatan`. No-data states follow BR-M27-18.
+ * resolved). Each panel is a link: GPS to Prestasi, AMARAN AWAL to Amaran Awal, LATIHAN to Statistik Penggunaan, TINGKATAN to `/prestasi/tingkatan` (FR-AS-2-1). No-data states follow BR-M27-18.
  * Colour appears only on the figures that carry a meaning (GPS band, risk, level accuracy).
  */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { isHttpMode } from '@/api/mode'
-import { DsEmptyState, DsIconChip, DsPanel } from '@/ds'
+import { DsEmptyState, DsIconChip, DsPanel, DsText } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
-import { barWidth, count, gps, PATHS, percent } from './dashboard-format'
+import { barWidth, count, gps, PATHS, percent, shownAccuracy } from './dashboard-format'
 
 const props = defineProps<{ performance: SchoolDashboard['performance'] }>()
+
+/** Band of a level row from the WHOLE number the screen shows (49.5 shows 50, which is not below 50; 60 section 4.6). */
+type LevelTone = 'error' | 'warning' | 'success' | 'muted'
+function levelTone(accuracy: number | null): LevelTone {
+  const shown = shownAccuracy(accuracy)
+  if (shown === null) return 'muted'
+  return shown < 50 ? 'error' : shown < 70 ? 'warning' : 'success'
+}
 
 /** Http mode only: the block is built from Bijak SPM sittings, so it is labelled as such (US-33). */
 const bijak = isHttpMode()
@@ -67,7 +75,8 @@ const isEmpty = computed(() => {
       class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       data-testid="sd-panels"
     >
-      <DsPanel tone="inset" data-testid="sd-panel-gps">
+      <RouterLink :to="PATHS.school" class="block min-w-0" data-testid="sd-panel-gps">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">GPS Sekolah</p>
           <p
@@ -94,8 +103,10 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
-      <DsPanel v-if="performance.risk" tone="inset" data-testid="sd-panel-risk">
+      <RouterLink v-if="performance.risk" :to="PATHS.amaran" class="block min-w-0" data-testid="sd-panel-risk">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Amaran Awal</p>
           <div class="mt-1 flex items-start justify-center gap-4">
@@ -123,8 +134,10 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
-      <DsPanel tone="inset" data-testid="sd-panel-practice">
+      <RouterLink :to="PATHS.usage" class="block min-w-0" data-testid="sd-panel-practice">
+        <DsPanel tone="inset" stretch>
         <div class="flex flex-col items-center justify-center gap-1 text-center">
           <p class="text-overline text-muted">Latihan</p>
           <p class="tabular text-display text-highlighted" data-testid="sd-practice-accuracy">
@@ -137,6 +150,7 @@ const isEmpty = computed(() => {
           </p>
         </div>
       </DsPanel>
+      </RouterLink>
 
       <RouterLink :to="PATHS.levels" class="block min-w-0" data-testid="sd-panel-levels">
         <DsPanel tone="inset" class="h-full hover:bg-elevated">
@@ -149,15 +163,23 @@ const isEmpty = computed(() => {
           >
             <div class="flex items-baseline justify-between gap-2">
               <span class="text-label text-highlighted">{{ level.name }}</span>
+              <DsText
+                v-if="levelTone(level.accuracy) === 'muted'"
+                as="span"
+                variant="label"
+                tone="muted"
+                tabular
+                data-testid="sd-level-pct"
+                >{{ percent(level.accuracy) }}</DsText
+              >
               <span
+                v-else
                 class="tabular text-label"
-                :class="
-                  level.accuracy < 50
-                    ? 'text-error'
-                    : level.accuracy < 70
-                      ? 'text-warning'
-                      : 'text-success'
-                "
+                :class="{
+                  'text-error': levelTone(level.accuracy) === 'error',
+                  'text-warning': levelTone(level.accuracy) === 'warning',
+                  'text-success': levelTone(level.accuracy) === 'success',
+                }"
                 data-testid="sd-level-pct"
                 >{{ percent(level.accuracy) }}</span
               >
@@ -166,7 +188,7 @@ const isEmpty = computed(() => {
               :model-value="barWidth(level.accuracy)"
               :max="100"
               size="sm"
-              :color="level.accuracy < 50 ? 'error' : level.accuracy < 70 ? 'warning' : 'success'"
+              :color="levelTone(level.accuracy) === 'muted' ? 'neutral' : levelTone(level.accuracy)"
               :aria-label="`Ketepatan ${level.name}`"
               data-testid="sd-level-bar"
             />

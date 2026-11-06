@@ -1,8 +1,8 @@
 /**
- * Structured Terbit blockers (R1-T34 follow-up). ONE place decides `overridable` (the contract map `BIJAK_BUILDER_BLOCKER_OVERRIDABLE`), so the
+ * Structured Terbit blockers (R1-T34 follow-up). ONE place decides `overridable` (the contract rule `bijakBuilderBlockerOverridable`), so the
  * review and the publish refusal can never disagree. The plain BM string arrays stay as they were; they are the `message` of each blocker.
  */
-import { BIJAK_BUILDER_BLOCKER_OVERRIDABLE, type BijakBuilderBlocker, type BijakBuilderBlockerCode } from '@pp/contract'
+import { bijakBuilderBlockerOverridable, type BijakBuilderBlocker, type BijakBuilderBlockerCode } from '@pp/contract'
 
 /** A blocker before the rule is applied. */
 export interface BlockerDraft {
@@ -13,14 +13,14 @@ export interface BlockerDraft {
 }
 
 /** Applies the rule and drops repeated lines (the first occurrence wins, so a hard code beats an overridable one with the same line). */
-export function toBlockers(drafts: readonly BlockerDraft[]): BijakBuilderBlocker[] {
+export function toBlockers(drafts: readonly BlockerDraft[], contractDisahkan: boolean): BijakBuilderBlocker[] {
   const byMessage = new Map<string, BijakBuilderBlocker>()
   for (const d of drafts) {
     if (byMessage.has(d.message)) continue
     byMessage.set(d.message, {
       code: d.code,
       message: d.message,
-      overridable: BIJAK_BUILDER_BLOCKER_OVERRIDABLE[d.code],
+      overridable: bijakBuilderBlockerOverridable(d.code, contractDisahkan),
       ...(d.section === undefined ? {} : { section: d.section }),
       ...(d.questionId === undefined ? {} : { questionId: d.questionId }),
     })

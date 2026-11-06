@@ -14,7 +14,8 @@ import { IdSchema } from '../../common/ids'
  *   422 VALIDATION_ERROR), English Laravel defaults as the mock produces them.
  * - Entity ids are decimal strings (`IdSchema`); the mock still uses numbers. Session ids are strings in
  *   both. Instants are ISO 8601 with +08:00; calendar dates are `YYYY-MM-DD`.
- * - Accuracies are percentages: 1 decimal, except `CommandCenterSessionRow.accuracy` (2 decimals).
+ * - Accuracies are percentages: 1 decimal.
+ * - XS-5 (R1 S6-T03): every accuracy is a number with ONE decimal and null (never 0) with 0 answers.
  */
 
 const FIELD = (description: string) => ({ description })
@@ -81,7 +82,7 @@ export const CommandCenterTopStudentSchema = z
     name: z.string(),
     schoolName: z.string().nullable().meta(FIELD('Null for a pupil without a school.')),
     answersCount: count,
-    accuracy: pct,
+    accuracy: pct.nullable(),
   })
   .meta({ id: 'CommandCenterTopStudent' })
 export type CommandCenterTopStudent = z.infer<typeof CommandCenterTopStudentSchema>
@@ -105,7 +106,7 @@ export const CommandCenterKirkpatrickSchema = z
       scale: z.literal(5),
       count,
     }),
-    t2Accuracy: pct,
+    t2Accuracy: pct.nullable(),
     t3Active: count.meta(FIELD('Pupils with an answer in the last 30 days.')),
     t4Gps: z.number().min(0).meta(FIELD('SPM subject GPS of the scope, 3 decimals; 0 when none.')),
   })
@@ -158,7 +159,7 @@ export const CommandCenterLiveDataSchema = z
     answeredWeek: count,
     answeredLastWeek: count,
     weekChange: z.number().int().meta(FIELD('Whole percent, half away from zero; 0 when last week is 0.')),
-    accuracy: pct,
+    accuracy: pct.nullable(),
     topSchools: z.array(CommandCenterTopSchoolSchema).max(5).meta(FIELD('Platform view only; empty on the school view.')),
     topStudents: z.array(CommandCenterTopStudentSchema).max(5),
     gpsOverall: z.number().min(0).meta(FIELD('Equals kirk.t4Gps.')),
@@ -243,7 +244,7 @@ export const CommandCenterDailyTopStudentSchema = z
     schoolId: IdSchema.nullable(),
     schoolName: z.string().nullable(),
     answers: count,
-    accuracy: pct,
+    accuracy: pct.nullable(),
   })
   .meta({ id: 'CommandCenterDailyTopStudent' })
 export type CommandCenterDailyTopStudent = z.infer<typeof CommandCenterDailyTopStudentSchema>
@@ -272,7 +273,7 @@ export const CommandCenterDailyActivitySchema = z
     practice: z.object({
       totalAnswers: count,
       correctAnswers: count,
-      accuracy: pct,
+      accuracy: pct.nullable(),
       activeStudents: count,
       sessionsStarted: count,
       sessionsCompleted: count,
@@ -317,12 +318,12 @@ export const CommandCenterSchoolDrillSchema = z
         userId: IdSchema,
         name: z.string(),
         students: count,
-        accuracy: pct,
+        accuracy: pct.nullable(),
         lastActiveHuman: z.string().meta(FIELD('Mock wire text. Open question for the frontend: BM rendering of relative time.')),
       }),
     ),
     students: z.array(
-      z.object({ userId: IdSchema, name: z.string(), answers: count, accuracy: pct, lastActiveHuman: z.string() }),
+      z.object({ userId: IdSchema, name: z.string(), answers: count, accuracy: pct.nullable(), lastActiveHuman: z.string() }),
     ),
     logins: z.array(z.object({ userId: IdSchema, name: z.string(), role: z.string(), timeAgo: z.string().meta(FIELD('Mock wire text. Open question for the frontend: BM rendering of relative time.')) })),
   })
@@ -344,7 +345,7 @@ export const CommandCenterSchoolSchema = z
       students: count.meta(FIELD('Every student of the school, active or not.')),
       active: count.meta(FIELD('Pupils with at least one answer.')),
       answers: count,
-      accuracy: pct,
+      accuracy: pct.nullable(),
     }),
     teachers: z.array(
       z.object({
@@ -373,7 +374,7 @@ export const CommandCenterTeacherSchema = z
         students: count,
         active30d: count,
         answers: count,
-        accuracy: pct,
+        accuracy: pct.nullable(),
       }),
     ),
   })
@@ -392,7 +393,7 @@ export const CommandCenterClassSchema = z
         userId: IdSchema,
         name: z.string(),
         answers: count,
-        accuracy: pct,
+        accuracy: pct.nullable(),
         lastActiveAt: TimestampSchema.nullable().meta(FIELD('Latest answer; null when the pupil never answered.')),
         status: CommandCenterPupilStatusSchema,
         mood: CommandCenterMoodSchema.nullable().meta(FIELD('Latest mood check-in.')),
@@ -408,7 +409,7 @@ export const CommandCenterSubjectRowSchema = z
     label: z.string().meta(FIELD('"Latihan Bebas" for UMUM.')),
     correct: count,
     total: count,
-    pct,
+    pct: pct.nullable().meta(FIELD('XS-5 pooled, 1 decimal; null = no answers ("—").')),
   })
   .meta({ id: 'CommandCenterSubjectRow' })
 export type CommandCenterSubjectRow = z.infer<typeof CommandCenterSubjectRowSchema>
@@ -449,7 +450,7 @@ export const CommandCenterStudentSchema = z
     student: CommandCenterRefSchema,
     cards: z.object({
       answers: count,
-      accuracy: pct,
+      accuracy: pct.nullable(),
       activeDays: count,
       streak: count,
       consistency: pct.meta(FIELD('round(days with an answer in the last 56 days / 56 * 100).')),
@@ -475,7 +476,7 @@ export const CommandCenterSessionRowSchema = z
     topic: z.string().nullable().meta(FIELD('Chapter name; "Latihan Bebas" for free practice; null when unknown.')),
     total: count,
     correct: count,
-    accuracy: pct.meta(FIELD('2 decimals.')),
+    accuracy: pct.nullable().meta(FIELD('XS-5, 1 decimal (60 section 4.6, no exception); null with no questions ("—").')),
     minutes: count.meta(FIELD('floor(seconds / 60).')),
   })
   .meta({ id: 'CommandCenterSessionRow' })
@@ -485,7 +486,7 @@ export const CommandCenterSessionListSchema = z
   .object({
     totalAnswers: count,
     totalSessions: count,
-    accuracy: pct.meta(FIELD('1 decimal.')),
+    accuracy: pct.nullable().meta(FIELD('1 decimal; null with no sessions ("—").')),
     timeSpentMinutes: count,
     sessions: z.array(CommandCenterSessionRowSchema),
   })
@@ -512,7 +513,7 @@ export const CommandCenterSessionDetailSchema = z
     total: count,
     correctCount: count,
     wrongCount: count,
-    accuracy: pct,
+    accuracy: pct.nullable(),
     timeSpent: z.object({ m: count, s: z.number().int().min(0).max(59) }),
     difficulty: z.number().int().nullable(),
     answers: z.array(CommandCenterSessionAnswerSchema),

@@ -3,6 +3,8 @@
  * keep the live JSON bodies (snake_case, `{error}` strings); the others use the `{data}` envelope.
  */
 
+import type { GamesSekolahBersaingBoardRow } from '@pp/contract'
+
 export type QuestionType = 'biasa' | 'pksk' | 'spm'
 export type PkskLevel = 'T1' | 'T4'
 export type StandingPeriod = 'weekly' | 'monthly' | 'all_time'
@@ -286,39 +288,24 @@ export interface LeagueDetail extends Omit<LeagueCard, 'schools'> {
   scoringLabel: string
   creatorName: string
   classLevels: string[]
-  inviteCode: string
-  shareUrl: string
-  canJoin: boolean
   schools: { id: number; name: string }[]
   /** One entry per class level that has standings. */
   standings: Record<string, LeagueStandingRow[]>
 }
 
-/** Body of #47 (S26 fields, live names). */
+/** Body of #47 (API-ADM-25, Admin Pusat): `levelIds` 1..5 = T1..T5. */
 export interface LeagueBody {
   name: string
-  type: 'friendly' | 'tournament' | 'league'
+  type: 'friendly' | 'league'
   scope: 'school' | 'district' | 'state' | 'national'
-  subject_id?: number | null
-  game_mode: 'mixed' | 'quiz' | 'multiplayer'
-  class_levels?: string[]
-  scoring_method: 'total_score' | 'avg_accuracy' | 'wins'
-  start_date: string
-  end_date: string
-  max_schools?: number | null
+  mode: 'mixed' | 'quiz' | 'multiplayer'
+  scoring: 'total_score' | 'avg_accuracy' | 'wins'
+  schoolLimit: number
+  subjectId?: number | null
+  levelIds: number[]
+  start: string
+  end: string
 }
 
-/** #50. `rows: []` is the empty state. */
-export interface SekolahBersaingResult {
-  weekStart: string
-  count: number
-  rows: {
-    rank: number
-    schoolName: string
-    state: string
-    aktifPct: number
-    streakAvg: number
-    notaPer10: number
-    anonymous: boolean
-  }[]
-}
+/** API-AS-14, in rank order. `[]` is the empty state. */
+export type SekolahBersaingResult = GamesSekolahBersaingBoardRow[]

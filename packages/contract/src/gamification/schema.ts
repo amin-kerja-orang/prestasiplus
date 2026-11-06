@@ -1,5 +1,5 @@
 import { z } from '../zod'
-import { IdSchema } from '../common/ids'
+import { ClientUuidSchema, IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { count, int } from './shared'
 
@@ -32,9 +32,6 @@ export const GAMIFICATION_MESSAGES = {
 
 /** Largest amount one admin award may grant (`AWARD_MAX`). */
 export const GAMIFICATION_AWARD_MAX = 10_000
-
-/** Referral rewards in syiling (mock constants `REFERRAL_REWARD_REFERRER` / `_REFEREE`). */
-export const GAMIFICATION_REFERRAL_REWARDS = { referrer: 50, referee: 25 } as const
 
 
 // ---------------------------------------------------------------------------------------------
@@ -146,9 +143,26 @@ export const GamificationChallengeProgressSchema = z
     progress: count.meta({ description: 'Equals target when already completed today.' }),
     pct: count.meta({ description: 'Rounded integer percentage.' }),
     completed: z.boolean(),
+    claimed: z.boolean().optional().meta({ description: 'True when the reward was claimed this Malaysia day (API-GAME-11).' }),
   })
   .meta({ id: 'GamificationChallengeProgress' })
 export type GamificationChallengeProgress = z.infer<typeof GamificationChallengeProgressSchema>
+
+/** A platform daily challenge as a teacher sees it (S6 Misi Harian "Global" rows): read-only, with today's completions among the teacher's pupils. Service return type; no route. */
+export const GuruGlobalChallengeSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    description: z.string(),
+    target: z.number().int().min(1),
+    rewardSyiling: count,
+    rewardXp: count,
+    difficulty: GamificationDifficultySchema,
+    icon: z.string(),
+    completedToday: count.meta({ description: 'Distinct pupils of the teacher who completed it today (Malaysia day), test rows excluded.' }),
+  })
+  .meta({ id: 'GuruGlobalChallenge' })
+export type GuruGlobalChallenge = z.infer<typeof GuruGlobalChallengeSchema>
 
 /** Subject mastery (read from the practice module); only subjects with at least one answer. */
 export const GamificationMasteryRowSchema = z
@@ -207,7 +221,10 @@ export type GamificationConvertView = z.infer<typeof GamificationConvertViewSche
  * balance all answer 422 `VALIDATION_ERROR` "Jumlah syiling tidak sah." with `fields.syilingAmount`.
  */
 export const GamificationConvertRequestSchema = z
-  .object({ syilingAmount: int })
+  .object({
+    syilingAmount: int,
+    clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing.' }),
+  })
   .meta({ id: 'GamificationConvertRequest' })
 export type GamificationConvertRequest = z.infer<typeof GamificationConvertRequestSchema>
 
@@ -228,7 +245,11 @@ export type GamificationConvertResult = z.infer<typeof GamificationConvertResult
 
 /** `meta` of `GET /gamification/challenges`: NOT the standard list meta. */
 export const GamificationChallengesMetaSchema = z
-  .object({ completed: count, active: count })
+  .object({
+    completed: count,
+    active: count,
+    claimed: count.optional().meta({ description: 'Rewards claimed this Malaysia day (API-GAME-11).' }),
+  })
   .meta({ id: 'GamificationChallengesMeta' })
 export type GamificationChallengesMeta = z.infer<typeof GamificationChallengesMetaSchema>
 
@@ -239,6 +260,36 @@ export const GamificationChallengesResponseSchema = z
   })
   .meta({ id: 'GamificationChallengesResponse' })
 export type GamificationChallengesResponse = z.infer<typeof GamificationChallengesResponseSchema>
+
+/** Module error codes of the claim (ERR-GAME-18, ERR-GAME-19); both answer 409. */
+export const GAMIFICATION_CLAIM_ERROR_CODES = ['CHALLENGE_NOT_DONE', 'CHALLENGE_CLAIMED'] as const
+export const GamificationClaimErrorCodeSchema = z.enum(GAMIFICATION_CLAIM_ERROR_CODES).meta({ id: 'GamificationClaimErrorCode' })
+export type GamificationClaimErrorCode = z.infer<typeof GamificationClaimErrorCodeSchema>
+
+/** Exact status and BM message per module code. */
+export const GAMIFICATION_CLAIM_ERRORS = {
+  CHALLENGE_NOT_DONE: { status: 409, message: 'Cabaran belum selesai.' },
+  CHALLENGE_CLAIMED: { status: 409, message: 'Ganjaran sudah dituntut.' },
+} as const satisfies Record<GamificationClaimErrorCode, { status: number; message: string }>
+
+/** Optional body of `POST /gamification/challenges/{id}/claim`. */
+export const GamificationChallengeClaimRequestSchema = z
+  .object({ clientUuid: ClientUuidSchema.optional().meta({ description: 'Idempotency key (DM-79), per user: a repeat returns the first result and moves nothing.' }) })
+  .meta({ id: 'GamificationChallengeClaimRequest' })
+export type GamificationChallengeClaimRequest = z.infer<typeof GamificationChallengeClaimRequestSchema>
+
+export const GamificationChallengeClaimResultSchema = z
+  .object({
+    claimed: z.literal(true),
+    rewardSyiling: count,
+    rewardXp: count,
+    notices: z
+      .array(z.string())
+      .optional()
+      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." Absent when there is nothing to tell, and always absent on a replay.' }),
+  })
+  .meta({ id: 'GamificationChallengeClaimResult' })
+export type GamificationChallengeClaimResult = z.infer<typeof GamificationChallengeClaimResultSchema>
 
 // ---------------------------------------------------------------------------------------------
 // Leaderboard
@@ -375,6 +426,8 @@ export const GamificationReferralSchema = z
     code: z.string().min(1),
     rewardReferrer: count,
     rewardReferee: count,
+    /** `referral_max_rewarded`: rewarded friends per referrer; at `stats.rewarded >= maxRewarded` the page shows "Had rujukan dicapai.". */
+    maxRewarded: count,
     registerUrl: z.string().min(1),
     whatsappUrl: z.string().min(1),
     telegramUrl: z.string().min(1),

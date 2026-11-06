@@ -5,7 +5,7 @@
  * |---|---|
  * | `battleSim({mode, afterPolls?})` | the NEXT battle queue: `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
  * | `battleWaiting({targetUserId, outcome, viewerId?})` | DV-M16-06: a waiting queue of `targetUserId` with a join request of `viewerId` (default 1) whose decision is `matched`, `rejected` or `expired`; returns `{queueId}` |
- * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `anonymousSchool` (`{week?, rank?}`), `openRoom` (Papan Bijak `PB1234`, waiting, host 4320), `settingCoins` (M14 `games_award_syiling` = 1), `spinNothing` / `spinSyiling5` (the next spin lands on segment 5 / 2) — the §6.11.7 fixtures |
+ * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `openRoom` (Papan Bijak `PB1234`, waiting, host 4320), `settingCoins` (M14 `games_award_syiling` = 1), `spinNothing` / `spinSyiling5` (the next spin lands on segment 5 / 2) — the §6.11.7 fixtures |
  * | `setBattleScores(uuid, {a, b})` | sets the scores of a battle |
  * | `m16Standings()` | the standings of every period, for assertions |
  * | `pbQuickMatch({mode})` | the NEXT Papan Bijak quick match: `match` (3rd poll, default) or `expired` (first poll) |
@@ -27,7 +27,6 @@ import {
   PERIODS,
   roomsRepo,
   setPendingSim,
-  sekolahBersaingRepo,
   tournamentsRepo,
 } from '../repository'
 import type { SimSpec } from '../types'
@@ -35,7 +34,6 @@ import type { SimSpec } from '../types'
 const FIXTURES = [
   'tournaments',
   'invitation',
-  'anonymousSchool',
   'openRoom',
   'settingCoins',
   'spinNothing',
@@ -80,10 +78,7 @@ export function battleWaiting(opts: {
   }
 }
 
-export function m16Fixture(
-  name: string,
-  options: { viewerId?: number; week?: string; rank?: number } = {},
-): void {
+export function m16Fixture(name: string, options: { viewerId?: number } = {}): void {
   if (!(FIXTURES as readonly string[]).includes(name)) {
     throw new RangeError(`m16Fixture: unknown fixture '${name}' (${FIXTURES.join(', ')})`)
   }
@@ -99,8 +94,7 @@ export function m16Fixture(
   } else if (name === 'openRoom') roomsRepo.insertOpenRoom()
   else if (name === 'settingCoins') settings.update([{ key: 'games_award_syiling', value: 1 }])
   else if (name === 'spinNothing') gameResultsRepo.setSpinNext(5)
-  else if (name === 'spinSyiling5') gameResultsRepo.setSpinNext(2)
-  else sekolahBersaingRepo.markAnonymous(options.week ?? '2026-09-21', options.rank ?? 1)
+  else gameResultsRepo.setSpinNext(2)
 }
 
 export function pbQuickMatch(opts: { mode: string }): void {
