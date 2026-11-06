@@ -273,6 +273,20 @@ export const ADMIN_ITEMS: readonly MatrixItem[] = [
   // [S0 end]
 ]
 
+// [S5 begin]
+/**
+ * Paths a role may open that are not a matrix row (the contract matrix in `packages/contract` has no
+ * Perutusan row). Perutusan (S5-T09, R1-AS-2): `/perutusan` and its children for teacher and school admin; `/perutusan/saya` and
+ * `/perutusan/tulis` are writer-only through the routes' own `roles` (a teacher gets the 403 page).
+ * The school-admin sidebar item `sa-perutusan` stays hidden in Delivery A (`user-nav.ts`,
+ * `SCHOOL_ADMIN_HIDDEN_IDS`, AC-SH-2); the route and the dashboard link work.
+ */
+const EXTRA_RULES: Readonly<Partial<Record<PrototypeRole, readonly PathRule[]>>> = {
+  teacher: [p('/perutusan')],
+  school_admin: [p('/perutusan')],
+}
+// [S5 end]
+
 const ITEMS: Readonly<Record<PrototypeRole, readonly MatrixItem[]>> = {
   student: STUDENT_ITEMS,
   teacher: TEACHER_ITEMS,
@@ -324,7 +338,10 @@ export function isPathInScope(role: Role | null, path: string): boolean {
   // Admin Pusat (D48) monitors the whole system: every route its Portal Pentadbiran shell links to
   // (`/admin/**` plus the cross-module admin screens) is allowed; the route's own `roles` still apply.
   if (role === 'admin') return true
-  return ITEMS[role].some((entry) => anyRule(entry.rules, target))
+  return (
+    ITEMS[role].some((entry) => anyRule(entry.rules, target)) ||
+    anyRule(EXTRA_RULES[role] ?? [], target)
+  )
 }
 
 /** `isPathInScope`, or `true` for everything when the scope switch is `off`. */

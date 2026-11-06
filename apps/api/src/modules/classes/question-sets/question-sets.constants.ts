@@ -19,9 +19,6 @@ export const QUESTION_SET_AUDIT = {
   PAPER_SUBMITTED: 'classes.question_paper.submitted',
 } as const
 
-/** Message of the default intake while BE-37 has not plugged its port in. */
-export const PAPER_INTAKE_UNAVAILABLE = 'Muat naik kertas soalan belum tersedia buat masa ini.'
-
 /**
  * Multipart limits of the paper upload, applied by the parser so an oversized body is cut off early:
  * at most 6 file parts (one over the 5 allowed, so "more than 5" is reported by the validation itself),

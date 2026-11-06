@@ -18,6 +18,7 @@ import {
   BijakPaperCoverSchema,
   BijakPaperCoverSectionSchema,
   BijakPaperReferencePanelSchema,
+  BijakPaperListQuerySchema,
   BijakPaperSummarySchema,
   BijakSubjectSchema,
 } from './schema'
@@ -86,7 +87,8 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/papers',
     tags: ['bijak-papers'],
     summary: 'Kertas Pilihan: published curated papers with the caller progress',
-    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. \`surface\` (DM-23, S3-T06) defaults to \`simulasi\` (Kertas Pilihan, unchanged); \`surface=subjektif\` lists the published Kertas Subjektif papers (rows carry \`surface\`, \`examBoard\`, the typed Jumlah Markah as \`marks\`, and the code \`K{kertas}\` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    request: { query: BijakPaperListQuerySchema },
     responses: {
       200: json(
         envelopeOf(z.array(BijakPaperSummarySchema)),
@@ -119,7 +121,7 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/contracts',
     tags: ['bijak-papers'],
     summary: 'Kontrak Blueprint list for Jana Kertas',
-    description: `Mock method listContracts(). Every blueprint including those with source Draf (those cannot generate). Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate (and unavailableReason NO_BLUEPRINT when false). A student, and Admin Sekolah in Mod Pelajar, sees the serving (Disahkan) version, or the head when none serves, and canGenerate is true only with a serving version. Admin Pusat in Mod Pelajar sees the head and canGenerate is true when its source is Spec or Disahkan. When false the UI shows "Belum ada kontrak untuk subjek dan kertas ini" (AC-03.6). ${ROLE_NOTE}`,
+    description: `Mock method listContracts(), S3-T01 (D76, PRD45 section 5.2): only the serving (Disahkan) version of each subject and kertas; a Spec or Draf contract is never listed, and a Spec head being edited over a Disahkan version shows that Disahkan version. Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate, true for every listed row. A subject and kertas with no row: the UI shows "Belum ada kontrak untuk subjek dan kertas ini" (AC-03.6). ${ROLE_NOTE}`,
     responses: {
       200: json(envelopeOf(z.array(BijakBlueprintContractSchema)), 'Blueprint contracts.'),
       401: UNAUTHORIZED,

@@ -11,15 +11,17 @@ import { POOL_PER_LEVEL } from '../../prisma/seed/questions/pool-content'
 import { PRIMARY_LEVELS, PRIMARY_PER_LEVEL, PRIMARY_SUBJECTS, primaryBank } from '../../prisma/seed/questions/pool-content-primary'
 import { featureModules } from '../../src/modules'
 import { SOLO_INFO, SUSUN_MAX_ANSWER } from '../../src/modules/games/solo/play/solo.rules'
-import { COUNT_OPTIONS, OFFERED_LEVEL_CODES } from '../../src/modules/practice/rules'
+import { COUNT_OPTIONS } from '../../src/modules/practice/rules'
 import { GAMES_THROTTLES_LIFTED } from '../games/helpers'
 import { bootSchoolAdminApp, DEMO_PASSWORD, type SchoolAdminTestApp } from '../school-admin/helpers'
 
 /**
- * AZ-02 (demo 23 Oct): the PoC pool at Darjah 1 to 4. Practice `random` offers D1 to D4 only (BR-11), Jutawan Ilmu and
+ * AZ-02 (demo 23 Oct): the PoC pool at Darjah 1 to 4. Practice offers D1 to D4 only (BR-11), Jutawan Ilmu and
  * the four question games draw at the pupil's level, Kad Memori draws over D1 to D4. Before AZ-02 the bank had no
  * question below Tingkatan 4, so all of them came back empty (UAT J-01).
  */
+/** The offered levels (practice `offeredLevels`: active, not primary), as the seed defines them. */
+const OFFERED_LEVEL_CODES = ['T1', 'T2', 'T3', 'T4', 'T5']
 const PRACTICE_MAX = Math.max(...COUNT_OPTIONS) // 20
 const JUTAWAN_LADDER: Record<number, number> = { 1: 4, 2: 4, 3: 4, 4: 3 }
 const SUBJECT_LEVELS = JSON.parse(
@@ -31,8 +33,8 @@ const keyText = (p: Part): string => p.options.find((o) => o.label === p.key.cor
 const primarySpecs = () => poolSpecs().filter((s) => !s.tingkatan)
 
 describe('PoC question pool at Darjah 1 to 4 (pure)', () => {
-  it('is not offered by practice random any more, for pool subjects the curriculum links to every one of them', () => {
-    // Secondary-only (2026-10-29): practice random offers T4/T5, so the Darjah pool is not offered.
+  it('is not offered by latih_tubi any more, for pool subjects the curriculum links to every one of them', () => {
+    // Secondary-only (2026-10-29): practice offers T4/T5, so the Darjah pool is not offered.
     for (const l of PRIMARY_LEVELS) expect(OFFERED_LEVEL_CODES).not.toContain(l)
     for (const s of PRIMARY_SUBJECTS) for (const l of PRIMARY_LEVELS) expect(SUBJECT_LEVELS, `${s} ${l}`).toContainEqual([s, l])
   })
@@ -245,13 +247,13 @@ describe('PoC question pool at Darjah 1 to 4 (database and API)', () => {
           )
         ).map((r) => r.code)
       for (const subjectCode of PRIMARY_SUBJECTS) {
-        const res = await p.post('/api/practice/sessions', { mode: 'random', subjectCode, count: PRACTICE_MAX })
+        const res = await p.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode, count: PRACTICE_MAX })
         expect(res.status, `${subjectCode}: ${JSON.stringify(res.body)}`).toBe(201)
         const ids = (res.body.data.questions as { id: string }[]).map((x) => x.id)
         for (const code of await levelsOf(ids)) expect(OFFERED_LEVEL_CODES, subjectCode).toContain(code)
       }
       // A Darjah level is refused on the practice start and on Jutawan.
-      const d1 = await p.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: PRACTICE_MAX, levelId: levelId.get('D1') })
+      const d1 = await p.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: PRACTICE_MAX, levelId: levelId.get('D1') })
       expect(d1.status).toBe(422)
       expect((await p.get('/api/games/jutawan?darjah=1')).status).toBe(422)
       // Kad Memori draws over Tingkatan 1 to 5 only.

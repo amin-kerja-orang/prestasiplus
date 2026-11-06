@@ -7,7 +7,8 @@ import { PrismaService } from '../../../../db/prisma.service'
 import { GROUP_SURFACES } from '../../../questions/serving'
 import { groupCompleteSql } from '../../../questions'
 import { PRACTICE_GROUP_SURFACES } from '../../ports'
-import { LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
+import { type OfferedLevel, offeredLevels } from '../../rules'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface AnswerFigures {
   answered: number
@@ -67,6 +68,11 @@ export class OverviewRepository {
     return this.prisma.client
   }
 
+  /** S4-T06: the offered levels (active, non-primary), see `offeredLevels`. */
+  offeredLevels(): Promise<OfferedLevel[]> {
+    return offeredLevels(this.db)
+  }
+
   /** BR-25: answers of the caller in `[from, to)`, with or without a session. Index: `ix_practice_answers_user_id_subject_id_answered_at`. */
   async answerFigures(userId: string, from: Date, to: Date, isTest: boolean): Promise<AnswerFigures> {
     const rows = await this.db.$queryRaw<{ answered: bigint; correct: bigint }[]>`
@@ -99,7 +105,7 @@ export class OverviewRepository {
         FROM revision_queue r
         JOIN questions q ON q.id = r.question_id
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved'`
+       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL}`
     return Number(rows[0]?.n ?? 0)
   }
 
@@ -122,7 +128,7 @@ export class OverviewRepository {
       SELECT v.subject_id, v.education_level_id AS level_id, v.difficulty_tp AS tp, (v.type = 'mcq') AS mcq, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND ${this.groupCond('latih_tubi_spm')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND ${this.groupCond('latih_tubi_spm')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${BANK_VISIBLE_SQL}
        GROUP BY 1, 2, 3, 4`
     return rows.map((r) => ({
       subjectId: r.subject_id === null ? null : idToString(r.subject_id),
@@ -143,7 +149,7 @@ export class OverviewRepository {
       SELECT q.id
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${BANK_VISIBLE_SQL}
        ORDER BY q.id DESC
        LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
@@ -161,7 +167,7 @@ export class OverviewRepository {
       SELECT v.chapter_id, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${this.groupCond('bab')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
+       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${this.groupCond('bab')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${BANK_VISIBLE_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(idToString(r.chapter_id), r.n)
     return out

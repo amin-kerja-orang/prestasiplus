@@ -17,8 +17,8 @@ describe('practice_answers time index (migration 0040_practice_answers_answered_
     const [u] = await db.query<{ id: string }>(`insert into users (name) values ('Murid indeks') returning id::text`)
     const [s] = await db.query<{ id: string }>(`insert into subjects (code, name, name_en, color) values ('IDX', 'Subjek', 'Subject', '#fff') returning id::text`)
     await db.query(
-      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test)
-       select $1::bigint, $2::bigint, g % 2 = 0, now() - g * interval '1 minute', g % 50 = 0 from generate_series(1, 2000) g`,
+      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test, mode)
+       select $1::bigint, $2::bigint, g % 2 = 0, now() - g * interval '1 minute', g % 50 = 0, 'latih_tubi' from generate_series(1, 2000) g`,
       [u!.id, s!.id],
     )
     await db.query(`analyze practice_answers`)

@@ -30,7 +30,9 @@ import {
   standingsRepo,
   timelineRepo,
 } from './repository/stores'
+import type { SchoolPerformance } from '../api/types'
 import { headcountRepo } from './repository/headcount'
+import { schoolPerformance as schoolPerformanceAll } from './repository/performance'
 import { finaliseHeadcount } from './seeds/headcount'
 import { finaliseM08, seedM08 } from './seeds/m08-t1'
 import { HEADCOUNT_TABLES } from './tables/headcount'
@@ -85,7 +87,21 @@ export { registerHeadcountReads, resetHeadcountReads } from './repository/headco
 /** The S5 class dashboard (M08 BR-M08-10); read by the M05 batch-3 class-228 test. */
 export { classDashboard } from './repository/class-performance'
 export { classItemAnalysis } from './repository/item-analysis'
-export { schoolPerformance } from './repository/performance'
+
+/**
+ * The S1 read model for other modules (M27 dashboard, M05 tests). The school dashboard of M27 shows Tingkatan 4 and 5 only, so
+ * this export keeps those two levels (the Prestasi pages read the full list from `repository/performance`).
+ */
+export function schoolPerformance(
+  scope: Parameters<typeof schoolPerformanceAll>[0],
+  clockYear: number,
+): Omit<SchoolPerformance, 'levels'> & { levels: (Omit<SchoolPerformance['levels'][number], 'code'> & { code: 't4' | 't5' })[] } {
+  const perf = schoolPerformanceAll(scope, clockYear)
+  return {
+    ...perf,
+    levels: perf.levels.flatMap((l) => (l.code === 't4' || l.code === 't5' ? [{ ...l, code: l.code }] : [])),
+  }
+}
 export type { HeadcountEntryView, HeadcountReads } from './repository/headcount-port'
 export type * from './repository/types'
 export type { SubjectTrend } from './repository/stores'
