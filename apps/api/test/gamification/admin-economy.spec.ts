@@ -199,8 +199,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
     it('GET lists every challenge (active or not) by (sortOrder, id) without the internal metric', async () => {
       const list = dataOf<Record<string, unknown>[]>(await admin.get('/admin/gamification/challenges'))
       expect(list).toHaveLength(11)
-      // The contract enum has no `combo` yet (DOC DEFECT 23, pending S0); Kombo 10 is the one row it cannot parse.
-      list.filter((c) => c.challengeType !== 'combo').forEach((c) => GamificationAdminChallengeSchema.parse(c))
+      list.forEach((c) => GamificationAdminChallengeSchema.parse(c)) // Kombo 10 parses: the contract enum has `combo`
       expect(list.filter((c) => c.challengeType === 'combo').map((c) => c.title)).toEqual(['Kombo 10'])
       expect(list.every((c) => !('metric' in c))).toBe(true)
       expect(list.slice(0, 4).map((c) => c.title)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik'])
@@ -232,7 +231,8 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
     it('combo is a selectable type (S7-T04 part 14): create sets metric best_combo, update to it resets the metric; kombo stays unknown', async () => {
       const created = await admin.post('/admin/gamification/challenges', { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'combo', targetValue: 10 })
       expect(created.status).toBe(201)
-      const c = dataOf<{ id: string }>(created) // not parsed: the contract enum has no `combo` yet (DOC DEFECT 23)
+      const c = GamificationAdminChallengeSchema.parse(dataOf(created))
+      expect(c.challengeType).toBe('combo')
       const metric = async () => (await t.db.query<{ metric: string }>(`select metric from challenges where id = $1`, [c.id]))[0]!.metric
       expect(await metric()).toBe('best_combo')
       await admin.put(`/admin/gamification/challenges/${c.id}`, { ...CHALLENGE_BODY, title: 'Kombo Uji', challengeType: 'quiz_count' })

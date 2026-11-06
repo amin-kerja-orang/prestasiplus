@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
+import { FixedClock } from '../../src/db/clock'
+import type { ChallengeRecord } from '../../src/modules/gamification/gamification.repository'
+import { GamificationService } from '../../src/modules/gamification/gamification.service'
+import { GamificationPorts, NoPracticeFacts } from '../../src/modules/gamification/ports'
+
 import { DEFAULT_METRIC_BY_TYPE, GAME_SESSION_MODES } from '../../src/modules/gamification/gamification.constants'
 import { dayMetrics } from '../../src/modules/gamification/gamification.service'
 import { GAME_ANSWER_MODES, longestRunInSession } from '../../src/modules/practice/day-facts'
@@ -55,5 +60,36 @@ describe('dayMetrics: best_combo and the game exclusion', () => {
 describe('combo is a selectable challenge type', () => {
   it('maps to best_combo', () => {
     expect(DEFAULT_METRIC_BY_TYPE.combo).toBe('best_combo')
+  })
+})
+
+describe('GamificationService reads best_combo only when a challenge needs it', () => {
+  const rec = (id: string, metric: string): ChallengeRecord => ({
+    id, title: `C${id}`, description: 'x', icon: '🎯', challengeType: 'quiz_count', metric, targetValue: 10,
+    rewardSyiling: 1, rewardXp: 1, difficulty: 'easy', sortOrder: 0, isActive: true,
+  })
+  async function run(metrics: string[]) {
+    const calls: string[] = []
+    const ports = new GamificationPorts()
+    ports.providePracticeFacts(Object.assign(new NoPracticeFacts(), { bestCombo: async (_u: string, day: string) => (calls.push(day), 7) }))
+    const repo = {
+      handle: () => ({}),
+      challenges: async () => metrics.map((m, i) => rec(String(i + 1), m)),
+      completedOn: async () => new Set<string>(),
+      streakOf: async () => ({ current: 0, lastActivityDate: null }),
+    }
+    const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock('2026-10-20T09:00:00+08:00'), ports, {} as never, {} as never, {} as never, {} as never)
+    const res = await svc.challengesToday('5')
+    return { calls, res }
+  }
+
+  it('no best_combo challenge: the port is not called', async () => {
+    expect((await run(['sessions', 'correct'])).calls).toEqual([])
+  })
+
+  it('a best_combo challenge: one call for the Malaysia day, and its progress is the run', async () => {
+    const { calls, res } = await run(['sessions', 'best_combo'])
+    expect(calls).toEqual(['2026-10-20'])
+    expect(res.data[1]).toMatchObject({ progress: 7, target: 10 })
   })
 })

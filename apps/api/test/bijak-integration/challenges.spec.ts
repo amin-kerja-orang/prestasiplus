@@ -221,6 +221,21 @@ describe('best_combo: the longest correct run inside one practice session of the
     expect(await combo('2026-10-20')).toBe(4)
   })
 
+  it('4b. answers with an IDENTICAL answered_at (the direct-complete path) are ordered by id: 5 right, 1 wrong, 5 right gives 5', async () => {
+    await clear()
+    const id = (
+      await t.db.query<{ id: string }>(
+        `insert into practice_sessions (id, user_id, mode, question_count, status, correct_count, time_spent_sec, started_at, completed_at, is_test)
+         values (gen_random_uuid(), $1::bigint, 'random', 11, 'completed', 10, 60, '2026-10-20T10:00:00+08:00', '2026-10-20T10:00:00+08:00', false) returning id::text`,
+        [uid()],
+      )
+    )[0]!.id
+    for (const c of 'CCCCCWCCCCC') {
+      await t.db.query(`insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, mode) values ($1::uuid, $2::bigint, 1, $3, '2026-10-20T10:00:00+08:00', 'random')`, [id, uid(), c === 'C'])
+    }
+    expect(await combo('2026-10-20')).toBe(5)
+  })
+
   it('5. answers outside a session do not count', async () => {
     await clear()
     for (let i = 0; i < 10; i++) {

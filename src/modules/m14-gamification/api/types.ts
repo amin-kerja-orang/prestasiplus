@@ -7,7 +7,7 @@
 export type TierKey = string
 export type LedgerType = 'earn' | 'spend' | 'convert' | 'bonus' | 'refund'
 export type Difficulty = 'easy' | 'medium' | 'hard'
-export type ChallengeType = 'quiz_count' | 'accuracy' | 'topic_variety' | 'streak' | 'time_spent'
+export type ChallengeType = 'quiz_count' | 'accuracy' | 'topic_variety' | 'streak' | 'time_spent' | 'combo'
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
 export type CashStatus = 'PENDING' | 'APPROVED' | 'PROCESSING' | 'PAID' | 'REJECTED'
 export type RedemptionStatus = 'PENDING' | 'PROCESSING' | 'DELIVERED' | 'CANCELLED'

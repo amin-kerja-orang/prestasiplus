@@ -382,7 +382,7 @@ describe('owners of the observed ledger rows (review MINOR-7)', () => {
 
 describe('other §6.10 queries and §6.11.5 / §6.11.7 seeds', () => {
   it('challenges, finishers, achievements, referrals', () => {
-    expect(challenges.count('Q-CHALLENGES-ACTIVE')).toBe(10)
+    expect(challenges.count('Q-CHALLENGES-ACTIVE')).toBe(11)
     expect(gamification.dailyFinishers()).toBe(0)
     expect(achievements.count('Q-ACH-UNLOCKED', 1)).toBe(0)
     expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 25 })

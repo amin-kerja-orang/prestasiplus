@@ -734,7 +734,9 @@ export class PracticeRepository {
   /**
    * M14 `best_combo` (S7-T04 part 14, R 4): the longest run of consecutive correct answers inside ONE practice
    * session, among the answers given in `[from, to)`. Runs of two sessions are never summed; answers without a
-   * session and game answers (`mode` game / battle) are ignored. Read-only.
+   * session and game answers (`mode` game / battle) are ignored. The run counts answer rows, not questions: a structured
+   * or subjective question writes one row per leaf, and a pending self-mark is written as `is_correct = false`, which
+   * breaks the run. Read-only.
    */
   async bestCombo(userId: string, from: Date, to: Date): Promise<number> {
     const rows = await this.db.practiceAnswer.findMany({

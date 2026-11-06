@@ -109,7 +109,7 @@ function gameRow(game: string, event: string, p: { correct?: number; detail?: Re
 
 /** BR-M14-12 metric values for one Malaysia day. */
 export function dayMetrics(
-  day: { sessions: readonly { mode?: string; correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] },
+  day: { sessions: readonly { mode: string; correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] },
   streakCurrent: number,
   bestCombo = 0,
 ): Record<string, number> {
@@ -118,7 +118,7 @@ export function dayMetrics(
   let bestCorrect = 0
   let seconds = 0
   // FR-GM-19.4: game sessions never count.
-  const sessions = day.sessions.filter((s) => s.mode === undefined || !GAME_SESSION_MODES.includes(s.mode))
+  const sessions = day.sessions.filter((s) => !GAME_SESSION_MODES.includes(s.mode))
   for (const s of sessions) {
     correct += s.correct
     seconds += s.timeSpent
