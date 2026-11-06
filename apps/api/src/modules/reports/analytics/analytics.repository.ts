@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { BANK_VISIBLE_SQL } from '../../questions/learner-visibility'
 import { M1_START_MS } from './domain/rules'
 
 /**
@@ -111,6 +112,16 @@ export interface SessionDayRow {
   questions: number
 }
 
+/** One (pupil, mode, MYT day) group of the all-modes activity feed (FR-GUR-42-6): `accuracySum` adds the per-unit accuracies (0..1). */
+export interface ActivityDayRow {
+  userId: string
+  mode: string
+  day: string
+  sessions: number
+  accuracySum: number
+  accuracyN: number
+}
+
 /** The answer log without Mod Pelajar rows and without unfinished sessions: a (practice_answers a) joined to its session s. */
 const CLEAN_ANSWERS = Prisma.sql`practice_answers a LEFT JOIN practice_sessions s ON s.id = a.session_id`
 const CLEAN_WHERE = Prisma.sql`NOT a.is_test AND (s.id IS NULL OR (s.status = 'completed' AND NOT s.is_test))`
@@ -128,13 +139,12 @@ export class AnalyticsRepository {
   }
 
   /** The T4/T5 segment (BR-M11-01): active pupils of grade 10 or 11 with a school, in scope. */
-  private segment(schoolIds: readonly string[] | null, pupilIds: readonly string[] | null = null): Prisma.Sql {
+  private segment(schoolIds: readonly string[] | null): Prisma.Sql {
     return Prisma.sql`SELECT u.id AS user_id, u.school_id
       FROM users u
       WHERE u.is_active AND u.grade IN (10, 11) AND u.school_id IS NOT NULL
         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
-        ${this.clause(schoolIds, Prisma.sql`u.school_id`)}
-        ${this.clause(pupilIds, Prisma.sql`u.id`)}`
+        ${this.clause(schoolIds, Prisma.sql`u.school_id`)}`
   }
 
   // --- schools -------------------------------------------------------------------------------------------------
@@ -161,33 +171,32 @@ export class AnalyticsRepository {
   }
 
   /** Registered T4/T5 pupils per school (Q-M11-T45). */
-  async registeredBySchool(ids: readonly string[] | null, pupilIds: readonly string[] | null = null): Promise<Map<string, number>> {
-    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
+  async registeredBySchool(ids: readonly string[] | null): Promise<Map<string, number>> {
+    if (ids !== null && ids.length === 0) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number }[]>`
-      WITH seg AS (${this.segment(ids, pupilIds)}) SELECT school_id::text AS school_id, count(*)::int AS n FROM seg GROUP BY school_id`
+      WITH seg AS (${this.segment(ids)}) SELECT school_id::text AS school_id, count(*)::int AS n FROM seg GROUP BY school_id`
     return new Map(rows.map((r) => [r.school_id, r.n]))
   }
 
   /** Teachers and teachers who logged in per school (Q-M11-TEACHERS). */
-  async teachersBySchool(ids: readonly string[] | null, teacherIds: readonly string[] | null = null): Promise<Map<string, { n: number; logged: number }>> {
-    if ((ids !== null && ids.length === 0) || (teacherIds !== null && teacherIds.length === 0)) return new Map()
+  async teachersBySchool(ids: readonly string[] | null): Promise<Map<string, { n: number; logged: number }>> {
+    if (ids !== null && ids.length === 0) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number; logged: number }[]>`
       SELECT u.school_id::text AS school_id, count(*)::int AS n, count(*) FILTER (WHERE u.last_login_at IS NOT NULL)::int AS logged
       FROM users u
       WHERE u.is_active AND u.school_id IS NOT NULL
         AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
         ${this.clause(ids, Prisma.sql`u.school_id`)}
-        ${this.clause(teacherIds, Prisma.sql`u.id`)}
       GROUP BY u.school_id`
     return new Map(rows.map((r) => [r.school_id, { n: r.n, logged: r.logged }]))
   }
 
   /** Answering pupils and answers per school since `from` (null = all time), over the T4/T5 segment (Q-ANS-SEG). */
-  async engagement(ids: readonly string[] | null, from: Date | null, pupilIds: readonly string[] | null = null): Promise<Map<string, { engaged: number; answers: number }>> {
-    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
+  async engagement(ids: readonly string[] | null, from: Date | null): Promise<Map<string, { engaged: number; answers: number }>> {
+    if (ids !== null && ids.length === 0) return new Map()
     const since = from === null ? Prisma.empty : Prisma.sql`AND a.answered_at >= ${from}`
     const rows = await this.db.$queryRaw<{ school_id: string; engaged: number; answers: number }[]>`
-      WITH seg AS (${this.segment(ids, pupilIds)})
+      WITH seg AS (${this.segment(ids)})
       SELECT seg.school_id::text AS school_id, count(DISTINCT a.user_id)::int AS engaged, count(*)::int AS answers
       FROM ${CLEAN_ANSWERS} JOIN seg ON seg.user_id = a.user_id
       WHERE ${CLEAN_WHERE} ${since}
@@ -196,11 +205,11 @@ export class AnalyticsRepository {
   }
 
   /** Answers per school per Monday-based week since M1 (BR-M11-15): `school -> week -> n`. */
-  async answersByWeek(ids: readonly string[] | null, pupilIds: readonly string[] | null = null): Promise<Map<string, Map<number, number>>> {
-    if ((ids !== null && ids.length === 0) || (pupilIds !== null && pupilIds.length === 0)) return new Map()
+  async answersByWeek(ids: readonly string[] | null): Promise<Map<string, Map<number, number>>> {
+    if (ids !== null && ids.length === 0) return new Map()
     const m1 = new Date(M1_START_MS)
     const rows = await this.db.$queryRaw<{ school_id: string; week: number; n: number }[]>`
-      WITH seg AS (${this.segment(ids, pupilIds)})
+      WITH seg AS (${this.segment(ids)})
       SELECT seg.school_id::text AS school_id,
         (floor(extract(epoch FROM (a.answered_at - ${m1}::timestamptz)) / 604800))::int + 1 AS week,
         count(*)::int AS n
@@ -468,7 +477,7 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ chapter_id: string; n: number }[]>`
       SELECT v.chapter_id::text AS chapter_id, count(*)::int AS n
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved'
-      WHERE q.is_active AND v.chapter_id = ANY(${keys}::bigint[])
+      WHERE q.is_active AND v.chapter_id = ANY(${keys}::bigint[]) AND ${BANK_VISIBLE_SQL}
         AND NOT EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pksk_domain')
       GROUP BY v.chapter_id`
     return new Map(rows.map((r) => [r.chapter_id, r.n]))
@@ -522,6 +531,51 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ user_id: string }[]>`
       SELECT DISTINCT s.user_id::text AS user_id FROM practice_sessions s
       WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test ${bySubject}`
+    return new Set(rows.map((r) => r.user_id))
+  }
+
+  /**
+   * FR-GUR-42-6 (XS-8): every completed non-test unit of activity in the window, grouped by pupil, mode and MYT day. Two sources
+   * write one unit each: a completed `practice_sessions` row (every mode, Set Soalan Guru = `question_set`) and a graded Bijak
+   * sitting (`practice_attempt_aggregates`, which does NOT write `practice_sessions`; mode `bijak`). The accuracy of a unit is
+   * correct / questions (sessions) or units awarded / units max (sittings); a unit without questions has none, and a provisional sitting counts as activity but has no accuracy.
+   */
+  async activityByDay(userIds: readonly string[], from: Date, to: Date): Promise<ActivityDayRow[]> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return []
+    const rows = await this.db.$queryRaw<{ user_id: string; mode: string; day: string; sessions: number; acc_sum: number; acc_n: number }[]>`
+      SELECT u.user_id::text AS user_id, u.mode, u.day, count(*)::int AS sessions,
+        coalesce(sum(u.acc), 0)::float8 AS acc_sum, count(u.acc)::int AS acc_n
+      FROM (
+        SELECT s.user_id, s.mode, to_char(s.completed_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+          CASE WHEN s.question_count > 0 THEN s.correct_count::float8 / s.question_count END AS acc
+        FROM practice_sessions s
+        WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test
+          AND s.completed_at >= ${from} AND s.completed_at <= ${to}
+        UNION ALL
+        SELECT g.user_id, 'bijak' AS mode, to_char(g.submitted_at AT TIME ZONE ${KL}, 'YYYY-MM-DD') AS day,
+          CASE WHEN g.units_max > 0 AND NOT g.provisional THEN (g.units_awarded / g.units_max)::float8 END AS acc
+        FROM practice_attempt_aggregates g
+        WHERE g.user_id = ANY(${keys}::bigint[]) AND NOT g.is_test AND g.submitted_at IS NOT NULL
+          AND g.submitted_at >= ${from} AND g.submitted_at <= ${to}
+      ) u
+      GROUP BY 1, 2, 3`
+    return rows.map((r) => ({ userId: r.user_id, mode: r.mode, day: r.day, sessions: r.sessions, accuracySum: r.acc_sum, accuracyN: r.acc_n }))
+  }
+
+  /** FR-GUR-42-6: pupils among `userIds` with any non-test practice in ANY mode: a completed session, an answer, or a graded Bijak sitting. */
+  async practisedAnyMode(userIds: readonly string[]): Promise<Set<string>> {
+    const keys = toIds(userIds)
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ user_id: string }[]>`
+      SELECT s.user_id::text AS user_id FROM practice_sessions s
+        WHERE s.user_id = ANY(${keys}::bigint[]) AND s.status = 'completed' AND NOT s.is_test
+      UNION
+      SELECT a.user_id::text FROM ${CLEAN_ANSWERS}
+        WHERE ${CLEAN_WHERE} AND a.user_id = ANY(${keys}::bigint[])
+      UNION
+      SELECT g.user_id::text FROM practice_attempt_aggregates g
+        WHERE g.user_id = ANY(${keys}::bigint[]) AND NOT g.is_test AND g.submitted_at IS NOT NULL`
     return new Set(rows.map((r) => r.user_id))
   }
 

@@ -4,9 +4,26 @@ import { Prisma } from '../../db/generated/client'
 import type { PrismaClient, TxClient } from '../../db/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import type { GameRewardCapReason } from '../games'
 
 /** A transaction handle or the plain client. */
 export type Db = TxClient | PrismaClient
+
+/** A stored challenge claim (DM-63). */
+export interface ClaimRecord {
+  id: string
+  challengeId: string
+  rewardSyiling: number
+  rewardXp: number
+  clientUuid: string | null
+}
+
+/** The first result of a reward event (DM-87). */
+export interface GameRewardEventRecord {
+  xp: number
+  syiling: number
+  cappedReason: GameRewardCapReason | null
+}
 
 /** A `date` column is read and written as UTC midnight of the calendar day. */
 const dayDate = (day: string): Date => new Date(`${day}T00:00:00Z`)
@@ -149,6 +166,7 @@ export interface LockedWallet {
   userId: string
   tierId: string | null
   currentSyiling: number
+  totalSyilingEarned: number
   tokenBalance: number
 }
 
@@ -385,6 +403,22 @@ export class GamificationRepository {
   }
 
   /**
+   * Per challenge id: how many distinct users of `userIds` have a real completion on the Malaysia day `day`
+   * (`is_test` rows excluded). Empty input answers an empty map without a query. Read-only.
+   */
+  async completionCountsOn(db: Db, day: string, userIds: bigint[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    if (userIds.length === 0) return out
+    const rows = await db.$queryRaw<{ challengeId: bigint; n: bigint }[]>`
+      SELECT cc.challenge_id AS "challengeId", count(DISTINCT cc.user_id)::bigint AS n
+        FROM challenge_completions cc
+       WHERE cc.completion_date = ${day}::date AND NOT cc.is_test AND cc.user_id = ANY(${userIds}::bigint[])
+       GROUP BY cc.challenge_id`
+    for (const r of rows) out.set(idToString(r.challengeId), num(r.n))
+    return out
+  }
+
+  /**
    * `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day). True only for the call that wrote
    * the row: the reward is credited by that call alone (AC2).
    */
@@ -393,6 +427,68 @@ export class GamificationRepository {
       INSERT INTO challenge_completions (user_id, challenge_id, completion_date, completed_at, is_test, created_at, updated_at)
       VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.at}::timestamptz, ${row.isTest}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (user_id, challenge_id, completion_date) DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  /** Challenge ids the user claimed on the Malaysia day `day` (DM-63, API-GAME-11). */
+  async claimedOn(db: Db, userId: string, day: string): Promise<Set<string>> {
+    const rows = await db.challengeClaim.findMany({ where: { userId: idFromString(userId), mytDate: dayDate(day) }, select: { challengeId: true } })
+    return new Set(rows.map((r) => idToString(r.challengeId)))
+  }
+
+  /** The claim of (user, challenge, Malaysia day), or null. */
+  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
+    const r = await db.challengeClaim.findUnique({
+      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
+    })
+    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
+  }
+
+  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
+  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
+    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
+  }
+
+  /**
+   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
+   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
+   */
+  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
+      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
+      ON CONFLICT DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  // --- game reward events (DM-87) ------------------------------------------------------------------
+
+  /** Serialises the reward events of one pupil until the transaction ends, so that parallel games cannot pass a daily cap together. */
+  async lockGameRewards(db: Db, userId: string): Promise<void> {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`game_rewards:${userId}`}, 0))`
+  }
+
+  async gameRewardEvent(db: Db, gameSessionId: string, userId: string): Promise<GameRewardEventRecord | null> {
+    return db.gameRewardEvent.findUnique({
+      where: { gameSessionId_userId: { gameSessionId, userId: idFromString(userId) } },
+      select: { xp: true, syiling: true, cappedReason: true },
+    }) as Promise<GameRewardEventRecord | null>
+  }
+
+  /** What the pupil's reward events hold for `[from, to)`. */
+  async gameRewardsBetween(db: Db, userId: string, from: Date, to: Date): Promise<{ xp: number; syiling: number }> {
+    const r = await db.gameRewardEvent.aggregate({ where: { userId: idFromString(userId), createdAt: { gte: from, lt: to } }, _sum: { xp: true, syiling: true } })
+    return { xp: r._sum.xp ?? 0, syiling: r._sum.syiling ?? 0 }
+  }
+
+  /** False when the session and pupil already hold their event: the unique index decides. */
+  async insertGameRewardEvent(db: Db, row: GameRewardEventRecord & { gameSessionId: string; userId: string; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO game_reward_events (game_session_id, user_id, xp, syiling, capped_reason, created_at)
+      VALUES (${row.gameSessionId}::uuid, ${idFromString(row.userId)}, ${row.xp}, ${row.syiling}, ${row.cappedReason}, ${row.at}::timestamptz)
+      ON CONFLICT (game_session_id, user_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
   }
@@ -471,11 +567,26 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
+  /** Serialises the referrals of one referrer (the cap count and the insert). `NO KEY UPDATE` does not block rows that only reference the user. */
+  async lockReferrer(db: Db, referrerId: string): Promise<void> {
+    await db.$queryRaw`SELECT id FROM users WHERE id = ${idFromString(referrerId)} FOR NO KEY UPDATE`
+  }
+
+  /** What the referrer was paid for referrals: the ledger rows keyed by the user's referees (a referee's own bonus is not counted). */
+  async referralSyilingEarned(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ total: bigint | null }[]>`
+      SELECT COALESCE(SUM(l.amount), 0)::bigint AS total
+      FROM coin_ledger l
+      JOIN referrals r ON r.referrer_id = l.user_id AND l.source_id = 'referral:' || r.referee_id::text
+      WHERE l.user_id = ${idFromString(userId)} AND l.source = 'referral' AND l.type = 'bonus' AND l.is_test = false`
+    return Number(rows[0]?.total ?? 0)
+  }
+
   /** True when this call stored the referral (a person is referred once: unique referee). */
-  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; at: Date }): Promise<boolean> {
+  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; rewarded: boolean; at: Date }): Promise<boolean> {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at)
-      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, true, ${row.at}::timestamptz, ${row.at}::timestamptz)
+      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, ${row.rewarded}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (referee_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
@@ -509,16 +620,16 @@ export class GamificationRepository {
 
   /** Read plus row lock: serialises the conversions of one wallet while the caller validates the amount against the balance. */
   async lockWallet(db: Db, userId: string): Promise<LockedWallet | null> {
-    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; tokenBalance: number }[]>`
-      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", token_balance AS "tokenBalance"
+    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; totalSyilingEarned: number; tokenBalance: number }[]>`
+      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", total_syiling_earned AS "totalSyilingEarned", token_balance AS "tokenBalance"
         FROM wallets WHERE user_id = ${idFromString(userId)} FOR UPDATE`
     const r = rows[0]
-    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, tokenBalance: r.tokenBalance } : null
+    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, totalSyilingEarned: r.totalSyilingEarned, tokenBalance: r.tokenBalance } : null
   }
 
-  async walletTierId(db: Db, userId: string): Promise<string | null> {
-    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true } })
-    return w?.tierId === null || w?.tierId === undefined ? null : idToString(w.tierId)
+  async walletTier(db: Db, userId: string): Promise<{ tierId: string | null; totalSyilingEarned: number } | null> {
+    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true, totalSyilingEarned: true } })
+    return w ? { tierId: w.tierId === null ? null : idToString(w.tierId), totalSyilingEarned: w.totalSyilingEarned } : null
   }
 
   async ledgerRecent(db: Db, userId: string, take: number): Promise<LedgerRecord[]> {
@@ -696,14 +807,6 @@ export class GamificationRepository {
     return row ? { id: idToString(row.id), name: row.name, type: row.type, priceSyiling: row.priceSyiling, costValueSen: row.costValueSen } : null
   }
 
-  /** Claims whose `claimed_at` falls in `[from, to)`: count, distinct students and the summed cost snapshot (G-18). */
-  async claimTiles(db: Db, from: Date, to: Date): Promise<{ claims: number; students: number; costSen: number }> {
-    const rows = await db.$queryRaw<{ claims: bigint; students: bigint; cost: bigint | null }[]>`
-      SELECT count(*)::bigint AS claims, count(DISTINCT user_id)::bigint AS students, COALESCE(SUM(cost_value_sen), 0)::bigint AS cost
-        FROM reward_claims WHERE claimed_at >= ${from}::timestamptz AND claimed_at < ${to}::timestamptz`
-    return { claims: num(rows[0]?.claims), students: num(rows[0]?.students), costSen: num(rows[0]?.cost) }
-  }
-
   async draws(db: Db): Promise<DrawRecord[]> {
     const rows = await db.draw.findMany({ orderBy: { id: 'desc' }, include: { prizes: { orderBy: { position: 'asc' } }, _count: { select: { tickets: true } } } })
     return rows.map((d) => toDraw(d, d._count.tickets))
@@ -763,8 +866,8 @@ export class GamificationRepository {
   // --- reads for BE-19's reports (PerformanceGamificationAdapter) ---------------------------------
 
   /** Wallet level, syiling and cached tier of many users in one read; users without a wallet row are absent. */
-  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; tierId: string | null }>> {
-    const out = new Map<string, { level: number; syiling: number; tierId: string | null }>()
+  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>> {
+    const out = new Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>()
     const ids = userIds.flatMap((id) => {
       try {
         return [idFromString(id)]
@@ -773,8 +876,8 @@ export class GamificationRepository {
       }
     })
     if (ids.length === 0) return out
-    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, tierId: true } })
-    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, tierId: r.tierId === null ? null : idToString(r.tierId) })
+    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, totalSyilingEarned: true, tierId: true } })
+    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, lifetime: r.totalSyilingEarned, tierId: r.tierId === null ? null : idToString(r.tierId) })
     return out
   }
 

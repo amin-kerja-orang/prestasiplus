@@ -64,35 +64,30 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
  * The first CI run decides further rows (D115): add one per failing item, `ownerCard` = the card of the
  * item's PRD module in docs/plan/r1-traceability.md. Calibrated by the CI runs of e08d5575 and 0daa328a.
  *
- * The Alat Soalan tool items of Guru (`GURU_TOOLS` in src/shells/nav/out-of-scope.ts: /guru/soalan-guru,
- * /guru/databank, /guru/kertas-peperiksaan, /guru/soalan-berstruktur ...; S6-T16..S6-T20) are hidden by
+ * The Alat Soalan tool items of Guru (`GURU_TOOLS` in src/shells/nav/out-of-scope.ts:
+ * /guru/databank, /guru/kertas-peperiksaan ...; S6-T16..S6-T20) are hidden by
  * `navFor` while the prototype scope is on, so they are not rendered and have no row yet. Add a row per
- * route when a card un-hides one.
+ * route when a card un-hides one. S6-T16 un-hid /guru/soalan-guru (item t-soalan-rujukan) and S6-T17
+ * un-hid /guru/soalan-berstruktur (item t-soalan-berstruktur); both are rendered and routed by m10, so
+ * they need no EXPECTED_RED row.
  */
 const EXPECTED_RED: Record<WalkRole, Row[]> = {
   student: [
-    // /prestasi redirects to the school dashboard (m08 routes/prestasi.ts:29), fixed by S10-T01.
-    { id: 'prestasi', route: '/prestasi', ownerCard: 'S10-T01' },
-    // The item is visible, but the m08 route currently answers 403 (Akses Ditolak) for the pupil until S10-T09 / S10-T03 land.
-    { id: 'headcount', route: '/headcount', ownerCard: 'S10-T09' },
-    { id: 'analisa-item', route: '/analisa-item', ownerCard: 'S10-T03' },
+    // The pupil /prestasi row (S10-T01, #544), the Analisa Item row (S10-T03) and the /headcount row (S10-T09) were removed when their pages landed.
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
-  adminSekolah: [
-    // The route allows school_admin (S0-T06), but GET /api/analytics/classes is @Roles('admin','teacher')
-    // (apps/api/src/modules/reports/performance/http/performance.controllers.ts:53), so the page shows 403.
-    // S10-T04 change (2) adds school_admin to @Roles and canOpenClassAnalysis.
-    { id: 'sa-analitik-adaptif', route: '/analitik/kelas', ownerCard: 'S10-T04' },
-  ],
+  // Admin Sekolah: the Analitik Adaptif row (S10-T04 Change (2)) was removed when the API gained school_admin.
+  adminSekolah: [],
 }
 
 /**
  * Fewest sidebar links a role must show, from what `sidebarEntries(role)` yields with the scope on:
- * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items
- * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 23. An empty sidebar fails.
+ * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 27 items (Soalan & Rujukan S6-T16 and
+ * Soalan Berstruktur S6-T17 rendered; Gambar Rajah left the sidebar, S6-T18) minus the 7 Kirkpatrick pages plus their one row = 21, Admin Sekolah 22.
+ * An empty sidebar fails.
  */
-const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 23 }
+const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 21, adminSekolah: 22 }
 
 const ROLE_LABEL: Record<WalkRole, string> = {
   student: 'pupil',
@@ -130,8 +125,8 @@ const ALLOWED_REDIRECTS: { role: WalkRole; from: string; to: string; reason: str
     role: 'adminSekolah',
     from: '/prestasi',
     to: '/prestasi/sekolah',
-    // src/modules/m08-student-performance/routes/prestasi.ts:29 redirects /prestasi for every role;
-    // /prestasi/sekolah is the school admin's own dashboard (the pupil's row is EXPECTED_RED, S10-T01).
+    // src/modules/m08-student-performance/routes/prestasi.ts:34 sends every role except the pupil to
+    // /prestasi/sekolah, the school admin's own dashboard (the pupil gets Prestasi 360, S10-T01).
     reason: 'school admin Prestasi is the school dashboard',
   },
 ]

@@ -8,6 +8,9 @@ export type M14ErrorCode =
   | 'CASH_DISABLED'
   | 'OUT_OF_STOCK'
   | 'LIMIT_REACHED'
+  | 'CHALLENGE_NOT_DONE'
+  | 'CHALLENGE_CLAIMED'
+  | 'CONFLICT'
 
 /** A refused M14 write (nothing is written). Handlers map `code` to the §7 error responses. */
 export class M14Error extends Error {

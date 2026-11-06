@@ -170,6 +170,14 @@ export const BijakPaperReferencePanelSchema = z
   .meta({ id: 'BijakPaperReferencePanel' })
 export type BijakPaperReferencePanel = z.infer<typeof BijakPaperReferencePanelSchema>
 
+/** Why a cover cannot start a new sitting (API-BIJAK-02, PO decision 12). The wire values are not in 60; the screen shows one line for all of them. */
+export const BIJAK_COVER_UNAVAILABLE_REASONS = ['QUESTION_WITHDRAWN', 'NO_QUESTIONS'] as const
+export const BijakCoverUnavailableReasonSchema = z.enum(BIJAK_COVER_UNAVAILABLE_REASONS).meta({
+  description:
+    'QUESTION_WITHDRAWN: a placed question is withdrawn or archived, or its pinned version is taken down. NO_QUESTIONS: the paper places no question.',
+})
+export type BijakCoverUnavailableReason = z.infer<typeof BijakCoverUnavailableReasonSchema>
+
 /** `PaperCover` of the mock: the summary plus instructions, reference sheet and sections. */
 export const BijakPaperCoverSchema = z
   .strictObject({
@@ -183,6 +191,15 @@ export const BijakPaperCoverSchema = z
         'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
     }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
+    kuizAvailable: z.boolean().optional().meta({
+      description:
+        'S3-T07: false when the paper is outside the caller\'s form (`level_scope`) and the caller has no open sitting on it, so the paper Kuiz answers 404 and the cover omits its action. Absent means available.',
+    }),
+    unavailable: z.boolean().meta({
+      description:
+        'PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees "Mula" disabled with the message "Kertas belum tersedia" before any click. A sitting already open can still be resumed.',
+    }),
+    unavailableReason: BijakCoverUnavailableReasonSchema.optional().meta({ description: 'Present only when `unavailable` is true.' }),
   })
   .meta({ id: 'BijakPaperCover' })
 export type BijakPaperCover = z.infer<typeof BijakPaperCoverSchema>

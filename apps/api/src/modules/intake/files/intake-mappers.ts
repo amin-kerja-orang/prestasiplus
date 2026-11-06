@@ -44,6 +44,7 @@ export function errorCodeOrNull(code: string | null): IntakeFileErrorCode | null
 export interface BatchRow {
   id: bigint
   status: string
+  statusReason?: string | null
   paperType: string
   subject: string
   kertas: number | null
@@ -67,14 +68,21 @@ export interface BatchItemCounts {
 
 export const NO_ITEMS: BatchItemCounts = { itemCount: 0, reviewedCount: 0 }
 
-export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS): IntakeBatchSummary {
+/** DM-08: the stored kertas is 1 to 4 (ck_intake_batches_kertas); anything else cannot occur, so it reads as 1. */
+function kertasOf(n: number): 1 | 2 | 3 | 4 {
+  return n === 2 || n === 3 || n === 4 ? n : 1
+}
+
+/** `targetPaperId`: the paper whose `source_batch_id` is this batch (DM-45), from one set-based lookup; null when none. */
+export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS, targetPaperId: bigint | null = null): IntakeBatchSummary {
   return {
     id: idToString(row.id),
     status: row.status as IntakeBatchStatus,
     statusLabel: INTAKE_BATCH_STATUS_LABELS[row.status as IntakeBatchStatus],
+    statusReason: row.statusReason ?? null,
     paperType: row.paperType as IntakeBatchSummary['paperType'],
     subject: row.subject,
-    kertas: row.kertas === null ? null : row.kertas === 2 ? 2 : 1,
+    kertas: row.kertas === null ? null : kertasOf(row.kertas),
     year: row.year,
     source: row.sourceText,
     copyright: rightsToWire(row.rightsStatus),
@@ -85,6 +93,7 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     itemCount: counts.itemCount,
     reviewedCount: counts.reviewedCount,
     owner: row.owner ? { id: idToString(row.owner.id), name: row.owner.name } : null,
+    targetPaperId: targetPaperId === null ? null : idToString(targetPaperId),
     createdAt: toMytTimestamp(row.createdAt),
     updatedAt: toMytTimestamp(row.updatedAt),
     submittedAt: row.submittedAt ? toMytTimestamp(row.submittedAt) : null,

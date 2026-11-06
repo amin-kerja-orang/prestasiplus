@@ -42,7 +42,18 @@ export const supportTicketScenarios: Scenario[] = [
       ctx.expectStatus(await admin.request('GET', '/admin/tiket?status=dibuka'), 200)
       const openAfter = Number(dataOf(await admin.request('GET', '/admin/tiket/open-count')).count)
       ctx.check(openAfter === openBefore + 1, `open-count must grow by one (${String(openBefore)} to ${String(openAfter)})`)
-      // read-only (D27): the contract has no write operation on the admin paths (integration spec: 404 on every write)
+      const detail = await admin.request('GET', `/admin/tiket/${String(ticket.id)}`)
+      ctx.expectStatus(detail, 200)
+      ctx.check(dataOf(detail).adminReply === null && dataOf(detail).body === 'Butiran ujian' && dataOf(detail).roleLabel === 'Murid', 'the detail must hold the body, the role and no reply')
+      const replied = await admin.request('PUT', `/admin/tiket/${String(ticket.id)}/reply`, { body: { text: 'Balasan ujian' } })
+      ctx.expectStatus(replied, 200)
+      ctx.check(dataOf(replied).adminReply === 'Balasan ujian' && dataOf(replied).status === 'dibuka', 'a reply must not change the status')
+      expectError(ctx, await admin.request('PUT', `/admin/tiket/${String(ticket.id)}/reply`, { body: { text: ' ' } }), 422, 'VALIDATION_ERROR')
+      const moved = await admin.request('PATCH', `/admin/tiket/${String(ticket.id)}/status`, { body: { status: 'dalam_proses' } })
+      ctx.expectStatus(moved, 200)
+      ctx.check(dataOf(moved).status === 'dalam_proses', 'the status must change')
+      expectError(ctx, await admin.request('PATCH', `/admin/tiket/${String(ticket.id)}/status`, { body: { status: 'baru' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await admin.request('GET', '/admin/tiket/999999999'), 404, 'NOT_FOUND')
     },
   },
   {
@@ -79,6 +90,21 @@ export const supportTicketScenarios: Scenario[] = [
       }
       const noCsrf = await ctx.as('student', { csrf: false })
       expectError(ctx, await noCsrf.request('POST', '/tiket', { body: { subject: 'a', body: 'b' } }), 403, 'CSRF_INVALID')
+    },
+  },
+  {
+    id: 'support-api/settings: the admin reads and saves the contact (API-ADM-10)',
+    domain: 'support',
+    targets: API_ONLY,
+    run: async (ctx) => {
+      const admin = await ctx.as('admin')
+      const read = await admin.request('GET', '/admin/settings/support')
+      ctx.expectStatus(read, 200)
+      const before = dataOf(read)
+      const saved = await admin.request('PUT', '/admin/settings/support', { body: { email: before.email } })
+      ctx.expectStatus(saved, 200)
+      expectError(ctx, await admin.request('PUT', '/admin/settings/support', { body: { email: 'bukan-emel' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await (await ctx.as('student')).request('GET', '/admin/settings/support'), 403, 'FORBIDDEN')
     },
   },
   {

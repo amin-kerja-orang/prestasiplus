@@ -10,11 +10,17 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
+  DsBadge,
+  DsCluster,
   DsEmptyState,
+  DsHeading,
   DsLoadError,
   DsPage,
   DsQuizHeader,
+  DsSection,
   DsStack,
+  DsStateView,
+  DsText,
 } from '@/ds'
 import { useApi } from '@/composables/useApi'
 import { useMedia } from '@/ds/useMedia'
@@ -342,9 +348,7 @@ const saveText = computed(
       message="Senarai kertas tidak dapat dimuatkan."
       @retry="reloadList"
     />
-    <div v-else-if="!papers" class="flex flex-col gap-3" aria-busy="true" data-testid="list-loading">
-      <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
-    </div>
+    <DsStateView v-else-if="!papers" status="loading" skeleton="list" :rows="3" data-testid="list-loading" />
     <DsEmptyState
       v-else-if="!papers.length"
       title="Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi."
@@ -352,45 +356,41 @@ const saveText = computed(
       data-testid="list-empty"
     />
     <template v-else>
-      <p class="text-caption text-muted" role="status" data-testid="paper-count">
+      <DsText variant="caption" tone="muted" role="status" data-testid="paper-count">
         {{ papers.length }} kertas
-      </p>
-      <section
+      </DsText>
+      <DsSection
         v-for="g in groups"
         :key="g.code"
-        class="flex flex-col gap-3"
-        :aria-label="g.name"
+        :title="g.name"
+        variant="subheading"
         :data-testid="`group-${g.code}`"
       >
-        <h2 class="text-subheading text-highlighted">{{ g.name }}</h2>
         <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 flex-col gap-2">
-              <h3 class="text-body text-highlighted">{{ p.title }}</h3>
-              <div class="flex flex-wrap items-center gap-2">
-                <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
-                <UBadge v-if="p.examBoard" color="neutral" variant="subtle">{{
-                  negeriLabel(p.examBoard)
-                }}</UBadge>
-                <UBadge color="neutral" variant="subtle">{{ p.year }}</UBadge>
-                <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
-                <UBadge
-                  :color="p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'"
-                  variant="soft"
+          <DsCluster justify="between" stack-below="sm" align="start">
+            <DsStack gap="sm">
+              <DsHeading :level="3" variant="label">{{ p.title }}</DsHeading>
+              <DsCluster gap="sm">
+                <DsBadge tone="neutral" :label="`Kertas ${p.kertas}`" />
+                <DsBadge v-if="p.examBoard" tone="neutral" :label="negeriLabel(p.examBoard)" />
+                <DsBadge tone="neutral" :label="String(p.year)" />
+                <DsBadge tone="neutral" :label="`${p.marks} markah`" />
+                <DsBadge
+                  :tone="p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'"
+                  :label="statusText(p)"
                   data-testid="paper-status"
-                  >{{ statusText(p) }}</UBadge
-                >
-              </div>
-            </div>
+                />
+              </DsCluster>
+            </DsStack>
             <UButton
               :to="{ name: 'm28.kertas-subjektif.paper', params: { paperId: p.id } }"
-              class="min-h-11 justify-center"
+              size="lg"
               :data-testid="`open-${p.id}`"
               >{{ p.status === 'sedang' ? 'Sambung' : 'Mula' }}</UButton
             >
-          </div>
+          </DsCluster>
         </UCard>
-      </section>
+      </DsSection>
     </template>
   </DsPage>
 
@@ -406,26 +406,23 @@ const saveText = computed(
           combo-label="Kombo"
           @close="confirmExit = true"
         />
-        <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-          <p class="min-w-0 truncate text-caption text-muted" data-testid="attempt-title">
+        <DsCluster justify="between">
+          <DsText variant="caption" tone="muted" truncate data-testid="attempt-title">
             {{ view?.attempt.title }}
-          </p>
-          <div class="flex items-center gap-3">
-            <span class="text-caption text-muted" role="status" data-testid="save-status">{{
+          </DsText>
+          <DsCluster gap="md">
+            <DsText variant="caption" tone="muted" role="status" data-testid="save-status">{{
               saveText
-            }}</span>
-            <UBadge
+            }}</DsText>
+            <DsBadge
               v-if="view"
-              color="neutral"
-              variant="soft"
-              size="lg"
+              tone="neutral"
               icon="i-ph-timer"
-              class="tabular"
+              :label="`Masa berlalu ${formatClock(elapsed)}`"
               data-testid="clock"
-              >Masa berlalu {{ formatClock(elapsed) }}</UBadge
-            >
-          </div>
-        </div>
+            />
+          </DsCluster>
+        </DsCluster>
       </template>
 
       <template #main>
@@ -436,32 +433,29 @@ const saveText = computed(
             data-testid="paper-not-found"
           >
             <template #actions>
-              <UButton :to="{ name: 'm28.kertas-subjektif' }" class="min-h-11"
+              <UButton :to="{ name: 'm28.kertas-subjektif' }" size="lg"
                 >Kembali ke Kertas Subjektif</UButton
               >
             </template>
           </DsEmptyState>
         </DsStack>
-        <DsLoadError v-else-if="loadError" class="my-8" :message="loadError" @retry="openSitting" />
-        <div
+        <DsLoadError v-else-if="loadError" :message="loadError" @retry="openSitting" />
+        <DsStateView
           v-else-if="!view"
-          class="flex flex-col gap-3 py-4"
-          aria-busy="true"
+          status="loading"
+          skeleton="list"
+          :rows="3"
           data-testid="attempt-loading"
-        >
-          <USkeleton class="h-8 w-1/2" />
-          <USkeleton class="h-24 w-full" />
-          <USkeleton class="h-16 w-full" />
-        </div>
-        <div v-else class="flex flex-col gap-6 pt-2">
-          <div class="flex flex-col gap-1">
-            <h1 class="text-title text-highlighted" data-testid="paper-heading">
+        />
+        <DsStack v-else gap="xl" padding="md">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" variant="title" data-testid="paper-heading">
               {{ subjectName }} — Kertas {{ view.attempt.kertas }}
-            </h1>
-            <p class="tabular text-caption text-muted" data-testid="paper-marks">
+            </DsHeading>
+            <DsText variant="caption" tone="muted" tabular data-testid="paper-marks">
               {{ totalMarks }} markah
-            </p>
-          </div>
+            </DsText>
+          </DsStack>
 
           <UAlert
             v-if="submitError"
@@ -472,16 +466,17 @@ const saveText = computed(
             data-testid="submit-error"
           />
 
-          <section
+          <DsStack
             v-for="s in sections"
             :key="s.section.id"
-            class="flex flex-col gap-4"
+            as="section"
+            gap="lg"
             :aria-label="s.section.label"
             :data-testid="`section-${s.section.id}`"
           >
-            <p class="text-overline text-muted">
+            <DsText variant="overline" tone="muted">
               {{ s.section.label }} · [{{ s.section.effectiveMarks }} markah]
-            </p>
+            </DsText>
             <component
               :is="b.group ? StimulusGroup : DsStack"
               v-for="b in s.blocks"
@@ -503,26 +498,25 @@ const saveText = computed(
                 <template #report="p"><ReportQuestionButton v-bind="p" /></template>
               </QuestionBlock>
             </component>
-          </section>
-        </div>
+          </DsStack>
+        </DsStack>
       </template>
 
       <template #footer>
-        <div v-if="view" class="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
-          <p class="tabular hidden text-caption text-muted sm:block" data-testid="blank-count">
+        <DsCluster v-if="view" justify="between" :wrap="false">
+          <DsText variant="caption" tone="muted" tabular data-testid="blank-count">
             {{ allLeaves.length - blankLeaves }} / {{ allLeaves.length }} bahagian dijawab
-          </p>
+          </DsText>
           <UButton
             type="button"
             color="primary"
-            :size="phone ? 'sm' : undefined"
-            class="ms-auto min-h-11 text-nowrap"
+            :size="phone ? 'md' : 'lg'"
             :loading="submitting"
             data-testid="submit"
             @click="pressSubmit"
             >Hantar &amp; Semak</UButton
           >
-        </div>
+        </DsCluster>
       </template>
     </AttemptShell>
 
@@ -537,25 +531,20 @@ const saveText = computed(
       :content="dialogContent"
     >
       <template #footer>
-        <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+        <DsCluster justify="end" stack-below="sm">
           <UButton
             ref="confirmBack"
             color="neutral"
             variant="soft"
-            class="min-h-11"
+            size="lg"
             data-testid="confirm-back"
             @click="confirmSubmit = false"
             >Kembali</UButton
           >
-          <UButton
-            class="min-h-11"
-            :loading="submitting"
-            data-testid="confirm-submit"
-            @click="submit"
-          >
+          <UButton size="lg" :loading="submitting" data-testid="confirm-submit" @click="submit">
             {{ submitting ? 'Menghantar...' : 'Hantar & Semak' }}
           </UButton>
-        </div>
+        </DsCluster>
       </template>
     </UModal>
 
@@ -566,17 +555,12 @@ const saveText = computed(
       :content="exitContent"
     >
       <template #footer>
-        <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-          <UButton
-            ref="exitBack"
-            color="neutral"
-            variant="soft"
-            class="min-h-11"
-            @click="confirmExit = false"
+        <DsCluster justify="end" stack-below="sm">
+          <UButton ref="exitBack" color="neutral" variant="soft" size="lg" @click="confirmExit = false"
             >Kekal</UButton
           >
-          <UButton class="min-h-11" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>
-        </div>
+          <UButton size="lg" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>
+        </DsCluster>
       </template>
     </UModal>
   </template>

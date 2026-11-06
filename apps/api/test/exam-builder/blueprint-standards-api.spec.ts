@@ -808,6 +808,23 @@ describe('S3-T01 FR-ADM-Q16.7: a Kontrak only for a Subjek whose DSKP is loaded 
     expect(codes).not.toContain('KNP')
   })
 
+  it('decision 6: a direct create for an inactive subject with units is refused like the lookup (422 fields.subject, same text); a new version of its existing contract still works', async () => {
+    for (const code of ['LNR', 'KNP']) {
+      const before = await count(t.db, `select count(*) n from blueprints`)
+      const e = expectError(await admin.post('/api/admin/blueprints', plain(`${code}/1`, code)), 'VALIDATION_ERROR', 422, MSG.dskpNotLoaded)
+      expect(e.fields).toEqual({ subject: MSG.dskpNotLoaded })
+      expect(await count(t.db, `select count(*) n from blueprints`)).toBe(before)
+    }
+    await newSubject('UJIE')
+    await addNode('UJIE', 'T4', 'unit', '1.0')
+    expect((await admin.post('/api/admin/blueprints', plain('UJIE/1', 'UJIE'))).status).toBe(201)
+    await rows(`update subjects set is_active = false where code = 'UJIE'`)
+    expect(await offered()).not.toContain('UJIE')
+    expectError(await admin.post('/api/admin/blueprints', { ...plain('UJIE/9', 'UJIE'), kertas: 2 }), 'VALIDATION_ERROR', 422, MSG.dskpNotLoaded)
+    const res = await admin.post('/api/admin/blueprints/UJIE/1/versions', { source: 'Spec', code: 'UJIE/2', durationMin: 60, sections: plain('UJIE/2', 'UJIE').sections })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+  })
+
   it('a new version of an existing contract is not refused: the check is on create only', async () => {
     await newSubject('UJID')
     await addNode('UJID', 'T4', 'unit', '1.0')

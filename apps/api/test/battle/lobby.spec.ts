@@ -22,7 +22,7 @@ describe('lobby (M16-15)', () => {
     expect(res.status).toBe(200)
     expect(res.headers['cache-control']).toBe('no-store')
     const lobby = parseData(BattleLobbySchema, res)
-    expect(lobby).toMatchObject({ grade: 10, gradeLabel: 'Tingkatan 4', spmUnlocked: true, pkskDomains: [] })
+    expect(lobby).toMatchObject({ grade: 10, gradeLabel: 'Tingkatan 4', spmUnlocked: true })
     const db = await rows<{ id: string; name: string; icon: string | null; color: string; is_core: boolean }>(`select id::text, name, icon, color, is_core from subjects where is_active order by subjects.id`)
     expect(lobby.subjects).toEqual(db.map((r) => ({ id: r.id, name: r.name, icon: r.icon, colour: r.color, core: r.is_core })))
     const withPool = await rows<{ id: string; name: string }>(

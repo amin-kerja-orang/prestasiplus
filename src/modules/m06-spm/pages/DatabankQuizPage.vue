@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Q1 `/spm/tahun-lepas/:code/quiz?count=` — the databank quiz (M06-T2; FR-M06-20/21, BR-M06-05/13).
- * Mounts M05's `QuizRunner` (XL-10) with `start = {mode:'past_year', subjectCode, count}`, the M05 Q1
+ * Mounts M05's `QuizRunner` (XL-10) with `start = {mode:'databank', subjectCode, count}`, the M05 Q1
  * labels, back to S2 and the M04 report with `source:'spm'`. A count outside 5/10/20 is refused by M05
  * #4 (422); the runner then goes back to S2. Finishing completes the session through M05 #6.
  */
@@ -24,7 +24,7 @@ const rawCount = computed(() => {
 })
 
 const start = computed<StartSessionRequest>(() => ({
-  mode: 'past_year',
+  mode: 'databank',
   subjectCode: code.value,
   ...(rawCount.value !== null ? { count: rawCount.value } : {}),
 }))

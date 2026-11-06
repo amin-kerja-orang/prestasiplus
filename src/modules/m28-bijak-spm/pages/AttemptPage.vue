@@ -5,6 +5,7 @@
  * One question per screen; a shared Rajah stays pinned (left panel from `lg`, sticky chip + bottom
  * sheet below). Answers autosave (device first, then the mock server) and submit flushes them.
  */
+import { BIJAK_ATTEMPTS_LIMITS } from '@pp/contract'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -41,7 +42,7 @@ import {
   unansweredIn,
   type ChooseState,
 } from '../domain/choose-n'
-import { formatClock, isAnswered, sectionRuleLine } from '../domain/paper-model'
+import { formatClock, isAnswered, leavesOf, SEMAK_KINDS, sectionRuleLine } from '../domain/paper-model'
 import { groupLabel, stimuliOf, toStimulusData } from '../lib/stimulus-data'
 import type { AttemptPaperView, PartAnswer, QuestionResult } from '../domain/types'
 import { createAutosave, clearLocal, type Autosave, type SaveStatus } from '../lib/autosave'
@@ -65,6 +66,8 @@ const picks = ref<Record<string, string[]>>({})
 const index = ref(0)
 const saveStatus = ref<SaveStatus>('idle')
 const checks = ref<Record<string, QuestionResult>>({})
+/** Answer-changing "Semak" used per question (FR-MUR-13-6; the server counts). */
+const checkCounts = ref<Record<string, number>>({})
 const combo = ref(0)
 const submitError = ref('')
 const submitting = ref(false)
@@ -135,6 +138,19 @@ watch(
 )
 const isLast = computed(() => index.value >= questions.value.length - 1)
 const currentCheck = computed(() => (current.value ? checks.value[current.value.id] : undefined))
+/** The leaf parts of the question that "Semak" reveals (46 section 3.5); an MCQ is its own leaf. */
+const currentSemakParts = computed(() => {
+  const q = current.value
+  if (!q) return []
+  return q.mcq ? [q.id] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id)
+})
+const checkCapReached = computed(() => !!current.value && (checkCounts.value[current.value.id] ?? 0) >= BIJAK_ATTEMPTS_LIMITS.maxChecksPerQuestion)
+/** Lead ruling DD4: a checked question stays locked (result and key stay) until "Tukar jawapan"; the cap locks it for good. */
+const changing = ref<Record<string, true>>({})
+const checkLocked = computed(() => checkCapReached.value || (!!currentCheck.value && !(current.value && changing.value[current.value.id])))
+const lockedPartIds = computed(() => (checkLocked.value ? currentSemakParts.value : []))
+/** Lead ruling Q3: "Semak" waits for an answer in one of the parts it reveals. */
+const hasSemakAnswer = computed(() => currentSemakParts.value.some((id) => isAnswered(answers.value[id])))
 
 function leafIds(qid: string): string[] {
   const q = questions.value.find((x) => x.id === qid)
@@ -266,6 +282,7 @@ async function load(): Promise<void> {
     const savedPos = readPosition(attemptId.value)
     index.value = Math.min(savedPos?.questionIndex ?? autosave.position(), lastIndex)
     checks.value = Object.fromEntries(v.checks.map((c) => [c.questionId, c]))
+    checkCounts.value = { ...v.attempt.checkCounts }
     clockOffset.value = server.serverNow() - Date.now()
     view.value = v
     if (savedPos && savedPos.questionIndex === index.value) {
@@ -351,6 +368,11 @@ async function goResult(auto = false): Promise<void> {
 }
 
 /* --------------------------------------------------------------------------- actions */
+/** "Tukar jawapan": re-opens only the auto-markable parts; the shown result and key stay until the next "Semak". */
+function changeAnswer(): void {
+  const q = current.value
+  if (q) changing.value = { ...changing.value, [q.id]: true }
+}
 function onAnswer(partId: string, a: PartAnswer): void {
   answers.value = { ...answers.value, [partId]: a }
   autosave?.setAnswer(partId, a)
@@ -406,10 +428,19 @@ function goToId(id: string): void {
 async function check(): Promise<void> {
   const q = current.value
   if (!q) return
-  await autosave?.flush()
+  submitError.value = ''
+  // A save that did not go through would mark the old answer on the server and use up a check.
+  if (autosave && !(await autosave.flush())) {
+    submitError.value = 'Semakan tidak dapat dibuat sekarang. Cuba lagi.'
+    return
+  }
   try {
     const res = await server.checkQuestion(user.value, attemptId.value, q.id)
     checks.value = { ...checks.value, [q.id]: res }
+    const rest = { ...changing.value }
+    delete rest[q.id]
+    changing.value = rest
+    if (res.checksUsed !== undefined) checkCounts.value = { ...checkCounts.value, [q.id]: res.checksUsed }
     combo.value = res.awarded === res.marks && res.marks > 0 ? combo.value + 1 : 0
   } catch {
     submitError.value = 'Semakan tidak dapat dibuat sekarang. Cuba lagi.'
@@ -623,7 +654,8 @@ const feedback = computed(() => {
             :stimulus-blocked="stimulusBlocked"
             :flagged="flags.includes(current.id)"
             :check="currentCheck"
-            :disabled="submitting || timeUp"
+            :locked-part-ids="lockedPartIds"
+            :disabled="submitting || timeUp || (checkLocked && !!current.mcq)"
             :choose="choose"
             @answer="onAnswer"
             @toggle-flag="toggleFlag"
@@ -641,6 +673,28 @@ const feedback = computed(() => {
             :combo="feedback.combo"
             :continue-label="isLast ? 'Selesai' : 'Seterusnya'"
             @continue="isLast ? (confirmSubmit = true) : goTo(index + 1)"
+          />
+
+          <!-- [PROPOSED] "Tukar jawapan": a marked option does not react, so the pupil needs a way back to change it before the next "Semak" (46 section 3.5). -->
+          <div v-if="!isExam && checkLocked && !checkCapReached">
+            <UButton
+              type="button"
+              color="neutral"
+              variant="soft"
+              class="min-h-11"
+              data-testid="check-change"
+              @click="changeAnswer"
+              >Tukar jawapan</UButton
+            >
+          </div>
+
+          <UAlert
+            v-if="!isExam && checkCapReached"
+            color="warning"
+            variant="soft"
+            description="Had semakan untuk soalan ini telah dicapai."
+            role="status"
+            data-testid="check-cap"
           />
 
           <UAlert
@@ -705,13 +759,13 @@ const feedback = computed(() => {
             Soalan {{ current?.number ?? 0 }} / {{ questions.length }}
           </p>
           <UButton
-            v-if="!isExam && current && !currentCheck"
+            v-if="!isExam && currentSemakParts.length > 0 && !checkLocked"
             type="button"
             color="primary"
             variant="soft"
             :size="phone ? 'sm' : undefined"
             class="min-h-11 text-nowrap"
-            :disabled="stimulusBlocked"
+            :disabled="stimulusBlocked || !hasSemakAnswer"
             data-testid="check-button"
             @click="check"
             >Semak</UButton

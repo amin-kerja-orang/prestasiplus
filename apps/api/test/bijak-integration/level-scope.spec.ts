@@ -122,7 +122,7 @@ describe('a sitting already on a paper outside the Tingkatan', () => {
       expect(resumed.body.data.attemptId).toBe(attemptId)
       expect(await listed(t4)).toContain(id)
       expect((await t4.get(`/api/bijak/papers/${id}`)).status).toBe(200)
-      expect((await start(t4, id, true)).status).toBe(403)
+      expect((await start(t4, id, true)).status).toBe(404) // a restart is a new sitting: 404 like level-scope-resume.spec.ts (base #841), not 403
     } finally {
       await setGrade(t4, 10)
     }

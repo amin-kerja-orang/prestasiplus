@@ -8,7 +8,7 @@
 
 // --- shared ----------------------------------------------------------------------------------
 
-export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Kritikal' | 'Tiada Langsung'
+export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Tiada' | 'Kritikal' | 'Tiada Langsung'
 
 /** BR-M11-10 periods; '' = all time. Any other value is treated as '' (INFERRED). */
 export type MonitoringPeriod = '' | '7d' | '30d' | '3m'
@@ -299,10 +299,13 @@ export interface ItemAnalysisRow {
   textPlain: string
   subjectName: string
   attempts: number
-  /** % correct, 1 decimal. */
+  /** Answers that were right / wrong, all modes (FR-GUR-6-5, FR-GUR-6-8): `correct + wrong = attempts`. */
+  correct: number
+  wrong: number
+  /** % correct, 1 decimal (shown as a whole number rounded half up, decision 11). */
   pct: number
   band: 'mudah' | 'sederhana' | 'sukar'
-  /** Upper-group p − lower-group p (3 decimals); null when it cannot be computed. */
+  /** Upper-group p − lower-group p (2 decimals, R1 decision D113); null = "Data Tidak Mencukupi" (fewer than 10 pupils). */
   discrimination: number | null
 }
 

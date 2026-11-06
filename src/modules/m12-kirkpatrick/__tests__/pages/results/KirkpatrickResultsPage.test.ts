@@ -57,14 +57,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
       'Pelajar Aktif',
       'Rekod Headcount',
     ])
-    expect(tiles(w).map((x) => x.value)).toEqual([
-      '4.30',
-      '96.7%',
-      '52',
-      '82.8%',
-      '946',
-      '4,378',
-    ])
+    expect(tiles(w).map((x) => x.value)).toEqual(['4.30', '96.7%', '52', '83%', '946', '4,378'])
     expect(captions(w)).toEqual([
       '41 rekod · 2025',
       '174/180 calon',
@@ -98,14 +91,7 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     )
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8080')
     expect(api.fetchKirkpatrickResults).toHaveBeenCalledWith({ schoolId: 8080 }, expect.anything())
-    expect(tiles(w).map((x) => x.value)).toEqual([
-      '4.00',
-      '100%',
-      '0',
-      '75.6%',
-      '53',
-      '4,378',
-    ])
+    expect(tiles(w).map((x) => x.value)).toEqual(['4.00', '100%', '0', '76%', '53', '4,378'])
     expect(captions(w)).toEqual([
       '41 rekod · 2026',
       '1/1 calon',
@@ -142,7 +128,8 @@ describe('S5 KPI cards (AC-M12-19.1 ... 19.3)', () => {
     api.fetchKirkpatrickResults.mockResolvedValue(resultsNoCounts())
     const { wrapper: w } = await open('/admin/kirkpatrick', '?school_id=8880')
     expect(
-      tiles(w).map((x) => x.value)
+      tiles(w)
+        .map((x) => x.value)
         .slice(0, 3),
     ).toEqual(['2.88', '-', '-'])
     const lines = captions(w)
@@ -424,7 +411,7 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
     const { wrapper: w } = await open()
     expect(t(w, 'roi-active').text()).toBe('946')
     expect(t(w, 'roi-per-student').text()).toBe('323.6')
-    expect(t(w, 'roi-accuracy').text()).toBe('82.8%')
+    expect(t(w, 'roi-accuracy').text()).toBe('83%')
     expect(t(w, 'roi-gps').text()).toBe('4.30')
     const box = t(w, 'res-roi')
     expect(box.text()).toContain('ROI penuh akan dapat dikira apabila:')
@@ -445,7 +432,7 @@ describe('S5 ROI and insights (AC-M12-24.1 ... 24.3)', () => {
     const { wrapper: w } = await open()
     expect(all(w, 'insight-row').map((r) => squash(r.text()))).toEqual([
       'Hanya 946 daripada 4,158 pelajar T4/T5 (22.8%) menggunakan platform. Data perbandingan terhad kepada pelajar aktif sahaja.',
-      'Purata ketepatan pelajar aktif dalam platform: 82.8%. Ini bersamaan anggaran gred A.',
+      'Purata ketepatan pelajar aktif dalam platform: 83%. Ini bersamaan anggaran gred A.',
       'GPS keseluruhan dari headcount (tahun 2025): 4.30. Trend menunjukkan peningkatan dari tahun ke tahun.',
     ])
     expect(squash(t(w, 'insight-disclaimer').text())).toBe(
