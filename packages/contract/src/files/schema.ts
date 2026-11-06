@@ -11,7 +11,7 @@ import { IdSchema } from '../common/ids'
  * attribute name `file` (BE-06 keeps `profilePicture` for `POST /me/picture`).
  */
 
-export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot', 'timeline_photo'] as const
+export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot', 'timeline_photo', 'marketplace_image'] as const
 export const FilePurposeSchema = z.enum(FILE_PURPOSES).meta({ id: 'FilePurpose' })
 export type FilePurpose = z.infer<typeof FilePurposeSchema>
 
@@ -57,6 +57,13 @@ export const FILE_PURPOSE_RULES: Readonly<
   // 2 MB, jpeg/png/webp (the same as PERFORMANCE_TIMELINE_LIMITS). Read: as avatar (owner, admin, scoped school_admin /
   // ppd_officer) — children's photos, least privilege (LEAD 2026-10-21).
   timeline_photo: AVATAR_LIKE,
+  // S7-T08 (P12-09): image of a Marketplace product, admin upload; JPG/PNG/WebP, 2 MB. One BM message for a wrong type and an oversize file.
+  marketplace_image: {
+    mimes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxBytes: 2 * 1024 * 1024,
+    typeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
+    sizeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
+  },
 }
 
 export const FILE_MESSAGES = {

@@ -13,6 +13,7 @@ export interface LockedReward {
   iconEmoji: string | null
   denominationRm: number
   tokenCost: number
+  costValueSen: number
   stockQuantity: number | null
   maxPerMonthPerStudent: number | null
   isActive: boolean
@@ -49,6 +50,15 @@ export class ShopRepository {
    */
   async lockUser(userId: string): Promise<void> {
     await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`shop:${userId}`}))`
+  }
+
+  /**
+   * Serialises the check of the session budget, which is global: the user lock does not stop two pupils counting the
+   * same sum. Only a non-digital redeem takes it, after the reward row and before the wallet row (cancel never needs it,
+   * it only frees budget), so no cycle is possible. The two-key form cannot collide with a one-key user lock.
+   */
+  async lockBudget(): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('shop:redeem-budget'), 0)`
   }
 
   // --- rewards: admin ---------------------------------------------------------------------------------
@@ -134,7 +144,7 @@ export class ShopRepository {
   /** Reads one reward and locks its row until the transaction ends (null when absent). */
   async lockReward(id: bigint): Promise<LockedReward | null> {
     const rows = await this.db.$queryRaw<LockedReward[]>`
-      SELECT id, title, vendor, icon_emoji AS "iconEmoji", denomination_rm::float8 AS "denominationRm", token_cost AS "tokenCost",
+      SELECT id, title, vendor, icon_emoji AS "iconEmoji", denomination_rm::float8 AS "denominationRm", token_cost AS "tokenCost", cost_value_sen AS "costValueSen",
              stock_quantity AS "stockQuantity", max_per_month_per_student::int AS "maxPerMonthPerStudent",
              is_active AS "isActive"
         FROM rewards WHERE id = ${id} FOR UPDATE`
@@ -158,6 +168,20 @@ export class ShopRepository {
     return this.db.rewardRedemption.count({ where: { userId, rewardId, status: NOT_CANCELLED, createdAt: { gte: from, lt: to } } })
   }
 
+  /**
+   * The non-cancelled redemptions (`pending_admin`, `delivered`) of every pupil created in `[from, to)`: how many, by how many
+   * pupils, and the sum of their real cost snapshots. This one sum is both the session budget check and the liability tile
+   * (FR-ADM-P2-09.1); a digital redemption has snapshot 0, so it adds nothing to the sum.
+   */
+  async redemptionTotals(from: Date, to: Date): Promise<{ redemptions: number; students: number; costSen: number }> {
+    const rows = await this.db.$queryRaw<{ redemptions: bigint; students: bigint; cost: bigint }[]>`
+      SELECT count(*)::bigint AS redemptions, count(DISTINCT user_id)::bigint AS students, COALESCE(SUM(cost_value_sen_snapshot), 0)::bigint AS cost
+        FROM reward_redemptions
+       WHERE status IN ('pending_admin', 'delivered') AND created_at >= ${from}::timestamptz AND created_at < ${to}::timestamptz`
+    const [row] = rows
+    return { redemptions: Number(row?.redemptions ?? 0), students: Number(row?.students ?? 0), costSen: Number(row?.cost ?? 0) }
+  }
+
   insertRedemption(data: {
     userId: bigint
     rewardId: bigint
@@ -166,6 +190,8 @@ export class ShopRepository {
     rewardIcon: string | null
     denominationRm: number
     tokenCost: number
+    tokenCostSnapshot: number
+    costValueSenSnapshot: number
     status: string
     stockReserved: boolean
     clientUuid: string | null
@@ -200,6 +226,22 @@ export class ShopRepository {
     const users = ids.length ? await this.db.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, email: true } }) : []
     const byId = new Map(users.map((u) => [u.id, u]))
     return { total, rows: rows.map((r) => ({ ...r, userName: byId.get(r.userId)?.name ?? '', userEmail: byId.get(r.userId)?.email ?? '' })) }
+  }
+
+  /**
+   * Which of `ids` (one page of the queue) count as a double submission (FR-ADM-P2-08.3): the same pupil has another non-cancelled
+   * redemption of the same reward within 60 seconds. Computed from `created_at` (ix_reward_redemptions_user_id_reward_id_created_at).
+   * A redemption whose reward was deleted has no reward to compare, so it is never flagged.
+   */
+  async doubleSubmits(ids: bigint[]): Promise<Set<bigint>> {
+    if (ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT r.id FROM reward_redemptions r
+       WHERE r.id IN (${Prisma.join(ids)}) AND r.reward_id IS NOT NULL AND EXISTS (
+         SELECT 1 FROM reward_redemptions o
+          WHERE o.user_id = r.user_id AND o.reward_id = r.reward_id AND o.id <> r.id AND o.status <> 'cancelled'
+            AND o.created_at BETWEEN r.created_at - interval '60 seconds' AND r.created_at + interval '60 seconds')`
+    return new Set(rows.map((r) => r.id))
   }
 
   // --- mystery boxes ----------------------------------------------------------------------------------

@@ -14,8 +14,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Marketplace - PRESTASIPLUS',
-      header: { title: 'Marketplace', subtitle: 'Peralatan sekolah untuk pelajar 🛒' },
+      title: 'Marketplace — PRESTASIPLUS',
+      header: { title: 'Marketplace', subtitle: 'Produk pembelajaran daripada penjual yang diluluskan' },
       module: 'M20',
       v2: true,
     },
