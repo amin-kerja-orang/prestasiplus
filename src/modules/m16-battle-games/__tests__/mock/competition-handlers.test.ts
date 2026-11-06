@@ -22,6 +22,7 @@ import {
   startBattle,
 } from '../../api'
 import { m16Hooks } from '../../mock/hooks'
+import { leaguesRepo } from '../../mock/repository'
 import { bootM16, MemoryStorage, setUser, type Answer, type Booted } from './helpers'
 
 const ADMIN = 1
@@ -88,6 +89,8 @@ describe('access', () => {
     ['POST', '/api/leagues'],
     ['POST', '/api/leagues/join'],
     ['GET', '/api/leagues/1'],
+    ['GET', '/api/leagues/1/standings'],
+    ['GET', '/api/leagues/1/me'],
     ['GET', '/api/sekolah-bersaing'],
   ] as const)('%s %s answers 401 without a session', async (method, url) => {
     expect((await call(method, url, null)).status).toBe(401)
@@ -622,6 +625,60 @@ describe('#46-#49 leagues', () => {
     expect(r.body.data).toMatchObject({ id: 3, status: 'upcoming', classLevels: ['T4', 'T5'], schools: [] })
     for (const key of ['inviteCode', 'shareUrl', 'canJoin']) expect(r.body.data).not.toHaveProperty(key)
     expect(await data<LeagueDto>('/api/leagues/3', ADMIN)).toEqual(r.body.data)
+  })
+
+  describe('API-GAME-13 standings and me (role M only)', () => {
+    it('status words: upcoming | active | ended, the label of active is "Aktif"', async () => {
+      const { LEAGUE_STATUS_LABELS } = await import('../../mock/data/leagues')
+      expect(LEAGUE_STATUS_LABELS).toEqual({ upcoming: 'Akan Datang', active: 'Aktif', ended: 'Tamat' })
+    })
+
+    it('standings: stored rows of a level; default the lowest level; recomputedAt null; frozen once ended', async () => {
+      const t4 = await data<{ rows: unknown[]; recomputedAt: string | null; frozen: boolean }>('/api/leagues/2/standings?level=4', T4_STUDENT)
+      expect(t4.recomputedAt).toBeNull()
+      expect(t4.frozen).toBe(true)
+      expect(t4.rows).toMatchObject([
+        { rank: 1, score: 2935, participants: 8, avgAccuracy: 77.2 },
+        { rank: 2, score: 0, participants: 0, avgAccuracy: 0 },
+      ])
+      expect(await data('/api/leagues/2/standings', T4_STUDENT)).toEqual(t4) // T4 is the lowest level of liga 2
+      const t5 = await data<{ rows: { score: number }[] }>('/api/leagues/2/standings?level=5', T4_STUDENT)
+      expect(t5.rows.map((r) => r.score)).toEqual([0, 0])
+      expect((await data<{ rows: unknown[]; frozen: boolean }>('/api/leagues/1/standings', T4_STUDENT))).toEqual({ rows: [], recomputedAt: null, frozen: false })
+    })
+
+    it('standings: a bad level or one the league does not have is 422 on level; an unknown league is 404', async () => {
+      for (const bad of ['0', '6', 'T4', 'abc', '1']) {
+        const r = await call<ErrorBody>('GET', `/api/leagues/2/standings?level=${bad}`, T4_STUDENT)
+        expect(r.status, bad).toBe(422)
+        expect(r.body.error.fields?.level).toBe('Tingkatan tidak sah.')
+      }
+      expect((await call('GET', '/api/leagues/999/standings', T4_STUDENT)).status).toBe(404)
+      expect((await call('GET', '/api/leagues/999/me', T4_STUDENT)).status).toBe(404)
+    })
+
+    it('me: a pupil whose school is not enrolled gets school null, 0 points, no contributors', async () => {
+      expect(await data('/api/leagues/2/me', T4_STUDENT)).toEqual({ school: null, mine: { points: 0 }, contributors: [] })
+    })
+
+    it('me: an enrolled school at the pupil Tingkatan is ranked from the stored rows', () => {
+      expect(leaguesRepo.meOf(2, 8090, 10)).toEqual({ school: { rank: 1, score: 2935, participants: 8 }, mine: { points: 0 }, contributors: [] })
+      expect(leaguesRepo.meOf(2, 8078, 11)).toMatchObject({ school: { rank: 2, score: 0, participants: 0 } })
+      expect(leaguesRepo.meOf(2, 8090, 9)?.school).toBeNull() // Tingkatan 3 is not a level of the league
+    })
+
+    it('403 for the other roles (teacher-like admin and school admin)', async () => {
+      for (const as of [ADMIN, SCHOOL_ADMIN]) {
+        expect((await call('GET', '/api/leagues/2/standings', as)).status).toBe(403)
+        expect((await call('GET', '/api/leagues/2/me', as)).status).toBe(403)
+      }
+    })
+
+    it('the typed client builds the two URLs', async () => {
+      const { fetchLeagueMe, fetchLeagueStandings } = await import('../../api')
+      expect(typeof fetchLeagueStandings).toBe('function')
+      expect(typeof fetchLeagueMe).toBe('function')
+    })
   })
 
   it('#48 AC-GM-15.2: join answers 403 for every role', async () => {

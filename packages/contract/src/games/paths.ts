@@ -30,9 +30,12 @@ import {
   GamesLeagueGameModeSchema,
   GamesLeagueEnrolRequestSchema,
   GamesLeagueListSchema,
+  GamesLeagueMeSchema,
   GamesLeagueScopeSchema,
   GamesLeagueScoringSchema,
   GamesLeagueStandingRowSchema,
+  GamesLeagueStandingsQuerySchema,
+  GamesLeagueStandingsSchema,
   GamesLeagueStatusSchema,
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
@@ -200,6 +203,8 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueEnrolRequest: GamesLeagueEnrolRequestSchema,
   GamesLeagueStandingRow: GamesLeagueStandingRowSchema,
   GamesLeagueDetail: GamesLeagueDetailSchema,
+  GamesLeagueStandings: GamesLeagueStandingsSchema,
+  GamesLeagueMe: GamesLeagueMeSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
   // admin
@@ -709,6 +714,39 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: noStore(envelopeOf(GamesLeagueDetailSchema), 'League detail; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
+      404: err('NOT_FOUND "Liga tidak dijumpai.".'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/leagues/{id}/standings',
+    tags: TAGS,
+    summary: 'League standings of one Tingkatan (API-GAME-13)',
+    description:
+      'Stored output of the hourly job, role M (pupil) only. `level` is 1..5 (T1..T5); default the lowest level of the league. Primary schools are left out. Under avg_accuracy a school with fewer than 30 answers is absent. `frozen` is true when the derived status is ended or the final recompute has run.',
+    request: { params: LeagueParams, query: GamesLeagueStandingsQuerySchema },
+    responses: {
+      200: noStore(envelopeOf(GamesLeagueStandingsSchema), 'Rows in rank order; Cache-Control: no-store.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN (role is not student).'),
+      404: err('NOT_FOUND "Liga tidak dijumpai.".'),
+      422: err('VALIDATION_ERROR "Tingkatan tidak sah." with fields.level (not 1..5, or not a level of the league).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/leagues/{id}/me',
+    tags: TAGS,
+    summary: 'Own school position, own points and top contributors (API-GAME-13)',
+    description:
+      'Role M (pupil) only. `school` is the position of the pupil\'s school at the pupil\'s own Tingkatan, or null (not enrolled, not ranked, no standing yet). `contributors` are the top 10 pupils of the school.',
+    request: { params: LeagueParams },
+    responses: {
+      200: noStore(envelopeOf(GamesLeagueMeSchema), 'Own position; Cache-Control: no-store.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN (role is not student).'),
       404: err('NOT_FOUND "Liga tidak dijumpai.".'),
     },
   })

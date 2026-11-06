@@ -5,6 +5,7 @@ import {
   GamesLeagueEnrolRequestSchema,
   gamesLevelIdToClassLevel,
   type GamesLeagueCreateRequest,
+  type GamesLeagueStatus,
   type GamesSekolahBersaingBoard,
 } from '@pp/contract'
 
@@ -123,4 +124,115 @@ export function rankSekolahBersaing(
     .sort((a, b) => b.accuracy - a.accuracy || b.pupils - a.pupils || b.sessions - a.sessions || a.school.localeCompare(b.school, 'ms'))
     .slice(0, options.topN)
     .map((r, i) => ({ rank: i + 1, school: r.school, state: r.state, accuracy: Math.min(100, Math.round(r.accuracy * 10) / 10), pupils: r.pupils }))
+}
+
+// --- derived status, window and standings rules (S7-T06 part 3, FR-GM-15.3, AC-GM-15.1/3/4) --------------------------------
+
+/** Minimum answers of a school (at one Tingkatan) to be ranked under `avg_accuracy` (AC-GM-15.3). */
+export const MIN_ACCURACY_ANSWERS = 30
+/** Contributors returned by `GET /leagues/:id/me`. */
+export const CONTRIBUTORS_TOP_N = 10
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const startMs = (start: string): number => Date.parse(`${start}T00:00:00+08:00`)
+
+/** The league window: `from` = start date 00:00 MYT (inclusive), `to` = the midnight after the end date, MYT (exclusive). */
+export function leagueWindow(start: string, end: string): { from: Date; to: Date } {
+  return { from: new Date(startMs(start)), to: new Date(startMs(end) + DAY_MS) }
+}
+
+/**
+ * Status by date and clock, never stored: `upcoming` before the start date 00:00 MYT, `active` from then through the end
+ * date 23:59:59 MYT, `ended` after. Dates are `YYYY-MM-DD`.
+ */
+export function leagueStatus(start: string, end: string, now: Date): GamesLeagueStatus {
+  const { from, to } = leagueWindow(start, end)
+  if (now.getTime() < from.getTime()) return 'upcoming'
+  return now.getTime() < to.getTime() ? 'active' : 'ended'
+}
+
+/** Start of the clock hour (a whole-hour offset, so the same hour in MYT and UTC). */
+export const hourStart = (d: Date): Date => new Date(Math.floor(d.getTime() / 3_600_000) * 3_600_000)
+
+/** One decimal, half up (the wire and the stored columns carry one decimal). */
+export const round1 = (n: number): number => Math.round(n * 10) / 10
+
+/** Correct / answered as a percent with one decimal; 0 without answers. */
+export const accuracyPct = (correct: number, answered: number): number => (answered === 0 ? 0 : Math.min(100, round1((correct / answered) * 100)))
+
+/** What a pupil earns in a league: `quiz` correct answers, `multiplayer` Battle points, `mixed` both. Wins count only where Battles count. */
+export function pupilPoints(mode: string, f: { correct: number; battlePoints: number; wins: number }): { points: number; wins: number } {
+  const quiz = mode === 'quiz' || mode === 'mixed'
+  const battle = mode === 'multiplayer' || mode === 'mixed'
+  return { points: (quiz ? f.correct : 0) + (battle ? f.battlePoints : 0), wins: battle ? f.wins : 0 }
+}
+
+export interface PupilFacts {
+  userId: string
+  schoolId: string
+  /** Class level code of the pupil (`T1`..`T5`, `D1`..`D6`). */
+  level: string
+  points: number
+  wins: number
+  answered: number
+  correct: number
+}
+
+export interface StandingOut {
+  level: string
+  schoolId: string
+  peserta: number
+  skor: number
+  purata: number
+}
+
+/** Row order of a league board (48 GAME-15): score desc, participants desc, school name asc (Malay collation). */
+export const compareStanding = (a: { skor: number; peserta: number; name: string }, b: { skor: number; peserta: number; name: string }): number =>
+  b.skor - a.skor || b.peserta - a.peserta || a.name.localeCompare(b.name, 'ms')
+
+/**
+ * One row per (level, enrolled school). `peserta` = distinct pupils with points; `skor` = the scoring method value
+ * (`total_score` the sum of points, `avg_accuracy` the accuracy percent, `wins` the won Battles); `purata` = accuracy
+ * percent. Under `avg_accuracy` a (level, school) with fewer than 30 answers gets no row (not ranked). Rows come back
+ * in stored order: level, then rank (skor desc, peserta desc, school name asc).
+ */
+export function buildStandings(
+  scoring: string,
+  levels: readonly string[],
+  schools: readonly { id: string; name: string }[],
+  pupils: readonly PupilFacts[],
+): StandingOut[] {
+  const out: StandingOut[] = []
+  for (const level of levels) {
+    const rows: (StandingOut & { name: string })[] = []
+    for (const school of schools) {
+      const mine = pupils.filter((p) => p.schoolId === school.id && p.level === level)
+      const answered = mine.reduce((a, p) => a + p.answered, 0)
+      const correct = mine.reduce((a, p) => a + p.correct, 0)
+      if (scoring === 'avg_accuracy' && answered < MIN_ACCURACY_ANSWERS) continue
+      const purata = accuracyPct(correct, answered)
+      const skor = scoring === 'avg_accuracy' ? purata : scoring === 'wins' ? mine.reduce((a, p) => a + p.wins, 0) : mine.reduce((a, p) => a + p.points, 0)
+      rows.push({ level, schoolId: school.id, peserta: mine.filter((p) => p.points > 0).length, skor: round1(skor), purata, name: school.name })
+    }
+    rows.sort(compareStanding)
+    out.push(...rows.map((r) => ({ level: r.level, schoolId: r.schoolId, peserta: r.peserta, skor: r.skor, purata: r.purata })))
+  }
+  return out
+}
+
+/** `level` query of API-GAME-13: absent = null (default), `1`..`5` = `T1`..`T5`; anything else = undefined (invalid). */
+export function parseLevelQuery(raw: unknown): string | null | undefined {
+  const v = Array.isArray(raw) ? raw[0] : raw
+  if (v === undefined || v === '') return null
+  if (typeof v !== 'string' || !/^[1-5]$/.test(v)) return undefined
+  return gamesLevelIdToClassLevel(Number(v))
+}
+
+/** Inverse of `levelCodeOfGrade`: `D1`..`D6` = grade 1..6, `T1`..`T5` = grade 7..11; null for anything else. */
+export function gradeOfLevel(level: string): number | null {
+  const n = Number(level.slice(1))
+  if (!Number.isInteger(n)) return null
+  if (level[0] === 'D' && n >= 1 && n <= 6) return n
+  if (level[0] === 'T' && n >= 1 && n <= 5) return n + 6
+  return null
 }

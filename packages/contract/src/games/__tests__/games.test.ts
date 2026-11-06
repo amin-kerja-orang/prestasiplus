@@ -35,6 +35,8 @@ import {
   gamesClassLevelToLevelId,
   gamesLevelIdToClassLevel,
   GamesLeagueListSchema,
+  GamesLeagueMeSchema,
+  GamesLeagueStandingsSchema,
   GamesLobbySchema,
   GamesQuickMatchCancelResponseSchema,
   GamesQuickMatchPollResponseSchema,
@@ -717,11 +719,42 @@ describe('leagues (M16-46 to M16-49)', () => {
     end: '2026-04-30',
   }
 
+  it('API-GAME-13 standings: rows with avgAccuracy, nullable recomputedAt, frozen', () => {
+    const row = { rank: 1, schoolName: 'SMK Fiktif', score: 7.5, participants: 2, avgAccuracy: 70 }
+    ok(GamesLeagueStandingsSchema, { rows: [row], recomputedAt: '2026-10-19T01:00:00.000Z', frozen: false })
+    ok(GamesLeagueStandingsSchema, { rows: [], recomputedAt: null, frozen: true })
+    rejected(GamesLeagueStandingsSchema, { rows: [row], frozen: false }) // recomputedAt is required (nullable)
+    rejected(GamesLeagueStandingsSchema, { rows: [{ ...row, rank: 0 }], recomputedAt: null, frozen: false })
+    rejected(GamesLeagueStandingsSchema, { rows: [{ ...row, avgAccuracy: 101 }], recomputedAt: null, frozen: false })
+    rejected(GamesLeagueStandingsSchema, { rows: [{ ...row, schoolId: '1' }], recomputedAt: null, frozen: false }) // strict
+    rejected(GamesLeagueStandingsSchema, { rows: [], recomputedAt: 'bukan-tarikh', frozen: false })
+  })
+
+  it('API-GAME-13 me: school or null, mine.points, at most 10 contributors of {name, points}', () => {
+    const contributor = { name: 'Murid A.', points: 7 }
+    ok(GamesLeagueMeSchema, { school: { rank: 1, score: 7, participants: 1 }, mine: { points: 7 }, contributors: [contributor] })
+    ok(GamesLeagueMeSchema, { school: null, mine: { points: 0 }, contributors: [] })
+    rejected(GamesLeagueMeSchema, { school: null, mine: { points: 0 }, contributors: Array.from({ length: 11 }, () => contributor) })
+    rejected(GamesLeagueMeSchema, { school: null, mine: { points: 0 }, contributors: [{ name: 'A', points: -1 }] })
+    rejected(GamesLeagueMeSchema, { school: null, mine: { points: 0 }, contributors: [{ name: 'A', points: 1, userId: '5' }] }) // no personal fields
+    rejected(GamesLeagueMeSchema, { mine: { points: 0 }, contributors: [] })
+  })
+
+  it('API-GAME-13 is in the OpenAPI document as two GET paths with 403 for non-pupils', () => {
+    const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, { responses: Record<string, unknown> }>> }
+    for (const path of ['/leagues/{id}/standings', '/leagues/{id}/me']) {
+      expect(Object.keys(doc.paths[path] ?? {})).toEqual(['get'])
+      expect(Object.keys(doc.paths[path]!.get!.responses)).toEqual(expect.arrayContaining(['200', '401', '403', '404']))
+    }
+  })
+
   it('parses the list {mine, open} and keeps the BM labels of the mock', () => {
     ok(GamesLeagueListSchema, { mine: [card], open: [card, { ...card, id: '2', subjectName: null }] })
     ok(GamesLeagueListSchema, { mine: [], open: [] })
     rejected(GamesLeagueListSchema, { mine: [{ ...card, status: 'draft' }], open: [] })
-    expect(GAMES_LEAGUE_LABELS.status).toEqual({ upcoming: 'Akan Datang', ongoing: 'Sedang Berlangsung', ended: 'Tamat' })
+    expect(GAMES_LEAGUE_LABELS.status).toEqual({ upcoming: 'Akan Datang', active: 'Aktif', ended: 'Tamat' })
+    ok(GamesLeagueListSchema, { mine: [{ ...card, status: 'active', statusLabel: 'Aktif' }], open: [] })
+    rejected(GamesLeagueListSchema, { mine: [{ ...card, status: 'ongoing' }], open: [] }) // renamed to active (S7-T06 part 3)
     expect(GAMES_LEAGUE_LABELS.type.friendly).toBe('Persahabatan')
     expect(GAMES_LEAGUE_LABELS.scope.national).toBe('Kebangsaan')
     expect(GAMES_LEAGUE_LABELS.scoring.wins).toBe('Bilangan Kemenangan')
@@ -904,18 +937,20 @@ describe('openapi registration', () => {
     'POST /leagues/join',
     'POST /leagues/{id}/schools',
     'GET /leagues/{id}',
+    'GET /leagues/{id}/standings',
+    'GET /leagues/{id}/me',
     'GET /sekolah-bersaing',
     'GET /admin/games',
     'PUT /admin/games/settings',
   ]
 
-  it('registers exactly the 30 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(30)
+  it('registers exactly the 32 routes of the card (30 + the two of API-GAME-13) under the games tag', () => {
+    expect(gamesOps).toHaveLength(32)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
-  it('does not register any battle, standings or tournament route (BE-44)', () => {
-    for (const { path } of gamesOps) expect(path).not.toMatch(/battle|tournament|standings/)
+  it('does not register any battle or tournament route, nor a Battle standings route (BE-44); the league standings of API-GAME-13 are the exception', () => {
+    for (const { path } of gamesOps) expect(path.replace('/leagues/{id}/standings', '')).not.toMatch(/battle|tournament|standings/)
     for (const name of Object.keys(GAMES_COMPONENT_SCHEMAS)) expect(name.startsWith('Games')).toBe(true)
     for (const name of Object.keys(GAMES_COMPONENT_SCHEMAS)) expect(name).not.toMatch(/^Games(Battle|Tournament)/)
   })

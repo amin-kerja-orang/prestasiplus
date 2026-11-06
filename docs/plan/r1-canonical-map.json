@@ -13893,6 +13893,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/leagues/:p/standings",
+      "method": "GET",
+      "path": "/api/leagues/:id/standings",
+      "api_id": "API-GAME-13",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "key": "GET /api/leagues/:p/me",
+      "method": "GET",
+      "path": "/api/leagues/:id/me",
+      "api_id": "API-GAME-13",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/leagues/leagues.controller.ts",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "key": "GET /api/sekolah-bersaing",
       "method": "GET",
       "path": "/api/sekolah-bersaing",

@@ -25,6 +25,8 @@ import type {
   LeagueBody,
   LeagueCard,
   LeagueDetail,
+  LeagueMe,
+  LeagueStandings,
   OpponentSearchUser,
   PollChallengerResponse,
   PollMatchResponse,
@@ -289,6 +291,17 @@ export function createLeague(body: LeagueBody): Promise<LeagueDetail> {
 /** #49 `GET /api/leagues/{id}` (404 for an unknown id). */
 export function fetchLeague(id: number, options: Signal = {}): Promise<LeagueDetail> {
   return api.get<LeagueDetail>(`/api/leagues/${String(id)}`, withSignal(options))
+}
+
+/** API-GAME-13 `GET /api/leagues/{id}/standings` (pupils only; `level` 1..5, default the lowest level of the league). */
+export function fetchLeagueStandings(id: number, level?: number, options: Signal = {}): Promise<LeagueStandings> {
+  const query = level === undefined ? '' : `?level=${String(level)}`
+  return api.get<LeagueStandings>(`/api/leagues/${String(id)}/standings${query}`, withSignal(options))
+}
+
+/** API-GAME-13 `GET /api/leagues/{id}/me` (pupils only): own school position, own points, top contributors. */
+export function fetchLeagueMe(id: number, options: Signal = {}): Promise<LeagueMe> {
+  return api.get<LeagueMe>(`/api/leagues/${String(id)}/me`, withSignal(options))
 }
 
 /** API-AS-14 `GET /api/sekolah-bersaing`: the live board in rank order (school admin and admin only, 403 otherwise). */
