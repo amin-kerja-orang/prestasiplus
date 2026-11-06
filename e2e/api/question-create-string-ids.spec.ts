@@ -73,7 +73,9 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       for (const [i, text] of ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'].entries()) {
         await page.getByTestId(`q-option-${String(i)}`).fill(text)
       }
-      await page.locator('[data-testid="q-correct"] [role="radio"]').nth(1).click()
+      // #1013 (AC-GUR-44-7) gives each choice a 44 px label laid over its small radio, so the tap goes to the label, as a user's does.
+      await page.locator('[data-testid="q-correct"] fieldset > div').nth(1).locator('label').click()
+      await expect(page.locator('[data-testid="q-correct"] [role="radio"]').nth(1)).toBeChecked()
       await expectNoHScroll(page)
 
       const post = page.waitForResponse(
