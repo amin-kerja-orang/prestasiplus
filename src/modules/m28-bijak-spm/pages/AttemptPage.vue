@@ -122,11 +122,19 @@ function onOffline(): void {
 }
 /** ERR-AUTH-01: a timed sitting keeps the screen until the pupil confirms; the answers stay on the device. */
 const sessionExpired = ref(false)
-let loginAgain: () => void = () => undefined
+let proceedToLogin: (() => void) | null = null
+let loginStarted = false
+/** The redirect runs once: a second quick click or tap while it is under way does nothing. */
+function loginAgain(): void {
+  if (loginStarted || !proceedToLogin) return
+  loginStarted = true
+  proceedToLogin()
+}
 const stopDeferring = deferUnauthorizedRedirect((proceed) => {
   // Only a timed attempt asks first; Mod Latihan and a page that failed to load take the normal redirect.
   if (!isExam.value) return proceed()
-  loginAgain = () => proceed(route.fullPath)
+  proceedToLogin = () => proceed(route.fullPath)
+  loginStarted = false
   sessionExpired.value = true
 })
 const questions = computed(() => view.value?.questions ?? [])
@@ -577,7 +585,7 @@ const feedback = computed(() => {
   <AttemptShell>
     <template #header>
       <DsQuizHeader
-        close-label="Keluar daripada percubaan"
+        close-label="Keluar daripada kertas"
         :progress="progress"
         progress-label="Kemajuan menjawab"
         :combo="isExam ? 0 : combo"
@@ -626,7 +634,7 @@ const feedback = computed(() => {
         data-testid="offline-banner"
       >
         <DsText variant="label" tone="warning" align="center">
-          Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.
+          Anda sedang luar talian. Semak sambungan internet anda.
         </DsText>
       </DsSurface>
       <DsSurface
@@ -640,7 +648,7 @@ const feedback = computed(() => {
         data-testid="reconnected-banner"
       >
         <DsText variant="label" tone="success" align="center">
-          Sambungan pulih. Jawapan telah disimpan.
+          Sambungan dipulihkan.
         </DsText>
       </DsSurface>
       <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while

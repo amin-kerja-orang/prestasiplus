@@ -66,6 +66,10 @@ export function setUnauthorizedRedirect(redirect: UnauthorizedRedirect | null): 
 /**
  * ERR-AUTH-01, timed Bijak sitting: the session is still cleared, but the redirect waits until the pupil confirms a dialog. The page registers
  * this while it is mounted; `proceed` runs the normal redirect, and `returnTo` is the path to come back to after login. Returns a function that removes the registration.
+ *
+ * There is a single slot: one registration at a time. A later call replaces the earlier one (the last registration wins), and `null` clears the slot.
+ * The returned remover clears the slot only if it still holds this registration, so an earlier page unmounting
+ * cannot remove a later page's registration. Call it on unmount.
  */
 export function deferUnauthorizedRedirect(defer: UnauthorizedDefer | null): () => void {
   unauthorizedDefer = defer
