@@ -57,6 +57,7 @@ import {
   BijakBuilderSchemeLineSchema,
   BijakBuilderReviewQuestionSchema,
   BijakBuilderSectionPatchSchema,
+  BijakBuilderSectionPoolExtrasShape,
   BijakBuilderSectionRuleSchema,
 } from './schema'
 
@@ -291,7 +292,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: publish (draf to terbit)',
-    description: `Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED ("Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan."), INELIGIBLE ("Soalan {id} tidak layak: ..." for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in \`overridden\`. Override without a reason: 422 "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" on fields.reason. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and \`canOverride\` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. A refusal (ok false) also carries \`blockerDetails\` (the same blockers as \`errors\`, structured: { code, message, overridable, section?, questionId? }) and \`canOverride\`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Optional body { override?: boolean, reason?: string } (R1-T34, V2 Panel tick "Terbitkan walaupun tidak memenuhi kontrak blueprint"): with override true and a reason of at least 5 characters the blueprint-conformance blockers are overridden and the paper is published. Under a Kontrak that is not Disahkan, exactly four codes are overridable: BLUEPRINT_NOT_VERIFIED ("Kontrak Simulasi {code} (versi {n}) belum Disahkan (status: {status}); Terbit memerlukan kontrak Disahkan."), INELIGIBLE ("Soalan {id} tidak layak: ..." for a missing DSKP unit or TP, or tags awaiting review), RULE_NOT_IN_CONTRACT (the answering rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (an admin-added Bahagian); the reason and the overridden lines go to the audit row bijak.paper.published_override and the answer lists them in \`overridden\`. Override without a reason: 422 "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" on fields.reason. Under a Disahkan Kontrak (S3-T01) nothing is overridable: INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT are hard there and \`canOverride\` is false. Every other blocker is hard and is never overridable, alone or mixed with an overridable one: the answer stays ok false and \`canOverride\` false. They are the printed structure and the questions (not Terbit, duplicates, split, incomplete or small groups, counts, marks), a question missing from the pool or that pupils cannot be served, NO_KEY, NO_MARKS, MODE_NOT_ALLOWED, GROUP_BROKEN, a Pilih N with fewer questions than N (RULE_N_EXCEEDS_QUESTIONS) and an admin-added Bahagian without a question (SECTION_EMPTY). A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. A refusal (ok false) also carries \`blockerDetails\` (the same blockers as \`errors\`, structured: { code, message, overridable, section?, questionId? }) and \`canOverride\`, computed by the same rule as GET /admin/papers/{id}/review (one source of truth; codes in BIJAK_BUILDER_BLOCKER_OVERRIDABLE). On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: { required: false as const, content: { 'application/json': { schema: BijakBuilderPublishRequestSchema } } } },
     responses: {
       200: json(envelopeOf(BijakBuilderPublishResultSchema), 'Publish result (ok true or false).'),
@@ -375,14 +376,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/sections/{sid}/pool',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: candidate pool of a section (units, groups whole)',
-    description: `Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Each unit says eligible (with BM reasons) and placed. ${ROLE_NOTE}`,
+    description: `Candidates by subject, kertas, level and DSKP unit from the standard pool (bijak-pool facts). A stimulus group is ONE unit with the stimulus once and marks = sum of members. Only units eligible for the section are listed (FR-ADM-Q14.4), each says placed. \`tahun\` and \`negeri\` filter on the source paper; a group matches as one unit. ${ROLE_NOTE}`,
     request: { params: SectionParams, query: BijakBuilderSectionPoolQuerySchema },
     responses: {
-      200: json(listEnvelopeOf(BijakBuilderPoolUnitSchema), 'Units (paged).'),
+      200: json(listEnvelopeOf(BijakBuilderPoolUnitSchema).extend(BijakBuilderSectionPoolExtrasShape), 'Units (paged), with the values the Tahun and Negeri filters offer.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: PAPER_NOT_FOUND,
-      422: err('VALIDATION_ERROR with fields (q, level, unit, page, pageSize) or invalid section.'),
+      422: err('VALIDATION_ERROR with fields (q, level, unit, tahun, negeri, page, pageSize) or invalid section.'),
     },
   })
 
@@ -391,14 +392,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/pool-preview',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: Pratonton kolam for a subject and kertas (shortage report)',
-    description: `Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage. Uses the head blueprint (Spec or Disahkan). 404 when there is none. ${ROLE_NOTE}`,
+    description: `Same code and candidate list as Jana set (composeStandardPaper): verdict, per-section needed/available and the first shortage, over the questions that match \`years\` and \`negeri\`, for a set of \`count\` questions. Uses the head blueprint (Spec or Disahkan). 404 when there is none. ${ROLE_NOTE}`,
     request: { query: BijakBuilderPoolPreviewQuerySchema },
     responses: {
       200: json(envelopeOf(BijakPoolPreviewSchema), 'The pool preview.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: BLUEPRINT_NOT_FOUND,
-      422: err('VALIDATION_ERROR with fields (subject, kertas).'),
+      422: err('VALIDATION_ERROR with fields (subject, kertas, years, negeri, count).'),
     },
   })
 
@@ -585,7 +586,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
     summary: 'Blueprint admin: create a blueprint, version 1 (NO MOCK)',
-    description: `No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" [PROPOSED]: add a version instead. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" [PROPOSED]: add a version instead. FR-ADM-Q16.7: a subject with no DSKP unit at T4 or T5 answers 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.dskpNotLoaded}" on fields.subject. FR-QA-41: a section that is both compulsory and Pilih N answers 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.compulsoryChoose}" on fields.sections.N.compulsory (the same on POST .../versions). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakBlueprintAdminCreateSchema) },
     responses: {
       201: json(envelopeOf(BijakBlueprintViewSchema), 'The created blueprint (version 1).'),

@@ -12,7 +12,7 @@ import { fetchBadgeHolders } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
 import CcTable from './CcTable.vue'
 import { useOpenTab } from './composables'
-import { accuracyTone, S2_COPY, studentPath } from './copy'
+import { accuracyText, accuracyTone, S2_COPY, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
 
 const props = defineProps<{ badge: { id: number; name: string } }>()
@@ -27,7 +27,7 @@ const rows = computed<DrillRow[]>(() =>
     cells: [
       { text: String(i + 1) },
       { text: h.name },
-      { text: `${String(h.accuracy)}%`, tone: accuracyTone(h.accuracy), mono: true },
+      { text: accuracyText(h.accuracy), tone: accuracyTone(h.accuracy), mono: true },
       { text: formatMyt(h.awardedAt, 'dd/MM/yyyy') },
     ],
   })),

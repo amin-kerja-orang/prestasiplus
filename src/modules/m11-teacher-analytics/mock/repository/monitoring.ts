@@ -186,11 +186,10 @@ function signalsOf(u: Universe): MonitoringOverview['signals'] {
       continue
     }
     if (r.tahap === 'Sederhana') continue
-    const kind = r.tahap === 'Rendah' ? 'rendah' : r.tahap === 'Kritikal' ? 'kritikal' : 'tiada'
+    const kind = r.tahap === 'Rendah' ? 'rendah' : 'tiada'
     const s = signalOf(r, kind, u.loggedBySchool)
     attention.push(s)
-    if (r.tahap === 'Kritikal') suggestions.push({ ...s, kind: 'motivasi' })
-    else if (r.tahap === 'Tiada Langsung') {
+    if (r.tahap === 'Tiada') {
       suggestions.push({ ...s, kind: s.teachersLoggedIn > 0 ? 'handsOn' : 'hubungi' })
     }
   }

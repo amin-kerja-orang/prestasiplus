@@ -1,12 +1,14 @@
 /**
  * Read-only SQL of the board that the shared repository does not offer (BE-22 board slice). Same population rules as
- * `CommandCenterRepository`: answers with `is_test = false` of ACTIVE users holding the `student` role; every input is a bound parameter.
+ * `CommandCenterRepository`: answers with `is_test = false` of XS-1 pupils (`XS_PUPIL_SQL`: student role, active, not suspended, Tingkatan 1-5)
+ * of secondary schools (`VISIBLE_USER_SQL`, D72); every input is a bound parameter.
  */
 import { Inject, Injectable } from '@nestjs/common'
 
 import { Prisma } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { XS_PUPIL_SQL } from '../../school-admin/xs-queries'
 import { type Band, engagementBand } from '../guru/rules'
 import { guruWindows } from '../shared/windows'
 import { VISIBLE_SCHOOL_SQL, VISIBLE_USER_SQL } from '../shared/visibility'
@@ -59,7 +61,7 @@ export interface TeacherDrillRow {
   lastAt: Date | null
 }
 
-const POPULATION = Prisma.sql`a.is_test = false AND u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')`
+const POPULATION = Prisma.sql`a.is_test = false AND ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL}`
 
 function schoolCond(schoolId: string | undefined): Prisma.Sql {
   if (schoolId === undefined) return Prisma.empty
@@ -99,7 +101,7 @@ export class BoardReads {
                      count(*) FILTER (WHERE a.answered_at >= ${w.d30From}) AS d30
                 FROM practice_answers a WHERE a.is_test = false AND a.answered_at <= ${w.now} GROUP BY a.user_id) p
         JOIN users u ON u.id = p.user_id
-       WHERE u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student') ${schoolCond(w.schoolId)}`)
+       WHERE ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL} ${schoolCond(w.schoolId)}`)
     return {
       answers: n(r?.answers),
       correct: n(r?.correct),
@@ -125,7 +127,7 @@ export class BoardReads {
                      count(DISTINCT (a.answered_at AT TIME ZONE 'Asia/Kuala_Lumpur')::date) AS d30
                 FROM users u
                 LEFT JOIN practice_answers a ON a.user_id = u.id AND a.is_test = false AND a.answered_at >= ${win.d30.from} AND a.answered_at <= ${now}
-               WHERE u.is_active AND ${VISIBLE_USER_SQL} AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+               WHERE ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL}
                GROUP BY u.id) d
        GROUP BY d.d7, d.d30`)
     const out: Record<Band, number> = { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 }
@@ -139,7 +141,7 @@ export class BoardReads {
       SELECT sc.id::text AS school_id, sc.name, count(*)::int AS students, sum(p.answers)::int AS answers
         FROM (SELECT a.user_id, count(*) AS answers FROM practice_answers a WHERE a.is_test = false AND a.answered_at <= ${to} GROUP BY a.user_id) p
         JOIN users u ON u.id = p.user_id JOIN schools sc ON sc.id = u.school_id
-       WHERE ${VISIBLE_SCHOOL_SQL} AND ${VISIBLE_USER_SQL} AND u.is_active AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'student')
+       WHERE ${VISIBLE_SCHOOL_SQL} AND ${VISIBLE_USER_SQL} AND ${XS_PUPIL_SQL('u')}
        GROUP BY sc.id, sc.name ORDER BY students DESC, answers DESC, sc.id ASC LIMIT ${Math.max(0, Math.trunc(limit))}`)
     return rows.map((r) => ({ schoolId: String(r.school_id), schoolName: String(r.name), students: n(r.students), answers: n(r.answers) }))
   }

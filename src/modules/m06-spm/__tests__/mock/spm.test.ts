@@ -88,7 +88,6 @@ describe('#1 overview (S1)', () => {
     expect(o.stats).toEqual({
       totalQuestions: 20_529,
       subjectCount: 25,
-      yearsAvailable: 0,
       trackingAQuestions: 1_769,
     })
     expect(o.modules).toEqual({
@@ -96,7 +95,9 @@ describe('#1 overview (S1)', () => {
       latihTubi: 14_673,
       trackingA: 1_769,
       subjektifSets: 4_059,
+      kertasSubjektif: 0,
     })
+    expect('yearsAvailable' in o.stats).toBe(false)
     expect(o.me).toEqual({ sessions: 4, avgAccuracy: 21.8, coins: 26, answered: 84 })
     // Never a chip above the total (E2E-M06-03).
     expect(o.modules.databank).toBeLessThanOrEqual(o.stats.totalQuestions)

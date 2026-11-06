@@ -30,6 +30,7 @@ const TYPE_OF_MODE: Readonly<Record<string, ReportType>> = {
   chapter: 'kuiz',
   revision: 'kuiz',
   past_year: 'kuiz',
+  databank: 'kuiz',
   mission: 'kuiz',
   remedial: 'kuiz',
   question_set: 'kuiz',

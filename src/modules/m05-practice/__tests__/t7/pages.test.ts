@@ -2,6 +2,7 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
+import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
@@ -19,6 +20,7 @@ const api = vi.hoisted(() => ({
   fetchSpmTargets: vi.fn(),
   saveSpmTargets: vi.fn(),
   fetchRemedialTests: vi.fn(),
+  fetchRemedialSuggestions: vi.fn(),
   fetchTodayMissions: vi.fn(),
 }))
 vi.mock('../../api/practice', () => api)
@@ -48,7 +50,9 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
     ],
   })
   await router.push(url)
-  wrapper = mount(component as never, { global: { plugins: [router], stubs: { teleport: true } } })
+  wrapper = mount(component as never, {
+    global: { plugins: [router, createPinia()], stubs: { teleport: true } },
+  })
   await flushPromises()
   return wrapper
 }
@@ -69,13 +73,14 @@ const card = (over: Record<string, unknown> = {}) => ({
   levelName: 'Tingkatan 5',
   parts: 1,
   marks: 10,
+  bestScore: null,
   ...over,
 })
 const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
   data: items,
   meta: {
     page: 1,
-    pageSize: 20,
+    pageSize: 12,
     totalItems: items.length,
     totalPages: 1,
     from: 1,
@@ -83,6 +88,7 @@ const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
     scope: null,
     track: null,
     subjectOptions: [{ id: 23, name: 'Perniagaan' }],
+    pendingSchemeCount: 0,
     ...meta,
   },
 })
@@ -98,11 +104,14 @@ afterEach(() => {
 })
 
 describe('S10 StructuredListPage', () => {
-  it.each([4454, 'clx9abc123'])('links "Mula" for a card id of %s (mock number / API string)', async (id) => {
-    api.fetchStructured.mockResolvedValue(listOf([card({ id, subjectId: String(id) })]))
-    const w = await render(StructuredListPage, '/latihan-berstruktur')
-    expect(t(w, 'card-start').attributes('href')).toBe(`/latihan-berstruktur/${String(id)}/jawab`)
-  })
+  it.each([4454, 'clx9abc123'])(
+    'links "Mula" for a card id of %s (mock number / API string)',
+    async (id) => {
+      api.fetchStructured.mockResolvedValue(listOf([card({ id, subjectId: String(id) })]))
+      const w = await render(StructuredListPage, '/latihan-berstruktur')
+      expect(t(w, 'card-start').attributes('href')).toBe(`/latihan-berstruktur/${String(id)}/jawab`)
+    },
+  )
 
   it('shows cards with the KBAT badge, hides a null school and links "Mula"', async () => {
     api.fetchStructured.mockResolvedValue(listOf([card()]))
@@ -114,12 +123,12 @@ describe('S10 StructuredListPage', () => {
     expect(t(w, 'card-author').text()).toBe('Guru Pakar')
     expect(t(w, 'card-footer').text()).toContain('2 soalan · Tingkatan 5')
     expect(t(w, 'card-start').attributes('href')).toBe('/latihan-berstruktur/4454/jawab')
-    expect(w.find('[data-testid=card-parts]').exists()).toBe(false)
+    expect(t(w, 'card-kbat-flag').text()).toBe('KBAT')
+    expect(t(w, 'card-parts').text()).toContain('1 bahagian · 10 markah')
     const subjectSelect = w.findAllComponents({ name: 'Select' })[0]
-    expect(((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label)).toEqual([
-      'Semua Subjek',
-      'Perniagaan',
-    ])
+    expect(
+      ((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label),
+    ).toEqual(['Semua Subjek', 'Perniagaan'])
   })
 
   it('shows the author school when present', async () => {
@@ -131,7 +140,12 @@ describe('S10 StructuredListPage', () => {
   it('shows the empty state and no pager', async () => {
     api.fetchStructured.mockResolvedValue(listOf([]))
     const w = await render(StructuredListPage, '/latihan-berstruktur?subject_id=99')
-    expect(t(w, 'structured-empty').text()).toContain('Tiada soalan berstruktur buat masa ini')
+    expect(t(w, 'structured-empty').text()).toContain('Tiada soalan berstruktur ditemui')
+    expect(t(w, 'structured-empty').text()).toContain(
+      'Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain.',
+    )
+    // R10: the old `subject_id` hand-over is still read.
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ subjectId: '99' })
     expect(w.find('[data-testid=structured-pager]').exists()).toBe(false)
   })
 
@@ -167,10 +181,59 @@ describe('S10 StructuredListPage', () => {
     await t(w, 'structured-filter').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toMatchObject({
-      subject_id: '',
+      subjectId: '',
       kbat_level: '4',
       scope: 'spm',
     })
+  })
+
+  it('has no KBAT flag for LOTS, the PRD KBAT labels, a 100-character search and 12 per page', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card({ kbatLevel: 2 })], { totalItems: 30 }))
+    const w = await render(StructuredListPage, '/latihan-berstruktur?q=aliran')
+    expect(w.find('[data-testid=card-kbat-flag]').exists()).toBe(false)
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ q: 'aliran' })
+    const kbat = w.findAllComponents({ name: 'Select' })[1]
+    expect(((kbat?.props('items') ?? []) as { label: string; value: string }[]).map((o) => o.label)).toEqual(
+      ['Semua', 'LOTS 1', 'LOTS 2', 'MOTS 3', 'HOTS 4', 'HOTS 5', 'HOTS 6'],
+    )
+    expect(w.get('[data-testid=filter-search]').attributes('maxlength')).toBe('100')
+    expect(w.findComponent({ name: 'Pagination' }).props('itemsPerPage')).toBe(12)
+  })
+
+  it('sends markable=1, shows the best score with "Cuba Lagi" and the pending-scheme notice', async () => {
+    api.fetchStructured.mockResolvedValue(
+      listOf(
+        [card({ bestScore: { awarded: 7, max: 10 } }), card({ id: 2 })],
+        { pendingSchemeCount: 3 },
+      ),
+    )
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ markable: '1' })
+    const cards = w.findAll('[data-testid^=structured-card-]')
+    expect(cards[0]?.get('[data-testid=card-best]').text()).toBe('Skor terbaik: 7/10')
+    expect(cards[0]?.get('[data-testid=card-start]').text()).toBe('Cuba Lagi')
+    expect(cards[1]?.find('[data-testid=card-best]').exists()).toBe(false)
+    expect(cards[1]?.get('[data-testid=card-start]').text()).toBe('Mula')
+    expect(t(w, 'structured-pending').text()).toBe(
+      '3 soalan untuk pilihan ini masih menunggu skema pemarkahan...',
+    )
+  })
+
+  it('hides the pending notice when nothing is pending', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card()]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(w.find('[data-testid=structured-pending]').exists()).toBe(false)
+  })
+
+  it('sends the search text as q and resets the page', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card()]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur?page=3')
+    await w.get('[data-testid=filter-search]').setValue('  tenaga ')
+    await t(w, 'structured-filter').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toMatchObject({ q: 'tenaga' })
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    expect(api.fetchStructured.mock.calls.at(-1)?.[0]).toMatchObject({ q: 'tenaga', page: 1 })
   })
 })
 
@@ -205,7 +268,7 @@ describe('Q3 StructuredAnswerPage', () => {
       expect.anything(),
     )
     expect(outcome.setRouteOutcome).not.toHaveBeenCalledWith(404)
-    await w.findAll('[data-testid=sub-answer]')[0]?.setValue('x')
+    for (const box of w.findAll('[data-testid=sub-answer]')) await box.setValue('x')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.submitStructuredAttempt).toHaveBeenCalledWith(String(id), expect.anything())
@@ -219,21 +282,26 @@ describe('Q3 StructuredAnswerPage', () => {
       { scope: 'spm', track: null },
       expect.anything(),
     )
-    expect(t(w, 'answer-stimulus').text()).toBe('<b>Teks</b> kes')
-    expect(w.find('[data-testid=answer-stimulus] b').exists()).toBe(false)
-    expect(w.find('[data-testid=answer-image]').exists()).toBe(false)
+    expect(t(w, 'answer-h1').text()).toBe('Soalan Berstruktur — Jawab')
+    expect(t(w, 'answer-summary').text()).toBe('2 bahagian · 6 markah')
+    // The stimulus shows once, as escaped text (never markup).
+    expect(w.findAll('[data-testid=stimulus-group]')).toHaveLength(1)
+    expect(t(w, 'stimulus-group').text()).toContain('<b>Teks</b> kes')
+    expect(w.find('[data-testid=stimulus-group] b').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group] img').exists()).toBe(false)
     expect(w.findAll('[data-testid=sub-marks]').map((m) => m.text())).toEqual([
       '[2 markah]',
       '[4 markah]',
     ])
-    expect(t(w, 'answer-hint').text()).toContain('Jawab semua sub-soalan, kemudian klik Hantar.')
+    expect(t(w, 'answer-hint').text()).toBe('✍️ Tulis jawapan anda, kemudian tekan Hantar & Semak.')
+    expect(t(w, 'answer-submit').text()).toBe('Hantar & Semak')
     expect(t(w, 'answer-back').attributes('href')).toBe(DETAIL.backUrl)
   })
 
   it('does not render an unsafe image', async () => {
     api.fetchStructuredDetail.mockResolvedValue({ ...DETAIL, stimulusImage: 'javascript:alert(1)' })
     const w = await render(StructuredAnswerPage, '/latihan-berstruktur/4454/jawab')
-    expect(w.find('[data-testid=answer-image]').exists()).toBe(false)
+    expect(w.find('[data-testid=stimulus-group] img').exists()).toBe(false)
   })
 
   it('posts the attempt with scope/track and shows marks and model answers', async () => {
@@ -255,13 +323,15 @@ describe('Q3 StructuredAnswerPage', () => {
       StructuredAnswerPage,
       '/latihan-berstruktur/4454/jawab?scope=spm&track=bahasa',
     )
-    await w.findAll('[data-testid=sub-answer]')[0]?.setValue('jawapan')
+    const boxes = w.findAll('[data-testid=sub-answer]')
+    await boxes[0]?.setValue('jawapan')
+    await boxes[1]?.setValue('lagi')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(api.submitStructuredAttempt).toHaveBeenCalledWith('4454', {
       answers: [
         { subQuestionId: 1, text: 'jawapan' },
-        { subQuestionId: 2, text: '' },
+        { subQuestionId: 2, text: 'lagi' },
       ],
       scope: 'spm',
       track: 'bahasa',
@@ -288,6 +358,7 @@ describe('Q3 StructuredAnswerPage', () => {
       }),
     )
     const w = await render(StructuredAnswerPage, '/latihan-berstruktur/4454/jawab')
+    for (const box of w.findAll('[data-testid=sub-answer]')) await box.setValue('x')
     await w.get('form').trigger('submit')
     await flushPromises()
     expect(t(w, 'answer-errors').text()).toContain('Jawapan tidak sah.')
@@ -308,44 +379,163 @@ describe('Q3 StructuredAnswerPage', () => {
 })
 
 describe('S13 RemedialListPage', () => {
-  it('shows the observed empty state', async () => {
-    api.fetchRemedialTests.mockResolvedValue({ data: [], meta: {} })
+  const none = { data: [], meta: {} }
+  const set = (over: Record<string, unknown> = {}) => ({
+    subjectCode: 'SN',
+    subjectName: 'Sains',
+    setNo: 1,
+    questionCount: 10,
+    before: 40,
+    after: 80,
+    delta: 40,
+    at: '2026-09-20T09:00:00+08:00',
+    ...over,
+  })
+  const need = (over: Record<string, unknown> = {}) => ({
+    subjectCode: 'SN',
+    subjectName: 'Sains',
+    answered: 120,
+    accuracy: 0,
+    target: 60,
+    ...over,
+  })
+  const assigned = {
+    data: [
+      {
+        id: 7601,
+        subjectName: 'Matematik',
+        totalQuestions: 10,
+        status: 'active',
+        createdAt: '2026-09-20T09:00:00+08:00',
+        teacherName: 'Cikgu Demo',
+      },
+      {
+        id: 7602,
+        subjectName: 'Sains',
+        totalQuestions: 5,
+        status: 'completed',
+        createdAt: '2026-09-10T09:00:00+08:00',
+        teacherName: 'Cikgu Demo',
+      },
+    ],
+    meta: {},
+  }
+
+  it('shows "Tiada topik lemah!" with the Latih Tubi button when all three lists are empty (0-answer pupil)', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockResolvedValue({ completed: [], needed: [] })
     const w = await render(RemedialListPage, '/remedial/saya')
     expect(t(w, 'remedial-h1').text()).toBe('Ujian Remedial Saya')
-    expect(t(w, 'remedial-empty').text()).toContain('Tiada ujian remedial. Bagus — teruskan usaha!')
+    const e = t(w, 'remedial-empty')
+    expect(e.text()).toContain('Tiada topik lemah!')
+    expect(e.text()).toContain('Prestasi anda baik merentas semua subjek. Teruskan!')
+    expect(e.text()).not.toContain('Tiada ujian remedial')
+    expect(t(w, 'remedial-empty-cta').text()).toBe('Terus Berlatih →')
+    expect(t(w, 'remedial-empty-cta').attributes('href')).toBe('/practice')
+    expect(w.find('[data-testid=remedial-error]').exists()).toBe(false)
   })
 
-  it('lists tests; only an active one has "Mula Ujian"', async () => {
-    api.fetchRemedialTests.mockResolvedValue({
-      data: [
-        {
-          id: 7601,
-          subjectName: 'Matematik',
-          totalQuestions: 10,
-          status: 'active',
-          createdAt: '2026-09-20T09:00:00+08:00',
-          teacherName: 'Cikgu Demo',
-        },
-        {
-          id: 7602,
-          subjectName: 'Sains',
-          totalQuestions: 5,
-          status: 'completed',
-          createdAt: '2026-09-10T09:00:00+08:00',
-          teacherName: 'Cikgu Demo',
-        },
-      ],
-      meta: {},
+  it('renders the three sections in order: sets, needed cards, assigned tests', async () => {
+    api.fetchRemedialTests.mockResolvedValue(assigned)
+    api.fetchRemedialSuggestions.mockResolvedValue({
+      completed: [set()],
+      needed: [need({ subjectCode: 'MATH', subjectName: 'Matematik', answered: 30, accuracy: 20 })],
     })
     const w = await render(RemedialListPage, '/remedial/saya')
-    const a = t(w, 'remedial-card-7601')
-    expect(a.text()).toContain('10 soalan')
-    expect(a.text()).toContain('Daripada: Cikgu Demo')
-    expect(a.text()).toContain('20/09/2026')
-    expect(a.get('[data-testid=remedial-start]').attributes('href')).toBe('/remedial/7601')
-    const b = t(w, 'remedial-card-7602')
-    expect(b.text()).toContain('Selesai')
-    expect(b.find('[data-testid=remedial-start]').exists()).toBe(false)
+    const order = ['remedial-set-list', 'remedial-needed-list', 'remedial-list'].map((id) =>
+      w.html().indexOf(`data-testid="${id}"`),
+    )
+    expect(order.every((i) => i >= 0)).toBe(true)
+    expect([...order].sort((a, b) => a - b)).toEqual(order)
+    expect(w.text()).toContain('Perlu Pemulihan Sekarang')
+    expect(w.text()).toContain('Ujian Daripada Guru')
+    expect(w.find('[data-testid=remedial-empty]').exists()).toBe(false)
+    expect(t(w, 'remedial-card-7601').get('[data-testid=remedial-start]').attributes('href')).toBe(
+      '/remedial/7601',
+    )
+    expect(t(w, 'remedial-card-7602').find('[data-testid=remedial-start]').exists()).toBe(false)
+  })
+
+  it('completed set row: copy, +/- delta colour and the redo link (AC-MUR-12-2)', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockResolvedValue({
+      completed: [
+        set(),
+        set({ subjectCode: 'BM', subjectName: 'Bahasa Melayu', before: 70, after: 65, delta: -5 }),
+        set({ subjectCode: 'MATH', subjectName: 'Matematik', before: 50, after: 50, delta: 0 }),
+      ],
+      needed: [],
+    })
+    const w = await render(RemedialListPage, '/remedial/saya')
+    const a = t(w, 'remedial-set-SN-1')
+    expect(a.get('[data-testid=remedial-set-title]').text()).toBe('Remedial Set 1 — Sains')
+    expect(a.get('[data-testid=remedial-set-status]').text()).toBe('Selesai')
+    expect(a.get('[data-testid=remedial-set-count]').text()).toBe('10 soalan')
+    expect(a.get('[data-testid=remedial-set-before]').text()).toBe('Sebelum: 40%')
+    expect(a.get('[data-testid=remedial-set-after]').text().replace(/\s+/g, ' ')).toBe(
+      'Selepas: 80% (+40%)',
+    )
+    expect(a.get('[data-testid=remedial-set-delta]').attributes('data-tone')).toBe('success')
+    expect(a.get('[data-testid=remedial-set-chip]').text()).toBe('Sains (Umum)')
+    expect(a.get('[data-testid=remedial-set-redo]').text()).toBe('🎯 Ulang Latihan →')
+    expect(a.get('[data-testid=remedial-set-redo]').attributes('href')).toBe('/practice/revision/SN')
+    const neg = t(w, 'remedial-set-BM-1').get('[data-testid=remedial-set-delta]')
+    expect(neg.text()).toBe('-5%')
+    expect(neg.attributes('data-tone')).toBe('error')
+    const zero = t(w, 'remedial-set-MATH-1').get('[data-testid=remedial-set-delta]')
+    expect(zero.text()).toBe('+0%')
+    expect(zero.attributes('data-tone')).toBe('success')
+  })
+
+  it('a null side shows "—" and a null delta drops the "(±d%)" part', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockResolvedValue({
+      completed: [set({ before: null, after: 80, delta: null })],
+      needed: [],
+    })
+    const w = await render(RemedialListPage, '/remedial/saya')
+    const a = t(w, 'remedial-set-SN-1')
+    expect(a.get('[data-testid=remedial-set-before]').text()).toBe('Sebelum: —')
+    expect(a.get('[data-testid=remedial-set-after]').text().replace(/\s+/g, ' ')).toBe('Selepas: 80%')
+    expect(a.find('[data-testid=remedial-set-delta]').exists()).toBe(false)
+  })
+
+  it('needed card shows the AC-MUR-12-1 fields and a bar against 60', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockResolvedValue({
+      completed: [],
+      needed: [need(), need({ subjectCode: 'BM', subjectName: 'Bahasa Melayu', answered: 10, accuracy: 30 })],
+    })
+    const w = await render(RemedialListPage, '/remedial/saya')
+    const c = t(w, 'remedial-needed-SN')
+    expect(c.get('[data-testid=remedial-needed-subject]').text()).toBe('Sains')
+    expect(c.get('[data-testid=remedial-needed-status]').text()).toBe('Perlu Pemulihan')
+    expect(c.get('[data-testid=remedial-needed-count]').text()).toBe('120 soalan')
+    expect(c.get('[data-testid=remedial-needed-accuracy]').text()).toBe('Ketepatan: 0%')
+    expect(c.get('[data-testid=remedial-needed-target]').text()).toBe('Sasaran: 60%')
+    expect(c.get('[data-testid=remedial-needed-chip]').text()).toBe('Sains (Umum)')
+    expect(c.get('[data-testid=remedial-needed-start]').text()).toBe('🎯 Latihan Pemulihan →')
+    expect(c.get('[data-testid=remedial-needed-start]').attributes('href')).toBe('/practice/revision/SN')
+    expect(c.get('[data-testid=remedial-needed-bar]').attributes('data-width')).toBe('0')
+    expect(
+      t(w, 'remedial-needed-BM').get('[data-testid=remedial-needed-bar]').attributes('data-width'),
+    ).toBe('50')
+  })
+
+  it('shows nothing for the assigned list when it is empty but other sections have items', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockResolvedValue({ completed: [], needed: [need()] })
+    const w = await render(RemedialListPage, '/remedial/saya')
+    expect(w.find('[data-testid=remedial-list]').exists()).toBe(false)
+    expect(w.text()).not.toContain('Ujian Daripada Guru')
+    expect(w.find('[data-testid=remedial-empty]').exists()).toBe(false)
+  })
+
+  it('shows the load error when the suggestions call fails', async () => {
+    api.fetchRemedialTests.mockResolvedValue(none)
+    api.fetchRemedialSuggestions.mockRejectedValue(new ApiError({ status: 500, code: 'INTERNAL', message: 'x' }))
+    const w = await render(RemedialListPage, '/remedial/saya')
+    expect(t(w, 'remedial-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
   })
 })
 
