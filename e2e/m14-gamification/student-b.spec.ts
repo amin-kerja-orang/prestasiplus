@@ -340,16 +340,27 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     await expectAdminHeader(page, 'Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText('🤝 Rujuk Kawan, Dapat Syiling!')
     await expect(page.getByTestId('referral-hero')).toContainText(
-      'Jemput kawan anda ke PRESTASIPLUS — dua-dua dapat ganjaran!',
+      'Jemput kawan sertai PrestasiPlus dan dapatkan syiling bonus',
     )
     await expect(page.getByTestId('reward-you')).toHaveText('100')
-    await expect(page.getByTestId('reward-friend')).toHaveText('0')
+    await expect(page.getByTestId('reward-friend')).toHaveCount(0)
     await expect(page.getByTestId('referral-tiles')).toContainText('Syiling untuk ANDA')
-    await expect(page.getByTestId('referral-tiles')).toContainText('Syiling untuk KAWAN')
-    await expect(page.getByTestId('referral-stats')).toContainText('📊 Statistik Rujukan')
+    await expect(page.getByTestId('referral-tiles')).not.toContainText('Syiling untuk KAWAN')
+    await expect(page.getByTestId('referral-explain')).toHaveText(
+      'Setiap kawan yang mendaftar melalui pautan ini memberi anda 100 syiling.',
+    )
+    await expect(page.getByTestId('referral-code-box')).toContainText('Kod rujukan anda')
+    await expect(page.getByTestId('referral-link-region')).toContainText('Pautan jemputan')
+    await expect(page.getByTestId('referral-stats')).toContainText('Kawan disertakan')
+    await expect(page.getByTestId('referral-stats')).toContainText('Syiling bonus')
     await expect(page.getByTestId('stat-referrals')).toHaveText('0')
-    await expect(page.getByTestId('stat-rewarded')).toHaveText('0')
+    await expect(page.getByTestId('stat-rewarded')).toHaveCount(0)
     await expect(page.getByTestId('stat-earned')).toHaveText('0')
+    await expect(page.getByTestId('referral-cap')).toHaveCount(0)
+    await expect(page.getByTestId('referral-joined')).toContainText('Kawan yang telah sertai')
+    await expect(page.getByTestId('referral-joined-empty')).toHaveText(
+      'Belum ada kawan mendaftar melalui pautan anda. Kongsi pautan di atas untuk mula.',
+    )
 
     // URL-encoded as live (FR-M14-58); compare the decoded targets
     const waHref = (await page.getByTestId('referral-whatsapp').getAttribute('href')) ?? ''
@@ -369,7 +380,7 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     await expect(page.getByTestId('referral-copy-code')).toHaveText('✓ Disalin!')
     expect(await clipboard(page)).toEqual(['4JURJTT'])
     await page.getByTestId('referral-copy-link').click()
-    await expect(page.getByTestId('referral-copy-link')).toHaveText('✓ Link Disalin!')
+    await expect(page.getByTestId('referral-copy-link')).toHaveText('Disalin')
     expect(await clipboard(page)).toEqual([
       '4JURJTT',
       'https://prestasiplus.my/register?ref=4JURJTT',
@@ -378,8 +389,29 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     await expect(page.getByTestId('referral-copy-code')).toHaveText('✓ Disalin!')
   })
 
-  test('SRS §12 #94 no horizontal scroll', async ({ page, gotoApp }) => {
+  test('SRS §12 #94 no horizontal scroll, wrapped code, tap targets', async ({ page, gotoApp }) => {
     await gotoApp('/gamification/referral')
+    await expect(page.getByTestId('referral-code')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    for (const id of [
+      'referral-copy-code',
+      'referral-copy-link',
+      'referral-whatsapp',
+      'referral-telegram',
+    ]) {
+      const box = await page.getByTestId(id).boundingBox()
+      expect(box?.height ?? 0, `${id} tap target`).toBeGreaterThanOrEqual(44)
+    }
+    // share buttons: one column below sm (640 px), two columns from sm up
+    const wa = await page.getByTestId('referral-whatsapp').boundingBox()
+    const tg = await page.getByTestId('referral-telegram').boundingBox()
+    if (viewportWidth(page) < 640) {
+      expect(Math.abs((wa?.x ?? 0) - (tg?.x ?? 1))).toBeLessThan(2)
+    } else {
+      expect(Math.abs((wa?.y ?? 0) - (tg?.y ?? 1))).toBeLessThan(2)
+    }
+    // 320 px floor (CLAUDE.md section 7)
+    await page.setViewportSize({ width: 320, height: 800 })
     await expect(page.getByTestId('referral-code')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })

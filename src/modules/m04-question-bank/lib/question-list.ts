@@ -196,7 +196,7 @@ export const complianceColor = (status: ComplianceStatus | (string & {})): Badge
   (Object.hasOwn(COMPLIANCE_COLOR, status) ? COMPLIANCE_COLOR[status as ComplianceStatus] : undefined) ??
   'neutral'
 
-export const LANGUAGE_LABELS: Record<string, string> = { bm: 'Bahasa Melayu', en: 'English' }
+export const LANGUAGE_LABELS: Record<string, string> = { ms: 'Bahasa Melayu', en: 'English', 'ms+en': 'BM + English (dwibahasa)' }
 
 export const TYPE_ANSWER_HEADINGS: Record<Exclude<QuestionType, 'mcq'>, string> = {
   true_false: 'Jawapan Betul / Salah',

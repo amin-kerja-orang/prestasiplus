@@ -33,7 +33,7 @@ describe('PaperMetaForm title', () => {
   it('blocks an empty or over-long title', async () => {
     const w = mount(PaperMetaForm, { props: { paper, title: '' } })
     expect(w.get('[data-testid="meta-save"]').attributes('disabled')).toBeDefined()
-    await w.setProps({ title: 'x'.repeat(201) })
+    await w.setProps({ title: 'x'.repeat(121) })
     expect(w.get('[data-testid="meta-save"]').attributes('disabled')).toBeDefined()
     await w.setProps({ title: 'ok' })
     expect(w.get('[data-testid="meta-save"]').attributes('disabled')).toBeUndefined()

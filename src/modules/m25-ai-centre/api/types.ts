@@ -2,22 +2,28 @@
 
 export type HeatmapBand = 'red' | 'amber' | 'green'
 
-/** DATA-M25-01 HeatmapTopic (derived, per request). */
-export interface HeatmapTopic {
-  chapterId: number
+/** Tile state: a band, or `belum-cuba` (a chapter with no attempt). */
+export type HeatmapState = HeatmapBand | 'belum-cuba'
+
+/** API-DSKP-08 tile (mirrors `HeatmapChapter` of `@pp/contract`): one chapter (Bab) of a practised subject. */
+export interface HeatmapChapter {
+  id: string
+  /** Bab number; null for a tile with none (listed after the numbered ones). */
+  number: number | null
   name: string
   attempts: number
   correct: number
-  /** Whole number 0-100, rounded half up (BR-M25-03). */
-  percent: number
-  band: HeatmapBand
+  /** 100 x correct / attempts to one decimal; null when `attempts` is 0. */
+  accuracy: number | null
+  state: HeatmapState
 }
 
-/** DATA-M25-02 HeatmapSubject (derived, per request). */
+/** API-DSKP-08 subject block (mirrors `HeatmapSubject`). `code` is the subject code for the tile link (Q-1). */
 export interface HeatmapSubject {
-  subjectId: number
+  id: string
+  code: string
   name: string
-  topics: HeatmapTopic[]
+  chapters: HeatmapChapter[]
 }
 
 /** #1 `GET /api/buku-nota/heatmap`. */

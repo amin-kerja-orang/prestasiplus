@@ -2278,7 +2278,6 @@
     "src/modules/m25-ai-centre/components/heatmap/CikguPakarBlock.vue": 10,
     "src/modules/m25-ai-centre/components/heatmap/HeatmapEmpty.vue": 1,
     "src/modules/m25-ai-centre/components/heatmap/HeatmapHero.vue": 8,
-    "src/modules/m25-ai-centre/components/heatmap/HeatmapSubjectBlock.vue": 4,
     "src/modules/m25-ai-centre/pages/HeatmapTopikLemahPage.vue": 2,
     "src/modules/m27-school-admin/components/activity/ActivityOverview.vue": 29,
     "src/modules/m27-school-admin/components/activity/ActivityPupilsTab.vue": 7,
