@@ -18,19 +18,23 @@ import { TimestampSchema } from '../common/time'
 /* Enums                                                                                       */
 /* ------------------------------------------------------------------------------------------ */
 
-/** Submission status. Prototype labels: Dihantar / Sedang diproses / Sedia untuk semakan / Gagal; `cancelled` is [PROPOSED]. */
-export const INTAKE_BATCH_STATUSES = ['submitted', 'processing', 'ready_for_review', 'failed', 'cancelled'] as const
+/**
+ * Submission status (OPT-BATCH-STATUS, 40 X10.5.3): Dihantar / Sedang diproses / Selesai / Selesai dengan ralat / Gagal / Dibatalkan.
+ * `selesai_dengan_ralat` (S1-T04, DM-71) = finished with at least one failed page and at least one extracted item.
+ */
+export const INTAKE_BATCH_STATUSES = ['submitted', 'processing', 'ready_for_review', 'selesai_dengan_ralat', 'failed', 'cancelled'] as const
 export const IntakeBatchStatusSchema = z.enum(INTAKE_BATCH_STATUSES).meta({
   id: 'IntakeBatchStatus',
   description:
-    'Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Sedia untuk semakan, failed = Gagal, cancelled = Dibatalkan [PROPOSED].',
+    'Processing status of a submission (card BE-37): submitted = Dihantar, processing = Sedang diproses, ready_for_review = Selesai, selesai_dengan_ralat = Selesai dengan ralat (S1-T04), failed = Gagal, cancelled = Dibatalkan [PROPOSED].',
 })
 export type IntakeBatchStatus = z.infer<typeof IntakeBatchStatusSchema>
 
 export const INTAKE_BATCH_STATUS_LABELS = {
   submitted: 'Dihantar',
   processing: 'Sedang diproses',
-  ready_for_review: 'Sedia untuk semakan',
+  ready_for_review: 'Selesai',
+  selesai_dengan_ralat: 'Selesai dengan ralat',
   failed: 'Gagal',
   cancelled: 'Dibatalkan',
 } as const satisfies Record<IntakeBatchStatus, string>
@@ -121,7 +125,18 @@ export const INTAKE_FILE_MESSAGES = {
   /** ERR-QUOTA-04 (teacher submission path, 409). */
   activeLimit: (n: number) => `Terlalu banyak kumpulan sedang diproses (maksimum ${n}). Tunggu salah satu selesai.`,
   batchClosed: 'Kelompok ini tidak lagi menerima fail.',
+  /** ERR-INT-05 (40 X10.11): a page over OCR_PAGE_TIMEOUT_MS (`OCR_TIMEOUT`) or a batch over OCR_BATCH_TIMEOUT_MS (`OCR_BATCH_TIMEOUT`, the batch `statusReason`). */
+  ocrTimeout: 'Pengecaman teks mengambil masa terlalu lama.',
+  /** ERR-INT-11 (409): the file already used its 3 retries. */
+  retryExhausted: 'Fail ini gagal diproses berulang kali. Sila hubungi sokongan.',
 } as const
+
+/** The 3 retries a file is allowed after its original run (`intake_files.retry_count` 0..3; the 4th is refused, ERR-INT-11). */
+export const INTAKE_MAX_RETRIES = 3
+/** Batch-level code of the 15 minute limit (setting OCR_BATCH_TIMEOUT_MS, default 900000). Not a page code: the failed pages carry `OCR_TIMEOUT`. */
+export const INTAKE_BATCH_TIMEOUT_CODE = 'OCR_BATCH_TIMEOUT'
+/** Page codes a retry can fix (ERR-INT-05 `OCR_TIMEOUT`, ERR-INT-06 `OCR_FAILED`, ERR-INT-08 `RENDER_FAILED`); the others need a new upload or manual entry. */
+export const INTAKE_RETRYABLE_PAGE_CODES = ['OCR_TIMEOUT', 'OCR_FAILED', 'RENDER_FAILED'] as const
 
 /* ------------------------------------------------------------------------------------------ */
 /* Requests                                                                                    */
@@ -131,6 +146,16 @@ export const INTAKE_SOURCE_MAX = 200
 export const INTAKE_NOTES_MAX = 1000
 export const INTAKE_BATCH_PAGE_SIZE_MAX = 100
 export const INTAKE_UPLOAD_FIELD = 'files'
+
+/** 202 body of POST /intake/files/{id}/retry and /intake/batches/{id}/retry (API-Q-26). */
+export const IntakeRetryResultSchema = z
+  .strictObject({
+    attempt: z.number().int().min(1).max(INTAKE_MAX_RETRIES).meta({ description: 'The retry just started (1..3). For a batch retry: the highest among the files re-run.' }),
+    retriesLeft: z.number().int().min(0).max(INTAKE_MAX_RETRIES - 1).meta({ description: 'Retries still allowed after this one (0..2). For a batch retry: the lowest among the files re-run.' }),
+  })
+  .meta({ id: 'IntakeRetryResult', description: 'S1-T04 (API-Q-26): the retry counter after a retry call.' })
+export type IntakeRetryResult = z.infer<typeof IntakeRetryResultSchema>
+export const IntakeRetryResultEnvelopeSchema = z.object({ data: IntakeRetryResultSchema }).meta({ id: 'IntakeRetryResultEnvelope' })
 
 /** Prototype IntakeMeta (paperType, subject, kertas, year, source, copyright, notes) plus the declaration tick. */
 export const IntakeBatchCreateSchema = z
@@ -206,6 +231,11 @@ export const IntakeBatchSummarySchema = z
     id: IdSchema,
     status: IntakeBatchStatusSchema,
     statusLabel: z.string().meta({ description: 'BM label of `status` (INTAKE_BATCH_STATUS_LABELS).' }),
+    statusReason: z
+      .string()
+      .nullable()
+      .optional()
+      .meta({ description: 'BM reason of the current status: why a batch is `failed` (for example ERR-INT-05 "Pengecaman teks mengambil masa terlalu lama.") or why it waits; null when there is none. S1-T04.' }),
     paperType: z.union([IntakePaperTypeSchema, z.enum(INTAKE_GURU_PAPER_TYPE_CODES)]).meta({ description: 'An admin code (IntakePaperType) or, for a teacher submission, an OPT-JENIS-HANTARAN slug.' }),
     subject: z.string().meta({ description: 'Admin: subject code. Teacher submission: free text (at most 100).' }),
     kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).nullable().meta({ description: 'Null only for a teacher submission.' }),

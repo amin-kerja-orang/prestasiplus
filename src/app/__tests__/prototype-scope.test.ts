@@ -131,6 +131,9 @@ describe('isPathInScope', () => {
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
+      '/guru/soalan-guru',
+      '/guru/soalan-guru/cipta',
+      '/guru/soalan-guru/12/sunting',
       '/guru/soalan-berstruktur',
       '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
@@ -147,7 +150,6 @@ describe('isPathInScope', () => {
     for (const path of [
       '/dashboard',
       '/guru/misi-harian',
-      '/guru/soalan-guru',
       '/guru/databank',
       '/guru/laporan-mingguan',
       '/practice',
