@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { TEACHER_A, TEACHER_B, bootClassesApp, client, createClass, errorIs, fieldsOf, firstSubject, idOfEmail, schoolOfCode, type ClassesTestApp, type Client } from './helpers'
 
 /** API-GUR-06 and the new columns of API-GUR-05 (S6-T10). DB spec; the default password is a throwaway set in the test process env only. */
-const THROWAWAY = 'w'.repeat(10)
+const THROWAWAY = 'w'.repeat(12)
 const StudentsBody = z.object({ data: z.array(TeacherStudentSchema), meta: TeacherStudentsMetaSchema })
 
 describe('POST /api/guru/students (Cipta Pelajar)', () => {

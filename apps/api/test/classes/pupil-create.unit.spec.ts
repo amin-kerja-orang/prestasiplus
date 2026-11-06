@@ -14,7 +14,7 @@ import { UsersService } from '../../src/modules/users/users.service'
 
 /** DB-free unit tests of S6-T10: username generator, IC rules, own-class check, Skor Purata math. No real credentials: every value is a throwaway built in the test. */
 
-const THROWAWAY = 'q'.repeat(8)
+const THROWAWAY = 'q'.repeat(12)
 const cfgOf = (values: Record<string, unknown>) => ({ get: (k: string) => values[k] }) as never
 
 describe('usernameStem (D113)', () => {
