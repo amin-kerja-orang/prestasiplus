@@ -68,6 +68,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T01 | AC-ADM-QE2.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order |
 | S1-T01 | AC-ADM-QE2.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | paper-units.spec.ts::is a paper-level error with the exact BM line (not section-prefixed, hard) |
 | S1-T01 | AC-ADM-QE3.13 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S5-T15 | AC-PA-01 | CI | Pass | 2026-11-06 | team-bb/S-1 | answer-store-writers.spec.ts::every direct writer is on the allow-list or the exemption with its exact count; answer-store-writers.spec.ts::the allow-list is empty |
+| S5-T15 | AC-PA-15 | CI | Pass | 2026-11-06 | team-bb/S-1 | session-sweeper.spec.ts::abandons a session idle for more than 2 h, keeping its checks and writing nothing else; session-sweeper.spec.ts::an abandoned session is not in the history (repo and GET /practice/sessions) |
+| S5-T06 | AC-MUR-54-2 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-2: the note an admin writes on a report shows in the pupil own list |
+| S5-T06 | AC-MUR-54-3 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-3: a pupil report without an owned context is 403 in BM and stores nothing |
+| S5-T06 | AC-MUR-54-5 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-5: a second report by the same user for the same question version is 409 in BM and the first row is untouched |
+| S5-T06 | AC-MUR-54-7 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-7: five reports (pending, reviewed, fixed, dismissed, fixed on an archived question) count 1/1/2/1 with all 5; exactly one reads removed; ReportScreens.test.ts::AC-MUR-54-7: five reports show the counters, five cards, one "Dikeluarkan" and no "Selesai" |
 | S6-T03 | AC-XS-1 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
@@ -89,6 +95,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T06 | AC-ADM-QE7.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | builder-placements.spec.ts::[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order |
 | S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | kuiz-whole-groups.spec.ts::[CI] AC-QP-6: a whole group is served together, contiguous and in group order |
 | S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
+| S5-T02 | AC-MUR-9-4 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::a pupil whose own form has no chapter question sees the data-empty state (AC-MUR-9-4) |
+| S5-T02 | AC-MUR-9-10 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::AC-MUR-9-10: 7 servable questions enable only "5 soalan"; the others carry the title |
 | S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
 
 ## Sprint 4
