@@ -62,7 +62,10 @@ export const REWARD_BULK_ACTIONS = [
 export const RewardBulkActionSchema = z.enum(REWARD_BULK_ACTIONS).meta({ id: 'RewardBulkAction' })
 export type RewardBulkAction = z.infer<typeof RewardBulkActionSchema>
 
-/** Module error codes of the M15 routes; all answer 409 (a missing row is the generic 404 `NOT_FOUND`). */
+/**
+ * Module error codes of the M15 routes. All answer 409 except `MYSTERY_DAILY_LIMIT` (429); a missing row is the generic
+ * 404 `NOT_FOUND`. `MYSTERY_DAILY_LIMIT` (ERR-GAME-16) and `BOX_UNAVAILABLE` (N5) are [PROPOSED] codes (S7-T07 P8).
+ */
 export const REWARD_ERROR_CODES = [
   'OUT_OF_STOCK',
   'MONTHLY_CAP',
@@ -71,6 +74,8 @@ export const REWARD_ERROR_CODES = [
   'TICKET_LIMIT',
   'INSUFFICIENT_BALANCE',
   'CONFLICT',
+  'MYSTERY_DAILY_LIMIT',
+  'BOX_UNAVAILABLE',
 ] as const
 export const RewardErrorCodeSchema = z.enum(REWARD_ERROR_CODES).meta({ id: 'RewardErrorCode' })
 export type RewardErrorCode = z.infer<typeof RewardErrorCodeSchema>
@@ -87,6 +92,8 @@ export const REWARD_ERRORS = {
     status: 409,
     messages: ['Tebusan ini tidak lagi menunggu pemprosesan.', 'Tebusan ini tidak lagi menunggu kelulusan.'],
   },
+  MYSTERY_DAILY_LIMIT: { status: 429, messages: ['Had kotak hari ini telah dicapai. Cuba lagi esok.'] },
+  BOX_UNAVAILABLE: { status: 409, messages: ['Kotak tidak tersedia buat masa ini.'] },
 } as const satisfies Record<RewardErrorCode, { status: number; messages: readonly string[] }>
 
 /** Messages of the generic codes the M15 routes raise. */
@@ -336,55 +343,72 @@ export const RewardRedeemResultSchema = z
   .meta({ id: 'RewardRedeemResult' })
 export type RewardRedeemResult = z.infer<typeof RewardRedeemResultSchema>
 
+/** One prize row of the pupil table. `chance` is a percent with one decimal, renormalised over the prizes still in stock. */
+export const RewardMysteryBoxPrizeSchema = z
+  .object({
+    label: z.string(),
+    kind: z.enum(['syiling', 'token']),
+    amount: z.number().int().min(1),
+    chance: z.number().min(0).max(100),
+  })
+  .meta({ id: 'RewardMysteryBoxPrize' })
+export type RewardMysteryBoxPrize = z.infer<typeof RewardMysteryBoxPrizeSchema>
+
+/** The one active box (48 GAME-23, DM-37): cost in syiling and the prizes that can still be won. */
 export const RewardMysteryBoxSchema = z
   .object({
     id: IdSchema,
-    name: z.string(),
-    description: z.string(),
-    icon: z.string(),
-    rarity: z.enum(['rare', 'epic', 'legendary']).nullable(),
-    costTokens: z.number().int().min(1),
-    coinMin: count,
-    coinMax: count,
-    xpMin: count,
-    xpMax: count,
-    color1: z.string(),
-    color2: z.string(),
+    label: z.string(),
+    costSyiling: z.number().int().min(1),
+    prizes: z.array(RewardMysteryBoxPrizeSchema),
   })
   .meta({ id: 'RewardMysteryBox' })
 export type RewardMysteryBox = z.infer<typeof RewardMysteryBoxSchema>
 
+/** The prize of an opening; the three prize fields are null for an opening made before P8. */
 export const RewardMysteryBoxHistoryItemSchema = z
   .object({
     id: IdSchema,
     boxId: IdSchema,
     boxName: z.string(),
-    coins: count,
-    xp: count,
+    prizeLabel: z.string().nullable(),
+    prizeKind: z.enum(['syiling', 'token']).nullable(),
+    prizeAmount: z.number().int().min(1).nullable(),
     createdAt: TimestampSchema,
   })
   .meta({ id: 'RewardMysteryBoxHistoryItem' })
 export type RewardMysteryBoxHistoryItem = z.infer<typeof RewardMysteryBoxHistoryItemSchema>
 
-/** `history` = the caller's last openings, newest first, at most 10. */
+/**
+ * `box` is null and `available` false when no box is active or no prize can be won (N5). `openedToday` counts the
+ * caller's openings of the current Malaysia day against `dailyMax`. `history` = the last openings, newest first, at most 10.
+ */
 export const RewardMysteryBoxesViewSchema = z
   .object({
-    tokenBalance: count,
-    boxes: z.array(RewardMysteryBoxSchema),
+    box: RewardMysteryBoxSchema.nullable(),
+    available: z.boolean(),
+    syilingBalance: count,
+    dailyMax: z.number().int().min(1),
+    openedToday: count,
     history: z.array(RewardMysteryBoxHistoryItemSchema).max(10),
   })
   .meta({ id: 'RewardMysteryBoxesView' })
 export type RewardMysteryBoxesView = z.infer<typeof RewardMysteryBoxesViewSchema>
 
-/** Both balances are the values after the opening; `coins` and `xp` fall inside the box ranges. */
+export const RewardMysteryBoxOpenRequestSchema = z
+  .object({
+    clientUuid: ClientUuidSchema.meta({ description: 'Idempotency key (DM-78), per user: a repeat returns the first opening and moves nothing.' }),
+  })
+  .meta({ id: 'RewardMysteryBoxOpenRequest' })
+export type RewardMysteryBoxOpenRequest = z.infer<typeof RewardMysteryBoxOpenRequestSchema>
+
+/** Both balances are the values after the opening. */
 export const RewardMysteryBoxOpenedSchema = z
   .object({
     openingId: IdSchema,
     boxId: IdSchema,
     boxName: z.string(),
-    icon: z.string(),
-    coins: count,
-    xp: count,
+    prize: z.object({ label: z.string(), kind: z.enum(['syiling', 'token']), amount: z.number().int().min(1) }),
     tokenBalance: count,
     syilingBalance: count,
   })

@@ -7205,7 +7205,9 @@
           "DRAW_CLOSED",
           "TICKET_LIMIT",
           "INSUFFICIENT_BALANCE",
-          "CONFLICT"
+          "CONFLICT",
+          "MYSTERY_DAILY_LIMIT",
+          "BOX_UNAVAILABLE"
         ]
       },
       "RewardItem": {
@@ -7927,67 +7929,55 @@
           "id": {
             "$ref": "#/components/schemas/Id"
           },
-          "name": {
+          "label": {
             "type": "string"
           },
-          "description": {
-            "type": "string"
-          },
-          "icon": {
-            "type": "string"
-          },
-          "rarity": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "rare",
-              "epic",
-              "legendary",
-              null
-            ]
-          },
-          "costTokens": {
+          "costSyiling": {
             "type": "integer",
             "minimum": 1
           },
-          "coinMin": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "coinMax": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xpMin": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xpMax": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "color1": {
-            "type": "string"
-          },
-          "color2": {
-            "type": "string"
+          "prizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardMysteryBoxPrize"
+            }
           }
         },
         "required": [
           "id",
-          "name",
-          "description",
-          "icon",
-          "rarity",
-          "costTokens",
-          "coinMin",
-          "coinMax",
-          "xpMin",
-          "xpMax",
-          "color1",
-          "color2"
+          "label",
+          "costSyiling",
+          "prizes"
+        ]
+      },
+      "RewardMysteryBoxPrize": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "syiling",
+              "token"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "label",
+          "kind",
+          "amount",
+          "chance"
         ]
       },
       "RewardMysteryBoxHistoryItem": {
@@ -8002,13 +7992,29 @@
           "boxName": {
             "type": "string"
           },
-          "coins": {
-            "type": "integer",
-            "minimum": 0
+          "prizeLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "xp": {
-            "type": "integer",
-            "minimum": 0
+          "prizeKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "syiling",
+              "token",
+              null
+            ]
+          },
+          "prizeAmount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
@@ -8018,23 +8024,42 @@
           "id",
           "boxId",
           "boxName",
-          "coins",
-          "xp",
+          "prizeLabel",
+          "prizeKind",
+          "prizeAmount",
           "createdAt"
         ]
       },
       "RewardMysteryBoxesView": {
         "type": "object",
         "properties": {
-          "tokenBalance": {
+          "box": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RewardMysteryBox"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "syilingBalance": {
             "type": "integer",
             "minimum": 0
           },
-          "boxes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RewardMysteryBox"
-            }
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "openedToday": {
+            "type": "integer",
+            "minimum": 0
           },
           "history": {
             "type": "array",
@@ -8045,8 +8070,11 @@
           }
         },
         "required": [
-          "tokenBalance",
-          "boxes",
+          "box",
+          "available",
+          "syilingBalance",
+          "dailyMax",
+          "openedToday",
           "history"
         ]
       },
@@ -8062,16 +8090,29 @@
           "boxName": {
             "type": "string"
           },
-          "icon": {
-            "type": "string"
-          },
-          "coins": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xp": {
-            "type": "integer",
-            "minimum": 0
+          "prize": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "syiling",
+                  "token"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "label",
+              "kind",
+              "amount"
+            ]
           },
           "tokenBalance": {
             "type": "integer",
@@ -8086,11 +8127,22 @@
           "openingId",
           "boxId",
           "boxName",
-          "icon",
-          "coins",
-          "xp",
+          "prize",
           "tokenBalance",
           "syilingBalance"
+        ]
+      },
+      "RewardMysteryBoxOpenRequest": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-78), per user: a repeat returns the first opening and moves nothing."
+          }
+        },
+        "required": [
+          "clientUuid"
         ]
       },
       "RewardCabutanDraw": {
@@ -92683,10 +92735,11 @@
         "tags": [
           "rewards"
         ],
-        "summary": "Kotak Misteri: boxes, token balance, last 10 openings",
+        "summary": "Kotak Misteri: the active box, odds, balance, daily count, last 10 openings",
+        "description": "Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false when no box is active or no prize can be won.",
         "responses": {
           "200": {
-            "description": "Boxes and own history.",
+            "description": "The box, own balance and history.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92722,7 +92775,7 @@
           "rewards"
         ],
         "summary": "Open a mystery box",
-        "description": "One transaction: opening row, token debit (costTokens, source mystery_box), syiling credit of coins (ledger earn, source mystery_box, description \"Kotak Misteri: {box name}\", ref opening:{id}), xp added when above 0. coins and xp are uniform integers inside the box ranges (the RNG is not specified). Success is 200, not 201. No body.",
+        "description": "One transaction (lock order: user, box FOR SHARE, prizes FOR UPDATE). Checks run in this order: Mod Pelajar (403), a repeat of the same clientUuid (returns the first opening, moves nothing), box exists and is active (404), N5 no prize can be won (409 BOX_UNAVAILABLE), daily limit mystery_box_daily_max per Malaysia day (429 MYSTERY_DAILY_LIMIT), syiling balance (409 INSUFFICIENT_BALANCE). Then the cost (mystery_boxes.cost_syiling) is debited as a spend (source mystery_box, key opening:{id}:cost), one prize is drawn by weight among the prizes whose stock is null or above 0, and credited: syiling as an earn \"Kotak Misteri: {prize}\" (key opening:{id}:prize) or tokens. A limited stock drops by 1. Success is 200, not 201.",
         "parameters": [
           {
             "schema": {
@@ -92749,6 +92802,16 @@
             "in": "header"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardMysteryBoxOpenRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Opened.",
@@ -92779,7 +92842,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Tidak dibenarkan dalam Mod Pelajar.\" (Mod Pelajar), or the CSRF refusal.",
             "content": {
               "application/json": {
                 "schema": {
@@ -92789,7 +92852,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Kotak tidak dijumpai.\"",
+            "description": "NOT_FOUND \"Kotak tidak dijumpai.\" (unknown, inactive or malformed id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -92799,7 +92862,27 @@
             }
           },
           "409": {
-            "description": "INSUFFICIENT_TOKENS \"Token tidak mencukupi.\"",
+            "description": "INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\"; BOX_UNAVAILABLE \"Kotak tidak tersedia buat masa ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "MYSTERY_DAILY_LIMIT \"Had kotak hari ini telah dicapai. Cuba lagi esok.\" (or the write rate limit).",
             "content": {
               "application/json": {
                 "schema": {

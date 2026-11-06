@@ -62,6 +62,8 @@ import {
   RewardListResponseSchema,
   RewardMysteryBoxHistoryItemSchema,
   RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequestSchema,
+  RewardMysteryBoxPrizeSchema,
   RewardMysteryBoxSchema,
   RewardMysteryBoxesViewSchema,
   RewardRedeemRequestSchema,
@@ -208,6 +210,8 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardMysteryBoxHistoryItem: RewardMysteryBoxHistoryItemSchema,
   RewardMysteryBoxesView: RewardMysteryBoxesViewSchema,
   RewardMysteryBoxOpened: RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequest: RewardMysteryBoxOpenRequestSchema,
+  RewardMysteryBoxPrize: RewardMysteryBoxPrizeSchema,
   RewardCabutanDraw: RewardCabutanDrawSchema,
   RewardCabutanView: RewardCabutanViewSchema,
   RewardTicketBought: RewardTicketBoughtSchema,
@@ -691,8 +695,9 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/gamification/mystery-boxes',
     tags: ['rewards'],
-    summary: 'Kotak Misteri: boxes, token balance, last 10 openings',
-    responses: { 200: json(envelopeOf(RewardMysteryBoxesViewSchema), 'Boxes and own history.'), 401: UNAUTHORIZED },
+    summary: 'Kotak Misteri: the active box, odds, balance, daily count, last 10 openings',
+    description: 'Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false when no box is active or no prize can be won.',
+    responses: { 200: json(envelopeOf(RewardMysteryBoxesViewSchema), 'The box, own balance and history.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({
@@ -701,14 +706,16 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Open a mystery box',
     description:
-      'One transaction: opening row, token debit (costTokens, source mystery_box), syiling credit of coins (ledger earn, source mystery_box, description "Kotak Misteri: {box name}", ref opening:{id}), xp added when above 0. coins and xp are uniform integers inside the box ranges (the RNG is not specified). Success is 200, not 201. No body.',
-    request: { params: IdParams, headers: [csrf] },
+      'One transaction (lock order: user, box FOR SHARE, prizes FOR UPDATE). Checks run in this order: Mod Pelajar (403), a repeat of the same clientUuid (returns the first opening, moves nothing), box exists and is active (404), N5 no prize can be won (409 BOX_UNAVAILABLE), daily limit mystery_box_daily_max per Malaysia day (429 MYSTERY_DAILY_LIMIT), syiling balance (409 INSUFFICIENT_BALANCE). Then the cost (mystery_boxes.cost_syiling) is debited as a spend (source mystery_box, key opening:{id}:cost), one prize is drawn by weight among the prizes whose stock is null or above 0, and credited: syiling as an earn "Kotak Misteri: {prize}" (key opening:{id}:prize) or tokens. A limited stock drops by 1. Success is 200, not 201.',
+    request: { params: IdParams, headers: [csrf], body: body(RewardMysteryBoxOpenRequestSchema) },
     responses: {
       200: json(envelopeOf(RewardMysteryBoxOpenedSchema), 'Opened.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF,
-      404: err('NOT_FOUND "Kotak tidak dijumpai."'),
-      409: err('INSUFFICIENT_TOKENS "Token tidak mencukupi."'),
+      403: err('FORBIDDEN "Tidak dibenarkan dalam Mod Pelajar." (Mod Pelajar), or the CSRF refusal.'),
+      404: err('NOT_FOUND "Kotak tidak dijumpai." (unknown, inactive or malformed id).'),
+      409: err('INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi."; BOX_UNAVAILABLE "Kotak tidak tersedia buat masa ini.".'),
+      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      429: err('MYSTERY_DAILY_LIMIT "Had kotak hari ini telah dicapai. Cuba lagi esok." (or the write rate limit).'),
     },
   })
 
