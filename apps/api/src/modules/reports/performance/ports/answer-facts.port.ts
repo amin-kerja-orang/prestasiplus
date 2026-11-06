@@ -6,6 +6,12 @@
  * (a fixed number of statements, no per-pupil loop) and is the only place the pooled accuracy sum
  * (correct / answered, XS-5) is made.
  */
+import type { QuestionPublicSchema, QuestionStimulusGroupSchema } from '@pp/contract'
+import type { z } from 'zod'
+
+type PublicQuestionShape = z.output<typeof QuestionPublicSchema>
+type StimulusGroupShape = z.output<typeof QuestionStimulusGroupSchema>
+
 export interface AnswerFactsQuery {
   userIds?: readonly string[]
   schoolIds?: readonly string[]
@@ -17,9 +23,19 @@ export interface AnswerFactsQuery {
   /** [from, to) on the answer's own time. */
   from?: Date
   to?: Date
+  /**
+   * `answerFacts` only. 'user-subject' groups by (user, subject) alone: rows carry questionId '0', chapterId and topicId null and
+   * mode '*'. Same attempts, correct and lastAnsweredAt totals as the default grain, far fewer rows. Default: the full grain below.
+   */
+  grain?: 'user-subject'
 }
 
-/** Grain: user, subject, question, chapter, topic, mode. An id the row does not carry reads '0' (subject, question). */
+/**
+ * Grain: user, subject, question, chapter, topic, mode. An id the row does not carry reads '0' (subject, question).
+ * `firstCorrect` and `firstAnsweredAt` (S10-T03, additive): the first answer of the row's grain by `answered_at`
+ * (ties by the stored order) and when it was given, so a caller can find the first attempt of a pupil on a question
+ * across several rows (the row with the earliest `firstAnsweredAt`) without a second statement.
+ */
 export interface AnswerFactRow {
   userId: string
   subjectId: string
@@ -30,6 +46,8 @@ export interface AnswerFactRow {
   attempts: number
   correct: number
   lastAnsweredAt: Date
+  firstCorrect: boolean
+  firstAnsweredAt: Date
 }
 
 export interface WeeklyFactRow {
@@ -53,6 +71,29 @@ export interface SessionCountRow {
   sessions: number
 }
 
+export interface DailyFactRow {
+  userId: string
+  /** The Malaysian calendar day, YYYY-MM-DD (Asia/Kuala_Lumpur). */
+  day: string
+  attempts: number
+  correct: number
+  /** Distinct `session_id`; answers with no session count one session per mode per MYT day (same rule as `WeeklyFactRow.sessions`). */
+  sessions: number
+}
+
+/**
+ * Finished-session durations per pupil (S10-T07 part 2, "Purata Masa/Sesi"). Read from `practice_sessions` (`status = 'completed'`,
+ * `time_spent_sec`, the stored seconds of the finished session; `started_at` and `completed_at` are the session's own stamps).
+ * `is_test` sessions are never returned. `from` / `to` bound `completed_at` ([from, to)); `modes` and `subjectId` filter the session.
+ */
+export interface SessionDurationRow {
+  userId: string
+  /** Finished (completed) sessions. */
+  sessions: number
+  /** Sum of `time_spent_sec` over those sessions. */
+  seconds: number
+}
+
 export interface SpInfo {
   id: string
   kind: 'topic' | 'chapter'
@@ -65,6 +106,10 @@ export interface SpInfo {
 export interface AnswerFactsPort {
   answerFacts(query: AnswerFactsQuery): Promise<AnswerFactRow[]>
   weeklyFacts(query: AnswerFactsQuery): Promise<WeeklyFactRow[]>
+  /** Day grain of `weeklyFacts` (S10-T07 part 2): one row per pupil and Malaysian day with an answer. */
+  dailyFacts(query: AnswerFactsQuery): Promise<DailyFactRow[]>
+  /** Finished-session seconds per pupil (S10-T07 part 2). Only `userIds`, `subjectId`, `modes`, `from` and `to` apply. */
+  sessionDurations(query: AnswerFactsQuery): Promise<SessionDurationRow[]>
   /** Added for S10-T01 (not on the card): a distinct count cannot be built from `weeklyFacts` rows. */
   sessionCounts(query: AnswerFactsQuery): Promise<SessionCountRow[]>
   spInfo(ids: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]>
@@ -72,12 +117,47 @@ export interface AnswerFactsPort {
 
 export const ANSWER_FACTS_PORT = Symbol('ANSWER_FACTS_PORT')
 
+/**
+ * What the pupil's own Analisa Item shows of a question (R1-MUR-6, FR-MUR-6-5/-7/-10), read-only through the S1 questions
+ * read contract (`QuestionsRepository.getMany(ids, 'live')` and `groupsByIds`). A question that is archived, inactive or
+ * unknown has no entry: it is dropped from the list. `question` is the public projection (no key); the types are those of
+ * the contract (`QuestionPublic`, `QuestionStimulusGroup`).
+ */
+export interface QuestionContent {
+  questionId: string
+  question: PublicQuestionShape
+  explanation: string | null
+  /** "Sumber" of the question; '' when the question records none. */
+  source: string
+  stimulusGroup: StimulusGroupShape | null
+}
+
+export interface QuestionContentPort {
+  /** Unknown, inactive or archived ids are absent from the map. */
+  questionContent(ids: readonly string[]): Promise<Map<string, QuestionContent>>
+}
+
+export const QUESTION_CONTENT_PORT = Symbol('QUESTION_CONTENT_PORT')
+
+/** Default until the questions adapter is bound: no content, so no item is listed. */
+export class EmptyQuestionContent implements QuestionContentPort {
+  async questionContent(): Promise<Map<string, QuestionContent>> {
+    return new Map()
+  }
+}
+
 /** Default until the practice adapter is registered: nothing answered. */
 export class EmptyAnswerFacts implements AnswerFactsPort {
   async answerFacts(): Promise<AnswerFactRow[]> {
     return []
   }
   async weeklyFacts(): Promise<WeeklyFactRow[]> {
+    return []
+  }
+  async dailyFacts(): Promise<DailyFactRow[]> {
+    return []
+  }
+  async sessionDurations(): Promise<SessionDurationRow[]> {
     return []
   }
   async sessionCounts(): Promise<SessionCountRow[]> {
