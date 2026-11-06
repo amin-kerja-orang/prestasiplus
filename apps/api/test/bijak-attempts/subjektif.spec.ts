@@ -153,8 +153,9 @@ describe('Kertas Subjektif sitting (paper surface subjektif)', () => {
   it('a Simulasi latihan sitting is still not paid and still has Semak (unchanged)', async () => {
     const id = await startAttempt(me, PAPER.sainsK2, 'latihan')
     expect(await row(id)).toMatchObject({ paper_kind: 'pilihan', mode: 'latihan' })
-    const check = await me.post(`/api/bijak/attempts/${id}/questions/${SEL_Q}/check`, {})
-    expect(check.status).toBe(200)
+    // A blank "Semak" is refused (lead ruling Q3, S3-T04 part semak), so the auto-marked part is answered first.
+    const check = await me.post(`/api/bijak/attempts/${id}/questions/${SEL_Q}/check`, { changes: [change('sn2-sel-q2-a', { text: 'osmosis' })] })
+    expect(check.status, JSON.stringify(check.body)).toBe(200)
     const res = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: `k-${id}`, changes: [] })
     expect(res.status).toBe(200)
     expect(t.reward.calls).toHaveLength(0)

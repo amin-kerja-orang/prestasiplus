@@ -13003,6 +13003,11 @@
             "items": {
               "$ref": "#/components/schemas/BijakAttemptPartResult"
             }
+          },
+          "checksUsed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "FR-MUR-13-6: only on a \"Semak\" response, the answer-changing checks used on this question so far (at most `maxChecksPerQuestion`)."
           }
         },
         "required": [
