@@ -1056,3 +1056,38 @@ What it means, exactly:
 - The dump PC's own encryption stays required (`docs/ops/cloud-dump-procedure.md`).
 
 Operator steps: (1) the raw dump file is deleted at runsheet 3.3 (immediately after the load, before the 3.4 copy) and its absence is confirmed at runsheet 3.3 (the `find` right after `wipe-dump`) and 3.13 (the K9 check after the load) (only the file; not a post-deploy step); (2) set and record the clean-up dates for `staging_cloud`, PITR/WAL and restore points; (3) drop the restore-drill scratch database after each drill; (4) list the root-equivalent accounts by role; (5) record the owner decision and a review date.
+
+## 10. UAT data operations (U-OP)
+
+Card S4-T08. The order, the owners and the approval rule come from the "UAT data operations runbook" of [the plan](../plan/r1-development-plan.md) (section 7, U-OP-01..20, owner key D110) and PRD 30 section 5; this section only adds the npm command of each script. Rules that hold for every row:
+
+- **Who runs it:** the designated UAT developer (OPS) with server access. No AI session and no card team runs these on UAT or on any server (D95, D110). Content work (Bab mapping, regrouping, Kontrak, Terbit, Tracking A, flags) is ADM work in the Portal Pentadbiran; the scripts only report.
+- **Dry run first:** every script is read-only or dry-run by default (`--dry-run` is accepted and means the default; a script that can write needs an explicit `--apply`). Run the dry run, read the report, get the product owner's written approval ("approve U-OP-nn") in the conversation, then (only for a row that has a real run) run the real step. A backup (`docs/ops/db-backup.md`) comes first.
+- **Evidence:** every report is written under `.evidence/uat-ops/` (counts and codes only; no name, e-mail, credential or host). The folder is not committed; attach the report to the approval request.
+- **Command form:** from the repository root, `npm run <name> -w @pp/api -- <flags>`. The connection comes from the environment (`DATABASE_URL`, or `--api-url` for the HTTP checks), never from a file in the repository. The exit code is 0 ok, 1 a check FAILed, 2 usage or environment error.
+
+| Order | U-OP | Command (`npm run ... -w @pp/api`) | Default mode | Prerequisites | Status |
+|---|---|---|---|---|---|
+| 1 | (backup) | `docs/ops/db-backup.md` | n/a | none | available |
+| 2 | U-OP-02 | `uat:intake-env` | read-only (env check, no DB) | S0-T03 merged; run in the API's environment | available |
+| 3 | U-OP-03 | `uat:check-levels -- --api-url <url>` | read-only | S4-T05 merged; the admin deactivated Darjah D1-D6 | available (the `VALIDATE CONSTRAINT` of `ck_education_levels_no_active_primary`, migration 0140, runs after this check passes) |
+| 4 | U-OP-01 | `uat:dskp-dry-run`, then the real load `dskp:load` (section 4) | dry run (the wrapper has no `--apply`) | backup; report reviewed | available |
+| 5 | U-OP-12 | `uat:accounts-check -- --school-id <id>` | read-only | accounts made by an Admin with "Janakan Akaun" (S6-T05) | available |
+| 6 | U-OP-07 | `uat:bulk-chapter-dry-run` | read-only (planning counts) | 01; the apply side is the admin's bulk action (API-DSKP-09, S4-T03) | available |
+| 7 | U-OP-05 | `uat:regroup-report` (reads the stored flags); detector backfill `uat:flag-stimulus` | `uat:regroup-report` read-only; `uat:flag-stimulus` dry run, `--apply` after approval | 01; S1-T07 and S2-T04 merged | available |
+| 8 | U-OP-06 | not available: #715 blocked pending a PO decision (no npm script until it merges) | n/a | 05 | pending, card S4-T04 |
+| 9 | U-OP-04, 08, 09 | `uat:terbit-papers` (also `be:uat:terbit-papers` from the repository root; needs `UAT_API_URL`, `UAT_ADMIN_EMAIL`, `UAT_ADMIN_PASSWORD` in the environment) | read-only (GET only; the real Terbit is the admin's in Set Builder) | Kontrak Disahkan (04), pool papers (08) | available (card S3-T08) |
+| 10 | U-OP-10 | none yet (Tracking A sets below target) | n/a | S3-T05 | pending, no script built (S4-T08 part C after S3-T05) |
+| 11 | U-OP-15 | `uat:chapters-t1-t3` | read-only | E-03, S4-T07 | available |
+| 12 | U-OP-11 | none yet (flag report) | n/a | S0-T10 | pending, no script built (needs S0-T10, then S4-T08 part C) |
+| 13 | U-OP-14 | `uat:uji-leftovers` | read-only (lists; the admin removes) | none | available |
+| 14 | U-OP-16 | `uat:support-contact -- --api-url <url>` | read-only | S7-T09 (N-07) set by the admin | available |
+| 15 | U-OP-17 | `uat:regroup-report` (open count); the work-list is ADM work | read-only | 05, S2-T04 | available (aggregator uat-verify pending, S4-T08 part C) |
+| 16 | U-OP-18 | `apps/api/scripts/uat-ops/group-integrity.sql` run with `psql` read-only (not an npm script) | read-only SQL | S1-T01 merged | available (card S1-T01) |
+| 17 | U-OP-19 | `uat:difficulty-level-backfill` | dry run, `--apply` after approval | S1-T02 merged (migration 0128) | available (card S1-T02) |
+| 18 | U-OP-20 | `uat:backfill-bijak-answers` (`--legacy-mode` runs alone) | dry run, `--apply` after approval | S5-T15 merged | available (card S5-T15) |
+| - | U-OP-13 | not a script of this card (migration 0229 dry run) | n/a | S7-T05 | pending, card S7-T05 |
+
+`apps/api/scripts/uat-ops/tag-integrity.sql` is an extra read-only SQL report and has no U-OP number. `apps/api/test/uat-ops/uat-scripts.spec.ts` keeps this table and `apps/api/package.json` in step (every `uat:*` entry points at an existing file; every script file has an entry or is on the spec's allow-list; every `uat:` command named above exists).
+
+Rollback: restore from the backup of row 1; the scripts are insert-only and idempotent where they write at all.

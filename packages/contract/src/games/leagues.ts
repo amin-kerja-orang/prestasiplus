@@ -4,13 +4,12 @@ import { DateOnlySchema } from '../common/time'
 import { GAMES_MESSAGES, gamesCount } from './common'
 
 /**
- * Leagues (M16-46 to M16-49) and the Sekolah Bersaing weekly board (M16-50). All bodies are `{ data }`.
+ * Leagues (M16-46 to M16-49) and the Sekolah Bersaing board (API-AS-14). All bodies are `{ data }`.
  *
- * League standings and Sekolah Bersaing rows are stored job output in the mock and are never recomputed
- * (BE-45 Open question 7); league `status` is stored and not moved by dates.
+ * League standings are stored job output in the mock and are never recomputed (BE-45 Open question 7); league `status`
+ * is stored; "ended" is judged by date on enrolment (statuses move to date-derived in S7-T06 part 3). Sekolah Bersaing is computed on request (DM-31).
  * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
- * names rule, issue #76: first name + initial unless the viewer may see it); an `anonymous` Sekolah Bersaing row
- * shows "Sekolah anonim".
+ * names rule, issue #76: first name + initial unless the viewer may see it).
  */
 
 export const GAMES_LEAGUE_TYPES = ['friendly', 'tournament', 'league'] as const
@@ -62,54 +61,65 @@ export const GamesLeagueListSchema = z
   .meta({ id: 'GamesLeagueList' })
 export type GamesLeagueList = z.infer<typeof GamesLeagueListSchema>
 
-// --- create (M16-47), join (M16-48) ---------------------------------------------------------------------------------
+// --- create (M16-47), enrol (API-ADM-25) ---------------------------------------------------------------------------------
 
 const required = { error: GAMES_MESSAGES.leagueRequired }
 
+/** The create form offers `friendly` and `league` only; a tournament has its own route (API-ADM-25). */
+export const GAMES_LEAGUE_CREATE_TYPES = ['friendly', 'league'] as const
+/** Tingkatan ids of the create form: 1..5 = T1..T5 (`LeagueClassLevel.level`). The ONE mapper between the two. */
+export const GAMES_LEAGUE_LEVEL_IDS = [1, 2, 3, 4, 5] as const
+export const gamesLevelIdToClassLevel = (id: number): (typeof GAMES_LEAGUE_CLASS_LEVELS)[number] => `T${String(id)}` as (typeof GAMES_LEAGUE_CLASS_LEVELS)[number]
+export const gamesClassLevelToLevelId = (level: string): number => Number(level.slice(1))
+
+/** Missing -> "Sila lengkapkan semua medan wajib."; present but wrong -> `wrong`. */
+const orRequired = (wrong: string) => ({ error: (iss: { input?: unknown }) => (iss.input === undefined ? GAMES_MESSAGES.leagueRequired : wrong) })
+
 /**
- * Body of `POST /leagues`. 422 top-level message = the first field message. Required fields:
- * "Sila lengkapkan semua medan wajib."; `end_date` before `start_date` "Tarikh tamat mesti selepas
- * tarikh mula."; `max_schools` outside 2..500 "Had sekolah mesti antara 2 dan 500."; unknown
- * `subject_id` "Mata pelajaran tidak sah." (server check); `class_levels` "Tingkatan tidak sah.".
+ * Body of `POST /leagues` (API-ADM-25, Admin Pusat; 60 section 2.17.9): `{ name, type, scope, mode, scoring,
+ * schoolLimit, subjectId?, levelIds, start, end }`. 422 `fields` are keyed by these names; the top-level message is the
+ * first failing field in form order (P14-09..14). Missing required field "Sila lengkapkan semua medan wajib.";
+ * `type`/`scope`/`mode`/`scoring` out of range "Format tidak sah."; `schoolLimit` outside 2..500 "Had sekolah mesti
+ * antara 2 dan 500."; `end` before `start` "Tarikh tamat mesti selepas tarikh mula."; unknown `subjectId` "Mata
+ * pelajaran tidak sah." (server check); `levelIds` outside 1..5 "Tingkatan tidak sah.".
  */
 export const GamesLeagueCreateRequestSchema = z
   .object({
-    name: z.string(required).trim().min(1, required).max(255, required),
-    type: z.enum(GAMES_LEAGUE_TYPES, required),
-    scope: z.enum(GAMES_LEAGUE_SCOPES, required),
-    subject_id: IdSchema.nullable().optional().meta({ description: 'Existing subject; unknown 422 "Mata pelajaran tidak sah." (subject_id).' }),
-    game_mode: z.enum(GAMES_LEAGUE_GAME_MODES, required),
-    class_levels: z.array(z.enum(GAMES_LEAGUE_CLASS_LEVELS, { error: GAMES_MESSAGES.leagueClassLevels }), {
-      error: GAMES_MESSAGES.leagueClassLevels,
-    }).optional(),
-    scoring_method: z.enum(GAMES_LEAGUE_SCORINGS, required),
-    start_date: z.iso.date(required),
-    end_date: z.iso.date(required),
-    max_schools: z
-      .number({ error: GAMES_MESSAGES.leagueMaxSchools })
+    name: z.string(required).trim().min(1, required).max(100, required),
+    type: z.enum(GAMES_LEAGUE_CREATE_TYPES, orRequired(GAMES_MESSAGES.leagueFormat)),
+    scope: z.enum(GAMES_LEAGUE_SCOPES, orRequired(GAMES_MESSAGES.leagueFormat)),
+    mode: z.enum(GAMES_LEAGUE_GAME_MODES, orRequired(GAMES_MESSAGES.leagueFormat)),
+    scoring: z.enum(GAMES_LEAGUE_SCORINGS, orRequired(GAMES_MESSAGES.leagueFormat)),
+    schoolLimit: z
+      .number(orRequired(GAMES_MESSAGES.leagueMaxSchools))
       .int({ error: GAMES_MESSAGES.leagueMaxSchools })
       .min(2, { error: GAMES_MESSAGES.leagueMaxSchools })
-      .max(500, { error: GAMES_MESSAGES.leagueMaxSchools })
-      .nullable()
-      .optional(),
+      .max(500, { error: GAMES_MESSAGES.leagueMaxSchools }),
+    subjectId: IdSchema.nullable().optional().meta({ description: 'Existing subject; unknown 422 "Mata pelajaran tidak sah." (subjectId).' }),
+    levelIds: z
+      .array(z.number({ error: GAMES_MESSAGES.leagueClassLevels }).int({ error: GAMES_MESSAGES.leagueClassLevels }).min(1, { error: GAMES_MESSAGES.leagueClassLevels }).max(5, { error: GAMES_MESSAGES.leagueClassLevels }), orRequired(GAMES_MESSAGES.leagueClassLevels))
+      .min(1, required)
+      .max(5, { error: GAMES_MESSAGES.leagueClassLevels })
+      .meta({ description: 'Tingkatan 1..5 = T1..T5; at least one.' }),
+    start: z.iso.date(required),
+    end: z.iso.date(required),
   })
   .superRefine((v, ctx) => {
-    if (typeof v.start_date === 'string' && typeof v.end_date === 'string' && v.end_date < v.start_date) {
-      ctx.addIssue({ code: 'custom', path: ['end_date'], message: GAMES_MESSAGES.leagueEndBeforeStart })
+    if (typeof v.start === 'string' && typeof v.end === 'string' && v.end < v.start) {
+      ctx.addIssue({ code: 'custom', path: ['end'], message: GAMES_MESSAGES.leagueEndBeforeStart })
     }
   })
   .meta({ id: 'GamesLeagueCreateRequest' })
 export type GamesLeagueCreateRequest = z.infer<typeof GamesLeagueCreateRequestSchema>
 
-/** `{ data: { id } }` of create (201) and join (200). */
-export const GamesLeagueIdResultSchema = z.strictObject({ id: IdSchema }).meta({ id: 'GamesLeagueIdResult' })
-export type GamesLeagueIdResult = z.infer<typeof GamesLeagueIdResultSchema>
-
-/** `invite_code` is trimmed and upper-cased. Refusals are 422 with `fields.invite_code` (see the route). */
-export const GamesLeagueJoinRequestSchema = z
-  .object({ invite_code: z.string() })
-  .meta({ id: 'GamesLeagueJoinRequest' })
-export type GamesLeagueJoinRequest = z.infer<typeof GamesLeagueJoinRequestSchema>
+/**
+ * Body of `POST /leagues/{id}/schools` (API-ADM-25, Admin Pusat only): the schools to enrol, in order. All or nothing;
+ * the first failing school decides the 422, which sits under `fields.schoolIds`.
+ */
+export const GamesLeagueEnrolRequestSchema = z
+  .strictObject({ schoolIds: z.array(IdSchema).min(1).max(500) })
+  .meta({ id: 'GamesLeagueEnrolRequest' })
+export type GamesLeagueEnrolRequest = z.infer<typeof GamesLeagueEnrolRequestSchema>
 
 // --- detail (M16-49) ----------------------------------------------------------------------------------------------------
 
@@ -132,9 +142,6 @@ export const GamesLeagueDetailSchema = z
     scoringLabel: z.string(),
     creatorName: z.string().meta({ description: 'Display name of the creator.' }),
     classLevels: z.array(GamesLeagueClassLevelSchema),
-    inviteCode: z.string().regex(/^[A-Z0-9]{8}$/).meta({ description: 'Visible to non-members, as live.' }),
-    shareUrl: z.string().meta({ description: 'WhatsApp share link (https://wa.me/?text=...).' }),
-    canJoin: z.boolean().meta({ description: 'Not ended, the caller school is not in, and not full.' }),
     schools: z.array(z.strictObject({ id: IdSchema, name: z.string() })),
     standings: z
       .partialRecord(GamesLeagueClassLevelSchema, z.array(GamesLeagueStandingRowSchema))
@@ -166,40 +173,3 @@ export const GamesSekolahBersaingBoardSchema = z
   .array(GamesSekolahBersaingBoardRowSchema)
   .meta({ id: 'GamesSekolahBersaingBoard', description: 'Rank order; [] when no school has a session.' })
 export type GamesSekolahBersaingBoard = z.infer<typeof GamesSekolahBersaingBoardSchema>
-
-// The weekly snapshot below is what the API still answers and documents until the S7-T02 BE part, which switches the
-// route to the board above and removes these schemas.
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. */
-export const GamesSekolahBersaingQuerySchema = z
-  .object({ week: z.string().optional().meta({ description: 'Any text; an invalid value is ignored.' }) })
-  .meta({ id: 'GamesSekolahBersaingQuery' })
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
-export const GamesSekolahBersaingRowSchema = z
-  .strictObject({
-    rank: z.number().int().min(1),
-    schoolName: z.string(),
-    state: z.string(),
-    aktifPct: z.number().min(0).max(100),
-    streakAvg: z.number().min(0),
-    notaPer10: z.number().min(0),
-    anonymous: z.boolean(),
-  })
-  .refine((r) => !r.anonymous || r.schoolName === GAMES_MESSAGES.sekolahAnonymous, {
-    path: ['schoolName'],
-    error: 'An anonymous row shows "Sekolah anonim".',
-  })
-  .meta({ id: 'GamesSekolahBersaingRow' })
-export type GamesSekolahBersaingRow = z.infer<typeof GamesSekolahBersaingRowSchema>
-
-/** @deprecated Weekly snapshot, removed by the S7-T02 BE part. */
-export const GamesSekolahBersaingSchema = z
-  .strictObject({
-    weekStart: DateOnlySchema.meta({ description: 'Monday of the selected week.' }),
-    count: gamesCount,
-    rows: z.array(GamesSekolahBersaingRowSchema).meta({ description: 'Stored rank order; [] for an empty week.' }),
-  })
-  .refine((v) => v.count === v.rows.length, { path: ['count'], error: 'count equals the number of rows.' })
-  .meta({ id: 'GamesSekolahBersaing' })
-export type GamesSekolahBersaing = z.infer<typeof GamesSekolahBersaingSchema>

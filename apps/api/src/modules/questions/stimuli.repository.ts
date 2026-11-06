@@ -8,7 +8,7 @@ import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimu
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
-import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
+import { QUESTION_SERVED, QUESTION_SERVED_BY_PAPER, VERSION_SERVED, VERSION_SERVED_BY_PAPER } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -40,7 +40,7 @@ export interface GroupRow {
   label: string | null
   scope: 'section' | 'paper'
   stimuli: StimulusRow[]
-  optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
+  optionBank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]
   questionIds: bigint[]
   /** S1-T01 (DM-51): the scope of the group itself; null = no restriction. */
   subjectId: bigint | null
@@ -103,14 +103,14 @@ export interface QuestionFacts {
   served: boolean
   subjectId: string | null
   levelId: string | null
-  /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
-  kertas: '1' | '2' | '3' | null
+  /** '1' | '2' | '3' | '4' from the paper code of the latest version, or null (compatible with any kertas). */
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** Subject, Tingkatan and kertas of one member (latest version). */
 export interface MemberTrait {
   subjectId: string | null
   levelId: string | null
-  kertas: '1' | '2' | '3' | null
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** The short form of a group member (R1-T49). */
 export interface MemberBrief {
@@ -189,6 +189,11 @@ export class StimuliRepository {
     await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
   }
 
+  /** Sets only the file of a stimulus (the content hash goes stale like any edit). */
+  async setAssetFile(id: string, fileId: bigint): Promise<void> {
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { assetFileId: fileId, contentHash: null } })
+  }
+
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
   async lockStimulus(id: string): Promise<boolean> {
     const key = bi(id)
@@ -255,7 +260,7 @@ export class StimuliRepository {
       label: g.label,
       scope: g.scope === 'paper' ? 'paper' : 'section',
       stimuli: g.stimuli.map((s) => this.rowOf(s.stimulus, s.stimulus._count.groupLinks)),
-      optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+      optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor })),
       questionIds: g.questions.map((q) => q.id),
       subjectId: g.subjectId,
       educationLevelId: g.educationLevelId,
@@ -317,7 +322,7 @@ export class StimuliRepository {
               label: g.label,
               scope: g.scope === 'paper' ? ('paper' as const) : ('section' as const),
               stimuli: g.stimuli.map((x) => this.rowOf(x.stimulus, x.stimulus._count.groupLinks)),
-              optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn })),
+              optionBank: g.options.map((o) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor })),
               questionIds: g.questions.map((q) => q.id),
               subjectId: g.subjectId,
               educationLevelId: g.educationLevelId,
@@ -418,7 +423,7 @@ export class StimuliRepository {
     label: string | null
     scope: 'section' | 'paper'
     stimulusIds: bigint[]
-    optionBank: { label: string; bodyMs: string | null; bodyEn: string | null }[]
+    optionBank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]
     traits?: GroupScope
   }): Promise<string> {
     const group = await this.db.stimulusGroup.create({
@@ -427,10 +432,38 @@ export class StimuliRepository {
         scope: input.scope,
         ...(input.traits === undefined ? {} : { subjectId: bi(input.traits.subjectId ?? ''), educationLevelId: bi(input.traits.educationLevelId ?? ''), kertas: input.traits.kertas }),
         stimuli: { create: input.stimulusIds.map((stimulusId, i) => ({ stimulusId, position: i + 1 })) },
-        options: { create: input.optionBank.map((o, i) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, position: i + 1 })) },
+        options: { create: input.optionBank.map((o, i) => ({ label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor, position: i + 1 })) },
       },
     })
     return idToString(group.id)
+  }
+
+  /** Replaces the whole option bank of a group (delete, then insert: the (group, position) and (group, label) keys are unique).
+   * Option row ids change on every save: the rows are replaced, not updated in place. */
+  async replaceOptionBank(groupId: string, bank: { label: string; bodyMs: string | null; bodyEn: string | null; imageFileId: bigint | null; isDistractor: boolean }[]): Promise<void> {
+    const key = BigInt(groupId)
+    await this.db.stimulusGroupOption.deleteMany({ where: { groupId: key } })
+    if (bank.length > 0) {
+      await this.db.stimulusGroupOption.createMany({ data: bank.map((o, i) => ({ groupId: key, label: o.label, bodyMs: o.bodyMs, bodyEn: o.bodyEn, imageFileId: o.imageFileId, isDistractor: o.isDistractor, position: i + 1 })) })
+    }
+  }
+
+  /**
+   * The bank letters that the answer keys of the members use (AC-QA-10): `mapping` keys (`match_letter` leaves) of the latest and of the live
+   * version of each question. Read only; `questionIds` are the members (for a draft copy, the staged ones).
+   */
+  async keyLettersOf(questionIds: readonly string[]): Promise<Set<string>> {
+    const keys = questionIds.map(bi).filter((k): k is bigint => k !== null)
+    if (keys.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ letter: string }[]>`
+      SELECT DISTINCT m.value AS letter
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND (v.version_no = q.latest_version_no OR v.version_no = q.live_version_no)
+        JOIN question_parts p ON p.question_version_id = v.id
+        JOIN answer_keys k ON k.part_id = p.id AND k.kind = 'mapping'
+        CROSS JOIN LATERAL jsonb_each_text(CASE WHEN jsonb_typeof(k.content -> 'map') = 'object' THEN k.content -> 'map' ELSE '{}'::jsonb END) m
+       WHERE q.id IN (${Prisma.join(keys)})`
+    return new Set(rows.map((r) => r.letter))
   }
 
   async setGroupLabel(id: string, label: string | null): Promise<void> {
@@ -543,6 +576,28 @@ export class StimuliRepository {
         JOIN question_versions v ON v.id = p.question_version_id
         JOIN questions q ON q.id = v.question_id
        WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED}
+      LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Is the stimulus pinned by a paper that is still held (`paperHeld`)? Same three ways as `stimulusServed`, paper reason only. */
+  async stimulusHeldByPaper(stimulusId: string): Promise<boolean> {
+    const key = bi(stimulusId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM stimulus_group_stimuli gs
+        JOIN questions q ON q.group_id = gs.group_id
+       WHERE gs.stimulus_id = ${key} AND ${QUESTION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_version_stimuli vs
+        JOIN question_versions v ON v.id = vs.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE vs.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_parts p
+        JOIN question_versions v ON v.id = p.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
       LIMIT 1`
     return rows.length > 0
   }

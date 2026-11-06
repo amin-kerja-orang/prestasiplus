@@ -45,13 +45,26 @@ export class ArticlesRepository {
     const where: Prisma.ArticleWhereInput = {
       isPublished: true,
       ...(f.category ? { category: f.category } : {}),
-      ...(f.search ? { title: { contains: f.search, mode: 'insensitive' } } : {}),
+      ...(f.search ? { OR: [{ title: { contains: f.search, mode: 'insensitive' } }, { content: { contains: f.search, mode: 'insensitive' } }] } : {}),
     }
     const [rows, total] = await Promise.all([
       this.prisma.client.article.findMany({ where, orderBy: READER_ORDER, skip: f.skip, take: f.take, include: cardInclude, omit: CARD_OMIT }),
       this.prisma.client.article.count({ where }),
     ])
     return { rows, total }
+  }
+
+  /** Published articles per category for a search term (the category filter is not applied): the pill counts. */
+  async readerCategoryCounts(search: string): Promise<Record<string, number>> {
+    const groups = await this.prisma.client.article.groupBy({
+      by: ['category'],
+      where: {
+        isPublished: true,
+        ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { content: { contains: search, mode: 'insensitive' } }] } : {}),
+      },
+      _count: { _all: true },
+    })
+    return Object.fromEntries(groups.map((g) => [g.category, g._count._all]))
   }
 
   latest(take: number): Promise<ArticleCardRow[]> {

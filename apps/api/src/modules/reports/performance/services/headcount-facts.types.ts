@@ -35,8 +35,11 @@ export type HeadcountScope =
   | { kind: 'teacher'; teacherId: string }
 
 export interface HeadcountFacts {
-  /** Entries of one student, across the configs visible to the given scope. */
-  entriesOfStudent(studentId: string, scope: HeadcountScope): Promise<HeadcountEntryView[]>
+  /**
+   * Entries of one student, across the configs visible to the given scope. `own` (the pupil reading their own block) widens the set
+   * to the configs of the pupil's own classes, as `GET /headcounts/me`; staff read the entry-holding configs of their scope only.
+   */
+  entriesOfStudent(studentId: string, scope: HeadcountScope, own?: boolean): Promise<HeadcountEntryView[]>
   /** Entries of the pupils in these classrooms. */
   entriesOfClasses(classroomIds: readonly string[]): Promise<HeadcountEntryView[]>
   /** Entries of a platform, school or teacher scope. */

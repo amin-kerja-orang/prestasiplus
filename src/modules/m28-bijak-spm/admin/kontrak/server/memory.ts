@@ -574,7 +574,7 @@ export class MockKontrakServer implements KontrakApi {
     }
   }
 
-  async generateDraft(subject: string, kertas: number): Promise<{ paperId: string }> {
+  async generateDraft(subject: string, kertas: number): Promise<{ id: string }> {
     const pool = await this.pool(subject, kertas)
     if (pool.verdict !== 'boleh' && pool.firstFailure)
       throw new KontrakError('shortage', 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', { shortages: [pool.firstFailure] })
@@ -587,7 +587,7 @@ export class MockKontrakServer implements KontrakApi {
           kertas: k as 1 | 2,
         })
       })
-    return { paperId: await make(subject, kertas) }
+    return { id: await make(subject, kertas) }
   }
 
   async listUnits(subject: string): Promise<BijakDskpUnit[]> {

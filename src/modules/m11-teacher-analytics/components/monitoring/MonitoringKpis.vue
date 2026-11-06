@@ -11,7 +11,9 @@ import { DsStack, DsStatRow, DsText, type StatItem } from '@/ds'
 import type { MonitoringKpi } from '../../api/types'
 import { avg, count, pct } from './monitoring-format'
 
-const props = defineProps<{ kpi: MonitoringKpi }>()
+const props = withDefaults(defineProps<{ kpi: MonitoringKpi; schoolAdmin?: boolean }>(), {
+  schoolAdmin: false,
+})
 
 const all6 = computed<StatItem[]>(() => [
   {
@@ -24,7 +26,7 @@ const all6 = computed<StatItem[]>(() => [
   },
   {
     key: 'students',
-    label: 'Pelajar T4/T5',
+    label: 'Pelajar',
     sub: 'Berdaftar',
     value: count(props.kpi.students),
     icon: 'i-ph-graduation-cap',
@@ -87,8 +89,41 @@ const teachers = computed<StatItem[]>(() => [
     accent: 'heat',
   },
 ])
-const pupils = computed(() => all6.value.slice(0, 3))
-const activity = computed(() => all6.value.slice(3))
+/** R1-AS-10 (V2): seven tiles, in this order and copy; no "Pernah Aktif" and no "Purata/Pelajar" tile. */
+const asTiles = computed<Record<string, StatItem>>(() => {
+  const [schools, students, , engagement, answers] = all6.value as [
+    StatItem,
+    StatItem,
+    StatItem,
+    StatItem,
+    StatItem,
+  ]
+  const [teacherReg, teacherLogin, teacherPct] = teachers.value as [StatItem, StatItem, StatItem]
+  return {
+    schools,
+    students: {
+      ...students,
+      label: 'Pelajar Berdaftar',
+      sub: `${count(props.kpi.engaged)} pernah aktif`,
+    },
+    engagement: { ...engagement, sub: 'Min. 1 soalan dijawab' },
+    answers: { ...answers, sub: `Purata ${avg(props.kpi.avgPerStudent)}/pelajar aktif` },
+    teachers: { ...teacherReg, sub: 'Akaun bertaraf guru' },
+    teachersLoggedIn: { ...teacherLogin, sub: 'Sejak penjejakan log masuk dimulakan' },
+    teacherPct: {
+      ...teacherPct,
+      sub: `${count(props.kpi.teachersLoggedIn)} / ${count(props.kpi.teachers)} guru`,
+    },
+  }
+})
+const pick = (...keys: string[]) => keys.map((k) => asTiles.value[k] as StatItem)
+const pupils = computed(() =>
+  props.schoolAdmin ? pick('schools', 'students', 'engagement') : all6.value.slice(0, 3),
+)
+const activity = computed(() => (props.schoolAdmin ? pick('answers') : all6.value.slice(3)))
+const teacherTiles = computed(() =>
+  props.schoolAdmin ? pick('teachers', 'teachersLoggedIn', 'teacherPct') : teachers.value,
+)
 </script>
 
 <template>
@@ -103,7 +138,7 @@ const activity = computed(() => all6.value.slice(3))
     </DsStack>
     <DsStack gap="sm">
       <DsText variant="overline" tone="muted">Guru</DsText>
-      <DsStatRow :items="teachers" prefix="mon-kpi" />
+      <DsStatRow :items="teacherTiles" prefix="mon-kpi" />
     </DsStack>
   </DsStack>
 </template>

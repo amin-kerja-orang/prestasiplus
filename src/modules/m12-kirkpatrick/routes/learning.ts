@@ -1,9 +1,9 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-import { STAFF_MOUNTS } from './mount'
+import { ALL_MOUNTS } from './mount'
 
 /** M12 route fragment: S3 T2 Pembelajaran on `/admin/kirkpatrick/learning` and the `/guru` twin (M12-T2). */
-const routes: RouteRecordRaw[] = STAFF_MOUNTS.map((mount): RouteRecordRaw => ({
+const routes: RouteRecordRaw[] = ALL_MOUNTS.map((mount): RouteRecordRaw => ({
   path: `${mount.prefix}/learning`,
   name: `${mount.name}-learning`,
   component: () => import('../pages/KirkpatrickLearningPage.vue'),

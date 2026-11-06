@@ -40,7 +40,7 @@ describe('HttpBijakServer: Semakan (R1)', () => {
       attemptMax: 10,
       provisional: false,
       pendingReview: 0,
-      result: { score: 5, max: 10 },
+      result: { score: 5, max: 10, questions: [] },
     }
     const { server, requests } = setup({ [`POST ${SELF_MARK}`]: ok(outcome) })
     const out = await server.selfMark(0, 'a1', { partId: 'p1', mark: 2, band: '2' })
@@ -60,6 +60,12 @@ describe('HttpBijakServer: Semakan (R1)', () => {
     const err = await server.selfMark(0, 'a1', { partId: 'p1', mark: 1 }).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(BijakError)
     expect(err).toMatchObject({ code: 'bad_request', message })
+  })
+
+  it('maps the 409 for an automatically marked part (46 section 3.4) to a bad_request with the BM text', async () => {
+    const message = 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.'
+    const { server } = setup({ [`POST ${SELF_MARK}`]: fail(409, 'CONFLICT', message) })
+    await expect(server.selfMark(0, 'a1', { partId: 'p1', mark: 1 })).rejects.toMatchObject({ code: 'bad_request', message })
   })
 
   it('maps 409 NOT_SUBMITTED to not_submitted', async () => {

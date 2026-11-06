@@ -301,7 +301,7 @@ export const AiExtractRequestSchema = z
     pages: z.array(AiPageTextSchema).max(AI_MAX_PAGES).meta({ description: 'Page text, in page order.' }),
     images: z.array(AiPageImageRefSchema).max(AI_MAX_PAGES).optional().meta({ description: 'Page images by reference, for vision-capable adapters.' }),
     subject: z.string().min(1).max(32).meta({ description: 'Subject code (SubjectCode, an open dictionary), e.g. MAT.', example: 'MAT' }),
-    kertas: z.union([z.literal(1), z.literal(2)]),
+    kertas: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
     taxonomy: z.array(AiTaxonomyUnitSchema).max(500).optional(),
     structure: z.array(AiStructureHintSchema).max(50).optional(),
   })
