@@ -29,11 +29,12 @@ export interface SelfMarkEntry {
 export type SelfMarks = Record<string, SelfMarkEntry>
 
 /**
- * What a person marks: mark-scheme points (V2 mark_scheme_points) and rubric (band_rubric), plus (FR-PA-21, K20, API-BIJAK-05) an `accepted` part the
- * grader left `belum_dimarkah`: short text of 3 or more words that matched nothing, or an unreadable number. `status` is the automatic one.
+ * Parts a person marks: scheme kind mark-scheme points (V2 mark_scheme_points) or rubric (band_rubric), and any part the
+ * grader left `belum_dimarkah` (FR-PA-21, K20, API-BIJAK-05, 46 section 3.4): an `accepted` part whose short text of 3 or more
+ * words matched nothing, or an unreadable number. `status` is the automatic one.
  */
-export function isSelfMarkable(scheme: SchemeDef | undefined, status: BijakAttemptPartResult['status']): boolean {
-  return scheme?.kind === 'points' || scheme?.kind === 'rubric' || (scheme?.kind === 'accepted' && status === 'belum_dimarkah')
+export function isSelfMarkable(scheme: SchemeDef | undefined, status?: BijakAttemptPartResult['status']): boolean {
+  return scheme?.kind === 'points' || scheme?.kind === 'rubric' || status === 'belum_dimarkah'
 }
 
 export function clamp(n: number, lo: number, hi: number): number {

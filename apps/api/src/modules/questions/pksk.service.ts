@@ -37,6 +37,7 @@ export interface PkskAnswerKeyRecord {
   domainCode: string
   optionCount: number
   correctIndexes: number[]
+  explanation: string | null
 }
 
 export interface PkskQuestionRow {
@@ -110,6 +111,11 @@ export class PkskQuestionsService {
     return this.repo.pkskServedCounts(level)
   }
 
+  /** Served questions per domain code over both levels; a question tagged with both levels counts once. */
+  countApprovedAllLevels(): Promise<Record<string, number>> {
+    return this.repo.pkskServedCountsAllLevels()
+  }
+
   /** Every served question of the domains at the level, without any correctness flag. */
   async approvedPool(level: PkskLevelCode, domainCodes: readonly string[]): Promise<PkskServedQuestion[]> {
     const ids = await this.repo.pkskServedIds(level, domainCodes)
@@ -135,6 +141,7 @@ export class PkskQuestionsService {
         domainCode: r.pksk.domainCode,
         optionCount: leaf.options.length,
         correctIndexes: leaf.options.flatMap((o, i) => (leaf.key.correct.includes(o.label) ? [i] : [])),
+        explanation: r.version.explanationMs,
       })
     }
     return out

@@ -85,6 +85,34 @@ export class TimelineRepository {
     return view as TimelinePostView
   }
 
+  /**
+   * Deletes the post of `userId` with this id and the same `isTest` flag (call inside a transaction); its photo rows go
+   * with it (FK cascade). Returns the public ids of the post's `timeline_photo` files so the caller can discard them
+   * after the commit, or null when no such post exists (an unknown id, another pupil's post and a test/real mismatch
+   * are one outcome).
+   */
+  async remove(userId: string, postId: string, isTest: boolean): Promise<{ filePublicIds: string[] } | null> {
+    const db = this.prisma.client
+    let id: bigint
+    let owner: bigint
+    try {
+      id = idFromString(postId)
+      owner = idFromString(userId)
+    } catch {
+      return null
+    }
+    const post = await db.timelinePost.findFirst({ where: { id, userId: owner, isTest }, select: { id: true } })
+    if (!post) return null
+    const photos = await db.timelinePostPhoto.findMany({ where: { postId: id }, select: { fileId: true } })
+    const files =
+      photos.length === 0
+        ? []
+        : await db.file.findMany({ where: { id: { in: photos.map((p) => p.fileId) }, purpose: TIMELINE_PHOTO_PURPOSE }, select: { publicId: true } })
+    const deleted = await db.timelinePost.deleteMany({ where: { id, userId: owner, isTest } })
+    if (deleted.count === 0) return null
+    return { filePublicIds: files.map((f) => f.publicId) }
+  }
+
   private async withPhotos(
     posts: readonly {
       id: bigint

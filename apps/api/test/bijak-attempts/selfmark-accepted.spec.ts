@@ -74,8 +74,8 @@ describe('self-mark of accepted parts (FR-PA-21, AC-PA-20)', () => {
     expect(part(SHORT).status).toBe('salah')
     expect(part(SHORT).selfMarkable).toBeUndefined()
     const res = await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: SHORT, mark: 1 })
-    expect(res.status).toBe(422)
-    expect(JSON.stringify(res.body)).toContain('Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.')
+    expect(res.status).toBe(409)
+    expect(res.body.error).toMatchObject({ code: 'CONFLICT', message: 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.' })
   })
 
   it('a correct accepted answer is betul, not self-markable', async () => {

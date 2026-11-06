@@ -10,13 +10,14 @@ import { DsPillNav, type PillItem } from '@/ds'
 import type { UsagePeriod } from '../../api/school-admin'
 import { PERIODS, USAGE_PATH } from './usage-format'
 
-defineProps<{ active: UsagePeriod }>()
+/** `basePath`: the route the pills link to (M17 central view); default the school-admin report. */
+const props = defineProps<{ active: UsagePeriod; basePath?: string }>()
 
 const items = computed<PillItem<UsagePeriod>[]>(() =>
   PERIODS.map((p) => ({
     key: p.period,
     label: p.label,
-    to: { path: USAGE_PATH, query: { period: p.period } },
+    to: { path: props.basePath ?? USAGE_PATH, query: { period: p.period } },
   })),
 )
 </script>

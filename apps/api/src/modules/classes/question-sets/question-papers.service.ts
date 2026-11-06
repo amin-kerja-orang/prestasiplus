@@ -43,15 +43,15 @@ export class QuestionPapersService {
       actorUserId: actor.userId,
       actorRole: actor.role,
       sessionRowId: actor.auth.sessionRowId,
-      targetType: 'question_paper',
-      targetId: paper.id,
+      targetType: 'intake_batch',
+      targetId: paper.batchId,
       scopeLevel: actor.auth.active.scope.level,
       requestId: actor.requestId,
       ip: actor.ip,
       isTest: actor.isTest,
     })
       .catch((err: unknown) => {
-        this.logger.warn(`Audit of question paper ${paper.id} failed: ${err instanceof Error ? err.message : String(err)}`)
+        this.logger.warn(`Audit of question paper batch ${paper.batchId} failed: ${err instanceof Error ? err.message : String(err)}`)
       })
 
     return QuestionSetPaperSchema.parse(paper)
