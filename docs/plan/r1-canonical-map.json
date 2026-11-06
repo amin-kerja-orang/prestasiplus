@@ -2914,6 +2914,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/settings|m22.admin-settings",
+      "path": "/admin/settings",
+      "name": "m22.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m22-support-tickets/pages/AdminSettingsPage.vue",
+      "file": "src/modules/m22-support-tickets/routes/tiket.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
       "key": "/buku-nota/heatmap|m25.heatmap",
       "path": "/buku-nota/heatmap",
       "name": "m25.heatmap",
@@ -14592,6 +14602,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/intake/files/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/files/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/intake/batches/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/batches/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/intake/files/:p/pages",
       "method": "GET",
       "path": "/api/intake/files/:id/pages",
@@ -17820,6 +17850,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/support/support.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/settings/support",
+      "method": "GET",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/settings/support",
+      "method": "PUT",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
     },
     {
       "key": "GET /api/admin/tiket/:p",
