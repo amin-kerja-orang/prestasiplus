@@ -2,8 +2,10 @@ import { GamesSoloSubmitResponseSchema, type GamesSoloGame } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { GamificationService } from '../../../src/modules/gamification'
-import { ACCOUNTS, bootGamesApp, insertMcqQuestions, loginAs, START, type Client, type GamesTestApp } from '../helpers'
+import { ACCOUNTS, bootGamesApp, idOf, insertMcqQuestions, loginAs, START, type Client, type GamesTestApp } from '../helpers'
 import { itemRows, type DbItem } from './support'
+
+const MOD_SESSION = '00000000-0000-4000-8000-000000000012'
 
 /** D-13: the games rewards port is bound to BE-23 (`games_award_syiling`), seed 0 pays nothing. Real Postgres, real wiring. */
 describe('games rewards port bound to GamificationService (D-13)', () => {
@@ -17,6 +19,11 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
   const ledger = (userId: string) =>
     t.db.query<{ source: string; source_id: string | null; amount: number; description: string; is_test: boolean }>(
       `select source, source_id, amount, description, is_test from coin_ledger where user_id = $1::bigint and source_id like 'game:%' order by id`,
+      [userId],
+    )
+  const events = (userId: string) =>
+    t.db.query<{ game_session_id: string; xp: number; syiling: number; capped_reason: string | null }>(
+      `select game_session_id::text, xp, syiling, capped_reason from game_reward_events where user_id = $1::bigint order by id`,
       [userId],
     )
   const syiling = async (userId: string) =>
@@ -55,7 +62,7 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     expect(t.ports.rewards.constructor.name).toBe('GamesRewardsAdapter')
   })
 
-  it('seed value 0: the submit credits 0, says 0 and writes no ledger row', async () => {
+  it('seed value 0: the submit credits 0, says 0 and writes no ledger row, but records the reward event', async () => {
     await setGames(0)
     const before = await syiling(student.userId)
     const id = await play(student, 'TTTFTT')
@@ -64,9 +71,10 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ syiling_awarded: 0, correct_count: 5, total_answered: 6 })
     expect(await ledger(student.userId)).toEqual([])
     expect(await syiling(student.userId)).toBe(before)
+    expect(await events(student.userId)).toEqual([{ game_session_id: id, xp: 0, syiling: 0, capped_reason: null }])
   })
 
-  it('games_award_syiling = 1: credits the computed coins once, with the M14 wording; a replay never pays twice', async () => {
+  it('games_award_syiling = 1: credits the computed coins once, under game:<game key> with the M14 wording; a replay returns the first result', async () => {
     await setGames(1)
     const before = await syiling(student.userId)
     const id = await play(student, 'TTTFTT')
@@ -74,16 +82,17 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ syiling_awarded: 9, correct_count: 5, total_answered: 6 })
     const rows = await ledger(student.userId)
-    expect(rows).toEqual([{ source: 'betul_salah', source_id: `game:${id}`, amount: 9, description: 'Betul/Salah: 5 betul, streak 3', is_test: false }])
+    expect(rows).toEqual([{ source: 'game:betul-salah', source_id: `game:${id}`, amount: 9, description: 'Betul/Salah: 5 betul, streak 3', is_test: false }])
     expect(await syiling(student.userId)).toBe(before + 9)
-    // a second submit is refused and a direct replay of the same result key adds nothing
+    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 0, syiling: 9, capped_reason: null })
+    // a second submit is refused and a direct replay of the same session adds nothing
     expect((await submit(student, id)).status).toBe(409)
     const again = await t.app.get(GamificationService, { strict: false }).onGameResult(
       student.userId,
-      { game: 'betul_salah', event: 'finish', coins: 9, xp: 0, correct: 5, total: 6, detail: { maxStreak: 3 }, key: id },
+      { game: 'betul_salah', event: 'finish', coins: 9, xp: 0, correct: 5, total: 6, detail: { maxStreak: 3 }, key: id, session: { id, gameKey: 'betul-salah' } },
       { isTest: false },
     )
-    expect(again).toEqual({ coinsCredited: 0, xpAdded: 0 })
+    expect(again).toEqual({ coinsCredited: 9, xpAdded: 0, cappedReason: null })
     expect(await ledger(student.userId)).toHaveLength(1)
     expect(await syiling(student.userId)).toBe(before + 9)
   })
@@ -117,6 +126,38 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect((GamesSoloSubmitResponseSchema.parse(res.body) as { syiling_awarded: number }).syiling_awarded).toBe(0)
     expect(await ledger(admin.userId)).toEqual([])
+    expect(await events(admin.userId)).toEqual([]) // AC-GM-00.12
+    expect((await rewards.onGameResult(student.userId, { game: 'betul_salah', event: 'finish', coins: 9, xp: 5, session: { id: MOD_SESSION, gameKey: 'betul-salah' } }, { isTest: true })).coinsCredited).toBe(0)
+    expect((await events(student.userId)).some((e) => e.game_session_id === MOD_SESSION)).toBe(false)
+  })
+
+  it('a pupil at the daily syiling cap: the submit says 0, no ledger row, and the event holds the reason', async () => {
+    await setGames(1)
+    await t.db.query(`update gamification_settings set value = 0 where key = 'games_daily_syiling_cap'`)
+    const before = (await ledger(student.userId)).length
+    const id = await play(student, 'TT')
+    const res = await submit(student, id)
+    expect((GamesSoloSubmitResponseSchema.parse(res.body) as { syiling_awarded: number }).syiling_awarded).toBe(0)
+    expect((await ledger(student.userId)).length).toBe(before)
+    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 0, syiling: 0, capped_reason: 'syiling_cap' })
+    await t.db.query(`update gamification_settings set value = 100 where key = 'games_daily_syiling_cap'`)
+  })
+
+  it('Jutawan Ilmu writes one event, under game:jutawan', async () => {
+    await setGames(1)
+    const u = student2.userId
+    const start = await student2.post('/api/games/jutawan/start', { subject: await idOf(t.db, 'subjects', 'MATH'), darjah: 10 })
+    expect(start.status, JSON.stringify(start.body)).toBe(200)
+    const sessionId = (start.body as { data: { sessionId: string } }).data.sessionId
+    const items = await itemRows(t.db, sessionId)
+    for (const [i, item] of items.slice(0, 11).entries()) {
+      t.clock.advance(2000)
+      const optionId = i < 10 ? item.key_index : ((item.key_index as number) + 1) % 4
+      const r = await student2.post(`/api/games/jutawan/${sessionId}/answer`, { questionId: item.question_id, optionId })
+      expect(r.status, JSON.stringify(r.body)).toBe(200)
+    }
+    expect((await events(u)).at(-1)).toEqual({ game_session_id: sessionId, xp: 0, syiling: 50, capped_reason: null })
+    expect((await ledger(u)).at(-1)).toMatchObject({ source: 'game:jutawan', source_id: `game:${sessionId}`, amount: 50 })
   })
 
   it('Papan Bijak: the rates come from the wallet tier and the credits use the M14 wording', async () => {

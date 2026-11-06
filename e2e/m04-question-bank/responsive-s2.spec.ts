@@ -84,6 +84,9 @@ async function measure(page: Page): Promise<{ overflow: number; seen: number; sm
         const big = (b: DOMRect): boolean => b.width >= min - 0.5 && b.height >= min - 0.5
         if (big(r)) continue
         if (e.matches(labelled)) {
+          // The theme grows a checkbox's hit area with `::after` (-inset-2.5 on 24 px gives 44 px).
+          const after = getComputedStyle(e, '::after')
+          if (parseFloat(after.width) >= min - 0.5 && parseFloat(after.height) >= min - 0.5) continue
           const labels = Array.from((e as HTMLInputElement).labels ?? [])
           const wrap = e.closest('label')
           if ([wrap, ...labels].some((l) => l !== null && big(l.getBoundingClientRect()))) continue

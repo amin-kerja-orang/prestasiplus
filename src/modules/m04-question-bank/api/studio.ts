@@ -5,6 +5,9 @@
  * `{data, status}` where `status` is the server's flash text.
  */
 import type {
+  BulkChapterRequest,
+  BulkChapterResult,
+  ChapterCoverageRow,
   QuestionGateCheck,
   ServabilityBatchResult,
   ServabilityReport,
@@ -280,4 +283,26 @@ export async function editAsDraft(id: string): Promise<string> {
   if (h.unsupported.length > 0) throw new EditAsDraftRefused(h.unsupported)
   const res = await updateStudioQuestion(id, editAsDraftBody(q))
   return res.data.id
+}
+
+/* ---- bulk "Tetapkan Bab" (S2-T08, API-DSKP-09 / API-DSKP-10) ------------------------------------------- */
+
+/** Body of the bulk call. `overwrite` is not exposed in R1 (D115): it is never sent, so the server default (false) applies. */
+export type BulkChapterBody = Omit<BulkChapterRequest, 'overwrite'>
+export type { BulkChapterResult, ChapterCoverageRow }
+
+/** `POST /api/admin/curriculum/questions/bulk-chapter`: `dryRun: true` only counts; otherwise `expectedCount` = the `matched` shown. */
+export const bulkChapter = (body: BulkChapterBody): Promise<BulkChapterResult> =>
+  api.post<BulkChapterResult>('/api/admin/curriculum/questions/bulk-chapter', { body })
+
+/** `GET /api/admin/curriculum/chapter-coverage`: approved questions with and without a Bab per Subjek x Tingkatan. */
+export const fetchChapterCoverage = async (
+  query: { subjectId?: string; educationLevelId?: string } = {},
+  signal?: AbortSignal,
+): Promise<ChapterCoverageRow[]> => {
+  const res = await api.get<{ rows: ChapterCoverageRow[] }>('/api/admin/curriculum/chapter-coverage', {
+    query: { subjectId: query.subjectId ?? null, educationLevelId: query.educationLevelId ?? null },
+    ...(signal ? { signal } : {}),
+  })
+  return res.rows
 }

@@ -238,10 +238,9 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     for (const adminOnly of ['Ke Admin Panel', 'Ke Dashboard', 'Student View', 'Panel Pentadbir']) {
       expect(labels).not.toContain(adminOnly)
     }
-    // No route under /admin except the open item "Gambar Rajah" (shells.md §7.2 item 4).
-    expect(teacherItems.filter((i) => i.to.startsWith('/admin/')).map((i) => i.label)).toEqual([
-      'Gambar Rajah',
-    ])
+    // No route under /admin: "Gambar Rajah" left the teacher sidebar (lead ruling (a), S6-T18); the
+    // teacher reaches it through the Sumbang Soalan "Alat Soalan" tile.
+    expect(teacherItems.filter((i) => i.to.startsWith('/admin/')).map((i) => i.label)).toEqual([])
   })
 
   it('the teacher Kirkpatrick group uses the shared "kirkpatrick" key and the teacher labels', () => {
@@ -307,10 +306,11 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(activeLabel('/admin/laporan-eksekutif/sekolah/7')).toBeNull()
   })
 
-  it('the /guru twins activate Monitoring and Kirkpatrick (FR-M11-05, FR-M12-04)', () => {
+  it('/admin/monitoring activates Monitoring; the /guru twin of Kirkpatrick is active too (FR-M11-05, FR-M12-04, S6-T08)', () => {
     expect(activeLabel('/admin/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring')).toBe('Monitoring')
-    expect(activeLabel('/guru/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
+    expect(activeLabel('/admin/monitoring/sekolah/5/pelajar/9')).toBe('Monitoring')
+    // the admin has no /guru/monitoring alias: that route is the teacher's own school (R1-GUR-10)
+    expect(activeLabel('/guru/monitoring')).toBeNull()
     expect(activeLabel('/guru/kirkpatrick')).toBe('Overview')
     expect(activeLabel('/guru/kirkpatrick/reaction')).toBe('Tahap 1: Reaksi')
     expect(activeLabel('/admin/kirkpatrick/interventions')).toBe('Intervensi')

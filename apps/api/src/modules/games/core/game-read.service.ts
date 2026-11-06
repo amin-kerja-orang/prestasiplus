@@ -41,7 +41,7 @@ export class GameReadService {
       },
       _count: { _all: true },
     })
-    for (const r of rooms) add(r.userId, r._count._all)
+    for (const r of rooms) if (r.userId !== null) add(r.userId, r._count._all)
     const sessions = await db.gameSession.groupBy({
       by: ['userId'],
       where: { userId: { in: ids }, isTest: false, submittedAt: { gte: range.from, lt: range.to } },

@@ -95,6 +95,14 @@ describe('DM-42: private questions are absent from the S1 reads', () => {
     for (const s of sqls.filter((x) => x.includes('latest_version_no') && !x.includes('education_levels WHERE stage'))) expect(s).toContain(BANK)
   })
 
+  it('structuredIds (listed and served) and isStructuredServed carry the bank predicate (FR-GUR-44a-9)', async () => {
+    const { sqls, prisma } = capture()
+    const repo = new QuestionsRepository(prisma)
+    await run(() => repo.structuredIds({ served: false } as never), () => repo.structuredIds({ served: true } as never), () => repo.isStructuredServed('1'))
+    expect(sqls.length).toBeGreaterThanOrEqual(3)
+    for (const s of sqls) expect(s).toContain(BANK)
+  })
+
   it('Databank lane, Jana scope and the Bijak pool', async () => {
     expect(Prisma.join(databankLaneConds(), ' AND ').sql).toContain(BANK)
     expect(janaEligibleScope().where.sql).toContain(BANK)
@@ -111,14 +119,14 @@ describe('DM-42: private questions are absent from the counts and reports of oth
     const overview = new OverviewRepository(o.prisma)
     await run(
       () => overview.bankMatrix(),
-      () => overview.newestPublishedMcqIds(5),
+      () => overview.newestIdsOf(new QuestionsRepository(o.prisma).scopeSql({ status: 'approved' } as never, true), 5),
       () => overview.chapterQuestionCounts(['1', '2']),
     )
     expect(o.sqls).toHaveLength(3)
     for (const s of o.sqls) expect(s).toContain(BANK)
 
     const l = capture()
-    await run(() => new StructuredListingRepository(l.prisma).page({ levelIds: ['1'], subjectIds: null, subjectOrder: false, kbat: null, limit: 10, offset: 0 } as never))
+    await run(() => new StructuredListingRepository(l.prisma).page({ levelIds: ['1'], subjectIds: null, subjectOrder: false, kbat: null, q: null, markable: false, limit: 10, offset: 0 } as never))
     expect(l.sqls).toHaveLength(2)
     for (const s of l.sqls) expect(s).toContain(BANK)
 

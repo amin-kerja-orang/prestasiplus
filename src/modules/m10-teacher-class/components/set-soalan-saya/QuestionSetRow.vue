@@ -1,19 +1,15 @@
 <script setup lang="ts">
 /**
- * One set of S34 (PROPOSED row, FN-M10-5.7.2): title, teacher, "{n} soalan", optional time limit and
- * attempts, and "Mula" to the M05 quiz.  "Mula" is always a link: M05 Q6 answers a set with no attempt left (409).
+ * One set of S34 (PROPOSED row, FN-M10-5.7.2): title, teacher, "{n} soalan" and "Mula" to the M05 quiz.
+ * R1 sets have no timer and no attempt cap, so neither is shown (R1-MUR-26).
  */
-import { computed } from 'vue'
-
 import { DsIconChip, DsPanel } from '@/ds'
 
 import type { StudentQuestionSet } from '../../api/types'
 import { SET_COPY } from './copy'
-import { attemptsLabel, questionCountLabel, quizPath, timeLimitLabel } from './format'
+import { questionCountLabel, quizPath } from './format'
 
-const props = defineProps<{ item: StudentQuestionSet }>()
-
-const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
+defineProps<{ item: StudentQuestionSet }>()
 </script>
 
 <template>
@@ -42,18 +38,6 @@ const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
                   aria-hidden="true"
                 />
                 {{ questionCountLabel(item.questionCount) }}
-              </li>
-              <li v-if="time" class="inline-flex items-center gap-2" data-testid="set-time">
-                <UIcon name="i-ph-clock-duotone" class="size-4 shrink-0" aria-hidden="true" />
-                {{ time }}
-              </li>
-              <li class="inline-flex items-center gap-2" data-testid="set-attempts">
-                <UIcon
-                  name="i-ph-arrows-clockwise-duotone"
-                  class="size-4 shrink-0"
-                  aria-hidden="true"
-                />
-                {{ attemptsLabel(item.attemptsLeft) }}
               </li>
             </ul>
           </div>

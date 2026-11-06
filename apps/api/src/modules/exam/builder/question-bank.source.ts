@@ -21,7 +21,7 @@ import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { BANK_ONLY, QuestionsRepository } from '../../questions'
-import { ACTIVE_SUBJECT_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
+import { ACTIVE_SUBJECT_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
@@ -43,6 +43,7 @@ import type {
   BuilderGroupInfo,
   BuilderPreview,
   BuilderQuestionInfo,
+  BuilderQuestionOrigin,
   BuilderQuestionRef,
   BuilderQuestionSource,
 } from './ports'
@@ -78,7 +79,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
-         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ACTIVE_SUBJECT_SQL} AND ${BANK_VISIBLE_SQL}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${ACTIVE_SUBJECT_SQL} AND ${BANK_VISIBLE_SQL}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
@@ -202,6 +203,22 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
             END) ILIKE ${pattern}
            OR COALESCE(u.title, '') ILIKE ${pattern})`
     return new Set(rows.map((r) => r.id.toString()))
+  }
+
+  /** S3-T02: `source_papers.year` and the trimmed `exam_board` of the version `describe` shows (the live one, else the latest), in one read. */
+  async originsOf(ids: readonly string[]): Promise<ReadonlyMap<string, BuilderQuestionOrigin>> {
+    const keys = [...new Set(ids)].flatMap((id) => {
+      const k = toBigint(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ id: bigint; year: number | null; negeri: string | null }[]>`
+      SELECT q.id, sp.year::int AS year, NULLIF(btrim(sp.exam_board), '') AS negeri
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
+        JOIN source_papers sp ON sp.id = v.source_paper_id
+       WHERE q.id = ANY(${keys}::bigint[])`
+    return new Map(rows.map((r) => [r.id.toString(), { year: r.year, negeri: r.negeri }]))
   }
 
   async groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>> {

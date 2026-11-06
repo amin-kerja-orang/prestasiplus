@@ -484,7 +484,11 @@ export const QuestionCreateRequestSchema = baseInput
   .meta({ id: 'QuestionCreateRequest' })
 
 /** PUT body: the four required fields must be sent; other fields are a patch (`''`/null clears). `questionType` is ignored. */
-export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateRequest' })
+export const QuestionUpdateRequestSchema = baseInput
+  // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
+  // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
+  .extend({ parts: z.array(QuestionPartSchema).min(1).optional() })
+  .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
 export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'archived', 'delete'] as const
@@ -682,7 +686,14 @@ export const QuestionStructuredDetailSchema = z
 
 export const GURU_STRUCTURED_PAGE_SIZE = 20
 
-const GuruStructuredStatus = z.enum(['approved', 'review'])
+const GuruStructuredStatus = z.enum(['approved', 'review', 'rejected']).meta({
+  description: '`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned ("Ditolak"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value.',
+})
+/** The `status` filter of the list: `rejected` is a row state, not a filter value (returned rows are listed under `review`). */
+const GuruStructuredStatusFilter = z.enum(['approved', 'review'])
+const GuruStructuredSource = z.enum(['question', 'submission']).meta({
+  description: '`question`: an approved question (numeric `id`). `submission`: the caller\'s own structured submission (an intake item; `id` is `g{itemId}`, never a question id).',
+})
 
 export const GuruStructuredRowSchema = z
   .object({
@@ -695,6 +706,8 @@ export const GuruStructuredRowSchema = z
     subCount: z.number().int().min(0),
     marks: z.number().int().min(0).meta({ description: 'Sum of the part marks.' }),
     status: GuruStructuredStatus,
+    source: GuruStructuredSource,
+    editable: z.boolean().meta({ description: 'True for an own `submission` the admin has not accepted yet (edit and delete allowed); always false for a `question`.' }),
   })
   .meta({ id: 'GuruStructuredRow' })
 
@@ -702,7 +715,7 @@ export const GuruStructuredListQuerySchema = z
   .object({
     subjectId: IdSchema.optional(),
     educationLevelId: IdSchema.optional(),
-    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved. `review` (the teacher\'s own submissions) is an empty page until the submission part exists.' }),
+    status: GuruStructuredStatusFilter.optional().meta({ description: 'Omitted: approved questions, then the caller\'s own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller\'s own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher\'s.' }),
     page: z.coerce.number().int().min(1).default(1),
   })
   .meta({ id: 'GuruStructuredListQuery' })
@@ -718,6 +731,20 @@ export const GuruStructuredSubSchema = z
   })
   .meta({ id: 'GuruStructuredSub' })
 
+export const GuruStructuredFormSchema = z
+  .object({
+    subjectId: IdSchema,
+    educationLevelId: IdSchema,
+    chapterId: IdSchema.nullable(),
+    spIds: z.array(IdSchema),
+    tp: z.number().int().min(1).max(6).nullable(),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable(),
+    difficultyLevel: Difficulty,
+    stimulusImageId: z.string().nullable().meta({ description: 'Token of the uploaded `question_image` file.' }),
+    rejectionReason: z.string().nullable().meta({ description: 'The admin\'s reason once the item was returned, else null.' }),
+  })
+  .meta({ id: 'GuruStructuredForm' })
+
 export const GuruStructuredDetailSchema = z
   .object({
     id: IdSchema,
@@ -726,11 +753,14 @@ export const GuruStructuredDetailSchema = z
     kbat: z.string(),
     status: GuruStructuredStatus,
     stimulus: z.string().meta({ description: 'The stimulus text, once, above all the sub-questions.' }),
-    stimulusImage: z.string().nullable().meta({ description: 'Always null this round: the file read rule has no teacher branch for a question picture.' }),
+    stimulusImage: z.string().nullable().meta({ description: 'Null for an approved question (the file read rule has no teacher branch for a question picture). For an own submission: `/api/files/{token}` of the uploaded image, or null.' }),
     totalMarks: z.number().int().min(0),
     subCount: z.number().int().min(0),
     subQuestions: z.array(GuruStructuredSubSchema),
     createdAt: TimestampSchema,
+    source: GuruStructuredSource,
+    editable: z.boolean(),
+    form: GuruStructuredFormSchema.nullable().meta({ description: 'The stored form fields for the edit screen; null for a `question`.' }),
   })
   .meta({ id: 'GuruStructuredDetail' })
 
@@ -894,6 +924,74 @@ export type QuestionGuruCreateRequest = z.output<typeof QuestionGuruCreateReques
 
 /** PUT /guru/questions/:id: the same form and rules as the create (the edit form sends every field); only a pending or returned own item. */
 export const QuestionGuruUpdateRequestSchema = guruBody().meta({ id: 'QuestionGuruUpdateRequest' })
+
+/* ------------------------------------------------------------------ structured submission (API-GUR-17, structured variant, ADD-13) */
+
+/**
+ * BM texts of the structured submission form (R1-GUR-44b field table); the DSKP texts are `GURU_QUESTION_MESSAGES`.
+ * `partTextLong` and `schemeLong` are instances of the GLB-1 pattern ERR-REQ-12 ("{Medan} tidak boleh melebihi {n} aksara.", 20-guru-admin-sekolah.md:44,
+ * 40-cross-cutting.md:422) with the 44b labels "Teks sub-soalan" / "Skema Jawapan" (20:1605, 1607). `partsMax` follows ERR-REQ-15
+ * ("{Medan} mesti antara {a} dan {b}.", 20:45); the 44b table has no text for the upper bound (DOC DEFECT, see PR).
+ */
+export const GURU_STRUCTURED_MESSAGES = {
+  stimulusLong: 'Rangsangan tidak boleh melebihi 4000 aksara.',
+  imageType: 'Fail mesti berupa imej (jpg, png atau webp).',
+  imageSize: 'Saiz imej tidak boleh melebihi 2 MB.',
+  partText: 'Sila isi teks sub-soalan.',
+  partTextLong: 'Teks sub-soalan tidak boleh melebihi 2000 aksara.',
+  marks: 'Markah mesti antara 1 dan 20.',
+  scheme: 'Sila isi skema jawapan.',
+  schemeLong: 'Skema jawapan tidak boleh melebihi 2000 aksara.',
+  partsMin: 'Sekurang-kurangnya satu sub-soalan diperlukan.',
+  partsMax: 'Bilangan sub-soalan mesti antara 1 dan 10.',
+  /** Success text of the create. */
+  submitted: 'Soalan berstruktur dihantar untuk semakan.',
+} as const
+
+export const GURU_STRUCTURED_MAX_PARTS = 10
+export const GURU_STRUCTURED_MAX_MARKS = 20
+
+const GuruStructuredPart = z.strictObject({
+  text: z.string({ error: GURU_STRUCTURED_MESSAGES.partText }).trim().min(1, GURU_STRUCTURED_MESSAGES.partText).max(2000, GURU_STRUCTURED_MESSAGES.partTextLong),
+  marks: z
+    .number({ error: GURU_STRUCTURED_MESSAGES.marks })
+    .int(GURU_STRUCTURED_MESSAGES.marks)
+    .min(1, GURU_STRUCTURED_MESSAGES.marks)
+    .max(GURU_STRUCTURED_MAX_MARKS, GURU_STRUCTURED_MESSAGES.marks),
+  scheme: z.string({ error: GURU_STRUCTURED_MESSAGES.scheme }).trim().min(1, GURU_STRUCTURED_MESSAGES.scheme).max(2000, GURU_STRUCTURED_MESSAGES.schemeLong),
+  cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+})
+
+/**
+ * Body of `POST /guru/intake/structured` and `PUT /guru/intake/structured/{id}` (API-GUR-17, structured variant; the same form edits).
+ * One stimulus (optional text, optional `stimulusImageId` = token of an upload through `POST /files?purpose=question_image`) and 1..10 parts.
+ * Total marks are computed, never sent. The conditional DSKP rule is a service rule (`guruDskpFields`).
+ * 422 `fields` keys: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficultyLevel, stimulus, stimulusImageId, parts,
+ * parts.{i}.text, parts.{i}.marks, parts.{i}.scheme, parts.{i}.cognitiveLevel.
+ */
+const guruStructuredBody = () =>
+  z.strictObject({
+    subjectId: GuruId(GURU_QUESTION_MESSAGES.subject),
+    educationLevelId: GuruId(GURU_QUESTION_MESSAGES.level),
+    chapterId: z.string({ error: GURU_QUESTION_MESSAGES.chapterInvalid }).max(64, GURU_QUESTION_MESSAGES.chapterInvalid).nullable().optional(),
+    spIds: z
+      .array(z.string({ error: GURU_QUESTION_MESSAGES.spInvalid }).min(1, GURU_QUESTION_MESSAGES.spInvalid).max(64, GURU_QUESTION_MESSAGES.spInvalid), { error: GURU_QUESTION_MESSAGES.spInvalid })
+      .max(3, GURU_QUESTION_MESSAGES.spMax)
+      .nullable()
+      .optional(),
+    tp: z.number({ error: GURU_QUESTION_MESSAGES.tpRange }).int(GURU_QUESTION_MESSAGES.tpRange).min(1, GURU_QUESTION_MESSAGES.tpRange).max(6, GURU_QUESTION_MESSAGES.tpRange).nullable().optional(),
+    cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+    difficultyLevel: z.number({ error: GURU_QUESTION_MESSAGES.difficulty }).int(GURU_QUESTION_MESSAGES.difficulty).min(1, GURU_QUESTION_MESSAGES.difficulty).max(5, GURU_QUESTION_MESSAGES.difficulty),
+    stimulus: z.string({ error: GURU_STRUCTURED_MESSAGES.stimulusLong }).max(4000, GURU_STRUCTURED_MESSAGES.stimulusLong).nullable().optional(),
+    stimulusImageId: z.string({ error: GURU_STRUCTURED_MESSAGES.imageType }).min(1, GURU_STRUCTURED_MESSAGES.imageType).max(64, GURU_STRUCTURED_MESSAGES.imageType).nullable().optional(),
+    parts: z
+      .array(GuruStructuredPart, { error: GURU_STRUCTURED_MESSAGES.partsMin })
+      .min(1, GURU_STRUCTURED_MESSAGES.partsMin)
+      .max(GURU_STRUCTURED_MAX_PARTS, GURU_STRUCTURED_MESSAGES.partsMax),
+  })
+export const GuruStructuredCreateRequestSchema = guruStructuredBody().meta({ id: 'GuruStructuredCreateRequest' })
+export type GuruStructuredCreateRequest = z.output<typeof GuruStructuredCreateRequestSchema>
+export const GuruStructuredUpdateRequestSchema = guruStructuredBody().meta({ id: 'GuruStructuredUpdateRequest' })
 
 /** Owner-only views of a teacher's submissions: `id` is the intake item id (API-GUR-18). */
 export const QuestionGuruSummarySchema = z
