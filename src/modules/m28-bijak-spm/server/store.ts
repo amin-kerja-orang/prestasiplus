@@ -115,6 +115,12 @@ export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh
 /** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
 export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
+/**
+ * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The set is read from the
+ * registry (`BLUEPRINTS`), the same rows the Kontrak admin mock seeds as Disahkan, so one entity has one status in both mocks.
+ */
+export const servesPupils = (b: { source: string }): boolean => b.source === 'Disahkan'
+
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
   private readonly now: () => number
