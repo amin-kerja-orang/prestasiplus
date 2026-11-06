@@ -25,7 +25,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { usePrototypeScope, useRouteExists } from '@/composables'
-import { DsFeedbackSheet, DsFloatScore, DsQuizHeader, DsQuizOption } from '@/ds'
+import { DsDialog, DsFeedbackSheet, DsFloatScore, DsQuizHeader, DsQuizOption } from '@/ds'
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { checkAnswer, startSession, submitSession } from '../../api/practice'
@@ -35,6 +35,7 @@ import {
   comboOf,
   dsOptionState,
   formatTime,
+  isHttpUrl,
   optionState,
   planStartError,
   safeHref,
@@ -92,6 +93,8 @@ const props = withDefaults(
     accentColor?: string
     /** No "Ulang Lagi" button on the results (Q4 remedial, Q5 mission: a restart would be a 409). */
     hideRetry?: boolean
+    /** Ask "Keluar daripada kuiz?" before the header close button leaves (the chapter quiz, S5-T02). */
+    confirmExit?: boolean
   }>(),
   {
     start: null,
@@ -104,6 +107,7 @@ const props = withDefaults(
     api: undefined,
     accentColor: '#3B82F6',
     hideRetry: false,
+    confirmExit: false,
   },
 )
 
@@ -210,6 +214,10 @@ const timeText = computed(() => formatTime(clock.value))
 const takenText = computed(() => formatTime(elapsed.value))
 const progressPct = computed(() => (total.value > 0 ? ((index.value + 1) / total.value) * 100 : 0))
 const revisionMeta = computed(() => active.value?.revisionMeta ?? null)
+const referenceHref = computed(() => {
+  const url = current.value?.referenceUrl
+  return isHttpUrl(url) ? url : null
+})
 const contributorHref = computed(() => safeHref(current.value?.contributor?.profileUrl))
 const tints = computed(() => props.report.tints ?? DEFAULT_TINTS)
 
@@ -267,7 +275,16 @@ const combo = computed(() => comboOf(answers.value))
 function jawi(q: { textDirection?: string; scriptType?: string }): boolean {
   return q.textDirection === 'rtl' || q.scriptType === 'mixed'
 }
+const exitOpen = ref(false)
 function leave(): void {
+  if (props.confirmExit) {
+    exitOpen.value = true
+    return
+  }
+  void router.push(props.backUrl)
+}
+function confirmLeave(): void {
+  exitOpen.value = false
   void router.push(props.backUrl)
 }
 const nextLabel = computed(() => (isLast.value ? 'Lihat Keputusan' : 'Soalan Seterusnya'))
@@ -333,6 +350,27 @@ const feedbackExplanation = computed(() =>
               data-testid="quiz-header"
               @close="leave"
             />
+            <DsDialog
+              v-model:open="exitOpen"
+              title="Keluar daripada kuiz?"
+              description="Jawapan yang sudah disemak telah disimpan. Anda boleh menyambung semula kuiz ini."
+              size="sm"
+              data-testid="quiz-exit-dialog"
+            >
+              <template #footer>
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  class="min-h-11"
+                  data-testid="quiz-exit-confirm"
+                  @click="confirmLeave"
+                  >Keluar</UButton
+                >
+                <UButton class="min-h-11" data-testid="quiz-exit-stay" @click="exitOpen = false"
+                  >Teruskan Kuiz</UButton
+                >
+              </template>
+            </DsDialog>
             <div class="flex items-center justify-between gap-3">
               <div class="flex min-w-0 flex-col gap-1">
                 <h1 class="text-subheading break-words text-highlighted" data-testid="quiz-title">
@@ -415,6 +453,20 @@ const feedbackExplanation = computed(() =>
               >
                 {{ current.questionText }}
               </h2>
+
+              <div v-if="referenceHref" data-testid="question-reference">
+                <UButton
+                  :to="referenceHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="neutral"
+                  variant="link"
+                  icon="i-ph-arrow-square-out-bold"
+                  class="min-h-11"
+                  data-testid="question-reference-link"
+                  >Rujukan</UButton
+                >
+              </div>
 
               <p
                 v-if="current.contributor"

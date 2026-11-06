@@ -3,7 +3,7 @@
  * BR-M08-11, -14, -16). Pure functions.
  */
 
-import type { Trend, WeakSp } from '../../api/types'
+import type { AnalyticsSubject, Trend, WeakSp } from '../../api/types'
 
 /** The ring circumference of the SVG r=50 (FR-M08-49). */
 export const RING_LENGTH = 314
@@ -105,6 +105,18 @@ export function dayLabel(date: string, sessions: number): string {
   return `${two(d)}/${two(m)} (${weekday}) — ${sessions === 0 ? 'Tiada aktiviti' : `${String(sessions)} sesi`}`
 }
 
+export const HEAT_LEGEND_360 = ['0', '1-4', '5-8', '9-12', '13+'] as const
+/** Prestasi 360 map bin (R1-MUR-4): 0, 1-4, 5-8, 9-12, 13+ sessions a day. */
+export function heatBin360(sessions: number): number {
+  const n = Math.max(Math.floor(sessions), 0)
+  return n === 0 ? 0 : n <= 4 ? 1 : n <= 8 ? 2 : n <= 12 ? 3 : 4
+}
+
+/** Prestasi 360 tooltip: "{dd/mm} ({Hari}) — {n} sesi latihan" or "— Tiada aktiviti". */
+export function dayLabel360(date: string, sessions: number): string {
+  return dayLabel(date, sessions).replace(/ sesi$/, ' sesi latihan')
+}
+
 /** FR-M08-40 bar and text colours: ≥ 80 success, 60–79.9 warning, < 60 error (INFERRED bands). */
 export function masteryTone(accuracy: number): {
   color: 'success' | 'warning' | 'error'
@@ -113,4 +125,34 @@ export function masteryTone(accuracy: number): {
   if (accuracy >= 80) return { color: 'success', text: 'text-success' }
   if (accuracy >= 60) return { color: 'warning', text: 'text-warning' }
   return { color: 'error', text: 'text-error' }
+}
+
+/** FR-MUR-5-6, AC-MUR-5-2: the message of a subject without any answer. */
+export const noPracticeText = (subject: string): string =>
+  `Belum ada latihan untuk ${subject}. Mula berlatih untuk membuka analitik penuh.`
+
+/** Summary sentence of a subject with answers (reference behaviour 3): "{mahir} daripada {total} Standard Pembelajaran ..." */
+export function masterySummary(subject: Pick<AnalyticsSubject, 'name' | 'counts' | 'ringTotal'>): string {
+  const base = `${String(subject.counts.mahir)} daripada ${String(subject.ringTotal)} Standard Pembelajaran sudah dikuasai untuk ${subject.name}.`
+  return subject.counts.belum > 0 ? `${base} Masih ada ${String(subject.counts.belum)} SP belum dicuba.` : base
+}
+
+/** Tab label of a subject: "{Subjek}" and, only with answers, the accuracy as a whole number (FR-MUR-5-2). */
+export const tabAccuracy = (s: Pick<AnalyticsSubject, 'accuracy' | 'answered'>): string | null =>
+  s.answered > 0 && s.accuracy !== null ? `${String(Math.round(s.accuracy))}%` : null
+
+/** The first subject with at least one answer, else the first (FR-MUR-5-8). */
+export function defaultTab<T extends Pick<AnalyticsSubject, 'answered'>>(subjects: readonly T[]): T | null {
+  return subjects.find((s) => s.answered > 0) ?? subjects[0] ?? null
+}
+
+/** FR-MUR-5-5 / PRD map: the tiles of a subject grouped by strand, in the order the strands first appear. */
+export function groupByStrand<T extends { strand: string | null }>(tiles: readonly T[]): { strand: string | null; tiles: T[] }[] {
+  const groups: { strand: string | null; tiles: T[] }[] = []
+  for (const t of tiles) {
+    const g = groups.find((x) => x.strand === t.strand)
+    if (g) g.tiles.push(t)
+    else groups.push({ strand: t.strand, tiles: [t] })
+  }
+  return groups
 }

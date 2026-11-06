@@ -84,7 +84,7 @@ export interface Count {
 
 /** Per-pupil answer tallies of a window (current windows end at `now` inclusive; `prev*` windows end exclusive). */
 export async function tallies(deps: GuruDeps, ctx: GuruContext, w?: Window, exclusiveTo = false): Promise<Map<string, UserTally>> {
-  const f: AnswerFilter = { to: w?.to ?? ctx.now, studentIds: ctx.ids, includeInactive: true }
+  const f: AnswerFilter = { to: w?.to ?? ctx.now, studentIds: ctx.ids }
   if (w) f.from = w.from
   if (exclusiveTo) f.exclusiveTo = true
   return new Map((await deps.repo.answerTallyByUser(f)).map((t) => [t.userId, t]))
@@ -105,7 +105,7 @@ export function sum(map: Map<string, Count>, only?: Iterable<string>): Count {
 
 /** Distinct answer days per pupil inside the last 30 days (MYT day keys). */
 export async function answerDaysOf(deps: GuruDeps, ctx: GuruContext): Promise<Map<string, Set<string>>> {
-  const rows = await deps.repo.answerDays({ from: ctx.windows.d30.from, to: ctx.now, studentIds: ctx.ids, includeInactive: true })
+  const rows = await deps.repo.answerDays({ from: ctx.windows.d30.from, to: ctx.now, studentIds: ctx.ids })
   const out = new Map<string, Set<string>>()
   for (const r of rows) {
     const set = out.get(r.userId) ?? new Set<string>()

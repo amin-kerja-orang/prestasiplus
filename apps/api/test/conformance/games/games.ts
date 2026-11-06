@@ -215,39 +215,47 @@ export const gamesScenarios: Scenario[] = [
     },
   },
   {
-    id: 'games-api/leagues: create, list, detail (no-store, invite code), join, and the board of Sekolah Bersaing',
+    id: 'games-api/leagues: admin-only create and school enrolment, join closed (403), list, detail (no-store, no invite code), and the board of Sekolah Bersaing',
     domain: 'games',
     targets: API_ONLY,
     async run(ctx) {
       const s = await ctx.as('student')
-      const body = { name: 'Liga Konformans', type: 'friendly', scope: 'school', game_mode: 'mixed', scoring_method: 'total_score', start_date: '2026-11-01', end_date: '2026-11-30', class_levels: ['T4'] }
-      const created = await s.request('POST', '/leagues', { body })
-      ctx.expectStatus(created, 201)
-      const id = String(dataOf(created).id)
-      const list = await s.request('GET', '/leagues')
-      ctx.expectStatus(list, 200)
-      const mine = (dataOf(list).mine ?? []) as { id: string }[]
-      ctx.check(mine.some((l) => l.id === id), 'the created league is in mine (the creator school joined)')
-      const detail = await s.request('GET', `/leagues/${id}`)
-      ctx.expectStatus(detail, 200)
-      ctx.check(detail.headers['cache-control'] === 'no-store', 'the detail carries the invite code: Cache-Control must be no-store')
-      const code = String(dataOf(detail).inviteCode)
-      ctx.check(/^[A-Z0-9]{8}$/.test(code), 'invite code is 8 characters of A-Z0-9')
-      // The creator school is already in: refused with fields.invite_code.
-      const again = await s.request('POST', '/leagues/join', { body: { invite_code: code } })
-      ctx.expectStatus(again, 422)
-      ctx.check(errorOf(again).message === 'Sekolah anda sudah menyertai liga ini.', 'joining twice says "Sekolah anda sudah menyertai liga ini."')
-      expectError(ctx, await s.request('GET', '/leagues/abc'), 404, 'NOT_FOUND')
-      expectError(ctx, await s.request('POST', '/leagues', { body: { ...body, end_date: '2026-10-01' } }), 422, 'VALIDATION_ERROR')
-      // The admin account has no school: refused with the school message.
       const admin = await ctx.as('admin')
-      const noSchool = await admin.request('POST', '/leagues/join', { body: { invite_code: code } })
-      ctx.expectStatus(noSchool, 422)
+      const body = { name: 'Liga Konformans', type: 'friendly', scope: 'school', mode: 'mixed', scoring: 'total_score', schoolLimit: 100, levelIds: [4], start: '2026-11-01', end: '2026-11-30' }
+      // FR-GM-15.1: only Admin Pusat creates and enrols.
+      expectError(ctx, await s.request('POST', '/leagues', { body }), 403, 'FORBIDDEN')
+      const created = await admin.request('POST', '/leagues', { body })
+      ctx.expectStatus(created, 201)
+      const id = String(dataOf(created).id) // 201 answers the league detail
+      expectError(ctx, await admin.request('POST', '/leagues', { body: { ...body, type: 'tournament' } }), 422, 'VALIDATION_ERROR')
+      const detail = await admin.request('GET', `/leagues/${id}`)
+      ctx.expectStatus(detail, 200)
+      ctx.check(detail.headers['cache-control'] === 'no-store', 'the detail is Cache-Control: no-store')
+      const d = dataOf(detail)
+      ctx.check(!('inviteCode' in d) && !('shareUrl' in d) && !('canJoin' in d), 'the detail has no inviteCode, shareUrl or canJoin')
+      ctx.check(Array.isArray(d.schools) && d.schools.length === 0, 'no school joins on create')
+      // A school id from the admin options (secondary schools).
+      const options = await admin.request('GET', '/admin/schools/options')
+      ctx.expectStatus(options, 200)
+      const schoolId = String(((options.body as { data: { id: string }[] }).data)[0]?.id)
+      expectError(ctx, await s.request('POST', `/leagues/${id}/schools`, { body: { schoolIds: [schoolId] } }), 403, 'FORBIDDEN')
+      const enrolled = await admin.request('POST', `/leagues/${id}/schools`, { body: { schoolIds: [schoolId] } })
+      ctx.expectStatus(enrolled, 200)
+      ctx.check(((dataOf(enrolled).schools ?? []) as { id: string }[]).some((x) => x.id === schoolId), 'the enrolled school is in the returned detail')
+      const again = await admin.request('POST', `/leagues/${id}/schools`, { body: { schoolIds: [schoolId] } })
+      ctx.expectStatus(again, 422)
+      ctx.check(errorOf(again).message === 'Sekolah ini sudah menyertai liga ini.', 'enrolling twice says "Sekolah ini sudah menyertai liga ini."')
+      // AC-GM-15.2: join answers 403 for every role.
+      for (const who of [s, admin]) expectError(ctx, await who.request('POST', '/leagues/join', { body: { invite_code: 'TEST2026' } }), 403, 'FORBIDDEN')
+      expectError(ctx, await s.request('GET', '/leagues/abc'), 404, 'NOT_FOUND')
+      expectError(ctx, await admin.request('POST', '/leagues', { body: { ...body, end: '2026-10-01' } }), 422, 'VALIDATION_ERROR')
 
-      const sb = await s.request('GET', '/sekolah-bersaing?week=bukan-tarikh')
+      // API-AS-14: school admin and admin only; an unknown query parameter is ignored.
+      expectError(ctx, await s.request('GET', '/sekolah-bersaing'), 403, 'FORBIDDEN')
+      const sb = await (await ctx.as('school_admin')).request('GET', '/sekolah-bersaing?week=bukan-tarikh')
       ctx.expectStatus(sb, 200)
-      ctx.check(dataOf(sb).count === (dataOf(sb).rows as unknown[]).length, 'count equals the number of rows')
-      ctx.expectStatus(await s.request('GET', '/sekolah-bersaing?week=2026-09-23'), 200)
+      ctx.check(Array.isArray((sb.body as { data?: unknown }).data), 'the board is an array')
+      ctx.expectStatus(await admin.request('GET', '/sekolah-bersaing'), 200)
     },
   },
   {

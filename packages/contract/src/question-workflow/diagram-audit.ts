@@ -5,15 +5,21 @@ import { QUESTION_WORKFLOW_IMAGE_MAX_BYTES, questionWorkflowFile, questionWorkfl
 /**
  * Diagram audit, S11 "Soalan Perlu Gambar Rajah" (mock `handlers/diagram-audit.ts`, SRS BR-M04-19,
  * FR-M04-95 to 101). Routes: `GET /diagram-audit`, `POST /diagram-audit/{kind}/{id}/image`,
- * `POST /diagram-audit/{kind}/{id}/dismiss`. Admin only. Image storage is BE-04.
+ * `POST /diagram-audit/{kind}/{id}/dismiss`. List: admin, teacher and school admin (whole bank). Image: admin (applied at once) and teacher (review path); dismiss: admin only. A teacher image is NOT applied to the question: it becomes an intake item of
+ * a `source = guru` batch (kind diagram, `payload.target`) and the card shows `pendingReview` until an admin accepts or
+ * rejects it (S6-T18 part 2). Image storage is BE-04.
  *
  * Difference from the mock: ids are strings (UD-1).
  */
 
 export const DIAGRAM_AUDIT_MESSAGES = {
   fileRequired: 'Sila pilih fail gambar.',
-  fileType: 'Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.',
+  fileType: 'Fail mesti berupa imej (jpg, png atau webp).',
+  fileSize: 'Saiz imej tidak boleh melebihi 2 MB.',
+  submittedForReview: 'Gambar dihantar untuk semakan.',
   uploaded: 'Gambar rajah berjaya dimuat naik.',
+  alreadyPending: 'Gambar untuk soalan ini sedang menunggu semakan.',
+  noStimulusGroup: 'Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.',
   dismissed: 'Soalan telah dikeluarkan daripada senarai audit.',
 } as const
 
@@ -22,8 +28,8 @@ export const DIAGRAM_AUDIT_PAGE_SIZE = 20
 export const DIAGRAM_AUDIT_EXCERPT_LENGTH = 400
 /** Number of subject pills in `meta.bySubject`. */
 export const DIAGRAM_AUDIT_PILL_COUNT = 10
-/** JPG, PNG, WebP or GIF; SVG and every other type are refused (SEC-M04-02). */
-export const DIAGRAM_AUDIT_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const
+/** JPG, PNG or WebP; GIF, SVG and every other type are refused (SEC-M04-02). */
+export const DIAGRAM_AUDIT_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
 export const DIAGRAM_AUDIT_KINDS = ['mcq', 'structured'] as const
 export const DiagramAuditKindSchema = z
@@ -55,6 +61,7 @@ export const DiagramAuditMcqItemSchema = z
     createdBy: CreatedBy,
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
+    pendingReview: z.boolean().meta({ description: 'True while an open teacher image (intake item, source guru) waits for an admin: the chip "Menunggu Semakan". Also true for the other questions of the same stimulus group.' }),
   })
   .meta({ id: 'DiagramAuditMcqItem' })
 
@@ -66,6 +73,7 @@ export const DiagramAuditStructuredItemSchema = z
     createdBy: CreatedBy,
     sourceFile: z.string().nullable(),
     sourcePage: z.number().int().nullable(),
+    pendingReview: z.boolean().meta({ description: 'True while an open teacher image (intake item, source guru) waits for an admin: the chip "Menunggu Semakan". Also true for the other questions of the same stimulus group.' }),
   })
   .meta({ id: 'DiagramAuditStructuredItem' })
 
@@ -114,18 +122,18 @@ export type DiagramAuditResponse = z.infer<typeof DiagramAuditResponseSchema>
 const image = questionWorkflowFile({
   maxBytes: QUESTION_WORKFLOW_IMAGE_MAX_BYTES,
   mimes: DIAGRAM_AUDIT_IMAGE_MIME_TYPES,
-  extensions: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-  description: 'JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04.',
+  extensions: ['jpg', 'jpeg', 'png', 'webp'],
+  description: 'JPG, PNG or WebP (GIF and SVG refused), at most 2 MB. Storage: BE-04.',
 })
 
-/** Body of `POST /diagram-audit/{kind}/{id}/image`, `multipart/form-data`. 422 `fields.image`: missing or not an image "Sila pilih fail gambar."; wrong type or size "Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.". */
+/** Body of `POST /diagram-audit/{kind}/{id}/image`, `multipart/form-data`. 422 `fields.image`: missing or not an image "Sila pilih fail gambar."; wrong type "Fail mesti berupa imej (jpg, png atau webp)."; over 2 MB "Saiz imej tidak boleh melebihi 2 MB.". */
 export const DiagramAuditImageRequestSchema = z.object({ image }).meta({ id: 'DiagramAuditImageRequest' })
 
 export const DiagramAuditResultSchema = z
-  .strictObject({ id: IdSchema, needsDiagram: z.literal(false) })
+  .strictObject({ id: IdSchema, needsDiagram: z.boolean().meta({ description: 'false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image).' }) })
   .meta({ id: 'DiagramAuditResult' })
 
-/** 200 body of image and dismiss `{ data: { id, needsDiagram: false }, status }`. */
+/** 200 body of image and dismiss `{ data: { id, needsDiagram }, status }`. Teacher image: `needsDiagram: true`, status "Gambar dihantar untuk semakan."; 409 when the stimulus group already has an open image (`alreadyPending`) or the question has no group (`noStimulusGroup`). */
 export const DiagramAuditMutationSchema = questionWorkflowMutationOf(DiagramAuditResultSchema).meta({
   id: 'DiagramAuditMutation',
 })

@@ -27,7 +27,7 @@ describe('class access matrix', () => {
     ['admin', 'a', true, true],
     ['teacher', 't1', true, true],
     ['teacher', 't2', false, false],
-    ['school_admin', 'sa1', true, false],
+    ['school_admin', 'sa1', true, true], // S10-T04 Change (2): own-school classroom
     ['student', '1', false, false],
     ['ppd_officer', 'o', false, false],
     ['parent', 'p', false, false],
@@ -41,6 +41,9 @@ describe('class access matrix', () => {
     expect(canOpenClassDashboard(ctxOf('admin', 'a'), cls({ kind: 'school_class' }))).toBe(false)
     expect(canOpenClassDashboard(ctxOf('school_admin', 'sa1'), cls({ schoolId: 's2' }))).toBe(false)
     expect(canOpenClassDashboard(ctxOf('admin', 'a'), cls({ schoolId: 's2' }))).toBe(true)
+
+    expect(canOpenClassAnalysis(ctxOf('school_admin', 'sa1'), cls({ schoolId: 's2' }))).toBe(false)
+    expect(canOpenClassAnalysis(ctxOf('school_admin', 'sa1'), cls({ kind: 'school_class' }))).toBe(false)
   })
 })
 
@@ -59,8 +62,9 @@ describe('student access', () => {
 })
 
 describe('school access', () => {
-  it('only the five roles; non-admins reach own school or officer coverage', () => {
-    expect(ITEM_SCHOOL_ROLES).toEqual(['admin', 'teacher', 'school_admin', 'student', 'ppd_officer'])
+  it('only the four roles (a student is refused, FR-MUR-6-2); non-admins reach own school or officer coverage', () => {
+    expect(ITEM_SCHOOL_ROLES).toEqual(['admin', 'teacher', 'school_admin', 'ppd_officer'])
+    expect(ITEM_SCHOOL_ROLES).not.toContain('student')
     const none = new Set<string>()
     for (const role of ROLE_CODES) {
       const ok = ITEM_SCHOOL_ROLES.includes(role)

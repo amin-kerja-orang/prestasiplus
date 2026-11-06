@@ -15,9 +15,9 @@ import { isApiError, isHttpMode } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
+import { DsBreadcrumb, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 
-import { fetchSchoolUsage } from '../api/school-admin'
+import { CENTRAL_EMPTY, fetchSchoolUsage, isSchoolDataMissing } from '../api/school-admin'
 import UsageModeCard from '../components/usage/UsageModeCard.vue'
 import UsagePeriodPills from '../components/usage/UsagePeriodPills.vue'
 import UsageTiles from '../components/usage/UsageTiles.vue'
@@ -30,13 +30,21 @@ const COHORT_FOOTNOTE = 'Disembunyikan kerana kurang daripada 5 pelajar aktif.'
 
 const crumbs = [{ label: 'Dashboard Sekolah', to: DASHBOARD_PATH }, { label: TITLE }]
 
+/**
+ * Central view (M17 `/admin/laporan-sekolah/...`, R1-ADM-M-07): `schoolId` is the school Admin Pusat picked (sent as
+ * `?schoolId=`), `schoolName` its name for the sub-line and `basePath` the route the pills link to. Without
+ * `schoolId` the school is the session's, as for the school admin.
+ */
+const props = defineProps<{ schoolId?: number | string; schoolName?: string; basePath?: string }>()
+const central = computed(() => props.schoolId !== undefined)
+
 const route = useRoute()
 const pageMeta = usePageMeta()
 const period = computed(() => normalisePeriod(route.query.period))
 
 const { data, error, loading, reload } = useApi(
-  (signal) => fetchSchoolUsage({ period: period.value, signal }),
-  [period],
+  (signal) => fetchSchoolUsage({ period: period.value, schoolId: props.schoolId, signal }),
+  [period, () => props.schoolId],
 )
 
 /**
@@ -48,6 +56,7 @@ const cohortHidden = computed(
     isHttpMode() && data.value?.tiles.accuracy === null && (data.value?.tiles.answers ?? 0) > 0,
 )
 
+const missing = computed(() => central.value && isSchoolDataMissing(error.value))
 const refused = computed(() => isApiError(error.value) && error.value.status === 403)
 watch(
   refused,
@@ -70,12 +79,17 @@ watch(
 <template>
   <DsPage data-testid="su-page" :data-period="data?.period">
     <template #breadcrumb>
-      <DsBreadcrumb v-if="data" :items="crumbs" data-testid="su-breadcrumb" />
+      <DsBreadcrumb v-if="data && !central" :items="crumbs" data-testid="su-breadcrumb" />
     </template>
     <template v-if="data">
-      <UsagePeriodPills :active="period" />
+      <UsagePeriodPills :active="period" :base-path="basePath" />
       <UsageTiles :tiles="data.tiles" />
-      <UsageModeCard :modes="data.modes" :period="data.period" :label="data.label" />
+      <UsageModeCard
+        :modes="data.modes"
+        :period="data.period"
+        :label="data.label"
+        :base-path="basePath"
+      />
       <p
         v-if="data.tiles.accuracy === null"
         class="text-caption text-muted"
@@ -84,6 +98,12 @@ watch(
         {{ cohortHidden ? COHORT_FOOTNOTE : EMPTY_FOOTNOTE }}
       </p>
     </template>
+    <DsEmptyState
+      v-else-if="missing"
+      :title="CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="su-central-empty"
+    />
     <DsLoadError
       v-else-if="error && !refused"
       testid="su-error"

@@ -153,6 +153,19 @@ export const PkskPracticeResultSchema = z
   .object({
     masteryPct: masteryPct.meta({ description: 'round(correct / answered * 100).' }),
     sessionId: PracticeSessionIdSchema,
+    correct: z.number().int().min(0).meta({ description: 'Number of answers scored correct.' }),
+    total: z.number().int().min(0).meta({ description: 'Number of answers scored (the set size).' }),
+    review: z
+      .array(
+        z.object({
+          questionId: IdSchema,
+          selectedIndex: z.number().int().min(0).nullable().meta({ description: 'Null for a Bahagian C (essay) answer or a blank.' }),
+          correctIndex: z.number().int().min(0).nullable().meta({ description: 'Null for a Bahagian C question.' }),
+          isCorrect: z.boolean(),
+          explanation: z.string().nullable(),
+        }),
+      )
+      .meta({ description: 'Revealed only after the answers are scored and stored; the served set never carries it.' }),
     gamification: z.object({
       coinsEarned: z.number().int().min(0),
       pointsEarned: z.number().int().min(0),

@@ -14,6 +14,7 @@ import {
   PracticeReadHistoryResponseSchema,
   PracticeReadMasterySchema,
   PracticeReadProgressSchema,
+  PracticeReadRemedialSuggestionsSchema,
   PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubjectSchema,
   PracticeReadSpmTargetsSaveRequestSchema,
@@ -21,6 +22,8 @@ import {
   PracticeReadSpmTargetsSchema,
   PracticeReadStructuredAttemptRequestSchema,
   PracticeReadStructuredAttemptResultSchema,
+  PracticeReadStructuredCardSchema,
+  PracticeReadStructuredListQuerySchema,
   PracticeReadStructuredDetailSchema,
   PracticeReadStructuredListResponseSchema,
   PracticeReadSubjectConfigSchema,
@@ -53,6 +56,8 @@ const dashboard = {
   streak: { count: 2, practisedToday: true },
   wallet: { coins: 120, points: 340, level: 3, levelProgressPct: 45.5 },
   week: { sessions: 4, accuracyPct: 72 },
+  accuracyPct: 66.7,
+  package: { name: 'Pakej Percuma', validUntil: '2027-11-03' },
   banners: [{ type: 'info', title: 'Selamat datang', body: null }],
   quests: [
     { key: '9', emoji: '🎯', title: 'Jawab 10 soalan', difficulty: 'easy', description: 'Jawab 10 soalan hari ini', target: 10, reward: 5, progress: 4, completed: false },
@@ -64,7 +69,7 @@ const dashboard = {
   subjects: [subject],
   stats: { totalQuestions: 140, activeSubjects: 1, activeLevels: 4, approvedQuestions: 120 },
   levelPills: [{ code: 'D1', name: 'Darjah 1', stage: 'primary', count: 30 }],
-  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1' }],
+  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1', figureThumbUrl: null }],
   difficultyChart: [1, 2, 3, 4, 5].map((level) => ({ level, count: level })),
   subjectStats: [{ id: '3', name: 'Matematik', icon: null, color: '#2563eb', bankCount: 140, avgDifficulty: 2.41, usedCount: 0 }],
 }
@@ -110,6 +115,28 @@ describe('dashboard', () => {
     ).toBe(false)
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, greetingPeriod: 'Subuh' }).success).toBe(false)
   })
+  it('"Soalan Terkini" (FR-MUR-2-8): text up to 140 characters + "…", a nullable figure URL, no answer key', () => {
+    const withRow = (row: Record<string, unknown>) =>
+      PracticeReadDashboardSchema.safeParse({ ...dashboard, recentQuestions: [{ ...dashboard.recentQuestions[0], ...row }] }).success
+    expect(withRow({ text: `${'x'.repeat(140)}…` })).toBe(true)
+    expect(withRow({ text: 'x'.repeat(142) })).toBe(false)
+    expect(withRow({ figureThumbUrl: '/api/files/AbCdEfGhIjKlMnOpQrStUv' })).toBe(true)
+    expect(withRow({ figureThumbUrl: null })).toBe(true)
+    expect(withRow({ figureThumbUrl: undefined })).toBe(false) // required, nullable
+    expect(withRow({ figureThumbUrl: 7 })).toBe(false)
+    expect(withRow({ correctAnswer: 'A' })).toBe(false) // strict: no answer key on the wire
+    expect(withRow({ options: [] })).toBe(false)
+  })
+  it('accuracyPct: null with no answers, one decimal at most, 0..100', () => {
+    for (const ok of [null, 0, 75, 66.7, 100]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: ok }).success).toBe(true)
+    for (const bad of [66.67, 100.1, -1, '75', undefined]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: bad }).success).toBe(false)
+  })
+  it('package: null, or { name, validUntil YYYY-MM-DD }', () => {
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: null }).success).toBe(true)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: { name: 'P', validUntil: '2027-11-03T00:00:00+08:00' } }).success).toBe(false)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: { name: 'P' } }).success).toBe(false)
+    expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, package: undefined }).success).toBe(false)
+  })
   it('rejects an unknown key (strict)', () => {
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, secret: 1 }).success).toBe(false)
   })
@@ -138,7 +165,7 @@ describe('subjects and chapters', () => {
   it('accepts chapter lists and detail, with a null level when none is offered', () => {
     expect(
       PracticeReadChapterSubjectListResponseSchema.safeParse({
-        data: [{ code: 'MATH', name: 'Matematik', icon: null, color: '#2563eb', chapterCount: 5, questionCount: 90 }],
+        data: [{ code: 'MATH', name: 'Matematik', icon: null, color: '#2563eb', chapterCount: 5, questionCount: 90, levels: [{ id: '4', code: 'T4', name: 'Tingkatan 4', chapterCount: 5, questionCount: 90 }] }],
         meta: meta(1),
       }).success,
     ).toBe(true)
@@ -148,6 +175,21 @@ describe('subjects and chapters', () => {
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, levels: [], levelId: null, chapters: [] }).success).toBe(true)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'done' }] }).success).toBe(false)
     expect(PracticeReadChapterSubjectDetailSchema.safeParse({ ...detail, chapters: [{ ...chapter, state: 'locked' }] }).success).toBe(false) // REQ-C-021: a chapter card is always open
+  })
+})
+
+describe('remedial suggestions', () => {
+  it('accepts the S5-T07 shape and rejects a target other than 60', () => {
+    const ok = {
+      completed: [{ subjectCode: 'SN', subjectName: 'Sains', setNo: 1, questionCount: 20, before: 40, after: 80, delta: 40, at: '2026-11-01T10:00:00+08:00' }],
+      needed: [{ subjectCode: 'SN', subjectName: 'Sains', answered: 120, accuracy: 0, target: 60 }],
+    }
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse(ok).success).toBe(true)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, needed: [{ ...ok.needed[0], target: 50 }] }).success).toBe(false)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ completed: [], needed: [] }).success).toBe(true)
+    const noSide = { ...ok.completed[0], before: null, delta: null }
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, completed: [noSide] }).success).toBe(true)
+    expect(PracticeReadRemedialSuggestionsSchema.safeParse({ ...ok, completed: [{ ...noSide, after: null }] }).success).toBe(true)
   })
 })
 
@@ -204,6 +246,8 @@ describe('progress, history, corrections, mastery', () => {
   })
   it('has a badge for every session mode', () => {
     expect(Object.keys(PRACTICE_READS_HISTORY_BADGES).sort()).toEqual([...PRACTICE_MODES].sort())
+    expect(PRACTICE_READS_HISTORY_BADGES.databank.label).toBe('Databank SPM')
+    expect(PRACTICE_READS_HISTORY_BADGES.tracking_a.label).toBe('Tracking A')
   })
   it('accepts corrections with and without a summary', () => {
     const base = { month: '2026-10', prevMonth: '2026-09', nextMonth: null, summary: null, subjects: [] }
@@ -233,15 +277,24 @@ describe('progress, history, corrections, mastery', () => {
 describe('structured questions', () => {
   const card = {
     id: '4001', subjectId: '1', subjectName: 'Bahasa Melayu', kbatLevel: 4, estimatedMinutes: 10, isTrial: false,
-    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10,
+    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10, bestScore: null,
   }
   it('accepts a list page with scope, track and subjectOptions', () => {
     expect(
       PracticeReadStructuredListResponseSchema.safeParse({
         data: [card],
-        meta: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }] },
+        meta: { page: 1, pageSize: 12, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }], pendingSchemeCount: 0 },
       }).success,
     ).toBe(true)
+  })
+  it('bestScore is an {awarded, max} pair or null; the list query caps q at 100 characters (S5-T11)', () => {
+    const ok = (bestScore: unknown) => PracticeReadStructuredCardSchema.safeParse({ ...card, bestScore }).success
+    expect(ok(null)).toBe(true)
+    expect(ok({ awarded: 3, max: 5 })).toBe(true)
+    expect(ok({ awarded: -1, max: 5 })).toBe(false)
+    expect(ok(undefined)).toBe(false)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(100), markable: '1' }).success).toBe(true)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(101) }).success).toBe(false)
   })
   it('rejects a list meta with an unknown scope', () => {
     expect(
@@ -319,6 +372,7 @@ describe('OpenAPI document', () => {
     ['get', '/practice/chapter-subjects/{code}'],
     ['get', '/practice/revision'],
     ['get', '/practice/revision/{code}'],
+    ['get', '/practice/remedial-suggestions'],
     ['get', '/practice/progress'],
     ['get', '/practice/history'],
     ['get', '/practice/corrections'],

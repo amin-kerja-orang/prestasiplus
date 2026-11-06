@@ -14,11 +14,17 @@
  * refused, and that a default that is not a valid subject / level / difficulty is a 422.
  */
 
+import type { SourcePaperDetail, SourcePaperRow } from '@pp/contract'
+
 import {
   blob,
   created,
+  notFound,
+  ok,
   paged,
   pageParams,
+  paginate,
+  str,
   validationError,
   route,
   type MockContext,
@@ -143,7 +149,101 @@ async function importQuestions(req: MockRequest, ctx: MockContext): Promise<Mock
   return created(run, { status: importedText(run.importedCount, run.failedCount) })
 }
 
+/* ------------------------------------------------------------------------------------------ */
+/* Sumber Kertas (S2-T09, API-Q-23): a small fixed registry, the same shapes as the API.        */
+/* ------------------------------------------------------------------------------------------ */
+
+type MockPaperIssue = SourcePaperDetail['issues'][number]
+interface MockPaper {
+  row: SourcePaperRow
+  fileNames: string[]
+  issues: MockPaperIssue[]
+  questionList: SourcePaperDetail['questionList']
+}
+
+const MOCK_SUBJECTS: Record<string, string> = { MAT: 'Matematik', BM: 'Bahasa Melayu', SEJ: 'Sejarah' }
+
+function mockPaper(
+  id: number,
+  p: Pick<SourcePaperRow, 'subject' | 'year' | 'kertas' | 'negeri' | 'paperType' | 'needsReview' | 'hasScheme'> & { questions: number },
+  issues: MockPaperIssue[] = [],
+): MockPaper {
+  const sid = String(id)
+  const name = MOCK_SUBJECTS[p.subject] ?? null
+  const title = [name ?? p.subject, String(p.year), ...(p.kertas === null ? [] : [`Kertas ${String(p.kertas)}`])].join(' ')
+  return {
+    row: {
+      id: sid,
+      batchId: sid,
+      title: p.negeri ? `${title} - ${p.negeri}` : title,
+      subjectName: name,
+      source: 'intake',
+      sourceLabel: 'Import (PDF/DOCX)',
+      ...p,
+    },
+    fileNames: [`kertas-${sid}.pdf`],
+    issues,
+    questionList: Array.from({ length: p.questions }, (_, i) => ({
+      no: String(i + 1),
+      questionId: String(9000 + id * 10 + i),
+      excerpt: `Soalan contoh ${String(i + 1)} untuk kertas ${sid}.`,
+      parts: (i % 3) + 1,
+    })),
+  }
+}
+
+const MOCK_PAPERS: MockPaper[] = [
+  mockPaper(301, { subject: 'MAT', year: 2025, kertas: 1, negeri: 'Johor', paperType: 'trial', questions: 3, needsReview: false, hasScheme: true }),
+  mockPaper(302, { subject: 'MAT', year: 2024, kertas: 2, negeri: 'Selangor', paperType: 'exam', questions: 2, needsReview: false, hasScheme: false }),
+  mockPaper(303, { subject: 'BM', year: 2023, kertas: 1, negeri: null, paperType: 'trial', questions: 1, needsReview: true, hasScheme: true }, [
+    { itemId: '5001', where: 'Soalan 2', message: 'Belum selesai disemak (Dijana).' },
+  ]),
+  mockPaper(304, { subject: 'SEJ', year: 2022, kertas: 2, negeri: 'Perak', paperType: 'exam', questions: 0, needsReview: true, hasScheme: false }, [
+    { itemId: null, where: 'Kertas', message: 'Pemprosesan kertas gagal.' },
+  ]),
+]
+
+const queryText = (req: MockRequest, key: string): string => {
+  const v = req.query[key]
+  return (Array.isArray(v) ? v[0] : v)?.trim() ?? ''
+}
+
+function sourcePaperList(req: MockRequest): MockResponse {
+  const q = queryText(req, 'q').toLowerCase()
+  const subject = queryText(req, 'subject').toUpperCase()
+  const year = queryText(req, 'year')
+  const negeri = queryText(req, 'negeri').toLowerCase()
+  const kertas = queryText(req, 'kertas')
+  const jenis = queryText(req, 'jenis')
+  const review = queryText(req, 'needsReview') === 'true'
+  const rows = MOCK_PAPERS.map((p) => p.row)
+    .filter((r) => (subject === '' || r.subject === subject) && (year === '' || String(r.year) === year))
+    .filter((r) => negeri === '' || (r.negeri ?? '').toLowerCase() === negeri)
+    .filter((r) => (kertas === '' || String(r.kertas) === kertas) && (jenis === '' || r.paperType === jenis) && (!review || r.needsReview))
+    .filter((r) => q === '' || `${r.title} ${r.subject} ${r.year}`.toLowerCase().includes(q))
+    .sort((a, b) => b.year - a.year || Number(b.id) - Number(a.id))
+  const all = MOCK_PAPERS.map((p) => p.row)
+  const options = {
+    years: [...new Set(all.map((r) => r.year))].sort((a, b) => b - a),
+    negeri: [...new Set(all.flatMap((r) => (r.negeri ? [r.negeri] : [])))].sort(),
+    subjects: [...new Set(all.map((r) => r.subject))].sort().map((code) => ({ code, name: MOCK_SUBJECTS[code] ?? null })),
+  }
+  return paginate(rows, pageParams(req.query, { pageSize: 25 }), {
+    totalPapers: all.length,
+    needsReviewCount: all.filter((r) => r.needsReview).length,
+    options,
+  })
+}
+
+function sourcePaperOne(req: MockRequest): MockResponse {
+  const found = MOCK_PAPERS.find((p) => p.row.id === req.params.id)
+  if (!found) return notFound()
+  return ok({ ...found.row, fileNames: found.fileNames, issues: found.issues, questionList: found.questionList })
+}
+
 export const importRoutes: RouteDef[] = [
+  route('GET', '/api/admin/source-papers', [adminOnly], sourcePaperList),
+  route('GET', '/api/admin/source-papers/:id', [adminOnly], sourcePaperOne, { params: { id: str() } }),
   route('POST', '/api/question-imports', [adminOnly], importQuestions),
   route('GET', '/api/question-imports/template', [adminOnly], () =>
     blob(new Blob([IMPORT_TEMPLATE_CSV], { type: 'text/csv' }), IMPORT_TEMPLATE_NAME),

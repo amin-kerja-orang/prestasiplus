@@ -34,6 +34,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { loginViaUi } from '../fixtures/api'
+import { roundHalfUp } from '../../src/lib/number/format.ts'
 import {
   account,
   expectNoHScroll,
@@ -58,7 +59,7 @@ interface LiveData {
   totalStudents: number
   activeStudents: number
   totalAnswered: number
-  accuracy: number
+  accuracy: number | null
   topSchools: { schoolId: string; schoolName: string; totalAnswers: number }[]
   recentFeed: { student: string; subject: string; schoolName?: string }[]
   correction: { total: number; avgImprovement: number; improvedCount: number }
@@ -118,7 +119,10 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     await expect
       .poll(async () => digits(await tile('answered').textContent()), { timeout: 15_000 })
       .toBe(String(data.totalAnswered))
-    await expect(tile('accuracy')).toContainText(String(Math.trunc(data.accuracy)))
+    // The screen shows the whole number half up from the one-decimal wire value, or the dash for null (S6-T03, 40 FR-X4-5).
+    await expect(tile('accuracy')).toContainText(
+      data.accuracy === null ? '—' : String(roundHalfUp(data.accuracy)),
+    )
     if (data.totalSchools > 0) {
       await expect
         .poll(async () => digits(await tile('schools').textContent()), { timeout: 15_000 })
@@ -164,7 +168,7 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
         data.recentFeed[0]!.student,
       )
     }
-    await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+    await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
     await expect(page.getByTestId('cc-footer')).toBeVisible()
     await expectNoHScroll(page)
   })
@@ -288,13 +292,16 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       })
     })
 
-    // 500: the tiles keep "--" (FR-M17-21), the board is not replaced by an error page, no English text.
+    // 500: the tiles keep "--" (FR-M17-21), the standard load error shows above them, no English text.
     await page.goto('/admin/command-center')
     await expect(page.getByTestId('cc-s2')).toBeVisible({ timeout: 20_000 })
     await expect(page.getByTestId('cc-kpi-students').getByTestId('cc-kpi-value')).toHaveText('--', {
       timeout: 15_000,
     })
-    await expect(page.getByTestId('cc-unavailable'), '500 is not "not built yet"').toHaveCount(0)
+    await expect(
+      page.getByTestId('cc-load-error'),
+      '500 with no data: the standard load error',
+    ).toBeVisible()
     const failed = ((await page.getByTestId('cc-body').textContent()) ?? '').toLowerCase()
     expect(failed, 'no raw English server text').not.toContain('server error')
     await expectNoHScroll(page)
@@ -308,12 +315,11 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
       '--',
     )
 
-    // 404 (endpoint not built): the BM "unavailable" message, polling stops.
+    // 404: the standard load error (DsLoadError) with retry.
     mode = 'missing'
     await page.goto('/admin/command-center')
-    const unavailable = page.getByTestId('cc-unavailable')
+    const unavailable = page.getByTestId('cc-load-error')
     await expect(unavailable).toBeVisible({ timeout: 20_000 })
-    await expect(unavailable).toContainText('belum tersedia')
     expect(((await unavailable.textContent()) ?? '').toLowerCase()).not.toContain('server error')
     await expectNoHScroll(page)
   })
@@ -592,7 +598,7 @@ test.describe('M17 Command Center board (Admin Sekolah) @api', () => {
         { timeout: 15_000 },
       )
       .toBe(String(data.totalStudents))
-    await expect(page.getByTestId('cc-unavailable')).toHaveCount(0)
+    await expect(page.getByTestId('cc-load-error')).toHaveCount(0)
     await expectNoHScroll(page)
 
     // Every pupil link of the feed and the top pupils stays inside this school's alias route.

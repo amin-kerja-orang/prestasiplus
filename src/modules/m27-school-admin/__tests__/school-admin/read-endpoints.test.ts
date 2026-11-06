@@ -164,8 +164,12 @@ describe('guard SA on every read endpoint (FR-M27-39 to 41; SEC-M27-06)', () => 
     expect((await call(null, url)).status).toBe(401)
   })
 
+  // API-ADM-22: the platform admin may read the five reports (with `?schoolId=`); everything else stays refused
+  const adminReports = [`${BASE}/usage`, `${BASE}/dskp-heatmap`, `${BASE}/laporan-bulanan`, `${BASE}/kelas`]
+
   it.each(urls)('answers 403 to a platform admin, teacher and pupil on %s', async (url) => {
-    for (const id of [ADMIN, GURU, PELAJAR]) expect((await call(id, url)).status).toBe(403)
+    const ids = adminReports.includes(url) ? [GURU, PELAJAR] : [ADMIN, GURU, PELAJAR]
+    for (const id of ids) expect((await call(id, url)).status).toBe(403)
   })
 
   it('answers 403 to a school admin without a school, and the body names no school', async () => {
@@ -664,15 +668,14 @@ describe('#16 classes (S8; BR-M27-35)', () => {
     expect(r.body.meta).toMatchObject({ displayed: 0, totalItems: 0, from: null })
   })
 
-  it('P2 lists the classroom classes of the school by name with the owner figures', async () => {
+  it('P2 lists the active classes of the school (rows = tile, FR-AS-53-1) by name with the owner figures', async () => {
     const r = await call<SchoolClassList>(P2, `${BASE}/kelas`)
     expect(r.status).toBe(200)
-    const own = classrooms.list({ schoolId: S1, kind: 'classroom' })
+    const own = classrooms.list({ schoolId: S1, isActive: true })
     expect(r.body.meta.totalItems).toBe(own.length)
     expect(r.body.meta.displayed).toBe(own.length)
-    expect(r.body.tiles.activeClasses).toBe(
-      classrooms.list({ isActive: true, schoolId: S1, kind: 'classroom' }).length,
-    )
+    expect(r.body.tiles.activeClasses).toBe(own.length)
+    expect(r.body.data.length).toBe(Math.min(own.length, 25))
     const names = r.body.data.map((c) => c.name)
     expect(names).toEqual(
       [...names].sort((a, b) => a.localeCompare(b, 'ms-MY', { sensitivity: 'base' })),
@@ -687,7 +690,8 @@ describe('#16 classes (S8; BR-M27-35)', () => {
       teacherName: users.get(GURU)?.name,
     })
     for (const row of r.body.data) {
-      expect(classrooms.get('classroom', row.id)?.schoolId).toBe(S1)
+      expect(classrooms.get(row.kind, row.id)?.schoolId).toBe(S1)
+      expect(row.isActive).toBe(true)
       expect(row.levelLabel).toMatch(/^(Tingkatan|Darjah) \d$/)
     }
   })

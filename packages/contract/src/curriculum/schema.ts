@@ -253,7 +253,14 @@ export const CurriculumTopicNodeSchema = CurriculumTopicSchema.extend({
   subtopics: z.array(CurriculumSubtopicSchema),
 }).meta({ id: 'CurriculumTopicNode' })
 
+/**
+ * `questionCount` / `servableCount` (API-DSKP-04, FR-ADM-C01.2) are computed per request and additive:
+ * both are absent on mock/legacy payloads. questionCount = live, active, approved question versions linked
+ * to the Bab; servableCount = the subset the learner-visibility rule would serve.
+ */
 export const CurriculumChapterNodeSchema = CurriculumChapterSchema.extend({
+  questionCount: z.int().min(0).optional(),
+  servableCount: z.int().min(0).optional(),
   topics: z.array(CurriculumTopicNodeSchema),
 }).meta({ id: 'CurriculumChapterNode' })
 
@@ -340,6 +347,15 @@ export const CurriculumLegacySubjectCodeSchema = z
   ])
   .meta({ id: 'CurriculumLegacySubjectCode' })
 
+/**
+ * The learner subject code (S4-T06, D11): any ACTIVE subject of the dataset, not a fixed enum. A subject among the 8 legacy codes
+ * keeps its legacy code (`MATEMATIK`, ...); any other active subject is its own `subjects.code` (e.g. `KIMIA`).
+ */
+export const CurriculumLearnerSubjectCodeSchema = z
+  .string()
+  .min(1)
+  .meta({ id: 'CurriculumLearnerSubjectCode', description: 'Learner subject code: a legacy code (MATEMATIK, ...) or the subject code of any other active subject.' })
+
 /** No island is locked (REQ-C-021, D98); `locked` was dropped from the enum (REQ-A-014 follow-up). */
 export const CurriculumTopicStateSchema = z
   .enum(['mastered', 'started', 'unlocked'])
@@ -354,7 +370,7 @@ export const CurriculumTopicCardSchema = z
   .object({
     id: IdSchema,
     gradeLevel: CurriculumGradeCodeSchema,
-    subject: CurriculumLegacySubjectCodeSchema,
+    subject: CurriculumLearnerSubjectCodeSchema,
     subjectLabel: z.string().meta({ description: 'Subject code with "_" replaced by a space.' }),
     name: z.string(),
     description: z.string().nullable(),
@@ -367,7 +383,7 @@ export const CurriculumTopicDetailLearnerSchema = z
   .object({
     id: IdSchema,
     gradeLevel: CurriculumGradeCodeSchema,
-    subject: CurriculumLegacySubjectCodeSchema,
+    subject: CurriculumLearnerSubjectCodeSchema,
     subjectLabel: z.string(),
     practiceCode: z.string().meta({ description: 'Admin subject practice code, for /practice/{practiceCode}.' }),
     name: z.string(),

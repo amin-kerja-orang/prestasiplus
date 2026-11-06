@@ -89,6 +89,15 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(t(w, 'studio-create').attributes('href')).toBe('/admin/studio/questions/create')
   })
 
+  it('the Menunggu Semakan tile equals the rows of ?status=review (AC-ADM-Q03.1, gap F3)', async () => {
+    const rows = [row('1', 'review'), row('2', 'review'), row('3', 'review')]
+    studio.fetchStudioList.mockResolvedValue(page(rows))
+    const w = await render('/admin/studio?status=review')
+    expect(studio.fetchStudioList).toHaveBeenCalledWith(expect.objectContaining({ status: 'review' }))
+    expect(t(w, 'studio-tile-review-value').text()).toBe('3')
+    expect(w.findAll('[data-testid="studio-row-status"]')).toHaveLength(3)
+  })
+
   it('asks the API for 25 per page and passes the supported filters', async () => {
     await render('/admin/studio?subject_id=3&status=review&search=litar')
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ subjectId: '3', status: 'review', search: 'litar', page: 1, pageSize: 25 }))
@@ -101,6 +110,7 @@ describe('StudioListPage (S1 to S6)', () => {
     for (const chip of ['Tahun: 2024', 'Negeri: Selangor', 'Kertas: 2', 'Jenis: Percubaan']) expect(text).toContain(chip)
     expect(t(w, 'studio-jenis-filter').text()).toContain('Semua jenis')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
+    expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 4')
   })
 
   it('drops a filter value the API would refuse instead of sending it', async () => {

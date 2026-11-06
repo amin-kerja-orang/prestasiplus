@@ -26,12 +26,6 @@ vi.mock('@/api', async (orig) => ({
   api: { get: topic.get },
 }))
 
-// The Tingkatan 1-3 hold-back reads the session store, which the `@/api` mock below cannot serve.
-vi.mock('@/lib/lower-form', async (orig) => {
-  const { ref } = await import('vue')
-  return { ...(await orig<typeof import('@/lib/lower-form')>()), useIsLowerForm: () => ref(false) }
-})
-
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))
 vi.mock('@/app/router/outcome', async (orig) => ({
   ...(await orig<typeof import('@/app/router/outcome')>()),
@@ -140,7 +134,7 @@ describe('S2 PracticeListPage', () => {
     expect(banner.text()).toContain('Mode Baru')
     expect(banner.text()).toContain('Soalan by Chapter')
     expect(banner.text()).toContain(
-      'Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap.',
+      'Jawab bab demi bab ikut buku teks dan DSKP.',
     )
     const cards = w.findAll('[data-testid^=subject-card-]')
     expect(cards.map((c) => c.attributes('href'))).toEqual([
@@ -285,6 +279,23 @@ describe('S3 PracticeConfigPage', () => {
     expect(router.currentRoute.value.path).toBe('/practice/MATH')
   })
 
+  it('disables the count buttons above the available count with the title "Hanya {n} soalan tersedia."', async () => {
+    api.fetchSubjectConfig.mockResolvedValue({
+      ...MATH,
+      difficultyStats: { ...MATH.difficultyStats, '3': 12 },
+    })
+    const w = await render(PracticeConfigPage, '/practice/MATH')
+    await t(w, 'difficulty-3').trigger('click')
+    for (const n of [5, 10]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeUndefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBeUndefined()
+    }
+    for (const n of [15, 20]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeDefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBe('Hanya 12 soalan tersedia.')
+    }
+  })
+
   it('starts Q1 with the chosen parameters when the link is clicked', async () => {
     const w = await render(PracticeConfigPage, '/practice/MATH')
     await t(w, 'level-1').trigger('click')
@@ -337,6 +348,17 @@ describe('S3 PracticeConfigPage', () => {
     expect(outcome.setRouteOutcome).toHaveBeenCalledWith(404)
   })
 
+  it('offers Tingkatan 1 to 5 from the API level list (D101, AC-X3-1)', async () => {
+    const levels = [1, 2, 3, 4, 5].map((n) => ({ id: n, code: `T${String(n)}`, name: `Tingkatan ${String(n)}`, count: 10 * n }))
+    api.fetchSubjectConfig.mockResolvedValue({ ...MATH, levels })
+    const w = await render(PracticeConfigPage, '/practice/MATH')
+    expect(w.findAll('[data-testid=config-levels] button').map((b) => b.text())).toEqual([
+      expect.stringContaining('Semua Tahap'),
+      ...levels.map((l) => expect.stringContaining(l.name)),
+    ])
+    expect(w.text()).not.toContain('akan datang')
+  })
+
   it('offers no level buttons for a subject with none (BR-11)', async () => {
     api.fetchSubjectConfig.mockResolvedValue({ ...MATH, total: 0, levels: [] })
     const w = await render(PracticeConfigPage, '/practice/ADDMATH')
@@ -349,7 +371,7 @@ describe('S3 PracticeConfigPage', () => {
 describe('Q1 PracticeQuizPage', () => {
   const sessionBody = {
     sessionId: 's9',
-    mode: 'random',
+    mode: 'latih_tubi',
     subject: { code: 'MATH', name: 'Matematik', color: '#EF4444' },
     questions: [
       {
@@ -368,11 +390,11 @@ describe('Q1 PracticeQuizPage', () => {
     ],
   }
 
-  it('starts a random session with the query parameters and shows the subject title', async () => {
+  it('starts a latih_tubi session with the query parameters and shows the subject title', async () => {
     api.startSession.mockResolvedValue(sessionBody)
     const w = await render(PracticeQuizPage, '/practice/MATH/quiz?level=2&difficulty=3&count=15')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       levelId: 2,
       difficulty: 3,
@@ -388,7 +410,7 @@ describe('Q1 PracticeQuizPage', () => {
     api.startSession.mockResolvedValue(sessionBody)
     await render(PracticeQuizPage, '/practice/MATH/quiz?count=10')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       count: 10,
     })

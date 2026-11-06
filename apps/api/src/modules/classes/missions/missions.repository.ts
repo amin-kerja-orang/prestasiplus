@@ -136,6 +136,23 @@ export class MissionsRepository {
     return this.prisma.client
   }
 
+  /**
+   * S6-T16 (FR-GUR-44a-10): the Tingkatan (education level ids, decimal) of the pupil's class(es) of the mission's teacher. When the mission was
+   * launched for one class (`classroomId`) only that class counts; an all-classes mission uses every active class of the teacher the pupil is
+   * enrolled in. Empty when the pupil has no such class (then the draw falls back to the unfiltered bank and serves no personal question).
+   */
+  async pupilLevelIds(mission: { teacherId: string; classroomId: string | null }, userId: string): Promise<string[]> {
+    if (!isIdString(mission.teacherId) || !isIdString(userId)) return []
+    const classroom = mission.classroomId !== null && isIdString(mission.classroomId) ? idFromString(mission.classroomId) : null
+    const rows = await this.db.$queryRaw<{ education_level_id: bigint }[]>`
+      SELECT DISTINCT c.education_level_id
+        FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
+       WHERE e.student_id = ${idFromString(userId)} AND e.status = 'active' AND c.is_active
+         AND c.teacher_id = ${idFromString(mission.teacherId)} AND (${classroom}::bigint IS NULL OR c.id = ${classroom})
+       ORDER BY c.education_level_id`
+    return rows.map((r) => idToString(r.education_level_id))
+  }
+
   // --- missions ---------------------------------------------------------------------------------
 
   /** M05 #21: the missions of one Malaysia day whose stored recipients include the student, oldest first. */
