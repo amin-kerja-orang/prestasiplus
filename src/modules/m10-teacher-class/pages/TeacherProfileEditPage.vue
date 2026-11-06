@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
                 @click="copyLink"
                 >{{ copied ? 'Disalin!' : 'Salin Link' }}</UButton
               >
-              <UButton :to="publicPath" target="_blank" color="neutral" variant="soft" size="lg" icon="i-ph-arrow-square-out" class="min-h-11" data-testid="teacher-view"
+              <UButton :to="publicPath" target="_blank" rel="noopener noreferrer" color="neutral" variant="soft" size="lg" icon="i-ph-arrow-square-out" class="min-h-11" data-testid="teacher-view"
                 >Lihat</UButton
               >
             </DsCluster>

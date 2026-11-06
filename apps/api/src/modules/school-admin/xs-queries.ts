@@ -284,6 +284,21 @@ export class XsQueries {
     return new Map(rows.map((r) => [String(r.user_id), { answered: num(r.answered), correct: num(r.correct) }]))
   }
 
+  /**
+   * XS-4/XS-5 inputs per listed pupil id, over non-test `practice_answers` (all modes, all time by default), WITHOUT the XS-1
+   * account filter: a screen that lists an inactive or suspended pupil (Amaran Awal) still pools that pupil's own answers.
+   */
+  async tallyOfPupils(userIds: readonly string[], window: XsWindow = XS_ALL_TIME): Promise<Map<string, XsPupilTally>> {
+    const ids = userIds.map(idOrNull).filter((v): v is bigint => v !== null)
+    if (ids.length === 0) return new Map()
+    const rows = await this.q(Prisma.sql`
+      SELECT a.user_id::text AS user_id, count(*)::int AS answered, count(*) FILTER (WHERE a.is_correct)::int AS correct
+        FROM practice_answers a
+       WHERE NOT a.is_test AND ${windowSql(window)} AND a.user_id IN (${Prisma.join(ids)})
+       GROUP BY a.user_id`)
+    return new Map(rows.map((r) => [String(r.user_id), { answered: num(r.answered), correct: num(r.correct) }]))
+  }
+
   /** XS-4 and XS-2 per MYT calendar month (`YYYY-MM`; only months with answers). */
   async tallyByMonth(scope: XsScope, window: XsWindow): Promise<Map<string, XsMonthTally>> {
     const rows = await this.q(Prisma.sql`
