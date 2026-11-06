@@ -25,6 +25,8 @@ import {
   DsStateView,
   DsStatusBadge,
   DsText,
+  resolveIcon,
+  usePersonality,
 } from '@/ds'
 
 import type { BuilderQuestion } from '../../domain/admin-types'
@@ -35,6 +37,8 @@ const M = BIJAK_BUILDER_MESSAGES
 const MAX_MB = 30
 const api = builderServer()
 const route = useRoute()
+const personality = usePersonality()
+const ph = (name: string) => resolveIcon(name, personality.value)
 const flash = useFlash()
 const id = computed(() => String(route.params.id))
 
@@ -126,7 +130,7 @@ async function upload(): Promise<void> {
       <DsStack v-if="paper" gap="md">
         <DsCluster justify="between" align="start">
           <DsStack gap="xs" align="start">
-            <UButton :to="SUBJEKTIF_PATH" color="neutral" variant="ghost" icon="arrow-left" label="Kertas Subjektif" data-testid="sj-back" />
+            <UButton :to="SUBJEKTIF_PATH" color="neutral" variant="ghost" :icon="ph('arrow-left')" label="Kertas Subjektif" data-testid="sj-back" />
             <DsHeading :level="2" data-testid="sj-title">{{ paper.title }}</DsHeading>
             <DsText variant="caption" tone="muted" data-testid="sj-meta">
               K{{ paper.kertas }} · {{ negeri }} · {{ paper.year }} · Tempoh (minit): {{ tempoh }} · Jumlah Markah:
@@ -139,7 +143,7 @@ async function upload(): Promise<void> {
               :to="subjektifPupilPath(paper.id)"
               color="neutral"
               variant="soft"
-              icon="student"
+              :icon="ph('student')"
               label="Lihat sebagai pelajar"
               data-testid="sj-as-pupil"
             />
@@ -150,12 +154,12 @@ async function upload(): Promise<void> {
 
         <DsStack v-if="tab === 'kandungan'" as="section" gap="md" aria-label="Kandungan" data-testid="sj-tab-kandungan">
           <DsCluster>
-            <UButton icon="upload-simple" label="Muat naik PDF sumber" data-testid="sj-upload-open" @click="openUpload" />
+            <UButton :icon="ph('upload-simple')" label="Muat naik PDF sumber" data-testid="sj-upload-open" @click="openUpload" />
             <UButton
               :to="builderPath(paper.id)"
               color="neutral"
               variant="soft"
-              icon="hammer"
+              :icon="ph('hammer')"
               label="Buka di Set Builder"
               data-testid="sj-open-builder"
             />
@@ -198,7 +202,7 @@ async function upload(): Promise<void> {
                     :to="{ name: 'm04.studio.edit', params: { id: q.id } }"
                     color="neutral"
                     variant="soft"
-                    icon="pencil-simple"
+                    :icon="ph('pencil-simple')"
                     label="Sunting skema"
                     :data-testid="`sj-scheme-edit-${q.id}`"
                   />

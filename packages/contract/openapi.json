@@ -71919,6 +71919,13 @@
           "id": {
             "$ref": "#/components/schemas/Id"
           },
+          "attemptId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The Bijak attempt (`exam_attempts.id`): the id of the self-mark and result routes. Same value as `id`.",
+            "example": "1042"
+          },
           "userId": {
             "$ref": "#/components/schemas/Id"
           },
@@ -72028,6 +72035,7 @@
         },
         "required": [
           "id",
+          "attemptId",
           "userId",
           "structuredQuestionId",
           "scope",
@@ -106733,7 +106741,7 @@
           "practice-reads"
         ],
         "summary": "Submit a structured attempt",
-        "description": "Mock POST /api/practice/structured/:id/attempts. Stores one attempt of the caller (not idempotent: each call stores a new row) and returns it with the marks and the model answers. Marking is the mock placeholder (LS-7): a sub-question gets full marks when its trimmed answer has at least 20 characters, else 0; the server uses @pp/exam-core once BE-14 has merged. A sub-question left out of answers is marked 0. Any signed-in role; own attempts only.",
+        "description": "Mock POST /api/practice/structured/:id/attempts. Submits one attempt of the caller (single shot, not idempotent: each call is a new attempt) and returns it with the marks and the model answers. The attempt is a Bijak attempt (paper_kind structured, mode latihan) graded by the one grader (@pp/exam-core): a part with an answer key is marked now, a part the grader cannot mark counts 0 and stays provisional until the pupil self-marks it (Bijak API-BIJAK-05, with the attemptId of the result). A sub-question left out of answers is marked 0. Any signed-in role; own attempts only.",
         "parameters": [
           {
             "schema": {
@@ -106768,7 +106776,7 @@
         },
         "responses": {
           "201": {
-            "description": "The stored attempt with marks and model answers.",
+            "description": "The submitted attempt (its Bijak attemptId too) with marks and model answers.",
             "content": {
               "application/json": {
                 "schema": {
@@ -106816,7 +106824,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields: scope or track \"Skop tidak sah.\" (not 'spm' / 'bahasa', or track without scope 'spm'); answers \"Jawapan tidak sah.\" (not an array); answers.<index> \"Jawapan tidak sah.\" (bad row, unknown or repeated subQuestionId) or \"Jawapan tidak boleh melebihi 5000 aksara.\". message is the first field message, plus \" (and N more error(s))\" when there are several.",
+            "description": "VALIDATION_ERROR with fields: scope or track \"Skop tidak sah.\" (not 'spm' / 'bahasa', or track without scope 'spm'); answers \"Jawapan tidak sah.\" (not an array); answers.<index> \"Jawapan tidak sah.\" (bad row, unknown or repeated subQuestionId) or \"Jawapan tidak boleh melebihi 5000 aksara.\". message is the first field message, plus \" (and N more error(s))\" when there are several. A set the grader cannot serve (a part mode it does not support) is VALIDATION_ERROR \"Tiada soalan layak untuk kertas ini.\" with no fields.",
             "content": {
               "application/json": {
                 "schema": {

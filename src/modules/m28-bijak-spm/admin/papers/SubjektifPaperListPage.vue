@@ -28,6 +28,8 @@ import {
   DsStatRow,
   DsStatusBadge,
   DsText,
+  resolveIcon,
+  usePersonality,
   dsCopy,
   type DefinitionItem,
   type RowAction,
@@ -47,6 +49,8 @@ const M = BIJAK_BUILDER_MESSAGES
 const PAGE_SIZE = 25
 const api = builderServer()
 const router = useRouter()
+const personality = usePersonality()
+const ph = (name: string) => resolveIcon(name, personality.value)
 const flash = useFlash()
 const fill = (text: string, title: string): string => text.replace('{title}', title)
 
@@ -303,7 +307,7 @@ async function save(): Promise<void> {
 <template>
   <DsPage layout="list" data-testid="sj-list-page">
     <template #actions>
-      <UButton icon="file-plus" label="Baharu" data-testid="sj-new" @click="openCreate" />
+      <UButton :icon="ph('file-plus')" label="Baharu" data-testid="sj-new" @click="openCreate" />
     </template>
 
     <DsStatRow :items="stats" density="compact" :cols="3" aria-label="Ringkasan kertas subjektif" />
