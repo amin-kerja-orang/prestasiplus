@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { BijakAttemptResult } from '@pp/contract'
+import type { BijakAttemptKind, BijakAttemptResult } from '@pp/contract'
 
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
@@ -13,7 +13,7 @@ export interface AttemptRow {
   id: string
   userId: string
   paperId: string | null
-  paperKind: 'pilihan' | 'jana'
+  paperKind: BijakAttemptKind
   title: string
   subject: string
   subjectName: string
@@ -52,7 +52,7 @@ export interface PhotoRow {
 export interface NewAttempt {
   userId: string
   paperId: string
-  paperKind: 'pilihan' | 'jana'
+  paperKind: BijakAttemptKind
   title: string
   subject: string
   subjectName: string

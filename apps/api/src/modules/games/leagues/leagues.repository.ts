@@ -108,11 +108,6 @@ export class LeaguesRepository {
     return row ? toRecord(row) : null
   }
 
-  async leagueByCode(code: string, viewerIsTest: boolean): Promise<LeagueRecord | null> {
-    const row = await this.db.league.findFirst({ where: { inviteCode: code, ...this.vis(viewerIsTest) } })
-    return row ? toRecord(row) : null
-  }
-
   /** `SELECT ... FOR UPDATE` of the league row; returns the fresh record (null when gone). */
   async lockLeague(id: string): Promise<LeagueRecord | null> {
     await this.db.$queryRaw`SELECT id FROM leagues WHERE id = ${idFromString(id)}::bigint FOR UPDATE`
