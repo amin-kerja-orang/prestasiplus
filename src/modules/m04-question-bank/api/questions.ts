@@ -83,8 +83,8 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
-  /** REQ-C-010: kertas ('1' to '3') and printed number label of the Studio list columns. */
-  kertas: '1' | '2' | '3' | null
+  /** REQ-C-010: kertas ('1' to '4') and printed number label of the Studio list columns. */
+  kertas: '1' | '2' | '3' | '4' | null
   numberLabel: string | null
   /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
   essayTopics?: EssayTopic[]
@@ -157,7 +157,7 @@ export interface Question {
   modelAnswer: string | null
   explanation: string | null
   /** v2 admin response: the paper kertas, or null. */
-  kertas?: '1' | '2' | '3' | null
+  kertas?: '1' | '2' | '3' | '4' | null
   /**
    * The part tree of a v2 row (`parts`): the "Aras pemikiran" lives on the LEAF (`parts[0].cognitiveLevel`), never at the top
    * (T33). A branch part has `children` and no `mode`.
@@ -256,7 +256,7 @@ export interface QuestionInputBody {
   explanation?: string | null
   language?: QuestionLanguage
   pointsValue?: number | string | null
-  /** Kertas '1' | '2' | '3'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
+  /** Kertas '1' | '2' | '3' | '4'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
   kertas?: string | null
   /** "Aras pemikiran" (T33 six levels); '' or null = none (clears on edit). Omitted keeps. */
   cognitiveLevel?: string | null

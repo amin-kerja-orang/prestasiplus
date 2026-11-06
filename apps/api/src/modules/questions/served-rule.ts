@@ -33,7 +33,7 @@ export const QUESTION_SERVED_BY_PAPER = Prisma.sql`EXISTS (SELECT 1 FROM paper_p
  * (`QUESTION_SERVED_BY_PAPER`). Alias `q` is `questions`. This is the "served lock" predicate of groups and stimuli.
  */
 export const QUESTION_SERVED = Prisma.sql`(
-  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved'))
+  (q.is_active AND EXISTS (SELECT 1 FROM question_versions sv WHERE sv.question_id = q.id AND sv.version_no = q.live_version_no AND sv.status = 'approved' AND sv.visibility = 'bank'))
   OR ${QUESTION_SERVED_BY_PAPER}
 )`
 
