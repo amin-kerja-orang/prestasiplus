@@ -3,8 +3,11 @@ import { ConfigService } from '@nestjs/config'
 
 import { LeaguesService } from '../../games/leagues/leagues.service'
 
-/** Default period of the league standings job: 1 hour (FR-GM-15.3). */
-export const DEFAULT_LEAGUE_STANDINGS_MS = 3_600_000
+/**
+ * Default tick of the league standings job: 5 minutes. The per-clock-hour guard in `recomputeStandings` keeps the
+ * write hourly (FR-GM-15.3); a short tick means no hour is skipped by timer drift and a deploy recomputes soon.
+ */
+export const DEFAULT_LEAGUE_STANDINGS_MS = 300_000
 
 /**
  * Hourly league standings (S7-T06 part 3, FR-GM-15.3, AC-GM-15.1/15.4). A plain interval, no `@nestjs/schedule` and no
