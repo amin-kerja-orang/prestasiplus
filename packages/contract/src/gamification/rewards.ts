@@ -376,6 +376,13 @@ export const RewardMysteryBoxesViewSchema = z
   .meta({ id: 'RewardMysteryBoxesView' })
 export type RewardMysteryBoxesView = z.infer<typeof RewardMysteryBoxesViewSchema>
 
+/**
+ * A badge unlocked by the action just made (48 GAME-25: "Lencana baru: {name}!" is the client's line). `code` is the
+ * achievement id, the table has no other code. Shared by every action that evaluates the badges and has no `notices`.
+ */
+export const AchievementUnlockedSchema = z.object({ code: z.string(), name: z.string() }).meta({ id: 'AchievementUnlocked' })
+export type AchievementUnlocked = z.infer<typeof AchievementUnlockedSchema>
+
 /** Both balances are the values after the opening; `coins` and `xp` fall inside the box ranges. */
 export const RewardMysteryBoxOpenedSchema = z
   .object({
@@ -387,6 +394,7 @@ export const RewardMysteryBoxOpenedSchema = z
     xp: count,
     tokenBalance: count,
     syilingBalance: count,
+    achievementsUnlocked: z.array(AchievementUnlockedSchema).optional().meta({ description: 'Badges this opening unlocked (their reward is a separate ledger row). Absent when none.' }),
   })
   .meta({ id: 'RewardMysteryBoxOpened' })
 export type RewardMysteryBoxOpened = z.infer<typeof RewardMysteryBoxOpenedSchema>

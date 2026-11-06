@@ -14401,6 +14401,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/gamification/challenges/:p/claim",
+      "method": "POST",
+      "path": "/api/gamification/challenges/:id/claim",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/gamification.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/gamification/leaderboard",
       "method": "GET",
       "path": "/api/gamification/leaderboard",

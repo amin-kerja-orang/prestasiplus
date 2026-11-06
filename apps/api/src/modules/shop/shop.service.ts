@@ -23,6 +23,7 @@ import { WalletService } from '../wallet'
 import { BOX_RANDOM, type BoxRandom } from './box-random'
 import { MYSTERY_BOXES, SOURCES } from './shop.constants'
 import { boxNotFound, modPelajarRefused, plainNotFound, rewardError, rewardNotFound, validation } from './shop.errors'
+import { ShopPorts } from './shop.ports'
 import { ShopRepository, idOrNull } from './shop.repository'
 import { drawStillOpen, mytMonthRange } from './shop.time'
 import type { ShopActor } from './actor'
@@ -75,6 +76,7 @@ export class ShopService {
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BOX_RANDOM) private readonly random: BoxRandom,
+    @Inject(ShopPorts) private readonly ports: ShopPorts,
   ) {}
 
   // --- #9 redeem --------------------------------------------------------------------------------------
@@ -146,7 +148,7 @@ export class ShopService {
     const box: RewardMysteryBox | undefined = MYSTERY_BOXES.find((b) => b.id === idText.replace(/^0+(?=\d)/, ''))
     if (!box) throw boxNotFound()
     const userId = idFromString(actor.userId)
-    return this.prisma.transaction(async (tx) => {
+    const opened = await this.prisma.transaction(async (tx) => {
       await this.repo.lockUser(actor.userId)
       // The outcome comes from the injected source: a CSPRNG in production, the seeded stream (key = user + opening number, like the mock) in tests.
       const rng = this.random.stream(`m15-mystery:${actor.userId}:${String(await this.repo.countOpenings(userId))}`)
@@ -162,6 +164,10 @@ export class ShopService {
       if (xp > 0) await this.wallet.addXp({ userId: actor.userId, amount: xp, isTest: false }, { tx })
       return { openingId: idToString(opening.id), boxId: box.id, boxName: box.name, icon: box.icon, coins, xp, tokenBalance, syilingBalance: credited.currentSyiling }
     })
+    // FR-GM-25.2 "Kotak Misteri": the opening is committed; the badges it unlocks are evaluated after it, in their own transaction
+    // and ledger rows (`achievement:<id>`), so a badge can never undo or fail the opening. The hook never throws.
+    const unlocked = await this.ports.afterBoxOpened(actor.userId)
+    return unlocked.length > 0 ? { ...opened, achievementsUnlocked: unlocked.map((b) => ({ code: b.code, name: b.name })) } : opened
   }
 
   // --- #12, #13 Cabutan Bertuah -----------------------------------------------------------------------
