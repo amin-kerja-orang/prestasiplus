@@ -16512,6 +16512,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/weekly-report",
+      "method": "GET",
+      "path": "/api/guru/weekly-report",
+      "api_id": "API-GUR-21",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/analytics/me",
       "method": "GET",
       "path": "/api/analytics/me",
