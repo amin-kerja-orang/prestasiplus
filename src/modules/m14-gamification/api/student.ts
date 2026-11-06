@@ -61,10 +61,13 @@ export function fetchConvertView(options: Options = {}): Promise<ConvertView> {
 
 /**
  * #6 `POST /api/gamification/convert` (S12): `422 VALIDATION_ERROR` ("Jumlah syiling tidak sah.")
- * when the amount is not an integer in [rate, currentSyiling]; nothing changes then.
+ * when the amount is not an integer in [rate, currentSyiling]; nothing changes then. The debit is
+ * tokens x rate. A repeat with the same `clientUuid` answers the first result and moves nothing (DM-79).
  */
-export function convertSyiling(syilingAmount: number): Promise<ConvertResult> {
-  return api.post<ConvertResult>('/api/gamification/convert', { body: { syilingAmount } })
+export function convertSyiling(syilingAmount: number, clientUuid: string): Promise<ConvertResult> {
+  return api.post<ConvertResult>('/api/gamification/convert', {
+    body: { syilingAmount, clientUuid },
+  })
 }
 
 /** #7 `GET /api/gamification/challenges` (S13): the active challenges with today's progress. */

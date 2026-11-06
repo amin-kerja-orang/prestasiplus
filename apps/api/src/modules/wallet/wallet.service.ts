@@ -199,7 +199,8 @@ export class WalletService {
    * Removes syiling (BR-M14-22, BR-M14-30): one `spend` or `convert` row with a negative amount. Refused with
    * 409 `INSUFFICIENT_BALANCE` ("Baki syiling tidak mencukupi.") when the balance is smaller than `amount`;
    * nothing is written then. Lifetime total and tier do not change. A `convert` also pays `tokens` into the
-   * token balance. Idempotent per `(userId, source, sourceId)` like `credit` (a replay needs the same type, amount and tokens).
+   * token balance. Idempotent per `(userId, source, sourceId)` like `credit` (a replay needs the same type, amount and tokens),
+   * and per `(userId, clientUuid)` when the caller passes a client key (DM-79); the wallet lock serialises both.
    */
   async debit(input: DebitInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
     assertUser(input.userId)
@@ -211,12 +212,13 @@ export class WalletService {
     if (type === 'convert' && !isPositive(input.tokens)) throw new RangeError('WalletService.debit: a convert needs a positive integer tokens')
     if (type === 'convert') assertCeiling(input.tokens as number)
     if (type === 'spend' && input.tokens !== undefined) throw new RangeError('WalletService.debit: tokens belong to a convert')
+    if (input.clientUuid !== undefined && !UUID.test(input.clientUuid)) throw new RangeError('WalletService.debit: clientUuid must be a uuid')
     return this.run(options.tx, async (db) => {
       const wallet = await this.repo.lockWallet(db, input.userId)
       const at = this.clock.now() // after the lock: created_at follows the lock order, like id
       const tokens = type === 'convert' ? (input.tokens as number) : null
       if (wallet) {
-        const replay = await this.replayOf(db, wallet, input.source, input.sourceId, { type, amount: -input.amount, tokens })
+        const replay = await this.replayOf(db, wallet, input.source, input.sourceId, { type, amount: -input.amount, tokens }, input.clientUuid)
         if (replay) return replay
       }
       if (!wallet || wallet.currentSyiling < input.amount) throw insufficientBalance('syiling')
@@ -228,6 +230,7 @@ export class WalletService {
         type,
         source: input.source,
         sourceId: input.sourceId ?? null,
+        clientUuid: input.clientUuid ?? null,
         tokens,
         amount: -input.amount,
         balanceAfter: balance,
@@ -415,9 +418,9 @@ export class WalletService {
   }
 
   /**
-   * The first result of an idempotency key, or null when the key is new (or there is none). The stored row
-   * must be the same movement (`type`, signed `amount`, `tokens`); otherwise the key was reused for a
-   * different request and the call is refused with 409 `CONFLICT` (nothing written).
+   * The first result of an idempotency key (`clientUuid` when given, then `sourceId`), or null when the key is new
+   * (or there is none). The stored row must be the same movement (`source`, `type`, signed `amount`, `tokens`);
+   * otherwise the key was reused for a different request and the call is refused with 409 `CONFLICT` (nothing written).
    */
   private async replayOf(
     db: Db,
@@ -425,11 +428,12 @@ export class WalletService {
     source: string,
     sourceId: string | null | undefined,
     expected: { type: string; amount: number; tokens: number | null },
+    clientUuid?: string,
   ): Promise<LedgerOutcome | null> {
-    if (sourceId === undefined || sourceId === null) return null
-    const first = await this.repo.ledgerByKey(db, wallet.userId, source, sourceId)
+    const byClient = clientUuid === undefined ? null : await this.repo.ledgerByClientUuid(db, wallet.userId, clientUuid)
+    const first = byClient ?? (sourceId === undefined || sourceId === null ? null : await this.repo.ledgerByKey(db, wallet.userId, source, sourceId))
     if (!first) return null
-    if (first.type !== expected.type || first.amount !== expected.amount || (first.tokens ?? null) !== expected.tokens) throw idempotencyConflict()
+    if (first.source !== source || first.type !== expected.type || first.amount !== expected.amount || (first.tokens ?? null) !== expected.tokens) throw idempotencyConflict()
     return this.outcome(first, true, wallet, await this.repo.tiers(db))
   }
 

@@ -12,6 +12,23 @@ export function s12CanConvert(amount: number | null, rate: number, balance: numb
   return amount >= rate && amount <= balance
 }
 
+/** FR-GM-18.1: what a conversion really debits, tokens x rate; the remainder stays with the pupil. */
+export function s12Debit(amount: number, rate: number): number {
+  return s12Tokens(amount, rate) * rate
+}
+
+/**
+ * One key per press (`clientUuid`, DM-79, FR-ERR-9). A v4 UUID from `crypto.getRandomValues`, because
+ * `crypto.randomUUID` exists in secure contexts only and an environment may run over plain HTTP.
+ */
+export function s12NewClientUuid(): string {
+  const b = crypto.getRandomValues(new Uint8Array(16))
+  b[6] = (b[6]! & 0x0f) | 0x40
+  b[8] = (b[8]! & 0x3f) | 0x80
+  const hex = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('')
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+}
+
 /** Parses the number input value; empty or invalid text is `null`. */
 export function s12ParseAmount(text: string): number | null {
   if (text.trim() === '') return null
