@@ -2,6 +2,7 @@ import { z } from '../zod'
 import { ListMetaSchema } from '../common/envelope'
 import { ClientUuidSchema, IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { isHttpUrl } from '../classes/teacher-tools/schema'
 
 /**
  * M05 practice write path (BE-12): start, check-answer, submit, history.
@@ -156,6 +157,13 @@ export const PracticeQuizQuestionSchema = z
       .strictObject({ name: z.string().min(1), profileUrl: z.string().nullable() })
       .nullable()
       .meta({ description: 'Teacher who wrote the question ("Soalan oleh:"), else null.' }),
+    referenceUrl: z
+      .string()
+      .max(2048)
+      .refine(isHttpUrl, { error: 'Pautan mesti bermula dengan http:// atau https://.' })
+      .nullable()
+      .optional()
+      .meta({ description: 'The teacher\'s "Rujukan" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9).' }),
     options: z.array(PracticeQuizOptionSchema),
   })
   .meta({ id: 'PracticeQuizQuestion' })

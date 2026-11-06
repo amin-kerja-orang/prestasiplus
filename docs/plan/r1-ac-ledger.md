@@ -150,6 +150,16 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S4-T02 | AC-ADM-C04.1 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-load.spec.ts |
 | S4-T02 | AC-ADM-C04.3 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-report.spec.ts; SubjectDskpReportTab.test.ts; nodes-per-in-scope-subject.spec.ts |
 | S5-T04 | AC-MUR-2-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | dashboard-prestasi-parity.spec.ts |
+| S5-T08 | AC-AS-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::school_admin picks a category, only its videos show, no "Tambah Video"; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 |
+| S5-T08 | AC-GUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::choosing a category: the pills show 2 and 1, clicking the first lists exactly its 2 videos; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 exactly 2 listed, pill counts 2 and 1 |
+| S5-T08 | AC-GUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::AC-GUR-7-2 a teacher saves a video with title, category and valid URL and it is listed under that category; VideoPages.test.ts::teacher adds a video (category sent) |
+| S5-T08 | AC-MUR-8-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | kelas-saya.spec.ts::the teacher adds the pupil (PUT /guru/students/:id), then the class is in the pupil's next Kelas Saya, join route 404; KelasSayaPelajarPage.test.ts::no join field or "Sertai" with or without a class |
+| S5-T12 | AC-MUR-20-1 | CI | Pass | 2026-11-05 | team-bb/S-4 | ArtikelPages.test.ts |
+| S5-T12 | AC-MUR-20-2 | CI | Pass | 2026-11-05 | team-bb/S-4 | articles.spec.ts |
+| S5-T12 | AC-MUR-20-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | ArtikelPages.test.ts |
+| S5-T12 | AC-MUR-20-4 | CI | Pass | 2026-11-05 | team-bb/S-4 | articles.spec.ts |
+| S5-T12 | AC-MUR-24-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | StudentPages.test.ts |
+| S5-T12 | AC-MUR-25-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | StudentPages.test.ts |
 
 ## Sprint 5
 
