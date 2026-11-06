@@ -103,16 +103,6 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     return rows.map((r) => r.id)
   }
 
-  async countPupils(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    const counts = await this.schools.memberCounts(schoolIds)
-    return new Map([...counts].map(([id, c]) => [id, c.studentCount]))
-  }
-
-  async countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>> {
-    const counts = await this.schools.memberCounts(schoolIds)
-    return new Map([...counts].map(([id, c]) => [id, c.teacherCount]))
-  }
-
   async subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>> {
     if (codes.length === 0) return new Map()
     // One read of the (small) subjects table instead of a lookup per code.
@@ -123,5 +113,20 @@ export class UsersDirectoryAdapter implements DirectoryPort {
       if (id !== undefined) out.set(code, id)
     }
     return out
+  }
+
+  async subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>> {
+    if (ids.length === 0) return new Map()
+    const wanted = new Set(ids)
+    const out = new Map<string, { code: string; name: string }>()
+    for (const s of await this.curriculum.subjects()) {
+      const id = s.id.toString()
+      if (wanted.has(id)) out.set(id, { code: s.code, name: s.name })
+    }
+    return out
+  }
+
+  async activeSubjects(): Promise<{ id: string; name: string }[]> {
+    return (await this.curriculum.subjects({ active: true })).map((s) => ({ id: s.id.toString(), name: s.name }))
   }
 }

@@ -149,6 +149,7 @@ export interface LockedWallet {
   userId: string
   tierId: string | null
   currentSyiling: number
+  totalSyilingEarned: number
   tokenBalance: number
 }
 
@@ -385,6 +386,22 @@ export class GamificationRepository {
   }
 
   /**
+   * Per challenge id: how many distinct users of `userIds` have a real completion on the Malaysia day `day`
+   * (`is_test` rows excluded). Empty input answers an empty map without a query. Read-only.
+   */
+  async completionCountsOn(db: Db, day: string, userIds: bigint[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>()
+    if (userIds.length === 0) return out
+    const rows = await db.$queryRaw<{ challengeId: bigint; n: bigint }[]>`
+      SELECT cc.challenge_id AS "challengeId", count(DISTINCT cc.user_id)::bigint AS n
+        FROM challenge_completions cc
+       WHERE cc.completion_date = ${day}::date AND NOT cc.is_test AND cc.user_id = ANY(${userIds}::bigint[])
+       GROUP BY cc.challenge_id`
+    for (const r of rows) out.set(idToString(r.challengeId), num(r.n))
+    return out
+  }
+
+  /**
    * `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day). True only for the call that wrote
    * the row: the reward is credited by that call alone (AC2).
    */
@@ -471,11 +488,26 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
+  /** Serialises the referrals of one referrer (the cap count and the insert). `NO KEY UPDATE` does not block rows that only reference the user. */
+  async lockReferrer(db: Db, referrerId: string): Promise<void> {
+    await db.$queryRaw`SELECT id FROM users WHERE id = ${idFromString(referrerId)} FOR NO KEY UPDATE`
+  }
+
+  /** What the referrer was paid for referrals: the ledger rows keyed by the user's referees (a referee's own bonus is not counted). */
+  async referralSyilingEarned(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ total: bigint | null }[]>`
+      SELECT COALESCE(SUM(l.amount), 0)::bigint AS total
+      FROM coin_ledger l
+      JOIN referrals r ON r.referrer_id = l.user_id AND l.source_id = 'referral:' || r.referee_id::text
+      WHERE l.user_id = ${idFromString(userId)} AND l.source = 'referral' AND l.type = 'bonus' AND l.is_test = false`
+    return Number(rows[0]?.total ?? 0)
+  }
+
   /** True when this call stored the referral (a person is referred once: unique referee). */
-  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; at: Date }): Promise<boolean> {
+  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; rewarded: boolean; at: Date }): Promise<boolean> {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at)
-      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, true, ${row.at}::timestamptz, ${row.at}::timestamptz)
+      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, ${row.rewarded}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (referee_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
@@ -509,16 +541,16 @@ export class GamificationRepository {
 
   /** Read plus row lock: serialises the conversions of one wallet while the caller validates the amount against the balance. */
   async lockWallet(db: Db, userId: string): Promise<LockedWallet | null> {
-    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; tokenBalance: number }[]>`
-      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", token_balance AS "tokenBalance"
+    const rows = await db.$queryRaw<{ userId: bigint; tierId: bigint | null; currentSyiling: number; totalSyilingEarned: number; tokenBalance: number }[]>`
+      SELECT user_id AS "userId", tier_id AS "tierId", current_syiling AS "currentSyiling", total_syiling_earned AS "totalSyilingEarned", token_balance AS "tokenBalance"
         FROM wallets WHERE user_id = ${idFromString(userId)} FOR UPDATE`
     const r = rows[0]
-    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, tokenBalance: r.tokenBalance } : null
+    return r ? { userId: idToString(r.userId), tierId: r.tierId === null ? null : idToString(r.tierId), currentSyiling: r.currentSyiling, totalSyilingEarned: r.totalSyilingEarned, tokenBalance: r.tokenBalance } : null
   }
 
-  async walletTierId(db: Db, userId: string): Promise<string | null> {
-    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true } })
-    return w?.tierId === null || w?.tierId === undefined ? null : idToString(w.tierId)
+  async walletTier(db: Db, userId: string): Promise<{ tierId: string | null; totalSyilingEarned: number } | null> {
+    const w = await db.wallet.findUnique({ where: { userId: idFromString(userId) }, select: { tierId: true, totalSyilingEarned: true } })
+    return w ? { tierId: w.tierId === null ? null : idToString(w.tierId), totalSyilingEarned: w.totalSyilingEarned } : null
   }
 
   async ledgerRecent(db: Db, userId: string, take: number): Promise<LedgerRecord[]> {
@@ -679,11 +711,6 @@ export class GamificationRepository {
     return rows.map((r) => ({ key: r.key, label: r.label, value: r.value.toNumber() }))
   }
 
-  async settingValue(db: Db, key: string): Promise<number> {
-    const r = await db.gamificationSetting.findUnique({ where: { key } })
-    return r ? r.value.toNumber() : 0
-  }
-
   async saveSetting(db: Db, key: string, value: number, at: Date): Promise<boolean> {
     const r = await db.gamificationSetting.updateMany({ where: { key }, data: { value, updatedAt: at } })
     return r.count === 1
@@ -768,8 +795,8 @@ export class GamificationRepository {
   // --- reads for BE-19's reports (PerformanceGamificationAdapter) ---------------------------------
 
   /** Wallet level, syiling and cached tier of many users in one read; users without a wallet row are absent. */
-  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; tierId: string | null }>> {
-    const out = new Map<string, { level: number; syiling: number; tierId: string | null }>()
+  async levelsOf(db: Db, userIds: readonly string[]): Promise<Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>> {
+    const out = new Map<string, { level: number; syiling: number; lifetime: number; tierId: string | null }>()
     const ids = userIds.flatMap((id) => {
       try {
         return [idFromString(id)]
@@ -778,8 +805,8 @@ export class GamificationRepository {
       }
     })
     if (ids.length === 0) return out
-    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, tierId: true } })
-    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, tierId: r.tierId === null ? null : idToString(r.tierId) })
+    const rows = await db.wallet.findMany({ where: { userId: { in: ids } }, select: { userId: true, level: true, currentSyiling: true, totalSyilingEarned: true, tierId: true } })
+    for (const r of rows) out.set(idToString(r.userId), { level: r.level, syiling: r.currentSyiling, lifetime: r.totalSyilingEarned, tierId: r.tierId === null ? null : idToString(r.tierId) })
     return out
   }
 

@@ -173,8 +173,16 @@ model Paper {
   paperCode          String?   @map("paper_code")
   /// t4, t5, t4_t5 (check).
   levelScope         String?   @map("level_scope")
-  /// The printed duration (Q-S1), stored per paper.
+  /// The printed duration (Q-S1), stored per paper. A `subjektif` paper writes `durationMinutes`, or 0 (check, DM-23).
   printedDurationMin Int       @map("printed_duration_min")
+  /// simulasi, subjektif (check, DM-23). Kertas Subjektif papers are `pilihan` rows with `surface = 'subjektif'`.
+  surface            String    @default("simulasi")
+  /// Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS, DM-23); required by the API for a subjektif paper.
+  examBoard          String?   @map("exam_board")
+  /// Tempoh (minit) of a subjektif paper, 0..300 (check); null or 0 = untimed (DM-23).
+  durationMinutes    Int?      @map("duration_minutes")
+  /// Jumlah Markah typed by the admin for a subjektif paper (DM-23, INV-17); null for Simulasi papers.
+  totalMarks         Int?      @map("total_marks")
   languageMode       String?   @map("language_mode")
   instructions       String[]  @default([])
   referenceSheets    Json      @default("[]") @map("reference_sheets") @db.JsonB
@@ -201,6 +209,7 @@ model Paper {
   @@index([status], map: "ix_papers_status")
   @@index([subjectId, kertas, status], map: "ix_papers_subject_id_kertas_status")
   @@index([blueprintId], map: "ix_papers_blueprint_id")
+  @@index([surface, status], map: "ix_papers_surface_status")
   @@map("papers")
 }
 

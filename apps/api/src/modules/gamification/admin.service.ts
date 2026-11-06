@@ -22,6 +22,7 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { isRewardSettingKey, rewardSettingError, rewardSettingsByKey, RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { AuditActor } from './actor'
 import {
@@ -29,6 +30,7 @@ import {
   ECONOMY_KEYS,
   MAX_PRIZE_LINES,
   MAX_PRIZE_QTY,
+  REWARD_CONTROL_KEYS,
   STUDENTS_PAGE_SIZE,
   TOGGLE_SETTING_KEYS,
   TRANSACTIONS_PAGE_SIZE,
@@ -186,6 +188,7 @@ export class GamificationAdminService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GamificationPorts) private readonly ports: GamificationPorts,
+    @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
   ) {}
 
   private async write<T>(actor: AuditActor, action: string, target: { type: string; id: string | null }, details: Record<string, unknown>, fn: (tx: TxClient) => Promise<T>): Promise<T> {
@@ -421,9 +424,10 @@ export class GamificationAdminService {
 
   async settings(db: Db = this.repo.handle()): Promise<GamificationSetting[]> {
     const rows = new Map((await this.repo.settings(db)).map((r) => [r.key, r]))
+    const moved = rewardSettingsByKey(await this.rewardSettings.read(db))
     return GAMIFICATION_SETTING_KEYS.flatMap((key) => {
       const r = rows.get(key)
-      return r ? [{ key, label: r.label, value: r.value, kind: TOGGLE_SETTING_KEYS.includes(key) ? ('toggle' as const) : ('number' as const) }] : []
+      return r ? [{ key, label: r.label, value: moved.get(key) ?? r.value, kind: TOGGLE_SETTING_KEYS.includes(key) ? ('toggle' as const) : ('number' as const) }] : []
     })
   }
 
@@ -441,35 +445,55 @@ export class GamificationAdminService {
       else values.push({ key: o.key, value })
     })
     if (Object.keys(fields).length > 0) throw validationFailure(fields)
-    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_SETTINGS_UPDATED, { type: 'gamification_settings', id: null }, { keys: values.map((v) => v.key) }, async (tx) => {
-      await this.applySettings(tx, values, 'settings')
+    const details: Record<string, unknown> = { keys: values.map((v) => v.key) }
+    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_SETTINGS_UPDATED, { type: 'gamification_settings', id: null }, details, async (tx) => {
+      Object.assign(details, await this.applySettings(tx, actor, values, 'settings'))
       return this.settings(tx)
     })
   }
 
-  /** Every key must exist, be an integer >= 0 (a toggle: 0 or 1); one refusal rolls the whole save back. */
-  private async applySettings(tx: TxClient, values: readonly { key: string; value: number }[], field: string | undefined): Promise<void> {
+  /**
+   * Every key must exist, be an integer >= 0 (a toggle: 0 or 1); one refusal rolls the whole save back. The four keys of
+   * `reward_settings` are checked against their own range and stored there, not in `gamification_settings` (S7-T05);
+   * the answer is that row before and after, for the audit.
+   */
+  private async applySettings(tx: TxClient, actor: AuditActor, values: readonly { key: string; value: number }[], field: string | undefined): Promise<object> {
     const known = new Set((await this.repo.settings(tx)).map((s) => s.key))
     const refuse = () => validationFailure(field === undefined ? {} : { [field]: MSG.summary }, MSG.summary)
+    const moved: { key: Parameters<typeof rewardSettingError>[0]; value: number }[] = []
+    const stayed: { key: string; value: number }[] = []
     for (const { key, value } of values) {
+      if (isRewardSettingKey(key)) {
+        if (rewardSettingError(key, value) !== undefined) throw refuse()
+        moved.push({ key, value })
+        continue
+      }
       const toggle = TOGGLE_SETTING_KEYS.includes(key)
-      if (!known.has(key) || !Number.isInteger(value) || value < 0 || value > (key === ECONOMY_KEYS.flatQuizReward ? MAX_AMOUNT_PER_CALL : INT_MAX) || (toggle && value > 1)) throw refuse()
+      if (!known.has(key) || !Number.isInteger(value) || value < 0 || value > INT_MAX || (toggle && value > 1)) throw refuse()
+      stayed.push({ key, value })
     }
     const at = this.clock.now()
-    for (const { key, value } of values) await this.repo.saveSetting(tx, key, value, at)
+    for (const { key, value } of stayed) await this.repo.saveSetting(tx, key, value, at)
+    return moved.length > 0 ? this.rewardSettings.save(tx, moved, actor.userId, at) : {}
   }
 
   // --- S10 reward control and lucky draws ----------------------------------------------------------
 
   private async economy(db: Db): Promise<GamificationEconomySettings> {
     const rows = new Map((await this.repo.settings(db)).map((r) => [r.key, r.value]))
-    const get = (k: string) => rows.get(k) ?? 0
+    const stored = await this.rewardSettings.read(db)
+    const moved = rewardSettingsByKey(stored)
+    const get = (k: string) => moved.get(k) ?? rows.get(k) ?? 0
     return {
       rewardBudgetSenSession: get(ECONOMY_KEYS.rewardBudgetSenSession),
       rewardBudgetSenMonth: get(ECONOMY_KEYS.rewardBudgetSenMonth),
       flatQuizReward: get(ECONOMY_KEYS.flatQuizReward),
       currentSessionYear: get(ECONOMY_KEYS.currentSessionYear),
       gamesAwardSyiling: get(ECONOMY_KEYS.gamesAwardSyiling),
+      redeemBudget: stored.redeemBudgetSen,
+      flatCoins: stored.coinsPerCorrect,
+      sessionYear: stored.sessionYear,
+      miniGamesCoins: stored.miniGamesGiveCoins,
     }
   }
 
@@ -488,22 +512,31 @@ export class GamificationAdminService {
     }
   }
 
-  /** `PUT /admin/reward-control/settings`: the five shared keys, camelCase (snake_case accepted); only the posted ones change. */
+  /**
+   * `PUT /admin/reward-control/settings`: the five shared keys, camelCase (snake_case accepted), and the four API-ADM-16
+   * names, which win over an older name of the same key; only the posted ones change.
+   */
   async saveEconomySettings(actor: AuditActor, body: unknown): Promise<GamificationEconomySettings> {
     const b = bodyOf(body)
+    const posted = new Map<string, { camel: string; raw: unknown }>()
+    for (const [camel, key] of [...Object.entries(ECONOMY_KEYS), ...Object.entries(REWARD_CONTROL_KEYS)]) {
+      const raw = b[camel] ?? b[key]
+      if (raw !== undefined && raw !== null && raw !== '') posted.set(key, { camel, raw })
+    }
     const values: { key: string; value: number }[] = []
     const fields: Record<string, string> = {}
-    for (const [camel, key] of Object.entries(ECONOMY_KEYS)) {
-      const raw = b[camel] ?? b[key]
-      if (raw === undefined || raw === null || raw === '') continue
-      const value = intOf(raw)
-      if (value === undefined) fields[camel] = MSG.invalid
-      else values.push({ key, value })
+    for (const [key, { camel, raw }] of posted) {
+      const flag = key === ECONOMY_KEYS.gamesAwardSyiling ? boolOf(raw) : undefined
+      const value = flag === undefined ? intOf(raw) : Number(flag)
+      const error = value === undefined ? MSG.invalid : isRewardSettingKey(key) ? rewardSettingError(key, value) : undefined
+      if (error !== undefined) fields[camel] = error
+      else if (value !== undefined) values.push({ key, value })
     }
     if (Object.keys(fields).length > 0) throw validationFailure(fields)
     if (values.length === 0) throw validationFailure({ settings: MSG.required })
-    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_SETTINGS_UPDATED, { type: 'gamification_settings', id: null }, { keys: values.map((v) => v.key) }, async (tx) => {
-      await this.applySettings(tx, values, undefined)
+    const details: Record<string, unknown> = { keys: values.map((v) => v.key) }
+    return this.write(actor, AUDIT_ACTIONS.GAMIFICATION_SETTINGS_UPDATED, { type: 'gamification_settings', id: null }, details, async (tx) => {
+      Object.assign(details, await this.applySettings(tx, actor, values, undefined))
       return this.economy(tx)
     })
   }

@@ -1,15 +1,16 @@
 /**
- * SRS M16 v1.6 §7 #46-#49 and #50: the leagues (S25-S27) and the Sekolah Bersaing weekly board (S28).
- * Logged in (U). The league invite code is visible to non-members, as live.
+ * SRS M16 v1.6 §7 #46-#49: the leagues (S25-S27), logged in (U). R1: create and school enrolment are Admin Pusat
+ * only (API-ADM-25), join is closed (403, API-GAME-05). API-AS-14: the live Sekolah Bersaing board, school admin and admin only.
  */
 
 import {
   created,
+  forbidden,
   int,
   notFound,
   ok,
-  queryString,
   requireAuth,
+  requireRole,
   route,
   type RouteDef,
 } from '@/mock/define'
@@ -23,28 +24,35 @@ export const leagueRoutes: RouteDef[] = [
     ok(leaguesRepo.list(viewerOf(req).schoolId)),
   ),
 
-  // #47
-  route('POST', '/api/leagues', [requireAuth()], (req, ctx) => {
+  // #47 (API-ADM-25, Admin Pusat only): answers the league detail.
+  route('POST', '/api/leagues', [requireRole('admin')], (req, ctx) => {
     try {
       const league = leaguesRepo.create(parseLeagueBody(req.body), viewerOf(req).id, ctx.prng)
-      return created({ id: league.id })
+      return created(leaguesRepo.get(league.id))
     } catch (e) {
       return refusal(e)
     }
   }),
 
-  // #48
-  route('POST', '/api/leagues/join', [requireAuth()], (req) => {
-    try {
-      const b = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<
-        string,
-        unknown
-      >
-      return ok({ id: leaguesRepo.join(b.invite_code, viewerOf(req).id) })
-    } catch (e) {
-      return refusal(e, 'invite_code')
-    }
-  }),
+  // #48: closed in R1 (AC-GM-15.2); Admin Pusat enrols schools instead.
+  route('POST', '/api/leagues/join', [requireAuth()], () => forbidden()),
+
+  // API-ADM-25 `POST /api/leagues/:id/schools`: Admin Pusat enrols schools, all or nothing.
+  route(
+    'POST',
+    '/api/leagues/:id/schools',
+    [requireRole('admin')],
+    (req) => {
+      try {
+        const b = (typeof req.body === 'object' && req.body !== null ? req.body : {}) as Record<string, unknown>
+        leaguesRepo.enrol(req.params.id as number, b.schoolIds)
+        return ok(leaguesRepo.get(req.params.id as number))
+      } catch (e) {
+        return refusal(e, 'schoolIds')
+      }
+    },
+    { params: { id: int() } },
+  ),
 
   // #49
   route(
@@ -52,14 +60,14 @@ export const leagueRoutes: RouteDef[] = [
     '/api/leagues/:id',
     [requireAuth()],
     (req) => {
-      const detail = leaguesRepo.get(req.params.id as number, viewerOf(req).schoolId)
+      const detail = leaguesRepo.get(req.params.id as number)
       return detail ? ok(detail) : notFound('Liga tidak dijumpai.')
     },
     { params: { id: int() } },
   ),
 
-  // #50 (S28): `week` is any text; an invalid value is ignored (DV-M16-30).
-  route('GET', '/api/sekolah-bersaing', [requireAuth()], (req) =>
-    ok(sekolahBersaingRepo.view(queryString(req.query, 'week'))),
+  // API-AS-14 (OQ-API-09): reads no query parameter, so an unknown one is ignored (FR-AS-45-3).
+  route('GET', '/api/sekolah-bersaing', [requireRole('school_admin', 'admin')], () =>
+    ok(sekolahBersaingRepo.view()),
   ),
 ]

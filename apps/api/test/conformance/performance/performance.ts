@@ -31,6 +31,7 @@ const ALL_ROUTES = [
   '/performance/classes/1',
   '/item-analysis/school/1',
   '/item-analysis/classes/1',
+  '/item-analysis/me',
 ]
 const UNKNOWN_ID = '987654321'
 const FOUR_ROLES: ActorRole[] = ['student', 'teacher', 'school_admin', 'admin']
@@ -45,7 +46,7 @@ async function ownId(who: HttpClient): Promise<string> {
 
 export const performanceScenarios: Scenario[] = [
   {
-    id: 'performance-api/anonymous is 401 on all 12 routes',
+    id: 'performance-api/anonymous is 401 on all 13 routes',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -63,13 +64,14 @@ export const performanceScenarios: Scenario[] = [
         ctx.expectStatus(res, 200)
         noStore(ctx, res, '/analytics/me')
       }
-      for (const role of ['admin', 'teacher'] as ActorRole[]) {
+      // S10-T04 Change (2): the school admin reads the classes of the own school.
+      for (const role of ['admin', 'teacher', 'school_admin'] as ActorRole[]) {
         const who = await ctx.as(role)
         ctx.expectStatus(await who.request('GET', '/analytics/classes'), 200)
         // an unknown risk level is treated as "all"
         ctx.expectStatus(await who.request('GET', '/analytics/classes?riskLevel=bogus'), 200)
       }
-      for (const role of ['student', 'school_admin'] as ActorRole[]) {
+      for (const role of ['student'] as ActorRole[]) {
         expectError(ctx, await (await ctx.as(role)).request('GET', '/analytics/classes'), 403, 'FORBIDDEN')
       }
     },
@@ -98,7 +100,11 @@ export const performanceScenarios: Scenario[] = [
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
-      for (const role of FOUR_ROLES) {
+      const student = await ctx.as('student')
+      for (const path of ['/performance/school', '/performance/levels', '/performance/levels/t4', '/performance/classes']) {
+        expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      }
+      for (const role of FOUR_ROLES.filter((r) => r !== 'student')) {
         const who = await ctx.as(role)
         for (const path of ['/performance/school', '/performance/levels', '/performance/classes']) {
           const res = await who.request('GET', path)
@@ -111,11 +117,16 @@ export const performanceScenarios: Scenario[] = [
           `${role}: /performance/levels must list t4 and t5`,
         )
       }
-      // only a teacher has own classes; every other role gets an empty list
-      for (const role of ['student', 'school_admin', 'admin'] as ActorRole[]) {
-        const rows = listOf(await (await ctx.as(role)).request('GET', '/performance/classes'))
-        ctx.check(rows.length === 0, `${role}: /performance/classes must be [] for a non-teacher`)
-      }
+      // A teacher gets the own classes, a school admin the active classrooms of the own school (S10-T07, FR-AS-4-2; the demo teacher and
+      // the demo school admin share DEMO001, so every class of the teacher is also in the school admin's list); every other role gets [].
+      const teacherIds = listOf(await (await ctx.as('teacher')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      const schoolIds = listOf(await (await ctx.as('school_admin')).request('GET', '/performance/classes')).map((r) => String(r.id))
+      ctx.check(
+        teacherIds.every((id) => schoolIds.includes(id)),
+        'school_admin: /performance/classes must list every active classroom of the own school (a superset of the teacher list)',
+      )
+      const platform = listOf(await (await ctx.as('admin')).request('GET', '/performance/classes'))
+      ctx.check(platform.length === 0, 'admin: /performance/classes must be [] for a non-teacher, non-school-admin')
     },
   },
   {
@@ -143,8 +154,8 @@ export const performanceScenarios: Scenario[] = [
           noStore(ctx, res, `/performance/classes/${id}`)
         }
       }
-      // a role that may not open class dashboards gets the same 404 (no existence leak)
-      expectError(ctx, await (await ctx.as('student')).request('GET', `/performance/classes/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      // a pupil may not open class dashboards at all (S10-T01: the five staff routes carry @Roles)
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/performance/classes/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
     },
   },
   {
@@ -152,7 +163,9 @@ export const performanceScenarios: Scenario[] = [
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
-      for (const role of FOUR_ROLES) {
+      // a pupil is refused (S10-T03, AC-MUR-6-5): the school item analysis is a staff and officer screen
+      expectError(ctx, await (await ctx.as('student')).request('GET', '/item-analysis/school'), 403, 'FORBIDDEN')
+      for (const role of FOUR_ROLES.filter((r) => r !== 'student')) {
         const res = await (await ctx.as(role)).request('GET', '/item-analysis/school')
         // the demo admin has no school: the own variant answers 404 (viewer has no school)
         const expected = role === 'admin' ? 404 : 200
@@ -160,13 +173,34 @@ export const performanceScenarios: Scenario[] = [
         noStore(ctx, res, '/item-analysis/school')
       }
       const admin = await ctx.as('admin')
-      // tingkatan other than T4/T5 is ignored; admin + unknown school = empty payload (FR-M08-143)
-      for (const path of [`/item-analysis/school/${UNKNOWN_ID}?tingkatan=T9`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T4`, `/item-analysis/school/${UNKNOWN_ID}`]) {
+      // tingkatan outside T1 to T5 is ignored; admin + unknown school = empty payload (FR-M08-143)
+      for (const path of [`/item-analysis/school/${UNKNOWN_ID}?tingkatan=T9`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T4`, `/item-analysis/school/${UNKNOWN_ID}?tingkatan=T1`, `/item-analysis/school/${UNKNOWN_ID}`]) {
         const res = await admin.request('GET', path)
         ctx.check(res.status === 200, `admin ${path}: expected 200, got ${res.status}`)
       }
       // a non-admin asking for a school outside the own scope is refused, same as for an unknown id
       expectError(ctx, await (await ctx.as('teacher')).request('GET', `/item-analysis/school/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/item-analysis/school/${UNKNOWN_ID}`), 403, 'FORBIDDEN')
+    },
+  },
+  {
+    id: 'performance-api/item analysis me (API-RPT-05): the pupil gets the own shape, every other role is 403',
+    domain: 'performance',
+    targets: ['api'],
+    async run(ctx) {
+      const res = await (await ctx.as('student')).request('GET', '/item-analysis/me')
+      ctx.expectStatus(res, 200)
+      noStore(ctx, res, '/item-analysis/me')
+      const data = dataOf(res) as { tiles?: Record<string, unknown>; subjects?: unknown; counts?: Record<string, unknown>; items?: unknown }
+      ctx.check(data.tiles !== undefined && 'answered' in data.tiles && 'needRemedial' in data.tiles && 'needStrengthen' in data.tiles && 'mastery' in data.tiles, 'tiles must carry answered, needRemedial, needStrengthen and mastery')
+      ctx.check(Array.isArray(data.subjects) && Array.isArray(data.items), 'subjects and items must be arrays')
+      ctx.check(data.counts !== undefined && 'isyaratAwal' in data.counts && 'pemulihan' in data.counts && 'pengukuhan' in data.counts, 'counts must carry the three categories')
+      const student = await ctx.as('student')
+      for (const q of ['tapis=ada_betul', 'tapis=selalu_salah', 'tapis=semua&subjectCode=MATH']) ctx.expectStatus(await student.request('GET', `/item-analysis/me?${q}`), 200)
+      expectError(ctx, await student.request('GET', '/item-analysis/me?tapis=semuanya'), 422, 'VALIDATION_ERROR')
+      for (const role of ['teacher', 'school_admin', 'admin'] as ActorRole[]) {
+        expectError(ctx, await (await ctx.as(role)).request('GET', '/item-analysis/me'), 403, 'FORBIDDEN')
+      }
     },
   },
   {
@@ -298,14 +332,26 @@ const headcountScenarios: Scenario[] = [
         expectError(ctx, await anon.request('POST', path, { body: {} }), 401, 'UNAUTHORIZED')
       }
       expectError(ctx, await anon.request('DELETE', '/headcounts/1'), 401, 'UNAUTHORIZED')
+      // S10-T02: the four PUT writes and the pupil's own routes.
+      for (const tail of ['ar', 'tov', 'settings', 'defaults']) expectError(ctx, await anon.request('PUT', `/headcounts/1/${tail}`, { body: {} }), 401, 'UNAUTHORIZED')
+      for (const path of ['/headcounts/me', '/headcounts/me/detail']) expectError(ctx, await anon.request('GET', path), 401, 'UNAUTHORIZED')
       const student = await ctx.as('student')
       for (const path of [...HEADCOUNT_READS, '/headcounts/students/1']) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      for (const tail of ['ar', 'tov', 'settings', 'defaults']) expectError(ctx, await student.request('PUT', `/headcounts/1/${tail}`, { body: {} }), 403, 'FORBIDDEN')
+      for (const path of ['/headcounts/me', '/headcounts/me/detail']) {
+        const res = await student.request('GET', path)
+        ctx.expectStatus(res, 200)
+        noStore(ctx, res, path)
+      }
+      for (const role of ['teacher', 'school_admin', 'admin'] as ActorRole[]) {
+        expectError(ctx, await (await ctx.as(role)).request('GET', '/headcounts/me'), 403, 'FORBIDDEN')
+      }
       expectError(ctx, await student.request('POST', '/headcounts', { body: {} }), 403, 'FORBIDDEN')
       expectError(ctx, await student.request('DELETE', '/headcounts/1'), 403, 'FORBIDDEN')
     },
   },
   {
-    id: 'performance-api/headcount: list, dashboard and form options answer 200 no-store for admin, teacher and school admin; admin and school admin see no configs',
+    id: 'performance-api/headcount: list, dashboard and form options answer 200 no-store for admin, teacher and school admin',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -316,7 +362,6 @@ const headcountScenarios: Scenario[] = [
           ctx.expectStatus(res, 200)
           noStore(ctx, res, path)
         }
-        if (role !== 'teacher') ctx.check(listOf(await who.request('GET', '/headcounts')).length === 0, `${role} sees no own configs`)
       }
     },
   },
@@ -332,13 +377,19 @@ const headcountScenarios: Scenario[] = [
       expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/reset`), 404, 'NOT_FOUND')
       expectError(ctx, await teacher.request('POST', `/headcounts/${UNKNOWN_ID}/drop-students`, { body: { action: 'drop', studentIds: ['1'] } }), 404, 'NOT_FOUND')
       expectError(ctx, await teacher.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/ar`, { body: { checkpoint: 1, marks: [] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/tov`, { body: { rows: [] } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/settings`, { body: { activeOtrs: 3 } }), 404, 'NOT_FOUND')
+      expectError(ctx, await teacher.request('PUT', `/headcounts/${UNKNOWN_ID}/defaults`, { body: { defaultTov: null, defaultEtr: null } }), 404, 'NOT_FOUND')
+      expectError(ctx, await (await ctx.as('student')).request('GET', `/headcounts/me/detail?configId=${UNKNOWN_ID}`), 404, 'NOT_FOUND')
       const noCsrf = await ctx.as('teacher', { csrf: false })
+      expectError(ctx, await noCsrf.request('PUT', `/headcounts/${UNKNOWN_ID}/defaults`, { body: {} }), 403, 'CSRF_INVALID')
       expectError(ctx, await noCsrf.request('POST', '/headcounts', { body: {} }), 403, 'CSRF_INVALID')
       expectError(ctx, await noCsrf.request('DELETE', `/headcounts/${UNKNOWN_ID}`), 403, 'CSRF_INVALID')
     },
   },
   {
-    id: 'performance-api/headcount: create rejects a foreign class with one 422; an admin never owns a class; auto-setup needs a level',
+    id: 'performance-api/headcount: create rejects a foreign class with one 422; an admin never writes; auto-setup needs a level',
     domain: 'performance',
     targets: ['api'],
     async run(ctx) {
@@ -352,7 +403,8 @@ const headcountScenarios: Scenario[] = [
       const admin = await (await ctx.as('admin')).request('POST', '/headcounts', {
         body: { classroomId: '1', subjectId: UNKNOWN_ID, educationLevelId: UNKNOWN_ID, academicYear: 2026, activeOtrs: 3, mode: 'auto' },
       })
-      expectError(ctx, admin, 422, 'VALIDATION_ERROR')
+      // S10-T02: writes are the owning teacher's; an admin is refused before any validation.
+      expectError(ctx, admin, 403, 'FORBIDDEN')
       expectError(ctx, await teacher.request('POST', '/headcounts/auto-setup', { body: { levels: [] } }), 422, 'VALIDATION_ERROR')
     },
   },

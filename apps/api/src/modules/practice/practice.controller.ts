@@ -4,6 +4,7 @@ import {
   ListSessionsQuerySchema,
   PRACTICE_MESSAGES,
   PRACTICE_MODES,
+  PRACTICE_START_MODES,
   type PracticeMode,
   StartSessionRequestSchema,
 } from '@pp/contract'
@@ -15,7 +16,7 @@ import { NoStoreInterceptor } from '../../common/http/no-store.interceptor'
 import { ok } from '../../common/http/respond'
 import { type RequestWithAuth, ScopeContext } from '../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
-import { invalidModes } from './errors'
+import { invalidModes, invalidStartMode } from './errors'
 import { type Caller, PracticeService } from './practice.service'
 import { HISTORY_MAX_PAGE, PRACTICE_LIMITS } from './rules'
 
@@ -70,6 +71,8 @@ export class PracticeController {
   @Post()
   @RateLimit(PRACTICE_LIMITS.write)
   async start(@Body() body: unknown, @Req() req: Req) {
+    // S5-T03 (N-5): a known stored mode that cannot be started (`random`, pksk, databank, tracking_a) is 422 ERR-PRAC-07; an unknown value stays "Nilai tidak sah.".
+    if (isRecord(body) && (PRACTICE_MODES as readonly unknown[]).includes(body.mode) && !(PRACTICE_START_MODES as readonly unknown[]).includes(body.mode)) throw invalidStartMode()
     return ok(await this.practice.start(callerOf(req), parseBody(StrictStartSessionRequestSchema, body, PRACTICE_MESSAGES.invalidValue)))
   }
 

@@ -28,6 +28,7 @@ import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeach
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
+import { REGROUP_COMPONENT_SCHEMAS, registerRegroupPaths } from './questions/regroup'
 import { STUDIO_COMPONENT_SCHEMAS, registerStudioPaths } from './questions/studio'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
@@ -52,6 +53,7 @@ import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/mis
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
+import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } from './reports/guru-weekly-report'
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
 import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bijak/builder/paths'
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, registerBijakStandardsPaths } from './bijak/standards/paths'
@@ -63,6 +65,7 @@ import { AI_COMPONENT_SCHEMAS, registerAiPaths } from './ai/paths'
 import { INTAKE_COMPONENT_SCHEMAS, registerIntakePaths } from './intake/paths'
 import { INTAKE_FILES_COMPONENT_SCHEMAS, registerIntakeFilesPaths } from './intake/files-paths'
 import { INTAKE_DASHBOARD_COMPONENT_SCHEMAS, registerIntakeDashboardPaths } from './intake/dashboard'
+import { SOURCE_PAPERS_COMPONENT_SCHEMAS, registerSourcePapersPaths } from './intake/source-papers'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -109,6 +112,7 @@ export const COMPONENT_SCHEMAS = {
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
+  ...REGROUP_COMPONENT_SCHEMAS, // S1-T07
   ...STUDIO_COMPONENT_SCHEMAS, // R1-T13 (REQ-C-006)
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
@@ -134,12 +138,14 @@ export const COMPONENT_SCHEMAS = {
   ...PKSK_COMPONENT_SCHEMAS, // BE-42
   ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
   ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
+  ...GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, // S6-T01
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
   ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
   ...BIJAK_STANDARDS_COMPONENT_SCHEMAS, // BJS-01
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
+  ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -179,6 +185,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
+  registerRegroupPaths(registry) // S1-T07
   registerStudioPaths(registry) // R1-T13 (REQ-C-006)
   registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
@@ -186,6 +193,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)
+  registerGuruWeeklyReportPaths(registry) // S6-T01
   registerKirkpatrickPaths(registry) // BE-20 (M12)
   registerBijakBuilderPaths(registry) // BE-39
   registerBijakStandardsPaths(registry) // BJS-01
@@ -197,6 +205,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakePaths(registry) // BE-38
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
+  registerSourcePapersPaths(registry) // S2-T09
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

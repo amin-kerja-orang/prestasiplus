@@ -18,7 +18,7 @@ import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CurriculumRepository } from '../curriculum'
 import { SubscriptionService, TRIAL_LIMIT } from '../subscriptions'
-import { alreadySubmitted, invalidAnswer, isUniqueViolation, noAttemptsLeft, notFound, remedialDone, trialExhausted } from './errors'
+import { alreadySubmitted, invalidAnswer, isUniqueViolation, notFound, remedialDone, trialExhausted } from './errors'
 import { type PracticeQuestion, PracticePorts, practiceRewardSource, versionKey } from './ports'
 import {
   HISTORY_MAX_ROWS,
@@ -30,7 +30,7 @@ import {
   type SessionRecord,
   type StoredCheck,
 } from './practice.repository'
-import { HISTORY_PAGE_SIZE, feedbackText } from './rules'
+import { HISTORY_PAGE_SIZE, feedbackText, selectedLabelOf } from './rules'
 import { PracticeStartPlanner } from './start.planner'
 
 export interface Caller {
@@ -170,7 +170,8 @@ export class PracticeService {
         options: q.options.map((o, i) => ({ id: i, label: o.label, text: o.text })),
       })),
       ...(s.mode === 'revision' && revisionMeta ? { revisionMeta } : {}),
-      ...(s.mode === 'question_set' ? { timeLimitSec: s.timeLimitSec } : {}),
+      // R1/R7: a set has no timer, also when a resumed legacy session stored a limit.
+      ...(s.mode === 'question_set' ? { timeLimitSec: null } : {}),
     }
     // Strict schema: a stray key (a correct answer, an explanation) fails here instead of leaving the server.
     return StartSessionResponseSchema.parse(body)
@@ -214,7 +215,7 @@ export class PracticeService {
         userId: caller.userId,
         questionId: ref.questionId,
         questionVersionNo: ref.versionNo,
-        selectedLabel: chosen.label,
+        selectedLabel: selectedLabelOf([chosen.label]) ?? chosen.label,
         isCorrect,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
@@ -258,7 +259,6 @@ export class PracticeService {
               completedAt: completed.completedAt,
               pointsEarned: completed.pointsEarned,
               sessionCoins: completed.coinsEarned,
-              ...(s.mode === 'mission' && s.coinsPerCorrect !== null ? { coinsPerCorrect: s.coinsPerCorrect } : {}),
               isTest: test,
             },
             tx,
@@ -286,7 +286,7 @@ export class PracticeService {
   /**
    * Inside the locked submit transaction: the one-shot rules of assigned work are enforced again, so parallel
    * starts that slipped past the start checks cannot all complete (remedial: one completion per test;
-   * question_set: at most maxAttempts completions).
+   * question_set: no cap in R1).
    */
   private async guardSubmit(session: SessionRecord): Promise<void> {
     if (session.mode === 'remedial' && session.remedialTestId) {
@@ -296,13 +296,6 @@ export class PracticeService {
     }
     if (session.mode === 'question_set' && session.questionSetId) {
       await this.repo.lockAssigned(session.userId, 'question_set', session.questionSetId)
-      const res = await this.ports.assignments.resolve('question_set', { userId: session.userId, id: session.questionSetId, at: this.clock.now() })
-      if (res.status === 'ok' && (res.maxAttempts ?? 0) > 0) {
-        const done = (await this.repo.linkedSessions(session.userId, 'questionSetId', session.questionSetId)).filter(
-          (s) => s.id !== session.id && s.status === 'completed',
-        ).length
-        if (done >= (res.maxAttempts ?? 0)) throw noAttemptsLeft()
-      }
     }
   }
 
@@ -387,7 +380,9 @@ export class PracticeService {
   async history(caller: Caller, query: HistoryQuery): Promise<SessionListResponse> {
     const modes = query.modes
     const activeType = query.type && (modes as readonly string[]).includes(query.type) ? (query.type as PracticeMode) : null
-    const narrowed = activeType ? [activeType] : modes
+    // S3-T07: the "Tahun Lepas" pill (`past_year`) lists the legacy `past_year` sessions and the new `databank` ones.
+    const typeModes: readonly PracticeMode[] = activeType === 'past_year' ? ['past_year', 'databank'] : activeType ? [activeType] : []
+    const narrowed = activeType ? typeModes.filter((m) => (modes as readonly string[]).includes(m)) : modes
     const paged = query.page !== undefined || query.pageSize !== undefined
     const stats = await this.repo.historyStats(caller.userId, { modes, includeTest: true })
     const total = activeType ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true }) : stats.sessions
