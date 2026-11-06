@@ -130,6 +130,8 @@ export const dsIconBaseNames = [
   'film-slate',
   // m08 TimelinePage (DsIconChip) and m09 BannerListPage (stat icon), D-09.
   'image',
+  // m17 AdminDashboardPage (Cabaran Kelas tile), S6-T11, D-09.
+  'sword',
 ] as const
 
 export const dsIconWeights = ['regular', 'duotone', 'bold'] as const
