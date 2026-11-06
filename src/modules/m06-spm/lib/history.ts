@@ -4,9 +4,9 @@
 
 import type { PracticeMode } from '@/modules/m05-practice'
 
-export type HistoryType = 'past_year' | 'latih_tubi' | 'ramalan'
+export type HistoryType = 'past_year' | 'databank' | 'latih_tubi' | 'ramalan'
 
-export const SPM_MODES: readonly HistoryType[] = ['past_year', 'latih_tubi', 'ramalan']
+export const SPM_MODES: readonly HistoryType[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
 
 export interface HistoryFilter {
   /** `null` is "Semua" (`/spm/history`). */
@@ -29,6 +29,7 @@ export const TYPE_BADGES: Record<
   { label: string; color: 'warning' | 'info' | 'secondary' }
 > = {
   past_year: { label: 'Tahun Lepas', color: 'warning' },
+  databank: { label: 'Tahun Lepas', color: 'warning' },
   latih_tubi: { label: 'Latih Tubi', color: 'info' },
   ramalan: { label: 'Tracking A', color: 'secondary' },
 }

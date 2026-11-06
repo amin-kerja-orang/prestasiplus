@@ -21,7 +21,13 @@
  * repository (`questions`) and `question-input.ts`.
  */
 
-import { QUESTION_MESSAGES } from '@pp/contract'
+import {
+  BULK_CHAPTER_CAP,
+  BULK_CHAPTER_MAX_IDS,
+  CURRICULUM_NOT_FOUND_MESSAGES,
+  QUESTION_MESSAGES,
+  type BulkChapterResult,
+} from '@pp/contract'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import {
   conflict,
@@ -346,6 +352,116 @@ function bulkByFilter(req: MockRequest, ctx: MockContext): MockResponse {
   return ok(result, { status: bulkFilterFlash(act, result.affected) })
 }
 
+
+/** API-DSKP-09 (mounted under `/api/admin/curriculum`, served by this module because it owns the question rows). */
+function bulkChapter(req: MockRequest, ctx: MockContext): MockResponse {
+  const body =
+    typeof req.body === 'object' && req.body !== null && !Array.isArray(req.body)
+      ? (req.body as Record<string, unknown>)
+      : {}
+  const fields: Record<string, string> = {}
+  for (const key of Object.keys(body)) {
+    if (!['chapterId', 'ids', 'filter', 'dryRun', 'expectedCount', 'overwrite'].includes(key)) fields[key] = FILTER_INVALID
+  }
+  const chapterId = Number(body.chapterId)
+  if (!Number.isSafeInteger(chapterId) || chapterId < 1) fields.chapterId = FILTER_INVALID
+  const ids = body.ids
+  const rawFilter = body.filter
+  if ((ids === undefined) === (rawFilter === undefined)) {
+    fields[ids === undefined ? 'filter' : 'ids'] = 'Send exactly one of ids or filter.'
+  }
+  if (ids !== undefined && (!Array.isArray(ids) || ids.length < 1 || ids.length > BULK_CHAPTER_MAX_IDS || ids.some((i) => !/^\d+$/.test(String(i))))) {
+    fields.ids = BULK_BAD_IDS
+  }
+  const dryRun = body.dryRun === true
+  const expected = body.expectedCount
+  if (expected === undefined ? !dryRun : typeof expected !== 'number' || !Number.isSafeInteger(expected) || expected < 0) {
+    fields.expectedCount = FILTER_COUNT_NEEDED
+  }
+  let filter: AdminListFilter = {}
+  if (rawFilter !== undefined) {
+    const f = typeof rawFilter === 'object' && rawFilter !== null && !Array.isArray(rawFilter) ? (rawFilter as Record<string, unknown>) : null
+    const sid = f?.subjectId
+    const lid = f?.educationLevelId
+    if (f === null || sid === undefined || lid === undefined) {
+      fields.filter = 'The filter must contain subjectId and educationLevelId.'
+    } else {
+      const status = typeof f.status === 'string' ? (WIRE_TO_MOCK_STATUS[f.status] ?? f.status) : undefined
+      const text = (k: string): string | undefined => (typeof f[k] === 'string' && (f[k]).trim() !== '' ? (f[k]).trim() : undefined)
+      filter = {
+        subjectId: Number(sid),
+        educationLevelId: Number(lid),
+        ...(status === undefined ? {} : { status }),
+        ...(text('difficultyLevel') === undefined ? {} : { difficultyLevel: Number(text('difficultyLevel')) }),
+        ...(text('dskpFilter') === undefined ? {} : { dskpFilter: text('dskpFilter') }),
+        ...(text('complianceFilter') === undefined ? {} : { complianceFilter: text('complianceFilter') }),
+        ...(text('sourceFilter') === undefined ? {} : { sourceFilter: text('sourceFilter') }),
+        ...(text('search') === undefined ? {} : { search: text('search') }),
+      }
+    }
+  }
+  if (Object.keys(fields).length > 0) return validationError(fields)
+
+  const chapter = curriculum.chapter(chapterId)
+  if (!chapter) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.chapter)
+  const select: { ids: number[] } | { filter: AdminListFilter } = Array.isArray(ids)
+    ? { ids: (ids as unknown[]).map(Number) }
+    : { filter }
+  const target = { chapterId, subjectId: chapter.subjectId, educationLevelId: chapter.educationLevelId }
+  const probe = questions.bulkChapter(target, select, { dryRun: true, now: ctx.clock.now(), cap: BULK_CHAPTER_CAP })
+  // Rows of another Subjek or Tingkatan than the Bab's are refused per row in `skipped` (200), never as a request error.
+  const shape = (r: typeof probe, applied: number, dry: boolean): BulkChapterResult => ({
+    matched: r.matched,
+    eligible: r.eligible,
+    refused: r.matched - r.eligible,
+    skipped: r.skipped,
+    applied,
+    cap: BULK_CHAPTER_CAP,
+    remaining: r.remaining,
+    capped: r.remaining > 0,
+    dryRun: dry,
+    auditId: dry ? null : `mock-audit-${String(ctx.clock.now())}`,
+  })
+  if (dryRun) return ok(shape(probe, 0, true))
+  if (probe.matched !== expected) return conflict(FILTER_COUNT_CHANGED(expected as number, probe.matched))
+  const done = questions.bulkChapter(target, select, { dryRun: false, now: ctx.clock.now(), cap: BULK_CHAPTER_CAP })
+  return ok(shape(done, done.applied, false))
+}
+
+/**
+ * API-DSKP-10: per offered Subjek x Tingkatan (an active subject linked to an active, non-primary level; zero pairs included) the
+ * approved questions with and without a Bab. The mock stores no stimulus flag, so "not flagged" holds for every row. 404 for an unknown id.
+ */
+function chapterCoverage(req: MockRequest): MockResponse {
+  const subjectId = idFilter(req, 'subjectId')
+  const levelId = idFilter(req, 'educationLevelId')
+  if (subjectId === 'invalid' || levelId === 'invalid') return validationError({ [subjectId === 'invalid' ? 'subjectId' : 'educationLevelId']: FILTER_INVALID })
+  if (subjectId !== undefined && !curriculum.subject(subjectId)) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.subject)
+  if (levelId !== undefined && !curriculum.level(levelId)) return notFound(CURRICULUM_NOT_FOUND_MESSAGES.level)
+  const offered = new Map(curriculum.levels().filter((l) => l.isActive && l.stage !== 'primary').map((l) => [l.id, l]))
+  const rows = []
+  for (const s of curriculum.subjects({ active: true }).sort((a, b) => a.order - b.order || a.id - b.id)) {
+    if (subjectId !== undefined && s.id !== subjectId) continue
+    const levels = s.educationLevelIds
+      .map((id) => offered.get(id))
+      .filter((l): l is NonNullable<typeof l> => l !== undefined)
+      .sort((a, b) => a.order - b.order || a.id - b.id)
+    for (const l of levels) {
+      if (levelId !== undefined && l.id !== levelId) continue
+      const c = questions.chapterCoverage(s.id, l.id)
+      rows.push({
+        subjectId: String(s.id),
+        subjectName: s.name,
+        levelCode: l.code,
+        approved: c.approved,
+        withChapter: c.withChapter,
+        withoutChapter: c.approved - c.withChapter,
+      })
+    }
+  }
+  return ok({ rows })
+}
+
 function bulkFilterFlash(action: 'approved' | 'archived', n: number): string {
   return action === 'approved'
     ? `Berjaya luluskan ${String(n)} soalan (hasil tapisan) — kini kelihatan kepada pelajar.`
@@ -398,6 +514,8 @@ export const questionRoutes: RouteDef[] = [
   route('GET', '/api/questions/summary', [adminOnly], summary),
   route('POST', '/api/questions/bulk-action', [adminOnly], bulk),
   route('POST', '/api/questions/bulk-action/filter', [adminOnly], bulkByFilter),
+  route('POST', '/api/admin/curriculum/questions/bulk-chapter', [adminOnly], bulkChapter),
+  route('GET', '/api/admin/curriculum/chapter-coverage', [adminOnly], chapterCoverage),
   route('POST', '/api/questions', [adminOnly], create),
   route('GET', '/api/questions/:id', [adminOnly], detail, { params: { id: int() } }),
   route('PUT', '/api/questions/:id', [adminOnly], update, { params: { id: int() } }),

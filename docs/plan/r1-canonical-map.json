@@ -2761,6 +2761,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/laporan-sekolah/headcount|m17.laporan-sekolah.headcount",
+      "path": "/admin/laporan-sekolah/headcount",
+      "name": "m17.laporan-sekolah.headcount",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": "S6-T13"
+    },
+    {
       "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",
       "path": "/admin/laporan-sekolah/analisa-item",
       "name": "m17.laporan-sekolah.analisa-item",
@@ -3094,6 +3104,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/latih-tubi|",
+      "path": "/admin/spm/latih-tubi",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneLatihTubiPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -3102,6 +3122,16 @@
       "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSimulasiPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/subjektif|",
+      "path": "/admin/spm/subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSubjektifPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
     },
     {
       "key": "/admin/spm/kontrak|",
@@ -16482,6 +16512,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/weekly-report",
+      "method": "GET",
+      "path": "/api/guru/weekly-report",
+      "api_id": "API-GUR-21",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/analytics/me",
       "method": "GET",
       "path": "/api/analytics/me",
@@ -16682,6 +16722,16 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/timeline/timeline.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/timeline/:p",
+      "method": "DELETE",
+      "path": "/api/timeline/:id",
+      "api_id": "API-RPT-15",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/timeline/timeline.controllers.ts",
+      "approved_by_card": "S10-T08"
     },
     {
       "key": "GET /api/amaran/schools/:p",

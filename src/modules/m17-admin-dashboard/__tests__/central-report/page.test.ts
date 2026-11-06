@@ -23,6 +23,7 @@ const api = vi.hoisted(() => ({
   fetchSchoolDskpHeatmap: vi.fn(),
   fetchMonthlyReport: vi.fn(),
   fetchSchoolRisk: vi.fn(),
+  fetchHeadcounts: vi.fn(),
   searchSchools: vi.fn(),
 }))
 vi.mock('@/modules/m27-school-admin/api/school-admin', async (importActual) => ({
@@ -35,6 +36,10 @@ vi.mock('@/modules/m27-school-admin/api/school-admin', async (importActual) => (
 vi.mock('@/modules/m27-school-admin/api/amaran', async (importActual) => ({
   ...(await importActual<typeof import('@/modules/m27-school-admin/api/amaran')>()),
   fetchSchoolRisk: api.fetchSchoolRisk,
+}))
+vi.mock('@/modules/m08-student-performance/api/headcount', async (importActual) => ({
+  ...(await importActual<typeof import('@/modules/m08-student-performance/api/headcount')>()),
+  fetchHeadcounts: api.fetchHeadcounts,
 }))
 vi.mock('@/modules/m02-users-schools/api/schools', () => ({ searchSchools: api.searchSchools }))
 
@@ -56,6 +61,7 @@ const VIEWS: ReadonlyArray<[Exclude<CentralReportView, 'sekolah-bersaing'>, keyo
   ['laporan-bulanan', 'fetchMonthlyReport', 'lb-loading', 'lb-central-empty'],
   ['amaran-wellbeing', 'fetchSchoolRisk', 'am-loading', 'am-central-empty'],
   ['amaran-awal', 'fetchSchoolRisk', 'am-loading', 'am-central-empty'],
+  ['headcount', 'fetchHeadcounts', 'page-loading', 'headcount-central-empty'],
 ]
 
 let router: Router
@@ -102,6 +108,7 @@ beforeEach(() => {
     'fetchSchoolDskpHeatmap',
     'fetchMonthlyReport',
     'fetchSchoolRisk',
+    'fetchHeadcounts',
   ] as const) {
     api[key].mockReturnValue(new Promise(() => undefined))
   }
@@ -177,6 +184,29 @@ describe('each view mounts the existing school page for the picked school (AC-AD
     await pickSchool(w)
     expect(has(w, 'su-central-empty')).toBe(false)
     expect(useRouteOutcome().value).toBe(403)
+  })
+
+  it('headcount lists the picked school read-only (no create, Auto-Setup or Dashboard button)', async () => {
+    api.fetchHeadcounts.mockReset().mockResolvedValue([
+      {
+        id: 7,
+        className: 'Kelas 4 Contoh',
+        subjectName: 'Matematik',
+        levelName: 'Tingkatan 4',
+        year: 2026,
+        mode: 'auto',
+        activeOtrs: 3,
+        students: 12,
+        teacherName: 'Guru Contoh',
+      },
+    ])
+    const w = await mountView('headcount')
+    await pickSchool(w)
+    expect(api.fetchHeadcounts).toHaveBeenCalledWith(expect.objectContaining({ schoolId: SCHOOL.id }))
+    expect(has(w, 'headcount-list')).toBe(true)
+    expect(w.text()).toContain('Kelas 4 Contoh')
+    for (const id of ['hero-create', 'hero-auto-setup', 'hero-dashboard']) expect(has(w, id)).toBe(false)
+    expect(router.currentRoute.value.path).toBe('/admin/laporan-sekolah/headcount')
   })
 
   it('analisa-item opens the M08 school page of the picked school', async () => {
