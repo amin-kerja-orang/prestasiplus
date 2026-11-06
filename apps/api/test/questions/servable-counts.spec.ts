@@ -39,6 +39,13 @@ let hub: SpmHubService
 let offeredIds: string[]
 const report: Record<string, unknown> = {}
 
+// Known counts on the demo seed. Hub (Databank, hub, Mock K1) stays ungrouped: BM 50, MATH 54, SCI 50.
+// Latih Tubi units (card = details): BM 51 = 50 ungrouped + 1 complete group (SEED-GRP-PASAR-1..3 count once, D91).
+// The practice card equals the Latih Tubi draw size, which keeps every member of the group: BM 53 = 50 + 3 members.
+const known = { BM: 50, MATH: 54, SCI: 50 } as const
+const knownUnits = { BM: 51, MATH: 54, SCI: 50 } as const
+const knownPracticeCard = { BM: 53, MATH: 54, SCI: 50 } as const
+
 const subjectId = async (code: string): Promise<string> => (await t.db.query<{ id: string }>(`select id::text id from subjects where code = $1`, [code]))[0]?.id as string
 const login = async (): Promise<number> => Number((await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c)
 
@@ -83,16 +90,17 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       expect(databank, `${code} databank`).toBe(poolCount)
       // S3-T07 (#967, D91) with S5-T03 part B: Latih Tubi serves whole groups, so its card and details count each complete group once (units), on top of the ungrouped pool.
       const latihUnits = await pool.latihTubiCount(id, { fresh: true })
-      expect(lt, `${code} latihTubi card`).toBe(latihUnits)
-      expect(details, `${code} details`).toBe(latihUnits)
+      expect(lt, `${code} latihTubi card`).toBe(knownUnits[code])
+      expect(details, `${code} details`).toBe(knownUnits[code])
+      expect(latihUnits, `${code} latihTubi units cross-check`).toBe(knownUnits[code])
       expect(drawnIds.length, `${code} drawable`).toBe(poolCount)
       expect(new Set(drawnIds).size).toBe(drawnIds.length)
       // Everything drawn is servable: live, active, approved, an offered level.
       expect(drawn.every((r) => r.isActive && r.version.status === 'approved' && offeredIds.includes(r.version.educationLevelId ?? ''))).toBe(true)
-      // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (the practice card of BM is 53 since S5-T03 part B: the complete group counts whole).
-      // S5-T03 part B (D91): the practice card equals the Latih Tubi draw (whole groups and figures); the SPM hub pool (Databank, hub, Mock K1) stays ungrouped until S3-T07 / S3-T05.
+      // D91 (T04): `bankMatrix` has `group_id IS NULL`, so the practice card equals the drawable size per surface (since S5-T03 part B the practice card of BM is 53: the complete group counts whole).
       const latihDraw = await repo.count({ ...filterOf('latih_tubi_spm', { subjectId: id }), status: 'approved', active: true })
-      expect(practiceCard, `${code} practice card = latih_tubi_spm draw`).toBe(latihDraw)
+      expect(practiceCard, `${code} practice card`).toBe(knownPracticeCard[code])
+      expect(latihDraw, `${code} practice card = latih_tubi_spm draw cross-check`).toBe(knownPracticeCard[code])
       // The login SQL counts every servable question of any activity (stimulus-group members included), so it is an upper bound.
       expect(servableInDb, `${code} login SQL >= drawable`).toBeGreaterThanOrEqual(poolCount)
       cards[code] = { ...(cards[code] as object), gapPracticeCardVsDrawable: practiceCard - poolCount }
@@ -113,13 +121,10 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
     console.log(`T05 COUNTS ${JSON.stringify(report)}`)
     expect(loginCount, 'login count = drawable count over all subjects').toBe(drawableAll)
     expect(loginCount, 'login "N+ Soalan" (D91: every servable question of any activity)').toBe(493)
-    // Known counts on the demo seed: card = details = drawable per subject (hub BM 50, MATH 54, SCI 50; the practice card of BM is 53).
-    // Latih Tubi units (card = details): BM 51 = 50 ungrouped + 1 complete group (SEED-GRP-PASAR-1..3 count once, D91).
-    const known = { BM: 50, MATH: 54, SCI: 50 } as const
-    const knownUnits = { BM: 51, MATH: 54, SCI: 50 } as const
     for (const code of SUBJECTS) {
       const n = known[code]
       expect(cards[code], `${code} card = details = drawable = ${String(n)}`).toMatchObject({
+        practiceCard: knownPracticeCard[code],
         databank: n,
         latihTubiCard: knownUnits[code],
         details: knownUnits[code],

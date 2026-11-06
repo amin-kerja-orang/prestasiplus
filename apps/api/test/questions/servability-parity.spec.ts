@@ -287,10 +287,14 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // Databank is Latih Tubi narrowed to the subjects with a Tahun Lepas position.
     for (const id of databank) expect(latih.has(id)).toBe(true)
     const dropped = sorted(latih).filter((id) => !databank.has(id))
-    // Databank is not a group surface yet (S3-T07): a figure, an option image or a group member is refused there on top of the subject list.
+    // Databank is not a group surface yet (S3-T07): a figure, an option image or a group member is served by Latih Tubi (S5-T03 part B) but refused
+    // here with its own exact reason; every other dropped question is dropped for the subject list alone.
+    const databankOnly: Record<string, string[]> = {}
+    for (const [key, code] of [['stemImage', 'has_stimulus'], ['optionImage', 'has_option_image'], ['groupA', 'has_stimulus'], ['groupB', 'has_stimulus'], ['ownPassage', 'has_stimulus'], ['ownTable', 'has_stimulus'], ['ownTwoPictures', 'has_stimulus'], ['ownMixed', 'has_stimulus'], ['sharedGone', 'has_stimulus']] as const) {
+      if (made[key]) databankOnly[made[key]] = [code]
+    }
     for (const id of dropped) {
-      const codes = reports.get(id)!.activities.find((a) => a.activity === 'databank')!.reasons.map((r) => r.code)
-      expect(codes.length === 1 && ['subject_not_listed', 'has_stimulus', 'has_option_image'].includes(codes[0]!), `databank ${id}: ${codes.join()}`).toBe(true)
+      expect(reports.get(id)!.activities.find((a) => a.activity === 'databank')!.reasons.map((r) => r.code), `databank ${id}`).toEqual(databankOnly[id] ?? ['subject_not_listed'])
     }
     // The fixture: MATH is listed, so the plain question is in both.
     expect(latih.has(made.plain!)).toBe(true)

@@ -179,10 +179,12 @@ describe('admin servability reads (R1-T30)', () => {
     for (const activity of ['bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
       expect(by.get(activity)?.served, activity).toBe(served(activity))
     }
-    // S5-T03 part B: the indicator count of Latih Tubi SPM stays on the SPM hub basis (ungrouped, text-only) until S3-T07 / S3-T05 flip the hub,
-    // while the per-question report already serves figures and whole groups: the count is the report's served set minus the figure and group questions.
-    expect(by.get('latih_tubi_spm')?.served, 'latih_tubi_spm').toBeLessThanOrEqual(served('latih_tubi_spm'))
-    expect(by.get('latih_tubi_spm')?.served, 'latih_tubi_spm').toBeGreaterThan(0)
+    // Latih Tubi SPM indicator (S5-T03 part B): it stays on the SPM hub basis (ungrouped, text-only) until S3-T07 / S3-T05 flip the hub, while the
+    // per-question report already serves the group member. Fixture: 5 = the 2 seeded MATH MCQs (ids 1 and 2)
+    // + plain + second + liveWithDraft (ungrouped, text-only). `grouped` is served by the report (6) but not counted here;
+    // the draft, the archived question and the table_fill essay are not servable.
+    expect(by.get('latih_tubi_spm')?.served, 'latih_tubi_spm').toBe(5)
+    expect(served('latih_tubi_spm'), 'latih_tubi_spm report served set = the 5 plus the group member').toBe(6)
     expect(by.get('simulasi_paper')).toMatchObject({ basis: 'evaluated', total: 3 })
     expect(by.get('databank')?.basis).toBe('sql')
     expect(by.get('jana_kertas')?.basis).toBe('pool')
