@@ -92736,7 +92736,7 @@
           "rewards"
         ],
         "summary": "Kotak Misteri: the active box, odds, balance, daily count, last 10 openings",
-        "description": "Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false when no box is active or no prize can be won.",
+        "description": "Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false only when no box is active. An active box with no prize that can be won is returned with prizes [] and available false (N5).",
         "responses": {
           "200": {
             "description": "The box, own balance and history.",

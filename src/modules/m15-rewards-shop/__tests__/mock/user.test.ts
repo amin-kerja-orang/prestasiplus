@@ -303,6 +303,20 @@ describe('#10, #11 mystery box on the 0222 model (S7-T07 P8)', () => {
     ).toHaveLength(1)
   })
 
+  it('a clientUuid reused on another box is 422 on clientUuid like the API, not 404; nothing moves', async () => {
+    wallet.setFields(PELAJAR, { syiling: 120 })
+    const key = uuid()
+    expect((await open(PELAJAR, key)).status).toBe(200)
+    const before = wallet.summary(PELAJAR).currentSyiling
+    const r = await open(PELAJAR, key, 6)
+    expect(r.status).toBe(422)
+    expect(
+      (r.body as unknown as { error: { fields: Record<string, string> } }).error.fields.clientUuid,
+    ).toBe('The client uuid field must be a valid UUID.')
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(before)
+    expect(mysteryBox.openingsCount(PELAJAR)).toBe(1)
+  })
+
   it('5 opens pass and the 6th is 429 MYSTERY_DAILY_LIMIT with the balance unchanged; the next Malaysia day passes again', async () => {
     wallet.setFields(PELAJAR, { syiling: 600 })
     m15Hooks.m15SetMysteryBox({ stocks: {} })

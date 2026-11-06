@@ -380,7 +380,7 @@ export const RewardMysteryBoxHistoryItemSchema = z
 export type RewardMysteryBoxHistoryItem = z.infer<typeof RewardMysteryBoxHistoryItemSchema>
 
 /**
- * `box` is null and `available` false when no box is active or no prize can be won (N5). `openedToday` counts the
+ * `box` is null and `available` false only when no box is active. An active box with no prize that can be won (N5) is returned with `prizes: []` and `available` false. `openedToday` counts the
  * caller's openings of the current Malaysia day against `dailyMax`. `history` = the last openings, newest first, at most 10.
  */
 export const RewardMysteryBoxesViewSchema = z

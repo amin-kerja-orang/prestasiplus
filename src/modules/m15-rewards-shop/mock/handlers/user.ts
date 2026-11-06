@@ -117,6 +117,9 @@ function openBox(req: MockRequest): MockResponse {
     }
     return ok(data)
   } catch (e) {
+    if (e instanceof M15Error && e.code === 'CLIENT_UUID_REUSED') {
+      return validationError({ clientUuid: e.message })
+    }
     if (e instanceof M15Error) return refusal(e)
     throw e
   }

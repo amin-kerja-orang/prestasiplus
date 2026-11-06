@@ -164,7 +164,10 @@ export const mysteryBoxRepo = defineRepository({
             .query({ where: { userId }, page: 1, pageSize: 100_000 })
             .rows.find((o) => o.clientUuid === clientUuid)
           if (first) {
-            if (first.boxId !== boxId) throw new M15Error('NOT_FOUND', 'Kotak tidak dijumpai.')
+            // The key belongs to the box it opened: on another box it is no repeat (the API answers 422 on clientUuid).
+            if (first.boxId !== boxId) {
+              throw new M15Error('CLIENT_UUID_REUSED', 'The client uuid field must be a valid UUID.')
+            }
             const after = balanceOf(userId)
             return {
               opening: first,
@@ -172,6 +175,8 @@ export const mysteryBoxRepo = defineRepository({
               prize: {
                 label: first.prizeLabel ?? '',
                 kind: first.prizeKind ?? 'syiling',
+                // A row with a clientUuid always has its prize fields (only pre-P8 rows lack them, and those have no clientUuid),
+                // so the fallback never runs; the API falls back to the row's `coins`, which this model does not have.
                 amount: first.prizeAmount ?? 0,
               },
               tokenBalance: after.tokenBalance,

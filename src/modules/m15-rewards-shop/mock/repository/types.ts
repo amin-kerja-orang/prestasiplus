@@ -75,6 +75,7 @@ export type M15ErrorCode =
   | 'INSUFFICIENT_BALANCE'
   | 'BOX_UNAVAILABLE'
   | 'MYSTERY_DAILY_LIMIT'
+  | 'CLIENT_UUID_REUSED'
 
 export class M15Error extends Error {
   readonly code: M15ErrorCode

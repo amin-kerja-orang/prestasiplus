@@ -193,6 +193,8 @@ export class MysteryBoxesService {
           openingId: idToString(first.id),
           boxId: String(first.boxId),
           boxName: stored?.label ?? '',
+          // `?? first.coins` only satisfies the nullable column: a row with a client_uuid always has its prize fields
+          // (pre-P8 rows lack them but also lack a client_uuid, so they never reach this branch).
           prize: { label: first.prizeLabel ?? '', kind, amount: first.prizeAmount ?? first.coins },
           tokenBalance: summary.tokenBalance,
           syilingBalance: summary.currentSyiling,
