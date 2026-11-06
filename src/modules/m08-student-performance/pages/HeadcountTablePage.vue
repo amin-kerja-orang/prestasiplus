@@ -24,6 +24,7 @@ import {
 import type { DropAction, HeadcountSort } from '../api/headcount-types'
 import HeadcountConfirmModals from '../components/headcount/HeadcountConfirmModals.vue'
 import HeadcountTable from '../components/headcount/HeadcountTable.vue'
+import { useHeadcountReadOnly } from '../lib/headcount-access'
 import { percentOf } from '../lib/headcount/format'
 import { LOAD_ERROR, isLoadError, notFoundOutcome, useRouteData } from '../lib/prestasi/load'
 import { routeId } from '../lib/route-id'
@@ -31,6 +32,8 @@ import { routeId } from '../lib/route-id'
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
+/** The school admin reads only (R1-AS-3): no write control is rendered. */
+const readOnly = useHeadcountReadOnly()
 
 const id = computed(() => routeId(route.params.id))
 /** An unknown `sort` is "ranking" (§5). */
@@ -178,7 +181,7 @@ const exportHref = computed(
       </div>
 
       <div class="flex flex-wrap items-start gap-2" data-testid="actions">
-        <div ref="keyInRoot" class="flex flex-col gap-2">
+        <div v-if="!readOnly && data.config.mode === 'manual'" ref="keyInRoot" class="flex flex-col gap-2">
           <UButton
             type="button"
             size="lg"
@@ -205,6 +208,7 @@ const exportHref = computed(
           </DsPanel>
         </div>
         <UButton
+          v-if="!readOnly"
           :to="`/headcount/${String(id)}/edit`"
           color="neutral"
           variant="soft"
@@ -242,6 +246,7 @@ const exportHref = computed(
           data-testid="action-unjuran"
         />
         <UButton
+          v-if="!readOnly"
           :to="`/headcount/${String(id)}/settings`"
           color="neutral"
           variant="soft"
@@ -251,6 +256,7 @@ const exportHref = computed(
           data-testid="action-settings"
         />
         <UButton
+          v-if="!readOnly"
           type="button"
           color="neutral"
           variant="soft"
@@ -261,6 +267,7 @@ const exportHref = computed(
           @click="resetOpen = true"
         />
         <UButton
+          v-if="!readOnly"
           type="button"
           color="error"
           variant="soft"
@@ -308,7 +315,7 @@ const exportHref = computed(
         />
       </div>
 
-      <DsPanel v-if="selected.length > 0" data-testid="selection-bar">
+      <DsPanel v-if="!readOnly && selected.length > 0" data-testid="selection-bar">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5" /><span data-testid="selection-count">{{
@@ -354,10 +361,11 @@ const exportHref = computed(
       </DsPanel>
 
       <div data-testid="table-card">
-        <HeadcountTable v-model:selected="selected" :detail="data" />
+        <HeadcountTable v-model:selected="selected" :detail="data" :selectable="!readOnly" />
       </div>
 
       <HeadcountConfirmModals
+        v-if="!readOnly"
         v-model:reset-open="resetOpen"
         v-model:delete-open="deleteOpen"
         :subject="data.config.subject"

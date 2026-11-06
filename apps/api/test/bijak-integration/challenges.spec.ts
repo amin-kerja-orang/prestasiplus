@@ -38,8 +38,8 @@ afterAll(async () => {
   await t.close()
 })
 
-/** Starts a MATH D1 `random` session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
-async function play(who: Client, startBody: Record<string, unknown> = { mode: 'random', subjectCode: 'MATH', levelId: w.level.d1, count: 5 }): Promise<string> {
+/** Starts a MATH chapter session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
+async function play(who: Client, startBody: Record<string, unknown> = { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }): Promise<string> {
   const start = await who.post('/api/practice/sessions', startBody)
   expect(start.status, JSON.stringify(start.body)).toBe(201)
   const data = start.body.data as StartSessionResponse
@@ -168,7 +168,7 @@ describe('daily challenges follow completed practice sessions', () => {
 describe('best_combo: the longest correct run inside one practice session of the Malaysia day', () => {
   const uid = () => maju.userId
   /** One completed session of `mode` whose answers (C correct, W wrong) are one second apart from `at`. */
-  async function session(mode: string, pattern: string, at: string, answerMode: string | null = null, chapter: number | null = null): Promise<string> {
+  async function session(mode: string, pattern: string, at: string, answerMode: string = 'latih_tubi', chapter: number | null = null): Promise<string> {
     const id = (
       await t.db.query<{ id: string }>(
         `insert into practice_sessions (id, user_id, mode, question_count, status, correct_count, time_spent_sec, started_at, completed_at, is_test)
@@ -211,13 +211,13 @@ describe('best_combo: the longest correct run inside one practice session of the
     expect(await combo('2026-10-19')).toBe(8)
   })
 
-  it('4. game and battle answers are excluded; a legacy NULL mode counts', async () => {
+  it('4. game and battle answers are excluded; other modes count', async () => {
     await clear()
     await session('random', 'CCCCCCCCCC', '2026-10-20T10:00:00+08:00', 'game')
     await session('random', 'CCCCCCCCCC', '2026-10-20T11:00:00+08:00', 'battle')
     expect(await combo('2026-10-20')).toBe(0)
     await session('chapter', 'CCCC', '2026-10-20T12:00:00+08:00', 'chapter')
-    await session('chapter', 'CCC', '2026-10-20T13:00:00+08:00', null)
+    await session('chapter', 'CCC', '2026-10-20T13:00:00+08:00', 'latih_tubi')
     expect(await combo('2026-10-20')).toBe(4)
   })
 
@@ -249,7 +249,7 @@ describe('best_combo: the longest correct run inside one practice session of the
     await session('random', 'CC', '2026-10-20T10:00:00+08:00', 'random', 1)
     await session('random', 'CC', '2026-10-20T11:00:00+08:00', 'game', 2)
     await session('random', 'CC', '2026-10-20T12:00:00+08:00', 'battle', 3)
-    await session('random', 'CC', '2026-10-20T13:00:00+08:00', null, 4)
+    await session('random', 'CC', '2026-10-20T13:00:00+08:00', 'latih_tubi', 4)
     const facts = await t.app.get(PracticeFactsAdapter).dayFacts(uid(), '2026-10-20')
     expect([...new Set(facts.chapterIds)].sort()).toEqual(['1', '4'])
   })

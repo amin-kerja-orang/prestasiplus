@@ -86,10 +86,10 @@ const BM: AnalyticsSubject = {
   ringTotal: 3,
   weak: bmWeak,
   map: {
-    caption: 'KSSR Bahasa Melayu Darjah 4',
+    caption: 'Peta DSKP — Standard Pembelajaran · Bahasa Melayu',
     tiles: [
-      { spId: 101, code: '1.1', title: 'Membaca', status: 'belum' },
-      { spId: 102, code: '2.1', title: 'Menulis', status: 'lemah' },
+      { spId: 101, code: '1.1', title: 'Membaca', status: 'belum', strand: 'Kemahiran Membaca' },
+      { spId: 102, code: '2.1', title: 'Menulis', status: 'lemah', strand: 'Kemahiran Menulis' },
     ],
   },
 }
@@ -104,7 +104,7 @@ const SEJ: AnalyticsSubject = {
   counts: { mahir: 8, sederhana: 2, lemah: 5, belum: 0 },
   ringTotal: 23,
   weak: sejWeak,
-  map: { caption: 'KSSR Sejarah Darjah 4', tiles: [] },
+  map: { caption: 'Peta DSKP — Standard Pembelajaran · Sejarah', tiles: [] },
 }
 const ANALYTICS: Analytics = {
   userLevelId: 4,
@@ -169,7 +169,7 @@ describe('S7 AnalitikPelajarPage', () => {
     expect(t(w, 'kpi-grade').text()).toBe('G – C')
     expect(exists(w, 'kpi-trend')).toBe(true)
     expect(t(w, 'encourage-box').text()).toContain('Jangan putus asa!')
-    expect(t(w, 'map-caption').text()).toBe('KSSR Bahasa Melayu Darjah 4')
+    expect(t(w, 'map-caption').text()).toBe('Peta DSKP — Standard Pembelajaran · Bahasa Melayu')
     expect(t(w, 'tile-101').attributes('title')).toBe('1.1: Membaca — Belum cuba')
     expect(t(w, 'tile-101').text()).toBe('1.1')
     expect(t(w, 'map-legend').text()).toContain('Mahir (75%+)')
@@ -220,6 +220,148 @@ describe('S7 AnalitikPelajarPage', () => {
     expect(exists(w, 'subject-tabs')).toBe(false)
     expect(exists(w, 'ring-card')).toBe(false)
     expect(exists(w, 'more-weak')).toBe(false)
+  })
+
+  describe('R1-MUR-5 SP map (S10-T04 part 3)', () => {
+    const sp = (spId: number, code: string, status: AnalyticsSubject['map']['tiles'][number]['status'], strand: string | null) => ({
+      spId,
+      code,
+      title: `Standard ${code}`,
+      status,
+      strand,
+    })
+    /** BM practised (3 SPs at 80, 60, 30 percent), Matematik not practised, Fizik practised in part. */
+    const MAP_BM: AnalyticsSubject = {
+      ...BM,
+      accuracy: 56.7,
+      answered: 30,
+      trend: 'up',
+      counts: { mahir: 1, sederhana: 1, lemah: 1, belum: 1 },
+      ringTotal: 4,
+      weak: [],
+      map: {
+        caption: 'Peta DSKP — Standard Pembelajaran · Bahasa Melayu',
+        tiles: [
+          sp(1, '1.1.1', 'mahir', 'Kemahiran Membaca'),
+          sp(2, '1.1.2', 'sederhana', 'Kemahiran Membaca'),
+          sp(3, '1.1.3', 'lemah', 'Kemahiran Membaca'),
+          sp(4, '2.1.1', 'belum', 'Kemahiran Menulis'),
+        ],
+      },
+    }
+    const MAP_MT: AnalyticsSubject = {
+      subjectId: 2,
+      name: 'Matematik',
+      code: 'MT',
+      accuracy: null,
+      answered: 0,
+      trend: 'stable',
+      projection: null,
+      counts: { mahir: 0, sederhana: 0, lemah: 0, belum: 2 },
+      ringTotal: 2,
+      weak: [],
+      map: {
+        caption: 'Peta DSKP — Standard Pembelajaran · Matematik',
+        tiles: [sp(21, '1.1.1', 'belum', 'Ubahan'), sp(22, '2.1.1', 'belum', 'Matriks')],
+      },
+    }
+    const MAP_FZ: AnalyticsSubject = { ...MAP_MT, subjectId: 3, name: 'Fizik', code: 'FZ', accuracy: 40, answered: 5, projection: { low: 'E', high: 'C' } }
+    const WITH_MAP: Analytics = { userLevelId: 11, topWeak: [], subjects: [MAP_MT, MAP_BM, MAP_FZ] }
+
+    it('AC-MUR-5-1: green, yellow and red tiles by band and the ring reads "1 / 4 SP"', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=BM', '/analitik/pelajar')
+      expect(['1', '2', '3', '4'].map((id) => t(w, `tile-${id}`).attributes('data-status'))).toEqual(['mahir', 'sederhana', 'lemah', 'belum'])
+      expect(t(w, 'tile-1').classes().join(' ')).toContain('success')
+      expect(t(w, 'tile-2').classes().join(' ')).toContain('warning')
+      expect(t(w, 'tile-3').classes().join(' ')).toContain('error')
+      expect(t(w, 'ring-arc').text()).toContain('/ 4 SP')
+      expect(w.findAll('[data-testid=ring-legend] > li').map((x) => x.text())).toEqual(['Mahir 1', 'Sederhana 1', 'Lemah 1', 'Belum cuba 1'])
+      expect(t(w, 'summary-message').text()).toBe('1 daripada 4 Standard Pembelajaran sudah dikuasai untuk Bahasa Melayu. Masih ada 1 SP belum dicuba.')
+    })
+
+    it('groups the tiles by strand with a heading each, in the order given', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=BM', '/analitik/pelajar')
+      const groups = w.findAll('[data-testid=map-strand]')
+      expect(groups.map((g) => g.get('[data-testid=strand-title]').text())).toEqual(['Kemahiran Membaca', 'Kemahiran Menulis'])
+      expect(groups[0]?.findAll('[data-testid^=tile-]').map((x) => x.text())).toEqual(['1.1.1', '1.1.2', '1.1.3'])
+      expect(groups[1]?.findAll('[data-testid^=tile-]').map((x) => x.text())).toEqual(['2.1.1'])
+      expect(t(w, 'map-caption').text()).toBe('Peta DSKP — Standard Pembelajaran · Bahasa Melayu')
+    })
+
+    it('a tile is no link until S5-T03 gives the servable count (title: code, wording, band)', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=BM', '/analitik/pelajar')
+      expect(w.find('[data-testid=map-tiles] a').exists()).toBe(false)
+      expect(t(w, 'tile-3').attributes('title')).toBe('1.1.3: Standard 1.1.3 — Lemah')
+      expect(t(w, 'map-legend').text()).toContain('Mahir (75%+)')
+      expect(t(w, 'map-legend').text()).toContain('Sederhana (50-74%)')
+      expect(t(w, 'map-legend').text()).toContain('Lemah (<50%)')
+      expect(t(w, 'map-legend').text()).toContain('Belum Cuba')
+    })
+
+    it('AC-MUR-5-6: a weak SP with 0 servable questions has its card but no link and no error', async () => {
+      api.fetchAnalytics.mockResolvedValue({ ...WITH_MAP, topWeak: [{ ...weak(9, 'BM', 20, 0), available: 0, focusCount: 0 }] })
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
+      expect(w.findAll('[data-testid=top-weak] [data-testid^=weak-card-]')).toHaveLength(1)
+      expect(w.find('[data-testid=top-weak] a').exists()).toBe(false)
+      expect(exists(w, 'page-error')).toBe(false)
+    })
+
+    it('FR-MUR-5-2: a subject without answers keeps its tab (no percent) and shows the message; Ketepatan, Trend and Unjuran read "—"', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=MT', '/analitik/pelajar')
+      expect(w.findAll('[data-testid^=tab-]')).toHaveLength(3)
+      expect(t(w, 'tab-2').text()).toBe('Matematik')
+      expect(t(w, 'tab-1').text()).toContain('57%')
+      expect(t(w, 'summary-message').text()).toBe('Belum ada latihan untuk Matematik. Mula berlatih untuk membuka analitik penuh.')
+      expect(t(w, 'kpi-acc').text()).toBe('—')
+      expect(t(w, 'kpi-answered').text()).toBe('0')
+      expect(t(w, 'kpi-trend').text()).toBe('—')
+      expect(t(w, 'kpi-grade').text()).toBe('—')
+      expect(exists(w, 'encourage-box')).toBe(false)
+      expect(t(w, 'ring-arc').text()).toContain('/ 2 SP')
+    })
+
+    it('FR-MUR-5-8: with no tab in the URL the first subject WITH answers opens (here the second tab), else the first', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar', '/analitik/pelajar')
+      expect(t(w, 'tab-1').attributes('aria-pressed')).toBe('true')
+      expect(t(w, 'tab-2').attributes('aria-pressed')).toBe('false')
+      wrapper?.unmount()
+      api.fetchAnalytics.mockResolvedValue({ ...WITH_MAP, subjects: [MAP_MT, { ...MAP_FZ, answered: 0, accuracy: null, projection: null }] })
+      const none = await render(AnalitikPelajarPage, '/analitik/pelajar', '/analitik/pelajar')
+      expect(t(none, 'tab-2').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('FR-MUR-5-8: ?tab= opens that subject, an unknown code falls back, a click writes the tab to the URL', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=FZ', '/analitik/pelajar')
+      expect(t(w, 'tab-3').attributes('aria-pressed')).toBe('true')
+      await t(w, 'tab-2').trigger('click')
+      await flushPromises()
+      expect(w.vm.$router.currentRoute.value.query.tab).toBe('MT')
+      expect(t(w, 'tab-2').attributes('aria-pressed')).toBe('true')
+      wrapper?.unmount()
+      const bad = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=XX', '/analitik/pelajar')
+      expect(t(bad, 'tab-1').attributes('aria-pressed')).toBe('true')
+    })
+
+    it('FR-MUR-5-7 and AC-MUR-5-4 (class proof only): the tab bar scrolls inside its own box and the tiles wrap', async () => {
+      api.fetchAnalytics.mockResolvedValue(WITH_MAP)
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar?tab=BM', '/analitik/pelajar')
+      expect(t(w, 'subject-tabs').classes()).toContain('overflow-x-auto')
+      expect(w.get('[data-testid=map-tiles]').classes()).toContain('flex-wrap')
+    })
+
+    it('AC-MUR-5-3: tabs with empty maps (every SP Belum cuba) and no error', async () => {
+      api.fetchAnalytics.mockResolvedValue({ userLevelId: 11, topWeak: [], subjects: [MAP_MT] })
+      const w = await render(AnalitikPelajarPage, '/analitik/pelajar')
+      expect(exists(w, 'page-error')).toBe(false)
+      expect(w.findAll('[data-testid=map-tiles] [data-status=belum]')).toHaveLength(2)
+      expect(t(w, 'top-weak').text()).toContain('Topik Perlu Perhatian Utama (0)')
+    })
   })
 
   it('shows the load-error box with a retry button', async () => {

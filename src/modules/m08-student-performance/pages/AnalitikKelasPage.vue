@@ -1,20 +1,23 @@
 <script setup lang="ts">
 /**
- * S8 `/analitik/kelas` "Analitik Kelas" (M08-T7; FR-M08-54…57, BR-M08-15). The selects submit on change:
- * the URL keeps the live query names `classroom_id`, `subject_id`, `risk_level`.
- * A class the viewer may not open is the 403 page (§7 #8).
+ * S8 `/analitik/kelas` "Analitik Kelas" (M08-T7; R1-GUR-5, R1-AS-5). The selects submit on change:
+ * the URL keeps the live query names `classroom_id`, `subject_id`, `risk_level` ("Semua Kelas" and "Semua Subjek"
+ * are query-less). A class the viewer may not open is the 403 page (§7 #8). Whole percentages on screen (decision 11),
+ * 25 rows a page, "Kelas" column for the school admin, "Rekod Intervensi" for the teacher only.
  */
 import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsFilterBar, DsLoadError, DsPage, DsPageHeader, DsStatRow, DsStatusBadge, type DsStatus } from '@/ds'
+import { useSessionStore } from '@/stores/session'
+
+import { DsCluster, DsDataTable, DsEmptyState, DsFilterBar, DsLoadError, DsPage, DsPageHeader, DsStatRow, DsStatusBadge, type DsStatus } from '@/ds'
 
 import { fetchClassAnalytics } from '../api/class'
-import type { RiskLevel } from '../api/types'
+import type { ClassRiskLevel, ClassTrend, RiskLevel } from '../api/types'
 import { TREND_ICON, TREND_TEXT } from '../lib/analitik'
 import { usePhIcon } from '../lib/icons'
-import { pct1 } from '../lib/prestasi/format'
+import { DASH, pctWhole } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
@@ -23,6 +26,11 @@ const statItems = useStatItems()
 const route = useRoute()
 const router = useRouter()
 const icon = usePhIcon()
+const session = useSessionStore()
+/** FR-AS-5-2: the school admin sees the extra column "Kelas". */
+const isSchoolAdmin = computed(() => session.role === 'school_admin')
+/** FR-GUR-5-4, FR-AS-5-3: "Rekod Intervensi" is the teacher's only (lead ruling, 5 Nov); never the school admin's or the admin's. */
+const mayRecordIntervention = computed(() => session.role === 'teacher')
 
 const queryInt = (key: string): number | undefined => {
   const raw = route.query[key]
@@ -62,35 +70,48 @@ const RISKS: { value: string; label: string }[] = [
   { value: 'medium', label: 'Sederhana' },
   { value: 'low', label: 'Rendah' },
 ]
-const RISK_BADGE: Record<RiskLevel, { label: string; status: DsStatus }> = {
+/** 'none' = Belum Bermula (no answers): the neutral "inactive" badge with its own word. */
+const RISK_BADGE: Record<ClassRiskLevel, { label: string; status: DsStatus }> = {
   critical: { label: 'Kritikal', status: 'risk-high' },
   high: { label: 'Tinggi', status: 'risk-mid' },
   medium: { label: 'Sederhana', status: 'inactive' },
   low: { label: 'Rendah', status: 'risk-low' },
+  none: { label: 'Belum Bermula', status: 'inactive' },
 }
-const TREND_LABEL = { up: 'Naik', down: 'Turun', stable: 'Tetap' } as const
+/** FR-GUR-5-2 Trend sentences; "BARU" is a badge. */
+const TREND_SENTENCE: Record<ClassTrend, string> = {
+  up: 'Meningkat berbanding minggu lepas',
+  down: 'Menurun berbanding minggu lepas',
+  stable: 'Stabil',
+  new: 'BARU',
+}
 
-const classItems = computed(() =>
-  (data.value?.options.classes ?? []).map((c) => ({ label: c.name, value: String(c.id) })),
-)
-const subjectItems = computed(() =>
-  (data.value?.options.subjects ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
-)
-const classValue = computed(() => String(data.value?.options.selected.classroomId ?? ''))
-const subjectValue = computed(() => String(data.value?.options.selected.subjectId ?? ''))
+const classItems = computed(() => [
+  { label: 'Semua Kelas', value: ALL },
+  ...(data.value?.options.classes ?? []).map((c) => ({ label: c.name, value: String(c.id) })),
+])
+const subjectItems = computed(() => [
+  { label: 'Semua Subjek', value: ALL },
+  ...(data.value?.options.subjects ?? []).map((s) => ({ label: s.name, value: String(s.id) })),
+])
+const classValue = computed(() => {
+  const id = data.value?.options.selected.classroomId
+  return id === null || id === undefined ? ALL : String(id)
+})
+const subjectValue = computed(() => {
+  const id = data.value?.options.selected.subjectId
+  return id === null || id === undefined ? ALL : String(id)
+})
 const riskValue = computed(() => data.value?.options.selected.riskLevel || ALL)
-const activeCount = computed(() => (riskLevel.value ? 1 : 0))
+const activeCount = computed(() => (riskLevel.value ? 1 : 0) + (classroomId.value === undefined ? 0 : 1) + (subjectId.value === undefined ? 0 : 1))
 
 /** Submit on change: the three filters of the current selection, empty ones left out. */
 function submit(change: { classroom_id?: string; subject_id?: string; risk_level?: string }): void {
-  const sel = data.value?.options.selected
   const next: Record<string, string> = {}
-  const cid =
-    change.classroom_id ?? (sel?.classroomId === null ? '' : String(sel?.classroomId ?? ''))
-  const sid =
-    change.classroom_id !== undefined
-      ? ''
-      : (change.subject_id ?? (sel?.subjectId === null ? '' : String(sel?.subjectId ?? '')))
+  // The current selection is the URL (the data of a reload in flight may still show the old one).
+  const cid = change.classroom_id ?? (classroomId.value === undefined ? '' : String(classroomId.value))
+  // The subjects are every active subject whatever the class: a class change keeps the subject.
+  const sid = change.subject_id ?? (subjectId.value === undefined ? '' : String(subjectId.value))
   const rl = change.risk_level ?? riskLevel.value
   if (cid) next.classroom_id = cid
   if (sid) next.subject_id = sid
@@ -102,7 +123,7 @@ function onChange(
   value: string | undefined,
 ): void {
   if (value === undefined) return
-  submit({ [key]: key === 'risk_level' && value === ALL ? '' : value })
+  submit({ [key]: value === ALL ? '' : value })
 }
 
 /** The bar's "Cari" re-submits the current selection; "Set Semula" goes back to the defaults. */
@@ -111,24 +132,22 @@ const reset = (): void => {
   void router.push({ path: '/analitik/kelas' })
 }
 
-type Trend = 'up' | 'down' | 'stable'
-const trendKey = (t: Trend): Trend => t
-const trendTone = (t: Trend): string => TREND_TEXT[t]
-const trendIcon = (t: Trend): string => icon.value(TREND_ICON[t])
-const riskStatus = (r: RiskLevel): DsStatus => RISK_BADGE[r].status
+const trendTone = (t: Exclude<ClassTrend, 'new'>): string => TREND_TEXT[t]
+const trendIcon = (t: Exclude<ClassTrend, 'new'>): string => icon.value(TREND_ICON[t])
+const riskStatus = (r: ClassRiskLevel): DsStatus => RISK_BADGE[r].status
 
 /** Unjuran "{low} – {high}" (DV-16). */
 const range = (p: { low: string; high: string }): string => `${p.low} – ${p.high}`
 /** Ketepatan colour: error < 50 (OBSERVED), the FR-M08-50 bands otherwise (INFERRED). */
-const accTone = (n: number): string =>
-  n < 50 ? 'text-error' : n < 75 ? 'text-warning' : 'text-success'
+const accTone = (n: number | null): string =>
+  n === null ? '' : n < 50 ? 'text-error' : n < 75 ? 'text-warning' : 'text-success'
 
 const summary = computed<StatSpec[]>(() => {
   const s = data.value?.summary
   if (!s) return []
   return [
     { id: 'pelajar', label: 'Jumlah Pelajar', value: s.students, icon: 'users' },
-    { id: 'ketepatan', label: 'Purata Ketepatan', value: pct1(s.accuracy), icon: 'target' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(s.accuracy), icon: 'target' },
     {
       id: 'berisiko',
       label: 'Pelajar Berisiko',
@@ -145,44 +164,56 @@ interface Row extends Record<string, unknown> {
   userId: number
   index: number
   name: string
-  accuracy: number
+  classesText: string
+  accuracy: number | null
   accuracyText: string
-  answered: number
-  trend: DataRow['trend']
+  answeredText: string
+  trend: ClassTrend
+  trendText: string
   rangeText: string
-  riskLevel: RiskLevel
+  riskLevel: ClassRiskLevel
   riskText: string
 }
 const rows = computed<Row[]>(() =>
-  (data.value?.rows ?? []).map((r, i) => ({
+  (data.value?.rows ?? []).map((r: DataRow, i) => ({
     userId: r.userId,
     index: i + 1,
     name: r.name,
+    classesText: r.classes.join(', '),
     accuracy: r.accuracy,
-    accuracyText: `${r.accuracy.toFixed(1)}%`,
-    answered: r.answered,
+    accuracyText: pctWhole(r.accuracy),
+    answeredText: r.riskLevel === 'none' ? DASH : String(r.answered),
     trend: r.trend,
-    rangeText: range(r.projection),
+    trendText: r.riskLevel === 'none' ? DASH : TREND_SENTENCE[r.trend],
+    rangeText: r.projection === null ? DASH : range(r.projection),
     riskLevel: r.riskLevel,
     riskText: RISK_BADGE[r.riskLevel].label,
   })),
 )
-const columns: TableColumn<Row>[] = [
+const columns = computed<TableColumn<Row>[]>(() => [
   { accessorKey: 'index', header: '#' },
   { accessorKey: 'name', header: 'Pelajar' },
+  ...(isSchoolAdmin.value ? [{ accessorKey: 'classesText', header: 'Kelas' }] : []),
   { accessorKey: 'accuracyText', header: 'Ketepatan' },
-  { accessorKey: 'answered', header: 'Soalan' },
-  { accessorKey: 'trend', header: 'Trend' },
+  { accessorKey: 'answeredText', header: 'Soalan' },
+  { accessorKey: 'trendText', header: 'Trend' },
   { accessorKey: 'rangeText', header: 'Unjuran' },
   { accessorKey: 'riskText', header: 'Risiko' },
   { accessorKey: 'userId', header: 'Tindakan' },
-]
-const cardFields = [
+])
+const cardFields = computed(() => [
+  ...(isSchoolAdmin.value ? [{ key: 'classesText', label: 'Kelas' }] : []),
   { key: 'accuracyText', label: 'Ketepatan' },
-  { key: 'answered', label: 'Soalan' },
+  { key: 'answeredText', label: 'Soalan' },
+  { key: 'trendText', label: 'Trend' },
   { key: 'rangeText', label: 'Unjuran' },
   { key: 'riskText', label: 'Risiko' },
-]
+])
+/** FR-GUR-5-4: Kritikal and Tinggi rows only; the m12 form reads `?pelajar=`. */
+const showIntervention = (r: { riskLevel: ClassRiskLevel }): boolean =>
+  mayRecordIntervention.value && (r.riskLevel === 'critical' || r.riskLevel === 'high')
+const interventionHref = (userId: number | string): string => `/guru/kirkpatrick/interventions?pelajar=${String(userId)}`
+const PAGE_SIZE = 25
 </script>
 
 <template>
@@ -237,7 +268,7 @@ const cardFields = [
 
       <div v-if="data.summary === null" data-testid="analitik-empty">
         <DsEmptyState
-          title="Tiada data analitik untuk kelas dan subjek ini."
+          title="Tiada pelajar sepadan dengan tapisan ini."
           icon="chart-line-up"
         />
       </div>
@@ -253,7 +284,7 @@ const cardFields = [
             caption="Senarai pelajar"
             card-title="name"
             :card-fields="cardFields"
-            :page-size="100"
+            :page-size="PAGE_SIZE"
             data-testid="student-table"
           >
             <template #name-cell="{ row }">
@@ -269,10 +300,17 @@ const cardFields = [
                 row.original.accuracyText
               }}</span>
             </template>
-            <template #trend-cell="{ row }">
-              <span :class="[trendTone(row.original.trend), 'flex items-center gap-1']">
+            <template #trendText-cell="{ row }">
+              <span v-if="row.original.riskLevel === 'none'" data-testid="trend-none">{{ DASH }}</span>
+              <DsStatusBadge
+                v-else-if="row.original.trend === 'new'"
+                status="new"
+                label="BARU"
+                data-testid="trend-new"
+              />
+              <span v-else :class="[trendTone(row.original.trend), 'flex items-center gap-1']" data-testid="trend-cell">
                 <UIcon :name="trendIcon(row.original.trend)" class="size-5" />
-                <span class="text-caption">{{ TREND_LABEL[trendKey(row.original.trend)] }}</span>
+                <span class="text-caption">{{ row.original.trendText }}</span>
               </span>
             </template>
             <template #riskText-cell="{ row }">
@@ -283,13 +321,27 @@ const cardFields = [
               />
             </template>
             <template #userId-cell="{ row }">
-              <UButton
-                :to="`/prestasi/${row.original.userId}`"
-                color="neutral"
-                variant="soft"
-                :icon="icon('chart-line-up')"
-                label="Lihat Analitik"
-              />
+              <DsCluster gap="sm">
+                <UButton
+                  :to="`/prestasi/${row.original.userId}`"
+                  color="neutral"
+                  variant="soft"
+                  size="lg"
+                  :icon="icon('chart-line-up')"
+                  label="Lihat Analitik"
+                  data-testid="lihat-analitik"
+                />
+                <UButton
+                  v-if="showIntervention(row.original)"
+                  :to="interventionHref(row.original.userId)"
+                  color="neutral"
+                  variant="soft"
+                  size="lg"
+                  :icon="icon('clipboard-text')"
+                  label="Rekod Intervensi"
+                  data-testid="rekod-intervensi"
+                />
+              </DsCluster>
             </template>
             <template #card-actions="{ row }">
               <UButton
@@ -299,6 +351,17 @@ const cardFields = [
                 size="lg"
                 :icon="icon('chart-line-up')"
                 label="Lihat Analitik"
+                data-testid="lihat-analitik"
+              />
+              <UButton
+                v-if="showIntervention(row)"
+                :to="interventionHref(row.userId)"
+                color="neutral"
+                variant="soft"
+                size="lg"
+                :icon="icon('clipboard-text')"
+                label="Rekod Intervensi"
+                data-testid="rekod-intervensi"
               />
             </template>
           </DsDataTable>

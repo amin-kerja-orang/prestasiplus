@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * One served question with its answer input (provisional pages S4a / S4b, L-2 / L-3): option
+ * One served question with its answer input (pages S4a / S4b): option
  * choices for Bahagian A / B (radio), a text area for C. Layout is PROPOSED, not observed.
  * Options reuse the quiz kit's `DsQuizOption` (toggle buttons in a labelled group).
  */

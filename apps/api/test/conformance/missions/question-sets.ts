@@ -40,16 +40,16 @@ export const questionSetsScenarios: Scenario[] = [
       const none = await teacher.request('POST', '/guru/question-papers', { body: {} })
       expectError(ctx, none, 422, 'VALIDATION_ERROR')
       const fields = errorOf(none).fields as Record<string, string>
-      ctx.check(fields.jenisSoalan === 'Sila pilih jenis soalan.', 'jenisSoalan message')
+      ctx.check(fields.paperType === 'Sila pilih jenis soalan.', 'paperType message')
       ctx.check(fields.subject === 'Sila isi matapelajaran.', 'subject message')
-      ctx.check(fields.files === 'Sila pilih sekurang-kurangnya satu fail.', 'files message')
-      ctx.check(String(errorOf(none).message) === 'Sila pilih jenis soalan. (and 2 more errors)', 'Laravel summary message')
+      ctx.check(fields.files === 'Sila pilih fail.', 'files message')
+      ctx.check(String(errorOf(none).message) === 'Sila pilih jenis soalan. (and 3 more errors)', 'Laravel summary message')
 
       const bad = await teacher.request('POST', '/guru/question-papers', {
         file: { field: 'files[]', filename: 'program.exe', contentType: 'application/octet-stream', content: new Uint8Array([1, 2, 3]) },
       })
       expectError(ctx, bad, 422, 'VALIDATION_ERROR')
-      ctx.check((errorOf(bad).fields as Record<string, string>).files === 'program.exe: format atau saiz tidak dibenarkan.', 'bad file message')
+      ctx.check((errorOf(bad).fields as Record<string, string>).files === 'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.', 'bad file message')
     },
   },
   {

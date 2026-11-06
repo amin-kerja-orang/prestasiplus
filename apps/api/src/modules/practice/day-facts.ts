@@ -4,8 +4,8 @@
 
 /**
  * `practice_answers.mode` codes written by games (AnswerLogPort registry, OPT-MODE-SESI): `game` for solo and room
- * games, `battle` for Battle. A game session never counts toward a challenge (FR-GM-19.4). A NULL mode (legacy row)
- * is a practice answer.
+ * games, `battle` for Battle. A game session never counts toward a challenge (FR-GM-19.4). `mode` is NOT NULL
+ * since 0188.
  */
 export const GAME_ANSWER_MODES = ['game', 'battle'] as const
 
