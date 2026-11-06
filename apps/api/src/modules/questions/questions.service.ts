@@ -1,13 +1,17 @@
+import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { z } from 'zod'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
+import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -42,6 +46,7 @@ import type {
   NamedRef,
   Page,
   PartAnswer,
+  PersonalQuestionWrite,
   PublicQuestion,
   QuestionActor,
   QuestionBulkAction,
@@ -209,6 +214,16 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** S6-T16: what the caller of a personal-question write runs INSIDE the write transaction. */
+export interface PersonalTxHooks {
+  /** After the question row lock, before the write: throw to refuse (the in-use 409). */
+  guard?: (tx: TxClient) => Promise<unknown>
+  /** Delete only: removes rows that point at the question (its Ulang Kaji queue rows). */
+  cleanup?: (tx: TxClient) => Promise<unknown>
+  /** The audit of the write. */
+  after?: (tx: TxClient, questionId: string) => Promise<unknown>
+}
+
 /** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
 const ESSAY_CHOICE_FLAT_MESSAGES = {
   modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
@@ -529,6 +544,8 @@ export class QuestionsService {
         failed.push(failure)
       }
     }
+    // A bulk hard delete removes served questions: tell the pool and Databank caches (the status moves above invalidate in `setStatus`).
+    if (action === 'delete' && affected > 0) this.overview?.invalidate()
     // `skipped` is present only when a row was skipped (additive on the wire).
     return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
@@ -699,14 +716,18 @@ export class QuestionsService {
   // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
 
   /**
-   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
-   * which have no source yet: an empty page. The caller fixes the page size.
+   * One slice of what a pupil is served (approved, live, figures present), newest first; `total` is the approved count. The own `review`
+   * submissions of the caller are merged in by the controller (S6-T17), which sets `offset` and `limit` to the part of the union that is approved.
    */
-  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
-    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+  async listGuruStructured(filter: StructuredListFilter): Promise<Page<QuestionView>> {
     const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
     const records = await this.repo.getMany(page.ids, 'live')
     return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
+  }
+
+  /** Of these question ids, those the teacher list serves (so an own item whose question is NOT served stays on the own side). */
+  servedStructuredAmong(ids: readonly string[]): Promise<Set<string>> {
+    return this.repo.structuredServedAmong(ids)
   }
 
   /**
@@ -719,6 +740,82 @@ export class QuestionsService {
     if (!record) throw questionNotFound()
     const stimulusGroup = record.groupId ? await this.repo.groupOf(record.id) : null
     return { ...(await this.viewOf(record)), stimulusGroup }
+  }
+
+  // --- personal questions (S6-T16, API-GUR-24, DM-42) ------------------------------------------------------------
+  // A teacher's own MCQ: `visibility = 'teacher_private'`, `owner_user_id` = the teacher, `created_by_id` NULL (so no Sumbang count or badge
+  // sees it, FR-GUR-44a-4), saved already `approved` and live. It skips the approve gate (it never enters Semakan, the bank or a paper) and
+  // `assertServableSomewhere` (it is served by the owner's mission draw only). The caller (classes/teacher-tools) validates the curriculum
+  // rules (D112) and owns the 404/409 rules; this method only builds and writes the version.
+
+  private personalNormalized(input: PersonalQuestionWrite, userId: string): Normalized {
+    const spIds = [...new Set(input.spIds ?? [])]
+    const parts = this.checkedParts(
+      partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.text,
+        options: input.options.map((o) => o.text),
+        correctAnswer: input.correctIndex,
+        ...(input.cognitiveLevel ? { cognitiveLevel: input.cognitiveLevel } : {}),
+      }),
+      false,
+    )
+    return {
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      tp: input.tp ?? input.difficulty,
+      difficultyLevel: input.difficulty,
+      stem: input.text,
+      parts,
+      language: languageToStore(undefined, undefined),
+      explanation: null,
+      ...(spIds.length === 0 ? {} : { tag: { unitId: null, spIds, tp: input.tp ?? null } }),
+      chapterId: input.chapterId ?? undefined,
+      actor: { userId, role: 'teacher' },
+      flatSp: spIds.length === 0,
+    }
+  }
+
+  /** Creates the personal question and returns its question id (decimal). `after` runs inside the same transaction (the caller's audit). */
+  async createPersonal(input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<string> {
+    const owner = parse(ownerUserId)
+    if (owner === null) throw questionNotFound()
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.visibility = 'teacher_private'
+    draft.ownerUserId = owner
+    draft.referenceUrl = input.referenceUrl ?? null
+    return this.prisma.transaction(async (tx) => {
+      const id = await this.repo.create({ sourceType: 'manual', createdById: null, groupId: null, groupPosition: null, now: this.clock.now(), version: draft })
+      await hooks.after?.(tx, id)
+      return id
+    }, TX)
+  }
+
+  /**
+   * Rewrites the content of a personal question in place (one version, no history). Owner and visibility never change. `guard` runs inside
+   * the transaction AFTER the question row lock (so a check and the write cannot be separated), `after` at the end of it.
+   */
+  async rewritePersonal(questionId: string, versionNo: number, input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<void> {
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.referenceUrl = input.referenceUrl ?? null
+    await this.prisma.transaction(async (tx) => {
+      if (!(await this.repo.lock(questionId))) throw questionNotFound()
+      await hooks.guard?.(tx)
+      await this.repo.rewriteVersion(questionId, versionNo, draft, this.clock.now())
+      await hooks.after?.(tx, questionId)
+    }, TX)
+  }
+
+  /** Hard-deletes a personal question (cascades to its version, parts, options and key). False when it is already gone. Hooks run in the same transaction after the lock. */
+  async removePersonal(questionId: string, hooks: PersonalTxHooks = {}): Promise<boolean> {
+    return this.prisma.transaction(async (tx) => {
+      if (!(await this.repo.lock(questionId))) return false
+      await hooks.guard?.(tx)
+      await hooks.cleanup?.(tx)
+      const removed = await this.repo.remove(questionId)
+      if (removed) await hooks.after?.(tx, questionId)
+      return removed
+    }, TX)
   }
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
@@ -756,20 +853,39 @@ export class QuestionsService {
 
   // --- internals ----------------------------------------------------------------------------------
 
+  /** Parses each top-level part with the strict write schema, or the lenient read schema when `unchanged(part, index)`. */
+  private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
+    | { success: true; data: QuestionPart[] }
+    | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
+    // The count rule is the one the schema always had (`array().min(1).max(20)`), so its message stays unchanged.
+    const sized = z.array(z.unknown()).min(1).max(20).safeParse(parts)
+    if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
+    const data: QuestionPart[] = []
+    for (const [i, p] of parts.entries()) {
+      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
+      data.push(r.data as QuestionPart)
+    }
+    return { success: true, data }
+  }
+
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
+    // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
+    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
+    const res = this.parseParts(parts, unchanged)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
       return res.data
     }
     const issue = res.error.issues[0]
-    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
     throw fail({ [key]: deepest.message })
   }
@@ -1120,7 +1236,7 @@ export class QuestionsService {
 
     let parts: QuestionPart[]
     if (input.parts) {
-      parts = this.checkedParts(input.parts, true)
+      parts = this.checkedParts(input.parts, true, v.parts)
     } else if (flatShaped) {
       // Remove wins; else a sent id (or null = no image) replaces the stored one; an omitted position keeps it.
       const optionImageIds = flat.optionImageIds.map((id, i) =>
@@ -1141,7 +1257,7 @@ export class QuestionsService {
         cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
-      parts = this.checkedParts(partsFromFlat(src), false)
+      parts = this.checkedParts(partsFromFlat(src), false, v.parts)
     } else {
       // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
       // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.

@@ -131,6 +131,9 @@ describe('isPathInScope', () => {
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
+      '/guru/soalan-guru',
+      '/guru/soalan-guru/cipta',
+      '/guru/soalan-guru/12/sunting',
       '/guru/soalan-berstruktur',
       '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
@@ -147,7 +150,6 @@ describe('isPathInScope', () => {
     for (const path of [
       '/dashboard',
       '/guru/misi-harian',
-      '/guru/soalan-guru',
       '/guru/databank',
       '/guru/laporan-mingguan',
       '/practice',
@@ -249,6 +251,15 @@ describe('the VITE_PROTOTYPE_SCOPE switch', () => {
     expect(isPrototypeScopeOn()).toBe(true)
     expect(isPathAllowed('student', '/admin/users')).toBe(false)
     expect(isPathAllowed('student', '/dashboard')).toBe(true)
+  })
+})
+
+describe('diagram audit /admin/soalan-gambar (S6-T18)', () => {
+  it('is allowed for the teacher (Sumbang Soalan tile) with the scope on, not for school_admin or a student', () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    expect(isPathAllowed('teacher', '/admin/soalan-gambar')).toBe(true)
+    expect(isPathAllowed('school_admin', '/admin/soalan-gambar')).toBe(false)
+    expect(isPathAllowed('student', '/admin/soalan-gambar')).toBe(false)
   })
 })
 

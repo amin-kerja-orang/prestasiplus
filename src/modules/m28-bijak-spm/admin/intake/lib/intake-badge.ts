@@ -9,6 +9,7 @@ export const WIRE_TONE: Record<NonNullable<Badged['batchStatus']>, DsStatus> = {
   submitted: 'pending-approval',
   processing: 'in-progress',
   ready_for_review: 'awaiting-review',
+  selesai_dengan_ralat: 'awaiting-review',
   failed: 'rejected',
   cancelled: 'inactive',
 }

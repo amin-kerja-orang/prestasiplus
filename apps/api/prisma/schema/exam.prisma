@@ -9,9 +9,8 @@
 // by BE-08, `users` by BE-03/05): those are plain scalar columns here so this file does not edit
 // another card's models.
 //
-// `paper_placements.question_id` is a plain bigint with NO foreign key yet: the question store
-// (`questions`, BE-09, migration 0011) is not on the base this migration was written against. The
-// integrator adds `fk_paper_placements_question_id` (-> questions.id) once BE-09 is merged.
+// `paper_placements.question_id` is a plain bigint here. Its foreign key `fk_paper_placements_question_id`
+// (-> questions.id, ON DELETE RESTRICT) is in migration 0160 (S3-T02, DM-11), SQL only.
 //
 // None of these tables can receive .cloud rows (data model 3.8: `exam_papers` and the blueprints are
 // archived, not migrated), so they carry no `legacy_*` columns and are not in migratable-models.json.
@@ -37,6 +36,8 @@ model Blueprint {
   /// Default duration (Q-S1); each paper stores its own printed duration.
   durationMin   Int      @map("duration_min")
   totalMarks    Int?     @map("total_marks")
+  /// DM-57 "Bilangan soalan dalam kertas"; null = not stated. No rule ties it to the section counts.
+  questionCount Int?     @map("question_count") @db.SmallInt
   languageMode  String?  @map("language_mode")
   autoMarkable  Boolean? @map("auto_markable")
   instructions  String[] @default([])
@@ -96,6 +97,8 @@ model BlueprintSection {
   kbatMarks     Int?    @map("kbat_marks") @db.SmallInt
   /// false = seeded from layer 2 and not yet reviewed by Admin Pusat; the server sets true on any admin write of kbatMarks.
   kbatReviewed  Boolean @default(true) @map("kbat_reviewed")
+  /// DM-57 "Markah setiap soalan": json array of integers, one per offered question. NULL = no list. Not the Int `paper_sections.marks_per_question`.
+  marksPerQuestion Json? @map("marks_per_question") @db.JsonB
 
   blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade, map: "fk_blueprint_sections_blueprint_id")
 
@@ -168,6 +171,8 @@ model Paper {
   kertas             Int       @db.SmallInt
   year               Int?      @db.SmallInt
   paperCode          String?   @map("paper_code")
+  /// DM-45 (0163): the intake batch this draft paper was imported from; FK set null. Partial unique (source_batch_id, paper_code) where not null (SQL only).
+  sourceBatchId      BigInt?   @map("source_batch_id")
   /// t4, t5, t4_t5 (check).
   levelScope         String?   @map("level_scope")
   /// The printed duration (Q-S1), stored per paper. A `subjektif` paper writes `durationMinutes`, or 0 (check, DM-23).
@@ -200,8 +205,9 @@ model Paper {
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  blueprint Blueprint?     @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_papers_blueprint_id")
-  sections  PaperSection[]
+  blueprint   Blueprint?     @relation(fields: [blueprintId], references: [id], onDelete: Restrict, map: "fk_papers_blueprint_id")
+  sourceBatch IntakeBatch?   @relation(fields: [sourceBatchId], references: [id], onDelete: SetNull, map: "fk_papers_source_batch_id")
+  sections    PaperSection[]
 
   @@index([status], map: "ix_papers_status")
   @@index([subjectId, kertas, status], map: "ix_papers_subject_id_kertas_status")
@@ -247,7 +253,7 @@ model PaperSection {
 model PaperPlacement {
   id             BigInt  @id @default(autoincrement())
   paperSectionId BigInt  @map("paper_section_id")
-  /// -> questions.id (BE-09). No foreign key until BE-09 is merged (see the header).
+  /// -> questions.id. FK ON DELETE RESTRICT in migration 0160 (DM-11); no Prisma relation (the builder reads questions through its port).
   questionId     BigInt  @map("question_id")
   /// The question version printed on the paper (editing a published question makes version n+1).
   pinnedVersionNo Int    @default(1) @map("pinned_version_no")

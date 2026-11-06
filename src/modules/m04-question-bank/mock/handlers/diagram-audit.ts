@@ -1,5 +1,5 @@
 /**
- * M04 diagram audit (SRS §7 #23–#25, BR-M04-19, FR-M04-95…101). Admin, teacher and school_admin may list; upload and dismiss are admin-only (S6-T18).
+ * M04 diagram audit (SRS §7 #23–#25, BR-M04-19, FR-M04-95…101). Admin, teacher and school_admin may list; dismiss is admin-only; upload is admin (direct) or teacher (to review, S6-T18).
  *
  * | # | Route | Notes |
  * |---|---|---|
@@ -15,9 +15,11 @@
  */
 
 import {
+  conflict,
   ok,
   pageMeta,
   pageParams,
+  requireRole,
   route,
   validationError,
   int,
@@ -29,10 +31,13 @@ import {
   type MockResponse,
   type RouteDef,
 } from '@/mock/define'
+import { DIAGRAM_AUDIT_MESSAGES } from '@pp/contract'
+
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
 import type { DiagramMcqItem, DiagramStructuredItem } from '../../api/diagram-audit'
+import { diagramReviewsRepo } from '../repository/diagram-review'
 import { questionsRepo } from '../repository/questions'
 import { structuredRepo } from '../repository/structured'
 import {
@@ -52,6 +57,8 @@ import {
 
 /** SRS §8 S11 flashes (UNVERIFIED COPY). */
 export const DIAGRAM_UPLOADED_TEXT = 'Gambar rajah berjaya dimuat naik.'
+export const DIAGRAM_SUBMITTED_TEXT = DIAGRAM_AUDIT_MESSAGES.submittedForReview
+export const DIAGRAM_ALREADY_PENDING = DIAGRAM_AUDIT_MESSAGES.alreadyPending
 export const DIAGRAM_DISMISSED_TEXT = 'Soalan telah dikeluarkan daripada senarai audit.'
 /** SRS §5 (S11 `image`) and the S2 image rule. */
 export const DIAGRAM_FILE_REQUIRED = 'Sila pilih fail gambar.'
@@ -133,6 +140,7 @@ function audit(req: MockRequest, ctx: MockContext): MockResponse {
     createdBy: userRef(r.createdBy),
     sourceFile: r.sourceFile,
     sourcePage: r.sourcePage,
+    pendingReview: diagramReviewsRepo.isPending('mcq', r.id),
   }))
   const strItems: DiagramStructuredItem[] = str.rows.map((r) => ({
     id: r.id,
@@ -141,6 +149,7 @@ function audit(req: MockRequest, ctx: MockContext): MockResponse {
     createdBy: userRef(r.createdBy),
     sourceFile: r.sourceFile,
     sourcePage: r.sourcePage,
+    pendingReview: diagramReviewsRepo.isPending('structured', r.id),
   }))
 
   // Top 10 subjects by flagged MCQ count, global under every filter (BR-M04-19).
@@ -184,7 +193,7 @@ function resolve(
   id: number,
   image: string | null,
   now: number,
-): { id: number; needsDiagram: false } | null {
+): { id: number; needsDiagram: boolean } | null {
   if (kind === 'mcq') {
     const row = questionsRepo.get(id)
     // PKSK rows are not part of the M04 lists (BR-M04-33).
@@ -215,6 +224,13 @@ function upload(req: MockRequest, ctx: MockContext): MockResponse {
   const value = bodyOf(req).image
   const error = imageError(value)
   if (error) return validationError(error)
+  if (req.session?.role === 'teacher') {
+    // A teacher's image goes to review: the question stays listed (S6-T18).
+    // The mock models no stimulus groups and no throttle: the noStimulusGroup 409 and the 5/min
+    // limit are BE-only.
+    if (!diagramReviewsRepo.open(kind, id)) return conflict(DIAGRAM_ALREADY_PENDING)
+    return ok({ id, needsDiagram: true }, { status: DIAGRAM_SUBMITTED_TEXT })
+  }
   const file = uploadedFile(value)
   const url = storeUpload(`${kind}/${String(id)}`, file as NonNullable<typeof file>)
   const data = ctx.transaction(() => resolve(kind, id, url, ctx.clock.now()))
@@ -231,9 +247,13 @@ function dismiss(req: MockRequest, ctx: MockContext): MockResponse {
 
 export const diagramRoutes: RouteDef[] = [
   route('GET', '/api/diagram-audit', [auditReaders], (req, ctx) => audit(req, ctx)),
-  route('POST', '/api/diagram-audit/:kind/:id/image', [adminOnly], (req, ctx) => upload(req, ctx), {
-    params: { kind: str(), id: int() },
-  }),
+  route(
+    'POST',
+    '/api/diagram-audit/:kind/:id/image',
+    [requireRole('admin', 'teacher')],
+    (req, ctx) => upload(req, ctx),
+    { params: { kind: str(), id: int() } },
+  ),
   route(
     'POST',
     '/api/diagram-audit/:kind/:id/dismiss',

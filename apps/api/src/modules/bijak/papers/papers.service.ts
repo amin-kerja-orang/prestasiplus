@@ -19,7 +19,7 @@ import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-c
 import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
 import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, placesUnservable } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
-import { generationSeed, mytYear, paperCodeOf, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
+import { generationSeed, levelScopeAllows, mytYear, paperCodeOf, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
@@ -84,13 +84,16 @@ export class PapersService {
     // A published paper missing a printed code or a section would break the contract (code min 1,
     // sections min 1): it is not listed (BE-39 may create such rows; they stay out of the hub).
     // A Kertas Subjektif paper has no printed-code field on its form (Q-18): it is listed with the code `K{kertas}` (paperCodeOf).
-    const papers = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
+    // S3-T07: a paper is listed when its `level_scope` includes the pupil's form (see `levelScopeAllows`; no resolvable form = NULL-scoped
+    // only), or when the pupil already has a sitting on it (kept so the result and Semakan stay reachable after a re-scope or promotion).
+    // Both surfaces: the cover and start apply the same level rule to every `pilihan` paper.
+    const grade = await this.repo.gradeOf(userId)
+    const all = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
+    const sat = await this.ports.progressSource.progressFor(userId, all.map((p) => idToString(p.id)))
+    const papers = all.filter((p) => levelScopeAllows(p.levelScope, grade) || sat.has(idToString(p.id)))
     if (papers.length === 0) return []
-    const [subjects, info, progress] = await Promise.all([
-      this.repo.subjectsByIds(papers.map((p) => p.subjectId)),
-      this.infoFor(papers),
-      this.ports.progressSource.progressFor(userId, papers.map((p) => idToString(p.id))),
-    ])
+    const progress = sat
+    const [subjects, info] = await Promise.all([this.repo.subjectsByIds(papers.map((p) => p.subjectId)), this.infoFor(papers)])
     // H-A13: a published paper that places a question the bank no longer serves (archived) cannot start a new sitting
     // (the attempt source answers 403 with a BM line), so it is not offered, like a paper without a code or a section.
     // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
@@ -110,9 +113,14 @@ export class PapersService {
       this.takenDownOf([paper]),
     ])
     const marked = await this.withPinned(info, [paper])
+    // S3-T07: the paper Kuiz is refused (404) for an out-of-scope curated paper unless the pupil has an own open sitting (`kuiz.service.ts`
+    // `visiblePaper`); the cover then omits the action. Sent only when false so every other cover is unchanged.
+    const inScope = paper.kind !== 'pilihan' || levelScopeAllows(paper.levelScope, await this.repo.gradeOf(userId))
+    const kuizAvailable = inScope || progress.get(idToString(paper.id))?.attemptId !== undefined
     const unavailableReason = this.coverUnavailableReason(paper, info, down)
     return {
       ...this.summary(paper, subjects, marked, progress),
+      ...(kuizAvailable ? {} : { kuizAvailable: false }),
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
       // AC-20.3: "Untuk Kegunaan Pemeriksa" is printed only when the paper holds a part a person marks. Read from `marked` (live and pinned) so a question archived after Terbit keeps the grid.
@@ -134,17 +142,15 @@ export class PapersService {
   }
 
   async listContracts(): Promise<BijakBlueprintContract[]> {
-    const blueprints = await this.repo.listActiveBlueprints()
+    // S3-T01 (D76): a pupil sees Disahkan contracts only. The rows are exactly what `findServingBlueprint` finds (the same predicate generate
+    // uses, N1), so an older Disahkan version still serving while a Spec head is edited is the row shown, and the list never offers a pair
+    // that generate would answer NO_BLUEPRINT.
+    const blueprints = await this.repo.listServingBlueprints()
     const subjects = await this.repo.subjectsByIds(blueprints.map((b) => b.subjectId))
-    // N1: `canGenerate` is exactly "findServingBlueprint finds a row" (the same predicate generate uses), so an
-    // older Disahkan version still serving while a Spec head is edited stays generable, and the list never
-    // offers a pair that generate would answer NO_BLUEPRINT.
-    const serving = new Set((await this.repo.listServingBlueprints()).map((r) => `${r.subjectId.toString()}:${String(r.kertas)}`))
     const out: BijakBlueprintContract[] = []
     for (const b of blueprints) {
       const subject = subjects.get(b.subjectId.toString())
       if (!subject || b.sections.length === 0) continue
-      const canGenerate = serving.has(`${b.subjectId.toString()}:${String(b.kertas)}`)
       out.push({
         subject: bijakCodeOf(subject.code),
         subjectName: subject.name,
@@ -153,15 +159,14 @@ export class PapersService {
         code: b.code,
         durationMin: b.durationMin,
         sections: b.sections.map((s) => ({ label: s.label, take: s.questionCount })),
-        canGenerate,
-        ...(canGenerate ? {} : { unavailableReason: 'NO_BLUEPRINT' as const }),
+        canGenerate: true,
       })
     }
     return out
   }
 
-  async subjects(): Promise<BijakSubject[]> {
-    return (await this.repo.hubSubjects()).map((s) => ({ code: bijakCodeOf(s.code), name: s.name }))
+  async subjects(userId: string): Promise<BijakSubject[]> {
+    return (await this.repo.hubSubjects(await this.repo.gradeOf(userId))).map((s) => ({ code: bijakCodeOf(s.code), name: s.name }))
   }
 
   /** For BE-16: the paper a user may sit (curated and published, or the user's own generated paper), else 404. */
@@ -300,6 +305,11 @@ export class PapersService {
     const paper = await this.repo.findPaper(id)
     if (!paper || paper.status !== 'published') throw paperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw paperNotFound()
+    // S3-T07: a curated paper outside the pupil's form is hidden from the list, so its URL (cover, start) answers 404 too.
+    // A pupil who already sat on it keeps the cover (result and Semakan stay reachable); a NEW start is refused in `attempt-source.ts`.
+    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.repo.gradeOf(userId))) {
+      if (!(await this.ports.progressSource.progressFor(userId, [paperId])).has(idToString(paper.id))) throw paperNotFound()
+    }
     return paper
   }
 

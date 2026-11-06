@@ -14,7 +14,13 @@ import {
   SPM_MOCK_SUBJECTS,
   SPM_WALKTHROUGH_MAX_IMAGE_BYTES,
   SPM_WALKTHROUGH_SUBJECTS,
+  SpmAdminTrackingASetCreateSchema,
+  SpmAdminTrackingASetSaveSchema,
+  SpmAdminTrackingASetSchema,
   SpmDatabankSubjectSchema,
+  TRACKING_A_CANDIDATE_CAP,
+  TRACKING_A_MESSAGES,
+  TRACKING_A_PROPOSED_COPY,
   SpmLatihTubiConfigSchema,
   SpmLatihTubiListSchema,
   SpmMockCreateRequestSchema,
@@ -49,8 +55,8 @@ const keysOf = (v: unknown): string[] =>
 const diff = { '1': 0, '2': 12, '3': 30, '4': 8, '5': 0 }
 
 const overview = {
-  stats: { totalQuestions: 20529, subjectCount: 19, yearsAvailable: 0, trackingAQuestions: 747 },
-  modules: { databank: 14673, latihTubi: 14673, trackingA: 747, subjektifSets: 210 },
+  stats: { totalQuestions: 20529, subjectCount: 19, trackingAQuestions: 747 },
+  modules: { databank: 14673, latihTubi: 14673, trackingA: 747, subjektifSets: 210, kertasSubjektif: 3 },
   me: { sessions: 4, avgAccuracy: 62.5, coins: 40, answered: 120 },
 }
 
@@ -106,7 +112,7 @@ const tile = {
   locked: 1,
   total: 3,
   readiness: 67,
-  lockedSets: [{ setNo: 3, readyCount: 12, target: 40 }],
+  lockedSets: [{ year: 2026, setNo: 3, readyCount: 12, target: 40 }],
   hasBankBesar: true,
 }
 
@@ -253,7 +259,7 @@ describe('M06 read models', () => {
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 1, bankBesar: 1, locked: 1 }, tiles: [tile] } })).toBe(true)
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: undefined })).toBe(false)
     expect(ok(SpmTrackingAHubSchema, { ...hub, bahasaLane: { subjects: 3, sets: 1 } })).toBe(false)
-    const tooMany = Array.from({ length: 7 }, (_, i) => ({ setNo: i + 1, readyCount: 0, target: 40 }))
+    const tooMany = Array.from({ length: 7 }, (_, i) => ({ year: 2026, setNo: i + 1, readyCount: 0, target: 40 }))
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 0, bankBesar: 0, locked: 7 }, tiles: [{ ...tile, lockedSets: tooMany }] } })).toBe(false)
     expect(ok(SpmTrackingAHubSchema, { ...hub, readiness: { summary: { bersih: 0, bankBesar: 0, locked: 0 }, tiles: [{ ...tile, readiness: 101 }] } })).toBe(false)
   })
@@ -480,5 +486,62 @@ describe('M06 OpenAPI document', () => {
     const schema = JSON.stringify(opOf('/spm-mocks', 'get').responses['200']?.content?.['application/json'])
     expect(schema).toContain('SpmMockListItem')
     expect(schema).not.toContain('meta')
+  })
+})
+
+describe('API-BIJAK-13 Tracking A admin (S3-T05)', () => {
+  const member = { id: '11', stem: 'Soalan', servable: true, statusWord: null }
+  const set = {
+    id: '7',
+    subjectId: '3',
+    subject: 'Sains',
+    year: 2026,
+    setNo: 1,
+    kind: 'ramalan',
+    targetCount: 40,
+    filled: 8,
+    attention: ['Hanya 8 daripada 40 soalan'],
+    items: [{ kind: 'group', id: '5', position: 1, questions: 1, label: 'Rajah 3', members: [member] }],
+    candidates: 12,
+    candidateItems: [{ kind: 'question', id: '11', questions: 1, label: 'Soalan', members: [member] }],
+  }
+
+  it('the set has a string array attention and the display word as kind', () => {
+    expect(ok(SpmAdminTrackingASetSchema, set)).toBe(true)
+    expect(ok(SpmAdminTrackingASetSchema, { ...set, attention: 'set tidak lengkap' })).toBe(false)
+    expect(ok(SpmAdminTrackingASetSchema, { ...set, kind: 'tracking_a' })).toBe(false)
+    const over = Array.from({ length: TRACKING_A_CANDIDATE_CAP + 1 }, () => set.candidateItems[0])
+    expect(ok(SpmAdminTrackingASetSchema, { ...set, candidateItems: over })).toBe(false)
+  })
+
+  it('create: the subject message and the set number range', () => {
+    expect(ok(SpmAdminTrackingASetCreateSchema, { subjectId: '3', year: 2026, setNo: 99 })).toBe(true)
+    expect(ok(SpmAdminTrackingASetCreateSchema, { subjectId: '3', year: 2026, setNo: 100 })).toBe(false)
+    expect(ok(SpmAdminTrackingASetCreateSchema, { subjectId: '3', year: 2026, setNo: 0 })).toBe(false)
+    const missing = SpmAdminTrackingASetCreateSchema.safeParse({ year: 2026, setNo: 1 })
+    expect(missing.error?.issues[0]?.message).toBe('Sila pilih subjek.')
+  })
+
+  it('save: an empty body has the exact message, and an item names a kind', () => {
+    expect(ok(SpmAdminTrackingASetSaveSchema, { items: [{ kind: 'group', id: '5' }] })).toBe(true)
+    expect(ok(SpmAdminTrackingASetSaveSchema, { items: [{ kind: 'rajah', id: '5' }] })).toBe(false)
+    const empty = SpmAdminTrackingASetSaveSchema.safeParse({ items: [] })
+    expect(empty.error?.issues[0]?.message).toBe('Pilih sekurang-kurangnya satu soalan sebelum menyimpan.')
+  })
+
+  it('the rulings read word for word', () => {
+    expect(TRACKING_A_MESSAGES.siblingClash(3, 2)).toBe('Soalan No. 3 sudah ada dalam Set 2 untuk subjek dan tahun ini. Buang atau tukar soalan itu.')
+    expect(TRACKING_A_MESSAGES.groupNoFit('Rajah 3', 4, 3)).toBe('Kumpulan \u201CRajah 3\u201D (4 soalan) tidak muat dalam 3 petak yang tinggal. Pilih kumpulan lain atau kosongkan petak.')
+    expect(TRACKING_A_MESSAGES.setExists(1)).toBe('Set 1 sudah wujud untuk subjek dan tahun ini.')
+    expect(TRACKING_A_MESSAGES.available('Bahasa Melayu', 28471)).toBe('Soalan tersedia untuk Bahasa Melayu: 28,471')
+    expect(TRACKING_A_PROPOSED_COPY.yearRange(2027)).toBe('Tahun mesti antara 2020 dan 2027.')
+  })
+
+  it('the three routes are registered and the list is not (D-8)', () => {
+    const doc = buildOpenApiDocument() as unknown as { paths: Record<string, Record<string, { responses: Record<string, unknown> } | undefined>> }
+    expect(doc.paths['/admin/spm/tracking-a']?.post?.responses).toHaveProperty('201')
+    expect(doc.paths['/admin/spm/tracking-a']?.get).toBeUndefined()
+    expect(doc.paths['/admin/spm/tracking-a/{id}']?.get?.responses).toHaveProperty('404')
+    expect(doc.paths['/admin/spm/tracking-a/{id}']?.put?.responses).toHaveProperty('422')
   })
 })

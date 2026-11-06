@@ -25,7 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
-import { ServabilityService } from '../../src/modules/questions'
+import { GROUP_SURFACES, ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -334,7 +334,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
 
   describe('3. the admin builds the paper (b09a routes)', () => {
     it('creates a MAT kertas 3 paper from the Disahkan Kontrak made in step 2b', async () => {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 3 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       fx.paper = res.body.data.id as string
       const e = await admin.get(`/api/admin/papers/${fx.paper}`)
@@ -425,7 +425,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     // it is closed by b08 (merged with T04). Kept as a plain test so it cannot regress.
     let imagePaper = ''
     it('the builder places the image group as one unit and Terbit works (structural tier)', async () => {
-      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 3 })
       expect(created.status).toBe(201)
       imagePaper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${imagePaper}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)
@@ -666,7 +666,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length)
       const lt = await pupil.get('/api/spm/latih-tubi/MATH')
       expect(lt.status, JSON.stringify(lt.body)).toBe(200)
-      expect(lt.body.data.total).toBe(solos().length)
+      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each when the surface serves groups (GROUP_SURFACES).
+      expect(lt.body.data.total).toBe(solos().length + (GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 0))
     })
 
     it('a Latih Tubi SPM session draws the solo MCQs and NONE of the D90 group members (explicit refusal)', async () => {
@@ -1016,7 +1017,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('a draft paper is not visible to a pupil; a withdrawn paper is gone for the pupil and cannot be retried, but the past attempt and its result stay (R1-20.3)', async () => {
-      const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      const draft = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 3 })
       expect(draft.status).toBe(201)
       expect((await pupil.get(`/api/bijak/papers/${draft.body.data.id as string}`)).status).toBe(404)
 
