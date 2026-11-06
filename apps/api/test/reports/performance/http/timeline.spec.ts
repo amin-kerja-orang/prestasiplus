@@ -311,3 +311,96 @@ describe('the cap and the rate limit', () => {
     expect((await s.agent.get('/api/timeline')).status).toBe(200)
   })
 })
+
+describe('the feed and DELETE /timeline/:id (S10-T08, API-RPT-14 and API-RPT-15)', () => {
+  const del = (s: Session, id: string, csrf = true) => {
+    const r = s.agent.delete(`/api/timeline/${id}`)
+    return csrf ? r.set('X-CSRF-Token', s.csrf) : r
+  }
+
+  it('GET /timeline carries `entries`: an own post is a `post` row with the same id and the time of its creation', async () => {
+    const s = await login('ujian1@demo.test')
+    const created = await post(s, { ...fields, title: 'Dalam suapan' }, [png()])
+    expect(created.status, JSON.stringify(created.body)).toBe(201)
+    const data = envelopeOf(PerformanceTimelineSchema).parse((await s.agent.get('/api/timeline')).body).data
+    const row = data.entries.find((e) => e.kind === 'post' && e.id === created.body.data.id)
+    expect(row).toMatchObject({ kind: 'post', at: created.body.data.createdAt })
+    expect(data.posts.map((p) => p.id)).toContain(created.body.data.id)
+    // The feed is the caller's own: every row is a session or badge of this pupil or a post of this pupil.
+    expect(data.entries.every((e) => e.kind !== 'post' || e.post.userId === s.userId)).toBe(true)
+  })
+
+  it('deletes an own post (200 { deleted: 1 }), its photo rows and its files; the feed no longer lists it', async () => {
+    const s = await login('pelajar@demo.test')
+    const files0 = await countFiles()
+    const created = await post(s, { ...fields, title: 'Untuk dipadam' }, [png(), { bytes: makeJpeg(), name: 'b.jpg', type: 'image/jpeg' }])
+    expect(created.status, JSON.stringify(created.body)).toBe(201)
+    const id = created.body.data.id as string
+    const photoUrl = (created.body.data.photos as { url: string }[])[0]!.url
+    expect(await countFiles()).toBe(files0 + 2)
+
+    const res = await del(s, id)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(res.body).toEqual({ data: { deleted: 1 } })
+    noStore(res)
+    expect(Number((await w.db.query<{ n: string }>(`select count(*)::text as n from timeline_posts where id = $1`, [id]))[0]?.n)).toBe(0)
+    expect(Number((await w.db.query<{ n: string }>(`select count(*)::text as n from timeline_post_photos where post_id = $1`, [id]))[0]?.n)).toBe(0)
+    expect(await countFiles()).toBe(files0)
+    expect((await s.agent.get(photoUrl)).status).toBe(404)
+    const data = envelopeOf(PerformanceTimelineSchema).parse((await s.agent.get('/api/timeline')).body).data
+    expect(data.posts.map((p) => p.id)).not.toContain(id)
+    expect(data.entries.some((e) => e.kind === 'post' && e.id === id)).toBe(false)
+  })
+
+  it("another pupil's post is the same 404 as an unknown id, and it is not deleted", async () => {
+    const owner = await login('ujian2@demo.test')
+    const intruder = await login('ujian1@demo.test')
+    const created = await post(owner, { ...fields, title: 'Milik ujian2' }, [png()])
+    const id = created.body.data.id as string
+    const files = await countFiles()
+    const other = await del(intruder, id)
+    const unknown = await del(intruder, '999999999')
+    expect(expectError(other, 'NOT_FOUND').message).toBe(expectError(unknown, 'NOT_FOUND').message)
+    expect(other.status).toBe(404)
+    expect(await countFiles()).toBe(files)
+    const left = envelopeOf(PerformanceTimelineSchema).parse((await owner.agent.get('/api/timeline')).body).data
+    expect(left.posts.map((p) => p.id)).toContain(id)
+    // A malformed id is the same 404.
+    expect((await del(intruder, 'abc')).status).toBe(404)
+  })
+
+  it('a teacher, a school admin, a parent and an admin outside Mod Pelajar get 403; anonymous gets 401; no CSRF token is CSRF_INVALID and deletes nothing', async () => {
+    for (const email of ['guru@demo.test', 'adminsekolah@demo.test', 'ibubapa@demo.test', 'admin@demo.test']) {
+      const s = await login(email)
+      expectError(await del(s, '1'), 'FORBIDDEN')
+    }
+    expect((await w.http().delete('/api/timeline/1')).status).toBe(401)
+    const s = await login('ujian3@demo.test')
+    const created = await post(s, { ...fields, title: 'Tanpa CSRF' }, [png()])
+    const id = created.body.data.id as string
+    expectCsrfInvalid(await del(s, id, false))
+    expect(Number((await w.db.query<{ n: string }>(`select count(*)::text as n from timeline_posts where id = $1`, [id]))[0]?.n)).toBe(1)
+  })
+
+  it('refuses a story of 2001 characters with the BM message under the field, and stores nothing', async () => {
+    const s = await login('ujian2@demo.test')
+    const posts = await countPosts(s.userId)
+    const files = await countFiles()
+    const res = await post(s, { ...fields, story: 'x'.repeat(2001) }, [png()])
+    expect(expectError(res, 'VALIDATION_ERROR').fields).toEqual({ story: MSG.storyTooLong })
+    expect(await countPosts(s.userId)).toBe(posts)
+    expect(await countFiles()).toBe(files)
+    const ok = await post(s, { ...fields, story: 'x'.repeat(2000) }, [png()])
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+  })
+
+  it('the anonymous public profile payload carries no posts, entries or badges of the pupil', async () => {
+    const s = await login('ujian3@demo.test')
+    await post(s, { ...fields, title: 'Hanya untuk pemilik' }, [png()])
+    const pub = await w.http().get(`/api/public/students/${s.userId}`)
+    expect(pub.status).toBe(200)
+    expect(pub.body.data.posts).toEqual([])
+    expect(pub.body.data).not.toHaveProperty('entries')
+    expect(JSON.stringify(pub.body)).not.toContain('Hanya untuk pemilik')
+  })
+})

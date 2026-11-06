@@ -155,10 +155,11 @@ export type SessionMode =
   | 'question_set'
   | 'pksk'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
 
-export const SPM_MODES: readonly string[] = ['past_year', 'latih_tubi', 'ramalan']
+export const SPM_MODES: readonly string[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
 /** BR-M14-16: achievements are evaluated after these modes only. */
 export const PRACTICE_MODES: readonly string[] = ['random', 'chapter', 'revision']
 
@@ -173,6 +174,7 @@ export function isSpmMode(mode: string): boolean {
 export function sessionCredit(mode: string): { source: string; prefix: string } {
   switch (mode) {
     case 'past_year':
+    case 'databank':
       return { source: 'quiz_spm', prefix: 'SPM Tahun Lepas' }
     case 'latih_tubi':
       return { source: 'quiz_spm', prefix: 'Latih Tubi SPM' }
@@ -191,6 +193,7 @@ export function teacherMirrorLabel(mode: string): string {
     case 'latih_tubi':
       return 'Latih Tubi SPM'
     case 'past_year':
+    case 'databank':
       return 'SPM Tahun Lepas'
     case 'ramalan':
       return 'Ramalan SPM'

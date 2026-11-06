@@ -3,11 +3,10 @@
  *
  * - #5: an unknown class, a school class (`sc-{id}`) or a class the viewer may not open is a 404
  *   (FR-M08-07, BR-M08-26: admin any classroom, teacher own, others none → 404).
- * - #8: admin and teacher only (§9: school admin and pelajar "none" → 403); a class the viewer may not
- *   open is a 403 (§7 #8). An unknown class id is the empty payload (SRS §8: "Tiada data analitik…"; Delivery
- *   Lead decision T7-1). Without `classroomId` a teacher gets the
- *   first own class (INFERRED: the "Kelas" select has no placeholder, so it shows its first option);
- *   the admin gets none.
+ * - #8: admin, teacher and (R1-AS-5) school admin of the own school; pelajar "none" → 403; a class the viewer
+ *   may not open is a 403 (§7 #8). An unknown class id is the empty payload (SRS §8; Delivery Lead decision
+ *   T7-1). Without `classroomId` ("Semua Kelas") a teacher gets every own class, the school admin every class
+ *   of the own school; the admin gets none.
  */
 
 import {
@@ -21,11 +20,11 @@ import {
   route,
   type RouteDef,
 } from '@/mock/define'
-import { classrooms } from '@/modules/m10-teacher-class/mock'
+import { classrooms, type ClassroomRow } from '@/modules/m10-teacher-class/mock'
 
 import { classAnalytics, parseRiskLevel } from '../repository/class-analytics'
 import { classDashboard } from '../repository/class-performance'
-import { mayOpenClass, mayOpenClassDashboard, ownClasses, viewerOf } from './common'
+import { mayOpenClassAnalysis, mayOpenClassDashboard, ownClasses, ownSchoolClasses, viewerOf } from './common'
 
 export const classRoutes: RouteDef[] = [
   route(
@@ -42,23 +41,26 @@ export const classRoutes: RouteDef[] = [
 
   route('GET', '/api/analytics/classes', [requireAuth()], (req) => {
     const viewer = viewerOf(req)
-    if (viewer.role !== 'admin' && viewer.role !== 'teacher') return forbidden()
-    const own = ownClasses(viewer)
+    if (viewer.role !== 'admin' && viewer.role !== 'teacher' && viewer.role !== 'school_admin') return forbidden()
+    const isSchoolAdmin = viewer.role === 'school_admin'
+    // The school admin picks among the classrooms of the OWN school, Tingkatan then name (R1-AS-5).
+    const own = isSchoolAdmin ? ownSchoolClasses(viewer) : ownClasses(viewer)
     const wanted = queryInt(req.query, 'classroomId')
-    let cls = null
+    let scope: ClassroomRow[] = own
     if (wanted !== undefined) {
       const found = classrooms.get('classroom', wanted)
-      if (found && !mayOpenClass(viewer, found)) return forbidden()
-      cls = found ?? null
-    } else if (own[0]) {
-      cls = own[0]
+      // An unknown class is the empty payload (T7-1); an existing one the viewer may not open is 403.
+      if (found && !mayOpenClassAnalysis(viewer, found)) return forbidden()
+      scope = found ? [found] : []
     }
     return ok(
       classAnalytics({
         ownClasses: own.map((c) => ({ id: c.classId, name: c.name })),
-        cls,
+        scope,
+        classroomId: wanted !== undefined && scope.length > 0 ? wanted : null,
         subjectId: queryInt(req.query, 'subjectId'),
         riskLevel: parseRiskLevel(queryString(req.query, 'riskLevel')),
+        withClassNames: isSchoolAdmin,
       }),
     )
   }),
