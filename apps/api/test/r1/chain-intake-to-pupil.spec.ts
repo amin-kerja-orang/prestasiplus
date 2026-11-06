@@ -286,7 +286,7 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
       const res = await admin.put(`/api/admin/section-pools/${id}`, { pools: [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'] })
       expect(res.status, JSON.stringify(res.body)).toBe(200)
     }
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     paperId = created.body.data.id as string
     const sections = ((await admin.get(`/api/admin/papers/${paperId}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)

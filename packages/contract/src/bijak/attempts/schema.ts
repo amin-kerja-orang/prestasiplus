@@ -613,6 +613,9 @@ export const BijakAttemptQuestionResultSchema = z
     counted: z.boolean().meta({ description: 'False when a choose-N section dropped this question from the total.' }),
     attempted: z.boolean(),
     parts: z.array(BijakAttemptPartResultSchema),
+    checksUsed: NonNegInt.optional().meta({
+      description: 'FR-MUR-13-6: only on a "Semak" response, the answer-changing checks used on this question so far (at most `maxChecksPerQuestion`).',
+    }),
   })
   .meta({ id: 'BijakAttemptQuestionResult' })
 export type BijakAttemptQuestionResult = z.infer<typeof BijakAttemptQuestionResultSchema>

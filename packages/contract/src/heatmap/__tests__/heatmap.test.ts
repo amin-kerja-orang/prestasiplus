@@ -7,110 +7,173 @@ import {
   HEATMAP_AMBER_MIN_PERCENT,
   HEATMAP_BANDS,
   HEATMAP_GREEN_MIN_PERCENT,
-  HEATMAP_MIN_ATTEMPTS,
+  HEATMAP_STATES,
+  HeatmapChapterSchema,
   HeatmapResponseSchema,
+  HeatmapStateSchema,
   HeatmapSubjectSchema,
-  HeatmapTopicSchema,
+  heatmapAccuracy,
   heatmapBand,
   heatmapPercent,
 } from '../schema'
+import * as heatmapSchema from '../schema'
 
-/** Mock-shaped payloads: Matematik cells 37 / 26 ordered 43, 57, 83 (observed figures), ids as strings. */
-const topic = { chapterId: '101', name: 'Pecahan', attempts: 7, correct: 3, percent: 43, band: 'red' }
-const mat = {
-  subjectId: '1',
-  name: 'Matematik',
-  topics: [
-    topic,
-    { chapterId: '102', name: 'Perpuluhan', attempts: 7, correct: 4, percent: 57, band: 'amber' },
-    { chapterId: '103', name: 'Peratus', attempts: 23, correct: 19, percent: 83, band: 'green' },
-  ],
+/** AC-MUR-14-5 tile (7 attempts, 4 correct), AC-MUR-14-1 tile (10 attempts, 4 correct) and a grey tile. */
+const amber = {
+  id: '102',
+  number: 2,
+  name: 'Perpuluhan',
+  attempts: 7,
+  correct: 4,
+  accuracy: 57.1,
+  state: 'amber',
 }
-const body = { data: { subjects: [mat, { subjectId: '2', name: 'Sains', topics: [{ ...topic, chapterId: '201', name: 'Cahaya' }] }] } }
+const red = {
+  id: '101',
+  number: 1,
+  name: 'Pecahan',
+  attempts: 10,
+  correct: 4,
+  accuracy: 40,
+  state: 'red',
+}
+const grey = {
+  id: '103',
+  number: 3,
+  name: 'Peratus',
+  attempts: 0,
+  correct: 0,
+  accuracy: null,
+  state: 'belum-cuba',
+}
+const mat = { id: '1', code: 'MAT', name: 'Matematik', chapters: [red, amber, grey] }
+const body = {
+  data: {
+    subjects: [mat, { id: '2', code: 'SNS', name: 'Sains', chapters: [{ ...grey, id: '201', name: 'Cahaya' }] }],
+  },
+}
 
-describe('HeatmapResponse (GET /buku-nota/heatmap)', () => {
-  it('parses a mock-shaped body and the empty state', () => {
+describe('HeatmapResponse (GET /buku-nota/heatmap, API-DSKP-08)', () => {
+  it('parses subjects[{id,name,chapters[{id,number,name,attempts,correct,accuracy,state}]}] and the empty state', () => {
     expect(HeatmapResponseSchema.safeParse(body).success).toBe(true)
     expect(HeatmapResponseSchema.safeParse({ data: { subjects: [] } }).success).toBe(true)
   })
 
-  it('accepts the edges: 5 attempts, 0 correct red 0, all correct green 100', () => {
-    expect(HeatmapTopicSchema.safeParse({ ...topic, attempts: 5, correct: 0, percent: 0, band: 'red' }).success).toBe(true)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, attempts: 5, correct: 5, percent: 100, band: 'green' }).success).toBe(true)
+  it('has no minimum number of attempts: 1 attempt and 0 attempts both parse', () => {
+    expect(
+      HeatmapChapterSchema.safeParse({ ...red, attempts: 1, correct: 0, accuracy: 0, state: 'red' })
+        .success,
+    ).toBe(true)
+    expect(HeatmapChapterSchema.safeParse(grey).success).toBe(true)
+    expect('HEATMAP_MIN_ATTEMPTS' in heatmapSchema).toBe(false)
   })
 
-  it('rejects an unknown band (never gray) and out-of-range or fractional percent', () => {
-    expect(HeatmapTopicSchema.safeParse({ ...topic, band: 'gray' }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, percent: 101 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, percent: -1 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, percent: 42.5 }).success).toBe(false)
+  it('accuracy is one decimal or null: a second decimal digit is rejected', () => {
+    expect(HeatmapChapterSchema.safeParse(amber).success).toBe(true)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, accuracy: 57.14 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, accuracy: 57.142857 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, accuracy: 101 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, accuracy: -1 }).success).toBe(false)
   })
 
-  it('rejects numeric ids and empty ids', () => {
-    expect(HeatmapTopicSchema.safeParse({ ...topic, chapterId: 101 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, chapterId: '' }).success).toBe(false)
-    expect(HeatmapSubjectSchema.safeParse({ ...mat, subjectId: 1 }).success).toBe(false)
+  it('accuracy is null exactly when attempts is 0, and then the state is belum-cuba', () => {
+    expect(HeatmapChapterSchema.safeParse({ ...grey, accuracy: 0 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, accuracy: null }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...grey, state: 'red' }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...amber, state: 'belum-cuba' }).success).toBe(false)
   })
 
-  it('rejects a chapter below the minimum attempts and correct above attempts', () => {
-    expect(HeatmapTopicSchema.safeParse({ ...topic, attempts: 4, correct: 3 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, attempts: 7, correct: 8 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, correct: -1 }).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, attempts: 7.5 }).success).toBe(false)
+  it('the state is red, amber, green or belum-cuba (the PRD name); "gray" is not a state', () => {
+    expect(HEATMAP_STATES).toEqual(['red', 'amber', 'green', 'belum-cuba'])
+    for (const s of HEATMAP_STATES) expect(HeatmapStateSchema.safeParse(s).success).toBe(true)
+    for (const s of ['gray', 'grey', 'belum_cuba'])
+      expect(HeatmapStateSchema.safeParse(s).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, state: 'gray' }).success).toBe(false)
   })
 
-  it('rejects missing keys, extra keys, an empty subject block and a bare body', () => {
-    const noBand: Record<string, unknown> = { ...topic }
-    delete noBand.band
-    expect(HeatmapTopicSchema.safeParse(noBand).success).toBe(false)
-    expect(HeatmapTopicSchema.safeParse({ ...topic, subjectId: '1' }).success).toBe(false)
-    expect(HeatmapSubjectSchema.safeParse({ ...mat, topics: [] }).success).toBe(false)
+  it('number is an integer or null; ids are strings', () => {
+    expect(HeatmapChapterSchema.safeParse({ ...red, number: null }).success).toBe(true)
+    expect(HeatmapChapterSchema.safeParse({ ...red, number: 1.5 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, id: 101 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, id: '' }).success).toBe(false)
+    expect(HeatmapSubjectSchema.safeParse({ ...mat, id: 1 }).success).toBe(false)
+    expect(HeatmapSubjectSchema.safeParse({ ...mat, code: '' }).success).toBe(false)
+    const noCode: Record<string, unknown> = { ...mat }
+    delete noCode.code
+    expect(HeatmapSubjectSchema.safeParse(noCode).success).toBe(false)
+  })
+
+  it('rejects correct above attempts, fractional counts, missing keys, extra keys and a bare body', () => {
+    expect(HeatmapChapterSchema.safeParse({ ...red, correct: 11 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, correct: -1 }).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, attempts: 7.5 }).success).toBe(false)
+    const noState: Record<string, unknown> = { ...red }
+    delete noState.state
+    expect(HeatmapChapterSchema.safeParse(noState).success).toBe(false)
+    expect(HeatmapChapterSchema.safeParse({ ...red, percent: 40 }).success).toBe(false)
+    expect(HeatmapSubjectSchema.safeParse({ ...mat, chapters: [] }).success).toBe(false)
     expect(HeatmapResponseSchema.safeParse({ subjects: [] }).success).toBe(false)
-    expect(HeatmapResponseSchema.safeParse({ data: { subjects: [], hidden: 3 } }).success).toBe(false)
-    expect(HeatmapResponseSchema.safeParse({ data: {} }).success).toBe(false)
+    expect(HeatmapResponseSchema.safeParse({ data: { subjects: [], hidden: 3 } }).success).toBe(
+      false,
+    )
   })
 })
 
 describe('rules', () => {
   it('constants', () => {
-    expect(HEATMAP_MIN_ATTEMPTS).toBe(5)
     expect(HEATMAP_AMBER_MIN_PERCENT).toBe(50)
     expect(HEATMAP_GREEN_MIN_PERCENT).toBe(80)
     expect(HEATMAP_BANDS).toEqual(['red', 'amber', 'green'])
   })
 
-  it('heatmapBand edges on the rounded percent', () => {
-    expect(heatmapBand(0)).toBe('red')
-    expect(heatmapBand(49)).toBe('red')
-    expect(heatmapBand(50)).toBe('amber')
-    expect(heatmapBand(79)).toBe('amber')
-    expect(heatmapBand(80)).toBe('green')
-    expect(heatmapBand(100)).toBe('green')
+  it('heatmapBand edges on the whole percent', () => {
+    expect([0, 49, 50, 79, 80, 100].map(heatmapBand)).toEqual([
+      'red',
+      'red',
+      'amber',
+      'amber',
+      'green',
+      'green',
+    ])
   })
 
-  it('heatmapPercent rounds half up (49.5 -> 50, 79.5 -> 80) and matches the formula up to 20 attempts', () => {
+  it('heatmapPercent rounds half up (49.5 -> 50, 79.5 -> 80) and agrees with the exact formula', () => {
     expect(heatmapPercent(99, 200)).toBe(50)
     expect(heatmapPercent(159, 200)).toBe(80)
-    expect(heatmapPercent(0, 5)).toBe(0)
-    expect(heatmapPercent(5, 5)).toBe(100)
+    expect(heatmapPercent(4, 7)).toBe(57)
     expect(heatmapPercent(0, 0)).toBe(0)
-    for (let attempts = 1; attempts <= 20; attempts++) {
+    for (let attempts = 1; attempts <= 30; attempts++) {
       for (let correct = 0; correct <= attempts; correct++) {
-        const exact = (100 * correct) / attempts
-        // round half up on the exact fraction, compared in integers to avoid float noise
-        const expected = Math.floor((200 * correct + attempts) / (2 * attempts))
-        expect(heatmapPercent(correct, attempts)).toBe(expected)
-        expect(Math.abs(heatmapPercent(correct, attempts) - exact)).toBeLessThanOrEqual(0.5)
+        expect(
+          Math.abs(heatmapPercent(correct, attempts) - (100 * correct) / attempts),
+        ).toBeLessThanOrEqual(0.5)
       }
     }
   })
 
-  it('heatmapPercent and heatmapBand always produce values the topic schema accepts', () => {
-    for (let attempts = HEATMAP_MIN_ATTEMPTS; attempts <= 20; attempts++) {
+  it('heatmapAccuracy is one decimal, half up, null without attempts (AC-MUR-14-1, AC-MUR-14-5)', () => {
+    expect(heatmapAccuracy(4, 10)).toBe(40)
+    expect(heatmapAccuracy(4, 7)).toBe(57.1)
+    expect(heatmapAccuracy(1, 3)).toBe(33.3)
+    expect(heatmapAccuracy(2, 3)).toBe(66.7)
+    expect(heatmapAccuracy(1, 8)).toBe(12.5)
+    expect(heatmapAccuracy(5, 5)).toBe(100)
+    expect(heatmapAccuracy(0, 5)).toBe(0)
+    expect(heatmapAccuracy(0, 0)).toBeNull()
+  })
+
+  it('every figure up to 40 attempts is a value the chapter schema accepts', () => {
+    for (let attempts = 1; attempts <= 40; attempts++) {
       for (let correct = 0; correct <= attempts; correct++) {
-        const percent = heatmapPercent(correct, attempts)
-        const parsed = HeatmapTopicSchema.safeParse({ ...topic, attempts, correct, percent, band: heatmapBand(percent) })
-        expect(parsed.success).toBe(true)
+        const state = heatmapBand(heatmapPercent(correct, attempts))
+        const parsed = HeatmapChapterSchema.safeParse({
+          ...red,
+          attempts,
+          correct,
+          accuracy: heatmapAccuracy(correct, attempts),
+          state,
+        })
+        expect(parsed.success, `${String(correct)}/${String(attempts)}`).toBe(true)
       }
     }
   })
@@ -118,7 +181,10 @@ describe('rules', () => {
 
 describe('OpenAPI document', () => {
   const doc = buildOpenApiDocument() as {
-    paths: Record<string, Record<string, { responses: Record<string, unknown>; parameters?: unknown[] }>>
+    paths: Record<
+      string,
+      Record<string, { responses: Record<string, unknown>; parameters?: unknown[] }>
+    >
     components: { schemas: Record<string, unknown> }
   }
 
@@ -131,14 +197,27 @@ describe('OpenAPI document', () => {
 
   it('registers the Heatmap components, all prefixed Heatmap', () => {
     const ids = Object.keys(HEATMAP_COMPONENT_SCHEMAS)
-    expect(ids).toEqual(['HeatmapBand', 'HeatmapTopic', 'HeatmapSubject', 'HeatmapResponse'])
+    expect(ids).toEqual([
+      'HeatmapBand',
+      'HeatmapState',
+      'HeatmapChapter',
+      'HeatmapSubject',
+      'HeatmapResponse',
+    ])
     for (const id of ids) expect(doc.components.schemas[id]).toBeDefined()
   })
 })
 
 describe('errors', () => {
   it('the 401 and 403 bodies parse as the common error body', () => {
-    expect(ErrorBodySchema.safeParse({ error: { code: 'UNAUTHORIZED', message: 'Unauthenticated.' } }).success).toBe(true)
-    expect(ErrorBodySchema.safeParse({ error: { code: 'FORBIDDEN', message: 'This action is unauthorized.' } }).success).toBe(true)
+    expect(
+      ErrorBodySchema.safeParse({ error: { code: 'UNAUTHORIZED', message: 'Unauthenticated.' } })
+        .success,
+    ).toBe(true)
+    expect(
+      ErrorBodySchema.safeParse({
+        error: { code: 'FORBIDDEN', message: 'This action is unauthorized.' },
+      }).success,
+    ).toBe(true)
   })
 })

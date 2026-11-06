@@ -114,6 +114,30 @@ export interface BijakRewardPort {
    * never above the attempt's maximum, nothing back for a lower total. Called after the commit of a self-mark of a closed EXAM attempt. Failures are logged and swallowed.
    */
   awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void>
+
+  /**
+   * S5-T11 (46 sections 3.4 item 9 and 3.6, A9): a Soalan Berstruktur attempt (`paper_kind = 'structured'`, a latihan). Called after the commit of
+   * the submit (`touchStreak` true) and after the commit of every self-mark that changed a part (`touchStreak` false). The binding pays
+   * `coinsPerCorrect()` x the GAIN of `score` over the highest total already paid to this pupil for this QUESTION (earlier structured attempts and
+   * this one), and 10 XP per mark gained; a total at or below the highest paid pays nothing and takes nothing back. Mod Pelajar pays nothing.
+   * Failures are logged and swallowed.
+   */
+  awardStructured(input: BijakStructuredRewardInput): Promise<void>
+}
+
+export interface BijakStructuredRewardInput {
+  attemptId: string
+  userId: string
+  questionId: string
+  /** True under Mod Pelajar: no reward at all. */
+  isTest: boolean
+  /** The attempt's total marks now (with every self-mark applied); the paid level never goes above `max`. */
+  score: number
+  max: number
+  /** True at submit: the streak counts the day the attempt closed. */
+  touchStreak: boolean
+  submittedAt?: Date | null
+  description: typeof BIJAK_REWARD_DESCRIPTION
 }
 
 export interface BijakSelfMarkRewardInput {
@@ -183,6 +207,7 @@ export class NoQuestions implements BijakQuestionSource {
 export class NoReward implements BijakRewardPort {
   async award(): Promise<void> {}
   async awardSelfMark(): Promise<void> {}
+  async awardStructured(): Promise<void> {}
 }
 
 export class NoAggregate implements BijakAttemptAggregatePort {

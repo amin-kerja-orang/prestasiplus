@@ -387,6 +387,8 @@ export interface Attempt {
   checked: string[]
   /** Latihan: how many times each question was checked (capped, NFR-05). */
   checkCounts?: Record<string, number>
+  /** Mock only (the API keeps the stored check result): the answers of the "Semak" parts when each question was last checked. */
+  checkAnswers?: Record<string, Record<string, PartAnswer>>
   submittedAt?: number
   lateBySeconds?: number
   idempotencyKey?: string
@@ -453,6 +455,8 @@ export interface QuestionResult {
   counted: boolean
   attempted: boolean
   parts: PartResult[]
+  /** FR-MUR-13-6: only on a "Semak" response, the answer-changing checks used on this question so far. */
+  checksUsed?: number
 }
 
 export interface SectionResult {

@@ -180,27 +180,19 @@ test.describe('Bijak SPM @bijak', () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('Jana Kertas generates a paper and shows a shortage list for an empty pool', async ({
+  test('there is no pupil Jana Kertas: no tab strip, and ?tab=jana falls back to Kertas Pilihan', async ({
     page,
     loginAs,
     gotoApp,
   }) => {
     await loginAs('pelajar@demo.test')
     await gotoApp('/spm/bijak?tab=jana')
-    await page.getByTestId('generate').click()
-    await expect(page.getByTestId('bijak-cover')).toBeVisible()
-    await expect(page.getByTestId('cover-title')).toContainText('Kertas Jana')
-    await page.goBack()
-    await page.getByTestId('jana-subject').click()
-    await page.getByRole('option', { name: 'Sains' }).click()
-    await page.getByTestId('jana-kertas').click()
-    await page.getByRole('option', { name: 'Kertas 1' }).click()
-    await page.getByTestId('generate').click()
-    await expect(page.getByTestId('shortage-line')).toHaveText(
-      'Bahagian A: perlu 40 soalan, hanya 0 tersedia',
-    )
-    await page.getByTestId('shortage-line').evaluate((el) => el.scrollIntoView({ block: 'center' }))
-    await shot(page, 'jana-shortage')
+    await expect(page.getByTestId('bijak-hub')).toBeVisible()
+    await expect(page.getByTestId('tab-pilihan')).toBeVisible()
+    await expect(page.getByTestId('bijak-tabs')).toHaveCount(0)
+    await expect(page.getByTestId('tab-jana')).toHaveCount(0)
+    await expect(page.getByTestId('generate')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
   })
 
   test('Sejarah K2: F and C mark codes, letter bank and the essay waiting for a teacher', async ({

@@ -101,7 +101,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
   })
 
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return Created.parse(res.body).data.id
   }
@@ -220,6 +220,18 @@ describe('paper builder wired to the BE-09 question bank', () => {
     expect((cover.body.data.sections as { marks: number }[])[2]!.marks).toBe(2)
   })
 
+  it('S3-T02: Tahun and Negeri read the source paper of the version in force (OPT-TAHUN, OPT-NEGERI-KERTAS present in the data)', async () => {
+    const source = (await q(`insert into source_papers (year, exam_board) values (2024, ' Johor ') returning id::text id`))[0]!.id as string
+    await q(`update question_versions set source_paper_id = $1::bigint where question_id = any($2::bigint[])`, [source, ids.a])
+    const preview = await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=2&years=2024&negeri=johor')
+    expect(preview.status, JSON.stringify(preview.body)).toBe(200)
+    expect(preview.body.data.filters).toEqual({ years: [2024], negeri: ['Johor'] })
+    expect(preview.body.data.eligibleTotal).toBe(3)
+    expect((await admin.get('/api/admin/papers/pool-preview?subject=MAT&kertas=2&years=2023')).body.data.eligibleTotal).toBe(0)
+    await q(`update question_versions set source_paper_id = null where question_id = any($1::bigint[])`, [ids.a])
+    await q(`delete from source_papers where id = $1::bigint`, [source])
+  })
+
   it('the admin preview carries the key and scheme of the real question', async () => {
     const res = await admin.post('/api/admin/papers/preview', { ids: [ids.a[0]!, '999999999'] })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
@@ -236,7 +248,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
     const pools = (id: string, ...codes: string[]) =>
       Promise.all(codes.map((c) => q(`insert into question_tags (question_id, kind, code) values ($1, 'pool', $2)`, [id, c])))
     const candidates = async (kertas: number): Promise<string[]> => {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas })
+      const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas })
       if (res.status !== 201) return []
       return (await editor(Created.parse(res.body).data.id)).questions.map((x) => x.id)
     }
