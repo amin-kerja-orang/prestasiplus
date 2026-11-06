@@ -72,7 +72,7 @@ async function render(): Promise<void> {
 }
 
 async function openExit(): Promise<void> {
-  ;[...document.body.querySelectorAll<HTMLElement>('button')].find((b) => b.getAttribute('aria-label') === 'Keluar daripada percubaan')!.click()
+  ;[...document.body.querySelectorAll<HTMLElement>('button')].find((b) => b.getAttribute('aria-label') === 'Keluar daripada kertas')!.click()
   await flushPromises()
 }
 
@@ -114,12 +114,12 @@ describe('offline banner (ERR-NET-01, ERR-NET-03)', () => {
     expect(q('[data-testid=offline-banner]')).toBeNull()
     window.dispatchEvent(new Event('offline'))
     await flushPromises()
-    expect(q('[data-testid=offline-banner]')?.textContent?.trim()).toBe('Anda luar talian. Jawapan disimpan pada peranti ini dan akan dihantar apabila sambungan pulih.')
+    expect(q('[data-testid=offline-banner]')?.textContent?.trim()).toBe('Anda sedang luar talian. Semak sambungan internet anda.')
     window.dispatchEvent(new Event('online'))
     await vi.advanceTimersByTimeAsync(10)
     await flushPromises()
     expect(q('[data-testid=offline-banner]')).toBeNull()
-    expect(q('[data-testid=reconnected-banner]')?.textContent?.trim()).toBe('Sambungan pulih. Jawapan telah disimpan.')
+    expect(q('[data-testid=reconnected-banner]')?.textContent?.trim()).toBe('Sambungan dipulihkan.')
     await vi.advanceTimersByTimeAsync(3000)
     await flushPromises()
     expect(q('[data-testid=reconnected-banner]')).toBeNull()
@@ -190,6 +190,18 @@ describe('session expiry with an unsent answer (ERR-AUTH-01, 46:364)', () => {
   })
 })
 
+describe('offline listener cleanup', () => {
+  it('removes the offline listener when the page unmounts', async () => {
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    const remove = vi.spyOn(window, 'removeEventListener')
+    wrapper?.unmount()
+    wrapper = null
+    expect(remove).toHaveBeenCalledWith('offline', expect.any(Function))
+    remove.mockRestore()
+  })
+})
+
 describe('offline banner, a flush while still offline', () => {
   it('a hidden tab that moves the status to saved does not say the connection is back', async () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false })
@@ -229,6 +241,19 @@ describe('session expiry (ERR-AUTH-01)', () => {
     await flushPromises()
     expect(redirect).toHaveBeenCalledOnce()
     expect(redirect).toHaveBeenCalledWith('/a/a1') // 46:364: the pupil returns to this sitting after login
+  })
+
+  it('two quick clicks on "Log Masuk Semula" run the redirect once', async () => {
+    const redirect = vi.fn()
+    setUnauthorizedRedirect(redirect)
+    server.getAttemptView.mockResolvedValue(view('exam'))
+    await render()
+    await expire()
+    const button = q('[data-testid=session-login]')!
+    button.click()
+    button.click()
+    await flushPromises()
+    expect(redirect).toHaveBeenCalledOnce()
   })
 
   it('Mod Latihan takes the normal redirect, and after the page leaves the policy is back to normal', async () => {
