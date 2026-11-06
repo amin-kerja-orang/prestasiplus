@@ -63,16 +63,18 @@ describe('Bijak papers follow level_scope by the pupil form (S3-T07)', () => {
 
   it('does not list a subjektif paper', async () => {
     await setGrade(10)
-    await t.db.query(`update papers set surface = 'subjektif' where paper_code = '1249/2'`)
+    // ck_papers_subjektif_duration (0161, #821): a subjektif paper writes Tempoh twice, `printed_duration_min` = `duration_minutes`.
+    await t.db.query(`update papers set surface = 'subjektif', duration_minutes = printed_duration_min where paper_code = '1249/2'`)
     expect(await listed()).toEqual(['1449/1', '4541/2'])
-    await t.db.query(`update papers set surface = 'simulasi' where paper_code = '1249/2'`)
+    await t.db.query(`update papers set surface = 'simulasi', duration_minutes = null where paper_code = '1249/2'`)
   })
 
   it('opening a hidden paper by id answers 404 (cover and start); a visible one opens', async () => {
     await setGrade(10)
     const hidden = await idOf('1449/2')
     expectError(await pupil.get(`/api/bijak/papers/${hidden}`), 'NOT_FOUND', 404, 'Kertas tidak ditemui')
-    expect(await source.resolveForAttempt({ userId: pupil.userId, paperId: hidden, isTest: false })).toEqual({ ok: false, reason: 'not_found' })
+    // The source says `out_of_scope` (S3-T07); `AttemptsService.start` turns it into the 404 (no open sitting to resume).
+    expect(await source.resolveForAttempt({ userId: pupil.userId, paperId: hidden, isTest: false })).toEqual({ ok: false, reason: 'out_of_scope' })
     const visible = await idOf('1449/1')
     expect((await pupil.get(`/api/bijak/papers/${visible}`)).status).toBe(200)
     expect((await source.resolveForAttempt({ userId: pupil.userId, paperId: visible, isTest: false })).ok).toBe(true)
@@ -87,7 +89,7 @@ describe('Bijak papers follow level_scope by the pupil form (S3-T07)', () => {
     sat.set(id, { lastScore: { score: 5, max: 10 } })
     expect(await listed()).toEqual(['1249/2', '1449/1'])
     expect((await pupil.get(`/api/bijak/papers/${id}`)).status).toBe(200)
-    expect(await source.resolveForAttempt({ userId: pupil.userId, paperId: id, isTest: false })).toEqual({ ok: false, reason: 'not_found' })
+    expect(await source.resolveForAttempt({ userId: pupil.userId, paperId: id, isTest: false })).toEqual({ ok: false, reason: 'out_of_scope' })
     sat.clear()
     expectError(await pupil.get(`/api/bijak/papers/${id}`), 'NOT_FOUND', 404, 'Kertas tidak ditemui')
   })
