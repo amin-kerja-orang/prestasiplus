@@ -13,9 +13,12 @@ import type { RouteLocationRaw } from 'vue-router'
 import { dsCopy } from './copy'
 import { useConfirm } from './useConfirm'
 
+/** A DS base name (`'trash'`, as `DsIcon` takes it) becomes its regular `i-ph-*` class; an `i-` class is kept as it is. */
+const iconClass = (name: string): string => (name.startsWith('i-') ? name : `i-ph-${name}`)
+
 export interface RowAction {
   label: string
-  /** Phosphor class (`i-ph-pencil-simple`). */
+  /** DS icon base name (`pencil-simple`), or a full Phosphor class (`i-ph-pencil-simple`). */
   icon?: string
   to?: RouteLocationRaw
   onSelect?: () => void
@@ -66,7 +69,7 @@ const menuActions = computed(() => props.actions.filter((a) => !inlineActions.va
 const items = computed<DropdownMenuItem[][]>(() => {
   const toItem = (a: RowAction): DropdownMenuItem => ({
     label: a.label,
-    ...(a.icon ? { icon: a.icon } : {}),
+    ...(a.icon ? { icon: iconClass(a.icon) } : {}),
     ...(a.to ? { to: a.to } : {}),
     ...(a.danger ? { color: 'error' as const } : {}),
     ...(a.testid ? { 'data-testid': a.testid } : {}),
@@ -91,7 +94,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
         color="neutral"
         variant="ghost"
         :class="a.icon ? 'min-h-9 min-w-9 justify-center pointer-coarse:min-h-11 pointer-coarse:min-w-11' : 'min-h-9 pointer-coarse:min-h-11'"
-        :icon="a.icon"
+        :icon="a.icon ? iconClass(a.icon) : undefined"
         :label="a.icon ? undefined : a.label"
       :aria-label="a.icon ? a.label : undefined"
       :title="a.icon ? a.label : undefined"

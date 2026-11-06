@@ -91,6 +91,13 @@ export class SpmRepository {
     return this.prisma.client
   }
 
+  // --- papers (hub count) -----------------------------------------------------------------------
+
+  /** Published curated papers of the Kertas Subjektif surface. */
+  countPublishedSubjektifPapers(): Promise<number> {
+    return this.db.paper.count({ where: { surface: 'subjektif', status: 'published', kind: 'pilihan' } })
+  }
+
   // --- subject configuration --------------------------------------------------------------------
 
   async configs(): Promise<SubjectConfigRow[]> {

@@ -51,6 +51,7 @@ import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths
 import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
+import { registerTeacherToolsPaths, TEACHER_TOOLS_COMPONENT_SCHEMAS } from './classes/teacher-tools/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
 import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } from './reports/guru-weekly-report'
@@ -65,6 +66,7 @@ import { AI_COMPONENT_SCHEMAS, registerAiPaths } from './ai/paths'
 import { INTAKE_COMPONENT_SCHEMAS, registerIntakePaths } from './intake/paths'
 import { INTAKE_FILES_COMPONENT_SCHEMAS, registerIntakeFilesPaths } from './intake/files-paths'
 import { INTAKE_DASHBOARD_COMPONENT_SCHEMAS, registerIntakeDashboardPaths } from './intake/dashboard'
+import { SOURCE_PAPERS_COMPONENT_SCHEMAS, registerSourcePapersPaths } from './intake/source-papers'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -116,6 +118,7 @@ export const COMPONENT_SCHEMAS = {
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
+  ...TEACHER_TOOLS_COMPONENT_SCHEMAS, // S6-T16 (Soalan & Rujukan)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
   ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
   ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
@@ -144,6 +147,7 @@ export const COMPONENT_SCHEMAS = {
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
+  ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -189,6 +193,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
+  registerTeacherToolsPaths(registry) // S6-T16 (Soalan & Rujukan)
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)
@@ -204,6 +209,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakePaths(registry) // BE-38
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
+  registerSourcePapersPaths(registry) // S2-T09
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
