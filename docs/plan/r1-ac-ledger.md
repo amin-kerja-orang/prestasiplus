@@ -83,6 +83,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
 | S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S7-T02 | AC-AS-45-1 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-1: the mean of session accuracy per school, in order, with the register name and state; sekolah-bersaing.test.ts::AC-AS-45-1: A rank 1 with a success 80% pill and 5, B rank 2 with a warning 60% pill and 3; rules.test.ts::AC-AS-45-1: ranks by accuracy, with the row shape of the contract |
+| S7-T02 | AC-AS-45-2 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31); sekolah-bersaing.test.ts::AC-AS-45-2: an empty board shows both exact lines and no table; rules.test.ts::AC-AS-45-2: no session anywhere is an empty board |
+| S7-T02 | AC-AS-45-3 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-3: 40 schools give exactly 30 rows; rules.test.ts::AC-AS-45-3: cuts 40 schools to the top 30 |
+| S7-T02 | AC-AS-45-6 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name; sekolah-bersaing.test.ts::AC-AS-45-6: the colour follows the rounded value; rules.test.ts::AC-AS-45-6: breaks ties by pupils, then sessions, then name |
 
 ## Sprint 2
 
@@ -132,6 +136,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
 | S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
 | S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
+| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-06 | team-bb/S-2 | unit/analitik-pelajar.spec.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter; UAT: 0 SP tags, #924) |
+| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-06 | team-bb/S-2 | analitik-pages.test.ts + http/analitik-pelajar-sp-real.spec.ts (real SP adapter) |
+| S4-T02 | AC-ADM-C04.1 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-load.spec.ts |
+| S4-T02 | AC-ADM-C04.3 | CI | Pass | 2026-11-06 | team-bb/S-3 | dskp-report.spec.ts; SubjectDskpReportTab.test.ts; nodes-per-in-scope-subject.spec.ts |
+| S5-T04 | AC-MUR-2-4 | CI | Pass | 2026-11-06 | team-bb/S-4 | dashboard-prestasi-parity.spec.ts |
 
 ## Sprint 5
 

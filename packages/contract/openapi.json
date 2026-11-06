@@ -9283,6 +9283,7 @@
               "STIMULUS_TEXT_REQUIRED",
               "STIMULUS_TABLE_INVALID",
               "STIMULUS_IMAGE_UNAVAILABLE",
+              "STIMULUS_IMAGE_INVALID",
               "STIMULUS_ALT_REQUIRED",
               "STIMULUS_CAPTION_LONG",
               "PART_STIMULUS_INVALID"
@@ -9399,6 +9400,11 @@
             "type": "string",
             "format": "binary",
             "description": "CSV or TXT file, UTF-8, at most 5 MB. Storage: BE-04."
+          },
+          "zipFile": {
+            "type": "string",
+            "format": "binary",
+            "description": "Optional ZIP, at most 20 MB. Entry names are matched by base name to the `stimulus_image` column; images are JPG, PNG or WebP (by their bytes), at most 2 MB each."
           },
           "defaultSubjectId": {
             "$ref": "#/components/schemas/Id"
@@ -29590,6 +29596,11 @@
             "maxItems": 3,
             "description": "The first 3 Perutusan posts visible to the caller (content owner BE-24)."
           },
+          "pendingTeachers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teachers waiting for the school admin to approve them (\"Guru Menunggu\"); equals the length of GET /admin-sekolah/guru/pending."
+          },
           "cards": {
             "type": "object",
             "properties": {
@@ -29795,6 +29806,7 @@
           "school",
           "roleLabel",
           "perutusan",
+          "pendingTeachers",
           "cards",
           "performance"
         ]
@@ -30805,13 +30817,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {
@@ -30863,9 +30876,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [
@@ -31898,7 +31914,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed."
           }
         },
         "required": [
@@ -40704,6 +40720,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ]
           },
@@ -41241,6 +41258,7 @@
           "1",
           "2",
           "3",
+          "4",
           null
         ]
       },
@@ -48362,7 +48380,8 @@
             "enum": [
               "1",
               "2",
-              "3"
+              "3",
+              "4"
             ]
           },
           "jenis": {
@@ -50111,6 +50130,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -50162,6 +50182,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -61185,6 +61206,18 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
               }
             ]
           },
@@ -65791,7 +65824,8 @@
           "ramalan",
           "mission",
           "remedial",
-          "question_set"
+          "question_set",
+          "databank"
         ]
       },
       "PracticeSessionId": {
@@ -65980,7 +66014,7 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target."
           },
           "chapterId": {
             "type": "string",
@@ -82920,6 +82954,18 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
               }
             ]
           },
@@ -83154,6 +83200,18 @@
                 ]
               },
               {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
+              },
+              {
                 "type": "null"
               }
             ],
@@ -83310,6 +83368,18 @@
                 "type": "number",
                 "enum": [
                   2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
                 ]
               },
               {
@@ -92359,7 +92429,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -92506,7 +92576,7 @@
           "question-imports"
         ],
         "summary": "Download the CSV template",
-        "description": "Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, header line plus 2 sample rows. Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).",
+        "description": "Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, the header of 30 Q-11 (all columns in order) plus one MCQ example and one example group of two questions with one Petikan stimulus (S1-T05 part 3). Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).",
         "responses": {
           "200": {
             "description": "The template file.",
@@ -103074,7 +103144,7 @@
           "practice-reads"
         ],
         "summary": "Own corrections: first attempt versus later attempt per question (S11)",
-        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
@@ -116422,7 +116492,8 @@
               "enum": [
                 "1",
                 "2",
-                "3"
+                "3",
+                "4"
               ]
             },
             "required": false,
@@ -116599,7 +116670,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 4) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {
@@ -139296,7 +139367,7 @@
           "intake-files"
         ],
         "summary": "Upload one or more PDF files to a submission",
-        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 30 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
         "parameters": [
           {
             "schema": {
