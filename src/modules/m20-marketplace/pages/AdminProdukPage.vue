@@ -3,7 +3,7 @@
  * P2-12 `/admin/marketplace/products` "Marketplace — Produk" (R1-ADM-P2-12; API-ADM-19), admin shell.
  *
  * Two global stat cards (`Jumlah Produk`, `Aktif`; not the filtered query), the filter bar (`Cari produk...`,
- * `Semua Kategori`, `Semua Status`, `Tapis`, `Reset`), the count line "{n} produk dijumpai", and 20 rows per page
+ * `Semua Kategori`, `Semua Status`, `Cari`, `Set Semula`), the count line "{n} produk dijumpai", and 20 rows per page
  * (cards below `md`). The query string is the state. Row actions: open (active products), edit, `Nyahaktif` /
  * `Aktifkan`, and delete after "Padam produk ini?" (`Batal` / `Ya, Padam`). Nothing blocks a delete (no orders exist).
  */

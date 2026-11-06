@@ -177,8 +177,8 @@ describe('AdminProdukPage (P2-12)', () => {
     expect(w.get<HTMLInputElement>(t('admin-products-search')).attributes('placeholder')).toBe('Cari produk...')
     expect(w.text()).toContain('Semua Kategori')
     expect(w.text()).toContain('Semua Status')
-    expect(w.text()).toContain('Tapis')
-    expect(w.text()).toContain('Reset')
+    expect(w.text()).toContain('Cari')
+    expect(w.text()).toContain('Set Semula')
     // Decision 2 on #506: the OPT-MARKET wording, no "{n} stok".
     expect(w.text()).toContain('✅ Ada')
     expect(w.text()).not.toMatch(/\d+ stok/)
@@ -190,7 +190,7 @@ describe('AdminProdukPage (P2-12)', () => {
     expect(w.findAll(t('admin-product-delete'))).toHaveLength(2)
   })
 
-  it('Tapis puts the filters in the URL and asks for them; Reset clears them', async () => {
+  it('Cari puts the filters in the URL and asks for them; Set Semula clears them', async () => {
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
     await w.get(t('admin-products-search')).setValue('beg')
     await w.get(t('admin-products-category')).setValue('2')
@@ -202,7 +202,7 @@ describe('AdminProdukPage (P2-12)', () => {
       { q: 'beg', categoryId: '2', status: 'draft', page: '1' },
       expect.anything(),
     )
-    const reset = w.findAll('button').find((b) => b.text() === 'Reset')!
+    const reset = w.findAll('button').find((b) => b.text() === 'Set Semula')!
     await reset.trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({})
@@ -340,7 +340,7 @@ describe('AdminPenjualPage (P2-13)', () => {
     ])
   })
 
-  it('the status filter lists Pending, Aktif, Digantung, Diharamkan and Tapis sends it', async () => {
+  it('the status filter lists Pending, Aktif, Digantung, Diharamkan and Cari sends it', async () => {
     const w = await mountAt(AdminPenjualPage, '/admin/marketplace/sellers', '/admin/marketplace/sellers')
     expect(w.findAll(`${t('admin-sellers-status')} option`).map((o) => o.text())).toEqual([
       'Semua Status',

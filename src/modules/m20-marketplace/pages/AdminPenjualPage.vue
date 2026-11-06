@@ -3,7 +3,7 @@
  * P2-13 `/admin/marketplace/sellers` "Marketplace — Penjual" (R1-ADM-P2-13; API-ADM-19), admin shell.
  *
  * Three global stat cards (`Jumlah Penjual`, `Aktif`, `Menunggu Pengesahan`; not the filtered query), the status
- * filter (`Semua Status`: Pending, Aktif, Digantung, Diharamkan; `Tapis`), the count line "{n} penjual dijumpai" and
+ * filter (`Semua Status`: Pending, Aktif, Digantung, Diharamkan; `Cari`), the count line "{n} penjual dijumpai" and
  * the seller rows (cards below `md`, status and actions always visible). Each row shows only the transitions the
  * server allows now (`Luluskan`, `Sahkan`, `Gantung`, `Haramkan`), each after a confirm. Sellers are never created or
  * deleted here; the owner is masked.

@@ -41,8 +41,8 @@ export const ADMIN_COPY = {
   searchPlaceholder: 'Cari produk...',
   allCategories: 'Semua Kategori',
   allStatuses: 'Semua Status',
-  apply: 'Tapis',
-  reset: 'Reset',
+  apply: 'Cari',
+  reset: 'Set Semula',
   add: 'Tambah Produk',
   productsFound: (n: number) => `${String(n)} produk dijumpai`,
   sellersFound: (n: number) => `${String(n)} penjual dijumpai`,
@@ -147,9 +147,10 @@ export const sellerOptionValue = (o: MarketplaceAdminSellerOption): string => o.
 /** Confirm texts: "Padam produk ini?" and "{Tindakan} penjual ini?" with `Ya, {Tindakan}` / `Batal`. */
 export const productDeleteConfirm = MARKETPLACE_ADMIN_PROPOSED.productDeleteConfirm
 /**
- * [PROPOSED] No PRD row gives a confirm for `Aktifkan` on a rejected product (R-1 minor on #912). It follows the
+ * No PRD row gives a confirm for `Aktifkan` on a rejected product (R-1 minor on #912). It follows the
  * pattern of the seller confirms: "{Tindakan} produk ini?" with `Ya, {Tindakan}` / `Batal`.
  */
+// [DOC DEFECT: no BM text in the PRD; PROPOSED]
 export const productActivateConfirm = {
   message: `${MARKETPLACE_ADMIN_PROPOSED.productActivateLabel} produk ini?`,
   confirmLabel: `Ya, ${MARKETPLACE_ADMIN_PROPOSED.productActivateLabel}`,
