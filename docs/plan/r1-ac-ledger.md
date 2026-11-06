@@ -171,7 +171,3 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
-| S5-T08 | AC-GUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::choosing a category: the pills show 2 and 1, clicking the first lists exactly its 2 videos; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 exactly 2 listed, pill counts 2 and 1 |
-| S5-T08 | AC-GUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::AC-GUR-7-2 a teacher saves a video with title, category and valid URL and it is listed under that category; VideoPages.test.ts::teacher adds a video (category sent) |
-| S5-T08 | AC-AS-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::school_admin picks a category, only its videos show, no "Tambah Video"; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 |
-| S5-T08 | AC-MUR-8-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | kelas-saya.spec.ts::the teacher adds the pupil (PUT /guru/students/:id), then the class is in the pupil's next Kelas Saya, join route 404; KelasSayaPelajarPage.test.ts::no join field or "Sertai" with or without a class |
