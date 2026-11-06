@@ -478,6 +478,14 @@ export function ownConfigsOf(studentId: number): HeadcountConfigRow[] {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id - a.id)
 }
 
+/**
+ * The pupil's own entry views for Prestasi 360 (FR-MUR-4-6, S10-T01 part 2): exactly the configs of `GET /headcounts/me`
+ * (own classes, current year, not dropped), each with the pupil's own line (class defaults when there is no entry row).
+ */
+export function ownEntryViewsOf(studentId: number): HeadcountEntryView[] {
+  return ownConfigsOf(studentId).map((c) => (ownLineOf(c, studentId) as RosterLine).view)
+}
+
 /** One card of `GET /headcounts/me`: the pupil's own pill (Active iff an ETR, own or default) and reason. */
 export function ownListItem(c: HeadcountConfigRow, studentId: number): HeadcountListItem {
   const line = ownLineOf(c, studentId) as RosterLine

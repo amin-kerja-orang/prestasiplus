@@ -179,6 +179,7 @@ describe('cards (FR-M27-24, BR-M27-12, 13)', () => {
     expect(d.cards.pupils).toBe(users.adminList({ role: 'student', schoolId, pageSize: 1 }).total)
     expect(d.cards.teachers).toBe(users.adminList({ role: 'teacher', schoolId, pageSize: 1 }).total)
     expect(d.cards.activeClasses).toBe(classrooms.list({ isActive: true, schoolId }).length)
+    expect(d.pendingTeachers).toBe(0)
   })
 })
 
