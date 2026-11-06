@@ -9,7 +9,7 @@
  *  - SW2-04  a school admin's "..." menu has "Pakej"; no row offers "Login As" (the API has no impersonation)
  *  - SW2-05  no "Pegawai JPN" in the role filter, the create form or the edit form (not a contract role)
  *  - SW2-07  at 768 and 1280 the "Tindakan" header and the first "..." button sit inside the table card
- *  - SW2-11  /profile/edit shows the school card for a student only (teacher: absent)
+ *  - SW2-11  /profile/edit has no school card for any role; a student's school is read-only on /tetapan
  *
  * Read-only: nothing is created, changed or deleted, so a re-run leaves the seed as it was.
  * Seed accounts and the password come from `./helpers` (`account()`); the password is never written here.
@@ -322,12 +322,23 @@ test.describe('AM2-SW2 profile school card @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('SW2-11 a student sees the school card on /profile/edit @api', async ({ page }) => {
+  // S5-T05 part A (#571): a pupil no longer picks a school on /profile/edit.
+  // PRD R1-MUR-A2 (docs/prd/r1/10-murid.md:321, FR-MUR-A2-5/-6, :354-355): the school is a
+  // read-only "Sekolah" row on /tetapan; only admin edits change it. Card S5-T05 Change (1)
+  // (docs/plan/r1-development-plan.md) drops the "Maklumat Sekolah" card from ProfileEditPage.
+  test('SW2-11 a student has no school card on /profile/edit, the school is read-only on /tetapan @api', async ({ page }) => {
     await signIn(page, 'student')
     await gotoApi(page, '/profile/edit')
     await expect(page.getByTestId('profile-form')).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByTestId('profile-school-card')).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Maklumat Sekolah' })).toBeVisible()
+    await expect(page.getByTestId('profile-save')).toBeVisible()
+    await expect(page.getByTestId('profile-school-card')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Maklumat Sekolah' })).toHaveCount(0)
+    await expectNoHScroll(page)
+
+    await gotoApi(page, '/tetapan')
+    await expect(page.getByTestId('account-panel')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('account-school')).toBeVisible()
+    await expect(page.getByTestId('account-school')).not.toHaveText('—')
     await expectNoHScroll(page)
   })
 })
