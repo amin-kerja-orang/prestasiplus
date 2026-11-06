@@ -14,8 +14,9 @@ import {
 } from '../domain/constants'
 import { START_SUGGESTION, subjectSuggestion } from '../domain/labels'
 import { figuresOf } from '../domain/reduce'
-import { compareIds, round } from '../domain/rules'
+import { compareIds } from '../domain/rules'
 import { lastDays, lastWeeks, mytMidnight } from '../domain/windows'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { pairStatus } from '../headcount/headcount.rules'
 import { DIRECTORY_PORT, PerformancePorts, type AnswerFactRow, type ClassInfo, type DirectoryPort, type PupilRef } from '../ports'
@@ -25,8 +26,10 @@ import type { Ctx, PerformanceStudent } from './types'
 
 const sum = <T>(list: readonly T[], f: (x: T) => number): number => list.reduce((n, x) => n + f(x), 0)
 
-/** Pooled accuracy: correct / answered x 100, ONE decimal on the wire (decision 11; a whole value has no fraction). */
-const accuracyPct = (correct: number, answered: number): number => round((correct / answered) * 100, 1)
+/** Pooled accuracy: the XS-5 helper (S6-T03): integer half-up to ONE decimal, capped at 100. Callers guard 0 answers; a stray 0 reads as 0. */
+const accuracyPct = (correct: number, answered: number): number => xsAccuracy(correct, answered) ?? 0
+
+/** Hero figure: the whole number rounded half up ONCE from the raw ratio (74.46 is 74, 74.5 is 75), integer arithmetic, capped at 100. */
 
 /** Prestasi 360 (S6). Throws NOT_FOUND (404) for an unknown pupil AND for a pupil the caller may not open: one outcome, no existence leak (OQ-1). */
 @Injectable()
@@ -59,7 +62,8 @@ export class StudentPerformanceService {
     ])
 
     const answered = sum(rows, (r) => r.attempts)
-    const accuracy = answered === 0 ? null : accuracyPct(sum(rows, (r) => r.correct), answered)
+    const correctAll = sum(rows, (r) => r.correct)
+    const accuracy = answered === 0 ? null : accuracyPct(correctAll, answered)
     const sessions = sessionCounts.find((r) => r.subjectId === null)?.sessions ?? 0
     const subjectSessions = new Map(sessionCounts.flatMap((r) => (r.subjectId === null ? [] : [[r.subjectId, r.sessions] as const])))
 

@@ -238,10 +238,9 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     for (const adminOnly of ['Ke Admin Panel', 'Ke Dashboard', 'Student View', 'Panel Pentadbir']) {
       expect(labels).not.toContain(adminOnly)
     }
-    // No route under /admin except the open item "Gambar Rajah" (shells.md §7.2 item 4).
-    expect(teacherItems.filter((i) => i.to.startsWith('/admin/')).map((i) => i.label)).toEqual([
-      'Gambar Rajah',
-    ])
+    // No route under /admin: "Gambar Rajah" left the teacher sidebar (lead ruling (a), S6-T18); the
+    // teacher reaches it through the Sumbang Soalan "Alat Soalan" tile.
+    expect(teacherItems.filter((i) => i.to.startsWith('/admin/')).map((i) => i.label)).toEqual([])
   })
 
   it('the teacher Kirkpatrick group uses the shared "kirkpatrick" key and the teacher labels', () => {

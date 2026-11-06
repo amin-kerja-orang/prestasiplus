@@ -277,13 +277,7 @@ describe('AdminShell: menu per role', () => {
       'data-nav-id="ke-dashboard"',
       'href="/admin/',
     ]) {
-      // "Gambar Rajah" (teacher menu, open item) is the only /admin/ route of the teacher list.
-      if (adminOnly === 'href="/admin/') {
-        const hrefs = [...html.matchAll(/href="(\/admin\/[^"]*)"/g)].map((m) => m[1])
-        expect([...new Set(hrefs)]).toEqual(['/admin/soalan-gambar'])
-      } else {
-        expect(html, adminOnly).not.toContain(adminOnly)
-      }
+      expect(html, adminOnly).not.toContain(adminOnly)
     }
     // Teacher menu, its own order; the pinned card is the teacher's Command Center.
     const labels = labelsOf(sidebar(w))

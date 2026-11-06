@@ -581,7 +581,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'section', id: 'sec-bantuan', label: 'Bantuan', text: 'text-red-500', rule: 'from-red-300' },
   { kind: 'item', id: 'tiket-bantuan', label: 'Tiket Bantuan', to: '/pusat-tuisyen/tiket', fa: 'fa-life-ring', color: 'text-emerald-500' },
   // Observed "6,144" is the default text; the shell replaces it with the live M04 count (nav-badges.ts).
-  { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: A },
   { kind: 'item', id: 'urus-tiket', label: 'Urus Tiket', to: '/admin/tiket', fa: 'fa-headset', color: 'text-red-400', badge: { text: '2', cls: B_COUNT_RED }, roles: A },
 ]
 

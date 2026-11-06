@@ -41,6 +41,7 @@ import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { guruStimulusImageOf } from '../files/guru-submissions'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -644,8 +645,22 @@ export class IntakeReviewService {
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
     let assetFileId: bigint | null = null
-    if (crop?.cropFileId) {
-      const cropped = await this.files.readStored(idToString(crop.cropFileId))
+    let kind = s.kind as IntakeStimulusKind
+    // The picture to copy: the figure crop of a paper item, or (S6-T17) the `question_image` a teacher uploaded for a structured submission.
+    let sourceFileId: string | null = crop?.cropFileId ? idToString(crop.cropFileId) : null
+    if (sourceFileId === null && s.figureId === null) {
+      const token = guruStimulusImageOf(row.payload)
+      if (token !== null) {
+        // A guru batch always has an owner; never match an unowned file (a null owner would).
+        const owner = row.batch.ownerUserId
+        const own = owner === null ? null : await this.prisma.client.file.findFirst({ where: { publicId: token, purpose: 'question_image', ownerUserId: owner }, select: { id: true } })
+        if (!own) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+        sourceFileId = idToString(own.id)
+        kind = 'image'
+      }
+    }
+    if (sourceFileId !== null) {
+      const cropped = await this.files.readStored(sourceFileId)
       if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
       const stored = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })
       made.fileToken = stored.publicId
@@ -654,7 +669,7 @@ export class IntakeReviewService {
     const table = stimulusTableOf(s.tableData)
     const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
-      kind: s.kind as IntakeStimulusKind,
+      kind,
       label: s.label || null,
       bodyMs: body,
       bodyEn: null,

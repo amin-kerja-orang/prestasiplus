@@ -252,6 +252,15 @@ describe('the VITE_PROTOTYPE_SCOPE switch', () => {
   })
 })
 
+describe('diagram audit /admin/soalan-gambar (S6-T18)', () => {
+  it('is allowed for the teacher (Sumbang Soalan tile) with the scope on, not for school_admin or a student', () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    expect(isPathAllowed('teacher', '/admin/soalan-gambar')).toBe(true)
+    expect(isPathAllowed('school_admin', '/admin/soalan-gambar')).toBe(false)
+    expect(isPathAllowed('student', '/admin/soalan-gambar')).toBe(false)
+  })
+})
+
 describe('home paths', () => {
   it('scopeHomePath points at the role dashboard', () => {
     expect(scopeHomePath('student')).toBe('/dashboard')
