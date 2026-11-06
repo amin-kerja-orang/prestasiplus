@@ -88,6 +88,20 @@ describe('roles', () => {
     expectError(await s.get('/api/item-analysis/classes'), 'FORBIDDEN')
   })
 
+  it('S10-T04 part 2: Semua Kelas and Semua Subjek by default for the teacher and the school admin; the same rows, "Kelas" names for the school admin only', async () => {
+    const teacher = parseData(await (as.guru as Client).get('/api/analytics/classes'), PerformanceClassAnalyticsSchema)
+    const admin = parseData(await (as.adminsekolah as Client).get('/api/analytics/classes'), PerformanceClassAnalyticsSchema)
+    for (const r of [teacher, admin]) expect(r.options.selected).toEqual({ classroomId: null, subjectId: null, riskLevel: '' })
+    expect(admin.rows.map((x) => x.userId)).toEqual(teacher.rows.map((x) => x.userId))
+    expect(teacher.rows.every((x) => x.classes.length === 0)).toBe(true)
+    expect(admin.rows.every((x) => x.classes.length > 0)).toBe(true)
+    // a risk filter never lists Belum Bermula rows; the unfiltered list has them last
+    const kritikal = parseData(await (as.guru as Client).get('/api/analytics/classes?riskLevel=critical'), PerformanceClassAnalyticsSchema)
+    expect(kritikal.rows.every((x) => x.riskLevel === 'critical')).toBe(true)
+    const firstNone = teacher.rows.findIndex((x) => x.riskLevel === 'none')
+    if (firstNone >= 0) expect(teacher.rows.slice(firstNone).every((x) => x.riskLevel === 'none' && x.accuracy === null)).toBe(true)
+  })
+
   it('every role with a session reads analytics/me', async () => {
     for (const k of who) parseData(await (as[k] as Client).get('/api/analytics/me'), PerformanceAnalyticsSchema)
   })

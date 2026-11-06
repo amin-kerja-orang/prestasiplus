@@ -13,14 +13,24 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsCluster, DsDataTable, DsStatusBadge, DsText, type CardField } from '@/ds'
+import { DsCluster, DsDataTable, DsStatusBadge, DsText, type CardField, type DsStatus } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import type { PupilRiskView, RiskStatus } from '../../api/amaran'
 import MobileCard from '../MobileCard.vue'
-import { STATUS_LABEL } from './amaran-format'
+import { NO_VALUE, STATUS_LABEL } from './amaran-format'
 
 const props = defineProps<{ rows: PupilRiskView[] }>()
+
+/** 25 rows per page (FR-AS-49-6). */
+const PAGE_SIZE = 25
+/** `not_started` uses the neutral "inactive" badge look with its own word (FR-X4-3: no data is not a risk). */
+const STATUS_BADGE: Record<RiskStatus, DsStatus> = {
+  high: 'risk-high',
+  watch: 'risk-mid',
+  on_track: 'risk-low',
+  not_started: 'inactive',
+}
 
 interface Row extends Record<string, unknown> {
   userId: number
@@ -41,7 +51,7 @@ const data = computed<Row[]>(() =>
     rank: String(p.rank),
     name: p.name,
     classLabel: p.classLabel,
-    score: p.score === null ? '—' : String(p.score),
+    score: p.score === null ? NO_VALUE : String(p.score),
     status: p.status,
     statusLabel: STATUS_LABEL[p.status],
     accuracy: p.accuracyText,
@@ -108,7 +118,7 @@ const cardFields: CardField[] = [
       layout="fixed"
       density="tight"
       :sticky-first-column="false"
-      :page-size="Math.max(1, data.length)"
+      :page-size="PAGE_SIZE"
       data-testid="am-table"
     >
       <template #rank-cell="{ row }">
@@ -138,13 +148,7 @@ const cardFields: CardField[] = [
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
-          :status="
-            row.original.status === 'high'
-              ? 'risk-high'
-              : row.original.status === 'watch'
-                ? 'risk-mid'
-                : 'risk-low'
-          "
+          :status="STATUS_BADGE[row.original.status]"
           :label="row.original.statusLabel"
           :data-status="row.original.status"
           data-testid="am-status"
