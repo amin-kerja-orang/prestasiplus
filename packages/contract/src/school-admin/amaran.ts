@@ -190,7 +190,7 @@ export const AmaranSchoolRiskSchema = z
     weakness: z.array(AmaranSubjectRiskSchema),
     pupils: z
       .array(AmaranPupilRiskSchema)
-      .meta({ description: 'Score descending (not_started last), 1-based rank. Inactive pupils are included.' }),
+      .meta({ description: 'Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed.' }),
   })
   .meta({ id: 'AmaranSchoolRisk' })
 export type AmaranSchoolRisk = z.infer<typeof AmaranSchoolRiskSchema>
