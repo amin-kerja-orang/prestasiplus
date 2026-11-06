@@ -9,7 +9,15 @@ import { computed } from 'vue'
 import { DsIconChip, type DsAccent } from '@/ds'
 
 import type { Overview } from '../../../api/types'
-import { count, gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
+import {
+  count,
+  gps,
+  KirkpatrickLink,
+  mean,
+  plain,
+  type KirkpatrickPaths,
+  accuracyPct,
+} from '../common'
 
 const props = defineProps<{ data: Overview; paths: KirkpatrickPaths; detail: boolean }>()
 
@@ -58,7 +66,7 @@ const levels = computed<Level[]>(() => {
       to: to(props.paths.behavior),
       value: plain(d.t3.active),
       suffix: `/${plain(d.t3.t4t5)}`,
-      caption: `Pelajar aktif · ${plain(d.t3.sessions)} sesi · ${pct(d.t3.accuracy)} ketepatan`,
+      caption: `Pelajar aktif · ${plain(d.t3.sessions)} sesi · ${accuracyPct(d.t3.accuracy)} ketepatan`,
     },
     {
       key: 't2',
@@ -66,7 +74,7 @@ const levels = computed<Level[]>(() => {
       icon: 'i-ph-brain',
       accent: 'trial',
       to: to(props.paths.learning),
-      value: pct(d.t2.accuracy),
+      value: accuracyPct(d.t2.accuracy),
       caption: `Ketepatan · ${count(d.t2.answers)} soalan dijawab`,
     },
     {

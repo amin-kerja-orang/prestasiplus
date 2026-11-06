@@ -114,6 +114,26 @@ describe('wallet read endpoints (AC6, AC8)', () => {
       expect(await wallet(admin)).toMatchObject({ currentSyiling: 256, totalSyilingEarned: 256, xp: 8, level: 2, xpNeeded: 110, levelProgressPct: 7, earnedToday: 0, earnedThisWeek: 0, streak: { current: 1, best: 5, multiplier: 1 } })
     })
 
+    it('AC-GM-17.6, AC-MUR-28-1: 374 lifetime is Gangsa at 374 / 500, and spending does not move the progress', async () => {
+      const u = await bareUser(t, 'kemajuan')
+      await t.wallet.credit({ userId: u, amount: 374, source: 't', sourceId: 'p1', description: 'd', isTest: false })
+      expect(await t.wallet.summary(u)).toMatchObject({ currentSyiling: 374, totalSyilingEarned: 374, tier: BRONZE, nextTier: { ...SILVER, pct: 74.8, need: 126 } })
+      await t.wallet.debit({ userId: u, amount: 300, source: 'shop', sourceId: 'p2', description: 'd', isTest: false })
+      expect(await t.wallet.summary(u)).toMatchObject({ currentSyiling: 74, totalSyilingEarned: 374, tier: BRONZE, nextTier: { ...SILVER, pct: 74.8, need: 126 } })
+    })
+
+    it('FR-MUR-28-2: a stored tier that lags reads the lifetime tier, and the read writes nothing; a stored tier above it is never lowered', async () => {
+      const u = await bareUser(t, 'lag')
+      await t.wallet.credit({ userId: u, amount: 100, source: 't', sourceId: 'l1', description: 'd', isTest: false })
+      await t.db.query(`update wallets set total_syiling_earned = 700 where user_id = $1`, [u])
+      const before = await t.db.query(`select current_syiling, total_syiling_earned, tier_id, updated_at from wallets where user_id = $1`, [u])
+      const lag = await t.wallet.summary(u)
+      expect(lag).toMatchObject({ currentSyiling: 100, totalSyilingEarned: 700, tier: SILVER, nextTier: { key: 'gold', pct: 35, need: 1300 } })
+      expect(await t.db.query(`select current_syiling, total_syiling_earned, tier_id, updated_at from wallets where user_id = $1`, [u])).toEqual(before)
+      await t.db.query(`update wallets set tier_id = (select id from tiers where tier_name = 'gold') where user_id = $1`, [u])
+      expect(await t.wallet.summary(u)).toMatchObject({ tier: { key: 'gold' }, nextTier: { key: 'platinum', pct: 14, need: 4300 } })
+    })
+
     it('earnedToday and earnedThisWeek count positive amounts of the Malaysia day and Monday-to-Sunday week (BR-M14-07)', async () => {
       const previous = t.clock.now()
       try {
@@ -208,6 +228,22 @@ describe('wallet read endpoints (AC6, AC8)', () => {
       expect(out.data.at(-1)!.balanceAfter).toBe(21) // the 20 oldest rows are left out
       expect((await t.wallet.transactions(u, 'earn')).data).toHaveLength(500)
       expect((await t.wallet.transactions(u, 'spend')).data).toHaveLength(0)
+    })
+
+    it('limit: the newest rows only, with type and the same meta; an invalid limit is ignored and a large one stays at the bound (S7-T04)', async () => {
+      const whole = await list(student)
+      expect(whole.data.length).toBeGreaterThan(3)
+      const three = await list(student, '?limit=3')
+      expect(three.data).toEqual(whole.data.slice(0, 3))
+      expect(three.meta).toEqual(whole.meta)
+      const earn = whole.data.filter((r) => r.type === 'earn')
+      expect((await list(student, '?type=earn&limit=2')).data).toEqual(earn.slice(0, 2))
+      for (const ignored of ['?limit=0', '?limit=-1', '?limit=abc', '?limit=1.5', '?limit=', '?limit=1234567890123456']) expect((await list(student, ignored)).data).toHaveLength(whole.data.length)
+      expect((await list(student, '?limit=1&limit=2')).data).toHaveLength(1)
+      const u = await bareUser(t, 'cap limit')
+      await t.db.query(`insert into coin_ledger (user_id, type, source, amount, balance_after, description) select $1, 'earn', 'cap', 1, g, 'd' from generate_series(1, 510) g`, [u])
+      expect((await t.wallet.transactions(u, '', { limit: 501 })).data).toHaveLength(500)
+      expect((await t.wallet.transactions(u, '', { limit: 3 })).data).toHaveLength(3)
     })
 
     it('lists every row of the caller, newest first (created_at desc, id desc), with meta { currentSyiling, type }', async () => {

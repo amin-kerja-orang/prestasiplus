@@ -3,6 +3,7 @@ import { SERVABILITY_ACTIVITIES, SERVABILITY_REASON_MS } from '@pp/contract'
 
 import { SERVABLE_STATUSES, evaluate, evaluateAll } from '../../src/modules/questions/serving'
 import type { ServabilityFacts } from '../../src/modules/questions/serving'
+import { mediaUnresolved } from '../../src/modules/questions/serving/rules'
 import type { QuestionRecord } from '../../src/modules/questions'
 
 /** Unit (no DB): the pure rules over hand-made facts. The parity against the real readers is `servability-parity.spec.ts`. */
@@ -117,12 +118,17 @@ describe('servability rules (pure)', () => {
     expect(codes(facts({ live: null, latest: draft, onPublishedPaper: true }), 'simulasi_paper')).toEqual(['not_approved'])
   })
 
-  it('level rules: inactive level, primary level, and a level the SPM activities do not offer (Bab does not mind)', () => {
+  it('level rules: inactive level, primary level; T1 to T5 are all offered and only a question with no level is refused (S4-T06)', () => {
     expect(codes(facts({ level: { id: '4', code: 'T4', stage: 'upper_secondary', isActive: false } }), 'bab')).toEqual(['level_inactive'])
     expect(codes(facts({ level: { id: '1', code: 'D1', stage: 'primary', isActive: true } }), 'bab')).toEqual(['level_primary'])
-    const t3 = facts({ level: { id: '3', code: 'T3', stage: 'lower_secondary', isActive: true } })
-    expect(codes(t3, 'latih_tubi_spm')).toEqual(['level_not_offered'])
-    expect(evaluate(t3, 'bab').served).toBe(true)
+    for (const [id, code, stage] of [['1', 'T1', 'lower_secondary'], ['3', 'T3', 'lower_secondary'], ['5', 'T5', 'upper_secondary']] as const) {
+      const f = facts({ level: { id, code, stage, isActive: true } })
+      expect(codes(f, 'latih_tubi_spm'), code).toEqual([])
+      expect(evaluate(f, 'latih_tubi_spm').served, code).toBe(true)
+      expect(evaluate(f, 'bab').served, code).toBe(true)
+    }
+    expect(codes(facts({ level: null }), 'latih_tubi_spm')).toEqual(['level_not_offered'])
+    expect(codes(facts({ level: null }), 'bab')).toEqual([])
   })
 
   it('subject rules: unlinked or inactive subject, and the Databank list narrower than the Latih Tubi list', () => {
@@ -155,5 +161,52 @@ describe('servability rules (pure)', () => {
     const draft = record({ liveVersionNo: null }, { status: 'draft' })
     const r = evaluate(facts({ live: null, latest: draft }), 'bab').reasons[0]
     expect(r?.message).toBe(SERVABILITY_REASON_MS.not_approved)
+  })
+})
+
+/** S1-T06 (FR-X1-4f): JS twin of MEDIA_RESOLVED_SQL; the SQL half is `media-serving.spec.ts` (CI). */
+describe('media rule twin (S1-T06)', () => {
+  const stim = (over: Partial<import('../../src/modules/questions/serving').MediaStimulusFact> = {}) => ({ kind: 'image', hasFile: true, hasTableData: false, bodyMs: null, bodyEn: null, ...over })
+  const withMedia = (stimuli: ReturnType<typeof stim>[], importIssueCodes: string[] = []) => facts({ media: { stimuli, importIssueCodes } })
+
+  it('a passage body of only tabs/newlines is NOT blank (Postgres btrim strips spaces only); only spaces are blank', () => {
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '\n', bodyEn: '\t' })], importIssueCodes: [] })).toBe(false)
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '   ', bodyEn: null })], importIssueCodes: [] })).toBe(true)
+  })
+
+  it('a single question whose image stimulus has no file gets image_missing on every activity but the pinned paper', () => {
+    const f = withMedia([stim({ hasFile: false })])
+    for (const a of SERVABILITY_ACTIVITIES.filter((x) => x !== 'simulasi_paper')) {
+      const r = evaluate(f, a)
+      expect(r.served, a).toBe(false)
+      expect(r.reasons.map((x) => x.code), a).toContain('image_missing')
+      expect(r.reasons.find((x) => x.code === 'image_missing')?.message).toBe('Imej belum dimuat naik — muat naik di borang sunting.')
+    }
+  })
+
+  it('a group with one stimulus lacking its file gives the reason to every member (each member carries the group stimuli)', () => {
+    const groupStimuli = [stim(), stim({ kind: 'diagram', hasFile: false })]
+    for (let i = 0; i < 2; i++) expect(codes(withMedia(groupStimuli), 'latih_tubi_spm')).toContain('image_missing')
+  })
+
+  it('resolved media gives no reason: files present, a table with a grid or a pipe body, a passage with text', () => {
+    const ok = withMedia([
+      stim(),
+      stim({ kind: 'table', hasFile: false, hasTableData: true }),
+      stim({ kind: 'table', hasFile: false, bodyMs: 'A | B' }),
+      stim({ kind: 'table', hasFile: true }),
+      stim({ kind: 'passage', bodyEn: 'Text' }),
+    ])
+    expect(codes(ok, 'databank')).not.toContain('image_missing')
+  })
+
+  it('an empty table, an empty passage and a legacy_image_unresolved hold are unresolved', () => {
+    expect(codes(withMedia([stim({ kind: 'table', hasFile: false, bodyMs: 'no grid' })]), 'bab')).toContain('image_missing')
+    expect(codes(withMedia([stim({ kind: 'passage', bodyMs: '  ' })]), 'bab')).toContain('image_missing')
+    expect(codes(withMedia([], ['legacy_image_unresolved']), 'bab')).toContain('image_missing')
+  })
+
+  it('facts without media (hand-made) are not judged', () => {
+    expect(codes(facts(), 'databank')).not.toContain('image_missing')
   })
 })

@@ -33,9 +33,6 @@ export const GAMIFICATION_MESSAGES = {
 /** Largest amount one admin award may grant (`AWARD_MAX`). */
 export const GAMIFICATION_AWARD_MAX = 10_000
 
-/** Referral rewards in syiling (mock constants `REFERRAL_REWARD_REFERRER` / `_REFEREE`). */
-export const GAMIFICATION_REFERRAL_REWARDS = { referrer: 50, referee: 25 } as const
-
 
 // ---------------------------------------------------------------------------------------------
 // Enums
@@ -150,6 +147,22 @@ export const GamificationChallengeProgressSchema = z
   })
   .meta({ id: 'GamificationChallengeProgress' })
 export type GamificationChallengeProgress = z.infer<typeof GamificationChallengeProgressSchema>
+
+/** A platform daily challenge as a teacher sees it (S6 Misi Harian "Global" rows): read-only, with today's completions among the teacher's pupils. Service return type; no route. */
+export const GuruGlobalChallengeSchema = z
+  .object({
+    id: IdSchema,
+    title: z.string(),
+    description: z.string(),
+    target: z.number().int().min(1),
+    rewardSyiling: count,
+    rewardXp: count,
+    difficulty: GamificationDifficultySchema,
+    icon: z.string(),
+    completedToday: count.meta({ description: 'Distinct pupils of the teacher who completed it today (Malaysia day), test rows excluded.' }),
+  })
+  .meta({ id: 'GuruGlobalChallenge' })
+export type GuruGlobalChallenge = z.infer<typeof GuruGlobalChallengeSchema>
 
 /** Subject mastery (read from the practice module); only subjects with at least one answer. */
 export const GamificationMasteryRowSchema = z
@@ -405,6 +418,8 @@ export const GamificationReferralSchema = z
     code: z.string().min(1),
     rewardReferrer: count,
     rewardReferee: count,
+    /** `referral_max_rewarded`: rewarded friends per referrer; at `stats.rewarded >= maxRewarded` the page shows "Had rujukan dicapai.". */
+    maxRewarded: count,
     registerUrl: z.string().min(1),
     whatsappUrl: z.string().min(1),
     telegramUrl: z.string().min(1),

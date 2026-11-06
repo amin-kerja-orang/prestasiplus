@@ -37,6 +37,21 @@ export const chapterRoutes: RouteDef[] = [
         chapterCount,
         // FR-M05-58: the practice-drawable questions of the offered levels (D72).
         questionCount: levels.reduce((a, l) => a + practiceLevelCount(s.id, l), 0),
+        levels: levels.flatMap((id) => {
+          const level = curriculum.level(id)
+          const n = practiceChapters(s.id, id).length
+          return level && n > 0
+            ? [
+                {
+                  id,
+                  code: level.code,
+                  name: level.name,
+                  chapterCount: n,
+                  questionCount: practiceLevelCount(s.id, id),
+                },
+              ]
+            : []
+        }),
       })
     }
     return unpaged(items)
