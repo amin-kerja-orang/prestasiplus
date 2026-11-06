@@ -98,7 +98,7 @@ describe('Prestasi 360 (student)', () => {
     expect(r.heroAccuracy).toBe(87)
   })
 
-  describe('XS rounding (S6-T03): one decimal half up on integers, hero rounded once', () => {
+  describe('XS rounding (S6-T03): one decimal half up on integers; the hero rounds the wire value (PRD 10 §0A.4, FR-MUR-4-4)', () => {
     const one = async (n: number, correct: number) => {
       answer('1', n, correct, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
       return w.student.student(ctxOf('student', '1'), '1')
@@ -116,10 +116,10 @@ describe('Prestasi 360 (student)', () => {
       expect(r.heroAccuracy).toBe(6)
     })
 
-    it('hero rounds once from the raw ratio: 35 of 47 (74.468) is 74.5 on the wire and 74 in the hero, not 75', async () => {
+    it('the hero rounds the 1-decimal wire value half up: 35 of 47 (74.468) is 74.5 on the wire and 75 in the hero, the same number as the cards', async () => {
       const r = await one(47, 35)
       expect(r.stats.accuracy).toBe(74.5)
-      expect(r.heroAccuracy).toBe(74)
+      expect(r.heroAccuracy).toBe(75)
     })
 
     it('hero at exactly 74.5 (149 of 200) is 75', async () => {

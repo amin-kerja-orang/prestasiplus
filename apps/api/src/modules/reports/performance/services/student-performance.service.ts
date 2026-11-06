@@ -30,7 +30,6 @@ const sum = <T>(list: readonly T[], f: (x: T) => number): number => list.reduce(
 const accuracyPct = (correct: number, answered: number): number => xsAccuracy(correct, answered) ?? 0
 
 /** Hero figure: the whole number rounded half up ONCE from the raw ratio (74.46 is 74, 74.5 is 75), integer arithmetic, capped at 100. */
-const wholeAccuracy = (correct: number, answered: number): number => Math.min(100, Math.floor((200 * Math.max(0, correct) + answered) / (2 * answered)))
 
 /** Prestasi 360 (S6). Throws NOT_FOUND (404) for an unknown pupil AND for a pupil the caller may not open: one outcome, no existence leak (OQ-1). */
 @Injectable()
@@ -128,7 +127,7 @@ export class StudentPerformanceService {
 
     return {
       user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
-      heroAccuracy: answered === 0 ? null : wholeAccuracy(correctAll, answered),
+      heroAccuracy: accuracy === null ? null : Math.round(accuracy),
       streak: profile?.streak.current ?? 0,
       stats: { sessions, accuracy, answered, seconds: figuresOf(sittings).seconds + sum(practiceDays, (p) => p.seconds) },
       headcount,
