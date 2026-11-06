@@ -6,13 +6,14 @@
  */
 import { PRACTICE_COUNT_OPTIONS, PRACTICE_REVISION_LENGTH, type PracticeMode } from '@pp/contract'
 
+import type { PrismaClient, TxClient } from '../../db/client'
 import type { RateLimitSpec } from '../../common/throttle'
 
 /** Question counts of random and chapter sessions. */
 export const COUNT_OPTIONS: readonly number[] = PRACTICE_COUNT_OPTIONS
 /** BR-14: revision length. */
 export const REVISION_LENGTH = PRACTICE_REVISION_LENGTH
-/** BR-M06-13: `past_year` counts. */
+/** BR-M06-13: `past_year` / `databank` counts. */
 export const PAST_YEAR_COUNTS: readonly number[] = [5, 10, 20]
 /** BR-M06-04: Latih Tubi counts of a subject without a target. */
 export const LATIH_TUBI_COUNTS: readonly number[] = [5, 10, 20, 30, 40, 50, 60]
@@ -37,28 +38,43 @@ export const LATIH_TUBI_TARGETS: Readonly<Record<string, number>> = {
   PSI: 40,
   ADDMATH: 20,
 }
-/** The SPM levels (T4, T5) a Latih Tubi session may name (by level code). */
-export const SPM_LEVEL_CODES: readonly string[] = ['T4', 'T5']
-/** BR-11 (secondary-only, 2026-10-29): the practice levels offered to random sessions are Tingkatan 4 and 5 (by level code). */
-export const OFFERED_LEVEL_CODES: readonly string[] = SPM_LEVEL_CODES
+/**
+ * S4-T06 (DM-20): the practice levels are the active, non-primary education levels (T1..T5 on the seed), read from `education_levels`.
+ * `gradeKey` is `TINGKATAN_` + the digit of `code` (the seed `grade` column holds 7..11, so it is not used).
+ */
+export interface OfferedLevel {
+  id: string
+  code: string
+  order: number
+  gradeKey: string
+}
+
+/** The one place the offered levels are computed (practice, S5-T03 and the learner curriculum reads import it; no second calculation). */
+export async function offeredLevels(db: Pick<TxClient | PrismaClient, '$queryRaw'>): Promise<OfferedLevel[]> {
+  // The card writes `"order"`; the column is `sort_order` (prisma/schema/curriculum.prisma), aliased to `order`.
+  const rows = await db.$queryRaw<{ id: string; code: string; order: number }[]>`
+    SELECT id::text AS id, code, sort_order AS "order"
+    FROM education_levels
+    WHERE stage <> 'primary' AND is_active
+    ORDER BY sort_order, id`
+  return rows.map((r) => ({ id: r.id, code: r.code, order: Number(r.order), gradeKey: `TINGKATAN_${/\d/.exec(r.code)?.[0] ?? ''}` }))
+}
 
 /** BR-30: `timeSpent` cap per question. */
 export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
 export const POINTS_PER_CORRECT = 10
-/** BR-09: mission sessions pay 3 coins per correct answer unless the mission says otherwise. */
-export const MISSION_COINS_PER_CORRECT = 3
 /** Largest page number the history accepts (a deeper page is 422, so a skip cannot be abused). */
 export const HISTORY_MAX_PAGE = 10_000
 /** Default page size of the history list. */
 export const HISTORY_PAGE_SIZE = 15
 
 /**
- * BR-09 (observed: the coins stored on a session are the correct answers, times the mission rate for a
- * `mission` session). The wallet credit has its own rate and comes back from the reward port.
+ * DM-48 (S5-T03): the coins stored on a session are the correct answers times ONE rate for every mode; the caller reads the rate
+ * with `coinsPerCorrect()` (`./coins`) when the credit is written (1 until the `reward_settings` row exists).
  */
-export function sessionCoins(mode: PracticeMode, correct: number, coinsPerCorrect?: number | null): number {
-  return mode === 'mission' ? correct * (coinsPerCorrect || MISSION_COINS_PER_CORRECT) : correct
+export function sessionCoins(correct: number, rate: number): number {
+  return correct * rate
 }
 
 /** S7 (revision, observed) and Q1 / Q2 (proposed) feedback titles. */
@@ -72,3 +88,12 @@ export const PRACTICE_LIMITS = {
   write: { bucket: 'practice.write', env: 'THROTTLE_PRACTICE_WRITE_PER_MINUTE', default: 120, per: 'user' },
   read: { bucket: 'practice.read', env: 'THROTTLE_PRACTICE_READ_PER_MINUTE', default: 120, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/**
+ * DM-44: the value of `practice_checks.selected_label` for a selection. One label stays as it is; an `mcq_multi`
+ * answer is the sorted, unique labels joined by commas ("A,C"). No label gives null.
+ */
+export function selectedLabelOf(labels: readonly string[]): string | null {
+  const unique = [...new Set(labels)].sort()
+  return unique.length === 0 ? null : unique.join(',')
+}

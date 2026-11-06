@@ -161,6 +161,8 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expect(own.data.map((r) => r.id)).toContain(d.id)
     const approved = await list(teacher, '?status=approved')
     expect(approved.data.every((r) => r.source === 'question')).toBe(true)
+    // A pending row (no question yet, `question_id` null) is listed under status=review only, never under approved.
+    expect(approved.data.map((r) => r.id)).not.toContain(d.id)
     expect(all.meta.totalItems).toBe(approved.meta.totalItems + own.meta.totalItems)
     const other = await list(teacher2)
     expect(other.data.map((r) => r.id)).not.toContain(d.id)
@@ -192,8 +194,10 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expectError(await teacher2.put(`/api/guru/intake/structured/${d.id}`, body()), 'NOT_FOUND')
     expectError(await teacher2.delete(`/api/guru/intake/structured/${d.id}`), 'NOT_FOUND')
     expectError(await teacher.put('/api/guru/intake/structured/g999999999', body()), 'NOT_FOUND')
-    // A single-MCQ item id is not a structured submission either.
-    expectError(await teacher.delete('/api/guru/intake/structured/1'), 'NOT_FOUND')
+    // A bare numeric id is tolerated on the write routes, so use one no item has; an MCQ submission id is not a structured one either.
+    expectError(await teacher.delete('/api/guru/intake/structured/999999998'), 'NOT_FOUND')
+    const mcq = await t.db.query<{ id: string }>(`select i.id::text id from intake_items i join intake_batches b on b.id = i.batch_id where b.source = 'guru' and i.item_type <> 'structured' limit 1`)
+    if (mcq[0]) expectError(await teacher.delete(`/api/guru/intake/structured/${mcq[0].id}`), 'NOT_FOUND')
   })
 
   it('edit and delete work only while the item is editable (409 once accepted)', async () => {

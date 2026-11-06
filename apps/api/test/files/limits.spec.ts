@@ -261,9 +261,9 @@ describe('environment', () => {
     expect(config({ NODE_ENV: 'development' }).storageDir).toContain('pp-files')
   })
 
-  it('defaults the limits (10 MB, 20 MB, 30 a minute) and the env schema bounds them', () => {
+  it('defaults the limits (10 MB, 30 MB, 30 a minute) and the env schema bounds them', () => {
     const c = config({ NODE_ENV: 'test' })
-    expect([c.maxUploadBytes, c.intakeMaxBytes, c.ratePerMinute, c.readsPerMinute]).toEqual([10 * 1024 * 1024, 20 * 1024 * 1024, 30, 120])
+    expect([c.maxUploadBytes, c.intakeMaxBytes, c.ratePerMinute, c.readsPerMinute]).toEqual([10 * 1024 * 1024, 30 * 1024 * 1024, 30, 120])
     const base = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://u:p@db:5432/x' }
     expect(loadEnv({ ...base, MAX_UPLOAD_MB: '5' }).MAX_UPLOAD_MB).toBe(5)
     expect(() => loadEnv({ ...base, MAX_UPLOAD_MB: '0' })).toThrow(/MAX_UPLOAD_MB/)

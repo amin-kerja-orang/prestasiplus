@@ -13,21 +13,24 @@ import { RouterLink } from 'vue-router'
 import { DsDataTable, type CardField } from '@/ds'
 
 import type { CellTone, HeadcountDetail } from '../../api/headcount-types'
-import { DASH, gradeOfPercent, num1 } from '../../lib/headcount/format'
+import { DASH, gradeOfPercent, num0, num1 } from '../../lib/headcount/format'
 
-const props = defineProps<{ detail: HeadcountDetail }>()
-const selected = defineModel<number[]>('selected', { required: true })
+/** `selectable` false (the school admin, read-only): no select column, no checkbox, no selection state. */
+const props = withDefaults(defineProps<{ detail: HeadcountDetail; selectable?: boolean }>(), {
+  selectable: true,
+})
+const selected = defineModel<number[]>('selected', { default: () => [] })
 
 const otrs = computed(() => Array.from({ length: props.detail.config.activeOtrs }, (_, i) => i))
 /** A pupil row without a user id (a masked name) can be neither opened nor selected. */
 const hasId = (id: unknown): boolean => id !== null && id !== undefined
-const selectable = computed(() => props.detail.rows.filter((r) => hasId(r.userId)))
+const selectableRows = computed(() => props.detail.rows.filter((r) => hasId(r.userId)))
 const allSelected = computed(
-  () => selectable.value.length > 0 && selected.value.length === selectable.value.length,
+  () => selectableRows.value.length > 0 && selected.value.length === selectableRows.value.length,
 )
 
 function toggleAll(checked: boolean | 'indeterminate') {
-  selected.value = checked === true ? selectable.value.map((r) => r.userId) : []
+  selected.value = checked === true ? selectableRows.value.map((r) => r.userId) : []
 }
 function toggleOne(id: number, checked: boolean | 'indeterminate') {
   const rest = selected.value.filter((v) => v !== id)
@@ -41,10 +44,18 @@ const TONE: Record<CellTone, string> = {
   na: 'text-dimmed',
 }
 
+/** TOV, ETR and averages: one decimal; the OTR targets and an Auto AR are whole numbers (decision 11). */
 const num = (v: number | null | undefined): string => (v == null ? DASH : num1(v))
+const whole = (v: number | null | undefined): string => (v == null ? DASH : num0(v))
+/** A Manual AR keeps its one decimal; an Auto AR is whole. */
+const arNum = (v: number | null | undefined): string =>
+  props.detail.config.mode === 'manual' ? num(v) : whole(v)
 const grade = (v: number | null | undefined): string => (v == null ? '' : gradeOfPercent(v))
-const withGrade = (v: number | null | undefined, g: string | null | undefined): string =>
-  v == null ? DASH : `${num1(v)}${g ? ` (${g})` : ''}`
+const withGrade = (
+  v: number | null | undefined,
+  g: string | null | undefined,
+  fmt: (x: number | null | undefined) => string = num,
+): string => (v == null ? DASH : `${fmt(v)}${g ? ` (${g})` : ''}`)
 
 interface Row extends Record<string, unknown> {
   userId: number
@@ -73,12 +84,12 @@ const rows = computed<Row[]>(() => {
     }
     otrs.value.forEach((i) => {
       const c = r.cells[i]
-      row[`otr${String(i)}`] = num(c?.target)
+      row[`otr${String(i)}`] = whole(c?.target)
       row[`otr${String(i)}g`] = c?.targetGrade ?? ''
-      row[`otr${String(i)}Text`] = withGrade(c?.target, c?.targetGrade)
-      row[`ar${String(i)}`] = num(c?.ar)
+      row[`otr${String(i)}Text`] = withGrade(c?.target, c?.targetGrade, whole)
+      row[`ar${String(i)}`] = arNum(c?.ar)
       row[`ar${String(i)}g`] = c?.arGrade ?? ''
-      row[`ar${String(i)}Text`] = withGrade(c?.ar, c?.arGrade)
+      row[`ar${String(i)}Text`] = withGrade(c?.ar, c?.arGrade, arNum)
       row[`tone${String(i)}`] = c?.tone ?? 'na'
     })
     return row
@@ -119,7 +130,7 @@ const pair = (id: string, header: string, key: string): TableColumn<Row> => ({
 })
 
 const columns = computed<TableColumn<Row>[]>(() => [
-  { id: 'select', header: ' ' },
+  ...(props.selectable ? [{ id: 'select', header: ' ' }] : []),
   { accessorKey: 'index', header: '#' },
   { accessorKey: 'name', header: 'Nama' },
   pair('g-tov', 'TOV', 'tov'),
@@ -196,7 +207,7 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
     <template #card-actions="{ row }">
       <div class="flex items-center gap-2">
         <UCheckbox
-          v-if="!row.average && hasId(row.userId)"
+          v-if="selectable && !row.average && hasId(row.userId)"
           :model-value="selected.includes(row.userId)"
           :aria-label="`Pilih ${row.name}`"
           @update:model-value="toggleOne(row.userId, $event)"

@@ -2,7 +2,7 @@ import { INTAKE_GATE_MESSAGES } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { makePng } from '../files/fixtures'
-import { bootWorkflowApp, loginAs, post, del, type LoggedIn, type WorkflowTestApp } from './helpers'
+import { bootWorkflowApp, loginAs, patch, post, del, type LoggedIn, type WorkflowTestApp } from './helpers'
 
 /**
  * S6-T17: the admin "Terima" of a teacher's structured submission that carries a stimulus image. The picture is COPIED to a new
@@ -14,7 +14,7 @@ let admin: LoggedIn
 let teacher: LoggedIn
 
 beforeAll(async () => {
-  t = await bootWorkflowApp()
+  t = await bootWorkflowApp({}, { withQuestionWorkflow: true })
   admin = await loginAs(t, 'admin@demo.test')
   teacher = await loginAs(t, 'guru@demo.test')
 }, 120_000)
@@ -30,7 +30,7 @@ async function upload(): Promise<string> {
   return (up.body as { data: { id: string } }).data.id
 }
 
-async function submit(token: string | null, stimulus = 'Rajah menunjukkan sebuah segi tiga.'): Promise<string> {
+async function submit(token: string | null, stimulus = 'Rajah menunjukkan sebuah segi tiga.', complete = true): Promise<string> {
   const ref = (await rows<{ s: string; l: string }>(`select (select id::text from subjects where code = 'MATH') s, (select id::text from education_levels where code = 'T4') l`))[0]!
   const res = await post(teacher, '/guru/intake/structured', {
     subjectId: ref.s,
@@ -38,13 +38,18 @@ async function submit(token: string | null, stimulus = 'Rajah menunjukkan sebuah
     difficultyLevel: 3,
     stimulus,
     ...(token === null ? {} : { stimulusImageId: token }),
-    parts: [{ text: 'Hitung luas segi tiga itu.', marks: 3, scheme: '1/2 x 6 x 4 = 12 cm2' }],
+    // Two parts: the bank types a version by its parts (`versionTypeOf`), and a lone leaf is typed by its mode (an essay here).
+    parts: [
+      { text: 'Hitung luas segi tiga itu.', marks: 3, scheme: '1/2 x 6 x 4 = 12 cm2' },
+      { text: 'Hitung perimeter segi tiga itu.', marks: 2, scheme: '6 + 5 + 5 = 16 cm' },
+    ],
     // The conditional DSKP fields are required only where the seed has chapters or DSKP nodes for MATH T4.
     ...(await dskp(ref.s, ref.l)),
   })
   expect(res.status, JSON.stringify(res.body)).toBe(201)
   const id = (res.body as { data: { id: string } }).data.id.slice(1)
-  // The admin completes the tag in review (unit and SP are the admin's to confirm, AC-GUR-44-11): done here straight on the item.
+  if (!complete) return id
+  // Complete tag set straight on the item. Terima (S1-T04) does not need it; Terbitkan does, and the last test leaves it out.
   const unit = (await rows<{ code: string }>(`select n.code from curriculum_nodes n where n.kind = 'unit' and n.subject_id = (select id from subjects where code = 'MATH') and n.education_level_id = $1 order by n.id limit 1`, [ref.l]))[0]
   const sp = (await rows<{ code: string }>(`select n.code from curriculum_nodes n where n.kind = 'sp' and n.subject_id = (select id from subjects where code = 'MATH') and n.education_level_id = $1 order by n.id limit 1`, [ref.l]))[0]
   await t.db.query(
@@ -112,5 +117,32 @@ describe('admin Terima of a structured teacher submission with a stimulus image'
     expect(await exists()).toBe('1')
     expect((await del(teacher, `/guru/intake/structured/g${b}`)).status).toBe(200)
     expect(await exists()).toBe('0')
+  })
+
+  it('Terima asks only what a Draf needs (S1-T04): 200 and a Draf with no Unit or SP; Terbitkan is refused until they are set', async () => {
+    const item = await submit(null, 'Rajah menunjukkan sebuah segi tiga.', false)
+    // The seed has DSKP nodes for MATH T4, so the form sent an SP and Terima would take the unit from it (44-F1). Clear the SP on the
+    // item (as an item with no tag is stored) so this case is a submission with no Unit and no SP.
+    await t.db.query(
+      `update intake_items set payload = jsonb_set(jsonb_set(payload, '{tag,sp}', '[]'::jsonb), '{guru,spIds}', '[]'::jsonb), low_fields = array(select distinct unnest(low_fields || array['tag.sp'])) where id = $1`,
+      [item],
+    )
+    // the reviewer confirms the low-confidence tag fields as they are (empty); Draf -> Semakan asks for that, not for a value
+    const stored = (await rows<{ low: string[] }>(`select low_fields low from intake_items where id = $1`, [item]))[0]!
+    const confirm = await patch(admin, `/intake/items/${item}`, { confirmed: stored.low })
+    expect(confirm.status, JSON.stringify(confirm.body)).toBe(200)
+    const res = await post(admin, `/intake/items/${item}/accept`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const questionId = (await rows<{ id: string }>(`select question_id::text id from intake_items where id = $1`, [item]))[0]!.id
+    const latest = (await rows<{ status: string; unit: string | null }>(
+      `select v.status, v.unit_node_id::text unit from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
+      [questionId],
+    ))[0]!
+    expect(latest).toMatchObject({ status: 'draft', unit: null })
+
+    expect((await post(admin, `/questions/${questionId}/status`, { to: 'review' })).status).toBe(200)
+    const refused = await post(admin, `/questions/${questionId}/status`, { to: 'approved' })
+    expect(refused.status, JSON.stringify(refused.body)).toBe(422)
+    expect(refused.body.error.fields).toMatchObject({ unitId: 'Sila pilih unit DSKP.', spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.' })
   })
 })
