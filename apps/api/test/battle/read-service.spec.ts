@@ -120,7 +120,7 @@ describe('BattleDeps reads (empty owner data)', () => {
   })
 
   it('answers empty/neutral values on an empty database', async () => {
-    expect(await deps.searchStudents('ab', '1', 10)).toEqual([])
+    expect(await deps.searchStudents('ab', '1', 10, '1')).toEqual([])
     expect(await deps.student('999')).toBeNull()
     expect(await deps.student('x')).toBeNull()
     expect(await deps.subject('x')).toBeNull()

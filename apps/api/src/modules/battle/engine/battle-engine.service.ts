@@ -1,9 +1,9 @@
 /**
- * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (ten questions drawn
- * once) and the report of a finished battle to M14.
+ * What the queue, the invitations and the arena share (BE-44): the pool pre-check, battle creation (the chosen count of
+ * questions drawn once) and the report of a finished battle to M14.
  */
 import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, type GamesReward } from '@pp/contract'
+import { BATTLE_MESSAGES, type BattleQuestionCount, type GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
@@ -17,6 +17,19 @@ import type { BattleParams } from './battle-params'
 
 export type BattleMode = 'quick_match' | 'school_battle' | 'challenge' | 'queue_join'
 export type QueueMode = 'quick_match' | 'school_battle'
+
+/** How long both players see the key and the points of a closed round before the next one opens (48 GAME-01 timers: 3 s). */
+export const BATTLE_REVEAL_MS = 3000
+
+export interface BattleTiming {
+  /** N: seconds a question lasts (`battle_question_seconds`); points are scored against it. */
+  questionSeconds: number
+  /** `battle_grace_seconds`: an answer inside it still counts, as s = N. */
+  graceSeconds: number
+  /** N + grace in ms: the answer window of a round. */
+  limitMs: number
+  revealMs: number
+}
 
 export interface BattleSide {
   id: string
@@ -43,9 +56,29 @@ export class BattleEngine {
     return this.ports.answers.record(gameAnswerEntry({ userId: a.userId, attemptId: a.battleId, questionId: a.questionId, gameKey: 'battle', position: a.position, isCorrect: a.isCorrect, answeredAt: a.answeredAt }))
   }
 
-  /** How long a question lasts, grace included (48 section 3.3): `battle_grace_seconds` is read per answer. */
-  async questionLimitMs(): Promise<number> {
-    return (BATTLE_RULES.questionSeconds + (await this.settings.get('battle_grace_seconds'))) * 1000
+  /**
+   * The round clock (48 GAME-01 timers): N = `battle_question_seconds`, the grace `battle_grace_seconds` and the reveal. An
+   * answer window is N + grace long; both settings are read per call, so an admin change reaches the next evaluation.
+   */
+  async timing(): Promise<BattleTiming> {
+    const questionSeconds = await this.settings.get('battle_question_seconds')
+    const graceSeconds = await this.settings.get('battle_grace_seconds')
+    return { questionSeconds, graceSeconds, limitMs: (questionSeconds + graceSeconds) * 1000, revealMs: BATTLE_REVEAL_MS }
+  }
+
+  /** The chip used when a start carries no `question_count` (`battle_questions_default`: 5, 10, 15 or 20). */
+  async questionCountDefault(): Promise<BattleQuestionCount> {
+    return (await this.settings.get('battle_questions_default')) as BattleQuestionCount
+  }
+
+  /** How long a Cabar Kawan invitation lasts (`battle_invitation_hours`). */
+  async invitationMs(): Promise<number> {
+    return (await this.settings.get('battle_invitation_hours')) * 3_600_000
+  }
+
+  /** `battle_daily_max`: Quick Match and Battle Sekolah battles a pupil may have per Malaysia day. */
+  dailyMax(): Promise<number> {
+    return this.settings.get('battle_daily_max')
   }
 
   /** How long a queue entry waits for a human before the robot (`battle_bot_fallback_seconds`); null: never a robot. */
@@ -60,7 +93,7 @@ export class BattleEngine {
   }
 
   /**
-   * Draws the 10 question ids of a battle with the stream `streamName` (null when the pool is too small, BR-M16-03). Call
+   * Draws the `params.questionCount` question ids of a battle with the stream `streamName` (null when the pool is too small, BR-M16-03). Call
    * it BEFORE a transaction: the questions owner hydrates SPM pools with queries that must not share a transaction
    * connection.
    */
@@ -68,18 +101,18 @@ export class BattleEngine {
     const levelId = await this.deps.levelIdOfGrade(ownerGrade)
     return this.deps.drawQuestions(
       { questionType: params.questionType, subjectId: params.subjectId, levelId, pkskDomainId: params.pkskDomainId, pkskTargetLevel: params.pkskTargetLevel },
-      BATTLE_RULES.arenaQuestions,
+      params.questionCount,
       prngStream(streamName),
     )
   }
 
-  /** True when 10 eligible keyless questions can be drawn for the params at the owner's level (BR-M16-03). */
+  /** True when `params.questionCount` eligible keyless questions can be drawn for the params at the owner's level (BR-M16-03). */
   async poolOk(params: BattleParams, ownerGrade: number | null, streamName: string): Promise<boolean> {
     return (await this.draw(params, ownerGrade, streamName)) !== null
   }
 
   /**
-   * Creates an `active` battle with its two participants and 10 drawn questions. Runs in the caller's transaction: when
+   * Creates an `active` battle with its two participants and its drawn questions (`params.questionCount`). Runs in the caller's transaction: when
    * the pool cannot give 10 questions the whole unit rolls back with 422 "Soalan tidak mencukupi.". Side `b` null is the
    * robot: a seat with no user and no school, in a battle that counts for no ranking (DM-60, 48 section 3.6).
    */
@@ -99,6 +132,7 @@ export class BattleEngine {
     const levelId = await this.deps.levelIdOfGrade(args.ownerGrade)
     const ids = args.questionIds === undefined ? await this.draw(params, args.ownerGrade, args.drawStream) : args.questionIds
     if (ids === null) throw rawInvalid(BATTLE_MESSAGES.poolTooSmall)
+    const now = this.clock.now()
     const row = await this.prisma.client.battle.create({
       data: {
         mode: args.mode,
@@ -108,8 +142,11 @@ export class BattleEngine {
         pkskTargetLevel: params.pkskTargetLevel,
         levelId: levelId === null ? null : idFromString(levelId),
         isTest,
+        questionCount: params.questionCount,
         countsForRanking: b !== null,
-        createdAt: this.clock.now(),
+        createdAt: now,
+        // 48 GAME-01 timers: round 1 opens when the battle becomes active.
+        roundStartedAt: now,
         participants: {
           create: [
             { side: 'A', userId: idFromString(a.id), schoolId: a.schoolId === null ? null : idFromString(a.schoolId), isBot: false, isTest },
