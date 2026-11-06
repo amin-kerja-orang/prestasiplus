@@ -6974,15 +6974,17 @@
               "liabilityRm": {
                 "type": "number",
                 "minimum": 0,
-                "description": "Sum of costValueSen of the claims in the session year / 100."
+                "description": "Sum of the real cost snapshots of the pending_admin and delivered reward redemptions created in the Malaysia calendar year of the session year / 100 (the sum the session budget uses; DM-48, DM-77)."
               },
               "students": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Pupils with such a redemption."
               },
               "claims": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Number of such redemptions, digital ones included."
               }
             },
             "required": [
@@ -7062,6 +7064,7 @@
         "enum": [
           "OUT_OF_STOCK",
           "MONTHLY_CAP",
+          "REDEEM_BUDGET",
           "INSUFFICIENT_TOKENS",
           "DRAW_CLOSED",
           "TICKET_LIMIT",
@@ -7587,6 +7590,10 @@
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "doubleSubmit": {
+            "type": "boolean",
+            "description": "The same pupil has another non-cancelled redemption of the same reward within 60 seconds of this one (FR-ADM-P2-08.3); computed, never stored."
           }
         },
         "required": [
@@ -7598,7 +7605,8 @@
           "denominationRm",
           "tokenCost",
           "status",
-          "createdAt"
+          "createdAt",
+          "doubleSubmit"
         ]
       },
       "RewardRedemptionListMeta": {
@@ -92777,7 +92785,7 @@
           "rewards"
         ],
         "summary": "Redeem a catalogue reward with tokens",
-        "description": "One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).",
+        "description": "One transaction: snapshot redemption row (with the reward token cost and real cost at this moment), token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), session budget (only a reward with a real cost above 0; the real cost snapshots of every pupil's pending_admin and delivered redemptions created in the Malaysia calendar year of the session year, plus this reward, must not pass the budget; DM-48), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).",
         "parameters": [
           {
             "schema": {
@@ -92851,7 +92859,7 @@
             }
           },
           "409": {
-            "description": "OUT_OF_STOCK \"Stok hadiah telah habis.\"; MONTHLY_CAP \"Had tebusan bulanan dicapai.\"; INSUFFICIENT_TOKENS \"Token tidak mencukupi.\".",
+            "description": "OUT_OF_STOCK \"Stok hadiah telah habis.\"; MONTHLY_CAP \"Had tebusan bulanan dicapai.\"; REDEEM_BUDGET \"Had tebusan sesi ini telah dicapai.\" (ERR-GAME-22); INSUFFICIENT_TOKENS \"Token tidak mencukupi.\".",
             "content": {
               "application/json": {
                 "schema": {

@@ -45,7 +45,7 @@ export interface MatrixEntry {
 
 /** Entities whose read is NOT "every row of the staging table once". */
 const NOT_PLAIN_READ: ReadonlySet<string> = new Set([
-  'subject_levels', 'jpns', 'ppds', 'gamification_settings', 'challenge_completions', 'user_achievements',
+  'subject_levels', 'jpns', 'ppds', 'gamification_settings', 'reward_settings', 'challenge_completions', 'user_achievements',
   'referral_codes', 'referrals', 'spm_targets', 'questions',
 ])
 
@@ -77,7 +77,8 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('tiers', 'gamification_tiers', 'tiers', 'adopts the seeded tier of the same label; never inserts'),
   e('achievements', 'achievements', 'achievements', 'adopts seeded achievements by name'),
   e('challenges', 'challenges', 'challenges', 'platform challenges only; teacher challenges are excluded'),
-  e('gamification_settings', 'reward_settings', 'gamification_settings', 'pivot: one key/value row per non-empty column'),
+  e('gamification_settings', 'reward_settings', 'gamification_settings', 'pivot: the key/value row of reward_budget_sen_month'),
+  e('reward_settings', 'reward_settings', 'reward_settings', 'pivot: the DM-48 values of the source row fill the singleton (DM-38)', 'idmap'),
   // ---- BE-29 wallet
   e('wallets', 'student_wallets', 'wallets'),
   e('coin_ledger', 'coin_transactions', 'coin_ledger'),
