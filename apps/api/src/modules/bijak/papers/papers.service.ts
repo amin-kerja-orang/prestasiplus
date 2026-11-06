@@ -124,9 +124,8 @@ export class PapersService {
   }
 
   async listContracts(): Promise<BijakBlueprintContract[]> {
-    // S3-T01 (D76): a pupil sees Disahkan contracts only. The rows are exactly what `findServingBlueprint` finds (the same predicate generate
-    // uses, N1), so an older Disahkan version still serving while a Spec head is edited is the row shown, and the list never offers a pair
-    // that generate would answer NO_BLUEPRINT.
+    // S3-T01 (D76): a pupil sees Disahkan contracts only. The rows are the serving Disahkan blueprints (`serves_students`, N1), so an older Disahkan
+    // version still serving while a Spec head is edited is the row shown, and a Spec head is never listed.
     const blueprints = await this.repo.listServingBlueprints()
     const subjects = await this.repo.subjectsByIds(blueprints.map((b) => b.subjectId))
     const out: BijakBlueprintContract[] = []
