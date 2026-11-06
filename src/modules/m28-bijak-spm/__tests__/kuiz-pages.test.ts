@@ -165,6 +165,25 @@ describe('KuizPage (random)', () => {
     expect(document.body.textContent).toContain('← Kertas penuh')
   })
 
+  it('FR-PA-26: Markah is over served, Ketepatan over answered (a skipped question is not answered)', async () => {
+    server.startKuiz.mockResolvedValue(session)
+    server.checkKuiz.mockResolvedValue({ correct: true, correctOptionId: 'C', explanation: null })
+    server.finishKuiz.mockResolvedValue({
+      score: 1,
+      total: 2,
+      answered: 1,
+      gamification: { coinsEarned: 1, streakCount: 1, pointsEarned: 10, totalBalance: 1 },
+    })
+    await mountPage(KuizPage, '/simulasi/kuiz')
+    for (let i = 0; i < 2; i++) {
+      await pick('C')
+      await click('[data-testid=kuiz-semak]')
+      await click('[data-testid=kuiz-next]')
+    }
+    expect(text('[data-testid=kuiz-score]')).toContain('1/2')
+    expect(text('[data-testid=kuiz-accuracy]')).toContain('100%')
+  })
+
   it('"Cuba Lagi" starts a fresh quiz with the chosen count and subject', async () => {
     server.startKuiz.mockResolvedValue(session)
     server.checkKuiz.mockResolvedValue({ correct: true, correctOptionId: 'C', explanation: null })
