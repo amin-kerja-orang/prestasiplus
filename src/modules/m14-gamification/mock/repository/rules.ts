@@ -204,12 +204,12 @@ export function teacherMirrorLabel(mode: string): string {
   }
 }
 
-/** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id (seed). */
+/** 48 GAME-24: 8 characters of [A-Z0-9] for a new code, deterministic from the user id (seed). */
 export function referralCodeFor(userId: number, salt = 0): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   let h = (Math.imul(userId ^ 0x5bd1e995, 0x27d4eb2d) + Math.imul(salt + 1, 0x165667b1)) >>> 0
   let out = ''
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0
     h = (h ^ (h >>> 12)) >>> 0
     out += alphabet[h % alphabet.length]

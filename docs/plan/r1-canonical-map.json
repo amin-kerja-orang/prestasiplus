@@ -2059,6 +2059,36 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-guru|",
+      "path": "/guru/soalan-guru",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/cipta|",
+      "path": "/guru/soalan-guru/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/:id(\\d+)/sunting|",
+      "path": "/guru/soalan-guru/:id(\\d+)/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "/guru/soalan-berstruktur|",
       "path": "/guru/soalan-berstruktur",
       "name": null,
@@ -2110,6 +2140,17 @@
     },
     {
       "key": "${prefix}|",
+      "path": "${prefix}",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue",
+      "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
+      "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "${prefix}| #2",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -2679,7 +2720,7 @@
       "approved_by_card": null
     },
     {
-      "key": "${prefix}| #2",
+      "key": "${prefix}| #3",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -5098,7 +5139,7 @@
       "source": "user-nav",
       "id": "t-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "teacher"
       ],
@@ -5140,12 +5181,12 @@
       "source": "user-nav",
       "id": "t-laporan-mingguan",
       "label": "Laporan Mingguan",
-      "route": "/laporan-mingguan",
+      "route": "/guru/laporan-mingguan-kelas",
       "roles": [
         "teacher"
       ],
       "status": "redirect-to:/guru/laporan-mingguan-kelas",
-      "sector": "S10",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register R-03: teacher sidebar opens a 403 page; re-point (S0-T06, S6-T01)",
       "approved_by_card": null
@@ -6069,7 +6110,7 @@
       "source": "user-nav",
       "id": "sa-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "school_admin"
       ],
@@ -10572,16 +10613,6 @@
       "approved_by_card": null
     },
     {
-      "name": "RewardSetting",
-      "table": "reward_settings",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/prisma/schema/gamification.prisma",
-      "approved_by_card": "S7-T05",
-      "dm": "DM-48",
-      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
-    },
-    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -10596,6 +10627,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48"
     },
     {
       "name": "User",
@@ -14561,6 +14602,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/source-papers",
+      "method": "GET",
+      "path": "/api/admin/source-papers",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/source-papers/:p",
+      "method": "GET",
+      "path": "/api/admin/source-papers/:id",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/intake/batches/:p/extract",
       "method": "POST",
       "path": "/api/intake/batches/:id/extract",
@@ -15431,6 +15492,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/guru/questions",
       "method": "GET",
       "path": "/api/guru/questions",
@@ -15479,6 +15560,56 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/personal-questions",
+      "method": "GET",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "POST /api/guru/personal-questions",
+      "method": "POST",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "GET /api/guru/personal-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "PUT /api/guru/personal-questions/:p",
+      "method": "PUT",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "DELETE /api/guru/personal-questions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
     },
     {
       "key": "GET /api/admin/questions/regroup-worklist",
@@ -15851,20 +15982,30 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/guru/structured-questions",
-      "method": "GET",
-      "path": "/api/guru/structured-questions",
-      "api_id": "API-GUR-26",
+      "key": "POST /api/guru/intake/structured",
+      "method": "POST",
+      "path": "/api/guru/intake/structured",
+      "api_id": "API-GUR-17",
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "GET /api/guru/structured-questions/:p",
-      "method": "GET",
-      "path": "/api/guru/structured-questions/:id",
-      "api_id": "API-GUR-26",
+      "key": "PUT /api/guru/intake/structured/:p",
+      "method": "PUT",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "DELETE /api/guru/intake/structured/:p",
+      "method": "DELETE",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
@@ -15978,8 +16119,8 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
-      "approved_by_card": "S1-T05",
-      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only.",
+      "approved_by_card": "S1-T05"
     },
     {
       "key": "POST /api/question-imports",

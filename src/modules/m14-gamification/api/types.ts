@@ -245,6 +245,8 @@ export interface Referral {
   code: string
   rewardReferrer: number
   rewardReferee: number
+  /** `referral_max_rewarded`: rewarded friends per referrer. */
+  maxRewarded: number
   registerUrl: string
   whatsappUrl: string
   telegramUrl: string

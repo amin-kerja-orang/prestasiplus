@@ -165,7 +165,7 @@ async function begin(restart: boolean): Promise<void> {
       </UAlert>
 
       <UButton
-        v-if="!unavailable"
+        v-if="!unavailable && cover.kuizAvailable !== false"
         :to="`/simulasi/${paperId}/kuiz`"
         color="neutral"
         variant="outline"
