@@ -28,7 +28,7 @@ import { M17_PROVISIONAL_TABLES } from './tables/provisional-tables'
 const plugin = defineMockModule({
   id: 'M17',
   dependsOn: ['core', 'M01'],
-  version: 2,
+  version: 3,
   tables: M17_PROVISIONAL_TABLES,
   repositories: {
     moodCheckins: moodCheckinsRepo,

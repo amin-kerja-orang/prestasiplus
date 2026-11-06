@@ -363,7 +363,7 @@ export function shellHomePath(role: Role | null): string {
 export function scopeHomePath(role: Role | null): string {
   if (role === 'teacher') return '/guru'
   if (role === 'school_admin') return '/admin-sekolah'
-  // M17 has no '/admin' dashboard page yet; the admin Command Center is the monitoring home.
+  // '/admin' is now a role-aware fallback in guards.ts and the old redirect is gone; the admin Command Center is still the monitoring home.
   if (role === 'admin') return '/admin/command-center'
   if (role === null) return '/login'
   // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`

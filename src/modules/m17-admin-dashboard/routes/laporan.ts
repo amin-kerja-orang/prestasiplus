@@ -4,7 +4,9 @@ import { whenCentralReports } from '@/app/features'
 import type { Role } from '@/stores/session-types'
 
 /**
- * M17 route fragment: S11 `/admin/laporan` (M17-T5; empty until its UI task) and the Admin Pusat central views of
+ * M17 route fragment: `/admin/laporan` Laporan (R1-ADM-M-06). Admin Pusat only, admin shell (S6-T11).
+ *
+ * It also holds the Admin Pusat central views of
  * the school reports (S6-T13, R1-ADM-M-07, Decided D-T13-1): one page component `CentralReportPage.vue`
  * with a `view` prop and one route record per Portal Pentadbiran item, `/admin/laporan-sekolah/{view}`.
  *
@@ -12,6 +14,23 @@ import type { Role } from '@/stores/session-types'
  * `sekolah-bersaing` redirects to the existing national board `/sekolah-bersaing`.
  * PM-24 Headcount mounts the existing M08 Headcount list read-only for the picked school.
  */
+
+const adminLaporanRoutes: RouteRecordRaw[] = [
+  {
+    path: '/admin/laporan',
+    name: 'm17.admin-laporan',
+    component: () => import('../pages/AdminLaporanPage.vue'),
+    meta: {
+      layout: 'admin',
+      access: 'auth',
+      roles: ['admin'],
+      title: 'Laporan - Admin Panel',
+      header: { title: 'Laporan', subtitle: 'Laporan aktiviti' },
+      module: 'M17',
+      v2: true,
+    },
+  },
+]
 
 /** The central views and their menu label (PM-12, 13, 15, 21, 22, 23, 24, 27, 28). */
 export const CENTRAL_REPORT_VIEWS = {
@@ -106,6 +125,6 @@ const centralReportRoutes: RouteRecordRaw[] = [
   },
 ]
 
-const routes: RouteRecordRaw[] = whenCentralReports(centralReportRoutes)
+const routes: RouteRecordRaw[] = [...adminLaporanRoutes, ...whenCentralReports(centralReportRoutes)]
 
 export default routes

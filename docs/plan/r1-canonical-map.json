@@ -110,17 +110,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin|",
-      "path": "/admin",
-      "name": null,
-      "status": "canonical",
-      "sector": "S0",
-      "component": null,
-      "file": "src/app/router/core-routes.ts",
-      "redirects_to": "(dynamic)",
-      "approved_by_card": null
-    },
-    {
       "key": "/__ds|dev.ds-gallery",
       "path": "/__ds",
       "name": "dev.ds-gallery",
@@ -3401,6 +3390,46 @@
       "component": "src/modules/m20-marketplace/pages/PenjualDetailPage.vue",
       "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/classes|",
+      "path": "/admin/classes",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m02-users-schools/pages/KelasSekolahPage.vue",
+      "file": "src/modules/m02-users-schools/routes/schools.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/analytics|m17.admin-analytics",
+      "path": "/admin/analytics",
+      "name": "m17.admin-analytics",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminAnalitikPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/analytics.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin|m17.admin-dashboard",
+      "path": "/admin",
+      "name": "m17.admin-dashboard",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminDashboardPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/dashboard.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan|m17.admin-laporan",
+      "path": "/admin/laporan",
+      "name": "m17.admin-laporan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/AdminLaporanPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": null
     }
   ],
   "menus": [
@@ -3474,7 +3503,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -3504,7 +3533,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -8171,14 +8200,13 @@
       "source": "pentadbiran",
       "id": "PP-01",
       "label": "Dashboard",
-      "route": "/admin/p/pp-01",
+      "route": "/admin",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "papan-pemuka",
       "approved_by_card": null
     },
@@ -8252,14 +8280,13 @@
       "source": "pentadbiran",
       "id": "PM-04",
       "label": "Analitik",
-      "route": "/admin/p/pm-04",
+      "route": "/admin/analytics",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "pemantauan",
       "approved_by_card": null
     },
@@ -8367,6 +8394,21 @@
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "pemantauan",
       "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|PM-29",
+      "source": "pentadbiran",
+      "id": "PM-29",
+      "label": "Laporan",
+      "route": "/admin/laporan",
+      "roles": [
+        "admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/pentadbiran/menu.ts",
+      "group": "pemantauan",
+      "approved_by_card": "S6-T11"
     },
     {
       "key": "pentadbiran|PM-12",
@@ -9275,14 +9317,13 @@
       "source": "pentadbiran",
       "id": "PS-03",
       "label": "Kelas Sekolah",
-      "route": "/admin/p/ps-03",
+      "route": "/admin/classes",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "pengguna-sekolah",
       "approved_by_card": null
     },
@@ -9306,14 +9347,13 @@
       "source": "pentadbiran",
       "id": "PS-05",
       "label": "Import Pengguna",
-      "route": "/admin/p/ps-05",
+      "route": "/admin/users/bulk-import",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "pengguna-sekolah",
       "approved_by_card": null
     },
@@ -18468,6 +18508,46 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/dashboard",
+      "method": "GET",
+      "path": "/api/admin/dashboard",
+      "api_id": "API-ADM-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/analytics",
+      "method": "GET",
+      "path": "/api/admin/analytics",
+      "api_id": "API-ADM-12",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/reports/laporan",
+      "method": "GET",
+      "path": "/api/admin/reports/laporan",
+      "api_id": "API-ADM-13",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/reports/analytics/http/analytics.controllers.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/classes",
+      "method": "GET",
+      "path": "/api/admin/classes",
+      "api_id": "API-ADM-05",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/reports/school-reports.controller.ts",
       "approved_by_card": null
     }
   ],
