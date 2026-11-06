@@ -231,6 +231,20 @@ describe('Guru structured submission: POST/PUT/DELETE /guru/intake/structured an
     expect(Detail.parse(res.body).data.form?.rejectionReason).toBeNull()
   })
 
+  it('a returned item is a `rejected` row (default list and status=review) and its detail says the same, with the reason', async () => {
+    const d = await created(teacher, { stimulus: 'Dikembalikan oleh admin.' })
+    expect((await list(teacher)).data.find((r) => r.id === d.id)).toMatchObject({ status: 'review', editable: true })
+    await t.db.query(`update intake_items set review_state = 'rejected', reject_reason = 'Skema tidak lengkap.' where id = $1`, [d.id.slice(1)])
+    const detail = Detail.parse((await teacher.get(`/api/guru/structured-questions/${d.id}`)).body).data
+    expect(detail).toMatchObject({ status: 'rejected', editable: true, form: { rejectionReason: 'Skema tidak lengkap.' } })
+    for (const q of ['', '?status=review']) {
+      const row = (await list(teacher, q)).data.find((r) => r.id === d.id)
+      expect(row, q).toMatchObject({ status: detail.status, editable: detail.editable, source: 'submission' })
+    }
+    expect((await list(teacher, '?status=approved')).data.map((r) => r.id)).not.toContain(d.id)
+    expectError(await teacher.get('/api/guru/structured-questions?status=rejected'), 'VALIDATION_ERROR')
+  })
+
   describe('stimulus image (jpg, png or webp, at most 2 MB, the caller own question_image upload)', () => {
     let n = 0
     const file = async (owner: string, over: { purpose?: string; mime?: string; size?: number } = {}): Promise<string> => {

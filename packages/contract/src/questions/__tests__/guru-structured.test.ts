@@ -10,6 +10,13 @@ describe('API-GUR-26 teacher structured questions', () => {
     expect(GuruStructuredListQuerySchema.safeParse({ status: 'draft' }).success).toBe(false)
   })
 
+  it('a row and its detail status take approved, review or rejected; the filter never takes rejected', () => {
+    const row = { id: 'g1', number: 1, textExcerpt: 'x', level: null, subject: null, kbat: '', subCount: 1, marks: 3, source: 'submission', editable: true }
+    for (const status of ['approved', 'review', 'rejected']) expect(GuruStructuredRowSchema.safeParse({ ...row, status }).success, status).toBe(true)
+    expect(GuruStructuredRowSchema.safeParse({ ...row, status: 'draft' }).success).toBe(false)
+    expect(GuruStructuredListQuerySchema.safeParse({ status: 'rejected' }).success).toBe(false)
+  })
+
   it('a row carries no admin field', () => {
     const row = { id: '1', number: 1, textExcerpt: 'x', level: null, subject: null, kbat: 'MOTS 3', subCount: 1, marks: 8, status: 'approved', source: 'question', editable: false }
     expect(GuruStructuredRowSchema.parse({ ...row, sourceFile: 'leak.pdf' })).toEqual(row)
