@@ -46,7 +46,13 @@ export class ChallengeClaimsService {
       const existing = await this.repo.claimOf(tx, userId, id, day)
       if (existing) return this.again(existing, uuid)
       // 4. The key already sits on another claim of this user.
-      if (uuid !== null && (await this.repo.claimUuidUsed(tx, userId, uuid))) throw idempotencyConflict()
+      if (uuid !== null && (await this.repo.claimUuidUsed(tx, userId, uuid))) {
+        // Same-key race: the first press may have committed between step 3 and this check (each statement takes its own
+        // READ COMMITTED snapshot). Re-read the claim of the day: if it is there, the key sits on THIS claim, so replay it.
+        const winner = await this.repo.claimOf(tx, userId, id, day)
+        if (winner) return this.again(winner, uuid)
+        throw idempotencyConflict()
+      }
       // 5. Progress below the target (a completion row of the day counts as done).
       const done = (await this.repo.completedOn(tx, userId, day)).has(id)
       if (!done && (await this.gamification.challengeProgressOn(tx, userId, day, challenge)) < challenge.targetValue) {
