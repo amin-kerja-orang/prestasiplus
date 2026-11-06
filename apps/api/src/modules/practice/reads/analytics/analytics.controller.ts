@@ -35,6 +35,12 @@ export class PracticeAnalyticsController {
     return ok(await this.analytics.revisionSubject(me(req), code))
   }
 
+  @Get('remedial-suggestions')
+  async remedialSuggestions(@Req() req: Req) {
+    const scope = ScopeContext.fromRequest(req)
+    return ok(await this.analytics.remedialSuggestions(scope.userId, scope.role))
+  }
+
   @Get('progress')
   async progress(@Query() query: Record<string, unknown>, @Req() req: Req) {
     return ok(await this.analytics.progress(me(req), one(query, 'period')))

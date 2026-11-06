@@ -87,16 +87,21 @@ export const MISSION_SESSIONS: readonly (readonly [number, number, string])[] = 
   [7104, 3, '2026-09-22'],
 ]
 export const MISSION_SCHOOL = 8082
-/** BR-09: mission sessions pay 3 coins per correct answer (the one source of the rate). */
-export const MISSION_COINS_PER_CORRECT = 3
+/**
+ * DM-48 (S5-T03): the one Syiling rate per correct answer for EVERY mode, mirror of the API helper `coinsPerCorrect()`
+ * (`apps/api/src/modules/practice/coins.ts`): 1 until S7-T05 creates the `reward_settings` row.
+ */
+export function coinsPerCorrect(): number {
+  return 1
+}
 
 /**
  * BR-09 (OBSERVED: S9 coins = "betul" on every live session): the coins stored on a session are the
- * correct answers, × 3 for a `mission` session. M14 credits the wallet with its own rate and returns
- * that value in the #6 response only (Delivery Lead, F-26 G4 MJ-1).
+ * correct answers times the one rate (`coinsPerCorrect()`), for every mode. M14 credits the wallet with its
+ * own rate and returns that value in the #6 response only (Delivery Lead, F-26 G4 MJ-1).
  */
-export function sessionCoins(mode: string, correct: number): number {
-  return mode === 'mission' ? correct * MISSION_COINS_PER_CORRECT : correct
+export function sessionCoins(_mode: string, correct: number): number {
+  return correct * coinsPerCorrect()
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 import { ErrorBodySchema, SchoolAdminMonthlyReportSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
+import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
 import { addPupil, addSchoolAdmin, addSession, addSubject } from './reports-fixtures'
 
 /** The helpers' clock is 2026-10-19 09:00 MYT. DB spec: needs Docker/Testcontainers. */
@@ -84,13 +84,14 @@ describe('GET /admin-sekolah/laporan-bulanan', () => {
     expect(r.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
   })
 
-  it('a school with fewer than 5 active pupils in the month is suppressed (no accuracy, no series, no subjects) but keeps its counts', async () => {
+  it('a school with fewer than 5 active pupils in the month is shown in full (no minimum cohort for staff)', async () => {
     const res = await adminB.get(`/admin-sekolah/laporan-bulanan?schoolId=${s1}`)
     const r = SchoolAdminMonthlyReportSchema.parse(res.body.data)
     expect(r.school.id).toBe(s2)
-    expect(r.cards).toMatchObject({ active: 2, answers: 20, accuracy: null })
-    expect(r.months).toEqual([])
-    expect(r.subjects).toEqual({ strongest: null, weakest: null, rows: [] })
+    // Changed from accuracy null, no series, no subjects (suppressed).
+    expect(r.cards).toMatchObject({ active: 2, answers: 20, accuracy: 100 })
+    expect(r.months).toEqual([{ month: '2026-10', label: 'Oktober 2026', answers: 20, correct: 20, activePupils: 2, perPupil: 10, accuracy: 100 }])
+    expect(r.subjects.rows).toEqual([{ name: 'Matematik Ujian', accuracy: 100, answers: 20, pupils: 2 }])
   })
 
   it('a school-B admin never sees school A figures', async () => {
@@ -99,9 +100,9 @@ describe('GET /admin-sekolah/laporan-bulanan', () => {
     expect(JSON.stringify(r)).not.toContain('Bahasa Ujian')
   })
 
-  it('401 without a session; 403 for admin, teacher and student', async () => {
+  it('401 without a session; 403 for teacher and student (admin: see admin-central-read.spec.ts)', async () => {
     expect((await t.http().get('/api/admin-sekolah/laporan-bulanan')).status).toBe(401)
-    for (const who of [ADMIN, TEACHER, STUDENT]) {
+    for (const who of [TEACHER, STUDENT]) {
       const res = await apiOf(await login(t, who)).get('/admin-sekolah/laporan-bulanan')
       expect(res.status, who).toBe(403)
       expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')
