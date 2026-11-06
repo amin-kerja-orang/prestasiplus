@@ -1434,7 +1434,9 @@ export class BuilderService {
    */
   async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakDraftGenerateRequestSchema, rawBody)
-    const title = setTitleOf(body.title)
+    // Lead ruling (b) on #775: Jana set keeps `title` optional with the old default until the web clients send one
+    // (kontrak and builder http clients post { subject, kertas } only); a title that is sent follows the 120 rule.
+    const title = body.title?.trim() ? setTitleOf(body.title) : undefined
     const first = await this.generationBlueprint(body.subject, body.kertas)
     if (!first.subject || !first.blueprint) throw noBlueprint()
     const subject = first.subject
@@ -1463,7 +1465,7 @@ export class BuilderService {
       }
       const factsById = new Map(candidates.map((f) => [f.id, f]))
       const paperId = await this.repo.createPaper(
-        this.newPaperFrom(blueprint, subject, body.kertas, actor, now, title, std, body.levelScope ?? this.contractLevelScope(blueprint)),
+        this.newPaperFrom(blueprint, subject, body.kertas, actor, now, title ?? DEFAULT_TITLE(subject.name, body.kertas), std, body.levelScope ?? this.contractLevelScope(blueprint)),
       )
       const fresh = await this.repo.findPilihan(paperId)
       for (const section of fresh?.sections ?? []) {

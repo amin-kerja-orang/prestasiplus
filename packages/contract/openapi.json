@@ -79452,7 +79452,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "description": "`Tajuk set` (PRD30 13-04). Required by the server: omitted, blank or only spaces = 422 `fields.title` \"Tajuk set diperlukan.\"; more than 120 characters after trim = 422 `fields.title` \"Tajuk set tidak boleh melebihi 120 aksara.\" (the schema accepts up to 200 so the server answers with the field message)."
+            "description": "`Tajuk set` (PRD30 13-04). Omitted, blank or only spaces = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the web clients send no title yet); more than 120 characters after trim = 422 `fields.title` \"Tajuk set tidak boleh melebihi 120 aksara.\" (the schema accepts up to 200 so the server answers with the field message)."
           },
           "years": {
             "type": "array",

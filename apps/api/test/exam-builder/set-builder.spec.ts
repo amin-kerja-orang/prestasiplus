@@ -184,14 +184,16 @@ describe('S3-T02 One Set Builder', () => {
       expect(expectError(await generate({ count: 0 }), 'VALIDATION_ERROR', 422).fields).toEqual({ count: 'Bilangan soalan mesti antara 1 dan 100.' })
     })
 
-    // S3-T02, PRD30 13-04: `Tajuk set` (Jana set) is required and at most 120 after trim; no default title, nothing is created on a refusal.
-    it('Jana set: a blank, whitespace or omitted title is 422 "Tajuk set diperlukan."; 120 characters pass, 121 is 422 on fields.title', async () => {
-      const before = (await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n
+    // S3-T02, PRD30 13-04 with lead ruling (b) on #775: a sent `Tajuk set` (Jana set) is at most 120 after trim; an omitted or
+    // blank one keeps the old default, because the web clients post { subject, kertas } only. Nothing is created on a refusal.
+    it('Jana set: a blank, whitespace or omitted title gets the default; 120 characters pass, 121 is 422 on fields.title', async () => {
       for (const title of ['', '   ', '\t \n']) {
-        expect(expectError(await generate({ title }), 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set diperlukan.' })
+        expect((await editor(await generated({ title }))).paper.title).toMatch(/^Percubaan SPM .+ Kertas 2 \(draf\)$/)
       }
       const omitted = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2 })
-      expect(expectError(omitted, 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set diperlukan.' })
+      expect(omitted.status, JSON.stringify(omitted.body)).toBe(201)
+      expect((await editor(omitted.body.data.id as string)).paper.title).toMatch(/^Percubaan SPM .+ Kertas 2 \(draf\)$/)
+      const before = (await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n
       const long = await generate({ title: 'T'.repeat(121) })
       expect(expectError(long, 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set tidak boleh melebihi 120 aksara.' })
       expectError(await generate({ title: `   ${'T'.repeat(121)}   ` }), 'VALIDATION_ERROR', 422)
