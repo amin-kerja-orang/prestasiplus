@@ -364,7 +364,8 @@ describe('diagram audit', () => {
     expect(ok(DiagramAuditResponseSchema, { data: list.data })).toBe(false)
     const row = list.data.mcq.items[0]!
     expect(ok(DiagramAuditResponseSchema, { ...list, data: { ...list.data, mcq: { ...list.data.mcq, items: [{ ...row, pendingReview: true }] } } })).toBe(true)
-    const { pendingReview: _p, ...bare } = row
+    const bare: Record<string, unknown> = { ...row }
+    delete bare.pendingReview
     expect(ok(DiagramAuditResponseSchema, { ...list, data: { ...list.data, mcq: { ...list.data.mcq, items: [bare] } } })).toBe(false)
   })
 
