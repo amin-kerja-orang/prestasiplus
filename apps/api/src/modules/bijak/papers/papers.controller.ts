@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Inject, Param, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { BijakGenerateRequestSchema, BijakPaperListQuerySchema, type BijakGenerateRequest, type BijakPaperListQuery } from '@pp/contract'
+import { Controller, Get, Inject, Param, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { BijakPaperListQuerySchema, type BijakPaperListQuery } from '@pp/contract'
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../../common/http'
@@ -9,7 +9,6 @@ import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
 import { BIJAK_PAPERS_LIMITS } from './papers.constants'
 import { PapersService } from './papers.service'
-import { canUseSpecBlueprints } from './spec-access'
 
 type Req = Request & RequestWithAuth
 
@@ -17,7 +16,8 @@ type Req = Request & RequestWithAuth
  * Bijak SPM papers (BE-15). Student role only: an admin or school admin reaches these routes only in
  * Mod Pelajar, where the session acts as a student and what it writes is test data. A teacher,
  * parent or sponsor gets 403 (D43, AC-01.4). CSRF on the POST is enforced by the session guard.
- * Responses carry no answer key, scheme or question id and are never cached.
+ * There is no pupil generate route: `POST /bijak/papers/generate` is removed and answers the framework 404 (S3-T07,
+ * FR-MUR-13-20); only the admin `POST /admin/papers/generate` generates. Responses carry no answer key, scheme or question id and are never cached.
  */
 @Controller('bijak')
 @Roles('student')
@@ -47,15 +47,7 @@ export class PapersController {
 
   @Get('subjects')
   @RateLimit(BIJAK_PAPERS_LIMITS.read)
-  async subjects() {
-    return { data: await this.papers.subjects() }
-  }
-
-  @Post('papers/generate')
-  @RateLimit(BIJAK_PAPERS_LIMITS.generate)
-  async generate(@Req() req: Req, @Body(new ZodValidationPipe(BijakGenerateRequestSchema)) body: BijakGenerateRequest) {
-    const scope = ScopeContext.fromRequest(req)
-    const canUseSpec = canUseSpecBlueprints(scope.auth)
-    return { data: await this.papers.generate({ userId: scope.userId, isTest: scope.isTest, canUseSpec }, body) }
+  async subjects(@Req() req: Req) {
+    return { data: await this.papers.subjects(ScopeContext.fromRequest(req).userId) }
   }
 }

@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import adminBuilder from './routes/admin-builder'
 import adminIntake from './routes/admin-intake'
 import adminKandungan from './routes/admin-kandungan'
+import adminKertasSubjektif from './routes/admin-kertas-subjektif'
 import adminKontrak from './routes/admin-kontrak'
 import adminPapers from './routes/admin-papers'
 
@@ -26,6 +27,7 @@ const routes: RouteRecordRaw[] = [
   ...adminBuilder,
   ...adminKontrak,
   ...adminKandungan,
+  ...adminKertasSubjektif,
   {
     path: '/spm/bijak',
     name: 'm28.bijak',

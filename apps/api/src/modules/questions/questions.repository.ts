@@ -93,6 +93,12 @@ export interface VersionDraft {
   lastEditor?: 'person' | 'ai'
   /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
   declaredMarks?: number | null
+  /** DM-42: `undefined` leaves the stored value untouched on a rewrite and stores `bank` on a new version. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the owner of a private version (set if and only if `visibility = teacher_private`); `undefined` leaves it untouched on a rewrite. */
+  ownerUserId?: bigint | null
+  /** DM-42: http(s) reference link; `undefined` leaves it untouched on a rewrite, `null` clears it. */
+  referenceUrl?: string | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
@@ -186,6 +192,13 @@ const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.quest
  * draft does not hide a question pupils still get.
  */
 const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
+/**
+ * The teacher list's "is a structured item" test: the version type is `structured`, OR the question came from a teacher's structured
+ * submission (the guru intake item linked to it by Terima carries `payload.guru.questionType = 'structured'`). A one-part submission is an
+ * `essay` in the bank (`versionTypeOf`), so only its origin marker tells it apart from any other essay. Same marker as `GURU_STRUCTURED_ITEM`.
+ */
+const GURU_STRUCTURED_ORIGIN_SQL = Prisma.sql`EXISTS (SELECT 1 FROM intake_items gi WHERE gi.question_id = q.id AND gi.payload->'guru'->>'v' = '1' AND gi.payload->'guru'->>'questionType' = 'structured')`
+const GURU_STRUCTURED_TYPE_SQL = Prisma.sql`(v.type = 'structured' OR ${GURU_STRUCTURED_ORIGIN_SQL})`
 const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
   Prisma.sql`q.is_active`,
   Prisma.sql`v.status = 'approved'`,
@@ -273,6 +286,7 @@ interface StimulusRow {
   bodyMs: string | null
   bodyEn: string | null
   caption: string | null
+  captionEn: string | null
   altText: string | null
   sourceCitation: string | null
   tableData: unknown
@@ -296,6 +310,7 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
     alt: row.altText,
     caption: row.caption,
+    captionEn: row.captionEn,
     sourceCitation: row.sourceCitation,
     tableData: row.tableData ?? null,
   }
@@ -381,6 +396,49 @@ export class QuestionsRepository {
     const out = new Map<string, number>()
     for (const r of rows) if (r.k !== null) out.set(String(r.k), r.n)
     return out
+  }
+
+  /**
+   * S3-T07 (D91, AC-MUR-13-13): the number of UNITS the filter serves. A stimulus group counts once however many members it has, a
+   * question outside any group counts once (a multi-leaf question is one unit in any scope that serves it; a scope with `mcqShape` serves single-part questions only, so there it counts 0). The group rule itself is in the
+   * filter (`wholeGroups` = `groupCompleteSql`: an incomplete group matches no row, so it counts 0, the same as the draw).
+   */
+  async unitCount(filter: QuestionFilter = {}): Promise<number> {
+    const { from, where } = this.scope(filter)
+    const rows = await this.db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)::int AS n ${from} WHERE ${where}`
+    return rows[0]?.n ?? 0
+  }
+
+  /**
+   * S3-T07: `unitCount` split by (level, TP) in ONE statement, every unit in exactly ONE bucket, so the buckets sum to `unitCount`.
+   * A question outside any group is its own unit and sits at its own level and TP. A group sits at ONE bucket:
+   *  - level: the group's own level (`stimulus_groups.education_level_id`) when it is set AND is a level this scope can show (an offered
+   *    level, active and not primary, and inside the filter's level restriction); else the level of its FIRST member in scope. Nothing in the
+   *    database ties a group's level to its members' LIVE versions, so a stale or unoffered value must not move the unit to a level the hub never lists;
+   *  - TP: always the TP of its FIRST member in scope (a group has no difficulty of its own).
+   * "First" = lowest `group_position` among the members IN SCOPE (positions are unique per group and never NULL for a grouped question: `ck_questions_group_position`, `uq_questions_group_id_group_position`; the id order is a harmless final tie-break): deterministic, and the group's true first member only when every member is in scope.
+   */
+  async unitCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
+    const { from, where } = this.scope(filter)
+    // The group's own level is usable only when this scope can show it: an offered level (the `SPM_SERVABLE_SQL` rule) inside the filter's level restriction.
+    const own: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = sg.education_level_id AND gl.stage <> 'primary' AND gl.is_active)`]
+    if (filter.educationLevelId !== undefined) {
+      const key = bi(filter.educationLevelId)
+      own.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id = ${key}`)
+    }
+    if (filter.educationLevelIds !== undefined) {
+      const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
+      own.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id IN (${Prisma.join(keys)})`)
+    }
+    const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+      SELECT u.level_id, u.tp, count(*)::int AS n FROM (
+        SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
+               CASE WHEN ${Prisma.join(own, ' AND ')} THEN sg.education_level_id ELSE v.education_level_id END AS level_id, v.difficulty_tp AS tp
+          ${from} LEFT JOIN stimulus_groups sg ON sg.id = q.group_id WHERE ${where}
+         ORDER BY CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END, q.group_position ASC NULLS LAST, q.id ASC
+      ) u GROUP BY 1, 2`
+    return rows.map((r) => ({ levelId: r.level_id === null ? null : idToString(r.level_id), tp: r.tp, n: r.n }))
   }
 
   /** Eligible-style counts grouped by (level, TP) in ONE statement: the SPM pool splits. `filter` is used as given. */
@@ -666,7 +724,8 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
+    // The admin list keeps the strict type; only the teacher (`served`) list widens it to the guru origin marker.
+    const conds: Prisma.Sql[] = [filter.served === true ? GURU_STRUCTURED_TYPE_SQL : Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
     if (filter.served === true) conds.push(...GURU_STRUCTURED_SERVED_SQL)
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
@@ -689,9 +748,10 @@ export class QuestionsRepository {
     }
     const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const offset = filter.offset ?? (filter.page - 1) * filter.pageSize
+    const limit = filter.limit ?? filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${limit} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
@@ -701,9 +761,21 @@ export class QuestionsRepository {
   async isStructuredServed(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id = ${key}`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
+  }
+
+  /** Of these question ids, those the teacher list serves (the same `served` rule as `structuredIds` and `isStructuredServed`). */
+  async structuredServedAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = ids.flatMap((id) => {
+      const key = bi(id)
+      return key === null ? [] : [key]
+    })
+    if (keys.length === 0) return new Set()
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return new Set(rows.map((r) => idToString(r.id)))
   }
 
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */
@@ -1407,6 +1479,9 @@ export class QuestionsRepository {
       ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
+      ...(c.visibility === undefined ? {} : { visibility: c.visibility }),
+      ...(c.ownerUserId === undefined ? {} : { ownerUserId: c.ownerUserId }),
+      ...(c.referenceUrl === undefined ? {} : { referenceUrl: c.referenceUrl }),
     }
   }
 
@@ -1520,6 +1595,7 @@ export class QuestionsRepository {
           wordMin: d.wordMin,
           wordMax: d.wordMax,
           topics: d.topics ?? Prisma.DbNull,
+          modeConfig: d.modeConfig ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
@@ -1566,7 +1642,10 @@ export class QuestionsRepository {
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
-    conds.push(NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL)
+    // DM-42: bank rows only, unconditionally; the mission draw alone adds the owner's own private rows (`ownerPrivateUserId`).
+    const ownerKey = filter.ownerPrivateUserId === undefined ? null : bi(filter.ownerPrivateUserId)
+    const ownPrivate = ownerKey === null ? null : Prisma.sql`(v.visibility = 'teacher_private' AND v.owner_user_id = ${ownerKey})`
+    conds.push(NOT_PRIMARY_LEVEL_SQL, ownPrivate === null ? BANK_VISIBLE_SQL : Prisma.sql`(${BANK_VISIBLE_SQL} OR ${ownPrivate})`)
     if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, NOT_FLAGGED_SQL, ALL_LEAVES_KEYED_SQL, MEDIA_RESOLVED_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
@@ -1577,7 +1656,12 @@ export class QuestionsRepository {
     eq(filter.subjectId, Prisma.sql`v.subject_id`)
     eq(filter.educationLevelId, Prisma.sql`v.education_level_id`)
     eq(filter.unitId, Prisma.sql`v.unit_node_id`)
-    eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    if (ownPrivate === null) eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    else if (filter.chapterId !== undefined) {
+      // The Bab narrows the bank part only; the owner's personal questions of the Subjek + Tingkatan stay in the pool.
+      const key = bi(filter.chapterId)
+      conds.push(key === null ? ownPrivate : Prisma.sql`(v.chapter_id = ${key} OR ${ownPrivate})`)
+    }
     if (filter.educationLevelIds !== undefined) {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
@@ -1603,7 +1687,13 @@ export class QuestionsRepository {
     if (filter.spmPool !== undefined) {
       // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
       // The complement keeps the flag out too: a flagged question is not "non-SPM", it is not served at all (S1-T07).
-      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL})`)
+      conds.push(
+        filter.spmPool
+          ? ownPrivate === null
+            ? SPM_SERVABLE_SQL
+            : Prisma.sql`(${SPM_SERVABLE_SQL} OR ${ownPrivate})`
+          : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL})`,
+      )
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)

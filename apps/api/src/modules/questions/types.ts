@@ -22,6 +22,23 @@ export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
+/** S6-T16 (API-GUR-24): what a teacher's personal question writes; already validated against the curriculum by the caller's service rules. */
+export interface PersonalQuestionWrite {
+  subjectId: string
+  educationLevelId: string
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+  /** The typed Kesukaran 1..5. */
+  difficulty: number
+  text: string
+  /** Exactly four, A to D. */
+  options: readonly { text: string }[]
+  correctIndex: number
+  referenceUrl?: string | null | undefined
+}
+
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
 export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 
@@ -29,8 +46,11 @@ export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 export const STORE_SOURCE_TYPES = ['pdf', 'excel', 'manual', 'ai_variant'] as const
 export type StoreSourceType = (typeof STORE_SOURCE_TYPES)[number]
 
-/** `question_versions.type`. */
-export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table'] as const
+/**
+ * `question_versions.type`: the 8 original values plus `mcq_multi`, `true_false` and `fill_blank` (S1-T09a D4, DM-69, migration
+ * 0134 widens the check). The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` / `questionTypeFromDb` in `@pp/contract`.
+ */
+export const STORE_QUESTION_TYPES = ['mcq', 'match', 'short', 'structured', 'working', 'essay', 'drawing', 'table', 'mcq_multi', 'true_false', 'fill_blank'] as const
 export type StoreQuestionType = (typeof STORE_QUESTION_TYPES)[number]
 
 export type ViewMode = 'live' | 'latest'
@@ -84,6 +104,8 @@ export interface StimulusRecord {
   alt: string | null
   /** R1-T07: figure caption. */
   caption?: string | null
+  /** DM-50: English twin of the caption. */
+  captionEn?: string | null
   /** R1-T07: source line of a passage or picture. */
   sourceCitation?: string | null
   /** R1-T07: table grid as stored (`{ head, rows }` for a `table`); unvalidated JSON, read defensively by the consumers. */
@@ -313,6 +335,12 @@ export interface QuestionFilter {
   idIn?: readonly string[]
   /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
   idAfter?: string
+  /**
+   * DM-42 / FR-GUR-44a-10 (the mission draw, the ONLY reader of `teacher_private`): besides the bank, the live personal questions OWNED by this
+   * user (users.id, decimal) are in the pool, at equal weight. The subject and level filters apply to both; `chapterId` and `spmPool` narrow
+   * the bank part only (a personal question carries no SPM pool and its Bab is optional). Any other owner's private question stays out.
+   */
+  ownerPrivateUserId?: string
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
@@ -325,6 +353,9 @@ export interface StructuredListFilter {
   served?: boolean
   /** Order by `created_at` descending instead of id ascending. */
   newestFirst?: boolean
+  /** Row offset and row count that replace the page arithmetic (the teacher union of API-GUR-26). */
+  offset?: number
+  limit?: number
   page: number
   pageSize: number
 }

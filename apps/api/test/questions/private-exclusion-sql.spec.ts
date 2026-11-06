@@ -119,7 +119,7 @@ describe('DM-42: private questions are absent from the counts and reports of oth
     const overview = new OverviewRepository(o.prisma)
     await run(
       () => overview.bankMatrix(),
-      () => overview.newestPublishedMcqIds(5),
+      () => overview.newestIdsOf(new QuestionsRepository(o.prisma).scopeSql({ status: 'approved' } as never, true), 5),
       () => overview.chapterQuestionCounts(['1', '2']),
     )
     expect(o.sqls).toHaveLength(3)

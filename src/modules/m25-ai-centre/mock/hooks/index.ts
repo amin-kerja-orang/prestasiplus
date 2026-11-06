@@ -7,8 +7,11 @@
  *
  * | Fixture | Chapter (M03 id) · attempts · correct |
  * |---|---|
- * | `m25-bands` | 12 · 10 · 4, 13 · 10 · 5, 14 · 100 · 79, 15 · 200 · 159, 16 · 10 · 8 |
- * | `m25-ties` | 12, 13, 14 · 10 · 5 each |
+ * | `m25-bands` | 91 · 10 · 4, 92 · 10 · 5, 220 · 100 · 79, 228 · 200 · 159, 322 · 10 · 8 |
+ * | `m25-ties` | 91, 92, 220 · 10 · 5 each |
+ *
+ * S10-T05: the heatmap lists Tingkatan 1-5 chapters only, so the fixtures use the T4/T5 Matematik chapters
+ * 91, 92, 220 (T4 Bab 1-3) and 228 (T5 Bab 1) and the Sains T4 chapter 322, the only T chapters with questions.
  */
 
 import { clock } from '@/lib/time'
@@ -23,16 +26,16 @@ export const M25_FIXTURES: Readonly<
   Record<string, readonly (readonly [number, number, number])[]>
 > = {
   'm25-bands': [
-    [12, 10, 4],
-    [13, 10, 5],
-    [14, 100, 79],
-    [15, 200, 159],
-    [16, 10, 8],
+    [91, 10, 4],
+    [92, 10, 5],
+    [220, 100, 79],
+    [228, 200, 159],
+    [322, 10, 8],
   ],
   'm25-ties': [
-    [12, 10, 5],
-    [13, 10, 5],
-    [14, 10, 5],
+    [91, 10, 5],
+    [92, 10, 5],
+    [220, 10, 5],
   ],
 }
 

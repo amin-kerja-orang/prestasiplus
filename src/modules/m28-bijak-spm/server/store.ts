@@ -30,12 +30,11 @@ import type {
   SaveExtractedPayload,
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
-import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
-import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
+import { BANK, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
-import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import { effectiveMarks, leavesOf, SEMAK_KINDS, type Leaf } from '../domain/paper-model'
 import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semakan'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter, SectionPoolQuery } from '../domain/admin-types'
 import type {
@@ -43,7 +42,6 @@ import type {
   AttemptMode,
   AttemptPaperView,
   AttemptResult,
-  GenerateOutcome,
   GroupView,
   HistoryRow,
   InProgressInfo,
@@ -68,6 +66,7 @@ import type {
 } from '../domain/types'
 
 import { BijakError } from './errors'
+import { CHECK_BLANK, sameAnswers } from './semak'
 import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakApi, ListedPaper, PaperSurface, SaveResult, SubmitResult } from './types'
@@ -292,91 +291,8 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  /** Kontrak list for Jana Kertas: which (subject, kertas) can be generated. */
-  async listContracts(): Promise<
-    {
-      subject: SubjectCode
-      subjectName: string
-      kertas: number
-      source: string
-      code: string
-      durationMin: number
-      sections: { label: string; take: number }[]
-      canGenerate: boolean
-      unavailableReason?: 'NO_BLUEPRINT'
-    }[]
-  > {
-    await this.tick()
-    return BLUEPRINTS.map((b) => ({
-      subject: b.subject,
-      subjectName: subjectName(b.subject),
-      kertas: b.kertas,
-      source: b.source,
-      code: b.code,
-      durationMin: b.durationMin,
-      sections: b.sections.map((s) => ({ label: s.label, take: s.take })),
-      canGenerate: b.source !== 'Draf',
-      ...(b.source === 'Draf' ? { unavailableReason: 'NO_BLUEPRINT' as const } : {}),
-    }))
-  }
-
   subjects() {
     return SUBJECTS
-  }
-
-  /** Jana Kertas (US-03). Returns a shortage list instead of a short paper. */
-  async generatePaper(
-    userId: number,
-    subject: SubjectCode,
-    kertas: number,
-  ): Promise<GenerateOutcome> {
-    await this.tick()
-    const bp = BLUEPRINTS.find((b) => b.subject === subject && b.kertas === kertas)
-    if (!bp || bp.source === 'Draf') return { ok: false, reason: 'no_blueprint' }
-    const unitsByPool = new Map<string, PoolUnit[]>()
-    for (const s of bp.sections) {
-      unitsByPool.set(
-        s.pool,
-        poolUnits(s.pool, BANK.pool, BANK.groups, (qid) => BANK.questions.get(qid)?.groupId),
-      )
-    }
-    const seen = new Set(
-      Object.values(this.state.attempts)
-        .filter((a) => a.userId === userId)
-        .flatMap((a) => a.sections.flatMap((s) => s.questionIds)),
-    )
-    this.state.seq += 1
-    const outcome = composeFromBlueprint(bp, unitsByPool, {
-      seed: this.now() + this.state.seq * 7919 + userId,
-      seen,
-    })
-    if (!outcome.ok) return { ok: false, reason: 'shortage', shortages: outcome.shortages }
-    const id = `jana-${subject.toLowerCase()}-k${kertas}-${this.state.seq}`
-    const gen: GeneratedPaper = {
-      id,
-      userId,
-      createdAt: this.now(),
-      title: `Kertas Jana ${subjectName(subject)} Kertas ${kertas} (#${this.state.seq})`,
-      subject,
-      kertas: kertas as 1 | 2,
-      year: new Date(this.now()).getFullYear(),
-      code: bp.code,
-      durationMin: bp.durationMin,
-      instructions: bp.instructions,
-      reference: bp.reference,
-      sections: outcome.sections.map((s, i) => ({
-        ...s,
-        id: `${id}-s${i + 1}`,
-        questionCount: s.questionIds.length,
-        markBudget: effectiveMarks(
-          s.rule,
-          s.questionIds.map((qid) => this.questionMarks(BANK.questions.get(qid)!)),
-        ),
-      })),
-    }
-    this.state.generated[id] = gen
-    this.persist()
-    return { ok: true, paperId: id }
   }
 
   /* -------------------------------------------------------------------------- attempts */
@@ -517,7 +433,13 @@ export class BijakServer implements BijakApi {
     void _s
     const checks =
       a.status === 'in_progress' && a.mode === 'latihan'
-        ? a.checked.map((qid) => this.gradeQuestion(a, qid, numberOf.get(qid)!, true))
+        ? // An edited answer was not checked yet: no verdict until its own "Semak" (the API's `shownChecks`).
+          a.checked
+            .filter((qid) => {
+              const last = a.checkAnswers?.[qid]
+              return !last || [...this.semakParts(qid)].every((id) => sameAnswers(last[id], a.answers[id]?.answer))
+            })
+            .map((qid) => this.semakResult(a, qid, numberOf.get(qid)!))
         : []
     return { attempt: meta, sections, questions, groups, checks }
   }
@@ -557,16 +479,13 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  /** Latihan: after the check cap the answer of a question is final. */
+  /** Latihan: after the check cap the answers of the checked parts are final. */
   private lockedParts(a: Attempt): Set<string> {
     const ids = new Set<string>()
     if (a.mode !== 'latihan') return ids
     for (const [qid, n] of Object.entries(a.checkCounts ?? {})) {
-      if (n < MAX_CHECKS_PER_QUESTION) continue
-      const q = BANK.questions.get(qid)
-      if (!q) continue
-      if (q.mcq) ids.add(q.id)
-      else for (const l of leavesOf(q.parts ?? [])) ids.add(l.id)
+      if (n < MAX_CHECKS_PER_QUESTION || !BANK.questions.has(qid)) continue
+      for (const id of this.semakParts(qid)) ids.add(id)
     }
     return ids
   }
@@ -930,20 +849,53 @@ export class BijakServer implements BijakApi {
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
       throw new BijakError('not_found', 'Soalan tidak ditemui')
+    if (this.semakParts(questionId).size === 0)
+      throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
+    const parts = this.semakParts(questionId)
     const counts = (a.checkCounts ??= {})
     const used = counts[questionId] ?? 0
-    // After the cap the answer is shown and no further payload can change it.
-    if (used < MAX_CHECKS_PER_QUESTION) {
-      if (payload) {
-        this.merge(a, payload.changes)
-        this.applyMeta(a, payload)
-      }
-      counts[questionId] = used + 1
+    // The API merges the payload and then refuses a blank check inside one transaction, so a refusal saves nothing.
+    const before = jsonClone({ answers: a.answers, flags: a.flags, picks: a.picks, position: a.position })
+    // After the cap the answer is shown and no further payload can change it (nor the count).
+    if (used < MAX_CHECKS_PER_QUESTION && payload) {
+      this.merge(a, payload.changes)
+      this.applyMeta(a, payload)
     }
+    const kinds = this.semakKinds(questionId)
+    if ([...parts].every((id) => isBlank(a.answers[id]?.answer, kinds.get(id)))) {
+      Object.assign(a, before)
+      throw new BijakError('bad_request', CHECK_BLANK)
+    }
+    // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+    const last = used > 0 ? a.checkAnswers?.[questionId] : undefined
+    const changed = !last || [...parts].some((id) => !sameAnswers(last[id], a.answers[id]?.answer))
+    if (used < MAX_CHECKS_PER_QUESTION && changed) counts[questionId] = used + 1
+    ;(a.checkAnswers ??= {})[questionId] = Object.fromEntries(
+      [...parts].map((id) => [id, jsonClone(a.answers[id]?.answer ?? {})]),
+    )
     if (!a.checked.includes(questionId)) a.checked.push(questionId)
     this.persist()
     const number = a.sections.flatMap((s) => s.questionIds).indexOf(questionId) + 1
-    return this.gradeQuestion(a, questionId, number, true)
+    return { ...this.semakResult(a, questionId, number), checksUsed: counts[questionId] ?? used }
+  }
+
+  /** The kind each "Semak" part is blank-checked with: `mcq` for an objective question, the part kind otherwise. */
+  private semakKinds(qid: string): Map<string, Leaf['kind'] | 'mcq'> {
+    const q = BANK.questions.get(qid)!
+    if (q.mcq) return new Map([[qid, 'mcq']])
+    return new Map(leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => [l.id, l.kind]))
+  }
+
+  /** The parts "Semak" reveals (46 section 3.5). */
+  private semakParts(qid: string): ReadonlySet<string> {
+    const q = BANK.questions.get(qid)!
+    return new Set(q.mcq ? [qid] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id))
+  }
+
+  private semakResult(a: Attempt, qid: string, number: number): QuestionResult {
+    const graded = this.gradeQuestion(a, qid, number, true)
+    const parts = graded.parts.filter((p) => this.semakParts(qid).has(p.partId))
+    return { ...graded, parts, marks: parts.reduce((n, p) => n + p.marks, 0), awarded: parts.reduce((n, p) => n + p.awarded, 0) }
   }
 
   /**
@@ -1039,6 +991,14 @@ export class BijakServer implements BijakApi {
       marks: paperMarks(b.questions),
       updatedAt: b.updatedAt,
     }
+  }
+
+  /** A mock batch has no `batchStatus`, so the page never offers `Batalkan`; removing it is enough here. */
+  async cancelIntakeBatch(id: string): Promise<void> {
+    await this.tick()
+    const store = this.intakeStore()
+    this.state.intake = Object.fromEntries(Object.entries(store).filter(([key]) => key !== id))
+    this.persist()
   }
 
   async listIntakeBatches(
@@ -1305,6 +1265,10 @@ export class BijakServer implements BijakApi {
   }
   sectionPool(id: string, sectionId: string, query?: SectionPoolQuery) {
     return this.ops.sectionPool(id, sectionId, query)
+  }
+
+  bankUnits(subject: SubjectCode, kertas: number) {
+    return this.ops.bankUnits(subject, kertas)
   }
 
   previewQuestions(ids: string[]) {

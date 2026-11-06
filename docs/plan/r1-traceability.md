@@ -580,7 +580,7 @@ The owner is the card whose `- Data/API:` line lists the id. Cards that only rea
 | API-GUR-23 | Exists-Fix | S0-T10 |
 | API-GUR-24 | Missing-Build | S6-T16 |
 | API-GUR-25 | Exists-Fix | S6-T16 |
-| API-GUR-26 | Missing-Build | S6-T17 |
+| API-GUR-26 | Exists-Fix | S6-T17 |
 | API-GUR-27 | Missing-Build | S6-T19 |
 | API-GUR-28 | Missing-Build | S6-T20 |
 | API-AS-01 | Exists-Fix | S6-T03 |
