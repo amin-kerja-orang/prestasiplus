@@ -686,6 +686,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           adminSekolah.page.getByTestId('action-key-in'),
           'read-only: no Key-in',
         ).toHaveCount(0)
+        await expectNoHScroll(adminSekolah.page)
 
         await adminSekolah.page.goto(`/headcount/student/${pupilId}`)
         // Former FINDING-6 (fixed by #1066): the staff pupil page lists the Auto pupil's class config without an entry row.
@@ -715,6 +716,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           adminSekolah.page.getByTestId(`headcount-${cfg}`).getByTestId('status-pill'),
           'school admin Prestasi of the pupil shows the Headcount pill Below',
         ).toHaveText('Below', { timeout: 20_000 })
+        await expectNoHScroll(adminSekolah.page)
       })
 
       let entries1 = 0
@@ -803,14 +805,15 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           numberBefore(await teacherPage.getByTestId('stat-cards').innerText(), 'Off Track'),
           'Dashboard Headcount Off Track',
         ).toBe(offTrackBefore)
+        await expectNoHScroll(teacherPage)
 
         await teacherPage.goto(`/prestasi/kelas/${cls.id}`)
         await expect(teacherPage.getByTestId('headcount-block')).toBeVisible({ timeout: 20_000 })
-        await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track').toContainText(
-          '0',
+        await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track').toHaveText(
+          /^\s*0\s+On Track/,
         )
-        await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toContainText(
-          '1',
+        await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toHaveText(
+          /^\s*1\s+Below Target/,
         )
         await expectNoHScroll(teacherPage)
       })
@@ -849,6 +852,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         })
         await expect(teacherPage.getByTestId('chip-on')).toContainText('On Track: 1')
         await expect(teacherPage.getByTestId('chip-below')).toContainText('Below: 0')
+        await expectNoHScroll(teacherPage)
 
         const dash = await call<{ configs: { id: string; onTrack: number; offTrack: number }[] }>(
           teacherPage,
@@ -878,11 +882,11 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
 
         await teacherPage.goto(`/prestasi/kelas/${cls.id}`)
         await expect(teacherPage.getByTestId('headcount-block')).toBeVisible({ timeout: 20_000 })
-        await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track +1').toContainText(
-          '1',
+        await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track +1').toHaveText(
+          /^\s*1\s+On Track/,
         )
-        await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toContainText(
-          '0',
+        await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toHaveText(
+          /^\s*0\s+Below Target/,
         )
         await expectNoHScroll(teacherPage)
       })
@@ -921,12 +925,14 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         }
         await pupil.page.goto('/headcount')
         await expect(pupil.page.getByTestId(`headcount-pill-${cfg}`)).toHaveText('Active')
+        await expectNoHScroll(pupil.page)
 
         await pupil.page.goto('/prestasi')
         await expect(
           pupil.page.getByTestId(`headcount-${cfg}`).getByTestId('status-pill'),
           'Prestasi Headcount pill',
         ).toHaveText('On Track')
+        await expectNoHScroll(pupil.page)
 
         await adminSekolah.page.goto(`/headcount/${cfg}`)
         await expect(adminSekolah.page.getByTestId('headcount-table')).toBeVisible({
@@ -936,6 +942,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           80,
         )
         await expect(adminSekolah.page.getByTestId('chip-on')).toContainText('On Track: 1')
+        await expectNoHScroll(adminSekolah.page)
       })
 
       await test.step('7. After 16 of 20: "{n} entri headcount" unchanged and equal everywhere; XS-1..XS-5 still agree', async () => {
@@ -961,6 +968,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         await expect(adminSekolah.page.getByTestId('sd-gps-entries')).toContainText(
           `${String(entries2)} entri headcount`,
         )
+        await expectNoHScroll(adminSekolah.page)
         await teacherPage.goto('/prestasi/sekolah')
         await expect(teacherPage.getByTestId('stat-cards')).toBeVisible({ timeout: 20_000 })
         expect(
@@ -970,6 +978,7 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           `${shownAccuracy(f.dash.accuracy)} Purata Ketepatan`,
         )
         await expect(teacherPage.getByTestId('gps-entries')).toHaveText(String(entries2))
+        await expectNoHScroll(teacherPage)
       })
     } finally {
       for (const p of peers) await p.context.close().catch(() => undefined)
