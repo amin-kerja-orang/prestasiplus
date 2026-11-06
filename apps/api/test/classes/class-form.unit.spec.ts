@@ -51,7 +51,7 @@ function build(opts: { taken?: boolean; schoolId?: string | null; own?: ClassRec
   const audit = { record: (e: unknown) => (calls.audits.push(e), Promise.resolve()) }
   const prisma = { transaction: <T>(fn: (tx: unknown) => Promise<T>) => fn({}) }
   const clock = new FixedClock(new Date('2026-10-19T01:00:00Z'))
-  const service = new ClassesService(repo as never, curriculum as never, {} as never, audit as never, prisma as never, clock)
+  const service = new ClassesService(repo as never, curriculum as never, {} as never, audit as never, prisma as never, clock, {} as never, {} as never)
   const actor = {
     auth: { sessionRowId: null, active: { scope: { level: 'school' } } },
     userId: '10',

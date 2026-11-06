@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { SERVABILITY_REASON_MS } from '@pp/contract'
 
 import { QuestionsService } from '../../src/modules/questions'
+import { stubPlacedQuestions } from '../support/db'
 import { ServabilityReadsService, ServabilityService } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
@@ -26,6 +27,7 @@ describe('servability overview: the shared pass equals the pre-change evaluation
 
   beforeAll(async () => {
     t = await bootQuestionsApp()
+    await stubPlacedQuestions(t.db) // DM-11: a placement of an id the bank does not hold needs a question row
     reads = t.app.get(ServabilityReadsService)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')
     const svc = t.app.get(QuestionsService)

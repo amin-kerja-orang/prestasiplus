@@ -48,8 +48,9 @@ import {
   AttemptsRepository,
   type PhotoRow,
 } from './attempts.repository'
-import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type PartAnswer, type SectionSnapshot } from './exam-core.adapter'
 import {
+  type AnswerMap,
   type Bundles,
   buildLeafIndex,
   buildServedPaper,
@@ -58,6 +59,9 @@ import {
   type LeafIndex,
   lockedParts,
   questionIdsOf,
+  revealedOnly,
+  sameAnswersAsCheck,
+  semakParts,
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
@@ -97,6 +101,8 @@ const ts = (d: Date) => toMytTimestamp(d)
 export const NO_ELIGIBLE_QUESTIONS = 'Tiada soalan layak untuk kertas ini.'
 const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_ELIGIBLE_QUESTIONS })
 
+/** 422 fields.questionId of a "Semak" on a question whose auto-markable parts are all blank. */
+const CHECK_BLANK = 'Jawab dahulu sebelum menyemak.'
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
@@ -286,12 +292,28 @@ export class BijakAttemptsService {
 
   /* ---------------------------------------------------------------------------------- views */
 
+  /**
+   * The stored "Semak" of each checked question while its answers are still the ones it was made on. An edited answer was not checked yet: it shows
+   * no verdict until its own "Semak" (a reload must not mark it for free). Only the parts "Semak" reveals, also for a row stored before that rule.
+   */
+  private async shownChecks(row: AttemptRow, order: readonly string[], bundles: Bundles, answers: AnswerMap): Promise<BijakAttemptQuestionResult[]> {
+    if (!order.length) return []
+    const stored = await this.repo.checkResults(row.id)
+    const index = buildLeafIndex(row.composition, bundles)
+    return order.flatMap((qid) => {
+      const result = stored.get(qid) as BijakAttemptQuestionResult | null | undefined
+      if (!result) return []
+      const shown = revealedOnly(result, new Set(semakParts(index, qid)))
+      return sameAnswersAsCheck(shown, answers) ? [shown] : []
+    })
+  }
+
   private async buildView(row: AttemptRow, withChecks: boolean, preloaded?: Bundles): Promise<BijakAttemptPaperView> {
     const [answers, checks, bundles] = await Promise.all([this.repo.answers(row.id), this.repo.checkCounts(row.id), preloaded ?? this.loadBundles(row.composition)])
     const served = buildServedPaper(row.composition, bundles)
     const showChecks = withChecks && row.status === 'in_progress' && row.mode === 'latihan'
     const map = this.answerMap(answers)
-    const results: BijakAttemptQuestionResult[] = showChecks ? checks.order.map((qid) => checkResult(row.composition, bundles, map, qid)) : []
+    const results = showChecks ? await this.shownChecks(row, checks.order, bundles, map) : []
     return {
       serverNow: ts(this.now()),
       attempt: this.toMeta(row, answers, checks),
@@ -486,12 +508,25 @@ export class BijakAttemptsService {
       const leaf = index.parts.get(c.partId)
       if (!leaf || locked.has(c.partId)) continue
       // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
-      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      if (leaf.topicIds) {
+        for (const key of ['choice', 'topicId'] as const) {
+          const topic = c.answer[key]
+          if (topic !== undefined && !leaf.topicIds.includes(topic)) {
+            throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.${key}`]: MSG.essayTopicUnknown } })
+          }
+        }
       }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
-      let answer = c.answer
+      // DM-68: `revealed` belongs to the server ("Semak" sets it, nothing clears it). `topicId` wins and is copied to `choice`, which every reader of an open essay_choice answer still uses.
+      let answer: PartAnswer = {
+        ...c.answer,
+        ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
+      }
+      delete answer.revealed
+      // A leaf with no topic choice has nowhere to keep a topic: a client `topicId` is dropped (not stored, not an error).
+      if (!leaf.topicIds) delete answer.topicId
+      if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
           photos = new Map()
@@ -716,19 +751,31 @@ export class BijakAttemptsService {
       if (row.status !== 'in_progress') throw attemptClosed()
       if (!row.composition.some((s) => s.questionIds.includes(questionId))) throw ApiError.of('NOT_FOUND', { message: MSG.questionNotFound })
       const load = this.lazyBundles(row)
+      const index = await this.leafIndexOf(row, load)
+      // 46 section 3.5: essay, working, drawing and table_fill have no "Semak"; their scheme comes after "Hantar".
+      const parts = semakParts(index, questionId)
+      if (parts.length === 0) throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
       const answers = await this.repo.answers(id)
       const checks = await this.repo.checkCounts(id)
       const used = checks.counts.get(questionId) ?? 0
       // After the cap the answer is shown and no further payload can change it (nor the count).
       if (used < MAX_CHECKS_PER_QUESTION && payload) {
-        const index = await this.leafIndexOf(row, load)
         await this.merge(row, answers, payload.changes, index, lockedParts(row.mode, checks.counts, index))
         await this.applyMeta(row, payload)
       }
-      const result = checkResult(row.composition, await load(), this.answerMap(answers), questionId)
-      if (used < MAX_CHECKS_PER_QUESTION) await this.repo.saveCheck(id, questionId, used + 1, result)
-      else await this.repo.saveCheck(id, questionId, used, result)
-      return result
+      const map = this.answerMap(answers)
+      // Lead ruling Q3: a blank part never consumes a check nor reveals the key (the UI disables "Semak" too).
+      if (parts.every((pid) => isBlank(map.get(pid), index.parts.get(pid)?.kind as LeafKind | 'mcq' | undefined))) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionId: CHECK_BLANK } })
+      }
+      const result = checkResult(row.composition, await load(), map, questionId, new Set(parts))
+      // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+      const last = used > 0 ? ((await this.repo.checkResults(id)).get(questionId) as BijakAttemptQuestionResult | null | undefined) : null
+      const changed = !last || !sameAnswersAsCheck(revealedOnly(last, new Set(parts)), map)
+      const checksUsed = used < MAX_CHECKS_PER_QUESTION && changed ? used + 1 : used
+      await this.repo.saveCheck(id, questionId, checksUsed, result)
+      await this.repo.markRevealed(id, parts, this.now())
+      return { ...result, checksUsed }
     }, TX)
   }
 

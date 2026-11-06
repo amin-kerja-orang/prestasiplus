@@ -10,6 +10,7 @@ import { BIJAK_STANDARDS_MESSAGES } from '../standards/schema'
 import {
   BIJAK_BUILDER_EDIT_LINES,
   BIJAK_BUILDER_MESSAGES,
+  BIJAK_SET_BUILDER_PROPOSED,
   BijakBlueprintAdminCreateSchema,
   BijakBlueprintAdminSectionInputSchema,
   BijakBlueprintAdminVersionInputSchema,
@@ -28,6 +29,10 @@ import {
   BijakSectionPoolsSchema,
   BijakBuilderBlockerSchema,
   BijakBuilderOkSchema,
+  BijakBuilderPaperSourceApplyResultSchema,
+  BijakBuilderPaperSourceApplySchema,
+  BijakBuilderPaperSourceUploadResultSchema,
+  BijakBuilderPaperSourceUploadSchema,
   BijakBuilderPaperCreateResultSchema,
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
@@ -86,6 +91,10 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderPaperPatch: BijakBuilderPaperPatchSchema,
   BijakBuilderBlocker: BijakBuilderBlockerSchema,
   BijakBuilderOk: BijakBuilderOkSchema,
+  BijakBuilderPaperSourceUpload: BijakBuilderPaperSourceUploadSchema,
+  BijakBuilderPaperSourceApply: BijakBuilderPaperSourceApplySchema,
+  BijakBuilderPaperSourceUploadResult: BijakBuilderPaperSourceUploadResultSchema,
+  BijakBuilderPaperSourceApplyResult: BijakBuilderPaperSourceApplyResultSchema,
   BijakBuilderPublishResult: BijakBuilderPublishResultSchema,
   BijakBuilderPreviewRequest: BijakBuilderPreviewRequestSchema,
   BijakBuilderReviewQuestion: BijakBuilderReviewQuestionSchema,
@@ -199,7 +208,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: create a paper (createPaper)',
-    description: `Body { subject, kertas, title? }. The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the default title is "Percubaan SPM {subjectName} Kertas {kertas} (draf)" and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.noBlueprint}" with no field (the mock throws it without a field). ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { subject, kertas, title }. \`title\` (\`Tajuk set\`, PRD30 13-01) is required by the server: blank, only spaces or omitted = 422 VALIDATION_ERROR \`fields.title\` "${BIJAK_BUILDER_MESSAGES.setTitleRequired}"; more than 120 characters after trim = 422 \`fields.title\` "${BIJAK_SET_BUILDER_PROPOSED.setTitleTooLong}". The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the title is the one sent (trimmed) and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.noBlueprint}" with no field (the mock throws it without a field). ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakBuilderPaperCreateSchema) },
     responses: {
       201: json(envelopeOf(BijakBuilderPaperCreateResultSchema), 'The new paper id.'),
@@ -258,7 +267,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: \`reference\` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with "Soalan berulang dalam kertas: {ids}". Status is not checked here (publish reports "{N} soalan belum Terbit"); POST /placements is the servable-checked way to add. R1-T48: \`code\` (V2 "Kod kertas (kulit)", the printed paper code, trimmed, at most 32 characters, else 422 "${BIJAK_BUILDER_MESSAGES.codeTooLong}"; blank = the subject code, as the V2 cover) and, per section, \`rule\` ({ type: all } or { type: choose, n }, V2 "Peraturan menjawab" / "Bilangan soalan dipilih"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 "Bilangan soalan dipilih mesti antara 1 dan {count}"; a Pilih N on a Bahagian without a question: 422 "${BIJAK_BUILDER_EDIT_LINES.ruleNoQuestions}"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: \`reference\` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title blank "${BIJAK_BUILDER_MESSAGES.setTitleRequired}", or more than 120 characters after trim "${BIJAK_SET_BUILDER_PROPOSED.setTitleTooLong}" (\`fields.title\`, the same rule as create, PRD30 13-01); a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question id that does not exist, or whose curriculum subject differs from the paper subject, "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with "Soalan berulang dalam kertas: {ids}". Status is not checked here (publish reports "{N} soalan belum Terbit"); POST /placements is the servable-checked way to add. R1-T48: \`code\` (V2 "Kod kertas (kulit)", the printed paper code, trimmed, at most 32 characters, else 422 "${BIJAK_BUILDER_MESSAGES.codeTooLong}"; blank = the subject code, as the V2 cover) and, per section, \`rule\` ({ type: all } or { type: choose, n }, V2 "Peraturan menjawab" / "Bilangan soalan dipilih"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 "Bilangan soalan dipilih mesti antara 1 dan {count}"; a Pilih N on a Bahagian without a question: 422 "${BIJAK_BUILDER_EDIT_LINES.ruleNoQuestions}"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),
@@ -300,6 +309,34 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
       422: err(`VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" (override without a reason).`),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/source',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: source PDF of a Kertas Subjektif (upload, then apply) [API-BIJAK-14]',
+    description: `S3-T06. Kertas Subjektif only. Two request shapes on one path. (1) multipart/form-data with \`paper\` (required PDF), optional \`scheme\` (PDF) and \`declaration\` ("true"): each file is at most 30 MB, checked by the %PDF- magic bytes and the .pdf name; the API creates the intake batch of THIS paper and answers 202 { data: { batchId } }. (2) JSON { apply: true } appends the accepted items of that batch as placements of the paper in one transaction (idempotent; a repeat appends 0) and answers 201 { data: { placements } }. Errors: 404 "${BIJAK_BUILDER_MESSAGES.paperNotFound}"; 409 for a Terbit paper "${BIJAK_BUILDER_MESSAGES.paperPublishedWithdrawFirst}", an upload when the paper already has a source batch "${BIJAK_BUILDER_MESSAGES.sourceBatchExists}", and on apply open items "${BIJAK_BUILDER_MESSAGES.itemsUndecided}" or a batch that is not ready "${BIJAK_BUILDER_MESSAGES.sourceBatchNotReady}"; 422 on fields.paper / fields.scheme "${BIJAK_BUILDER_MESSAGES.sourcePdfInvalid}" or "${BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge}", fields.declaration "${BIJAK_BUILDER_MESSAGES.declarationRequired}", fields.surface "${BIJAK_BUILDER_MESSAGES.subjektifOnly}", fields.source "${BIJAK_BUILDER_MESSAGES.sourceBatchMissing}" (apply before upload). The edge allows 62 MB for this path (2 x 30 MB plus overhead). ${ROLE_NOTE}`,
+    request: {
+      params: PaperIdParams,
+      headers: [csrf],
+      body: {
+        required: true as const,
+        content: {
+          'multipart/form-data': { schema: BijakBuilderPaperSourceUploadSchema },
+          'application/json': { schema: BijakBuilderPaperSourceApplySchema },
+        },
+      },
+    },
+    responses: {
+      201: json(envelopeOf(BijakBuilderPaperSourceApplyResultSchema), 'JSON { apply: true }: the number of placements appended by this call.'),
+      202: json(envelopeOf(BijakBuilderPaperSourceUploadResultSchema), 'Multipart: the intake batch created for this paper.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      409: err('CONFLICT (Terbit paper, source batch already exists, open items or batch not ready; BM text as listed above).'),
+      422: err('VALIDATION_ERROR (not a Kertas Subjektif, invalid or oversize PDF, declaration not ticked, or apply before upload; BM text as listed above).'),
     },
   })
 

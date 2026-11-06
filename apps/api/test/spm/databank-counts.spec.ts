@@ -134,8 +134,79 @@ describe('Latih Tubi SPM hub total follows the serving rule', () => {
     const geo = await subjectId('GEO')
     const served = await repo.unitCount(latihTubiFilter(geo))
     expect(await pool.latihTubiCount(geo, { fresh: true })).toBe(served)
+    expect((await pool.latihTubiCells(geo, { fresh: true })).reduce((a, c) => a + c.n, 0)).toBe(served)
     // Groups off: ungrouped single-leaf only (1 solo). Groups on: the complete group counts once more.
     expect(served).toBe(GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 1)
+  })
+})
+
+describe('Latih Tubi breakdowns count units like the total', () => {
+  it('[CI] AC-MUR-13-13 a group sits in ONE bucket (its first member), so level and difficulty cells sum to the total (groups on and off)', async () => {
+    await t.db.query('delete from questions')
+    const bio = await subjectId('BIO')
+    await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1 })
+    await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 4 })
+    // A complete group whose members differ in level and TP: it must land in the bucket of its first member only (T4, TP 2).
+    const members = [
+      await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 2 }),
+      await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 5 }),
+      await addQuestion(t.db, { subject: 'BIO', level: 'T5', tp: 3 }),
+    ]
+    await groupOf(members)
+    // An incomplete group counts nowhere.
+    await groupOf([await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1 }), await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 1, status: 'draft' })])
+
+    const sum = (rows: { n: number }[]) => rows.reduce((a, r) => a + r.n, 0)
+    for (const filter of [latihTubiFilter(bio), withLtGroups(bio)]) {
+      const total = await repo.unitCount(filter)
+      expect(sum(await repo.unitCountsByLevelTp(filter))).toBe(total)
+    }
+    const on = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(on)).toBe(3) // two solos + the complete group once
+    expect(on.filter((r) => r.tp === 2)).toHaveLength(1) // the group is at its first member (TP 2), not at TP 5 or 3
+    expect(on.some((r) => r.tp === 5 || r.tp === 3)).toBe(false)
+
+    // The group row's own level wins over the first member's (T4): set it to T5 and the group moves there, TP still the first member's.
+    const group = (await t.db.query<{ group_id: string }>('select group_id::text from questions where id = $1::bigint', [members[0]]))[0]!.group_id
+    const t5 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'T5'`))[0]!.id
+    const t4 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'T4'`))[0]!.id
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [t5, group])
+    const own = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(own)).toBe(3)
+    expect(own).toContainEqual({ levelId: t5, tp: 2, n: 1 })
+    expect(own).not.toContainEqual({ levelId: t4, tp: 2, n: 1 })
+
+    // A group level the scope never shows (here Darjah 1: primary and inactive) is ignored: the unit falls back to the first member's level, so the buckets still sum to the total.
+    const d1 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'D1'`))[0]!.id
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [d1, group])
+    const unoffered = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(unoffered)).toBe(await repo.unitCount(withLtGroups(bio)))
+    expect(unoffered.some((r) => r.levelId === d1)).toBe(false)
+    expect(unoffered).toContainEqual({ levelId: t4, tp: 2, n: 1 })
+    // A group level outside the filter's level restriction is ignored the same way (T5 own level, filter T4).
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [t5, group])
+    const restricted = await repo.unitCountsByLevelTp({ ...withLtGroups(bio), educationLevelIds: [t4] })
+    expect(sum(restricted)).toBe(await repo.unitCount({ ...withLtGroups(bio), educationLevelIds: [t4] }))
+    expect(restricted.every((r) => r.levelId === t4)).toBe(true)
+    await t.db.query('update stimulus_groups set education_level_id = null where id = $1::bigint', [group])
+
+    // The service: breakdown cells equal the hub total under the live surfaces.
+    const cells = await pool.latihTubiCells(bio, { fresh: true })
+    expect(cells.reduce((a, c) => a + c.n, 0)).toBe(await pool.latihTubiCount(bio, { fresh: true }))
+  })
+
+  it('[CI] AC-MUR-13-13 a group is bucketed at its lowest-position member, not its lowest question id', async () => {
+    // ck_questions_group_position ties group_id and group_position together (both NULL or both set) and uq_questions_group_id_group_position
+    // makes positions unique inside a group, so there are no NULL or tied positions to break: the lowest position decides.
+    await t.db.query('delete from questions')
+    const bio = await subjectId('BIO')
+    const a = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 3 })
+    const b = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 5 })
+    expect(BigInt(a)).toBeLessThan(BigInt(b))
+    await groupOf([b, a]) // b is position 1 although a has the lower id
+    const rows = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ tp: 5, n: 1 })
   })
 })
 
