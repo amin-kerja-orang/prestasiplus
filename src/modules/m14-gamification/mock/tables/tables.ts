@@ -10,6 +10,7 @@ import { defineTable, maxPlusOne } from '@/mock/define'
 import type {
   Achievement,
   CashWithdrawal,
+  ChallengeClaimRow,
   ChallengeCompletion,
   DailyChallenge,
   DailyLoginMark,
@@ -42,6 +43,11 @@ export const challengesTable = defineTable<DailyChallenge>({
 })
 export const completionsTable = defineTable<ChallengeCompletion>({
   name: 'gamification.challengeCompletions',
+  ids: maxPlusOne(),
+  indexes: ['userId', 'date'],
+})
+export const challengeClaimsTable = defineTable<ChallengeClaimRow>({
+  name: 'gamification.challengeClaims',
   ids: maxPlusOne(),
   indexes: ['userId', 'date'],
 })
@@ -151,6 +157,7 @@ export const M14_TABLES = {
   tiers: tiersTable,
   challenges: challengesTable,
   challengeCompletions: completionsTable,
+  challengeClaims: challengeClaimsTable,
   achievements: achievementsTable,
   userAchievements: userAchievementsTable,
   streaks: streaksTable,

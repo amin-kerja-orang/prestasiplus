@@ -108,7 +108,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
     it('10 active in (sortOrder, id) order, nothing done: meta {completed 0, active 10}', async () => {
       const res = await student.get('/gamification/challenges')
       const body = GamificationChallengesResponseSchema.parse(res.body)
-      expect(body.meta).toEqual({ completed: 0, active: 10 })
+      expect(body.meta).toEqual({ completed: 0, active: 10, claimed: 0 })
       expect(body.data).toHaveLength(10)
       expect(body.data.map((c) => c.title).slice(0, 5)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Mula Hari Ini'])
       expect(body.data.every((c) => c.progress === 0 && c.pct === 0 && !c.completed)).toBe(true)
