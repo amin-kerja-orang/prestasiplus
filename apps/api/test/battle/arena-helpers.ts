@@ -263,3 +263,47 @@ export function parseData<T>(schema: { parse(v: unknown): T }, res: Response): T
   expect(Object.keys(res.body as object), JSON.stringify(res.body)).toEqual(['data'])
   return parse(schema, { body: res.body.data, status: res.status } as Response)
 }
+
+/** The round clock of a battle as stored (`answered` = rounds closed; the next round opens at `round_started_at`, which is in the future during a reveal). */
+export async function roundOf(t: BattleTestApp, uuid: string): Promise<{ status: string; answered: number; startedAt: Date; questionCount: number }> {
+  const [row] = await t.db.query<{ status: string; answered: number; round_started_at: Date | null; created_at: Date; question_count: number }>(
+    `select status, answered, round_started_at, created_at, question_count from battles where id = $1`,
+    [uuid],
+  )
+  if (!row) throw new Error(`no battle ${uuid}`)
+  return { status: row.status, answered: row.answered, startedAt: row.round_started_at ?? row.created_at, questionCount: row.question_count }
+}
+
+/**
+ * Moves the clock like a waiting client does, until round `round` (1-based) has closed and the next one is open: one second at a
+ * time, with a poll of the arena of `viewer` after each (the poll and the robot's own time close the round), then to the exact
+ * start of the next round. Returns at once when the battle is over. Call it after the answers of `round`.
+ */
+export async function nextRound(t: BattleTestApp, viewer: Client, uuid: string, round: number): Promise<void> {
+  for (let i = 0; i < 60; i++) {
+    await viewer.get(`/battle/arena/${uuid}`)
+    const state = await roundOf(t, uuid)
+    if (state.status !== 'active') return
+    if (state.answered >= round) {
+      if (state.startedAt.getTime() > t.clock.now().getTime()) t.clock.set(state.startedAt)
+      return
+    }
+    t.clock.advance(1000)
+  }
+  throw new Error(`round ${round} of ${uuid} did not close`)
+}
+
+/** Settings of 48 section 2 changed for one test; the caller puts them back with `restoreSetting`. */
+export async function setSetting(t: BattleTestApp, key: string, value: number): Promise<void> {
+  await t.db.query(`update gamification_settings set value = $2 where key = $1`, [key, value])
+}
+
+/** A battle between two pupils: `owner` invites `receiver` (same school) and `receiver` accepts. Returns the battle uuid. */
+export async function humanBattle(owner: Client, receiver: Client, subjectId: string, over: Record<string, unknown> = {}): Promise<string> {
+  const invite = await owner.post('/battle/invite', { question_type: 'biasa', subject_id: subjectId, receiver_id: receiver.id, ...over })
+  expect(invite.status, JSON.stringify(invite.body)).toBe(200)
+  const pending = (await receiver.get('/battle/invitations')).body.invitations as { uuid: string }[]
+  const accepted = await receiver.post(`/battle/invite/${pending[0]?.uuid}/accept`)
+  expect(accepted.status, JSON.stringify(accepted.body)).toBe(200)
+  return accepted.body.battle_uuid as string
+}

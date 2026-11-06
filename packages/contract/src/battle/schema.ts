@@ -72,11 +72,23 @@ export const BATTLE_MESSAGES = {
   dateInvalid: 'Tarikh tidak sah.',
   closeBeforeOpen: 'Tarikh tutup mesti selepas tarikh buka.',
   actionInvalid: 'Tindakan tidak sah.',
+  /** ERR-GAME-05 (48 section 3.8). */
+  dailyLimit: 'Had battle hari ini telah dicapai. Cuba lagi esok.',
+  invitationExpired: 'Cabaran tamat tempoh.',
 } as const
 
 // -------------------------------------------------------------------------------------------
 // Enums
 // -------------------------------------------------------------------------------------------
+
+/** 48 GAME-01: the "Bilangan Soalan" chips; a battle has one question per count. */
+export const BATTLE_QUESTION_COUNTS = [5, 10, 15, 20] as const
+export const BATTLE_QUESTION_COUNT_MIN = 5
+export const BATTLE_QUESTION_COUNT_MAX = 20
+/** `battle_question_seconds` runs 10..60 (48 section 2). */
+export const BATTLE_QUESTION_SECONDS_MAX = 60
+export const BattleQuestionCountSchema = z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(20)]).meta({ id: 'BattleQuestionCount' })
+export type BattleQuestionCount = z.infer<typeof BattleQuestionCountSchema>
 
 export const BATTLE_QUESTION_TYPES = ['biasa', 'pksk', 'spm'] as const
 export const BattleQuestionTypeSchema = z.enum(BATTLE_QUESTION_TYPES).meta({ id: 'BattleQuestionType' })
@@ -109,15 +121,19 @@ export const BATTLE_TOURNAMENT_ACTIONS = ['draft', 'open_registration'] as const
 // Pure rules (BR-M16-07), shared by the tests and the backend
 // -------------------------------------------------------------------------------------------
 
-/** A correct answer after `seconds` scores `1000 - round(500 * s / 15)`, `s = floor(seconds)` clamped to 0..15. */
-export function battleArenaPoints(seconds: number): number {
-  const s = Math.min(BATTLE_RULES.questionSeconds, Math.max(0, Math.floor(seconds)))
-  return 1000 - Math.round((500 * s) / BATTLE_RULES.questionSeconds)
+/**
+ * A correct answer after `seconds` scores `1000 - round(500 * s / N)`, `s = floor(seconds)` clamped to 0..N (48 section GAME-01,
+ * AC-GM-01.1). `questionSeconds` is N (`battle_question_seconds`, default 15). With `graceSeconds` (`battle_grace_seconds`) given, an
+ * answer later than N + grace is a timeout and scores 0 (AC-GM-01.2); inside the grace window it counts s = N, so 500.
+ */
+export function battleArenaPoints(seconds: number, questionSeconds: number = BATTLE_RULES.questionSeconds, graceSeconds?: number): number {
+  if (graceSeconds !== undefined && seconds > questionSeconds + graceSeconds) return 0
+  const s = Math.min(questionSeconds, Math.max(0, Math.floor(seconds)))
+  return 1000 - Math.round((500 * s) / questionSeconds)
 }
 
-/** Higher total wins; equal and non-zero is a draw (`null`); 0-0 is player B (DV-M16-35). */
+/** Higher total wins; equal totals, 0-0 included, are a draw `null` (48 section 3.4, AC-GM-01.3; DV-M16-35 is replaced). */
 export function battleWinner(scoreA: number, scoreB: number): 'A' | 'B' | null {
-  if (scoreA === 0 && scoreB === 0) return 'B'
   if (scoreA > scoreB) return 'A'
   if (scoreB > scoreA) return 'B'
   return null
@@ -150,15 +166,19 @@ const openToAll = z
   .optional()
   .meta({ description: 'Treated as true only when literally true (anything else is false). No effect on an invitation.' })
 
+const questionCount = BattleQuestionCountSchema.optional().meta({
+  description: 'The "Bilangan Soalan" chip (48 GAME-01): 5, 10, 15 or 20; absent is `battle_questions_default`. A pupil is matched only with the same count.',
+})
+
 /**
  * Body of M16-02 and M16-03. `biasa`: `subject_id` is a battle subject. `pksk`: an active domain and
  * `T1|T4`. `spm`: a subject with a non-empty SPM pool; callers below grade 10 get 403 `{}`.
  */
 export const BattleStartRequestSchema = z
   .discriminatedUnion('question_type', [
-    z.object({ ...biasaFields, open_to_all: openToAll }),
-    z.object({ ...pkskFields, open_to_all: openToAll }),
-    z.object({ ...spmFields, open_to_all: openToAll }),
+    z.object({ ...biasaFields, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...pkskFields, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...spmFields, open_to_all: openToAll, question_count: questionCount }),
   ])
   .meta({ id: 'BattleStartRequest' })
 export type BattleStartRequest = z.infer<typeof BattleStartRequestSchema>
@@ -191,7 +211,11 @@ export const BattlePollMatchResponseSchema = z
     z.strictObject({ status: z.literal('expired') }),
     z.strictObject({ status: z.literal('not_found') }),
     z.strictObject({ status: z.literal('incoming_challenge'), challenger: BattleChallengerSchema }),
-    z.strictObject({ status: z.literal('matched'), battle_uuid: IdSchema }),
+    z.strictObject({
+      status: z.literal('matched'),
+      battle_uuid: IdSchema,
+      robot: z.boolean().optional().meta({ description: 'True when the opponent is "Robot PrestasiPlus": the overlay says so for 2 s before the arena (48 GAME-01).' }),
+    }),
   ])
   .meta({ id: 'BattlePollMatchResponse' })
 
@@ -235,9 +259,9 @@ const receiver = { receiver_id: IdSchema.meta({ description: 'An existing studen
 /** Body of M16-08: the start body plus `receiver_id`. */
 export const BattleInviteRequestSchema = z
   .discriminatedUnion('question_type', [
-    z.object({ ...biasaFields, ...receiver, open_to_all: openToAll }),
-    z.object({ ...pkskFields, ...receiver, open_to_all: openToAll }),
-    z.object({ ...spmFields, ...receiver, open_to_all: openToAll }),
+    z.object({ ...biasaFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...pkskFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...spmFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
   ])
   .meta({ id: 'BattleInviteRequest' })
 export type BattleInviteRequest = z.infer<typeof BattleInviteRequestSchema>
@@ -246,7 +270,7 @@ export const BattleInvitationSchema = z
   .strictObject({ uuid: IdSchema, sender_name: z.string(), sender_school: z.string() })
   .meta({ id: 'BattleInvitation' })
 
-/** 200 of M16-09: pending invitations younger than 24 h, newest first. */
+/** 200 of M16-09: pending invitations younger than `battle_invitation_hours`, newest first. */
 export const BattleInvitationsResponseSchema = z
   .strictObject({ invitations: z.array(BattleInvitationSchema) })
   .meta({ id: 'BattleInvitationsResponse' })
@@ -329,9 +353,33 @@ export const BattleArenaResultSchema = z
   })
   .meta({ id: 'BattleArenaResult' })
 
+export const BATTLE_ARENA_PHASES = ['answering', 'reveal', 'finished'] as const
+export const BattleArenaPhaseSchema = z.enum(BATTLE_ARENA_PHASES).meta({ id: 'BattleArenaPhase' })
+
+const RevealSideSchema = z.strictObject({
+  optionId: z.number().int().min(0).max(3).nullable().meta({ description: 'The option the side picked; null for a timeout.' }),
+  correct: z.boolean(),
+  points: z.number().int().min(0).max(1000),
+})
+
+/** What both players see for the round that just closed (48 GAME-01 timers): the key, both sides' picks and points. */
+export const BattleArenaRevealSchema = z
+  .strictObject({
+    index: z.number().int().min(1).max(BATTLE_QUESTION_COUNT_MAX),
+    correctOptionId: z.number().int().min(0).max(3),
+    you: RevealSideSchema,
+    opponent: RevealSideSchema,
+  })
+  .meta({ id: 'BattleArenaReveal' })
+export type BattleArenaReveal = z.infer<typeof BattleArenaRevealSchema>
+
 /**
- * `data` of M16-16. While `active`: `question` is the caller's next question and `secondsLeft` is 15;
- * otherwise `question` is null, `secondsLeft` is 0 and `result` is present.
+ * `data` of M16-16. Both players are in the same round (`index` of `total`, the battle's `question_count`). `phase`
+ * `answering`: `question` is the round's question and `secondsLeft` the seconds left to answer (0..`battle_question_seconds`);
+ * `roundEndsAt` is when the answer window, grace included, closes. `phase` `reveal`: the round just closed; `question` is that
+ * round's question, `reveal` carries the key and both sides' picks and points, `secondsLeft` is 0 and `roundEndsAt` is when the
+ * next round opens. Otherwise (`finished`: finished, forfeited or abandoned) `question` is null, `secondsLeft` is 0, `result` is
+ * present and `reveal` is the last round's when there is one.
  */
 export const BattleArenaViewSchema = z
   .strictObject({
@@ -340,21 +388,29 @@ export const BattleArenaViewSchema = z
     you: z.enum(['A', 'B']),
     players: z.strictObject({ A: ArenaPlayerSchema, B: ArenaPlayerSchema }),
     scores: ScoresSchema,
-    index: z.number().int().min(1).max(BATTLE_RULES.arenaQuestions),
-    total: z.literal(BATTLE_RULES.arenaQuestions),
+    index: z.number().int().min(1).max(BATTLE_QUESTION_COUNT_MAX),
+    total: z.number().int().min(BATTLE_QUESTION_COUNT_MIN).max(BATTLE_QUESTION_COUNT_MAX),
     question: BattleArenaQuestionSchema.nullable(),
-    secondsLeft: z.number().int().min(0).max(BATTLE_RULES.questionSeconds),
-    roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the caller\'s question times out, grace included (48 section 3.3).' }),
+    secondsLeft: z.number().int().min(0).max(BATTLE_QUESTION_SECONDS_MAX),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the current phase ends (answering: the window incl. grace, 48 section 3.3; reveal: the next round opens).' }),
+    phase: BattleArenaPhaseSchema.optional(),
+    youAnswered: z.boolean().optional().meta({ description: 'While active: the caller has a row for the round on screen (own seat only; nothing about the opponent).' }),
+    reveal: BattleArenaRevealSchema.optional(),
     result: BattleArenaResultSchema.optional(),
   })
   .superRefine((v, ctx) => {
     const active = v.status === 'active'
-    if (active && (v.question === null || v.secondsLeft !== BATTLE_RULES.questionSeconds || v.result !== undefined)) {
-      ctx.addIssue({ code: 'custom', message: 'an active battle has a question, secondsLeft 15 and no result' })
+    if (active && (v.question === null || v.result !== undefined)) {
+      ctx.addIssue({ code: 'custom', message: 'an active battle has a question and no result' })
     }
     if (!active && (v.question !== null || v.secondsLeft !== 0 || v.result === undefined)) {
       ctx.addIssue({ code: 'custom', message: 'a battle that is not active has no question, secondsLeft 0 and a result' })
     }
+    if (v.index > v.total) ctx.addIssue({ code: 'custom', message: 'index runs up to total', path: ['index'] })
+    if (v.phase !== undefined && (v.phase === 'finished') === active) {
+      ctx.addIssue({ code: 'custom', message: 'phase finished exactly when the battle is not active', path: ['phase'] })
+    }
+    if (v.phase === 'reveal' && v.reveal === undefined) ctx.addIssue({ code: 'custom', message: 'phase reveal carries the reveal', path: ['reveal'] })
   })
   .meta({ id: 'BattleArenaView' })
 export type BattleArenaView = z.infer<typeof BattleArenaViewSchema>
@@ -367,30 +423,40 @@ export const BattleAnswerRequestSchema = z
     seconds: z
       .number()
       .min(0)
-      .max(BATTLE_RULES.questionSeconds)
-      .meta({ description: 'Seconds used, 0..15; floor(seconds) is scored.' }),
+      .max(BATTLE_QUESTION_SECONDS_MAX)
+      .meta({ description: 'Seconds used, 0..`battle_question_seconds` (at most 60); floor(seconds) is scored. The server clock can only make it slower.' }),
   })
   .meta({ id: 'BattleAnswerRequest' })
 export type BattleAnswerRequest = z.infer<typeof BattleAnswerRequestSchema>
 
 /**
- * `data` of M16-17. The key (`correctOptionId`) is revealed only here, after the answer is stored.
- * `opponent` is the simulated bot's answer for the same question (D53(a)). Exactly one of `next`
- * (questions 1 to 9) and `result` (question 10) is present.
+ * `data` of M16-17. Rounds are shared (48 GAME-01) and the key is never shown while a round is open: the answer is accepted and
+ * the response says only `accepted`, the `phase` the battle is in now and when it ends (`roundEndsAt`). The key and the
+ * correctness of both seats come only from the arena view in `phase` `reveal` (`reveal`). `result` is present when this answer
+ * closed the last round. `correct`, `correctOptionId`, `points`, `you`, `opponent` and `next` are no longer sent (kept optional so
+ * the schema only widens); an `opponent` that answered still carries `correct` and `score` when present. At most one of `next`
+ * and `result` is present.
  */
 export const BattleAnswerResultSchema = z
   .strictObject({
-    correct: z.boolean(),
-    correctOptionId: z.number().int().min(0).max(3),
-    points: z.number().int().min(0).max(1000),
-    you: z.strictObject({ score: z.number().int().min(0) }),
-    opponent: z.strictObject({ answered: z.literal(true), correct: z.boolean(), score: z.number().int().min(0) }),
+    accepted: z.boolean().optional().meta({ description: 'True when the answer was stored for the open round.' }),
+    phase: BattleArenaPhaseSchema.optional().meta({ description: 'The phase of the battle after the answer: reveal when it closed the round.' }),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'When the current phase ends (answering: the window incl. grace; reveal: the next round opens). Absent when finished.' }),
+    correct: z.boolean().optional(),
+    correctOptionId: z.number().int().min(0).max(3).optional(),
+    points: z.number().int().min(0).max(1000).optional(),
+    you: z.strictObject({ score: z.number().int().min(0) }).optional(),
+    opponent: z.strictObject({ answered: z.boolean(), correct: z.boolean().optional(), score: z.number().int().min(0).optional() }).optional(),
     next: BattleArenaQuestionSchema.optional(),
     result: BattleArenaResultSchema.optional(),
   })
-  .refine((r) => (r.next === undefined) !== (r.result === undefined), {
-    message: 'exactly one of next and result is present',
+  .refine((r) => r.next === undefined || r.result === undefined, {
+    message: 'at most one of next and result is present',
     path: ['next'],
+  })
+  .refine((r) => r.opponent === undefined || !r.opponent.answered || (r.opponent.correct !== undefined && r.opponent.score !== undefined), {
+    message: 'an opponent that answered carries correct and score',
+    path: ['opponent'],
   })
   .meta({ id: 'BattleAnswerResult' })
 export type BattleAnswerResult = z.infer<typeof BattleAnswerResultSchema>
