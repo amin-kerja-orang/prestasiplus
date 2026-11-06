@@ -6,6 +6,8 @@ import {
   PERFORMANCE_TIMELINE_MESSAGES,
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
+  PerformanceClassesAggregateSchema,
+  PerformanceLevelCodeSchema,
   PerformanceHeadcountArRequestSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
   PerformanceHeadcountCreateRequestSchema,
@@ -428,6 +430,32 @@ describe('performance contract (BE-19)', () => {
         rows: [],
       }).success,
     ).toBe(true)
+    // S10-T04 part 2: Belum Bermula row (none, null accuracy and projection), BARU trend, "Kelas" names, null pooled average
+    const analyticsRow = {
+      userId: '1',
+      name: 'Murid Contoh',
+      accuracy: 74,
+      answered: 50,
+      trend: 'stable',
+      projection: { low: 'B', high: 'A' },
+      riskLevel: 'low',
+      classes: ['4 Amanah'],
+    }
+    const analytics = (rows: object[], accuracy: number | null) => ({
+      options: { classes: [], subjects: [], selected: { classroomId: null, subjectId: null, riskLevel: '' } },
+      summary: { students: rows.length, accuracy, atRisk: 0, good: 0 },
+      rows,
+    })
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([analyticsRow], 74)).success).toBe(true)
+    expect(
+      PerformanceClassAnalyticsSchema.safeParse(
+        analytics([{ ...analyticsRow, accuracy: null, answered: 0, projection: null, riskLevel: 'none', trend: 'new', classes: [] }], null),
+      ).success,
+    ).toBe(true)
+    // `classes` is required on a row, and an unknown risk or trend is refused
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, classes: undefined }], 74)).success).toBe(false)
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, riskLevel: 'belum_bermula' }], 74)).success).toBe(false)
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, trend: 'baru' }], 74)).success).toBe(false)
     expect(PerformanceLevelDetailSchema.safeParse({ code: 't6' }).success).toBe(false)
     const school = {
       school: {
@@ -621,5 +649,46 @@ describe('performance contract (BE-19)', () => {
       expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     for (const name of Object.keys(PERFORMANCE_COMPONENT_SCHEMAS))
       expect(doc.components.schemas[name], name).toBeDefined()
+  })
+})
+
+describe('S10-T07 contract changes', () => {
+  it('the level code is t1 to t5 in lower case (DOC DEFECT 2); the upper-case and t6 are refused', () => {
+    for (const c of ['t1', 't2', 't3', 't4', 't5']) expect(PerformanceLevelCodeSchema.safeParse(c).success).toBe(true)
+    for (const c of ['T4', 't6', 't0']) expect(PerformanceLevelCodeSchema.safeParse(c).success).toBe(false)
+  })
+
+  it('the classes endpoint documents the array, and the aggregate block sits on its own sibling path', () => {
+    const paths = buildOpenApiDocument().paths as Record<string, { get?: { parameters?: unknown[] } } | undefined>
+    expect(paths['/performance/classes']?.get).toBeDefined()
+    expect(paths['/performance/classes']?.get?.parameters ?? []).toEqual([])
+    expect(paths['/performance/classes/aggregate']?.get).toBeDefined()
+    const agg = PerformanceClassesAggregateSchema.safeParse({
+      classes: [],
+      topStudents: [{ userId: '1', name: 'Murid Contoh', answered: 12, accuracy: 83.3 }],
+      subjects: [{ subjectId: '4', name: 'Sains', answered: 12, accuracy: 83.3 }],
+    })
+    expect(agg.success).toBe(true)
+    expect(PerformanceClassesAggregateSchema.safeParse({ classes: [], topStudents: [] }).success).toBe(false)
+  })
+
+  it('class stats.avgMinutes is a nullable number (Purata Masa/Sesi); Murid Berisiko rows carry answered, accuracy and lastAnsweredAt', () => {
+    const atRisk = { userId: '3', name: 'Murid Contoh', className: '4 A', answered: 0, accuracy: null, lastAnsweredAt: null }
+    const level = {
+      code: 't1', name: 'Tingkatan 1', classes: 1, students: 1, subjects: 0, accuracy: 0, sessions: 0, onTrack: 0, below: 0, onTrackPct: 0,
+      classRows: [], topStudents: [], atRisk: [atRisk],
+    }
+    expect(PerformanceLevelDetailSchema.safeParse(level).success).toBe(true)
+    const dashboard = {
+      class: { id: '1', name: 'K', school: 'S', subject: null, year: 2026, joinCode: 'A' },
+      stats: { students: 1, accuracy: 0, sessions: 0, answered: 0, avgMinutes: null, active7d: 0 },
+      headcount: null, attention: [], trend: [], ranking: [],
+    }
+    expect(PerformanceClassDashboardSchema.safeParse(dashboard).success).toBe(true)
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, stats: { ...dashboard.stats, avgMinutes: 10.4 } }).success).toBe(true)
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, stats: { ...dashboard.stats, avgMinutes: '10.4' } }).success).toBe(false)
+    // Daily trend point: the MYT day, sessions, accuracy and active pupils (a zero-filled day is all zeros).
+    const day = { date: '2026-09-24', sessions: 0, avgAccuracy: 0, activeStudents: 0 }
+    expect(PerformanceClassDashboardSchema.safeParse({ ...dashboard, trend: [day] }).success).toBe(true)
   })
 })
