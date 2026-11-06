@@ -2108,6 +2108,26 @@
       "approved_by_card": "S6-T17"
     },
     {
+      "key": "/guru/soalan-berstruktur/cipta|",
+      "path": "/guru/soalan-berstruktur/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturCiptaPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit|",
+      "path": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "/guru/analisis-item|guru-analisis-item",
       "path": "/guru/analisis-item",
       "name": "guru-analisis-item",
@@ -12284,16 +12304,6 @@
       "method": "GET",
       "path": "/api/bijak/subjects",
       "api_id": "API-BIJAK-02",
-      "status": "canonical",
-      "sector": "S3",
-      "file": "apps/api/src/modules/bijak/papers/papers.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/bijak/papers/generate",
-      "method": "POST",
-      "path": "/api/bijak/papers/generate",
-      "api_id": "API-BIJAK-03",
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/src/modules/bijak/papers/papers.controller.ts",

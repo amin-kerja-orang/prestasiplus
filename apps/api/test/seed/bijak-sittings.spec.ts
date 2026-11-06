@@ -17,7 +17,7 @@ import { PracticeReadsModule } from '../../src/modules/practice/reads'
 import { CLOCK, type Clock } from '../../src/db/clock'
 import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
 import { XsQueries } from '../../src/modules/school-admin/xs-queries'
-import { DIRECTORY_PORT, type DirectoryPort } from '../../src/modules/reports/performance/ports'
+import { DIRECTORY_PORT, XS_COUNTS_PORT, type DirectoryPort, type XsCountsPort } from '../../src/modules/reports/performance/ports'
 import { InMemoryAnswerFacts } from '../reports/performance/fakes/in-memory-answer-facts'
 import { featureModules } from '../../src/modules'
 import { MIN_COHORT } from '../../src/modules/reports/performance/domain/constants'
@@ -138,7 +138,7 @@ describe('PoC Bijak sittings seed', () => {
       store.add({ userId: f.userId, subjectId: f.subjectId, questionId: f.questionId, mode: 'simulasi', isCorrect: f.awarded >= f.max, answeredAt: new Date('2026-09-20T10:00:00+08:00') })
     }
     const ports = new PerformancePorts(real.bijak, real.classes, real.practice, real.gamification, undefined, store, real.questionContent)
-    const items = new ItemAnalysisService(ports, t.app.get<DirectoryPort>(DIRECTORY_PORT, { strict: false }), t.app.get<Clock>(CLOCK, { strict: false }))
+    const items = new ItemAnalysisService(ports, t.app.get<DirectoryPort>(DIRECTORY_PORT, { strict: false }), t.app.get<Clock>(CLOCK, { strict: false }), t.app.get<XsCountsPort>(XS_COUNTS_PORT, { strict: false }))
     const res = await items.school(
       { userId: admin!.id, role: 'admin', scope: { level: 'national', label: 'Kebangsaan' }, isTest: false },
       {} as never,
