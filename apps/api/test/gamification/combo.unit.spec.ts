@@ -78,7 +78,7 @@ describe('GamificationService reads best_combo only when a challenge needs it', 
       completedOn: async () => new Set<string>(),
       streakOf: async () => ({ current: 0, lastActivityDate: null }),
     }
-    const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock('2026-10-20T09:00:00+08:00'), ports, {} as never, {} as never, {} as never, {} as never)
+    const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock('2026-10-20T09:00:00+08:00'), ports, {} as never, {} as never, {} as never, {} as never, {} as never)
     const res = await svc.challengesToday('5')
     return { calls, res }
   }

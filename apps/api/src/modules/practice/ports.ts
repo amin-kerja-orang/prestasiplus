@@ -47,6 +47,8 @@ export interface PracticeQuestion {
   hasDskp: boolean
   /** Teacher who wrote the question ("Soalan oleh:"), else null. */
   contributor: { name: string; profileUrl: string | null } | null
+  /** The teacher's "Rujukan" link (FR-GUR-44a-9): set only for a private (personal) question served in a mission; a bank question has none. */
+  referenceUrl?: string | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
   options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
   /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */

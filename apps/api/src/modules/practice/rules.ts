@@ -13,7 +13,7 @@ import type { RateLimitSpec } from '../../common/throttle'
 export const COUNT_OPTIONS: readonly number[] = PRACTICE_COUNT_OPTIONS
 /** BR-14: revision length. */
 export const REVISION_LENGTH = PRACTICE_REVISION_LENGTH
-/** BR-M06-13: `past_year` counts. */
+/** BR-M06-13: `past_year` / `databank` counts. */
 export const PAST_YEAR_COUNTS: readonly number[] = [5, 10, 20]
 /** BR-M06-04: Latih Tubi counts of a subject without a target. */
 export const LATIH_TUBI_COUNTS: readonly number[] = [5, 10, 20, 30, 40, 50, 60]

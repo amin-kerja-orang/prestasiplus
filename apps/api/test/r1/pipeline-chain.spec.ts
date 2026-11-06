@@ -25,7 +25,7 @@ import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
-import { ServabilityService } from '../../src/modules/questions'
+import { GROUP_SURFACES, ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -666,7 +666,8 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length)
       const lt = await pupil.get('/api/spm/latih-tubi/MATH')
       expect(lt.status, JSON.stringify(lt.body)).toBe(200)
-      expect(lt.body.data.total).toBe(solos().length)
+      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each when the surface serves groups (GROUP_SURFACES).
+      expect(lt.body.data.total).toBe(solos().length + (GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 0))
     })
 
     it('a Latih Tubi SPM session draws the solo MCQs and NONE of the D90 group members (explicit refusal)', async () => {
