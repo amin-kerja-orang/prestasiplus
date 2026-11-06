@@ -297,6 +297,14 @@ describe('GET/POST/PUT /api/guru/classes (AC 1, 2, 7; S6-T14)', () => {
   })
 
   describe('PUT /api/guru/classes/:id (API-GUR-03)', () => {
+    it('an edit that omits year keeps the stored Tahun Sesi (not the current year)', async () => {
+      const k = await a.post('/guru/classes', { name: 'Tahun Kekal', educationLevel: 'tingkatan-4', year: 2027 })
+      const id = ClassEnvelope.parse(k.body).data.id
+      const res = await a.put(`/guru/classes/${id}`, { name: 'Tahun Kekal Edit', educationLevel: 'tingkatan-4' })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(ClassEnvelope.parse(res.body).data).toMatchObject({ name: 'Tahun Kekal Edit', academicYear: 2027, year: 2027 })
+    })
+
     it('edits an own class with the same validation as create; join code and owner stay', async () => {
       const k = await createClass(t, a, { name: 'Sebelum Edit', educationLevel: 'tingkatan-4' })
       const res = await a.put(`/guru/classes/${k.id}`, { name: '  Selepas Edit ', educationLevel: 'tingkatan-5', subjectId: null, year: 2027, description: ' Baharu ' })

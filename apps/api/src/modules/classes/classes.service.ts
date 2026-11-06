@@ -98,11 +98,11 @@ export class ClassesService {
 
   /**
    * The validated R1 class form (S6-T14, `ClassUpsertRequestSchema`) shared by create and edit: `name` (trimmed, 1 to 100),
-   * `educationLevel` (Tingkatan 1 to 5), `subjectId` optional (null or empty = "Tiada Subjek"), `year` (default the current MYT
-   * year), `schoolId` optional (only the teacher's own school). A teacher without a school is refused (422, `noSchool`).
+   * `educationLevel` (Tingkatan 1 to 5), `subjectId` optional (null or empty = "Tiada Subjek"), `year` (a create defaults to the current MYT
+   * year, an edit keeps the stored one), `schoolId` optional (only the teacher's own school). A teacher without a school is refused (422, `noSchool`).
    * Failing fields are reported together.
    */
-  private async classForm(actor: ClassActor, raw: unknown): Promise<ClassFormValues> {
+  private async classForm(actor: ClassActor, raw: unknown, storedYear?: number): Promise<ClassFormValues> {
     const parsed = tryParseStrict(ClassUpsertRequestSchema, raw)
     const fields: Record<string, string> = { ...parsed.fields }
     const body = parsed.data
@@ -131,7 +131,8 @@ export class ClassesService {
       }
     }
     if (Object.keys(fields).length > 0 || !body || levelId === null) throw invalid(fields)
-    const year = body.year ?? Number(mytDay(this.clock.now()).slice(0, 4))
+    // An edit that omits `year` keeps the stored Tahun Sesi (the contract says optional); only a create defaults to the current MYT year.
+    const year = body.year ?? storedYear ?? Number(mytDay(this.clock.now()).slice(0, 4))
     return { name: body.name, subjectId, educationLevelId: levelId, schoolId, academicYear: year, description: body.description ? body.description : null }
   }
 
@@ -183,7 +184,7 @@ export class ClassesService {
   /** `PUT /guru/classes/:id` (API-GUR-03): the same form as create on an own class; any other class is a generic 404. */
   async updateClass(actor: ClassActor, id: string, raw: unknown): Promise<TeacherClass> {
     const own = await this.ownClass(actor, id)
-    const form = await this.classForm(actor, raw)
+    const form = await this.classForm(actor, raw, own.academicYear)
     if (await this.repo.nameTaken(actor.userId, form.academicYear, form.name, own.id)) throw this.nameTaken()
 
     const now = this.clock.now()

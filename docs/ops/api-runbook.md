@@ -109,6 +109,8 @@ docker compose logs migrate
 
 Before a deploy that carries a migration: take a backup (section 10) and check the lint with `npm run be:lint:migration`. After the deploy: `GET /api/ready` must be 200. A migration is never edited after merge; a mistake is fixed with a new migration, or by restoring the pre-deploy backup.
 
+Migration 0201 (S6-T14) builds `ix_practice_sessions_question_set_id_status` on `practice_sessions` without `CONCURRENTLY`, which blocks writes to that table while it builds. On a populated database deploy it in a quiet window (or create the index by hand with `CREATE INDEX CONCURRENTLY IF NOT EXISTS` first; 0201 then skips it). Migration 0203 renames duplicate class names (" (2)", " (3)" ...) before its unique index; a second run changes nothing.
+
 ## 7. Seed rules
 
 `npm run be:db:seed` (`apps/api/prisma/seed/index.ts`) runs the modules of the profile (default `poc`) in order.

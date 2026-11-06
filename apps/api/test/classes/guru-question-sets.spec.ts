@@ -71,6 +71,8 @@ describe('teacher Set Soalan (S6-T14)', () => {
     subjectId = (await firstSubject(t)).id
     clsA = await classWith(t, a, [s1], '5 Bestari')
     clsB = await classWith(t, a, [s2], '5 Cekap')
+    // s2 sits in both classes: a pupil counts only for a class the set is assigned to (FR-GUR-8b-5), and most tests assign to 5 Bestari.
+    await t.db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1::bigint, $2::bigint, 'active', 'teacher')`, [clsA.id, s2Id])
     const bank = await a.get('/guru/question-sets/bank')
     expect(bank.status, JSON.stringify(bank.body)).toBe(200)
     bankIds = GuruSetBankResponseSchema.parse(bank.body).data.units.filter((u) => u.kind === 'question').flatMap((u) => u.questionIds)
@@ -345,6 +347,71 @@ describe('teacher Set Soalan (S6-T14)', () => {
       const p2 = GuruSetResultsResponseSchema.parse((await a.get(`/guru/question-sets/${set.id}/results?page=2`)).body)
       expect(p2.data.rows.map((r) => r.accuracy).sort()).toEqual([33.3, 66.7])
       expect(p2.meta).toMatchObject({ page: 2, totalItems: 27, totalPages: 2 })
+    })
+  })
+
+  describe('one pupil rule for the list and the results (R-1)', () => {
+    const counters = async (setId: string) => {
+      const row = GuruSetListResponseSchema.parse((await a.get('/guru/question-sets')).body).data
+      const hasil = GuruSetResultsResponseSchema.parse((await a.get(`/guru/question-sets/${setId}/results`)).body).data.summary.penyertaan
+      return { siap: row.rows.find((r) => r.id === setId)?.siap, hasil, participation: row.counters.participation, summarySiap: row.summary.siap }
+    }
+
+    it('a pupil who leaves the assigned class, or is hidden, drops from siap, Penyertaan and Hasil together', async () => {
+      const only = await classWith(t, a, [s1], 'Hanya Sini')
+      const set = await make({ title: 'Satu Peraturan', status: 'published', classroomIds: [only.id] })
+      await complete(set.id, s1Id, 4, 5)
+      const base = (await counters(set.id)).participation
+      expect(await counters(set.id)).toMatchObject({ siap: 1, hasil: 1 })
+      // a hidden (primary) pupil is no longer counted anywhere
+      await t.db.query(`update users set grade = 3 where id = $1::bigint`, [s1Id])
+      try {
+        expect(await counters(set.id)).toMatchObject({ siap: 0, hasil: 0, participation: base - 1 })
+      } finally {
+        await t.db.query(`update users set grade = null where id = $1::bigint`, [s1Id])
+      }
+      // the enrolment is withdrawn
+      await t.db.query(`update enrolments set status = 'removed' where classroom_id = $1::bigint and student_id = $2::bigint`, [only.id, s1Id])
+      expect(await counters(set.id)).toMatchObject({ siap: 0, hasil: 0 })
+      await t.db.query(`update enrolments set status = 'active' where classroom_id = $1::bigint and student_id = $2::bigint`, [only.id, s1Id])
+      expect(await counters(set.id)).toMatchObject({ siap: 1, hasil: 1 })
+    })
+
+    it('AC-GUR-8b-10 after unassigning a class: "Semua Kelas" equals the per-class filters and the list says the same', async () => {
+      const x = await classWith(t, a, [s1], 'Kelas X Lepas')
+      const y = await classWith(t, a, [s2], 'Kelas Y Lepas')
+      const set = await make({ title: 'Lepas Kelas', status: 'published', classroomIds: [x.id, y.id] })
+      await complete(set.id, s1Id, 4, 5)
+      await complete(set.id, s2Id, 3, 5)
+      const summaryOf = async (q = '') => GuruSetResultsResponseSchema.parse((await a.get(`/guru/question-sets/${set.id}/results${q}`)).body).data.summary
+      expect(await summaryOf()).toEqual({ penyertaan: 2, skorPurata: 70, jumlahPercubaan: 2 })
+      const put = await a.put(`/guru/question-sets/${set.id}`, body({ title: set.title, classroomIds: [x.id], status: 'published', questionIds: set.questionIds }))
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      // x only: 4/5 by s1. s2 sat in y (unassigned) and also in 5 Bestari, which is not assigned either.
+      expect(await summaryOf()).toEqual(await summaryOf(`?classroomId=${x.id}`))
+      expect(await summaryOf()).toEqual({ penyertaan: 1, skorPurata: 80, jumlahPercubaan: 1 })
+      expect(await summaryOf(`?classroomId=${y.id}`)).toEqual({ penyertaan: 0, skorPurata: null, jumlahPercubaan: 0 })
+      expect((await counters(set.id)).siap).toBe(1)
+    })
+
+    it('publishing a set whose stored questions are all archived is 422 fields.questionIds', async () => {
+      const set = await make({ title: 'Semua Arkib', questionIds: bankIds.slice(0, 1) })
+      await t.db.query(`update questions set is_active = false where id = $1`, [set.questionIds[0]])
+      try {
+        expect(fieldsOf(await a.post(`/guru/question-sets/${set.id}/status`, { status: 'published' }))).toEqual({ questionIds: GURU_SET_MESSAGES.questionsRequired })
+      } finally {
+        await t.db.query(`update questions set is_active = true where id = $1`, [set.questionIds[0]])
+      }
+    })
+
+    it('a class that was deactivated after the assignment does not block a title-only edit, but cannot be newly assigned', async () => {
+      const dead = await classWith(t, a, [], 'Kelas Dinyahaktif')
+      const set = await make({ title: 'Kelas Mati', classroomIds: [dead.id] })
+      await t.db.query(`update classrooms set is_active = false where id = $1::bigint`, [dead.id])
+      const edit = await a.put(`/guru/question-sets/${set.id}`, body({ title: 'Kelas Mati 2', classroomIds: [dead.id], questionIds: set.questionIds }))
+      expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+      expect(SetBody.parse(edit.body).data.classroomIds).toEqual([dead.id])
+      expect(fieldsOf(await a.post('/guru/question-sets', body({ classroomIds: [dead.id] })))).toEqual({ classroomIds: GURU_SET_MESSAGES.invalid })
     })
   })
 

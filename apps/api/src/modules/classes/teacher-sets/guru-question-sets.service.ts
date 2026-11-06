@@ -177,7 +177,7 @@ export class GuruQuestionSetsService {
    * Validates the form and reports every failing field together. `questionIds` are checked only when `checkQuestions`
    * (a create, or an edit that changes the list): approved and servable, no duplicate, whole stimulus groups.
    */
-  private async resolve(actor: ClassActor, raw: unknown, checkQuestions: (ids: readonly string[]) => boolean): Promise<Resolved> {
+  private async resolve(actor: ClassActor, raw: unknown, checkQuestions: (ids: readonly string[]) => boolean, assigned: readonly string[] = []): Promise<Resolved> {
     const parsed = tryParseStrict(GuruSetUpsertRequestSchema as unknown as Obj, raw) as { data?: GuruSetUpsertRequest; fields?: Record<string, string> }
     const fields: Record<string, string> = { ...parsed.fields }
     const body = parsed.data
@@ -189,7 +189,7 @@ export class GuruQuestionSetsService {
         if (!level || level.grade === null || !(TINGKATAN_GRADES as readonly number[]).includes(level.grade)) fields.educationLevelId = GURU_SET_MESSAGES.invalid
       }
       classIds = [...new Set(body.classroomIds)]
-      if (classIds.length > 0 && !(await this.ownActiveClasses(actor, classIds))) fields.classroomIds = GURU_SET_MESSAGES.invalid
+      if (classIds.length > 0 && !(await this.ownActiveClasses(actor, classIds, assigned))) fields.classroomIds = GURU_SET_MESSAGES.invalid
       if (body.status === 'published' && classIds.length === 0 && fields.classroomIds === undefined) fields.classroomIds = GURU_SET_MESSAGES.classRequiredToPublish
       if (!fields.questionIds && checkQuestions(body.questionIds)) {
         const message = await this.questionProblem(body.questionIds)
@@ -200,11 +200,14 @@ export class GuruQuestionSetsService {
     return { body, classIds }
   }
 
-  /** True when every id is an own, active class of kind `classroom`. */
-  private async ownActiveClasses(actor: ClassActor, ids: readonly string[]): Promise<boolean> {
+  /**
+   * True when every id is an own class of kind `classroom` that is active. A class the set is ALREADY assigned to (`assigned`) is
+   * accepted even when it was deactivated since, so a title-only edit of such a set still saves.
+   */
+  private async ownActiveClasses(actor: ClassActor, ids: readonly string[], assigned: readonly string[] = []): Promise<boolean> {
     if (!ids.every((i) => isIdString(i) && i !== '0')) return false
     const rows = await this.classes.byIds(ids)
-    return rows.length === ids.length && rows.every((c) => c.kind === 'classroom' && c.teacherId === actor.userId && c.isActive)
+    return rows.length === ids.length && rows.every((c) => c.kind === 'classroom' && c.teacherId === actor.userId && (c.isActive || assigned.includes(c.id)))
   }
 
   /** The BM message for a question list that cannot be saved, or null when it is fine. */
@@ -268,7 +271,8 @@ export class GuruQuestionSetsService {
     const set = await this.ownSet(actor, id)
     const stored = (await this.repo.storedItems(set.id)).map((i) => i.questionId)
     const locked = await this.repo.hasSessions(set.id)
-    const { body, classIds } = await this.resolve(actor, raw, (ids) => !sameSequence(ids, stored) && !locked)
+    const assigned = (await this.repo.classroomIdsOf([set.id])).get(set.id) ?? []
+    const { body, classIds } = await this.resolve(actor, raw, (ids) => !sameSequence(ids, stored) && !locked, assigned)
     const changed = !sameSequence(body.questionIds, stored)
     const items = changed && !locked ? await this.itemsOf(body.questionIds) : null
     const now = this.clock.now()
@@ -309,6 +313,8 @@ export class GuruQuestionSetsService {
     if (status === 'published') {
       const classIds = (await this.repo.classroomIdsOf([set.id])).get(set.id) ?? []
       if (classIds.length === 0) throw invalid({ classroomIds: GURU_SET_MESSAGES.classRequiredToPublish })
+      // A set whose stored questions are all archived would be published empty: the pupil sees no question, so it is refused.
+      if (((await this.eligible.eligibleItems([set])).get(set.id)?.length ?? 0) === 0) throw invalid({ questionIds: GURU_SET_MESSAGES.questionsRequired })
     }
     const now = this.clock.now()
     const row = await this.prisma.transaction(async (tx) => {

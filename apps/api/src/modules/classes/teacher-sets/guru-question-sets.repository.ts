@@ -309,47 +309,57 @@ export class GuruQuestionSetsRepository {
     return rows.length > 0
   }
 
-  /** Distinct pupils with a completed session, per set ("{n} siap"). */
+  /**
+   * THE pupil predicate of every count on the list and on the results page (one place, so "{n} siap", "Penyertaan" and "Hasil" agree).
+   * It needs the aliases `ps` (practice_sessions of the set) and `u` (its pupil). A completed, non-test session counts only when the
+   * pupil is visible (`VISIBLE_USER_SQL`) and is actively enrolled in a class ASSIGNED to the set (FR-GUR-8b-5): "Semua Kelas" is
+   * therefore the union of the per-class filters, and a class the teacher unassigned no longer counts. With `classroomId` the pupil
+   * must be in that one class, and the class must be assigned.
+   */
+  private pupilCounts(classroomId: bigint | null): Prisma.Sql {
+    const only = classroomId === null ? Prisma.empty : Prisma.sql`AND qc.classroom_id = ${classroomId}`
+    return Prisma.sql`ps.status = 'completed' AND NOT ps.is_test AND ${VISIBLE_USER_SQL} AND EXISTS (
+        SELECT 1 FROM question_set_classrooms qc JOIN enrolments e ON e.classroom_id = qc.classroom_id
+         WHERE qc.question_set_id = ps.question_set_id AND e.student_id = ps.user_id AND e.status = 'active' AND NOT e.is_test ${only})`
+  }
+
+  /** Distinct counted pupils per set ("{n} siap"). */
   async siapOf(setIds: readonly string[]): Promise<Map<string, number>> {
     const keys = idsOf(setIds)
     const out = new Map<string, number>(setIds.map((id) => [id, 0]))
     if (keys.length === 0) return out
     const rows = await this.db.$queryRaw<{ set_id: bigint; n: number }[]>`
-      SELECT question_set_id AS set_id, count(DISTINCT user_id)::int AS n
-        FROM practice_sessions
-       WHERE question_set_id = ANY(${keys}::bigint[]) AND status = 'completed' AND NOT is_test
-       GROUP BY question_set_id`
+      SELECT ps.question_set_id AS set_id, count(DISTINCT ps.user_id)::int AS n
+        FROM practice_sessions ps JOIN users u ON u.id = ps.user_id
+       WHERE ps.question_set_id = ANY(${keys}::bigint[]) AND ${this.pupilCounts(null)}
+       GROUP BY ps.question_set_id`
     for (const r of rows) out.set(idToString(r.set_id), r.n)
     return out
   }
 
-  /** Distinct pupils with a completed session on any of the sets (the summary "siap"). */
+  /** Distinct counted pupils on any of the sets (the summary "siap"). */
   async distinctSiap(setIds: readonly string[]): Promise<number> {
     const keys = idsOf(setIds)
     if (keys.length === 0) return 0
     const rows = await this.db.$queryRaw<{ n: number }[]>`
-      SELECT count(DISTINCT user_id)::int AS n FROM practice_sessions
-       WHERE question_set_id = ANY(${keys}::bigint[]) AND status = 'completed' AND NOT is_test`
+      SELECT count(DISTINCT ps.user_id)::int AS n FROM practice_sessions ps JOIN users u ON u.id = ps.user_id
+       WHERE ps.question_set_id = ANY(${keys}::bigint[]) AND ${this.pupilCounts(null)}`
     return rows[0]?.n ?? 0
   }
 
-  /** "Penyertaan": distinct pupils with at least one completed session on any `set` of the teacher. */
+  /** "Penyertaan": distinct counted pupils on any `set` of the teacher. */
   async participation(teacherId: string): Promise<number> {
     const owner = idOf(teacherId)
     if (owner === null) return 0
     const rows = await this.db.$queryRaw<{ n: number }[]>`
       SELECT count(DISTINCT ps.user_id)::int AS n
-        FROM practice_sessions ps JOIN question_sets s ON s.id = ps.question_set_id
-       WHERE s.teacher_id = ${owner} AND s.kind = 'set' AND ps.status = 'completed' AND NOT ps.is_test`
+        FROM practice_sessions ps JOIN question_sets s ON s.id = ps.question_set_id JOIN users u ON u.id = ps.user_id
+       WHERE s.teacher_id = ${owner} AND s.kind = 'set' AND ${this.pupilCounts(null)}`
     return rows[0]?.n ?? 0
   }
 
   private resultWhere(setId: bigint, classroomId: bigint | null): Prisma.Sql {
-    const cls =
-      classroomId === null
-        ? Prisma.empty
-        : Prisma.sql`AND EXISTS (SELECT 1 FROM enrolments e WHERE e.student_id = ps.user_id AND e.classroom_id = ${classroomId} AND e.status = 'active' AND e.is_test = false)`
-    return Prisma.sql`ps.question_set_id = ${setId} AND ps.status = 'completed' AND NOT ps.is_test AND ${VISIBLE_USER_SQL} ${cls}`
+    return Prisma.sql`ps.question_set_id = ${setId} AND ${this.pupilCounts(classroomId)}`
   }
 
   /** Cards of the results page over every completed session of the set (optionally of the pupils of one class). */

@@ -647,7 +647,7 @@ export class ClassesRepository {
   /**
    * Tugasan, Skor Purata and Terakhir Aktif of the given pupils (one grouped query each; test rows never count).
    * - tugasan: distinct Set Soalan sets and Misi the pupil completed that are assigned to a class of THIS teacher the
-   *   pupil is an active member of (`question_sets.classroom_id` today; S6-T14 repoints it to the assignment table).
+   *   pupil is an active member of (`question_set_classrooms`, the assignment table of DM-46; S6-T14).
    * - skorPurata: round(mean of correct_count / question_count x 100) (`skorPurataOf`) over completed sessions of every mode.
    * - lastActiveAt: latest `practice_answers.answered_at`.
    */
@@ -664,7 +664,7 @@ export class ClassesRepository {
            AND EXISTS (
              SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
               WHERE e.student_id = s.user_id AND e.status = 'active' AND e.is_test = false AND c.teacher_id = ${teacher}
-                AND ((s.mode = 'question_set' AND EXISTS (SELECT 1 FROM question_sets q WHERE q.id = s.question_set_id AND q.classroom_id = e.classroom_id))
+                AND ((s.mode = 'question_set' AND EXISTS (SELECT 1 FROM question_set_classrooms qc WHERE qc.question_set_id = s.question_set_id AND qc.classroom_id = e.classroom_id))
                   OR (s.mode = 'mission' AND EXISTS (SELECT 1 FROM missions m WHERE m.id = s.mission_id AND m.classroom_id = e.classroom_id))))
          GROUP BY s.user_id`,
       this.db.$queryRaw<{ user_id: bigint; ratio: number; n: number }[]>`
