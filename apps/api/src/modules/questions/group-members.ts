@@ -56,9 +56,9 @@ export class GroupMembers {
 
   /**
    * Makes `ordered` the members of the group, in that order. Adds, removals and reordering in one call; an unchanged list is a no-op.
-   * Returns the members after the change.
+   * Returns the members after the change. `opts.regroup` lifts the served lock for ADDED members only (the regroup route, API-Q-24).
    */
-  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false): Promise<string[]> {
+  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false, opts: { regroup?: boolean } = {}): Promise<string[]> {
     await this.lock(groupId)
     // A draft copy stages its members in `draft_members` (S1-T01 part 3c); they reach the live group only through the swap (`swap = true`: the
     // publish of the copy, the one path that may change the members of a served group).
@@ -90,7 +90,8 @@ export class GroupMembers {
       if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
-      if (f.served && !swap) throw conflict(M.memberServed)
+      // S1-T07 (45 6.6.3): the regroup (`regroup: true`) is the only caller that may add a question shown to pupils; the normal routes keep DM-04.
+      if (f.served && !swap && opts.regroup !== true) throw conflict(M.memberServed)
     }
     // The group's own scope (DM-51): an added member must match a non-null Subjek / Tingkatan / Kertas of the group.
     for (const q of added) {

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
+import type { AccountProfileActivity } from '@pp/contract'
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { ApiError } from '@/api'
+import { api, ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 import { useSessionStore } from '@/stores/session'
 
@@ -47,6 +48,14 @@ const USER: UserMe = {
   landingPath: '/dashboard',
 }
 
+const ACTIVITY: AccountProfileActivity = {
+  tiles: { coins: 0, streakDays: 1, level: 1, practiceDays: 1, sessions: 2, accuracy: null, streakBest: 1, streakToday: 1 },
+  calendar30d: Array.from({ length: 30 }, (_, i) => ({ date: `2026-10-${String(i + 1).padStart(2, '0')}`, answered: 0, sessions: 0 })),
+  badges: [],
+  recentSessions: [],
+  publicProfilePath: '/pelajar/2',
+}
+
 const blank = { template: '<div />' }
 let wrapper: VueWrapper | null = null
 
@@ -63,6 +72,7 @@ async function render(
     user,
   })
   vi.spyOn(session, 'refreshUser').mockReturnValue(refresh)
+  vi.spyOn(api, 'get').mockResolvedValue(ACTIVITY)
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -106,9 +116,57 @@ describe('S7 /profile (FR-M01-38)', () => {
     expect(w.get('[data-testid=profile-email]').text()).toBe('pelajar@demo.test')
     expect(w.get('[data-testid=profile-member-since]').text()).toBe('Ahli sejak 6 Februari 2026')
     expect(w.find('[data-testid=profile-crown]').exists()).toBe(true)
+    // The pupil edits in the page itself (FR-MUR-A1-7): no button to the edit page.
+    expect(w.find('[data-testid=profile-edit-link]').exists()).toBe(false)
+  })
+
+  it('the teacher hero "Kemaskini Profil" opens /guru/profil/edit (FR-GUR-A1-2) and loads no pupil blocks', async () => {
+    const get = vi.spyOn(api, 'get')
+    const w = await render(ProfilePage, { ...USER, role: 'teacher' })
     const link = w.get('[data-testid=profile-edit-link]')
     expect(link.text()).toBe('Kemaskini Profil')
-    expect(link.attributes('href')).toBe('/profile/edit')
+    expect(link.attributes('href')).toBe('/guru/profil/edit')
+    expect(get).not.toHaveBeenCalled()
+    expect(w.find('[data-testid=profile-public-card]').exists()).toBe(false)
+  })
+
+  it('keeps the hero button "Kemaskini Profil" -> /profile/edit for the school admin and the admin', async () => {
+    for (const role of ['school_admin', 'admin'] as const) {
+      const w = await render(ProfilePage, { ...USER, role })
+      const link = w.get('[data-testid=profile-edit-link]')
+      expect(link.text()).toBe('Kemaskini Profil')
+      expect(link.attributes('href')).toBe('/profile/edit')
+      w.unmount()
+    }
+  })
+
+  it('shows the read-only school block to the school admin: nama, kod, PPD and negeri from /me, no inputs (AC-AS-A1-3)', async () => {
+    const w = await render(ProfilePage, { ...USER, role: 'school_admin' })
+    const block = w.get('[data-testid=profile-school-block]')
+    expect(w.get('[data-testid=profile-school-name]').text()).toBe('SMK DEMO')
+    expect(w.get('[data-testid=profile-school-code]').text()).toBe('ABA0001')
+    expect(w.get('[data-testid=profile-school-ppd]').text()).toBe('PPD PETALING UTAMA')
+    expect(w.get('[data-testid=profile-school-state]').text()).toBe('Selangor')
+    for (const label of ['Nama Sekolah', '# Kod', 'PPD', 'Negeri']) expect(block.text()).toContain(label)
+    expect(block.find('input, textarea, select, button').exists()).toBe(false)
+  })
+
+  it('shows a dash for a school admin whose school has no PPD or code', async () => {
+    const w = await render(ProfilePage, {
+      ...USER,
+      role: 'school_admin',
+      school: { ...SCHOOL, code: '', district: null },
+    })
+    expect(w.get('[data-testid=profile-school-code]').text()).toBe('—')
+    expect(w.get('[data-testid=profile-school-ppd]').text()).toBe('—')
+  })
+
+  it('does not show the school block to the pupil, the teacher or the admin', async () => {
+    for (const role of ['student', 'teacher', 'admin'] as const) {
+      const w = await render(ProfilePage, { ...USER, role })
+      expect(w.find('[data-testid=profile-school-block]').exists()).toBe(false)
+      w.unmount()
+    }
   })
 
   it('uses the initials image without a picture and the uploaded picture otherwise', async () => {
@@ -125,7 +183,7 @@ describe('S7 /profile (FR-M01-38)', () => {
 })
 
 describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
-  it('pre-fills, disables the email and keeps the bio counter static', async () => {
+  it('pre-fills, disables the email and counts the bio against 1000', async () => {
     const w = await render(ProfileEditPage)
     expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
       'Pelajar Demo',
@@ -136,10 +194,10 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     expect(email.attributes('name')).toBeUndefined()
     expect(w.text()).toContain('Email tidak boleh diubah')
     expect(w.get('[data-testid=profile-phone-input]').attributes('placeholder')).toBe('012-3456789')
-    expect(w.get('[data-testid=profile-bio-input]').attributes('maxlength')).toBe('500')
-    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')
+    expect(w.get('[data-testid=profile-bio-input]').attributes('maxlength')).toBe('1000')
+    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('12/1000')
     await w.get('[data-testid=profile-bio-input]').setValue('abc')
-    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('Baki: 500 aksara')
+    expect(w.get('[data-testid=profile-bio-counter]').text()).toBe('3/1000')
   })
 
   it('has no Tingkatan picker and no "Maklumat Sekolah" card (S5-T05: grade and school are admin-managed)', async () => {
@@ -209,6 +267,109 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
     const w = await render(ProfileEditPage)
     expect(w.get('[data-testid=profile-back]').attributes('href')).toBe('/profile')
     expect(w.get('[data-testid=profile-save]').text()).toBe('Simpan Profil')
+  })
+})
+
+describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS-A1-4, AC-AS-A1-1, AC-AS-A1-4)', () => {
+  const ADMIN: UserMe = { ...USER, name: 'Admin Contoh', email: 'admin.sekolah@demo.test', role: 'school_admin', grade: null }
+
+  it('Telefon "12345": "Format telefon tidak sah." shows and nothing is saved', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue('12345')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Format telefon tidak sah.'] })
+  })
+
+  it.each(['+60123456789', '012-3456789', ''])('Telefon "%s" saves and "Profil dikemaskini." shows', async (phone) => {
+    apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, phone: phone || null }, status: 'Profil berjaya dikemaskini.' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue(phone)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledWith({ name: 'Admin Contoh', phone: phone === '' ? null : phone, bio: 'Suka belajar' })
+    expect(useFlashStore().current).toEqual({ type: 'success', message: 'Profil dikemaskini.' })
+  })
+
+  it.each([
+    ['12345678', false],
+    ['123456789', true],
+    ['12345678901234', true],
+    ['123456789012345', false],
+    ['+60-123-456789', true],
+    ['   ', true],
+    ['60+123456789', false],
+  ])('Telefon %j passes the check: %s (9-14 digits, optional leading "+")', async (value, ok) => {
+    apiMocks.updateProfile.mockResolvedValue({ data: ADMIN, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-phone-input]').setValue(value)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledTimes(ok ? 1 : 0)
+    if (ok) expect(apiMocks.updateProfile.mock.calls[0]?.[0]).toMatchObject({ phone: value.trim() === '' ? null : value.trim() })
+  })
+
+  it('a Nama of exactly 255 characters saves (trimmed); a bad Nama and a bad Telefon show two lines', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: ADMIN, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-name-input]').setValue(` ${'A'.repeat(255)} `)
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'A'.repeat(255) }))
+    await w.get('[data-testid=profile-name-input]').setValue('')
+    await w.get('[data-testid=profile-phone-input]').setValue('123')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.', 'Format telefon tidak sah.'] })
+  })
+
+  it('a blank or over-long Nama is refused with its BM line and nothing is saved', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    await w.get('[data-testid=profile-name-input]').setValue('   ')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.'] })
+    await w.get('[data-testid=profile-name-input]').setValue('A'.repeat(256))
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Nama tidak boleh melebihi 255 aksara.'] })
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('an empty Nama shows "Sila isi nama." (no native required to block it) and makes no save call', async () => {
+    const w = await render(ProfileEditPage, ADMIN)
+    expect(w.get('[data-testid=profile-name-input]').attributes('required')).toBeUndefined()
+    await w.get('[data-testid=profile-name-input]').setValue('')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.'] })
+    expect(apiMocks.updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('another role keeps the native required on Nama', async () => {
+    const w = await render(ProfileEditPage, { ...USER, role: 'teacher' })
+    expect(w.get('[data-testid=profile-name-input]').attributes('required')).toBeDefined()
+  })
+
+  it('a new name updates the session user (avatar initials and shell card); the e-mel stays read-only', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, name: 'Admin Contoh B' }, status: 'x' })
+    const w = await render(ProfileEditPage, ADMIN)
+    expect(w.get('[data-testid=profile-email-input]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid=profile-name-input]').setValue('Admin Contoh B')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(useSessionStore().user?.name).toBe('Admin Contoh B')
+  })
+
+  it('another role keeps the V3 behaviour: no client phone rule, the server status text', async () => {
+    apiMocks.updateProfile.mockResolvedValue({ data: USER, status: 'Profil berjaya dikemaskini.' })
+    const w = await render(ProfileEditPage, { ...USER, role: 'teacher' })
+    await w.get('[data-testid=profile-phone-input]').setValue('12345')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(apiMocks.updateProfile).toHaveBeenCalled()
+    expect(useFlashStore().current).toEqual({ type: 'success', message: 'Profil berjaya dikemaskini.' })
   })
 })
 
