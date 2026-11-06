@@ -55,7 +55,7 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
   }
   const setPool = (id: string, pools: string[]) => admin.put(`/api/admin/section-pools/${id}`, { pools })
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return res.body.data.id as string
   }
@@ -254,8 +254,8 @@ describe('R1-T34 structured blockers: review and publish agree', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(200)
       const details = (res.body.data as { blockerDetails: Detail[] }).blockerDetails
       expect(details.find((b) => b.code === 'NO_KEY')).toMatchObject({ questionId: bad, overridable: false, section: 'Bahagian C' })
-      // the bank cannot read the keyless question, so it has no servability verdict: that is a HARD NOT_SERVABLE, never a silent pass
-      expect(details.find((b) => b.code === 'NOT_SERVABLE' && b.questionId === bad)).toMatchObject({ overridable: false, message: `Soalan ${bad} tidak dapat disemak untuk murid; cuba lagi.` })
+      // S1-T07: the servability read now loads the keyless question leniently and names the cause (no_scheme): still a HARD NOT_SERVABLE, never a silent pass
+      expect(details.find((b) => b.code === 'NOT_SERVABLE' && b.questionId === bad)).toMatchObject({ overridable: false, message: `Soalan ${bad} tidak dapat dihidangkan kepada murid: Tiada skema — tidak disajikan.` })
       expect(res.body.data.canOverride).toBe(false)
       await refuseOverride(paper)
     })

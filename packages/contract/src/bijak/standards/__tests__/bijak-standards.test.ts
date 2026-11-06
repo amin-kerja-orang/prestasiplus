@@ -551,6 +551,23 @@ describe('pool preview and draft generation', () => {
     expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
   })
 
+  it('S3-T02 generate request validation: kertas 5, count 0 and 101, years out of range, and the strict { id } result', () => {
+    const parse = (body: object) => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body })
+    expect(parse({ kertas: 5 }).error?.issues[0]?.message).toBe('Kertas tidak sah.')
+    expect(parse({ count: 0 }).success).toBe(false)
+    expect(parse({ count: 101 }).success).toBe(false)
+    expect(parse({ count: 1 }).success).toBe(true)
+    expect(parse({ count: 100 }).success).toBe(true)
+    expect(parse({ years: [1899] }).success).toBe(false)
+    expect(parse({ years: [2101] }).success).toBe(false)
+    expect(parse({ years: [2025.5] }).success).toBe(false)
+    expect(parse({ years: [1900, 2100] }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', extra: 1 }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+  })
+
   it('the pool preview takes the additive group, total, filter and scope fields', () => {
     const shape = BijakPoolPreviewSchema.shape
     for (const key of ['groupTotal', 'contractTotal', 'filters', 'levelScope'] as const) expect(shape[key].safeParse(undefined).success, key).toBe(true)

@@ -101,7 +101,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
   })
 
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return Created.parse(res.body).data.id
   }
@@ -248,7 +248,7 @@ describe('paper builder wired to the BE-09 question bank', () => {
     const pools = (id: string, ...codes: string[]) =>
       Promise.all(codes.map((c) => q(`insert into question_tags (question_id, kind, code) values ($1, 'pool', $2)`, [id, c])))
     const candidates = async (kertas: number): Promise<string[]> => {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas })
+      const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas })
       if (res.status !== 201) return []
       return (await editor(Created.parse(res.body).data.id)).questions.map((x) => x.id)
     }

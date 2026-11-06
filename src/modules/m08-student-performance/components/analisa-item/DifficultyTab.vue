@@ -4,26 +4,28 @@
  * question (inline in the "Soalan" cell from `md`, a card list below). Row numbers restart at 1 in the
  * shown order; no match shows no rows and no message.
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPanel } from '@/ds'
+import { DsCluster, DsDataTable, DsEmptyState, DsFilterBar, DsPanel, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
-import { formatNumber } from '@/lib/number'
-
 import type { ItemAnalysis } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
-import { LEVEL_BADGE, LEVEL_ICON } from '../../lib/prestasi/format'
+import { LEVEL_BADGE, LEVEL_ICON, pctWhole } from '../../lib/prestasi/format'
 import {
+  DEFAULT_SORT,
+  SEARCH_TOO_SHORT,
   SORT_OPTIONS,
   accuracyClass,
   filterRows,
   index2,
+  parseSort,
+  searchTooShort,
   sortRows,
   topicLine,
   type SortKey,
 } from '../../lib/prestasi/item-analysis'
-
 
 import DifficultyDetail from './DifficultyDetail.vue'
 
@@ -32,9 +34,22 @@ const props = defineProps<{ analysis: ItemAnalysis }>()
 const icon = usePhIcon()
 const wide = useMedia('(min-width: 768px)')
 
-const search = ref('')
-const sort = ref<SortKey>('difficulty_desc')
+const PAGE_SIZE = 25
+const route = useRoute()
+const router = useRouter()
+
+// Search and sort live in the query string (`q`, `susun`; GLB-4). The refs answer at once, the URL follows.
+const search = ref(typeof route.query.q === 'string' ? route.query.q : '')
+const sort = ref<SortKey>(parseSort(route.query.susun))
 const open = ref<ReadonlySet<number>>(new Set())
+const page = ref(1)
+watch([search, sort], () => {
+  page.value = 1
+  const q = search.value.trim() === '' ? undefined : search.value
+  const susun = sort.value === DEFAULT_SORT ? undefined : sort.value
+  void router.replace({ query: { ...route.query, q, susun } })
+})
+const tooShort = computed(() => searchTooShort(search.value))
 
 const found = computed(() =>
   sortRows(filterRows(props.analysis.difficulty, search.value), sort.value),
@@ -63,7 +78,7 @@ const rows = computed<Row[]>(() =>
     attemptsText: String(r.attempts),
     studentsText: `${r.students} pelajar`,
     accuracy: r.accuracy,
-    accuracyText: `${formatNumber(r.accuracy, { decimals: 1 })}%`,
+    accuracyText: pctWhole(r.accuracy),
     indexText: index2(r.index),
     level: r.level,
     wrongText: `${r.wrongStudents.length} pelajar salah`,
@@ -92,8 +107,15 @@ function toggle(id: number): void {
 }
 function reset(): void {
   search.value = ''
-  sort.value = 'difficulty_desc'
+  sort.value = DEFAULT_SORT
 }
+
+/** Below `md` the rows are a card list; it pages by 25 like the table. */
+const pages = computed(() => Math.max(1, Math.ceil(rows.value.length / PAGE_SIZE)))
+const pageRows = computed(() => {
+  const from = (Math.min(page.value, pages.value) - 1) * PAGE_SIZE
+  return rows.value.slice(from, from + PAGE_SIZE)
+})
 </script>
 
 <template>
@@ -116,6 +138,9 @@ function reset(): void {
             aria-label="Cari soalan"
             size="lg"
             class="w-full sm:w-72"
+            :color="tooShort ? 'error' : undefined"
+            :aria-invalid="tooShort"
+            aria-describedby="difficulty-search-hint"
             data-testid="difficulty-search"
           />
         </template>
@@ -129,12 +154,23 @@ function reset(): void {
         />
       </DsFilterBar>
 
+      <DsText
+        v-if="tooShort"
+        id="difficulty-search-hint"
+        variant="caption"
+        tone="error"
+        role="status"
+        data-testid="difficulty-search-hint"
+      >
+        {{ SEARCH_TOO_SHORT }}
+      </DsText>
+
       <DsDataTable
         v-if="wide"
         :data="rows"
         :columns="columns"
         caption="Indeks kesukaran soalan"
-        :page-size="1000"
+        :page-size="PAGE_SIZE"
         data-testid="difficulty-table"
       >
         <template #text-cell="{ row }">
@@ -196,7 +232,11 @@ function reset(): void {
       </DsDataTable>
 
       <ul v-else class="flex flex-col gap-3" data-testid="difficulty-table">
-        <li v-for="r in rows" :key="r.questionId" :data-testid="`difficulty-group-${r.questionId}`">
+        <li
+          v-for="r in pageRows"
+          :key="r.questionId"
+          :data-testid="`difficulty-group-${r.questionId}`"
+        >
           <DsPanel>
             <div class="flex flex-col gap-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -251,6 +291,36 @@ function reset(): void {
           </DsPanel>
         </li>
       </ul>
+      <DsCluster
+        v-if="!wide && pages > 1"
+        as="nav"
+        justify="between"
+        wrap
+        aria-label="Halaman"
+        data-testid="difficulty-pager"
+      >
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          class="min-h-11"
+          :disabled="page <= 1"
+          label="Sebelum"
+          @click="page -= 1"
+        />
+        <DsText as="span" variant="meta">Halaman {{ page }} daripada {{ pages }}</DsText>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          class="min-h-11"
+          :disabled="page >= pages"
+          label="Seterusnya"
+          @click="page += 1"
+        />
+      </DsCluster>
     </template>
   </div>
 </template>

@@ -164,7 +164,7 @@ export class MockBuilderServer implements BuilderApi {
 
   /** The mock's Jana set (API-BIJAK-11): the sections of the contract at the size asked, filled from the bank, a group whole or not at all. */
   async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
-    const { paperId } = await kontrakServer().generateDraft(subject, kertas)
+    const { id: paperId } = await kontrakServer().generateDraft(subject, kertas)
     const a = await this.a()
     const ed = await a.getPaperEditor(paperId)
     const total = ed.paper.sections.reduce((n, s) => n + s.questionCount, 0)

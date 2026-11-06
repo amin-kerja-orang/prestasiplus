@@ -103,6 +103,9 @@ const jsonOrNull = (v: Prisma.InputJsonValue | null) => (v === null ? Prisma.Jso
 /** A DSKP unit a Kontrak can use: kind unit at T4 or T5 (`unitsOfSubject`, the offered subjects, the create check). */
 const DSKP_UNIT = { kind: 'unit', educationLevel: { code: { in: ['T4', 'T5'] } } } satisfies Prisma.CurriculumNodeWhereInput
 
+/** A subject the UI offers for a new Kontrak: active with at least one DSKP unit (the lookup and the create check share it). */
+const OFFERED_SUBJECT = { isActive: true, nodes: { some: DSKP_UNIT } } satisfies Prisma.SubjectWhereInput
+
 /** Blueprint ("Kontrak") rows of BE-15's tables, for the admin writes of BE-39 and BJS-08/09. Runs on the open transaction when there is one. */
 @Injectable()
 export class BlueprintsRepository {
@@ -127,7 +130,7 @@ export class BlueprintsRepository {
   /** Subjects a Kontrak can be created for (FR-ADM-Q16.7): active with at least one DSKP unit, by display order then name. */
   subjectsWithDskp(): Promise<SubjectRef[]> {
     return this.db.subject.findMany({
-      where: { isActive: true, nodes: { some: DSKP_UNIT } },
+      where: OFFERED_SUBJECT,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
       select: { id: true, code: true, name: true },
     })
@@ -145,9 +148,9 @@ export class BlueprintsRepository {
     return level === 'T4' || level === 'T5' ? { nodeId: n.id.toString(), code: n.code, level, title: n.title } : null
   }
 
-  /** True when the subject has a DSKP unit (FR-ADM-Q16.7). */
-  async hasDskpUnit(subjectId: bigint): Promise<boolean> {
-    return (await this.db.curriculumNode.findFirst({ where: { subjectId, ...DSKP_UNIT }, select: { id: true } })) !== null
+  /** True when the subject is one `subjectsWithDskp` offers: active with a DSKP unit (FR-ADM-Q16.7). */
+  async isOfferedSubject(subjectId: bigint): Promise<boolean> {
+    return (await this.db.subject.findFirst({ where: { id: subjectId, ...OFFERED_SUBJECT }, select: { id: true } })) !== null
   }
 
   /** Units (kind unit) of a subject at T4 and T5, by `sortOrder` (architecture 15.1). */
@@ -384,7 +387,8 @@ export class BlueprintsRepository {
   /** Newest published Kertas Pilihan of a subject and kertas, with sections and placements (architecture 6.3a: newest 20). */
   publishedPilihan(subjectId: bigint, kertas: number, take: number): Promise<PublishedPilihan[]> {
     return this.db.paper.findMany({
-      where: { kind: 'pilihan', status: 'published', subjectId, kertas },
+      // Simulasi papers only: a Kertas Subjektif paper (DM-23, S3-T06) is not evidence for a Kontrak.
+      where: { kind: 'pilihan', status: 'published', surface: 'simulasi', subjectId, kertas },
       include: { sections: { orderBy: { position: 'asc' }, include: { placements: { orderBy: { position: 'asc' } } } } },
       orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
       take,

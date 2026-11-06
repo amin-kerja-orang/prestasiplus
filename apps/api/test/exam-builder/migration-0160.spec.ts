@@ -165,6 +165,14 @@ describe('DM-26 paper-group-integrity.sql', () => {
     await db.query(`delete from paper_sections where id = $1::bigint`, [s])
   })
 
+  it('a gap in the positions is not a split: positions are unique per section, not consecutive', async () => {
+    const s = await section(9)
+    for (const [i, m] of members.entries()) await place(s, m, (i + 1) * 2)
+    await place(s, single, 9)
+    expect(await counts()).toEqual([0, 0, 0, 0, 0, 0])
+    await db.query(`delete from paper_sections where id = $1::bigint`, [s])
+  })
+
   it('names a group that is incomplete, split, not contiguous, out of order, and a wrong section count', async () => {
     const a = await section(2)
     // A member missing from the section; the count of 4 is not met.

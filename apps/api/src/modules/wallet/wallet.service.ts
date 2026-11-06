@@ -14,7 +14,7 @@ import { CLOCK, type Clock, startOfMytDay } from '../../db/clock'
 import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { amountCeiling, balanceLimit, idempotencyConflict, insufficientBalance, sessionCreditOwnerConflict } from './errors'
-import { levelProgressPct, nextTierOf, nextTierProgress, nextTitleOf, titleOf, upgradedTierId, defaultTier, xpNeeded } from './rules'
+import { levelProgressPct, lifetimeTierOf, nextTierOf, nextTierProgress, nextTitleOf, titleOf, upgradedTierId, defaultTier, xpNeeded } from './rules'
 import {
   CREDIT_TYPES,
   DEBIT_TYPES,
@@ -154,11 +154,11 @@ export class WalletService {
   // --- writes --------------------------------------------------------------------------------------
 
   /**
-   * Adds syiling (BR-M14-22): one ledger row, balance and lifetime up, the tier moved up when a higher active
-   * tier is reached (BR-M14-08, never down). Creates the wallet on the first credit (BR-M14-02).
+   * Adds syiling (BR-M14-22): one ledger row, balance up, the tier moved up when the lifetime total reaches a higher
+   * active tier (FR-GM-17.2, never down). Creates the wallet on the first credit (BR-M14-02).
    * Idempotent per `(userId, source, sourceId)`: a replay (same type and amount) returns the FIRST entry with the
    * CURRENT wallet totals and writes nothing; the same key with another type or amount is a 409 `CONFLICT`.
-   * The lifetime total grows with every credit type, as the mock does (a `refund` too).
+   * The lifetime total grows on `earn` and `bonus` only (48 GAME-17): a `refund` gives back what was spent, so it moves the balance alone.
    */
   async credit(input: CreditInput, options: { tx?: TxClient } = {}): Promise<LedgerOutcome> {
     assertUser(input.userId)
@@ -175,9 +175,9 @@ export class WalletService {
       const replay = await this.replayOf(db, wallet, input.source, input.sourceId, { type, amount: input.amount, tokens: null })
       if (replay) return replay
       const balance = wallet.currentSyiling + input.amount
-      const lifetime = wallet.totalSyilingEarned + input.amount
+      const lifetime = type === 'refund' ? wallet.totalSyilingEarned : wallet.totalSyilingEarned + input.amount
       if (balance > INT_MAX || lifetime > INT_MAX) throw balanceLimit()
-      const tierId = upgradedTierId(tiers, wallet.tierId, balance)
+      const tierId = upgradedTierId(tiers, wallet.tierId, lifetime)
       const row = await this.repo.appendLedger(db, {
         userId: input.userId,
         type,
@@ -334,7 +334,7 @@ export class WalletService {
     const db = this.repo.handle(options.tx)
     const [tiers, row, streak] = await Promise.all([this.repo.tiers(db), this.repo.wallet(db, userId), this.repo.streak(db, userId)])
     const w = row ?? EMPTY_WALLET
-    const tier = (row?.tierId ? tiers.find((t) => t.id === row.tierId) : undefined) ?? defaultTier(tiers)
+    const tier = lifetimeTierOf(tiers, row)
     if (!tier) throw new Error('M14: no tier is defined')
     const next = nextTierOf(tiers, tier.id)
     const now = this.clock.now()
@@ -356,7 +356,7 @@ export class WalletService {
       xpNeeded: xpNeeded(w.level),
       levelProgressPct: levelProgressPct(w.xp, w.level),
       tier: tierView(tier),
-      nextTier: next ? { ...tierView(next), ...nextTierProgress(w.currentSyiling, next) } : null,
+      nextTier: next ? { ...tierView(next), ...nextTierProgress(w.totalSyilingEarned, next) } : null,
       title: titleOf(w.totalSyilingEarned),
       nextTitle: nextTitleOf(w.totalSyilingEarned),
       earnedToday,
@@ -369,13 +369,13 @@ export class WalletService {
    * `GET /api/gamification/transactions`: every ledger row of the user, newest first (`created_at` desc, `id`
    * desc, BR-M14-33), not paginated (contract OQ-API-B4-2). `type` empty = all; a value outside the five
    * types is not an error and gives no rows (FR-M14-08). `meta.type` echoes the query. Not paginated (contract
-   * OQ-API-B4-2) but bounded: at most `TRANSACTIONS_MAX_ROWS` (500) rows, the newest ones.
+   * OQ-API-B4-2) but bounded: at most `TRANSACTIONS_MAX_ROWS` (500) rows, the newest ones; `limit` asks for fewer.
    */
-  async transactions(userId: string, type: string, options: { tx?: TxClient } = {}): Promise<WalletTransactionsResponse> {
+  async transactions(userId: string, type: string, options: { tx?: TxClient; limit?: number } = {}): Promise<WalletTransactionsResponse> {
     assertUser(userId)
     const db = this.repo.handle(options.tx)
     const known = type === '' || (WALLET_LEDGER_TYPES as readonly string[]).includes(type)
-    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null, TRANSACTIONS_MAX_ROWS) : Promise.resolve([]), this.repo.wallet(db, userId)])
+    const [rows, wallet] = await Promise.all([known ? this.repo.ledgerOf(db, userId, type || null, Math.min(options.limit ?? TRANSACTIONS_MAX_ROWS, TRANSACTIONS_MAX_ROWS)) : Promise.resolve([]), this.repo.wallet(db, userId)])
     return { data: rows.map(toLedgerEntry), meta: { currentSyiling: wallet?.currentSyiling ?? 0, type } }
   }
 

@@ -116,7 +116,7 @@ describe('T53 shortfall by subject and kertas (AC-08.4) and the candidate window
       // which runs the same generator on the Spec contract of the launch seed
       pool.ids = new Set()
       const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
-      const err = expectError(await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2 }), 'SHORTAGE', 422, BIJAK_PAPERS_MESSAGES.shortage)
+      const err = expectError(await admin.post('/api/admin/papers/generate', { title: 'Set Ujian', subject: 'MAT', kertas: 2 }), 'SHORTAGE', 422, BIJAK_PAPERS_MESSAGES.shortage)
       const shortages = (err.details as { shortages: { section: string; need: number; have: number }[] }).shortages
       expect(shortages.length).toBeGreaterThan(0)
       expect(shortages[0]).toMatchObject({ have: 0 })
@@ -126,7 +126,7 @@ describe('T53 shortfall by subject and kertas (AC-08.4) and the candidate window
 
   describe('AC-R1-21.6: the bank search window', () => {
     async function sectionOf(): Promise<{ paperId: string; sectionId: string }> {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+      const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const paperId = Created.parse(res.body).data.id
       const editor = await admin.get(`/api/admin/papers/${paperId}`)

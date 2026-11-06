@@ -1,6 +1,6 @@
 /**
  * SW12-02: the teacher `used` counter must not scan the answer log. Migration 0091 adds the partial index
- * `ix_practice_answers_question_id_real`; `usedCountQuery` probes it once per owned question.
+ * `ix_practice_answers_question_id_real`; `usedCountQuery` probes it once per submitted (accepted, published) question.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -8,7 +8,7 @@ import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
-import { usedCountQuery } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
+import { submissionUsedCountQuery, usedCountQuery } from '../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const INDEX = 'ix_practice_answers_question_id_real'
@@ -18,8 +18,8 @@ describe('practice_answers question index and the used query (migration 0091_pra
   let owner: string
   let ownedQuestion: string
 
-  const plan = async (): Promise<string> => {
-    const q = usedCountQuery(BigInt(owner))
+  const plan = async (build: typeof usedCountQuery = usedCountQuery): Promise<string> => {
+    const q = build(BigInt(owner))
     const rows = await db.query<{ 'QUERY PLAN': string }>(`explain ${q.text}`, q.values as unknown[])
     return rows.map((r) => r['QUERY PLAN']).join('\n')
   }
@@ -33,18 +33,29 @@ describe('practice_answers question index and the used query (migration 0091_pra
     const subject = (await db.query<{ id: string }>(`select id::text from subjects order by id limit 1`))[0]!.id
     await db.query(`update questions set created_by_id = $1 where id in (select id from questions where created_by_id = $2 order by id limit 7)`, [owner, admin])
     ownedQuestion = (await db.query<{ id: string }>(`select id::text from questions where created_by_id = $1 order by id limit 1`, [owner]))[0]!.id
+    // S6-T06: `used` is driven from the teacher's own submissions, i.e. accepted guru intake items that point at a published question.
+    await db.query(`update questions set live_version_no = latest_version_no where id = $1`, [ownedQuestion])
+    const batch = (await db.query<{ id: string }>(`insert into intake_batches (owner_user_id, source, status, paper_type, subject, source_text, rights_status) values ($1::bigint, 'guru', 'ready_for_review', 'umum', 'Subjek', 'Kiriman guru', 'own') returning id::text id`, [owner]))[0]!.id
+    await db.query(
+      `insert into intake_items (batch_id, position, source_type, number_label, item_type, payload, review_state, question_id)
+       select $1::bigint, row_number() over (order by q.id), 'manual', '1', 'mcq',
+              jsonb_build_object('stem', 'x', 'options', '[]'::jsonb, 'guru', jsonb_build_object('v', 1, 'questionType', 'mcq', 'subjectId', '1', 'educationLevelId', '1', 'chapterId', null, 'spIds', '[]'::jsonb, 'tp', null, 'cognitiveLevel', null, 'difficultyLevel', 3, 'correctIndex', 1, 'explanation', null)),
+              'accepted', q.id
+         from questions q where q.created_by_id = $2::bigint`,
+      [batch, owner],
+    )
     // A few thousand answers: real ones on other questions, test traffic, migrated history without a question link, and one on an owned question.
     await db.query(
-      `insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test)
-       select $1::bigint, 1000000 + g, true, now(), g % 7 = 0 from generate_series(1, 6000) g`,
+      `insert into practice_answers (user_id, question_id, is_correct, answered_at, is_test, mode)
+       select $1::bigint, 1000000 + g, true, now(), g % 7 = 0, 'latih_tubi' from generate_series(1, 6000) g`,
       [student],
     )
     await db.query(
-      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, historical)
-       select $1::bigint, $2::bigint, true, now(), true from generate_series(1, 3000) g`,
+      `insert into practice_answers (user_id, subject_id, is_correct, answered_at, historical, mode)
+       select $1::bigint, $2::bigint, true, now(), true, 'latih_tubi' from generate_series(1, 3000) g`,
       [student, subject],
     )
-    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1, $2, true, now())`, [student, ownedQuestion])
+    await db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1, $2, true, now(), 'latih_tubi')`, [student, ownedQuestion])
     await db.query(`analyze practice_answers`)
   }, 180_000)
   afterAll(async () => {
@@ -58,31 +69,34 @@ describe('practice_answers question index and the used query (migration 0091_pra
     expect(rows[0]!.indexdef).toMatch(/USING btree \(question_id\) WHERE \(\(question_id IS NOT NULL\) AND \(NOT is_test\)\)$/)
   })
 
-  it('the used query probes the index per owned question and never scans practice_answers', async () => {
-    const text = await plan()
-    expect(text).toContain(INDEX)
-    expect(text).not.toMatch(/Seq Scan on practice_answers/)
-    expect(text).not.toMatch(/Seq Scan on structured_attempts/)
-  })
+  // The bank query (statsOf, school-admin report) and the submissions query (submissionStatsOf, /guru/contributions) keep the same index discipline.
+  for (const [name, build] of [['bank', usedCountQuery], ['submissions', submissionUsedCountQuery]] as const) {
+    it(`${name}: the used query probes the index per owned question and never scans practice_answers`, async () => {
+      const text = await plan(build)
+      expect(text).toContain(INDEX)
+      expect(text).not.toMatch(/Seq Scan on practice_answers/)
+      expect(text).not.toMatch(/Seq Scan on structured_attempts/)
+    })
 
-  it('still no hashed SubPlan over the answer tables when structured_attempts has rows but no statistics yet', async () => {
-    const student = (await db.query<{ id: string }>(`select id::text from users where email = 'pelajar@demo.test'`))[0]!.id
-    await db.query(
-      `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at)
-       select $1::bigint, 3000000 + g, 1, 1, 2, now() from generate_series(1, 3000) g`,
-      [student],
-    )
-    const text = await plan()
-    // The only SubPlan allowed is the D72 level filter over the tiny `education_levels` table; the answer probes never hash.
-    const lines = text.split('\n')
-    const subPlans = lines.flatMap((l, i) => (/^\s*SubPlan \d+/.test(l) ? [lines.slice(i + 1, i + 3).join('\n')] : []))
-    for (const body of subPlans) expect(body).toMatch(/education_levels/)
-    expect(text).not.toMatch(/Seq Scan on (practice_answers|structured_attempts)/)
-  })
+    it(`${name}: still no hashed SubPlan over the answer tables when structured_attempts has rows but no statistics yet`, async () => {
+      const student = (await db.query<{ id: string }>(`select id::text from users where email = 'pelajar@demo.test'`))[0]!.id
+      await db.query(
+        `insert into structured_attempts (user_id, question_id, question_version_no, total_awarded, total_max, submitted_at)
+         select $1::bigint, 3000000 + g, 1, 1, 2, now() from generate_series(1, 3000) g`,
+        [student],
+      )
+      const text = await plan(build)
+      // The only SubPlan allowed is the D72 level filter over the tiny `education_levels` table; the answer probes never hash.
+      const lines = text.split('\n')
+      const subPlans = lines.flatMap((l, i) => (/^\s*SubPlan \d+/.test(l) ? [lines.slice(i + 1, i + 3).join('\n')] : []))
+      for (const body of subPlans) expect(body).toMatch(/education_levels/)
+      expect(text).not.toMatch(/Seq Scan on (practice_answers|structured_attempts)/)
+    })
 
-  it('counts the owned question that has a real answer', async () => {
-    const q = usedCountQuery(BigInt(owner))
-    const rows = await db.query<{ n: number }>(q.text, q.values as unknown[])
-    expect(rows[0]!.n).toBe(1)
-  })
+    it(`${name}: counts the owned question that has a real answer`, async () => {
+      const q = build(BigInt(owner))
+      const rows = await db.query<{ n: number }>(q.text, q.values as unknown[])
+      expect(rows[0]!.n).toBe(1)
+    })
+  }
 })

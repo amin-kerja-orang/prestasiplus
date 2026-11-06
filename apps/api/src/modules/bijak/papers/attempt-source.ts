@@ -2,8 +2,8 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { idFromString, idToString } from '../../../db/ids'
 import { PapersRepository } from './papers.repository'
-import { BijakPapersPorts } from './ports'
-import { ruleOf } from './rules'
+import { BijakPapersPorts, placesUnservable } from './ports'
+import { levelScopeAllows, paperCodeOf, ruleOf } from './rules'
 import { bijakCodeOf } from './subject-codes'
 
 /*
@@ -32,6 +32,8 @@ export interface AttemptSectionSnapshot {
 export interface AttemptPaper {
   id: string
   kind: 'pilihan' | 'jana'
+  /** DM-23: a `subjektif` paper is sat as a Kertas Subjektif attempt (`paper_kind = 'subjektif'`, latihan, untimed). */
+  surface: 'simulasi' | 'subjektif'
   title: string
   /**
    * The BIJAK subject code (MAT, SN, SEJ), never the curriculum code (MATH, SCI). BE-16 stores it as
@@ -50,6 +52,7 @@ export type PaperResolution =
   | { ok: true; paper: AttemptPaper }
   | { ok: false; reason: 'not_found' }
   | { ok: false; reason: 'not_eligible' }
+  | { ok: false; reason: 'out_of_scope' }
 
 export interface BijakPaperSource {
   resolveForAttempt(input: { userId: string; paperId: string; isTest: boolean }): Promise<PaperResolution>
@@ -92,19 +95,18 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
     const paper = await this.repo.findPaper(id)
     if (!paper || paper.status !== 'published') return { ok: false, reason: 'not_found' }
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== input.userId) return { ok: false, reason: 'not_found' }
-    const scope = await this.repo.pupilScope(paper, input.userId, this.ports.progressSource)
-    if (scope === 'closed') return { ok: false, reason: 'not_found' }
-    if (scope === 'has_sitting') return { ok: false, reason: 'not_eligible' }
+    // S3-T07: a curated paper outside the pupil's form (`level_scope`) cannot start a NEW sitting. `out_of_scope` is a 404 for BE-16 unless
+    // the pupil has their own open sitting on it, which `start` still resumes (a re-scoped or promoted pupil keeps the card).
+    if (paper.kind === 'pilihan' && !levelScopeAllows(paper.levelScope, await this.repo.gradeOf(input.userId))) return { ok: false, reason: 'out_of_scope' }
 
     const questionIds = paper.sections.flatMap((s) => s.placements.map((p) => idToString(p.questionId)))
     if (questionIds.length === 0) return { ok: false, reason: 'not_eligible' }
     const info = await this.ports.questionSource.getMany([...new Set(questionIds)])
-    if (questionIds.some((q) => !info.has(q))) return { ok: false, reason: 'not_eligible' }
-    // REQ-B-058: the check above only looks at the LIVE version. A NEW sitting is also refused when the version a placement PINNED has been
+    // `info` only knows the LIVE version (H-A13). REQ-B-058: a NEW sitting is also refused when the version a placement PINNED has been
     // taken down (archived "withdrawn" / "source_takedown") while a later version is live; a `superseded` pin is still served. A sitting
     // already open is not affected: `start` resumes it on `not_eligible` and its pinned version is read as before.
     const pins = paper.sections.flatMap((s) => s.placements.map((p) => ({ questionId: idToString(p.questionId), versionNo: p.pinnedVersionNo })))
-    if ((await this.ports.questionSource.takenDownPins(pins)).size > 0) return { ok: false, reason: 'not_eligible' }
+    if (placesUnservable(pins, info, await this.ports.questionSource.takenDownPins(pins))) return { ok: false, reason: 'not_eligible' }
 
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const code = subject ? bijakCodeOf(subject.code) : ''
@@ -113,11 +115,12 @@ export class BijakPapersAttemptSource implements BijakPaperSource {
       paper: {
         id: idToString(paper.id),
         kind: paper.kind === 'jana' ? 'jana' : 'pilihan',
+        surface: paper.surface === 'subjektif' ? 'subjektif' : 'simulasi',
         title: paper.title,
         subject: code,
         subjectName: subject?.name ?? code,
         kertas: paper.kertas,
-        code: paper.paperCode ?? '',
+        code: paperCodeOf(paper),
         durationMin: paper.printedDurationMin,
         sections: paper.sections.map((s) => ({
           id: idToString(s.id),

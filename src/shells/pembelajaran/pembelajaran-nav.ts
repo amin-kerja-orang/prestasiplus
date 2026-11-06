@@ -20,6 +20,12 @@ import {
 } from '@/shells/nav/user-nav'
 import type { Role } from '@/stores/session-types'
 
+/** Touch target of the Log Keluar row in the account dropdown and the Lagi panel (AC-MUR-A5-4: at least 44 px). */
+export const LOGOUT_ROW_MIN_HEIGHT_CLASS = 'min-h-11'
+
+/** Link wrapper of a header reward pill (FR-MUR-SH-11): at least 44 px high, the pill look is unchanged. */
+export const REWARD_LINK_CLASS = 'inline-flex min-h-11 items-center rounded-full'
+
 export interface PembelajaranTab {
   id: string
   label: string

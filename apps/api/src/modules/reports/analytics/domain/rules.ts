@@ -5,7 +5,7 @@ import { MONITORING_START_DATE } from '../analytics.constants'
  * No database and no clock; unit-tested.
  */
 
-export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Kritikal' | 'Tiada Langsung'
+export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Tiada'
 export type Period = '' | '7d' | '30d' | '3m'
 
 export const DAY_MS = 86_400_000
@@ -15,17 +15,20 @@ const MYT_OFFSET_MS = 8 * 3_600_000
 export const M1_START_MS = Date.parse(`${MONITORING_START_DATE}T00:00:00+08:00`)
 
 export const round1 = (n: number): number => Math.round(n * 10) / 10
-export const round3 = (n: number): number => Math.round(n * 1000) / 1000
+export const round2 = (n: number): number => Math.round((n + Number.EPSILON * Math.sign(n)) * 100) / 100
+/** R1 decision D113 (FR-GUR-6-9): fewest pupils for a discrimination index. */
+export const DISCRIMINATION_MIN_PUPILS = 10
+/** Upper and lower group size: g = max(1, ceil(0.27 x N)); the product is rounded first so 0.27 x 100 is 27, not 28. */
+export const discriminationGroup = (n: number): number => Math.max(1, Math.ceil(Math.round(0.27 * n * 1e6) / 1e6))
 /** `part / whole * 100`; 0 when `whole` is 0. */
 export const percent = (part: number, whole: number): number => (whole <= 0 ? 0 : (part / whole) * 100)
 
-/** BR-M11-12: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0. */
+/** R1-AS-10 / R1-GUR-10: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. */
 export function tahapOf(p: number): TahapKey {
   if (p > 60) return 'Cemerlang'
   if (p >= 20) return 'Sederhana'
-  if (p >= 5) return 'Rendah'
-  if (p > 0) return 'Kritikal'
-  return 'Tiada Langsung'
+  if (p > 0) return 'Rendah'
+  return 'Tiada'
 }
 
 /** BR-M11-28 bands: p > 70 mudah; 40 <= p <= 70 sederhana; p < 40 sukar. */
