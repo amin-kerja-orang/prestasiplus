@@ -98,11 +98,11 @@ export const PerformanceDifficultySchema = z
   .enum(['Mudah', 'Sederhana', 'Sukar'])
   .meta({ id: 'PerformanceDifficulty' })
 export const PerformanceRiskLevelSchema = z
-  .enum(['critical', 'high', 'medium', 'low'])
-  .meta({ id: 'PerformanceRiskLevel' })
+  .enum(['critical', 'high', 'medium', 'low', 'none'])
+  .meta({ id: 'PerformanceRiskLevel', description: "'none' = Belum Bermula (no answers); only the class analytics rows carry it." })
 export const PerformanceTrendSchema = z
-  .enum(['up', 'down', 'stable'])
-  .meta({ id: 'PerformanceTrend' })
+  .enum(['up', 'down', 'stable', 'new'])
+  .meta({ id: 'PerformanceTrend', description: "'new' = answers only in the last 7 days; only the class analytics rows carry it." })
 export const PerformanceSpStatusSchema = z.enum(['mahir', 'sederhana', 'lemah', 'belum'])
 export const PerformancePairStatusSchema = z.enum(['on', 'below', 'none'])
 
@@ -427,10 +427,12 @@ export const PerformanceAnalyticsSchema = z
         subjectId: IdSchema,
         name: z.string(),
         code: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, all modes, one decimal; null = no answers in the subject ("—"). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        /** null = no answers in the subject. */
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         counts: z.object({ mahir: count, sederhana: count, lemah: count, belum: count }),
         ringTotal: count,
         weak: z.array(weakSp),
@@ -442,6 +444,8 @@ export const PerformanceAnalyticsSchema = z
               code: z.string(),
               title: z.string(),
               status: PerformanceSpStatusSchema,
+              /** Heading of the strand (Tajuk DSKP / SK) the SP is grouped under; null = no heading. */
+              strand: z.string().nullable(),
             }),
           ),
         }),
@@ -473,16 +477,19 @@ export const PerformanceClassAnalyticsSchema = z
         riskLevel: z.union([PerformanceRiskLevelSchema, z.literal('')]),
       }),
     }),
-    summary: z.object({ students: count, accuracy: pct, atRisk: count, good: count }).nullable(),
+    summary: z.object({ students: count, accuracy: pct.nullable(), atRisk: count, good: count }).nullable(),
     rows: z.array(
       z.object({
         userId: IdSchema,
         name: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, one decimal; null for Belum Bermula (no answers). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         riskLevel: PerformanceRiskLevelSchema,
+        /** School admin only: names of the classes of the selected scope the pupil is in; [] for a teacher. */
+        classes: z.array(z.string()),
       }),
     ),
   })
