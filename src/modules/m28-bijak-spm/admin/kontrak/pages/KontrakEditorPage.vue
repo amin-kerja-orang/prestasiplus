@@ -93,20 +93,29 @@ const refused = ref<Issue[]>([])
 const issues = computed(() => (status.value === 'ready' ? validateForm(form.value) : []))
 /* FR-ADM-Q16.4, 16-20: "Belum lengkap untuk Disahkan ({n})" counts the Syarat Disahkan of the saved head, the same rows as the Pengesahan tab. */
 const check = ref<BijakVerificationCheck | null>(null)
+/** The saved head's check could not be read: the count is unknown, never the weaker count of the form's own list. */
+const checkUnknown = ref(false)
 watch(
   () => [view.value?.subject, view.value?.kertas, view.value?.version, reloadKey.value],
   async () => {
     const asked = view.value
     if (!asked) {
       check.value = null
+      checkUnknown.value = false
       return
     }
     const answer = await api.verification(asked.subject, asked.kertas).catch(() => null)
-    if (view.value === asked) check.value = answer?.check ?? null
+    if (view.value !== asked) return
+    check.value = answer?.check ?? null
+    checkUnknown.value = answer === null
   },
 )
 const failing = computed<GateRow[] | null>(() => (check.value ? failingGates(check.value, form.value) : null))
 const problemCount = computed(() => errorsOf(issues.value).length + (failing.value?.length ?? incompleteOf(issues.value).length))
+const problemLabel = computed(() => {
+  if (checkUnknown.value) return errorsOf(issues.value).length ? `${errorsOf(issues.value).length}+ masalah` : 'Semakan Disahkan tidak dapat dimuat'
+  return problemCount.value ? `${problemCount.value} masalah` : 'Tiada masalah'
+})
 
 const tab = computed(() => String(route.query.paparan ?? 'umum'))
 const sectionIndex = computed(() => {
@@ -484,7 +493,7 @@ const poolReason = 'Simpan dahulu'
         </div>
         <template #aside>
           <div id="contract-check-anchor">
-            <ContractCheckPanel :form="form" :issues="issues" :failing="failing" @goto="gotoIssue" @gate="gotoGate" />
+            <ContractCheckPanel :form="form" :issues="issues" :failing="failing" :unknown="checkUnknown" @goto="gotoIssue" @gate="gotoGate" />
           </div>
         </template>
       </DsSplit>
@@ -495,7 +504,7 @@ const poolReason = 'Simpan dahulu'
             color="neutral"
             variant="link"
             class="min-h-11 px-0"
-            :label="problemCount ? `${problemCount} masalah` : 'Tiada masalah'"
+            :label="problemLabel"
             data-testid="problem-chip"
             @click="scrollToCheck"
           />

@@ -154,9 +154,10 @@ describe('PRD30 16-01 to 16-12 copy', () => {
     expect(messages(form([section()], { totalMarks: 100 }))).toContain('Jumlah markah (100) mesti sama dengan jumlah markah bahagian (18).')
   })
 
-  it('keeps the coded limits: 600 minutes pass, 601 do not', () => {
-    expect(messages(form([section()], { durationMin: 600 }))).not.toContain('Tempoh mesti antara 1 dan 300 minit.')
-    expect(messages(form([section()], { durationMin: 601 }))).toContain('Tempoh mesti antara 1 dan 300 minit.')
+  it('enforces the limit the message states (PRD 30 row 16-04): 300 minutes pass, 301 do not', () => {
+    expect(messages(form([section()], { durationMin: 300 }))).not.toContain('Tempoh mesti antara 1 dan 300 minit.')
+    expect(messages(form([section()], { durationMin: 301 }))).toContain('Tempoh mesti antara 1 dan 300 minit.')
+    expect(messages(form([section()], { durationMin: 600 }))).toContain('Tempoh mesti antara 1 dan 300 minit.')
   })
 })
 
@@ -190,6 +191,30 @@ describe('422 fields reach the screen', () => {
   })
 })
 
+describe('one Kontrak status in both mocks (D12)', () => {
+  const servingPairs = (rows: { subject: string; kertas: number }[]): string[] => rows.map((r) => `${r.subject}/${r.kertas}`).sort()
+
+  it('the admin mock reads MAT/1 and SN/1 as Disahkan, serving, with a verification record', async () => {
+    const api = new MockKontrakServer()
+    for (const [subject, kertas] of [['MAT', 1], ['SN', 1]] as const) {
+      const v = await api.get(subject, kertas)
+      expect(v).toMatchObject({ source: 'Disahkan', servesStudents: true, version: 1 })
+      expect(v.verification).toMatchObject({ verifierRole: 'admin', bodies: [] })
+      expect((await api.verification(subject, kertas)).record).not.toBeNull()
+    }
+    expect((await api.get('MAT', 2)).source).toBe('Spec')
+  })
+
+  it('the pupil serving set equals the registry serving Disahkan rows', async () => {
+    const admin = await new MockKontrakServer().list()
+    const registry = servingPairs(admin.filter((v) => v.source === 'Disahkan' && v.servesStudents))
+    expect(registry).toEqual(['MAT/1', 'SN/1'])
+    const pupil = await new BijakServer().listContracts()
+    expect(servingPairs(pupil)).toEqual(registry)
+    expect(pupil.every((c) => c.source === 'Disahkan')).toBe(true)
+  })
+})
+
 describe('Mocks answer as the API', () => {
   const body = {
     code: 'X/1',
@@ -201,6 +226,15 @@ describe('Mocks answer as the API', () => {
   it('refuses a contract for a subject with no DSKP unit, on fields.subject (AC-ADM-Q16.4)', async () => {
     const e = await new MockKontrakServer().create({ subject: 'KIM', kertas: 1, ...body }).catch((x: unknown) => x as KontrakError)
     expect(e).toMatchObject({ kind: 'invalid', message: MSG.dskpNotLoaded, fields: { subject: MSG.dskpNotLoaded } })
+  })
+
+  it('refuses a duration above 300 minutes on fields.durationMin and answers a duplicate with the one contract message', async () => {
+    const api = new MockKontrakServer()
+    const e = await api.create({ subject: 'MAT', kertas: 4, ...body, durationMin: 301 }).catch((x: unknown) => x as KontrakError)
+    expect(e).toMatchObject({ kind: 'invalid', fields: { durationMin: 'Tempoh mesti antara 1 dan 300 minit.' } })
+    await expect(api.create({ subject: 'MAT', kertas: 4, ...body, durationMin: 300 })).resolves.toMatchObject({ kertas: 4 })
+    const dup = await api.create({ subject: 'MAT', kertas: 1, ...body }).catch((x: unknown) => x as KontrakError)
+    expect(dup).toMatchObject({ kind: 'conflict', message: MSG.blueprintExists })
   })
 
   it('offers only subjects with units in Baharu', async () => {
@@ -302,6 +336,16 @@ describe('Kontrak screens', () => {
       expect(sourceSelect().element.value).toBe('Spec')
     })
 
+    it('puts the control back to the form value when the Pengesahan tab does not open', async () => {
+      server()
+      const r = await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/2')
+      r.beforeEach((to) => (to.query.paparan === 'pengesahan' ? false : true))
+      await sourceSelect().setValue('Disahkan')
+      await flushPromises()
+      expect(r.currentRoute.value.query.paparan).toBeUndefined()
+      expect(sourceSelect().element.value).toBe('Spec')
+    })
+
     it('still writes Draf and Spec', async () => {
       server()
       await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/2')
@@ -354,6 +398,18 @@ describe('Kontrak screens', () => {
       await link.trigger('click')
       await flushPromises()
       expect(r.currentRoute.value.query.paparan).toBe('pengesahan')
+    })
+
+    it('shows the count as unknown, not the form count, when the check cannot be read', async () => {
+      const api = server()
+      vi.spyOn(api, 'verification').mockRejectedValue(new Error('offline'))
+      await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/2')
+      const panel = wrapper!.get('[data-testid="contract-check"]')
+      expect(panel.text()).toContain('Belum lengkap untuk Disahkan (tidak diketahui)')
+      expect(panel.get('[data-testid="check-unknown"]').text()).toContain('tidak dapat dimuatkan')
+      expect(panel.find('[data-testid="check-incomplete"]').exists()).toBe(false)
+      expect(panel.text()).not.toMatch(/Belum lengkap untuk Disahkan \(\d+\)/)
+      expect(wrapper!.get('[data-testid="problem-chip"]').text()).not.toMatch(/^\d+ masalah$/)
     })
 
     it('falls back to the form when there is no check to read yet: a new contract', async () => {
@@ -464,6 +520,19 @@ describe('Kontrak screens', () => {
       await flushPromises()
       expect(document.body.textContent).toContain('Sila pilih subjek.')
       expect(optionValues('add-subject').filter(Boolean)).toEqual(['MAT', 'SN', 'SEJ'])
+    })
+
+    it('answers a duplicate subject and kertas with the one contract message', async () => {
+      server()
+      await open(KontrakListPage, '/admin/spm/kontrak')
+      await openAdd()
+      for (const [id, value] of [['add-subject', 'MAT'], ['add-kertas', '1']] as const) {
+        const el = document.querySelector<HTMLSelectElement>(`[data-testid="${id}"]`)!
+        el.value = value
+        el.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+      await flushPromises()
+      expect(document.querySelector('[data-testid="add-exists"]')?.textContent).toContain(MSG.blueprintExists)
     })
 
     it('says so when no subject has its DSKP loaded, and does not let the admin continue', async () => {

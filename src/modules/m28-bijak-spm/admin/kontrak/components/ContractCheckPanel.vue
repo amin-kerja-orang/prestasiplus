@@ -27,6 +27,8 @@ const props = defineProps<{
    * unreviewed values included). Null when there is no check to read (a new contract): the form's own list stands in.
    */
   failing?: readonly GateRow[] | null
+  /** The check of the saved head failed to load: say so instead of showing the form's weaker count as if it were the answer. */
+  unknown?: boolean
 }>()
 const emit = defineEmits<{ goto: [issue: Issue]; gate: [row: GateRow] }>()
 
@@ -141,7 +143,18 @@ const title = computed(() => (wide.value ? 'Semakan Kontrak' : `Semakan Kontrak 
         </ul>
       </section>
 
-      <section v-if="missing.length" aria-labelledby="check-incomplete">
+      <UAlert
+        v-if="unknown"
+        color="warning"
+        variant="subtle"
+        icon="i-ph-warning"
+        role="alert"
+        title="Belum lengkap untuk Disahkan (tidak diketahui)"
+        description="Syarat Disahkan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi."
+        data-testid="check-unknown"
+      />
+
+      <section v-else-if="missing.length" aria-labelledby="check-incomplete">
         <h3 id="check-incomplete" class="text-label text-highlighted">
           Belum lengkap untuk Disahkan ({{ missing.length }})
         </h3>

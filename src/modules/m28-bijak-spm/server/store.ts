@@ -117,11 +117,10 @@ export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh
 export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
 /**
- * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The registry seeds every head as
- * Spec, so the mock names the pairs whose earlier version is taken as Disahkan and serving; the Jana Kertas flow has something to run on.
+ * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The set is read from the
+ * registry (`BLUEPRINTS`), the same rows the Kontrak admin mock seeds as Disahkan, so one entity has one status in both mocks.
  */
-const SERVING_CONTRACTS: ReadonlySet<string> = new Set(['MAT/1', 'SN/1'])
-const servesPupils = (b: { subject: string; kertas: number }): boolean => SERVING_CONTRACTS.has(`${b.subject}/${b.kertas}`)
+export const servesPupils = (b: { source: string }): boolean => b.source === 'Disahkan'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore

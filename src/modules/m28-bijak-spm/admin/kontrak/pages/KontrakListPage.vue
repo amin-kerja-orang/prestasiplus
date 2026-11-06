@@ -3,7 +3,7 @@
  * K1: Senarai Kontrak Blueprint (`/admin/spm/kontrak`, design 3). One contract per subject and
  * kertas; Jana Kertas reads it. "Baharu" (dialog "Kontrak Baharu") opens an empty Draf in the editor.
  */
-import type { BijakBlueprintView } from '@pp/contract'
+import { BIJAK_BUILDER_MESSAGES as MSG, type BijakBlueprintView } from '@pp/contract'
 import type { TableColumn } from '@nuxt/ui'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -384,7 +384,7 @@ function proceed(): void {
           variant="subtle"
           icon="i-ph-warning-circle"
           role="alert"
-          description="Kontrak untuk subjek/kertas ini sudah wujud."
+          :description="MSG.blueprintExists"
           :actions="[{ label: 'Buka kontrak', color: 'neutral', variant: 'soft', class: 'min-h-11', to: editTo(existing) }]"
           data-testid="add-exists"
         />

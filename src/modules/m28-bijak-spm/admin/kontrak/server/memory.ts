@@ -258,10 +258,23 @@ export class MockKontrakServer implements KontrakApi {
             ]
           : []
       for (const e of study) this.evidenceStore.set(e.id, e)
-      const view = viewOf(bp.subject, bp.kertas, 1, bp.source, input, null, study.length, bp.subject === 'MAT' && bp.kertas === 2)
+      // A registry head that is Disahkan carries what the Sahkan flow writes at minimum (no evidence items are invented).
+      const seededSummary: BijakVerificationSummary | null =
+        bp.source === 'Disahkan'
+          ? { verifiedAt: now(), verifierName: 'Pentadbir Pusat (contoh)', verifierRole: 'admin', evidenceLabel: '', bodies: [] }
+          : null
+      const view = viewOf(bp.subject, bp.kertas, 1, bp.source, input, seededSummary, study.length, bp.subject === 'MAT' && bp.kertas === 2)
       this.recs.set(id, {
         retired: false,
-        versions: [{ view, createdAt: now(), hash: structuralKey(input), evidenceIds: study.map((e) => e.id), verification: null }],
+        versions: [
+          {
+            view,
+            createdAt: now(),
+            hash: structuralKey(input),
+            evidenceIds: study.map((e) => e.id),
+            verification: seededSummary ? { ...seededSummary, evidence: [], lines: [] } : null,
+          },
+        ],
       })
     }
   }
@@ -304,6 +317,9 @@ export class MockKontrakServer implements KontrakApi {
   /** As `assertRuleBounds` of the API: 422 VALIDATION_ERROR with `fields`, before the content check. */
   private checkRuleBounds(input: Input): void {
     const fields: Record<string, string> = {}
+    // PRD 30-admin-pusat row 16-04: Tempoh 1 to 300 (same limit as the form's validate.ts).
+    if (!Number.isInteger(input.durationMin) || input.durationMin < 1 || input.durationMin > 300)
+      fields.durationMin = 'Tempoh mesti antara 1 dan 300 minit.'
     input.sections.forEach((s, i) => {
       if (s.rule.type !== 'choose') return
       if (s.rule.n > s.questionCount) fields[`sections.${i}.rule.n`] = MSG.chooseNRange
@@ -336,7 +352,7 @@ export class MockKontrakServer implements KontrakApi {
     if (!UNITS[body.subject]?.length) throw new KontrakError('invalid', MSG.dskpNotLoaded, { fields: { subject: MSG.dskpNotLoaded } })
     const k = this.key(body.subject, body.kertas)
     const old = this.recs.get(k)
-    if (old && !old.retired) throw new KontrakError('conflict', 'Kontrak untuk subjek dan kertas ini sudah wujud.')
+    if (old && !old.retired) throw new KontrakError('conflict', MSG.blueprintExists)
     this.checkInput(body)
     const { subject, kertas, ...input } = body
     const view = viewOf(subject, kertas, 1, input.source ?? 'Draf', input, null, 0)

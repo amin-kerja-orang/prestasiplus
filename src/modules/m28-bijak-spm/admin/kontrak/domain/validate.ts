@@ -204,7 +204,8 @@ export function quotaSum(s: FormSection): QuotaSum {
 const INSTRUCTION_MAX = 500
 const MARK_BUDGET_MAX = 1000
 const CODE_MAX = 32
-const DURATION_MAX = 600
+/** PRD 30-admin-pusat row 16-04: "1 to 300" (the OpenAPI max of 600 is looser). */
+const DURATION_MAX = 300
 const PAPER_QUESTIONS_MAX = 200
 
 function sectionIssues(f: ContractForm, i: number): Issue[] {

@@ -3,7 +3,7 @@
  * Tab "Umum" (design 4.2): paper facts, cover instructions, optional paper-level standards, the
  * Bahagian list (add, reorder with buttons, remove) and the danger zone.
  */
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { DsFormField, DsFormSection, DsNativeSelect, useConfirm } from '@/ds'
 
@@ -40,9 +40,15 @@ const statusItems = computed(() => [
   { label: 'Disahkan', value: 'Disahkan', disabled: verifyBlocked.value },
 ])
 /** FR-ADM-Q16.2: `Disahkan` opens the Pengesahan tab and never writes the value; only `Sahkan` there does. */
+const sourceControl = ref<{ $el: HTMLElement } | null>(null)
 function setSource(value: string | number): void {
   if (value === 'Disahkan') {
     if (!verifyBlocked.value) emit('open-verification')
+    // The form still holds the old value, so the control is put back to it; if the tab did not open, it must not keep showing Disahkan.
+    void nextTick(() => {
+      const el = sourceControl.value?.$el.querySelector('select')
+      if (el) el.value = form.value.source
+    })
     return
   }
   form.value.source = value as SourceTag
@@ -145,7 +151,7 @@ async function retire(): Promise<void> {
       </div>
       <DsFormField v-else native :for="fieldId(null, 'status')" label="Sumber" :hint="verifyBlocked ? 'Simpan perubahan dahulu.' : undefined">
         <template #default="f">
-          <DsNativeSelect :id="f.id" :model-value="form.source" :items="statusItems" :aria-describedby="f.describedby" data-testid="kontrak-source" @update:model-value="setSource" />
+          <DsNativeSelect :id="f.id" ref="sourceControl" :model-value="form.source" :items="statusItems" :aria-describedby="f.describedby" data-testid="kontrak-source" @update:model-value="setSource" />
         </template>
       </DsFormField>
       <div class="sm:col-span-2">
