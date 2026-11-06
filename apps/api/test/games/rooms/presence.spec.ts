@@ -22,6 +22,9 @@ describe('room seat presence (R3)', () => {
 
   beforeAll(async () => {
     t = await bootGamesApp({ withGamification: true })
+    // The dice and the question order come from the room's secret seed, random per room: pin it for the whole file, or
+    // a run in N lets a room finish (a tile-50 win) before the step under test, whichever test plays turns.
+    vi.spyOn(t.app.get(RoomSecrets, { strict: false }), 'newSeed').mockReturnValue(PINNED_SEED)
     const { insertShortMcqs } = await import('./support')
     await insertShortMcqs(t.db, { subject: 'MATH', level: 'T4', count: 60, prefix: 'PR' })
     a = await loginAs(t, ACCOUNTS.student)
@@ -30,6 +33,7 @@ describe('room seat presence (R3)', () => {
     await t.db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
   })
   afterAll(async () => {
+    vi.restoreAllMocks()
     await t.close()
   })
   beforeEach(async () => {
@@ -206,11 +210,7 @@ describe('room seat presence (R3)', () => {
   it.each([1, 0])('3 timeouts remove a seat with 2 humans left (bots %i): a robot takes the seat, or it is skipped when robots are off', async (bots) => {
     await t.db.query(`update gamification_settings set value = ${String(bots)} where key = 'games_room_bots_enabled'`)
     try {
-      // The dice and the question order come from the room's secret seed, which is random per room: pin it, or one
-      // run in N lets a and b (who play every turn of theirs here) reach tile 50 before solo's third timeout.
-      const pin = vi.spyOn(t.app.get(RoomSecrets, { strict: false }), 'newSeed').mockReturnValue(PINNED_SEED)
       const code = await createRoom(a, 'papan-bijak', { ...PB_FORM, match_mode: 'same_level' })
-      pin.mockRestore()
       await b.post(P('papan-bijak', undefined, '/join'), { room_code: code })
       await solo.post(P('papan-bijak', undefined, '/join'), { room_code: code })
       parseRoom(await a.post(P('papan-bijak', code, '/start')))
