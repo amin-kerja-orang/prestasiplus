@@ -360,7 +360,8 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     }
     const answers = tables.indexOf('practice_answers')
     const delta = (after: number[], before: number[]) => after.map((n, i) => n - before[i]!)
-    const check = () => student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: id('SEED-MCQ-MATH-T4'), optionId: 'A' })
+    // MATH-T5: no earlier test checks it on this paper, so its DM-44 row does not exist yet (test 16 already wrote the MATH-T4 row)
+    const check = () => student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: 'A' })
     const before = await count()
     await student.get(`/api/bijak/kuiz/papers/${paperId}`)
     expect(await count()).toEqual(before)
