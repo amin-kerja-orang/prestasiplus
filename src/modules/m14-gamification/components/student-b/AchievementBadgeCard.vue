@@ -1,21 +1,30 @@
 <script setup lang="ts">
 /**
  * S15 badge card (FR-M14-47, FN-M14-6.1.4): icon, name, description, rarity tag, reward line
- * "🪙 {syiling} · ⭐ {xp} XP" and, for the five kuiz-count badges, a progress bar with "{n}/{target}".
+ * "🪙 {syiling} · ⭐ {xp} XP" and, for the five kuiz-count badges, a progress bar with "{n} / {target}".
+ * A locked card says "Belum dibuka"; an unlocked card shows its unlock date (FR-GM-25.1/25.2).
  * v2: an unlocked card shows the 3D medal; a locked card shows a lock glyph on `bg-elevated` and is
  * dimmed. An unlocked card is clickable and emits `open`. No ARIA beyond live (D10).
  */
 import { computed } from 'vue'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsText } from '@/ds'
 
 import type { AchievementItem } from '../../api'
-import { progressPct } from '../../lib/student/achievements-lib'
+import {
+  ACHIEVEMENTS_COPY,
+  achievementProgressLabel,
+  progressPct,
+  unlockedDateLabel,
+} from '../../lib/student/achievements-lib'
 
 const props = defineProps<{ item: AchievementItem }>()
 const emit = defineEmits<{ open: [item: AchievementItem] }>()
 
 const pct = computed(() => (props.item.progress ? progressPct(props.item.progress) : 0))
+
+const progressText = computed(() => achievementProgressLabel(props.item.progress))
+const unlockedDate = computed(() => (props.item.unlocked ? unlockedDateLabel(props.item.unlockedAt) : null))
 
 function onClick(): void {
   if (props.item.unlocked) emit('open', props.item)
@@ -54,6 +63,12 @@ function onClick(): void {
         data-testid="badge-rarity"
         >{{ item.rarityLabel }}</UBadge
       >
+      <DsText v-if="!item.unlocked" variant="caption" data-testid="badge-locked">{{
+        ACHIEVEMENTS_COPY.locked
+      }}</DsText>
+      <DsText v-else-if="unlockedDate" variant="caption" tabular data-testid="badge-unlocked-at">{{
+        unlockedDate
+      }}</DsText>
       <p class="text-caption text-toned" data-testid="badge-reward">
         🪙 {{ item.rewardSyiling }} · ⭐ {{ item.rewardXp }} XP
       </p>
@@ -66,7 +81,7 @@ function onClick(): void {
           :data-value="pct"
         />
         <p class="tabular text-caption text-muted" data-testid="badge-progress-text">
-          {{ item.progress.value }}/{{ item.progress.target }}
+          {{ progressText }}
         </p>
       </div>
     </div>

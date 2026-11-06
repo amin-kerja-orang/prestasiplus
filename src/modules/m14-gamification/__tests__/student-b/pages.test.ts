@@ -162,7 +162,7 @@ describe('S15 AchievementsPage', () => {
   })
   const data = (items: AchievementItem[], unlocked = 0): Achievements => ({
     unlocked,
-    total: 25,
+    total: 26,
     streak: { current: 1, best: 5, multiplier: 1 },
     items,
   })
@@ -172,9 +172,7 @@ describe('S15 AchievementsPage', () => {
       data([item(), item({ id: 3, name: 'Streak 3 Hari', icon: '🔥', progress: null })]),
     )
     const w = await render(AchievementsPage, '/gamification/achievements')
-    expect(w.get('[data-testid=achievements-subtitle]').text()).toBe(
-      'Kumpul lencana dan capai pencapaian — 0/25 dicapai',
-    )
+    expect(w.get('[data-testid=achievements-subtitle]').text()).toBe('Kemajuan lencana 0 / 26')
     expect(w.get('[data-testid=streak-current]').text()).toBe('1')
     expect(w.get('[data-testid=streak-bonus]').text()).toBe('1.0x Bonus')
     expect(w.get('[data-testid=streak-best]').text()).toBe('Terbaik: 5 hari')
@@ -192,8 +190,60 @@ describe('S15 AchievementsPage', () => {
     expect(tid(w, 'badge-reward')[0]?.text()).toBe('🪙 5 · ⭐ 3 XP')
     // progress only on the card that carries it
     expect(tid(w, 'badge-progress')).toHaveLength(1)
-    expect(tid(w, 'badge-progress-text')[0]?.text()).toBe('0/1')
+    expect(tid(w, 'badge-progress-text')[0]?.text()).toBe('0 / 1')
     expect(tid(w, 'badge-rarity')[0]?.text()).toBe('Biasa')
+  })
+
+  it('a locked card says "Belum dibuka" and no date; an unlocked card shows its short BM date and no locked word', async () => {
+    api.fetchGamificationAchievements.mockResolvedValue(
+      data(
+        [
+          item(),
+          item({ id: 2, name: 'Pelajar Rajin', unlocked: true, unlockedAt: '2026-09-23T16:10:00+08:00' }),
+        ],
+        1,
+      ),
+    )
+    const w = await render(AchievementsPage, '/gamification/achievements')
+    const [locked, open] = tid(w, 'badge-card')
+    expect(locked?.get('[data-testid=badge-locked]').text()).toBe('Belum dibuka')
+    expect(locked?.find('[data-testid=badge-unlocked-at]').exists()).toBe(false)
+    expect(open?.find('[data-testid=badge-locked]').exists()).toBe(false)
+    expect(open?.get('[data-testid=badge-unlocked-at]').text()).toBe('23 Sep 2026')
+  })
+
+  it('shows progress as "n / target" only where the API gives it; an unlocked one reads target / target', async () => {
+    api.fetchGamificationAchievements.mockResolvedValue(
+      data([
+        item({ progress: { value: 4, target: 10 } }),
+        item({ id: 2, unlocked: true, unlockedAt: '2026-09-23T16:10:00+08:00', progress: { value: 10, target: 10 } }),
+        item({ id: 3, progress: null }),
+      ]),
+    )
+    const w = await render(AchievementsPage, '/gamification/achievements')
+    expect(tid(w, 'badge-progress-text').map((p) => p.text())).toEqual(['4 / 10', '10 / 10'])
+    expect(tid(w, 'badge-progress')).toHaveLength(2)
+  })
+
+  it('the counter is "Kemajuan lencana n / total" of the whole catalogue, also under a rarity filter', async () => {
+    api.fetchGamificationAchievements.mockResolvedValue({
+      ...data([item({ id: 4, rarity: 'rare', rarityLabel: 'Jarang' })], 7),
+    })
+    const w = await render(
+      AchievementsPage,
+      '/gamification/achievements',
+      '/gamification/achievements?rarity=rare',
+    )
+    expect(api.fetchGamificationAchievements.mock.calls[0]?.[0]).toEqual({ rarity: 'rare' })
+    expect(tid(w, 'badge-card')).toHaveLength(1)
+    expect(w.get('[data-testid=achievements-subtitle]').text()).toBe('Kemajuan lencana 7 / 26')
+  })
+
+  it('the grid is 2 columns at 375, 3 at 768 and 5 at 1280', async () => {
+    api.fetchGamificationAchievements.mockResolvedValue(data([item()]))
+    const w = await render(AchievementsPage, '/gamification/achievements')
+    const cls = w.get('[data-testid=achievements-grid]').classes()
+    expect(cls).toEqual(expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3', 'xl:grid-cols-5']))
   })
 
   it('passes ?rarity= to the API, marks that pill active, and renders no card for an unknown value', async () => {

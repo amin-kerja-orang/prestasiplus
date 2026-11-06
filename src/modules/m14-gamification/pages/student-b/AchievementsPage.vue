@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
  * S15 `/gamification/achievements` "Pencapaian Anda" (M14-T2b; FR-M14-44..51, BR-M14-15/16;
- * FN-M14-6.1.*). Hero with "{unlocked}/25 dicapai", the streak card from the single M14 store, the
- * rarity pills (links, `?rarity=`) and the 25 cards; an unlocked card opens the share modal.
+ * FN-M14-6.1.*). Hero with "Kemajuan lencana {unlocked} / {total}", the streak card from the single M14 store, the
+ * rarity pills (links, `?rarity=`) and the cards (26 in the catalogue); an unlocked card opens the share modal.
  * An unknown `?rarity=` renders the pills and no card and no message (FR-M14-08).
  */
 import { computed, ref } from 'vue'
@@ -19,7 +19,7 @@ import {
   ACHIEVEMENTS_COPY,
   ACHIEVEMENTS_PATH,
   RARITY_PILLS,
-  achievementsSubtitle,
+  badgeProgressLabel,
   readRarity,
   streakBestLabel,
   streakBonusLabel,
@@ -58,7 +58,7 @@ const progressWidth = computed(() =>
                   {{ ACHIEVEMENTS_COPY.title }}
                 </h1>
                 <p class="text-label text-muted" data-testid="achievements-subtitle">
-                  {{ achievementsSubtitle(data.unlocked, data.total) }}
+                  {{ badgeProgressLabel(data.unlocked, data.total) }}
                 </p>
               </div>
             </div>

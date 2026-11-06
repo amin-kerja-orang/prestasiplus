@@ -3,6 +3,8 @@
  * pills, the share-card gradients (live `rarityGradients`), the progress width and the WhatsApp text.
  */
 
+import { formatDateShortMs } from '@/lib/time'
+
 import type { AchievementItem, Rarity } from '../../api'
 
 export const ACHIEVEMENTS_PATH = '/gamification/achievements'
@@ -16,11 +18,21 @@ export const ACHIEVEMENTS_COPY = {
   close: 'Tutup',
   loadError: 'Maaf, berlaku ralat. Sila cuba semula.',
   retry: 'Cuba Semula',
+  /** FR-GM-25.1: the word on a locked card (the Profil tile keeps the DS "Terkunci"). */
+  locked: 'Belum dibuka',
 } as const
 
-/** "Kumpul lencana dan capai pencapaian — {unlocked}/{total} dicapai" (FN-M14-6.1.1). */
-export const achievementsSubtitle = (unlocked: number, total: number): string =>
-  `Kumpul lencana dan capai pencapaian — ${String(unlocked)}/${String(total)} dicapai`
+/** "Kemajuan lencana {unlocked} / {total}" (FR-GM-25.5); `total` is the whole catalogue, never the filtered count. */
+export const badgeProgressLabel = (unlocked: number, total: number): string =>
+  `Kemajuan lencana ${String(unlocked)} / ${String(total)}`
+
+/** "{value} / {target}" of a sessions-based badge (FR-GM-25.1); `null` when the API gives no progress. */
+export const achievementProgressLabel = (progress: AchievementItem['progress']): string | null =>
+  progress ? `${String(progress.value)} / ${String(progress.target)}` : null
+
+/** The unlock date of an unlocked card as the short BM date Profil uses ("17 Mac 2026"); `null` when absent. */
+export const unlockedDateLabel = (unlockedAt: string | null): string | null =>
+  unlockedAt ? formatDateShortMs(unlockedAt) : null
 
 export const streakBonusLabel = (multiplier: number): string => `${multiplier.toFixed(1)}x Bonus`
 export const streakBestLabel = (best: number): string => `Terbaik: ${String(best)} hari`

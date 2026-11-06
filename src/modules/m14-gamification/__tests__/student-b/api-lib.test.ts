@@ -3,7 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import type { PodiumEntry } from '../../api'
 import {
   RARITY_PILLS,
+  badgeProgressLabel,
+  unlockedDateLabel,
+  ACHIEVEMENTS_COPY,
   achievementFileName,
+  achievementProgressLabel,
   achievementShareText,
   progressPct,
   rarityGradient,
@@ -85,6 +89,15 @@ describe('achievements-lib', () => {
     expect(achievementShareText('Langkah Pertama', 'https://prestasiplus.my/pelajar/3')).toBe(
       '🏅 Saya baru capai "Langkah Pertama" di PRESTASIPLUS! 🎉\n\nJom latih tubi sama-sama:\nhttps://prestasiplus.my/pelajar/3',
     )
+  })
+
+  it('formats the counter, the progress and the unlock date', () => {
+    expect(badgeProgressLabel(7, 26)).toBe('Kemajuan lencana 7 / 26')
+    expect(achievementProgressLabel({ value: 4, target: 10 })).toBe('4 / 10')
+    expect(achievementProgressLabel(null)).toBeNull()
+    expect(unlockedDateLabel('2026-09-23T16:10:00+08:00')).toBe('23 Sep 2026')
+    expect(unlockedDateLabel(null)).toBeNull()
+    expect(ACHIEVEMENTS_COPY.locked).toBe('Belum dibuka')
   })
 
   it('uses the live gradients and falls back to common', () => {
