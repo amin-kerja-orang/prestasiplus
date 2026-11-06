@@ -142,12 +142,27 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
       await join(student2, 'papan-bijak', code)
       parseRoom(await student.post(P('papan-bijak', code, '/start')))
       const res = await leave(student, 'papan-bijak', code)
-      expect(parseRoom(res).status).toBe('finished')
+      const view = parseRoom(res)
+      expect(view.status).toBe('finished')
+      expect(view.result?.winnerId).toBe(student2.userId) // the host left: the remaining human wins by default
       const rows = await t.db.query(
         `select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`,
         [student.userId],
       )
       expect(rows).toEqual([{ wins: 0, jumlah: 1, skor: 0, betul: 0 }])
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [student2.userId])).toEqual([{ wins: 1, jumlah: 1 }])
+    })
+
+    it('a NON-host leaving a 2-human Papan Bijak room drops players below the minimum: the game ends, the host wins by default, the leaver gets jumlah + 1 only', async () => {
+      await t.db.query("delete from game_standings where game = 'papan-bijak'")
+      const code = await createRoom(student, 'papan-bijak', PB_FORM)
+      await join(student2, 'papan-bijak', code)
+      parseRoom(await student.post(P('papan-bijak', code, '/start')))
+      const view = parseRoom(await leave(student2, 'papan-bijak', code))
+      expect(view.status).toBe('finished')
+      expect(view.result?.winnerId).toBe(student.userId)
+      expect(await t.db.query(`select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`, [student2.userId])).toEqual([{ wins: 0, jumlah: 1, skor: 0, betul: 0 }])
+      expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [student.userId])).toEqual([{ wins: 1, jumlah: 1 }])
     })
 
     it('a robot-only game moves no standing when its host leaves', async () => {

@@ -115,6 +115,10 @@ export function createTimelinePost(input: TimelineInput, o: Signal = {}): Promis
   return api.multipart<TimelinePost>('/api/timeline', form, withSignal(o))
 }
 
+/** `DELETE /api/timeline/:id` (API-RPT-15): own post only; 404 for any other id. Answers `{ deleted: 1 }`. */
+export const deleteTimelinePost = (id: number | string, o: Signal = {}) =>
+  api.delete<{ deleted: 1 }>(`/api/timeline/${encodeURIComponent(String(id))}`, withSignal(o))
+
 /** #20 `GET /api/public/students/:id` (S18; no session needed); 404 unknown. */
 export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>
   api.get<PublicProfile>(`/api/public/students/${String(id)}`, withSignal(o))
