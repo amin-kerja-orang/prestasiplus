@@ -29,6 +29,12 @@ import type {
 } from '../domain/types'
 import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
 
+/** The two paper lists of `GET /api/bijak/papers?surface` (default `simulasi`). */
+export type PaperSurface = 'simulasi' | 'subjektif'
+
+/** A row of the list; the Kertas Subjektif rows also carry `surface` and `examBoard` (slug of OPT-NEGERI-KERTAS). */
+export type ListedPaper = PaperSummary & { surface?: PaperSurface; examBoard?: string }
+
 export interface SaveResult {
   savedAt: number
   /** The attempt is already closed; the device keeps its local copy. */
@@ -86,7 +92,7 @@ export interface BijakApi extends BijakKuizApi {
   subjects(): readonly Subject[]
   /** Sync: the server clock (HTTP: local clock plus the offset of the last attempt view). */
   serverNow(): number
-  listPapers(userId: number): Promise<PaperSummary[]>
+  listPapers(userId: number, surface?: PaperSurface): Promise<ListedPaper[]>
   getCover(userId: number, paperId: string): Promise<PaperCover>
   listContracts(): Promise<ContractRow[]>
   generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<BijakGenerateOutcome>
@@ -109,13 +115,15 @@ export interface BijakApi extends BijakKuizApi {
     questionId: string,
     payload?: SavePayload,
   ): Promise<QuestionResult>
-  getResult(userId: number, attemptId: string): Promise<ResultView>
+  /** `withScheme` is `?scheme=1`: a Kertas Subjektif result carries no scheme without it (AC-MUR-13-21). */
+  getResult(userId: number, attemptId: string, withScheme?: boolean): Promise<ResultView>
   history(userId: number): Promise<HistoryRow[]>
   /** R1-B12: the pupil's own mark (and band) for one part of a closed attempt. */
   selfMark(
     userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme?: boolean,
   ): Promise<SelfMarkOutcome>
   /** R1-B15 "Cuba Lagi": a fresh attempt on the paper of a closed attempt. */
   retryAttempt(userId: number, attemptId: string): Promise<{ attemptId: string }>

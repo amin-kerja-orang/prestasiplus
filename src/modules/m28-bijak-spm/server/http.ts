@@ -16,6 +16,7 @@ import type {
   BijakAttemptMeta,
   BijakAttemptPaperView,
   BijakAttemptPastSittings,
+  BijakAttemptResult,
   BijakAttemptResultView,
   BijakAttemptSaveResult,
   BijakAttemptSelfMarkResult,
@@ -42,10 +43,10 @@ import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
 import type {
   AttemptMode,
   AttemptPaperView,
+  AttemptResult,
   HistoryRow,
   InProgressInfo,
   PaperCover,
-  PaperSummary,
   QuestionResult,
   ResultView,
   SaveChange,
@@ -56,7 +57,15 @@ import type {
   SubmitPayload,
 } from '../domain/types'
 import { BijakError } from './errors'
-import type { BijakApi, BijakGenerateOutcome, ContractRow, SaveResult, SubmitResult } from './types'
+import type {
+  BijakApi,
+  BijakGenerateOutcome,
+  ContractRow,
+  ListedPaper,
+  PaperSurface,
+  SaveResult,
+  SubmitResult,
+} from './types'
 
 export interface HttpBijakOptions {
   /** The API client to send through. Default: the app-wide `api` (transport installed by bootstrap). */
@@ -123,13 +132,25 @@ function metaFromWire(m: BijakAttemptMeta): AttemptPaperView['attempt'] {
   }
 }
 
+/**
+ * S3-T06 (AC-MUR-13-21): a Kertas Subjektif result read without `?scheme=1` carries no `scheme` on its parts. The views keep
+ * their shape with an empty reveal (the part marks only), so nothing of the scheme is shown until it is fetched.
+ */
+function questionFromWire(q: BijakAttemptQuestionResult): QuestionResult {
+  return { ...q, parts: q.parts.map((p) => ({ ...p, scheme: p.scheme ?? { marks: p.marks } })) }
+}
+
+function resultFromWire(r: BijakAttemptResult): AttemptResult {
+  return { ...r, questions: r.questions.map(questionFromWire) }
+}
+
 function viewFromWire(v: BijakAttemptPaperView): AttemptPaperView {
   return {
     attempt: metaFromWire(v.attempt),
     sections: v.sections,
     questions: v.questions,
     groups: v.groups,
-    checks: v.checks,
+    checks: v.checks.map(questionFromWire),
   }
 }
 
@@ -283,8 +304,10 @@ export class HttpBijakServer implements BijakApi {
     return this.subjectList
   }
 
-  listPapers(): Promise<PaperSummary[]> {
-    return this.send<BijakPaperSummary[]>('GET', '/api/bijak/papers')
+  listPapers(_userId?: number, surface: PaperSurface = 'simulasi'): Promise<ListedPaper[]> {
+    // The default list keeps its URL: only the Kertas Subjektif lane adds `?surface`.
+    const query = surface === 'simulasi' ? '' : `?surface=${encodeURIComponent(surface)}`
+    return this.send<BijakPaperSummary[]>('GET', `/api/bijak/papers${query}`)
   }
 
   getCover(_userId: number, paperId: string): Promise<PaperCover> {
@@ -401,17 +424,17 @@ export class HttpBijakServer implements BijakApi {
       'POST',
       `/api/bijak/attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}/check`,
       payload ? payloadToWire(payload) : undefined,
-    )
+    ).then(questionFromWire)
   }
 
-  async getResult(_userId: number, attemptId: string): Promise<ResultView> {
+  async getResult(_userId: number, attemptId: string, withScheme = false): Promise<ResultView> {
     const wire = await this.send<BijakAttemptResultView>(
       'GET',
-      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/result`,
+      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/result${withScheme ? '?scheme=1' : ''}`,
     )
     return {
       attempt: metaFromWire(wire.attempt),
-      result: wire.result,
+      result: resultFromWire(wire.result),
       paper: viewFromWire(wire.paper),
     }
   }
@@ -431,18 +454,22 @@ export class HttpBijakServer implements BijakApi {
     _userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme = false,
   ): Promise<SelfMarkOutcome> {
     try {
-      return await this.exec<BijakAttemptSelfMarkResult>(
+      const out = await this.exec<BijakAttemptSelfMarkResult>(
         'POST',
-        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/self-mark`,
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/self-mark${withScheme ? '?scheme=1' : ''}`,
         body,
       )
+      return { ...out, result: resultFromWire(out.result) }
     } catch (e) {
       if (e instanceof ApiError && e.status === 422) {
         const msg = e.fields?.partId ?? e.fields?.band ?? e.fields?.mark
         if (msg) throw new BijakError('bad_request', msg)
       }
+      // 46 section 3.4: an automatically marked part answers 409 with its BM line; shown like a 422 refusal.
+      if (e instanceof ApiError && e.status === 409 && e.code === 'CONFLICT' && e.message) throw new BijakError('bad_request', e.message)
       throw toBijakError(e)
     }
   }

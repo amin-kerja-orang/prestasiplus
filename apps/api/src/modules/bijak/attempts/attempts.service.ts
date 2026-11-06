@@ -43,6 +43,7 @@ import {
 } from './attempts.constants'
 import {
   type AnswerRow,
+  type AttemptMode,
   type AttemptRow,
   AttemptsRepository,
   type PhotoRow,
@@ -228,6 +229,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
+      if (resolved.reason === 'out_of_scope') {
+        // S3-T07: outside the pupil's form, a NEW sitting or a restart is 404, but the pupil's own open sitting still resumes.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
+      }
       if (resolved.reason === 'not_eligible') {
         // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
         if (!body.restart && !opts.fresh) {
@@ -239,6 +248,10 @@ export class BijakAttemptsService {
       throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     }
     const paper = resolved.paper
+    // DM-83 / API-BIJAK-04: the attempt kind follows the paper surface, never the body. A Kertas Subjektif sitting is always
+    // `latihan` and untimed (46 section 4.7), whatever mode the client sent.
+    const subjektif = paper.surface === 'subjektif'
+    const mode: AttemptMode = subjektif ? 'latihan' : body.mode
     const composition = freezeComposition(paper.sections)
     if (!composition.length || questionIdsOf(composition).length === 0) {
       this.logger.error('A paper without questions was offered for an attempt')
@@ -257,23 +270,23 @@ export class BijakAttemptsService {
       const attempt = await this.repo.create({
         userId,
         paperId: body.paperId,
-        paperKind: paper.kind,
+        paperKind: subjektif ? 'subjektif' : paper.kind,
         title: paper.title,
         subject: paper.subject,
         subjectName: paper.subjectName,
         kertas: paper.kertas,
         code: paper.code,
-        mode: body.mode,
+        mode,
         startedAt,
         // A paper with no Tempoh (durationMin 0, an untimed Kertas Subjektif paper; PO decision 2026-11-05, item 17) never gets a deadline.
-        deadlineAt: body.mode === 'exam' && paper.durationMin > 0 ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
+        deadlineAt: mode === 'exam' && paper.durationMin > 0 ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
         durationMin: paper.durationMin,
         composition,
         isTest,
       })
       return { attempt, created: true, abandoned: open.length }
     }, TX)
-    if (out.created) await this.record(AUDIT_ACTIONS.BIJAK_ATTEMPT_STARTED, auth, out.attempt.id, who, { mode: body.mode, restart: body.restart === true })
+    if (out.created) await this.record(AUDIT_ACTIONS.BIJAK_ATTEMPT_STARTED, auth, out.attempt.id, who, { mode, restart: body.restart === true })
     return { attemptId: out.attempt.id, created: out.created }
   }
 
@@ -320,7 +333,11 @@ export class BijakAttemptsService {
     return this.buildView(row, true)
   }
 
-  async result(userId: string, id: string): Promise<BijakAttemptResultView> {
+  /**
+   * `withScheme` is `?scheme=1` ("Tunjuk Skema Pemarkahan"). A Kertas Subjektif attempt carries no scheme text without it
+   * (AC-MUR-13-21, 46 section 3.5); every other attempt kind always carries its scheme after submit.
+   */
+  async result(userId: string, id: string, withScheme = false): Promise<BijakAttemptResultView> {
     let row = await this.owned(userId, id)
     if (this.expired(row)) {
       await this.closeExpired(row.id)
@@ -332,7 +349,7 @@ export class BijakAttemptsService {
     const bundles = await this.loadBundles(row.composition)
     const paper = await this.buildView(row, false, bundles)
     const result = this.present(row, stored, this.answerMap(await this.repo.answers(row.id)), bundles)
-    return { attempt: paper.attempt, result, paper }
+    return { attempt: paper.attempt, result: withholdScheme(row, result, withScheme), paper }
   }
 
   /** The result as served: automatic grading + keyword suggestions (R1-B13) + the pupil's self-marks on top (R1-B12). */
@@ -350,7 +367,7 @@ export class BijakAttemptsService {
    * replaces its earlier figures). The reward given at submit is NOT repeated; D94: a mark that raises the best-N total pays the gain through
    * `reward.awardSelfMark` (2 syiling and 10 XP per mark of the net gain over the highest paid total, once per level, capped at the maximum), the stored result's coins stay as at submit.
    */
-  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest): Promise<BijakAttemptSelfMarkResult> {
+  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest, withScheme = false): Promise<BijakAttemptSelfMarkResult> {
     await this.owned(auth.userId, id)
     const events: ClosedEvent[] = []
     const out = await this.prisma.transaction(async (): Promise<BijakAttemptSelfMarkResult> => {
@@ -366,7 +383,9 @@ export class BijakAttemptsService {
       const found = stored.result.questions.flatMap((q) => q.parts.map((p) => ({ q, p }))).find((x) => x.p.partId === body.partId)
       if (!found) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkPartUnknown } })
       const scheme = bundles.get(found.q.questionId)?.schemes[body.partId]
-      if (!isSelfMarkable(scheme)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
+      // 46 section 3.4: a part a person marks (scheme points or rubric, or any part left `belum_dimarkah`, K20); an
+      // automatically marked part answers 409.
+      if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('CONFLICT', { message: MSG.selfMarkNotSubjective })
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {
@@ -395,7 +414,8 @@ export class BijakAttemptsService {
         attemptMax: result.max,
         provisional: result.provisional,
         pendingReview: result.pendingReview,
-        result,
+        // A Kertas Subjektif attempt carries its scheme only when the request says it was revealed (`?scheme=1`, AC-MUR-13-21).
+        result: withholdScheme(row, result, withScheme),
       }
     }, TX)
     await this.emit(events)
@@ -723,7 +743,8 @@ export class BijakAttemptsService {
   ): Promise<BijakAttemptQuestionResult> {
     if (payload) assertAttemptPayload(payload)
     const first = await this.owned(userId, id)
-    if (first.mode !== 'latihan') throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
+    // A Kertas Subjektif sitting has no "Semak": its scheme comes only after "Hantar & Semak" (FR-PA-20, AC-PA-10).
+    if (first.mode !== 'latihan' || first.paperKind === 'subjektif') throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
     return this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw notFoundAttempt()
       const row = (await this.repo.find(id)) as AttemptRow
@@ -824,8 +845,9 @@ export class BijakAttemptsService {
           swept: e.swept,
           isTestAttempt: a.isTest,
         })
-        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward.
-        if (a.mode === 'exam') {
+        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward. A Kertas Subjektif
+        // sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
+        if (a.mode === 'exam' || a.paperKind === 'subjektif') {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
@@ -845,7 +867,7 @@ export class BijakAttemptsService {
         }
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
-      if (e.regraded && e.selfMark && a.mode === 'exam') {
+      if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
@@ -865,9 +887,7 @@ export class BijakAttemptsService {
           attemptId: a.id,
           userId: a.userId,
           isTest: a.isTest,
-          // The aggregate's start_type knows only the paper kinds; `subjektif` / `structured` (DM-83) are
-          // passed once S5 widens `ck_practice_attempt_aggregates_start_type` (S3-T06 cross-sector PR).
-          paperKind: a.paperKind === 'pilihan' || a.paperKind === 'jana' ? a.paperKind : undefined,
+          paperKind: a.paperKind,
           startedAt: a.startedAt,
           submittedAt: a.submittedAt,
           paperId: a.paperId,
@@ -911,3 +931,23 @@ function cleanFileName(raw: string | undefined, mime: string): string {
 }
 
 export { PAYLOAD_LIMITS }
+
+/**
+ * AC-MUR-13-21: a Kertas Subjektif attempt read without `?scheme=1` carries no scheme text: each part loses its `scheme`, its
+ * scheme `points` and the keyword `suggestion` (which quotes the scheme points). Marks, status and `selfMarkable` stay.
+ */
+export function withholdScheme(row: Pick<AttemptRow, 'paperKind'>, result: BijakAttemptResult, withScheme: boolean): BijakAttemptResult {
+  if (withScheme || row.paperKind !== 'subjektif') return result
+  return {
+    ...result,
+    questions: result.questions.map((q) => ({
+      ...q,
+      parts: q.parts.map((p) => {
+        const rest = { ...p, points: [] }
+        delete rest.scheme
+        delete rest.suggestion
+        return rest
+      }),
+    })),
+  }
+}

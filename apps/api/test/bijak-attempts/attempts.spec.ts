@@ -150,7 +150,7 @@ describe('reveal rules (US-15, AC3)', () => {
     expect(res.status).toBe(200)
     const r = BijakAttemptQuestionResultSchema.parse(res.body.data)
     expect(r.awarded).toBe(1)
-    expect(r.parts[0]!.scheme.correctOption).toBe(correctChoice(q))
+    expect(r.parts[0]!.scheme!.correctOption).toBe(correctChoice(q))
     const v1 = await view(me, id)
     expect(v1.checks.map((c) => c.questionId)).toEqual([q])
     // the other question stays closed
@@ -562,7 +562,7 @@ describe('latihan Semak (AC3, NFR-05)', () => {
     const fourth = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { ...body(right, 10), position: 7 })
     const r4 = BijakAttemptQuestionResultSchema.parse(fourth.body.data)
     expect(r4.awarded).toBe(0)
-    expect(r4.parts[0]!.scheme.correctOption).toBe(right)
+    expect(r4.parts[0]!.scheme!.correctOption).toBe(right)
     const v = await view(me, id)
     expect(v.attempt.answers[q]!.answer.choice).toBe(`${q}-wrong-3`)
     expect(v.attempt.checkCounts).toEqual({ [q]: 3 })
