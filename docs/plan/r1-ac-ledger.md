@@ -125,6 +125,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
 | S5-T04 | AC-MUR-2-11 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood-command-center.spec.ts::Guru Command Center "Mood Pelajar" counts 1 for Tertekan; mood-command-center.spec.ts::the Mood Pelajar drill lists the pupil; mood-command-center.spec.ts::the Admin Sekolah "Aktiviti Harian" mood panel counts it for the school; mood-command-center.spec.ts::and no other school |
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
+| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
+| S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
 
 ## Sprint 5
 
