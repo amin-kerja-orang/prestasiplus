@@ -95,10 +95,11 @@ beforeAll(async () => {
 
   // Papers for the Kertas Subjektif count: 2 published subjektif (one with a level_scope, one without), and the ones that do not count.
   const mathId = await idOf(db, 'subjects', 'MATH')
+  // `ck_papers_duration` (0161) allows a 0 duration for `surface = 'subjektif'` only.
   const paper = (status: string, surface: string, levelScope: string | null, title: string) =>
     db.query(
       `insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, surface, level_scope, published_at)
-       values ('pilihan', $1, $2, 2, 0, $3, $4, $5, case when $3 = 'published' then now() end)`,
+       values ('pilihan', $1, $2, 2, case when $4 = 'subjektif' then 0 else 60 end, $3, $4, $5, case when $3 = 'published' then now() end)`,
       [title, mathId, status, surface, levelScope],
     )
   await paper('published', 'subjektif', null, 'Kertas hub 1')
