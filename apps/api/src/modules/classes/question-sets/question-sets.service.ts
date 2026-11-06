@@ -36,7 +36,7 @@ export class QuestionSetsService {
     const buildable = sets.filter((s) => !s.needsRebuild)
     const stored = await this.repo.itemIds(buildable.map((s) => s.id))
     const all = [...new Set([...stored.values()].flat())]
-    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live')
+    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live', 'exclude', { lenientKeys: true })
     // The same verdict play applies (`servableMcq` with stimulus allowed, as `servableRecords` does via `check(m, true)`), so the list count matches what a start serves.
     // Dependency on S5-T03: play serves groups on the 'bab' surface only once `GROUP_SURFACES` lists it; the count follows the final shape.
     const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved' && servableMcq(q, { allowStimulus: true }).ok).map((q) => q.id))

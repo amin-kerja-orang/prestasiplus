@@ -79,19 +79,31 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
     const [row] = await t.db.query<{ id: string }>(`insert into topics (chapter_id, name) values ($1::bigint, $2) returning id::text`, [chapterOf.get(tp.chapterId)!, tp.name])
     topicOf.set(tp.id, row!.id)
   }
+  // `practice_answers.session_id` is a foreign key, so every answer-linked session id needs a row. These rows exist only
+  // for that key: they are 'in_progress' with no completed_at (the table requires status completed <=> completed_at set),
+  // so `sessionDurations` (finished sessions only) never sees them. The finished sessions it counts come only from
+  // `seed.sessions`, which is exactly what the in-memory fake receives: one row per finished session on both adapters.
+  // Mode and the other answer-side reads only use `ps.mode`, so they are unaffected by the status.
   const sessionOf = new Map<string, string>()
   for (const a of seed.answers) {
     if (a.sessionId === undefined || sessionOf.has(a.sessionId)) continue
     const [row] = await t.db.query<{ id: string }>(
-      `insert into practice_sessions (user_id, mode, question_count, status, started_at, completed_at, is_test) values ($1::bigint, $2, 1, 'completed', $3::timestamptz, $3::timestamptz, false) returning id::text`,
+      `insert into practice_sessions (user_id, mode, question_count, status, started_at, is_test) values ($1::bigint, $2, 1, 'in_progress', $3::timestamptz, false) returning id::text`,
       [userOf.get(a.userId)!, MODE_IN[a.mode] ?? a.mode, a.answeredAt.toISOString()],
     )
     sessionOf.set(a.sessionId, row!.id)
   }
+  for (const x of seed.sessions ?? []) {
+    await t.db.query(
+      `insert into practice_sessions (user_id, mode, subject_id, question_count, status, time_spent_sec, started_at, completed_at, is_test)
+       values ($1::bigint, $2, $3::bigint, 1, $4::text, $5, $6::timestamptz, case when $4::text = 'completed' then $6::timestamptz end, $7)`,
+      [userOf.get(x.userId)!, MODE_IN[x.mode] ?? x.mode, subjectOf(x.subjectId), x.status, x.timeSpentSec, x.completedAt.toISOString(), x.isTest === true],
+    )
+  }
   for (const a of seed.answers) {
     await t.db.query(
-      `insert into practice_answers (session_id, user_id, question_id, subject_id, education_level_id, chapter_id, topic_id, is_correct, answered_at, is_test)
-       values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5::bigint, $6::bigint, $7::bigint, $8, $9::timestamptz, $10)`,
+      `insert into practice_answers (session_id, user_id, question_id, subject_id, education_level_id, chapter_id, topic_id, is_correct, answered_at, is_test, mode)
+       values ($1::uuid, $2::bigint, $3::bigint, $4::bigint, $5::bigint, $6::bigint, $7::bigint, $8, $9::timestamptz, $10, 'latih_tubi')`,
       [
         a.sessionId === undefined ? null : sessionOf.get(a.sessionId)!,
         userOf.get(a.userId)!,
@@ -130,6 +142,8 @@ async function translating(seed: AnswerFactsSeed): Promise<AnswerFactsPort> {
         mode: MODE_OUT[r.mode] ?? r.mode,
       })),
     weeklyFacts: async (q) => (await real.weeklyFacts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
+    dailyFacts: async (q) => (await real.dailyFacts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
+    sessionDurations: async (q) => (await real.sessionDurations(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)! })),
     sessionCounts: async (q) =>
       (await real.sessionCounts(scope(q))).map((r) => ({ ...r, userId: userBack.get(r.userId)!, subjectId: r.subjectId === null ? null : (subjectBack.get(r.subjectId) ?? r.subjectId) })),
     spInfo: async (q) =>

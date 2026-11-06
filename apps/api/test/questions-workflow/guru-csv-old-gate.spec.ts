@@ -1,4 +1,4 @@
-import { INTAKE_GATE_MESSAGES as G, QuestionGateCheckSchema, QuestionGuruSummarySchema, SessionSchema, envelopeOf, listEnvelopeOf } from '@pp/contract'
+import { QuestionGateCheckSchema, QuestionGuruSummarySchema, SessionSchema, envelopeOf, listEnvelopeOf } from '@pp/contract'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
@@ -14,11 +14,10 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 300_000 })
  * Real app, real routes, no row is written by hand. The OLD header is the legacy one (`question_text,...,subject_id,education_level_id,difficulty_level`):
  * it has no Bab, no SP, no TP and no Aras column, so the row becomes a guru intake item with `low_fields = [tag.tp, tag.sp]` and no unit.
  *   1. the teacher imports the row (POST /api/guru/questions/import) and sees "Menunggu Semakan";
- *   2. Accept is refused by the intake gate while the unit/SP/TP are not set (422 details.issues); the teacher still sees "Menunggu Semakan";
- *   3. the admin sets the unit, SP, TP and Aras on the item in review (PATCH /api/intake/items/:id), confirms the low fields and accepts: a Draf with NO Bab;
- *   4. Draf -> Semakan needs no Bab; Terbitkan (POST /api/questions/:id/status approved) is refused with 422 `fields.chapterId` "Sila pilih Bab.";
+ *   2. Accept (S1-T04: a Draf needs no Unit, SP or Bab) returns 200 and creates a Draf with none of them; the teacher still sees "Menunggu Semakan";
+ *   3. Draf -> Semakan, then Terbitkan (POST /api/questions/:id/status approved) is refused with 422 `fields` unitId, spIds and chapterId ("Sila pilih Bab.");
  *      the question stays in review and the teacher still sees "Menunggu Semakan";
- *   5. the admin sets the Bab (PUT /api/questions/:id), Terbitkan succeeds, and the teacher now sees "Diluluskan".
+ *   4. the admin sets the Unit, SP, TP, Aras and Bab (PUT /api/questions/:id), Terbitkan succeeds, and the teacher now sees "Diluluskan".
  */
 interface Client {
   userId: string
@@ -120,63 +119,52 @@ describe('AC-GUR-44-11: an old guru CSV row without Bab and SP is refused at Ter
     expect(await listed()).toMatchObject({ status: 'pending', statusLabel: 'Menunggu Semakan', editable: true, questionText: STEM })
   })
 
-  it('2. Accept is refused while the unit and SP are not set (422 with the gate issues); nothing is created and the teacher still sees "Menunggu Semakan"', async () => {
+  it('2. Accept checks only what a Draf needs (S1-T04): 200, a Draf with no Unit, SP, TP or Bab; the teacher still sees "Menunggu Semakan"', async () => {
     const before = await questionRows()
-    const res = await admin.post(`/api/intake/items/${itemId}/accept`)
-    expect(res.status, JSON.stringify(res.body)).toBe(422)
-    expect(res.body.error.code).toBe('VALIDATION_ERROR')
-    const messages = (res.body.error.details.issues as { message: string }[]).map((i) => i.message)
-    expect(messages).toEqual(expect.arrayContaining([G.unitMissing, G.spMissing]))
-    expect(await questionRows()).toBe(before)
-    expect((await item()).review_state).toBe('needs_review')
-    expect(await listed()).toMatchObject({ status: 'pending', statusLabel: 'Menunggu Semakan' })
-  })
-
-  it('3. the admin sets the unit, SP, TP and Aras on the item in review, confirms the low fields and accepts: a Draf with no Bab', async () => {
-    const stored = await item()
-    const tag = (stored.payload as { tag: Record<string, unknown> }).tag
-    const patched = await admin.patch(`/api/intake/items/${itemId}`, {
-      tag: { ...tag, unit: unitCode, unitLabel: 'Unit ujian', sp: [spCode], tp: 3 },
-      cognitiveLevel: 'mengaplikasi',
-      confirmed: stored.low_fields,
-    })
-    expect(patched.status, JSON.stringify(patched.body)).toBe(200)
+    // the reviewer confirms the two low-confidence tag fields as they are (still empty): Draf -> Semakan asks for that, not for a value
+    const confirm = await admin.patch(`/api/intake/items/${itemId}`, { confirmed: (await item()).low_fields })
+    expect(confirm.status, JSON.stringify(confirm.body)).toBe(200)
     const res = await admin.post(`/api/intake/items/${itemId}/accept`)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const accepted = await item()
     expect(accepted.review_state).toBe('accepted')
     questionId = String(accepted.question_id)
     expect(questionId).not.toBe('null')
-    expect(await latest()).toMatchObject({ status: 'draft', chapter: null })
-    expect((await latest()).unit).not.toBeNull()
+    expect(await questionRows(), 'Terima creates exactly one question').toBe(before + 1)
+    expect(await latest()).toMatchObject({ status: 'draft', chapter: null, unit: null })
     // accepted but not published: the teacher still sees "Menunggu Semakan", and can no longer edit it
     expect(await listed()).toMatchObject({ status: 'pending', statusLabel: 'Menunggu Semakan', editable: false })
   })
 
-  it('4. Semakan needs no Bab, but Terbitkan is refused with "Sila pilih Bab."; the question stays in review and the teacher still sees "Menunggu Semakan"', async () => {
+  it('3. Terbitkan is refused: 422 with the gate issues for Unit, SP and Bab; the question keeps its status and the teacher still sees "Menunggu Semakan"', async () => {
     const submit = await admin.post(`/api/questions/${questionId}/status`, { to: 'review' })
     expect(submit.status, JSON.stringify(submit.body)).toBe(200)
     expect((await latest()).status).toBe('review')
 
     const check = await gateCheck()
     expect(check.ok).toBe(false)
-    expect(check.issues).toContainEqual({ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.', step: 4 })
+    expect(check.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'unitId', message: 'Sila pilih unit DSKP.' }),
+        expect.objectContaining({ path: 'spIds', message: 'Sila pilih sekurang-kurangnya satu SP DSKP.' }),
+        expect.objectContaining({ path: 'chapterId', code: 'NO_CHAPTER', message: 'Sila pilih Bab.' }),
+      ]),
+    )
 
     const refused = await admin.post(`/api/questions/${questionId}/status`, { to: 'approved' })
     expect(refused.status, JSON.stringify(refused.body)).toBe(422)
     expect(refused.body.error.code).toBe('VALIDATION_ERROR')
-    expect(refused.body.error.fields).toMatchObject({ chapterId: 'Sila pilih Bab.' })
-    // the unit and SP were set by the admin in step 3, so the gate does not ask for them again
-    expect(refused.body.error.fields).not.toHaveProperty('unitId')
-    expect(refused.body.error.fields).not.toHaveProperty('spIds')
-    expect(await latest()).toMatchObject({ status: 'review', chapter: null })
+    expect(refused.body.error.fields).toMatchObject({
+      unitId: 'Sila pilih unit DSKP.',
+      spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
+      chapterId: 'Sila pilih Bab.',
+    })
+    expect(await latest()).toMatchObject({ status: 'review', chapter: null, unit: null })
     expect(await listed()).toMatchObject({ status: 'pending', statusLabel: 'Menunggu Semakan' })
   })
 
-  it('5. the admin sets the Bab in review, Terbitkan succeeds, and the teacher now sees "Diluluskan"', async () => {
-    const version = await q(`select v.id::text id, v.unit_node_id::text unit from question_versions v where v.question_id = $1::bigint order by v.version_no desc limit 1`, [questionId])
-    const sps = await q(`select node_id::text node from question_version_sp_nodes where question_version_id = $1::bigint`, [version[0]!.id])
-    expect(sps.length).toBeGreaterThan(0)
+  it('4. the admin sets Unit, SP, TP, Aras and Bab on the question, Terbitkan succeeds, and the teacher now sees "Diluluskan"', async () => {
+    const nodeId = async (code: string) => String((await q(`select id::text id from curriculum_nodes where code = $1 and subject_id = $2::bigint and education_level_id = $3::bigint order by id limit 1`, [code, subjectId, levelId]))[0]!.id)
     const put = await admin.put(`/api/questions/${questionId}`, {
       subjectId,
       educationLevelId: levelId,
@@ -188,10 +176,11 @@ describe('AC-GUR-44-11: an old guru CSV row without Bab and SP is refused at Ter
       kertas: '2',
       cognitiveLevel: 'mengaplikasi',
       curriculumChapterId: chapterId,
-      tag: { unitId: String(version[0]!.unit), spIds: sps.map((s) => String(s.node)), tp: 3 },
+      tag: { unitId: await nodeId(unitCode), spIds: [await nodeId(spCode)], tp: 3 },
     })
     expect(put.status, JSON.stringify(put.body)).toBe(200)
-    expect(await latest()).toMatchObject({ status: 'review', chapter: chapterId })
+    expect(await latest()).toMatchObject({ status: 'review', chapter: chapterId, tp: 3 })
+    expect((await latest()).unit).not.toBeNull()
     expect((await gateCheck()).ok).toBe(true)
 
     const approved = await admin.post(`/api/questions/${questionId}/status`, { to: 'approved' })

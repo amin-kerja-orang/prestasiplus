@@ -1,5 +1,23 @@
 [
   {
+    "code": "t1",
+    "name": "Tingkatan 1",
+    "classes": 10,
+    "students": 0
+  },
+  {
+    "code": "t2",
+    "name": "Tingkatan 2",
+    "classes": 12,
+    "students": 0
+  },
+  {
+    "code": "t3",
+    "name": "Tingkatan 3",
+    "classes": 9,
+    "students": 0
+  },
+  {
     "code": "t4",
     "name": "Tingkatan 4",
     "classes": 13,
