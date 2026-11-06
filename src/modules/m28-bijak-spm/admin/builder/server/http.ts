@@ -38,6 +38,9 @@ import {
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
+  type SubjektifCreate,
+  type SubjektifPage,
+  type SubjektifQuery,
 } from './api'
 
 const PAGE_SIZE = 100
@@ -46,7 +49,7 @@ const enc = encodeURIComponent
 const GENERIC = 'Sesuatu tidak kena. Sila cuba lagi.'
 
 interface ErrBody {
-  error?: { code?: string; message?: string; details?: { shortages?: BijakGenerateShortage[] } }
+  error?: { code?: string; message?: string; fields?: Record<string, string>; details?: { shortages?: BijakGenerateShortage[] } }
 }
 
 /** Maps a failed request to a `BuilderError`; `missing` = what a 404 means on this route. */
@@ -61,7 +64,10 @@ export function builderErrorFrom(e: unknown, missing: 'not_found' | 'no_blueprin
   if (e.status === 404)
     return new BuilderError(missing, msg || (missing === 'no_blueprint' ? 'Tiada blueprint untuk subjek dan kertas ini' : 'Kertas tidak ditemui'))
   if (e.status === 403) return new BuilderError('forbidden', msg || 'Akses ditolak')
-  if (e.status === 400 || e.status === 422) return new BuilderError('invalid', msg || GENERIC, e.fields ? { fields: e.fields } : {})
+  if (e.status === 400 || e.status === 422) {
+    const fields = e.fields ?? body.error?.fields
+    return new BuilderError('invalid', msg || GENERIC, fields ? { fields } : {})
+  }
   return new BuilderError('other', msg || GENERIC)
 }
 
@@ -73,7 +79,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
   private async call<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | FormData,
     missing: 'not_found' | 'no_blueprint' = 'not_found',
   ): Promise<T> {
     try {
@@ -248,6 +254,61 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
 
   units(subject: string): Promise<BijakDskpUnit[]> {
     return this.call('GET', `/api/admin/bijak/dskp/units?subject=${enc(subject)}`)
+  }
+
+  async listSubjektif(query: SubjektifQuery = {}): Promise<SubjektifPage> {
+    const qs = new URLSearchParams({ surface: 'subjektif' })
+    if (query.subject) qs.set('subject', query.subject)
+    if (query.kertas) qs.set('kertas', String(query.kertas))
+    if (query.status) qs.set('status', query.status)
+    if (query.year) qs.set('year', String(query.year))
+    if (query.negeri) qs.set('negeri', query.negeri)
+    qs.set('page', String(query.page ?? 1))
+    qs.set('pageSize', String(query.pageSize ?? 25))
+    try {
+      const res = await this.client.request<{
+        data: BijakBuilderPaperSummary[]
+        meta?: { totalItems?: number; counts?: SubjektifPage['counts'] }
+      }>('GET', `/api/admin/papers?${qs.toString()}`, { raw: true })
+      const rows = (res?.data ?? []).map(summaryFromWire)
+      return {
+        rows,
+        total: res?.meta?.totalItems ?? rows.length,
+        counts: res?.meta?.counts ?? null,
+      }
+    } catch (e) {
+      throw builderErrorFrom(e)
+    }
+  }
+
+  async createSubjektif(input: SubjektifCreate): Promise<{ id: string }> {
+    const body: Record<string, unknown> = {
+      surface: 'subjektif',
+      title: input.title.trim(),
+      subject: input.subject,
+      kertas: input.kertas,
+      examBoard: input.examBoard,
+      year: input.year,
+      totalMarks: input.totalMarks,
+    }
+    if (input.durationMinutes !== undefined) body.durationMinutes = input.durationMinutes
+    const out = await this.call<{ id: string }>('POST', '/api/admin/papers', body)
+    return { id: out.id }
+  }
+
+  async deletePaper(id: string): Promise<void> {
+    await this.call('DELETE', `/api/admin/papers/${enc(id)}`)
+  }
+
+  async uploadSource(id: string, files: { paper: File; scheme?: File | null }): Promise<{ batchId: string }> {
+    const form = new FormData()
+    form.append('paper', files.paper, files.paper.name)
+    if (files.scheme) form.append('scheme', files.scheme, files.scheme.name)
+    return this.call<{ batchId: string }>('POST', `/api/admin/papers/${enc(id)}/source`, form)
+  }
+
+  applySource(id: string): Promise<{ placements: number }> {
+    return this.call('POST', `/api/admin/papers/${enc(id)}/source`, { apply: true })
   }
 }
 

@@ -3186,6 +3186,38 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/kertas-subjektif|",
+      "path": "/admin/spm/kertas-subjektif",
+      "name": null,
+      "status": "redirect-to:/admin/kertas-subjektif",
+      "sector": "S3",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "redirects_to": "/admin/kertas-subjektif",
+      "note": "V2 path alias; docs/prd/r1/30-admin-pusat.md 3.2",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/kertas-subjektif|",
+      "path": "/admin/kertas-subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifPaperListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/kertas-subjektif/:id|",
+      "path": "/admin/kertas-subjektif/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifPaperDetailPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/spm/subjektif|",
       "path": "/admin/spm/subjektif",
       "name": null,

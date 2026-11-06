@@ -212,6 +212,14 @@ export interface AdminPaper extends Omit<PaperDef, 'sections'> {
   updatedAt: number
   publishedAt?: number
   sections: SectionDef[]
+  /** S3-T06 (DM-23): `subjektif` = a Kertas Subjektif paper. */
+  surface?: 'simulasi' | 'subjektif'
+  /** S3-T06 `Negeri` (OPT-NEGERI-KERTAS slug). */
+  examBoard?: string | null
+  /** S3-T06 `Tempoh (minit)`; null or 0 = untimed. */
+  durationMinutes?: number | null
+  /** S3-T06 `Jumlah Markah` typed by the admin. */
+  totalMarks?: number | null
   /** `Dilihat murid` (`papers.level_scope`); null = not restricted. */
   levelScope?: BijakLevelScope | null
   /** A draft imported from an intake batch (DM-45, S1-T10): `Terbitkan` only from the preview (FR-ADM-Q07.7). */
@@ -252,6 +260,14 @@ export interface AdminPaperSummary {
   budget: number
   ok: boolean
   updatedAt: number
+  /** S3-T06 (DM-23) fields of a Kertas Subjektif row. */
+  surface?: 'simulasi' | 'subjektif'
+  examBoard?: string | null
+  year?: number
+  /** Placed questions that have a scheme (`{s}` of `{q} soalan, {s} bersekema`). */
+  schemeCount?: number
+  totalMarks?: number | null
+  durationMinutes?: number | null
   /** `Dilihat murid`; null = not restricted. */
   levelScope?: BijakLevelScope | null
   /** Origin of the placed questions per Negeri, largest first. */
@@ -278,6 +294,8 @@ export interface BuilderQuestion {
    * builder answer carries it (request to team A: `pinned` per placed question).
    */
   pinned?: boolean
+  /** S3-T06: on a question placed on a Kertas Subjektif paper, whether it has a mark scheme. */
+  hasScheme?: boolean
 }
 
 export interface BuilderGroup {

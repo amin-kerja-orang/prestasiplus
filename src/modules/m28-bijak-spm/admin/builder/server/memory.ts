@@ -35,6 +35,9 @@ import {
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
+  type SubjektifCreate,
+  type SubjektifPage,
+  type SubjektifQuery,
 } from './api'
 
 const ALREADY = (id: string): string => `Soalan ${id} sudah ada dalam kertas ini`
@@ -96,6 +99,124 @@ function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_
   if (/berulang/.test(message)) return 'DUPLICATE_QUESTION'
   if (/tidak lengkap/.test(message)) return 'GROUP_INCOMPLETE'
   return 'COUNT_TOO_FEW'
+}
+
+/* ------------------------------------------------------------------- S3-T06 Kertas Subjektif */
+
+interface SjQuestion {
+  id: string
+  preview: string
+  marks: number
+  hasScheme: boolean
+}
+interface SjPaper {
+  id: string
+  title: string
+  subject: string
+  subjectName: string
+  kertas: number
+  examBoard: string
+  year: number
+  durationMinutes: number | null
+  totalMarks: number
+  status: 'draf' | 'terbit'
+  questions: SjQuestion[]
+  updatedAt: number
+}
+
+const SJ_SUBJECTS: Record<string, string> = { BM: 'Bahasa Melayu', MAT: 'Matematik', SN: 'Sains' }
+const SJ_AT = 1_800_000_000_000
+const fill = (text: string, vars: Record<string, string | number>): string =>
+  text.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''))
+
+/** Seed: two published papers (one with a question that has no scheme) and one empty draft; fictional titles. */
+function sjSeed(): SjPaper[] {
+  const q = (n: number, marks: number, hasScheme = true): SjQuestion => ({ id: String(9000 + n), preview: `Soalan contoh ${n}`, marks, hasScheme })
+  return [
+    { id: 'sj-1', title: 'Bahasa Melayu Kertas 2 - Percubaan Contoh', subject: 'BM', subjectName: 'Bahasa Melayu', kertas: 2, examBoard: 'Selangor', year: 2025, durationMinutes: 150, totalMarks: 40, status: 'terbit', questions: [q(1, 20), q(2, 20)], updatedAt: SJ_AT },
+    { id: 'sj-2', title: 'Matematik Kertas 2 - Percubaan Contoh', subject: 'MAT', subjectName: 'Matematik', kertas: 2, examBoard: 'MRSM', year: 2024, durationMinutes: null, totalMarks: 30, status: 'terbit', questions: [q(3, 10), q(4, 20, false)], updatedAt: SJ_AT - 86_400_000 },
+    { id: 'sj-3', title: 'Sains Kertas 3 - Percubaan Contoh', subject: 'SN', subjectName: 'Sains', kertas: 3, examBoard: 'Johor', year: 2025, durationMinutes: 0, totalMarks: 50, status: 'draf', questions: [], updatedAt: SJ_AT - 172_800_000 },
+  ]
+}
+
+const sjRow = (p: SjPaper): AdminPaperSummary => ({
+  id: p.id,
+  title: p.title,
+  subject: p.subject,
+  subjectName: p.subjectName,
+  kertas: p.kertas,
+  code: `K${p.kertas}`,
+  status: p.status,
+  questionCount: p.questions.length,
+  marks: p.questions.reduce((n, x) => n + x.marks, 0),
+  budget: p.totalMarks,
+  ok: true,
+  updatedAt: p.updatedAt,
+  surface: 'subjektif',
+  examBoard: p.examBoard,
+  year: p.year,
+  schemeCount: p.questions.filter((x) => x.hasScheme).length,
+  totalMarks: p.totalMarks,
+  durationMinutes: p.durationMinutes,
+})
+
+function sjEditor(p: SjPaper): PaperEditorData {
+  const section = {
+    id: `${p.id}-s1`,
+    label: 'Bahagian A',
+    markBudget: p.totalMarks,
+    questionCount: p.questions.length,
+    rule: { type: 'all' as const },
+    questionIds: p.questions.map((x) => x.id),
+  }
+  return {
+    paper: {
+      id: p.id,
+      title: p.title,
+      subject: p.subject,
+      kertas: p.kertas as 1 | 2,
+      year: p.year,
+      code: `K${p.kertas}`,
+      durationMin: p.durationMinutes ?? 0,
+      instructions: [],
+      sections: [section],
+      status: p.status,
+      createdAt: p.updatedAt,
+      updatedAt: p.updatedAt,
+      surface: 'subjektif',
+      examBoard: p.examBoard,
+      durationMinutes: p.durationMinutes,
+      totalMarks: p.totalMarks,
+    },
+    blueprint: null,
+    questions: p.questions.map((x) => ({
+      id: x.id,
+      preview: x.preview,
+      marks: x.marks,
+      kind: 'berstruktur' as const,
+      topic: 'Contoh',
+      status: 'terbit' as const,
+      kertas: p.kertas,
+      subject: p.subject,
+      // `servable` is deliberately not the scheme flag (a Terbit paper reads servable for every pinned question).
+      servable: true,
+      hasScheme: x.hasScheme,
+    })),
+    groups: [],
+  }
+}
+
+/** Field checks of 18-02..18-08 (the 422 `fields` of the server). */
+function sjValidate(v: { title?: string; examBoard?: string; year?: number; durationMinutes?: number | null; totalMarks?: number }): Record<string, string> {
+  const f: Record<string, string> = {}
+  const m = BIJAK_BUILDER_MESSAGES
+  if (!v.title?.trim()) f.title = m.subjektifTitleRequired
+  else if (v.title.trim().length > 150) f.title = m.subjektifTitleTooLong
+  if (!v.examBoard?.trim()) f.examBoard = m.examBoardRequired
+  if (!v.year) f.year = m.yearRequired
+  if (v.durationMinutes != null && (!Number.isInteger(v.durationMinutes) || v.durationMinutes < 0 || v.durationMinutes > 300)) f.durationMinutes = m.durationRange
+  if (!v.totalMarks || !Number.isInteger(v.totalMarks) || v.totalMarks < 1 || v.totalMarks > 200) f.totalMarks = m.totalMarksRange
+  return f
 }
 
 /** `Tajuk set` (PRD30 13-01): the 422 `fields.title` the API answers, as the http client reads it. */
@@ -251,11 +372,37 @@ export class MockBuilderServer implements BuilderApi {
     await (await this.a()).deletePaper(id)
   }
 
+  private sj: SjPaper[] = sjSeed()
+  private sjSeq = 3
+  private sjFind(id: string): SjPaper | undefined {
+    return this.sj.find((p) => p.id === id)
+  }
+
   async getEditor(id: string): Promise<PaperEditorData> {
+    const sj = this.sjFind(id)
+    if (sj) return sjEditor(sj)
     return this.withChips(await (await this.a()).getPaperEditor(id))
   }
 
   async updateHeader(id: string, patch: HeaderPatch): Promise<PaperEditorData> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      if (sj.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+      const fields = sjValidate({
+        title: patch.title ?? sj.title,
+        examBoard: patch.examBoard ?? sj.examBoard,
+        year: patch.year ?? sj.year,
+        durationMinutes: patch.durationMinutes === undefined ? sj.durationMinutes : patch.durationMinutes,
+        totalMarks: patch.totalMarks ?? sj.totalMarks,
+      })
+      if (Object.keys(fields).length) throw new BuilderError('invalid', Object.values(fields)[0]!, { fields })
+      if (patch.title !== undefined) sj.title = patch.title.trim()
+      if (patch.examBoard !== undefined) sj.examBoard = patch.examBoard
+      if (patch.year !== undefined) sj.year = patch.year
+      if (patch.durationMinutes !== undefined) sj.durationMinutes = patch.durationMinutes
+      if (patch.totalMarks !== undefined) sj.totalMarks = patch.totalMarks
+      return sjEditor(sj)
+    }
     const a = await this.a()
     const { instructions, code, ...rest } = patch
     const ed = await a.getPaperEditor(id)
@@ -451,6 +598,18 @@ export class MockBuilderServer implements BuilderApi {
   }
 
   async publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      const errors: string[] = []
+      if (sj.questions.length === 0) errors.push(fill(BIJAK_BUILDER_MESSAGES.subjektifNoContent, { title: sj.title }))
+      for (const x of sj.questions) if (!x.hasScheme) errors.push(`${x.preview}: ${BIJAK_BUILDER_MESSAGES.subjektifNoScheme}`)
+      const sum = sj.questions.reduce((n, x) => n + x.marks, 0)
+      if (sj.questions.length && sum !== sj.totalMarks)
+        errors.push(fill(BIJAK_BUILDER_MESSAGES.totalMarksMismatch, { a: sj.totalMarks, b: sum }))
+      if (errors.length) return { ok: false, errors, blockerDetails: [], canOverride: false }
+      sj.status = 'terbit'
+      return { ok: true, errors: [] }
+    }
     if (options.override && (options.reason ?? '').trim().length < 5)
       throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
     const a = await this.a()
@@ -516,6 +675,11 @@ export class MockBuilderServer implements BuilderApi {
   }
 
   async withdraw(id: string): Promise<void> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      sj.status = 'draf'
+      return
+    }
     await (await this.a()).unpublishPaper(id)
   }
 
@@ -534,6 +698,71 @@ export class MockBuilderServer implements BuilderApi {
 
   async units(subject: string): Promise<BijakDskpUnit[]> {
     return kontrakServer().listUnits(subject)
+  }
+
+  async listSubjektif(query: SubjektifQuery = {}): Promise<SubjektifPage> {
+    await Promise.resolve()
+    const all = this.sj
+    const hit = all.filter(
+      (p) =>
+        (!query.subject || p.subject === query.subject) &&
+        (!query.kertas || p.kertas === query.kertas) &&
+        (!query.status || p.status === query.status) &&
+        (!query.year || p.year === query.year) &&
+        (!query.negeri || bijakNegeriSlug(p.examBoard) === bijakNegeriSlug(query.negeri)),
+    )
+    const size = query.pageSize ?? 25
+    const page = query.page ?? 1
+    const full = (p: SjPaper): boolean => p.questions.length > 0 && p.questions.every((x) => x.hasScheme)
+    return {
+      rows: hit.slice((page - 1) * size, page * size).map(sjRow),
+      total: hit.length,
+      counts: { total: all.length, published: all.filter((p) => p.status === 'terbit').length, withScheme: all.filter(full).length },
+    }
+  }
+
+  async createSubjektif(input: SubjektifCreate): Promise<{ id: string }> {
+    await Promise.resolve()
+    const fields = sjValidate(input)
+    if (!input.subject) fields.subject = BIJAK_BUILDER_MESSAGES.subjectRequired
+    if (![2, 3, 4].includes(input.kertas)) fields.kertas = BIJAK_BUILDER_MESSAGES.kertasInvalid
+    if (Object.keys(fields).length) throw new BuilderError('invalid', Object.values(fields)[0]!, { fields })
+    this.sjSeq += 1
+    const id = `sj-${this.sjSeq}`
+    this.sj.unshift({
+      id,
+      title: input.title.trim(),
+      subject: input.subject,
+      subjectName: SJ_SUBJECTS[input.subject] ?? input.subject,
+      kertas: input.kertas,
+      examBoard: input.examBoard,
+      year: input.year,
+      durationMinutes: input.durationMinutes ?? null,
+      totalMarks: input.totalMarks,
+      status: 'draf',
+      questions: [],
+      updatedAt: SJ_AT,
+    })
+    return { id }
+  }
+
+  async deletePaper(id: string): Promise<void> {
+    await Promise.resolve()
+    const i = this.sj.findIndex((p) => p.id === id)
+    if (i < 0) throw new BuilderError('not_found', 'Kertas tidak ditemui')
+    if (this.sj[i]!.status === 'terbit') throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.deleteTerbitSet)
+    this.sj.splice(i, 1)
+  }
+
+  /** The source route lands in a later part of S3-T06: the mock answers 404 like the server, so the page shows its error state. */
+  async uploadSource(): Promise<{ batchId: string }> {
+    await Promise.resolve()
+    throw new BuilderError('not_found', 'Kertas tidak ditemui')
+  }
+
+  async applySource(): Promise<{ placements: number }> {
+    await Promise.resolve()
+    throw new BuilderError('not_found', 'Kertas tidak ditemui')
   }
 }
 

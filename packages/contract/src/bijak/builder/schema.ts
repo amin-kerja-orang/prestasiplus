@@ -125,6 +125,14 @@ export const BIJAK_BUILDER_MESSAGES = {
   /** S3-T06, API-BIJAK-14: the paper has no source batch yet. [DOC DEFECT: no BM text in the PRD; default] */
   sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
   /** S3-T06, flashes of PRD30 field 18-11. */
+  /** S3-T06 form 18-04..18-06 empty options. [DOC DEFECT: no BM text in the PRD; default] */
+  subjektifPickKertas: 'Pilih kertas',
+  subjektifPickNegeri: 'Pilih negeri',
+  subjektifPickTahun: 'Pilih tahun',
+  /** S3-T06 detail page, tabs Kandungan and Skema with no placed question. [DOC DEFECT: no BM text in the PRD; default] */
+  subjektifNoQuestions: 'Tiada soalan dalam kertas ini.',
+  /** S3-T06 field 18-09 after a successful source upload. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceUploaded: 'Fail sumber telah dimuat naik.',
   subjektifCreated: '“{title}” telah dicipta sebagai draf.',
   subjektifUpdated: '“{title}” telah dikemas kini.',
   subjektifDeleted: '“{title}” telah dipadam.',
@@ -632,6 +640,7 @@ export const BijakBuilderQuestionSchema = z
       description:
         'S3-T02, FR-ADM-Q14.7, API-BIJAK-10 (g): on a question placed on this paper in the editor, false when pupils cannot be served it (chip `Tidak disajikan`, blocks Terbit). A Terbit paper serves its pinned version, so it reads true there (AC-ADM-Q14.3). Absent on a candidate that is not placed.',
     }),
+    hasScheme: z.boolean().optional().meta({ description: 'S3-T06 (FR-ADM-Q18.8): on a question placed on a Kertas Subjektif paper, whether it has a mark scheme (the one `schemeOf` rule that also gives `schemeCount` and the NO_SCHEME blocker). Absent on a Simulasi paper and on a candidate.' }),
     notServedReason: z.string().optional().meta({ description: 'S3-T02: the BM reason of `Dilihat murid di` (tooltip of `Tidak disajikan`); present when `servable` is false.' }),
   })
   .meta({ id: 'BijakBuilderQuestion' })
