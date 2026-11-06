@@ -9,7 +9,7 @@ import { toMytTimestamp } from '../../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
-import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
+import { isStructuredVisible, QuestionsRepository, type QuestionPart, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
 import { StructuredAttemptsRepository } from './attempts.repository'
@@ -105,6 +105,11 @@ const invalid = (fields: Record<string, string>): ApiError => {
  * carries free text per sub-question (no option, number or mapping kind), and the subjective modes it
  * marks need a human or AI mark, so it does not map onto the mock's rule.
  */
+/** JS twin of `ALL_LEAVES_KEYED_SQL` (the list's `markable` rule): some leaf part has no answer key. */
+function hasUnkeyedLeaf(parts: readonly QuestionPart[]): boolean {
+  return parts.some((p) => ('mode' in p ? p.key == null : hasUnkeyedLeaf(p.children)))
+}
+
 @Injectable()
 export class StructuredService {
   private readonly logger = new Logger(StructuredService.name)
@@ -132,8 +137,20 @@ export class StructuredService {
   }
 
   private async getVisible(id: string, levels: Map<string, string>): Promise<QuestionRecord | null> {
-    const r = await this.questions.get(id, 'live')
-    return r && isStructuredVisible(r, levels) ? r : null
+    // Lenient read (as the list's hydrate): a leaf without a key row still parses. A set that is not markable (a leaf without a key, or a
+    // present but invalid stored key, which the repository reports as SERVER_ERROR) is not visible: 404, never 500. Same rule as the list.
+    let r: QuestionRecord | null
+    try {
+      r = (await this.questions.getMany([id], 'live', 'exclude', { lenientKeys: true }))[0] ?? null
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'SERVER_ERROR') {
+        this.logger.warn(`structured ${id}: unreadable stored key, treated as not visible`)
+        return null
+      }
+      throw e
+    }
+    if (!r || !isStructuredVisible(r, levels)) return null
+    return hasUnkeyedLeaf(r.version.parts) ? null : r
   }
 
   private subjectOptions(scope: Scope, track: Track, subjects: Map<string, { code: string; name: string; active: boolean }>): { id: string; name: string }[] {

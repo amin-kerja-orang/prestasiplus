@@ -222,6 +222,26 @@ describe('AC1 GET /api/practice/structured', () => {
     }
   })
 
+  it('a set with a leaf without a key is 404 on detail and attempt (never 500); a fully keyed set stays 200', async () => {
+    const good = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Detail kunci lengkap' })
+    const bad = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Detail kunci hilang' })
+    try {
+      await t.db.query(
+        `delete from answer_keys where part_id = (select p.id from question_parts p join question_versions v on v.id = p.question_version_id
+          where v.question_id = $1 and p.mode is not null order by p.id limit 1)`,
+        [bad],
+      )
+      expectError(await student.get(`/api/practice/structured/${bad}`), 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expectError(await student.post(`/api/practice/structured/${bad}/attempts`, { answers: [] }), 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expect((await attemptRows(student.userId)).filter((r) => r.question_id === bad)).toHaveLength(0)
+      expect((await student.get(`/api/practice/structured/${good}`)).status).toBe(200)
+      const ok = await student.post(`/api/practice/structured/${good}/attempts`, { answers: [] })
+      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    } finally {
+      await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[good, bad]])
+    }
+  })
+
   it('S5-T11 order: newest published first by published_at, not created_at', async () => {
     const older = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Susunan lama' })
     const newer = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Susunan baru' })
