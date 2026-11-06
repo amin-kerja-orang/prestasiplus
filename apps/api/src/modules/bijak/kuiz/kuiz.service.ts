@@ -27,7 +27,6 @@ import { type GradedAnswer, PracticeRepository, type ServedRef, type StoredCheck
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
-import { BijakPapersPorts } from '../papers/ports'
 import { PapersRepository } from '../papers/papers.repository'
 import { levelScopeAllows } from '../papers/rules'
 import {
@@ -82,7 +81,6 @@ export class KuizService {
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(PracticePorts) private readonly ports: PracticePorts,
     @Inject(PapersRepository) private readonly papers: PapersRepository,
-    @Inject(BijakPapersPorts) private readonly paperPorts: BijakPapersPorts,
   ) {}
 
   // --- random quiz -------------------------------------------------------------------------------

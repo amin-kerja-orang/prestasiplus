@@ -3,6 +3,7 @@ import {
   BIJAK_BUILDER_CHECK_LINES as LINES,
   BIJAK_BUILDER_EDIT_LINES as EDIT,
   BIJAK_SET_BUILDER_PROPOSED,
+  BIJAK_SET_TITLE_MAX,
   bijakDefaultLevelScope,
   bijakNegeriOptions,
   bijakNegeriSlug,
@@ -148,6 +149,14 @@ const groupStimulusFields = (g: BuilderGroupInfo | undefined): { stimulus?: Bija
 
 const notFound = () => ApiError.of('NOT_FOUND', { message: MESSAGES.paperNotFound })
 const invalid = (message: string) => ApiError.of('VALIDATION_ERROR', { message })
+
+/** PRD30 13-01 / 13-04 (S3-T02): `Tajuk set` is required and at most 120 characters after trim; the refusal is on `fields.title`. */
+function setTitleOf(raw: string | undefined): string {
+  const title = raw?.trim() ?? ''
+  const message = title === '' ? MESSAGES.setTitleRequired : title.length > BIJAK_SET_TITLE_MAX ? BIJAK_SET_BUILDER_PROPOSED.setTitleTooLong : undefined
+  if (message !== undefined) throw ApiError.of('VALIDATION_ERROR', { message, fields: { title: message } })
+  return title
+}
 
 function parseId(text: string): bigint | null {
   try {
@@ -511,12 +520,12 @@ export class BuilderService {
 
   async create(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakBuilderPaperCreateSchema, rawBody)
+    const title = setTitleOf(body.title)
     // kertas is a smallint column: a larger number can have no blueprint (and must not reach the query).
     if (body.kertas > MAX_KERTAS) throw invalid(MESSAGES.noBlueprint)
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
     if (!subject) throw invalid(MESSAGES.noBlueprint)
     const now = this.clock.now()
-    const trimmed = body.title?.trim()
     const id = await this.prisma.transaction(async () => {
       // Lock the active blueprint row, then re-read it: a concurrent retire / new version / Draf edit is seen.
       const first = await this.repo.activeBlueprint(subject.id, body.kertas)
@@ -525,7 +534,7 @@ export class BuilderService {
       const blueprint = await this.repo.activeBlueprint(subject.id, body.kertas)
       if (!blueprint || blueprint.source === 'draft') throw invalid(MESSAGES.noBlueprint)
       const paperId = await this.repo.createPaper({
-        title: trimmed ? trimmed : DEFAULT_TITLE(subject.name, body.kertas),
+        title,
         subjectId: subject.id,
         kertas: body.kertas,
         year: mytYear(now),
@@ -566,6 +575,8 @@ export class BuilderService {
       const paper = await this.lockedPaper(id)
       if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
       const body = parseWith(BijakBuilderPaperPatchSchema, rawBody)
+      // PRD30 13-01: a paper is one set, so `PUT` edits the same `Tajuk set` and follows the create rule (required, at most 120).
+      const title = body.title === undefined ? undefined : setTitleOf(body.title)
       const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
       const bijakSubject = subject ? bijakCodeOf(subject.code) : ''
 
@@ -654,7 +665,7 @@ export class BuilderService {
       if (repeated.length) throw invalid(LINES.duplicateQuestion([...new Set(repeated)]))
 
       await this.repo.updatePaper(paper.id, {
-        ...(body.title !== undefined ? { title: body.title } : {}),
+        ...(title !== undefined ? { title } : {}),
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
         ...(body.code !== undefined ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
@@ -1423,6 +1434,7 @@ export class BuilderService {
    */
   async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakDraftGenerateRequestSchema, rawBody)
+    const title = setTitleOf(body.title)
     const first = await this.generationBlueprint(body.subject, body.kertas)
     if (!first.subject || !first.blueprint) throw noBlueprint()
     const subject = first.subject
@@ -1451,7 +1463,7 @@ export class BuilderService {
       }
       const factsById = new Map(candidates.map((f) => [f.id, f]))
       const paperId = await this.repo.createPaper(
-        this.newPaperFrom(blueprint, subject, body.kertas, actor, now, body.title?.trim() || DEFAULT_TITLE(subject.name, body.kertas), std, body.levelScope ?? this.contractLevelScope(blueprint)),
+        this.newPaperFrom(blueprint, subject, body.kertas, actor, now, title, std, body.levelScope ?? this.contractLevelScope(blueprint)),
       )
       const fresh = await this.repo.findPilihan(paperId)
       for (const section of fresh?.sections ?? []) {

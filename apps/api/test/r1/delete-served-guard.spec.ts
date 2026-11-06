@@ -97,7 +97,7 @@ describe('R1 delete-served-guard', () => {
     const rest = [await approved(), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
     const ids = [...(first ?? []), ...rest.slice((first ?? []).length)] // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks
     for (const [i, id] of ids.entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const paper = created.body.data.id as string
     const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
@@ -265,7 +265,7 @@ describe('R1 delete-served-guard', () => {
     it('a question that only a DRAFT paper places is not held, but DM-11 keeps it while it is placed: 409 in_use, until it leaves the paper', async () => {
       const spare = await approved()
       expect((await setPool(spare, ['MAT2-A'])).status).toBe(200)
-      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+      const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
       const paper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
       expect((await admin.post(`/api/admin/papers/${paper}/placements`, { sectionId: sections[0], questionId: spare })).status).toBe(201)
@@ -334,7 +334,7 @@ describe('R1 delete-served-guard', () => {
       await advance([m1, m2])
       const rest = [await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
       for (const [i, id] of [m1, m2, ...rest].entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
-      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+      const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
       const paper = created.body.data.id as string
       const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
       const g = await admin.post(`/api/admin/papers/${paper}/placements`, { sectionId: sections[0], questionId: m1 })
