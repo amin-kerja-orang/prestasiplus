@@ -7283,7 +7283,8 @@
             "type": "boolean"
           },
           "requiresParentConsent": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Ignored: no consent status exists (FR-GM-21.3); always stored false."
           }
         },
         "required": [
@@ -94247,7 +94248,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.rewardId \"Sila pilih hadiah.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94524,7 +94525,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94667,7 +94668,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94749,7 +94750,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94908,7 +94909,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94928,7 +94929,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.code \"The code field is required.\" / \"The code field must not be greater than 100 characters.\".",
+            "description": "VALIDATION_ERROR fields.code \"Kod baucar diperlukan.\" / \"Kod baucar tidak boleh melebihi 100 aksara.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -95096,7 +95097,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -95189,7 +95190,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -95199,7 +95200,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
