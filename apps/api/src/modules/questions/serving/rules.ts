@@ -126,6 +126,9 @@ function keyReasons(live: QuestionRecord, activity: ServabilityActivity): Servab
   return [...modes].map((code) => reason(code, activity))
 }
 
+/** Postgres `btrim()` strips spaces only (not tabs, newlines or NBSP), unlike JS `trim()`; this keeps the twin identical to `mediaResolvedSql`. */
+const blankLikeSql = (v: string | null): boolean => (v ?? '').replace(/^ +| +$/g, '') === ''
+
 /**
  * JS twin of `MEDIA_RESOLVED_SQL` (S1-T06, FR-X1-4f), the same definition as `mediaResolvedSql`: a stimulus the live version shows cannot be shown when a picture
  * kind has no file, a table has no grid, no file and no pipe table in its body, or a passage has no text; or the version carries a `legacy_image_unresolved`
@@ -137,7 +140,7 @@ export function mediaUnresolved(media: NonNullable<ServabilityFacts['media']>): 
   return media.stimuli.some((s) => {
     if (PICTURE_KINDS.includes(s.kind)) return !s.hasFile
     if (s.kind === 'table') return !s.hasTableData && !s.hasFile && (s.bodyMs === null || !s.bodyMs.includes('|'))
-    if (s.kind === 'passage') return (s.bodyMs ?? '').trim() === '' && (s.bodyEn ?? '').trim() === ''
+    if (s.kind === 'passage') return blankLikeSql(s.bodyMs) && blankLikeSql(s.bodyEn)
     return false
   })
 }

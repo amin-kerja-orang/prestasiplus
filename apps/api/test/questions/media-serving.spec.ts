@@ -99,4 +99,17 @@ describe('pupil serving needs the stimulus file (S1-T06, FR-X1-4f)', () => {
     expect((await drawn([id])).has(id)).toBe(false)
     expect(await indicated(id)).toBe(true)
   })
+
+  it('[CI] a non-array or non-object import_issues value does not throw in the draw or the report (jsonb_typeof guard)', async () => {
+    const id = await publish('Soalan dengan import_issues bukan tatasusunan, hitung luas kawasan berlorek.')
+    const sid = await image(true)
+    await q(`insert into question_version_stimuli (question_version_id, stimulus_id, position) select id, $2::bigint, 1 from question_versions where question_id = $1`, [id, sid])
+    for (const v of [`'"x"'`, `'7'`, `'true'`, `'{"code": "legacy_image_unresolved"}'`, `'["x", 3, null]'`]) {
+      await q(`update question_versions set import_issues = ${v}::jsonb where question_id = $1`, [id])
+      expect((await drawn([id])).has(id), v).toBe(true)
+      await expect(servability.report(id), v).resolves.not.toBeNull()
+    }
+    await q(`update question_versions set import_issues = '[{"code": "legacy_image_unresolved"}]'::jsonb where question_id = $1`, [id])
+    expect((await drawn([id])).has(id)).toBe(false)
+  })
 })

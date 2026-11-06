@@ -3,6 +3,7 @@ import { SERVABILITY_ACTIVITIES, SERVABILITY_REASON_MS } from '@pp/contract'
 
 import { SERVABLE_STATUSES, evaluate, evaluateAll } from '../../src/modules/questions/serving'
 import type { ServabilityFacts } from '../../src/modules/questions/serving'
+import { mediaUnresolved } from '../../src/modules/questions/serving/rules'
 import type { QuestionRecord } from '../../src/modules/questions'
 
 /** Unit (no DB): the pure rules over hand-made facts. The parity against the real readers is `servability-parity.spec.ts`. */
@@ -167,6 +168,11 @@ describe('servability rules (pure)', () => {
 describe('media rule twin (S1-T06)', () => {
   const stim = (over: Partial<import('../../src/modules/questions/serving').MediaStimulusFact> = {}) => ({ kind: 'image', hasFile: true, hasTableData: false, bodyMs: null, bodyEn: null, ...over })
   const withMedia = (stimuli: ReturnType<typeof stim>[], importIssueCodes: string[] = []) => facts({ media: { stimuli, importIssueCodes } })
+
+  it('a passage body of only tabs/newlines is NOT blank (Postgres btrim strips spaces only); only spaces are blank', () => {
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '\n', bodyEn: '\t' })], importIssueCodes: [] })).toBe(false)
+    expect(mediaUnresolved({ stimuli: [stim({ kind: 'passage', hasFile: false, bodyMs: '   ', bodyEn: null })], importIssueCodes: [] })).toBe(true)
+  })
 
   it('a single question whose image stimulus has no file gets image_missing on every activity but the pinned paper', () => {
     const f = withMedia([stim({ hasFile: false })])

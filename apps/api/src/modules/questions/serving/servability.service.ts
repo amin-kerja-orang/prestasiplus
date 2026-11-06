@@ -123,7 +123,7 @@ export class ServabilityService {
       { qid: bigint; kind: string | null; has_file: boolean | null; has_table: boolean | null; body_ms: string | null; body_en: string | null; codes: string[] | null }[]
     >`
       SELECT q.id AS qid, s.kind, (s.asset_file_id IS NOT NULL) AS has_file, (s.table_data IS NOT NULL) AS has_table, s.body_ms, s.body_en,
-             ARRAY(SELECT e->>'code' FROM jsonb_array_elements(coalesce(v.import_issues, '[]'::jsonb)) e) AS codes
+             ARRAY(SELECT e->>'code' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(v.import_issues) = 'array' THEN v.import_issues ELSE '[]'::jsonb END) e WHERE jsonb_typeof(e) = 'object') AS codes
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
         LEFT JOIN LATERAL (${VERSION_STIMULI_SQL}) l ON TRUE

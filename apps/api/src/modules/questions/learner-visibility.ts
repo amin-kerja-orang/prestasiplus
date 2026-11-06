@@ -54,7 +54,7 @@ export const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql):
         OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
         OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
   )
-  AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
+  AND NOT coalesce(jsonb_typeof(${importIssues}) = 'array' AND ${importIssues} @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)
 )`
 
 /** Every stimulus a version shows (own links, part links, its group's); aliases `v`, `q`. Selects `sid`. */
