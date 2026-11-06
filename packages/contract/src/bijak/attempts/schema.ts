@@ -585,7 +585,10 @@ export const BijakAttemptPartResultSchema = z
     }),
     suggestion: BijakAttemptSuggestionSchema.optional(),
     answer: BijakAttemptPartAnswerSchema,
-    scheme: BijakAttemptSchemeSchema,
+    scheme: BijakAttemptSchemeSchema.optional().meta({
+      description:
+        'The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` ("Tunjuk Skema Pemarkahan", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too.',
+    }),
   })
   .meta({ id: 'BijakAttemptPartResult' })
 export type BijakAttemptPartResult = z.infer<typeof BijakAttemptPartResultSchema>

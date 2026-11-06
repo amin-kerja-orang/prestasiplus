@@ -5,7 +5,8 @@
  *   (never two requests at once; a tick is skipped from the schedule, not queued). The timer text is
  *   set from the elapsed seconds on each poll only.
  * - Stops: `matched` (navigate), `expired` / `not_found`, 120 s since the start, 5 consecutive failed
- *   polls (a success resets the counter). "Batal" stops everything and sends no request.
+ *   polls (a success resets the counter). "Batal" stops everything at once and, while searching, tells the
+ *   server to drop the queue entry (API-GAME-14); that request is fire-and-forget.
  * - `incoming_challenge` swaps the card for the challenger card; polling continues.
  * - The waiting side (#12, #13) exists but no UI control starts it (DV-M16-06): `watchWaiting` /
  *   `requestJoin` are reached by the page's test seam only.
@@ -19,6 +20,7 @@ import { clock } from '@/lib/time/clock'
 
 import {
   acceptChallenger,
+  cancelQueue,
   BATTLE_MAX_FAILURES,
   BATTLE_POLL_MS,
   BATTLE_ROBOT_OVERLAY_MS,
@@ -184,6 +186,11 @@ export function useBattleSearch(rawOptions: {
     }, BATTLE_ROBOT_OVERLAY_MS)
   }
 
+  /** The battle uuid of a `matched` poll body, else `null`. */
+  function matchedUuid(body: { status?: string; battle_uuid?: unknown } | null): string | null {
+    return body?.status === 'matched' && typeof body.battle_uuid === 'string' ? body.battle_uuid : null
+  }
+
   // --- search (#4) -------------------------------------------------------------------------------
 
   async function searchTick(mySession: number): Promise<void> {
@@ -216,9 +223,10 @@ export function useBattleSearch(rawOptions: {
     const body = bodyOf<
       PollMatchResponse & { battle_uuid: string; challenger: Challenger; robot: boolean }
     >(res)
-    if (body?.status === 'matched' && typeof body.battle_uuid === 'string') {
-      if (body.robot === true) showRobotOverlay(body.battle_uuid, mySession)
-      else matched(body.battle_uuid)
+    const uuid = matchedUuid(body)
+    if (uuid !== null) {
+      if (body?.robot === true) showRobotOverlay(uuid, mySession)
+      else matched(uuid)
       return
     }
     if (body?.status === 'expired' || body?.status === 'not_found') {
@@ -299,11 +307,30 @@ export function useBattleSearch(rawOptions: {
     await start(last.mode, last.params)
   }
 
-  /** "Batal": resets the page state; no request (DV-M16-05). */
+  /**
+   * "Batal": resets the page state at once (optimistic). While searching, the own queue entry is also
+   * cancelled on the server (API-GAME-14). A 404 means the entry already matched: the entry is polled once
+   * and, if it matched, the arena opens as for a normal matched poll. Any other failure (network) changes
+   * nothing on screen. The waiting phase holds somebody else's entry (#12), so it sends nothing.
+   */
   function cancel(): void {
+    const dropId = phase.value === 'searching' ? queueId : null
     stopWith('')
     waitingName.value = ''
     waitingGrade.value = ''
+    if (dropId === null) return
+    const mySession = session
+    cancelQueue(dropId).catch(async (err: unknown) => {
+      if ((err as { status?: unknown } | null)?.status !== 404) return
+      try {
+        const res = await pollMatch(dropId)
+        if (mySession !== session || !isOk(res.status)) return
+        const uuid = matchedUuid(bodyOf<PollMatchResponse & { battle_uuid: string }>(res))
+        if (uuid !== null) matched(uuid)
+      } catch {
+        // the poll failed: nothing changes on screen
+      }
+    })
   }
 
   // --- incoming challenger (#5, #6) --------------------------------------------------------------

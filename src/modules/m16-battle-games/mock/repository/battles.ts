@@ -448,6 +448,20 @@ export const battlesRepo = defineRepository({
         })
       },
 
+      /**
+       * API-GAME-14: the owner's "Batal". A waiting / incoming entry ends (`abandoned`: never matched,
+       * the UI has stopped polling); an ended entry answers the same; a matched, foreign or unknown one is 404.
+       */
+      cancelQueue(userId: number, queueId: number): void {
+        transaction(() => {
+          const q = ownQueue(userId, queueId)
+          if (!q || q.status === 'matched') throw new M16Error('NOT_FOUND', 'Giliran tidak dijumpai.')
+          if (q.status === 'waiting' || q.status === 'incoming_challenge') {
+            queues.update(q.id, { status: 'abandoned', challenger: null })
+          }
+        })
+      },
+
       /** #7 (BR-M16-11): students by name, not the viewer, A to Z, at most 10. */
       searchOpponent(
         viewerId: number,

@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   pollMatch: vi.fn(),
   acceptChallenger: vi.fn(),
   rejectChallenger: vi.fn(),
+  cancelQueue: vi.fn(),
   joinQueue: vi.fn(),
   pollChallenger: vi.fn(),
 }))
@@ -41,6 +42,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-25T08:00:00Z'))
   for (const fn of Object.values(api)) fn.mockReset()
+  api.cancelQueue.mockResolvedValue({ cancelled: true })
   setup()
 })
 afterEach(() => {
@@ -228,16 +230,73 @@ describe('polling #4 (3 s, stop rules)', () => {
     expect(s.errorMsg.value).toBe('Ralat rangkaian berulang. Sila semak internet anda.')
   })
 
-  it('"Batal" stops the polling and sends no request', async () => {
+  it('"Batal" stops the polling and cancels the queue entry once', async () => {
     await started()
     api.pollMatch.mockResolvedValue(res(200, { status: 'waiting' }))
+    api.cancelQueue.mockResolvedValue({ cancelled: true })
     await tick(3000)
     s.cancel()
     expect(s.phase.value).toBe('idle')
     await tick(30_000)
     expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue.mock.calls[0]?.[0]).toBe(41)
     expect(api.rejectChallenger).not.toHaveBeenCalled()
     expect(s.errorMsg.value).toBe('')
+  })
+
+  it('"Batal" is idle at once and silent when the cancel is refused (404 already matched) or fails', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(new Error('404'))
+    s.cancel()
+    await tick(0)
+    expect(s.phase.value).toBe('idle')
+    expect(s.errorMsg.value).toBe('')
+    expect(onMatched).not.toHaveBeenCalled()
+  })
+
+  const notFound = () => Object.assign(new Error('Giliran tidak dijumpai.'), { status: 404 })
+
+  it('"Batal" answered 404 and the one poll says matched: opens the arena', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(notFound())
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'matched', battle_uuid: 'b-7' }))
+    s.cancel()
+    await tick(0)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(api.pollMatch.mock.calls[0]![0]).toBe(41)
+    expect(onMatched).toHaveBeenCalledWith('b-7')
+    expect(s.phase.value).toBe('idle')
+    await tick(10000)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('"Batal" answered 404 and the poll says not_found: stays idle, silent', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(notFound())
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'not_found' }))
+    s.cancel()
+    await tick(0)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(onMatched).not.toHaveBeenCalled()
+    expect(s.phase.value).toBe('idle')
+    expect(s.errorMsg.value).toBe('')
+  })
+
+  it('"Batal" answered 200: idle and no poll', async () => {
+    await started()
+    s.cancel()
+    await tick(10000)
+    expect(api.pollMatch).not.toHaveBeenCalled()
+    expect(onMatched).not.toHaveBeenCalled()
+    expect(s.phase.value).toBe('idle')
+  })
+
+  it('"Batal" outside the search (idle, waiting for a join approval) sends no cancel', () => {
+    s.cancel()
+    s.watchWaiting(7, 'Murid A')
+    s.cancel()
+    expect(api.cancelQueue).not.toHaveBeenCalled()
   })
 
   it('disposing the scope clears the timer', async () => {
