@@ -6,6 +6,7 @@ import type TestAgent from 'supertest/lib/agent'
 
 import { runSeeds } from '../../../../prisma/seed'
 import { identitySeed } from '../../../../prisma/seed/core/identity'
+import { curriculumSeed } from '../../../../prisma/seed/curriculum'
 import { defineAppModule } from '../../../../src/app.module'
 import { configureApp } from '../../../../src/configure-app'
 import { CLOCK, FixedClock } from '../../../../src/db/clock'
@@ -53,7 +54,7 @@ async function addUser(db: TestDatabase, email: string, name: string, role: stri
  */
 export async function bootWorld(env: Record<string, string> = {}): Promise<World> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed], { prisma: db.prisma })
+  await runSeeds([identitySeed, curriculumSeed], { prisma: db.prisma })
   for (const [i, email] of EXTRA_PUPILS.entries()) await addUser(db, email, `Murid Ujian ${i + 1}`, 'student', 'DEMO001', 10)
   // The pupil of the own item analysis (API-RPT-05): a school of its own, so no figure of DEMO001 changes.
   await addUser(db, 'saya@demo.test', 'Murid Saya', 'student', 'DEMO002', 10)
@@ -117,6 +118,16 @@ export async function bootWorld(env: Record<string, string> = {}): Promise<World
   const classes = new InMemoryClasses()
     .add({ id: classId, schoolId: schools.demo1, teacherId: ids['guru@demo.test'] as string, teacherName: 'Guru Demo', name: '4 Amanah' }, pupils)
     .add({ id: otherClassId, schoolId: schools.demo2, teacherId: null, name: '4 Cekap' }, [])
+
+  // The teacher's XS-1 roster (`XsQueries.pupils`, teacher scope) reads real enrolments: the same nine pupils in an active classroom of the teacher.
+  const [dbClass] = await db.query<{ id: string }>(
+    `insert into classrooms (name, teacher_id, school_id, education_level_id, academic_year, join_code)
+       select '4 Amanah', $1::bigint, $2::bigint, (select id from education_levels where grade = 10 order by sort_order, id limit 1), 2026, 'PERFXS1' returning id::text`,
+    [ids['guru@demo.test'], schools.demo1],
+  )
+  for (const userId of pupils) {
+    await db.query(`insert into enrolments (classroom_id, student_id, status, source) values ($1::bigint, $2::bigint, 'active', 'teacher')`, [dbClass!.id, userId])
+  }
 
   // The class and school figures read the shared answer store (S10-T01/T07): one answered session per pupil
   // (5 answers, 3 right; no question id, so the item analysis does not see them and the item rows above share the session), plus a test row that must never be counted. The pupils join the class here so the class figures see them.

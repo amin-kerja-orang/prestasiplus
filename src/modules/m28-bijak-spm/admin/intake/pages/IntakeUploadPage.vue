@@ -17,7 +17,7 @@ import { INTAKE_LIST_PATH, intakeReviewPath } from '../lib/intake-routes'
 import { checkFile, readPaper, type OcrProgress } from '../lib/ocr'
 import { setPageImages } from '../lib/page-images'
 import { SAMPLE_PAGES } from '../lib/sample-paper'
-import { PAPER_TYPES, type PageImage, type PageText } from '../types'
+import { PAPER_TYPES, toIntakeKertas, type PageImage, type PageText } from '../types'
 
 /** http mode: the server accepts PDF only (BE-37); the mock keeps PDF, PNG and JPG. */
 const pdfOnly = import.meta.env.VITE_API_MODE === 'http'
@@ -85,7 +85,7 @@ async function run(
   upload?: File,
 ): Promise<void> {
   phase.value = 'ekstrak'
-  const kertas = Number(form.kertas) === 1 ? 1 : 2
+  const kertas = toIntakeKertas(form.kertas)
   const extracted = await extractor.extract({ pages, images, subject: form.subject, kertas })
   phase.value = 'simpan'
   const batch = await server.createIntakeBatch(
