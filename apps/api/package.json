@@ -37,6 +37,7 @@
     "uat:difficulty-level-backfill": "tsx scripts/uat-ops/difficulty-level-backfill.ts",
     "uat:flag-stimulus": "tsx scripts/uat-ops/flag-stimulus.ts",
     "uat:backfill-bijak-answers": "tsx scripts/uat-ops/backfill-bijak-answers.ts",
+    "uat:challenge-metrics": "tsx scripts/uat-ops/challenge-metrics.ts",
     "dskp:load": "tsx src/modules/curriculum/dskp/cli.ts",
     "curriculum:load-dskp": "tsx src/modules/curriculum/dskp/cli.ts",
     "admin:bootstrap": "tsx src/ops/admin-bootstrap/cli.ts",

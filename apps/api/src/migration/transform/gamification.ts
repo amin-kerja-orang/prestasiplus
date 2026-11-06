@@ -10,6 +10,7 @@
  */
 import { enumMapper, invalid, orphan } from './activity-common'
 import { enumKey, flag, ok, squash, stamps, text, type Outcome, type Staged } from './activity-common'
+import { DEFAULT_METRIC_BY_TYPE, MIGRATED_CHALLENGE_METRICS } from '../../modules/gamification/gamification.constants'
 import { MAX_AMOUNT_PER_CALL } from '../../modules/wallet/wallet.constants'
 
 // ---------------------------------------------------------------- tiers
@@ -29,7 +30,7 @@ export function tierMatchKey(labelMs: string | null | undefined): string | null 
  * v2 `challenge_type` codes. The identity codes plus the five Malay `.cloud` codes (FIT-FIX OQ5, LEAD 25 Oct 13:15 MYT, #109 6393823280),
  * each mapped by what the v2 evaluator measures (`DEFAULT_METRIC_BY_TYPE`, BR-M14-12) and by the "Jenis" select of URS FN-M14-9.3.4:
  * `bilangan_kuiz` "Bilangan Kuiz" -> quiz_count (sessions), `ketepatan` "Ketepatan (%)" -> accuracy (best accuracy),
- * `topik_berbeza` "Topik Berbeza" -> topic_variety (distinct chapters), `kombo` "Kombo" -> streak (day streak),
+ * `topik_berbeza` "Topik Berbeza" -> topic_variety (distinct chapters), `kombo` "Kombo" -> combo (best combo, S7-T04 part 15),
  * `masa` "Masa (min)" -> time_spent (minutes). Any other word stays UNKNOWN_ENUM (OD-25: never from a hunch).
  */
 export const CHALLENGE_TYPE_MAP: Readonly<Record<string, string>> = {
@@ -38,13 +39,20 @@ export const CHALLENGE_TYPE_MAP: Readonly<Record<string, string>> = {
   topic_variety: 'topic_variety',
   streak: 'streak',
   time_spent: 'time_spent',
+  combo: 'combo',
   bilangan_kuiz: 'quiz_count',
   ketepatan: 'accuracy',
   topik_berbeza: 'topic_variety',
-  kombo: 'streak',
+  kombo: 'combo',
   masa: 'time_spent',
 }
 const challengeType = enumMapper('challenge_type', CHALLENGE_TYPE_MAP)
+
+/** Ruling 18: the metric by exact title, else `DEFAULT_METRIC_BY_TYPE` of the (known) type. */
+export function challengeMetric(title: string, type: string): string | null {
+  if (Object.hasOwn(MIGRATED_CHALLENGE_METRICS, title)) return MIGRATED_CHALLENGE_METRICS[title as keyof typeof MIGRATED_CHALLENGE_METRICS]
+  return Object.hasOwn(DEFAULT_METRIC_BY_TYPE, type) ? DEFAULT_METRIC_BY_TYPE[type as keyof typeof DEFAULT_METRIC_BY_TYPE] : null
+}
 
 /** A platform challenge has no author and no class; the others are teacher challenges (no v2 target, GAP-11). */
 export function isPlatformChallenge(row: Staged): boolean {
@@ -93,7 +101,7 @@ export function challengeDifficulty(raw: string | null | undefined): { value: st
 export interface ChallengeValues {
   title: string
   challenge_type: string
-  metric: null
+  metric: string | null
   target_value: number
   reward_syiling: number
   reward_xp: number
@@ -105,7 +113,8 @@ export interface ChallengeValues {
 }
 
 /**
- * Platform rows only (the caller has filtered teacher rows). `metric` stays null (OD-25). The rewards, difficulty, flag and order come
+ * Platform rows only (the caller has filtered teacher rows). `metric` comes from the exact title (ruling 18, `MIGRATED_CHALLENGE_METRICS`),
+ * else the default of the type (BR-M14-12); an unknown type is rejected before this. The rewards, difficulty, flag and order come
  * from the staged columns (FIT-FIX OQ5); a missing value takes the v2 default (0 / 0 / medium / 0 / active), an invalid one rejects the row.
  */
 export function transformChallenge(row: Staged): Outcome<ChallengeValues> {
@@ -127,7 +136,7 @@ export function transformChallenge(row: Staged): Outcome<ChallengeValues> {
   return ok({
     title,
     challenge_type: type.value,
-    metric: null,
+    metric: challengeMetric(title, type.value),
     target_value: target,
     reward_syiling: syiling ?? 0,
     reward_xp: xp ?? 0,
