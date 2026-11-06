@@ -667,8 +667,19 @@ function mathraceAnswer(c: Ctx, a: Answer): EngineOut {
   return out(c)
 }
 
+/** 48 GAME-05: a seat's points (skor) are its steps. */
+const mathracePoints = (meter: Record<string, number>, userId: string): number => meter[userId] ?? 0
+
+/**
+ * GAME-05: the points of a Perlumbaan Matematik game that ends without the engine settling it (the last human wins by default,
+ * 3.6). Same formula as `mathraceEnd`: each seat's points are its steps. Returns new seats.
+ */
+export function mathraceSettleDefault(players: EnginePlayer[], meter: Record<string, number>): EnginePlayer[] {
+  return players.map((pl) => ({ ...pl, points: mathracePoints(meter, pl.userId) }))
+}
+
 function mathraceEnd(c: Ctx): EngineOut {
-  for (const pl of c.players) pl.points = c.s.meter[pl.userId] ?? 0
+  for (const pl of c.players) pl.points = mathracePoints(c.s.meter, pl.userId)
   return finish(c)
 }
 

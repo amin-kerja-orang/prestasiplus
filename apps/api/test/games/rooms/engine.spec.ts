@@ -20,6 +20,7 @@ import {
   computeSettlement,
   handOverSeat,
   pbPoints,
+  mathraceSettleDefault,
   pbSettleDefault,
   shouldWritePoll,
   questionView,
@@ -1332,6 +1333,13 @@ describe('Papan Bijak literal acceptance criteria (GAME-02 A)', () => {
     expect(ps.every((x) => x.points === 0)).toBe(true)
     expect(pbSettleDefault(ps, null).map((x) => x.points)).toEqual([10, 20, 30])
     expect(pbPoints(4, true)).toBe(90)
+  })
+
+  it('GAME-05: mathraceSettleDefault sets each seat points to its steps (0 when absent) and does not mutate', () => {
+    const ps = players(3, false)
+    const done = mathraceSettleDefault(ps, { [ps[0]!.userId]: 5, [ps[1]!.userId]: 12 })
+    expect(done.map((x) => x.points)).toEqual([5, 12, 0])
+    expect(ps.every((x) => x.points === 0)).toBe(true)
   })
 
   it('FR-GM-02.3: a landing effect whose target is a special tile is not applied again', () => {
