@@ -347,6 +347,58 @@ describe('AC1 GET /api/practice/structured', () => {
     expect((await list(student)).data.map((c) => c.id)).toContain(anyn)
   })
 
+  describe('S5-T11 learner visibility (NOT_FLAGGED_SQL, MEDIA_RESOLVED_SQL) applies to the page and the total alike', () => {
+    const liveVersion = async (id: string) =>
+      (await t.db.query<{ id: string }>('select v.id::text id from question_versions v join questions q on q.id = v.question_id and v.version_no = q.live_version_no where q.id = $1', [id]))[0]?.id as string
+
+    it('a normal set is listed and counted', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis normal' })
+      try {
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = $1', [ok])
+      }
+    })
+
+    it('a set whose live version is flagged (stimulus_missing) is not listed and not counted; a dismissed flag or stem_duplicated lists again', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const flagged = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis flagged' })
+      try {
+        await t.db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where id = $1`, [await liveVersion(flagged)])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        await t.db.query(`update question_versions set flag_dismissed_at = now() where id = $1`, [await liveVersion(flagged)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+        await t.db.query(`update question_versions set flag_dismissed_at = null, stimulus_flag = 'stem_duplicated' where id = $1`, [await liveVersion(flagged)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(2)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, flagged]])
+      }
+    })
+
+    it('a set with a picture stimulus without its file, or a legacy_image_unresolved import hold, is not listed and not counted; fixing both lists them', async () => {
+      const ok = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis ok' })
+      const noFile = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis nofile' })
+      const held = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'zzvis held' })
+      const sid = (await t.db.query<{ id: string }>(`insert into stimuli (kind, label) values ('diagram', 'Rajah zzvis') returning id::text id`))[0]?.id as string
+      try {
+        await t.db.query('insert into question_version_stimuli (question_version_id, stimulus_id, position) values ($1, $2, 1)', [await liveVersion(noFile), sid])
+        await t.db.query(`update question_versions set import_issues = '[{"code": "legacy_image_unresolved"}]'::jsonb where id = $1`, [await liveVersion(held)])
+        const out = await list(student, '?q=zzvis')
+        expect(out.data.map((c) => c.id)).toEqual([ok])
+        expect(out.meta.totalItems).toBe(1)
+        await t.db.query(`update stimuli set kind = 'passage', body_ms = 'Petikan zzvis' where id = $1`, [sid])
+        await t.db.query(`update question_versions set import_issues = null where id = $1`, [await liveVersion(held)])
+        expect((await list(student, '?q=zzvis')).meta.totalItems).toBe(3)
+      } finally {
+        await t.db.query('update questions set is_active = false where id = any($1::bigint[])', [[ok, noFile, held]])
+      }
+    })
+  })
+
   it('author and school: a teacher creator shows name and school, any other creator "Guru Pakar"', async () => {
     const teacherId = await userIdOf(t.db, 'guru@demo.test')
     const teacher = (await t.db.query<{ name: string; school: string | null }>(
