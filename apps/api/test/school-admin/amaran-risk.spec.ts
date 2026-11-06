@@ -96,7 +96,7 @@ describe('BE-21 Amaran mastery level from the M05 ladder', () => {
 describe('BE-21 Amaran cell texts and labels', () => {
   it('uses the exact BM strings', () => {
     const active = pupilView(scored({ accuracy: 72.46, sessions: 2, lastActiveAt: NOW - DAY_MS, masteryLevels: [3, 4] }), 1)
-    expect(active.accuracyText).toBe('Purata ketepatan: 72.5%')
+    expect(active.accuracyText).toBe('Purata ketepatan: 73%')
     expect(active.engagementText).toBe('Terakhir aktif: 2026-10-20')
     expect(active.masteryText).toBe('Purata tahap: L4')
     expect(active.mastery).toBe(3.5)
@@ -127,6 +127,8 @@ describe('BE-21 Amaran cell texts and labels', () => {
 
   it('tingkatan filter accepts T4, T5, 4, 5 in any case; anything else is no filter', () => {
     expect(['T4', 't4', '4', ' T5 ', '5', 'T6', '', 'x', undefined].map((v) => parseTingkatan(v))).toEqual([4, 4, 4, 5, 5, undefined, undefined, undefined, undefined])
+    // Tingkatan 1-5 (D101, FR-X3-3): the lower forms filter too.
+    expect(['T1', 't2', '3', ' T3 ', '0', 'T0', '12'].map((v) => parseTingkatan(v))).toEqual([1, 2, 3, 3, undefined, undefined, undefined])
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 4)).toBe(true)
     expect(inTingkatan([{ name: 'A', slug: 'tingkatan-4' }], 5)).toBe(false)
     expect(inTingkatan([], 4)).toBe(false)
@@ -233,16 +235,16 @@ describe('BE-21 Amaran CSV (pure part)', () => {
     .map((p, i) => pupilView(p, i + 1))
 
   it('has a BOM, CRLF line ends with a trailing CRLF and the contract header', () => {
-    const csv = amaranCsv(pupils)
+    const csv = amaranCsv(pupils, 'SMK Contoh')
     expect(csv.charCodeAt(0)).toBe(0xfeff)
     expect(csv.endsWith('\r\n')).toBe(true)
     expect(csv.replace(/\r\n/g, '')).not.toMatch(/[\r\n]/)
-    expect(csv.slice(1).split('\r\n')[0]).toBe('Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
+    expect(csv.slice(1).split('\r\n')[0]).toBe('Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
     expect(csv.split('\r\n')).toHaveLength(pupils.length + 2)
   })
 
   it('neutralises formula cells with an apostrophe and quotes commas and quotes', () => {
-    const csv = amaranCsv(pupils)
+    const csv = amaranCsv(pupils, 'SMK Contoh')
     expect(csv).toContain(`"'=HYPERLINK(""http://evil.test"",""klik"")"`)
     expect(csv).toContain(`'@SUM(A1)`)
     expect(csv).toContain(`"Murid, ""Koma"""`)

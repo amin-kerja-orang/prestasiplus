@@ -4,13 +4,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type RouteRecordRaw, type Router } from 'vue-router'
 
-import type { PublicProfile, Timeline, TimelinePost } from '../../api/types'
+import type { PublicProfile, Timeline, TimelineEntry, TimelinePost } from '../../api/types'
 import PublicProfilePage from '../../pages/PublicProfilePage.vue'
 import TimelineCreatePage from '../../pages/TimelineCreatePage.vue'
 import TimelinePage from '../../pages/TimelinePage.vue'
 
 const api = vi.hoisted(() => ({
   fetchTimeline: vi.fn(),
+  deleteTimelinePost: vi.fn(),
   fetchPublicProfile: vi.fn(),
   createTimelinePost: vi.fn(),
 }))
@@ -101,6 +102,140 @@ afterEach(() => {
   wrapper?.unmount()
   wrapper = null
   vi.useRealTimers()
+})
+
+const feed = (entries: TimelineEntry[], posts: TimelinePost[] = []): Timeline => ({ profileUrl: '/pelajar/1', posts, entries })
+
+describe('S16 TimelinePage: the automatic feed (R1-MUR-39)', () => {
+  const session = (over: Partial<Extract<TimelineEntry, { kind: 'session' }>> = {}): TimelineEntry => ({
+    kind: 'session',
+    id: 's:a',
+    at: '2026-10-23T20:06:00+08:00',
+    subjectName: 'Sains',
+    correct: 30,
+    answered: 40,
+    accuracy: 75,
+    ...over,
+  })
+
+  it('has the new subtitle and the profile box when the feed is empty, with the V2 empty sentence, the V3 title and button', async () => {
+    api.fetchTimeline.mockResolvedValue(feed([]))
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    expect(w.text()).toContain('Aktiviti terkini anda — latihan, pencapaian & mata diperoleh')
+    const empty = w.get('[data-testid=timeline-empty]')
+    expect(empty.text()).toContain('Timeline Kosong')
+    expect(empty.text()).toContain('Belum ada aktiviti lagi. Mula buat latihan untuk mengisi timeline anda dengan pencapaian dan mata!')
+    expect(w.get('[data-testid=add-first]').text()).toBe('Tambah Post Pertama')
+    expect(w.get('[data-testid=add-post]').text()).toBe('Tambah Post')
+    expect(w.get('[data-testid=public-profile-box]').text()).toContain('Profil Awam Anda')
+  })
+
+  it('is not empty when only a session exists, and words the session row as the PRD does', async () => {
+    api.fetchTimeline.mockResolvedValue(feed([session()]))
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    expect(w.find('[data-testid=timeline-empty]').exists()).toBe(false)
+    expect(w.get('[data-testid=session-title]').text()).toBe('Selesai latihan Sains 30/40')
+    expect(w.get('[data-testid=session-detail]').text()).toBe('30/40 betul · 75% ketepatan')
+    expect(w.get('[data-testid=row-time]').text()).toBe('8:06 PM')
+    expect(w.get('[data-testid=day-heading]').text()).toBe('23 Oktober 2026')
+    expect(w.get('[data-testid=day-badge]').text()).toBe('23 Okt')
+    expect(w.find('[data-testid=post-delete]').exists()).toBe(false)
+  })
+
+  it('groups rows by Malaysian day: 23:30 and 00:30 MYT are two days, and a UTC-looking time follows MYT', async () => {
+    api.fetchTimeline.mockResolvedValue(
+      feed([
+        session({ id: 's:c', at: '2026-10-24T00:30:00+08:00' }),
+        session({ id: 's:b', at: '2026-10-23T23:30:00+08:00' }),
+        session({ id: 's:a', at: '2026-10-23T08:00:00+08:00' }),
+      ]),
+    )
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    const days = w.findAll('[data-testid=timeline-day]')
+    expect(days.map((d) => d.attributes('data-day'))).toEqual(['2026-10-24', '2026-10-23'])
+    expect(days[0]?.findAll('[data-testid=timeline-row]')).toHaveLength(1)
+    expect(days[1]?.findAll('[data-testid=timeline-row]')).toHaveLength(2)
+    expect(days[0]?.get('[data-testid=row-time]').text()).toBe('12:30 AM')
+    expect(days[1]?.findAll('[data-testid=row-time]').map((t) => t.text())).toEqual(['11:30 PM', '8:00 AM'])
+  })
+
+  it('shows a badge row with its emoji, and the generic icon when the icon is a name', async () => {
+    api.fetchTimeline.mockResolvedValue(
+      feed([
+        { kind: 'badge', id: 'b:1', at: '2026-10-23T21:00:00+08:00', name: 'Pemula', icon: '🏅' },
+        { kind: 'badge', id: 'b:2', at: '2026-10-23T20:00:00+08:00', name: 'Rajin', icon: 'trophy' },
+        { kind: 'badge', id: 'b:3', at: '2026-10-23T19:00:00+08:00', name: 'Tanpa ikon', icon: '' },
+      ]),
+    )
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    expect(w.findAll('[data-testid=badge-title]').map((t) => t.text())).toEqual([
+      'Lencana diperoleh: Pemula',
+      'Lencana diperoleh: Rajin',
+      'Lencana diperoleh: Tanpa ikon',
+    ])
+    expect(w.findAll('[data-testid=badge-emoji]').map((t) => t.text())).toEqual(['🏅'])
+    expect(w.findAll('[data-testid=badge-icon]')).toHaveLength(2)
+  })
+
+  it('renders mixed rows in the order sent and keeps post text as text only', async () => {
+    const p = post({ id: 7, createdAt: '2026-10-23T18:00:00+08:00' })
+    api.fetchTimeline.mockResolvedValue(
+      feed([
+        { kind: 'badge', id: 'b:1', at: '2026-10-23T21:00:00+08:00', name: 'Pemula', icon: '🏅' },
+        session(),
+        { kind: 'post', id: 7, at: p.createdAt, post: p },
+      ]),
+    )
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    expect(w.findAll('[data-testid=timeline-row]').map((r) => r.attributes('data-kind'))).toEqual(['badge', 'session', 'post'])
+    expect(w.get('[data-testid=post-title]').text()).toBe('Sijil <b>Matematik</b>')
+    expect(w.find('[data-testid=post-story] img').exists()).toBe(false)
+  })
+
+  it('375px-friendly markup: rows are min-w-0 flex rows and long names wrap (no fixed widths)', async () => {
+    api.fetchTimeline.mockResolvedValue(feed([session({ subjectName: 'Pendidikan Jasmani dan Kesihatan Yang Sangat Panjang Namanya' })]))
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    expect(w.get('[data-testid=timeline-row]').classes()).toContain('min-w-0')
+    expect(w.get('[data-testid=session-title]').classes()).toContain('break-words')
+  })
+})
+
+describe('S16 TimelinePage: Padam (B-056)', () => {
+  const own = (): Timeline => {
+    const p = post({ id: 7 })
+    return feed([{ kind: 'post', id: 7, at: p.createdAt, post: p }], [p])
+  }
+  const body = () => document.body
+
+  it('asks first: title, body, Padam danger and Batal; Batal deletes nothing', async () => {
+    api.fetchTimeline.mockResolvedValue(own())
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    await w.get('[data-testid=post-delete]').trigger('click')
+    await flushPromises()
+    expect(body().textContent).toContain('Padam catatan ini?')
+    expect(body().textContent).toContain('Catatan ini akan dipadam secara kekal.')
+    const cancel = body().querySelector('[data-testid=delete-cancel]') as HTMLElement
+    const confirm = body().querySelector('[data-testid=delete-confirm]') as HTMLElement
+    expect(cancel.textContent?.trim()).toBe('Batal')
+    expect(confirm.textContent?.trim()).toBe('Padam')
+    expect(cancel.hasAttribute('autofocus')).toBe(true)
+    cancel.click()
+    await flushPromises()
+    expect(api.deleteTimelinePost).not.toHaveBeenCalled()
+  })
+
+  it('Padam calls the delete for that post and reloads the feed', async () => {
+    api.fetchTimeline.mockResolvedValueOnce(own()).mockResolvedValueOnce(feed([]))
+    api.deleteTimelinePost.mockResolvedValue({ deleted: 1 })
+    const w = await render(TimelinePage, '/timeline', '/timeline')
+    await w.get('[data-testid=post-delete]').trigger('click')
+    await flushPromises()
+    ;(body().querySelector('[data-testid=delete-confirm]') as HTMLElement).click()
+    await flushPromises()
+    expect(api.deleteTimelinePost).toHaveBeenCalledWith(7)
+    expect(api.fetchTimeline).toHaveBeenCalledTimes(2)
+    expect(w.find('[data-testid=timeline-empty]').exists()).toBe(true)
+  })
 })
 
 describe('S16 TimelinePage', () => {
