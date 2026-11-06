@@ -369,10 +369,22 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       undefined,
       'headcount',
     )
-  hc(
+  // S6-T13 PM-24 (ruling 6 on #491): Admin Pusat lists ONE school's configs (the same list as that school's admin).
+  get(
     '/headcounts',
     'Own headcount configs (S12), newest first',
     z.array(PerformanceHeadcountListItemSchema),
+    { 403: E403(STAFF) },
+    {
+      query: z.object({
+        schoolId: z.string().optional().meta({
+          description:
+            'Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.',
+        }),
+      }),
+    },
+    'teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); admin without schoolId: all configs, as before; admin with schoolId: VALIDATION_ERROR fields.schoolId "Sila pilih sekolah." when empty, repeated or malformed, NOT_FOUND when no such school. No 422 is listed here so the conformance smoke still picks the teacher list.',
+    'headcount',
   )
   hc('/headcounts/dashboard', 'Headcount dashboard (S13)', PerformanceHeadcountDashboardSchema)
   hc(
