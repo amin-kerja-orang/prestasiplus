@@ -1,5 +1,5 @@
 /** Pure rules of the papers module (no database, no Nest): mapping, defaults and the generation seed. */
-import { bijakLevelScopeAllows, type BijakBlueprintSource } from '@pp/contract'
+import type { BijakBlueprintSource } from '@pp/contract'
 
 import { fnv1a32 } from '../../../db/prng'
 import type { Blueprint, BlueprintSection, SectionRule } from './exam-core.adapter'
@@ -13,14 +13,6 @@ export const SOURCE_TO_WIRE: Readonly<Record<string, BijakBlueprintSource>> = {
 
 export function sourceToWire(source: string): BijakBlueprintSource {
   return SOURCE_TO_WIRE[source] ?? 'Draf'
-}
-
-/**
- * PO decision 2026-11-05 item 6: the ONE scope rule of every pupil read (list, cover, attempt, kuiz). `pilihan` papers only: a generated (Jana)
- * paper belongs to the user it was made for. `grade` is `users.grade`.
- */
-export function paperInPupilScope(paper: { kind: string; levelScope: string | null }, grade: number | null): boolean {
-  return paper.kind !== 'pilihan' || bijakLevelScopeAllows(paper.levelScope, grade)
 }
 
 export function ruleOf(ruleType: string, ruleN: number | null): SectionRule {
@@ -124,4 +116,20 @@ export function paperCodeOf(paper: { paperCode: string | null; surface: string; 
 /** Calendar year in Malaysia time (UTC+8, no daylight saving). */
 export function mytYear(at: Date): number {
   return new Date(at.getTime() + 8 * 60 * 60 * 1000).getUTCFullYear()
+}
+
+/** `users.grade` (1..11: 1 to 6 Darjah, 7 to 11 Tingkatan 1 to 5) of the two forms a Bijak SPM paper can be scoped to. */
+const GRADE_T4 = 10
+const GRADE_T5 = 11
+
+/**
+ * Whether a pupil of this form may see a paper with this `papers.level_scope` (S3-T07, AC-PA-36 clause (b), PO 2026-11-05).
+ * NULL scope means every form. `t4` is for Tingkatan 4, `t5` for Tingkatan 5, `t4_t5` for both. A T1 to T3 pupil, a
+ * primary pupil and a pupil with no resolvable form (`grade` null or outside 1..11) see only the NULL-scoped papers.
+ */
+export function levelScopeAllows(levelScope: string | null, grade: number | null): boolean {
+  if (levelScope === null) return true
+  if (grade === GRADE_T4) return levelScope === 't4' || levelScope === 't4_t5'
+  if (grade === GRADE_T5) return levelScope === 't5' || levelScope === 't4_t5'
+  return false
 }

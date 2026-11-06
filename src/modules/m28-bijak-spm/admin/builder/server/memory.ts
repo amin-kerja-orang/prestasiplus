@@ -222,8 +222,8 @@ export class MockBuilderServer implements BuilderApi {
   }
 
   async generate(subject: string, kertas: number): Promise<string> {
-    const { paperId } = await kontrakServer().generateDraft(subject, kertas)
-    return paperId
+    const { id } = await kontrakServer().generateDraft(subject, kertas)
+    return id
   }
 
   poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview> {

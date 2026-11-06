@@ -98,7 +98,7 @@ export class IntakeDashboardService {
     const [raw, money] = await Promise.all([this.source.intake(range, paths), this.budget(range)])
 
     const byStatus = INTAKE_DASHBOARD_BATCH_STATUSES.map((status) => ({ status, count: raw.batchesByStatus[status] ?? 0 }))
-    const succeeded = raw.batchesByStatus.ready_for_review ?? 0
+    const succeeded = (raw.batchesByStatus.ready_for_review ?? 0) + (raw.batchesByStatus.selesai_dengan_ralat ?? 0)
     const failed = raw.batchesByStatus.failed ?? 0
     const age = (at: Date | null) => (at === null ? null : Math.max(0, Math.floor((now.getTime() - at.getTime()) / 1000)))
 

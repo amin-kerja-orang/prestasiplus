@@ -242,6 +242,41 @@ describe('QuizRunner question', () => {
     expect(t(w, 'question-contributor').text()).toContain('Soalan oleh:')
   })
 
+  it('shows the "Rujukan" link only for an http(s) referenceUrl (FR-GUR-44a-9)', async () => {
+    const base = session()
+    const [first, second] = base.questions
+    api.start.mockResolvedValue({
+      ...base,
+      questions: [
+        { ...first!, referenceUrl: 'https://rujukan.example.org/bab-1' },
+        { ...second!, referenceUrl: 'javascript:alert(1)' },
+      ],
+    })
+    const w = await render()
+    const link = t(w, 'question-reference-link')
+    expect(link.text()).toBe('Rujukan')
+    expect(link.attributes('href')).toBe('https://rujukan.example.org/bab-1')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener noreferrer')
+    expect(t(w, 'question-text').html()).not.toContain('Rujukan')
+  })
+
+  it('hides the link when referenceUrl is absent, null, javascript: or an internal path', async () => {
+    const base = session()
+    for (const referenceUrl of [
+      undefined,
+      null,
+      'javascript:alert(1)',
+      '/dalaman',
+      'https://u:p@x.org',
+    ]) {
+      api.start.mockResolvedValue({ ...base, questions: [{ ...base.questions[0]!, referenceUrl }] })
+      const w = await render()
+      expect(w.find('[data-testid=question-reference]').exists(), String(referenceUrl)).toBe(false)
+      wrapper?.unmount()
+    }
+  })
+
   it('shows the revision chips and the "Salah {n}x" pill with revisionChips (S7)', async () => {
     const w = await render({ revisionChips: true })
     expect(t(w, 'chip-revision').text()).toContain(
@@ -641,5 +676,67 @@ describe('QuizRunner hideRetry', () => {
     const hidden = await toResults({ hideRetry: true })
     expect(hidden.find('[data-testid=result-retry]').exists()).toBe(false)
     expect(hidden.find('[data-testid=result-back]').exists()).toBe(true)
+  })
+})
+
+describe('QuizRunner confirmExit (S5-T02, chapter quiz)', () => {
+  // The runner and the dialog both teleport to the body: mount for real, attached to the document.
+  async function renderReal(props: Record<string, unknown> = {}): Promise<void> {
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+    })) as unknown as typeof window.matchMedia
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/:p(.*)*', component: { template: '<div />' } }],
+    })
+    await router.push('/practice/BM/quiz')
+    wrapper = mount(QuizRunner, {
+      props: {
+        start: { mode: 'chapter', chapterId: 1, count: 2 },
+        headerTitle: (s: StartSessionResponse) => s.subject?.name ?? '',
+        backUrl: '/practice/BM',
+        report: { source: 'latihan' },
+        api: api as unknown as QuizApi,
+        ...props,
+      },
+      global: { plugins: [router] },
+    })
+    await flushPromises()
+  }
+  const closeButton = (): HTMLElement =>
+    document.body.querySelector<HTMLElement>('[aria-label="Keluar latihan"]')!
+  const bodyButton = (label: string): HTMLElement | undefined =>
+    [...document.body.querySelectorAll<HTMLElement>('button')].find(
+      (b) => b.textContent.trim() === label,
+    )
+  const click = async (el: HTMLElement | undefined): Promise<void> => {
+    el?.click()
+    await flushPromises()
+  }
+  it('leaves at once without confirmExit', async () => {
+    await renderReal()
+    await click(closeButton())
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM')
+    expect(document.body.textContent).not.toContain('Keluar daripada kuiz?')
+  })
+
+  it('asks "Keluar daripada kuiz?"; "Teruskan Kuiz" stays and "Keluar" leaves', async () => {
+    await renderReal({ confirmExit: true })
+    await click(closeButton())
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM/quiz')
+    expect(document.body.textContent).toContain('Keluar daripada kuiz?')
+    expect(document.body.textContent).toContain(
+      'Jawapan yang sudah disemak telah disimpan. Anda boleh menyambung semula kuiz ini.',
+    )
+    await click(bodyButton('Teruskan Kuiz'))
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM/quiz')
+    await click(closeButton())
+    await click(bodyButton('Keluar'))
+    expect(router.currentRoute.value.fullPath).toBe('/practice/BM')
   })
 })

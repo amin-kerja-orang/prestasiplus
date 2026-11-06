@@ -1,89 +1,78 @@
 /**
- * M04 question-paper endpoints (SRS §7 #20–#22; build-plan M04-T2): S10 "Kertas Soalan Guru" list,
- * status update and file download. Every call needs an admin session. UI tasks read this file and do
- * not change it (build-plan §S.3 rule 5).
+ * Kiriman Guru (R1-ADM-Q-12, FR-ADM-Q12.1, FR-ADM-Q12.5): a teacher submission is an intake item of a
+ * `source=guru` batch, read from `GET /api/intake/items` (API-Q-15). No separate submissions route exists.
+ * The server owns the OPT-KIRIMAN-STATUS mapping, so the tiles and the filter both send its display keys.
  */
 
-import { api, isHttpMode, type BlobResult, type ListResult } from '@/api'
+import type { IntakeFileSummary, IntakeItemRow, IntakeKirimanStatus } from '@pp/contract'
 
-import { SubmissionsUnavailableError } from '../lib/submissions-unavailable'
+import { api, type BlobResult, type ListResult } from '@/api'
 
-export type SubmissionStatus = 'pending' | 'processing' | 'done' | 'rejected'
+const ITEMS_URL = '/api/intake/items'
 
-export interface SubmissionFile {
-  /** 0-based; the `:index` of #22. */
-  index: number
-  name: string
-  size: number
-  mime: string
-}
+export const SUBMISSION_PAGE_SIZE = 20
 
-/** DATA-M04-05 with the teacher (name, e-mail and school from M01 / M02). */
-export interface QuestionSubmission {
-  id: number
-  teacherId: number
-  subjectText: string
-  levelCode: string | null
-  year: number
-  paperType: string
-  authorCredit: string
-  note: string | null
-  files: SubmissionFile[]
-  status: SubmissionStatus
-  adminNotes: string | null
-  createdAt: string
-  teacher: { id: number; name: string | null; email: string | null; school: string | null }
-}
-
-/** `meta.counts` of #20: over every paper, whatever the filter. */
-export interface SubmissionCounts extends Record<string, number> {
+/** Tile totals of FR-ADM-Q12.1, over every item whatever the filter. */
+export interface SubmissionCounts {
   all: number
   pending: number
   processing: number
   done: number
-  rejected: number
 }
 
-export interface SubmissionListMeta {
-  counts: SubmissionCounts
-}
-
-/** #21 body. `adminNotes` (≤ 1000) replaces the stored note when given (`''` clears it). */
-export interface SubmissionStatusInput {
-  status: SubmissionStatus
-  adminNotes?: string | null
-}
-
-/** #21 result: the paper plus the flash text "Status kertas soalan berjaya dikemaskini.". */
-export interface SubmissionMutation {
-  data: QuestionSubmission
-  status: string
-}
-
-/** #20 `GET /api/question-submissions`: id descending, not paged. An unknown status is an empty list. */
-export function fetchQuestionSubmissions(
-  query: { status?: string | null; signal?: AbortSignal } = {},
-): Promise<ListResult<QuestionSubmission, SubmissionListMeta>> {
-  // The real API has no admin submissions route yet: skip the request (it would only 404).
-  if (isHttpMode()) return Promise.reject(new SubmissionsUnavailableError())
-  return api.list<QuestionSubmission, SubmissionListMeta>('/api/question-submissions', {
-    query: { status: query.status ?? null },
+export function fetchSubmissionItems(
+  query: { status?: string | null; page?: number; signal?: AbortSignal } = {},
+): Promise<ListResult<IntakeItemRow>> {
+  return api.list<IntakeItemRow>(ITEMS_URL, {
+    query: {
+      source: 'guru',
+      kirimanStatus: query.status ?? null,
+      page: query.page ?? 1,
+      pageSize: SUBMISSION_PAGE_SIZE,
+    },
     ...(query.signal ? { signal: query.signal } : {}),
   })
 }
 
-/** #21 `PATCH /api/question-submissions/:id/status` (404; 422 with `fields`). */
-export function updateSubmissionStatus(
-  id: number,
-  input: SubmissionStatusInput,
-): Promise<SubmissionMutation> {
-  return api.patch<SubmissionMutation>(`/api/question-submissions/${String(id)}/status`, {
-    body: input,
-    raw: true,
-  })
+export async function fetchSubmissionCounts(signal?: AbortSignal): Promise<SubmissionCounts> {
+  const total = async (kirimanStatus: IntakeKirimanStatus): Promise<number> => {
+    const result = await api.list<IntakeItemRow>(ITEMS_URL, {
+      query: { source: 'guru', kirimanStatus, pageSize: 1 },
+      ...(signal ? { signal } : {}),
+    })
+    return result.meta.totalItems
+  }
+  const [all, pending, processing, done] = await Promise.all([
+    total('Jumlah'),
+    total('Pending'),
+    total('Processing'),
+    total('Selesai'),
+  ])
+  return { all, pending, processing, done }
 }
 
-/** #22 `GET /api/question-submissions/:id/files/:index`: a placeholder text file with the file name. */
-export function downloadSubmissionFile(id: number, index: number): Promise<BlobResult> {
-  return api.blob(`/api/question-submissions/${String(id)}/files/${String(index)}`)
+/**
+ * The files of the batches on a page (`GET /api/intake/batches/:id`, API-Q-14): an item row names no file.
+ * A batch that cannot be read only leaves its `Fail` cell empty.
+ */
+export async function fetchBatchFiles(
+  batchIds: string[],
+  signal?: AbortSignal,
+): Promise<Map<string, IntakeFileSummary[]>> {
+  const ids = [...new Set(batchIds)]
+  const results = await Promise.allSettled(
+    ids.map((id) =>
+      api.get<{ files: IntakeFileSummary[] }>(`/api/intake/batches/${id}`, signal ? { signal } : {}),
+    ),
+  )
+  const files = new Map<string, IntakeFileSummary[]>()
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') files.set(ids[index] as string, result.value.files)
+  })
+  return files
+}
+
+/** `GET /api/intake/files/:id/original` (API-Q-14). */
+export function downloadSubmissionFile(fileId: string): Promise<BlobResult> {
+  return api.blob(`/api/intake/files/${fileId}/original`)
 }

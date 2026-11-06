@@ -66,7 +66,7 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks, so the 1-mark `last` goes to Bahagian A.
     const ids = [last ?? (await approved()), await approved(), await approved(), await approved(), await approved({ pointsValue: 2 }), await approved({ pointsValue: 2 })]
     for (const [i, id] of ids.entries()) expect((await setPool(id, [i < 3 ? 'MAT2-A' : i === 3 ? 'MAT2-B' : 'MAT2-C'])).status).toBe(200)
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const paper = created.body.data.id as string
     const sections = ((await admin.get(`/api/admin/papers/${paper}`)).body.data.paper.sections as { id: string }[]).map((s) => s.id)
@@ -200,7 +200,7 @@ describe('REQ-B-052: an archived question pinned on a published paper cannot be 
     const repo = t.app.get(QuestionsRepository)
     const sat = await publishedPaper()
     const quiet = await publishedPaper()
-    const draft = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const draft = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     const draftId = draft.body.data.id as string
     const sections = ((await admin.get(`/api/admin/papers/${draftId}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)
     const spare = await approved()

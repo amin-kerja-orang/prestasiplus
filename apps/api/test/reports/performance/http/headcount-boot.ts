@@ -101,6 +101,7 @@ export async function bootHeadcountWorld(env: Record<string, string> = {}): Prom
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
     THROTTLE_PERFORMANCE_READ_PER_MINUTE: '100000',
+    THROTTLE_PERFORMANCE_WRITE_PER_MINUTE: '100000',
     ...env,
   })
   const clock = new FixedClock(HC_START)

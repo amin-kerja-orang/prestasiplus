@@ -17,10 +17,10 @@
  * #1 `GET /api/me/gamification-summary` stays the core handler (overview §10).
  */
 
-import { ok, queryString, route, validationError, type RouteDef } from '@/mock/define'
+import { notFound, ok, queryString, route, validationError, type RouteDef } from '@/mock/define'
 
 import { masteryLevel, masteryMultiplier, masteryNextTarget, MASTERY_LABELS } from '../data/mastery'
-import { REFERRAL_REWARD_REFEREE, REFERRAL_REWARD_REFERRER } from '../data/catalogue'
+import { REFERRAL_SETTINGS } from '../data/catalogue'
 import {
   achievementsRepo,
   challengesRepo,
@@ -45,6 +45,7 @@ import {
 } from './common'
 import { intOf, bodyOf } from './input'
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const LEDGER_TYPES: readonly string[] = ['earn', 'spend', 'convert', 'bonus', 'refund']
 
 /** The student-facing ledger row (`LedgerRow` of §7 #4). */
@@ -183,8 +184,20 @@ export const studentRoutes: RouteDef[] = [
 
   // #7 (S13)
   route('GET', '/api/gamification/challenges', [anySession], (req) => {
-    const { items, completed, active } = challengesRepo.today(viewerId(req))
-    return ok(items, { meta: { completed, active } })
+    const { items, completed, active, claimed } = challengesRepo.today(viewerId(req))
+    return ok(items, { meta: { completed, active, claimed } })
+  }),
+
+  // API-GAME-11: claim the reward of a finished challenge (S13). The body is optional; success is 200.
+  route('POST', '/api/gamification/challenges/:id/claim', [anySession], (req) => {
+    const raw = bodyOf(req).clientUuid
+    const uuid = typeof raw === 'string' && UUID_PATTERN.test(raw) ? raw.toLowerCase() : null
+    if (raw !== undefined && raw !== null && uuid === null) {
+      return validationError({ clientUuid: MSG.invalid }, MSG.summary)
+    }
+    const id = intOf(req.params.id)
+    if (id === undefined) return notFound('Cabaran tidak dijumpai.')
+    return ok(guarded(() => challengesRepo.claim(viewerId(req), id, uuid)))
   }),
 
   // #8 (S14): `period` and every other query are ignored (FR-M14-08, FR-M14-42).
@@ -260,11 +273,13 @@ export const studentRoutes: RouteDef[] = [
     const userId = viewerId(req)
     const code = referralsRepo.codeOf(userId)
     const registerUrl = `https://prestasiplus.my/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_REWARD_REFEREE)} syiling PERCUMA! ${registerUrl}`
+    // [PROPOSED] 0-variant: at a friend reward of 0 the clause "untuk dapat {n} syiling PERCUMA" is dropped.
+    const text = referralShareText(code, registerUrl, REFERRAL_SETTINGS.refereeSyiling)
     return ok({
       code,
-      rewardReferrer: REFERRAL_REWARD_REFERRER,
-      rewardReferee: REFERRAL_REWARD_REFEREE,
+      rewardReferrer: REFERRAL_SETTINGS.referrerSyiling,
+      rewardReferee: REFERRAL_SETTINGS.refereeSyiling,
+      maxRewarded: REFERRAL_SETTINGS.maxRewarded,
       registerUrl,
       // As on live (S16-referral.json): only spaces are encoded; `:/?=&!` stay raw.
       whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
@@ -273,3 +288,10 @@ export const studentRoutes: RouteDef[] = [
     })
   }),
 ]
+
+/** The WhatsApp share text; at a friend reward of 0 the "untuk dapat {n} syiling PERCUMA" clause is dropped ([PROPOSED]). */
+export function referralShareText(code: string, registerUrl: string, refereeSyiling: number): string {
+  return refereeSyiling > 0
+    ? `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(refereeSyiling)} syiling PERCUMA! ${registerUrl}`
+    : `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}! ${registerUrl}`
+}

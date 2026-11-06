@@ -27,13 +27,17 @@ HAVING count(DISTINCT pl.paper_section_id) > 1
 ORDER BY s.paper_id, q.group_id;
 
 \echo '(c) groups that are not contiguous in their section (another question sits between two members)'
-SELECT pl.paper_section_id, q.group_id, min(pl.position) AS first_position, max(pl.position) AS last_position, count(*) AS placed
-FROM paper_placements pl
-JOIN questions q ON q.id = pl.question_id
-WHERE q.group_id IS NOT NULL
-GROUP BY pl.paper_section_id, q.group_id
-HAVING max(pl.position) - min(pl.position) + 1 <> count(*)
-ORDER BY pl.paper_section_id, q.group_id;
+SELECT o.paper_section_id, o.group_id, min(o.position) AS first_position, max(o.position) AS last_position, count(*) AS placed
+FROM (
+  SELECT pl.paper_section_id, q.group_id, pl.position,
+         row_number() OVER (PARTITION BY pl.paper_section_id ORDER BY pl.position) AS slot
+  FROM paper_placements pl
+  JOIN questions q ON q.id = pl.question_id
+) o
+WHERE o.group_id IS NOT NULL
+GROUP BY o.paper_section_id, o.group_id
+HAVING max(o.slot) - min(o.slot) + 1 <> count(*)
+ORDER BY o.paper_section_id, o.group_id;
 
 \echo '(d) group members that are not in group_position order'
 SELECT o.paper_section_id, o.group_id, o.question_id, o.position, o.group_position

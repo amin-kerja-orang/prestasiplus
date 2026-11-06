@@ -223,6 +223,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
+      if (resolved.reason === 'out_of_scope') {
+        // S3-T07: outside the pupil's form, a NEW sitting or a restart is 404, but the pupil's own open sitting still resumes.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
+      }
       if (resolved.reason === 'not_eligible') {
         // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
         if (!body.restart && !opts.fresh) {
@@ -478,12 +486,25 @@ export class BijakAttemptsService {
       const leaf = index.parts.get(c.partId)
       if (!leaf || locked.has(c.partId)) continue
       // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
-      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      if (leaf.topicIds) {
+        for (const key of ['choice', 'topicId'] as const) {
+          const topic = c.answer[key]
+          if (topic !== undefined && !leaf.topicIds.includes(topic)) {
+            throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.${key}`]: MSG.essayTopicUnknown } })
+          }
+        }
       }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
-      let answer = c.answer
+      // DM-68: `revealed` belongs to the server ("Semak" sets it, nothing clears it). `topicId` wins and is copied to `choice`, which every reader of an open essay_choice answer still uses.
+      let answer: PartAnswer = {
+        ...c.answer,
+        ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
+      }
+      delete answer.revealed
+      // A leaf with no topic choice has nowhere to keep a topic: a client `topicId` is dropped (not stored, not an error).
+      if (!leaf.topicIds) delete answer.topicId
+      if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
           photos = new Map()
@@ -832,9 +853,7 @@ export class BijakAttemptsService {
           attemptId: a.id,
           userId: a.userId,
           isTest: a.isTest,
-          // The aggregate's start_type knows only the paper kinds; `subjektif` / `structured` (DM-83) are
-          // passed once S5 widens `ck_practice_attempt_aggregates_start_type` (S3-T06 cross-sector PR).
-          paperKind: a.paperKind === 'pilihan' || a.paperKind === 'jana' ? a.paperKind : undefined,
+          paperKind: a.paperKind,
           startedAt: a.startedAt,
           submittedAt: a.submittedAt,
           paperId: a.paperId,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S8 table (FR-M27-112, 113, 115; PROPOSED, D23): columns "#", "Kelas" (name, a link to M08 S5
- * `/prestasi/kelas/{id}`; an inactive class carries the badge "Tidak Aktif"), "Subjek" ("Tiada Subjek"),
+ * `/prestasi/kelas/{id}` for a classroom, plain text for a school_class; an inactive class carries the badge "Tidak Aktif"), "Subjek" ("Tiada Subjek"),
  * "Tingkatan", "Guru", "Murid", "Kod Kelas". Empty: "Tiada kelas dijumpai" and "Sila cipta kelas
  * terlebih dahulu". Staff table from `md`, a card list below; paging is server side (25 per page).
  */
@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, DsText, type CardField } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
@@ -35,7 +35,7 @@ interface Item extends Record<string, unknown> {
   members: string
   code: string
   isActive: boolean
-  link: string
+  link: string | null
 }
 
 const items = computed<Item[]>(() =>
@@ -71,7 +71,7 @@ const cardFields: CardField[] = [
 ]
 
 function open(row: Item): void {
-  void router.push(row.link)
+  if (row.link !== null) void router.push(row.link)
 }
 </script>
 
@@ -103,11 +103,13 @@ function open(row: Item): void {
     <template #name-cell="{ row }">
       <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="kl-row">
         <RouterLink
+          v-if="row.original.link !== null"
           :to="row.original.link"
           class="inline-flex min-h-11 items-center text-label text-highlighted"
           data-testid="kl-name"
           >{{ row.original.name }}</RouterLink
         >
+        <DsText v-else as="span" variant="label" data-testid="kl-name">{{ row.original.name }}</DsText>
         <DsStatusBadge
           v-if="!row.original.isActive"
           status="inactive"

@@ -119,7 +119,7 @@ describe('S3-T02 One Set Builder', () => {
   })
 
   const editor = async (id: string) => Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data
-  const generate = (body: Record<string, unknown> = {}) => admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2, ...body })
+  const generate = (body: Record<string, unknown> = {}) => admin.post('/api/admin/papers/generate', { title: 'Set Ujian', subject: 'MAT', kertas: 2, ...body })
   const generated = async (body: Record<string, unknown> = {}): Promise<string> => {
     const res = await generate(body)
     expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -137,12 +137,12 @@ describe('S3-T02 One Set Builder', () => {
   const setGrade = (grade: number) => t.db.query(`update users set grade = $1 where id = $2`, [grade, BigInt(student.userId)])
 
   describe('Jana set (API-BIJAK-11, FR-ADM-Q13.2)', () => {
-    it('answers { data: { id } } with the title and scope asked; omitted title and scope fall back to the default and the contract', async () => {
+    it('answers { data: { id } } with the title and scope asked; an omitted scope falls back to the contract (the title is required, PRD30 13-04)', async () => {
       const named = await editor(await generated({ title: '  Latih Tubi Mac  ', levelScope: 't5' }))
       expect(named.paper.title).toBe('Latih Tubi Mac')
       expect(named.paper.levelScope).toBe('t5')
       const plain = await editor(await generated())
-      expect(plain.paper.title).toContain('Percubaan SPM')
+      expect(plain.paper.title).toBe('Set Ujian')
       expect(plain.paper.levelScope).toBe('t4_t5')
       expect(plain.paper.sections.map((s) => s.questionIds.length)).toEqual([3, 1, 2])
     })
@@ -184,6 +184,22 @@ describe('S3-T02 One Set Builder', () => {
       expect(expectError(await generate({ count: 0 }), 'VALIDATION_ERROR', 422).fields).toEqual({ count: 'Bilangan soalan mesti antara 1 dan 100.' })
     })
 
+    // S3-T02, PRD30 13-04: `Tajuk set` (Jana set) is required and at most 120 after trim; no default title, nothing is created on a refusal.
+    it('Jana set: a blank, whitespace or omitted title is 422 "Tajuk set diperlukan."; 120 characters pass, 121 is 422 on fields.title', async () => {
+      const before = (await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n
+      for (const title of ['', '   ', '\t \n']) {
+        expect(expectError(await generate({ title }), 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set diperlukan.' })
+      }
+      const omitted = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2 })
+      expect(expectError(omitted, 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set diperlukan.' })
+      const long = await generate({ title: 'T'.repeat(121) })
+      expect(expectError(long, 'VALIDATION_ERROR', 422).fields).toEqual({ title: 'Tajuk set tidak boleh melebihi 120 aksara.' })
+      expectError(await generate({ title: `   ${'T'.repeat(121)}   ` }), 'VALIDATION_ERROR', 422)
+      expect((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n).toBe(before)
+      const t120 = 'T'.repeat(120)
+      expect((await editor(await generated({ title: `  ${t120}  ` }))).paper.title).toBe(t120)
+    })
+
     it('Tahun and Negeri narrow the draw; a pool that is then too small is a shortage, and nothing is created', async () => {
       const before = (await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n
       const res = await generate({ years: [2025], negeri: ['johor'] })
@@ -218,11 +234,11 @@ describe('S3-T02 One Set Builder', () => {
     })
 
     it('Mula kosong takes the scope too; Salin set keeps it', async () => {
-      const made = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, levelScope: 't4' })
+      const made = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2, levelScope: 't4' })
       expect((await editor(made.body.data.id as string)).paper.levelScope).toBe('t4')
       const copy = await admin.post(`/api/admin/papers/${made.body.data.id as string}/copy`)
       expect((await editor(copy.body.data.id as string)).paper.levelScope).toBe('t4')
-      expect((await editor((await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string)).paper.levelScope).toBe('t4_t5')
+      expect((await editor((await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })).body.data.id as string)).paper.levelScope).toBe('t4_t5')
     })
   })
 
@@ -269,7 +285,7 @@ describe('S3-T02 One Set Builder', () => {
     let sectionA: string
     let sectionC: string
     beforeAll(async () => {
-      paper = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      paper = (await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })).body.data.id as string
       const e = await editor(paper)
       sectionA = e.paper.sections[0]!.id
       sectionC = e.paper.sections[2]!.id
@@ -330,7 +346,7 @@ describe('S3-T02 One Set Builder', () => {
 
   describe('FR-QA-41, paper side (AC-QA-41)', () => {
     const fresh = async () => {
-      const id = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      const id = (await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })).body.data.id as string
       const e = await editor(id)
       return { id, a: e.paper.sections[0]!.id, b: e.paper.sections[1]!.id, c: e.paper.sections[2]!.id }
     }
@@ -404,7 +420,7 @@ describe('S3-T02 One Set Builder', () => {
 
   describe('Terbit marks check (S3-T01 decision 15)', () => {
     const fullPaper = async () => {
-      const id = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      const id = (await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })).body.data.id as string
       const e = await editor(id)
       await admin.put(`/api/admin/papers/${id}`, {
         sections: [

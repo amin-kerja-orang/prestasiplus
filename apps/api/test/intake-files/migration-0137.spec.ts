@@ -39,7 +39,7 @@ describe('migration 0137 intake guru source', () => {
 
   it('still enforces the admin subject code regex and kertas value', async () => {
     await expect(insert({ paper: 'trial', subject: 'Matematik Tambahan', kertas: 1 })).rejects.toThrow(/ck_intake_batches_subject/)
-    await expect(insert({ paper: 'trial', subject: 'MAT', kertas: 3 })).rejects.toThrow(/ck_intake_batches_kertas/)
+    await expect(insert({ paper: 'trial', subject: 'MAT', kertas: 5 })).rejects.toThrow(/ck_intake_batches_kertas/)
   })
 
   it('keeps the five old paper_type codes and refuses an unknown one', async () => {
