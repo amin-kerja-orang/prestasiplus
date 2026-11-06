@@ -410,6 +410,18 @@ describe('HttpBijakServer: errors', () => {
     expect(e).toMatchObject({ code: 'bad_request', message: 'Percubaan sudah tamat' })
   })
 
+  it('422 on a blank check is bad_request with the fields.questionId line, like the mock', async () => {
+    const { server } = setup({
+      'POST /api/bijak/attempts/att-1/questions/q-1/check': fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+        fields: { questionId: 'Jawab dahulu sebelum menyemak.' },
+      }),
+    })
+    expect(await code(server.checkQuestion(7, 'att-1', 'q-1'))).toMatchObject({
+      code: 'bad_request',
+      message: 'Jawab dahulu sebelum menyemak.',
+    })
+  })
+
   it('403 on a check in exam mode is forbidden with the scheme message', async () => {
     const { server } = setup({
       'POST /api/bijak/attempts/att-1/questions/q-1/check': fail(

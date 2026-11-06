@@ -2,6 +2,7 @@ import { ServabilityDatabankRowSchema, ServabilityOverviewSchema, ServabilityPap
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
+import { stubPlacedQuestions } from '../support/db'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, loginAs, parseData, parseList, type Client, type QuestionsTestApp } from './helpers'
 
@@ -38,6 +39,7 @@ describe('hub cards equal their lanes on seeded-shape data (REQ-B-033)', () => {
   beforeAll(async () => {
     process.env.THROTTLE_SERVABILITY_OVERVIEW_PER_MINUTE = '1000'
     t = await bootQuestionsApp()
+    await stubPlacedQuestions(t.db) // DM-11: a placement of an id the bank does not hold needs a question row
     svc = t.app.get(QuestionsService)
     admin = await loginAs(t, 'admin')
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')

@@ -3,12 +3,21 @@ import type { BijakAttemptPartAnswer, BijakAttemptSavePayload, BijakAttemptSubmi
 import { ApiError } from '../../../common/errors/api-error'
 import { PAYLOAD_LIMITS as L, PAYLOAD_MESSAGES as M } from './attempts.constants'
 
+function entriesTooBig(m: Record<string, string> | undefined): boolean {
+  if (!m) return false
+  const entries = Object.entries(m)
+  return entries.length > L.answerEntries || entries.some(([k, v]) => k.length > L.answerKeyChars || v.length > L.finalChars)
+}
+
 function answerTooBig(a: BijakAttemptPartAnswer): boolean {
   if (a.steps && (a.steps.length > L.steps || a.steps.some((s) => s.length > L.stepChars))) return true
   if (a.final !== undefined && a.final.length > L.finalChars) return true
   if (a.unit !== undefined && a.unit.length > L.unitChars) return true
   if (a.text !== undefined && a.text.length > L.textChars) return true
-  if (a.choice !== undefined && a.choice.length > 64) return true
+  if (a.choice !== undefined && a.choice.length > L.answerKeyChars) return true
+  if (a.topicId !== undefined && a.topicId.length > L.answerKeyChars) return true
+  if (a.choices && (a.choices.length > L.choices || a.choices.some((c) => c.length > L.answerKeyChars))) return true
+  if (entriesTooBig(a.gaps) || entriesTooBig(a.cells)) return true
   if (a.photos && a.photos.length > 3) return true
   if (a.photos?.some((p) => p.name.length > L.photoNameChars)) return true
   if (a.plain && (a.plain.final.length > L.plainChars || a.plain.steps.length > L.steps || a.plain.steps.some((s) => s.length > L.plainChars))) {
