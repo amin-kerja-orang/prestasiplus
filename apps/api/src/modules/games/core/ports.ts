@@ -34,11 +34,28 @@ export interface GameResultInput {
   total?: number
   detail?: Record<string, unknown>
   key?: string
+  /**
+   * The game session of this result (DM-87). With it, `GamificationService` records the one reward event of the
+   * session and pupil and applies the daily caps; without it (Roda Nasib) the result stays on `key`.
+   */
+  session?: GameResultSession
 }
+
+export interface GameResultSession {
+  /** `game_rooms.session_id` or the solo session uuid. */
+  id: string
+  /** The game key of 48 section 3.5 (`betul-salah`), not the M14 token: the ledger source is `game:<game key>`. */
+  gameKey: string
+}
+
+/** Which daily cap of 48 section 3.4 rule 4 reduced a reward. */
+export type GameRewardCapReason = 'xp_cap' | 'syiling_cap' | 'xp_and_syiling_cap'
 
 export interface GameResultOutcome {
   coinsCredited: number
   xpAdded: number
+  /** Only for a result with `session`: the cap that reduced it, or null. */
+  cappedReason?: GameRewardCapReason | null
 }
 
 export interface GameRewardsPort {

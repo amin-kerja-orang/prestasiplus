@@ -179,7 +179,12 @@ export const BIJAK_SET_BUILDER_PROPOSED = {
   poolGroups: (groups: number) => `${String(groups)} kumpulan rangsangan`,
   scaledHint: (total: number) => `Kurang daripada ${String(total)}: setiap Bahagian dikecilkan mengikut kadar kontrak.`,
   terbitFromPreview: 'Kertas diimport diterbitkan daripada pratonton.',
+  /** PRD30 13-01 and 13-04: `Tajuk set` is at most 120 characters (the PRD gives no message for the limit; the form follows N07-03). */
+  setTitleTooLong: 'Tajuk set tidak boleh melebihi 120 aksara.',
 } as const
+
+/** PRD30 13-01 and 13-04: `Tajuk set` is required and at most this many characters (after trim) on create, Jana set and update. */
+export const BIJAK_SET_TITLE_MAX = 120
 
 /**
  * R1-T48 texts that take a value. `numberUsed` and the section / question wording follow the V2 Panel "Semak Kertas Simulasi"
@@ -789,7 +794,7 @@ export const BijakBuilderPaperCreateSchema = z
     kertas: Kertas,
     title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
       description:
-        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create). Kertas Subjektif: required, at most 150.',
+        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); required by the server (PRD30 13-01): omitted, blank or only spaces = 422 `fields.title` "Tajuk set diperlukan."; more than 120 characters after trim = 422 `fields.title` "Tajuk set tidak boleh melebihi 120 aksara." (the schema accepts up to 200 so the server answers with the field message). Kertas Subjektif: required, at most 150 (the 120 set rule does not apply).',
     }),
     levelScope: BijakLevelScopeSchema.optional().meta({ description: 'S3-T02 `Dilihat murid`; omitted = the default from the contract.' }),
     surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06: omitted = `simulasi`.' }),
@@ -847,7 +852,7 @@ export const BijakBuilderPaperPatchSchema = z
     title: z
       .string()
       .trim()
-      .min(1, BIJAK_BUILDER_MESSAGES.titleRequired)
+      .min(1, BIJAK_BUILDER_MESSAGES.setTitleRequired)
       .max(200, BIJAK_BUILDER_MESSAGES.titleTooLong)
       .optional()
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),

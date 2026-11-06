@@ -496,7 +496,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     expect(BijakBuilderPaperPatchSchema.safeParse({ durationMin: 0 }).success).toBe(false)
     const r = BijakBuilderPaperPatchSchema.safeParse({ title: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.titleRequired)
+    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.setTitleRequired)
   })
 })
 
@@ -1042,7 +1042,7 @@ describe('openapi document', () => {
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.paperLocked)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidQuestion)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidSection)
-    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
+    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.setTitleRequired)
     expect(text('/admin/papers/{id}', 'put')).toContain('subject check only')
     expect(text('/admin/papers/{id}', 'put')).toContain('Checks run in the mock order')
     expect(text('/admin/papers/{id}', 'delete')).toContain(BIJAK_BUILDER_MESSAGES.deleteTerbit)

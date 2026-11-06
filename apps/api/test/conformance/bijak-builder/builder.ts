@@ -27,7 +27,7 @@ const blueprintBody = (code: string, source: 'Disahkan' | 'Spec' | 'Draf' = 'Spe
 const arr = (value: unknown): Json[] => (Array.isArray(value) ? (value as Json[]) : [])
 
 async function createPaper(ctx: ScenarioContext, admin: Client, subject: string, kertas: number, title?: string): Promise<string> {
-  const res = await admin.request('POST', '/admin/papers', { body: title ? { subject, kertas, title } : { subject, kertas } })
+  const res = await admin.request('POST', '/admin/papers', { body: { subject, kertas, title: title ?? 'Set uji' } })
   ctx.expectStatus(res, 201)
   return String(dataOf(res).id)
 }
@@ -101,7 +101,7 @@ export const bijakBuilderScenarios: Scenario[] = [
       const editor = await editorOf(ctx, admin, id)
       const paper = editor.paper as Json
       ctx.check(paper.status === 'draf' && paper.code === '1449/2', 'a new paper must be draf with the blueprint code')
-      ctx.check(String(paper.title) === 'Percubaan SPM Matematik Kertas 2 (draf)', `default title differs: ${String(paper.title)}`)
+      ctx.check(String(paper.title) === 'Set uji', `title differs: ${String(paper.title)}`)
       ctx.check(sectionsOf(editor).length === 3 && sectionsOf(editor).every((s) => arr(s.questionIds).length === 0), 'a new paper must have the 3 blueprint sections, empty')
       ctx.check(editor.blueprint !== null, 'the editor must carry the blueprint')
       const candidates = arr(editor.questions).filter((q) => q.kertas === 2)

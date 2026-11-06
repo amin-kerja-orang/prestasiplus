@@ -2099,8 +2099,8 @@
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
       "name": null,
       "status": "canonical",
       "sector": "S6",
@@ -2124,8 +2124,19 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/NotFoundPage.vue",
+      "component": "src/modules/m11-teacher-analytics/pages/LaporanMingguanGuruPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/laporan-mingguan|",
+      "path": "/guru/laporan-mingguan",
+      "name": null,
+      "status": "redirect-to:/guru/laporan-mingguan-kelas",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "redirects_to": "/guru/laporan-mingguan-kelas",
       "approved_by_card": null
     },
     {
@@ -10613,6 +10624,16 @@
       "approved_by_card": null
     },
     {
+      "name": "GameRewardEvent",
+      "table": "game_reward_events",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-87",
+      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult."
+    },
+    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -11818,6 +11839,16 @@
       "sector": "S7",
       "file": "apps/api/src/modules/battle/queue/queue.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/battle/queue/:p/cancel",
+      "method": "POST",
+      "path": "/api/battle/queue/:queueId/cancel",
+      "api_id": "API-GAME-14",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/battle/queue/queue-cancel.controller.ts",
+      "approved_by_card": "S7-T01"
     },
     {
       "key": "POST /api/battle/accept-challenger/:p",
@@ -14403,6 +14434,16 @@
       "key": "GET /api/gamification/challenges",
       "method": "GET",
       "path": "/api/gamification/challenges",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/gamification.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/gamification/challenges/:p/claim",
+      "method": "POST",
+      "path": "/api/gamification/challenges/:id/claim",
       "api_id": null,
       "status": "canonical",
       "sector": "S7",
