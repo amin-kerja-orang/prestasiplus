@@ -64,19 +64,17 @@ export async function offeredLevels(db: Pick<TxClient | PrismaClient, '$queryRaw
 export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
 export const POINTS_PER_CORRECT = 10
-/** BR-09: mission sessions pay 3 coins per correct answer unless the mission says otherwise. */
-export const MISSION_COINS_PER_CORRECT = 3
 /** Largest page number the history accepts (a deeper page is 422, so a skip cannot be abused). */
 export const HISTORY_MAX_PAGE = 10_000
 /** Default page size of the history list. */
 export const HISTORY_PAGE_SIZE = 15
 
 /**
- * BR-09 (observed: the coins stored on a session are the correct answers, times the mission rate for a
- * `mission` session). The wallet credit has its own rate and comes back from the reward port.
+ * DM-48 (S5-T03): the coins stored on a session are the correct answers times ONE rate for every mode; the caller reads the rate
+ * with `coinsPerCorrect()` (`./coins`) when the credit is written (1 until the `reward_settings` row exists).
  */
-export function sessionCoins(mode: PracticeMode, correct: number, coinsPerCorrect?: number | null): number {
-  return mode === 'mission' ? correct * (coinsPerCorrect || MISSION_COINS_PER_CORRECT) : correct
+export function sessionCoins(correct: number, rate: number): number {
+  return correct * rate
 }
 
 /** S7 (revision, observed) and Q1 / Q2 (proposed) feedback titles. */
@@ -90,3 +88,12 @@ export const PRACTICE_LIMITS = {
   write: { bucket: 'practice.write', env: 'THROTTLE_PRACTICE_WRITE_PER_MINUTE', default: 120, per: 'user' },
   read: { bucket: 'practice.read', env: 'THROTTLE_PRACTICE_READ_PER_MINUTE', default: 120, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/**
+ * DM-44: the value of `practice_checks.selected_label` for a selection. One label stays as it is; an `mcq_multi`
+ * answer is the sorted, unique labels joined by commas ("A,C"). No label gives null.
+ */
+export function selectedLabelOf(labels: readonly string[]): string | null {
+  const unique = [...new Set(labels)].sort()
+  return unique.length === 0 ? null : unique.join(',')
+}

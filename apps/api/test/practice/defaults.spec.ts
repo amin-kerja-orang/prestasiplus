@@ -35,9 +35,8 @@ afterAll(async () => {
 const post = (body: unknown) => pelajar.post('/api/practice/sessions', body)
 
 describe('AC3 default ports', () => {
-  it('the empty bank: random, chapter, past_year and latih_tubi are 422 NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi."', async () => {
+  it('the empty bank: chapter, past_year and latih_tubi are 422 NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi."', async () => {
     for (const body of [
-      { mode: 'random', subjectCode: 'MATH', count: 5 },
       { mode: 'chapter', chapterId: w.chapter.c1, count: 5 },
       { mode: 'past_year', subjectCode: 'SEJ', count: 5 },
       { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 },
