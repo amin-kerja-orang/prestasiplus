@@ -115,6 +115,38 @@ describe('Semak (FR-MUR-13-6)', () => {
     expect(q('[data-testid=check-change]')).toBeNull()
   })
 
+  it('reload after "Tukar jawapan" follows the API view: the edited answer is open for a new Semak, an untouched one is locked again', async () => {
+    const saved = (choice: string) => ({ q1: { answer: { choice }, rev: 1, savedAt: Date.now() } })
+    const withState = (checks: object[], choice: string) => {
+      const v = view([question('q1', MCQ)], { q1: 1 })
+      return { ...v, attempt: { ...v.attempt, answers: saved(choice), checked: ['q1'] }, checks }
+    }
+    server.getAttemptView.mockResolvedValue(withState([result('q1', 1)], 'a'))
+    server.checkQuestion.mockResolvedValue(result('q1', 1))
+    await render()
+    expect(q('[data-testid=check-button]')).toBeNull()
+    q('[data-testid=check-change]')!.click()
+    await flushPromises()
+    expect(q('[data-testid=check-button]')).not.toBeNull()
+    q('[data-testid=option-b]')!.click()
+    await flushPromises()
+    // reload 1: the answer was edited, so the API view returns no verdict for it and the part is open
+    wrapper!.unmount()
+    server.getAttemptView.mockResolvedValue(withState([], 'b'))
+    await render()
+    expect(q('[data-testid=check-button]')).not.toBeNull()
+    expect(q('[data-testid=check-change]')).toBeNull()
+    expect(q('[data-testid=option-a]')?.hasAttribute('disabled')).toBe(false)
+    expect((q('[data-testid=check-button]') as HTMLButtonElement).disabled).toBe(false)
+    // reload 2: "Tukar jawapan" without an edit is not remembered; the API view returns the check again and the part is locked
+    wrapper!.unmount()
+    server.getAttemptView.mockResolvedValue(withState([result('q1', 1)], 'a'))
+    await render()
+    expect(q('[data-testid=check-button]')).toBeNull()
+    expect(q('[data-testid=check-change]')).not.toBeNull()
+    expect(q('[data-testid=option-b]')?.getAttribute('data-state')).toBe('correct')
+  })
+
   it('a save that fails sends no check, and says the existing line', async () => {
     server.getAttemptView.mockResolvedValue(view([question('q1', MCQ)]))
     server.saveAnswers.mockRejectedValueOnce(new Error('500'))
