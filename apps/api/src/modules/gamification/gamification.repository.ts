@@ -4,6 +4,7 @@ import { Prisma } from '../../db/generated/client'
 import type { PrismaClient, TxClient } from '../../db/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import type { GameRewardCapReason } from '../games'
 
 /** A transaction handle or the plain client. */
 export type Db = TxClient | PrismaClient
@@ -15,6 +16,13 @@ export interface ClaimRecord {
   rewardSyiling: number
   rewardXp: number
   clientUuid: string | null
+}
+
+/** The first result of a reward event (DM-87). */
+export interface GameRewardEventRecord {
+  xp: number
+  syiling: number
+  cappedReason: GameRewardCapReason | null
 }
 
 /** A `date` column is read and written as UTC midnight of the calendar day. */
@@ -451,6 +459,36 @@ export class GamificationRepository {
       INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
       VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
       ON CONFLICT DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  // --- game reward events (DM-87) ------------------------------------------------------------------
+
+  /** Serialises the reward events of one pupil until the transaction ends, so that parallel games cannot pass a daily cap together. */
+  async lockGameRewards(db: Db, userId: string): Promise<void> {
+    await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`game_rewards:${userId}`}, 0))`
+  }
+
+  async gameRewardEvent(db: Db, gameSessionId: string, userId: string): Promise<GameRewardEventRecord | null> {
+    return db.gameRewardEvent.findUnique({
+      where: { gameSessionId_userId: { gameSessionId, userId: idFromString(userId) } },
+      select: { xp: true, syiling: true, cappedReason: true },
+    }) as Promise<GameRewardEventRecord | null>
+  }
+
+  /** What the pupil's reward events hold for `[from, to)`. */
+  async gameRewardsBetween(db: Db, userId: string, from: Date, to: Date): Promise<{ xp: number; syiling: number }> {
+    const r = await db.gameRewardEvent.aggregate({ where: { userId: idFromString(userId), createdAt: { gte: from, lt: to } }, _sum: { xp: true, syiling: true } })
+    return { xp: r._sum.xp ?? 0, syiling: r._sum.syiling ?? 0 }
+  }
+
+  /** False when the session and pupil already hold their event: the unique index decides. */
+  async insertGameRewardEvent(db: Db, row: GameRewardEventRecord & { gameSessionId: string; userId: string; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO game_reward_events (game_session_id, user_id, xp, syiling, capped_reason, created_at)
+      VALUES (${row.gameSessionId}::uuid, ${idFromString(row.userId)}, ${row.xp}, ${row.syiling}, ${row.cappedReason}, ${row.at}::timestamptz)
+      ON CONFLICT (game_session_id, user_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
   }

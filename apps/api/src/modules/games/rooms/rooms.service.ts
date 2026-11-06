@@ -531,6 +531,7 @@ export class RoomsService {
         total: r.total,
         detail: r.detail,
         key: room.code,
+        session: { id: room.sessionId, gameKey: room.game },
       },
       { tx, isTest: false },
     )
