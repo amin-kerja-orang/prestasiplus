@@ -10842,6 +10842,18 @@
               "$ref": "#/components/schemas/BijakPaperCoverSection"
             },
             "minItems": 1
+          },
+          "unavailable": {
+            "type": "boolean",
+            "description": "PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees \"Mula\" disabled with the message \"Kertas belum tersedia\" before any click. A sitting already open can still be resumed."
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "QUESTION_WITHDRAWN",
+              "NO_QUESTIONS"
+            ],
+            "description": "Present only when `unavailable` is true."
           }
         },
         "required": [
@@ -10860,7 +10872,8 @@
           "instructions",
           "reference",
           "examinerGrid",
-          "sections"
+          "sections",
+          "unavailable"
         ],
         "additionalProperties": false
       },
@@ -52838,6 +52851,9 @@
       "PerformanceLevelCode": {
         "type": "string",
         "enum": [
+          "t1",
+          "t2",
+          "t3",
           "t4",
           "t5"
         ]
@@ -52922,6 +52938,76 @@
           "year",
           "joinCode",
           "isActive"
+        ]
+      },
+      "PerformanceClassesAggregate": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceClassCard"
+            }
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "answered",
+                "accuracy"
+              ]
+            },
+            "description": "Top 10 pupils with at least 5 answers, accuracy descending, ties by answers descending."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "answered",
+                "accuracy"
+              ]
+            },
+            "description": "Subjects with answers, accuracy descending."
+          }
+        },
+        "required": [
+          "classes",
+          "topStudents",
+          "subjects"
         ]
       },
       "PerformanceSchool": {
@@ -53475,29 +53561,55 @@
                 "className": {
                   "type": "string"
                 },
-                "checkpoint": {
+                "answered": {
                   "type": "integer"
                 },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "lastAnsweredAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Timestamp"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "checkpoint": {
+                  "type": "integer",
+                  "deprecated": true
+                },
                 "ar": {
-                  "type": "number"
+                  "type": "number",
+                  "deprecated": true
                 },
                 "target": {
-                  "type": "number"
+                  "type": "number",
+                  "deprecated": true
                 },
                 "gap": {
-                  "type": "number"
+                  "type": "number",
+                  "deprecated": true
                 }
               },
               "required": [
                 "userId",
                 "name",
                 "className",
-                "checkpoint",
-                "ar",
-                "target",
-                "gap"
+                "answered",
+                "accuracy",
+                "lastAnsweredAt"
               ]
-            }
+            },
+            "description": "Murid Berisiko: whole-number accuracy below 50 or no answer in the last 7 days; 10 rows, accuracy ascending (no answer last)."
           }
         },
         "required": [
@@ -53569,7 +53681,10 @@
                 "type": "integer"
               },
               "avgMinutes": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "active7d": {
                 "type": "integer"
@@ -53697,7 +53812,8 @@
                 "avgAccuracy",
                 "activeStudents"
               ]
-            }
+            },
+            "description": "Daily, the last 30 Malaysian days including today, oldest first, zero-filled (a day without an answer is sessions 0, avgAccuracy 0, activeStudents 0); `date` is the MYT day."
           },
           "ranking": {
             "type": "array",
@@ -121695,10 +121811,10 @@
         "tags": [
           "performance"
         ],
-        "summary": "Level cards T4/T5 (S2)",
+        "summary": "Level cards T1-T5: T4 and T5 always, T1-T3 when the scope has classes or pupils (S2)",
         "responses": {
           "200": {
-            "description": "Level cards T4/T5 (S2)",
+            "description": "Level cards T1-T5: T4 and T5 always, T1-T3 when the scope has classes or pupils (S2)",
             "content": {
               "application/json": {
                 "schema": {
@@ -121797,7 +121913,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": code is not t4 or t5",
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": code is not t1 to t5",
             "content": {
               "application/json": {
                 "schema": {
@@ -121815,7 +121931,7 @@
           "performance"
         ],
         "summary": "Own classes (S4)",
-        "description": "A teacher gets the own active classrooms; every other role gets [].",
+        "description": "A teacher gets the own active classrooms, a school admin the active classrooms of the own school; every other role gets [].",
         "responses": {
           "200": {
             "description": "Own classes (S4)",
@@ -121829,6 +121945,55 @@
                       "items": {
                         "$ref": "#/components/schemas/PerformanceClassCard"
                       }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/classes/aggregate": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Own classes with Pelajar Terbaik and Prestasi Mengikut Subjek (S4, R1-GUR-4)",
+        "description": "Same classes as `GET /performance/classes` plus the top 10 pupils (at least 5 answers, accuracy descending) and the accuracy per subject over their pupils. Registered before `/performance/classes/{id}`.",
+        "responses": {
+          "200": {
+            "description": "Own classes with Pelajar Terbaik and Prestasi Mengikut Subjek (S4, R1-GUR-4)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceClassesAggregate"
                     }
                   },
                   "required": [
