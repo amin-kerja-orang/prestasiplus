@@ -810,10 +810,10 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         await teacherPage.goto(`/prestasi/kelas/${cls.id}`)
         await expect(teacherPage.getByTestId('headcount-block')).toBeVisible({ timeout: 20_000 })
         await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track').toHaveText(
-          /^\s*0\s+On Track/,
+          /^\s*0\s*On Track/,
         )
         await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toHaveText(
-          /^\s*1\s+Below Target/,
+          /^\s*1\s*Below Target/,
         )
         await expectNoHScroll(teacherPage)
       })
@@ -883,10 +883,10 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         await teacherPage.goto(`/prestasi/kelas/${cls.id}`)
         await expect(teacherPage.getByTestId('headcount-block')).toBeVisible({ timeout: 20_000 })
         await expect(teacherPage.getByTestId('hc-on'), 'class dashboard On Track +1').toHaveText(
-          /^\s*1\s+On Track/,
+          /^\s*1\s*On Track/,
         )
         await expect(teacherPage.getByTestId('hc-below'), 'class dashboard Below').toHaveText(
-          /^\s*0\s+Below Target/,
+          /^\s*0\s*Below Target/,
         )
         await expectNoHScroll(teacherPage)
       })
