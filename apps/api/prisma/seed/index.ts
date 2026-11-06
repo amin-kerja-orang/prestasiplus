@@ -9,7 +9,7 @@
  */
 import { pathToFileURL } from 'node:url'
 
-import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
+import { seedClockFor, seedRunAt, SystemClock, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
@@ -51,8 +51,12 @@ export interface SeedContext {
   profile: string
   /** The environment of this run (`RunSeedsOptions.env`, default `process.env`): the same one the demo guard reads. */
   readonly env: Record<string, string | undefined>
-  /** Fixed at the ADR-0006 anchor; never the real time. */
+  /** The ADR-0006 anchor (SEED_NOW); in a demo-profile run with a run date (ADR-0006 Amendment 3) the same time of day on the run date. Never read from the real time here. */
   clock: Clock
+  /** A fixed calendar instant of the seed data moved with the clock: `new Date(iso)` in CI profiles, shifted by whole days in a demo run. */
+  date(iso: string): Date
+  /** Like `date`, shifted by whole weeks only (weekday kept); for week-start keys. */
+  weekDate(iso: string): Date
   /** Independent seeded stream per name; call once per generator. */
   prng(name: string): Prng
   /** Throws when the run was started without a database (unit tests of the runner). */
@@ -117,6 +121,11 @@ export interface RunSeedsOptions {
   profile?: string
   prisma?: PrismaClient
   seedBase?: number
+  /**
+   * The real run time. Only the CLI entry passes it. Given it, a demo profile (`RUN_DATE_SEED_PROFILES`: `poc`) dates every seed row
+   * relative to this day; omitted (every test caller) or for any other profile, SEED_NOW stays the fixed calendar.
+   */
+  runAt?: Date
 }
 
 /**
@@ -138,10 +147,13 @@ export async function runSeeds(
   }
   const profile = options.profile ?? DEFAULT_PROFILE
   const { prisma, seedBase = DEFAULT_SEED_BASE } = options
+  const dates = seedClockFor(profile, options.runAt)
   const ctx: SeedContext = {
     profile,
     env,
-    clock: new FixedClock(SEED_NOW),
+    clock: dates.clock,
+    date: dates.date,
+    weekDate: dates.weekDate,
     prng: (name) => prngStream(name, seedBase),
     get prisma(): PrismaClient {
       if (!prisma) throw new Error('This seed run has no database connection.')
@@ -223,7 +235,10 @@ async function main(): Promise<void> {
   const profile = parseProfile(process.argv.slice(2))
   const prisma = createPrismaClient(url)
   try {
-    const done = await runSeeds(seedModules, { profile, prisma })
+    // The one place the real time is read for seeds. Opt-in: only SEED_CLOCK=rundate (demo/UAT reseed) dates `poc` from the run
+    // day; unset or `fixed` keeps SEED_NOW for every profile (ADR-0006 amendment 3).
+    const runAt = seedRunAt(process.env, () => new SystemClock().now())
+    const done = await runSeeds(seedModules, { profile, prisma, runAt })
     console.log(`seed: profile=${profile}, ${done.length} module(s): ${done.join(', ') || '(none)'}`)
   } finally {
     await prisma.$disconnect()
