@@ -11,6 +11,9 @@ export type Letter = 'A' | 'B' | 'C' | 'D'
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low'
 export type Trend = 'up' | 'down' | 'stable'
+/** Analitik Adaptif class rows: 'new' = answers only in the last 7 days (BARU); 'none' = no answers (Belum Bermula). */
+export type ClassTrend = Trend | 'new'
+export type ClassRiskLevel = RiskLevel | 'none'
 /** Tingkatan 1 to 5, lower case (`/prestasi/tingkatan/t1..t5`). */
 export type LevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
 
@@ -239,10 +242,12 @@ export interface AnalyticsSubject {
   subjectId: number
   name: string
   code: string
-  accuracy: number
+  /** null = no answers in the subject ("—"). */
+  accuracy: number | null
   answered: number
   trend: Trend
-  projection: { low: Grade; high: Grade }
+  /** null = no answers in the subject. */
+  projection: { low: Grade; high: Grade } | null
   counts: { mahir: number; sederhana: number; lemah: number; belum: number }
   ringTotal: number
   weak: WeakSp[]
@@ -253,6 +258,8 @@ export interface AnalyticsSubject {
       code: string
       title: string
       status: 'mahir' | 'sederhana' | 'lemah' | 'belum'
+      /** Strand heading (Tajuk DSKP / SK) the tile is grouped under; null = none. */
+      strand: string | null
     }[]
   }
 }
@@ -530,15 +537,18 @@ export interface ClassAnalytics {
     subjects: { id: number; name: string }[]
     selected: { classroomId: number | null; subjectId: number | null; riskLevel: RiskLevel | '' }
   }
-  summary: { students: number; accuracy: number; atRisk: number; good: number } | null
+  summary: { students: number; accuracy: number | null; atRisk: number; good: number } | null
   rows: {
     userId: number
     name: string
-    accuracy: number
+    /** null = Belum Bermula (no answers). */
+    accuracy: number | null
     answered: number
-    trend: Trend
-    projection: { low: Grade; high: Grade }
-    riskLevel: RiskLevel
+    trend: ClassTrend
+    projection: { low: Grade; high: Grade } | null
+    riskLevel: ClassRiskLevel
+    /** School admin only: names of the classes of the selected scope the pupil is in; [] for a teacher. */
+    classes: string[]
   }[]
 }
 
