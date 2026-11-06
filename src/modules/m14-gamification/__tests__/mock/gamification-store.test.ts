@@ -653,8 +653,7 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     expect(rowsOf(3).reverse()).toEqual([
       ['SPM Tahun Lepas: 4 betul — 40%', 4],
       ['Streak activity (spm)', 7],
-      ['Cabaran selesai: Mula Hari Ini', 10],
-    ])
+    ]) // the completed challenge is paid on the claim (Tuntut), not on completion
     expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
     expect(achievements.forUser(3).unlocked).toBe(0)
   })
