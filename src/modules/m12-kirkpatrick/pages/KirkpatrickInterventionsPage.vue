@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * S7 Intervensi (FR-M12-70 ... 76; URS EP-M12-8). Mounted on `/admin/kirkpatrick/interventions` and the `/guru`
- * twin. Both query parameters are ignored. A saved record reloads the KPIs and the list.
+ * S7 Intervensi (FR-M12-70 ... 76; URS EP-M12-8). Mounted on `/admin/kirkpatrick/interventions`, the `/guru`
+ * twin and the `/admin-sekolah` mount. Both query parameters are ignored. A saved record reloads the KPIs and the list.
  */
 import { DsLoadError, DsPage } from '@/ds'
 
@@ -40,7 +40,7 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
     <template v-if="data">
       <InterventionKpis :kpi="data.kpi" />
       <InterventionForm @saved="reload" />
-      <InterventionList :rows="data.rows" />
+      <InterventionList :rows="data.rows" @changed="reload" />
     </template>
   </DsPage>
 </template>

@@ -69,12 +69,19 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T01 | AC-ADM-QE2.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order |
 | S1-T01 | AC-ADM-QE2.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | paper-units.spec.ts::is a paper-level error with the exact BM line (not section-prefixed, hard) |
 | S1-T01 | AC-ADM-QE3.13 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S6-T03 | AC-XS-1 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
+| S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 
 ## Sprint 2
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
+| S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
+| S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
+| S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
 
 ## Sprint 3
 
