@@ -14,6 +14,7 @@ import { learnerBadges, streak, wallet } from '@/modules/m14-gamification/mock'
 
 import type { StudentPerformance, WeakTopic } from '../../api/types'
 import { headcountReads, latestAr, pairStatus, type HeadcountEntryView } from './headcount-port'
+import { ownEntryViewsOf } from './headcount-views'
 import { PRACTICE_MODE_SET } from './reads'
 import { capPercent, pct, round } from './rules'
 import { activityRepo, spRecordsRepo } from './stores'
@@ -169,7 +170,8 @@ function trendOf(sessions: ReturnType<typeof practice.history>, now: number): St
   })
 }
 
-export function studentPerformance(pupil: UserRow, now: number): StudentPerformance {
+/** `viewerIsPupil`: the pupil reads their own block (the `GET /headcounts/me` set); staff read every year, as before. */
+export function studentPerformance(pupil: UserRow, now: number, viewerIsPupil = false): StudentPerformance {
   const sessions = practice.history(pupil.id).filter((s) => PRACTICE_MODE_SET.has(s.mode))
   let questionsTotal = 0
   let correct = 0
@@ -229,7 +231,9 @@ export function studentPerformance(pupil: UserRow, now: number): StudentPerforma
   })
 
   const stored = activityRepo.get(pupil.id)
-  const entries = headcountReads.entries().filter((e) => e.studentId === pupil.id)
+  const entries = viewerIsPupil
+    ? ownEntryViewsOf(pupil.id)
+    : headcountReads.entries().filter((e) => e.studentId === pupil.id)
   const weak = weakTopicsOf(pupil.id)
   const streakView = streak.get(pupil.id)
   const w = wallet.summary(pupil.id)
