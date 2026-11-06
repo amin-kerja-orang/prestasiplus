@@ -65,11 +65,13 @@ export const jutawanLifelineInvalid = (): ApiError => fieldError('type', M.jutaw
 export const quizTilesInvalid = (): ApiError => fieldError('boardgame_quiz_tiles', M.quizTiles)
 /** Leagues: the top-level message is the first field message. */
 export const leagueInvalid = (field: string, message: string): ApiError => fieldError(field, message)
-export const leagueInviteInvalid = (): ApiError => fieldError('invite_code', M.leagueInviteInvalid)
-export const leagueEnded = (): ApiError => fieldError('invite_code', M.leagueEnded)
-export const leagueNeedsSchool = (): ApiError => fieldError('invite_code', M.leagueNeedsSchool)
-export const leagueAlreadyIn = (): ApiError => fieldError('invite_code', M.leagueAlreadyIn)
-export const leagueFull = (): ApiError => fieldError('invite_code', M.leagueFull)
+export const leagueEnded = (): ApiError => fieldError('schoolIds', M.leagueEnded)
+export const leagueAlreadyIn = (): ApiError => fieldError('schoolIds', M.leagueAlreadyIn)
+export const leagueFull = (): ApiError => fieldError('schoolIds', M.leagueFull)
+/** ERR-REQ-11: an empty or missing school list. */
+export const leagueSchoolsMissing = (): ApiError => fieldError('schoolIds', M.leagueSchoolsPick)
+/** ERR-REQ-14: a non-numeric or unknown school id. */
+export const leagueSchoolInvalid = (): ApiError => fieldError('schoolIds', M.leagueSchoolFormat)
 
 /** The raw (un-enveloped) bodies. Routes return these with `res.status(n)` instead of throwing. */
 export const rawMessage = (message: string): { message: string } => ({ message })
