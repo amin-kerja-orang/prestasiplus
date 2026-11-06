@@ -28,10 +28,11 @@ import PublishOverride from '../components/PublishOverride.vue'
 import ReviewBlock from '../components/ReviewBlock.vue'
 import StudentViewDrawer from '../components/StudentViewDrawer.vue'
 import { builderCopy as t, LEVEL_ITEMS } from '../domain/copy'
-import { hasStimulus, hasStimulusOf, validTitle } from '../domain/stimulus'
+import { setTitleError } from '../domain/set-title'
+import { hasStimulus, hasStimulusOf } from '../domain/stimulus'
 import { movedOrder, sectionUnits, type SectionUnit } from '../domain/units'
 import { usePaperActions } from '../lib/use-paper-actions'
-import { BUILDER_PATH, builderMessage, type SectionPatch, type SectionPool } from '../server/api'
+import { BUILDER_PATH, BuilderError, builderMessage, type SectionPatch, type SectionPool } from '../server/api'
 import { builderServer } from '../server/client'
 
 const api = builderServer()
@@ -132,9 +133,10 @@ async function rename(): Promise<void> {
     titleDraft.value = paper.value?.title ?? ''
     return
   }
-  if (!validTitle(next)) {
+  const rule = setTitleError(next)
+  if (rule) {
     titleDraft.value = paper.value.title
-    flash.show({ type: 'error', message: t.titleInvalid })
+    flash.show({ type: 'error', message: rule })
     return
   }
   try {
@@ -142,7 +144,7 @@ async function rename(): Promise<void> {
     flash.show({ type: 'success', message: t.renamed(next) })
   } catch (e) {
     titleDraft.value = paper.value.title
-    flash.show({ type: 'error', message: builderMessage(e, t.errRename) })
+    flash.show({ type: 'error', message: e instanceof BuilderError && e.fields.title ? e.fields.title : builderMessage(e, t.errRename) })
   }
 }
 

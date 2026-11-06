@@ -61,7 +61,7 @@ export function builderErrorFrom(e: unknown, missing: 'not_found' | 'no_blueprin
   if (e.status === 404)
     return new BuilderError(missing, msg || (missing === 'no_blueprint' ? 'Tiada blueprint untuk subjek dan kertas ini' : 'Kertas tidak ditemui'))
   if (e.status === 403) return new BuilderError('forbidden', msg || 'Akses ditolak')
-  if (e.status === 400 || e.status === 422) return new BuilderError('invalid', msg || GENERIC)
+  if (e.status === 400 || e.status === 422) return new BuilderError('invalid', msg || GENERIC, e.fields ? { fields: e.fields } : {})
   return new BuilderError('other', msg || GENERIC)
 }
 
@@ -121,7 +121,8 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
 
   async create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string> {
     const body: Record<string, unknown> = { subject: input.subject, kertas: input.kertas }
-    if (input.title?.trim()) body.title = input.title.trim()
+    // Sent as typed: a blank title is the server's 422 `fields.title`, never silently dropped.
+    body.title = input.title ?? ''
     if (input.levelScope) body.levelScope = input.levelScope
     const out = await this.call<{ id: string }>('POST', '/api/admin/papers', body)
     return out.id
@@ -129,7 +130,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
 
   async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
     const body: Record<string, unknown> = { subject, kertas }
-    if (options.title?.trim()) body.title = options.title.trim()
+    body.title = options.title ?? '' // as typed, see create
     if (options.years?.length) body.years = options.years
     if (options.negeri?.length) body.negeri = options.negeri
     if (options.count !== undefined) body.count = options.count

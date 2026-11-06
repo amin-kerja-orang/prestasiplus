@@ -16,6 +16,7 @@ import { ADMIN_ROUTES } from '../../papers/ui'
 import { KONTRAK_ROUTES } from '../../kontrak/server/api'
 import PoolPreviewCard from '../components/PoolPreviewCard.vue'
 import { builderCopy as t, LEVEL_SCOPE_ITEMS, levelScopeLabel } from '../domain/copy'
+import { setTitleError } from '../domain/set-title'
 import { BuilderError, builderMessage, builderPath } from '../server/api'
 import { builderServer } from '../server/client'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -50,20 +51,28 @@ watch([blankSubject, blankKertas], ([s, k]) => {
   if (!blankTitleEdited.value) blankTitle.value = defaultTitle(s, k)
   blankScope.value = scopeOf(s, k)
 })
-const blankTitleError = computed(() => (blankTried.value && !blankTitle.value.trim() ? t.titleRequiredSet : undefined))
+/** `Tajuk set`: the message of the rule, or of the server's 422 `fields.title` when it refused a title the form let through. */
+const blankTitleServerError = ref<string | undefined>()
+const blankTitleError = computed(() => {
+  const rule = setTitleError(blankTitle.value)
+  if (rule && (blankTried.value || blankTitle.value.trim())) return rule
+  return blankTitleServerError.value
+})
 const blankSubjectError = computed(() => (blankTried.value && !blankSubject.value ? t.subjectRequired : undefined))
 const blankKertasError = computed(() => (blankTried.value && blankSubject.value && !blankKertas.value ? t.kertasInvalid : undefined))
 
 async function startBlank(): Promise<void> {
   blankTried.value = true
-  if (!blankTitle.value.trim() || !blankSubject.value || !blankKertas.value) return
+  blankTitleServerError.value = undefined
+  if (setTitleError(blankTitle.value) || !blankSubject.value || !blankKertas.value) return
   blankBusy.value = true
   try {
     const id = await api.create({ subject: blankSubject.value, kertas: Number(blankKertas.value), title: blankTitle.value, levelScope: blankScope.value })
     flash.show({ type: 'success', message: t.blankCreated })
     await router.push(builderPath(id))
   } catch (e) {
-    flash.show({ type: 'error', message: builderMessage(e, t.errGenerate) })
+    if (e instanceof BuilderError && e.fields.title) blankTitleServerError.value = e.fields.title
+    else flash.show({ type: 'error', message: builderMessage(e, t.errGenerate) })
   } finally {
     blankBusy.value = false
   }
@@ -154,7 +163,8 @@ const toggleNegeri = (n: string): void => {
   genNegeri.value = genNegeri.value.includes(n) ? genNegeri.value.filter((x) => x !== n) : [...genNegeri.value, n]
 }
 
-const genTitleError = computed(() => (genSubject.value && !genTitle.value.trim() ? t.titleRequiredSet : undefined))
+const genTitleServerError = ref<string | undefined>()
+const genTitleError = computed(() => (genSubject.value ? setTitleError(genTitle.value) : undefined) ?? genTitleServerError.value)
 const poolShort = computed(() => !!pool.value && (pool.value.verdict === 'tidak_boleh' || requested.value > pool.value.eligibleTotal))
 /** 13-10: on only when the pool holds the set asked for; the title and the count must be valid. */
 const canGenerate = computed(
@@ -165,6 +175,7 @@ const subjectName = computed(() => subjectOf(genSubject.value)?.name ?? genSubje
 async function generate(): Promise<void> {
   if (!canGenerate.value) return
   genBusy.value = true
+  genTitleServerError.value = undefined
   try {
     const id = await api.generate(genSubject.value, Number(genKertas.value), { ...janaFilters.value, title: genTitle.value, levelScope: genScope.value })
     const ed = await api.getEditor(id)
@@ -175,6 +186,8 @@ async function generate(): Promise<void> {
     if (e instanceof BuilderError && e.kind === 'shortage') {
       flash.show({ type: 'error', message: e.message || t.errGenerateShortage })
       void loadPool()
+    } else if (e instanceof BuilderError && e.fields.title) {
+      genTitleServerError.value = e.fields.title
     } else {
       flash.show({ type: 'error', message: builderMessage(e, t.errGenerate) })
     }
@@ -229,7 +242,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
         <form class="flex flex-col gap-3" data-testid="blank-form" novalidate @submit.prevent="startBlank">
           <h3 class="text-subheading text-highlighted">{{ t.blankTitle }}</h3>
           <UFormField :label="t.blankTitleField" required :error="blankTitleError">
-            <UInput v-model="blankTitle" class="w-full" maxlength="200" data-testid="blank-title" @update:model-value="blankTitleEdited = true" />
+            <UInput v-model="blankTitle" class="w-full" data-testid="blank-title" @update:model-value="((blankTitleEdited = true), (blankTitleServerError = undefined))" />
           </UFormField>
           <div class="grid gap-3 sm:grid-cols-2">
             <UFormField :label="t.subject" required :error="blankSubjectError">
@@ -271,10 +284,9 @@ async function deleteSet(id: string, status: string): Promise<void> {
             <UInput
               v-model="genTitle"
               class="w-full"
-              maxlength="200"
               :placeholder="t.genTitlePlaceholder"
               data-testid="gen-title"
-              @update:model-value="genTitleEdited = true"
+              @update:model-value="((genTitleEdited = true), (genTitleServerError = undefined))"
             />
           </DsFormField>
           <div class="grid gap-3 sm:grid-cols-2">

@@ -17,6 +17,7 @@ import { scaleSectionCounts } from '@pp/exam-core'
 
 import type { AdminPaperSummary, BuilderQuestion, PaperEditorData } from '../../../domain/admin-types'
 import { addUnit, checkPaper, removeUnit, unitsOf } from '../../../domain/paper-builder'
+import { setTitleError } from '../domain/set-title'
 import { kontrakServer } from '../../kontrak/server/client'
 import {
   BuilderError,
@@ -96,6 +97,12 @@ function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_
   return 'COUNT_TOO_FEW'
 }
 
+/** `Tajuk set` (PRD30 13-01): the 422 `fields.title` the API answers, as the http client reads it. */
+function titleGuard(title: string | undefined): void {
+  const err = setTitleError(title)
+  if (err) throw new BuilderError('invalid', err, { fields: { title: err } })
+}
+
 export class MockBuilderServer implements BuilderApi {
   constructor(private readonly overridable: OverridableLines = blueprintLines) {}
   private admin: Promise<AdminMock> | null = null
@@ -150,11 +157,12 @@ export class MockBuilderServer implements BuilderApi {
   }
 
   async create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string> {
+    titleGuard(input.title)
     const a = await this.a()
     const id = await a.createPaper({
       subject: input.subject,
       kertas: input.kertas as 1 | 2,
-      ...(input.title ? { title: input.title } : {}),
+      title: input.title!.trim(),
     })
     const ed = await a.getPaperEditor(id)
     ;(ed.paper as MockPaper).levelScope = input.levelScope ?? 't4_t5'
@@ -164,6 +172,7 @@ export class MockBuilderServer implements BuilderApi {
 
   /** The mock's Jana set (API-BIJAK-11): the sections of the contract at the size asked, filled from the bank, a group whole or not at all. */
   async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
+    titleGuard(options.title)
     const { id: paperId } = await kontrakServer().generateDraft(subject, kertas)
     const a = await this.a()
     const ed = await a.getPaperEditor(paperId)
@@ -248,6 +257,8 @@ export class MockBuilderServer implements BuilderApi {
     const a = await this.a()
     const { instructions, code, ...rest } = patch
     const ed = await a.getPaperEditor(id)
+    // The server's order: the paper exists, it is not terbit, then the title (the same rule as create).
+    if (rest.title !== undefined && ed.paper.status !== 'terbit') titleGuard(rest.title)
     // The mock hands out its live paper object: instructions and the code are set on it, then saved to persist.
     if (instructions && ed.paper.status !== 'terbit') ed.paper.instructions = [...instructions]
     if (code !== undefined && ed.paper.status !== 'terbit') ed.paper.code = code || ed.paper.subject

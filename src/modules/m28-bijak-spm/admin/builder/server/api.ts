@@ -30,13 +30,16 @@ export type BuilderErrorKind =
 
 export class BuilderError extends Error {
   readonly shortages: BijakGenerateShortage[]
+  /** Field to BM message of a 422 `fields` (e.g. `title`); empty when the refusal has no field. */
+  readonly fields: Record<string, string>
   constructor(
     readonly kind: BuilderErrorKind,
     message: string,
-    extra: { shortages?: BijakGenerateShortage[] } = {},
+    extra: { shortages?: BijakGenerateShortage[]; fields?: Record<string, string> } = {},
   ) {
     super(message)
     this.shortages = extra.shortages ?? []
+    this.fields = extra.fields ?? {}
   }
 }
 

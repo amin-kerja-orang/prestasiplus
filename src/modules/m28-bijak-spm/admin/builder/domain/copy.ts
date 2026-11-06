@@ -31,7 +31,6 @@ export const builderCopy = {
   genTitleField: 'Tajuk set', // PRD30 13-04
   genTitlePlaceholder: 'cth: Latih Tubi Sejarah Mac', // PRD30 13-04
   defaultTitle: (subject: string, kertas: number): string => `Percubaan SPM ${subject} Kertas ${kertas} (draf)`, // the server's default
-  titleRequiredSet: MSG.setTitleRequired, // PRD30 13-01
   subjectRequired: MSG.subjectRequired, // PRD30 13-02
   kertasInvalid: MSG.kertasInvalid, // PRD30 13-06
   countRange: MSG.countRange, // PRD30 13-07
@@ -136,7 +135,6 @@ export const builderCopy = {
   errMeta: 'Kertas gagal dikemas kini.', // [PROPOSED] (Kemas kini metadata)
   errPassage: 'Petikan gagal dikemas kini.', // [PROPOSED] (Sunting petikan)
   errReference: 'Bahan rujukan gagal dikemas kini.', // [PROPOSED]
-  titleInvalid: 'Tajuk diperlukan (paling banyak 200 aksara).', // [PROPOSED] contract title 1..200
   errLoad: 'Tidak dapat memuatkan set ini.', // [PROPOSED]
   errGenerate: 'Set tidak dapat dijana. Sila cuba lagi.', // [PROPOSED]
   errGenerateShortage: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', // existing K3 copy
@@ -177,7 +175,6 @@ export const builderCopy = {
   sectionFull: 'Bahagian ini sudah penuh.', // [PROPOSED]
   reviewStale: 'Simpan draf untuk menyegarkan semakan.', // [PROPOSED]
   reviewError: 'Tidak dapat memuatkan semakan kertas.', // [PROPOSED]
-  titleRequired: 'Tajuk diperlukan (paling banyak 200 aksara).', // [PROPOSED]
   sectionsEdit: 'Sunting bahagian', // V2
   sectionLabel: 'Label bahagian', // V2
   sectionInstruction: 'Arahan bahagian', // V2
