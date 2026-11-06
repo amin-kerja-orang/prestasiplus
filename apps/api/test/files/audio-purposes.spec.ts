@@ -137,6 +137,28 @@ describe('purposes audio_kbat and cms_screenshot (BE-24)', () => {
     })
   })
 
+  describe('marketplace_image (S7-T08)', () => {
+    const message = 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.'
+
+    it('admin uploads an image; a student and a teacher get 403 on upload', async () => {
+      const ref = await uploadOk(admin, 'marketplace_image', makePng())
+      expect(ref).toMatchObject({ purpose: 'marketplace_image', mime: 'image/png' })
+      for (const who of [student, teacher]) expectError(await upload(who, 'marketplace_image', makePng()), 'FORBIDDEN')
+    })
+
+    it('any signed-in user reads it; anonymous gets 401', async () => {
+      const ref = await uploadOk(admin, 'marketplace_image', makePng())
+      for (const who of [admin, student, teacher]) expect((await who.agent.get(ref.url)).status).toBe(200)
+      expectError(await t.http().get(ref.url), 'UNAUTHORIZED')
+    })
+
+    it('refuses a non-image and an image over 2 MB with the BM message', async () => {
+      expectFieldError(await upload(admin, 'marketplace_image', Buffer.from('<html>'), { filename: 'a.png' }), message)
+      const big = Buffer.concat([makePng(), Buffer.alloc(3 * 1024 * 1024)])
+      expectFieldError(await upload(admin, 'marketplace_image', big), message)
+    })
+  })
+
   describe('files.mime check (migration 0009)', () => {
     let seq = 0
     const insert = (mime: string, n: string) =>
