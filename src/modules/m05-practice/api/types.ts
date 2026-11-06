@@ -554,6 +554,8 @@ export interface StructuredAttemptRequest {
 /** #17 DATA-M05-06 StructuredAttempt + the model answers. */
 export interface StructuredAttemptResult {
   id: string
+  /** S5-T11: the Bijak attempt id (self-mark and result routes); equal to `id`. */
+  attemptId: string
   userId: number
   structuredQuestionId: number
   scope: StructuredScope | null

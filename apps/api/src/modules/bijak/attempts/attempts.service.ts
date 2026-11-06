@@ -64,6 +64,7 @@ import {
   sameAnswersAsCheck,
   semakParts,
 } from './marking'
+import { bijakCodeOf } from '../papers/subject-codes'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
 import { applySelfMarks, automaticScore, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
@@ -102,9 +103,11 @@ export interface StructuredAttemptInput {
   questionId: string
   /** The version the pupil was served; the attempt is pinned to it. */
   versionNo: number
-  title: string
-  subject: string
-  subjectName: string
+  /** Null or blank: the attempt is titled `STRUCTURED_TITLE`. */
+  title: string | null
+  /** Curriculum code (MATH, SCI ...); stored as the Bijak code (`bijakCodeOf`, MAT, SN ...). Null: the question's own subject tag. */
+  subject: string | null
+  subjectName: string | null
   answers: readonly { path: string; text: string }[]
 }
 
@@ -117,6 +120,8 @@ export interface StructuredAttemptOutput {
 
 /** `exam_attempts.paper_code` of a structured attempt (the contract wants 1+ characters; there is no printed paper code). */
 const STRUCTURED_CODE = 'Berstruktur'
+/** Title of a structured attempt whose set has no text to take it from. */
+const STRUCTURED_TITLE = 'Soalan Berstruktur'
 
 /** The label path of each answerable leaf of the mapped parts (the labels as the bank wrote them, joined with `.`). */
 function leafPaths(parts: readonly PartDef[], labels: readonly string[] = []): Map<string, string> {
@@ -350,6 +355,8 @@ export class BijakAttemptsService {
     const paths = leafPaths(bundle.question.parts ?? [])
     const index = buildLeafIndex(composition, bundles)
     const byPath = new Map([...paths].map(([id, path]) => [path, id]))
+    // Stored Bijak data holds the Bijak code (MAT / SN / SEJ), as `exam_attempts.subject` of a paper attempt does; an unknown code passes through (open dictionary).
+    const subject = bijakCodeOf(input.subject?.trim() || bundle.question.curriculum.subject)
     const now = this.now()
     const answers = new Map<string, AnswerRow>()
     for (const a of input.answers) {
@@ -364,9 +371,9 @@ export class BijakAttemptsService {
         userId: who.userId,
         paperId: null,
         paperKind: 'structured',
-        title: input.title,
-        subject: input.subject,
-        subjectName: input.subjectName,
+        title: input.title?.trim() || STRUCTURED_TITLE,
+        subject,
+        subjectName: input.subjectName?.trim() || subject,
         kertas: 1,
         // The result view needs a printed code; a structured set has none.
         code: STRUCTURED_CODE,

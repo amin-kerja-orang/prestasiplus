@@ -286,10 +286,11 @@ export interface PracticeStructuredAttemptInput {
   questionId: string
   /** The live version practice served; the attempt is graded from exactly this version. */
   versionNo: number
-  title: string
-  /** Curriculum subject code and name (the attempt row keeps them as a snapshot). */
-  subject: string
-  subjectName: string
+  /** Start of the stem; null or blank = the Bijak side names the attempt itself (never an empty title). */
+  title: string | null
+  /** Curriculum subject code and name (the attempt row keeps a snapshot; Bijak stores its own code); null when the bank row has no resolvable subject. */
+  subject: string | null
+  subjectName: string | null
   scope: 'spm' | null
   track: 'bahasa' | null
   answers: { path: string; text: string }[]

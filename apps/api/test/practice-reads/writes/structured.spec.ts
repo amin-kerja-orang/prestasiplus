@@ -6,9 +6,10 @@ import {
   PracticeReadStructuredListResponseSchema,
   envelopeOf,
 } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { toMytTimestamp } from '../../../src/common/time/myt'
+import { AttemptsRepository } from '../../../src/modules/bijak/attempts/attempts.repository'
 import { QuestionsRepository } from '../../../src/modules/questions'
 import {
   type Client,
@@ -518,7 +519,7 @@ describe('AC7 POST /api/practice/structured/:id/attempts', () => {
     const legacyBefore = (await attemptRows(c.userId)).length
     const out = Attempt.parse((await post(c, { answers: [{ subQuestionId: subs(tree)[3], text: '-1' }] })).body).data
     const row = (await examRows(c.userId)).find((r) => r.id === out.attemptId)
-    expect(row).toMatchObject({ paper_id: null, paper_kind: 'structured', mode: 'latihan', status: 'submitted', duration_min: 0, deadline_at: null, is_test: false, subject: 'MATH' })
+    expect(row).toMatchObject({ paper_id: null, paper_kind: 'structured', mode: 'latihan', status: 'submitted', duration_min: 0, deadline_at: null, is_test: false, subject: 'MAT' })
     expect(row?.submitted_at).not.toBeNull()
     expect(row?.title).toBe('Diberi fungsi kuadratik f(x) = x² − 4x + 3.')
     expect(row?.composition).toHaveLength(1)
@@ -568,6 +569,77 @@ describe('AC7 POST /api/practice/structured/:id/attempts', () => {
       // someone else's attempt is 403
       expect((await student.post(url, { partId: pending, mark: 1 })).status).toBe(403)
     } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
+  it('S5-T11 a visible set the bridge refuses (two sibling parts share an id) is 422 "Tiada soalan layak untuk kertas ini." and nothing is stored', async () => {
+    const bad = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set label berlanggar' })
+    try {
+      // Publishing refuses such a set, so the clash is made after it: "(b)" is renamed "a", which collides with "(a)" once the bridge strips the brackets.
+      await t.db.query(
+        `update question_parts set label = 'a' where label = '(b)' and question_version_id in (select id from question_versions where question_id = $1)`,
+        [bad],
+      )
+      const c = await loginAs(t, 'teacher')
+      // Practice still shows it (getVisible passes) and the detail lists both parts.
+      const detail = Detail.parse((await c.get(`/api/practice/structured/${bad}`)).body).data
+      expect(detail.subQuestions.map((x) => x.label)).toEqual(['(a)', 'a'])
+      const err = expectError(await post(c, { answers: [{ subQuestionId: `${bad}-(a)`, text: 'jawapan (a)' }] }, bad), 'VALIDATION_ERROR')
+      expect(err.message).toBe('Tiada soalan layak untuk kertas ini.')
+      expect(err.fields).toBeUndefined()
+      for (const [table, sql] of [
+        ['exam_attempts', `select count(*)::int n from exam_attempts where user_id = $1`],
+        ['attempt_answers', `select count(*)::int n from attempt_answers x join exam_attempts a on a.id = x.attempt_id where a.user_id = $1`],
+        ['attempt_results', `select count(*)::int n from attempt_results r join exam_attempts a on a.id = r.attempt_id where a.user_id = $1`],
+        ['structured_attempts', `select count(*)::int n from structured_attempts where user_id = $1`],
+      ] as const) {
+        expect((await t.db.query<{ n: number }>(sql, [c.userId]))[0]?.n, table).toBe(0)
+      }
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [bad])
+    }
+  })
+
+  it('S5-T11 a second submit of the same set is an independent attempt (Cuba Lagi): two ids, two rows, the best score is the max', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set cuba lagi' })
+    try {
+      const c = await loginAs(t, 'student2')
+      const body = (a: string) => ({ answers: [{ subQuestionId: `${id}-(a)`, text: a }, { subQuestionId: `${id}-(b)`, text: 'jawapan (b)' }] })
+      const first = Attempt.parse((await post(c, body('jawapan (a)'), id)).body).data
+      const second = Attempt.parse((await post(c, body('salah'), id)).body).data
+      expect(second.attemptId).not.toBe(first.attemptId)
+      expect([first.totalAwarded, second.totalAwarded]).toEqual([5, 3])
+      const rows = await t.db.query<{ id: string }>(`select id::text from exam_attempts where user_id = $1 and paper_kind = 'structured' and composition -> 0 -> 'questionIds' ->> 0 = $2`, [c.userId, id])
+      expect(rows.map((r) => r.id).sort()).toEqual([first.attemptId, second.attemptId].sort())
+      expect((await list(c, '?q=cuba+lagi')).data.find((x) => x.id === id)?.bestScore).toEqual({ awarded: 5, max: 5 })
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
+  it('S5-T11 the Bijak retry (Cuba Lagi of a paper) on a structured attempt is 409: it has no paper, a pupil retries through this POST', async () => {
+    const c = await loginAs(t, 'student2')
+    const made = Attempt.parse((await post(c, { answers: [] })).body).data
+    expectError(await c.post(`/api/bijak/attempts/${made.attemptId}/retry`, {}), 'CONFLICT')
+  })
+
+  it('S5-T11 one transaction: a failure while saving the result leaves no attempt, no answers and no result', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set atomik' })
+    const spy = vi.spyOn(t.app.get(AttemptsRepository), 'saveResult').mockRejectedValueOnce(new Error('boom'))
+    try {
+      const c = await loginAs(t, 'student2')
+      const res = await post(c, { answers: [{ subQuestionId: `${id}-(a)`, text: 'jawapan (a)' }] }, id)
+      expect(res.status).toBe(500)
+      const n = await t.db.query<{ n: number }>(
+        `select count(*)::int n from exam_attempts where user_id = $1 and composition -> 0 -> 'questionIds' ->> 0 = $2`,
+        [c.userId, id],
+      )
+      expect(n[0]?.n).toBe(0)
+      const stray = await t.db.query<{ n: number }>(`select count(*)::int n from attempt_answers x where not exists (select 1 from exam_attempts a where a.id = x.attempt_id)`)
+      expect(stray[0]?.n).toBe(0)
+    } finally {
+      spy.mockRestore()
       await t.db.query('update questions set is_active = false where id = $1', [id])
     }
   })
