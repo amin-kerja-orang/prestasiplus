@@ -22,13 +22,13 @@ describe('crumb groups equal sidebar groups', () => {
   })
 
   it('previously orphan crumbs resolve to a rendered group', () => {
-    expect(groupOf(activeItem('/admin/tiket')?.id ?? '')?.label).toBe('Penglibatan')
-    expect(groupOf(activeItem('/admin/pksk/access')?.id ?? '')?.label).toBe('Kewangan')
+    expect(groupOf(activeItem('/admin/tiket')?.id ?? '')?.label).toBe('Sistem')
+    expect(groupOf(activeItem('/admin/pksk/access')?.id ?? '')?.label).toBe('Premium')
     expect(activeItem('/admin/tools/screenshots')?.label).toBe('Upload Screenshot')
   })
 
   it('every Kirkpatrick page keeps its own item and the pupil page sits in the Kirkpatrick section', () => {
-    expect(activeItem('/admin/kirkpatrick/reaction')?.label).toBe('Tahap 1: Reaksi')
+    expect(activeItem('/admin/kirkpatrick/reaction')?.label).toBe('T1: Reaksi')
     expect(activeItem('/admin/kirkpatrick/chain')?.label).toBe('Rantaian Impak')
     expect(activeItem('/admin/kirkpatrick/pelajar/4')?.sub).toBe('Kirkpatrick')
   })
