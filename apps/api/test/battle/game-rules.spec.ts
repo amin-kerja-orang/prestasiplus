@@ -1,11 +1,10 @@
 import { Logger } from '@nestjs/common'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BATTLE_MESSAGES, BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
+import { BattleAnswerResultSchema, BattleArenaViewSchema } from '@pp/contract'
 
-import { ApiError } from '../../src/common/errors/api-error'
 import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
-import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
+import { addMcqs, bootBattleApp, botBattle, client, nextRound, parseData, roundOf, STUDENT_G10, STUDENT_G10_B, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 /** S7-T01, part GAME-00 in Battle Arena (48 sections 3.3 to 3.6): the robot, the answer store, rewards, pace and clocks. */
 describe('GAME-00 common rules in Battle', () => {
@@ -16,11 +15,14 @@ describe('GAME-00 common rules in Battle', () => {
   const answerRows = (uuid: string) =>
     rows<{ user_id: string; part_ref: string; mode: string; is_correct: boolean }>(`select user_id::text, part_ref, mode, is_correct from practice_answers where attempt_id = $1::uuid order by answered_at, id`, [uuid])
   const questionOf = async (who: Client, uuid: string): Promise<string> => parseData(BattleArenaViewSchema, await who.get(`/battle/arena/${uuid}`)).question?.id as string
-  /** One answer after `gapMs`; the seeded right option is 1. */
+  /** One answer `gapMs` into the round on screen (the seeded right option is 1), then the wait for the robot and the reveal: the next call is the next round. */
   const answer = async (who: Client, uuid: string, right: boolean, gapMs = 2000) => {
+    const round = (await roundOf(t, uuid)).answered + 1
     t.clock.advance(gapMs)
     const res = await who.post(`/battle/arena/${uuid}/answer`, { questionId: await questionOf(who, uuid), optionId: right ? 1 : 0, seconds: Math.min(15, gapMs / 1000) })
-    return parseData(BattleAnswerResultSchema, res)
+    const out = parseData(BattleAnswerResultSchema, res)
+    await nextRound(t, who, uuid, round)
+    return out
   }
 
   beforeAll(async () => {
@@ -58,9 +60,9 @@ describe('GAME-00 common rules in Battle', () => {
 
   describe('FR-GM-00.3, FR-GM-00.6: rewards', () => {
     const finish = async (who: Client, uuid: string, gapMs = 2000) => {
-      let last = await answer(who, uuid, true, gapMs)
-      while (!last.result) last = await answer(who, uuid, true, gapMs)
-      return last.result
+      await answer(who, uuid, true, gapMs)
+      while ((await roundOf(t, uuid)).status === 'active') await answer(who, uuid, true, gapMs)
+      return parseData(BattleArenaViewSchema, await who.get(`/battle/arena/${uuid}`)).result as NonNullable<ReturnType<typeof BattleArenaViewSchema.parse>['result']>
     }
 
     it('rule 3: a battle won against the robot: 10 x 10 + the play XP, session and ledger key the battle uuid; the view repeats the block', async () => {
@@ -88,8 +90,9 @@ describe('GAME-00 common rules in Battle', () => {
       try {
         const uuid = await botBattle(a, s.math)
         const before = t.reports.length
-        await answer(a, uuid, true, 5000)
-        const result = await finish(a, uuid, 500)
+        // rounds keep a pupil's answers at least 3 s apart, so only the first one (from the battle start) can be too fast
+        await answer(a, uuid, true, 500)
+        const result = await finish(a, uuid, 2000)
         expect(result.scoreA).toBeGreaterThan(0)
         expect(result.reward).toEqual({ xp: 0, syiling: 0, capped: false, reason: 'pace_guard' })
         expect(t.reports.length).toBe(before)
@@ -107,35 +110,39 @@ describe('GAME-00 common rules in Battle', () => {
       const uuid = await botBattle(a, s.math)
       const view = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
       expect(new Date(view.roundEndsAt as string).getTime()).toBe(t.clock.now().getTime() + 18_000)
-      expect((await answer(a, uuid, true, 17_000)).points).toBe(500)
+      await answer(a, uuid, true, 17_000)
+      expect(await lastAnswer(uuid)).toEqual({ option_id: 1, points: 500 })
       const question = await questionOf(a, uuid)
       t.clock.advance(18_500)
       const res = await a.post(`/battle/arena/${uuid}/answer`, { questionId: question, optionId: 1, seconds: 2 })
       // the poll for the question was before the deadline: the late answer itself is the timeout
-      expect(parseData(BattleAnswerResultSchema, res).points).toBe(0)
+      expect(res.status).toBe(200)
       expect(await lastAnswer(uuid)).toEqual({ option_id: null, points: 0 })
     })
 
-    it('a poll after the time writes the timeout and shows the next question', async () => {
+    it('a poll after the time writes the timeout, shows the reveal of that round and then the next question', async () => {
       const uuid = await botBattle(a, s.math)
       t.clock.advance(18_001)
       const view = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
-      expect(view.index).toBe(2)
+      expect(view).toMatchObject({ phase: 'reveal', index: 1 })
       expect((await answerRows(uuid)).map((r) => [r.part_ref, r.is_correct])).toEqual([['battle#1', false]])
+      t.clock.advance(3_000)
+      expect(parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))).toMatchObject({ phase: 'answering', index: 2 })
     })
 
-    it('the sweep moves a battle with no poller to its end, with its rows and one reward', async () => {
+    it('the sweep moves a battle with no poller until the third timeout in a row forfeits it, with its rows and one report', async () => {
       const uuid = await botBattle(a, s.math)
       const arena = t.get(ArenaService)
       t.clock.advance(18_000)
       await arena.sweepClocks()
       expect(await answerRows(uuid)).toEqual([]) // exactly at the limit is still in time
-      for (let i = 0; i < 10; i++) {
-        t.clock.advance(18_001)
+      // a round lasts 18 s and is revealed for 3 s: 21 s per round
+      for (let i = 0; i < 3; i++) {
+        t.clock.advance(21_001)
         await arena.sweepClocks()
       }
-      expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('finished')
-      expect(await answerRows(uuid)).toHaveLength(10)
+      expect((await rows<{ status: string; winner: string }>(`select status, winner from battles where id = $1`, [uuid]))[0]).toEqual({ status: 'forfeited', winner: 'B' })
+      expect(await answerRows(uuid)).toHaveLength(3)
       expect(t.reports.filter((r) => r.session === uuid)).toHaveLength(1)
     })
   })
@@ -146,39 +153,40 @@ describe('GAME-00 common rules in Battle', () => {
     const restore = (uuid: string) => rows(`update questions set live_version_no = 1 where id in (select question_id from battle_questions where battle_id = $1)`, [uuid])
     beforeEach(() => rows(`update battles set status = 'finished' where status = 'active'`)) // the counts below are of one battle
 
-    it('a battle whose questions were archived still times out to its end, with its rows and its reward', async () => {
+    it('a battle whose questions were archived still times out, with its rows and its forfeit', async () => {
       const uuid = await botBattle(a, s.math)
       await archive(uuid)
       try {
         const arena = t.get(ArenaService)
-        for (let i = 0; i < 10; i++) {
-          t.clock.advance(18_001)
+        for (let i = 0; i < 3; i++) {
+          t.clock.advance(21_001)
           expect(await arena.sweepClocks()).toBe(1)
         }
-        expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('finished')
-        expect(await answerRows(uuid)).toHaveLength(10)
+        expect((await rows<{ status: string }>(`select status from battles where id = $1`, [uuid]))[0]?.status).toBe('forfeited')
+        expect(await answerRows(uuid)).toHaveLength(3)
       } finally {
         await restore(uuid)
       }
     })
 
-    it('only "moved first" stays silent; any other refusal is logged', async () => {
-      await botBattle(a, s.math)
+    it('a battle whose clock fails is logged and the sweep goes on with the others', async () => {
+      const first = await botBattle(a, s.math)
+      const second = await botBattle(a, s.math)
       const arena = t.get(ArenaService)
       const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined)
-      const store = vi.spyOn(arena as unknown as { store: () => Promise<unknown> }, 'store')
+      const real = arena.advance.bind(arena)
+      const advance = vi.spyOn(arena, 'advance').mockImplementation(async (id: string) => {
+        if (id === first) throw new Error('clock down')
+        return real(id)
+      })
       try {
         t.clock.advance(18_001)
-        store.mockRejectedValueOnce(ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver }))
-        expect(await arena.sweepClocks()).toBe(0)
-        store.mockRejectedValueOnce(ApiError.of('VALIDATION_ERROR', { message: BATTLE_MESSAGES.questionInvalid }))
-        expect(await arena.sweepClocks()).toBe(0)
-        expect(warn).not.toHaveBeenCalled()
-        store.mockRejectedValueOnce(ApiError.of('NOT_FOUND', { message: BATTLE_MESSAGES.questionNotFound }))
-        expect(await arena.sweepClocks()).toBe(0)
+        expect(await arena.sweepClocks()).toBe(1) // the second battle's timeout
         expect(warn).toHaveBeenCalledTimes(1)
+        expect((await answerRows(second)).length).toBe(1)
+        expect(await answerRows(first)).toEqual([])
       } finally {
-        store.mockRestore()
+        advance.mockRestore()
         warn.mockRestore()
       }
     })

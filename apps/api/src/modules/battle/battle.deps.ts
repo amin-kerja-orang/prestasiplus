@@ -182,13 +182,14 @@ export class BattleDeps {
   }
 
   /**
-   * M16-07 search: active students whose NAME contains `q` (case-insensitive), not `excludeId`, name A-Z (`ms` collation)
-   * then id. A bounded database read (`searchStudentsByName`, name only) with a national read scope; the active /
-   * not-suspended / student check runs on the rows it returns.
+   * M16-07 search: active students of the school `schoolId` (FR-GM-01.6: the caller's own) whose NAME contains `q`
+   * (case-insensitive), not `excludeId`, name A-Z (`ms` collation) then id. A bounded database read
+   * (`searchStudentsByName`, name only) with a read scope of that one school; the active / not-suspended / student check runs
+   * on the rows it returns.
    */
-  async searchStudents(q: string, excludeId: string, limit: number): Promise<BattleStudent[]> {
-    const everyone = { auth: { active: { scope: { level: 'national' } } } as unknown as AuthContext, userId: excludeId, role: 'admin', schoolId: null, isAdmin: true, requestId: null, ip: null } satisfies Caller
-    const found = await this.users.searchStudentsByName(everyone, q, limit + SEARCH_OVER_READ)
+  async searchStudents(q: string, excludeId: string, limit: number, schoolId: string): Promise<BattleStudent[]> {
+    const inSchool = { auth: { active: { scope: { level: 'school', schoolId } } } as unknown as AuthContext, userId: excludeId, role: 'admin', schoolId: null, isAdmin: true, requestId: null, ip: null } satisfies Caller
+    const found = await this.users.searchStudentsByName(inSchool, q, limit + SEARCH_OVER_READ)
     const full = await this.users.getMany(found.filter((r) => r.id !== excludeId).map((r) => r.id))
     const kept = full.filter((u) => this.isActiveStudent(u) && isSecondaryGrade(u.grade)) // secondary-only (2026-10-29)
     kept.sort((a, b) => a.name.localeCompare(b.name, 'ms') || (BigInt(a.id) < BigInt(b.id) ? -1 : 1))

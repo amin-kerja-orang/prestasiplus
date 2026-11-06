@@ -20,4 +20,14 @@ describe('robot answers (AC 11)', () => {
     expect(botAnswers(uuid, 1).every((a) => a.correct && a.points > 0)).toBe(true)
     expect(botAnswers(uuid, 0.5).map((a) => a.seconds)).toEqual(answers.map((a) => a.seconds))
   })
+
+  it('FR-GM-01.1: one answer per question of the chosen count (5, 10, 15, 20), the first ones the same as for 10', () => {
+    const uuid = '3f0c3a52-0000-4000-8000-000000000003'
+    const ten = botAnswers(uuid, 0.5)
+    for (const n of [5, 10, 15, 20]) {
+      const answers = botAnswers(uuid, 0.5, n)
+      expect(answers).toHaveLength(n)
+      expect(answers.slice(0, Math.min(n, 10))).toEqual(ten.slice(0, Math.min(n, 10)))
+    }
+  })
 })

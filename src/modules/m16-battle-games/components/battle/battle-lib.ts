@@ -6,7 +6,13 @@ import { clock } from '@/lib/time/clock'
 import { diffForHumans } from '@/lib/time/relative'
 import { toEpochMs, type DateInput } from '@/lib/time/zone'
 
-import type { BattleLobby, BattleStartBody, PkskLevel, QuestionType } from '../../api'
+import type {
+  BattleLobby,
+  BattleQuestionCount,
+  BattleStartBody,
+  PkskLevel,
+  QuestionType,
+} from '../../api'
 
 /** S3 state select (discovery A.4): "Semua Negeri" (empty value) + 16 states. */
 export const BATTLE_STATES = [
@@ -30,8 +36,9 @@ export const BATTLE_STATES = [
 
 /** Exact messages of §7.1 / §8.1. */
 export const BATTLE_MSG = {
-  noOpponent: 'Tiada lawan dijumpai. Sila cuba lagi.',
-  noOpponentTimeout: 'Tiada lawan dijumpai dalam masa 2 minit. Sila cuba lagi.',
+  // 48 ERR-GAME-02 / AC-GM-01.5 (ruling 33); the client 120 s stop shows the same text.
+  noOpponent: 'Tiada lawan dijumpai.',
+  noOpponentTimeout: 'Tiada lawan dijumpai.',
   repeatedError: 'Ralat berulang semasa mencari lawan. Sila cuba lagi.',
   repeatedNetwork: 'Ralat rangkaian berulang. Sila semak internet anda.',
   noQueueId: 'Ralat sistem: ID giliran tidak sah. Sila cuba lagi.',
@@ -44,8 +51,32 @@ export const BATTLE_MSG = {
   leftQueue: 'Pemain sudah keluar dari barisan.',
   sendChallengeNetwork: 'Ralat menghantar cabaran.',
   acceptInviteNetwork: 'Ralat.',
-  forfeitConfirm: 'Tamatkan battle ini? Anda akan dikira kalah.',
   forfeitNetwork: 'Ralat. Sila cuba lagi.',
+  // 48 GAME-01 Screen copy.
+  robotOverlay: 'Tiada lawan setakat ini. Anda akan bermain dengan Robot PrestasiPlus (latihan).',
+  retry: 'Cuba Lagi',
+  invitationExpired: 'Cabaran tamat tempoh.',
+  resultWin: 'Anda menang!',
+  resultLose: 'Anda kalah.',
+  resultDraw: 'Seri!',
+  resultOpponentForfeit: 'Lawan menyerah. Anda menang!',
+  resultOwnForfeit: 'Anda telah menyerah.',
+  // 48 GAME-01 status chip "Ditinggalkan": the neutral abandoned result (QUESTION: no result copy).
+  resultAbandoned: 'Ditinggalkan',
+  backToArena: 'Kembali ke Arena',
+  questionCount: 'Bilangan Soalan',
+  playAgain: 'Main Lagi',
+  // 48:310 confirm dialog (D113)
+  forfeitTitle: 'Menyerah battle ini?',
+  forfeitBody: 'Anda akan kalah dan tidak mendapat mata.',
+  forfeit: 'Menyerah',
+  keepPlaying: 'Teruskan Bermain',
+  // [PROPOSED] waiting after you answered (lead ruling on #977)
+  waitingOpponent: 'Menunggu lawan...',
+  // 48:723 / AC-GM-16.6: Battle Sekolah refused because the account has no school
+  noSchool: 'Akaun anda belum dikaitkan dengan sekolah atau kelas.',
+  // 40:556 ERR-REQ-01 with no fields
+  invalidRequest: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
 } as const
 
 export const rejectedMessage = (name: string): string => `${name} menolak permohonan anda.`
@@ -77,6 +108,8 @@ export interface BattleSelection {
   pkskDomainId: number | null
   pkskLevel: PkskLevel | null
   spmSubjectId: number | null
+  /** The "Bilangan Soalan" chip; sent as `question_count` when set. */
+  questionCount?: BattleQuestionCount
 }
 
 /** FN-M16-2.1.6: `canStart` per question type. */
@@ -100,6 +133,9 @@ export function pkskBlocked(lobby: LobbyWithPkskAccess, level: PkskLevel | null)
   return lobby.pkskAccess !== undefined && level !== null && !lobby.pkskAccess[level]
 }
 
+const countOf = (sel: BattleSelection): { question_count?: BattleQuestionCount } =>
+  sel.questionCount === undefined ? {} : { question_count: sel.questionCount }
+
 /** BR-M16-03 request body of #2, #3 and #8. */
 export function matchParams(sel: BattleSelection): BattleStartBody {
   if (sel.questionType === 'pksk') {
@@ -108,14 +144,17 @@ export function matchParams(sel: BattleSelection): BattleStartBody {
       open_to_all: sel.openToAll,
       pksk_domain_id: sel.pkskDomainId as number,
       pksk_target_level: sel.pkskLevel as PkskLevel,
+      ...countOf(sel),
     }
   }
   return {
     question_type: sel.questionType,
     open_to_all: sel.openToAll,
     subject_id: (sel.questionType === 'spm' ? sel.spmSubjectId : sel.subjectId) as number,
+    ...countOf(sel),
   }
 }
+
 
 /** Option letter of the arena (A-D). */
 export function optionLetter(index: number): string {
