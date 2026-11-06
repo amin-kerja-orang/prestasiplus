@@ -85,4 +85,6 @@ export const MOD_PELAJAR_REFUSAL = 'Tidak dibenarkan dalam Mod Pelajar.'
 /** API-GAME-11 notices (ruling 21 on #500), built server-side. */
 export const CLAIM_NOTICES = {
   tierUp: (label: string): string => `Tahniah! Anda naik ke tier ${label}.`,
+  /** 48 GAME-25 "Notice on unlock". */
+  badge: (name: string): string => `Lencana baru: ${name}!`,
 } as const
