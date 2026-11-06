@@ -48,6 +48,11 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S8-T04 | AC-PA-21 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-21 (warning once at every width; at 0 submits with auto:true; offline at 0 locks, banner, submits on reconnect); result-auto-banner.test.ts::AC-PA-21: auto=1 shows "Masa tamat. Jawapan anda telah dihantar secara automatik." once |
+| S8-T04 | AC-PA-22 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-22 (3 blank: "Anda belum menjawab 3 soalan." then "Hantar jawapan anda sekarang?"; focus starts on the safe button; Esc chooses the safe button) |
+| S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
+| S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
+| S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 
@@ -68,6 +73,12 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T01 | AC-ADM-QE2.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::adds the 2nd and 3rd question to a one-stimulus group; stimuli stay at 1 and the detail lists 3 members in order |
 | S1-T01 | AC-ADM-QE2.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | paper-units.spec.ts::is a paper-level error with the exact BM line (not section-prefixed, hard) |
 | S1-T01 | AC-ADM-QE3.13 | CI | Pass | 2026-11-05 | team-aa/S-3 | stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S5-T15 | AC-PA-01 | CI | Pass | 2026-11-06 | team-bb/S-1 | answer-store-writers.spec.ts::every direct writer is on the allow-list or the exemption with its exact count; answer-store-writers.spec.ts::the allow-list is empty |
+| S5-T15 | AC-PA-15 | CI | Pass | 2026-11-06 | team-bb/S-1 | session-sweeper.spec.ts::abandons a session idle for more than 2 h, keeping its checks and writing nothing else; session-sweeper.spec.ts::an abandoned session is not in the history (repo and GET /practice/sessions) |
+| S5-T06 | AC-MUR-54-2 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-2: the note an admin writes on a report shows in the pupil own list |
+| S5-T06 | AC-MUR-54-3 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-3: a pupil report without an owned context is 403 in BM and stores nothing |
+| S5-T06 | AC-MUR-54-5 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-5: a second report by the same user for the same question version is 409 in BM and the first row is untouched |
+| S5-T06 | AC-MUR-54-7 | CI | Pass | 2026-11-06 | team-bb/S-1 | reports.spec.ts::AC-MUR-54-7: five reports (pending, reviewed, fixed, dismissed, fixed on an archived question) count 1/1/2/1 with all 5; exactly one reads removed; ReportScreens.test.ts::AC-MUR-54-7: five reports show the counters, five cards, one "Dikeluarkan" and no "Selesai" |
 | S6-T03 | AC-XS-1 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
@@ -77,6 +88,14 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S10-T04 | AC-GUR-5-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-GUR-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-GUR-5-8 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-AS-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-AS-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | class-pages.test.ts |
+| S10-T04 | AC-MUR-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pelajar.spec.ts (fake SP port; UAT waits #924) |
+| S10-T04 | AC-MUR-5-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts (fake SP port; UAT waits #924) |
+| S10-T04 | AC-MUR-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | analitik-pages.test.ts (fake SP port; UAT waits #924) |
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
@@ -89,6 +108,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T06 | AC-ADM-QE7.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | builder-placements.spec.ts::[CI] AC-QE7.1: the Jana draw never splits a group: whole or not at all, members contiguous in group order |
 | S1-T06 | AC-MUR-QP-6 | CI | Pass | 2026-11-05 | team-aa/S-3 | kuiz-whole-groups.spec.ts::[CI] AC-QP-6: a whole group is served together, contiguous and in group order |
 | S8-T03 | AC-QA-18 | CI | Pass | 2026-11-05 | team-aa/S-3 | sanitize.test.ts::keeps allowed tags; render-markup.test.ts::sanitises before expanding |
+| S5-T02 | AC-MUR-9-4 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::a pupil whose own form has no chapter question sees the data-empty state (AC-MUR-9-4) |
+| S5-T02 | AC-MUR-9-10 | CI | Pass | 2026-11-06 | team-bb/S-1 | chapter-pages.test.ts::AC-MUR-9-10: 7 servable questions enable only "5 soalan"; the others carry the title |
 | S4-T07 | AC-ADM-C01.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | CurriculumBrowserPage.test.ts |
 
 ## Sprint 4
@@ -107,7 +128,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-8 | CI | Pass | 2026-11-06 | team-bb/S-4 | HomeMood.test.ts::asks "Bagaimana perasaan anda hari ini?" with the four labelled choices; HomeMood.test.ts::after a reload with a stored choice, shows "✓ Sedih" and offers no choices; mood.spec.ts::reads null before a check-in, then records the first choice and reads it back (AC-MUR-2-8) |
 | S5-T04 | AC-MUR-2-9 | CI | Pass | 2026-11-06 | team-bb/S-4 | DashboardPage.test.ts::Ketepatan shows "—" for null accuracy, without a count-up (AC-MUR-2-9); overview.spec.ts::accuracyPct is null with 0 answers (FR-MUR-2-13) |
 | S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
+| S5-T04 | AC-MUR-2-11 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood-command-center.spec.ts::Guru Command Center "Mood Pelajar" counts 1 for Tertekan; mood-command-center.spec.ts::the Mood Pelajar drill lists the pupil; mood-command-center.spec.ts::the Admin Sekolah "Aktiviti Harian" mood panel counts it for the school; mood-command-center.spec.ts::and no other school |
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
+| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
+| S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
 
 ## Sprint 5
 
