@@ -50,6 +50,7 @@ const MODES: readonly string[] = [
   'question_set',
   'pksk',
   'past_year',
+  'databank',
   'latih_tubi',
   'ramalan',
 ]

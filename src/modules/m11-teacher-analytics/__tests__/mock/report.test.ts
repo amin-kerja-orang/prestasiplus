@@ -38,7 +38,7 @@ const items = (query = '', as: number | null = GURU) =>
 const KIMIA = 10
 
 describe('S1 teacher report: account 5 (§6.8; E2E-M11-10/12/14/16)', () => {
-  it('30 days: 100% 8 / 8, 100% 8 / 8, 14 activities, 46%', async () => {
+  it('30 days: 100% 8 / 8, 100% 8 / 8, 14 activities, 51%', async () => {
     const r = await report()
     expect(r.range).toBe(30)
     expect(r.classroomId).toBeNull()
@@ -52,9 +52,9 @@ describe('S1 teacher report: account 5 (§6.8; E2E-M11-10/12/14/16)', () => {
       battle: 0,
       permainan: 0,
     })
-    expect(r.score.overall).toBe(46)
+    expect(r.score.overall).toBe(51)
     expect(r.score.byType).toEqual({
-      kuiz: 46,
+      kuiz: 51,
       struktur: null,
       latihTubi: null,
       trackingA: null,
@@ -224,7 +224,7 @@ describe('S1 lists and the M16 port (BR-M11-04/05/07, §6.1)', () => {
     const r = await report()
     expect(r.activity.byType.battle).toBe(0)
     expect(r.activity.byType.permainan).toBe(0)
-    expect(r.score.overall).toBe(46)
+    expect(r.score.overall).toBe(51)
     expect(asked.length).toBeGreaterThan(0)
     expect(asked.every((ids) => ids.every((id) => id >= 3001 && id <= 3008))).toBe(true)
   })
@@ -247,7 +247,7 @@ describe('S1 lists and the M16 port (BR-M11-04/05/07, §6.1)', () => {
     expect(r.activity.byType.battle).toBe(2)
     expect(r.score.byType.battle).toBe(60)
     expect(r.activity.total).toBe(16)
-    expect(r.score.overall).toBe(Math.round(((38 + 3) / (83 + 5)) * 100))
+    expect(r.score.overall).toBe(52) // FR-GUR-42-2: mean of per-session accuracies (a battle counts once at its pooled accuracy)
     expect(r.trend.find((t) => t.date === '24/09')?.count).toBe(5)
     expect(r.mostActive[0]).toMatchObject({ id: 3001, activities: 5 })
   })
@@ -260,13 +260,16 @@ describe('S6 item analysis: class 2001 (BR-M11-28; E2E-M11-43/44)', () => {
       [700005, 8, 12.5, 'sukar', -0.5],
       [700006, 8, 12.5, 'sukar', 0.5],
       [700004, 8, 25, 'sukar', 0],
-      [700002, 10, 50, 'sederhana', 0.333],
+      [700002, 10, 50, 'sederhana', 0.33],
       [700007, 8, 50, 'sederhana', 1],
       [700008, 8, 50, 'sederhana', 1],
       [700003, 10, 60, 'sederhana', 0.25],
       [700001, 8, 75, 'mudah', 1],
     ])
     expect(r.rows.every((x) => x.subjectName === 'Kimia' && x.textPlain !== '')).toBe(true)
+    // Betul + Salah = Cubaan, all modes (FR-GUR-6-5, FR-GUR-6-8).
+    expect(r.rows.every((x) => x.correct + x.wrong === x.attempts)).toBe(true)
+    expect(r.rows.find((x) => x.questionId === 700003)).toMatchObject({ correct: 6, wrong: 4 })
   })
 
   it('a selected class scopes the answers to its subject; an explicit subject wins', async () => {

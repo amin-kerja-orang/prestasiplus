@@ -11,7 +11,7 @@ import { computed, ref } from 'vue'
 import { DsBadge, DsDataTable, DsPanel, DsProgress } from '@/ds'
 
 import type { SchoolEngagementRow, TahapKey, TeacherEngagementRow } from '../../api/types'
-import { count, pct, TAHAP, type UiColor } from './monitoring-format'
+import { count, pct, TAHAP, tahapLabel, type UiColor } from './monitoring-format'
 import type { MonitoringPaths } from './monitoring-paths'
 
 const props = defineProps<{
@@ -20,9 +20,9 @@ const props = defineProps<{
   paths: MonitoringPaths
 }>()
 
-/** Paged at 20 rows (FN-M11-3.4.x). */
-const pageSize = ref(20)
-const PAGE_SIZES = [10, 20, 50]
+/** Paged at 25 rows (R1-AS-10). */
+const pageSize = ref(25)
+const PAGE_SIZES = [10, 25, 50]
 
 const tahapStyle = (t: TahapKey) => TAHAP[t]
 /** DsProgress has no neutral tone; the empty bar is not drawn, so the fallback is never seen. */
@@ -33,7 +33,7 @@ const barTone = (t: TahapKey) => {
 const isStudent = computed(() => props.kind === 'student')
 const sectionId = computed(() => (isStudent.value ? 'section-pelajar' : 'section-guru'))
 const title = computed(() =>
-  isStudent.value ? 'Analisis Penglibatan Pelajar T4/T5' : 'Analisis Penglibatan Guru',
+  isStudent.value ? 'Analisis Penglibatan Pelajar' : 'Analisis Penglibatan Guru',
 )
 const activeLabel = computed(() => (isStudent.value ? 'Aktif' : 'Login'))
 
@@ -55,9 +55,8 @@ const columns = computed<TableColumn<Row>[]>(() => [
 const LEGEND: readonly [UiColor, string][] = [
   ['success', 'Cemerlang (> 60%)'],
   ['warning', 'Sederhana (20-60%)'],
-  ['error', 'Rendah (5-20%)'],
-  ['error', 'Kritikal (< 5%)'],
-  ['neutral', 'Tiada Langsung (0%)'],
+  ['error', 'Rendah (< 20%)'],
+  ['neutral', 'Tiada (0%)'],
 ]
 </script>
 
@@ -118,7 +117,10 @@ const LEGEND: readonly [UiColor, string][] = [
           }}</span>
         </template>
         <template #tahap-cell="{ row }">
-          <DsBadge :tone="tahapStyle(row.original.tahap).color" :label="row.original.tahap" />
+          <DsBadge
+            :tone="tahapStyle(row.original.tahap).color"
+            :label="tahapLabel(row.original.tahap)"
+          />
         </template>
         <template #bar-cell="{ row }">
           <span v-if="tahapStyle(row.original.tahap).bar === 'empty'" class="text-body text-muted"
@@ -146,7 +148,10 @@ const LEGEND: readonly [UiColor, string][] = [
                   >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</span
                 >
               </div>
-              <DsBadge :tone="tahapStyle((row as Row).tahap).color" :label="(row as Row).tahap" />
+              <DsBadge
+                :tone="tahapStyle((row as Row).tahap).color"
+                :label="tahapLabel((row as Row).tahap)"
+              />
             </div>
             <dl class="grid grid-cols-3 gap-3 text-body">
               <div>
@@ -180,13 +185,7 @@ const LEGEND: readonly [UiColor, string][] = [
       ><details>
         <summary class="cursor-pointer text-label text-highlighted">Legenda</summary>
         <p class="mt-4 flex flex-wrap items-center gap-2 text-body text-muted">
-          <DsBadge
-            v-for="[color, label] in LEGEND"
-            :key="label"
-            :tone="color"
-           
-            :label="label"
-          />
+          <DsBadge v-for="[color, label] in LEGEND" :key="label" :tone="color" :label="label" />
           <DsBadge v-if="!isStudent" tone="neutral" label="Tiada Guru (0 daftar)" />
         </p></details
     ></DsPanel>

@@ -9,12 +9,14 @@ import {
   type AiExtractedPaper,
   type AiExtractRequest,
   type AiQuestionDraft,
+  INTAKE_RETRYABLE_PAGE_CODES,
   type IntakeExtractionRun,
+  type IntakeExtractRequest,
   type IntakeRunReasonCode,
 } from '@pp/contract'
 
 import { AuditService } from '../../../common/audit/audit.service'
-import { ApiError } from '../../../common/errors/api-error'
+import { ApiError, DEFAULT_ERROR_MESSAGES } from '../../../common/errors/api-error'
 import type { AuthContext } from '../../../common/scope/auth-context'
 import { toMytTimestamp } from '../../../common/time/myt'
 import type { TxClient } from '../../../db/client'
@@ -24,7 +26,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { scrubContactDetails } from '../../ai-extraction'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { type ClaimedJob, JobError, JobsService } from '../../jobs'
-import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFiguresService, type AiExtractor } from '../files'
+import { AI_EXTRACTOR, IntakeExtractionInput, IntakeFilesService, IntakeFiguresService, type AiExtractor } from '../files'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { DuplicateDetector, type Finding } from './duplicate-detector'
@@ -49,6 +51,29 @@ const REASON_MESSAGE: Record<IntakeRunReasonCode, string> = {
 /** Low band of AC-05.3: a field under this confidence is a low field (the person must confirm it). */
 const LOW_CONFIDENCE = 0.7
 const ACTIVE_RUN = ['queued', 'running']
+/** Seconds between two looks at a pages run that waits for the OCR of its pages. */
+const OCR_WAIT_SECONDS = 3
+/** Batch statuses from which an extraction may start (a finished OCR, a partly failed extraction, a failed one). */
+const EXTRACTABLE = ['ready_for_review', 'selesai_dengan_ralat', 'failed']
+
+interface PageTarget {
+  fileId: bigint
+  pageNo: number
+}
+
+/** The `pages` of a pages run, read back from the job payload (ids are strings there). */
+function readPageTargets(raw: unknown): PageTarget[] | null {
+  if (!Array.isArray(raw)) return null
+  const out: PageTarget[] = []
+  for (const p of raw as Array<{ fileId?: unknown; pageNo?: unknown }>) {
+    try {
+      if (typeof p.fileId === 'string' && typeof p.pageNo === 'number') out.push({ fileId: idFromString(p.fileId), pageNo: p.pageNo })
+    } catch {
+      // skip an unreadable entry
+    }
+  }
+  return out.length > 0 ? out : null
+}
 const DEFAULT_TAG_UNIT = null
 
 /**
@@ -124,6 +149,7 @@ export class IntakeExtractionService implements OnModuleInit {
     @Inject(AI_EXTRACTOR) private readonly extractor: AiExtractor,
     @Inject(IntakeExtractionInput) private readonly input: IntakeExtractionInput,
     @Inject(IntakeFiguresService) private readonly figures: IntakeFiguresService,
+    @Inject(IntakeFilesService) private readonly intakeFiles: IntakeFilesService,
     @Inject(CurriculumFactsService) private readonly curriculum: CurriculumFactsService,
     @Inject(DuplicateDetector) private readonly detector: DuplicateDetector,
     @Inject(IntakeWorkflowConfig) private readonly config: IntakeWorkflowConfig,
@@ -143,7 +169,8 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /** POST /intake/batches/{id}/extract. `status` is the HTTP status to answer. */
-  async request(auth: AuthContext, idText: string, who: CallerInfo): Promise<{ run: IntakeExtractionRun; status: 200 | 202 }> {
+  async request(auth: AuthContext, idText: string, who: CallerInfo, body?: IntakeExtractRequest): Promise<{ run: IntakeExtractionRun; status: 200 | 202 }> {
+    if (body?.pages) return this.requestPages(auth, idText, body.pages, who)
     const id = parseId(idText)
     if (id === null) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
     const batch = await this.prisma.client.intakeBatch.findFirst({
@@ -152,13 +179,14 @@ export class IntakeExtractionService implements OnModuleInit {
     })
     if (!batch) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
 
-    const existing = await this.shortcut(id)
+    // A failed batch is extracted again even if an earlier run "succeeded" with no item (the end rule made that batch `failed`).
+    const existing = await this.shortcut(id, batch.status !== 'failed')
     if (existing) return existing
 
     // A teacher's DOCX/XLSX is stored with no pages (page_count null): it has nothing to read, so a batch with only such files is not
     // extractable (409, no run, no job, no state change) and in a mixed batch only the PDFs count.
     const done = batch.files.filter((f) => f.status === 'done' && f.pageCount !== null)
-    if ((batch.status !== 'ready_for_review' && batch.status !== 'failed') || done.length === 0) {
+    if (!EXTRACTABLE.includes(batch.status) || done.length === 0) {
       throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
     }
     await this.refuseImported(auth, id, done.map((f) => f.sha256))
@@ -170,8 +198,8 @@ export class IntakeExtractionService implements OnModuleInit {
         const lockedBatch = locked[0]
         if (!lockedBatch) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
         const again = await tx.intakeExtractionRun.findFirst({ where: { batchId: id }, orderBy: { id: 'desc' } })
-        if (again && (ACTIVE_RUN.includes(again.state) || again.state === 'succeeded')) return { row: again, created: false }
-        if (lockedBatch.status !== 'ready_for_review' && lockedBatch.status !== 'failed') throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
+        if (again && (ACTIVE_RUN.includes(again.state) || (again.state === 'succeeded' && lockedBatch.status !== 'failed'))) return { row: again, created: false }
+        if (!EXTRACTABLE.includes(lockedBatch.status)) throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
 
         const created = await tx.intakeExtractionRun.create({ data: { batchId: id, requestedById: idFromString(auth.userId) } })
         const job = await this.jobs.enqueue(
@@ -214,12 +242,76 @@ export class IntakeExtractionService implements OnModuleInit {
     }
   }
 
+  /**
+   * POST /intake/batches/{id}/extract with `pages[]` (S1-T04, API-Q-15): "Cuba lagi" on failed pages. Skips the succeeded-run shortcut,
+   * accepts a `selesai_dengan_ralat` or `failed` batch, and only pages that failed OCR with a code a retry can fix (else 422 `fields.pages`).
+   * The pages are read again (the one retry path of `IntakeFilesService.retryInBatch`: `retry_count` + 1 on every file named, the 4th retry
+   * is 409 ERR-INT-11) and a run is queued that waits for that OCR and then extracts the new items of those pages only.
+   */
+  private async requestPages(auth: AuthContext, idText: string, pages: ReadonlyArray<{ fileId: string; pageNo: number }>, who: CallerInfo): Promise<{ run: IntakeExtractionRun; status: 200 | 202 }> {
+    const id = parseId(idText)
+    if (id === null) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
+    const batch = await this.prisma.client.intakeBatch.findFirst({ where: { id, ...visibleBatches(auth) }, select: { id: true, status: true, files: { select: { id: true } } } })
+    if (!batch) throw ApiError.of('NOT_FOUND', { message: INTAKE_MESSAGES.batchNotFound })
+    const active = await this.latestRun(id)
+    if (!EXTRACTABLE.includes(batch.status) || (active && ACTIVE_RUN.includes(active.state))) {
+      throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
+    }
+
+    // Every named page must be a failed page of a file of this batch that a retry can fix.
+    const wanted = new Map<bigint, number[]>()
+    for (const p of pages) {
+      const fileId = parseId(p.fileId)
+      if (fileId === null || !batch.files.some((f) => f.id === fileId)) throw this.badPages()
+      const list = wanted.get(fileId) ?? []
+      if (!list.includes(p.pageNo)) list.push(p.pageNo)
+      wanted.set(fileId, list)
+    }
+    for (const [fileId, pageNos] of wanted) {
+      const failed = await this.prisma.client.intakePage.count({
+        where: { intakeFileId: fileId, pageNo: { in: pageNos }, ocrStatus: 'failed', errorCode: { in: [...INTAKE_RETRYABLE_PAGE_CODES] } },
+      })
+      if (failed !== pageNos.length) throw this.badPages()
+    }
+
+    try {
+      const runId = await this.prisma.transaction(async (tx) => {
+        const retried = await this.intakeFiles.retryInBatch(tx, auth, id, wanted, true)
+        if (retried.runId === null) throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
+        await this.audit.record({
+          action: INTAKE_AUDIT.extractionRequested,
+          actorUserId: auth.userId,
+          actorRole: auth.active.role,
+          scopeLevel: auth.active.scope.level,
+          schoolId: auth.active.scope.schoolId ?? null,
+          targetType: 'intake_batch',
+          targetId: idToString(id),
+          requestId: who.requestId,
+          ip: who.ip,
+          isTest: auth.mode !== null,
+          details: { runId: idToString(retried.runId), pages: retried.pages.length, attempt: retried.attempt },
+          tx,
+        })
+        return retried.runId
+      })
+      const row = await this.prisma.client.intakeExtractionRun.findUniqueOrThrow({ where: { id: runId } })
+      return { run: runToWire(row), status: 202 }
+    } catch (err) {
+      if (isUniqueViolation(err)) throw ApiError.of('CONFLICT', { message: INTAKE_MESSAGES.notExtractable })
+      throw err
+    }
+  }
+
+  private badPages(): ApiError {
+    return ApiError.of('VALIDATION_ERROR', { fields: { pages: DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR } })
+  }
+
   /** An active run is returned as it is (202); a succeeded one is returned unchanged (200, no new items, no cost). */
-  private async shortcut(batchId: bigint): Promise<{ run: IntakeExtractionRun; status: 200 | 202 } | null> {
+  private async shortcut(batchId: bigint, succeededCounts = true): Promise<{ run: IntakeExtractionRun; status: 200 | 202 } | null> {
     const latest = await this.latestRun(batchId)
     if (!latest) return null
     if (ACTIVE_RUN.includes(latest.state)) return { run: runToWire(latest), status: 202 }
-    if (latest.state === 'succeeded') return { run: runToWire(latest), status: 200 }
+    if (latest.state === 'succeeded' && succeededCounts) return { run: runToWire(latest), status: 200 }
     return null
   }
 
@@ -269,7 +361,7 @@ export class IntakeExtractionService implements OnModuleInit {
   // ---- job handler -------------------------------------------------------------------------------
 
   async handle(job: ClaimedJob, signal: AbortSignal): Promise<void> {
-    const payload = (job.payload ?? {}) as { runId?: unknown; wait?: unknown }
+    const payload = (job.payload ?? {}) as { runId?: unknown; wait?: unknown; pages?: unknown; ocrWait?: unknown }
     let runId: bigint
     try {
       runId = idFromString(String(payload.runId ?? ''))
@@ -285,6 +377,23 @@ export class IntakeExtractionService implements OnModuleInit {
       return
     }
 
+    // A pages run (retry of failed pages) first waits for the OCR of those pages; the batch sweep ends it if that takes too long.
+    const targets = readPageTargets(payload.pages)
+    if (targets) {
+      const reading = await this.prisma.client.intakeFile.count({ where: { batchId: batch.id, status: { in: ['uploaded', 'processing'] } } })
+      if (reading > 0) {
+        const n = typeof payload.ocrWait === 'number' && Number.isInteger(payload.ocrWait) && payload.ocrWait >= 0 ? payload.ocrWait + 1 : 1
+        await this.jobs.enqueue({
+          type: WORKFLOW_JOB_TYPE,
+          idempotencyKey: `${WORKFLOW_JOB_TYPE}:${run.id}:ocr:${n}`,
+          entityType: WORKFLOW_JOB_ENTITY,
+          entityId: idToString(batch.id),
+          payload: { runId: idToString(run.id), wait: wait, pages: payload.pages, ocrWait: n },
+          runAfter: new Date(Date.now() + OCR_WAIT_SECONDS * 1000),
+        })
+        return
+      }
+    }
     await this.prisma.client.intakeExtractionRun.update({
       where: { id: run.id },
       data: { state: 'running', startedAt: run.startedAt ?? new Date(), attempts: job.attempts, reasonCode: null },
@@ -296,13 +405,15 @@ export class IntakeExtractionService implements OnModuleInit {
     try {
       const prepared = await this.prepare(batch.id, batch.subject)
       pageMap = prepared.pageMap
-      paper = prepared.request.pages.length === 0 ? null : await this.call(prepared.request, signal)
+      // A pages run with no page read again has nothing new to extract: no provider call, no cost.
+      const readAgain = targets === null ? true : (await this.readAgain(targets)) > 0
+      paper = prepared.request.pages.length === 0 || !readAgain ? null : await this.call(prepared.request, signal)
     } catch (err) {
-      await this.onAttemptFailed(run.id, batch.id, job, wait, err)
+      await this.onAttemptFailed(run.id, batch.id, job, wait, err, payload.pages)
       return
     }
     try {
-      await this.persist(run.id, batch.id, batch.subject, paper, pageMap, signal)
+      await this.persist(run.id, batch.id, batch.subject, paper, pageMap, signal, targets)
     } catch (err) {
       if (err instanceof JobError) throw err
       await this.prisma.client.intakeExtractionRun.update({ where: { id: run.id }, data: { state: 'queued' } })
@@ -351,7 +462,16 @@ export class IntakeExtractionService implements OnModuleInit {
   }
 
   /** A failed attempt: budget exhaustion waits, anything else is rethrown for the runner (retry with backoff). */
-  private async onAttemptFailed(runId: bigint, batchId: bigint, job: ClaimedJob, wait: number, err: unknown): Promise<void> {
+  /** How many of the pages of a pages run were read (text layer or OCR) this time. */
+  private async readAgain(targets: readonly PageTarget[]): Promise<number> {
+    let n = 0
+    for (const t of targets) {
+      n += await this.prisma.client.intakePage.count({ where: { intakeFileId: t.fileId, pageNo: t.pageNo, ocrStatus: { in: ['done', 'not_needed'] } } })
+    }
+    return n
+  }
+
+  private async onAttemptFailed(runId: bigint, batchId: bigint, job: ClaimedJob, wait: number, err: unknown, pages?: unknown): Promise<void> {
     const code = codeOf(err)
     if (code === 'AI_BUDGET_EXHAUSTED') {
       await this.prisma.transaction(async (tx) => {
@@ -367,7 +487,7 @@ export class IntakeExtractionService implements OnModuleInit {
             idempotencyKey: `${WORKFLOW_JOB_TYPE}:${runId}:wait:${next}`,
             entityType: WORKFLOW_JOB_ENTITY,
             entityId: idToString(batchId),
-            payload: { runId: idToString(runId), wait: next },
+            payload: { runId: idToString(runId), wait: next, ...(pages === undefined ? {} : { pages }) },
             runAfter: new Date(Date.now() + this.config.budgetRecheckSeconds * 1000),
           },
           tx,
@@ -409,7 +529,15 @@ export class IntakeExtractionService implements OnModuleInit {
 
   // ---- result to items ----------------------------------------------------------------------------
 
-  private async persist(runId: bigint, batchId: bigint, subject: string, paper: AiExtractedPaper | null, pageMap: PageRef[], signal: AbortSignal): Promise<void> {
+  private async persist(
+    runId: bigint,
+    batchId: bigint,
+    subject: string,
+    paper: AiExtractedPaper | null,
+    pageMap: PageRef[],
+    signal: AbortSignal,
+    onlyPages: readonly PageTarget[] | null = null,
+  ): Promise<void> {
     const drafts = paper?.questions ?? []
     const stimuliIn = (paper?.stimuli ?? []).slice(0, MAX_STIMULI_PER_BATCH)
 
@@ -426,6 +554,8 @@ export class IntakeExtractionService implements OnModuleInit {
     })
     const room = Math.max(0, this.config.maxItemsPerBatch - existing.length)
     let mapped = drafts.slice(0, room).map((d) => this.mapDraft(d, subject, pageMap))
+    // A pages run adds the items of the pages it read again only; the items of the other pages already exist.
+    if (onlyPages) mapped = mapped.filter((m) => m.page !== null && onlyPages.some((t) => t.fileId === m.page?.fileId && t.pageNo === m.page.pageNo))
     // D90: a figure belongs to EVERY question that names it. Add the links the extractor missed (never move one it made).
     const figureLinks = linkReferencingItems(
       stimuliIn.map((s) => ({ ref: s.id, label: s.label })),
@@ -524,7 +654,11 @@ export class IntakeExtractionService implements OnModuleInit {
           finishedAt: new Date(),
         },
       })
-      await tx.intakeBatch.update({ where: { id: batchId }, data: { status: 'ready_for_review', statusReason: null } })
+      // The one end rule (45 section 3.3.2 item 7): failed when no item exists, selesai_dengan_ralat when a page failed, else ready_for_review.
+      const items = await tx.intakeItem.count({ where: { batchId } })
+      const failedPages = await tx.intakePage.count({ where: { ocrStatus: 'failed', intakeFile: { batchId } } })
+      const ended = items === 0 ? 'failed' : failedPages > 0 ? 'selesai_dengan_ralat' : 'ready_for_review'
+      await tx.intakeBatch.update({ where: { id: batchId }, data: { status: ended, statusReason: ended === 'failed' ? AI_MESSAGES.noQuestions : null } })
       return created
     })
 

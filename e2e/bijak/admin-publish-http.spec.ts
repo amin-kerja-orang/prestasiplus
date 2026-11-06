@@ -15,7 +15,7 @@
  * http client (server/http-admin.ts, wired to BE-39: papers list/get/create/save/publish/unpublish/
  * delete, blueprints). The intake, review-queue and bank methods were wired afterwards (AZ-20, see
  * intake-review-http.spec.ts); only the bank "Sunting" versions and "Minta Pembetulan" have no route.
- * The demo path is Pembina Kertas. Since R1-B07 (T36) the builder offers the QUESTION BANK only: the PoC fixture and the composite
+ * The demo path is Set Builder and Semak Kertas (S3-T02: the old Pembina Kertas list redirects). Since R1-B07 (T36) the builder offers the QUESTION BANK only: the PoC fixture and the composite
  * builder source are gone from the API (`BIJAK_POC_QUESTIONS` is a deprecated no-op), so create + publish works only on a database with
  * enough approved bank questions for the blueprint (the demo seed's bank questions, T26 e2e seed). Subject/kertas used: Matematik
  * Kertas 1 (blueprint "Objektif"). A publish that lacks questions is refused ("<Bahagian>: Kurang N soalan (perlu X, ada Y)", BE-39
@@ -42,71 +42,58 @@ async function login(page: Page, user: string, pass: string): Promise<void> {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'))
 }
 
-/** Pentadbiran menu (drawer below 1024 px) -> Pembina Kertas. */
+/** Pentadbiran menu (drawer below 1024 px) -> the old Pembina Kertas entry -> the Set Builder it redirects to (FR-ADM-Q15.6). */
 async function openPaperBuilder(page: Page): Promise<void> {
   if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
   const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
   await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
-  await expect(page).toHaveURL(/\/admin\/spm\/kertas$/)
+  await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
 }
 
-/** Kertas Baharu -> Cipta Kertas (Matematik Kertas 1, titled for easy cleanup). */
+/** Mula kosong (Matematik Kertas 1, titled for easy cleanup). */
 async function createDraft(page: Page, title: string): Promise<string> {
-  await page.getByTestId('paper-new').click()
-  await expect(page.getByTestId('paper-new-page')).toBeVisible()
+  await expect(page.getByTestId('set-builder-page')).toBeVisible()
   await expectNoHorizontalScrollHttp(page)
-  // The subject option is matched by name (value is the subject code), Kertas by its label.
-  const subjectValue = await page
-    .getByTestId('new-subject')
-    .locator('option', { hasText: /^Matematik$/ })
-    .first()
-    .getAttribute('value')
-  expect(subjectValue, 'a "Matematik" subject option').toBeTruthy()
-  await page.getByTestId('new-subject').selectOption(subjectValue ?? '')
-  await page.getByTestId('new-kertas').selectOption({ label: 'Kertas 1' })
-  await page.getByTestId('new-title').fill(title)
-  await expect(page.getByTestId('blueprint-summary')).toBeVisible()
-  await page.getByRole('button', { name: 'Cipta Kertas' }).click()
-  await expect(page.getByTestId('paper-editor-page')).toBeVisible()
+  await page.getByTestId('blank-subject').selectOption({ label: 'Matematik' })
+  await page.getByTestId('blank-kertas').selectOption({ label: 'Kertas 1' })
+  await page.getByTestId('blank-title').fill(title)
+  await page.getByTestId('blank-submit').click()
+  await expect(page.getByTestId('set-builder-editor')).toBeVisible()
   await expect(page.getByTestId('budget-check')).toContainText('Belum sepadan dengan blueprint')
-  return new URL(page.url()).pathname.split('/').pop() ?? ''
+  return new URL(page.url()).pathname.split('/').at(-2) ?? ''
 }
 
-/** Adds the first picker candidate to section 0 until the blueprint matches. */
+/** Adds the first free bank unit to section 0 until the blueprint matches (the bank pages 50 units at a time). */
 async function assembleUntilMatching(page: Page): Promise<void> {
   const check = page.getByTestId('budget-check')
+  if ((page.viewportSize()?.width ?? 0) < 1024) await page.getByTestId('builder-pane-bank').click()
   for (let i = 0; i < 40; i++) {
     if ((await check.innerText()).includes('Sepadan dengan blueprint')) return
-    await page.getByTestId('add-0').click()
-    await expect(page.getByTestId('picker')).toBeVisible()
-    // The picker lists the section pool 20 units a page and hides what the paper already holds (REQ-B-042), so
-    // once the first page is used up (the blueprint needs 40) the next candidates sit behind "Muat lagi".
-    const add = page.locator('[data-testid^=pick-add-]')
-    const more = page.getByTestId('picker-more')
+    const add = page.locator('li[data-testid^=pool-]:not([data-testid^=pool-group-])').locator('[data-testid^=pool-add-]:not([disabled])')
+    const more = page.getByTestId('bank-more')
     await expect(add.or(more).first()).toBeVisible()
     while ((await add.count()) === 0 && (await more.isVisible())) {
       const paged = page.waitForResponse((r) => /\/pool\?/.test(r.url()))
       await more.click()
       await paged
     }
+    const placed = page.waitForResponse((r) => /\/placements$/.test(r.url()))
     await add.first().click()
-    await page.keyboard.press('Escape')
-    await expect(page.getByTestId('picker')).toBeHidden()
+    await placed
   }
   await expect(check).toContainText('Sepadan dengan blueprint')
 }
 
-/** Deletes a draft from the list (card button below 640 px, table row button above). */
-async function deleteDraft(page: Page, id: string, title: string): Promise<void> {
-  await page.goto('/admin/spm/kertas')
-  await expect(page.getByTestId('papers-page')).toBeVisible()
-  const byId = page.getByTestId(`paper-delete-${id}`)
-  const inRow = page
-    .getByTestId('papers-table')
-    .locator('tr', { hasText: title })
-    .getByRole('button', { name: 'Padam kertas' })
-  const button = (await byId.count()) ? byId : inRow
-  if (await button.count()) await button.first().click()
+/** Deletes a draft from the one list, past its confirm. */
+async function deleteDraft(page: Page, id: string): Promise<void> {
+  await page.goto('/admin/studio/sets')
+  await expect(page.getByTestId('set-builder-page')).toBeVisible()
+  const button = page.getByTestId(`set-delete-${id}`)
+  if (await button.count()) {
+    await button.click()
+    await page.locator('[data-ds=confirm-ok]').click()
+    await expect(page.getByTestId(`set-${id}`)).toHaveCount(0)
+  }
 }
 
 /** A student in a SEPARATE browser context sees the paper title in the Bijak list. */
@@ -144,30 +131,29 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await expect(link).toHaveAttribute('href', '/admin/spm/kertas')
   })
 
-  // Real (B3): GET /api/admin/papers behind the list (PaperListPage.vue: papers-page, papers-table, paper-new).
-  test('Pembina Kertas list renders through the admin http client @bijak', async ({ page }) => {
+  // Real (B3): GET /api/admin/papers behind the one list (SetBuilderLandingPage.vue); the old menu entry redirects to it.
+  test('the Set Builder list renders through the admin http client @bijak', async ({ page }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
     await openPaperBuilder(page)
-    await expect(page.getByTestId('papers-page')).toBeVisible()
-    await expect(page.getByTestId('papers-table')).toBeVisible()
-    await expect(page.getByTestId('paper-new')).toBeVisible()
-    // The generic load error ("Tidak dapat memuatkan senarai kertas.") must not be showing.
-    await expect(page.getByText('Tidak dapat memuatkan senarai kertas.')).toHaveCount(0)
+    await expect(page.getByTestId('set-builder-page')).toBeVisible()
+    await expect(page.getByTestId('blank-submit')).toBeVisible()
+    // The generic load error must not be showing.
+    await expect(page.getByText('Tidak dapat memuatkan senarai set.')).toHaveCount(0)
     await expectNoHorizontalScrollHttp(page)
   })
 
   // Real, read-only: opens the first existing paper (no edit, no publish, no write).
   test('opening an existing paper renders the editor read-only path @bijak', async ({ page }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
-    await page.goto('/admin/spm/kertas')
-    await expect(page.getByTestId('papers-page')).toBeVisible()
-    const open = page.locator('a[href^="/admin/spm/kertas/"]:not([href$="/baharu"])').first()
+    await page.goto('/admin/studio/sets')
+    await expect(page.getByTestId('set-builder-page')).toBeVisible()
+    const open = page.locator('a[href^="/admin/spm/kertas/"]').first()
     test.skip((await open.count()) === 0, 'no existing paper in this environment')
     await open.click()
     await expect(page.getByTestId('paper-editor-page')).toBeVisible()
     await expect(page.getByTestId('budget-check')).toBeVisible()
-    await expect(page.getByTestId('paper-title')).toBeVisible()
+    await expect(page.getByTestId('meta-title')).toBeVisible()
     await expect(page.getByTestId('section-0')).toBeVisible()
     await expect(page.getByText('Tidak dapat memuatkan kertas.')).toHaveCount(0)
     await expectNoHorizontalScrollHttp(page)
@@ -217,9 +203,11 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
   }) => {
     const title = `E2E-http refuse ${Date.now()}`
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
-    await page.goto('/admin/spm/kertas')
+    await page.goto('/admin/studio/sets')
     const id = await createDraft(page, title)
     try {
+      await page.getByTestId('builder-semak').click()
+      await expect(page.getByTestId('paper-editor-page')).toBeVisible()
       // R1-F09: Terbitkan is disabled while the check fails; the reason is shown as text.
       await expect(page.getByTestId('paper-publish')).toBeDisabled()
       await expect(page.getByTestId('publish-errors')).toContainText(
@@ -230,7 +218,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expectNoHorizontalScrollHttp(page)
     } finally {
       // Cleanup: delete the draft from the list.
-      await deleteDraft(page, id, title)
+      await deleteDraft(page, id)
     }
   })
 
@@ -246,13 +234,11 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     await page.goto('/admin/command-center')
     await openPaperBuilder(page)
-    await expect(page.getByTestId('papers-page')).toBeVisible()
-    await expectNoHorizontalScrollHttp(page)
     const id = await createDraft(page, title)
     try {
       await assembleUntilMatching(page)
-      await page.getByTestId('paper-save').click()
-      await expect(page.getByTestId('paper-save')).toBeDisabled()
+      await page.getByTestId('builder-semak').click()
+      await expect(page.getByTestId('paper-editor-page')).toBeVisible()
 
       // REQ-B-054: the demo seed Disahkan only 3472/2, so the Kontrak of Matematik Kertas 1 (1449/1) is still Spec: the plain
       // Terbitkan is disabled with the server's reason and the audited override publishes (the same path as admin-publish.spec.ts).
@@ -265,7 +251,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
       await expect(page.getByTestId('paper-unpublish')).toBeVisible()
       await expect(page.getByTestId('paper-view-student')).toBeVisible()
       await expect(page.getByTestId('paper-publish')).toHaveCount(0)
-      await expect(page.getByTestId('paper-title')).toBeDisabled()
+      await expect(page.getByTestId('meta-title')).toBeDisabled()
       await expectNoHorizontalScrollHttp(page)
 
       await studentSees(browser, testInfo, title)
@@ -277,7 +263,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
         await page.locator('[data-ds=confirm-ok]').click()
         await expect(page.getByTestId('paper-publish')).toBeVisible()
       }
-      await deleteDraft(page, id, title)
+      await deleteDraft(page, id)
     }
   })
 })

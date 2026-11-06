@@ -113,10 +113,22 @@ export const IntakeExtractionRunSchema = z
   .meta({ id: 'IntakeExtractionRun', description: '[PROPOSED] One extraction run of a batch.' })
 export type IntakeExtractionRun = z.infer<typeof IntakeExtractionRunSchema>
 
-/** Empty body. Strict, so a content field is a 422: the pages come from the stored batch, never from the request. */
+/**
+ * Body of POST /intake/batches/{id}/extract. Empty = start the first extraction of the batch. `pages` (S1-T04, API-Q-15) = "Cuba lagi" on
+ * failed pages: `[{ fileId, pageNo }]` (page numbers are per file), at least 1. Only pages whose OCR failed (and a retry can fix) of files of
+ * this batch are accepted (else 422 `fields.pages`); each file named gets `retry_count` + 1 (the 4th retry is 409 ERR-INT-11). Strict, so a
+ * content field or a provider choice is a 422.
+ */
 export const IntakeExtractRequestSchema = z
-  .strictObject({})
-  .meta({ id: 'IntakeExtractRequest', description: '[PROPOSED] Empty object. Input comes from the stored batch; the request cannot carry content or a provider choice.' })
+  .strictObject({
+    pages: z
+      .array(z.strictObject({ fileId: IdSchema, pageNo: z.number().int().min(1).max(10_000) }))
+      .min(1)
+      .max(500)
+      .optional()
+      .meta({ description: 'Failed pages to run again: `{ fileId, pageNo }`. Omit for the first extraction.' }),
+  })
+  .meta({ id: 'IntakeExtractRequest', description: 'Optional `pages[]` to retry failed pages. Input otherwise comes from the stored batch; the request cannot carry content or a provider choice.' })
 export type IntakeExtractRequest = z.infer<typeof IntakeExtractRequestSchema>
 
 /* ------------------------------------------------------------------------------------------ */

@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { DsPanel } from '@/ds'
 
 import type { StudentKirkpatrick } from '../../../api/types'
-import { pct1 } from '../common/kirkpatrick-format'
+import { accuracyPct } from '../common/kirkpatrick-format'
 import { barColor } from './pelajar-format'
 
 const props = defineProps<{ platform: StudentKirkpatrick['platform'] }>()
@@ -23,7 +23,7 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
         <div class="flex items-baseline justify-between gap-3">
           <span class="min-w-0 text-label text-muted">{{ r.subjectName }}</span>
           <span class="tabular shrink-0 text-caption text-highlighted" data-testid="pel-plat-value"
-            >{{ pct1(r.accuracy) }} ({{ r.answers }})</span
+            >{{ accuracyPct(r.accuracy) }} ({{ r.answers }})</span
           >
         </div>
         <UProgress
@@ -32,7 +32,7 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
           :color="barColor(r.accuracy)"
           size="sm"
           class="mt-1"
-          :aria-label="`${r.subjectName} ${pct1(r.accuracy)}`"
+          :aria-label="`${r.subjectName} ${accuracyPct(r.accuracy)}`"
           data-testid="pel-plat-bar"
         />
       </li>

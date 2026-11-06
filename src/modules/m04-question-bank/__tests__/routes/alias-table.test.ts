@@ -23,8 +23,8 @@ const ALIASES: Alias[] = [
   { from: '/admin/studio/questions/42/preview', to: '/admin/studio/questions/42/sunting?pratonton=1', owner: 'S2-T03' },
   { from: '/admin/spm/soalan', to: '/admin/spm/databank', owner: 'S2-T03' },
   { from: '/admin/spm/soalan?status=approved', to: '/admin/spm/databank', owner: 'S2-T03' },
-  { from: '/admin/spm/kertas', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
-  { from: '/admin/spm/kertas/baharu', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
+  { from: '/admin/spm/kertas', to: '/admin/studio/sets', owner: 'S3-T02' },
+  { from: '/admin/spm/kertas/baharu', to: '/admin/studio/sets', owner: 'S3-T02' },
   { from: '/admin/spm/kertas-subjektif', to: '/admin/kertas-subjektif', owner: 'S3-T06', pending: true },
 ]
 

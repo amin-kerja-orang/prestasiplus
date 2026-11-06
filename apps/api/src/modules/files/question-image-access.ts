@@ -1,5 +1,5 @@
 import { Prisma } from '../../db/generated/client'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SERVABLE_STATUS } from '../questions/learner-visibility'
 import { paperHeld } from '../questions/served-rule'
 
 /**
@@ -94,7 +94,7 @@ export function pupilMayReadQuestionImageSql(fileId: bigint, userId: bigint, pub
       JOIN questions q ON q.id = v.question_id
      WHERE (q.live_version_no = v.version_no AND q.is_active
             AND v.status IN (${inList(SERVABLE_VERSION_STATUSES)})
-            AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL})
+            AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${BANK_VISIBLE_SQL})
         OR (v.status IN ('approved', 'archived')
             AND EXISTS (SELECT 1
                           FROM paper_placements pl

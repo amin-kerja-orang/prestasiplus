@@ -302,9 +302,9 @@ test.describe('QA-G5 L17 remedial flow', { tag: [moduleTag(5)] }, () => {
     loginAs,
     gotoApp,
   }) => {
-    await loginAs('pelajarmaju@demo.test')
+    await loginAs('pelajar2@demo.test')
     await gotoApp('/remedial/saya')
-    await expect(tid(page, 'remedial-empty')).toContainText('Tiada ujian remedial. Bagus — teruskan usaha!')
+    await expect(tid(page, 'remedial-empty')).toContainText('Tiada topik lemah!')
     await gotoApp('/misi-harian')
     await expect(tid(page, 'missions-empty')).toContainText('Tiada misi hari ini')
   })
@@ -391,7 +391,7 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     )
 
     await gotoApp('/latihan-berstruktur?subject_id=3&scope=spm&kbat_level=6')
-    await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur buat masa ini')
+    await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur ditemui')
   })
 })
 

@@ -50,6 +50,8 @@ export const AUDIT_ACTIONS = {
   STIMULUS_GROUP_MEMBER_MOVED: 'stimulus.group.member_moved',
   STIMULUS_GROUP_MERGED: 'stimulus.group.merged',
   QUESTIONS_REGROUPED: 'questions.regrouped',
+  QUESTIONS_REGROUP_UNDONE: 'questions.regroup_undone',
+  QUESTION_FLAG_DISMISSED: 'question.flag_dismissed',
   BIJAK_PAPER_CREATED: 'bijak.paper.created',
   BIJAK_PAPER_UPDATED: 'bijak.paper.updated',
   BIJAK_PAPER_DELETED: 'bijak.paper.deleted',
@@ -89,12 +91,22 @@ export const AUDIT_ACTIONS = {
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
   KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
+  KIRKPATRICK_INTERVENTION_REVIEWED: 'kirkpatrick.intervention.reviewed',
   // BE-19 headcount (M08): no pupil data in the detail.
   HEADCOUNT_CONFIG_RESET: 'headcount.config.reset',
   HEADCOUNT_CONFIG_DELETED: 'headcount.config.deleted',
   HEADCOUNT_CONFIG_CREATED: 'headcount.config.created',
   HEADCOUNT_CONFIGS_AUTO_SETUP: 'headcount.configs.auto_setup',
   HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
+  // S7-T08 Marketplace admin (API-ADM-19): product writes and the four seller transitions.
+  MARKETPLACE_PRODUCT_CREATED: 'marketplace.product.created',
+  MARKETPLACE_PRODUCT_UPDATED: 'marketplace.product.updated',
+  MARKETPLACE_PRODUCT_DELETED: 'marketplace.product.deleted',
+  MARKETPLACE_PRODUCT_IMAGE_DELETED: 'marketplace.product.image_deleted',
+  MARKETPLACE_SELLER_APPROVED: 'marketplace.seller.approved',
+  MARKETPLACE_SELLER_VERIFIED: 'marketplace.seller.verified',
+  MARKETPLACE_SELLER_SUSPENDED: 'marketplace.seller.suspended',
+  MARKETPLACE_SELLER_BANNED: 'marketplace.seller.banned',
   // S10-T02: Bilangan OTR changed in Tetapan (CF-05 deletes the marks above the new count in the same transaction).
   HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
 } as const
