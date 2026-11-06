@@ -28,7 +28,6 @@ import {
   bottomNavActive,
   bottomNavFor,
   chromeFor,
-  footerLinksFor,
   lagiFor,
   type LagiRow,
 } from '@/shells/nav/admin-nav'
@@ -52,7 +51,6 @@ const role = computed(() => session.role)
 const user = computed(() => session.user)
 const chrome = computed(() => chromeFor(role.value))
 const entries = computed(() => adminMenuFor(role.value))
-const footerLinks = computed(() => footerLinksFor(role.value))
 const bottomEntries = computed(() => bottomNavFor(role.value))
 const lagiMenu = computed(() => lagiFor(role.value))
 
@@ -61,8 +59,8 @@ const header = computed<PageHeader>(
   () => pageMeta.state.header ?? route.meta.header ?? DEFAULT_ADMIN_HEADER,
 )
 
-/** The one active item (§2.8); the footer links take part in the same rule. */
-const activeId = computed(() => activeItemId(entries.value, route.path, footerLinks.value))
+/** The one active item (§2.8). */
+const activeId = computed(() => activeItemId(entries.value, route.path))
 const groupKey = computed(() => activeGroupKey(entries.value, route.path, activeId.value))
 
 function rowActive(row: LagiRow): boolean {
@@ -100,7 +98,6 @@ onBeforeUnmount(() => shell.closeOverlays())
     >
       <AdminSidebar
         :entries="entries"
-        :footer-links="footerLinks"
         :active-id="activeId"
         :caption="chrome.caption"
         :home="chrome.home"

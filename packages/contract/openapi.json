@@ -467,6 +467,13 @@
           "mustChangePassword": {
             "type": "boolean",
             "description": "True while a forced password change is pending; other routes answer 403 PASSWORD_CHANGE_REQUIRED."
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "S0-T10 (API-AUTH-03): feature key to enabled, from the server flags; always present on GET /session. A key that is absent counts as ON."
           }
         },
         "required": [
@@ -83846,6 +83853,86 @@
         "additionalProperties": false,
         "description": "[PROPOSED] AI cost by day, provider and submission, with the budget (card BE-40)."
       },
+      "FeatureAudience": {
+        "type": "string",
+        "enum": [
+          "pelajar",
+          "guru"
+        ]
+      },
+      "FeatureToggle": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelMs": {
+            "type": "string",
+            "minLength": 1
+          },
+          "audience": {
+            "$ref": "#/components/schemas/FeatureAudience"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "audience",
+          "enabled",
+          "locked"
+        ]
+      },
+      "FeatureToggleListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureToggle"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "FeatureToggleUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "FeatureToggleResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FeatureToggle"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "FeatureMap": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "boolean"
+        },
+        "description": "Feature key to enabled. A key that is absent counts as ON (FR-ADM-N06.4)."
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -139194,6 +139281,139 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-toggles": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Kawalan Ciri: list the feature toggles",
+        "description": "Admin Pusat only. Ordered by sort_order.",
+        "responses": {
+          "200": {
+            "description": "All toggles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureToggleListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-toggles/{key}": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Kawalan Ciri: switch one toggle",
+        "description": "Admin Pusat only, audited (actor, key, old, new). Effective on the next request (5 s in-process cache, dropped on write). `{enabled:true}` on a locked key answers 409 CONFLICT.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "key",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeatureToggleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The toggle after the write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureToggleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin) or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: no such key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the key is locked and cannot be switched on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: enabled is not a boolean.",
             "content": {
               "application/json": {
                 "schema": {

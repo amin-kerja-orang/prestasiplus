@@ -14,6 +14,7 @@ import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { FeatureFlagsService } from '../../src/common/feature-flags'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { CIKGU_AI, CikguModule, type CikguAiPort } from '../../src/modules/cikgu'
@@ -77,6 +78,12 @@ export async function bootCikguApp(opts: BootOptions = {}): Promise<CikguTestApp
     .useValue(clock)
   if (opts.ai) builder = builder.overrideProvider(CIKGU_AI).useValue(opts.ai)
   const moduleRef = await builder.compile()
+  // Cikgu Alesa is locked OFF in R1 (D102, INV-29; migration 0250 + LOCKED_OFF_FALLBACK), so FeatureGuard
+  // answers 404 on /api/cikgu for every caller. The module is dormant in R1; these specs keep it covered for
+  // R2 by switching the `cikgu-alesa` key ON for this test app only. Every other key keeps the real flag state.
+  const flags = moduleRef.get(FeatureFlagsService, { strict: false })
+  const isEnabled = flags.isEnabled.bind(flags)
+  flags.isEnabled = (key: string) => (key === 'cikgu-alesa' ? Promise.resolve(true) : isEnabled(key))
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()

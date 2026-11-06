@@ -1,5 +1,6 @@
 import { z } from '../zod'
 import { PortalIdSchema, RoleCodeSchema, type PortalId, type RoleCode, type ScopeLevel } from '../common/enums'
+import { FeatureMapSchema } from '../common/feature-flags'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { CapabilityKeySchema } from '../access/schema'
@@ -103,6 +104,10 @@ export const SessionSchema = z
     csrf: z.string().min(1),
     mustChangePassword: z.boolean().meta({
       description: 'True while a forced password change is pending; other routes answer 403 PASSWORD_CHANGE_REQUIRED.',
+    }),
+    features: FeatureMapSchema.optional().meta({
+      description:
+        'S0-T10 (API-AUTH-03): feature key to enabled, from the server flags; always present on GET /session. A key that is absent counts as ON.',
     }),
   })
   .superRefine((s, ctx) => {

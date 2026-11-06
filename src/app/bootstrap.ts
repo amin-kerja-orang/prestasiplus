@@ -9,7 +9,7 @@
  * 1. mock mode: `startMock({ persistence, init: window.__MOCK_INIT__ })` resolves first (in dev
  *    and e2e builds it installs `window.__mock` and applies `__MOCK_INIT__.session`, which writes
  *    `pp.auth`); http mode: the fetch transport;
- * 2. `installTransport(withSessionSliding(transport))` (BR-06 client sliding);
+ * 2. `installTransport(withSessionSliding(transport))` (BR-06 client sliding; http mode also `withFeatureRefresh`);
  * 3. Pinia, then `useSessionStore()` once (restores `pp.auth`, wires the token and 401 hook);
  * 4. the router from the module registry, then the 401 redirect to `/login`;
  * 5. mount.
@@ -23,7 +23,7 @@ import type { Router, RouterHistory } from 'vue-router'
 import { createHttpTransport, installTransport, isHttpMode, type Transport } from '@/api'
 import type { BootMockOptions, MockRuntime } from '@/mock'
 import { useSessionStore, withSessionSliding } from '@/stores'
-import { restoreHttpSession, storedCsrfToken } from '@/stores/http-session'
+import { restoreHttpSession, storedCsrfToken, withFeatureRefresh } from '@/stores/http-session'
 import { readStoredSession } from '@/stores/session'
 import { uiLocale, uiLocaleKey } from '@/theme/locale-ms'
 
@@ -109,7 +109,8 @@ async function createTransport(
 
 export async function bootstrap(options: BootstrapOptions = {}): Promise<BootstrappedApp> {
   const { transport, mockRuntime, mockReady } = await createTransport(options.mock)
-  installTransport(withSessionSliding(transport))
+  // http mode: a 404 under an OFF-able api prefix re-reads `GET /api/session` so the menu follows (S0-T10).
+  installTransport(withSessionSliding(isHttpMode() ? withFeatureRefresh(transport) : transport))
   // A stored session is judged by the shared clock. In the deferred demo boot that clock is still
   // the real one (the mock clock is anchored in the past and restored only when the mock is ready),
   // so every stored session would look expired and a reload would log the user out. Wait for the

@@ -100,5 +100,7 @@ export const AUDIT_ACTIONS = {
   HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
   // S10-T02: Bilangan OTR changed in Tetapan (CF-05 deletes the marks above the new count in the same transaction).
   HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
+  // S0-T10 Kawalan Ciri: detail { key, old, new }.
+  FEATURE_FLAG_TOGGLED: 'feature_flag.toggled',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

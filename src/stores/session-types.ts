@@ -69,6 +69,8 @@ export interface ClientSession {
   csrf?: string
   /** Real API only: the account must change its password first (AM2-A1, DV-26). Absent = false. */
   mustChangePassword?: boolean
+  /** Real API only (S0-T10): server feature flags of `GET /api/session`; a key that is absent counts as ON. */
+  features?: Record<string, boolean>
   /** Only on an impersonated session (XR-M27-21): the actor and the path "Kembali ke Admin" uses. */
   impersonator?: { id: number; name: string; returnTo: string }
   /** Only in Mod Pelajar (v2-portals US-07): the admin session parked while the student view is open. */

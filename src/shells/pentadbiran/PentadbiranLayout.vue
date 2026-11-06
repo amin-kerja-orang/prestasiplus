@@ -53,7 +53,7 @@ useShellTabTitle(computed(() => (entity.value ? `${entity.value} · ${title.valu
 // Crumbs = the sidebar group of the active screen, generated from menu.ts.
 const crumbs = computed(() => {
   const g = activeGroupDef.value
-  if (!g || g.label === title.value) return []
+  if (!g?.label || g.label === title.value) return []
   return [g.label]
 })
 const initials = computed(
@@ -73,7 +73,7 @@ const groups = computed(() =>
 )
 // A folded section (Kirkpatrick) is one sidebar row; its pages are tabs above the content.
 const tabs = computed(() => {
-  const sub = current.value?.sub
+  const sub = current.value?.nested ? undefined : current.value?.sub
   return sub
     ? sectionTabs(PENTADBIRAN_MENU, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
     : []

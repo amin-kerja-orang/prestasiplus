@@ -7,7 +7,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell, isMobileWidth } from '../support'
+import { expectNoHorizontalScroll, isMobileWidth } from '../support'
 import { HTTP_MODE } from './bijak-flow'
 
 test.skip(
@@ -21,12 +21,9 @@ test.skip(
 
 const TITLE = 'Kertas UAT Terbit'
 
-/** Admin Pusat -> Pembina Kertas through the Pentadbiran menu (drawer below 1024 px). */
+/** Admin Pusat -> Pembina Kertas by URL (S0-T07: it has no sidebar entry; Set Builder replaces it in the menu). */
 async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
-  await gotoApp('/admin/command-center')
-  if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
-  const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
-  await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
+  await gotoApp('/admin/spm/kertas')
   await expect(page.getByTestId('papers-page')).toBeVisible()
   await expectNoHorizontalScroll(page)
 }

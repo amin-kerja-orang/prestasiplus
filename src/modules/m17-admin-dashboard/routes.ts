@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import analytics from './routes/analytics'
 import commandCenter from './routes/command-center'
 import dashboard from './routes/dashboard'
+import featureToggles from './routes/feature-toggles'
 import laporan from './routes/laporan'
 import laporanEksekutif from './routes/laporan-eksekutif'
 import monitoring from './routes/monitoring'
@@ -15,6 +16,7 @@ const routes: RouteRecordRaw[] = [
   ...analytics,
   ...commandCenter,
   ...dashboard,
+  ...featureToggles,
   ...laporan,
   ...laporanEksekutif,
   ...monitoring,
