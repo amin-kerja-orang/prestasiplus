@@ -31,6 +31,8 @@ import {
   type MockResponse,
   type RouteDef,
 } from '@/mock/define'
+import { DIAGRAM_AUDIT_MESSAGES } from '@pp/contract'
+
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
@@ -55,8 +57,8 @@ import {
 
 /** SRS §8 S11 flashes (UNVERIFIED COPY). */
 export const DIAGRAM_UPLOADED_TEXT = 'Gambar rajah berjaya dimuat naik.'
-export const DIAGRAM_SUBMITTED_TEXT = 'Gambar dihantar untuk semakan.'
-export const DIAGRAM_ALREADY_PENDING = 'Gambar untuk soalan ini sedang menunggu semakan.'
+export const DIAGRAM_SUBMITTED_TEXT = DIAGRAM_AUDIT_MESSAGES.submittedForReview
+export const DIAGRAM_ALREADY_PENDING = DIAGRAM_AUDIT_MESSAGES.alreadyPending
 export const DIAGRAM_DISMISSED_TEXT = 'Soalan telah dikeluarkan daripada senarai audit.'
 /** SRS §5 (S11 `image`) and the S2 image rule. */
 export const DIAGRAM_FILE_REQUIRED = 'Sila pilih fail gambar.'
