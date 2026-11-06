@@ -63,7 +63,7 @@ export class GamificationModule implements OnModuleInit {
     this.performance.provideGamification(this.gamificationRead)
     // D-13: the games' syiling follows `games_award_syiling` (seed 0 = XP only) instead of the never-earning default.
     this.gamesPorts.provideRewards(this.gamesRewards)
-    // XR-M14-02(b): a self-registration with a referral code pays the new user 25 and the referrer 50, in the registration transaction.
+    // XR-M14-02(b): a self-registration of a pupil with a referral code pays the amounts of the referral settings, in the registration transaction.
     this.accountPorts.provideRegistrationHook(this.registrationHook)
     // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
     this.authPorts.provideLoginHook(this.loginHook)

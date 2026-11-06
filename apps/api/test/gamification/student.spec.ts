@@ -216,17 +216,42 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
   })
 
   describe('GET /api/gamification/referral (S16)', () => {
-    it('the first read creates a stable 7-character code; links as the live site (only spaces encoded); stats 0 / 0 / 0', async () => {
+    const walletOf2 = async (userId: string) => (await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [userId]))[0]
+    const referralRow = async (refereeId: string) =>
+      (await t.db.query<{ referrer_id: string; rewarded: boolean }>(`select referrer_id::text, rewarded from referrals where referee_id = $1::bigint`, [refereeId]))[0]
+    /** Syiling the badges paid (a referrer's lifetime total can cross a badge after the reward: FR-GM-25.2, its own ledger row). */
+    const badgeSyilingOf = async (userId: string): Promise<number> =>
+      Number((await t.db.query<{ n: string }>(`select coalesce(sum(amount), 0)::text as n from coin_ledger where user_id = $1::bigint and source = 'achievement'`, [userId]))[0]!.n)
+    const ledgerOf = (userId: string) => t.db.query<{ amount: number; source_id: string }>(`select amount, source_id from coin_ledger where user_id = $1::bigint and source = 'referral'`, [userId])
+    /** A setting row for the test; the reader answers the 48 section 2 default for a key with no row. */
+    const setSetting = (key: string, value: number) =>
+      t.db.query(`insert into gamification_settings (key, value, label) values ($1, $2, 'ujian') on conflict (key) do update set value = excluded.value`, [key, value])
+    const unsetSetting = (key: string) => t.db.query(`delete from gamification_settings where key = $1`, [key])
+    /** A fresh referrer pupil with a code. */
+    const pupilWithCode = async (label: string) => {
+      const id = await bareStudent(t, label)
+      return { id, code: (await t.gamification.referral(id)).code }
+    }
+
+    it('FR-GM-24.3, AC-GM-24.5, AC-MUR-36-5: the first read creates a stable 8-character code; rewards and cap are the settings (100 / 0 / 20); links as the live site; stats 0 / 0 / 0', async () => {
       const a = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       const again = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       const other = GamificationReferralSchema.parse(dataOf(await maju.get('/gamification/referral')))
-      expect(a.code).toMatch(/^[A-Z0-9]{7}$/)
+      expect(a.code).toMatch(/^[A-Z0-9]{8}$/)
       expect(again.code).toBe(a.code)
       expect(other.code).not.toBe(a.code)
-      expect(a).toMatchObject({ rewardReferrer: 50, rewardReferee: 25, registerUrl: `https://app.example.test/register?ref=${a.code}`, stats: { referrals: 0, rewarded: 0, syilingEarned: 0 } })
-      expect(a.whatsappUrl).toBe(`https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}%20untuk%20dapat%2025%20syiling%20PERCUMA!%20https://app.example.test/register?ref=${a.code}`)
+      expect(a).toMatchObject({ rewardReferrer: 100, rewardReferee: 0, maxRewarded: 20, registerUrl: `https://app.example.test/register?ref=${a.code}`, stats: { referrals: 0, rewarded: 0, syilingEarned: 0 } })
+      expect(a.whatsappUrl).toBe(`https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}!%20https://app.example.test/register?ref=${a.code}`)
       expect(a.telegramUrl).toBe(`https://t.me/share/url?url=${encodeURIComponent(a.registerUrl)}&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%20${a.code}`)
       expect(await t.db.query(`select 1 from referral_codes where user_id = $1`, [await userIdOf(t.db, STUDENT)])).toHaveLength(1)
+    })
+
+    it('a code stored before (7 characters) is kept and still applies', async () => {
+      const id = await bareStudent(t, 'Kod Lama')
+      await t.db.query(`insert into referral_codes (user_id, code) values ($1::bigint, 'OLD7CHR')`, [id])
+      expect((await t.gamification.referral(id)).code).toBe('OLD7CHR')
+      const friend = await bareStudent(t, 'Kawan Kod Lama')
+      expect(await t.gamification.applyReferral(friend, 'old7chr', { isTest: false })).toEqual({ applied: true })
     })
 
     it('parallel first reads of one user store ONE code', async () => {
@@ -236,26 +261,136 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await t.db.query(`select 1 from referral_codes where user_id = $1`, [id])).toHaveLength(1)
     })
 
-    it('stats follow the referrals: a rewarded referral pays 25 to the new user and 50 to the referrer, once', async () => {
+    it('FR-GM-24.1, FR-GM-24.2, AC-GM-24.1, AC-GM-24.2, AC-MUR-36-1, AC-MUR-36-2: a new pupil with a pupil code pays the referrer 100 once and the friend nothing (0 writes no ledger row)', async () => {
       const referrer = await userIdOf(t.db, STUDENT)
       const code = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral'))).code
-      const friend = await bareUser(t, 'Kawan Baru')
+      const friend = await bareStudent(t, 'Kawan Baru')
       expect(await t.gamification.applyReferral(friend, ` ${code.toLowerCase()} `, { isTest: false })).toEqual({ applied: true })
       expect(await t.gamification.applyReferral(friend, code, { isTest: false })).toEqual({ applied: false }) // referred once
-      expect(await t.gamification.applyReferral(await bareUser(t, 'Diri'), 'NOSUCH1', { isTest: false })).toEqual({ applied: false })
+      expect(await t.gamification.applyReferral(await bareStudent(t, 'Diri'), 'NOSUCH12', { isTest: false })).toEqual({ applied: false })
       expect(await t.gamification.applyReferral(referrer, code, { isTest: false })).toEqual({ applied: false }) // not your own code
-      expect((await walletOf2(friend)).current_syiling).toBe(25)
-      // 370 + 50 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
+      expect(await walletOf2(friend)).toBeUndefined()
+      expect(await ledgerOf(friend)).toEqual([])
+      // 370 + 100 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
       const badges = await t.db.query<{ amount: number; description: string }>(`select amount, description from coin_ledger where user_id = $1 and source = 'achievement'`, [referrer])
       expect(badges).toEqual([{ amount: 10, description: 'Pencapaian: Pengumpul Syiling' }])
-      expect((await walletOf2(referrer)).current_syiling).toBe(420 + 10)
+      expect((await walletOf2(referrer))!.current_syiling).toBe(470 + 10)
+      expect(await ledgerOf(referrer)).toEqual([{ amount: 100, source_id: `referral:${friend}` }])
       const r = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
-      expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 50 })
+      expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 100 })
     })
 
-    async function walletOf2(userId: string) {
-      return (await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [userId]))[0]!
-    }
+    it('AC-GM-24.5, AC-MUR-36-5: a changed setting is read on the next call (80 for the referrer, 10 for the friend) and shown on the page', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Tetapan')
+      await setSetting('referral_referrer_syiling', 80)
+      await setSetting('referral_referee_syiling', 10)
+      try {
+        const view = await t.gamification.referral(referrer)
+        expect(view).toMatchObject({ rewardReferrer: 80, rewardReferee: 10 })
+        expect(decodeURIComponent(view.whatsappUrl)).toContain(`Guna kod ${code} untuk dapat 10 syiling PERCUMA!`)
+        const friend = await bareStudent(t, 'Kawan Tetapan')
+        expect(await t.gamification.applyReferral(friend, code, { isTest: false })).toEqual({ applied: true })
+        expect((await walletOf2(referrer))!.current_syiling).toBe(80)
+        expect((await walletOf2(friend))!.current_syiling).toBe(10)
+        expect(await ledgerOf(friend)).toEqual([{ amount: 10, source_id: `referral:${friend}` }])
+        expect((await t.gamification.referral(referrer)).stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 80 })
+      } finally {
+        await unsetSetting('referral_referrer_syiling')
+        await unsetSetting('referral_referee_syiling')
+      }
+    })
+
+    it('FR-GM-24.2, AC-GM-24.3, AC-MUR-36-5: beyond referral_max_rewarded the referral is stored with rewarded = false and nothing is paid', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Had')
+      await setSetting('referral_max_rewarded', 2)
+      try {
+        const friends = await Promise.all([1, 2, 3].map((n) => bareStudent(t, `Kawan Had ${String(n)}`)))
+        for (const f of friends) expect(await t.gamification.applyReferral(f, code, { isTest: false })).toEqual({ applied: true })
+        expect((await Promise.all(friends.map((f) => referralRow(f)))).map((r) => r?.rewarded)).toEqual([true, true, false])
+        expect(await ledgerOf(friends[2]!)).toEqual([])
+        expect((await walletOf2(referrer))!.current_syiling).toBe(200 + (await badgeSyilingOf(referrer)))
+        const view = await t.gamification.referral(referrer)
+        expect(view.maxRewarded).toBe(2)
+        expect(view.stats).toEqual({ referrals: 3, rewarded: 2, syilingEarned: 200 })
+        expect(await t.gamification.applyReferral(friends[2]!, code, { isTest: false })).toEqual({ applied: false }) // once per friend, still
+      } finally {
+        await unsetSetting('referral_max_rewarded')
+      }
+    })
+
+    it('FR-GM-24.2: the cap holds when sign-ups arrive at the same time (the referrer row is locked before the count)', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Serentak')
+      await setSetting('referral_max_rewarded', 3)
+      try {
+        const friends = await Promise.all(Array.from({ length: 8 }, (_, n) => bareStudent(t, `Kawan Serentak ${String(n)}`)))
+        const out = await Promise.all(friends.map((f) => t.gamification.applyReferral(f, code, { isTest: false })))
+        expect(out.every((o) => o.applied)).toBe(true)
+        const rows = await Promise.all(friends.map((f) => referralRow(f)))
+        expect(rows.every((r) => r !== undefined)).toBe(true) // every unrewarded referral is still stored
+        expect(rows.filter((r) => r?.rewarded)).toHaveLength(3)
+        expect(rows.filter((r) => r && !r.rewarded)).toHaveLength(5)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100 + (await badgeSyilingOf(referrer)))
+        expect(await ledgerOf(referrer)).toHaveLength(3)
+      } finally {
+        await unsetSetting('referral_max_rewarded')
+      }
+    })
+
+    it('referralSyilingEarned counts only the referrer\'s own referral rows (2 rewarded, 1 unrewarded; a referee bonus and a non-referral row are ignored)', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Jumlah')
+      await setSetting('referral_max_rewarded', 2)
+      await setSetting('referral_referee_syiling', 7)
+      try {
+        const friends = await Promise.all([1, 2, 3].map((n) => bareStudent(t, `Kawan Jumlah ${String(n)}`)))
+        for (const f of friends) await t.gamification.applyReferral(f, code, { isTest: false })
+        // The referrer is a referee of somebody else too: that bonus has the same source but is not theirs to count.
+        const up = await pupilWithCode('Rujuk Atas')
+        await t.gamification.applyReferral(referrer, up.code, { isTest: false })
+        await t.wallet.credit({ userId: referrer, amount: 40, source: 'quiz_practice', sourceId: 'sum-other', description: 'Latih Tubi: 40 betul', isTest: false })
+        expect((await ledgerOf(referrer)).map((r) => r.amount).sort((x, y) => x - y)).toEqual([7, 100, 100])
+        expect((await t.gamification.referral(referrer)).stats).toEqual({ referrals: 3, rewarded: 2, syilingEarned: 200 })
+      } finally {
+        await unsetSetting('referral_max_rewarded')
+        await unsetSetting('referral_referee_syiling')
+      }
+    })
+
+    it('share text: a friend reward above 0 keeps the live clause; at 0 the clause is dropped', async () => {
+      const { id, code } = await pupilWithCode('Rujuk Teks')
+      expect(decodeURIComponent((await t.gamification.referral(id)).whatsappUrl)).not.toContain('syiling PERCUMA')
+      await setSetting('referral_referee_syiling', 5)
+      try {
+        expect(decodeURIComponent((await t.gamification.referral(id)).whatsappUrl)).toContain(`Guna kod ${code} untuk dapat 5 syiling PERCUMA!`)
+      } finally {
+        await unsetSetting('referral_referee_syiling')
+      }
+    })
+
+    it('FR-GM-24.2: new pupils only, referred by pupils only (R6): a referee, a teacher referrer or an admin referrer that is not a pupil earns nothing and no referral is stored', async () => {
+      const { id: referrer, code } = await pupilWithCode('Rujuk Murid')
+      const notPupil = await bareUser(t, 'Bukan Murid')
+      expect(await t.gamification.applyReferral(notPupil, code, { isTest: false })).toEqual({ applied: false })
+      expect(await referralRow(notPupil)).toBeUndefined()
+
+      const teacherId = await userIdOf(t.db, TEACHER)
+      const teacherCode = (await t.gamification.referral(teacherId)).code
+      const friend = await bareStudent(t, 'Kawan Guru')
+      expect(await t.gamification.applyReferral(friend, teacherCode, { isTest: false })).toEqual({ applied: false })
+      expect(await referralRow(friend)).toBeUndefined()
+      expect(await ledgerOf(friend)).toEqual([])
+      expect(await ledgerOf(referrer)).toEqual([])
+
+      // An ADMIN referrer (also what a Mod Pelajar test actor is): no referral stored, nothing paid to either side.
+      const adminId = await userIdOf(t.db, ADMIN)
+      const adminCode = (await t.gamification.referral(adminId)).code
+      const adminBefore = (await walletOf2(adminId))?.current_syiling
+      const friend2 = await bareStudent(t, 'Kawan Admin')
+      expect(await t.gamification.applyReferral(friend2, adminCode, { isTest: false })).toEqual({ applied: false })
+      expect(await referralRow(friend2)).toBeUndefined()
+      expect(await ledgerOf(friend2)).toEqual([])
+      expect(await ledgerOf(adminId)).toEqual([])
+      expect((await walletOf2(adminId))?.current_syiling).toBe(adminBefore)
+    })
   })
 
   describe('GET /api/gamification/convert (S12)', () => {

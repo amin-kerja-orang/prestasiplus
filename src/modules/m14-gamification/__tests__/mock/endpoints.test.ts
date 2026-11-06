@@ -462,7 +462,7 @@ describe('#10 share cards', () => {
 })
 
 describe('#11 referral', () => {
-  it('admin: the observed code 4JURJTT, 50 / 25, share links, statistics 0 / 0 / 0', async () => {
+  it('admin: the observed code 4JURJTT, 100 / 0, share links, statistics 0 / 0 / 0', async () => {
     const d = dataOf<{
       code: string
       whatsappUrl: string
@@ -471,27 +471,28 @@ describe('#11 referral', () => {
     }>(await get('/api/gamification/referral', admin))
     expect(d).toMatchObject({
       code: '4JURJTT',
-      rewardReferrer: 50,
-      rewardReferee: 25,
+      rewardReferrer: 100,
+      rewardReferee: 0,
+      maxRewarded: 20,
       registerUrl: 'https://prestasiplus.my/register?ref=4JURJTT',
       stats: { referrals: 0, rewarded: 0, syilingEarned: 0 },
     })
     expect(decodeURIComponent(d.whatsappUrl)).toBe(
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     )
     // Exactly the live hrefs (S16-referral.json): only spaces encoded, `:/?=&!` raw.
     expect(d.whatsappUrl).toBe(
-      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT%20untuk%20dapat%2025%20syiling%20PERCUMA!%20https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT!%20https://prestasiplus.my/register?ref=4JURJTT',
     )
     expect(d.telegramUrl).toBe(
       'https://t.me/share/url?url=https://prestasiplus.my/register?ref=4JURJTT&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT',
     )
   })
 
-  it('every other user gets a stable 7-character code', async () => {
+  it('every other user gets a stable 8-character code', async () => {
     const a = dataOf<{ code: string }>(await get('/api/gamification/referral', pelajar)).code
     const b = dataOf<{ code: string }>(await get('/api/gamification/referral', pelajar)).code
-    expect(a).toMatch(/^[A-Z0-9]{7}$/)
+    expect(a).toMatch(/^[A-Z0-9]{8}$/)
     expect(b).toBe(a)
     expect(a).not.toBe('4JURJTT')
   })
