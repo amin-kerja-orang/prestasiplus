@@ -497,7 +497,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     expect(BijakBuilderPaperPatchSchema.safeParse({ durationMin: 0 }).success).toBe(false)
     const r = BijakBuilderPaperPatchSchema.safeParse({ title: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.titleRequired)
+    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.setTitleRequired)
   })
 })
 
@@ -534,6 +534,23 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
     expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(31) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT + S3-T06's TOTAL_MARKS_MISMATCH, NO_SCHEME
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'MARKS_NOT_IN_CONTRACT', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
+  })
+
+  it('S3-T01: nothing is overridable under a Disahkan Kontrak; under any other Kontrak the map decides', () => {
+    for (const code of BIJAK_BUILDER_BLOCKER_CODES) {
+      expect(bijakBuilderBlockerOverridable(code, true), code).toBe(false)
+      expect(bijakBuilderBlockerOverridable(code, false), code).toBe(BIJAK_BUILDER_BLOCKER_OVERRIDABLE[code])
+    }
+  })
+
+  it('S3-T01: the exact BM strings of the Kontrak rules and the exception reason', () => {
+    expect(BIJAK_BUILDER_MESSAGES.dskpNotLoaded).toBe('DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.')
+    expect(BIJAK_BUILDER_MESSAGES.compulsoryChoose).toBe('Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.')
+    expect(BIJAK_BUILDER_MESSAGES.chooseNRange).toBe('Nombor N tidak sah.')
+    expect(BIJAK_BUILDER_MESSAGES.marksPerQuestionMismatch).toBe('Markah setiap soalan mesti sama dengan markah bahagian.')
+    expect(BIJAK_BUILDER_MESSAGES.overrideReasonRequired).toBe('Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).')
+    const short = BijakBuilderPublishRequestSchema.safeParse({ override: true, reason: 'abc' })
+    expect(short.error?.issues[0]?.message).toBe(BIJAK_BUILDER_MESSAGES.overrideReasonRequired)
   })
 
   it('S3-T01: nothing is overridable under a Disahkan Kontrak; under any other Kontrak the map decides', () => {
@@ -1027,7 +1044,7 @@ describe('openapi document', () => {
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.paperLocked)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidQuestion)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidSection)
-    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
+    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.setTitleRequired)
     expect(text('/admin/papers/{id}', 'put')).toContain('subject check only')
     expect(text('/admin/papers/{id}', 'put')).toContain('Checks run in the mock order')
     expect(text('/admin/papers/{id}', 'delete')).toContain(BIJAK_BUILDER_MESSAGES.deleteTerbit)

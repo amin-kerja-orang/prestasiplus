@@ -28,8 +28,7 @@ import {
   GamesLeagueCreateRequestSchema,
   GamesLeagueDetailSchema,
   GamesLeagueGameModeSchema,
-  GamesLeagueIdResultSchema,
-  GamesLeagueJoinRequestSchema,
+  GamesLeagueEnrolRequestSchema,
   GamesLeagueListSchema,
   GamesLeagueScopeSchema,
   GamesLeagueScoringSchema,
@@ -38,9 +37,6 @@ import {
   GamesLeagueTypeSchema,
   GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaingSchema,
 } from './leagues'
 import {
   GamesBoardTileSchema,
@@ -201,15 +197,11 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesLeagueCard: GamesLeagueCardSchema,
   GamesLeagueList: GamesLeagueListSchema,
   GamesLeagueCreateRequest: GamesLeagueCreateRequestSchema,
-  GamesLeagueIdResult: GamesLeagueIdResultSchema,
-  GamesLeagueJoinRequest: GamesLeagueJoinRequestSchema,
+  GamesLeagueEnrolRequest: GamesLeagueEnrolRequestSchema,
   GamesLeagueStandingRow: GamesLeagueStandingRowSchema,
   GamesLeagueDetail: GamesLeagueDetailSchema,
   GamesSekolahBersaingBoardRow: GamesSekolahBersaingBoardRowSchema,
   GamesSekolahBersaingBoard: GamesSekolahBersaingBoardSchema,
-  GamesSekolahBersaingQuery: GamesSekolahBersaingQuerySchema,
-  GamesSekolahBersaingRow: GamesSekolahBersaingRowSchema,
-  GamesSekolahBersaing: GamesSekolahBersaingSchema,
   // admin
   GamesAdminOverview: GamesAdminOverviewSchema,
   GamesAdminSettingsUpdateRequest: GamesAdminSettingsUpdateRequestSchema,
@@ -663,15 +655,15 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Create a league (M16-47)',
     description:
-      'Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.',
+      'Admin Pusat only (API-ADM-25). The league is upcoming with an 8-character invite code (A-Z0-9) kept internally; no school joins on create (enrol with `/leagues/{id}/schools`). Body `{ name, type (friendly|league), scope, mode, scoring, schoolLimit 2..500, subjectId?, levelIds 1..5, start, end }`. Success is 201 with the league detail.',
     request: { headers: [csrf], body: body(GamesLeagueCreateRequestSchema) },
     responses: {
       429: RATE_LIMITED,
-      201: json(envelopeOf(GamesLeagueIdResultSchema), 'League created.'),
+      201: json(envelopeOf(GamesLeagueDetailSchema), 'League created: the league detail (as GET /leagues/{id}).'),
       401: UNAUTHORIZED,
-      403: CSRF_INVALID,
+      403: FORBIDDEN_ADMIN_WRITE,
       422: err(
-        'VALIDATION_ERROR, top-level message = the first field message: "Sila lengkapkan semua medan wajib." (name, type, scope, game_mode, scoring_method, start_date, end_date), "Tarikh tamat mesti selepas tarikh mula." (end_date), "Had sekolah mesti antara 2 dan 500." (max_schools), "Mata pelajaran tidak sah." (subject_id), "Tingkatan tidak sah." (class_levels).',
+        'VALIDATION_ERROR, `fields` keyed by the body names, top-level message = the first failing field in form order (name, type, scope, mode, scoring, schoolLimit, subjectId, levelIds, start, end): "Sila lengkapkan semua medan wajib." (missing), "Format tidak sah." (type, scope, mode, scoring), "Had sekolah mesti antara 2 dan 500." (schoolLimit), "Mata pelajaran tidak sah." (subjectId), "Tingkatan tidak sah." (levelIds), "Tarikh tamat mesti selepas tarikh mula." (end).',
       ),
     },
   })
@@ -680,16 +672,29 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/leagues/join',
     tags: TAGS,
-    summary: 'Join a league by invite code (M16-48)',
-    description: 'The caller school joins. Static path: wins over `/leagues/{id}`.',
-    request: { headers: [csrf], body: body(GamesLeagueJoinRequestSchema) },
+    summary: 'Join a league by invite code (M16-48): closed in R1',
+    description:
+      'Unused in R1 (API-GAME-05): answers 403 FORBIDDEN for every role (AC-GM-15.2). Admin Pusat enrols schools with `/leagues/{id}/schools`. Static path: wins over `/leagues/{id}`.',
+    request: { headers: [csrf] },
+    responses: { 429: RATE_LIMITED, 401: UNAUTHORIZED, 403: FORBIDDEN_CSRF_OR('"Anda tidak dibenarkan melakukan tindakan ini." (every role)') },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/leagues/{id}/schools',
+    tags: TAGS,
+    summary: 'Enrol schools in a league (API-ADM-25)',
+    description:
+      'Admin Pusat only (FR-GM-15.1). Enrols the given schools, all or nothing, once per school, before the league ends and while schools < max_schools. Returns the league detail.',
+    request: { params: LeagueParams, headers: [csrf], body: body(GamesLeagueEnrolRequestSchema) },
     responses: {
       429: RATE_LIMITED,
-      200: json(envelopeOf(GamesLeagueIdResultSchema), 'Joined.'),
+      200: json(envelopeOf(GamesLeagueDetailSchema), 'Enrolled; the league detail.'),
       401: UNAUTHORIZED,
-      403: CSRF_INVALID,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND "Liga tidak dijumpai.".'),
       422: err(
-        'VALIDATION_ERROR with fields.invite_code: "Kod jemputan tidak sah.", "Liga ini sudah tamat.", "Anda perlu mempunyai sekolah untuk menyertai liga ini.", "Sekolah anda sudah menyertai liga ini.", "Liga ini sudah penuh.".',
+        'VALIDATION_ERROR with fields.schoolIds (the first failing school in the given order): "Liga ini sudah tamat.", "Sekolah ini sudah menyertai liga ini.", "Liga ini sudah penuh.", or "Sila pilih sekolah." (empty or missing list), "Format sekolah tidak sah." (non-numeric or unknown school id). A school already enrolled or repeated in the body is "Sekolah ini sudah menyertai liga ini."; nothing is written on any failure.',
       ),
     },
   })
@@ -699,10 +704,10 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/leagues/{id}',
     tags: TAGS,
     summary: 'League detail (M16-49)',
-    description: 'The invite code and share link are visible to non-members, as live.',
+    description: 'The league with its member schools and stored standings.',
     request: { params: LeagueParams },
     responses: {
-      200: noStore(envelopeOf(GamesLeagueDetailSchema), 'League detail with the invite code; Cache-Control: no-store.'),
+      200: noStore(envelopeOf(GamesLeagueDetailSchema), 'League detail; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err('NOT_FOUND "Liga tidak dijumpai.".'),
     },
@@ -714,11 +719,14 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/sekolah-bersaing',
     tags: TAGS,
-    summary: 'Sekolah Bersaing weekly board (M16-50)',
+    summary: 'Sekolah Bersaing live board (API-AS-14)',
     description:
-      'National board, no school scope. `week`: a valid YYYY-MM-DD selects the Monday of that week; anything else the current week; never an error. An anonymous row shows "Sekolah anonim".',
-    request: { query: GamesSekolahBersaingQuerySchema },
-    responses: { 200: json(envelopeOf(GamesSekolahBersaingSchema), 'Weekly snapshot.'), 401: UNAUTHORIZED },
+      'National board, no school scope, computed on request. School admin and admin only. Top 30 schools by mean session accuracy; ties by pupils, sessions, school name. An unknown query parameter is ignored.',
+    responses: {
+      200: json(envelopeOf(GamesSekolahBersaingBoardSchema), 'Rank order; [] when no school has a session.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN "This action is unauthorized." (role is not school_admin or admin).'),
+    },
   })
 
   // ---- admin game settings -----------------------------------------------------------------------------------

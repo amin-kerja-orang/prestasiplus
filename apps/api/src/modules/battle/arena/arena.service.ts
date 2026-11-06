@@ -43,9 +43,9 @@ export class ArenaService {
   ) {}
 
   /** M16-15. */
-  async lobby(userId: string) {
+  async lobby(who: { userId: string; role: string }) {
     const deps = this.engine.deps
-    const grade = await deps.gradeOf(userId)
+    const grade = await deps.gradeOf(who.userId)
     const unlocked = grade !== null && grade >= BATTLE_RULES.spmMinGrade
     const subjects = (await deps.subjects()).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1))
     const out = {
@@ -53,7 +53,8 @@ export class ArenaService {
       gradeLabel: gradeLabel(grade),
       spmUnlocked: unlocked,
       subjects: subjects.map((s) => ({ id: s.id, name: s.name, icon: s.icon, colour: s.colour, core: s.core })),
-      pkskDomains: deps.pkskDomains().map((d) => ({ id: d.id, name: d.name, icon: '', colour: '' })),
+      pkskDomains: (await deps.pkskDomains()).map((d) => ({ id: d.id, name: d.name, icon: d.icon, colour: d.colour })),
+      pkskAccess: await deps.pkskAccess(who),
     }
     if (!unlocked) return out
     // Bounded parallelism: a few subjects at a time (the counts are cached by the deps).

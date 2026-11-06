@@ -156,7 +156,7 @@ model QuestionVersion {
   archiveReason String?   @map("archive_reason")
   publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
 
-  /// mcq, match, short, structured, working, essay, drawing, table (check constraint).
+  /// mcq, match, short, structured, working, essay, drawing, table, mcq_multi, true_false, fill_blank (check constraint, migration 0134, DM-69).
   type          String
   stemMs        String? @map("stem_ms")
   stemEn        String? @map("stem_en")
@@ -192,6 +192,14 @@ model QuestionVersion {
   textbookRef       Json?   @map("textbook_ref")
   /// DM-58: why the version was sent back from Semakan to Draf (5..500 characters); cleared on the next send for review.
   rejectionReason   String? @map("rejection_reason")
+  /// DM-42 (migration 0127): bank (default, every served set) or teacher_private (Soalan & Rujukan, Misi Harian only; check constraint).
+  visibility        String  @default("bank") @map("visibility")
+  /// DM-42: FK users(id) ON DELETE RESTRICT (migration SQL); set if and only if visibility = teacher_private (check constraint).
+  ownerUserId       BigInt? @map("owner_user_id")
+  /// DM-42: http(s) link shown to the pupil as "Rujukan", at most 2048 characters (check constraint).
+  referenceUrl      String? @map("reference_url")
+  /// DM-54: scheme v2 question-level rules (deductions, zeroIf); NULL = none. Migration 0133.
+  schemeRules       Json?   @map("scheme_rules")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt
@@ -242,6 +250,7 @@ model QuestionVersion {
   @@index([unitNodeId], map: "ix_question_versions_unit_node_id")
   @@index([sourcePaperId], map: "ix_question_versions_source_paper_id")
   @@index([contributorId], map: "ix_question_versions_contributor_id")
+  // Partial index in migration 0127 (WHERE visibility = 'teacher_private') is SQL-only: ix_question_versions_owner_private.
   @@map("question_versions")
 }
 
@@ -301,6 +310,8 @@ model QuestionPart {
   /// graph, diagram, sketch (check constraint).
   drawingKind       String?  @map("drawing_kind")
   tableGrid         Json?    @map("table_grid") @db.JsonB
+  /// DM-55: per-part answer-mode settings (maxWords, wordRange, answerTemplate, multi, example, ...); NULL = defaults. Migration 0133.
+  modeConfig        Json?    @map("mode_config")
   stimulusId        BigInt?  @map("stimulus_id")
   choiceGroup       String?  @map("choice_group")
   /// after_submit, never (check constraint).

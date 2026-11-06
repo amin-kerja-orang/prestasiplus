@@ -192,7 +192,7 @@ export class BlueprintsService {
     assertRuleBounds(body.sections)
     const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
     if (!subject) throw ApiError.of('VALIDATION_ERROR', { fields: { subject: INVALID_FIELD_MESSAGE } })
-    if (!(await this.repo.hasDskpUnit(subject.id))) throw ApiError.of('VALIDATION_ERROR', { message: MSG.dskpNotLoaded, fields: { subject: MSG.dskpNotLoaded } })
+    if (!(await this.repo.isOfferedSubject(subject.id))) throw ApiError.of('VALIDATION_ERROR', { message: MSG.dskpNotLoaded, fields: { subject: MSG.dskpNotLoaded } })
     if (body.kertas > KERTAS_MAX) throw ApiError.of('VALIDATION_ERROR', { fields: { kertas: INVALID_FIELD_MESSAGE } })
     const exists = () => ApiError.of('CONFLICT', { message: MSG.blueprintExists })
     const reference = await this.checkedReference(actor, body.reference, [])

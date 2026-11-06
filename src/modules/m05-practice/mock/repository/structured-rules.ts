@@ -6,7 +6,7 @@
 import type { SpmGrade } from '../datasets/types'
 
 /** Structured list page size (BR-23). */
-export const STRUCTURED_PAGE_SIZE = 20
+export const STRUCTURED_PAGE_SIZE = 12
 
 /** §6.10 "KBAT levels (S10)": a valid `kbatLevel` is 1–6; anything else matches nothing (§5). */
 export const KBAT_LEVELS = [1, 2, 3, 4, 5, 6] as const

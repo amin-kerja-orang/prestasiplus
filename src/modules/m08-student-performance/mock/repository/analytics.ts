@@ -68,6 +68,17 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
   const byWeakness = (a: SpRecordRow, b: SpRecordRow) =>
     pct(a.correct, a.answered) - pct(b.correct, b.answered) || a.seq - b.seq
 
+  // R1-MUR-5 FR-MUR-5-2: a tab for every subject that has an SP map at the pupil's level, practised or not,
+  // plus the subjects with records (observed V2 anchors that have no level keep their tab).
+  const level = userLevelId === null ? undefined : curriculum.level(userLevelId)
+  const mappedSubjectIds = level
+    ? curriculum
+        .subjects({ active: true, educationLevelId: level.id })
+        .filter((sub) => dskp.bidang({ subjectId: sub.id, educationLevelId: level.id }).length > 0)
+        .map((sub) => sub.id)
+    : []
+  for (const id of mappedSubjectIds) if (!bySubject.has(id)) bySubject.set(id, [])
+
   const subjects: AnalyticsSubject[] = [...bySubject.entries()]
     .sort((a, b) => a[0] - b[0])
     .flatMap(([subjectId, list]) => {
@@ -80,12 +91,11 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
       const status = new Map<number, 'mahir' | 'sederhana' | 'lemah'>()
       for (const r of list) {
         if (r.answered === 0) continue
-        const band = spBand(pct(r.correct, r.answered))
+        const band = spBand(Math.round(pct(r.correct, r.answered)))
         counts[band]++
         status.set(r.dskpSpId, band)
       }
       // The DSKP map of the viewer's level: one tile per SP of the subject at that level.
-      const level = userLevelId === null ? undefined : curriculum.level(userLevelId)
       const tiles: AnalyticsSubject['map']['tiles'] = []
       if (level) {
         for (const bidang of dskp.bidang({ subjectId, educationLevelId: level.id })) {
@@ -96,6 +106,7 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
                 code: sp.code,
                 title: sp.description,
                 status: status.get(sp.id) ?? 'belum',
+                strand: bidang.name,
               })
             }
           }
@@ -106,7 +117,7 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
       // DV-13: the ring denominator is the map tile count unless mahir exceeds it.
       const ringTotal = counts.mahir > tiles.length ? answeredSps + counts.belum : tiles.length
       const weak = list
-        .filter((r) => r.answered > 0 && spBand(pct(r.correct, r.answered)) === 'lemah')
+        .filter((r) => r.answered > 0 && spBand(Math.round(pct(r.correct, r.answered))) === 'lemah')
         .sort(byWeakness)
         .flatMap((r) => weakOf(r) ?? [])
       return [
@@ -114,15 +125,16 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
           subjectId,
           name: subject.name,
           code: subject.code,
-          accuracy: round(capPercent(accuracy), 1),
+          // No answers: no figure at all ("—"), never an invented 0 (FR-MUR-5-6).
+          accuracy: answered === 0 ? null : round(capPercent(accuracy), 1),
           answered,
           trend: trendOf(user.id, subjectId, now),
-          projection: projection(accuracy),
+          projection: answered === 0 ? null : projection(accuracy),
           counts,
           ringTotal,
           weak,
           map: {
-            caption: level ? `${level.curriculum} ${subject.name} ${level.name}` : '',
+            caption: level ? `Peta DSKP — Standard Pembelajaran · ${subject.name}` : '',
             tiles,
           },
         },
@@ -130,7 +142,7 @@ export function analyticsOf(user: UserRow, now: number): Analytics {
     })
 
   const topWeak = records
-    .filter((r) => r.answered > 0 && spBand(pct(r.correct, r.answered)) === 'lemah')
+    .filter((r) => r.answered > 0 && spBand(Math.round(pct(r.correct, r.answered))) === 'lemah')
     .sort(byWeakness)
     .flatMap((r) => weakOf(r) ?? [])
     .slice(0, 4)

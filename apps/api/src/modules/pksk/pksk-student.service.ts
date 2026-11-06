@@ -19,6 +19,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
+import { AnswerLogPort } from '../practice'
 import type { PkskActor } from './actor'
 import { invalidAnswers } from './errors'
 import { PkskAccessService } from './pksk-access.service'
@@ -58,6 +59,7 @@ export class PkskStudentService {
     @Inject(PKSK_SHUFFLE) private readonly shuffle: Shuffle,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   /** M07-01. */
@@ -67,13 +69,14 @@ export class PkskStudentService {
 
   /** M07-02. */
   async domainList(): Promise<PkskDomain[]> {
-    const rows = await this.domains.list()
+    const [rows, counts] = await Promise.all([this.domains.list(), this.questions.countApprovedAllLevels()])
     return rows.map((d) => ({
       ...domainRef(d),
       bahagian: d.bahagian,
       nameEn: d.nameEn,
       order: d.order,
       isActive: d.isActive,
+      questionCount: counts[d.code] ?? 0,
       createdAt: toMytTimestamp(d.createdAt),
       updatedAt: toMytTimestamp(d.updatedAt),
     }))
@@ -123,10 +126,11 @@ export class PkskStudentService {
     const domain = await this.domains.byCode(code)
     if (!domain) throw ApiError.of('NOT_FOUND')
     const pool = this.shuffle(await this.questions.approvedPool(level, [domain.code]))
-    await this.progress.markLoaded(actor.userId, level, domain.id, now)
+    const set = pool.slice(0, PRACTICE_SIZE)
+    await this.progress.markLoaded(actor.userId, level, domain.id, now, set.map((q) => q.id))
     return {
       domain: { id: domain.id, code: domain.code as PkskDomain['code'], name: domain.name, bahagian: domain.bahagian },
-      questions: pool.slice(0, PRACTICE_SIZE).map(served),
+      questions: set.map(served),
     }
   }
 
@@ -155,21 +159,42 @@ export class PkskStudentService {
       optionIndex: a.optionIndex ?? null,
     }))
     const masteryPct = Math.round((scored.filter((s) => s.isCorrect).length / scored.length) * 100)
+    const correctCount = scored.filter((s) => s.isCorrect).length
     return this.write(async () => {
+      // Only the served set, and only once: no open set, or an id that was not served, is refused before anything is
+      // scored, stored or revealed (the delete of the load rolls back with the refusal).
       const loaded = await this.progress.takeLoaded(actor.userId, level, domain.id)
+      if (loaded === null) throw invalidAnswers()
+      const servedIds = new Set(loaded.servedIds)
+      if (!answers.every((a) => servedIds.has(a.questionId))) throw invalidAnswers()
       const done = await this.practice.completeDirect({
         userId: actor.userId,
         isTest: actor.isTest,
         domainCode: domain.code,
         level,
-        startedAt: loaded !== null && loaded.getTime() < now.getTime() ? loaded : now,
+        startedAt: loaded.at.getTime() < now.getTime() ? loaded.at : now,
         completedAt: now,
         answers: scored,
       })
       await this.progress.setMastery(actor.userId, level, domain.id, masteryPct, actor.isTest)
+      // Revealed only now: the answers are scored and stored (the served set never carries the key).
+      const review = scored.map((s) => {
+        const key = keys.get(s.questionId) as PkskAnswerKey
+        return {
+          questionId: s.questionId,
+          selectedIndex: domain.bahagian === 'C' ? null : s.optionIndex,
+          // The contract allows one index; a multi-key question reveals its first correct option.
+          correctIndex: domain.bahagian === 'C' ? null : (key.correctIndexes[0] ?? null),
+          isCorrect: s.isCorrect,
+          explanation: key.explanation,
+        }
+      })
       return {
         masteryPct,
         sessionId: done.sessionId,
+        correct: correctCount,
+        total: scored.length,
+        review,
         gamification: {
           coinsEarned: done.coinsEarned,
           pointsEarned: done.pointsEarned,
@@ -180,9 +205,10 @@ export class PkskStudentService {
     })
   }
 
-  /** M07-08: 30 A + 70 B + 1 C approved questions of the level (fewer when the pool is short). Nothing is stored. */
+  /** M07-08: 30 A + 70 B + 1 C approved questions of the level (fewer when the pool is short). Stores only the served ids. */
   async exam(actor: PkskActor, rawLevel: string): Promise<PkskExam> {
-    const level = await this.gate.gate(actor, rawLevel, this.clock.now())
+    const now = this.clock.now()
+    const level = await this.gate.gate(actor, rawLevel, now)
     const domains = await this.domains.list()
     const sections = []
     for (const part of EXAM_PLAN) {
@@ -190,6 +216,7 @@ export class PkskStudentService {
       const pool = this.shuffle(await this.questions.approvedPool(level, codes))
       sections.push({ bahagian: part.bahagian, weightPct: part.weightPct, questions: pool.slice(0, part.count).map(served) })
     }
+    await this.progress.markExamLoaded(actor.userId, level, now, sections.flatMap((s) => s.questions.map((q) => q.id)))
     return { sections }
   }
 
@@ -214,8 +241,14 @@ export class PkskStudentService {
     const pct = (b: PkskBahagian): number => bahagianPct(right[b], (EXAM_PLAN.find((p) => p.bahagian === b) as { count: number }).count)
     const [a, b, c] = [pct('A'), pct('B'), pct('C')] as [number, number, number]
     const scorePct = examScore(a, b, c)
-    const row = await this.write(() =>
-      this.progress.addAttempt({
+    const row = await this.write(async () => {
+      // Only the served set, and only once: no open set, or an id that was not served, is refused before anything is
+      // stored (the delete of the load rolls back with the refusal).
+      const loaded = await this.progress.takeExamLoaded(actor.userId, level)
+      if (loaded === null) throw invalidAnswers()
+      const servedIds = new Set(loaded.servedIds)
+      if (!answers.every((x) => servedIds.has(x.questionId))) throw invalidAnswers()
+      const attempt = await this.progress.addAttempt({
         userId: actor.userId,
         level,
         completedAt: now,
@@ -225,8 +258,28 @@ export class PkskStudentService {
         bahagianCPct: c,
         grade: gradeOf(scorePct),
         isTest: actor.isTest,
-      }),
-    )
+      })
+      // One answer row per exam answer through the single answer store (mode `pksk`); the attempt id is the decimal
+      // `pksk_exam_attempts.id`, which the port maps to a stable uuid. Same transaction as the attempt.
+      for (const x of answers) {
+        const key = keys.get(x.questionId) as PkskAnswerKey
+        const isCorrect = correct(bahagianByCode.get(key.domainCode) as PkskBahagian, key, x)
+        await this.answerLog.record({
+          userId: actor.userId,
+          attemptId: attempt.id,
+          questionId: x.questionId,
+          partRef: null,
+          mode: 'pksk',
+          isCorrect,
+          marksAwarded: isCorrect ? 1 : 0,
+          marksMax: 1,
+          answeredAt: now,
+          isTest: actor.isTest,
+          selectedLabel: x.optionIndex === undefined || x.optionIndex === null ? null : String.fromCharCode(65 + x.optionIndex),
+        })
+      }
+      return attempt
+    })
     return { id: row.id, completedAt: toMytTimestamp(row.completedAt), scorePct: row.scorePct, grade: row.grade }
   }
 

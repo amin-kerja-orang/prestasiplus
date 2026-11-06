@@ -47,7 +47,6 @@ import type {
   HistoryRow,
   InProgressInfo,
   PaperCover,
-  PaperSummary,
   QuestionResult,
   ResultView,
   SaveChange,
@@ -58,7 +57,15 @@ import type {
   SubmitPayload,
 } from '../domain/types'
 import { BijakError } from './errors'
-import type { BijakApi, BijakGenerateOutcome, ContractRow, SaveResult, SubmitResult } from './types'
+import type {
+  BijakApi,
+  BijakGenerateOutcome,
+  ContractRow,
+  ListedPaper,
+  PaperSurface,
+  SaveResult,
+  SubmitResult,
+} from './types'
 
 export interface HttpBijakOptions {
   /** The API client to send through. Default: the app-wide `api` (transport installed by bootstrap). */
@@ -289,8 +296,10 @@ export class HttpBijakServer implements BijakApi {
     return this.subjectList
   }
 
-  listPapers(): Promise<PaperSummary[]> {
-    return this.send<BijakPaperSummary[]>('GET', '/api/bijak/papers')
+  listPapers(_userId?: number, surface: PaperSurface = 'simulasi'): Promise<ListedPaper[]> {
+    // The default list keeps its URL: only the Kertas Subjektif lane adds `?surface`.
+    const query = surface === 'simulasi' ? '' : `?surface=${encodeURIComponent(surface)}`
+    return this.send<BijakPaperSummary[]>('GET', `/api/bijak/papers${query}`)
   }
 
   getCover(_userId: number, paperId: string): Promise<PaperCover> {
@@ -377,23 +386,30 @@ export class HttpBijakServer implements BijakApi {
     await this.send<null>('POST', `/api/bijak/attempts/${encodeURIComponent(attemptId)}/abandon`)
   }
 
-  checkQuestion(
+  async checkQuestion(
     _userId: number,
     attemptId: string,
     questionId: string,
     payload?: SavePayload,
   ): Promise<QuestionResult> {
-    return this.send<BijakAttemptQuestionResult>(
-      'POST',
-      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}/check`,
-      payload ? payloadToWire(payload) : undefined,
-    ).then(questionFromWire)
+    try {
+      const wire = await this.exec<BijakAttemptQuestionResult>(
+        'POST',
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}/check`,
+        payload ? payloadToWire(payload) : undefined,
+      )
+      return questionFromWire(wire)
+    } catch (e) {
+      // 422 VALIDATION_ERROR fields.questionId "Jawab dahulu sebelum menyemak." (a blank Semak): the mock's bad_request with the same line.
+      if (e instanceof ApiError && e.status === 422 && e.fields?.questionId) throw new BijakError('bad_request', e.fields.questionId)
+      throw toBijakError(e)
+    }
   }
 
-  async getResult(_userId: number, attemptId: string): Promise<ResultView> {
+  async getResult(_userId: number, attemptId: string, withScheme = false): Promise<ResultView> {
     const wire = await this.send<BijakAttemptResultView>(
       'GET',
-      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/result`,
+      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/result${withScheme ? '?scheme=1' : ''}`,
     )
     return {
       attempt: metaFromWire(wire.attempt),
@@ -417,11 +433,12 @@ export class HttpBijakServer implements BijakApi {
     _userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme = false,
   ): Promise<SelfMarkOutcome> {
     try {
       const out = await this.exec<BijakAttemptSelfMarkResult>(
         'POST',
-        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/self-mark`,
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/self-mark${withScheme ? '?scheme=1' : ''}`,
         body,
       )
       return { ...out, result: resultFromWire(out.result) }

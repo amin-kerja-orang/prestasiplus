@@ -135,13 +135,13 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
     })
 
     it('the Simulasi create is unchanged (needs a Kontrak, keeps its Kontrak sections and code)', async () => {
-      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+      const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi' })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const row = (await q(`select surface, blueprint_id, paper_code from papers where id = $1`, [res.body.data.id]))[0]!
       expect(row.surface).toBe('simulasi')
       expect(row.blueprint_id).not.toBeNull()
       expect((await editor(res.body.data.id as string)).paper).toMatchObject({ surface: 'simulasi', code: expect.stringMatching(/\d/) })
-      const none = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      const none = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3, title: 'Set simulasi' })
       expect(none.status).toBe(422)
     })
   })
@@ -158,7 +158,7 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
       const noScheme = await question('written')
       await dropKey(noScheme)
       expect((await place(b, await sectionOf(b), noScheme)).status).toBe(201)
-      simulasi = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      simulasi = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi' })).body.data.id as string
     })
 
     const list = async (qs = '') => {
@@ -278,12 +278,16 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
     })
 
     it('a Simulasi paper refuses Negeri, Tempoh and Jumlah Markah with 422', async () => {
-      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi' })).body.data.id as string
       for (const body of [{ examBoard: 'Johor' }, { durationMinutes: 30 }, { totalMarks: 10 }]) {
         const res = await admin.put(`/api/admin/papers/${sim}`, body)
         expect(res.status, JSON.stringify(res.body)).toBe(422)
       }
-      expect((await admin.put(`/api/admin/papers/${sim}`, { title: 'Tajuk simulasi 160 ' + 'z'.repeat(150) })).status).toBe(200)
+      // A Simulasi set keeps the S3-T02 set title rule (at most 120), not the Kertas Subjektif one (150).
+      expect((await admin.put(`/api/admin/papers/${sim}`, { title: 'z'.repeat(120) })).status).toBe(200)
+      const long = await admin.put(`/api/admin/papers/${sim}`, { title: 'z'.repeat(121) })
+      expect(long.status).toBe(422)
+      expect(long.body.error.fields).toEqual({ title: 'Tajuk set tidak boleh melebihi 120 aksara.' })
     })
   })
 

@@ -3,8 +3,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import { AUDIT_ROUTES } from '../lib/audit-routes'
 
 /**
- * M04 route fragment: S10 teacher question papers (M04-T7; FR-M04-91..94). Admin shell, admin only.
- * S10 keeps its live shell title and subtitle (FR-M04-107).
+ * M04 route fragment: Kertas Soalan Guru (R1-ADM-Q-12). Admin shell, admin only. The intro is the
+ * subtitle of `DsPage`; the portal header reads it from there.
  */
 const routes: RouteRecordRaw[] = [
   {
@@ -16,11 +16,8 @@ const routes: RouteRecordRaw[] = [
       v2: true,
       access: 'auth',
       roles: ['admin'],
-      title: 'Kertas Soalan - Admin',
-      header: {
-        title: 'Kertas Soalan Guru',
-        subtitle: 'Semak dan proses fail soalan yang dihantar oleh guru',
-      },
+      title: 'Kertas Soalan Guru - Admin Panel',
+      header: { title: 'Kertas Soalan Guru' },
       module: 'M04',
     },
   },

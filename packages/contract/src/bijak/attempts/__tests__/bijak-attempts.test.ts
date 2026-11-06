@@ -927,3 +927,16 @@ describe('the picture and stimulus wire (REQ-B-014 b, c)', () => {
     expect(Object.keys(BijakAttemptStimulusSchema.shape)).not.toContain('svg')
   })
 })
+
+describe('DM-68 answer keys', () => {
+  it('parses the new keys, each optional; an old answer stays valid', () => {
+    const all = { choices: ['a'], gaps: { g1: 'x' }, cells: { c1: '1' }, topicId: 't1', revealed: true }
+    expect(BijakAttemptPartAnswerSchema.parse(all)).toEqual(all)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ choice: 't1', text: 'x' }).success).toBe(true)
+  })
+  it('refuses a wrong shape and an unknown key', () => {
+    expect(BijakAttemptPartAnswerSchema.safeParse({ choices: 'a' }).success).toBe(false)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ gaps: { g1: 1 } }).success).toBe(false)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ extra: 1 }).success).toBe(false)
+  })
+})

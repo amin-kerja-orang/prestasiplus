@@ -50,6 +50,10 @@ export const PAYLOAD_LIMITS = {
   textChars: 8000,
   plainChars: 2000,
   photoNameChars: 256,
+  /** DM-68 keys. A paper question has at most 8 options (OPT-JENIS-SOALAN). */
+  choices: 8,
+  answerKeyChars: 64,
+  answerEntries: 400,
   flags: 300,
   picksSections: 50,
   picksPerSection: 300,
