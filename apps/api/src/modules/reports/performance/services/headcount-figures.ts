@@ -1,6 +1,6 @@
 import { MIN_COHORT } from '../domain/constants'
 import { GRADES, compareIds, gradeOfPercent, pct, round, type Grade } from '../domain/rules'
-import { GRADE_POINTS, bandStatus, isGraded, latestAr, pairStatus } from '../headcount/headcount.rules'
+import { GRADE_POINTS, isGraded, latestAr, pairStatus } from '../headcount/headcount.rules'
 import type { HeadcountEntryView } from './headcount-facts.types'
 
 /** Pure figures over headcount entries (Part D). Dropped entries never count. */
@@ -30,7 +30,8 @@ export const achievementOf = (gps: number): number => Math.round(((GPS_BAR_BASE 
 /** BR-M08-01: the grade of an entry is the grade of its latest AR; null without an AR. */
 export function entryGrade(e: HeadcountEntryView): Grade | null {
   const l = latestAr(e)
-  return l === null ? null : gradeOfPercent(l.ar)
+  // HC-5: the AR is rounded to a whole number first (89.5 reads A+).
+  return l === null ? null : gradeOfPercent(round(l.ar, 0))
 }
 
 /** GPS = sum of grade points / graded entries, 2 decimals. */
@@ -97,23 +98,23 @@ export function studentStatuses(entries: readonly HeadcountEntryView[]): { on: n
   return { on, below }
 }
 
-/** BR-M08-07: every pair counts; one without a target or an AR is below. */
+/** HC-4: a pair is on or below by its latest AR against its OTR; a pair with no AR or no target ("none") is ignored. */
 export function pairCounts(entries: readonly HeadcountEntryView[]): { on: number; below: number; onPct: number } {
   let on = 0
   let below = 0
   for (const e of entries) {
-    if (pairStatus(e) === 'on') on++
-    else below++
+    const st = pairStatus(e)
+    if (st === 'on') on++
+    else if (st === 'below') below++
   }
-  return { on, below, onPct: Math.round(pct(on, on + below)) }
+  return { on, below, onPct: on + below === 0 ? 0 : Math.round(pct(on, on + below)) }
 }
 
-/** S5 badge: above and on track both read "on". */
+/** S5 badge: the pair status of HC-4 (on / below), na without an AR or a target. */
 export function classBadge(e: HeadcountEntryView | undefined): 'on' | 'below' | 'na' {
   if (!e) return 'na'
-  const l = latestAr(e)
-  const s = l === null ? 'na' : bandStatus(l.ar, l.target)
-  return s === 'above' || s === 'on' ? 'on' : s === 'below' ? 'below' : 'na'
+  const s = pairStatus(e)
+  return s === 'on' ? 'on' : s === 'below' ? 'below' : 'na'
 }
 
 /** The most recently updated config among the entries (updatedAt, then id, both descending). */

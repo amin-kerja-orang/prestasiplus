@@ -238,8 +238,8 @@ export function creditSyilingOp(
   }
   const w = walletState(userId)
   w.currentSyiling += amount
-  w.totalSyilingEarned += amount
-  w.tierKey = upgradedTier(allTiers(), w.tierKey, w.currentSyiling)
+  if (row.type !== 'refund') w.totalSyilingEarned += amount // 48 GAME-17: earn and bonus only
+  w.tierKey = upgradedTier(allTiers(), w.tierKey, w.totalSyilingEarned)
   const wallet = saveWallet(userId, w, at)
   const ledger = addLedgerRow(
     userId,
@@ -382,7 +382,8 @@ export function walletSummaryOp(userId: number): WalletSummary {
   const tiers = allTiers()
   const row = walletRow(userId)
   const w = walletState(userId)
-  const tier = tiers.find((t) => t.tierName === w.tierKey) ?? defaultTier(tiers)
+  const tierKey = upgradedTier(tiers, w.tierKey, w.totalSyilingEarned) // FR-GM-17.2, on read: writes nothing
+  const tier = tiers.find((t) => t.tierName === tierKey) ?? defaultTier(tiers)
   const next = nextTierOf(tiers, tier.tierName)
   const now = nowMs()
   const today = dayRange(now)
@@ -398,7 +399,7 @@ export function walletSummaryOp(userId: number): WalletSummary {
     xpNeeded: xpNeeded(w.level),
     levelProgressPct: levelProgressPct(w.xp, w.level),
     tier: tierView(tier),
-    nextTier: next ? { ...tierView(next), ...nextTierProgress(w.currentSyiling, next) } : null,
+    nextTier: next ? { ...tierView(next), ...nextTierProgress(w.totalSyilingEarned, next) } : null,
     title: titleOf(w.totalSyilingEarned),
     nextTitle: nextTitleOf(w.totalSyilingEarned),
     earnedToday: row ? earnedBetween(userId, today.start, today.end) : 0,
