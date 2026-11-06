@@ -18,7 +18,7 @@ import {
   PB_ROLL_MS,
   ROOM_ABSENT_S,
   ROOM_ABSENT_TIMEOUTS,
-  ROOM_BOT_FALLBACK_S,
+  roomRobotSettings,
   ROOM_SEEN_GAP_MS,
   ROOM_WAITING_MIN,
   PF_ROUNDS,
@@ -70,6 +70,7 @@ import {
   applyTimeout,
   handOverSeat,
   pbSettleDefault,
+  skipSeat,
   startGame,
   type EnginePlayer,
   type EngineRoom,
@@ -314,13 +315,15 @@ export const roomsRepo = defineRepository({
     /** Ruling 53: seconds until robots may join a waiting room (from its creation); null when none will. */
     const robotInSeconds = (room: GameRoomRow, minPlayers: number): number | null => {
       if (playersOf(room.id).length >= minPlayers) return null
+      if (!roomRobotSettings.botsEnabled || roomRobotSettings.fallbackSeconds === 0) return null
       const waited = m16Now() - room.createdAtMs
-      return Math.max(0, Math.ceil((ROOM_BOT_FALLBACK_S * 1000 - waited) / 1000))
+      return Math.max(0, Math.ceil((roomRobotSettings.fallbackSeconds * 1000 - waited) / 1000))
     }
 
     /** One robot per seat missing to the minimum once the room has waited the fallback time (Papan Bijak). */
     const botsAfterWait = (room: GameRoomRow, minPlayers: number, prng: PrngRegistry): void => {
-      if (m16Now() - room.createdAtMs < ROOM_BOT_FALLBACK_S * 1000) return
+      if (!roomRobotSettings.botsEnabled || roomRobotSettings.fallbackSeconds === 0) return
+      if (m16Now() - room.createdAtMs < roomRobotSettings.fallbackSeconds * 1000) return
       while (playersOf(room.id).length < minPlayers) addBot(room, prng)
     }
 
@@ -478,6 +481,7 @@ export const roomsRepo = defineRepository({
       room: GameRoomRow,
       out: { state: RoomState; players: EnginePlayer[]; finished: boolean },
       roundStart: number = m16Now(),
+      restart = false,
     ): GameRoomRow => {
       // The round clock restarts when the round number changes (and at the start).
       // It also restarts when the Papan Bijak turn or what the room awaits changes (roll to answer, next player).
@@ -487,7 +491,8 @@ export const roomsRepo = defineRepository({
         prev.round === out.state.round &&
         prev.turn === out.state.turn &&
         prev.awaiting === out.state.awaiting
-      out.state.roundStartedMs = same && prev.roundStartedMs !== null ? prev.roundStartedMs : roundStart
+      out.state.roundStartedMs =
+        !restart && same && prev.roundStartedMs !== null ? prev.roundStartedMs : roundStart
       for (const ep of out.players) {
         const row = playersOf(room.id).find((p) => p.userId === ep.userId)
         if (row) players.update(row.id, { team: ep.team, points: ep.points, correct: ep.correct })
@@ -590,6 +595,22 @@ export const roomsRepo = defineRepository({
       const counts = (base.startHumans ?? all.filter((p) => !p.isBot).length) >= 2
       const st: RoomState = counts ? { ...base, leavers: [...(base.leavers ?? []), seat.userId] } : base
       const left = all.filter((p) => !p.isBot && p.id !== seat.id)
+      if (left.length >= 2 && !roomRobotSettings.botsEnabled) {
+        // Ruling 50.1: robots off, so the seat is skipped and never a robot; the humans left play on.
+        const index = all.indexOf(seat)
+        players.remove(seat.id)
+        const out = skipSeat(
+          engineRoom(room),
+          enginePlayers(room.id),
+          st,
+          seat.userId,
+          index,
+          all.length,
+          prng,
+          botAccuracy(),
+        )
+        return applyOut(room, out, m16Now(), true) // the new seat's clock starts now
+      }
       if (left.length >= 2) {
         const rng = prng.fresh(`m16:room:${room.id}:swap:${String(st.draws)}`)
         const robot = pickRoomBot(room, rng)

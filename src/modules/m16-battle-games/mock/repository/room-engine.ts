@@ -67,6 +67,17 @@ const human = (c: Ctx): EnginePlayer =>
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
 const key = (pl: EnginePlayer): string => String(pl.userId)
 const nextQ = (c: Ctx): number => {
+  // Ruling 56, FR-GM-02.4 (Papan Bijak only): when the cursor wraps the pool, it restarts reshuffled (a named stream per pass).
+  if (
+    c.room.game === 'papan-bijak' &&
+    c.s.qIds.length > 0 &&
+    c.s.cursor > 0 &&
+    c.s.cursor % c.s.qIds.length === 0
+  ) {
+    const pass = c.s.cursor / c.s.qIds.length
+    const rng = c.prng.fresh(`m16:room:${c.room.code}:${c.s.seed ?? ''}:pool${String(pass)}`)
+    c.s.qIds = rng.shuffle([...c.s.qIds])
+  }
   const id = c.s.qIds[c.s.cursor % c.s.qIds.length] as number
   c.s.cursor += 1
   return id
@@ -139,6 +150,7 @@ export function startGame(
   const c: Ctx = { room, players: players.map((x) => ({ ...x })), s: emptyState(humanId), prng, p }
   const pool = prng.fresh(`m16:room:${room.code}:pool`)
   c.s.startHumans = c.players.filter((x) => !x.isBot).length
+  c.s.seed = String(prng.fresh(`m16:room:${room.code}:seed`).int(0, 2_147_483_646))
   switch (room.game) {
     case 'papan-bijak': {
       // 48 GAME-02 (#1010): with 0 quiz tiles no question is ever asked, so none is drawn.
@@ -343,6 +355,7 @@ export function handOverSeat(
   if (s.presence) s.presence = Object.fromEntries(Object.entries(s.presence).filter(([k]) => k !== String(leaver)))
   s.humanId = Number(m(String(s.humanId)))
   if (s.winnerId !== null) s.winnerId = Number(m(String(s.winnerId)))
+  if (s.mvpId !== null) s.mvpId = Number(m(String(s.mvpId)))
   if (state.humanId !== leaver) return { state: s, players: c.players, finished: false }
   if (s.awaiting === 'answer') {
     // The leaver stood on a quiz tile: the robot answers it with the platform accuracy.
@@ -356,6 +369,36 @@ export function handOverSeat(
     s.awaiting = null
     s.pendingQ = null
   }
+  return pbRun(c)
+}
+
+/**
+ * A human left a Papan Bijak game in play and robots are off: the seat is skipped, never a robot, and the humans left
+ * play on. The turn order keeps the next seat in line next; when the room waited for the leaver, the next seat is asked.
+ */
+export function skipSeat(
+  room: EngineRoom,
+  players: EnginePlayer[],
+  state: RoomState,
+  leaver: number,
+  leaverIndex: number,
+  oldCount: number,
+  prng: PrngRegistry,
+  p: number,
+): EngineOut {
+  const c: Ctx = { room, players: players.map((x) => ({ ...x })), s: structuredClone(state), prng, p }
+  const s = c.s
+  delete s.positions[String(leaver)]
+  delete s.meter[String(leaver)]
+  if (s.presence) delete s.presence[String(leaver)]
+  const wasActor = s.humanId === leaver
+  const at = s.turn % oldCount
+  const target =
+    leaverIndex < at ? at - 1 : leaverIndex === at ? leaverIndex % (oldCount - 1) : at
+  s.turn = Math.floor(s.turn / oldCount) * (oldCount - 1) + target
+  if (!wasActor) return { state: s, players: c.players, finished: false }
+  s.awaiting = null
+  s.pendingQ = null
   return pbRun(c)
 }
 

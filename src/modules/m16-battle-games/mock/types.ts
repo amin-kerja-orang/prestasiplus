@@ -267,6 +267,8 @@ export interface RoomState {
   total: number
   /** The question pool drawn at start. */
   qIds: number[]
+  /** Papan Bijak: the room's seed, a part of the reshuffle stream names (ruling 56). */
+  seed?: string
   /** Next unused pool index. */
   cursor: number
   /** The viewer whose action is awaited (the host). */

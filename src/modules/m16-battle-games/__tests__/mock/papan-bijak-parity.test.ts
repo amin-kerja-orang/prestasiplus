@@ -99,6 +99,30 @@ describe('Papan Bijak engine (48 GAME-02)', () => {
     expect(pbSettleDefault(ps, HUMAN).map((p) => p.points)).toEqual([70, 30])
   })
 
+  it('ruling 56: when the cursor wraps the pool, the pool restarts reshuffled (a permutation, deterministic, new each pass)', () => {
+    const board = Array.from({ length: 50 }, (_, i) => (i === 0 ? 'start' : i === 49 ? 'finish' : 'quiz'))
+    const pool = Array.from({ length: 40 }, (_, i) => i + 1)
+    const wrap = (qIds: number[], cursor: number) =>
+      applyAction(
+        ROOM,
+        seats(),
+        { ...emptyState(HUMAN), awaiting: 'roll', board, positions: { [HUMAN]: 1, [BOT]: 1 }, qIds, cursor, seed: 'abc' },
+        { type: 'roll' },
+        prng,
+        0.5,
+      ).state
+    const a = wrap(pool, 40) // questions 41-80
+    expect([...a.qIds].sort((x, y) => x - y)).toEqual(pool)
+    expect(a.qIds).not.toEqual(pool)
+    expect(a.cursor).toBe(41)
+    expect(a.pendingQ).toBe(a.qIds[0])
+    expect(wrap(pool, 40).qIds).toEqual(a.qIds) // same room, same pass: same order
+    const b = wrap(a.qIds, 80) // questions 81-120: the next pass shuffles again
+    expect([...b.qIds].sort((x, y) => x - y)).toEqual(pool)
+    expect(b.qIds).not.toEqual(a.qIds)
+    expect(wrap(pool, 10).qIds).toEqual(pool) // no wrap, no reshuffle
+  })
+
   it('with 0 quiz tiles the start draws no question and the board has none', () => {
     const out = startGame(ROOM, seats(), HUMAN, 0, prng, 0.5)
     expect(out.state.qIds).toEqual([])
@@ -407,5 +431,44 @@ describe('Papan Bijak leave (ruling 50) and absence (ruling 49)', () => {
       ).toBe(200)
     advance(30)
     expect((await view(started.code)).status).toBe('playing')
+  })
+})
+
+describe('Papan Bijak with the room robots off (rulings 50.1, 53)', () => {
+  const restore = () => m16Hooks.roomRobots({ enabled: true, fallbackSeconds: 30 })
+
+  it('robots off or a fallback of 0: no robotInSeconds and no robot after the wait', async () => {
+    for (const settings of [{ enabled: false }, { enabled: true, fallbackSeconds: 0 }]) {
+      m16Hooks.roomRobots(settings)
+      try {
+        const code = await createRoom()
+        expect((await view(code)).robotInSeconds).toBeUndefined()
+        advance(40)
+        const v = await view(code)
+        expect(v.players).toHaveLength(1)
+        expect((await call<Any>('POST', roomPath(code, '/start'), HOST)).status).toBe(409)
+      } finally {
+        restore()
+      }
+    }
+  })
+
+  it('3 humans, robots off: the leaver seat is skipped (no robot), the two humans play on and the leaver counts at the settle', async () => {
+    m16Hooks.roomRobots({ enabled: false })
+    try {
+      const started = await startRoom([GUEST, THIRD], 0)
+      const had = standing(GUEST)?.jumlah ?? 0
+      expect((await act(started.code, GUEST, { type: 'leave' })).status).toBe(200)
+      const v = await view(started.code, HOST)
+      expect(v.status).toBe('playing')
+      expect(v.players.map((p: Any) => p.isBot)).toEqual([false, false])
+      expect(v.players.map((p: Any) => p.id)).not.toContain(GUEST)
+      expect([HOST, THIRD]).toContain(v.state.humanId)
+      expect(v.state.roundSecondsLeft).toBeGreaterThan(0)
+      await playOut(v)
+      expect(standing(GUEST)?.jumlah).toBe(had + 1)
+    } finally {
+      restore()
+    }
   })
 })

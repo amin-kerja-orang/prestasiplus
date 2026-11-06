@@ -87,6 +87,18 @@ export const PB_ANSWER_MS = 20_000
  * gap) and 3 timeouts in a row remove it.
  */
 export const ROOM_BOT_FALLBACK_S = 30
+/**
+ * The two room-robot switches (`games_room_bots_enabled`, `battle_bot_fallback_seconds`) as M16 mock state, since the M14
+ * catalogue does not hold them. Defaults: robots on, 30 s. A test hook changes them; `resetM16` restores them.
+ */
+export const roomRobotSettings: { botsEnabled: boolean; fallbackSeconds: number } = {
+  botsEnabled: true,
+  fallbackSeconds: ROOM_BOT_FALLBACK_S,
+}
+export function resetRoomRobotSettings(): void {
+  roomRobotSettings.botsEnabled = true
+  roomRobotSettings.fallbackSeconds = ROOM_BOT_FALLBACK_S
+}
 export const ROOM_WAITING_MIN = 15
 export const ROOM_ABSENT_S = 30
 export const ROOM_SEEN_GAP_MS = 5_000
