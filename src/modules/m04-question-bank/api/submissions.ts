@@ -51,6 +51,13 @@ export async function fetchSubmissionCounts(signal?: AbortSignal): Promise<Submi
   return { all, pending, processing, done }
 }
 
+/** Files per batch id, kept for the life of the page (a full reload clears it). Failed reads are not kept. */
+const batchFilesCache = new Map<string, IntakeFileSummary[]>()
+/** Empties the cache (tests). */
+export function clearBatchFilesCache(): void {
+  batchFilesCache.clear()
+}
+
 /**
  * The files of the batches on a page (`GET /api/intake/batches/:id`, API-Q-14): an item row names no file.
  * A batch that cannot be read only leaves its `Fail` cell empty.
@@ -60,14 +67,22 @@ export async function fetchBatchFiles(
   signal?: AbortSignal,
 ): Promise<Map<string, IntakeFileSummary[]>> {
   const ids = [...new Set(batchIds)]
+  const files = new Map<string, IntakeFileSummary[]>()
+  // One read per batch id: a batch already read (another row, another page) is answered from the cache.
+  const missing = ids.filter((id) => {
+    const known = batchFilesCache.get(id)
+    if (known) files.set(id, known)
+    return !known
+  })
   const results = await Promise.allSettled(
-    ids.map((id) =>
+    missing.map((id) =>
       api.get<{ files: IntakeFileSummary[] }>(`/api/intake/batches/${id}`, signal ? { signal } : {}),
     ),
   )
-  const files = new Map<string, IntakeFileSummary[]>()
   results.forEach((result, index) => {
-    if (result.status === 'fulfilled') files.set(ids[index] as string, result.value.files)
+    if (result.status !== 'fulfilled') return
+    batchFilesCache.set(missing[index] as string, result.value.files)
+    files.set(missing[index] as string, result.value.files)
   })
   return files
 }
