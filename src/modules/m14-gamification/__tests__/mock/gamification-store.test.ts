@@ -639,6 +639,17 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     expect(achievements.forUser(3).unlocked).toBe(0)
   })
 
+  it('databank (S3-T07): credits quiz_spm with the "SPM Tahun Lepas" wording, like past_year', () => {
+    gamification.onSessionCompleted(session(3, { mode: 'databank', correct: 4 }))
+    expect(rowsOf(3).reverse()).toEqual([
+      ['SPM Tahun Lepas: 4 betul — 40%', 4],
+      ['Streak activity (spm)', 7],
+      ['Cabaran selesai: Mula Hari Ini', 10],
+    ])
+    expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
+    expect(achievements.forUser(3).unlocked).toBe(0)
+  })
+
   it('latih_tubi / ramalan: quiz_spm wording; the XP bar text (E2E-M14-44)', () => {
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
     expect(wallet.summary(3)).toMatchObject({ xp: 73, xpNeeded: 100, level: 1 })
@@ -1078,8 +1089,8 @@ describe('review follow-ups (idempotency, validation, shim, claims, complimentar
     expect(wallet.get(5901)).toBeUndefined()
   })
 
-  it('tier upgrade through onSessionCompleted (BR-M14-08): 495 + credits ≥ 500 → silver', () => {
-    wallet.setFields(3, { syiling: 495, tierKey: 'bronze' })
+  it('tier upgrade through onSessionCompleted (FR-GM-17.2): 495 lifetime + credits ≥ 500 → silver', () => {
+    wallet.setFields(3, { syiling: 495, lifetime: 495, tierKey: 'bronze' })
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
     expect(wallet.summary(3)).toMatchObject({
       currentSyiling: 495 + 6 + 7 + 10 + 12,

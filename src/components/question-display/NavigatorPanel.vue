@@ -39,7 +39,7 @@ const stateIcon: Record<NavState, string> = {
 </script>
 
 <template>
-  <nav class="flex flex-col gap-4" aria-label="Peta soalan" data-testid="navigator">
+  <nav class="flex flex-col gap-4" aria-label="Peta soalan" data-testid="navigator" data-qd="navigator">
     <p class="text-caption text-muted" data-testid="nav-counts">
       Dijawab {{ counts.answered }} · Ditanda {{ counts.flagged }} · Belum {{ counts.none }}
     </p>
@@ -90,7 +90,7 @@ const stateIcon: Record<NavState, string> = {
         </UButton>
       </div>
     </section>
-    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="nav-legend">
+    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" data-testid="nav-legend" data-qd="nav-legend">
       <li
         v-for="st in ['answered', 'flagged', 'none'] as const"
         :key="st"

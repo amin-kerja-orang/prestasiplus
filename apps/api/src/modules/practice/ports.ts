@@ -94,9 +94,10 @@ export interface PracticeQuestionSource {
   chapterPage(chapterId: string, excludeIds: readonly string[], limit: number): Promise<string[]>
   /**
    * The LIVE version of each id that is eligible for practice NOW (`eligibleForPractice`: published, active).
-   * An ineligible or unknown id is omitted, so it is never served (AC 4).
+   * An ineligible or unknown id is omitted, so it is never served (AC 4). A teacher's personal question (DM-42) is omitted too, unless the
+   * caller is a mission session (`allowPrivate`): Ulang Kaji, Buka Soalan Sama and every other mode never serve one.
    */
-  live(ids: readonly string[], activity?: PracticeDrillActivity): Promise<ReadonlyMap<string, PracticeQuestion>>
+  live(ids: readonly string[], activity?: PracticeDrillActivity, opts?: { allowPrivate?: boolean }): Promise<ReadonlyMap<string, PracticeQuestion>>
   /**
    * The ids among `ids` that the SPM activities (Databank, Latih Tubi SPM, Mock K1) may serve NOW: the same rule as a draw with
    * `spmPool: true` (`SPM_SERVABLE_SQL`: offered level, active subject and subject-level, not PKSK, approved and active). A single
@@ -147,7 +148,7 @@ export type AssignmentResolution =
       status: 'ok'
       subjectId: string | null
       questionIds: string[]
-      /** mission: coins per correct answer (else `MISSION_COINS_PER_CORRECT`). */
+      /** Legacy per-mission rate: no longer read for the credit (S5-T03; the one rate is `coinsPerCorrect()`, DM-48). */
       coinsPerCorrect?: number | null
       /** question_set: time limit in seconds. */
       timeLimitSec?: number | null
@@ -196,8 +197,8 @@ export const PRACTICE_REWARD_SOURCE = 'quiz_practice'
 export type PracticeRewardSource = 'quiz_practice' | 'quiz_spm' | 'quiz_pksk'
 
 /**
- * M14 BR-M14-03: the ledger source follows the session mode. The SPM modes `past_year`, `latih_tubi` and
- * `ramalan` credit as `quiz_spm`, `pksk` as `quiz_pksk`, and every other (practice) mode as `quiz_practice`.
+ * M14 BR-M14-03: the ledger source follows the session mode. The SPM modes `past_year`, `latih_tubi`,
+ * `ramalan`, `databank` and `tracking_a` credit as `quiz_spm`, `pksk` as `quiz_pksk`, and every other (practice) mode as `quiz_practice`.
  * The reward binding passes this as `CreditInput.source`.
  */
 export function practiceRewardSource(mode: PracticeMode): PracticeRewardSource {
@@ -205,6 +206,9 @@ export function practiceRewardSource(mode: PracticeMode): PracticeRewardSource {
     case 'past_year':
     case 'latih_tubi':
     case 'ramalan':
+    // S5-T15: databank / tracking_a replace past_year / ramalan, so they credit as the SPM source too.
+    case 'databank':
+    case 'tracking_a':
       return 'quiz_spm'
     case 'pksk':
       return 'quiz_pksk'
@@ -227,8 +231,6 @@ export interface PracticeSessionCompleted {
   pointsEarned: number
   /** BR-09: the session's own coins (mock `sessionCoins`). */
   sessionCoins: number
-  /** mission only. */
-  coinsPerCorrect?: number
   /** True under Mod Pelajar: every ledger row must be stamped `is_test`. */
   isTest: boolean
 }

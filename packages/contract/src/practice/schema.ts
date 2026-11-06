@@ -24,15 +24,29 @@ export const PRACTICE_MODES = [
   'remedial',
   'question_set',
   'pksk',
+  // S5-T15 (0181): the two new lanes. The legacy past_year / ramalan stay so old rows load; they read as these.
+  'databank',
+  'tracking_a',
 ] as const
 export const PracticeModeSchema = z.enum(PRACTICE_MODES).meta({ id: 'PracticeMode' })
 export type PracticeMode = z.infer<typeof PracticeModeSchema>
 
-/** Modes `POST /practice/sessions` accepts: `pksk` sessions are created by M07, not here (422). */
-export const PRACTICE_START_MODES = PRACTICE_MODES.filter((m) => m !== 'pksk') as unknown as readonly [
-  Exclude<PracticeMode, 'pksk'>,
-  ...Exclude<PracticeMode, 'pksk'>[],
-]
+/**
+ * Legacy stored modes (S5-T03, N-5, D-T10-2): old rows keep them and they stay in `PRACTICE_MODES` (read / check list), but
+ * R1 code never writes them and `POST /practice/sessions` refuses them (422 ERR-PRAC-07 "Mod tidak sah.").
+ */
+export const LEGACY_PRACTICE_MODES = ['random', 'past_year', 'ramalan'] as const
+
+/**
+ * Modes `POST /practice/sessions` accepts: `PRACTICE_MODES` without `pksk` (created by M07, not here) and without `random`.
+ * `past_year` and `ramalan` are legacy too but STAY startable for now (old clients; the Tracking A page still starts `ramalan`).
+ * They leave this list in the follow-up that removes the last page / spec starting them. S3-T07 part A: `databank` has a planner
+ * case (the m06-spm Databank page starts it), so it is startable. `tracking_a` has no planner case yet, so it is not.
+ */
+type NotStartable = 'pksk' | 'random' | 'tracking_a'
+export const PRACTICE_START_MODES = PRACTICE_MODES.filter(
+  (m) => m !== 'pksk' && m !== 'random' && m !== 'tracking_a',
+) as unknown as readonly [Exclude<PracticeMode, NotStartable>, ...Exclude<PracticeMode, NotStartable>[]]
 export const PracticeStartModeSchema = z.enum(PRACTICE_START_MODES).meta({ id: 'PracticeStartMode' })
 
 export const PracticeSessionIdSchema = z.uuid().meta({
@@ -100,7 +114,7 @@ export const StartSessionRequestSchema = z
     levelId: IdSchema.nullable().optional(),
     difficulty: z.number().int().min(1).max(5).nullable().optional(),
     count: z.number().int().min(1).optional().meta({
-      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target.',
+      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target.',
     }),
     chapterId: intId('chapter mode').optional(),
     year: z.number().int().optional().meta({ description: 'ramalan mode.' }),

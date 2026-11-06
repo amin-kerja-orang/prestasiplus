@@ -281,10 +281,10 @@ export const USER_NAV: readonly NavEntry[] = [
     ],
   },
   // INFERRED hrefs (the student items of the same label).
-  { kind: 'item', id: 't-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: T },
+  { kind: 'item', id: 't-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/kelas', fa: 'fa-brain', color: 'text-violet-500', roles: T },
   { kind: 'item', id: 't-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-rose-500', roles: T },
   { kind: 'item', id: 't-perbandingan-kelas', label: 'Perbandingan Kelas', to: '/guru/perbandingan-kelas', fa: 'fa-balance-scale', color: 'text-purple-500', roles: T },
-  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/laporan-mingguan', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
+  { kind: 'item', id: 't-laporan-mingguan', label: 'Laporan Mingguan', to: '/guru/laporan-mingguan-kelas', fa: 'fa-calendar-week', color: 'text-emerald-500', roles: T },
 
   // ── Pusat AI (one live partial, same markup in sidebar and drawer) ──
   { kind: 'section', id: 'sec-pusat-ai', label: 'Pusat AI', text: '', rule: 'from-purple-300', variant: 'gradient', badge: { text: 'NEW', cls: B_NEW_SECTION }, roles: AI_ALL },
@@ -312,7 +312,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'subheading', id: 'sub-visi-ai', label: '✨ Visi & Pertandingan', cls: sub('text-indigo-600/80'), roles: AI_ALL },
   // Student only (murid screenshot); INFERRED href (same page as the "Profil Cerah" item below).
   { kind: 'item', id: 'profil-cerah-ai', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, variant: 'ai', badge: { text: 'NEW', cls: B_NEW_PURPLE_INFERRED }, roles: S },
-  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Leaderboard mingguan sekolah-sekolah Malaysia', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: AI_ALL },
+  { kind: 'item', id: 'sekolah-bersaing-ai', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', variant: 'ai', tip: 'Kedudukan sekolah teratas berdasarkan purata ketepatan latihan pelajar.', badge: { text: 'NEW', cls: B_NEW_ITEM }, roles: ['admin', 'school_admin'] },
   { kind: 'item', id: 'tetapan-peribadi', label: 'Tetapan Peribadi', to: '/tetapan', fa: 'fa-cog', color: 'text-slate-600', variant: 'ai', tip: 'Tetapan rohani, masa Subuh, mod Ramadan', roles: AI_ALL },
 
   { kind: 'subheading', id: 'sub-bilik-duta-preview', label: '🏆 Bilik Duta · 🔒 PREVIEW', cls: sub('text-amber-600/80'), roles: A },
@@ -395,7 +395,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-monitoring', label: 'Monitoring', to: '/admin-sekolah/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: SCH },
   // Shown collapsed in the screenshot (its sub-items are not visible): rendered as a link.
   { kind: 'item', id: 'sa-kirkpatrick', label: 'Kirkpatrick', to: '/admin-sekolah/kirkpatrick', fa: 'fa-microscope', color: 'text-cyan-500', roles: SCH },
-  { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
+  { kind: 'item', id: 'sa-analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/kelas', fa: 'fa-brain', color: 'text-violet-500', roles: SCH },
   { kind: 'item', id: 'sa-statistik-penggunaan', label: 'Statistik Penggunaan', to: '/admin-sekolah/statistik-penggunaan', fa: 'fa-chart-pie', color: 'text-purple-500', roles: SCH },
   { kind: 'item', id: 'sa-dskp-heatmap', label: 'DSKP Heatmap', to: '/admin-sekolah/dskp-heatmap', fa: 'fa-table-cells', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-purple-500', roles: SCH },
@@ -422,7 +422,7 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── ✨ Visi & Pertandingan ──
   { kind: 'section', id: 'sec-visi', label: '✨ Visi & Pertandingan', text: 'text-indigo-700', rule: 'from-indigo-300', roles: SA_ },
   { kind: 'item', id: 'profil-cerah', label: 'Profil Cerah', to: '/profil-cerah', fa: 'fa-magic', color: C_INDIGO, roles: SA_ },
-  { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'sekolah-bersaing', label: 'Sekolah Bersaing', to: '/sekolah-bersaing', fa: 'fa-trophy', color: 'text-amber-500', roles: ['admin'] },
   { kind: 'item', id: 'cita-cita-hijrah', label: 'Cita-Cita Hijrah', to: '/cita-cita', fa: 'fa-star', color: 'text-pink-500', roles: SA_ },
 
   // ── 💎 Killer Features ──
@@ -435,7 +435,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'penguasaan', label: 'Penguasaan', to: '/penguasaan', fa: 'fa-layer-group', color: 'text-purple-500', roles: SA_ },
   { kind: 'item', id: 'laporan-soalan', label: 'Laporan Soalan', to: '/laporan-soalan', fa: 'fa-flag', color: 'text-red-400', roles: SA_ },
   { kind: 'item', id: 'liga', label: 'Liga Pertandingan', to: '/liga', fa: 'fa-trophy', color: 'text-yellow-500', roles: SA_ },
-  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: SA_ },
+  { kind: 'item', id: 'perutusan', label: 'Perutusan', to: '/perutusan', fa: 'fa-scroll', color: 'text-amber-500', roles: A },
 
   // ── Pembelajaran ──
   { kind: 'section', id: 'sec-pembelajaran', label: 'Pembelajaran', text: 'text-blue-700', rule: 'from-blue-300', roles: SA_ },
@@ -750,6 +750,16 @@ const SETTINGS_ID = 'tetapan-peribadi'
 const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
   'laporan-mingguan',
 ])
+/**
+ * Menu items with no sidebar link for a role. Perutusan (Admin Sekolah, AC-SH-2, Delivery A): the
+ * page works and the dashboard card links to it, the sidebar item stays hidden.
+ */
+const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
+  student: STUDENT_HIDDEN_IDS,
+  school_admin: new Set(['sa-perutusan']),
+}
+const isRoleHidden = (role: string | null, id: string): boolean =>
+  role !== null && ROLE_HIDDEN_IDS[role]?.has(id) === true
 /** Profile entries of each role: scope mode puts "Tetapan Peribadi" right after them. */
 const PROFILE_IDS: readonly string[] = ['profil-saya', 't-profil-saya', 'sa-profil-saya']
 
@@ -770,7 +780,7 @@ function scopeEntries(
   for (const entry of entries) {
     if (entry.kind === 'item') {
       if (SCOPE_DUPLICATE_IDS.has(entry.id)) continue
-      if (role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)) continue
+      if (isRoleHidden(role, entry.id)) continue
       if (isPathAllowed(role, entry.to)) kept.push(entry)
     } else if (entry.kind === 'group') {
       const children = entry.children.filter((child) => isPathAllowed(role, child.to))
@@ -807,7 +817,7 @@ export function navFor(
     options.includeOutOfScope === true ||
     isPrototypeScopeOn() ||
     entry.kind !== 'item' ||
-    (!isOutOfScope(entry.to) && !(role === 'student' && STUDENT_HIDDEN_IDS.has(entry.id)))
+    (!isOutOfScope(entry.to) && !isRoleHidden(role, entry.id))
   const visible = scopeEntries(
     withoutKeluargaAngkat(withoutAlesa(entries))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))

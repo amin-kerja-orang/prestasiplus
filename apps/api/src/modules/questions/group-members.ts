@@ -39,9 +39,9 @@ export class GroupMembers {
     if (!(await this.repo.lockGroup(groupId))) throw notFound()
   }
 
-  /** A draft copy stages its members in `draft_members`: no in-place member route applies to it (409). */
-  async assertNotDraftCopy(groupId: string): Promise<void> {
-    if ((await this.repo.groupScope(groupId))?.draftOfGroupId != null) throw conflict(M.conflict)
+  /** The members of a group in order; for a draft copy the members staged in it (`draft_members`). */
+  async current(groupId: string): Promise<string[]> {
+    return (await this.repo.groupScope(groupId))?.draftOfGroupId != null ? this.repo.stagedMembers(groupId) : this.repo.memberIds(groupId)
   }
 
   /** The BM warning for a group with no member, else null (one member is valid). */
@@ -56,14 +56,14 @@ export class GroupMembers {
 
   /**
    * Makes `ordered` the members of the group, in that order. Adds, removals and reordering in one call; an unchanged list is a no-op.
-   * Returns the members after the change.
+   * Returns the members after the change. `opts.regroup` lifts the served lock for ADDED members only (the regroup route, API-Q-24).
    */
-  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false): Promise<string[]> {
+  async set(groupId: string, ordered: readonly string[], field = 'questionIds', subjectMessage: string = M.memberScope, swap = false, opts: { regroup?: boolean } = {}): Promise<string[]> {
     await this.lock(groupId)
-    // A draft copy stages its members in `draft_members`; the in-place member routes do not apply to it. Its members reach the live group
-    // only through the swap (`swap = true`: the publish of the copy, which is the one path that may change the members of a served group).
+    // A draft copy stages its members in `draft_members` (S1-T01 part 3c); they reach the live group only through the swap (`swap = true`: the
+    // publish of the copy, the one path that may change the members of a served group).
     const scope = await this.repo.groupScope(groupId)
-    if (scope?.draftOfGroupId != null) throw conflict(M.conflict)
+    if (scope?.draftOfGroupId != null) return this.setStaged(groupId, ordered, field, subjectMessage, scope)
     if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
     if (ordered.length > STIMULUS_LIMITS.groupQuestions) throw fail({ [field]: M.membersTooMany })
     const current = await this.repo.memberIds(groupId)
@@ -82,12 +82,16 @@ export class GroupMembers {
 
     const touched = [...new Set([...added, ...removed, ...ordered])]
     const facts = await this.repo.lockQuestions(touched)
+    // A question staged in the draft copy of ANOTHER group is taken (the clash would only show when that copy is published).
+    const stagedAway = swap || added.length === 0 ? new Set<string>() : await this.repo.stagedElsewhere(await this.repo.draftCopyOf(groupId), added)
     for (const q of added) {
+      if (stagedAway.has(q)) throw fail({ [field]: M.memberTaken })
       const f = facts.get(q)
       if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
       if (f.groupId !== null) throw fail({ [field]: f.groupId === groupId ? M.memberExists : M.memberTaken })
       if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
-      if (f.served && !swap) throw conflict(M.memberServed)
+      // S1-T07 (45 6.6.3): the regroup (`regroup: true`) is the only caller that may add a question shown to pupils; the normal routes keep DM-04.
+      if (f.served && !swap && opts.regroup !== true) throw conflict(M.memberServed)
     }
     // The group's own scope (DM-51): an added member must match a non-null Subjek / Tingkatan / Kertas of the group.
     for (const q of added) {
@@ -114,11 +118,44 @@ export class GroupMembers {
   }
 
   /**
+   * Makes `ordered` the members staged in a draft copy. The same member rules as `set`, except that the served lock does not apply (a served member
+   * may be staged, moved within the order or left out: the swap applies it) and a member may sit in the copy's own live group.
+   */
+  private async setStaged(copyId: string, ordered: readonly string[], field: string, subjectMessage: string, scope: GroupScope & { draftOfGroupId: string | null }): Promise<string[]> {
+    if (new Set(ordered).size !== ordered.length) throw fail({ [field]: M.membersInvalid })
+    if (ordered.length > STIMULUS_LIMITS.groupQuestions) throw fail({ [field]: M.membersTooMany })
+    const current = await this.repo.stagedMembers(copyId)
+    const added = ordered.filter((q) => !current.includes(q))
+    if (added.length === 0 && current.length === ordered.length && current.every((q, i) => ordered[i] === q)) return [...current]
+    const facts = await this.repo.lockQuestions(ordered)
+    const elsewhere = await this.repo.stagedElsewhere(copyId, added)
+    for (const q of added) {
+      const f = facts.get(q)
+      if (f === undefined || f.pksk) throw fail({ [field]: M.membersInvalid })
+      if ((f.groupId !== null && f.groupId !== scope.draftOfGroupId) || elsewhere.has(q)) throw fail({ [field]: M.memberTaken })
+      if (!f.active || f.archived) throw fail({ [field]: M.memberInactive })
+      this.assertScope(scope, { subjectId: f.subjectId, levelId: f.levelId, kertas: f.kertas }, field, subjectMessage)
+    }
+    const subjects = new Set<string>()
+    const kertas = new Set<string>()
+    for (const q of ordered) {
+      const f = facts.get(q)
+      if (f === undefined) continue
+      subjects.add(f.subjectId ?? '')
+      if (f.kertas !== null) kertas.add(f.kertas)
+    }
+    if (subjects.size > 1) throw fail({ [field]: M.memberMixed })
+    if (kertas.size > 1) throw fail({ [field]: M.memberKertas })
+    await this.repo.setDraftMembers(copyId, ordered)
+    return [...ordered]
+  }
+
+  /**
    * A NEW question joins the group while it is created (`stimulusGroupId` on POST /api/questions): locks the group, checks the cap, that the
    * question has the group's subject and a compatible kertas, and returns its position (the end). The question is not in the group yet, so
    * it is not counted; it can be served at once only when it is created already approved (an admin shortcut), which does not bind the group.
    */
-  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<number> {
+  async joinNew(groupId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<number> {
     await this.lock(groupId).catch(() => {
       throw fail({ stimulusGroupId: M.groupInvalid })
     })
@@ -135,7 +172,7 @@ export class GroupMembers {
    * A member's subject or kertas changes (PUT /api/questions on a grouped question): it must still fit the other members, else the group
    * would hold two subjects (or two kertas). The only member of a group may change freely. Runs inside the edit transaction.
    */
-  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | null): Promise<void> {
+  async assertTraitChange(groupId: string, questionId: string, subjectId: string | null, levelId: string | null, kertas: '1' | '2' | '3' | '4' | null): Promise<void> {
     await this.lock(groupId)
     this.assertScope(await this.repo.groupScope(groupId), { subjectId, levelId, kertas }, 'subjectId')
     this.assertFits(await this.repo.memberTraits(groupId, questionId), subjectId, kertas, 'subjectId')
@@ -152,7 +189,7 @@ export class GroupMembers {
     if (group.kertas !== null && member.kertas !== null && String(group.kertas) !== member.kertas) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }
 
-  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | null, field: string): void {
+  private assertFits(others: readonly { subjectId: string | null; kertas: '1' | '2' | '3' | '4' | null }[], subjectId: string | null, kertas: '1' | '2' | '3' | '4' | null, field: string): void {
     if (others.some((o) => o.subjectId !== subjectId)) throw fail({ [field]: M.memberMixed })
     if (kertas !== null && others.some((o) => o.kertas !== null && o.kertas !== kertas)) throw fail({ [field === 'subjectId' ? 'kertas' : field]: M.memberKertas })
   }
@@ -163,6 +200,8 @@ export class GroupMembers {
    */
   async move(questionId: string, from: string | null, to: string | null): Promise<void> {
     if (to === from) return
+    // A draft copy stages its members in `draft_members`: neither side of this route may be a copy (409), or the copy's staged members would be lost.
+    for (const g of [from, to]) if (g !== null && (await this.repo.groupScope(g))?.draftOfGroupId != null) throw conflict(M.conflict)
     // A question shown to pupils cannot leave its group, whether it goes nowhere or to another group (409, not 422).
     if (from !== null && (await this.repo.servingMemberIds(from)).includes(questionId)) throw conflict(M.groupServed)
     if (from !== null && to !== null) throw fail({ stimulusGroupId: M.memberTaken })

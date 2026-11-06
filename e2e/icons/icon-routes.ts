@@ -23,6 +23,7 @@ export const ICON_ROUTES = {
     ...['/gamification/convert', '/gamification/challenges', '/gamification/rewards', '/marketplace'],
     ...['/gamification/leaderboard', '/gamification/achievements', '/gamification/mystery-box'],
     ...['/gamification/referral', '/cikgu', '/cikgu/hadiah', '/timeline', '/jemput-ibu-bapa'],
+    '/laporan-soalan',
   ],
   teacher: [
     ...ACCOUNT,

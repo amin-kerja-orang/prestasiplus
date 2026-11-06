@@ -12,7 +12,7 @@
 
 import { expectNoHorizontalScroll, moduleTag, navigateInApp, provisional, viewportWidth } from '../support'
 import { expect, test } from './fixtures'
-import { answerFrom, PELAJAR, tid } from './support'
+import { answerFrom, PELAJAR, statValues, tid } from './support'
 
 test.describe.configure({ timeout: 360_000 })
 test.use({ mockInit: { latency: 0 } })
@@ -27,9 +27,7 @@ test.describe('QA-G5 M06 flows', { tag: [moduleTag(6)] }, () => {
     await loginAs(PELAJAR)
     await gotoApp('/spm')
     await expect(tid(page, 'spm-hub-page')).toBeVisible({ timeout: 60_000 })
-    const before = await page
-      .locator('[data-testid=spm-mine-sessions] [data-testid=mine-value]')
-      .innerText()
+    const before = await statValues(tid(page, 'spm-mine-sessions')).innerText()
     // Hub module card -> S2 (an in-app navigation, not a reload).
     await page.locator('a[href="/spm/tahun-lepas"]').first().click()
     await expect(page).toHaveURL(/\/spm\/tahun-lepas$/)
@@ -57,9 +55,7 @@ test.describe('QA-G5 M06 flows', { tag: [moduleTag(6)] }, () => {
     await expect(first.getByTestId('row-correct')).toHaveText(`${String(correct)}/5 betul`)
     await expect(first.getByTestId('row-coins')).toContainText(`+${String(correct)}`)
     await gotoApp('/spm')
-    await expect(
-      page.locator('[data-testid=spm-mine-sessions] [data-testid=mine-value]'),
-    ).toHaveText(String(Number(before) + 1))
+    await expect(statValues(tid(page, 'spm-mine-sessions'))).toHaveText(String(Number(before) + 1))
   })
 
   test('F2 S3 -> S4 config (Tingkatan 5 + Sukar) -> Q2 -> results -> S10 latih_tubi', async ({

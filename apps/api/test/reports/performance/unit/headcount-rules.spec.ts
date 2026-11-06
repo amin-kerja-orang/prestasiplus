@@ -6,10 +6,14 @@ import {
   isGraded,
   latestAr,
   meanOrNull,
+  entryStatusOf,
+  otrTargets,
   pairStatus,
   predictionOf,
   projectionOf,
+  resolveMarks,
   rowTone,
+  statusReasonOf,
   toNum,
 } from '../../../../src/modules/reports/performance/headcount/headcount.rules'
 
@@ -31,13 +35,72 @@ describe('latest AR and pair status (BR-M08-01/07/08)', () => {
     expect(pairStatus({ targets: [60], actuals: [null] })).toBe('none')
   })
 
-  it('band: above over the target, on within 2 points under, below beyond, na without data', () => {
-    expect(bandStatus(61, 60)).toBe('above')
+  it('band (HC-SPEC): above AR - OTR > 2, on 0..2, below < 0, na without data', () => {
+    expect(bandStatus(63, 60)).toBe('above')
+    expect(bandStatus(62.1, 60)).toBe('above')
+    expect(bandStatus(62, 60)).toBe('on')
     expect(bandStatus(60, 60)).toBe('on')
-    expect(bandStatus(58, 60)).toBe('on')
-    expect(bandStatus(57.99, 60)).toBe('below')
+    expect(bandStatus(59.9, 60)).toBe('below')
+    expect(bandStatus(58, 60)).toBe('below')
     expect(bandStatus(null, 60)).toBe('na')
     expect(bandStatus(50, null)).toBe('na')
+  })
+
+  it('the pair status is the latest checkpoint with an AR against its own OTR', () => {
+    expect(pairStatus({ targets: [53, 66, 80], actuals: [60, 60, 60] })).toBe('below')
+    expect(pairStatus({ targets: [53, 66, 80], actuals: [60, null, null] })).toBe('on')
+    expect(pairStatus({ targets: [53, 66, 80], actuals: [null, null, null] })).toBe('none')
+  })
+})
+
+describe('OTR targets (HC-2)', () => {
+  const table: [number, number, number, (number | null)[]][] = [
+    // [n, tov, etr, targets]; r_k = floor(100 k / n) / 100
+    [2, 40, 80, [60, 80]],
+    [3, 40, 80, [53, 66, 80]],
+    [4, 40, 80, [50, 60, 70, 80]],
+    [5, 40, 80, [48, 56, 64, 72, 80]],
+    [2, 0, 100, [50, 100]],
+    [3, 0, 100, [33, 66, 100]],
+    [4, 10, 90, [30, 50, 70, 90]],
+    [5, 50, 50, [50, 50, 50, 50, 50]],
+    [3, 80, 40, [67, 54, 40]],
+  ]
+  it.each(table)('n = %i, TOV %i, ETR %i', (n, tov, etr, expected) => {
+    expect(otrTargets(tov, etr, n)).toEqual(expected)
+  })
+
+  it('computes in integer tenths, half up: TOV 0.7, ETR 36.3, n = 2 → 19; 40/80/n=3 → 53/66/80', () => {
+    expect(otrTargets(0.7, 36.3, 2)).toEqual([19, 36.3])
+    expect(otrTargets(40, 80, 3)).toEqual([53, 66, 80])
+  })
+
+  it('rounds half up and is null without a TOV or an ETR', () => {
+    expect(otrTargets(41, 80, 2)).toEqual([61, 80])
+    expect(otrTargets(null, 80, 3)).toEqual([null, null, null])
+    expect(otrTargets(40, null, 2)).toEqual([null, null])
+  })
+
+  it('the assembler resolves defaults, computes the targets and sizes the actuals', () => {
+    const cfg = { activeOtrs: 3, defaultTov: 40, defaultEtr: 80 }
+    expect(resolveMarks(null, cfg)).toEqual({ tov: 40, targets: [53, 66, 80], actuals: [null, null, null], etr: 80, rs: null })
+    expect(resolveMarks({ tov: 50, etr: null, rs: 70, actuals: [61.5, undefined, 99, 98] }, cfg)).toEqual({
+      tov: 50,
+      targets: [60, 70, 80],
+      actuals: [61.5, null, 99],
+      etr: 80,
+      rs: 70,
+    })
+    expect(resolveMarks(null, { activeOtrs: 2, defaultTov: null, defaultEtr: 80 }).targets).toEqual([null, null])
+  })
+
+  it('status reason and entry status', () => {
+    expect(statusReasonOf({ tov: 40, etr: null })).toBe('belum_ada_data')
+    expect(statusReasonOf({ tov: null, etr: null })).toBe('belum_ada_data')
+    expect(statusReasonOf({ tov: null, etr: 80 })).toBe('belum_ada_tov')
+    expect(statusReasonOf({ tov: 40, etr: 80 })).toBeNull()
+    expect(entryStatusOf({ etr: 80 })).toBe('active')
+    expect(entryStatusOf({ etr: null })).toBe('draft')
   })
 })
 
@@ -50,7 +113,10 @@ describe('mean and grades', () => {
 
   it('grades a percentage, null stays null', () => {
     expect(gradeOrNull(90)).toBe('A+')
-    expect(gradeOrNull(39.9)).toBe('G')
+    expect(gradeOrNull(39.9)).toBe('E')
+    expect(gradeOrNull(39.4)).toBe('G')
+    expect(gradeOrNull(89.5)).toBe('A+')
+    expect(gradeOrNull(89.4)).toBe('A')
     expect(gradeOrNull(null)).toBeNull()
   })
 
@@ -62,28 +128,27 @@ describe('mean and grades', () => {
   })
 })
 
-describe('projection (BR-M08-24)', () => {
-  it('adds the mean step to the last AR and compares with the ETR and TOV', () => {
-    expect(projectionOf({ actuals: [60, 70, null], tov: 50, etr: 80 })).toEqual({
-      value: 80,
-      variant: 'green',
-      trend: 'Meningkat',
-      confidence: 'Sederhana',
-    })
+describe('projection (HC-6)', () => {
+  it('worked example: AR 60 with TOV 40 and ETR 80 ends at the ETR, Meningkat, Sederhana', () => {
+    expect(projectionOf({ actuals: [60, 60, 60], tov: 40, etr: 80 })).toEqual({ value: 80, variant: 'green', trend: 'Meningkat', confidence: 'Sederhana' })
   })
 
-  it('amber under the ETR, red without an ETR, low confidence with one point', () => {
-    expect(projectionOf({ actuals: [60, 62, 64], tov: 60, etr: 90 })).toMatchObject({ value: 66, variant: 'amber', trend: 'Meningkat', confidence: 'Tinggi' })
-    expect(projectionOf({ actuals: [65, null], tov: null, etr: null })).toEqual({ value: 65, variant: 'red', trend: 'Stabil', confidence: 'Rendah' })
+  it('end = ETR when the latest AR >= TOV, else the AR itself', () => {
+    expect(projectionOf({ actuals: [30, null], tov: 40, etr: 80 })).toEqual({ value: 30, variant: 'amber', trend: 'Stabil', confidence: 'Rendah' })
+    expect(projectionOf({ actuals: [40, null], tov: 40, etr: 80 })?.value).toBe(80)
   })
 
-  it('clamps to 0..100 and trends down', () => {
-    expect(projectionOf({ actuals: [80, 95], tov: 99, etr: 90 })?.value).toBe(100)
-    expect(projectionOf({ actuals: [20, 5], tov: 30, etr: 50 })).toMatchObject({ value: 0, trend: 'Menurun' })
+  it('trend: end above AR + 2 rises, below AR - 2 falls, else stable; Tinggi when AR >= ETR', () => {
+    expect(projectionOf({ actuals: [78, null], tov: 40, etr: 80 })?.trend).toBe('Stabil')
+    expect(projectionOf({ actuals: [77.9, null], tov: 40, etr: 80 })?.trend).toBe('Meningkat')
+    expect(projectionOf({ actuals: [90, null], tov: 40, etr: 80 })).toMatchObject({ value: 80, trend: 'Menurun', confidence: 'Tinggi' })
+    expect(projectionOf({ actuals: [82, null], tov: 40, etr: 80 })).toMatchObject({ trend: 'Stabil', confidence: 'Tinggi' })
   })
 
-  it('has none without an AR', () => {
+  it('has none without an AR, a TOV or an ETR', () => {
     expect(projectionOf({ actuals: [null, null], tov: 50, etr: 70 })).toBeNull()
+    expect(projectionOf({ actuals: [60], tov: null, etr: 70 })).toBeNull()
+    expect(projectionOf({ actuals: [60], tov: 50, etr: null })).toBeNull()
   })
 })
 

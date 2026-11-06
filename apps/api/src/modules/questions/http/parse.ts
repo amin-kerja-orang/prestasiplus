@@ -10,6 +10,8 @@ import {
   QuestionFilterBulkRequestSchema,
   QuestionListQuerySchema,
   QuestionStructuredListQuerySchema,
+  GURU_STRUCTURED_PAGE_SIZE,
+  GuruStructuredListQuerySchema,
   type ListMeta,
 } from '@pp/contract'
 import type { z } from 'zod'
@@ -108,7 +110,7 @@ function pageOf(text: string | undefined, max: number, fallback: number, key: st
 /** `GET /questions`. Unknown filter values match nothing; a bad `status` is a 422 on `status`. */
 export function parseAdminList(raw: unknown): AdminListFilter {
   const fields = newFields()
-  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing', 'tahun', 'negeri', 'kertas', 'jenis'], fields)
+  const q = cleanQuery(raw, ['page', 'pageSize', 'subjectId', 'educationLevelId', 'difficultyLevel', 'status', 'dskpFilter', 'complianceFilter', 'sourceFilter', 'search', 'tagReview', 'missing', 'tahun', 'negeri', 'kertas', 'jenis', 'tingkatan', 'chapter', 'unit', 'source', 'q', 'flag', 'rejected'], fields)
   const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
   const pageSize = pageOf(q.pageSize, 100, ADMIN_PAGE_SIZE, 'pageSize', fields)
   for (const key of ['subjectId', 'educationLevelId', 'difficultyLevel', 'dskpFilter', 'complianceFilter', 'sourceFilter'] as const) {
@@ -142,12 +144,32 @@ export function parseAdminList(raw: unknown): AdminListFilter {
 }
 
 /** The four V2 Studio filters of a parsed list query or bulk filter (only the ones that are set). */
-function filterV2Fields(d: { tahun?: string | undefined; negeri?: string | undefined; kertas?: '1' | '2' | '3' | undefined; jenis?: AdminListFilter['jenis'] | undefined }): Partial<AdminListFilter> {
+function filterV2Fields(d: {
+  tahun?: string | undefined
+  negeri?: string | undefined
+  kertas?: '1' | '2' | '3' | '4' | undefined
+  jenis?: AdminListFilter['jenis'] | undefined
+  tingkatan?: AdminListFilter['tingkatan'] | undefined
+  chapter?: string | undefined
+  unit?: string | undefined
+  source?: AdminListFilter['source'] | undefined
+  q?: string | undefined
+  flag?: AdminListFilter['flag'] | undefined
+  rejected?: AdminListFilter['rejected'] | undefined
+}): Partial<AdminListFilter> {
   return {
     ...(d.tahun === undefined ? {} : { tahun: d.tahun }),
     ...(d.negeri === undefined ? {} : { negeri: d.negeri }),
     ...(d.kertas === undefined ? {} : { kertas: d.kertas }),
     ...(d.jenis === undefined ? {} : { jenis: d.jenis }),
+    // S1-T07 (API-Q-01): the list and the bulk-by-filter body read the same keys.
+    ...(d.tingkatan === undefined ? {} : { tingkatan: d.tingkatan }),
+    ...(d.chapter === undefined ? {} : { chapter: d.chapter }),
+    ...(d.unit === undefined ? {} : { unit: d.unit }),
+    ...(d.source === undefined ? {} : { source: d.source }),
+    ...(d.q === undefined ? {} : { q: d.q }),
+    ...(d.flag === undefined ? {} : { flag: d.flag }),
+    ...(d.rejected === undefined ? {} : { rejected: d.rejected }),
   }
 }
 
@@ -173,6 +195,33 @@ export function parseStructuredList(raw: unknown): StructuredListFilter {
     ...(d.subjectId === undefined ? {} : { subjectId: d.subjectId }),
     ...(d.educationLevelId === undefined ? {} : { educationLevelId: d.educationLevelId }),
     ...(d.kbatLevel === undefined ? {} : { kbatLevel: d.kbatLevel }),
+  }
+}
+
+/** `GET /guru/structured-questions`: 20 per page, `status` approved (default) or review. */
+export function parseGuruStructuredList(raw: unknown): { filter: StructuredListFilter; status: 'approved' | 'review' } {
+  const fields = newFields()
+  const q = cleanQuery(raw, ['page', 'subjectId', 'educationLevelId', 'status'], fields)
+  const page = pageOf(q.page, MAX_PAGE, 1, 'page', fields)
+  for (const key of ['subjectId', 'educationLevelId', 'status'] as const) {
+    if ((q[key]?.length ?? 0) > FILTER_MAX) fields[key] = FILTER_MESSAGE
+  }
+  const { page: _p, ...rest } = q
+  void _p
+  const parsed = GuruStructuredListQuerySchema.safeParse({ ...rest, page })
+  if (!parsed.success) {
+    for (const [k, v] of Object.entries(fieldsOf(parsed.error))) fields[k] ??= v
+  }
+  if (Object.keys(fields).length > 0 || !parsed.success) throw invalid(fields)
+  const d = parsed.data
+  return {
+    status: d.status ?? 'approved',
+    filter: {
+      page: d.page,
+      pageSize: GURU_STRUCTURED_PAGE_SIZE,
+      ...(d.subjectId === undefined ? {} : { subjectId: d.subjectId }),
+      ...(d.educationLevelId === undefined ? {} : { educationLevelId: d.educationLevelId }),
+    },
   }
 }
 

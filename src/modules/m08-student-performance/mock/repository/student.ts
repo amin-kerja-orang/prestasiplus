@@ -14,6 +14,7 @@ import { learnerBadges, streak, wallet } from '@/modules/m14-gamification/mock'
 
 import type { StudentPerformance, WeakTopic } from '../../api/types'
 import { headcountReads, latestAr, pairStatus, type HeadcountEntryView } from './headcount-port'
+import { ownEntryViewsOf } from './headcount-views'
 import { PRACTICE_MODE_SET } from './reads'
 import { capPercent, pct, round } from './rules'
 import { activityRepo, spRecordsRepo } from './stores'
@@ -145,7 +146,32 @@ function suggestionsOf(
   return out
 }
 
-export function studentPerformance(pupil: UserRow, now: number): StudentPerformance {
+/** Monday 00:00 (local) of the week of `ms`. */
+function mondayOf(ms: number): number {
+  const d = startOfDay(ms)
+  return addDays(d, -((new Date(d).getDay() + 6) % 7))
+}
+
+/** S10-T01 Build (b): the last 12 weeks (Monday start), "Mgg 1" oldest … "Mgg 12" current; a week with no answers is null / 0. */
+function trendOf(sessions: ReturnType<typeof practice.history>, now: number): StudentPerformance['trend'] {
+  const current = mondayOf(now)
+  return Array.from({ length: 12 }, (_, i) => {
+    const from = addDays(current, (i - 11) * 7)
+    const to = addDays(from, 7)
+    const inWeek = sessions.filter((s) => s.completedAtMs >= from && s.completedAtMs < to)
+    const n = inWeek.reduce((sum, s) => sum + s.questionCount, 0)
+    const c = inWeek.reduce((sum, s) => sum + s.correctCount, 0)
+    return {
+      week: formatDateKey(from),
+      label: `Mgg ${String(i + 1)}`,
+      accuracy: n === 0 ? null : round(capPercent((c / n) * 100), 1),
+      sessions: inWeek.length,
+    }
+  })
+}
+
+/** `viewerIsPupil`: the pupil reads their own block (the `GET /headcounts/me` set); staff read every year, as before. */
+export function studentPerformance(pupil: UserRow, now: number, viewerIsPupil = false): StudentPerformance {
   const sessions = practice.history(pupil.id).filter((s) => PRACTICE_MODE_SET.has(s.mode))
   let questionsTotal = 0
   let correct = 0
@@ -205,18 +231,21 @@ export function studentPerformance(pupil: UserRow, now: number): StudentPerforma
   })
 
   const stored = activityRepo.get(pupil.id)
-  const entries = headcountReads.entries().filter((e) => e.studentId === pupil.id)
+  const entries = viewerIsPupil
+    ? ownEntryViewsOf(pupil.id)
+    : headcountReads.entries().filter((e) => e.studentId === pupil.id)
   const weak = weakTopicsOf(pupil.id)
   const streakView = streak.get(pupil.id)
   const w = wallet.summary(pupil.id)
 
   return {
     user: { id: pupil.id, name: pupil.name, initial: (pupil.name.trim()[0] ?? '?').toUpperCase() },
-    heroAccuracy: Math.round(capPercent(accuracy)),
+    heroAccuracy: questionsTotal === 0 ? null : Math.round(capPercent(accuracy)),
+    trend: trendOf(sessions, now),
     streak: streakView.current,
     stats: {
       sessions: sessions.length,
-      accuracy: round(capPercent(accuracy), 1),
+      accuracy: questionsTotal === 0 ? null : round(capPercent(accuracy), 1),
       answered: questionsTotal,
       seconds,
     },
