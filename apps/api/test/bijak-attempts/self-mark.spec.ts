@@ -320,7 +320,7 @@ describe('R1-B12 self-mark', () => {
       void ADMIN
     })
 
-    it('the part must be on this attempt and be a written part (422 on fields.partId)', async () => {
+    it('the part must be on this attempt (422 on fields.partId) and be a written part (409 for an auto-marked part, 46 section 3.4)', async () => {
       const id = await sains()
       const unknown = await selfMark(me, id, { partId: MCQ_PART, mark: 1 })
       expect(unknown.status).toBe(422)
@@ -331,8 +331,8 @@ describe('R1-B12 self-mark', () => {
       // an automatically marked part (short answer with accepted keywords is points, so use the mapping part of Sejarah)
       const s = await sejarah()
       const auto = await selfMark(me, s, { partId: 'sej2-q2-a', mark: 1 })
-      expect(auto.status).toBe(422)
-      expect(auto.body.error.fields.partId).toBe('Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.')
+      expect(auto.status).toBe(409)
+      expect(auto.body.error).toMatchObject({ code: 'CONFLICT', message: 'Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.' })
     })
 
     it('rejects a malformed body (422): no partId, a fraction, a string', async () => {
