@@ -2,16 +2,16 @@
   "scope": "school",
   "header": {
     "classCount": 2,
-    "studentCount": 9
+    "studentCount": 10
   },
   "stats": {
-    "students": 9,
+    "students": 10,
     "teachers": 1,
     "classes": 2,
     "subjects": 2,
-    "sessions": 18,
-    "answered": 177,
-    "accuracy": 54.4
+    "sessions": 22,
+    "answered": 214,
+    "accuracy": 56.9
   },
   "gps": {
     "value": 5.33,

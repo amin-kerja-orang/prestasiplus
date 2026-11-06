@@ -13,8 +13,7 @@ import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
-import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
+import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchPracticeSubjects } from '../api/practice'
@@ -26,7 +25,6 @@ const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const route = useRoute()
 const router = useRouter()
 
-const lowerForm = useIsLowerForm()
 const { data, error, reload } = useApi((signal) => fetchPracticeSubjects({ signal }))
 const subjects = computed(() => data.value?.data ?? [])
 
@@ -51,21 +49,13 @@ watch(
     data-testid="practice-list-page"
   >
 
-    <DsEmptyState
-      v-if="lowerForm"
-      icon="books"
-      :title="LOWER_FORM_COPY.title"
-      :description="LOWER_FORM_COPY.description"
-      data-testid="lower-form-empty"
-    />
-
-    <template v-else-if="data">
+    <template v-if="data">
       <RouterLink to="/practice/chapter" class="block" data-testid="chapter-banner">
         <DsCharacterCard
           accent="action"
           art="books"
           title="Soalan by Chapter"
-          description="Jawab bab demi bab ikut buku teks dan DSKP. Bab seterusnya terkunci sehingga bab semasa lengkap."
+          description="Jawab bab demi bab ikut buku teks dan DSKP."
         >
           <span class="mt-1 flex items-center gap-2 text-label text-highlighted">
             <UBadge color="primary" variant="solid" size="md">Mode Baru</UBadge>

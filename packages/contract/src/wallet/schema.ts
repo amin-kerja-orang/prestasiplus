@@ -132,11 +132,12 @@ export type WalletLedgerEntry = z.infer<typeof WalletLedgerEntrySchema>
 /**
  * Query of `GET /api/gamification/transactions`. `type` is optional; an empty value means all; any
  * value outside `WalletLedgerType` is not an error and returns zero rows (FR-M14-08). The route is
- * NOT paginated in the mock (OQ-API-B4-2: keep as coded).
+ * NOT paginated in the mock (OQ-API-B4-2: keep as coded). `limit` is optional and only bounds the rows; there is no page.
  */
 export const WalletTransactionsQuerySchema = z
   .object({
     type: z.string().optional().meta({ description: 'earn | spend | convert | bonus | refund. Empty = all; anything else = no rows.' }),
+    limit: z.string().optional().meta({ description: 'Positive integer: at most this many of the newest rows. An invalid value is ignored and a value above 500 is clamped to 500, the bound of the route.' }),
   })
   .meta({ id: 'WalletTransactionsQuery' })
 export type WalletTransactionsQuery = z.infer<typeof WalletTransactionsQuerySchema>
