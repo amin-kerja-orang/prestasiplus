@@ -509,7 +509,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'guru-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: A },
   { kind: 'item', id: 'guru-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: A },
   { kind: 'section', id: 'sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: A },
-  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/admin/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
   {
     kind: 'group',
     id: 'guru-kirkpatrick',

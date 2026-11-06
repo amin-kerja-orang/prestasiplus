@@ -2099,8 +2099,8 @@
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
       "name": null,
       "status": "canonical",
       "sector": "S6",
@@ -11829,6 +11829,16 @@
       "sector": "S7",
       "file": "apps/api/src/modules/battle/queue/queue.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/battle/queue/:p/cancel",
+      "method": "POST",
+      "path": "/api/battle/queue/:queueId/cancel",
+      "api_id": "API-GAME-14",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/battle/queue/queue-cancel.controller.ts",
+      "approved_by_card": "S7-T01"
     },
     {
       "key": "POST /api/battle/accept-challenger/:p",
