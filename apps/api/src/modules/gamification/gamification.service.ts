@@ -67,6 +67,8 @@ export interface EntryOptions {
   isTest: boolean
   /** The event time (default the clock); decides the Malaysia day of a completion. */
   at?: Date
+  /** `evaluateAchievements` only: evaluate just the achievements of these criterion kinds (default: all). The daily login passes `['streak']`. */
+  kinds?: readonly string[]
 }
 
 export interface GameResultInput {
@@ -545,7 +547,7 @@ export class GamificationService {
    * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
    * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
    * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
-   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the badges once (savepoint, never
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the streak badges once (savepoint, never
    * fails the login). Idempotent: the day mark
    * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
@@ -570,7 +572,8 @@ export class GamificationService {
         credited = DAILY_LOGIN_REWARD
       }
       // `isTest: false` always: a login is never Mod Pelajar (the hook fires on password logins only), so no test unlock is written here.
-      await this.evaluateAchievementsSafely(userId, { tx, isTest: false })
+      // Only the streak badges: the login moved the streak and nothing else, and a full pass would pay the syiling-total badge the seeded pupil already qualifies for (XL3-30: a form login reads 372).
+      await this.evaluateAchievementsSafely(userId, { tx, isTest: false, kinds: ['streak'] })
       return { firstToday: true, credited, streak: streak.current }
     })
   }
@@ -673,6 +676,7 @@ export class GamificationService {
       }
       for (const a of catalogue) {
         if (unlocks.has(a.id) || a.criterionKind === null || a.criterionMin === null) continue
+        if (opts.kinds && !opts.kinds.includes(a.criterionKind)) continue
         if ((await metric(a)) < a.criterionMin) continue
         const r = await this.unlockRecord(db, userId, a, { ...opts, tx: db as TxClient, at })
         if (!r.unlocked) continue

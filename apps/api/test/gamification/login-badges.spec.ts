@@ -43,7 +43,7 @@ describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
     const spy = watch()
     await loginAs(t as never, STUDENT_EMPTY)
     expect(spy).toHaveBeenCalledTimes(1)
-    expect(spy.mock.calls[0]![1]).toMatchObject({ isTest: false })
+    expect(spy.mock.calls[0]![1]).toMatchObject({ isTest: false, kinds: ['streak'] })
     expect((await unlocks(id)).map((r) => r.name)).toContain('Streak 3 Hari')
     const rows = (await badgeRows(id)).filter((r) => r.description === 'Pencapaian: Streak 3 Hari')
     expect(rows).toHaveLength(1)
@@ -52,6 +52,17 @@ describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
     await loginAs(t as never, STUDENT_EMPTY)
     expect(spy).toHaveBeenCalledTimes(1)
     expect(await badgeRows(id)).toHaveLength(total)
+  })
+
+  it('a login evaluates only the streak badges: a pupil who already qualifies for the syiling-total badge does not unlock it or get paid for it', async () => {
+    const id = await userIdOf(t.db, STUDENT_EMPTY)
+    t.clock.set('2026-11-03T09:00:00+08:00')
+    await t.wallet.credit({ userId: id, amount: 500, isTest: false, source: 'admin_award', sourceId: 'login-badges-500', description: 'Anugerah' })
+    const before = (await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [id]))[0]!.current_syiling
+    await loginAs(t as never, STUDENT_EMPTY)
+    expect((await unlocks(id)).map((r) => r.name)).not.toContain('Pengumpul Syiling')
+    expect((await badgeRows(id)).filter((r) => r.description === 'Pencapaian: Pengumpul Syiling')).toHaveLength(0)
+    expect((await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [id]))[0]!.current_syiling).toBe(before + 2) // only the daily +2
   })
 
   it('a teacher login evaluates nothing', async () => {
