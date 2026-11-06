@@ -185,6 +185,47 @@ describe('Auto AR from the answer store', () => {
   })
 })
 
+describe('per-student reads of a class pupil without an entry row (AC-CHAIN-5 items 3 and 4)', () => {
+  const day = (iso: string) => new Date(iso)
+
+  it('staff facts (GET /performance/students/:id): an Auto pupil with no entry row has the Auto card, with the live AR and the class defaults', async () => {
+    w.answers.addMany('p2', 4, 3, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
+    w.repo.configs.find((c) => c.id === auto)!.defaultTov = 40
+    w.repo.configs.find((c) => c.id === auto)!.defaultEtr = 80
+    for (const scope of [{ kind: 'teacher', teacherId: 't1' }, { kind: 'school', schoolId: 's1' }, { kind: 'platform' }] as const) {
+      const views = await w.facts.entriesOfStudent('p2', scope)
+      const p2 = views.find((v) => v.configId === auto)
+      expect(p2, scope.kind).toMatchObject({ studentId: 'p2', tov: 40, etr: 80, actuals: [75, 75, 75] })
+      expect(views.every((v) => v.studentId === 'p2')).toBe(true)
+    }
+    // A foreign teacher's and a foreign school's scope still see nothing of this pupil.
+    expect(await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't2' })).toEqual([])
+    expect(await w.facts.entriesOfStudent('p2', { kind: 'school', schoolId: 's2' })).toEqual([])
+  })
+
+  it('staff GET /headcount/students/:id: a class pupil with no entry row has the Auto and the Manual section, the same line as the teacher table', async () => {
+    w.answers.addMany('p2', 4, 3, { mode: 'practice', answeredAt: day('2026-03-01T10:00:00+08:00'), subjectId: '2' })
+    const table = await w.service.detail(ctx('t1', 'teacher'), auto, undefined)
+    for (const c of [ctx('t1', 'teacher'), ctx('sa1', 'school_admin'), ctx('a1', 'admin')]) {
+      const r = await w.service.student(c, 'p2')
+      expect(r.sections.map((s) => s.configId).sort(), c.role).toEqual([manual, auto].sort())
+      const sec = r.sections.find((s) => s.configId === auto)
+      expect(sec?.rows.map((x) => x.ar)).toEqual(lineOf(table, 'p2')?.cells.map((x) => x.ar))
+      expect(sec?.rows.map((x) => x.ar)).toEqual([75, 75, 75])
+    }
+    // A foreign teacher and a school admin of another school stay 404.
+    expect(await status(w.service.student(ctx('t2', 'teacher', 's2'), 'p2'))).toBe(404)
+    expect(await status(w.service.student(ctx('sa2', 'school_admin', 's2'), 'p2'))).toBe(404)
+  })
+
+  it('a dropped pupil is still left out of both per-student reads', async () => {
+    w.repo.addEntry(auto, 'p2', { tov: 40, etr: 80 })
+    await w.service.dropStudents(wctx('t1', 'teacher'), auto, { action: 'drop', studentIds: ['p2'] })
+    expect((await w.service.student(ctx('t1', 'teacher'), 'p2')).sections.map((s) => s.configId)).toEqual([manual])
+    expect((await w.facts.entriesOfStudent('p2', { kind: 'teacher', teacherId: 't1' })).filter((v) => !v.dropped).map((v) => v.configId)).not.toContain(auto)
+  })
+})
+
 describe('writes belong to the owning teacher', () => {
   it('school_admin and admin get 403 on every write, a foreign teacher 404', async () => {
     const calls = (c: HeadcountWriteCtx, id: string) => [

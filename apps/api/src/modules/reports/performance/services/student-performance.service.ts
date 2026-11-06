@@ -203,7 +203,7 @@ export class StudentPerformanceService {
     // (FR-MUR-4-6, S10-T02). Staff keep every year of the configs in their scope (AC-M08-14.2: the previous-year card).
     const own = ctx.userId === userId
     const year = Number(mytDay(this.clock.now()).slice(0, 4))
-    const all = (await this.facts.entriesOfStudent(userId, scope, own)).filter((e) => !e.dropped)
+    const all = (await this.facts.entriesOfStudent(userId, scope)).filter((e) => !e.dropped)
     const entries = own ? all.filter((e) => e.academicYear === year) : all
     if (entries.length === 0) return []
     const classes = new Map((await this.ports.classes.classesByIds([...new Set(entries.map((e) => e.classroomId))])).map((c) => [c.id, c]))
