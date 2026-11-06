@@ -179,6 +179,94 @@ export const PAPERS: PaperDef[] = [
   },
 ]
 
+/**
+ * Kertas Subjektif papers of the mock (S3-T06): the pupil lane `/kertas-subjektif`. Two published, one draft
+ * (AC-MUR-13-20: the draft is never listed and its id answers 404). Built from the questions above, which all have a
+ * scheme; fictitious titles. Untimed (`durationMin` 0, no Tempoh).
+ */
+export interface SubjektifPaperDef extends PaperDef {
+  /** Slug of OPT-NEGERI-KERTAS. */
+  examBoard: string
+  published: boolean
+}
+
+export const SUBJEKTIF_PAPERS: SubjektifPaperDef[] = [
+  {
+    id: 'subj-sej-k2-selangor',
+    title: 'Percubaan Negeri Selangor Sejarah Kertas 2 (Contoh)',
+    subject: 'SEJ',
+    kertas: 2,
+    year: 2025,
+    code: '1249/2',
+    durationMin: 0,
+    examBoard: 'selangor',
+    published: true,
+    instructions: ['Baca soalan, jawab atas kertas, kemudian buka skema untuk semak sendiri.'],
+    sections: [
+      {
+        id: 'subj-sej-k2-selangor-s1',
+        label: 'Bahagian A',
+        rule: { type: 'all' },
+        markBudget: 9,
+        questionCount: 2,
+        questionIds: sej.setA,
+      },
+      {
+        id: 'subj-sej-k2-selangor-s2',
+        label: 'Bahagian B',
+        rule: { type: 'all' },
+        markBudget: 10,
+        questionCount: 1,
+        questionIds: sej.setB.slice(0, 1),
+      },
+    ],
+  },
+  {
+    id: 'subj-sn-k2-johor',
+    title: 'Percubaan Negeri Johor Sains Kertas 2 (Contoh)',
+    subject: 'SN',
+    kertas: 2,
+    year: 2025,
+    code: '4541/2',
+    durationMin: 0,
+    examBoard: 'johor',
+    published: true,
+    instructions: ['Baca soalan, jawab atas kertas, kemudian buka skema untuk semak sendiri.'],
+    sections: [
+      {
+        id: 'subj-sn-k2-johor-s1',
+        label: 'Bahagian A',
+        rule: { type: 'all' },
+        markBudget: 9,
+        questionCount: 3,
+        questionIds: sn.setA,
+      },
+    ],
+  },
+  {
+    id: 'subj-mat-k2-kedah-draf',
+    title: 'Percubaan Negeri Kedah Matematik Kertas 2 (Draf)',
+    subject: 'MAT',
+    kertas: 2,
+    year: 2025,
+    code: '1449/2',
+    durationMin: 0,
+    examBoard: 'kedah',
+    published: false,
+    instructions: ['Baca soalan, jawab atas kertas, kemudian buka skema untuk semak sendiri.'],
+    sections: [
+      {
+        id: 'subj-mat-k2-kedah-draf-s1',
+        label: 'Bahagian A',
+        rule: { type: 'all' },
+        markBudget: 9,
+        questionCount: 1,
+        questionIds: ['mat2-diskaun-v1'],
+      },
+    ],
+  },
+]
+
 export const BLUEPRINTS: Blueprint[] = [
   {
     subject: 'MAT',

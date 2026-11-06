@@ -64,7 +64,8 @@ async function approvedMcq(subject: string, level: string, chapter: string): Pro
       explanation: 'Penjelasan ujian.',
       cognitiveLevel: 'mengaplikasi',
       curriculumChapterId: chapter,
-      ...(sp === undefined ? {} : { dskpSpId: sp }),
+      // With SP nodes the tag carries the SP and a TP (TP has no Kesukaran fallback, #685/#783); the unit is the SP's ancestor.
+      ...(sp === undefined ? {} : { tag: { unitId: null, spIds: [sp], tp: 3 } }),
     } as never,
     admin,
   )

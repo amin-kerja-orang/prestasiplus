@@ -166,10 +166,10 @@ describe('sweep', () => {
   })
 
   it('an abandoned session is not in the history (repo and GET /practice/sessions)', async () => {
-    const started = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const started = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const q = started.questions[0]?.id as string
     expect((await checkAnswer(pelajar, started.sessionId, t.bank, q, true)).status).toBe(200)
-    const done = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const done = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     for (const x of done.questions) await checkAnswer(pelajar, done.sessionId, t.bank, x.id, true)
     expect((await pelajar.post(`/api/practice/sessions/${done.sessionId}/submit`, { timeSpent: 10 })).status).toBe(200)
     t.reward.calls.length = 0
@@ -179,11 +179,11 @@ describe('sweep', () => {
     expect(t.reward.calls).toHaveLength(0)
     expect(await countRows(t.db, 'practice_checks', 'session_id = $1', [started.sessionId])).toBe(1)
 
-    const list = await pelajar.get('/api/practice/sessions?modes=random')
+    const list = await pelajar.get('/api/practice/sessions?modes=chapter')
     expect(list.body.data.map((r: { id: string }) => r.id)).toEqual([done.sessionId])
     const repo = t.app.get(PracticeRepository)
-    expect((await repo.history(uid, { modes: ['random'] })).map((s) => s.id)).toEqual([done.sessionId])
-    expect(await repo.historyCount(uid, { modes: ['random'] })).toBe(1)
+    expect((await repo.history(uid, { modes: ['chapter'] })).map((s) => s.id)).toEqual([done.sessionId])
+    expect(await repo.historyCount(uid, { modes: ['chapter'] })).toBe(1)
   })
 
   it('one pass loops full batches until a short one and sums them', async () => {

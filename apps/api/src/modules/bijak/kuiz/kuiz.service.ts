@@ -510,7 +510,8 @@ export class KuizService {
   private async visiblePaper(userId: string, paperId: string) {
     if (!isIdString(paperId)) throw kuizPaperNotFound()
     const paper = await this.papers.findPaper(idFromString(paperId))
-    if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
+    // A Kertas Subjektif paper (DM-23) is not a Kuiz paper: the same 404 as an unknown one.
+    if (!paper || paper.status !== 'published' || paper.surface === 'subjektif') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
     // H-A13 / AC-R1-18.4: a paper that places a question the bank no longer serves (archived after Terbit) is refused. This is the
     // first half of the new-sitting rule (`attempt-source.ts`: a live approved version; `is_active` is NOT checked, the placement is

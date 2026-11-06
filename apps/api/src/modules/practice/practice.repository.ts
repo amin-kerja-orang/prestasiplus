@@ -6,7 +6,9 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { AnswerLogPort, type WritableAnswerMode, writableModeOf } from './answer-log.port'
+import { coinsPerCorrect } from './coins'
 import { alreadySubmitted, notFound } from './errors'
+import { BANK_VISIBLE_SQL } from '../questions/learner-visibility'
 import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -513,7 +515,7 @@ export class PracticeRepository {
       await this.db.practiceCheck.deleteMany({ where: { sessionId: locked.id } })
 
       // (3) the session.
-      const coins = sessionCoins(locked.mode, correct, locked.coinsPerCorrect)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.update({
         where: { id: locked.id },
@@ -561,7 +563,7 @@ export class PracticeRepository {
       const correct = input.answers.filter((a) => a.isCorrect).length
       const cap = MAX_SECONDS_PER_QUESTION * total
       const spent = Math.max(0, Math.min(cap, Math.round((input.completedAt.getTime() - input.startedAt.getTime()) / 1000)))
-      const coins = sessionCoins('pksk', correct)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.create({
         data: {
@@ -603,8 +605,19 @@ export class PracticeRepository {
 
   /** BR-14: a wrong answer adds one to `wrong_times` (or queues the question), a right answer removes it. */
   private async writeQueue(userId: bigint, graded: readonly GradedAnswer[], at: Date): Promise<void> {
+    // DM-42: a teacher's personal question is never queued for Ulang Kaji (it is served by its owner's mission only). The queue read
+    // (`eligibleQueueBySubject`) and the revision planner drop it as well, so a row written before this guard stays unserved.
+    const ids = graded.map((g) => idFromString(g.check.questionId))
+    const hidden = new Set(
+      (
+        await this.db.$queryRaw<{ id: bigint }[]>`
+          SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
+           WHERE q.id = ANY(${ids}::bigint[]) AND NOT (${BANK_VISIBLE_SQL})`
+      ).map((r) => r.id.toString()),
+    )
     for (const g of graded) {
       if (g.subjectId === null) continue
+      if (hidden.has(g.check.questionId)) continue
       const questionId = idFromString(g.check.questionId)
       if (g.isCorrect) {
         await this.db.revisionQueue.deleteMany({ where: { userId, questionId } })
