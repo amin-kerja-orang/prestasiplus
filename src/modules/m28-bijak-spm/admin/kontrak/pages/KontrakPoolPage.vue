@@ -122,9 +122,9 @@ async function generate(): Promise<void> {
   generating.value = true
   draftError.value = null
   try {
-    const { paperId } = await api.generateDraft(subject.value, kertas.value)
+    const { id } = await api.generateDraft(subject.value, kertas.value)
     flash.show({ type: 'success', message: 'Draf kertas dijana. Kertas belum diterbitkan.' })
-    await router.push({ name: ADMIN_ROUTES.paperEdit, params: { id: paperId } })
+    await router.push({ name: ADMIN_ROUTES.paperEdit, params: { id } })
   } catch (e) {
     if (e instanceof KontrakError && e.kind === 'shortage') {
       draftError.value = { title: 'Draf kertas tidak dapat dijana.', lines: e.shortages.map(shortageLine), retry: false }

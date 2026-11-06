@@ -1,3 +1,5 @@
+import { bandOf } from '../../lib/headcount/otr'
+
 /**
  * The headcount read port (SRS M08 v1.11 §6.4, BR-M08-01/07/08). HeadcountConfig and HeadcountEntry are
  * owned by M08-T1b (`headcount*` files), which runs after this task. The S1 / S3 / S6 / S9 figures that
@@ -97,13 +99,10 @@ export function pairStatus(e: HeadcountEntryView): 'on' | 'below' | 'none' {
   return l.ar >= l.target ? 'on' : 'below'
 }
 
-/** BR-M08-08 rule (2): the ±2 % band (Above > OTR; On Track OTR − 2…OTR; Below < OTR − 2). */
+/** HC-4 Ringkasan bands: Above AR − OTR > 2, On Track 0…2, Below < 0 (HC-SPEC, DV-GUR-3-1). */
 export function bandStatus(
   ar: number | null,
   target: number | null,
 ): 'above' | 'on' | 'below' | 'na' {
-  if (ar === null || target === null) return 'na'
-  if (ar > target) return 'above'
-  if (ar >= target - 2) return 'on'
-  return 'below'
+  return bandOf(ar, target)
 }

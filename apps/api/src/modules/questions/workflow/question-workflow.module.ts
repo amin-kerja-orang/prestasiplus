@@ -13,6 +13,7 @@ import { LifecycleService } from './lifecycle'
 // Not from the './lifecycle' barrel: the barrel is imported by QuestionWorkflowService, and the controller imports that service (import cycle).
 import { LifecycleController } from './lifecycle/lifecycle.controller'
 import { CurriculumModule } from '../../curriculum'
+import { IntakeFilesModule } from '../../intake/files/intake-files.module'
 import { GuruQuestionImportController, QuestionImportsController, QuestionImportsService } from './imports'
 import { NotificationsModule } from '../../notifications'
 import { QuestionBankAdapter } from './bank-adapter'
@@ -52,7 +53,7 @@ import { QuestionWorkflowService } from './question-workflow.service'
  * bank, see `test/questions-workflow/helpers.ts`.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, NotificationsModule, CurriculumModule, FilesModule, QuestionsModule],
+  imports: [AuditModule, ThrottleModule, NotificationsModule, CurriculumModule, FilesModule, QuestionsModule, IntakeFilesModule],
   controllers: [
     // --- controllers: one line per route group ---------------------------------------------
     QualityController,

@@ -25,7 +25,11 @@ const rich = (ms: string | null, en: string | null): { ms: string; en?: string }
 
 // --- rows -> tree ---------------------------------------------------------------------------------
 
-export function partsFromRows(rows: readonly PartRow[], options: readonly PartOption[], keys: readonly AnswerKey[]): QuestionPart[] {
+/**
+ * `lenient` (the servability read only): a leaf with NO `answer_keys` row is returned with `key` undefined instead of failing, so the indicator can
+ * say `no_key` / `no_scheme` (S1-T07) instead of the read answering 500. Every other reader keeps the strict parse and never sees such a leaf.
+ */
+export function partsFromRows(rows: readonly PartRow[], options: readonly PartOption[], keys: readonly AnswerKey[], lenient = false): QuestionPart[] {
   const children = new Map<string, PartRow[]>()
   for (const row of rows) {
     const k = row.parentPartId === null ? '' : idToString(row.parentPartId)
@@ -45,12 +49,12 @@ export function partsFromRows(rows: readonly PartRow[], options: readonly PartOp
           return { label: row.label, prompt: rich(row.promptMs, row.promptEn), children: build(idToString(row.id)) } as QuestionPart
         }
         if (kids && kids.length > 0) throw new StoredKeyError(idToString(row.id))
-        return leafFromRow(row, (optionsOf.get(row.id) ?? []).slice().sort((a, b) => a.position - b.position), keyOf.get(row.id))
+        return leafFromRow(row, (optionsOf.get(row.id) ?? []).slice().sort((a, b) => a.position - b.position), keyOf.get(row.id), lenient)
       })
   return build('')
 }
 
-function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undefined): QuestionLeaf {
+function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undefined, lenient = false): QuestionLeaf {
   const candidate: Record<string, unknown> = {
     label: row.label,
     prompt: rich(row.promptMs, row.promptEn),
@@ -77,8 +81,21 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if ((row.mode === 'essay' || row.mode === 'essay_choice') && row.wordMin !== null && row.wordMax !== null) candidate.wordRange = { min: row.wordMin, max: row.wordMax }
   if (row.mode === 'essay_choice') candidate.topics = row.topics
   const parsed = QuestionLeafPartSchema.safeParse(candidate)
-  if (!parsed.success) throw new StoredKeyError(idToString(row.id))
+  if (!parsed.success) {
+    if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
+    // #805: an MCQ whose key names no option is tolerated (and only that: the leaf must parse once the key is pointed at a real option);
+    // `servableMcq` then refuses it ("the key names no option"), so it is never served or scored.
+    if (lenient && row.mode === 'mcq' && keyNamesNoOption(candidate)) return candidate as unknown as QuestionLeaf
+    throw new StoredKeyError(idToString(row.id))
+  }
   return parsed.data as QuestionLeaf
+}
+
+function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
+  const first = (candidate.options as { label: string }[] | undefined)?.[0]
+  const k = candidate.key as { kind?: unknown } | undefined
+  if (first === undefined || k?.kind !== 'option') return false
+  return QuestionLeafPartSchema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------

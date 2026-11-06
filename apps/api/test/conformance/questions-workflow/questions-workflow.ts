@@ -10,6 +10,8 @@ import { API_ONLY, dataOf, errorOf, expectError, listOf } from '../helpers'
  */
 
 const CSV_TEMPLATE_NAME = 'template-import-soalan.csv'
+const GURU_CSV_TEMPLATE_NAME = 'templat-soalan.csv'
+const GURU_ROW_CSV = 'subjek,tingkatan,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,kesukaran\r\nSubjek Tiada,4,Berapakah 2 + 2?,3,4,5,6,B,2\r\n'
 const ROW_CSV =
   'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level\r\n' +
   'Berapakah 2 + 2?,3,4,5,6,B,999999,999999,2\r\n'
@@ -34,7 +36,6 @@ const ADMIN_READS = [
   '/question-imports',
   '/question-imports/template',
   '/question-quality',
-  '/diagram-audit',
   '/master-notes',
 ] as const
 const ADMIN_WRITES = [
@@ -45,6 +46,10 @@ const ADMIN_WRITES = [
   '/master-notes/1/approve',
   '/questions/1/ai-explanation',
 ] as const
+/** Readable by admin, teacher and school admin (S6-T18); the writes under it stay in ADMIN_WRITES. */
+const STAFF_READS = ['/diagram-audit'] as const
+/** Inside ADMIN_WRITES but open to a teacher too (S6-T18 part 2): the guard lets her in, so an unknown question is 404, not 403. */
+const TEACHER_WRITES = ['/diagram-audit/mcq/1/image'] as const
 const GURU_READS = ['/guru/questions/template', '/guru/dskp/bidang', '/guru/dskp/sk', '/guru/dskp/sp'] as const
 
 export const questionsWorkflowScenarios: Scenario[] = [
@@ -112,7 +117,7 @@ export const questionsWorkflowScenarios: Scenario[] = [
     },
   },
   {
-    id: 'question-workflow-api/guru import and template: same template bytes, 422 without a file, rejected rows listed',
+    id: 'question-workflow-api/guru import and template: the BM template, 422 without a file, rejected rows listed in errors',
     domain: 'question-workflow',
     targets: API_ONLY,
     async run(ctx) {
@@ -120,16 +125,17 @@ export const questionsWorkflowScenarios: Scenario[] = [
       const admin = await ctx.as('admin')
       const tpl = await teacher.request('GET', '/guru/questions/template')
       ctx.expectStatus(tpl, 200)
-      ctx.check(String(tpl.headers['content-disposition']).includes(CSV_TEMPLATE_NAME), 'guru template Content-Disposition lacks the file name')
+      ctx.check(String(tpl.headers['content-disposition']).includes(GURU_CSV_TEMPLATE_NAME), 'guru template Content-Disposition lacks the file name')
       const adminTpl = await admin.request('GET', '/question-imports/template')
-      ctx.check(JSON.stringify(tpl.body) === JSON.stringify(adminTpl.body), 'the guru template differs from the admin template')
+      ctx.check(String(adminTpl.headers['content-disposition']).includes(CSV_TEMPLATE_NAME), 'admin template Content-Disposition lacks the file name')
+      ctx.check(String(tpl.headers['content-disposition']) !== String(adminTpl.headers['content-disposition']), 'the guru template must be its own file (templat-soalan.csv)')
 
       expectField(ctx, await teacher.request('POST', '/guru/questions/import'), 'csvFile')
-      const res = await teacher.request('POST', '/guru/questions/import', csvPart('csvFile', ROW_CSV))
+      const res = await teacher.request('POST', '/guru/questions/import', csvPart('csvFile', GURU_ROW_CSV))
       ctx.expectStatus(res, 200)
       const data = dataOf(res)
       ctx.check(data.imported === 0, `expected imported 0, got ${String(data.imported)}`)
-      ctx.check(Array.isArray(data.failed) && data.failed.length === 1, 'expected one failed row')
+      ctx.check(Array.isArray(data.errors) && data.errors.length === 1, 'expected one error row')
     },
   },
   {
@@ -222,7 +228,7 @@ export const questionsWorkflowScenarios: Scenario[] = [
     targets: API_ONLY,
     async run(ctx) {
       const anon = ctx.anonymous()
-      for (const path of [...ADMIN_READS, ...GURU_READS, '/question-reports/mine']) {
+      for (const path of [...ADMIN_READS, ...STAFF_READS, ...GURU_READS, '/question-reports/mine']) {
         expectError(ctx, await anon.request('GET', path), 401, 'UNAUTHORIZED')
       }
       for (const path of [...ADMIN_WRITES, '/guru/questions/import', '/question-reports']) {
@@ -245,12 +251,13 @@ export const questionsWorkflowScenarios: Scenario[] = [
     },
   },
   {
-    id: 'question-workflow-api/school admin is 403 on every route except the student report routes',
+    id: 'question-workflow-api/school admin is 403 on every route except the student report routes and the diagram audit list',
     domain: 'question-workflow',
     targets: API_ONLY,
     async run(ctx) {
       const schoolAdmin = await ctx.as('school_admin')
       for (const path of [...ADMIN_READS, ...GURU_READS]) expectError(ctx, await schoolAdmin.request('GET', path), 403, 'FORBIDDEN')
+      for (const path of STAFF_READS) ctx.expectStatus(await schoolAdmin.request('GET', path), 200)
       for (const path of [...ADMIN_WRITES, '/guru/questions/import']) expectError(ctx, await schoolAdmin.request('POST', path), 403, 'FORBIDDEN')
       expectError(ctx, await schoolAdmin.request('PATCH', '/question-reports/1', { body: { status: 'fixed' } }), 403, 'FORBIDDEN')
       ctx.expectStatus(await schoolAdmin.request('GET', '/question-reports/mine'), 200)
@@ -262,10 +269,12 @@ export const questionsWorkflowScenarios: Scenario[] = [
     targets: API_ONLY,
     async run(ctx) {
       const student = await ctx.as('student')
-      for (const path of [...ADMIN_READS, ...GURU_READS]) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
+      for (const path of [...ADMIN_READS, ...STAFF_READS, ...GURU_READS]) expectError(ctx, await student.request('GET', path), 403, 'FORBIDDEN')
       const teacher = await ctx.as('teacher')
       for (const path of ADMIN_READS) expectError(ctx, await teacher.request('GET', path), 403, 'FORBIDDEN')
-      for (const path of ADMIN_WRITES) expectError(ctx, await teacher.request('POST', path), 403, 'FORBIDDEN')
+      for (const path of STAFF_READS) ctx.expectStatus(await teacher.request('GET', path), 200)
+      for (const path of ADMIN_WRITES.filter((p) => !(TEACHER_WRITES as readonly string[]).includes(p))) expectError(ctx, await teacher.request('POST', path), 403, 'FORBIDDEN')
+      for (const path of TEACHER_WRITES) expectError(ctx, await teacher.request('POST', path), 404, 'NOT_FOUND')
     },
   },
 ]

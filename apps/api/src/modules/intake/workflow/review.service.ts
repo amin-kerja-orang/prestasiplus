@@ -14,6 +14,7 @@ import {
   type IntakeItem,
   type IntakeItemCreateRequest,
   type IntakeItemListQuery,
+  type IntakeKirimanStatus,
   type IntakeItemListResponse,
   type IntakeItemPatch,
   type IntakeItemPatchResult,
@@ -33,13 +34,15 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
-import { QuestionsRepository, QuestionsService } from '../../questions'
+import { QuestionsRepository, QuestionsService, StimuliService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
-import { batchLevelIssues, itemIssues, questionMarks, stimulusIssues } from './gate'
+import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { diagramTargetOf, type DiagramTarget } from '../files/guru-diagram'
+import { guruStimulusImageOf } from '../files/guru-submissions'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -80,13 +83,13 @@ interface Transition {
  * through `IntakeExtractionService`, which can only produce `generated` or `needs_review`.
  */
 /**
- * Kertas ('1' to '3') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
+ * Kertas ('1' to '4') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
  * label (`K2`, `P1`). Null when neither says (the question then carries no kertas and is not a paper-builder candidate).
  */
-export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | null {
+export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | '4' | null {
   if (!paper) return null
   const m = (paper.paperCode ? /\/([0-9])\s*$/.exec(paper.paperCode) : null) ?? (paper.kertas ? /^[A-Za-z]*\s*([0-9])\s*$/.exec(paper.kertas) : null)
-  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3') ? m[1] : null
+  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3' || m[1] === '4') ? m[1] : null
 }
 
 @Injectable()
@@ -96,6 +99,7 @@ export class IntakeReviewService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(QuestionsRepository) private readonly questionsRepo: QuestionsRepository,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(CurriculumFactsService) private readonly curriculum: CurriculumFactsService,
     @Inject(ItemViews) private readonly views: ItemViews,
@@ -123,13 +127,16 @@ export class IntakeReviewService {
       batch: {
         ...visibleBatches(auth),
         ...(q.subject === undefined ? {} : { subject: q.subject.toUpperCase() }),
+        ...(q.source === undefined ? {} : { source: q.source }),
         ...(isAdmin(auth) && q.uploaderId !== undefined ? { ownerUserId: parseId(q.uploaderId) ?? -1n } : {}),
       },
       ...(q.batchId === undefined ? {} : { batchId: parseId(q.batchId) ?? -1n }),
       ...(q.band === undefined ? {} : { OR: BAND_WHERE[q.band] }),
       ...(q.duplicate === undefined ? {} : DUPLICATE_WHERE[q.duplicate]),
     }
-    const where: Prisma.IntakeItemWhereInput = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const stateWhere = q.state === undefined ? base : { ...base, reviewState: q.state }
+    const kiriman = q.kirimanStatus === undefined ? null : await this.kirimanWhere(q.kirimanStatus, base)
+    const where: Prisma.IntakeItemWhereInput = kiriman === null ? stateWhere : { AND: [stateWhere, kiriman] }
     const [total, rows, grouped] = await Promise.all([
       this.prisma.client.intakeItem.count({ where }),
       this.prisma.client.intakeItem.findMany({
@@ -144,6 +151,36 @@ export class IntakeReviewService {
     const counts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
     for (const g of grouped) if (g.reviewState in counts) counts[g.reviewState as IntakeItemState] = g._count._all
     return { data: await this.views.rows(auth, rows), meta: { ...listMeta(q.page, q.pageSize, total), counts } }
+  }
+
+  /**
+   * FR-ADM-Q12.1 / 40 OPT-KIRIMAN-STATUS: the display keys of Kiriman Guru over the stored item states. `Processing` and
+   * `Selesai` split the accepted items by the LIVE version of the resulting question (D12): `Selesai` = active question with
+   * `live_version_no` set and that version `approved`; `Processing` = every other accepted item.
+   */
+  private async kirimanWhere(key: IntakeKirimanStatus, base: Prisma.IntakeItemWhereInput): Promise<Prisma.IntakeItemWhereInput | null> {
+    switch (key) {
+      case 'Jumlah':
+        return null
+      case 'Pending':
+        return { reviewState: { in: [...OPEN] } }
+      case 'Ditolak':
+        return { reviewState: 'rejected' }
+      default: {
+        // Only the accepted items inside the caller scope and the other filters are looked at (never the whole table).
+        const accepted = await this.prisma.client.intakeItem.findMany({ where: { AND: [base, { reviewState: 'accepted' }] }, select: { id: true, questionId: true } })
+        const qids = [...new Set(accepted.flatMap((r) => (r.questionId === null ? [] : [r.questionId])))]
+        const live = qids.length === 0 ? [] : await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+          SELECT q.id
+          FROM questions q
+          WHERE q.id = ANY(${qids}::bigint[]) AND q.is_active AND q.live_version_no IS NOT NULL
+            AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved')`
+        const liveIds = new Set(live.map((r) => r.id))
+        // An accepted item whose question is gone (FK SET NULL) has no live approved question: it is Processing.
+        const done = accepted.filter((r) => r.questionId !== null && liveIds.has(r.questionId)).map((r) => r.id)
+        return key === 'Selesai' ? { id: { in: done } } : { reviewState: 'accepted', id: { notIn: done } }
+      }
+    }
   }
 
   async review(auth: AuthContext, idText: string): Promise<IntakeBatchReview> {
@@ -341,7 +378,7 @@ export class IntakeReviewService {
           numberLabel: next.label,
           itemType: next.type,
           pageNo: next.page,
-          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}) } as unknown as Prisma.InputJsonValue,
+          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}), ...(stored.target ? { target: stored.target } : {}) } as unknown as Prisma.InputJsonValue,
           confirmedFields: confirmed,
           needsManual,
           humanEdited: edited,
@@ -397,7 +434,19 @@ export class IntakeReviewService {
       if (!OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
       await this.decide(tx, auth, row, 'rejected', body.reason, who)
     }, TX)
+    await this.discardDiagramSource(first)
     return this.views.detail(auth, await this.loadVisible(auth, idText))
+  }
+
+  /** After a diagram item is rejected its uploaded image is not used again: remove the batch owner's file (never throws). */
+  private async discardDiagramSource(row: ItemRow): Promise<void> {
+    const target = diagramTargetOf(row.payload)
+    if (target === null || row.batch.ownerUserId === null) return
+    const file = await this.prisma.client.file.findFirst({
+      where: { id: idFromString(target.imageFileId), purpose: 'question_image', ownerUserId: row.batch.ownerUserId },
+      select: { publicId: true },
+    })
+    if (file) await this.files.discard(file.publicId, 'question_image')
   }
 
   /** Final decision (reject): state, reason, who and when, the history row and the audit row in one transaction. */
@@ -509,9 +558,14 @@ export class IntakeReviewService {
 
   /** The accept itself, inside the caller's transaction on a locked row. Throws 409 for a wrong state, 422 for a failed gate. */
   private async acceptRow(tx: TxClient, auth: AuthContext, row: ItemRow, who: CallerInfo): Promise<void> {
+    // S6-T18 part 2: a teacher's diagram image sets the asset of an EXISTING group stimulus; no question is made. Admin only, decided
+    // first, so a teacher cannot accept (or probe the state of) their own diagram item.
+    const diagram = diagramTargetOf(row.payload)
+    if (diagram !== null && !isAdmin(auth)) throw ApiError.of('FORBIDDEN')
     if (row.reviewState === 'accepted') throw conflict(INTAKE_MESSAGES.itemAlreadyAccepted)
     if (row.reviewState === 'rejected') throw conflict(INTAKE_MESSAGES.itemLocked)
     if (row.reviewState === 'duplicate') throw conflict(INTAKE_MESSAGES.itemIsDuplicate)
+    if (diagram !== null) return this.acceptDiagram(tx, auth, row, diagram, who)
 
     // Items of one stimulus group are accepted one at a time: the first creates the bank stimulus and group, the rest join it.
     if (row.stimulusId !== null) await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${row.batchId} FOR UPDATE`
@@ -519,9 +573,12 @@ export class IntakeReviewService {
     const q = questionOf(row)
     const stimulus = row.stimulus ? stimulusOf(row.stimulus) : undefined
     const resolved = await this.curriculum.resolver().resolve(q.tag)
-    const issues = itemIssues(q, stimulus, resolved.facts)
-    if (issues.length > 0 || resolved.ids === null) throw gateError(issues)
+    const issues = draftIssues(q, stimulus, resolved.facts)
+    if (issues.length > 0) throw gateError(issues)
+    // Unreachable in practice: `ids` is null only when the subject or level is unknown, which draftIssues already reports.
+    if (resolved.ids === null) throw gateError([{ itemId: q.id, where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${INTAKE_GATE_MESSAGES.subjectLevelMissing}` }])
 
+    // The copy belongs to the batch owner (the teacher who sent the image); the admin only decides.
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
     const made: MadeBankGroup = {}
@@ -554,9 +611,9 @@ export class IntakeReviewService {
       // The bank stimulus, group and figure copy are written outside this transaction: a refused accept must not leave them behind
       // (one orphan object per retry otherwise).
       await this.discardMade(made)
-      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: err.message }])
+      if (err instanceof ConvertError) throw gateError([{ itemId: idToString(row.id), where: err.where, message: `Soalan ${q.label}: ${err.message}` }])
       if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields) {
-        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message })))
+        throw gateError(Object.values(err.fields).map((message) => ({ itemId: idToString(row.id), where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${message}` })))
       }
       throw err
     }
@@ -586,6 +643,60 @@ export class IntakeReviewService {
   }
 
   /**
+   * Accept of a diagram item (S6-T18 part 2, ruling on #494): the teacher's image is copied to a `question_image` owned by the batch owner and becomes
+   * `asset_file_id` of the EXISTING stimulus of the group (no new stimulus, no new group, no question version). The question is then
+   * resolved in the diagram audit (`image`), so it no longer shows as needing a diagram. Inside the caller's transaction; a failure removes the copy.
+   */
+  private async acceptDiagram(tx: TxClient, auth: AuthContext, row: ItemRow, target: DiagramTarget, who: CallerInfo): Promise<void> {
+    const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
+    // The group and its stimulus still exist, and the question still belongs to the group.
+    const link = await tx.stimulusGroupStimulus.findFirst({ where: { groupId: idFromString(target.groupId), stimulusId: idFromString(target.stimulusId) }, select: { id: true } })
+    const question = await tx.question.findFirst({ where: { id: idFromString(target.questionId), groupId: idFromString(target.groupId) }, select: { id: true } })
+    if (!link || !question) throw conflict(WORKFLOW_MESSAGES.diagramTargetGone)
+    // Only the batch owner's own `question_image` (a guru batch always has an owner; a null owner would match an unowned file).
+    const source = row.batch.ownerUserId === null
+      ? null
+      : await tx.file.findFirst({ where: { id: idFromString(target.imageFileId), purpose: 'question_image', ownerUserId: row.batch.ownerUserId }, select: { id: true } })
+    const bytes = source ? await this.files.readStored(idToString(source.id)) : null
+    if (!bytes) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+
+    let token: string | undefined
+    try {
+      const copy = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: bytes.bytes, isTest: auth.mode !== null })
+      token = copy.publicId
+      const copyId = idFromString(copy.id)
+      // Under the stimulus lock (D113): refused with 409 while pupils are served the stimulus, and never over an existing file. The siblings of
+      // the group need no change: once the stimulus has a file they drop out of the diagram candidate predicate by themselves.
+      if (!(await this.stimuli.attachFirstAsset(target.stimulusId, copyId))) throw conflict(WORKFLOW_MESSAGES.diagramTargetGone)
+      const resolved = { resolution: 'image', fileId: copyId, resolvedById: idFromString(auth.userId) }
+      await tx.diagramAuditResolution.upsert({
+        where: { kind_questionId: { kind: target.kind, questionId: idFromString(target.questionId) } },
+        create: { kind: target.kind, questionId: idFromString(target.questionId), ...resolved },
+        update: resolved,
+      })
+      await tx.intakeItem.update({
+        where: { id: row.id },
+        data: { reviewState: 'accepted', decidedById: idFromString(auth.userId), decidedAt: new Date() },
+      })
+      await tx.intakeItemEvent.create({
+        data: {
+          itemId: row.id,
+          event: 'accepted',
+          fromState: row.reviewState,
+          toState: 'accepted',
+          afterValue: { questionId: target.questionId, groupId: target.groupId, stimulusId: target.stimulusId, assetFileId: copy.id },
+          actorUserId: idFromString(auth.userId),
+          actorRole: auth.active.role,
+        },
+      })
+      await this.record(INTAKE_AUDIT.itemAccepted, auth, row, who, { from: row.reviewState, to: 'accepted', diagram: true, questionId: target.questionId, stimulusId: target.stimulusId }, tx)
+    } catch (err) {
+      if (token !== undefined) await this.files.discard(token, 'question_image')
+      throw err
+    }
+  }
+
+  /**
    * The bank stimulus group of an item's stimulus: the group of an already accepted item of the same stimulus, else a new
    * bank stimulus and group made from a SNAPSHOT of the intake stimulus (text, caption, alt, the stored crop; D6). Both are
    * created through `QuestionsService`. The crop is an `intake_figure` file (reviewers only); the bank stimulus gets its OWN
@@ -608,8 +719,22 @@ export class IntakeReviewService {
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
     let assetFileId: bigint | null = null
-    if (crop?.cropFileId) {
-      const cropped = await this.files.readStored(idToString(crop.cropFileId))
+    let kind = s.kind as IntakeStimulusKind
+    // The picture to copy: the figure crop of a paper item, or (S6-T17) the `question_image` a teacher uploaded for a structured submission.
+    let sourceFileId: string | null = crop?.cropFileId ? idToString(crop.cropFileId) : null
+    if (sourceFileId === null && s.figureId === null) {
+      const token = guruStimulusImageOf(row.payload)
+      if (token !== null) {
+        // A guru batch always has an owner; never match an unowned file (a null owner would).
+        const owner = row.batch.ownerUserId
+        const own = owner === null ? null : await this.prisma.client.file.findFirst({ where: { publicId: token, purpose: 'question_image', ownerUserId: owner }, select: { id: true } })
+        if (!own) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+        sourceFileId = idToString(own.id)
+        kind = 'image'
+      }
+    }
+    if (sourceFileId !== null) {
+      const cropped = await this.files.readStored(sourceFileId)
       if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
       const stored = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })
       made.fileToken = stored.publicId
@@ -618,7 +743,7 @@ export class IntakeReviewService {
     const table = stimulusTableOf(s.tableData)
     const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
-      kind: s.kind as IntakeStimulusKind,
+      kind,
       label: s.label || null,
       bodyMs: body,
       bodyEn: null,
@@ -695,6 +820,7 @@ export class IntakeReviewService {
           await this.decide(tx, auth, fresh, 'rejected', body.reason as string, who)
         }
       }, TX)
+      if (body.action === 'reject') await this.discardDiagramSource(row)
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'VALIDATION_ERROR') return skip('GATE_FAILED', ((err.details as { issues?: IntakeIssue[] } | undefined)?.issues ?? []).slice(0, 50))

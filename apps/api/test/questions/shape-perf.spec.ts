@@ -85,7 +85,7 @@ describe('shaped counts stay linear at a 12k pool', () => {
 
   it('SPM pool count (single-leaf shape)', async () => {
     const pool = t.get(SpmPoolService)
-    const { value, ms } = await timed('spm pool count', () => new SpmPoolService(t.get(QuestionsRepository), { get: () => '0' } as never, { now: () => new Date() } as never).count(w.tag.subjectId))
+    const { value, ms } = await timed('spm pool count', () => new SpmPoolService(t.get(QuestionsRepository), { get: () => '0' } as never, { now: () => new Date() } as never, { generation: 0 } as never).count(w.tag.subjectId))
     void pool
     expect(ms).toBeLessThan(BOUND_MS)
     expect(value).toBe(await sqlCount(`and ${SPM_SERVABLE} and q.group_id is null`))

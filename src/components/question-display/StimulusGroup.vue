@@ -27,11 +27,13 @@ const props = withDefaults(
     stimulus?: StimulusData
     /** With an id the open state is kept per group for the session (FR-X6-6); without it the `open` model rules. */
     groupId?: string
+    /** With `groupId`: open the first time the group appears. False for a further group of a page that shows several: the sheet is modal, and two would stack. */
+    initialOpen?: boolean
     hint?: boolean
     /** Wide split: `half` (default, 1:1) or `sitting` (the V3 attempt ratio: stimulus 4 : questions 5). */
     split?: 'half' | 'sitting'
   }>(),
-  { stimuli: undefined, stimulus: undefined, groupId: undefined, hint: true, split: 'half' },
+  { stimuli: undefined, stimulus: undefined, groupId: undefined, initialOpen: true, hint: true, split: 'half' },
 )
 const emit = defineEmits<{
   loaded: [id: string]
@@ -44,7 +46,7 @@ const emit = defineEmits<{
 const inline = !useSlots().default
 
 const model = defineModel<boolean>('open', { default: false })
-const keyed = computed(() => (props.groupId ? useStimulusOpen(props.groupId) : null))
+const keyed = computed(() => (props.groupId ? useStimulusOpen(props.groupId, props.initialOpen) : null))
 const open = computed({
   get: () => (keyed.value ? keyed.value.value : model.value),
   set: (v: boolean) => {

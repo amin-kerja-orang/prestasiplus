@@ -41,6 +41,13 @@ import {
   QuestionStructuredDetailSchema,
   QuestionStructuredListQuerySchema,
   QuestionStructuredRowSchema,
+  GuruStructuredCreateRequestSchema,
+  GuruStructuredDetailSchema,
+  GuruStructuredFormSchema,
+  GuruStructuredListQuerySchema,
+  GuruStructuredRowSchema,
+  GuruStructuredSubSchema,
+  GuruStructuredUpdateRequestSchema,
   QuestionStructuredStatsSchema,
   QuestionStructuredSubSchema,
   QuestionFilterOptionsSchema,
@@ -79,6 +86,12 @@ export const QUESTIONS_COMPONENT_SCHEMAS = {
   QuestionFilterBulkRequest: QuestionFilterBulkRequestSchema,
   QuestionFilterBulkResult: QuestionFilterBulkResultSchema,
   QuestionStructuredRow: QuestionStructuredRowSchema,
+  GuruStructuredRow: GuruStructuredRowSchema,
+  GuruStructuredSub: GuruStructuredSubSchema,
+  GuruStructuredForm: GuruStructuredFormSchema,
+  GuruStructuredCreateRequest: GuruStructuredCreateRequestSchema,
+  GuruStructuredUpdateRequest: GuruStructuredUpdateRequestSchema,
+  GuruStructuredDetail: GuruStructuredDetailSchema,
   QuestionStructuredSub: QuestionStructuredSubSchema,
   QuestionStructuredDetail: QuestionStructuredDetailSchema,
   QuestionGuruSummary: QuestionGuruSummarySchema,
@@ -111,6 +124,8 @@ const StructuredListEnvelope = z.object({
   data: z.array(QuestionStructuredRowSchema),
   meta: ListMetaSchema.extend({ stats: QuestionStructuredStatsSchema }),
 })
+
+const GuruStructuredListEnvelope = z.object({ data: z.array(GuruStructuredRowSchema), meta: ListMetaSchema })
 
 /** Registers the BE-09 endpoints. Admin routes: Admin Pusat only. Guru routes: Guru or Admin (mock teacherOnly), own rows only. GET /guru/questions/template and POST /guru/questions/import (BE-10) and GET /guru/contributions (BE-17) belong to other cards. */
 export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
@@ -185,7 +200,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Create a question',
     description:
-      'JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
+      'JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 4) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
     request: { headers: [csrf], body: body(QuestionCreateRequestSchema) },
     responses: {
       201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'),
@@ -257,6 +272,56 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     description: '`meta.stats` covers the whole store, not the filter. Unknown filter values match nothing.',
     request: { query: QuestionStructuredListQuerySchema },
     responses: { 200: json(StructuredListEnvelope, 'A page of rows.'), 401: unauthorized, 403: forbidden },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/structured-questions',
+    tags: ['questions', 'guru'],
+    summary: 'Teacher list of approved structured questions (20 per page, newest first)',
+    description: 'API-GUR-26 read. Teacher or Admin Pusat. Approved, live, active questions a pupil is served (a question that needs a figure it lacks is left out), plus the CALLER\'s own `review` structured submissions (`source: submission`, id `g{itemId}`), listed first, newest first. `status=approved`: questions only; `status=review`: own submissions only; never another teacher\'s. `meta.totalItems` is the union count.',
+    request: { query: GuruStructuredListQuerySchema },
+    responses: { 200: json(GuruStructuredListEnvelope, 'A page of rows.'), 401: unauthorized, 403: forbidden, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'get',
+    path: '/guru/structured-questions/{id}',
+    tags: ['questions', 'guru'],
+    summary: 'Teacher detail of an approved structured question or of an own submission',
+    description: 'No admin-only fields. A question that is not approved, not served or unknown is 404; so is an id `g{itemId}` of another teacher\'s submission.',
+    request: { params: idParams },
+    responses: {
+      200: json(envelopeOf(GuruStructuredDetailSchema), 'The question.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+    },
+  })
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/intake/structured',
+    tags: guru,
+    summary: 'Submit a structured question for review (API-GUR-17, structured variant, ADD-13)',
+    description:
+      'JSON body. Creates ONE `source = guru` intake batch (paper type `umum`) with ONE structured intake item: the stimulus once on the group and 1..10 parts; no `questions` row exists until the admin accepts it. Image: upload through `POST /files?purpose=question_image` and send its token as `stimulusImageId` (jpg, png or webp, at most 2 MB). Returns the detail with `status: review`, `source: submission`, id `g{itemId}`. Success text: "Soalan berstruktur dihantar untuk semakan."',
+    request: { headers: [csrf], body: body(GuruStructuredCreateRequestSchema) },
+    responses: { 201: json(envelopeOf(GuruStructuredDetailSchema), 'Created.'), 401: unauthorized, 403: forbidden, 422: invalid },
+  })
+  registry.registerPath({
+    method: 'put',
+    path: '/guru/intake/structured/{id}',
+    tags: guru,
+    summary: 'Edit an own structured submission (only while the admin has not accepted it)',
+    description: '`id` is the `g{itemId}` of the row. Another teacher\'s id is 404. An accepted item is 409. A returned item goes back to review.',
+    request: { params: idParams, headers: [csrf], body: body(GuruStructuredUpdateRequestSchema) },
+    responses: { 200: json(envelopeOf(GuruStructuredDetailSchema), 'Updated.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: err('CONFLICT: the item was already accepted.'), 422: invalid },
+  })
+  registry.registerPath({
+    method: 'delete',
+    path: '/guru/intake/structured/{id}',
+    tags: guru,
+    summary: 'Delete an own structured submission (only while the admin has not accepted it)',
+    request: { params: idParams, headers: [csrf] },
+    responses: { 200: json(envelopeOf(QuestionGuruRemoveResultSchema), 'Removed.'), 401: unauthorized, 403: forbidden, 404: notFound, 409: err('CONFLICT: the item was already accepted.') },
   })
   registry.registerPath({
     method: 'get',
