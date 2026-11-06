@@ -12,6 +12,7 @@ import { useSessionStore } from '@/stores/session'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import type {
+  ClassesAggregate,
   ClassItemAnalysis,
   LevelDetail,
   SchoolItemAnalysis,
@@ -30,6 +31,7 @@ const api = vi.hoisted(() => ({
   fetchLevels: vi.fn(),
   fetchLevelDetail: vi.fn(),
   fetchOwnClasses: vi.fn(),
+  fetchOwnClassesAggregate: vi.fn(),
   fetchSchoolItemAnalysis: vi.fn(),
   fetchItemAnalysisClasses: vi.fn(),
   fetchClassItemAnalysis: vi.fn(),
@@ -178,6 +180,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setRouteOutcome(null)
   for (const fn of Object.values(api)) fn.mockReset()
+  api.fetchLevels.mockResolvedValue([])
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -205,7 +208,7 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(labels[0]!.classes()).not.toContain('truncate')
   })
 
-  it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy to 1 decimal', async () => {
+  it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy as a whole number (decision 11)', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
     const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
     expect(t(w, 'header-summary').text()).toBe(
@@ -218,7 +221,7 @@ describe('S1 PrestasiSekolahPage', () => {
       ['subjek', '27'],
       ['sesi', '32122'],
       ['soalan', '478,499'],
-      ['ketepatan', '79.8%'],
+      ['ketepatan', '80%'],
     ]
     for (const [id, value] of expected) {
       expect(t(w, `stat-${id}`).find('.tabular').text()).toBe(value)
@@ -337,10 +340,9 @@ describe('S3 TingkatanPage', () => {
         userId: 3201,
         name: 'Murid Simulasi 01',
         className: '4 Simulasi',
-        checkpoint: 3,
-        ar: 56,
-        target: 82,
-        gap: -26,
+        answered: 12,
+        accuracy: 40,
+        lastAnsweredAt: '2026-09-24T10:00:00.000+08:00',
       },
     ],
   }
@@ -350,15 +352,15 @@ describe('S3 TingkatanPage', () => {
     const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
     expect(api.fetchLevelDetail.mock.calls[0]?.[0]).toBe('t4')
     expect(t(w, 'level-summary').text()).toBe('Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek')
-    expect(t(w, 'stat-ketepatan').text()).toContain('63.9%')
+    expect(t(w, 'stat-ketepatan').text()).toContain('64%')
     expect(t(w, 'headcount-pct').text()).toBe('0% On Track')
     expect(tr(w, 'class-row-5').text()).toContain('Lihat →')
     expect(tr(w, 'class-row-806').text()).not.toContain('Lihat')
     expect(tr(w, 'class-row-806').text()).toContain('—')
     expect(t(w, 'top-82').text()).toContain('4 sesi · 60 soalan')
     expect(t(w, 'top-82').text()).toContain('64%')
-    expect(t(w, 'at-risk').text()).toContain('4 Simulasi · OTR3: 56.00% (sasaran 82.00%)')
-    expect(t(w, 'at-risk').text()).toContain('-26')
+    expect(t(w, 'at-risk').text()).toContain('4 Simulasi · 12 soalan')
+    expect(t(w, 'at-risk').text()).toContain('40%')
   })
 
   it('B7: an empty list hides its panel; both empty hide the row; both filled keep two columns', async () => {
@@ -392,6 +394,28 @@ describe('S3 TingkatanPage', () => {
     expect(w.find('.lg\\:grid-cols-2').exists()).toBe(true)
   })
 
+  it('the level pills are built from the levels that have classes (T1-T5), the active one marked; the School page buttons link to Tingkatan and Kelas for staff', async () => {
+    api.fetchLevels.mockResolvedValue([
+      { code: 't1', name: 'Tingkatan 1', classes: 2, students: 20 },
+      { code: 't4', name: 'Tingkatan 4', classes: 13, students: 149 },
+    ])
+    api.fetchLevelDetail.mockResolvedValue(T4)
+    for (const role of ['teacher', 'school_admin'] as const) {
+      signInAs(role)
+      const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
+      const pills = w.findAll('[data-testid^=pill-]')
+      expect(pills.map((p) => p.text())).toEqual(['T1', 'T4'])
+      expect(pills.map((p) => p.attributes('href'))).toEqual(['/prestasi/tingkatan/t1', '/prestasi/tingkatan/t4'])
+      w.unmount()
+      api.fetchSchoolPerformance.mockResolvedValue(S1)
+      const s = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+      const hrefs = s.findAll('a').map((a) => a.attributes('href'))
+      expect(hrefs).toContain('/prestasi/tingkatan')
+      expect(hrefs).toContain('/prestasi/kelas')
+      s.unmount()
+    }
+  })
+
   it('an unknown level code is the 404 page', async () => {
     api.fetchLevelDetail.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
@@ -402,10 +426,17 @@ describe('S3 TingkatanPage', () => {
 })
 
 describe('S4 PrestasiKelasPilihPage', () => {
+  const aggregate = (over: Partial<ClassesAggregate> = {}): ClassesAggregate => ({
+    classes: [],
+    topStudents: [],
+    subjects: [],
+    ...over,
+  })
+
   it('shows the observed empty state with the "Cipta Kelas" link to a teacher and the admin', async () => {
     for (const role of ['teacher', 'admin'] as const) {
       signInAs(role)
-      api.fetchOwnClasses.mockResolvedValue([])
+      api.fetchOwnClassesAggregate.mockResolvedValue(aggregate())
       const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
       expect(t(w, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
       expect(t(w, 'kelas-empty').text()).toContain('Cipta kelas terlebih dahulu')
@@ -417,7 +448,7 @@ describe('S4 PrestasiKelasPilihPage', () => {
   it('http mode: the admin gets no "Cipta Kelas" (the route is teacher-only there, DV-M10-37); the teacher keeps it', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     try {
-      api.fetchOwnClasses.mockResolvedValue([])
+      api.fetchOwnClassesAggregate.mockResolvedValue(aggregate())
       signInAs('admin')
       const a = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
       expect(t(a, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
@@ -432,22 +463,48 @@ describe('S4 PrestasiKelasPilihPage', () => {
     }
   })
 
+  const CLASS = {
+    id: 9,
+    name: '5 A',
+    subjectName: 'Kimia',
+    color: '#10B981',
+    students: 8,
+    year: 2026,
+    joinCode: 'ABC123',
+    isActive: true,
+  }
+
   it('lists active classes as cards linking to the class dashboard', async () => {
-    api.fetchOwnClasses.mockResolvedValue([
-      {
-        id: 9,
-        name: '5 A',
-        subjectName: 'Kimia',
-        color: '#10B981',
-        students: 8,
-        year: 2026,
-        joinCode: 'ABC123',
-        isActive: true,
-      },
-    ])
+    api.fetchOwnClassesAggregate.mockResolvedValue(aggregate({ classes: [CLASS] }))
     const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
     expect(t(w, 'class-card-9').attributes('href')).toBe('/prestasi/kelas/9')
     expect(w.find('[data-testid=kelas-empty]').exists()).toBe(false)
+  })
+
+  it('Pelajar Terbaik and Prestasi Mengikut Subjek: whole-number rows and the exact empty copy (FR-GUR-4-7, AC-GUR-4-7)', async () => {
+    api.fetchOwnClassesAggregate.mockResolvedValue(
+      aggregate({
+        classes: [CLASS],
+        topStudents: [
+          { userId: 1, name: 'Aina Contoh', answered: 20, accuracy: 85.4 },
+          { userId: 2, name: 'Bakar Contoh', answered: 9, accuracy: 66.6 },
+        ],
+        subjects: [{ subjectId: 4, name: 'Kimia', answered: 29, accuracy: 70.5 }],
+      }),
+    )
+    const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+    const rows = w.findAll('[data-testid=top-row]').map((r) => r.text())
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain('Aina Contoh')
+    expect(rows[0]).toContain('85% · 20 soalan')
+    expect(rows[1]).toContain('67% · 9 soalan')
+    expect(t(w, 'subject-row').text()).toContain('Kimia 71% · 29 soalan')
+    w.unmount()
+
+    api.fetchOwnClassesAggregate.mockResolvedValue(aggregate({ classes: [CLASS] }))
+    const e = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+    expect(t(e, 'top-empty').text()).toBe('Tiada pelajar dengan sekurang-kurangnya 5 soalan.')
+    expect(t(e, 'subject-empty').text()).toBe('Belum ada data latihan.')
   })
 })
 
