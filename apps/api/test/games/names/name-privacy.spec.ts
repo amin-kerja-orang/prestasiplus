@@ -14,18 +14,18 @@ const viewer = (role: RoleCode, over: Partial<NameViewer> = {}): NameViewer => (
 const pupil = { id: '20', name: 'Murid Contoh Alfa', schoolId: '1' }
 
 describe('displayName (children\'s names rule)', () => {
-  it('is first name + initial of the second word', () => {
-    expect(displayName('Murid Contoh Alfa')).toBe('Murid C.')
-    expect(displayName('Murid Demo')).toBe('Murid D.')
+  it('is the first given name only (ruling 7 on #497)', () => {
+    expect(displayName('Murid Contoh Alfa')).toBe('Murid')
+    expect(displayName('Murid Demo')).toBe('Murid')
   })
-  it('keeps a single word, trims and upper-cases the initial, survives blanks', () => {
+  it('keeps a single word, trims, survives blanks', () => {
     expect(displayName('Alfa')).toBe('Alfa')
-    expect(displayName('  murid   contoh  ')).toBe('murid C.')
+    expect(displayName('  murid   contoh  ')).toBe('murid')
     expect(displayName('')).toBe('')
     expect(displayName('   ')).toBe('')
   })
   it('initials computed from the shown name leak no more than the shown name', () => {
-    expect(initialsOf(displayName('Murid Contoh Alfa'))).toBe('MC')
+    expect(initialsOf(displayName('Murid Contoh Alfa'))).toBe('M')
     expect(initialsOf(displayName('Alfa'))).toBe('A')
   })
 })
@@ -61,13 +61,13 @@ describe('shownPupil', () => {
   it('full name and real id within scope', () => {
     expect(shownPupil(viewer('admin'), pupil)).toEqual({ userId: '20', name: 'Murid Contoh Alfa' })
   })
-  it('first name + initial and a null id outside the scope', () => {
-    expect(shownPupil(viewer('student'), pupil)).toEqual({ userId: null, name: 'Murid C.' })
+  it('the first given name and a null id outside the scope', () => {
+    expect(shownPupil(viewer('student'), pupil)).toEqual({ userId: null, name: 'Murid' })
   })
   it('an adult account is not a child: shown in full to everyone', () => {
     expect(shownPupil(viewer('student'), { ...pupil, isPupil: false })).toEqual({ userId: '20', name: 'Murid Contoh Alfa' })
   })
   it('an unknown account type is protected (isPupil defaults to true)', () => {
-    expect(shownPupil(viewer('parent'), { id: '20', name: 'Murid Contoh Alfa', schoolId: null })).toEqual({ userId: null, name: 'Murid C.' })
+    expect(shownPupil(viewer('parent'), { id: '20', name: 'Murid Contoh Alfa', schoolId: null })).toEqual({ userId: null, name: 'Murid' })
   })
 })

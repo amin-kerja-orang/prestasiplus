@@ -27,7 +27,7 @@ import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
 import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
 import { PocBuilderQuestionSource } from '../support/poc/builder-source'
-import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
+import { battleConformanceEnv, battleFixture, seedBattleConformance } from './battle/fixtures'
 import { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -135,6 +135,7 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   await serveSeededBlueprints(db)
   await setPocMarkBudgets(db)
   await seedBattleConformance(db.prisma) // BE-44: published MCQs so a battle queue can draw its 10 questions
+  const clock = new FixedClock(CONFORMANCE_START)
   const dir = await mkdtemp(join(tmpdir(), 'pp-conformance-'))
 
   for (const [k, v] of Object.entries({ ...conformanceEnv(db.url, dir), ...opts.env })) {
@@ -142,12 +143,28 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
     else process.env[k] = v
   }
 
+  battleFixture.advanceClock = (ms) => clock.set(clock.now().getTime() + ms)
+  battleFixture.seedRankedBattle = async () => {
+    const [a, b] = await db.query<{ id: string; school_id: string }>(
+      `select id::text, school_id::text from users where email in ('pelajar@demo.test', 'pelajar2@demo.test') order by email`,
+    )
+    const [battle] = await db.query<{ id: string }>(
+      `insert into battles (mode, question_type, status, answered, winner, is_test, counts_for_ranking, created_at, finished_at)
+       values ('quick_match', 'biasa', 'finished', 10, 'A', false, true, $1, $1) returning id::text`,
+      [clock.now()],
+    )
+    await db.query(
+      `insert into battle_participants (battle_id, side, user_id, school_id, score, correct, is_test, is_bot)
+       values ($1, 'A', $2, $3, 7000, 7, false, false), ($1, 'B', $4, $5, 3000, 3, false, false)`,
+      [battle!.id, a!.id, a!.school_id, b!.id, b!.school_id],
+    )
+  }
   const moduleRef = await Test.createTestingModule({
     imports: [defineAppModule(featureModules)],
     controllers: opts.controllers ?? [],
   })
     .overrideProvider(CLOCK)
-    .useValue(new FixedClock(CONFORMANCE_START))
+    .useValue(clock)
     // The scenarios are shared with the mock and place the PoC questions (reserved ids, BE-15). The seed
     // does not load them into the BE-09 tables yet (no PocQuestionLoader), so the builder keeps serving
     // the PoC fixture here, like BE-15 does on the student side. The wired source is covered by

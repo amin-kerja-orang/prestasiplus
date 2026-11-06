@@ -26,10 +26,8 @@ import {
   GamesPorts,
   GameReadService,
   type BattleReadPort,
-  type BotPoolPort,
   type GameRewardsPort,
   type PlatformAccuracySource,
-  type WeeklyPracticeSource,
 } from '../../src/modules/games'
 import { DEMO_PASSWORD, dropDatabase } from '../curriculum/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -58,10 +56,8 @@ export interface BootGamesOptions {
   /** Port doubles, plugged before `app.init()` (each at most once). */
   ports?: {
     rewards?: GameRewardsPort
-    weeklyPractice?: WeeklyPracticeSource
     platformAccuracy?: PlatformAccuracySource
     battle?: BattleReadPort
-    botPool?: BotPoolPort
   }
   /** Start the clock somewhere else. */
   at?: string
@@ -86,6 +82,7 @@ export interface GamesTestApp {
 export class FakeRewards implements GameRewardsPort {
   canEarn = true
   rates = { correct: 2, win: 10 }
+  private readonly first = new Map<string, { coinsCredited: number; xpAdded: number }>()
   readonly calls: { userId: string; input: Parameters<GameRewardsPort['onGameResult']>[1]; isTest: boolean }[] = []
   async canEarnSyiling(): Promise<boolean> {
     return this.canEarn
@@ -99,9 +96,14 @@ export class FakeRewards implements GameRewardsPort {
     options: { isTest: boolean },
   ): Promise<{ coinsCredited: number; xpAdded: number }> {
     this.calls.push({ userId, input, isTest: options.isTest })
-    if (options.isTest || !this.canEarn) return { coinsCredited: 0, xpAdded: 0 }
-    const coins = input.coins ?? (input.game === 'papan_bijak' ? (input.event === 'win' ? this.rates.win : this.rates.correct) : 0)
-    return { coinsCredited: coins > 0 ? coins : 0, xpAdded: 0 }
+    if (options.isTest) return { coinsCredited: 0, xpAdded: 0 }
+    const coins = this.canEarn ? (input.coins ?? 0) : 0
+    const out = { coinsCredited: coins > 0 ? coins : 0, xpAdded: input.xp }
+    if (input.session) this.first.set(`${input.session.id}:${userId}`, out)
+    return out
+  }
+  async firstGameResult(sessionId: string, userId: string): Promise<{ coinsCredited: number; xpAdded: number } | null> {
+    return this.first.get(`${sessionId}:${userId}`) ?? null
   }
 }
 
@@ -134,10 +136,8 @@ export async function bootGamesApp(opts: BootGamesOptions = {}): Promise<GamesTe
   const ports = app.get(GamesPorts, { strict: false })
   const p = opts.ports ?? {}
   if (p.rewards) ports.provideRewards(p.rewards)
-  if (p.weeklyPractice) ports.provideWeeklyPractice(p.weeklyPractice)
   if (p.platformAccuracy) ports.providePlatformAccuracy(p.platformAccuracy)
   if (p.battle) ports.provideBattle(p.battle)
-  if (p.botPool) ports.provideBotPool(p.botPool)
   await app.init()
   return {
     app,

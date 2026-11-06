@@ -180,6 +180,13 @@ describe('room helpers (FR-M16-68..70)', () => {
     ).toBe(true)
   })
 
+  it('R2: the seat the room waits for acts; a seat that has answered, or is not on turn, waits (youAnswered)', () => {
+    const playing = room({ status: 'playing', state: { awaiting: 'answer', round: 2, total: 10, humanId: 2, log: [] } })
+    expect(canAct(playing, 2)).toBe(true)
+    expect(canAct(playing, 1)).toBe(false) // the host, but it is the other seat's turn
+    expect(canAct({ ...playing, youAnswered: true }, 2)).toBe(false)
+  })
+
   it('polls only waiting and playing rooms', () => {
     expect(isOpenRoom(room({ status: 'waiting' }))).toBe(true)
     expect(isOpenRoom(room({ status: 'playing' }))).toBe(true)

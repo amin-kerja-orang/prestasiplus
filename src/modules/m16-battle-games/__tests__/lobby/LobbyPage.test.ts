@@ -157,16 +157,42 @@ describe('S8-S12 lobby template (FR-M16-62..65)', () => {
     expect(get('join-submit').text()).toBe('Masuk')
   })
 
-  it('an empty or unknown code posts and shows the flash "Bilik tidak dijumpai."', async () => {
+  it('an empty or malformed code is refused on the client: "Kod bilik tidak sah." and no request (AC-GM-R.1)', async () => {
+    const { router } = await mountPage()
+    await get('join-form').trigger('submit') // empty: not required by the browser, refused by the 6-character rule
+    await flushPromises()
+    expect(joinRoom).not.toHaveBeenCalled()
+    expect(get('join-card').text()).toContain('Kod bilik tidak sah.')
+    await get('join-input').setValue('ab12c')
+    await get('join-form').trigger('submit')
+    await flushPromises()
+    expect(joinRoom).not.toHaveBeenCalled()
+    expect(get('join-card').text()).toContain('Kod bilik tidak sah.')
+    expect(router.currentRoute.value.fullPath).toBe('/perang-fakta')
+  })
+
+  it('an unknown code posts and shows the flash "Bilik tidak dijumpai."', async () => {
     joinRoom.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' }),
     )
     const { router } = await mountPage()
-    await get('join-form').trigger('submit') // empty: not required, so it submits
+    await get('join-input').setValue('zzzzzz')
+    await get('join-form').trigger('submit')
     await flushPromises()
-    expect(joinRoom).toHaveBeenCalledWith('perang-fakta', '')
+    expect(joinRoom).toHaveBeenCalledWith('perang-fakta', 'ZZZZZZ')
     expect(router.currentRoute.value.fullPath).toBe('/perang-fakta')
     expect(useFlashStore().current).toEqual({ type: 'error', message: 'Bilik tidak dijumpai.' })
+  })
+
+  it('a full or started room shows the server text as the flash (ERR-GAME-08/09)', async () => {
+    joinRoom.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message: 'Bilik sudah penuh.' }),
+    )
+    await mountPage()
+    await get('join-input').setValue('ABC123')
+    await get('join-form').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toEqual({ type: 'error', message: ['Bilik sudah penuh.'] })
   })
 
   it('a known code opens the room', async () => {
