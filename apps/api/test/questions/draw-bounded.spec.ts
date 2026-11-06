@@ -524,7 +524,7 @@ describe('G4 follow-ups', () => {
     const twoPart = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions v where v.number_label like 'QL-CA-%' and (select count(*) from question_parts p where p.question_version_id = v.id) = 2`))[0]?.id as string
     const before = await pool.count(w.tag.subjectId)
     await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'spm')`, [twoPart])
-    const after = await new SpmPoolService(repo, { get: () => '0' } as never, { now: () => new Date() } as never).count(w.tag.subjectId)
+    const after = await new SpmPoolService(repo, { get: () => '0' } as never, { now: () => new Date() } as never, { generation: 0 } as never).count(w.tag.subjectId)
     expect(after).toBe(before)
     const drawn = await pool.sample(w.tag.subjectId, 400, prngStream('shape'))
     expect(drawn.map((r) => r.id)).not.toContain(twoPart)
@@ -547,7 +547,7 @@ describe('re-G4 minors', () => {
   it('battle: a rejected read is not cached (the next call re-reads), a resolved one is', async () => {
     const clock = new FixedClock(new Date('2026-10-19T01:00:00Z'))
     const count = vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(7)
-    const deps = new BattleDeps({} as never, {} as never, {} as never, { count } as never, {} as never, clock)
+    const deps = new BattleDeps({} as never, {} as never, {} as never, { count } as never, {} as never, {} as never, {} as never, clock)
     await expect(deps.spmPoolCount('1')).rejects.toThrow('db down')
     await expect(deps.spmPoolCount('1')).resolves.toBe(7)
     await expect(deps.spmPoolCount('1')).resolves.toBe(7)

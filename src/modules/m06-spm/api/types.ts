@@ -17,10 +17,17 @@ export interface SpmOverview {
   stats: {
     totalQuestions: number
     subjectCount: number
-    yearsAvailable: number
+    /** Absent while there is no year source; the hub hides the tile. */
+    yearsAvailable?: number
     trackingAQuestions: number
   }
-  modules: { databank: number; latihTubi: number; trackingA: number; subjektifSets: number }
+  modules: {
+    databank: number
+    latihTubi: number
+    trackingA: number
+    subjektifSets: number
+    kertasSubjektif: number
+  }
   me: { sessions: number; avgAccuracy: number; coins: number; answered: number }
 }
 

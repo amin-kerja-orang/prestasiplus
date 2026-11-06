@@ -121,8 +121,8 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
   }
 
   async generate(subject: string, kertas: number): Promise<string> {
-    const out = await this.call<{ paperId: string }>('POST', '/api/admin/papers/generate', { subject, kertas })
-    return out.paperId
+    const out = await this.call<{ id: string }>('POST', '/api/admin/papers/generate', { subject, kertas })
+    return out.id
   }
 
   poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview> {

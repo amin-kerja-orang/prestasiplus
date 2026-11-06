@@ -74,8 +74,7 @@ function overview(req: MockRequest): SpmOverview {
     stats: {
       totalQuestions: HUB_TOTAL_QUESTIONS.value,
       subjectCount: new Set(levels.map((s) => s.id)).size,
-      // The dataset has no `year` field on questions, so no year is available (as live: 0).
-      yearsAvailable: 0,
+      // The dataset has no `year` field on questions, so there is no year source: the field is omitted.
       trackingAQuestions: trackingA,
     },
     modules: {
@@ -83,6 +82,8 @@ function overview(req: MockRequest): SpmOverview {
       latihTubi: HUB_POOL_CHIP.value,
       trackingA,
       subjektifSets: SUBJEKTIF_SUBJECT_IDS.reduce((a, id) => a + visibleSets(id), 0),
+      // The mock has no papers store: no Kertas Subjektif paper is published.
+      kertasSubjektif: 0,
     },
     me: {
       sessions: stats.sessions,

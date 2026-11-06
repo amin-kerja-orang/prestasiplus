@@ -186,7 +186,8 @@ export function planStart(
       })
       return plan
     }
-    case 'past_year': {
+    case 'past_year':
+    case 'databank': {
       const s = subjectOf(req.subjectCode)
       const count = countIn(req.count, PAST_YEAR_COUNTS)
       const rows = questions.spmPool({ subjectId: s.id }).sample(count, rng)

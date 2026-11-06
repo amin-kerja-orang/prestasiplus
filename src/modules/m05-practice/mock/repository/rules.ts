@@ -15,13 +15,13 @@ export const PRACTICE_MODES: readonly PracticeMode[] = [
   'question_set',
   'pksk',
 ]
-export const SPM_MODES: readonly PracticeMode[] = ['past_year', 'latih_tubi', 'ramalan']
+export const SPM_MODES: readonly PracticeMode[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
 export const ALL_MODES: readonly PracticeMode[] = [...PRACTICE_MODES, ...SPM_MODES]
 
 export const isMode = (v: unknown): v is PracticeMode =>
   typeof v === 'string' && (ALL_MODES as readonly string[]).includes(v)
 
-/** Legacy stored modes (mirror of `LEGACY_PRACTICE_MODES` of the contract). Only `random` is refused at start for now: `past_year` / `ramalan` stay startable until the Databank / Tracking A cards move their pages. */
+/** Legacy stored modes (mirror of `LEGACY_PRACTICE_MODES` of the contract). Only `random` is refused at start for now: `past_year` / `ramalan` stay startable for old clients (the Tracking A page still starts `ramalan`; the Databank page starts `databank`). */
 export const LEGACY_PRACTICE_MODES: readonly PracticeMode[] = ['random', 'past_year', 'ramalan']
 const REFUSED_AT_START: readonly PracticeMode[] = ['random']
 
@@ -35,7 +35,7 @@ export const INVALID_MODE_MESSAGE = 'Mod tidak sah.'
 export const COUNT_OPTIONS = [5, 10, 15, 20] as const
 /** BR-14 / §6.10: revision length. */
 export const REVISION_LENGTH = 20
-/** BR-M06-13: `past_year` counts. */
+/** BR-M06-13: `past_year` / `databank` counts. */
 export const PAST_YEAR_COUNTS = [5, 10, 20] as const
 /** BR-M06-04: Latih Tubi counts of a subject without a target. */
 export const LATIH_TUBI_COUNTS = [5, 10, 20, 30, 40, 50, 60] as const

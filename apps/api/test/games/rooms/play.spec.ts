@@ -775,6 +775,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       expect(rewards.calls).toHaveLength(1) // exactly one report for the acting human
       expect(rewards.calls[0]?.input).toMatchObject({ game: 'perang_fakta', correct: 0 })
       expect(rewards.calls[0]?.input.key).toBe(code)
+      expect(rewards.calls[0]?.input.session).toEqual({ id: (await roomOf(t.db, code)).session_id, gameKey: 'perang-fakta' })
     })
 
     it('optionId null is the explicit no-vote and restarts the round clock; a real vote scores', async () => {
