@@ -14241,39 +14241,218 @@
             "additionalProperties": false
           },
           "me": {
-            "type": "object",
-            "properties": {
-              "sessions": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "avgAccuracy": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 100
-              },
-              "coins": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "answered": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "sessions",
-              "avgAccuracy",
-              "coins",
-              "answered"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/SpmMyStats"
           }
         },
         "required": [
           "stats",
           "modules",
           "me"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMyStats": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed practice sessions plus closed Bijak sittings (abandoned and in-progress never count)."
+          },
+          "avgAccuracy": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Pooled correct / answered x 100 over the SPM-mode answers, a whole number rounded half up; null (shown \"—\") with 0 answers."
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Syiling earned from the SPM sources of the M14 wallet ledger."
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Answer rows of the SPM modes."
+          }
+        },
+        "required": [
+          "sessions",
+          "avgAccuracy",
+          "coins",
+          "answered"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryMod": {
+        "type": "string",
+        "enum": [
+          "all",
+          "databank",
+          "latih_tubi",
+          "tracking_a",
+          "past_year",
+          "ramalan"
+        ]
+      },
+      "SpmHistoryRowMode": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "latih_tubi",
+          "tracking_a",
+          "simulasi",
+          "subjektif",
+          "structured",
+          "kuiz"
+        ]
+      },
+      "SpmHistoryRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id of the practice session or of the Bijak attempt."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SpmHistoryRowMode"
+          },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Curriculum subject code; \"UMUM\" for a session with no subject."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Correct answers of a session; whole marks (rounded) scored of a Bijak sitting."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions of a session; whole marks (rounded) available of a Bijak sitting."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number, rounded half up; 0 when `total` is 0."
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The sitting's own coins (the display value stored with the session or result), not the wallet."
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time spent; a Bijak sitting counts its elapsed time capped at the deadline."
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Completion (practice) or submit (Bijak) time; the sort key, newest first.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "subject",
+          "correct",
+          "total",
+          "percent",
+          "coins",
+          "durationSeconds",
+          "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The requested page (1-based)."
+          },
+          "pageSize": {
+            "type": "number",
+            "enum": [
+              15
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "ceil(total / pageSize), at least 1 (the pager reads \"Halaman {page} daripada {pageCount}\")."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows under the active chip."
+          },
+          "mod": {
+            "type": "string",
+            "enum": [
+              "all",
+              "databank",
+              "latih_tubi",
+              "tracking_a",
+              "past_year",
+              "ramalan"
+            ],
+            "description": "The chip applied (the alias already resolved; `all` when none was sent)."
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SpmMyStats"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "pageCount",
+          "total",
+          "mod",
+          "stats"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmHistoryRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SpmHistoryMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
         ],
         "additionalProperties": false
       },
@@ -99134,7 +99313,7 @@
           "spm"
         ],
         "summary": "SPM hub (M06-01): totals, module chips and the caller practice stats",
-        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
+        "description": "`me` is the caller's \"Prestasi SPM Anda\" panel: answers from `practice_answers` over the SPM modes (databank, tracking_a, structured, subjektif, simulasi, kuiz, latih_tubi; legacy past_year and ramalan count as databank and tracking_a), sessions = completed practice sessions + closed Bijak sittings, coins from the M14 ledger, `avgAccuracy` a whole number or null with 0 answers. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
         "responses": {
           "200": {
             "description": "Hub figures.",
@@ -99156,6 +99335,106 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/history": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Sejarah Kuiz SPM (API-BIJAK-07): the caller's closed SPM sittings, newest first, 15 per page",
+        "description": "Merges completed practice sessions and closed Bijak sittings (`exam_attempts`: submitted or auto_submitted; the row mode follows `paper_kind`). Abandoned, in-progress and swept sessions are never listed. Query `mod` (alias `type`): all, databank, latih_tubi, tracking_a; the legacy past_year and ramalan are accepted as aliases of databank and tracking_a, and the chips Tahun Lepas and Tracking A list the legacy rows too. Only `all` lists Bijak, Subjektif, Berstruktur and Kuiz rows. `halaman` is 1-based. `meta.stats` covers all modes, never the chip or the page. Pupil only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "databank",
+                "latih_tubi",
+                "tracking_a",
+                "past_year",
+                "ramalan"
+              ],
+              "description": "Chip filter; default `all`. An unknown value is 422."
+            },
+            "required": false,
+            "description": "Chip filter; default `all`. An unknown value is 422.",
+            "name": "mod",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "databank",
+                "latih_tubi",
+                "tracking_a",
+                "past_year",
+                "ramalan"
+              ],
+              "description": "Alias of `mod` (old links). `mod` wins when both are sent."
+            },
+            "required": false,
+            "description": "Alias of `mod` (old links). `mod` wins when both are sent.",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number; default 1. A page past the last one returns no rows."
+            },
+            "required": false,
+            "description": "1-based page number; default 1. A page past the last one returns no rows.",
+            "name": "halaman",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of rows with the pager meta and the all-mode stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpmHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not a pupil).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (`mod`/`type` outside the list, or `halaman` not a positive integer).",
             "content": {
               "application/json": {
                 "schema": {
