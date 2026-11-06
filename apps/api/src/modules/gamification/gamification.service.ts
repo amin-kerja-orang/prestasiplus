@@ -531,7 +531,7 @@ export class GamificationService {
   /** The progress (0..target) of `c` on the Malaysia day `day`, from the same facts as `challengesToday` (BR-M14-12). */
   async challengeProgressOn(db: Db, userId: string, day: string, c: ChallengeRecord): Promise<number> {
     const [streak, facts] = await Promise.all([this.repo.streakOf(db, userId), this.ports.practiceFacts.dayFacts(userId, day)])
-    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0))
+    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, [c])))
   }
 
   /**

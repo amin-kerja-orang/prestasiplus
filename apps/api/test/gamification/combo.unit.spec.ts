@@ -76,6 +76,7 @@ describe('GamificationService reads best_combo only when a challenge needs it', 
       handle: () => ({}),
       challenges: async () => metrics.map((m, i) => rec(String(i + 1), m)),
       completedOn: async () => new Set<string>(),
+      claimedOn: async () => new Set<string>(),
       streakOf: async () => ({ current: 0, lastActivityDate: null }),
     }
     const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock('2026-10-20T09:00:00+08:00'), ports, {} as never, {} as never, {} as never, {} as never, {} as never)
