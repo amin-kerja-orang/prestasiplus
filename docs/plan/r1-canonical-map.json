@@ -13881,6 +13881,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/admin/papers/:p/source",
+      "method": "POST",
+      "path": "/api/admin/papers/:id/source",
+      "api_id": "API-BIJAK-14",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/exam/builder/builder.controller.ts",
+      "approved_by_card": "S3-T06"
+    },
+    {
       "key": "GET /api/admin/papers/:p/review",
       "method": "GET",
       "path": "/api/admin/papers/:id/review",
