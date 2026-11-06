@@ -22,6 +22,8 @@ import {
   PracticeReadSpmTargetsSchema,
   PracticeReadStructuredAttemptRequestSchema,
   PracticeReadStructuredAttemptResultSchema,
+  PracticeReadStructuredCardSchema,
+  PracticeReadStructuredListQuerySchema,
   PracticeReadStructuredDetailSchema,
   PracticeReadStructuredListResponseSchema,
   PracticeReadSubjectConfigSchema,
@@ -275,15 +277,24 @@ describe('progress, history, corrections, mastery', () => {
 describe('structured questions', () => {
   const card = {
     id: '4001', subjectId: '1', subjectName: 'Bahasa Melayu', kbatLevel: 4, estimatedMinutes: 10, isTrial: false,
-    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10,
+    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10, bestScore: null,
   }
   it('accepts a list page with scope, track and subjectOptions', () => {
     expect(
       PracticeReadStructuredListResponseSchema.safeParse({
         data: [card],
-        meta: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }] },
+        meta: { page: 1, pageSize: 12, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }], pendingSchemeCount: 0 },
       }).success,
     ).toBe(true)
+  })
+  it('bestScore is an {awarded, max} pair or null; the list query caps q at 100 characters (S5-T11)', () => {
+    const ok = (bestScore: unknown) => PracticeReadStructuredCardSchema.safeParse({ ...card, bestScore }).success
+    expect(ok(null)).toBe(true)
+    expect(ok({ awarded: 3, max: 5 })).toBe(true)
+    expect(ok({ awarded: -1, max: 5 })).toBe(false)
+    expect(ok(undefined)).toBe(false)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(100), markable: '1' }).success).toBe(true)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(101) }).success).toBe(false)
   })
   it('rejects a list meta with an unknown scope', () => {
     expect(

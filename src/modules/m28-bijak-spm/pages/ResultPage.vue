@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
+import { DsCluster, DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsText, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
@@ -98,11 +98,31 @@ onMounted(() => window.addEventListener('beforeunload', warnOnUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnOnUnload))
 onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : true))
 
-async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
-  const out = await server.selfMark(user.value, attemptId.value, body)
-  refreshed.value = out.result
+/**
+ * The save of one sitting (S3-T06, autosave): bound to the attempt it was rendered for, so a change flushed when a control
+ * unmounts still reaches that attempt; saves run one after another page-wide, so every response holds all earlier marks
+ * and the last one is the newest state; a response for a sitting the page no longer shows is not applied.
+ */
+let saveChain: Promise<unknown> = Promise.resolve()
+function saveFor(id: string): (body: { partId: string; mark: number; band?: string }) => Promise<void> {
+  return (body) => {
+    const run = saveChain.then(async () => {
+      const out = await server.selfMark(user.value, id, body)
+      if (id === attemptId.value) refreshed.value = out.result
+    })
+    saveChain = run.catch(() => undefined)
+    return run
+  }
 }
+const saveSelfMark = computed(() => saveFor(attemptId.value))
 const percent = computed(() => result.value?.percent ?? 0)
+/** OPT-STATUS-ATTEMPT: the status chip of the Semakan (46 section 3.7). */
+const STATUS_LABEL: Record<string, string> = {
+  in_progress: 'Belum dihantar',
+  submitted: 'Dihantar',
+  auto_submitted: 'Dihantar automatik',
+  abandoned: 'Ditinggalkan',
+}
 const art = computed(() =>
   percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books',
 )
@@ -303,6 +323,19 @@ const home = computed(() => landingPath.value || '/dashboard')
         </template>
       </DsWinScreen>
 
+      <!-- FR-PA-26: status chip, "{score} / {max}" and the whole-number percent (rounded half up, 46 section 3.7). -->
+      <DsCluster justify="center" gap="xs" data-testid="result-summary">
+        <UBadge color="neutral" variant="subtle" data-testid="result-status">{{
+          STATUS_LABEL[data.attempt.status]
+        }}</UBadge>
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-score"
+          >{{ result.score }} / {{ result.max }}</DsText
+        >
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-percent"
+          >{{ Math.round(percent) }}%</DsText
+        >
+      </DsCluster>
+
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <UButton
           color="neutral"
@@ -360,8 +393,7 @@ const home = computed(() => landingPath.value || '/dashboard')
         color="info"
         variant="soft"
         icon="i-ph-hourglass-medium"
-        :title="`${result.pendingReview} bahagian belum dimarkah — perlu semakan`"
-        description="Jumlah markah ialah sementara sehingga semakan selesai."
+        :title="`Markah sementara - ${result.pendingReview} bahagian belum dimarkah.`"
         data-testid="provisional"
       />
 

@@ -31,7 +31,7 @@ import type {
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
 import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
-import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
+import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
@@ -49,8 +49,8 @@ import type {
   InProgressInfo,
   PaperCover,
   PaperDef,
-  PaperKind,
   PaperSummary,
+  PaperKind,
   PartResult,
   PartStatus,
   QuestionDef,
@@ -70,7 +70,7 @@ import type {
 import { BijakError } from './errors'
 import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
-import type { BijakApi, SaveResult, SubmitResult } from './types'
+import type { BijakApi, ListedPaper, PaperSurface, SaveResult, SubmitResult } from './types'
 
 // Re-exported so existing imports from './store' keep working (the HTTP client imports the small
 // modules directly and never this one, which pulls the seed registry).
@@ -184,9 +184,17 @@ export class BijakServer implements BijakApi {
 
   /* --------------------------------------------------------------------------- papers */
 
-  private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind } {
+  /** H-C5 / H-A13: the paper places no question, or one the bank no longer serves. */
+  private placesUnserved(def: PaperDef): boolean {
+    return def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))
+  }
+
+  private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind | 'subjektif' } {
     const fixed = PAPERS.find((p) => p.id === id)
     if (fixed) return { ...fixed, kind: 'pilihan' }
+    // S3-T06: a published Kertas Subjektif paper; a draft is not found (AC-MUR-13-20).
+    const subjektif = SUBJEKTIF_PAPERS.find((p) => p.id === id && p.published)
+    if (subjektif) return { ...subjektif, kind: 'subjektif' }
     const published = this.ops.publishedPaper(id)
     if (published) return { ...published, kind: 'pilihan' }
     const gen = this.state.generated[id]
@@ -217,7 +225,7 @@ export class BijakServer implements BijakApi {
       .sort((a, b) => b.startedAt - a.startedAt)[0]
   }
 
-  private summary(def: PaperDef & { kind: PaperKind }, userId: number): PaperSummary {
+  private summary(def: PaperDef & { kind: PaperKind | 'subjektif' }, userId: number): PaperSummary {
     const last = this.latestAttempt(userId, def.id)
     const submitted = Object.values(this.state.attempts)
       .filter((a) => a.userId === userId && a.paperId === def.id && a.result)
@@ -234,7 +242,7 @@ export class BijakServer implements BijakApi {
       durationMin: def.durationMin,
       questionCount: def.sections.reduce((n, s) => n + s.questionIds.length, 0),
       marks: this.paperMarks(def.sections),
-      kind: def.kind,
+      kind: def.kind === 'jana' ? 'jana' : 'pilihan',
       status: inProgress ? 'sedang' : submitted ? 'selesai' : 'belum',
       ...(submitted?.result
         ? { lastScore: { score: submitted.result.score, max: submitted.result.max } }
@@ -243,9 +251,16 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  async listPapers(userId: number): Promise<PaperSummary[]> {
+  async listPapers(userId: number, surface: PaperSurface = 'simulasi'): Promise<ListedPaper[]> {
     await this.tick()
     this.sweep()
+    if (surface === 'subjektif') {
+      return SUBJEKTIF_PAPERS.filter((p) => p.published).map((p) => ({
+        ...this.summary({ ...p, kind: 'subjektif' }, userId),
+        surface: 'subjektif' as const,
+        examBoard: p.examBoard,
+      }))
+    }
     return [...PAPERS, ...this.ops.publishedPapers()].map((p) =>
       this.summary({ ...p, kind: 'pilihan' }, userId),
     )
@@ -273,6 +288,7 @@ export class BijakServer implements BijakApi {
         compulsory: !!s.compulsory,
         ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),
       })),
+      unavailable: this.placesUnserved(def),
     }
   }
 
@@ -393,20 +409,23 @@ export class BijakServer implements BijakApi {
   async startAttempt(
     userId: number,
     paperId: string,
-    mode: AttemptMode,
+    requested: AttemptMode,
     opts: { restart?: boolean; fresh?: boolean } = {},
   ): Promise<{ attemptId: string }> {
     await this.tick()
+    let mode = requested
     const def = this.resolvePaper(paperId, userId)
     const open = Object.values(this.state.attempts).filter(
       (a) => a.userId === userId && a.paperId === paperId && a.status === 'in_progress',
     )
+    // DM-83: a Kertas Subjektif sitting is always latihan and untimed, whatever mode is sent.
+    if (def.kind === 'subjektif') mode = 'latihan'
     if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
     }
     // H-C5 / H-A13: a paper that places a question the bank no longer serves cannot start a new sitting (API: 403 + this BM line).
-    if (def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))) {
+    if (this.placesUnserved(def)) {
       throw new BijakError('forbidden', PAPER_UNAVAILABLE)
     }
     if (!opts.fresh) for (const a of open) a.status = 'abandoned'
@@ -759,6 +778,7 @@ export class BijakServer implements BijakApi {
     userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme = false,
   ): Promise<SelfMarkOutcome> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
@@ -796,7 +816,7 @@ export class BijakServer implements BijakApi {
       attemptMax: a.result.max,
       provisional: a.result.provisional,
       pendingReview: a.result.pendingReview,
-      result: a.result,
+      result: this.presented(a, a.result, withScheme),
     }
   }
 
@@ -905,7 +925,7 @@ export class BijakServer implements BijakApi {
   ): Promise<QuestionResult> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
-    if (a.mode !== 'latihan')
+    if (a.mode !== 'latihan' || (a.paperKind as string) === 'subjektif')
       throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
@@ -926,14 +946,33 @@ export class BijakServer implements BijakApi {
     return this.gradeQuestion(a, questionId, number, true)
   }
 
-  async getResult(userId: number, attemptId: string): Promise<ResultView> {
+  /**
+   * AC-MUR-13-21: a Kertas Subjektif result carries no scheme, scheme points or suggestion unless `withScheme`
+   * (API `?scheme=1`). Marks, status and `selfMarkable` stay. Other kinds always carry their scheme after submit.
+   */
+  private presented(a: Attempt, result: AttemptResult, withScheme: boolean): AttemptResult {
+    if (withScheme || (a.paperKind as string) !== 'subjektif') return result
+    return {
+      ...result,
+      questions: result.questions.map((q) => ({
+        ...q,
+        parts: q.parts.map((p) => {
+          const rest = { ...p, points: [], scheme: { marks: p.marks } } as ReviewPart
+          delete rest.suggestion
+          return rest
+        }),
+      })),
+    }
+  }
+
+  async getResult(userId: number, attemptId: string, withScheme = false): Promise<ResultView> {
     await this.tick()
     this.sweep()
     const a = this.attemptOf(userId, attemptId)
     if (!a.result) throw new BijakError('not_submitted', 'Skema hanya didedahkan selepas Hantar')
     const paper = this.buildView(a)
     paper.checks = []
-    return { attempt: paper.attempt, result: a.result, paper }
+    return { attempt: paper.attempt, result: this.presented(a, a.result, withScheme), paper }
   }
 
   /* --------------------------------------------------------------------------- history */

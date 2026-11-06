@@ -35,6 +35,8 @@ export const PRACTICE_READS_MESSAGES = {
   invalidAnswer: 'Jawapan tidak sah.',
   /** Answer text over the limit; the mock builds it from `STRUCTURED_MAX_ANSWER_CHARS`. */
   answerTooLong: (max: number) => `Jawapan tidak boleh melebihi ${String(max)} aksara.`,
+  /** `GET /practice/structured`: `q` over the limit (422). */
+  searchTooLong: (max: number) => `Carian tidak boleh melebihi ${String(max)} aksara.`,
 } as const
 
 // ---------------------------------------------------------------------------------------------
@@ -43,8 +45,10 @@ export const PRACTICE_READS_MESSAGES = {
 
 /** History page size (BR-21): fixed, `pageSize` is not accepted. */
 export const PRACTICE_READS_HISTORY_PAGE_SIZE = 15
-/** Structured list page size (BR-23): fixed. */
-export const PRACTICE_READS_STRUCTURED_PAGE_SIZE = 20
+/** Structured list page size (ruling R9, R1-MUR-17): fixed at 12. */
+export const PRACTICE_READS_STRUCTURED_PAGE_SIZE = 12
+/** Longest `q` search text of the structured list (FR-MUR-17). */
+export const PRACTICE_READS_STRUCTURED_SEARCH_MAX = 100
 /** Upper bound of one structured answer text (mock "INFERRED"). */
 export const PRACTICE_READS_STRUCTURED_MAX_ANSWER_CHARS = 5000
 /** KBAT levels of the structured list (1-2 LOTS, 3 MOTS, 4-6 HOTS, BR-23). */
@@ -582,9 +586,11 @@ export const PracticeReadStructuredTrackSchema = z.enum(['bahasa']).meta({ id: '
 export const PracticeReadStructuredListQuerySchema = z.object({
   subjectId: z.string().optional().meta({ description: 'Subject filter. An empty value is no filter; an unknown or non-numeric value matches nothing (200, empty list).' }),
   kbatLevel: z.string().optional().meta({ description: '1 to 6. An empty value is no filter; any other value matches nothing (200, empty list).' }),
-  page: z.string().optional().meta({ description: 'Page number; a missing or invalid value means page 1. The page size is fixed at 20.' }),
+  page: z.string().optional().meta({ description: 'Page number; a missing or invalid value means page 1. The page size is fixed at 12.' }),
   scope: z.string().optional().meta({ description: "'spm' selects the SPM variant (Subjektif). Any other value is ignored." }),
   track: z.string().optional().meta({ description: "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored." }),
+  q: z.string().max(PRACTICE_READS_STRUCTURED_SEARCH_MAX).optional().meta({ description: 'Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search.' }),
+  markable: z.enum(['0', '1', 'true', 'false']).optional().meta({ description: "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all." }),
 })
 
 export const PracticeReadStructuredDetailQuerySchema = z.object({
@@ -610,6 +616,10 @@ export const PracticeReadStructuredCardSchema = z
     levelName: z.string().meta({ description: 'M03 level name, e.g. "Tingkatan 5".' }),
     parts: count().meta({ description: '"{parts} bahagian": the top-level parts.' }),
     marks: count().meta({ description: '"{marks} markah".' }),
+    bestScore: z
+      .strictObject({ awarded: count(), max: count() })
+      .nullable()
+      .meta({ description: "The caller's best attempt on this set (highest awarded total); null when there is no attempt." }),
   })
   .meta({ id: 'PracticeReadStructuredCard' })
 
@@ -619,6 +629,7 @@ export const PracticeReadStructuredListMetaSchema = ListMetaSchema.extend({
   subjectOptions: z
     .array(z.strictObject({ id: IdSchema, name: z.string() }))
     .meta({ description: 'The "Subjek" options (without "Semua Subjek"): plain list by name; SPM variants in the FR-M05-134 order.' }),
+  pendingSchemeCount: count().meta({ description: 'Sets in the current filter (q, subject, KBAT; ignoring `markable`) with no usable scheme: the "{n} soalan untuk pilihan ini masih menunggu skema pemarkahan..." notice.' }),
 }).meta({ id: 'PracticeReadStructuredListMeta' })
 
 export const PracticeReadStructuredListResponseSchema = z

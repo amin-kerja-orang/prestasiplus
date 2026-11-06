@@ -10,6 +10,7 @@ import { api } from '@/api'
 import type {
   Analytics,
   ClassCard,
+  ClassesAggregate,
   ClassItemAnalysis,
   ItemAnalysisMe,
   ItemMeTapis,
@@ -41,13 +42,17 @@ export const fetchSchoolPerformance = (o: Signal = {}) =>
 export const fetchLevels = (o: Signal = {}) =>
   api.get<LevelCard[]>('/api/performance/levels', withSignal(o))
 
-/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t4 / t5. */
+/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t1 to t5. */
 export const fetchLevelDetail = (code: string, o: Signal = {}) =>
   api.get<LevelDetail>(`/api/performance/levels/${encodeURIComponent(code)}`, withSignal(o))
 
 /** #4 `GET /api/performance/classes` (S4, the viewer's own classes). */
 export const fetchOwnClasses = (o: Signal = {}) =>
   api.get<ClassCard[]>('/api/performance/classes', withSignal(o))
+
+/** #4 `GET /api/performance/classes/aggregate` (S4, R1-GUR-4): the cards plus "Pelajar Terbaik" and "Prestasi Mengikut Subjek". */
+export const fetchOwnClassesAggregate = (o: Signal = {}) =>
+  api.get<ClassesAggregate>('/api/performance/classes/aggregate', withSignal(o))
 
 /** #6 `GET /api/performance/students/:userId` (S6); 404 unknown, 403 not permitted. */
 export const fetchStudentPerformance = (userId: number | string, o: Signal = {}) =>
@@ -109,6 +114,10 @@ export function createTimelinePost(input: TimelineInput, o: Signal = {}): Promis
   ;(input.captions ?? []).forEach((c, i) => form.append(`captions[${String(i)}]`, c))
   return api.multipart<TimelinePost>('/api/timeline', form, withSignal(o))
 }
+
+/** `DELETE /api/timeline/:id` (API-RPT-15): own post only; 404 for any other id. Answers `{ deleted: 1 }`. */
+export const deleteTimelinePost = (id: number | string, o: Signal = {}) =>
+  api.delete<{ deleted: 1 }>(`/api/timeline/${encodeURIComponent(String(id))}`, withSignal(o))
 
 /** #20 `GET /api/public/students/:id` (S18; no session needed); 404 unknown. */
 export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>

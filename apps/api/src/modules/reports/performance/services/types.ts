@@ -4,6 +4,7 @@ import type {
   PerformanceClassAnalyticsQuerySchema,
   PerformanceClassAnalyticsSchema,
   PerformanceClassCardSchema,
+  PerformanceClassesAggregateSchema,
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
   PerformanceItemAnalysisMeSchema,
@@ -12,6 +13,7 @@ import type {
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
   PerformanceRankingSchema,
+  PerformanceTimelineEntrySchema,
   PerformanceTimelinePostSchema,
   PerformanceSchoolItemAnalysisSchema,
   PerformanceSchoolSchema,
@@ -35,6 +37,7 @@ export type PerformanceAnalytics = z.infer<typeof PerformanceAnalyticsSchema>
 export type PerformanceClassAnalyticsQuery = z.infer<typeof PerformanceClassAnalyticsQuerySchema>
 export type PerformanceClassAnalytics = z.infer<typeof PerformanceClassAnalyticsSchema>
 export type PerformanceClassCard = z.infer<typeof PerformanceClassCardSchema>
+export type PerformanceClassesAggregate = z.infer<typeof PerformanceClassesAggregateSchema>
 export type PerformanceClassDashboard = z.infer<typeof PerformanceClassDashboardSchema>
 export type PerformanceClassItemAnalysis = z.infer<typeof PerformanceClassItemAnalysisSchema>
 export type PerformanceLevelCard = z.infer<typeof PerformanceLevelCardSchema>
@@ -60,3 +63,4 @@ export type PerformanceRanking = z.infer<typeof PerformanceRankingSchema>
 export type PerformanceLeaderboard = z.infer<typeof PerformanceLeaderboardSchema>
 export type PerformancePublicProfile = z.infer<typeof PerformancePublicProfileSchema>
 export type PerformanceTimelinePost = z.infer<typeof PerformanceTimelinePostSchema>
+export type PerformanceTimelineEntry = z.infer<typeof PerformanceTimelineEntrySchema>

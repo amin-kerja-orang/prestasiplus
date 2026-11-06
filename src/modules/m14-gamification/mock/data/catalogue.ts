@@ -772,9 +772,11 @@ export const TITLES: readonly { name: string; emoji: string; threshold: number }
   { name: 'Mitos', emoji: '', threshold: 10000 },
 ]
 
-/** BR-M14-19 referral rewards. */
-export const REFERRAL_REWARD_REFERRER = 50
-export const REFERRAL_REWARD_REFEREE = 25
+/**
+ * Referral settings (48 GAME-24): the defaults of `referral_referrer_syiling`, `referral_referee_syiling` and
+ * `referral_max_rewarded` in 48 section 2. The real amounts are admin settings; this is the mock's stand-in table.
+ */
+export const REFERRAL_SETTINGS = { referrerSyiling: 100, refereeSyiling: 0, maxRewarded: 20 } as const
 
 /** BR-M14-20 award bounds. */
 export const AWARD_MAX = 10_000

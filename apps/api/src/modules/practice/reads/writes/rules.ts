@@ -2,7 +2,7 @@
  * Fixed values and pure functions of the SPM targets and structured-attempt endpoints (SRS M05 v1.17
  * BR-22, BR-23, BR-26, section 6.13; mock `structured-rules.ts`). No database, no clock.
  */
-import { PRACTICE_READS_MESSAGES, PRACTICE_READS_SPM_GRADES } from '@pp/contract'
+import { PRACTICE_READS_MESSAGES, PRACTICE_READS_STRUCTURED_PAGE_SIZE, PRACTICE_READS_SPM_GRADES } from '@pp/contract'
 import type { RateLimitSpec } from '../../../../common/throttle'
 
 /**
@@ -14,8 +14,8 @@ export const READS_WRITE_LIMITS = {
   attempts: { bucket: 'practice-reads.attempts', env: 'THROTTLE_STRUCTURED_ATTEMPT_PER_MINUTE', default: 60, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
-/** Structured list page size (BR-23). */
-export const STRUCTURED_PAGE_SIZE = 20
+/** Structured list page size (ruling R9). */
+export const STRUCTURED_PAGE_SIZE = PRACTICE_READS_STRUCTURED_PAGE_SIZE
 /** Upper bound of one answer text (mock "INFERRED"). */
 export const MAX_ANSWER_CHARS = 5000
 /** The card preview is the first 200 characters of the stimulus plus "..." (mock "INFERRED"). */
