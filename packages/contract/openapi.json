@@ -20295,7 +20295,7 @@
           "page": {
             "type": "integer",
             "minimum": 1,
-            "description": "Current page (25 per page)."
+            "description": "Current page (25 per page). Absent until the roster API pages (S6-T10 pelajar)."
           },
           "pageSize": {
             "type": "integer",
@@ -20308,10 +20308,7 @@
         },
         "required": [
           "count",
-          "schoolSet",
-          "page",
-          "pageSize",
-          "totalPages"
+          "schoolSet"
         ]
       },
       "ClassStudentAddRequest": {
