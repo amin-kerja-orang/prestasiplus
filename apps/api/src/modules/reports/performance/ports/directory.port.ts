@@ -42,6 +42,8 @@ export interface DirectoryPort {
   subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>>
   /** Curriculum subjects by id (code and BM name), one read; an unknown id is absent from the map. */
   subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>>
+  /** Every ACTIVE curriculum subject in the curriculum order (BR-08), one read (the "Mata Pelajaran" options of Analitik Adaptif). */
+  activeSubjects(): Promise<{ id: string; name: string }[]>
 }
 
 export const DIRECTORY_PORT = Symbol('DIRECTORY_PORT')
