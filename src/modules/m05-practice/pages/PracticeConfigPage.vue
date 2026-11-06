@@ -269,6 +269,8 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   class="h-auto min-h-14 flex-col justify-center gap-0 py-2"
                   :data-selected="questionCount === n ? 'true' : 'false'"
                   :aria-pressed="questionCount === n"
+                  :disabled="n > available"
+                  :title="n > available ? `Hanya ${available} soalan tersedia.` : undefined"
                   :data-testid="`count-${n}`"
                   @click="questionCount = n"
                 >
