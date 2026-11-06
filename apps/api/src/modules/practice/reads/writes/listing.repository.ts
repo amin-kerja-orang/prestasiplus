@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
-import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL } from '../../../questions/learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface ListingQuery {
   /** Education level ids a student may see (T4, T5), decimal strings. */
@@ -42,7 +42,8 @@ export class StructuredListingRepository {
       db.$queryRaw<{ id: bigint }[]>`
         SELECT q.id FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-        WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL}
+        WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL}
+          AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
           AND v.education_level_id = ANY(${levels}::bigint[])
           AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
           AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)
@@ -60,7 +61,8 @@ export class StructuredListingRepository {
           SELECT ${ALL_LEAVES_KEYED_SQL} AS ok
           FROM questions q
           JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-          WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL}
+          WHERE q.is_active AND v.status = 'approved' AND v.type = 'structured' AND ${BANK_VISIBLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL}
+          AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL}
             AND v.education_level_id = ANY(${levels}::bigint[])
             AND (${subjects}::bigint[] IS NULL OR v.subject_id = ANY(${subjects}::bigint[]))
             AND (${q.kbat}::int IS NULL OR LEAST(6, GREATEST(1, COALESCE(v.cognitive_level, 1))) = ${q.kbat}::int)

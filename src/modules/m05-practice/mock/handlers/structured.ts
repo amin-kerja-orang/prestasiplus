@@ -425,6 +425,8 @@ export const structuredRoutes: RouteDef[] = [
       const stored = practiceRepo.addStructuredAttempt(row)
       return created({
         ...stored,
+        // S5-T11: the contract also returns the (Bijak) attempt id, equal to `id`.
+        attemptId: String(stored.id),
         modelAnswers: q.subQuestions.map((s) => ({ subQuestionId: s.id, text: s.modelAnswer })),
       })
     },

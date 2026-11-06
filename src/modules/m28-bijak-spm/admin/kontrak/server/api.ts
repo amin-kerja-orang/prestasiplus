@@ -78,7 +78,8 @@ export interface KontrakApi {
   verification(subject: string, kertas: number): Promise<BijakVerificationState>
   verify(subject: string, kertas: number, note: string): Promise<BijakBlueprintView>
   pool(subject: string, kertas: number): Promise<BijakPoolPreview>
-  generateDraft(subject: string, kertas: number): Promise<{ paperId: string }>
+  /** `title` is the `Tajuk set` the API requires (PRD30 13-04: required, at most 120 after trim). */
+  generateDraft(subject: string, kertas: number, title: string): Promise<{ id: string }>
   /** DSKP units of a subject for the unit picker (`GET /admin/bijak/dskp/units`). */
   listUnits(subject: string): Promise<BijakDskpUnit[]>
   /** Subjects the admin can add a contract for (`GET /admin/bijak/subjects`). */

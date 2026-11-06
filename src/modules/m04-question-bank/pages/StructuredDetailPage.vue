@@ -15,10 +15,7 @@ import { useApi, usePageMeta, useRouteExists } from '@/composables'
 import { DsBackLink, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import { fetchStructuredQuestion } from '../api/structured'
-import {
-  fetchGuruStructuredQuestion,
-  type GuruStructuredDetail,
-} from '../api/structured-guru'
+import { fetchGuruStructuredQuestion, type GuruStructuredDetail } from '../api/structured-guru'
 import StructuredGuruDetail from '../components/StructuredGuruDetail.vue'
 import { formatEnDate } from '../lib/audit-format'
 import {
@@ -29,14 +26,21 @@ import {
 import { GURU_BACK_LABEL, kbatLabel, partLabelText } from '../lib/structured-options'
 import { LOAD_ERROR, isNotFound } from '../lib/ui-errors'
 
-const props = withDefaults(defineProps<{ id: number; portal?: 'admin' | 'guru' }>(), {
+const props = withDefaults(defineProps<{ id: number | string; portal?: 'admin' | 'guru' }>(), {
   portal: 'admin',
 })
 const guru = props.portal === 'guru'
 const listPath = guru ? GURU_STRUCTURED_LIST_PATH : STRUCTURED_LIST_PATH
 const backLabel = guru ? GURU_BACK_LABEL : 'Kembali ke senarai'
 // R1-GUR-44b: the tab title carries the id, "Soalan Berstruktur #{id}" (the route meta title is static).
-if (guru) usePageMeta().setTitle(`Soalan Berstruktur #${String(props.id)}`)
+const pageMeta = usePageMeta()
+if (guru) {
+  watch(
+    () => props.id,
+    (id) => pageMeta.setTitle(`Soalan Berstruktur #${String(id)}`),
+    { immediate: true },
+  )
+}
 // DV: the M10 teacher edit form is not routed yet, so "Edit Soalan" is hidden until it is.
 const { routeExists } = useRouteExists()
 
@@ -48,7 +52,7 @@ const {
   (signal) =>
     guru
       ? fetchGuruStructuredQuestion(props.id, { signal })
-      : fetchStructuredQuestion(props.id, { signal }),
+      : fetchStructuredQuestion(Number(props.id), { signal }),
   () => props.id,
 )
 const question = computed(() =>
@@ -65,17 +69,12 @@ watch(
   },
   { immediate: true },
 )
-
 </script>
 
 <template>
   <DsPage class="max-w-5xl" data-testid="structured-detail">
     <template #breadcrumb>
-      <DsBackLink
-        :to="listPath"
-        :label="backLabel"
-        data-testid="structured-back"
-      />
+      <DsBackLink :to="listPath" :label="backLabel" data-testid="structured-back" />
     </template>
 
     <DsLoadError

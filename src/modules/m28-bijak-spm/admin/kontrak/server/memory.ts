@@ -29,6 +29,7 @@ import { BLUEPRINTS, SUBJECTS, subjectName } from '../../../data/registry'
 import { formFromView, structuralKey } from '../domain/form'
 import { REASON_BANK_QUERY } from '../domain/pool'
 import { validateForm } from '../domain/validate'
+import { setTitleError } from '../../builder/domain/set-title'
 import { KontrakError, type KontrakApi } from './api'
 
 type Input = BijakBlueprintAdminVersionInput
@@ -198,7 +199,7 @@ function viewOf(
 
 export interface MockKontrakOptions {
   /** Creates the draft paper behind "Jana draf kertas" (default: the Bijak admin mock). */
-  createPaper?: (subject: string, kertas: number) => Promise<string>
+  createPaper?: (subject: string, kertas: number, title: string) => Promise<string>
 }
 
 export class MockKontrakServer implements KontrakApi {
@@ -621,20 +622,24 @@ export class MockKontrakServer implements KontrakApi {
     }
   }
 
-  async generateDraft(subject: string, kertas: number): Promise<{ paperId: string }> {
+  async generateDraft(subject: string, kertas: number, title: string): Promise<{ id: string }> {
+    // As the API (PRD30 13-04): 422 VALIDATION_ERROR `fields.title`, before anything is read or created.
+    const titleMessage = setTitleError(title)
+    if (titleMessage) throw new KontrakError('invalid', titleMessage, { fields: { title: titleMessage } })
     const pool = await this.pool(subject, kertas)
     if (pool.verdict !== 'boleh' && pool.firstFailure)
       throw new KontrakError('shortage', 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', { shortages: [pool.firstFailure] })
     const make =
       this.options.createPaper ??
-      (async (s: string, k: number) => {
+      (async (s: string, k: number, t: string) => {
         const { bijakAdminServer } = await import('../../../server/client')
-        return (bijakAdminServer() as unknown as { createPaper(i: { subject: string; kertas: 1 | 2 }): Promise<string> }).createPaper({
+        return (bijakAdminServer() as unknown as { createPaper(i: { subject: string; kertas: 1 | 2; title: string }): Promise<string> }).createPaper({
           subject: s,
           kertas: k as 1 | 2,
+          title: t,
         })
       })
-    return { paperId: await make(subject, kertas) }
+    return { id: await make(subject, kertas, title.trim()) }
   }
 
   async listUnits(subject: string): Promise<BijakDskpUnit[]> {

@@ -61,7 +61,10 @@ test.describe('M11 S2 teacher scope @api', () => {
     expect((await page.request.get(`/api/monitoring/schools/${other}`)).status()).toBe(404)
 
     await page.goto('/guru/monitoring')
-    await expect(page.getByTestId('mon-kpis')).toBeVisible({ timeout: 20_000 })
+    // R1-GUR-10: `/guru/monitoring` is the school detail of the own school (banner, header), not the national overview.
+    await expect(page.getByTestId('mon-school-header')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('mon-scope-banner')).toBeVisible()
+    await expect(page.getByTestId('mon-kpis')).toHaveCount(0)
     await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
     await expectNoHScroll(page)
 

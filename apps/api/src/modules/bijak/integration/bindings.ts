@@ -4,8 +4,17 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import type { TxClient } from '../../../db/client'
 import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
-import { practiceRewardSource, type PracticeRewardPort, type PracticeRewardResult, type PracticeSessionCompleted } from '../../practice/ports'
+import {
+  practiceRewardSource,
+  type PracticeRewardPort,
+  type PracticeRewardResult,
+  type PracticeSessionCompleted,
+  type PracticeStructuredAttemptInput,
+  type PracticeStructuredAttemptOutput,
+  type PracticeStructuredAttemptPort,
+} from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
+import { BijakAttemptsService } from '../attempts'
 import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput } from '../attempts/ports'
 import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
@@ -199,5 +208,19 @@ export class WalletPracticeReward implements PracticeRewardPort {
       await tx.$executeRawUnsafe(`ROLLBACK TO SAVEPOINT ${savepoint}`)
     }
     await tx.$executeRawUnsafe(`RELEASE SAVEPOINT ${savepoint}`)
+  }
+}
+
+/**
+ * S5-T11 (API-PRAC-10): the practice `PracticeStructuredAttemptPort` -> the Bijak attempts module. A Soalan Berstruktur attempt is one
+ * `exam_attempts` row graded by the ONE grader (`gradeAttempt`); practice keeps only the wire shape. Behind a port so `practice` never
+ * imports `bijak/attempts` (a circular import).
+ */
+@Injectable()
+export class BijakStructuredAttempts implements PracticeStructuredAttemptPort {
+  constructor(@Inject(BijakAttemptsService) private readonly attempts: BijakAttemptsService) {}
+
+  submit(input: PracticeStructuredAttemptInput): Promise<PracticeStructuredAttemptOutput> {
+    return this.attempts.submitStructured({ userId: input.userId, isTest: input.isTest }, input)
   }
 }

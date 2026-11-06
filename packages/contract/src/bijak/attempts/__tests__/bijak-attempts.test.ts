@@ -745,9 +745,9 @@ describe('OpenAPI document', () => {
   })
 
   it('has no clash with the papers routes of BE-15', () => {
-    for (const p of ['/bijak/papers', '/bijak/papers/{id}', '/bijak/contracts', '/bijak/subjects', '/bijak/papers/generate'])
+    for (const p of ['/bijak/papers', '/bijak/papers/{id}', '/bijak/contracts', '/bijak/subjects'])
       expect(paths[p]).toBeDefined()
-    expect(ops.some((o) => o.path === '/bijak/papers/generate')).toBe(false)
+    expect(paths['/bijak/papers/generate']).toBeUndefined()
   })
 
   it('registers every component of this card, all prefixed BijakAttempt', () => {
@@ -925,5 +925,18 @@ describe('the picture and stimulus wire (REQ-B-014 b, c)', () => {
     expect(BijakAttemptStimulusSchema.safeParse(base).success).toBe(true)
     expect(BijakAttemptStimulusSchema.safeParse({ ...base, svg: '<svg onload="alert(1)"/>' }).success).toBe(false)
     expect(Object.keys(BijakAttemptStimulusSchema.shape)).not.toContain('svg')
+  })
+})
+
+describe('DM-68 answer keys', () => {
+  it('parses the new keys, each optional; an old answer stays valid', () => {
+    const all = { choices: ['a'], gaps: { g1: 'x' }, cells: { c1: '1' }, topicId: 't1', revealed: true }
+    expect(BijakAttemptPartAnswerSchema.parse(all)).toEqual(all)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ choice: 't1', text: 'x' }).success).toBe(true)
+  })
+  it('refuses a wrong shape and an unknown key', () => {
+    expect(BijakAttemptPartAnswerSchema.safeParse({ choices: 'a' }).success).toBe(false)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ gaps: { g1: 1 } }).success).toBe(false)
+    expect(BijakAttemptPartAnswerSchema.safeParse({ extra: 1 }).success).toBe(false)
   })
 })

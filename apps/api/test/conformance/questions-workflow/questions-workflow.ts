@@ -48,6 +48,8 @@ const ADMIN_WRITES = [
 ] as const
 /** Readable by admin, teacher and school admin (S6-T18); the writes under it stay in ADMIN_WRITES. */
 const STAFF_READS = ['/diagram-audit'] as const
+/** Inside ADMIN_WRITES but open to a teacher too (S6-T18 part 2): the guard lets her in, so an unknown question is 404, not 403. */
+const TEACHER_WRITES = ['/diagram-audit/mcq/1/image'] as const
 const GURU_READS = ['/guru/questions/template', '/guru/dskp/bidang', '/guru/dskp/sk', '/guru/dskp/sp'] as const
 
 export const questionsWorkflowScenarios: Scenario[] = [
@@ -271,7 +273,8 @@ export const questionsWorkflowScenarios: Scenario[] = [
       const teacher = await ctx.as('teacher')
       for (const path of ADMIN_READS) expectError(ctx, await teacher.request('GET', path), 403, 'FORBIDDEN')
       for (const path of STAFF_READS) ctx.expectStatus(await teacher.request('GET', path), 200)
-      for (const path of ADMIN_WRITES) expectError(ctx, await teacher.request('POST', path), 403, 'FORBIDDEN')
+      for (const path of ADMIN_WRITES.filter((p) => !(TEACHER_WRITES as readonly string[]).includes(p))) expectError(ctx, await teacher.request('POST', path), 403, 'FORBIDDEN')
+      for (const path of TEACHER_WRITES) expectError(ctx, await teacher.request('POST', path), 404, 'NOT_FOUND')
     },
   },
 ]

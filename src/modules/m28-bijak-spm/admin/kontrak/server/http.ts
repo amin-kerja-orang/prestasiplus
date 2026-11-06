@@ -132,8 +132,8 @@ export class HttpKontrakServer extends HttpBijakServer implements KontrakApi {
   pool(subject: string, kertas: number): Promise<BijakPoolPreview> {
     return this.call('GET', `${this.base(subject, kertas)}/pool`)
   }
-  generateDraft(subject: string, kertas: number): Promise<{ paperId: string }> {
-    return this.call('POST', '/api/admin/papers/generate', { subject, kertas })
+  generateDraft(subject: string, kertas: number, title: string): Promise<{ id: string }> {
+    return this.call('POST', '/api/admin/papers/generate', { subject, kertas, title: title.trim() })
   }
 
   listUnits(subject: string): Promise<BijakDskpUnit[]> {
