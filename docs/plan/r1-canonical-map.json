@@ -10485,6 +10485,15 @@
       "approved_by_card": null
     },
     {
+      "name": "ChallengeClaim",
+      "table": "challenge_claims",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T04",
+      "dm": "DM-63"
+    },
+    {
       "name": "Achievement",
       "table": "achievements",
       "status": "canonical",
