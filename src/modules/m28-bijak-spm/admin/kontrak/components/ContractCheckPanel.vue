@@ -10,7 +10,7 @@ import { DsPanel, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import type { ContractForm } from '../domain/form'
-import type { GateRow } from '../domain/verify'
+import { PROPOSED_COPY, type GateRow } from '../domain/verify'
 import {
   errorsOf,
   incompleteOf,
@@ -149,8 +149,8 @@ const title = computed(() => (wide.value ? 'Semakan Kontrak' : `Semakan Kontrak 
         variant="subtle"
         icon="i-ph-warning"
         role="alert"
-        title="Belum lengkap untuk Disahkan (tidak diketahui)"
-        description="Syarat Disahkan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi."
+        :title="PROPOSED_COPY.checkUnknownTitle"
+        :description="PROPOSED_COPY.checkUnknownDescription"
         data-testid="check-unknown"
       />
 

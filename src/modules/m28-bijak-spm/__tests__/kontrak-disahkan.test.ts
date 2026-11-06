@@ -228,13 +228,31 @@ describe('Mocks answer as the API', () => {
     expect(e).toMatchObject({ kind: 'invalid', message: MSG.dskpNotLoaded, fields: { subject: MSG.dskpNotLoaded } })
   })
 
-  it('refuses a duration above 300 minutes on fields.durationMin and answers a duplicate with the one contract message', async () => {
+  it('does not bound Tempoh in the mock (the API accepts up to 600; the form refuses above 300) and answers a duplicate with the one contract message', async () => {
     const api = new MockKontrakServer()
-    const e = await api.create({ subject: 'MAT', kertas: 4, ...body, durationMin: 301 }).catch((x: unknown) => x as KontrakError)
-    expect(e).toMatchObject({ kind: 'invalid', fields: { durationMin: 'Tempoh mesti antara 1 dan 300 minit.' } })
-    await expect(api.create({ subject: 'MAT', kertas: 4, ...body, durationMin: 300 })).resolves.toMatchObject({ kertas: 4 })
+    await expect(api.create({ subject: 'MAT', kertas: 4, ...body, durationMin: 301 })).resolves.toMatchObject({ kertas: 4, durationMin: 301 })
+    await expect(api.create({ subject: 'MAT', kertas: 3, ...body, durationMin: 600 })).resolves.toMatchObject({ kertas: 3, durationMin: 600 })
+    expect(messages(form([section()], { durationMin: 301 }))).toContain('Tempoh mesti antara 1 dan 300 minit.')
     const dup = await api.create({ subject: 'MAT', kertas: 1, ...body }).catch((x: unknown) => x as KontrakError)
     expect(dup).toMatchObject({ kind: 'conflict', message: MSG.blueprintExists })
+  })
+
+  it('seeded Disahkan MAT/1 and SN/1 show no failing gate next to Disahkan; a Spec head still fails its gates', async () => {
+    const api = new MockKontrakServer()
+    for (const [subject, kertas] of [['MAT', 1], ['SN', 1]] as const) {
+      const view = await api.get(subject, kertas)
+      const { record, check } = await api.verification(subject, kertas)
+      expect(view.source).toBe('Disahkan')
+      expect(record).not.toBeNull()
+      expect(check).toMatchObject({ passes: true, blueprintProblems: [], completeness: [] })
+      expect(failingGates(check, formFromView(view))).toEqual([])
+      // Editing the structure creates a Spec version, which is checked for real again.
+      const body = toInput(formFromView(view))
+      const next = await api.saveVersion(subject, kertas, { ...body, durationMin: body.durationMin + 5 })
+      expect(next.source).toBe('Spec')
+      expect((await api.verification(subject, kertas)).check.passes).toBe(false)
+    }
+    expect((await api.verification('MAT', 2)).check.passes).toBe(false)
   })
 
   it('offers only subjects with units in Baharu', async () => {
@@ -376,10 +394,10 @@ describe('Kontrak screens', () => {
   describe('Belum lengkap untuk Disahkan (FR-ADM-Q16.4, 16-20)', () => {
     it('counts the Syarat Disahkan rows, evidence included, in the panel and on the Pengesahan tab', async () => {
       const api = server()
-      const r = await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/1')
-      const { check } = await api.verification('MAT', 1)
-      const n = failingGates(check, formFromView(await api.get('MAT', 1))).length
-      const fromFormOnly = validateForm(formFromView(await api.get('MAT', 1))).filter((i) => i.level === 'incomplete').length
+      const r = await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/2')
+      const { check } = await api.verification('MAT', 2)
+      const n = failingGates(check, formFromView(await api.get('MAT', 2))).length
+      const fromFormOnly = validateForm(formFromView(await api.get('MAT', 2))).filter((i) => i.level === 'incomplete').length
       expect(check.completeness.some((c) => c.code === 'NO_EVIDENCE_BODIES')).toBe(true)
       expect(n).toBeGreaterThan(0)
       expect(n).not.toBe(fromFormOnly)
@@ -393,7 +411,7 @@ describe('Kontrak screens', () => {
 
     it('a row with no field of its own opens the Pengesahan tab', async () => {
       server()
-      const r = await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/1')
+      const r = await open(KontrakEditorPage, '/admin/spm/kontrak/MAT/2')
       const link = wrapper!.get('[data-testid="check-incomplete"]').findAll('button').find((b) => b.text().includes('Rekod pengesahan'))!
       await link.trigger('click')
       await flushPromises()

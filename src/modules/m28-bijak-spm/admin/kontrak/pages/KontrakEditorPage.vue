@@ -37,7 +37,7 @@ import {
 } from '../domain/form'
 import { gapText, REVIEW_BADGE } from '../domain/review'
 import { errorsOf, incompleteOf, issueFromProblem, issuesFromFields, validateForm, type Issue } from '../domain/validate'
-import { failingGates, type GateRow } from '../domain/verify'
+import { failingGates, PROPOSED_COPY, type GateRow } from '../domain/verify'
 import { KONTRAK_ROUTES, KontrakError } from '../server/api'
 import { kontrakServer } from '../server/client'
 
@@ -113,7 +113,7 @@ watch(
 const failing = computed<GateRow[] | null>(() => (check.value ? failingGates(check.value, form.value) : null))
 const problemCount = computed(() => errorsOf(issues.value).length + (failing.value?.length ?? incompleteOf(issues.value).length))
 const problemLabel = computed(() => {
-  if (checkUnknown.value) return errorsOf(issues.value).length ? `${errorsOf(issues.value).length}+ masalah` : 'Semakan Disahkan tidak dapat dimuat'
+  if (checkUnknown.value) return errorsOf(issues.value).length ? `${errorsOf(issues.value).length}+ masalah` : PROPOSED_COPY.checkUnknownChip
   return problemCount.value ? `${problemCount.value} masalah` : 'Tiada masalah'
 })
 

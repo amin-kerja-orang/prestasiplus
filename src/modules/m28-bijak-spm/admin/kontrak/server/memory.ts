@@ -88,6 +88,12 @@ interface Ver {
   hash: string
   evidenceIds: string[]
   verification: BijakVerificationRecord | null
+  /**
+   * A registry head seeded as Disahkan: the Sahkan flow already passed its gates when it was verified, but the registry holds no
+   * evidence items, profile or quota to re-derive them (none is invented). While the head stays that verified, the check reports
+   * those gates as met at the time of verification instead of failing next to "Disahkan". Any new version drops the flag.
+   */
+  historical?: boolean
 }
 interface Rec {
   versions: Ver[]
@@ -273,6 +279,7 @@ export class MockKontrakServer implements KontrakApi {
             hash: structuralKey(input),
             evidenceIds: study.map((e) => e.id),
             verification: seededSummary ? { ...seededSummary, evidence: [], lines: [] } : null,
+            ...(seededSummary ? { historical: true } : {}),
           },
         ],
       })
@@ -317,9 +324,8 @@ export class MockKontrakServer implements KontrakApi {
   /** As `assertRuleBounds` of the API: 422 VALIDATION_ERROR with `fields`, before the content check. */
   private checkRuleBounds(input: Input): void {
     const fields: Record<string, string> = {}
-    // PRD 30-admin-pusat row 16-04: Tempoh 1 to 300 (same limit as the form's validate.ts).
-    if (!Number.isInteger(input.durationMin) || input.durationMin < 1 || input.durationMin > 300)
-      fields.durationMin = 'Tempoh mesti antara 1 dan 300 minit.'
+    // Tempoh is not bounded here: the API accepts up to the contract's durationMin max (600). The form's own limit of 300
+    // (PRD 30-admin-pusat row 16-04, validate.ts) stays in the UI until the DOC DEFECT on #437 is settled.
     input.sections.forEach((s, i) => {
       if (s.rule.type !== 'choose') return
       if (s.rule.n > s.questionCount) fields[`sections.${i}.rule.n`] = MSG.chooseNRange
@@ -381,6 +387,7 @@ export class MockKontrakServer implements KontrakApi {
       hash: h,
       evidenceIds: [...prev.evidenceIds],
       verification: keep ? prev.verification : null,
+      ...(keep && prev.historical ? { historical: true } : {}),
     })
     return this.viewOfHead(r)
   }
@@ -472,6 +479,7 @@ export class MockKontrakServer implements KontrakApi {
 
   /** The gate of AC-39.1 and AC-39.7 against the head. */
   private computeCheck(h: Ver): BijakVerificationCheck {
+    if (h.historical && h.view.source === 'Disahkan') return { passes: true, blueprintProblems: [], completeness: [], lines: [] }
     const form = formFromView(h.view)
     const blueprintProblems: BijakBlueprintProblem[] = validateForm(form)
       .filter((i) => i.level === 'error' && i.code !== 'REQUIRED')
