@@ -175,6 +175,19 @@ describe('Latih Tubi breakdowns count units like the total', () => {
     expect(sum(own)).toBe(3)
     expect(own).toContainEqual({ levelId: t5, tp: 2, n: 1 })
     expect(own).not.toContainEqual({ levelId: t4, tp: 2, n: 1 })
+
+    // A group level the scope never shows (here Darjah 1: primary and inactive) is ignored: the unit falls back to the first member's level, so the buckets still sum to the total.
+    const d1 = (await t.db.query<{ id: string }>(`select id::text from education_levels where code = 'D1'`))[0]!.id
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [d1, group])
+    const unoffered = await repo.unitCountsByLevelTp(withLtGroups(bio))
+    expect(sum(unoffered)).toBe(await repo.unitCount(withLtGroups(bio)))
+    expect(unoffered.some((r) => r.levelId === d1)).toBe(false)
+    expect(unoffered).toContainEqual({ levelId: t4, tp: 2, n: 1 })
+    // A group level outside the filter's level restriction is ignored the same way (T5 own level, filter T4).
+    await t.db.query('update stimulus_groups set education_level_id = $1::bigint where id = $2::bigint', [t5, group])
+    const restricted = await repo.unitCountsByLevelTp({ ...withLtGroups(bio), educationLevelIds: [t4] })
+    expect(sum(restricted)).toBe(await repo.unitCount({ ...withLtGroups(bio), educationLevelIds: [t4] }))
+    expect(restricted.every((r) => r.levelId === t4)).toBe(true)
     await t.db.query('update stimulus_groups set education_level_id = null where id = $1::bigint', [group])
 
     // The service: breakdown cells equal the hub total under the live surfaces.
