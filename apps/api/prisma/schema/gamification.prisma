@@ -33,6 +33,7 @@ model Challenge {
   legacyId      String?  @map("legacy_id")
 
   completions ChallengeCompletion[]
+  claims      ChallengeClaim[]
 
   @@unique([legacySource, legacyId], map: "uq_challenges_legacy")
   @@index([isActive, sortOrder, id], map: "ix_challenges_is_active_sort_order")
@@ -61,6 +62,27 @@ model ChallengeCompletion {
   @@index([userId, completionDate], map: "ix_challenge_completions_user_id_completion_date")
   @@index([challengeId], map: "ix_challenge_completions_challenge_id")
   @@map("challenge_completions")
+}
+
+/// DM-63 (S7-T04, ruling 20 on #500): one claim of a daily challenge reward per user, challenge and Malaysia day.
+/// The reward columns hold the amounts actually credited (0 syiling when coins are disabled). Append-only; no `is_test` (Mod Pelajar is refused).
+model ChallengeClaim {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  challengeId   BigInt   @map("challenge_id")
+  /// Malaysia calendar day (G-04).
+  mytDate       DateTime @map("myt_date") @db.Date
+  rewardSyiling Int      @map("reward_syiling")
+  rewardXp      Int      @map("reward_xp")
+  /// DM-63/DM-79: partial unique (user_id, client_uuid) where not null, written in migration 0226 only (Prisma cannot express partial indexes).
+  clientUuid    String?  @map("client_uuid") @db.Uuid
+  claimedAt     DateTime @default(now()) @map("claimed_at") @db.Timestamptz(6)
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade, map: "fk_challenge_claims_challenge_id")
+
+  @@unique([userId, challengeId, mytDate], map: "uq_challenge_claims_user_challenge_date")
+  @@index([challengeId], map: "ix_challenge_claims_challenge_id")
+  @@map("challenge_claims")
 }
 
 /// Achievement catalogue. The structured criterion drives auto-unlock; a migrated legacy row keeps only
@@ -228,6 +250,8 @@ model DrawTicket {
   id        BigInt   @id @default(autoincrement())
   drawId    BigInt   @map("draw_id")
   userId    BigInt   @map("user_id")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid String? @map("client_uuid") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   draw Draw @relation(fields: [drawId], references: [id], onDelete: Restrict, map: "fk_draw_tickets_draw_id")
@@ -341,6 +365,8 @@ model RewardRedemption {
   cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
   /// admin, parent (check).
   cancelledBy        String?   @map("cancelled_by")
+  /// DM-78: partial unique (user_id, client_uuid), written in migration 0230 only (Prisma cannot express partial indexes).
+  clientUuid         String?   @map("client_uuid") @db.Uuid
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource       String?   @map("legacy_source")
@@ -372,7 +398,7 @@ model MysteryBoxOpening {
 /// Key/value gamification settings (mock `gamification.settings`); toggles are 0/1.
 model GamificationSetting {
   id           BigInt   @id @default(autoincrement())
-  /// One of the ten setting keys (check).
+  /// One of the setting keys (check): the ten of 0019 plus every key of 48 section 2 (0224).
   key          String
   value        Decimal  @db.Decimal(12, 2)
   label        String

@@ -20,10 +20,12 @@ import { SchoolAdminPupilCreateRequestSchema, SchoolAdminPupilCreatedResultSchem
 import {
   SchoolAdminActivityReportSchema,
   SchoolAdminClassListResponseSchema,
+  SchoolAdminClassRowSchema,
   SchoolAdminDashboardSchema,
   SchoolAdminDskpHeatmapSchema,
   SchoolAdminMonthlyReportSchema,
   SchoolAdminUsageSchema,
+  REPORT_SCOPE_MESSAGES,
 } from '../reports'
 import {
   SchoolAdminTeacherCreateRequestSchema,
@@ -64,6 +66,7 @@ const dashboard = {
   school: { id: '8880', name: 'SMK DEMO', state: 'Negeri Demo', ppd: 'PPD DEMO', code: 'DEMO0001' },
   roleLabel: 'Admin Sekolah',
   perutusan: [{ id: '5', title: 'Perutusan Demo', createdAt: AT, author: { initials: 'AD', roleLabel: 'Admin Pusat' } }],
+  pendingTeachers: 2,
   cards: { pupils: 59, teachers: 6, activeClasses: 4, subscription: { status: 'active', label: 'Aktif' } },
   performance: {
     gps: { value: 5.2, grade: 'C+', band: 'Sederhana', entries: 3 },
@@ -159,6 +162,7 @@ const classRow = {
   isActive: true,
   link: '/prestasi/kelas/7',
 }
+const schoolClassRow = { ...classRow, key: 'school_class:8', kind: 'school_class', id: '8', link: null }
 const classList = {
   data: [classRow],
   meta: { ...meta, displayed: 1 },
@@ -191,7 +195,7 @@ const teacherListRow = {
   canEdit: false,
 }
 
-const tally = { green: 40, yellow: 10, red: 9, total: 59, pct: { green: 68, yellow: 17, red: 15 } }
+const tally = { green: 40, yellow: 10, red: 9, notStarted: 3, total: 59, pct: { green: 68, yellow: 17, red: 15 } }
 const weak = { subjectId: '3', subjectName: 'Matematik', weak: 12, total: 59, pct: 20 }
 const risk = {
   rank: 1,
@@ -202,8 +206,8 @@ const risk = {
   tingkatan: 4,
   className: '4 Amanah',
   classLabel: 'Tingkatan 4 4 Amanah',
-  score: 80,
-  status: 'high',
+  score: null,
+  status: 'not_started',
   accuracy: null,
   engagement: null,
   mastery: null,
@@ -214,6 +218,7 @@ const risk = {
 const schoolRisk = {
   school,
   levelFilter: 'T4',
+  levels: [4, 5],
   levelSuffix: ' — Tingkatan 4',
   tally,
   weakness: [weak],
@@ -260,6 +265,7 @@ const effectivenessEmpty = {
 describe('school-admin contract: reports', () => {
   it('parses the dashboard, including a school without risk data or practice', () => {
     expect(ok(SchoolAdminDashboardSchema, dashboard)).toBe(true)
+    expect(ok(SchoolAdminDashboardSchema, { ...dashboard, pendingTeachers: undefined })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, performance: { ...dashboard.performance, risk: null, gps: { value: null, grade: null, band: null, entries: 0 } } })).toBe(true)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, cards: { ...dashboard.cards, subscription: { status: 'paused', label: 'x' } } })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, perutusan: Array(4).fill(dashboard.perutusan[0]) })).toBe(false)
@@ -300,7 +306,11 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminClassListResponseSchema, classList)).toBe(true)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, tiles: undefined })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, meta: meta })).toBe(false) // displayed missing
-    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, kind: 'school_class' }] })).toBe(false)
+    // S6-T13: the list holds active classes of both kinds (equal to the Kelas Aktif tile).
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [schoolClassRow] })).toBe(true)
+    expect(ok(SchoolAdminClassRowSchema, schoolClassRow)).toBe(true) // school_class: link null, no class dashboard
+    expect(ok(SchoolAdminClassRowSchema, { ...classRow, link: '' })).toBe(false)
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'kelas:7', kind: 'kelas' }] })).toBe(false)
   })
 })
 
@@ -454,7 +464,13 @@ describe('school-admin contract: Amaran', () => {
   it('parses the school risk page, with and without a level filter', () => {
     expect(ok(AmaranSchoolRiskSchema, schoolRisk)).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: null, levelSuffix: '', pupils: [] })).toBe(true)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: 'T1' })).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: 'T6' })).toBe(false)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: [] })).toBe(true)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: [6] })).toBe(false)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: undefined, tally: { ...tally, notStarted: undefined } })).toBe(true) // additive: older payloads still parse
+    // FR-X4-3: a not_started pupil has no score; a scored pupil keeps its number.
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, score: 52, status: 'watch' }] })).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, tally: { ...tally, pct: { green: 101, yellow: 0, red: 0 } } })).toBe(false)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, status: 'critical' }] })).toBe(false)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, rank: 0 }] })).toBe(false)
@@ -494,11 +510,11 @@ describe('school-admin contract: Amaran', () => {
   })
 
   it('keeps the mock labels, header row and file name', () => {
-    expect(AMARAN_STATUS_LABELS).toEqual({ on_track: 'On Track', watch: 'Perlu Perhatian', high: 'Berisiko Tinggi' })
+    expect(AMARAN_STATUS_LABELS).toEqual({ on_track: 'On Track', watch: 'Perlu Perhatian', high: 'Berisiko Tinggi', not_started: 'Belum Bermula' })
     expect(AMARAN_TYPE_LABELS.kaunseling).toBe('Sesi Kaunseling')
     expect(AMARAN_TYPE_LABELS.mentor_rakan).toBe('Mentor Rakan Sebaya')
     expect(AMARAN_MONTH_ABBREVIATIONS.join(' ')).toBe('Jan Feb Mac Apr Mei Jun Jul Ogo Sep Okt Nov Dis')
-    expect(AMARAN_CSV_COLUMNS.join(',')).toBe('Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
+    expect(AMARAN_CSV_COLUMNS.join(',')).toBe('Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
     expect(amaranCsvFilename('8880', '20260925')).toBe('amaran-sekolah-8880-20260925.csv')
   })
 })
@@ -668,7 +684,7 @@ describe('school-admin contract: OpenAPI document', () => {
 
   it('excludes Admin Pusat from /admin-sekolah/*, documents the self-toggle refusal and the 404 scope rule', () => {
     const dash = doc.paths['/admin-sekolah/dashboard']!.get!
-    expect(JSON.stringify(dash.responses['403'])).toMatch(/Admin \(Pusat\) role is EXCLUDED/)
+    expect(JSON.stringify(dash.responses['403'])).toMatch(/Admin \(Pusat\) role gets 403 on every \/admin-sekolah\/\* route except the five read reports/)
     const toggle = doc.paths['/admin-sekolah/guru/{id}/toggle-active']!.post! as Operation
     expect(toggle.description).toMatch(/cannot deactivate their own account/)
     expect(toggle.description).toContain(SCHOOL_ADMIN_MESSAGES.selfToggle)
@@ -748,9 +764,16 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(pw).toMatch(/not retrievable again/i)
   })
 
-  it('no school id can be sent: no M27 request schema or query has schoolId', () => {
+  it('API-ADM-22 422 text is the BM M-07 copy', () => {
+    expect(REPORT_SCOPE_MESSAGES.schoolIdRequired).toBe('Sila pilih sekolah.')
+    expect(JSON.stringify(doc.paths['/admin-sekolah/usage']!.get)).toContain('Sila pilih sekolah.')
+  })
+
+  it('no school id can be sent: no M27 request schema or query has schoolId, except the five API-ADM-22 report queries', () => {
+    const central = ['SchoolAdminUsageQuery', 'SchoolAdminActivityQuery', 'SchoolAdminMonthlyQuery', 'SchoolAdminHeatmapQuery', 'SchoolAdminClassListQuery']
+    for (const name of central) expect(Object.keys((doc.components.schemas[name]!.properties ?? {}) as object), name).toContain('schoolId')
     for (const [name, schema] of Object.entries(doc.components.schemas)) {
-      if (!/^SchoolAdmin.*(Request|Query)$/.test(name)) continue
+      if (!/^SchoolAdmin.*(Request|Query)$/.test(name) || central.includes(name)) continue
       expect(Object.keys((schema.properties ?? {}) as object), name).not.toContain('schoolId')
     }
   })

@@ -364,7 +364,8 @@ export class KuizService {
   private async visiblePaper(userId: string, paperId: string) {
     if (!isIdString(paperId)) throw kuizPaperNotFound()
     const paper = await this.papers.findPaper(idFromString(paperId))
-    if (!paper || paper.status !== 'published') throw kuizPaperNotFound()
+    // A Kertas Subjektif paper (DM-23) is not a Kuiz paper: the same 404 as an unknown one.
+    if (!paper || paper.status !== 'published' || paper.surface === 'subjektif') throw kuizPaperNotFound()
     if (paper.kind === 'jana' && paper.generatedForUserId?.toString() !== userId) throw kuizPaperNotFound()
     // S3-T02, PO decision item 6: the same rule as the list, the cover and the attempt; this read and `check` hand out the answer key.
     if ((await this.papers.pupilScope(paper, userId, this.paperPorts.progressSource)) === 'closed') throw kuizPaperNotFound()

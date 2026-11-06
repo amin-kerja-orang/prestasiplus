@@ -24,14 +24,14 @@ afterEach(() => {
 const range = (from: number, to: number): number[] =>
   Array.from({ length: to - from + 1 }, (_, i) => from + i)
 const MATRIX_ROWS = {
-  student: [...range(2, 9), ...range(12, 40)],
+  student: [...range(2, 9), ...range(12, 40), 54],
   teacher: [...range(1, 11), ...range(41, 44)],
   school_admin: [...range(1, 7), 10, 11, ...range(45, 53)],
 } as const
 
 describe('matrix counts (role-access-matrix.md)', () => {
-  it('Murid has 37 module items, Guru 15, Admin Sekolah 18', () => {
-    expect(STUDENT_ITEMS).toHaveLength(37)
+  it('Murid has 38 module items, Guru 15, Admin Sekolah 18', () => {
+    expect(STUDENT_ITEMS).toHaveLength(38)
     expect(TEACHER_ITEMS).toHaveLength(15)
     expect(SCHOOL_ADMIN_ITEMS).toHaveLength(18)
   })
@@ -61,7 +61,7 @@ describe('matrix counts (role-access-matrix.md)', () => {
       'Tiket Bantuan',
       'Log Keluar',
     ])
-    expect(scopeItemsFor('student')).toHaveLength(37 + 5)
+    expect(scopeItemsFor('student')).toHaveLength(38 + 5)
     expect(scopeItemsFor('teacher')).toHaveLength(15 + 5)
     expect(scopeItemsFor('school_admin')).toHaveLength(18 + 5)
     expect(scopeItemsFor('admin')).toHaveLength(1 + 5)
@@ -99,6 +99,7 @@ describe('isPathInScope', () => {
       '/permainan/betul-salah',
       '/papan-bijak/ABC123',
       '/topics/12',
+      '/laporan-soalan',
       '/marketplace/some-product',
       '/ibu-bapa/terima/tok',
     ]) {
@@ -112,7 +113,6 @@ describe('isPathInScope', () => {
       '/billing/invoices',
       '/bilik-duta',
       '/sekolah-bersaing',
-      '/laporan-soalan',
       '/admin',
       '/guru',
       '/notifikasi',
@@ -131,12 +131,16 @@ describe('isPathInScope', () => {
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
+      '/guru/soalan-berstruktur',
+      '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
       '/guru/laporan-mingguan-kelas',
       '/headcount/12/summary',
       '/prestasi/kelas',
       '/practice/chapter',
       '/analisa-item/kelas',
+      '/perutusan',
+      '/perutusan/7',
     ]) {
       expect(isPathInScope('teacher', path), path).toBe(true)
     }
@@ -157,6 +161,11 @@ describe('isPathInScope', () => {
     }
   })
 
+  it('Murid: no Perutusan in R1 (S5-T09)', () => {
+    expect(isPathInScope('student', '/perutusan')).toBe(false)
+    expect(isPathInScope('student', '/perutusan/7')).toBe(false)
+  })
+
   it('Admin Sekolah: the dashboard is exact, only matrix sub-pages are allowed', () => {
     for (const path of [
       '/admin-sekolah',
@@ -172,6 +181,10 @@ describe('isPathInScope', () => {
       '/headcount',
       '/prestasi/sekolah',
       '/analitik/pelajar',
+      '/perutusan',
+      '/perutusan/7',
+      '/perutusan/saya',
+      '/perutusan/tulis',
     ]) {
       expect(isPathInScope('school_admin', path), path).toBe(true)
     }
@@ -182,7 +195,6 @@ describe('isPathInScope', () => {
       '/admin-sekolah/invois',
       '/admin-sekolah/aktiviti-guru',
       '/amaran/intervensi/5',
-      '/perutusan',
       '/dashboard',
       '/liga',
     ]) {

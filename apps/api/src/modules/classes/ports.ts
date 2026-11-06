@@ -20,6 +20,11 @@ export interface TeacherQuestionStats {
 
 export interface TeacherQuestionsProvider {
   statsOf(teacherId: string): Promise<TeacherQuestionStats>
+  /**
+   * S6-T06 (FR-GUR-44-1, D113): the teacher's own question SUBMISSIONS (guru intake items), the counters of `/guru/contributions` and the
+   * dashboard "Soalan". Absent (a fake): `statsOf` is read.
+   */
+  submissionStatsOf?(teacherId: string): Promise<TeacherQuestionStats>
 }
 
 export class NoTeacherQuestions implements TeacherQuestionsProvider {

@@ -36,10 +36,10 @@ export const ANALYTICS_MESSAGES = {
 
 // --- Enums -----------------------------------------------------------------------------------
 
-export const ANALYTICS_TAHAP = ['Cemerlang', 'Sederhana', 'Rendah', 'Kritikal', 'Tiada Langsung'] as const
+export const ANALYTICS_TAHAP = ['Cemerlang', 'Sederhana', 'Rendah', 'Tiada', 'Kritikal', 'Tiada Langsung'] as const
 export const AnalyticsTahapSchema = z.enum(ANALYTICS_TAHAP).meta({
   id: 'AnalyticsTahap',
-  description: 'Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0.',
+  description: 'Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced.',
 })
 export const AnalyticsLevelSchema = z.enum(['T4', 'T5']).meta({ id: 'AnalyticsLevel' })
 export const AnalyticsStudentStatusSchema = z.enum(['aktif', 'login', 'never']).meta({ id: 'AnalyticsStudentStatus' })
@@ -247,9 +247,11 @@ export const AnalyticsItemAnalysisSchema = z
         textPlain: z.string(),
         subjectName: z.string(),
         attempts: count,
+        correct: count.meta({ description: '"Betul": answers of all modes that were right (FR-GUR-6-5).' }),
+        wrong: count.meta({ description: '"Salah": attempts minus correct.' }),
         pct,
         band: z.enum(['mudah', 'sederhana', 'sukar']),
-        discrimination: z.number().nullable().meta({ description: 'Upper-group p minus lower-group p (3 decimals); null when it cannot be computed.' }),
+        discrimination: z.number().nullable().meta({ description: 'Upper-group p minus lower-group p (2 decimals); null when it cannot be computed (fewer than 10 pupils).' }),
       }),
     ),
   })

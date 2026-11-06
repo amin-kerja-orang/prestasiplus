@@ -1,7 +1,7 @@
 import type { CommandCenterGuruAchievements, CommandCenterGuruBadgeHolders } from '@pp/contract'
 
 import { notFound } from '../http/errors'
-import { percent } from '../shared/math'
+import { accuracyPct } from '../shared/math'
 import { dateKey, toMytTimestamp } from '../shared/windows'
 import { cmpId, type GuruContext, type GuruDeps, sum, tallies } from './context'
 import { badgeColor } from './rules'
@@ -48,7 +48,7 @@ export async function buildBadgeHolders(deps: GuruDeps, ctx: GuruContext, badgeI
       .sort((a, b) => a.awardedAt.getTime() - b.awardedAt.getTime() || cmpId(a.userId, b.userId))
       .map((a) => {
         const t = sum(all, [a.userId])
-        return { studentId: a.userId, name: ctx.byId.get(a.userId)?.name ?? '', accuracy: percent(t.correct, t.answers), awardedAt: toMytTimestamp(a.awardedAt) }
+        return { studentId: a.userId, name: ctx.byId.get(a.userId)?.name ?? '', accuracy: accuracyPct(t.correct, t.answers), awardedAt: toMytTimestamp(a.awardedAt) }
       }),
   }
 }

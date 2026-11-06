@@ -1,17 +1,17 @@
 <script setup lang="ts">
 /**
  * Lane "Databank Soalan" (`/admin/spm/databank`, V2 A2/P2, AC-R1-21.2): one bank question per row. Columns Senarai, Tajuk,
- * Perhatian, Tindakan. `Perhatian` shows the servability reasons (D94 copy, H2), not the V2 phrases. Row action: Sunting.
- * Pratonton is not a separate screen in R1 (the Bank page previews in a dialog), so it is not offered here (UX-23).
+ * Perhatian, Tindakan. `Perhatian` shows the servability reasons (D94 copy, H2), not the V2 phrases. Row actions: Pratonton
+ * (the V2 preview path, which redirects to the Studio Pratonton; PRD47 M-01) and Sunting.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsLoadError } from '@/ds'
+import { DsCluster, DsDataTable, DsLoadError, DsPage, DsStack, DsText } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { kandunganServer } from '../client'
-import { laneCopy } from '../lanes'
+import { laneCopy, QUESTION_STATUS_OPTIONS, questionStatusLabel } from '../lanes'
 import { PAGE_SIZE, useLane } from '../use-lane'
 import LaneShell from './LaneShell.vue'
 
@@ -19,16 +19,11 @@ import type { ServabilityDatabankRow } from '@pp/contract'
 
 type Row = ServabilityDatabankRow & { no: number } & Record<string, unknown>
 
-const STATUSES = [
-  { value: 'draft', label: 'Draf' },
-  { value: 'review', label: 'Menunggu Semakan' },
-  { value: 'approved', label: 'Diterbitkan' },
-  { value: 'archived', label: 'Diarkibkan' },
-]
-const statusText = (code: string): string => STATUSES.find((s) => s.value === code)?.label ?? code
+const statusText = questionStatusLabel
+const previewPath = (questionId: string): string => `/admin/studio/questions/${questionId}/preview`
 
 const server = kandunganServer()
-const { filters, page, subjects, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
+const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)
 
 const rows = computed<Row[]>(() =>
   (list.data.value?.rows ?? []).map((r, i) => ({ ...r, no: (page.value - 1) * PAGE_SIZE + i + 1 })),
@@ -42,15 +37,16 @@ const columns: TableColumn<Row>[] = [
 </script>
 
 <template>
-  <LaneShell
-    v-model:filters="filters"
-    heading="Databank Soalan"
-    :subjects="subjects"
-    :statuses="STATUSES"
-    :chips="chips"
-    testid="lane-databank"
-    @remove-chip="removeChip"
-  >
+  <DsPage layout="list" data-testid="lane-databank">
+    <LaneShell
+      v-model:filters="filters"
+      lane="databank"
+      :count="count"
+      :subjects="subjects"
+      :statuses="QUESTION_STATUS_OPTIONS"
+      :chips="chips"
+      @remove-chip="removeChip"
+    />
     <DsLoadError v-if="list.error.value" message="Tidak dapat memuatkan senarai." @retry="list.reload()" />
     <DsDataTable
       v-else
@@ -72,7 +68,7 @@ const columns: TableColumn<Row>[] = [
         <div class="min-w-0">
           <p class="break-words text-body">{{ row.original.title }}</p>
           <p class="text-caption text-muted">
-            {{ row.original.subject?.name ?? '' }} · {{ statusText(row.original.status) }}
+            {{ row.original.meta ?? row.original.subject?.name ?? '' }} · {{ statusText(row.original.status) }}
           </p>
         </div>
       </template>
@@ -80,11 +76,12 @@ const columns: TableColumn<Row>[] = [
         <ul v-if="row.original.attention.length" class="flex flex-col gap-1" :data-testid="`attention-${row.original.questionId}`">
           <li v-for="a in row.original.attention" :key="a.code" class="text-caption text-error">{{ a.message }}</li>
         </ul>
+        <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
       </template>
       <template #card="{ row }">
         <div class="flex min-w-0 flex-1 flex-col gap-1">
           <p class="break-words text-body">{{ row.title }}</p>
-          <p class="text-caption text-muted">{{ row.subject?.name ?? '' }} · {{ statusText(row.status as string) }}</p>
+          <p class="text-caption text-muted">{{ row.meta ?? row.subject?.name ?? '' }} · {{ statusText(row.status as string) }}</p>
           <ul v-if="(row.attention as unknown[]).length" class="flex flex-col gap-1">
             <li
               v-for="a in row.attention as { code: string; message: string }[]"
@@ -94,28 +91,45 @@ const columns: TableColumn<Row>[] = [
               {{ a.message }}
             </li>
           </ul>
+          <DsText v-else variant="caption" tone="muted">{{ laneCopy.noAttention }}</DsText>
         </div>
       </template>
       <template #card-actions="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.questionId } }"
-          :data-testid="`lane-edit-${String(row.questionId)}`"
-        />
+        <DsStack gap="sm">
+          <UButton
+            color="neutral"
+            :label="laneCopy.preview"
+            :to="previewPath(String(row.questionId))"
+            :data-testid="`lane-preview-${String(row.questionId)}`"
+          />
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            :label="laneCopy.edit"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.questionId } }"
+            :data-testid="`lane-edit-${String(row.questionId)}`"
+          />
+        </DsStack>
       </template>
       <template #actions-cell="{ row }">
-        <UButton
-          size="sm"
-          icon="i-ph-pencil-simple"
-          :label="laneCopy.edit"
-          class="min-h-11"
-          :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.original.questionId } }"
-          :data-testid="`lane-edit-${row.original.questionId}`"
-        />
+        <DsCluster gap="sm">
+          <UButton
+            color="neutral"
+            :label="laneCopy.preview"
+            :to="previewPath(row.original.questionId)"
+            :data-testid="`lane-preview-${row.original.questionId}`"
+          />
+          <UButton
+            size="sm"
+            icon="i-ph-pencil-simple"
+            :label="laneCopy.edit"
+            class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: row.original.questionId } }"
+            :data-testid="`lane-edit-${row.original.questionId}`"
+          />
+        </DsCluster>
       </template>
     </DsDataTable>
-  </LaneShell>
+  </DsPage>
 </template>

@@ -9,13 +9,14 @@ import { DsPillNav, type PillItem } from '@/ds'
 
 import { ACTIVITY_PATH, RANGES, type ActivityRange } from './activity-format'
 
-defineProps<{ active: ActivityRange }>()
+/** `basePath`: the route the pills link to (M17 central view); default the school-admin report. */
+const props = defineProps<{ active: ActivityRange; basePath?: string }>()
 
 const items = computed<PillItem<ActivityRange>[]>(() =>
   RANGES.map((r) => ({
     key: r.range,
     label: r.label,
-    to: { path: ACTIVITY_PATH, query: { range: String(r.range) } },
+    to: { path: props.basePath ?? ACTIVITY_PATH, query: { range: String(r.range) } },
   })),
 )
 </script>

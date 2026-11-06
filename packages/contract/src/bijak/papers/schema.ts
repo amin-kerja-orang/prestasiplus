@@ -56,6 +56,30 @@ export const BijakPaperKindSchema = z.enum(BIJAK_PAPER_KINDS).meta({
 })
 export type BijakPaperKind = z.infer<typeof BijakPaperKindSchema>
 
+/**
+ * The kind of an attempt (`exam_attempts.paper_kind`, DM-83, migration 0165): the paper kinds plus
+ * `subjektif` (a Kertas Subjektif sitting, S3-T06) and `structured` (a Soalan Berstruktur attempt, S5-T11).
+ */
+export const BIJAK_ATTEMPT_KINDS = [...BIJAK_PAPER_KINDS, 'subjektif', 'structured'] as const
+export const BijakAttemptKindSchema = z.enum(BIJAK_ATTEMPT_KINDS).meta({
+  description:
+    'pilihan = curated paper, jana = generated paper, subjektif = Kertas Subjektif sitting (latihan, untimed, self-marked), structured = Soalan Berstruktur attempt (no paper).',
+})
+export type BijakAttemptKind = z.infer<typeof BijakAttemptKindSchema>
+
+/** DM-23: `simulasi` = Set Builder papers (Bijak hub, Kuiz); `subjektif` = Kertas Subjektif papers (S3-T06). */
+export const BIJAK_PAPER_SURFACES = ['simulasi', 'subjektif'] as const
+export const BijakPaperSurfaceSchema = z.enum(BIJAK_PAPER_SURFACES).meta({
+  description: 'simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23).',
+})
+export type BijakPaperSurface = z.infer<typeof BijakPaperSurfaceSchema>
+
+/** Query of `GET /api/bijak/papers` (API-BIJAK-01/04): `surface` defaults to `simulasi`, so existing callers are unchanged. */
+export const BijakPaperListQuerySchema = z
+  .object({ surface: BijakPaperSurfaceSchema.default('simulasi') })
+  .meta({ id: 'BijakPaperListQuery' })
+export type BijakPaperListQuery = z.infer<typeof BijakPaperListQuerySchema>
+
 /** Caller progress on a paper: `belum` not started, `sedang` an attempt is in progress, `selesai` has a result. */
 export const BIJAK_PAPER_PROGRESS = ['belum', 'sedang', 'selesai'] as const
 export const BijakPaperProgressSchema = z.enum(BIJAK_PAPER_PROGRESS).meta({
@@ -72,7 +96,7 @@ const summaryShape = {
   kertas: Kertas,
   year: z.number().int(),
   code: z.string().min(1).meta({ description: 'Printed paper code.', example: '1449/2' }),
-  durationMin: z.number().int().min(1).meta({ description: 'Printed duration in minutes (Q-S1).' }),
+  durationMin: z.number().int().min(0).meta({ description: 'Printed duration in minutes (Q-S1); 0 = an untimed Kertas Subjektif paper, shown as "—" (PO decision 2026-11-05, item 17).' }),
   questionCount: z
     .number()
     .int()
@@ -96,6 +120,13 @@ const summaryShape = {
     }),
   attemptId: IdSchema.optional().meta({
     description: 'The in-progress attempt of the caller; present only when status is sedang.',
+  }),
+  surface: BijakPaperSurfaceSchema.optional().meta({
+    description: 'S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list.',
+  }),
+  examBoard: z.string().min(1).optional().meta({
+    description: 'S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.',
+    example: 'selangor',
   }),
 }
 
@@ -139,6 +170,14 @@ export const BijakPaperReferencePanelSchema = z
   .meta({ id: 'BijakPaperReferencePanel' })
 export type BijakPaperReferencePanel = z.infer<typeof BijakPaperReferencePanelSchema>
 
+/** Why a cover cannot start a new sitting (API-BIJAK-02, PO decision 12). The wire values are not in 60; the screen shows one line for all of them. */
+export const BIJAK_COVER_UNAVAILABLE_REASONS = ['QUESTION_WITHDRAWN', 'NO_QUESTIONS'] as const
+export const BijakCoverUnavailableReasonSchema = z.enum(BIJAK_COVER_UNAVAILABLE_REASONS).meta({
+  description:
+    'QUESTION_WITHDRAWN: a placed question is withdrawn or archived, or its pinned version is taken down. NO_QUESTIONS: the paper places no question.',
+})
+export type BijakCoverUnavailableReason = z.infer<typeof BijakCoverUnavailableReasonSchema>
+
 /** `PaperCover` of the mock: the summary plus instructions, reference sheet and sections. */
 export const BijakPaperCoverSchema = z
   .strictObject({
@@ -152,6 +191,11 @@ export const BijakPaperCoverSchema = z
         'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
     }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
+    unavailable: z.boolean().meta({
+      description:
+        'PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees "Mula" disabled with the message "Kertas belum tersedia" before any click. A sitting already open can still be resumed.',
+    }),
+    unavailableReason: BijakCoverUnavailableReasonSchema.optional().meta({ description: 'Present only when `unavailable` is true.' }),
   })
   .meta({ id: 'BijakPaperCover' })
 export type BijakPaperCover = z.infer<typeof BijakPaperCoverSchema>

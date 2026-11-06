@@ -101,6 +101,56 @@ describe('S17 history (AC-M14-06)', () => {
     expect(w!.find('nav[aria-label="pagination"]').exists()).toBe(false)
   })
 
+  describe('client paging, 15 per page (FR-MUR-28-4, AC-MUR-28-5)', () => {
+    const many = (n: number) =>
+      Array.from({ length: n }, (_, i) =>
+        ledgerRow(100 - i, { description: `Baris ${String(i + 1)}` }),
+      )
+    const descs = () => all('s17-row-desc').map((d) => d.text())
+    const serve = (n: number) =>
+      api.fetchGamificationTransactions.mockResolvedValue({
+        data: many(n),
+        meta: { currentSyiling: 256, type: '' },
+      })
+
+    it('12 rows all show on page 1 with no pager', async () => {
+      serve(12)
+      await mountAt('/gamification/history')
+      expect(all('s17-row')).toHaveLength(12)
+      expect(w!.find('[data-testid="s17-pager"]').exists()).toBe(false)
+    })
+
+    it('exactly 15 rows stay on one page; 16 rows open a pager', async () => {
+      serve(15)
+      await mountAt('/gamification/history')
+      expect(w!.find('[data-testid="s17-pager"]').exists()).toBe(false)
+      w!.unmount()
+      serve(16)
+      await mountAt('/gamification/history')
+      expect(all('s17-row')).toHaveLength(15)
+      expect(w!.find('[data-testid="s17-pager"]').exists()).toBe(true)
+    })
+
+    it('?halaman=2 shows the rest, keeps one read of #4 and the newest-first order', async () => {
+      serve(19)
+      await mountAt('/gamification/history?halaman=2')
+      expect(descs()).toEqual(['Baris 16', 'Baris 17', 'Baris 18', 'Baris 19'])
+      expect(api.fetchGamificationTransactions).toHaveBeenCalledTimes(1)
+    })
+
+    it.each(['abc', '0', '-3', '1.5'])('?halaman=%s reads as page 1', async (value) => {
+      serve(19)
+      await mountAt(`/gamification/history?halaman=${value}`)
+      expect(descs()[0]).toBe('Baris 1')
+    })
+
+    it('a page past the end reads as the last page', async () => {
+      serve(19)
+      await mountAt('/gamification/history?halaman=9')
+      expect(descs()).toEqual(['Baris 16', 'Baris 17', 'Baris 18', 'Baris 19'])
+    })
+  })
+
   it('?type= is sent to #4 and the pill is active (AC-06.2)', async () => {
     await mountAt('/gamification/history?type=earn')
     expect(api.fetchGamificationTransactions).toHaveBeenCalledWith(

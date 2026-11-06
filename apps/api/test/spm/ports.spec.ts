@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { NoStructuredAttempts, SpmPorts } from '../../src/modules/spm'
+import { NoPapers, NoStructuredAttempts, SpmPorts } from '../../src/modules/spm'
 import { bootSpmApp, loginAs, parseData, type SpmTestApp } from './helpers'
 import { SpmSubjektifOverviewSchema } from '@pp/contract'
 
@@ -17,6 +17,17 @@ describe('SpmPorts', () => {
     ports.provideStructuredAttempts(source)
     expect(ports.structuredAttempts).toBe(source)
     expect(() => ports.provideStructuredAttempts(source)).toThrow(/already set/)
+  })
+})
+
+describe('SpmPorts papers', () => {
+  it('defaults to no papers; binding twice is a wiring error', async () => {
+    const ports = new SpmPorts()
+    expect(ports.papers).toBeInstanceOf(NoPapers)
+    expect(await ports.papers.countPublishedSubjektif()).toBe(0)
+    ports.providePapers({ countPublishedSubjektif: async () => 4 })
+    expect(await ports.papers.countPublishedSubjektif()).toBe(4)
+    expect(() => ports.providePapers(new NoPapers())).toThrow(/already set/)
   })
 })
 
