@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import type { Prng } from '../../../db/prng'
 import { type QuestionFilter, type QuestionRecord, QuestionsRepository } from '../../questions'
+import { isBankVersion } from '../../questions/learner-visibility'
 
 const CHUNK = 200
 
@@ -19,7 +20,7 @@ export class QuestionPool {
     const out = new Map<string, QuestionRecord>()
     for (let i = 0; i < ids.length; i += CHUNK) {
       for (const r of await this.questions.getMany(ids.slice(i, i + CHUNK), 'live')) {
-        if (r.isActive && r.version.status === 'approved' && r.version.type === 'mcq') out.set(r.id, r)
+        if (r.isActive && r.version.status === 'approved' && r.version.type === 'mcq' && isBankVersion(r.version)) out.set(r.id, r) // DM-42: a personal question never enters a remedial test
       }
     }
     return out
@@ -27,7 +28,8 @@ export class QuestionPool {
 
   /**
    * Up to `n` eligible `mcq` question ids of `filter` (live published, active), drawn in SQL (seeded, LIMIT `n`): the draw
-   * for a mission start or a remedial topic. Nothing is loaded beyond the `n` ids, whatever the size of the bank.
+   * for a mission start or a remedial topic. Nothing is loaded beyond the `n` ids, whatever the size of the bank. A mission filter may carry
+   * `ownerPrivateUserId` (DM-42): the owner's personal questions then join the pool at equal weight (the one place a private question is drawn).
    */
   async draw(filter: QuestionFilter, n: number, rng: Prng): Promise<string[]> {
     return this.questions.sample({ ...filter, type: 'mcq' }, n, rng)

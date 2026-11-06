@@ -507,7 +507,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'guru-laporan', label: 'Laporan', to: '/guru/laporan', fa: 'fa-chart-pie', color: 'text-orange-500', roles: A },
   { kind: 'item', id: 'guru-amaran-awal', label: 'Amaran Awal', to: '/amaran', fa: 'fa-exclamation-triangle', color: 'text-amber-500', roles: A },
   { kind: 'section', id: 'sec-analitik', label: 'ANALITIK', text: 'text-indigo-700', rule: 'from-indigo-300', roles: A },
-  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/guru/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
+  { kind: 'item', id: 'guru-monitoring', label: 'Monitoring', to: '/admin/monitoring', fa: 'fa-binoculars', color: 'text-teal-500', roles: A },
   {
     kind: 'group',
     id: 'guru-kirkpatrick',
@@ -579,7 +579,8 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'section', id: 'sec-bantuan', label: 'Bantuan', text: 'text-red-500', rule: 'from-red-300' },
   { kind: 'item', id: 'tiket-bantuan', label: 'Tiket Bantuan', to: '/pusat-tuisyen/tiket', fa: 'fa-life-ring', color: 'text-emerald-500' },
   // Observed "6,144" is the default text; the shell replaces it with the live M04 count (nav-badges.ts).
-  { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: ['admin', 'teacher', 'school_admin'] },
+  { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: A },
+
 ]
 
 /**

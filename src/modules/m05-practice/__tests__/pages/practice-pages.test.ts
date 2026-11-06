@@ -279,6 +279,23 @@ describe('S3 PracticeConfigPage', () => {
     expect(router.currentRoute.value.path).toBe('/practice/MATH')
   })
 
+  it('disables the count buttons above the available count with the title "Hanya {n} soalan tersedia."', async () => {
+    api.fetchSubjectConfig.mockResolvedValue({
+      ...MATH,
+      difficultyStats: { ...MATH.difficultyStats, '3': 12 },
+    })
+    const w = await render(PracticeConfigPage, '/practice/MATH')
+    await t(w, 'difficulty-3').trigger('click')
+    for (const n of [5, 10]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeUndefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBeUndefined()
+    }
+    for (const n of [15, 20]) {
+      expect(t(w, `count-${n}`).attributes('disabled')).toBeDefined()
+      expect(t(w, `count-${n}`).attributes('title')).toBe('Hanya 12 soalan tersedia.')
+    }
+  })
+
   it('starts Q1 with the chosen parameters when the link is clicked', async () => {
     const w = await render(PracticeConfigPage, '/practice/MATH')
     await t(w, 'level-1').trigger('click')
@@ -354,7 +371,7 @@ describe('S3 PracticeConfigPage', () => {
 describe('Q1 PracticeQuizPage', () => {
   const sessionBody = {
     sessionId: 's9',
-    mode: 'random',
+    mode: 'latih_tubi',
     subject: { code: 'MATH', name: 'Matematik', color: '#EF4444' },
     questions: [
       {
@@ -373,11 +390,11 @@ describe('Q1 PracticeQuizPage', () => {
     ],
   }
 
-  it('starts a random session with the query parameters and shows the subject title', async () => {
+  it('starts a latih_tubi session with the query parameters and shows the subject title', async () => {
     api.startSession.mockResolvedValue(sessionBody)
     const w = await render(PracticeQuizPage, '/practice/MATH/quiz?level=2&difficulty=3&count=15')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       levelId: 2,
       difficulty: 3,
@@ -393,7 +410,7 @@ describe('Q1 PracticeQuizPage', () => {
     api.startSession.mockResolvedValue(sessionBody)
     await render(PracticeQuizPage, '/practice/MATH/quiz?count=10')
     expect(api.startSession).toHaveBeenCalledWith({
-      mode: 'random',
+      mode: 'latih_tubi',
       subjectCode: 'MATH',
       count: 10,
     })

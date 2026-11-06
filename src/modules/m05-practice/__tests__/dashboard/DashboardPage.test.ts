@@ -108,6 +108,7 @@ function dash(over: Partial<Dashboard> = {}): Dashboard {
         text: 'Soalan terkini satu',
         createdAt: '2026-05-01T10:00:00+08:00',
         levelCode: 'T5',
+        figureThumbUrl: null,
       },
     ],
     difficultyChart: [

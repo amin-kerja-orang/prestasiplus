@@ -68,10 +68,10 @@ afterEach(() => {
 })
 
 describe('Q1 DatabankQuizPage', () => {
-  it('starts a past_year session for the code and count, with the spm report', async () => {
+  it('starts a databank session for the code and count, with the spm report', async () => {
     const w = await render(DatabankQuizPage, '/spm/tahun-lepas/BM/quiz?count=10')
     const runner = { props: (k: string) => propOf(w, k) }
-    expect(runner.props('start')).toEqual({ mode: 'past_year', subjectCode: 'BM', count: 10 })
+    expect(runner.props('start')).toEqual({ mode: 'databank', subjectCode: 'BM', count: 10 })
     expect(runner.props('backUrl')).toBe('/spm/tahun-lepas')
     expect(runner.props('report')).toEqual({ source: 'spm' })
     expect(runner.props('retry')).toBe('restart')

@@ -1606,6 +1606,7 @@ Routes `/guru/soalan-berstruktur`, `/cipta`, `/:id`, `/:id/edit`. API: API-GUR-2
 | Sub-Soalan: Markah * | integer | Yes | empty | 1 to 20 | "Markah mesti antara 1 dan 20." | none | part marks | ADD-13 |
 | Sub-Soalan: Skema Jawapan * | textarea | Yes | empty | max 2000 | "Sila isi skema jawapan." | none | part mark scheme | ADD-13 |
 | Sub-Soalan: Aras Pemikiran | select | No | the question's Aras | OPT-ARAS | none | none | part cognitive level | ADD-13 |
+| Sub-Soalan (1 to 10) | n/a | n/a | n/a | at most 10 parts | "Bilangan sub-soalan mesti antara 1 dan 10." (ERR-REQ-15 instance) | none | n/a | ADD-13 |
 | Tambah Sub-Soalan / Buang | buttons | n/a | one part | "Buang" is disabled at one part | "Sekurang-kurangnya satu sub-soalan diperlukan." | none | n/a | none |
 
 - List: 20 per page, newest first; sub-line "Cipta & urus soalan berstruktur mengikut piawaian SPM KPM — {n} soalan dalam bank". Empty: "Tiada soalan berstruktur dijumpai."
