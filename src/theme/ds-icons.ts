@@ -9,6 +9,8 @@ import { learnIconNames } from './learn-icons.ts'
  */
 export const dsIconBaseNames = [
   'arrow-right',
+  // `key`: PkskAccessPage (icon: 'key') and SchoolUserEditForm (<Ds… icon="key">); its last literal went with the Kelas Saya join box (#676).
+  'key',
   'book-open',
   'caret-down',
   'caret-up-down',

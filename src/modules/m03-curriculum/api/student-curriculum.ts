@@ -73,7 +73,7 @@ export interface TopicDetail {
 
 export type TopicState = 'mastered' | 'started' | 'unlocked' | 'locked'
 
-/** One S14 subject pill: shown as "{emoji} {label}". */
+/** One S14 subject pill: shown as "{emoji} {label}"; a subject outside the 7 known ones has an empty `emoji` and `color` (neutral pill). */
 export interface LearningMapSubject {
   code: string
   label: string
