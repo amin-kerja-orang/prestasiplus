@@ -427,10 +427,12 @@ export const PerformanceAnalyticsSchema = z
         subjectId: IdSchema,
         name: z.string(),
         code: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, all modes, one decimal; null = no answers in the subject ("—"). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        /** null = no answers in the subject. */
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         counts: z.object({ mahir: count, sederhana: count, lemah: count, belum: count }),
         ringTotal: count,
         weak: z.array(weakSp),
@@ -442,6 +444,8 @@ export const PerformanceAnalyticsSchema = z
               code: z.string(),
               title: z.string(),
               status: PerformanceSpStatusSchema,
+              /** Heading of the strand (Tajuk DSKP / SK) the SP is grouped under; null = no heading. */
+              strand: z.string().nullable(),
             }),
           ),
         }),

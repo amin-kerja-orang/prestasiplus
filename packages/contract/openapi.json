@@ -54248,7 +54248,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -54257,7 +54260,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -54371,13 +54377,20 @@
                               "lemah",
                               "belum"
                             ]
+                          },
+                          "strand": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
                           "spId",
                           "code",
                           "title",
-                          "status"
+                          "status",
+                          "strand"
                         ]
                       }
                     }

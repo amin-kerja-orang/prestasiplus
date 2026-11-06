@@ -2,7 +2,7 @@
  * Pure performance rules, ported from the M08 mock (`rules.ts`, SRS M08 v1.11 section 4): grades,
  * rounding, accuracy cap, difficulty, discrimination, trend, projection, risk. No store access.
  */
-import { ANALYTICS_TREND_DELTA, PROJECTION_BAND, RISK_CRITICAL_BELOW, RISK_HIGH_BELOW, RISK_MEDIUM_BELOW, TREND_DELTA } from './constants'
+import { ANALYTICS_TREND_DELTA, PROJECTION_BAND, RISK_CRITICAL_BELOW, RISK_HIGH_BELOW, RISK_MEDIUM_BELOW, SP_MAHIR_FROM, SP_SEDERHANA_FROM, TREND_DELTA } from './constants'
 
 export const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
 export type Grade = (typeof GRADES)[number]
@@ -132,3 +132,13 @@ export const parseRiskLevel = (v: string | undefined): RiskLevel | '' =>
 export const compareIds = (a: string, b: string): number => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0)
 
 export const mean = (values: readonly number[]): number => (values.length === 0 ? 0 : values.reduce((a, b) => a + b, 0) / values.length)
+
+export type SpBand = 'mahir' | 'sederhana' | 'lemah'
+
+/** FR-MUR-5-3: the accuracy is rounded half up to a whole number first (74.5 is 75), then 75+ Mahir, 50-74 Sederhana, below 50 Lemah. */
+export function spBandOfPercent(accuracy: number): SpBand {
+  const whole = Math.round(accuracy)
+  if (whole >= SP_MAHIR_FROM) return 'mahir'
+  if (whole >= SP_SEDERHANA_FROM) return 'sederhana'
+  return 'lemah'
+}

@@ -34,6 +34,11 @@ export const ANALYTICS_TREND_DELTA = 3
 export const RISK_CRITICAL_BELOW = 40
 export const RISK_HIGH_BELOW = 55
 export const RISK_MEDIUM_BELOW = 70
+/** Analitik Adaptif SP bands of the pupil (FR-MUR-5-3) on the whole-number accuracy: 75 and above Mahir, 50 to 74 Sederhana, below 50 Lemah. */
+export const SP_MAHIR_FROM = 75
+export const SP_SEDERHANA_FROM = 50
+/** The weakest SPs of the "Topik Perlu Perhatian Utama" block. */
+export const TOP_WEAK_SP_LIMIT = 4
 /** Projection range: grade(accuracy - band) to grade(accuracy + band). */
 export const PROJECTION_BAND = 10
 export const HEATMAP_DAYS = 90
