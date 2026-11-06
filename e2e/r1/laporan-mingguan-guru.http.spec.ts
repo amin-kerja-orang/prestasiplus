@@ -24,7 +24,8 @@ test.describe('Laporan Mingguan Guru @api', () => {
     const select = page.getByTestId('lm-class')
     const cetak = page.getByRole('button', { name: 'Cetak' })
     await expect(cetak).toBeVisible()
-    for (const el of [toolbar.locator('select, [role="combobox"]').first(), cetak]) {
+    // DsNativeSelect keeps a visually hidden native <select> (1 px) beside the visible combobox trigger: measure the trigger.
+    for (const el of [toolbar.getByRole('combobox'), cetak]) {
       const box = await el.boundingBox()
       expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
     }
