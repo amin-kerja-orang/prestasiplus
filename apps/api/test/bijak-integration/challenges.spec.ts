@@ -2,6 +2,7 @@ import { GamificationChallengesResponseSchema, type StartSessionResponse } from 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { gamificationSeed } from '../../prisma/seed/gamification'
+import { GamificationService } from '../../src/modules/gamification'
 import { PracticeFactsAdapter } from '../../src/modules/bijak/integration/practice-facts'
 import { PracticePorts } from '../../src/modules/practice/ports'
 import { fillBank, loadWorld, type World } from '../practice/helpers'
@@ -160,5 +161,99 @@ describe('daily challenges follow completed practice sessions', () => {
     expect(await challengeRows(admin.userId)).toEqual([{ source_id: `challenge:${mula}:${DAY}`, amount: 10, is_test: true }])
     // real figures of the pupils stay untouched
     expect((await t.db.query(`select count(*)::int as n from challenge_completions where is_test = false and user_id = $1`, [admin.userId]))[0]?.n).toBe(0)
+  })
+})
+
+/** S7-T04 part 14 (R 4, FR-GM-19.4): `best_combo` and the game exclusion over the real answer store. */
+describe('best_combo: the longest correct run inside one practice session of the Malaysia day', () => {
+  const uid = () => maju.userId
+  /** One completed session of `mode` whose answers (C correct, W wrong) are one second apart from `at`. */
+  async function session(mode: string, pattern: string, at: string, answerMode: string | null = null, chapter: number | null = null): Promise<string> {
+    const id = (
+      await t.db.query<{ id: string }>(
+        `insert into practice_sessions (id, user_id, mode, question_count, status, correct_count, time_spent_sec, started_at, completed_at, is_test)
+         values (gen_random_uuid(), $1::bigint, $2, $3, 'completed', 0, 60, $4::timestamptz, $4::timestamptz, false) returning id::text`,
+        [uid(), mode, pattern.length, at],
+      )
+    )[0]!.id
+    for (const [i, c] of [...pattern].entries()) {
+      await t.db.query(
+        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, mode, chapter_id) values ($1::uuid, $2::bigint, 1, $3, $4::timestamptz + ($5 || ' seconds')::interval, $6, $7)`,
+        [id, uid(), c === 'C', at, String(i), answerMode, chapter],
+      )
+    }
+    return id
+  }
+  const combo = (day: string) => t.app.get(PracticeFactsAdapter).bestCombo(uid(), day)
+  const clear = async () => {
+    await t.db.query(`delete from practice_answers where user_id = $1::bigint`, [uid()])
+    await t.db.query(`delete from practice_sessions where user_id = $1::bigint`, [uid()])
+  }
+
+  it('1. a run inside one session; a wrong answer breaks it', async () => {
+    await clear()
+    await session('random', 'CCCWCCCCC', '2026-10-20T10:00:00+08:00')
+    expect(await combo('2026-10-20')).toBe(5)
+  })
+
+  it('2. runs split across two sessions: the longest per session counts, never the sum', async () => {
+    await clear()
+    await session('random', 'CCCCCC', '2026-10-20T10:00:00+08:00')
+    await session('chapter', 'CCCCC', '2026-10-20T11:00:00+08:00')
+    expect(await combo('2026-10-20')).toBe(6)
+  })
+
+  it("3. yesterday's answers are excluded, at the Malaysia midnight", async () => {
+    await clear()
+    await session('random', 'CCCCCCCC', '2026-10-19T23:59:50+08:00') // all inside the 19th
+    await session('random', 'CC', '2026-10-20T00:00:00+08:00')
+    expect(await combo('2026-10-20')).toBe(2)
+    expect(await combo('2026-10-19')).toBe(8)
+  })
+
+  it('4. game and battle answers are excluded; a legacy NULL mode counts', async () => {
+    await clear()
+    await session('random', 'CCCCCCCCCC', '2026-10-20T10:00:00+08:00', 'game')
+    await session('random', 'CCCCCCCCCC', '2026-10-20T11:00:00+08:00', 'battle')
+    expect(await combo('2026-10-20')).toBe(0)
+    await session('chapter', 'CCCC', '2026-10-20T12:00:00+08:00', 'chapter')
+    await session('chapter', 'CCC', '2026-10-20T13:00:00+08:00', null)
+    expect(await combo('2026-10-20')).toBe(4)
+  })
+
+  it('5. answers outside a session do not count', async () => {
+    await clear()
+    for (let i = 0; i < 10; i++) {
+      await t.db.query(`insert into practice_answers (user_id, subject_id, is_correct, answered_at, mode) values ($1::bigint, 1, true, '2026-10-20T10:00:00+08:00'::timestamptz + ($2 || ' seconds')::interval, 'latih_tubi')`, [uid(), String(i)])
+    }
+    expect(await combo('2026-10-20')).toBe(0)
+  })
+
+  it('6. the chapters of game answers do not count as topics (FR-GM-19.4)', async () => {
+    await clear()
+    await session('random', 'CC', '2026-10-20T10:00:00+08:00', 'random', 1)
+    await session('random', 'CC', '2026-10-20T11:00:00+08:00', 'game', 2)
+    await session('random', 'CC', '2026-10-20T12:00:00+08:00', 'battle', 3)
+    await session('random', 'CC', '2026-10-20T13:00:00+08:00', null, 4)
+    const facts = await t.app.get(PracticeFactsAdapter).dayFacts(uid(), '2026-10-20')
+    expect([...new Set(facts.chapterIds)].sort()).toEqual(['1', '4'])
+  })
+
+  it('7. Kombo 10 shows 9/10 at a run of 9 and completes at 10', async () => {
+    await clear()
+    t.clock.set('2026-10-20T10:30:00+08:00')
+    await session('random', 'CCCCCCCCCWCCCC', '2026-10-20T10:00:00+08:00')
+    const progress = async () => (await challenges(maju))['Kombo 10']
+    expect(await progress()).toMatchObject({ progress: 9, target: 10, completed: false })
+    const gm = t.app.get(GamificationService)
+    await gm.settleChallenges(uid(), { isTest: false })
+    expect(await completions(uid())).not.toContainEqual(expect.objectContaining({ challenge_id: await idOfChallenge('Kombo 10') }))
+    await clear()
+    await session('random', 'CCCCCCCCCCC', '2026-10-20T10:00:00+08:00')
+    expect(await progress()).toMatchObject({ progress: 10, target: 10, pct: 100 })
+    await gm.settleChallenges(uid(), { isTest: false })
+    expect(await completions(uid())).toContainEqual({ challenge_id: await idOfChallenge('Kombo 10'), completion_date: DAY, is_test: false })
+    expect(await progress()).toMatchObject({ progress: 10, completed: true })
+    await clear()
   })
 })

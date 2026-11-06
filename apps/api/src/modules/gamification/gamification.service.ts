@@ -36,6 +36,7 @@ import {
   RARITY_LABELS,
   DAILY_LOGIN_DESCRIPTION,
   DAILY_LOGIN_REWARD,
+  GAME_SESSION_MODES,
   REFERRAL_REWARD_REFEREE,
   REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
@@ -107,25 +108,32 @@ function gameRow(game: string, event: string, p: { correct?: number; detail?: Re
 }
 
 /** BR-M14-12 metric values for one Malaysia day. */
-export function dayMetrics(day: { sessions: readonly { correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] }, streakCurrent: number): Record<string, number> {
+export function dayMetrics(
+  day: { sessions: readonly { mode?: string; correct: number; total: number; timeSpent: number }[]; chapterIds: readonly string[] },
+  streakCurrent: number,
+  bestCombo = 0,
+): Record<string, number> {
   let correct = 0
   let bestAccuracy = 0
   let bestCorrect = 0
   let seconds = 0
-  for (const s of day.sessions) {
+  // FR-GM-19.4: game sessions never count.
+  const sessions = day.sessions.filter((s) => s.mode === undefined || !GAME_SESSION_MODES.includes(s.mode))
+  for (const s of sessions) {
     correct += s.correct
     seconds += s.timeSpent
     bestCorrect = Math.max(bestCorrect, s.correct)
     if (s.total > 0) bestAccuracy = Math.max(bestAccuracy, Math.floor((s.correct / s.total) * 100))
   }
   return {
-    sessions: day.sessions.length,
+    sessions: sessions.length,
     correct,
     best_accuracy: bestAccuracy,
     best_correct_in_session: bestCorrect,
     chapters: new Set(day.chapterIds).size,
     minutes: Math.floor(seconds / 60),
     streak: streakCurrent,
+    best_combo: bestCombo,
   }
 }
 
@@ -229,7 +237,7 @@ export class GamificationService {
       this.repo.streakOf(db, userId),
       this.ports.practiceFacts.dayFacts(userId, day),
     ])
-    const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
+    const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, active))
     const data = active.map((c): GamificationChallengeProgress => {
       const completed = done.has(c.id)
       const progress = completed ? c.targetValue : progressOf(c, metrics)
@@ -248,6 +256,11 @@ export class GamificationService {
       }
     })
     return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length } }
+  }
+
+  /** `best_combo` of the day, read only when an active challenge measures it (R 4; one extra query otherwise avoided). */
+  private async comboOf(userId: string, day: string, active: readonly ChallengeRecord[]): Promise<number> {
+    return active.some((c) => c.metric === 'best_combo') ? this.ports.practiceFacts.bestCombo(userId, day) : 0
   }
 
   /**
@@ -521,7 +534,7 @@ export class GamificationService {
         this.repo.streakOf(db, userId),
         this.ports.practiceFacts.dayFacts(userId, day),
       ])
-      const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
+      const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0, await this.comboOf(userId, day, active))
       const out = { claimedIds: [] as string[], syiling: 0, xp: 0 }
       for (const c of active) {
         if (done.has(c.id) || progressOf(c, metrics) < c.targetValue) continue

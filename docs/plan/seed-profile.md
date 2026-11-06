@@ -54,7 +54,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | blueprint_evidence | 16 |
 | blueprint_sections | 23 |
 | blueprints | 11 |
-| challenges | 10 |
+| challenges | 11 |
 | chapters | 1311 |
 | chat_threads | 1 |
 | classrooms | 15 |
@@ -144,7 +144,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 100 of 200. Total rows: 21948.
+Tables with rows: 100 of 200. Total rows: 21949.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

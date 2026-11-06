@@ -35,8 +35,12 @@ export class StubPracticeFacts implements PracticeFactsProvider {
   masteryRows: PracticeMasteryFact[] = []
   counts = { all: 0, practice: 0 }
   accurate = 0
+  combo = 0
   async dayFacts(): Promise<PracticeDayFacts> {
     return this.day
+  }
+  async bestCombo(): Promise<number> {
+    return this.combo
   }
   async mastery(): Promise<readonly PracticeMasteryFact[]> {
     return this.masteryRows
