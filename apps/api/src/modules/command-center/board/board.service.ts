@@ -11,6 +11,7 @@ import type {
 } from '@pp/contract'
 
 import { CLOCK, type Clock } from '../../../db/clock'
+import { xsAccuracy } from '../../school-admin/xs-queries'
 import { notFound } from '../http/errors'
 import type { Viewer } from '../http/viewer'
 import { CommandCenterRepository, type LoginRow } from '../shared/command-center.repository'
@@ -31,8 +32,11 @@ const ROLE_ORDER = ['student', 'teacher', 'parent', 'admin', 'school_admin'] as 
 const ROLE_SHOWN = ['admin', 'school_admin', 'teacher', 'parent', 'student'] as const
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const
 
-/** correct / answers as a percentage with one decimal; 0 when nothing was answered. */
-const accuracyOf = (correct: number, answers: number): number => (answers === 0 ? 0 : Math.round((correct / answers) * 1000) / 10)
+/**
+ * XS-5 (`xsAccuracy`): pooled correct / answers, one decimal half up, never above 100; `null` (shown "—", never 0%) without
+ * answers (every accuracy field of the board contract is nullable).
+ */
+const accuracyOf = (correct: number, answers: number): number | null => xsAccuracy(correct, answers)
 
 /** Half away from zero. */
 function weekChangeOf(week: number, last: number): number {
@@ -101,7 +105,8 @@ export class BoardService {
       schoolId === undefined ? Promise.resolve(null) : this.repo.schoolRef(schoolId),
       this.reads.liveTallies({ now, schoolId, todayFrom: w.today.from, weekFrom: w.week.from, lastWeekFrom: w.lastWeek.from, d30From: w.last30d.from }),
       this.repo.studentCount({ schoolId }),
-      this.repo.subscribedSchoolCount(monthDay, schoolId),
+      // API-AS-02 (S6-T07): the school admin's scope is one school, so its tile counts that school, subscribed or not.
+      school ? Promise.resolve(1) : this.repo.subscribedSchoolCount(monthDay),
       school ? Promise.resolve([]) : this.reads.topSchools(now, TOP_LIMIT),
       this.reads.topUsers({ from: w.week.from, to: now, schoolId }, TOP_LIMIT),
       this.repo.latestAnswers({ to: now, schoolId }, FEED_LIMIT),
@@ -333,7 +338,7 @@ export class BoardService {
         .sort((a, b) => b.students - a.students || a.name.localeCompare(b.name) || idCompare(a.userId, b.userId)),
       students: pupils
         .map((p) => ({ userId: p.userId, name: p.name, answers: p.answers, accuracy: accuracyOf(p.correct, p.answers), lastActiveHuman: diffForHumans(p.lastAt, now) }))
-        .sort((a, b) => b.answers - a.answers || b.accuracy - a.accuracy || idCompare(a.userId, b.userId)),
+        .sort((a, b) => b.answers - a.answers || (b.accuracy ?? 0) - (a.accuracy ?? 0) || idCompare(a.userId, b.userId)),
       logins: logins.map((l) => ({ userId: l.userId, name: l.name, role: roleShown(l.roles), timeAgo: diffForHumans(l.lastLoginAt, now) })),
     }
   }

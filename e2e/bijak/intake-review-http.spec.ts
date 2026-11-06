@@ -222,25 +222,22 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await expect(page.getByTestId('submitted-note')).toBeVisible()
       await page.getByTestId('goto-queue').click()
 
-      /* ---- review queue */
-      await expect(page.getByTestId('review-queue-page')).toBeVisible()
+      /* ---- the old queue list redirects to the one review queue, the Studio filter (S2-T03) */
+      await page.waitForURL(/\/admin\/studio\?status=review$/)
+      await expect(page.getByTestId('studio-list-page')).toBeVisible()
       await expectNoHorizontalScrollHttp(page)
-      const table = page.getByTestId('queue-table')
-      const mine = table.getByText(token).first()
-      await expect(mine).toBeVisible({ timeout: 30_000 })
-      await mine.click()
+
+      /* ---- the review workspace stays at its own route */
+      const items = ((await (await page.request.get(`/api/intake/items?batchId=${batchId}`)).json()) as { data: { id: string | number; stemPreview: string }[] }).data
+      const mine = items.find((i) => i.stemPreview.includes(token))
+      expect(mine, 'the edited item of the batch').toBeTruthy()
+      await page.goto(`/admin/spm/semakan/${String(mine?.id)}`)
       await expect(page.getByTestId('review-item-page')).toBeVisible()
       await expect(page.getByTestId('review-gate')).toContainText('Semua syarat dipenuhi')
       await expect(page.getByTestId('action-correct')).toHaveCount(0) // no route for corrections
       await expectNoHorizontalScrollHttp(page)
       await page.getByTestId('action-publish').click() // "Terima (Draf)"
-      await expect(page.getByTestId('review-queue-page')).toBeVisible()
-
-      // The accepted item moved to "Diterima (Draf)".
-      await page.getByTestId('queue-stat-draf').click()
-      await expect(page.getByTestId('queue-table').getByText(token).first()).toBeVisible({
-        timeout: 30_000,
-      })
+      await page.waitForURL(/\/admin\/studio\?status=review$/)
 
       /* ---- the Draf question is in the Bijak bank */
       await page.goto('/admin/spm/soalan')
@@ -274,7 +271,7 @@ test.describe('Intake review over HTTP @bijak @api', () => {
     page.on('pageerror', (e) => errors.push(e.message))
     await login(page)
     for (const [route, testId] of [
-      ['/admin/spm/semakan', 'review-queue-page'],
+      ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
       ['/admin/spm/soalan', 'bank-page'],
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const) {

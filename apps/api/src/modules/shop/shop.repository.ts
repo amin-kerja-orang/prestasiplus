@@ -169,10 +169,16 @@ export class ShopRepository {
     tokenCost: number
     status: string
     stockReserved: boolean
+    clientUuid: string | null
     at: Date
   }): Promise<RewardRedemption> {
     const { at, ...rest } = data
     return this.db.rewardRedemption.create({ data: { ...rest, createdAt: at, updatedAt: at } })
+  }
+
+  /** The first redemption of this key (DM-78). */
+  redemptionByClientUuid(userId: bigint, clientUuid: string): Promise<RewardRedemption | null> {
+    return this.db.rewardRedemption.findFirst({ where: { userId, clientUuid } })
   }
 
   /** Reads one redemption and locks its row until the transaction ends. */
@@ -236,8 +242,13 @@ export class ShopRepository {
     return new Map(rows.map((r) => [r.drawId, r._count._all]))
   }
 
-  insertTicket(drawId: bigint, userId: bigint, at: Date) {
-    return this.db.drawTicket.create({ data: { drawId, userId, createdAt: at } })
+  /** The first ticket of this key (DM-78). */
+  ticketByClientUuid(userId: bigint, clientUuid: string) {
+    return this.db.drawTicket.findFirst({ where: { userId, clientUuid } })
+  }
+
+  insertTicket(drawId: bigint, userId: bigint, clientUuid: string | null, at: Date) {
+    return this.db.drawTicket.create({ data: { drawId, userId, clientUuid, createdAt: at } })
   }
 }
 

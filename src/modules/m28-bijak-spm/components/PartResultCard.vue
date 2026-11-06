@@ -23,6 +23,11 @@ const STATUS: Record<
 }
 
 const status = computed(() => STATUS[props.result.status])
+/** FR-MUR-13-12: a marked verdict carries its marks, "✓ Betul ({a}/{m})". */
+const verdictWithMarks = computed(() => props.result.status === 'betul' || props.result.status === 'salah')
+const statusText = computed(() =>
+  verdictWithMarks.value ? `${status.value.text} (${props.result.awarded}/${props.result.marks})` : status.value.text,
+)
 const optionText = (id: string | undefined): string =>
   props.options?.find((o) => o.id === id)?.text ?? ''
 const optionImage = (id: string | undefined): McqOption['image'] =>
@@ -46,9 +51,9 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
       </h4>
       <div class="flex items-center gap-2">
         <UBadge :color="status.color" variant="soft" size="md" data-testid="part-status">{{
-          status.text
+          statusText
         }}</UBadge>
-        <span class="tabular text-label text-highlighted" data-testid="part-marks">
+        <span v-if="!verdictWithMarks" class="tabular text-label text-highlighted" data-testid="part-marks">
           {{ result.awarded }} / {{ result.marks }}
         </span>
       </div>
