@@ -34,7 +34,7 @@ interface Ctx {
   s1: Client
   svc: QuestionsService
   source: Be09PracticeQuestionSource
-  /** A secondary level (Tingkatan 5, not the world's T4) offered to random sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
+  /** A secondary level (Tingkatan 5, not the world's T4) offered to practice sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
   dLevel: string
   /** A level that is NOT SPM-servable (a primary-stage Darjah, hidden; T1 to T5 are all offered since S4-T06): a question there is outside every SPM activity. */
   nonSpmLevel: string
@@ -119,13 +119,13 @@ describe('wiring', () => {
   })
 })
 
-describe('random sessions start with published questions only', () => {
+describe('latih_tubi sessions start with published questions only', () => {
   let eligible: string[]
   let ineligible: Record<string, string>
 
   beforeAll(async () => {
     eligible = []
-    for (let i = 0; i < 5; i++) eligible.push(await mcq({ level: c.dLevel, text: `Soalan rawak ${String(i)}` }))
+    for (let i = 0; i < 5; i++) eligible.push(await mcq({ level: c.dLevel, text: `Soalan latih tubi ${String(i)}` }))
     const deactivated = await mcq({ level: c.dLevel, text: 'Soalan nyahaktif' })
     await c.svc.deactivate(deactivated)
     const otherSubject = await tagOf(c.t.db, 'SEED-MCQ-SCI-T4')
@@ -147,9 +147,9 @@ describe('random sessions start with published questions only', () => {
     expect(live.has(ineligible.deactivated as string)).toBe(false)
   })
 
-  it('POST /practice/sessions (random) is 201 with exactly the eligible questions and no answer key', async () => {
+  it('POST /practice/sessions (latih_tubi) is 201 with exactly the eligible questions and no answer key', async () => {
     const subjectCode = c.w.subjectCode
-    const res = await start({ mode: 'random', subjectCode, levelId: c.dLevel, count: 5 })
+    const res = await start({ mode: 'latih_tubi', subjectCode, levelId: c.dLevel, count: 5 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const questions = res.body.data.questions as { id: string; options: unknown[]; questionText: string; contributor: unknown; hasDskp: boolean }[]
     expect(questions).toHaveLength(5)
@@ -167,10 +167,15 @@ describe('random sessions start with published questions only', () => {
     expect(check.body.data).toMatchObject({ isCorrect: true, correctOptionId: 1, explanation: SECRET_EXPLANATION })
   })
 
-  it('too few eligible questions is still 422 NOT_ENOUGH_QUESTIONS', async () => {
-    const res = await start({ mode: 'random', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 10 })
+  it('a draw with no eligible question is still 422 NOT_ENOUGH_QUESTIONS (latih_tubi serves what exists, so only an empty draw is refused)', async () => {
+    // The five eligible questions are tp 3 (difficulty 3): difficulty 5 matches none.
+    const res = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 5, difficulty: 5 })
     expect(res.status, JSON.stringify(res.body)).toBe(422)
     expect(res.body.error.code).toBe('NOT_ENOUGH_QUESTIONS')
+    // A pool smaller than the count is served as is: 5 eligible, 10 asked.
+    const short = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 10 })
+    expect(short.status, JSON.stringify(short.body)).toBe(201)
+    expect(short.body.data.questions).toHaveLength(5)
   })
 
   it('a deactivated or unpublished question is never served, over many draws', async () => {

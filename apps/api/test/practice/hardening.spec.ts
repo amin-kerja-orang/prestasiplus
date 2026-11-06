@@ -55,7 +55,7 @@ const submit = (c: Client, id: string) => c.post(`/api/practice/sessions/${id}/s
 
 describe('1 trial: the limit holds on the check, not only on the start', () => {
   it('at 50 used a first check in an already started session is 402; no check row, the counter stays 50', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.pelajar])
     const res = await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[0]?.id as string, true)
     expect(res.status).toBe(402)
@@ -65,7 +65,7 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   })
 
   it('the 50th check is allowed (49 to 50); a repeat of a checked question still answers at the limit', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 49 where id = $1', [ids.pelajar])
     const q = s.questions[0]?.id as string
     expect((await checkAnswer(pelajar, s.sessionId, t.bank, q, true)).status).toBe(200)
@@ -75,7 +75,7 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   })
 
   it('parallel first checks at 49: exactly one succeeds, one check row, counter 50', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 49 where id = $1', [ids.pelajar])
     const results = await Promise.all(s.questions.map((q) => checkAnswer(pelajar, s.sessionId, t.bank, q.id, true)))
     expect(results.map((r) => r.status).sort()).toEqual([200, 402, 402, 402, 402])
@@ -86,15 +86,15 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   it('a subscribed user is never refused', async () => {
     await makeSubscribed(t.db, ids.maju)
     await t.db.query('update users set trial_questions_used = 500 where id = $1', [ids.maju])
-    const s = await startSession(maju, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(maju, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     expect((await checkAnswer(maju, s.sessionId, t.bank, s.questions[0]?.id as string, true)).status).toBe(200)
   })
 
   it('checks of one session get distinct, increasing seq values even in parallel', async () => {
-    const s = await startSession(maju, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const s = await startSession(maju, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     await Promise.all(s.questions.map((q) => checkAnswer(maju, s.sessionId, t.bank, q.id, true)))
     const rows = await t.db.query<{ seq: number }>('select seq from practice_checks where session_id = $1 order by seq', [s.sessionId])
-    expect(rows.map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(rows.map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
   })
 })
 

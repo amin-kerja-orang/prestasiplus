@@ -131,6 +131,8 @@ export function buildSchoolDashboard(
         createdAt: p.createdAt,
         author: { initials: p.author.initials, roleLabel: p.author.roleLabel },
       })),
+    // The pending-teacher mock list is always empty (mock/handlers/pending-teachers.ts): no record is invented.
+    pendingTeachers: 0,
     cards: {
       pupils: count('student'),
       teachers: count('teacher'),

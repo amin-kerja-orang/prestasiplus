@@ -61,8 +61,8 @@ export class HeadcountController {
   ) {}
 
   @Get()
-  async list(@Req() req: Req) {
-    return ok(await overloadTo429(async () => this.headcounts.list(await this.ctx.of(req))))
+  async list(@Query() query: Record<string, unknown>, @Req() req: Req) {
+    return ok(await overloadTo429(async () => this.headcounts.list(await this.ctx.of(req), query.schoolId)))
   }
 
   @Get('dashboard')
