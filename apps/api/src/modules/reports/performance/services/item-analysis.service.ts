@@ -14,7 +14,6 @@ import {
 import { COUNTED_MODES, ITEM_TINGKATAN_CODES, REDACTED_ID, SCHOOL_QUESTION_CAP } from '../domain/constants'
 import { canSeeName, isStaff, meetsCohort, nameFor } from '../domain/privacy'
 import {
-  capPercent,
   compareIds,
   difficultyIndex,
   difficultyLevel,
@@ -27,12 +26,15 @@ import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import {
   DIRECTORY_PORT,
   PerformancePorts,
+  XS_COUNTS_PORT,
   type BijakItemFact,
   type ClassInfo,
   type DirectoryPort,
   type OptionLetter,
   type SchoolRef,
+  type XsCountsPort,
 } from '../ports'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
 import type { HeadcountEntryView, HeadcountFacts } from './headcount-facts.types'
 import { gpsByYear, liveEntries, schoolGps } from './headcount-figures'
 import { discriminationOf, groupBy, itemStats, nameMap, ownPupilIds, pooledByPupil, toCard } from './support'
@@ -85,6 +87,7 @@ export class ItemAnalysisService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Inject(XS_COUNTS_PORT) protected readonly xs: XsCountsPort,
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
@@ -156,9 +159,12 @@ export class ItemAnalysisService {
     }
 
     // Every answer of the school, all modes, in one read (XS-8). Tingkatan narrows the PUPILS (class level of an active class, else the grade level).
-    const users = await this.directory.users(await this.directory.pupilIdsOfSchool(targetId))
-    let pupils = [...users.values()].filter((u) => u.isActive)
-    let rows = await this.ports.answerFacts.answerFacts({ schoolIds: [targetId] })
+    // S6-T03: the population is XS-1 (active, not suspended, Tingkatan 1-5); answers of any other account are not counted.
+    const xsIds = (await this.xs.pupils({ kind: 'school', schoolId: targetId })).ids
+    const xsSet = new Set(xsIds)
+    const users = await this.directory.users(xsIds)
+    let pupils = [...users.values()].filter((u) => xsSet.has(u.id))
+    let rows = (await this.ports.answerFacts.answerFacts({ schoolIds: [targetId] })).filter((r) => xsSet.has(r.userId))
     let tingkatanOptions: ItemTingkatan[] = []
     if (staff) {
       const levels = await this.levelsOfPupils(pupils)
@@ -218,7 +224,7 @@ export class ItemAnalysisService {
           name: subjectNameOf(subjectId),
           pupils: ok ? p : 0,
           questions: ok ? new Set(list.map((r) => r.questionId).filter((id) => id !== '0')).size : 0,
-          accuracy: ok ? round(capPercent(pct(good, n)), 1) : 0,
+          accuracy: ok ? xsAccuracy(good, n) ?? 0 : 0,
           wrong: ok ? n - good : 0,
         }
       })
@@ -288,7 +294,7 @@ export class ItemAnalysisService {
       answers,
       questionsTested: answers === null ? null : new Set(basis.map((r) => r.questionId).filter((id) => id !== '0')).size,
       correct: answers === null ? null : correct,
-      accuracy: answers === null ? null : round(capPercent(pct(correct, answered)), 1),
+      accuracy: answers === null ? null : xsAccuracy(correct, answered),
       difficulty,
       gps: gps.value === null ? { ...gps, years: [] } : gps,
       subjects,
@@ -366,7 +372,7 @@ export class ItemAnalysisService {
       .map((q) => {
         const facts = bijak.get(q.questionId) ?? []
         const first = facts[0]
-        const accuracy = round(capPercent(pct(q.correct, q.attempts)), 1)
+        const accuracy = xsAccuracy(q.correct, q.attempts) ?? 0
         const index = difficultyIndex(q.correct, q.attempts)
         const pop = popularWrong(facts)
         return {

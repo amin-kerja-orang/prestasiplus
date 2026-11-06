@@ -193,6 +193,98 @@ describe('pupil /headcount/student/:ownId (HeadcountStudentPage)', () => {
     expect(t(w, 'row-otr-2').element.closest('tr')?.textContent).toContain('—')
   })
 
+  describe('goal text (AC-MUR-3-2)', () => {
+    const withRows = (
+      ars: (number | null)[],
+      etr: number | null = 80,
+      tone: 'on' | 'below' | 'noAr' = 'below',
+    ): HeadcountSection => ({
+      ...SECTION,
+      etr,
+      jurang: 40,
+      rows: ars.map((ar, i) => ({
+        checkpoint: i + 1,
+        target: 53 + i * 13,
+        targetGrade: 'C+',
+        ar,
+        arGrade: ar === null ? null : 'B',
+        tone: ar === null ? 'noAr' : tone,
+      })),
+    })
+    const goal = async (section: HeadcountSection) => {
+      api.fetchHeadcountMeDetail.mockResolvedValue({
+        student: { id: 47, name: 'Murid Demo', school: null },
+        sections: [section],
+      })
+      return open()
+    }
+
+    it('AR 60 below RS 80: "Belum capai sasaran" beside "Jurang: +40", status text in the rows', async () => {
+      const w = await goal(withRows([60, 60, 60]))
+      expect(t(w, 'chip-goal').text()).toBe('Belum capai sasaran')
+      expect(t(w, 'chip-jurang').text()).toBe('Jurang: +40')
+      expect(w.get('[data-testid="summary-chips"]').text()).toContain('Belum capai sasaran')
+      expect(w.findAll('[data-testid="row-status"]').map((r) => r.text())).toEqual([
+        'Below',
+        'Below',
+        'Below',
+      ])
+    })
+
+    it('AR 80 equal to RS 80 (and above): "Sasaran tercapai"', async () => {
+      const w = await goal(withRows([80, 80, 80], 80, 'on'))
+      expect(t(w, 'chip-goal').text()).toBe('Sasaran tercapai')
+      expect(w.text()).not.toContain('Belum capai sasaran')
+      expect(w.findAll('[data-testid="row-status"]').map((r) => r.text())).toEqual([
+        'On Track',
+        'On Track',
+        'On Track',
+      ])
+      wrapper?.unmount()
+      const above = await goal(withRows([95, null], 80, 'on'))
+      expect(t(above, 'chip-goal').text()).toBe('Sasaran tercapai')
+    })
+
+    it('uses the latest checkpoint that has an AR', async () => {
+      const w = await goal(withRows([90, 50, null]))
+      expect(t(w, 'chip-goal').text()).toBe('Belum capai sasaran')
+    })
+
+    it('AR 0 is a value: "Belum capai sasaran"', async () => {
+      const w = await goal(withRows([0]))
+      expect(t(w, 'chip-goal').text()).toBe('Belum capai sasaran')
+    })
+
+    it('no AR yet, or no ETR: neither text is shown', async () => {
+      const noAr = await goal(withRows([null, null]))
+      expect(has(noAr, 'chip-goal')).toBe(false)
+      wrapper?.unmount()
+      const noEtr = await goal(withRows([60], null))
+      expect(has(noEtr, 'chip-goal')).toBe(false)
+    })
+
+    it('a negative Jurang (RS below TOV) reads "-n"', async () => {
+      const w = await goal({ ...withRows([60]), tov: 80, etr: 75, jurang: -5 })
+      expect(t(w, 'chip-jurang').text()).toBe('Jurang: -5')
+      expect(t(w, 'chip-goal').text()).toBe('Belum capai sasaran')
+    })
+
+    it('a zero Jurang reads "0" (no sign), as on Tetapan', async () => {
+      const w = await goal({ ...withRows([60]), tov: 80, etr: 80, jurang: 0 })
+      expect(t(w, 'chip-jurang').text()).toBe('Jurang: 0')
+    })
+
+    it('a teacher view has no goal chip', async () => {
+      session.role = 'teacher'
+      api.fetchHeadcountStudent.mockResolvedValue({
+        student: { id: 47, name: 'Murid Demo', school: null },
+        sections: [withRows([60])],
+      })
+      const w = await open('', 47)
+      expect(has(w, 'chip-goal')).toBe(false)
+    })
+  })
+
   it('another pupil id is the 403 page and no request is made', async () => {
     await open('?configId=501', 99)
     expect(useRouteOutcome().value).toBe(403)

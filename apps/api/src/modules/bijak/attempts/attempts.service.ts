@@ -48,12 +48,13 @@ import {
   AttemptsRepository,
   type PhotoRow,
 } from './attempts.repository'
-import { isBlank, type LeafKind, type PartAnswer, type SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type PartAnswer, type PartDef, type SectionSnapshot } from './exam-core.adapter'
 import {
   type AnswerMap,
   type Bundles,
   buildLeafIndex,
   buildServedPaper,
+  bundleOf,
   checkResult,
   gradeAttempt,
   type LeafIndex,
@@ -63,6 +64,7 @@ import {
   sameAnswersAsCheck,
   semakParts,
 } from './marking'
+import { bijakCodeOf } from '../papers/subject-codes'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
 import { applySelfMarks, automaticScore, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
@@ -94,6 +96,49 @@ interface ClosedEvent {
 export interface CallerInfo {
   ip: string | null
   requestId: string | null
+}
+
+/** S5-T11: one submit of a Soalan Berstruktur set. A leaf is addressed by its label path (`(a).(i)`), as the practice sub-question id minus its `<questionId>-`. */
+export interface StructuredAttemptInput {
+  questionId: string
+  /** The version the pupil was served; the attempt is pinned to it. */
+  versionNo: number
+  /** Null or blank: the attempt is titled `STRUCTURED_TITLE`. */
+  title: string | null
+  /** Curriculum code (MATH, SCI ...); stored as the Bijak code (`bijakCodeOf`, MAT, SN ...). Null: the question's own subject tag. */
+  subject: string | null
+  subjectName: string | null
+  answers: readonly { path: string; text: string }[]
+}
+
+export interface StructuredAttemptOutput {
+  attemptId: string
+  submittedAt: Date
+  /** One entry per answerable leaf; `pending` = not marked by the grader (`belum_dimarkah`), awarded 0 until the pupil self-marks. */
+  parts: { path: string; awarded: number; max: number; pending: boolean }[]
+}
+
+/** `exam_attempts.paper_code` of a structured attempt (the contract wants 1+ characters; there is no printed paper code). */
+const STRUCTURED_CODE = 'Berstruktur'
+/** Title of a structured attempt whose set has no text to take it from. */
+const STRUCTURED_TITLE = 'Soalan Berstruktur'
+
+/** The label path of each answerable leaf of the mapped parts (the labels as the bank wrote them, joined with `.`). */
+function leafPaths(parts: readonly PartDef[], labels: readonly string[] = []): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const p of parts) {
+    const here = [...labels, p.label]
+    if (p.children?.length) for (const [id, path] of leafPaths(p.children, here)) out.set(id, path)
+    else out.set(p.id, here.join('.'))
+  }
+  return out
+}
+
+/** The one text box of a sub-question as the answer the grader reads for that leaf kind (numeric reads `final`, a letter match reads `choice`). */
+function structuredAnswerOf(kind: string, text: string): PartAnswer {
+  if (kind === 'numeric') return { final: text }
+  if (kind === 'match_letter') return { choice: text.trim() }
+  return { text }
 }
 
 const ts = (d: Date) => toMytTimestamp(d)
@@ -288,6 +333,72 @@ export class BijakAttemptsService {
     }, TX)
     if (out.created) await this.record(AUDIT_ACTIONS.BIJAK_ATTEMPT_STARTED, auth, out.attempt.id, who, { mode, restart: body.restart === true })
     return { attemptId: out.attempt.id, created: out.created }
+  }
+
+  /**
+   * S5-T11 (API-PRAC-10): a Soalan Berstruktur attempt, single shot. In ONE transaction: the composition is frozen as one section holding the
+   * question (pinned to the served version), an `exam_attempts` row is made (`paper_kind 'structured'`, no paper, `latihan`, untimed), the
+   * answers are stored, the ONE grader (`gradeAttempt`) marks them, the result is saved and the attempt is closed as `submitted`. A part the grader
+   * cannot mark stays `belum_dimarkah` (provisional) for the pupil's own mark (API-BIJAK-05, unchanged). The reward and the per-leaf practice rows are part 4b.
+   */
+  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput): Promise<StructuredAttemptOutput> {
+    const composition: SectionSnapshot[] = [
+      { id: 's1', label: 'Soalan Berstruktur', rule: { type: 'all' }, questionIds: [input.questionId], versions: { [input.questionId]: input.versionNo } },
+    ]
+    // A set the bridge refuses, or whose stored key the bank cannot read (a leaf without a scheme), is a handled 422, never a 500 (nothing is created).
+    const bundles = await this.loadBundles(composition, noEligibleQuestions).catch((err: unknown) => {
+      if (err instanceof ApiError) throw err
+      this.logger.error(`Question ${input.questionId} could not be loaded for a structured attempt: ${err instanceof Error ? err.message : String(err)}`)
+      throw noEligibleQuestions()
+    })
+    const bundle = bundleOf(bundles, input.questionId)
+    const paths = leafPaths(bundle.question.parts ?? [])
+    const index = buildLeafIndex(composition, bundles)
+    const byPath = new Map([...paths].map(([id, path]) => [path, id]))
+    // Stored Bijak data holds the Bijak code (MAT / SN / SEJ), as `exam_attempts.subject` of a paper attempt does; an unknown code passes through (open dictionary).
+    const subject = bijakCodeOf(input.subject?.trim() || bundle.question.curriculum.subject)
+    const now = this.now()
+    const answers = new Map<string, AnswerRow>()
+    for (const a of input.answers) {
+      const partId = byPath.get(a.path)
+      const leaf = partId === undefined ? undefined : index.parts.get(partId)
+      if (partId === undefined || !leaf || !a.text.trim()) continue
+      answers.set(partId, { partId, answer: structuredAnswerOf(leaf.kind, a.text), rev: 1, savedAt: now })
+    }
+    const result = gradeAttempt(composition, bundles, this.answerMap(answers))
+    const attempt = await this.prisma.transaction(async () => {
+      const row = await this.repo.create({
+        userId: who.userId,
+        paperId: null,
+        paperKind: 'structured',
+        title: input.title?.trim() || STRUCTURED_TITLE,
+        subject,
+        subjectName: input.subjectName?.trim() || subject,
+        kertas: 1,
+        // The result view needs a printed code; a structured set has none.
+        code: STRUCTURED_CODE,
+        mode: 'latihan',
+        startedAt: now,
+        deadlineAt: null,
+        durationMin: 0,
+        composition,
+        isTest: who.isTest,
+      })
+      await this.repo.upsertAnswers(row.id, [...answers.values()])
+      const closed = await this.repo.close(row.id, { status: 'submitted', submittedAt: now, lateBySeconds: null, idempotencyKey: null })
+      if (!closed) throw new Error('A new structured attempt could not be closed')
+      await this.repo.saveResult(row.id, result)
+      return row
+    }, TX)
+    const graded = result.questions[0]?.parts ?? []
+    return {
+      attemptId: attempt.id,
+      submittedAt: now,
+      parts: graded.flatMap((p) => {
+        const path = paths.get(p.partId)
+        return path === undefined ? [] : [{ path, awarded: p.awarded, max: p.marks, pending: p.status === 'belum_dimarkah' }]
+      }),
+    }
   }
 
   /* ---------------------------------------------------------------------------------- views */
