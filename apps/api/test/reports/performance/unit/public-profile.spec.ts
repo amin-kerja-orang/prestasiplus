@@ -71,6 +71,16 @@ describe('Public profile (S18)', () => {
     expect(postsOf).not.toHaveBeenCalled()
   })
 
+  it('the payload carries no feed: no entries, sessions, badges or posts of the pupil (FR-MUR-39-4)', async () => {
+    w.gamification.addBadge('1', { key: 'pemula', name: 'Pemula', icon: '🏅', earnedAt: new Date('2026-09-22T10:00:00+08:00') })
+    const r = await w.profile.profile('1')
+    expect(Object.keys(r)).not.toContain('entries')
+    expect(Object.keys(r)).not.toContain('badges')
+    expect(Object.keys(r)).not.toContain('sessionList')
+    expect(r.posts).toEqual([])
+    expect(JSON.stringify(r)).not.toContain('Pemula')
+  })
+
   describe('response-time floor (L5)', () => {
     afterEach(() => vi.useRealTimers())
 

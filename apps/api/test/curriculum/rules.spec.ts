@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   GRADE_CODES,
   MAP_SUBJECTS,
+  mapSubjectPills,
   NO_PROGRESS,
   PRACTICE_CODE,
   byOrderThenId,
@@ -10,7 +11,9 @@ import {
   compareTopicNumbers,
   deriveSubjectLevelPairs,
   gradeOfCode,
+  learnerSubjectOf,
   legacySubjectOfPracticeCode,
+  practiceCodeOfLearnerSubject,
   islandStates,
   mapSubjectLabel,
   subjectLabelOf,
@@ -113,6 +116,15 @@ describe('grade and practice codes (BR-13, BR-16, BR-17)', () => {
     expect(legacySubjectOfPracticeCode('GEO')).toBe('GEOGRAFI')
     for (const name of ['ZZ', '', 'constructor', 'toString', '__proto__', 'hasOwnProperty']) expect(legacySubjectOfPracticeCode(name), name).toBeUndefined()
   })
+
+  it('learnerSubjectOf / practiceCodeOfLearnerSubject: legacy codes map both ways, any other subject code is its own, a bare practice code or inherited name selects nothing', () => {
+    expect(learnerSubjectOf('MATH')).toBe('MATEMATIK')
+    expect(learnerSubjectOf('KIMIA')).toBe('KIMIA')
+    expect(practiceCodeOfLearnerSubject('MATEMATIK')).toBe('MATH')
+    expect(practiceCodeOfLearnerSubject('KIMIA')).toBe('KIMIA')
+    for (const name of ['MATH', 'GEO']) expect(practiceCodeOfLearnerSubject(name), name).toBeNull()
+    for (const name of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) expect(practiceCodeOfLearnerSubject(name), name).toBe(name) // exact, matches no subject row
+  })
 })
 
 describe('Peta Belajar rules (BR-14, BR-15)', () => {
@@ -124,6 +136,20 @@ describe('Peta Belajar rules (BR-14, BR-15)', () => {
 
   it('with no progress every topic is open (default provider state)', () => {
     expect(islandStates([NO_PROGRESS, NO_PROGRESS, NO_PROGRESS, NO_PROGRESS])).toEqual(['unlocked', 'unlocked', 'unlocked', 'unlocked'])
+  })
+
+  it('S4-T06: pills = the known ones that are active, then the other active subjects by name, in order', () => {
+    const pills = mapSubjectPills([
+      { code: 'GEO', name: 'Geografi' },
+      { code: 'SCI', name: 'Sains' },
+      { code: 'EKO', name: 'Ekonomi' },
+      { code: 'EKO', name: 'Ekonomi 2' },
+    ])
+    expect(pills.map((p) => [p.code, p.label, p.emoji, p.color])).toEqual([
+      ['SAINS', 'Sains', '🔬', '#F59E0B'],
+      ['GEOGRAFI', 'Geografi', '', ''],
+      ['EKO', 'Ekonomi', '', ''],
+    ])
   })
 
   it('BR-15: pill labels, Geografi and unknown codes title-cased', () => {

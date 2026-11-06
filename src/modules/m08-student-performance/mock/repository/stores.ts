@@ -27,6 +27,7 @@ import {
 } from '../tables/tables'
 import { CRITICAL_QUESTIONS } from '../data/item-statistics'
 import { GPS_CHART } from '../data/observed'
+import type { Tingkatan } from '../../api/types'
 import type {
   ActivityRow,
   ItemStatisticRow,
@@ -103,7 +104,7 @@ export const itemStatisticsRepo = defineRepository({
       })
     },
     /** The observed S9 headline row of a school view (display constant), or undefined. */
-    summary(schoolId: number, tingkatan: 'T4' | 'T5' | null = null): ItemSummaryRow | undefined {
+    summary(schoolId: number, tingkatan: Tingkatan | null = null): ItemSummaryRow | undefined {
       return stores.summaries.get(`${String(schoolId)}:${tingkatan ?? 'all'}`)
     },
     /**
@@ -113,7 +114,7 @@ export const itemStatisticsRepo = defineRepository({
     forScope(
       kind: ItemScopeKind,
       scopeId: string | number,
-      tingkatan: 'T4' | 'T5' | null = null,
+      tingkatan: Tingkatan | null = null,
     ): ItemStatisticRow[] {
       return store
         .query({ where: { scopeKind: kind, scopeId, tingkatan: tingkatan ?? { isNull: true } } })
@@ -180,6 +181,15 @@ export const timelineRepo = defineRepository({
     },
     create(input: Omit<TimelinePostRow, 'id'>): TimelinePostRow {
       return transaction(() => store.insert(input))
+    },
+    /** Deletes a post of `userId` (R1-MUR-39 Padam); false when it is not that user's post. */
+    removeOwn(userId: number, id: number): boolean {
+      return transaction(() => {
+        const row = store.query({ where: { userId, id } }).rows[0]
+        if (!row) return false
+        store.remove(id)
+        return true
+      })
     },
   }),
 })

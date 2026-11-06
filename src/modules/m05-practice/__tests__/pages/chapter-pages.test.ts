@@ -39,6 +39,14 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../../api/practice', () => api)
 
+const sessionMock = vi.hoisted(() => ({
+  user: null as { role: string; grade: number | null } | null,
+}))
+vi.mock('@/stores/session', async (orig) => ({
+  ...(await orig<typeof import('@/stores/session')>()),
+  useSessionStore: () => sessionMock,
+}))
+
 const outcome = vi.hoisted(() => ({ setRouteOutcome: vi.fn() }))
 vi.mock('@/app/router/outcome', async (orig) => ({
   ...(await orig<typeof import('@/app/router/outcome')>()),
@@ -57,6 +65,7 @@ vi.mock('../../components/quiz/QuizRunner.vue', () => ({
       correctedLine: Boolean,
       backUrl: { type: null, default: null },
       retry: { type: null, default: null },
+      confirmExit: Boolean,
       report: { type: null, default: null },
       accentColor: { type: null, default: null },
     },
@@ -141,6 +150,7 @@ const runnerProps = (w: VueWrapper) =>
 
 beforeEach(() => {
   mounts.length = 0
+  sessionMock.user = null
   for (const f of Object.values(api)) f.mockReset()
   outcome.setRouteOutcome.mockReset()
   takeRevisionFlash()
@@ -215,6 +225,10 @@ describe('S4 ChapterIndexPage', () => {
       color: '#3B82F6',
       chapterCount: 18,
       questionCount: 4833,
+      levels: [
+        { id: 4, code: 'T4', name: 'Tingkatan 4', chapterCount: 8, questionCount: 2000 },
+        { id: 5, code: 'T5', name: 'Tingkatan 5', chapterCount: 10, questionCount: 2833 },
+      ],
     },
     {
       code: 'MATH',
@@ -223,11 +237,13 @@ describe('S4 ChapterIndexPage', () => {
       color: '#EF4444',
       chapterCount: 25,
       questionCount: 6538,
+      levels: [{ id: 5, code: 'T5', name: 'Tingkatan 5', chapterCount: 25, questionCount: 6538 }],
     },
   ]
 
   it('shows the hero, the random-drill link and one card per subject (FR-M05-57, 58)', async () => {
     api.fetchChapterSubjects.mockResolvedValue({ data: SUBJECTS, meta: {} })
+    sessionMock.user = { role: 'student', grade: 11 }
     const w = await render(ChapterIndexPage, '/practice/chapter')
     expect(w.text()).toContain('Mode Sistematik')
     expect(t(w, 'chapter-index-page').get('h1').text()).toBe('Soalan by Chapter')
@@ -239,9 +255,10 @@ describe('S4 ChapterIndexPage', () => {
     const cards = w
       .findAll('[data-testid^=chapter-subject-]')
       .filter((c) => c.element.tagName === 'A')
+    // The pupil's own form (T5): the link carries the level.
     expect(cards.map((c) => c.attributes('href'))).toEqual([
-      '/practice/chapter/BM',
-      '/practice/chapter/MATH',
+      '/practice/chapter/BM?level=5',
+      '/practice/chapter/MATH?level=5',
     ])
     const math = t(w, 'chapter-subject-MATH')
     expect(math.get('[data-testid=chapter-subject-name]').text()).toBe('Matematik')
@@ -250,6 +267,39 @@ describe('S4 ChapterIndexPage', () => {
     // The name truncates when long, as live.
     expect(math.get('[data-testid=chapter-subject-name]').classes()).toContain('truncate')
     expect(math.find('[data-testid=chapter-subject-icon]').find('svg, span').exists()).toBe(true)
+  })
+
+  it('FR-MUR-9-5: "Pilih Tahap" lists the levels with chapters; a change re-counts the subjects', async () => {
+    api.fetchChapterSubjects.mockResolvedValue({ data: SUBJECTS, meta: {} })
+    sessionMock.user = { role: 'student', grade: 10 }
+    const w = await render(ChapterIndexPage, '/practice/chapter')
+    expect(w.text()).toContain('Pilih Tahap')
+    const select = w.findComponent({ name: 'Select' })
+    expect((select.props('items') as { label: string }[]).map((o) => o.label)).toEqual([
+      'Tingkatan 4 — 2,000 soalan',
+      'Tingkatan 5 — 9,371 soalan',
+    ])
+    // Own form T4: only Bahasa Melayu has chapters there, with its T4 counts.
+    expect(select.props('modelValue')).toBe('T4')
+    expect(t(w, 'chapter-subject-grid').findAll('li')).toHaveLength(1)
+    expect(t(w, 'chapter-subject-BM').get('[data-testid=chapter-subject-chapters]').text()).toBe(
+      '8 bab tersedia',
+    )
+    select.vm.$emit('update:modelValue', 'T5')
+    await flushPromises()
+    expect(t(w, 'chapter-subject-grid').findAll('li')).toHaveLength(2)
+    expect(
+      t(w, 'chapter-subject-BM').get('[data-testid=chapter-subject-questions]').text(),
+    ).toBe('2,833 soalan chapter')
+  })
+
+  it('a pupil whose own form has no chapter question sees the data-empty state (AC-MUR-9-4)', async () => {
+    api.fetchChapterSubjects.mockResolvedValue({ data: [SUBJECTS[1]], meta: {} })
+    sessionMock.user = { role: 'student', grade: 10 }
+    const w = await render(ChapterIndexPage, '/practice/chapter')
+    expect(t(w, 'chapter-subjects-empty').text()).toContain(
+      'Tiada subjek bab tersedia untuk tahap ini.',
+    )
   })
 
   it('shows an empty state, not a blank page, when no subject is offered (D72)', async () => {
@@ -266,6 +316,7 @@ describe('S4 ChapterIndexPage', () => {
       new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'x' }),
     )
     api.fetchChapterSubjects.mockResolvedValue({ data: SUBJECTS, meta: {} })
+    sessionMock.user = { role: 'student', grade: 11 }
     const w = await render(ChapterIndexPage, '/practice/chapter')
     expect(t(w, 'chapter-error').text()).toContain('Maaf, berlaku ralat. Sila cuba semula.')
     await t(w, 'chapter-retry').trigger('click')
@@ -354,10 +405,59 @@ describe('S5 ChapterSubjectPage', () => {
     const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
     const empty = t(w, 'chapter-card-3')
     expect(t(w, 'chapter-empty-3').text()).toBe('Tiada soalan')
-    expect(t(w, 'chapter-empty-3').attributes('title')).toBe('Belum ada soalan untuk Nombor hingga 1000')
+    // Neutral chip: no lock icon and no title (D98).
+    expect(t(w, 'chapter-empty-3').attributes('title')).toBeUndefined()
+    expect(t(w, 'chapter-empty-3').html()).not.toContain('lock')
     expect(empty.findAll('a')).toHaveLength(0)
     expect(w.text()).not.toContain('Progressive Unlock')
     expect(w.find('[data-testid=chapter-unlock-rule]').exists()).toBe(false)
+  })
+
+  it('AC-MUR-9-10: 7 servable questions enable only "5 soalan"; the others carry the title', async () => {
+    api.fetchChapterSubject.mockResolvedValue({
+      ...MATH,
+      chapters: [card({ id: 7, number: 1, total: 7, remaining: 7 })],
+    })
+    const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
+    const btn = (n: number) => t(w, `chapter-count-7-${String(n)}`)
+    expect(btn(5).attributes('href')).toBe('/practice/chapter/MATH/7/quiz?count=5')
+    expect(btn(5).attributes('disabled')).toBeUndefined()
+    expect(btn(5).attributes('aria-disabled')).toBeUndefined()
+    expect(btn(5).attributes('title')).toBeUndefined()
+    for (const n of [10, 15, 20]) {
+      expect(btn(n).text()).toBe(`${String(n)} soalan`)
+      expect(btn(n).attributes('title')).toBe('Hanya 7 soalan tersedia.')
+      expect(btn(n).attributes('href')).toBeUndefined()
+      expect(btn(n).attributes('aria-disabled') ?? btn(n).attributes('disabled')).toBeDefined()
+    }
+  })
+
+  it('FR-MUR-9-12: below 5 questions one button "Mula ({n} soalan)" replaces the four', async () => {
+    api.fetchChapterSubject.mockResolvedValue({
+      ...MATH,
+      chapters: [card({ id: 8, number: 1, total: 3, remaining: 3 })],
+    })
+    const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
+    const links = t(w, 'chapter-card-8').findAll('a')
+    expect(links.map((a) => [a.text(), a.attributes('href')])).toEqual([
+      ['Mula (3 soalan)', '/practice/chapter/MATH/8/quiz?count=3'],
+    ])
+    expect(t(w, 'chapter-card-8').text()).not.toContain('10 soalan')
+  })
+
+  it('regression (D98): Bab 2 opens with Bab 1 unanswered and no text mentions 70% or a lock', async () => {
+    api.fetchChapterSubject.mockResolvedValue({
+      ...MATH,
+      chapters: [
+        card({ id: 1, number: 1, answered: 0, remaining: 464 }),
+        card({ id: 2, number: 2, name: 'Sukatan dan Geometri', total: 302, remaining: 302 }),
+      ],
+    })
+    const w = await render(ChapterSubjectPage, '/practice/chapter/MATH')
+    expect(t(w, 'chapter-stats-1').text()).toBe('0/464 soalan unik · Skor 0% · 464 baki')
+    expect(t(w, 'chapter-card-2').attributes('data-state')).toBe('open')
+    expect(t(w, 'chapter-card-2').findAll('a')).toHaveLength(4)
+    expect(w.text()).not.toMatch(/70\s?%|Progressive Unlock|Kunci bab sebelumnya|akan datang/)
   })
 
   it('raises the global 404 page for an unknown code', async () => {
@@ -377,6 +477,7 @@ describe('Q2 ChapterQuizPage', () => {
     expect(p.start).toEqual({ mode: 'chapter', chapterId: 1, count: 15 })
     expect(p.backUrl).toBe('/practice/chapter/MATH?level=1')
     expect(p.retry).toBe('restart')
+    expect(p.confirmExit).toBe(true)
     expect(p.report).toEqual({ source: 'latihan' })
     expect(outcome.setRouteOutcome).not.toHaveBeenCalled()
   })
