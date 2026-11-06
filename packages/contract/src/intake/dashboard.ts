@@ -31,13 +31,13 @@ import { registerRoute } from '../ai/rate-limit'
 
 /**
  * Submission statuses counted by the dashboard. Same codes as the BE-37 batch status (Dihantar,
- * Sedang diproses, Sedia untuk semakan, Gagal, Dibatalkan); a separate constant so this file does
+ * Sedang diproses, Selesai, Selesai dengan ralat, Gagal, Dibatalkan); a separate constant so this file does
  * not depend on BE-37's contract file.
  */
-export const INTAKE_DASHBOARD_BATCH_STATUSES = ['submitted', 'processing', 'ready_for_review', 'failed', 'cancelled'] as const
+export const INTAKE_DASHBOARD_BATCH_STATUSES = ['submitted', 'processing', 'ready_for_review', 'selesai_dengan_ralat', 'failed', 'cancelled'] as const
 export const IntakeDashboardBatchStatusSchema = z.enum(INTAKE_DASHBOARD_BATCH_STATUSES).meta({
   id: 'IntakeDashboardBatchStatus',
-  description: '[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, failed, cancelled.',
+  description: '[PROPOSED] Submission (intake batch) status, the BE-37 codes: submitted, processing, ready_for_review, selesai_dengan_ralat, failed, cancelled.',
 })
 export type IntakeDashboardBatchStatus = z.infer<typeof IntakeDashboardBatchStatusSchema>
 
@@ -158,7 +158,7 @@ export const IntakeDashboardSchema = z
       .meta({ description: 'Snapshot at generatedAt, not limited to the month.' }),
     extraction: z
       .object({
-        succeeded: count.meta({ description: 'Submissions of the month that reached ready_for_review.' }),
+        succeeded: count.meta({ description: 'Submissions of the month that reached ready_for_review or selesai_dengan_ralat.' }),
         failed: count.meta({ description: 'Submissions of the month that ended failed.' }),
         successRate: rate.meta({ description: 'succeeded / (succeeded + failed) * 100, one decimal; null when both are 0. Submissions still pending or cancelled are not counted.' }),
       })
