@@ -43,7 +43,7 @@ beforeEach(async () => {
 })
 
 const SESSION = '11111111-1111-4111-8111-111111111111'
-const START_BODY = { mode: 'random', subjectCode: 'MATH', count: 5 }
+const START_BODY = { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 }
 
 describe('AC10 authentication, CSRF and roles', () => {
   it('without a session every route is 401 UNAUTHORIZED', async () => {
@@ -52,7 +52,7 @@ describe('AC10 authentication, CSRF and roles', () => {
       await http.post('/api/practice/sessions').send(START_BODY),
       await http.post(`/api/practice/sessions/${SESSION}/check-answer`).send({ questionId: '1', selectedOptionId: 0 }),
       await http.post(`/api/practice/sessions/${SESSION}/submit`).send({ timeSpent: 1 }),
-      await http.get('/api/practice/sessions?modes=random'),
+      await http.get('/api/practice/sessions?modes=latih_tubi'),
     ]) {
       expectError(res, 'UNAUTHORIZED')
     }
@@ -68,7 +68,7 @@ describe('AC10 authentication, CSRF and roles', () => {
     expect(await countRows(t.db, 'practice_checks')).toBe(0)
     expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(0)
     // Reading needs no token.
-    expect((await c.get('/api/practice/sessions?modes=random')).status).toBe(200)
+    expect((await c.get('/api/practice/sessions?modes=latih_tubi')).status).toBe(200)
   })
 
   it.each(['pelajar@demo.test', 'guru@demo.test', 'adminsekolah@demo.test', 'admin@demo.test', 'guruadmin@demo.test'])(
@@ -77,7 +77,7 @@ describe('AC10 authentication, CSRF and roles', () => {
       const c = await loginAs(t, email)
       const { started, submit } = await play(c, t.bank, START_BODY, 3)
       expect(submit.status, JSON.stringify(submit.body)).toBe(200)
-      const list = await c.get('/api/practice/sessions?modes=random')
+      const list = await c.get('/api/practice/sessions?modes=latih_tubi')
       expect(list.body.data.map((r: { id: string }) => r.id)).toEqual([started.sessionId])
     },
   )
@@ -93,7 +93,7 @@ describe('AC10 authentication, CSRF and roles', () => {
       await c.post(`/api/practice/sessions/${sessionId}/check-answer`, { questionId: q }), // a 422
       await c.post(`/api/practice/sessions/${sessionId}/submit`, { timeSpent: 1 }),
       await c.post(`/api/practice/sessions/${sessionId}/submit`, { timeSpent: 1 }), // a 409
-      await c.get('/api/practice/sessions?modes=random'),
+      await c.get('/api/practice/sessions?modes=latih_tubi'),
     ]
     for (const res of checks) expect(res.headers['cache-control']).toContain('no-store')
   })
@@ -105,18 +105,18 @@ describe('AC8 Mod Pelajar stamps every row it writes with is_test', () => {
     const { started, submit } = await play(admin, t.bank, START_BODY, 2)
     expect(submit.status, JSON.stringify(submit.body)).toBe(200)
     expect(await countRows(t.db, 'practice_sessions', 'is_test')).toBe(1)
-    expect(await countRows(t.db, 'practice_session_questions', 'is_test')).toBe(5)
-    expect(await countRows(t.db, 'practice_answers', 'is_test and session_id = $1', [started.sessionId])).toBe(5)
+    expect(await countRows(t.db, 'practice_session_questions', 'is_test')).toBe(12)
+    expect(await countRows(t.db, 'practice_answers', 'is_test and session_id = $1', [started.sessionId])).toBe(12)
     expect(await countRows(t.db, 'practice_answers', 'not is_test')).toBe(0)
     expect(t.reward.calls[0]?.isTest).toBe(true)
     // Their own list includes the test session; other modules' reads do not.
-    const own = await admin.get('/api/practice/sessions?modes=random')
+    const own = await admin.get('/api/practice/sessions?modes=latih_tubi')
     expect(own.body.data).toHaveLength(1)
     const repo = t.app.get(PracticeRepository)
     const adminId = await userIdByEmail(t.db, 'admin@demo.test')
-    expect(await repo.history(adminId, { modes: ['random'] })).toEqual([])
+    expect(await repo.history(adminId, { modes: ['latih_tubi'] })).toEqual([])
     expect(await repo.answers(adminId)).toEqual([])
-    expect(await repo.answers(adminId, { includeTest: true })).toHaveLength(5)
+    expect(await repo.answers(adminId, { includeTest: true })).toHaveLength(12)
   })
 
   it('checks stamped is_test while the session is open', async () => {
