@@ -271,8 +271,9 @@ describe('student: challenges, leaderboard, achievements, share cards, referral'
     expect(GamificationShareCardsSchema.safeParse({ ...cards, ranking: { accuracy: 38.7 } }).success).toBe(false)
     const referral = {
       code: 'AINA1234',
-      rewardReferrer: 50,
-      rewardReferee: 25,
+      rewardReferrer: 100,
+      rewardReferee: 0,
+      maxRewarded: 20,
       registerUrl: 'https://prestasiplus.my/register?ref=AINA1234',
       whatsappUrl: 'https://wa.me/?text=Jom%20belajar',
       telegramUrl: 'https://t.me/share/url?url=x&text=Jom%20belajar',
@@ -280,6 +281,7 @@ describe('student: challenges, leaderboard, achievements, share cards, referral'
     }
     expect(GamificationReferralSchema.safeParse(referral).success).toBe(true)
     expect(GamificationReferralSchema.safeParse({ ...referral, code: '' }).success).toBe(false)
+    expect(GamificationReferralSchema.safeParse({ ...referral, maxRewarded: undefined }).success).toBe(false)
   })
 })
 
