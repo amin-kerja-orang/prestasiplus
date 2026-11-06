@@ -789,6 +789,10 @@ export class PracticeRepository {
    * breaks the run. Read-only.
    */
   async bestCombo(userId: string, from: Date, to: Date): Promise<number> {
+    // Scope (R 4, "in one session today"): the window is on `answered_at`, not on the session, and there is no status
+    // filter, so an in-progress session counts live. A session that crosses Malaysia midnight is split at the day
+    // boundary: its answers before 00:00 MYT count for the previous day, those from 00:00 for the new day, and each
+    // day's run starts fresh at the first answer inside its window (a streak of correct answers never bridges midnight).
     const rows = await this.db.practiceAnswer.findMany({
       where: { userId: idFromString(userId), sessionId: { not: null }, answeredAt: { gte: from, lt: to }, OR: NOT_GAME_ANSWER },
       select: { sessionId: true, isCorrect: true },

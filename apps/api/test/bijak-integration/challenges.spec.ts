@@ -234,6 +234,35 @@ describe('best_combo: the longest correct run inside one practice session of the
     expect(await combo('2026-10-20')).toBe(5)
   })
 
+  it('4c. two sessions of 4 correct in a row give 4, not 8 (R 4)', async () => {
+    await clear()
+    await session('random', 'CCCC', '2026-10-20T10:00:00+08:00')
+    await session('chapter', 'CCCC', '2026-10-20T10:05:00+08:00')
+    expect(await combo('2026-10-20')).toBe(4)
+  })
+
+  it('4d. an in-progress session counts live', async () => {
+    await clear()
+    const id = (
+      await t.db.query<{ id: string }>(
+        `insert into practice_sessions (id, user_id, mode, question_count, status, correct_count, time_spent_sec, started_at, is_test)
+         values (gen_random_uuid(), $1::bigint, 'random', 10, 'in_progress', 0, 0, '2026-10-20T10:00:00+08:00', false) returning id::text`,
+        [uid()],
+      )
+    )[0]!.id
+    for (let i = 0; i < 3; i++) {
+      await t.db.query(`insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, mode) values ($1::uuid, $2::bigint, 1, true, '2026-10-20T10:00:00+08:00'::timestamptz + ($3 || ' seconds')::interval, 'random')`, [id, uid(), String(i)])
+    }
+    expect(await combo('2026-10-20')).toBe(3)
+  })
+
+  it('4e. a session crossing Malaysia midnight is split: 4 correct before and 4 after give 4 on each day, never 8', async () => {
+    await clear()
+    await session('random', 'CCCCCCCC', '2026-10-19T23:59:56+08:00') // answers at :56 .. 00:00:03
+    expect(await combo('2026-10-19')).toBe(4)
+    expect(await combo('2026-10-20')).toBe(4)
+  })
+
   it('5. answers outside a session do not count', async () => {
     await clear()
     for (let i = 0; i < 10; i++) {
