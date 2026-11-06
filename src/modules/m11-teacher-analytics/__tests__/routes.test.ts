@@ -15,7 +15,7 @@ import monitoring from '../routes/monitoring'
 import perbandinganKelas from '../routes/perbandingan-kelas'
 
 describe('M11 routes', () => {
-  it('spreads the five fragments (S1, S6, S2–S5, S8, S7), all empty until their UI tasks', () => {
+  it('spreads the five fragments (S1, S6, S2–S5, S8, S7)', () => {
     for (const fragment of [
       laporan,
       analisisItem,
@@ -34,10 +34,25 @@ describe('M11 routes', () => {
     ])
   })
 
+  it('S6-T01: /guru/laporan-mingguan-kelas is the teacher page; the old path redirects', async () => {
+    const rec = laporanMingguan.find((r) => r.path === '/guru/laporan-mingguan-kelas')
+    expect(rec?.name).toBe('m11.laporan-mingguan-kelas')
+    const loaded = await (rec?.component as () => Promise<{ default: { __name?: string } }>)()
+    expect(loaded.default.__name).toBe('LaporanMingguanGuruPage')
+    expect(rec?.meta).toMatchObject({
+      roles: ['teacher'],
+      title: 'Laporan Mingguan — PRESTASIPLUS',
+      header: { title: 'Laporan Mingguan' },
+    })
+    const old = laporanMingguan.find((r) => r.path === '/guru/laporan-mingguan')
+    expect(old?.redirect).toBe('/guru/laporan-mingguan-kelas')
+  })
+
   it('the manifest names the module and exports the typed client', () => {
     expect(m11.manifest).toMatchObject({ id: 'M11', slug: 'm11-teacher-analytics' })
     for (const fn of [
       'fetchTeacherReport',
+      'fetchGuruWeeklyReport',
       'fetchItemAnalysis',
       'fetchMonitoringOverview',
       'fetchSchoolDetail',

@@ -467,6 +467,20 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     expect(done.body.error).toMatchObject({ code: 'ALREADY_COMPLETED', message: 'Misi ini sudah diselesaikan.' })
   })
 
+  it('mission: referenceUrl is served by the start and by the replay for a private question, and absent for one without (FR-GUR-44a-9)', async () => {
+    const url = 'https://rujukan.example.org/bab-1'
+    const withLink = t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1, referenceUrl: url })
+    const plain = t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1 })
+    t.assignments.set('mission', '9003', { status: 'ok', subjectId: w.subject.math, questionIds: [withLink, plain] })
+    const first = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
+    const replay = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
+    for (const res of [first, replay]) {
+      expect(StartSessionResponseSchema.safeParse(res.body).success).toBe(true)
+      expect(res.questions.find((q) => q.id === withLink)?.referenceUrl).toBe(url)
+      expect(res.questions.find((q) => q.id === plain)).not.toHaveProperty('referenceUrl')
+    }
+  })
+
   it('mission: no coin rate is stored (S5-T03, the rate is read when the credit is written)', async () => {
     t.assignments.set('mission', '9002', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 2) })
     const s = await startSession(pelajar, { mode: 'mission', missionId: '9002' })

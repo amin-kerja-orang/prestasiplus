@@ -191,6 +191,10 @@ export const BijakPaperCoverSchema = z
         'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
     }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
+    kuizAvailable: z.boolean().optional().meta({
+      description:
+        'S3-T07: false when the paper is outside the caller\'s form (`level_scope`) and the caller has no open sitting on it, so the paper Kuiz answers 404 and the cover omits its action. Absent means available.',
+    }),
     unavailable: z.boolean().meta({
       description:
         'PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees "Mula" disabled with the message "Kertas belum tersedia" before any click. A sitting already open can still be resumed.',
