@@ -160,19 +160,19 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
   })
 
   describe('GET /api/gamification/achievements (S15)', () => {
-    it('25 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
+    it('26 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
       const d = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements')))
-      expect(d).toMatchObject({ unlocked: 0, total: 25 })
-      expect(d.items).toHaveLength(25)
+      expect(d).toMatchObject({ unlocked: 0, total: 26 })
+      expect(d.items).toHaveLength(26)
       expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', rarityLabel: 'Biasa', rarityColor: '#9ca3af', progress: { value: 0, target: 1 }, unlocked: false, unlockedAt: null })
       expect(d.items.filter((i) => i.progress !== null)).toHaveLength(5)
     })
 
-    it('filters by rarity (6 / 8 / 6 / 5) while total stays 25; an unknown rarity answers no card', async () => {
+    it('filters by rarity (6 / 9 / 6 / 5) while total stays 26; an unknown rarity answers no card', async () => {
       const count = async (r: string) => GamificationAchievementsSchema.parse(dataOf(await student.get(`/gamification/achievements?rarity=${r}`))).items.length
-      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 8, 6, 5])
+      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 9, 6, 5])
       const none = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements?rarity=mythic')))
-      expect(none).toMatchObject({ items: [], total: 25 })
+      expect(none).toMatchObject({ items: [], total: 26 })
     })
 
     it('an unlock shows with its time and progress caps at the target; the progress value follows the practice count', async () => {
