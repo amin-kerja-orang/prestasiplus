@@ -9283,6 +9283,7 @@
               "STIMULUS_TEXT_REQUIRED",
               "STIMULUS_TABLE_INVALID",
               "STIMULUS_IMAGE_UNAVAILABLE",
+              "STIMULUS_IMAGE_INVALID",
               "STIMULUS_ALT_REQUIRED",
               "STIMULUS_CAPTION_LONG",
               "PART_STIMULUS_INVALID"
@@ -9399,6 +9400,11 @@
             "type": "string",
             "format": "binary",
             "description": "CSV or TXT file, UTF-8, at most 5 MB. Storage: BE-04."
+          },
+          "zipFile": {
+            "type": "string",
+            "format": "binary",
+            "description": "Optional ZIP, at most 20 MB. Entry names are matched by base name to the `stimulus_image` column; images are JPG, PNG or WebP (by their bytes), at most 2 MB each."
           },
           "defaultSubjectId": {
             "$ref": "#/components/schemas/Id"
@@ -10632,6 +10638,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           }
         },
         "required": [
@@ -10817,6 +10837,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           },
           "instructions": {
             "type": "array",
@@ -12689,7 +12723,74 @@
             "$ref": "#/components/schemas/BijakAttemptPartAnswer"
           },
           "scheme": {
-            "$ref": "#/components/schemas/BijakAttemptScheme"
+            "type": "object",
+            "properties": {
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correctOption": {
+                "type": "string",
+                "description": "MCQ: the correct option id."
+              },
+              "correctLetter": {
+                "type": "string",
+                "description": "match_letter: the correct letter."
+              },
+              "acceptedText": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "accepted: the accepted answers as text."
+              },
+              "rubric": {
+                "type": "object",
+                "properties": {
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakAttemptRubricBand"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "finalDisplay": {
+                "type": "string",
+                "description": "LaTeX of the model final answer."
+              },
+              "unit": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "marks"
+            ],
+            "additionalProperties": false,
+            "description": "The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too."
           }
         },
         "required": [
@@ -12701,8 +12802,7 @@
           "status",
           "confidence",
           "points",
-          "answer",
-          "scheme"
+          "answer"
         ],
         "additionalProperties": false
       },
@@ -29496,6 +29596,11 @@
             "maxItems": 3,
             "description": "The first 3 Perutusan posts visible to the caller (content owner BE-24)."
           },
+          "pendingTeachers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teachers waiting for the school admin to approve them (\"Guru Menunggu\"); equals the length of GET /admin-sekolah/guru/pending."
+          },
           "cards": {
             "type": "object",
             "properties": {
@@ -29701,6 +29806,7 @@
           "school",
           "roleLabel",
           "perutusan",
+          "pendingTeachers",
           "cards",
           "performance"
         ]
@@ -30711,13 +30817,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {
@@ -30769,9 +30876,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [
@@ -31804,7 +31914,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed."
           }
         },
         "required": [
@@ -40610,6 +40720,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ]
           },
@@ -41147,6 +41258,7 @@
           "1",
           "2",
           "3",
+          "4",
           null
         ]
       },
@@ -48268,7 +48380,8 @@
             "enum": [
               "1",
               "2",
-              "3"
+              "3",
+              "4"
             ]
           },
           "jenis": {
@@ -50017,6 +50130,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -50068,6 +50182,7 @@
               "1",
               "2",
               "3",
+              "4",
               null
             ],
             "description": "S1-T01: kertas of the group (reuses `QuestionKertas`); defaulted from the members when absent."
@@ -55577,6 +55692,110 @@
           "createdAt"
         ]
       },
+      "PerformanceTimelineEntry": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "subjectName": {
+                "type": "string"
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "subjectName",
+              "correct",
+              "answered",
+              "accuracy"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "badge"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "name",
+              "icon"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "post"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "post": {
+                "$ref": "#/components/schemas/PerformanceTimelinePost"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "post"
+            ]
+          }
+        ]
+      },
       "PerformanceTimeline": {
         "type": "object",
         "properties": {
@@ -55588,11 +55807,32 @@
             "items": {
               "$ref": "#/components/schemas/PerformanceTimelinePost"
             }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelineEntry"
+            }
           }
         },
         "required": [
           "profileUrl",
-          "posts"
+          "posts",
+          "entries"
+        ]
+      },
+      "PerformanceTimelineDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
         ]
       },
       "PerformanceTimelineCreateRequest": {
@@ -60704,6 +60944,18 @@
                 "type": "number",
                 "enum": [
                   2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
                 ]
               }
             ]
@@ -82440,6 +82692,18 @@
                 "enum": [
                   2
                 ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
               }
             ]
           },
@@ -82674,6 +82938,18 @@
                 ]
               },
               {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
+                ]
+              },
+              {
                 "type": "null"
               }
             ],
@@ -82830,6 +83106,18 @@
                 "type": "number",
                 "enum": [
                   2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  4
                 ]
               },
               {
@@ -91879,7 +92167,7 @@
           "question-imports"
         ],
         "summary": "Import questions from a CSV file",
-        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "description": "Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix \"Baris {n}: \" (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. An unknown header cell is ignored and listed in `warnings` (\"Kolum {nama} tidak dikenali dan diabaikan.\"). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
         "parameters": [
           {
             "schema": {
@@ -92026,7 +92314,7 @@
           "question-imports"
         ],
         "summary": "Download the CSV template",
-        "description": "Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, header line plus 2 sample rows. Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).",
+        "description": "Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, the header of 30 Q-11 (all columns in order) plus one MCQ example and one example group of two questions with one Petikan stimulus (S1-T05 part 3). Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).",
         "responses": {
           "200": {
             "description": "The template file.",
@@ -93259,7 +93547,24 @@
           "bijak-papers"
         ],
         "summary": "Kertas Pilihan: published curated papers with the caller progress",
-        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. `surface` (DM-23, S3-T06) defaults to `simulasi` (Kertas Pilihan, unchanged); `surface=subjektif` lists the published Kertas Subjektif papers (rows carry `surface`, `examBoard`, the typed Jumlah Markah as `marks`, and the code `K{kertas}` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "simulasi",
+                "subjektif"
+              ],
+              "default": "simulasi",
+              "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23)."
+            },
+            "required": false,
+            "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23).",
+            "name": "surface",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Published papers with the caller progress.",
@@ -94362,7 +94667,7 @@
           "bijak-attempts"
         ],
         "summary": "The result page with full schemes (after submit only)",
-        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
+        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. A Kertas Subjektif attempt (paperKind subjektif, S3-T06) carries no scheme text unless read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21): each part then has no `scheme`, no `suggestion` and empty `points`. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
         "parameters": [
           {
             "schema": {
@@ -94376,6 +94681,19 @@
             "description": "Attempt id (opaque; a UUID on the backend).",
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ],
+              "description": "Kertas Subjektif only: include the scheme."
+            },
+            "required": false,
+            "description": "Kertas Subjektif only: include the scheme.",
+            "name": "scheme",
+            "in": "query"
           }
         ],
         "responses": {
@@ -94632,7 +94950,7 @@
           "bijak-attempts"
         ],
         "summary": "Semakan: record the pupil own mark (\"Markah kendiri\") for one part",
-        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt whose scheme is points or rubric (selfMarkable in the result); another part gives 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\" or \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
+        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt (else 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\") whose scheme is points or rubric, or that the grader left belum_dimarkah (selfMarkable in the result; 46 section 3.4, K20); an automatically marked part gives 409 CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The response result of a Kertas Subjektif attempt carries no scheme text unless the request has `?scheme=1` (the pupil already pressed \"Tunjuk Skema Pemarkahan\"). The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
         "parameters": [
           {
             "schema": {
@@ -94719,7 +95037,7 @@
             }
           },
           "409": {
-            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed).",
+            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed), or CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\" (an automatically marked part).",
             "content": {
               "application/json": {
                 "schema": {
@@ -115912,7 +116230,8 @@
               "enum": [
                 "1",
                 "2",
-                "3"
+                "3",
+                "4"
               ]
             },
             "required": false,
@@ -116089,7 +116408,7 @@
           "questions"
         ],
         "summary": "Create a question",
-        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 3) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
+        "description": "JSON only. Images are ids of files already uploaded with `POST /files?purpose=question_image` (JPG/PNG/WebP up to 2MB): `questionImageFileId`, `optionImageFileIds[i]`; their errors use the keys `questionImage` and `optionImages.<i>`. `kertas` (1 to 4) feeds the paper builder; error key `kertas`. Status defaults to `draft`. Service rule (not enforced by the body schema): `status: approved` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: \"Soalan berjaya ditambah.\"",
         "parameters": [
           {
             "schema": {
@@ -122539,10 +122858,11 @@
         "tags": [
           "performance"
         ],
-        "summary": "Own timeline (S16)",
+        "summary": "Own timeline feed (S16, API-RPT-14)",
+        "description": "Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).",
         "responses": {
           "200": {
-            "description": "Own timeline (S16)",
+            "description": "Own timeline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -122652,6 +122972,87 @@
         }
       }
     },
+    "/timeline/{id}": {
+      "delete": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Delete an own timeline post (API-RPT-15)",
+        "description": "Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil's post is the same 404 as an unknown id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimelineDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown post id, or a post of another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/students/{id}": {
       "get": {
         "tags": [
@@ -122739,6 +123140,19 @@
           "headcount"
         ],
         "summary": "Own headcount configs (S12), newest first",
+        "description": "teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); admin without schoolId: all configs, as before; admin with schoolId: VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when empty, repeated or malformed, NOT_FOUND when no such school. No 422 is listed here so the conformance smoke still picks the teacher list.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.",
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Own headcount configs (S12), newest first",
@@ -138258,7 +138672,7 @@
           "intake-files"
         ],
         "summary": "Upload one or more PDF files to a submission",
-        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 20 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
+        "description": "Card BE-37. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD, Murid and every other role get 403. multipart/form-data, parts named `files` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, `fields.files`, one BM message). Refusals: \"Jenis fail tidak disokong. Gunakan PDF.\", \"Fail melebihi had 30 MB.\" (INTAKE_MAX_FILE_MB), \"Fail melebihi had 200 halaman.\" (OCR_MAX_PAGES), \"Fail PDF dilindungi kata laluan dan tidak boleh dibaca.\", \"Fail PDF rosak atau tidak boleh dibaca.\", \"Fail PDF terlalu kompleks untuk diproses.\", \"Fail ini telah diimport dalam kelompok lain.\" (same hash as a file in another batch that is not failed or cancelled), \"Maksimum 10 fail bagi setiap kelompok.\" [PROPOSED copy]. A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT \"Kelompok ini tidak lagi menerima fail.\". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED \"Had kuota muat naik harian telah dicapai. Cuba lagi esok.\". On success processing is queued and the batch becomes `processing`; the response lists the stored files.",
         "parameters": [
           {
             "schema": {

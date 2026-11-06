@@ -19,5 +19,6 @@ import { AmaranService } from './amaran.service'
   imports: [AuditModule, ClassesModule, KirkpatrickModule, PracticeModule, SchoolsModule, ThrottleModule, UsersModule],
   controllers: [AmaranController],
   providers: [AmaranService, XsQueries],
+  exports: [AmaranService],
 })
 export class AmaranModule {}

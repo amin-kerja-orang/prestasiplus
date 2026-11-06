@@ -61,7 +61,7 @@ export interface Answer<T = unknown> {
 export async function send<T = unknown>(
   runtime: MockRuntime,
   userId: number | null,
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'DELETE',
   url: string,
   body?: unknown,
 ): Promise<Answer<T>> {
