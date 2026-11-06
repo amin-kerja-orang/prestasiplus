@@ -182,13 +182,15 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
   async function fileReport(page: Page, opts: { unplaced?: boolean } = {}): Promise<Report> {
     const used = new Set((await reports(page)).map((r) => r.questionId))
     const rows = ((await (await page.request.get('/api/structured-questions')).json()) as { data: { id: string }[] }).data
-    let free: { id: string } | undefined
-    for (const row of rows) {
-      if (used.has(String(row.id))) continue
-      if (opts.unplaced === true && !(await isUnplaced(page, String(row.id)))) continue
-      free = row
-      break
-    }
+    const open = rows.filter((row) => !used.has(String(row.id)))
+    // Unplaced questions are scarce on the CI stack (the K2 fixture places its 15 in a Terbit paper): only the Arkib test needs one,
+    // so every other test takes a placed question first and falls back to an unplaced one only when no placed one is left.
+    const unplaced = new Set<string>()
+    for (const row of open) if (await isUnplaced(page, String(row.id))) unplaced.add(String(row.id))
+    const free: { id: string } | undefined =
+      opts.unplaced === true
+        ? open.find((row) => unplaced.has(String(row.id)))
+        : (open.find((row) => !unplaced.has(String(row.id))) ?? open[0])
     // A hard failure on purpose: a skip here would hide the row-action coverage once the seeded pool runs out. A pupil may
     // report only a question shown to them, so a test cannot make its own.
     expect(free, 'no structured question without a report is left on this stack').toBeDefined()
