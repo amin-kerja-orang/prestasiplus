@@ -179,6 +179,8 @@ export const EnvSchema = z.object({
   OCR_LANG_DIR: z.string().trim().optional(),
   OCR_WORKERS: z.coerce.number().int().min(1).max(16).optional(),
   OCR_PAGE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  /** Wall-clock limit of one intake batch in processing (S1-T04, code OCR_BATCH_TIMEOUT). Default 900000 (15 min). */
+  OCR_BATCH_TIMEOUT_MS: z.coerce.number().int().min(60_000).max(7_200_000).optional(),
   OCR_INSPECT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
   OCR_MAX_PAGES: z.coerce.number().int().min(1).max(2000).optional(),
   OCR_MIN_TEXT_CHARS: z.coerce.number().int().min(0).max(10_000).optional(),

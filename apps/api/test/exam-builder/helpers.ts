@@ -26,7 +26,7 @@ import { BijakBuilderPorts, type BuilderQuestionSource, ExamBuilderModule, Quest
 import { PocBuilderQuestionSource } from '../support/poc/builder-source'
 import { plugPocBuilder, plugPocPapers } from '../support/poc/plug'
 import { questionsSeed } from '../../prisma/seed/questions'
-import { createTestDatabase, type TestDatabase } from '../support/db'
+import { createTestDatabase, stubPlacedQuestions, type TestDatabase } from '../support/db'
 
 export const DEMO_PASSWORD = 'Demo1234'
 export const START = '2026-10-19T09:00:00+08:00'
@@ -111,6 +111,7 @@ export function poolFromBuilderSource(source: BuilderQuestionSource): BijakPoolS
 export async function bootBuilderApp(opts: BootOptions = {}): Promise<BuilderTestApp> {
   const db = await createTestDatabase()
   await runSeeds(opts.realBank ? [identitySeed, curriculumSeed, questionsSeed, examSeed] : [identitySeed, curriculumSeed, examSeed], { prisma: db.prisma })
+  if (!opts.realBank) await stubPlacedQuestions(db)
   Object.assign(process.env, {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

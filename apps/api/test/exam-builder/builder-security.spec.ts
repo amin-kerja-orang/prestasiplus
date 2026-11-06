@@ -34,7 +34,7 @@ describe('paper builder security (AC6)', () => {
     t = await bootBuilderApp({ builderSource: bank, papersSource: bank, pool: 'builder-source' })
     await serveSeededBlueprints(t.db)
     admin = await loginAs(t, ACCOUNTS.admin)
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     paperId = envelopeOf(BijakBuilderPaperCreateResultSchema).parse(res.body).data.id
   })
   afterAll(async () => {
@@ -88,7 +88,7 @@ describe('paper builder security (AC6)', () => {
 
   it('unknown keys in a body are refused (strict contract schemas)', async () => {
     expectError(await admin.put(`/api/admin/papers/${paperId}`, { title: 'X', status: 'terbit' }), 'VALIDATION_ERROR', 422)
-    expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, status: 'published' }), 'VALIDATION_ERROR', 422)
+    expectError(await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2, status: 'published' }), 'VALIDATION_ERROR', 422)
   })
 })
 
@@ -148,8 +148,8 @@ describe('rate limit', () => {
   })
 
   it('the 3rd write in a minute is 429 RATE_LIMITED with Retry-After; reads are not limited', async () => {
-    for (let i = 0; i < 2; i++) expect((await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).status).toBe(201)
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    for (let i = 0; i < 2; i++) expect((await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })).status).toBe(201)
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     const err = expectError(res, 'RATE_LIMITED', 429)
     expect(err.retryAfter).toBeGreaterThan(0)
     expect(Number(res.headers['retry-after'])).toBe(err.retryAfter)

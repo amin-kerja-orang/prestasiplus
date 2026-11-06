@@ -168,6 +168,7 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.getByTestId('intake-kertas').selectOption('2')
       await page.getByTestId('intake-source').fill(`Sekolah Contoh ${token}`)
       await page.getByTestId('intake-copyright').selectOption('sendiri')
+      await page.getByTestId('intake-declaration').click()
       await page.getByTestId('intake-file').setInputFiles({
         name: `kertas-${token}.pdf`,
         mimeType: 'application/pdf',
@@ -220,8 +221,11 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       /* ---- the gate passes: "Hantar untuk semakan" goes to the queue */
       await page.getByTestId('submit-review').click()
       await expect(page.getByTestId('submitted-note')).toBeVisible()
+      await expect(page.getByTestId('goto-queue')).toHaveText('Buka Import & Semakan')
       await page.getByTestId('goto-queue').click()
+      await expect(page).toHaveURL(/\/admin\/spm\/soalan\/ekstrak$/)
 
+      await page.goto('/admin/spm/semakan')
       /* ---- the old queue list redirects to the one review queue, the Studio filter (S2-T03) */
       await page.waitForURL(/\/admin\/studio\?status=review$/)
       await expect(page.getByTestId('studio-list-page')).toBeVisible()
