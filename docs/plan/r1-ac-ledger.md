@@ -226,6 +226,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T10 | AC-GUR-42-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts; report-all-modes.spec.ts |
 | S6-T10 | AC-GUR-42-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | report-all-modes.spec.ts; analytics/teacher.spec.ts |
 | S6-T10 | AC-GUR-42-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S3-T07 | AC-PA-32 | CI | Pass | 2026-11-06 | team-dd/S-3 | bijak-papers/generate.spec.ts; bijak-hub-no-jana.test.ts |
+| S3-T07 | AC-MUR-13-29 | CI | Pass | 2026-11-06 | team-dd/S-3 | m06-spm/__tests__/pages/pages.test.ts; spm/hub.spec.ts (six hub entries per FR-MUR-13-1: five cards + Bijak SPM banner, lead ruling) |
 
 ## Sprint 5
 
@@ -245,6 +247,13 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T18 | AC-GUR-44c-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | intake-workflow/diagram-upload.spec.ts |
 | S6-T18 | AC-GUR-44c-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
 | S6-T18 | AC-GUR-44c-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; intake-workflow/diagram-upload.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
+| S6-T17 | AC-GUR-44b-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; questions/guru-structured.spec.ts; StructuredGuruPages.test.ts |
+| S6-T17 | AC-GUR-44b-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; guru-structured-submit.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; structured-guru.test.ts; structured-submit-mock.test.ts; berstruktur/pages.test.ts |
+| S6-T17 | AC-GUR-44b-8 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts; structured-submit-mock.test.ts |
+| S6-T17 | AC-GUR-44b-9 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts |
 
 ## Sprint 6
 

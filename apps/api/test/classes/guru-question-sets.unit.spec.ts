@@ -90,7 +90,7 @@ function build(opts: { sessions?: boolean; sessionsAfterCheck?: boolean; stored?
   const prisma = { transaction: <T>(fn: (tx: unknown) => Promise<T>) => fn({}) }
   const service = new GuruQuestionSetsService(
     repo as never,
-    {} as never,
+    { eligibleItems: (rows: { id: string }[]) => Promise.resolve(new Map(rows.map((r) => [r.id, (opts.stored ?? ['1', '2']).filter((q) => eligibleSet.has(q))]))) } as never,
     questions as never,
     classes as never,
     {} as never,
@@ -187,6 +187,9 @@ describe('status and copy', () => {
     await one.service.setStatus(one.actor, '50', { status: 'published' })
     await one.service.setStatus(one.actor, '50', { status: 'draft' })
     expect(one.calls.statuses).toEqual(['published', 'draft'])
+    const archived = build({ classes: ['5'], eligible: [] })
+    await expect(archived.service.setStatus(archived.actor, '50', { status: 'published' })).rejects.toMatchObject({ fields: { questionIds: GURU_SET_MESSAGES.questionsRequired } })
+    await archived.service.setStatus(archived.actor, '50', { status: 'draft' })
     await expect(one.service.setStatus(one.actor, '50', { status: 'scheduled' })).rejects.toMatchObject({ fields: { status: GURU_SET_MESSAGES.statusInvalid } })
   })
   it('copy: a draft titled "{title} (Salinan)", the stored items, the chosen own class only', async () => {

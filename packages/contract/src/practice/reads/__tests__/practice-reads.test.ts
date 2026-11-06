@@ -88,7 +88,8 @@ const historyItem = {
 }
 
 const structuredAttempt = {
-  id: '9001',
+  id: '5f1c0a52-7a55-4e55-9b2b-3f1d3c0b9a11',
+  attemptId: '5f1c0a52-7a55-4e55-9b2b-3f1d3c0b9a11',
   userId: '77',
   structuredQuestionId: '4001',
   scope: null,
@@ -329,6 +330,10 @@ describe('structured questions', () => {
     const without: Record<string, unknown> = { ...structuredAttempt }
     delete without.modelAnswers
     expect(PracticeReadStructuredAttemptResultSchema.safeParse(without).success).toBe(false)
+    // S5-T11: the Bijak attempt id is part of the result.
+    const noAttemptId: Record<string, unknown> = { ...structuredAttempt }
+    delete noAttemptId.attemptId
+    expect(PracticeReadStructuredAttemptResultSchema.safeParse(noAttemptId).success).toBe(false)
   })
 })
 
