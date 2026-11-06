@@ -4,7 +4,14 @@ import { adminMenuFor, flatItems } from '@/shells/nav/admin-nav'
 import { ALESA_NAV_IDS, navFor, USER_NAV } from '@/shells/nav/user-nav'
 import type { Role } from '@/stores/session-types'
 
-import { isAlesaAiOn, isKeluargaAngkatOn, whenAlesaAi, whenKeluargaAngkat } from '../features'
+import {
+  isAlesaAiOn,
+  isCentralReportsOn,
+  isKeluargaAngkatOn,
+  whenAlesaAi,
+  whenCentralReports,
+  whenKeluargaAngkat,
+} from '../features'
 
 /** `VITE_ALESA_AI` (TRACKER D73): every ALESA / Cikgu Alesa AI surface is hidden unless `on`. */
 afterEach(() => {
@@ -86,13 +93,16 @@ describe('isKeluargaAngkatOn / whenKeluargaAngkat', () => {
     expect(whenKeluargaAngkat([1, 2])).toEqual([1, 2])
   })
 
-  it('the menu drops the item and the Killer Features heading once it is empty while off', () => {
+  it('the menu drops the item; the Killer Features heading stays for Laporan Soalan (S5-T06)', () => {
     for (const role of ROLES) {
       const ids = labelsOf(role)
       expect(ids, role).not.toContain('mohon-keluarga-angkat')
     }
     vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
-    expect(navFor('student', 'sidebar').map((e) => e.id)).not.toContain('sec-killer')
+    const sidebar = navFor('student', 'sidebar').map((e) => e.id)
+    expect(sidebar).toContain('sec-killer')
+    expect(sidebar).toContain('laporan-soalan')
+    expect(sidebar).not.toContain('mohon-keluarga-angkat')
     expect(navFor('student', 'drawer').map((e) => e.id)).not.toContain('mohon-keluarga-angkat')
   })
 
@@ -109,5 +119,22 @@ describe('isKeluargaAngkatOn / whenKeluargaAngkat', () => {
     vi.resetModules()
     const on = (await import('@/modules/m21-sponsorship')).manifest.routes
     expect(on.map((r) => r.path)).toContain('/mohon-keluarga-angkat')
+  })
+})
+
+/** `VITE_CENTRAL_REPORTS` (S6-T13, R1-ADM-M-07): the Admin Pusat central report views are hidden unless `on`. */
+describe('isCentralReportsOn / whenCentralReports', () => {
+  it('is off by default and for any value but "on"', () => {
+    expect(isCentralReportsOn()).toBe(false)
+    vi.stubEnv('VITE_CENTRAL_REPORTS', 'off')
+    expect(isCentralReportsOn()).toBe(false)
+    vi.stubEnv('VITE_CENTRAL_REPORTS', 'on')
+    expect(isCentralReportsOn()).toBe(true)
+  })
+
+  it('keeps the routes only when on', () => {
+    expect(whenCentralReports([1, 2])).toEqual([])
+    vi.stubEnv('VITE_CENTRAL_REPORTS', 'on')
+    expect(whenCentralReports([1, 2])).toEqual([1, 2])
   })
 })
