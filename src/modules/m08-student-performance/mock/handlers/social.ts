@@ -17,14 +17,20 @@ import {
   validationError,
   type RouteDef,
 } from '@/mock/define'
-import { formatDateKey } from '@/lib/time'
+import { formatDateKey, toIsoMyt } from '@/lib/time'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { practice } from '@/modules/m05-practice/mock'
-import { streak, tiers, wallet } from '@/modules/m14-gamification/mock'
+import { achievements, streak, tiers, wallet } from '@/modules/m14-gamification/mock'
 
-import type { PublicProfile, Timeline, TimelineCategory, TimelinePost } from '../../api/types'
+import type {
+  PublicProfile,
+  Timeline,
+  TimelineCategory,
+  TimelineEntry,
+  TimelinePost,
+} from '../../api/types'
 import { PRACTICE_MODE_SET } from '../repository/reads'
 import { capPercent, pct, round } from '../repository/rules'
 import { PERIODS, leaderboardOf, rankingOf, type RankingQuery } from '../repository/social'
@@ -56,6 +62,50 @@ const postView = (p: TimelinePostRow): TimelinePost => ({
   photos: p.photos.map((x) => ({ ...x })),
 })
 
+/** The feed shows at most this many rows (the API caps the same way). */
+const FEED_LIMIT = 100
+const KIND_ORDER = { badge: 0, post: 1, session: 2 } as const
+
+/**
+ * The viewer's own feed (R1-MUR-39): finished practice sessions (the M05 history, practice modes only, read the same
+ * way as the public profile), unlocked badges and own posts, merged newest first (ties: kind, then id).
+ */
+function feedOf(viewerId: number): TimelineEntry[] {
+  const sessions = practice
+    .history(viewerId)
+    .filter((s) => PRACTICE_MODE_SET.has(s.mode) && s.total > 0 && s.completedAtMs > 0)
+    .slice(0, FEED_LIMIT)
+    .map((s): TimelineEntry => ({
+      kind: 'session',
+      id: `s:${s.id}`,
+      at: toIsoMyt(s.completedAtMs),
+      subjectName: s.subjectId === null ? '' : (curriculum.subject(s.subjectId)?.name ?? ''),
+      correct: s.correct,
+      answered: s.total,
+      accuracy: Math.round((s.correct / s.total) * 100),
+    }))
+  const badges = achievements
+    .forUser(viewerId)
+    .items.filter((a) => a.unlocked && a.unlockedAt !== null)
+    .map((a): TimelineEntry => ({ kind: 'badge', id: `b:${String(a.id)}`, at: toIsoMyt(a.unlockedAt as string), name: a.name, icon: a.icon }))
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, FEED_LIMIT)
+  const posts = timelineRepo
+    .forUser(viewerId)
+    .map(postView)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id)
+    .slice(0, FEED_LIMIT)
+    .map((post): TimelineEntry => ({ kind: 'post', id: post.id, at: toIsoMyt(post.createdAt), post }))
+  return [...sessions, ...badges, ...posts]
+    .sort(
+      (a, b) =>
+        Date.parse(b.at) - Date.parse(a.at) ||
+        KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
+        (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0),
+    )
+    .slice(0, FEED_LIMIT)
+}
+
 const asList = (v: unknown): unknown[] => (Array.isArray(v) ? v : v === undefined ? [] : [v])
 const isFile = (v: unknown): v is Blob => typeof Blob !== 'undefined' && v instanceof Blob
 
@@ -81,9 +131,23 @@ export const socialRoutes: RouteDef[] = [
     const body: Timeline = {
       profileUrl: `/pelajar/${String(viewer.id)}`,
       posts: timelineRepo.forUser(viewer.id).map(postView),
+      entries: feedOf(viewer.id),
     }
     return ok(body)
   }),
+
+  route(
+    'DELETE',
+    '/api/timeline/:id',
+    [requireAuth()],
+    (req) => {
+      const viewer = viewerOf(req)
+      // Another user's post and an unknown id are the same answer.
+      if (!timelineRepo.removeOwn(viewer.id, req.params.id as number)) return notFound()
+      return ok({ deleted: 1 })
+    },
+    { params: { id: int() } },
+  ),
 
   route('POST', '/api/timeline', [requireAuth()], async (req, ctx) => {
     const viewer = viewerOf(req)
