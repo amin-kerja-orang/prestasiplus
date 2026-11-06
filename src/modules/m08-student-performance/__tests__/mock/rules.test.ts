@@ -114,15 +114,19 @@ describe('accuracy (BR-M08-05, DV-07)', () => {
 })
 
 describe('difficulty and discrimination (BR-M08-18, 19)', () => {
-  it('Indeks = 1 − p with the cut-offs 0.30 / 0.70', () => {
+  it('Indeks = 1 − p is display only; Tahap is on the whole-number % betul', () => {
     expect(difficultyIndex(6, 8)).toBe(0.25)
     expect(difficultyIndex(2, 8)).toBe(0.75)
     expect(difficultyIndex(1, 8)).toBe(0.88)
-    expect(difficultyLevel(0.25)).toBe('Mudah')
-    expect(difficultyLevel(0.3)).toBe('Mudah')
-    expect(difficultyLevel(0.5)).toBe('Sederhana')
-    expect(difficultyLevel(0.7)).toBe('Sederhana')
-    expect(difficultyLevel(0.75)).toBe('Sukar')
+    // Tahap on the whole-number % betul: > 70 Mudah, 40–70 Sederhana, < 40 Sukar (S10-T03 change 2).
+    expect(difficultyLevel(75)).toBe('Mudah')
+    expect(difficultyLevel(70.4)).toBe('Sederhana')
+    expect(difficultyLevel(70.5)).toBe('Mudah')
+    expect(difficultyLevel(70)).toBe('Sederhana')
+    expect(difficultyLevel(40)).toBe('Sederhana')
+    expect(difficultyLevel(39.5)).toBe('Sederhana')
+    expect(difficultyLevel(39.4)).toBe('Sukar')
+    expect(difficultyLevel(12.5)).toBe('Sukar')
   })
 
   it('discrimination status bands', () => {

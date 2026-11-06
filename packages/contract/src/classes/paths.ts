@@ -10,9 +10,6 @@ import {
   ClassEnrolmentSchema,
   ClassEnrolmentSourceSchema,
   ClassEnrolmentStatusSchema,
-  ClassJoinRequestSchema,
-  ClassJoinResponseSchema,
-  ClassJoinResultSchema,
   ClassJoinedClassSchema,
   ClassQrDataSchema,
   ClassStudentAddRequestSchema,
@@ -62,9 +59,6 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   TeacherGalleryQuery: TeacherGalleryQuerySchema,
   TeacherGallery: TeacherGallerySchema,
   ClassJoinedClass: ClassJoinedClassSchema,
-  ClassJoinRequest: ClassJoinRequestSchema,
-  ClassJoinResult: ClassJoinResultSchema,
-  ClassJoinResponse: ClassJoinResponseSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({

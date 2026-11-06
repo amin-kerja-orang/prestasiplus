@@ -50,6 +50,8 @@ export const AUDIT_ACTIONS = {
   STIMULUS_GROUP_MEMBER_MOVED: 'stimulus.group.member_moved',
   STIMULUS_GROUP_MERGED: 'stimulus.group.merged',
   QUESTIONS_REGROUPED: 'questions.regrouped',
+  QUESTIONS_REGROUP_UNDONE: 'questions.regroup_undone',
+  QUESTION_FLAG_DISMISSED: 'question.flag_dismissed',
   BIJAK_PAPER_CREATED: 'bijak.paper.created',
   BIJAK_PAPER_UPDATED: 'bijak.paper.updated',
   BIJAK_PAPER_DELETED: 'bijak.paper.deleted',
@@ -89,6 +91,7 @@ export const AUDIT_ACTIONS = {
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
   KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
+  KIRKPATRICK_INTERVENTION_REVIEWED: 'kirkpatrick.intervention.reviewed',
   // BE-19 headcount (M08): no pupil data in the detail.
   HEADCOUNT_CONFIG_RESET: 'headcount.config.reset',
   HEADCOUNT_CONFIG_DELETED: 'headcount.config.deleted',

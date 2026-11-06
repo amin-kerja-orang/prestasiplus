@@ -102,7 +102,6 @@ import {
 import {
   MAX_SECONDS_PER_QUESTION,
   MESSAGES,
-  MISSION_COINS_PER_CORRECT,
   sessionCoins,
   POINTS_PER_CORRECT,
   PracticeError,
@@ -453,7 +452,6 @@ export const practiceRepo = defineRepository({
     /** BR-31 step 6 (M14), or the BR-09 rate when M14 is not booted. */
     const gamify = (s: SessionRow, correct: number, completedAt: string): GamificationResult => {
       const pointsEarned = POINTS_PER_CORRECT * correct
-      const coinsPerCorrect = s.mode === 'mission' ? MISSION_COINS_PER_CORRECT : undefined
       const result = seams().onSessionCompleted({
         userId: s.userId,
         sessionId: s.id,
@@ -463,7 +461,6 @@ export const practiceRepo = defineRepository({
         timeSpent: s.timeSpent,
         completedAt,
         pointsEarned,
-        ...(coinsPerCorrect !== undefined ? { coinsPerCorrect } : {}),
       })
       return (
         result ?? {
