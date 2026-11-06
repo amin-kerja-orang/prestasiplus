@@ -192,6 +192,13 @@ const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.quest
  * draft does not hide a question pupils still get.
  */
 const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
+/**
+ * The teacher list's "is a structured item" test: the version type is `structured`, OR the question came from a teacher's structured
+ * submission (the guru intake item linked to it by Terima carries `payload.guru.questionType = 'structured'`). A one-part submission is an
+ * `essay` in the bank (`versionTypeOf`), so only its origin marker tells it apart from any other essay. Same marker as `GURU_STRUCTURED_ITEM`.
+ */
+const GURU_STRUCTURED_ORIGIN_SQL = Prisma.sql`EXISTS (SELECT 1 FROM intake_items gi WHERE gi.question_id = q.id AND gi.payload->'guru'->>'v' = '1' AND gi.payload->'guru'->>'questionType' = 'structured')`
+const GURU_STRUCTURED_TYPE_SQL = Prisma.sql`(v.type = 'structured' OR ${GURU_STRUCTURED_ORIGIN_SQL})`
 const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
   Prisma.sql`q.is_active`,
   Prisma.sql`v.status = 'approved'`,
@@ -684,7 +691,8 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
+    // The admin list keeps the strict type; only the teacher (`served`) list widens it to the guru origin marker.
+    const conds: Prisma.Sql[] = [filter.served === true ? GURU_STRUCTURED_TYPE_SQL : Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
     if (filter.served === true) conds.push(...GURU_STRUCTURED_SERVED_SQL)
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
@@ -720,7 +728,7 @@ export class QuestionsRepository {
   async isStructuredServed(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id = ${key}`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
   }
@@ -732,7 +740,7 @@ export class QuestionsRepository {
       return key === null ? [] : [key]
     })
     if (keys.length === 0) return new Set()
-    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return new Set(rows.map((r) => idToString(r.id)))
   }
