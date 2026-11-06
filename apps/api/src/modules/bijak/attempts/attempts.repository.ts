@@ -51,7 +51,8 @@ export interface PhotoRow {
 
 export interface NewAttempt {
   userId: string
-  paperId: string
+  /** Null for a structured attempt (S5-T11: no paper, the composition is frozen from the question). */
+  paperId: string | null
   paperKind: BijakAttemptKind
   title: string
   subject: string
@@ -150,7 +151,7 @@ export class AttemptsRepository {
     const r = await this.prisma.client.examAttempt.create({
       data: {
         userId: idFromString(input.userId),
-        paperId: idFromString(input.paperId),
+        paperId: input.paperId === null ? null : idFromString(input.paperId),
         paperKind: input.paperKind,
         title: input.title,
         subject: input.subject,

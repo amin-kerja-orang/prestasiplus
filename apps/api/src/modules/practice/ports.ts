@@ -9,6 +9,7 @@
  * - `PracticeAssignmentSource` BE-18 (missions, remedial tests, question sets). Default: `SET_NOT_READY`.
  * - `PracticeRamalanSource`    BE-41 (`SpmTrackingService.ramalanQuestionIds`). Default: empty set.
  * - `PracticeRewardPort`       BE-11 / BE-23 (wallet credit, quest rewards, streak). Default: no-op.
+ * - `PracticeStructuredAttemptPort` S5-T11 (a Soalan Berstruktur attempt is a Bijak attempt, graded by the one grader). Default: refuses.
  *
  * Every port method that runs inside the submit transaction receives that transaction (`tx`), and the
  * ambient one (`PrismaService.transaction`) is active too, so a real adapter that writes joins the same unit
@@ -271,6 +272,49 @@ export class NoReward implements PracticeRewardPort {
   }
 }
 
+/* ------------------------------------------------------------ S5-T11: structured attempt (Bijak) */
+
+/**
+ * One submit of a Soalan Berstruktur set (API-PRAC-10), single shot: the Bijak attempts module creates the attempt, freezes it, grades it with
+ * its one grader and closes it. A leaf is addressed by its label path (`(a).(i)`: the labels of its ancestors and itself joined with `.`, the
+ * sub-question id without its `<questionId>-` prefix), so practice never sees a Bijak part id.
+ */
+export interface PracticeStructuredAttemptInput {
+  userId: string
+  /** Mod Pelajar: the attempt is stamped `is_test`. */
+  isTest: boolean
+  questionId: string
+  /** The live version practice served; the attempt is graded from exactly this version. */
+  versionNo: number
+  /** Start of the stem; null or blank = the Bijak side names the attempt itself (never an empty title). */
+  title: string | null
+  /** Curriculum subject code and name (the attempt row keeps a snapshot; Bijak stores its own code); null when the bank row has no resolvable subject. */
+  subject: string | null
+  subjectName: string | null
+  scope: 'spm' | null
+  track: 'bahasa' | null
+  answers: { path: string; text: string }[]
+}
+
+export interface PracticeStructuredAttemptOutput {
+  /** `exam_attempts.id` (a uuid). */
+  attemptId: string
+  submittedAt: Date
+  /** One entry per answerable leaf. A part the grader cannot mark (`pending`) is 0 awarded until the pupil marks it herself. */
+  parts: { path: string; awarded: number; max: number; pending: boolean }[]
+}
+
+export interface PracticeStructuredAttemptPort {
+  submit(input: PracticeStructuredAttemptInput): Promise<PracticeStructuredAttemptOutput>
+}
+
+/** Until the Bijak integration binds the real port (a test app without it): a wiring error, never a silent placeholder mark. */
+export class NoStructuredAttempts implements PracticeStructuredAttemptPort {
+  async submit(): Promise<PracticeStructuredAttemptOutput> {
+    throw new Error('PracticePorts: the structured attempt port is not set')
+  }
+}
+
 /* -------------------------------------------------------------------------------- the holder */
 
 @Injectable()
@@ -279,6 +323,7 @@ export class PracticePorts {
   private assignmentSource: PracticeAssignmentSource = new NoAssignments()
   private ramalanSource: PracticeRamalanSource = new NoRamalan()
   private rewardPort: PracticeRewardPort = new NoReward()
+  private structuredPort: PracticeStructuredAttemptPort = new NoStructuredAttempts()
   private readonly set = new Set<string>()
 
   get questions(): PracticeQuestionSource {
@@ -292,6 +337,9 @@ export class PracticePorts {
   }
   get reward(): PracticeRewardPort {
     return this.rewardPort
+  }
+  get structuredAttempts(): PracticeStructuredAttemptPort {
+    return this.structuredPort
   }
 
   private once(name: string): void {
@@ -318,5 +366,10 @@ export class PracticePorts {
   provideReward(port: PracticeRewardPort): void {
     this.once('reward port')
     this.rewardPort = port
+  }
+  /** S5-T11: Bijak attempts (`BijakIntegrationModule`). */
+  provideStructuredAttempts(port: PracticeStructuredAttemptPort): void {
+    this.once('structured attempt port')
+    this.structuredPort = port
   }
 }
