@@ -27,6 +27,7 @@ import type {
 import type {
   IntakeBatch,
   IntakeExtraction,
+  IntakeKertas,
   IntakeMeta,
   IntakeIssue,
   IntakeQuestion,
@@ -182,8 +183,8 @@ export function batchFromWire(b: WireBatchDetail, pages: PageText[], extras: Bat
     id: b.id,
     subject: b.subject,
     // Wire kertas/year are null only for a teacher submission; IntakeBatch keeps the 0 "blank"
-    // sentinel (cast: 0 is outside 1 | 2) and the render sites omit it.
-    kertas: (b.kertas ?? 0) as 1 | 2,
+    // sentinel (cast: 0 is outside 1..4) and the render sites omit it.
+    kertas: (b.kertas ?? 0) as IntakeKertas,
     year: b.year ?? 0,
     paperType: paperTypeFromWire(b.paperType),
     source: b.source,

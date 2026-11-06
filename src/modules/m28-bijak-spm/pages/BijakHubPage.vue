@@ -1,54 +1,50 @@
 <script setup lang="ts">
 /**
- * Bijak SPM hub (US-01..US-03, US-18 link): two starts. "Kertas Pilihan" lists curated, real-format
- * papers by subject and kertas with the caller's status; "Jana Kertas" builds a fresh paper from the
- * question pool under the Kontrak Blueprint, or shows which section is short.
+ * Bijak SPM hub (US-01, US-02, US-18 link): one list. "Kertas Pilihan" lists curated, real-format
+ * papers by subject and kertas with the caller's status. There is no tab strip and no pupil paper
+ * generation (FR-MUR-13-20); any `tab` query is ignored.
  */
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
+import { DsCluster, DsEmptyState, DsHeroCard, DsLoadError, DsPage, DsText } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
-import type { BijakGenerateShortage } from '@pp/contract'
-
-import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
-import type { PaperSummary, SubjectCode } from '../domain/types'
+import type { PaperSummary } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
 import { bijakServer } from '../server/client'
 
 useLearnerTheme()
-const route = useRoute()
 const router = useRouter()
 const user = useBijakUser()
 const server = bijakServer()
-
-const SUBJECTS = server.subjects()
-const tab = ref<'pilihan' | 'jana'>(route.query.tab === 'jana' ? 'jana' : 'pilihan')
-const tabs = [
-  { label: 'Kertas Pilihan', value: 'pilihan' },
-  { label: 'Jana Kertas', value: 'jana' },
-]
 
 const {
   data: papers,
   error: papersError,
   reload: reloadPapers,
 } = useApi(() => server.listPapers(user.value))
-const { data: contracts } = useApi(() => server.listContracts())
 
 /* ----------------------------------------------------------------- Kertas Pilihan */
 const subjectFilter = ref<string>('semua')
-const kertasFilter = ref<'semua' | '1' | '2'>('semua')
-const subjectItems = computed(() => [
-  { label: 'Semua subjek', value: 'semua' },
-  ...SUBJECTS.map((s) => ({ label: s.name, value: s.code })),
-])
-const kertasItems = [
+const kertasFilter = ref<string>('semua')
+/** 46 section 4.2 row 1: only the subjects of listed (Terbit) papers, name asc. */
+const subjectItems = computed(() => {
+  const names = new Map((papers.value ?? []).map((p) => [p.subject, p.subjectName]))
+  return [
+    { label: 'Semua subjek', value: 'semua' },
+    ...[...names]
+      .sort(([, a], [, b]) => a.localeCompare(b, 'ms'))
+      .map(([value, label]) => ({ label, value })),
+  ]
+})
+/** OPT-KERTAS: the kertas numbers the listed papers hold, ascending. */
+const kertasItems = computed(() => [
   { label: 'Semua kertas', value: 'semua' },
-  { label: 'Kertas 1', value: '1' },
-  { label: 'Kertas 2', value: '2' },
-]
+  ...[...new Set((papers.value ?? []).map((p) => p.kertas))]
+    .sort((a, b) => a - b)
+    .map((k) => ({ label: `Kertas ${k}`, value: String(k) })),
+])
 
 const filtered = computed(() =>
   (papers.value ?? []).filter(
@@ -63,8 +59,16 @@ const grouped = computed(() => {
     if (!map.has(p.subject)) map.set(p.subject, { name: p.subjectName, papers: [] })
     map.get(p.subject)!.papers.push(p)
   }
-  return [...map.entries()].map(([code, v]) => ({ code, ...v }))
+  // FR-MUR-13-5: groups by paper count, most first; equal counts by name.
+  return [...map.entries()]
+    .map(([code, v]) => ({ code, ...v, setLine: setLine(v.papers) }))
+    .sort((a, b) => b.papers.length - a.papers.length || a.name.localeCompare(b.name, 'ms'))
 })
+/** "{n} set · {kod}". [PROPOSED] {kod} is the SPM subject code, the paper code before the slash (1449/2 -> 1449; lead ruling DD3, provisional). No code: "{n} set" alone. */
+function setLine(list: readonly PaperSummary[]): string {
+  const kod = [...new Set(list.map((p) => (p.code ?? '').split('/')[0]!.trim()).filter(Boolean))].join(', ')
+  return kod ? `${list.length} set · ${kod}` : `${list.length} set`
+}
 /** Hero: the sitting in progress ("Sambung kertas"), else the next paper to start ("Mula kertas"). */
 const heroPaper = computed(() => {
   const all = papers.value ?? []
@@ -81,59 +85,6 @@ function actionText(p: PaperSummary): string {
 }
 function open(p: PaperSummary): void {
   void router.push({ name: 'm28.bijak.cover', params: { paperId: p.id } })
-}
-
-/* -------------------------------------------------------------------- Jana Kertas */
-const janaSubject = ref<SubjectCode>('MAT')
-const janaKertas = ref<'1' | '2'>('1')
-const generating = ref(false)
-const shortages = ref<BijakGenerateShortage[]>([])
-/** S1-e: network/other failure or 503 GENERATE_LIMIT; both offer "Cuba Semula". */
-const generateError = ref('')
-
-const contract = computed(() =>
-  contracts.value?.find(
-    (c) => c.subject === janaSubject.value && String(c.kertas) === janaKertas.value,
-  ),
-)
-/** BJS-01: the server decides (student: Disahkan only; Admin Pusat in Mod Pelajar: Spec too). */
-/** Fresh key per shortage result so the alert remounts and takes focus again on every retry. */
-const shortageKey = ref(0)
-watch([janaSubject, janaKertas], () => {
-  shortages.value = []
-  generateError.value = ''
-})
-const usable = computed(() => !!contract.value?.canGenerate)
-/** AC-39.6: only the Admin Pusat tester can reach a Spec contract; students never see a status. */
-const isSpec = computed(() => usable.value && contract.value?.source === 'Spec')
-const janaSubjectItems = computed(() => SUBJECTS.map((s) => ({ label: s.name, value: s.code })))
-const janaKertasItems = [
-  { label: 'Kertas 1', value: '1' },
-  { label: 'Kertas 2', value: '2' },
-]
-
-async function generate(): Promise<void> {
-  if (!usable.value || generating.value) return
-  generating.value = true
-  shortages.value = []
-  generateError.value = ''
-  try {
-    const out = await server.generatePaper(user.value, janaSubject.value, Number(janaKertas.value))
-    if (out.ok) {
-      await router.push({ name: 'm28.bijak.cover', params: { paperId: out.paperId } })
-    } else if (out.reason === 'shortage') {
-      shortages.value = out.shortages
-      shortageKey.value += 1
-    } else if (out.reason === 'limit') {
-      generateError.value = 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
-    } else {
-      generateError.value = 'Belum ada kontrak untuk subjek dan kertas ini'
-    }
-  } catch {
-    generateError.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
-  } finally {
-    generating.value = false
-  }
 }
 </script>
 
@@ -174,11 +125,8 @@ async function generate(): Promise<void> {
       @cta="open(heroPaper)"
     />
 
-    <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" data-testid="bijak-tabs" />
-
     <!-- Kertas Pilihan -->
     <section
-      v-if="tab === 'pilihan'"
       class="flex flex-col gap-4"
       aria-labelledby="h-pilihan"
       data-testid="tab-pilihan"
@@ -228,16 +176,18 @@ async function generate(): Promise<void> {
           class="flex flex-col gap-3"
           :aria-label="g.name"
         >
-          <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
+          <DsCluster align="baseline" gap="xs">
+            <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
+            <DsText variant="caption" tabular data-testid="group-sets">{{ g.setLine }}</DsText>
+          </DsCluster>
           <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 flex-col gap-2">
                 <h4 class="text-body text-highlighted">{{ p.title }}</h4>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2" data-testid="paper-chips">
                   <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.durationMin }} minit</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.year }}</UBadge>
+                  <UBadge color="neutral" variant="subtle">{{ p.durationMin }} min</UBadge>
                   <UBadge
                     :color="
                       p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'
@@ -253,103 +203,6 @@ async function generate(): Promise<void> {
           </UCard>
         </section>
       </template>
-    </section>
-
-    <!-- Jana Kertas -->
-    <section
-      v-else
-      class="flex flex-col gap-4"
-      aria-labelledby="h-jana"
-      :aria-busy="generating"
-      data-testid="tab-jana"
-    >
-      <h2 id="h-jana" class="text-heading text-highlighted">Jana Kertas</h2>
-      <p class="text-body text-toned">
-        Pilih subjek dan kertas. Kertas baharu dibina daripada bank soalan mengikut struktur kertas
-        sebenar; soalan yang berkongsi rajah sentiasa kekal bersama.
-      </p>
-      <div class="grid gap-3 sm:grid-cols-2">
-        <UFormField label="Subjek">
-          <USelect
-            v-model="janaSubject"
-            :items="janaSubjectItems"
-            :disabled="generating"
-            class="w-full"
-            data-testid="jana-subject"
-          />
-        </UFormField>
-        <UFormField label="Kertas">
-          <USelect
-            v-model="janaKertas"
-            :items="janaKertasItems"
-            :disabled="generating"
-            class="w-full"
-            data-testid="jana-kertas"
-          />
-        </UFormField>
-      </div>
-
-      <UCard v-if="usable && contract" data-testid="contract">
-        <div class="flex flex-col gap-2">
-          <p class="text-label text-highlighted">
-            {{ contract.subjectName }} Kertas {{ contract.kertas }} · {{ contract.code }} ·
-            {{ contract.durationMin }} minit
-          </p>
-          <ul class="flex flex-col gap-1 text-body text-default">
-            <li v-for="s in contract.sections" :key="s.label">
-              {{ s.label }}: {{ s.take }} soalan
-            </li>
-          </ul>
-          <template v-if="isSpec">
-            <div>
-              <UBadge color="warning" variant="subtle" data-testid="spec-badge"
-                >Spec - ujian sahaja</UBadge
-              >
-            </div>
-            <p class="text-caption text-muted" data-testid="spec-note">
-              Data ujian: tidak dikira dalam analitik, kedudukan atau ganjaran.
-            </p>
-          </template>
-        </div>
-      </UCard>
-      <UAlert
-        v-if="contracts && !usable"
-        id="jana-reason"
-        color="info"
-        variant="soft"
-        icon="i-ph-info"
-        description="Belum ada kontrak untuk subjek dan kertas ini"
-        role="status"
-        class="max-w-prose"
-        data-testid="no-contract"
-      />
-
-      <UButton
-        size="lg"
-        icon="i-ph-magic-wand"
-        :loading="generating"
-        :aria-disabled="!usable || undefined"
-        :aria-describedby="contracts && !usable ? 'jana-reason' : undefined"
-        class="min-h-11 w-full justify-center sm:w-auto sm:self-start"
-        data-testid="generate"
-        @click="generate"
-        >{{ generating ? 'Menjana...' : 'Jana Kertas' }}</UButton
-      >
-      <p v-if="generating" class="text-caption text-muted" role="status" data-testid="generating">
-        Menyusun kertas mengikut kontrak...
-      </p>
-
-      <GenerateShortageAlert v-if="shortages.length" :key="shortageKey" :shortages="shortages" />
-      <div v-if="generateError" class="flex max-w-prose flex-col gap-2" data-testid="generate-error">
-        <UAlert color="error" variant="soft" :title="generateError" role="alert" />
-        <UButton
-          color="neutral"
-          class="min-h-11 w-full justify-center sm:w-auto sm:self-start"
-          data-testid="generate-retry"
-          @click="generate"
-          >Cuba Semula</UButton
-        >
-      </div>
     </section>
   </DsPage>
 </template>

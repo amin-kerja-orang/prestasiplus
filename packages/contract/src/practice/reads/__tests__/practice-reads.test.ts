@@ -22,6 +22,8 @@ import {
   PracticeReadSpmTargetsSchema,
   PracticeReadStructuredAttemptRequestSchema,
   PracticeReadStructuredAttemptResultSchema,
+  PracticeReadStructuredCardSchema,
+  PracticeReadStructuredListQuerySchema,
   PracticeReadStructuredDetailSchema,
   PracticeReadStructuredListResponseSchema,
   PracticeReadSubjectConfigSchema,
@@ -67,7 +69,7 @@ const dashboard = {
   subjects: [subject],
   stats: { totalQuestions: 140, activeSubjects: 1, activeLevels: 4, approvedQuestions: 120 },
   levelPills: [{ code: 'D1', name: 'Darjah 1', stage: 'primary', count: 30 }],
-  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1' }],
+  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1', figureThumbUrl: null }],
   difficultyChart: [1, 2, 3, 4, 5].map((level) => ({ level, count: level })),
   subjectStats: [{ id: '3', name: 'Matematik', icon: null, color: '#2563eb', bankCount: 140, avgDifficulty: 2.41, usedCount: 0 }],
 }
@@ -112,6 +114,18 @@ describe('dashboard', () => {
       }).success,
     ).toBe(false)
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, greetingPeriod: 'Subuh' }).success).toBe(false)
+  })
+  it('"Soalan Terkini" (FR-MUR-2-8): text up to 140 characters + "…", a nullable figure URL, no answer key', () => {
+    const withRow = (row: Record<string, unknown>) =>
+      PracticeReadDashboardSchema.safeParse({ ...dashboard, recentQuestions: [{ ...dashboard.recentQuestions[0], ...row }] }).success
+    expect(withRow({ text: `${'x'.repeat(140)}…` })).toBe(true)
+    expect(withRow({ text: 'x'.repeat(142) })).toBe(false)
+    expect(withRow({ figureThumbUrl: '/api/files/AbCdEfGhIjKlMnOpQrStUv' })).toBe(true)
+    expect(withRow({ figureThumbUrl: null })).toBe(true)
+    expect(withRow({ figureThumbUrl: undefined })).toBe(false) // required, nullable
+    expect(withRow({ figureThumbUrl: 7 })).toBe(false)
+    expect(withRow({ correctAnswer: 'A' })).toBe(false) // strict: no answer key on the wire
+    expect(withRow({ options: [] })).toBe(false)
   })
   it('accuracyPct: null with no answers, one decimal at most, 0..100', () => {
     for (const ok of [null, 0, 75, 66.7, 100]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: ok }).success).toBe(true)
@@ -263,15 +277,24 @@ describe('progress, history, corrections, mastery', () => {
 describe('structured questions', () => {
   const card = {
     id: '4001', subjectId: '1', subjectName: 'Bahasa Melayu', kbatLevel: 4, estimatedMinutes: 10, isTrial: false,
-    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10,
+    preview: 'Baca petikan...', topic: null, author: 'Guru Pakar', school: null, subQuestionCount: 3, levelName: 'Tingkatan 5', parts: 2, marks: 10, bestScore: null,
   }
   it('accepts a list page with scope, track and subjectOptions', () => {
     expect(
       PracticeReadStructuredListResponseSchema.safeParse({
         data: [card],
-        meta: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }] },
+        meta: { page: 1, pageSize: 12, totalItems: 1, totalPages: 1, from: 1, to: 1, scope: 'spm', track: 'bahasa', subjectOptions: [{ id: '1', name: 'Bahasa Melayu' }], pendingSchemeCount: 0 },
       }).success,
     ).toBe(true)
+  })
+  it('bestScore is an {awarded, max} pair or null; the list query caps q at 100 characters (S5-T11)', () => {
+    const ok = (bestScore: unknown) => PracticeReadStructuredCardSchema.safeParse({ ...card, bestScore }).success
+    expect(ok(null)).toBe(true)
+    expect(ok({ awarded: 3, max: 5 })).toBe(true)
+    expect(ok({ awarded: -1, max: 5 })).toBe(false)
+    expect(ok(undefined)).toBe(false)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(100), markable: '1' }).success).toBe(true)
+    expect(PracticeReadStructuredListQuerySchema.safeParse({ q: 'a'.repeat(101) }).success).toBe(false)
   })
   it('rejects a list meta with an unknown scope', () => {
     expect(

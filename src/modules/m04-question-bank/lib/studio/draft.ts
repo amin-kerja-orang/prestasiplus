@@ -40,7 +40,7 @@ export interface LeafDraft {
   numeric: { value: string; tolerance: string; unit: string }
 }
 
-export type Kertas = '' | '1' | '2' | '3'
+export type Kertas = '' | '1' | '2' | '3' | '4'
 /** V2 Langkah 4 "Kesukaran": Mudah, Sederhana, Sukar. The wire holds 1 to 5. */
 export const KESUKARAN = [
   { value: 1, label: 'Mudah' },
@@ -387,7 +387,7 @@ export function hydrate(q: WireQuestion): Hydrated {
   const draft: StudioDraft = {
     subjectId: q.subjectId ?? '',
     educationLevelId: q.educationLevelId ?? '',
-    kertas: q.kertas === '1' || q.kertas === '2' || q.kertas === '3' ? q.kertas : '',
+    kertas: q.kertas === '1' || q.kertas === '2' || q.kertas === '3' || q.kertas === '4' ? q.kertas : '',
     numberLabel: q.numberLabel ?? '',
     stem: q.questionText,
     stemImageToken: q.questionImage,

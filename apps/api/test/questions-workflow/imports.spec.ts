@@ -1,10 +1,10 @@
 import {
   QUESTION_IMPORT_ERROR_CSV_FILENAME,
   QUESTION_IMPORT_ERROR_CSV_HEADER,
+  QUESTION_IMPORT_CODE_HEADER,
   QUESTION_IMPORT_GURU_HEADER,
   QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
-  QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
@@ -13,9 +13,23 @@ import {
   QuestionImportRunSchema,
   listEnvelopeOf,
 } from '@pp/contract'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { createServer as createHttpsServer, type Server as HttpsServer } from 'node:https'
+import { createServer as createTcpServer, type Server as TcpServer } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { crc32, deflateRawSync, deflateSync } from 'node:zlib'
+
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { ApiError } from '../../src/common/errors/api-error'
+import { FILE_STORAGE, type FileStorage } from '../../src/modules/files'
 import { StimuliService } from '../../src/modules/questions'
+import { QuestionWorkflowService } from '../../src/modules/questions/workflow'
+import { QuestionImportsService, classifyImage, fetchImageBytes, hostHeaderFor, isBlockedIp } from '../../src/modules/questions/workflow/imports/imports.service'
+import { buildCsv, parseCsv, readZipFiles } from '../../src/modules/questions/workflow/imports/csv'
+import { IMPORT_ZIP } from '../../src/modules/questions/workflow/imports/imports.constants'
 
 import { expectCsrfInvalid, expectError, bootWorkflowApp, loginAll, parseData, count, type Client, type WorkflowTestApp } from './helpers'
 import { curriculumIds, fixture, uploadClient, type UploadClient } from './imports-support'
@@ -47,7 +61,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
   })
 
   describe('templates', () => {
-    it('admin template: file name, content type, CRLF bytes equal to the mock template, header equals the contract header', async () => {
+    it('admin template: file name, content type, CRLF bytes equal to the mock template, header equals the code header of Q-11', async () => {
       const res = await c.admin.get('/api/question-imports/template')
       expect(res.status).toBe(200)
       expect(res.headers['content-type']).toContain(QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE)
@@ -55,7 +69,7 @@ describe('question imports (BE-10 AC 5, 9)', () => {
       expect(res.headers['cache-control']).toBe('no-store')
       const text = res.text
       expect(text).toBe(QUESTION_IMPORT_TEMPLATE_CSV)
-      expect(text.split('\r\n')[0]).toBe(QUESTION_IMPORT_HEADER.join(','))
+      expect(text.split('\r\n')[0]).toBe(QUESTION_IMPORT_CODE_HEADER.join(','))
       expect(text.endsWith('\r\n')).toBe(true)
     })
 
@@ -544,10 +558,10 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       ])
     })
 
-    it('[CI] a URL stimulus_image is a row error and nothing of the group is created', async () => {
+    it('[CI] a non-https stimulus_image URL is a row error and nothing of the group is created', async () => {
       const groups = await groupCount()
       const res = await importAdmin(
-        [`${GHEAD},stimulus_image,stimulus_alt`, `${gline({ question_key: 'IM1', ...FIRST, stimulus_kind: 'image' })},https://contoh.test/a.png,Gambar`].join('\n'),
+        [`${GHEAD},stimulus_image,stimulus_alt`, `${gline({ question_key: 'IM1', ...FIRST, stimulus_kind: 'image' })},http://contoh.test/a.png,Gambar`].join('\n'),
       )
       expect(res.status).toBe(201)
       expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(['Baris 2: Imej rangsangan tidak dapat dimuat turun.'])
@@ -621,6 +635,713 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       const res = await admin.upload('/api/question-imports', { name: 'lama.csv', body: fixture('import-mixed.csv', { subject: tag.subjectId, level: tag.levelId }) })
       const csv = await c.admin.get(`/api/question-imports/${res.body.data.id as string}/errors`)
       expect(csv.text.split('\r\n').slice(0, 3)).toEqual(['baris,question_key,medan,kod_ralat,mesej', '3,,,,Baris tidak lengkap.', '4,,,,Jawapan betul mesti A, B, C atau D.'.replace(/^(.*,)(Jawapan.*)$/, '$1"$2"')])
+    })
+  })
+})
+
+/* ---------------------------------------------------------------------------------------- S1-T05 part 3: the image ZIP and the template */
+
+interface ZipEntry { name: string; data: Buffer; store?: boolean; declared?: number }
+
+/** A ZIP built by hand so a test can lie in the headers (`declared` is the uncompressed size the headers claim). */
+function buildZip(entries: ZipEntry[]): Buffer {
+  const locals: Buffer[] = []
+  const central: Buffer[] = []
+  let offset = 0
+  for (const e of entries) {
+    const name = Buffer.from(e.name, 'utf8')
+    const body = e.store ? e.data : deflateRawSync(e.data)
+    const declared = e.declared ?? e.data.length
+    const lh = Buffer.alloc(30)
+    lh.writeUInt32LE(0x04034b50, 0)
+    lh.writeUInt16LE(20, 4)
+    lh.writeUInt16LE(0x800, 6)
+    lh.writeUInt16LE(e.store ? 0 : 8, 8)
+    lh.writeUInt32LE(crc32(e.data), 14)
+    lh.writeUInt32LE(body.length, 18)
+    lh.writeUInt32LE(declared, 22)
+    lh.writeUInt16LE(name.length, 26)
+    locals.push(lh, name, body)
+    const ch = Buffer.alloc(46)
+    ch.writeUInt32LE(0x02014b50, 0)
+    ch.writeUInt16LE(20, 4)
+    ch.writeUInt16LE(20, 6)
+    ch.writeUInt16LE(0x800, 8)
+    ch.writeUInt16LE(e.store ? 0 : 8, 10)
+    ch.writeUInt32LE(crc32(e.data), 16)
+    ch.writeUInt32LE(body.length, 20)
+    ch.writeUInt32LE(declared, 24)
+    ch.writeUInt16LE(name.length, 28)
+    ch.writeUInt32LE(offset, 42)
+    central.push(ch, name)
+    offset += 30 + name.length + body.length
+  }
+  const cd = Buffer.concat(central)
+  const end = Buffer.alloc(22)
+  end.writeUInt32LE(0x06054b50, 0)
+  end.writeUInt16LE(entries.length, 8)
+  end.writeUInt16LE(entries.length, 10)
+  end.writeUInt32LE(cd.length, 12)
+  end.writeUInt32LE(offset, 16)
+  return Buffer.concat([...locals, cd, end])
+}
+
+const pngChunk = (type: string, data: Buffer): Buffer => {
+  const head = Buffer.alloc(8)
+  head.writeUInt32BE(data.length, 0)
+  head.write(type, 4, 'latin1')
+  const crc = Buffer.alloc(4)
+  crc.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])), 0)
+  return Buffer.concat([head, data, crc])
+}
+/** A real 1 x 1 PNG (passes the same content inspection as POST /files). */
+function tinyPng(): Buffer {
+  const ihdr = Buffer.alloc(13)
+  ihdr.writeUInt32BE(1, 0)
+  ihdr.writeUInt32BE(1, 4)
+  ihdr.set([8, 6, 0, 0, 0], 8)
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), pngChunk('IHDR', ihdr), pngChunk('IDAT', deflateSync(Buffer.from([0, 255, 0, 0, 255]))), pngChunk('IEND', Buffer.alloc(0))])
+}
+
+describe('S1-T05 part 3: image ZIP reader (bomb and slip limits)', () => {
+  const limits = { maxEntries: IMPORT_ZIP.maxEntries, maxTotalBytes: IMPORT_ZIP.maxTotalBytes, maxEntryBytes: IMPORT_ZIP.maxEntryBytes }
+  it('[CI] the limits are 20 MB ZIP, 100 entries, 40 MB unpacked, 2 MB an image', () => {
+    expect(IMPORT_ZIP).toEqual({ maxBytes: 20 * 1024 * 1024, maxEntries: 100, maxTotalBytes: 40 * 1024 * 1024, maxEntryBytes: 2 * 1024 * 1024 })
+  })
+
+  it('[CI] zip slip: an entry named ../x.png, /abs.png, a drive path or with a NUL is dropped; a safe entry is keyed by its base name', () => {
+    const png = tinyPng()
+    const files = readZipFiles(
+      buildZip([
+        { name: '../x.png', data: png },
+        { name: '/abs.png', data: png },
+        { name: 'C:\\win.png', data: png },
+        { name: 'a/../../y.png', data: png },
+        { name: 'bad\0.png', data: png },
+        { name: 'folder/sub/ok.png', data: png },
+      ]),
+      limits,
+    )
+    expect([...files.keys()]).toEqual(['ok.png'])
+    expect(files.get('ok.png')?.equals(png)).toBe(true)
+  })
+
+  it('[CI] zip bomb by count: more than 100 entries is refused before anything is inflated', () => {
+    expect(() => readZipFiles(buildZip(Array.from({ length: 101 }, (_, i) => ({ name: `f${String(i)}.png`, data: Buffer.from('a') }))), limits)).toThrow()
+    expect(readZipFiles(buildZip(Array.from({ length: 100 }, (_, i) => ({ name: `f${String(i)}.png`, data: Buffer.from('a') }))), limits).size).toBe(100)
+  })
+
+  it('[CI] zip bomb by declared size: a central directory that claims more than 40 MB unpacked is refused', () => {
+    const zip = buildZip([
+      { name: 'a.png', data: Buffer.from('a'), declared: 30 * 1024 * 1024 },
+      { name: 'b.png', data: Buffer.from('b'), declared: 30 * 1024 * 1024 },
+    ])
+    expect(() => readZipFiles(zip, limits)).toThrow()
+  })
+
+  it('[CI] lying sizes: an entry that inflates past 2 MB is unusable although its header says 10 bytes, and the running total is capped too', () => {
+    const lying = readZipFiles(buildZip([{ name: 'big.png', data: Buffer.alloc(5 * 1024 * 1024), declared: 10 }]), limits)
+    expect(lying.get('big.png')).toBeNull()
+    const many = Array.from({ length: 30 }, (_, i) => ({ name: `z${String(i)}.png`, data: Buffer.alloc(1_900_000), declared: 10 }))
+    expect(() => readZipFiles(buildZip(many), limits)).toThrow()
+  })
+
+  it('[CI] a file that is not a ZIP is refused', () => {
+    expect(() => readZipFiles(Buffer.from('bukan zip sama sekali, hanya teks biasa'), limits)).toThrow()
+  })
+})
+
+describe('S1-T05 part 3: stimulus images from the ZIP and the template (real bank)', () => {
+  let t: WorkflowTestApp
+  let c: Record<'admin' | 'teacher' | 'otherTeacher' | 'schoolAdmin' | 'student', Client>
+  let admin: UploadClient
+  let tag: { subjectId: string; levelId: string; subject: string; tingkatan: string; unit: string; sp: string }
+  const png = tinyPng()
+  const GHEAD =
+    'question_key,type,prompt_ms,option_a,option_b,option_c,option_d,correct,marks,subject_code,tingkatan,kertas,unit_code,sp_kod,tp,aras,difficulty,group_key,stimulus_label,stimulus_kind,stimulus_image,stimulus_alt'
+  const imageRow = (image: string, key = 'ZP1'): string => {
+    const v: Record<string, string> = {
+      question_key: key, type: 'mcq', prompt_ms: 'Apakah yang ditunjukkan oleh rajah itu?', option_a: 'A1', option_b: 'B1', option_c: 'C1', option_d: 'D1', correct: 'B', marks: '1',
+      subject_code: tag.subject, tingkatan: tag.tingkatan, kertas: '1', unit_code: tag.unit, sp_kod: tag.sp, tp: '3', aras: 'mengaplikasi', difficulty: '3',
+      group_key: `G-${key}`, stimulus_label: 'Rajah 1', stimulus_kind: 'image', stimulus_image: image, stimulus_alt: 'Gambar sebuah pasar',
+    }
+    return GHEAD.split(',').map((col) => v[col] ?? '').join(',')
+  }
+  const post = (rows: string[], zip: Buffer | null, name = 'imej.csv') =>
+    admin.upload('/api/question-imports', { name, body: [GHEAD, ...rows].join('\n') }, {}, true, zip === null ? undefined : { name: 'imej.zip', body: zip })
+  const counts = async () => ({
+    groups: await count(t.db, 'select count(*) as n from stimulus_groups'),
+    files: await count(t.db, `select count(*) as n from files where purpose = 'question_image'`),
+  })
+
+  beforeAll(async () => {
+    t = await bootWorkflowApp({ bank: 'real', env: { THROTTLE_QUESTIONS_WRITE_PER_MINUTE: '100000' } })
+    c = await loginAll(t)
+    admin = await uploadClient(t, 'admin')
+    const [row] = await t.db.query<{ subject_id: string; education_level_id: string; unit_node_id: string; sp: string }>(
+      `select v.subject_id::text, v.education_level_id::text, v.unit_node_id::text,
+              (select node_id::text from question_version_sp_nodes where question_version_id = v.id limit 1) as sp
+         from question_versions v where v.number_label = 'SEED-MCQ-MATH-T4'`,
+    )
+    const [names] = await t.db.query<{ subject: string; level: string; unit: string; sp: string }>(
+      `select (select code from subjects where id = $1::bigint) as subject, (select code from education_levels where id = $2::bigint) as level,
+              (select code from curriculum_nodes where id = $3::bigint) as unit, (select code from curriculum_nodes where id = $4::bigint) as sp`,
+      [row!.subject_id, row!.education_level_id, row!.unit_node_id, row!.sp],
+    )
+    tag = { subjectId: row!.subject_id, levelId: row!.education_level_id, subject: names!.subject, tingkatan: names!.level.replace(/^T/, ''), unit: names!.unit, sp: names!.sp }
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('[CI] happy path: the image named by stimulus_image is read from the ZIP, stored as a question_image file and linked to the group stimulus', async () => {
+    const before = await counts()
+    const res = await post([imageRow('rajah.png')], buildZip([{ name: 'gambar/rajah.png', data: png }, { name: 'lain.png', data: png }]))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+    const after = await counts()
+    expect(after.groups).toBe(before.groups + 1)
+    expect(after.files).toBe(before.files + 1)
+    const [s] = await t.db.query<{ kind: string; alt_text: string; purpose: string; mime: string; owner: string }>(
+      `select s.kind, s.alt_text, f.purpose, f.mime, f.owner_user_id::text as owner from stimuli s join files f on f.id = s.asset_file_id order by s.id desc limit 1`,
+    )
+    expect(s).toEqual({ kind: 'image', alt_text: 'Gambar sebuah pasar', purpose: 'question_image', mime: 'image/png', owner: admin.userId })
+  })
+
+  it('[CI] an image missing from the ZIP, and a CSV with no ZIP at all, give the Q-11 "cannot be downloaded" text and create nothing', async () => {
+    const before = await counts()
+    for (const zip of [buildZip([{ name: 'lain.png', data: png }]), null]) {
+      const res = await post([imageRow('tiada.png')], zip)
+      expect(res.status).toBe(201)
+      expect(res.body.data.failures).toEqual([{ row: 2, message: 'Baris 2: Imej rangsangan tidak dapat dimuat turun.', questionKey: 'ZP1', field: 'stimulus_image', code: 'STIMULUS_IMAGE_UNAVAILABLE' }])
+    }
+    expect(await counts()).toEqual(before)
+  })
+
+  it('[CI] a non-https stimulus_image URL stays a row error even when a ZIP is sent', async () => {
+    const res = await post([imageRow('http://contoh.test/rajah.png')], buildZip([{ name: 'rajah.png', data: png }]))
+    expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(['Baris 2: Imej rangsangan tidak dapat dimuat turun.'])
+  })
+
+  it('[CI] a non-image disguised as .png, and an image over 2 MB, give the 11-02 text; nothing is stored', async () => {
+    const before = await counts()
+    const big = Buffer.concat([png, Buffer.alloc(IMPORT_ZIP.maxEntryBytes + 10)])
+    const res = await post(
+      [imageRow('palsu.png', 'ZP2'), imageRow('besar.png', 'ZP3'), imageRow('dalam.png', 'ZP4')],
+      buildZip([{ name: 'palsu.png', data: Buffer.from('ini hanyalah teks, bukan gambar') }, { name: 'besar.png', data: big }, { name: 'dalam.png', data: Buffer.alloc(5 * 1024 * 1024), }]),
+    )
+    expect(res.status).toBe(201)
+    expect(res.body.data.failures.map((f: { message: string; code: string }) => [f.message, f.code])).toEqual([
+      ['Baris 2: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+      ['Baris 3: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+      ['Baris 4: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+    ])
+    expect(await counts()).toEqual(before)
+  })
+
+  it('[CI] zip slip over HTTP: a ../x.png or /abs.png entry is never found by the name x.png or abs.png', async () => {
+    const res = await post([imageRow('x.png', 'ZP5'), imageRow('abs.png', 'ZP6')], buildZip([{ name: '../x.png', data: png }, { name: '/abs.png', data: png }]))
+    expect(res.body.data.failures.map((f: { code: string }) => f.code)).toEqual(['STIMULUS_IMAGE_UNAVAILABLE', 'STIMULUS_IMAGE_UNAVAILABLE'])
+  })
+
+  it('[CI] 422 on zipFile for a non-ZIP, an entry-count bomb, a declared-size bomb and lying headers; no run is stored', async () => {
+    const runsBefore = await count(t.db, 'select count(*) as n from question_imports')
+    const text = Buffer.from('ini bukan fail zip')
+    const bombs = [
+      text,
+      buildZip(Array.from({ length: IMPORT_ZIP.maxEntries + 1 }, (_, i) => ({ name: `f${String(i)}.png`, data: Buffer.from('a') }))),
+      buildZip([{ name: 'a.png', data: Buffer.from('a'), declared: 30 * 1024 * 1024 }, { name: 'b.png', data: Buffer.from('b'), declared: 30 * 1024 * 1024 }]),
+      buildZip(Array.from({ length: 30 }, (_, i) => ({ name: `z${String(i)}.png`, data: Buffer.alloc(1_900_000), declared: 10 }))),
+    ]
+    for (const zip of bombs) {
+      const res = await post([imageRow('rajah.png')], zip)
+      expect(res.status).toBe(422)
+      expect(res.body.error.fields.zipFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    }
+    expect(await count(t.db, 'select count(*) as n from question_imports')).toBe(runsBefore)
+  })
+
+  it('[CI] a group rolled back at execute time (after its image was stored) leaves no file row and no stored object, and the other questions stay', async () => {
+    const storage = t.app.get<FileStorage>(FILE_STORAGE)
+    const keys: string[] = []
+    const put = storage.put.bind(storage)
+    storage.put = async (key, bytes) => {
+      keys.push(key)
+      return put(key, bytes)
+    }
+    const svc = t.app.get(StimuliService)
+    const original = svc.createGroup.bind(svc)
+    svc.createGroup = async () => {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { stimulusIds: 'Ralat ujian kumpulan.' } })
+    }
+    const before = await counts()
+    const questions = await count(t.db, 'select count(*) as n from questions')
+    try {
+      const single = imageRow('rajah.png', 'RB0').replace(/,G-RB0,.*$/, ',,,,,')
+      const res = await post([single, imageRow('rajah.png', 'RB1')], buildZip([{ name: 'rajah.png', data: png }]))
+      expect(res.status, JSON.stringify(res.body)).toBe(201)
+      expect(res.body.status).toBe('Import selesai: 1 soalan diimport, 1 gagal.')
+      expect(res.body.data.failures).toEqual([{ row: 3, message: 'Baris 3: Ralat ujian kumpulan.', questionKey: 'G-RB1', field: 'group_key', code: 'GROUP_REJECTED' }])
+    } finally {
+      svc.createGroup = original
+      storage.put = put
+    }
+    expect(keys).toHaveLength(1)
+    expect(await storage.exists(keys[0] as string)).toBe(false)
+    expect(await counts()).toEqual(before)
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions + 1)
+  })
+
+  it('[CI] file names match without regard to case: Rajah1.PNG in the CSV finds rajah1.png in the ZIP', async () => {
+    const res = await post([imageRow('Rajah1.PNG', 'CS1')], buildZip([{ name: 'gambar/rajah1.png', data: png }]))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+    const res2 = await post([imageRow('rajah2.png', 'CS2')], buildZip([{ name: 'RAJAH2.PNG', data: png }]))
+    expect(res2.body.status).toBe('Import selesai: 1 soalan diimport, 0 gagal.')
+  })
+
+  it('[CI] two ZIP entries with the same base name (also differing only in case) make the name unusable: every row naming it gets an error, no first-wins', async () => {
+    const before = await counts()
+    const res = await post(
+      [imageRow('x.png', 'DU1'), imageRow('Y.png', 'DU2')],
+      buildZip([{ name: 'a/x.png', data: png }, { name: 'b/x.png', data: png }, { name: 'y.png', data: png }, { name: 'sub/Y.PNG', data: png }]),
+    )
+    expect(res.status).toBe(201)
+    expect(res.body.data.failures.map((f: { row: number; message: string; code: string }) => [f.row, f.message, f.code])).toEqual([
+      [2, 'Baris 2: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+      [3, 'Baris 3: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+    ])
+    expect(await counts()).toEqual(before)
+    const files = readZipFiles(buildZip([{ name: 'a/x.png', data: png }, { name: 'b/x.png', data: png }]), { maxEntries: 100, maxTotalBytes: 1 << 20, maxEntryBytes: 1 << 20 })
+    expect(files.get('x.png')).toBeNull()
+  })
+
+  it('[CI] an outer failure after images were stored (a group already done) leaves 0 stored objects and 0 file rows and no run', async () => {
+    const storage = t.app.get<FileStorage>(FILE_STORAGE)
+    const keys: string[] = []
+    const put = storage.put.bind(storage)
+    storage.put = async (key, bytes) => {
+      keys.push(key)
+      return put(key, bytes)
+    }
+    const workflow = t.app.get(QuestionWorkflowService)
+    const original = workflow.recordCreation.bind(workflow)
+    let calls = 0
+    workflow.recordCreation = async (...args: Parameters<typeof original>) => {
+      if (++calls === 2) throw new Error('kegagalan luar jangka')
+      return original(...args)
+    }
+    const before = await counts()
+    const runs = await count(t.db, 'select count(*) as n from question_imports')
+    const questions = await count(t.db, 'select count(*) as n from questions')
+    try {
+      const res = await post([imageRow('rajah.png', 'OF1'), imageRow('rajah.png', 'OF2')], buildZip([{ name: 'rajah.png', data: png }]))
+      expect(res.status).toBe(500)
+    } finally {
+      workflow.recordCreation = original
+      storage.put = put
+    }
+    expect(keys).toHaveLength(2)
+    for (const key of keys) expect(await storage.exists(key)).toBe(false)
+    expect(await counts()).toEqual(before)
+    expect(await count(t.db, 'select count(*) as n from question_imports')).toBe(runs)
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(questions)
+  })
+
+  it('[CI] the template has the code header, one MCQ and one group, and imports once its codes are replaced by real ones', async () => {
+    const res = await c.admin.get('/api/question-imports/template')
+    const records = parseCsv(res.text)
+    expect(records[0]?.cells).toEqual([...QUESTION_IMPORT_CODE_HEADER])
+    expect(records).toHaveLength(4)
+    const col = (name: string) => QUESTION_IMPORT_CODE_HEADER.indexOf(name as (typeof QUESTION_IMPORT_CODE_HEADER)[number])
+    const rows = records.map((r, n) => {
+      if (n === 0) return r.cells
+      const cells = [...r.cells]
+      cells[col('subject_code')] = tag.subject
+      cells[col('tingkatan')] = tag.tingkatan
+      cells[col('unit_code')] = tag.unit
+      cells[col('sp_kod')] = tag.sp
+      cells[col('bab_kod')] = ''
+      cells[col('topik_kod')] = ''
+      return cells
+    })
+    const before = await count(t.db, 'select count(*) as n from questions')
+    const out = await admin.upload('/api/question-imports', { name: 'templat.csv', body: buildCsv(rows) })
+    expect(out.status, JSON.stringify(out.body)).toBe(201)
+    expect(out.body.status).toBe('Import selesai: 3 soalan diimport, 0 gagal.')
+    expect(out.body.warnings).toBeUndefined()
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 3)
+  })
+
+  it('[CI] the Guru route still reads the code header and ignores a zipFile part (no ZIP on that route)', async () => {
+    const guru = await uploadClient(t, 'teacher')
+    const res = await guru.upload('/api/guru/questions/import', { name: 'g.csv', body: [GHEAD, imageRow('rajah.png', 'GZ1')].join('\n') }, {}, true, { name: 'imej.zip', body: buildZip([{ name: 'rajah.png', data: png }]) })
+    expect(res.status).toBe(422)
+    // An unexpected part is not a missing file: ERR-REQ-01, never "Sila pilih fail." (that is for an absent csvFile only).
+    expect(res.body.error.fields.csvFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    const missing = await guru.upload('/api/guru/questions/import', null)
+    expect(missing.body.error.fields.csvFile).toBe('Sila pilih fail.')
+  })
+})
+
+
+/* --------------------------------------------------------------------------------- S1-T05 part 4: https image URLs and the fetch guard */
+
+describe('S1-T05 part 4: fetch guard (no network: tables, stubs and a local https server)', () => {
+  it('[CI] isBlockedIp: private, loopback, link-local, CGNAT, metadata, reserved and IPv6 equivalents are blocked; public addresses are not', () => {
+    const blocked = [
+      '0.0.0.0', '0.1.2.3', '10.0.0.1', '10.255.255.255', '172.16.0.1', '172.31.255.255', '192.168.0.1', '192.168.255.255', '127.0.0.1', '127.255.255.254',
+      '169.254.0.1', '169.254.169.254', '100.64.0.1', '100.127.255.255', '224.0.0.1', '255.255.255.255', '192.0.0.1', '198.18.0.1',
+      '::', '::1', 'fc00::1', 'fd12:3456::1', 'fe80::1', 'febf::1', 'ff02::1', '::ffff:127.0.0.1', '::ffff:7f00:1', '::ffff:10.0.0.1', '::ffff:a9fe:a9fe',
+      '::ffff:192.168.1.1', '::7f00:1', '64:ff9b::7f00:1', '64:ff9b:1::1', '64:ff9b:1:ffff:ffff:ffff:ffff:ffff', '2001:0:4136:e378:8000:63bf:3fff:fdd2', '2001::1', '192.88.99.1', '192.88.99.255', '2002:7f00:1::1', 'bukan-ip', '',
+    ]
+    for (const ip of blocked) expect(isBlockedIp(ip), ip).toBe(true)
+    const allowed = ['8.8.8.8', '1.1.1.1', '93.184.216.34', '172.15.255.255', '172.32.0.1', '100.63.255.255', '100.128.0.1', '169.253.0.1', '11.0.0.1', '192.88.98.255', '192.88.100.0', '2001:1::1', '2001:4860:4860::8888', '64:ff9a::1', '2606:4700:4700::1111', '2a00:1450:4009:81f::200e', '::ffff:8.8.8.8', '::ffff:808:808']
+    for (const ip of allowed) expect(isBlockedIp(ip), ip).toBe(false)
+  })
+
+  it('[CI] https only: http, ftp, file, data, javascript, credentials, another port and garbage are refused without any DNS lookup', async () => {
+    let lookups = 0
+    const resolve = async (): Promise<string[]> => {
+      lookups++
+      return ['93.184.216.34']
+    }
+    for (const url of ['http://gambar.contoh.test/a.png', 'ftp://gambar.contoh.test/a.png', 'file:///etc/passwd', 'data:image/png;base64,AAAA', 'javascript:alert(1)', 'https://pengguna:kata@gambar.contoh.test/a.png', 'https://gambar.contoh.test:8443/a.png', 'bukan url', '']) {
+      expect(await fetchImageBytes(url, { resolve }), url).toEqual({ ok: false })
+    }
+    expect(lookups).toBe(0)
+  })
+
+  it('[CI] decimal, octal and hex IP literals and bracketed IPv6 in the URL are judged by their real address and never resolved', async () => {
+    let lookups = 0
+    const resolve = async (): Promise<string[]> => {
+      lookups++
+      return ['93.184.216.34']
+    }
+    for (const url of ['https://2130706433/a.png', 'https://0177.0.0.1/a.png', 'https://0x7f000001/a.png', 'https://0x7f.1/a.png', 'https://127.1/a.png', 'https://[::1]/a.png', 'https://[::ffff:7f00:1]/a.png', 'https://[::ffff:127.0.0.1]/a.png', 'https://169.254.169.254/latest/meta-data/', 'https://2852039166/', 'https://10.0.0.1/a.png', 'https://[fe80::1]/a.png']) {
+      expect(await fetchImageBytes(url, { resolve }), url).toEqual({ ok: false })
+    }
+    expect(lookups).toBe(0)
+  })
+
+  it('[CI] the RESOLVED address is checked, not the host name: a name resolving to a private address, or to a public and a private one, is refused', async () => {
+    for (const answer of [['10.0.0.5'], ['127.0.0.1'], ['169.254.169.254'], ['::1'], ['93.184.216.34', '10.0.0.5'], ['::ffff:192.168.0.1'], []]) {
+      expect(await fetchImageBytes('https://gambar.contoh.test/a.png', { resolve: async () => answer }), answer.join()).toEqual({ ok: false })
+    }
+    expect(await fetchImageBytes('https://gambar.contoh.test/a.png', { resolve: async () => { throw new Error('NXDOMAIN') } })).toEqual({ ok: false })
+  })
+
+  describe('against a local https server (self-signed, a stubbed resolver)', () => {
+    let dir: string
+    let server: HttpsServer
+    let port: number
+    let ca: string
+    const seen: { host: string | undefined; url: string | undefined }[] = []
+    let concurrent = 0
+    let maxConcurrent = 0
+    const png = tinyPng()
+    const opts = (extra: Record<string, unknown> = {}) => ({ resolve: async () => ['127.0.0.1'], isBlocked: () => false, ca, port, ...extra })
+
+    beforeAll(async () => {
+      dir = mkdtempSync(join(tmpdir(), 'pp-url-test-'))
+      execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', join(dir, 'k.pem'), '-out', join(dir, 'c.pem'), '-days', '2', '-subj', '/CN=gambar.contoh.test', '-addext', 'subjectAltName=DNS:gambar.contoh.test'], { stdio: 'ignore' })
+      ca = readFileSync(join(dir, 'c.pem'), 'utf8')
+      server = createHttpsServer({ key: readFileSync(join(dir, 'k.pem')), cert: ca }, (req, res) => {
+        seen.push({ host: req.headers.host, url: req.url })
+        const url = req.url ?? ''
+        if (url.startsWith('/ok')) {
+          concurrent++
+          maxConcurrent = Math.max(maxConcurrent, concurrent)
+          setTimeout(() => {
+            concurrent--
+            res.writeHead(200, { 'content-type': 'text/html' }) // the header is ignored: the bytes decide
+            res.end(png)
+          }, 60)
+        } else if (url.startsWith('/typed-but-text')) {
+          res.writeHead(200, { 'content-type': 'image/png' })
+          res.end('ini teks biasa, bukan gambar')
+        } else if (url.startsWith('/redirect')) {
+          res.writeHead(302, { location: '/ok.png' })
+          res.end()
+        } else if (url.startsWith('/huge')) {
+          res.writeHead(200, { 'content-type': 'image/png' })
+          const chunk = Buffer.alloc(256 * 1024)
+          let sent = 0
+          const pump = (): void => {
+            while (sent < 20 * 1024 * 1024) {
+              sent += chunk.length
+              if (!res.write(chunk)) return void res.once('drain', pump)
+            }
+            res.end()
+          }
+          pump()
+        } else if (url.startsWith('/slow')) {
+          // never answers: the import budget aborts it
+        } else if (url.startsWith('/stall')) {
+          res.writeHead(200, { 'content-type': 'image/png' })
+          res.write(png.subarray(0, 10)) // headers sent, then nothing: the total timeout ends it
+        } else {
+          res.writeHead(404)
+          res.end()
+        }
+      })
+      await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
+      port = (server.address() as { port: number }).port
+    })
+    afterAll(async () => {
+      server.closeAllConnections()
+      await new Promise((r) => server.close(r))
+      rmSync(dir, { recursive: true, force: true })
+    })
+
+    it('[CI] fetches the image through the pinned address (the name is not resolvable by real DNS), sends the host name, resolves once, and ignores the Content-Type', async () => {
+      let lookups = 0
+      const got = await fetchImageBytes('https://gambar.contoh.test/ok.png', opts({ resolve: async () => { lookups++; return ['127.0.0.1'] } }))
+      expect(got.ok && got.bytes.equals(png)).toBe(true)
+      expect(lookups).toBe(1)
+      expect(seen.at(-1)?.host).toBe(`gambar.contoh.test:${String(port)}`)
+      expect(classifyImage(png)).toBe('ok')
+      const text = await fetchImageBytes('https://gambar.contoh.test/typed-but-text', opts())
+      expect(text.ok && classifyImage(text.bytes)).toBe('bad')
+    })
+
+    it('[CI] a certificate that does not verify (no trusted CA) is refused', async () => {
+      expect(await fetchImageBytes('https://gambar.contoh.test/ok.png', opts({ ca: undefined }))).toEqual({ ok: false })
+    })
+
+    it('[CI] no redirect is followed: a 302 is refused and its target is never requested; a 404 is refused', async () => {
+      const before = seen.length
+      expect(await fetchImageBytes('https://gambar.contoh.test/redirect', opts())).toEqual({ ok: false })
+      expect(seen.slice(before).map((r) => r.url)).toEqual(['/redirect'])
+      expect(await fetchImageBytes('https://gambar.contoh.test/tiada', opts())).toEqual({ ok: false })
+    })
+
+    it('[CI] the body is cut off at 2 MB: a 20 MB response is refused and the transfer stops early', async () => {
+      const started = Date.now()
+      expect(await fetchImageBytes('https://gambar.contoh.test/huge', opts())).toEqual({ ok: false })
+      expect(Date.now() - started).toBeLessThan(5000)
+    })
+
+    it('[CI] the connect timeout (5 s) and the total timeout (10 s) end a server that never answers and one that stalls after the headers', async () => {
+      const silent: TcpServer = createTcpServer(() => undefined) // accepts the TCP connection, never completes the TLS handshake
+      await new Promise<void>((r) => silent.listen(0, '127.0.0.1', r))
+      const silentPort = (silent.address() as { port: number }).port
+      const t0 = Date.now()
+      expect(await fetchImageBytes('https://gambar.contoh.test/ok.png', opts({ port: silentPort }))).toEqual({ ok: false })
+      const connectMs = Date.now() - t0
+      expect(connectMs).toBeGreaterThanOrEqual(4500)
+      expect(connectMs).toBeLessThan(8000)
+      silent.close()
+      const t1 = Date.now()
+      expect(await fetchImageBytes('https://gambar.contoh.test/stall', opts())).toEqual({ ok: false })
+      const totalMs = Date.now() - t1
+      expect(totalMs).toBeGreaterThanOrEqual(9500)
+      expect(totalMs).toBeLessThan(13000)
+    }, 40_000)
+
+    it('[CI] hostHeaderFor puts an IPv6 literal in brackets (with the port unless 443) and leaves names and IPv4 literals alone', () => {
+      expect(hostHeaderFor('2001:db8::1', 443)).toBe('[2001:db8::1]')
+      expect(hostHeaderFor('2001:db8::1', 8443)).toBe('[2001:db8::1]:8443')
+      expect(hostHeaderFor('::1', 443)).toBe('[::1]')
+      expect(hostHeaderFor('gambar.contoh.test', 443)).toBeNull()
+      expect(hostHeaderFor('93.184.216.34', 443)).toBeNull()
+    })
+
+    it('[CI] the Host header the server receives for an IPv6 literal URL is bracketed (runs where the host has IPv6 loopback)', async () => {
+      const received: (string | undefined)[] = []
+      const six = createHttpsServer({ key: readFileSync(join(dir, 'k.pem')), cert: ca }, (req, res) => {
+        received.push(req.headers.host)
+        res.writeHead(200)
+        res.end(png)
+      })
+      const listening = await new Promise<boolean>((r) => {
+        six.once('error', () => r(false))
+        six.listen(0, '::1', () => r(true))
+      })
+      if (!listening) return // no IPv6 on this host: the pure header test above covers the logic
+      try {
+        const p6 = (six.address() as { port: number }).port
+        const got = await fetchImageBytes('https://[::1]/x.png', { isBlocked: () => false, ca, port: p6 })
+        // The certificate has no IP SAN for ::1, so verification may refuse it; the header check is on what the server received when it did connect.
+        if (got.ok) expect(received.at(-1)).toBe(`[::1]:${String(p6)}`)
+      } finally {
+        six.closeAllConnections()
+        six.close()
+      }
+    })
+
+    describe('through the import (real bank)', () => {
+      let t: WorkflowTestApp
+      let admin: UploadClient
+      let svc: QuestionImportsService
+      let tag: { subject: string; tingkatan: string; unit: string; sp: string }
+      const GHEAD = 'question_key,type,prompt_ms,option_a,option_b,option_c,option_d,correct,marks,subject_code,tingkatan,kertas,unit_code,sp_kod,tp,aras,difficulty,group_key,stimulus_label,stimulus_kind,stimulus_image,stimulus_alt'
+      const urlRow = (image: string, key: string): string => {
+        const v: Record<string, string> = {
+          question_key: key, type: 'mcq', prompt_ms: 'Apakah yang ditunjukkan oleh rajah itu?', option_a: 'A1', option_b: 'B1', option_c: 'C1', option_d: 'D1', correct: 'B', marks: '1',
+          subject_code: tag.subject, tingkatan: tag.tingkatan, kertas: '1', unit_code: tag.unit, sp_kod: tag.sp, tp: '3', aras: 'mengaplikasi', difficulty: '3',
+          group_key: `G-${key}`, stimulus_label: 'Rajah 1', stimulus_kind: 'image', stimulus_image: image, stimulus_alt: 'Gambar sebuah pasar',
+        }
+        return GHEAD.split(',').map((c) => v[c] ?? '').join(',')
+      }
+      const post = (rows: string[], zip?: Buffer) =>
+        admin.upload('/api/question-imports', { name: 'url.csv', body: [GHEAD, ...rows].join('\n') }, {}, true, zip ? { name: 'imej.zip', body: zip } : undefined)
+      const counts = async () => ({ groups: await count(t.db, 'select count(*) as n from stimulus_groups'), files: await count(t.db, `select count(*) as n from files where purpose = 'question_image'`) })
+
+      beforeAll(async () => {
+        t = await bootWorkflowApp({ bank: 'real', env: { THROTTLE_QUESTIONS_WRITE_PER_MINUTE: '100000' } })
+        admin = await uploadClient(t, 'admin')
+        svc = t.app.get(QuestionImportsService)
+        svc.fetchOptions = opts()
+        const [row] = await t.db.query<{ subject_id: string; education_level_id: string; unit_node_id: string; sp: string }>(
+          `select v.subject_id::text, v.education_level_id::text, v.unit_node_id::text,
+                  (select node_id::text from question_version_sp_nodes where question_version_id = v.id limit 1) as sp
+             from question_versions v where v.number_label = 'SEED-MCQ-MATH-T4'`,
+        )
+        const [n] = await t.db.query<{ subject: string; level: string; unit: string; sp: string }>(
+          `select (select code from subjects where id = $1::bigint) as subject, (select code from education_levels where id = $2::bigint) as level,
+                  (select code from curriculum_nodes where id = $3::bigint) as unit, (select code from curriculum_nodes where id = $4::bigint) as sp`,
+          [row!.subject_id, row!.education_level_id, row!.unit_node_id, row!.sp],
+        )
+        tag = { subject: n!.subject, tingkatan: n!.level.replace(/^T/, ''), unit: n!.unit, sp: n!.sp }
+      })
+      afterAll(async () => {
+        await t.close()
+      })
+
+      it('[CI] an https URL is fetched, stored as a question_image through the same path and linked to the stimulus; a ZIP name in another row still works', async () => {
+        const before = await counts()
+        const res = await post([urlRow('https://gambar.contoh.test/ok.png', 'U1'), urlRow('lokal.png', 'U2')], buildZip([{ name: 'lokal.png', data: png }]))
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
+        const after = await counts()
+        expect(after).toEqual({ groups: before.groups + 2, files: before.files + 2 })
+        const [s] = await t.db.query<{ purpose: string; mime: string }>(`select f.purpose, f.mime from stimuli s join files f on f.id = s.asset_file_id order by s.id asc limit 1 offset (select count(*) from stimuli where asset_file_id is not null) - 2`)
+        expect(s).toEqual({ purpose: 'question_image', mime: 'image/png' })
+      })
+
+      it('[CI] a failed fetch, a redirect, a non-https URL and a blocked address are row errors with the Q-11 text and no detail; a non-image or oversize body has the 11-02 text', async () => {
+        svc.fetchOptions = opts()
+        const res = await post([
+          urlRow('https://gambar.contoh.test/tiada.png', 'F1'),
+          urlRow('https://gambar.contoh.test/redirect', 'F2'),
+          urlRow('http://gambar.contoh.test/ok.png', 'F3'),
+          urlRow('ftp://gambar.contoh.test/ok.png', 'F4'),
+          urlRow('https://gambar.contoh.test/typed-but-text', 'F5'),
+          urlRow('https://gambar.contoh.test/huge', 'F6'),
+        ])
+        expect(res.status).toBe(201)
+        expect(res.body.data.failures.map((f: { row: number; message: string; code: string }) => [f.row, f.message, f.code])).toEqual([
+          [2, 'Baris 2: Imej rangsangan tidak dapat dimuat turun.', 'STIMULUS_IMAGE_UNAVAILABLE'],
+          [3, 'Baris 3: Imej rangsangan tidak dapat dimuat turun.', 'STIMULUS_IMAGE_UNAVAILABLE'],
+          [4, 'Baris 4: Imej rangsangan tidak dapat dimuat turun.', 'STIMULUS_IMAGE_UNAVAILABLE'],
+          [5, 'Baris 5: Imej rangsangan tidak dapat dimuat turun.', 'STIMULUS_IMAGE_UNAVAILABLE'],
+          [6, 'Baris 6: Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.', 'STIMULUS_IMAGE_INVALID'],
+          [7, 'Baris 7: Imej rangsangan tidak dapat dimuat turun.', 'STIMULUS_IMAGE_UNAVAILABLE'],
+        ])
+        expect(JSON.stringify(res.body)).not.toContain('contoh.test')
+        // The default guard (no test seams) refuses the same server: a loopback address is blocked.
+        svc.fetchOptions = {}
+        const blocked = await post([urlRow('https://localhost/ok.png', 'B1'), urlRow('https://127.0.0.1/ok.png', 'B2'), urlRow('https://169.254.169.254/latest/meta-data/', 'B3'), urlRow('https://2130706433/ok.png', 'B4')])
+        expect(blocked.body.data.failures.map((f: { code: string }) => f.code)).toEqual(Array(4).fill('STIMULUS_IMAGE_UNAVAILABLE'))
+        svc.fetchOptions = opts()
+      })
+
+      it('[CI] at most 4 URLs are fetched at once, and a URL used twice is fetched once', async () => {
+        maxConcurrent = 0
+        const before = seen.length
+        const rows = Array.from({ length: 12 }, (_, i) => urlRow(`https://gambar.contoh.test/ok.png?n=${String(i)}`, `C${String(i)}`))
+        rows.push(urlRow('https://gambar.contoh.test/ok.png?n=0', 'C99'))
+        const res = await post(rows)
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(res.body.status).toBe('Import selesai: 13 soalan diimport, 0 gagal.')
+        expect(maxConcurrent).toBeGreaterThan(1)
+        expect(maxConcurrent).toBeLessThanOrEqual(4)
+        expect(seen.length - before).toBe(12)
+      })
+
+      it('[CI] a URL written with surrounding spaces and the same URL without are fetched once', async () => {
+        const before = seen.length
+        const res = await post([urlRow('" https://gambar.contoh.test/ok.png?d=1 "', 'T1'), urlRow('https://gambar.contoh.test/ok.png?d=1', 'T2')])
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 0 gagal.')
+        expect(seen.length - before).toBe(1)
+      })
+
+      it('[CI] the total fetch budget aborts the fetches still running, starts no new one, and the import goes on: finished URLs are imported, the others get the row error, no sockets or objects are left', async () => {
+        svc.fetchOptions = { ...opts(), budgetMs: 300 }
+        const storage = t.app.get<FileStorage>(FILE_STORAGE)
+        const keys: string[] = []
+        const put = storage.put.bind(storage)
+        storage.put = async (key, bytes) => {
+          keys.push(key)
+          return put(key, bytes)
+        }
+        const before = await counts()
+        const sawBefore = seen.length
+        const urls = ['ok.png?b=1', 'ok.png?b=2', ...Array.from({ length: 10 }, (_, i) => `slow?b=${String(i)}`)]
+        const started = Date.now()
+        let res
+        try {
+          res = await post(urls.map((u, i) => urlRow(`https://gambar.contoh.test/${u}`, `BG${String(i)}`)))
+        } finally {
+          storage.put = put
+          svc.fetchOptions = opts()
+        }
+        const elapsed = Date.now() - started
+        expect(res.status, JSON.stringify(res.body)).toBe(201)
+        expect(elapsed).toBeLessThan(4000) // budget 300 ms + the import itself, far below one 10 s fetch timeout
+        expect(res.body.status).toBe('Import selesai: 2 soalan diimport, 10 gagal.')
+        expect(res.body.data.failures.map((f: { message: string }) => f.message)).toEqual(Array.from({ length: 10 }, (_, i) => `Baris ${String(i + 4)}: Imej rangsangan tidak dapat dimuat turun.`))
+        // Only 4 workers were ever busy: the two fast URLs and the first slow ones; the budget stopped the queue (not all 10 slow URLs were requested).
+        expect(seen.length - sawBefore).toBeLessThan(12)
+        // Imported images are stored and linked; nothing else was stored.
+        expect(keys).toHaveLength(2)
+        for (const key of keys) expect(await storage.exists(key)).toBe(true)
+        expect(await counts()).toEqual({ groups: before.groups + 2, files: before.files + 2 })
+        // The aborted sockets are destroyed: the server ends up with no open connection.
+        await new Promise((r) => setTimeout(r, 300))
+        const open = await new Promise<number>((r) => server.getConnections((_e, n) => r(n)))
+        expect(open).toBe(0)
+      })
+
+      it('[CI] more than 100 distinct URLs refuses the whole file with 422 and fetches nothing', async () => {
+        const before = seen.length
+        const res = await post(Array.from({ length: 101 }, (_, i) => urlRow(`https://gambar.contoh.test/ok.png?n=${String(i)}`, `X${String(i)}`)))
+        expect(res.status).toBe(422)
+        expect(res.body.error.fields.csvFile).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+        expect(seen.length).toBe(before)
+        const hundred = await post(Array.from({ length: 100 }, (_, i) => urlRow(`https://gambar.contoh.test/ok.png?n=${String(i)}`, `Y${String(i)}`)))
+        expect(hundred.status).toBe(201)
+      })
+
+      it('[CI] an outer failure after URL images were stored leaves 0 stored objects and 0 file rows (the run-wide cleanup covers fetched images)', async () => {
+        const storage = t.app.get<FileStorage>(FILE_STORAGE)
+        const keys: string[] = []
+        const put = storage.put.bind(storage)
+        storage.put = async (key, bytes) => {
+          keys.push(key)
+          return put(key, bytes)
+        }
+        const workflow = t.app.get(QuestionWorkflowService)
+        const original = workflow.recordCreation.bind(workflow)
+        let calls = 0
+        workflow.recordCreation = async (...args: Parameters<typeof original>) => {
+          if (++calls === 2) throw new Error('kegagalan luar jangka')
+          return original(...args)
+        }
+        const before = await counts()
+        try {
+          const res = await post([urlRow('https://gambar.contoh.test/ok.png', 'OU1'), urlRow('https://gambar.contoh.test/ok.png?x=1', 'OU2')])
+          expect(res.status).toBe(500)
+        } finally {
+          workflow.recordCreation = original
+          storage.put = put
+        }
+        expect(keys).toHaveLength(2)
+        for (const key of keys) expect(await storage.exists(key)).toBe(false)
+        expect(await counts()).toEqual(before)
+      })
     })
   })
 })

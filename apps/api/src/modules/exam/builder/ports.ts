@@ -72,6 +72,12 @@ export interface BuilderCandidateScope {
   kertas: number
 }
 
+/** S3-T02: the source paper of a question, for the Tahun and Negeri filters: `source_papers.year` and `exam_board`. */
+export interface BuilderQuestionOrigin {
+  year: number | null
+  negeri: string | null
+}
+
 export interface BuilderPreview {
   questions: BijakBuilderReviewQuestion[]
   stimuli: Record<string, BijakAttemptStimulus>
@@ -92,6 +98,17 @@ export interface BuilderQuestionSource {
    * store itself so a text search never has to describe the whole candidate set. A source without it is searched by describing the candidates.
    */
   matchText?(ids: readonly string[], needle: string): Promise<Set<string>>
+  /**
+   * Optional (S3-T02). The source paper of the version in force of `ids`; a question without one is absent. A source without it has no Tahun or Negeri data,
+   * so those two filters stay hidden and match nothing.
+   */
+  originsOf?(ids: readonly string[]): Promise<ReadonlyMap<string, BuilderQuestionOrigin>>
+  /**
+   * Optional (S3-T06). Of `refs`, the keys `${id}:${versionNo ?? 0}` of those questions that are `bersekema` at the version shown (the pinned one, else the live
+   * one, else the latest): the version exists and every leaf has an answer key / scheme. The ONE scheme rule of a Kertas Subjektif (list count and Terbit gate).
+   * A source without it has no scheme data, so no question counts as bersekema.
+   */
+  schemeOf?(refs: readonly BuilderQuestionRef[]): Promise<ReadonlySet<string>>
   /** Admin review content (`previewQuestions`): carries the answer key and mark scheme. Unknown ids are left out. */
   review(ids: readonly string[]): Promise<BuilderPreview>
 }

@@ -13,6 +13,10 @@
 
 import { api, isHttpMode, uploadQuestionImage, type ListResult } from '@/api'
 
+import type { RegroupRequest } from '@pp/contract'
+
+import type { RegroupCounts, RegroupWorkRow } from '../lib/question-list'
+
 export type QuestionStatus =
   | 'draft'
   | 'pending_review'
@@ -28,7 +32,8 @@ export type ComplianceStatus = 'verified' | 'pending_mapping' | 'quarantined' | 
 export type SourceType = 'textbook' | 'dskp' | 'trial' | 'marking_scheme' | 'ai_generated'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
-export type QuestionLanguage = 'bm' | 'en'
+/** Wire tokens of `language` (60 API-Q-03); `bm` is an input alias of `ms` on the server and is never read back. */
+export type QuestionLanguage = 'ms' | 'en' | 'ms+en'
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review' | 'publish'
 
 /**
@@ -83,8 +88,8 @@ export interface QuestionRow {
   dskpTagged: boolean
   sourceType: SourceType | null
   sourceFile: string | null
-  /** REQ-C-010: kertas ('1' to '3') and printed number label of the Studio list columns. */
-  kertas: '1' | '2' | '3' | null
+  /** REQ-C-010: kertas ('1' to '4') and printed number label of the Studio list columns. */
+  kertas: '1' | '2' | '3' | '4' | null
   numberLabel: string | null
   /** R1-H-A7: only on an `essay_choice` (esei pilihan) question: its topics. */
   essayTopics?: EssayTopic[]
@@ -146,6 +151,8 @@ export interface Question {
   difficultyLevel: number
   questionType: QuestionType
   questionText: string
+  /** English stem (DM-50); null or absent when none. */
+  questionTextEn?: string | null
   questionImage: string | null
   /** MCQ: 4 strings ("" allowed for C/D from an import); `null` for the other types and PKSK rows. */
   options: string[] | null
@@ -157,7 +164,7 @@ export interface Question {
   modelAnswer: string | null
   explanation: string | null
   /** v2 admin response: the paper kertas, or null. */
-  kertas?: '1' | '2' | '3' | null
+  kertas?: '1' | '2' | '3' | '4' | null
   /**
    * The part tree of a v2 row (`parts`): the "Aras pemikiran" lives on the LEAF (`parts[0].cognitiveLevel`), never at the top
    * (T33). A branch part has `children` and no `mode`.
@@ -237,6 +244,8 @@ export interface QuestionInputBody {
   /** Create only (a saved question keeps its type). */
   questionType?: QuestionType
   questionText: string
+  /** English stem; null or blank clears it, absent keeps it. */
+  questionTextEn?: string | null
   dskpSpId?: number | string | null
   /** Bab (chapter) id; '' or null clears it on edit, absent keeps it. */
   curriculumChapterId?: number | string | null
@@ -256,7 +265,7 @@ export interface QuestionInputBody {
   explanation?: string | null
   language?: QuestionLanguage
   pointsValue?: number | string | null
-  /** Kertas '1' | '2' | '3'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
+  /** Kertas '1' | '2' | '3' | '4'; '' or null = none (clears on edit). Omitted keeps. http mode only. */
   kertas?: string | null
   /** "Aras pemikiran" (T33 six levels); '' or null = none (clears on edit). Omitted keeps. */
   cognitiveLevel?: string | null
@@ -377,6 +386,7 @@ export function toQuestionJson(
       input.curriculumChapterId === null || input.curriculumChapterId === '' ? null : String(input.curriculumChapterId)
   }
   if (input.language !== undefined) body.language = input.language
+  if (input.questionTextEn !== undefined) body.questionTextEn = input.questionTextEn
   if (input.pointsValue !== undefined && input.pointsValue !== null && input.pointsValue !== '') {
     body.pointsValue = Number(input.pointsValue)
   }
@@ -435,6 +445,61 @@ export function fetchQuestionSummary(
     '/api/questions/summary',
     options.signal ? { signal: options.signal } : {},
   )
+}
+
+export interface RegroupWorklistPage {
+  data: RegroupWorkRow[]
+  meta: { totalItems: number; totalPages: number; pageSize: number; page: number; counts: RegroupCounts }
+}
+
+/** API-Q-13 `GET /api/admin/questions/regroup-worklist` (S1-T07 part 2). Blank filters are not sent. */
+export function fetchRegroupWorklist(
+  query: { subjectId?: string; educationLevelId?: string; flag?: string; page?: number },
+  options: { signal?: AbortSignal } = {},
+): Promise<RegroupWorklistPage> {
+  return api.get<RegroupWorklistPage>('/api/admin/questions/regroup-worklist', {
+    query: { subjectId: query.subjectId || null, educationLevelId: query.educationLevelId || null, flag: query.flag || null, page: query.page ?? 1 },
+    raw: true,
+    ...(options.signal ? { signal: options.signal } : {}),
+  })
+}
+
+/** `GET /api/stimuli` (paged, Admin Pusat): the picker of `Lampirkan rangsangan`; only rows in no group can be attached again. */
+export interface StimulusPick {
+  id: string
+  kind: string
+  label: string
+  excerpt: string | null
+  groupCount: number
+}
+export async function listStimuliToAttach(options: { signal?: AbortSignal } = {}): Promise<{ data: StimulusPick[] }> {
+  // The contract has no "ungrouped" filter (subject/level filter by members, which an ungrouped stimulus lacks), so every page is read, in order.
+  const data: StimulusPick[] = []
+  for (let page = 1, pages = 1; page <= pages; page += 1) {
+    const res = await api.get<{ data: StimulusPick[]; meta?: { totalPages?: number } }>('/api/stimuli', {
+      query: { pageSize: 100, page },
+      raw: true,
+      ...(options.signal ? { signal: options.signal } : {}),
+    })
+    data.push(...res.data.filter((s) => s.groupCount === 0))
+    pages = res.meta?.totalPages ?? 1
+  }
+  return { data }
+}
+
+/** API-Q-12 `POST /api/admin/questions/{id}/flags/dismiss` ("Bukan masalah"); 409 when `flag` is not the stored flag. */
+export function dismissQuestionFlag(id: string, flag: string): Promise<{ data: { id: string; flags: string[] } }> {
+  return api.post<{ data: { id: string; flags: string[] } }>(`/api/admin/questions/${id}/flags/dismiss`, { body: { flag }, raw: true })
+}
+
+/** API-Q-24 `POST /api/admin/questions/regroup`: exactly one of `figureQuestionId` / `stimulusId` (see RegroupRequest). */
+export function regroupQuestions(body: RegroupRequest): Promise<{ data: { id: string }; meta: { auditId: string } }> {
+  return api.post<{ data: { id: string }; meta: { auditId: string } }>('/api/admin/questions/regroup', { body, raw: true })
+}
+
+/** API-Q-36 `POST /api/admin/questions/regroup/{auditId}/undo` ("Buat asal"); 409 after a later edit. */
+export function undoRegroup(auditId: string): Promise<{ data: { restored: number } }> {
+  return api.post<{ data: { restored: number } }>(`/api/admin/questions/regroup/${auditId}/undo`, { raw: true })
 }
 
 /** #3 `POST /api/questions` (201; 422 with `fields`). Multipart in mock mode, JSON in http mode. */

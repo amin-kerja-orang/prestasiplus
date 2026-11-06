@@ -107,14 +107,15 @@ export interface RewardSeed {
   consent?: boolean
   category?: string
   validityDays?: number
+  costSen?: number
 }
 
 /** Inserts an own reward row (the seeded Hadiah are all inactive). Returns its id. */
 export async function insertReward(t: ShopTestApp, o: RewardSeed = {}): Promise<string> {
   const rows = await t.db.query<{ id: string }>(
-    `insert into rewards (category, vendor, title, denomination_rm, token_cost, stock_quantity, max_per_month_per_student, is_active, requires_parent_consent, voucher_validity_days, display_order)
-     values ($1, 'Vendor Ujian', $2, 10, $3, $4, $5, $6, $7, $8, 100) returning id::text`,
-    [o.category ?? 'ewallet', o.title ?? 'Baucar Ujian', o.tokenCost ?? 10, o.stock === undefined ? null : o.stock, o.maxPerMonth === undefined ? null : o.maxPerMonth, o.active ?? true, o.consent ?? false, o.validityDays ?? 365],
+    `insert into rewards (category, vendor, title, denomination_rm, token_cost, stock_quantity, max_per_month_per_student, is_active, requires_parent_consent, voucher_validity_days, display_order, cost_value_sen)
+     values ($1, 'Vendor Ujian', $2, 10, $3, $4, $5, $6, $7, $8, 100, $9) returning id::text`,
+    [o.category ?? 'ewallet', o.title ?? 'Baucar Ujian', o.tokenCost ?? 10, o.stock === undefined ? null : o.stock, o.maxPerMonth === undefined ? null : o.maxPerMonth, o.active ?? true, o.consent ?? false, o.validityDays ?? 365, o.costSen ?? 0],
   )
   return rows[0]!.id
 }

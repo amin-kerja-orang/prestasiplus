@@ -20,7 +20,7 @@ async function noScroll(page: Page): Promise<void> {
   await expectNoHorizontalScroll(page)
 }
 
-/** The pane switch is shown below `lg` (1024 px). */
+/** The pane switch is shown below `lg` (1024 px): tabs below 1024, two panes at 1024 and above. */
 const narrow = (page: Page): boolean => (page.viewportSize()?.width ?? 0) < 1024
 
 async function shot(page: Page, name: string): Promise<void> {
@@ -72,8 +72,12 @@ test.describe('Set Builder responsive @bijak', () => {
     const gid = (await group.getAttribute('data-testid'))!.replace('pool-group-', '')
     await group.locator('[data-testid^=pool-add-]').click()
     await expect(page.locator('[data-testid^=pool-add-]').first()).toBeVisible()
+    await expect(page.getByTestId(`unit-group-${gid}`)).toHaveCount(1)
     const single = page.locator('[data-testid^=pool-]:not([data-testid^=pool-group-]):not([data-testid=pool-stimulus]):not([data-testid=pool-reasons])').filter({ has: page.locator('[data-testid^=pool-add-]') }).first()
-    if (await single.count()) await single.locator('[data-testid^=pool-add-]').click()
+    if (await single.count()) {
+      await single.locator('[data-testid^=pool-add-]').click()
+      await expect(page.locator('[data-testid^=builder-section-] [data-testid^=remove-]')).toHaveCount(2)
+    }
 
     if (narrow(page)) await page.getByTestId('builder-pane-set').click()
     const unit = page.getByTestId(`unit-group-${gid}`)
@@ -102,7 +106,66 @@ test.describe('Set Builder responsive @bijak', () => {
     await expect(page.getByTestId('paper-review')).toBeVisible()
     await expect(page.getByTestId('paper-publish')).toBeDisabled()
     expect(new URL(page.url()).pathname).toContain(id)
+    await expect(page.getByRole('heading', { name: 'Semak Kertas Simulasi' })).toBeVisible()
+    await expect(page.getByTestId('paper-edit-in-builder')).toContainText('Sunting di Set Builder')
     await noScroll(page)
     await shot(page, 'semak')
+  })
+
+  test('Jana set fields, a scaled draw, the rule control, the two redirects @bijak', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('admin@demo.test')
+    // FR-ADM-Q15.6: the old list and form land on the one list.
+    await gotoApp('/admin/spm/kertas')
+    await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
+    await gotoApp('/admin/spm/kertas/baharu')
+    await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
+    await expect(page.getByTestId('landing-contract')).toBeVisible()
+
+    await page.getByTestId('gen-subject').selectOption({ label: 'Matematik' })
+    await page.getByTestId('gen-kertas').selectOption({ label: 'Kertas 1' })
+    await expect(page.getByTestId('gen-count')).toHaveValue('10')
+    await expect(page.getByTestId('gen-title')).toHaveValue('Percubaan SPM Matematik Kertas 1 (draf)')
+    await expect(page.getByTestId('gen-years')).toBeVisible()
+    await expect(page.getByTestId('gen-negeri')).toBeVisible()
+    await expect(page.getByTestId('pool-available')).toContainText('soalan tersedia')
+    await noScroll(page)
+    await shot(page, 'landing-jana')
+
+    await page.getByTestId('gen-count').fill('11')
+    await expect(page.getByTestId('generate-form')).toContainText('Bilangan soalan melebihi jumlah kontrak (10).')
+    await expect(page.getByTestId('gen-submit')).toBeDisabled()
+    await page.getByTestId('gen-count').fill('4')
+    await expect(page.getByTestId('gen-scaled')).toBeVisible()
+    await page.getByTestId('gen-title').fill('Set Berskala Ujian')
+    await expect(page.getByTestId('gen-submit')).toBeEnabled()
+    await page.getByTestId('gen-submit').click()
+
+    await expect(page.getByTestId('set-builder-editor')).toBeVisible()
+    await expect(page.getByTestId('builder-fill-0')).toContainText('/ 4 dipilih')
+    await expect(page.getByTestId('section-0-badges')).toContainText('Soalan 4 / 4')
+    await expect(page.getByTestId('budget-check')).toBeVisible()
+    await noScroll(page)
+    await shot(page, 'builder-scaled')
+
+    // The rule control, on a Bahagian that keeps its marks: Pilih N then back.
+    await page.getByTestId('rule-type-0').selectOption('choose', { force: true })
+    await expect(page.getByTestId('section-0-badges')).toContainText('Markah 1 /')
+    await expect(page.getByTestId('rule-n-0')).toBeVisible()
+    await page.getByTestId('rule-n-0').fill('99')
+    await page.getByTestId('rule-n-0').blur()
+    await expect(page.getByTestId('builder-rule-0')).toContainText('Nombor N tidak sah.')
+    await noScroll(page)
+    await shot(page, 'builder-rule')
+    await page.getByTestId('rule-n-0').fill('2')
+    await page.getByTestId('rule-n-0').blur()
+    await expect(page.getByTestId('section-0-badges')).toContainText('Markah 2 /')
+
+    // Tahun and Negeri of the bank: hidden with no data, here the mock has data.
+    if (narrow(page)) await page.getByTestId('builder-pane-bank').click()
+    await expect(page.getByTestId('bank-negeri-toggle')).toBeVisible()
+    await page.getByTestId('bank-negeri-toggle').click()
+    await expect(page.getByTestId('bank-count')).toContainText('dipaparkan')
+    await noScroll(page)
+    await shot(page, 'builder-bank-filters')
   })
 })

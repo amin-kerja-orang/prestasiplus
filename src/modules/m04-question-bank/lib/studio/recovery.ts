@@ -64,7 +64,7 @@ export function parseSnapshot(text: string | null): StudioDraft | null {
   if (!isObj(raw) || raw.v !== VERSION || !isObj(raw.draft) || raw.draft.leaves === undefined || !Array.isArray(raw.draft.leaves)) return null
   const d = raw.draft
   if (!isStr(d.subjectId) || !isStr(d.educationLevelId) || !isStr(d.stem) || !isStr(d.numberLabel) || !isStr(d.chapterId) || typeof d.difficulty !== 'number') return null
-  if (!isNullStr(d.stemImageToken) || !isNullStr(d.unitId) || !isNullStr(d.groupId) || !['', '1', '2', '3'].includes(d.kertas as string)) return null
+  if (!isNullStr(d.stemImageToken) || !isNullStr(d.unitId) || !isNullStr(d.groupId) || !['', '1', '2', '3', '4'].includes(d.kertas as string)) return null
   if (!Array.isArray(d.spIds) || !d.spIds.every(isStr) || d.spIds.length > 3) return null
   const leaves = (d.leaves as unknown[]).map(leafOf)
   if (leaves.some((l) => l === null) || leaves.length > 26) return null
