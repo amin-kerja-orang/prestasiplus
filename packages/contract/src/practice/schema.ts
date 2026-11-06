@@ -68,6 +68,7 @@ export const PRACTICE_ERROR_CODES = [
   'SET_NOT_READY',
   'NO_WRONG_QUESTIONS',
   'ALREADY_COMPLETED',
+  /** Not raised in R1: a question_set has no attempt cap (S5-T11, R7). Kept for legacy clients. */
   'NO_ATTEMPTS_LEFT',
   'ALREADY_SUBMITTED',
 ] as const
