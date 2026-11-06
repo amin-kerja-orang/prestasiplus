@@ -22,9 +22,6 @@ import type {
   BijakAttemptSelfMarkResult,
   BijakAttemptStartResult,
   BijakAttemptSubmitResult,
-  BijakBlueprintContract,
-  BijakGenerateResult,
-  BijakGenerateShortage,
   BijakKuizCheckRequest,
   BijakKuizCheckResult,
   BijakKuizPaperPage,
@@ -53,14 +50,11 @@ import type {
   SavePayload,
   StoredAnswer,
   Subject,
-  SubjectCode,
   SubmitPayload,
 } from '../domain/types'
 import { BijakError } from './errors'
 import type {
   BijakApi,
-  BijakGenerateOutcome,
-  ContractRow,
   ListedPaper,
   PaperSurface,
   SaveResult,
@@ -193,16 +187,6 @@ export function toBijakError(e: unknown): unknown {
   return e
 }
 
-function shortagesOf(e: ApiError): BijakGenerateShortage[] {
-  const body = e.body as { error?: { details?: { shortages?: BijakGenerateShortage[] } } } | null
-  return body?.error?.details?.shortages ?? []
-}
-
-function limitSectionsOf(e: ApiError): { section?: string }[] {
-  const body = e.body as { error?: { details?: { limitSections?: { section?: string }[] } } } | null
-  return body?.error?.details?.limitSections ?? []
-}
-
 /* ------------------------------------------------------------------------------- the client */
 
 export class HttpBijakServer implements BijakApi {
@@ -304,34 +288,6 @@ export class HttpBijakServer implements BijakApi {
 
   getCover(_userId: number, paperId: string): Promise<PaperCover> {
     return this.send<BijakPaperCover>('GET', `/api/bijak/papers/${encodeURIComponent(paperId)}`)
-  }
-
-  listContracts(): Promise<ContractRow[]> {
-    return this.send<BijakBlueprintContract[]>('GET', '/api/bijak/contracts')
-  }
-
-  async generatePaper(
-    _userId: number,
-    subject: SubjectCode,
-    kertas: number,
-  ): Promise<BijakGenerateOutcome> {
-    try {
-      const out = await this.exec<BijakGenerateResult>('POST', '/api/bijak/papers/generate', {
-        subject,
-        kertas,
-      })
-      return { ok: true, paperId: out.paperId }
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 422) {
-        if (e.code === 'NO_BLUEPRINT') return { ok: false, reason: 'no_blueprint' }
-        if (e.code === 'SHORTAGE')
-          return { ok: false, reason: 'shortage', shortages: shortagesOf(e) }
-      }
-      if (e instanceof ApiError && e.status === 503 && e.code === 'GENERATE_LIMIT') {
-        return { ok: false, reason: 'limit', limitSections: limitSectionsOf(e) }
-      }
-      throw toBijakError(e)
-    }
   }
 
   /* ------------------------------------------------------------------------------- attempts */

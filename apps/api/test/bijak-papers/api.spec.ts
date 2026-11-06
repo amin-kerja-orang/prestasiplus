@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
 import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
+import { seedJanaPaper } from '../support/jana-paper'
 import golden from './golden-mock.json'
 import { NOT_SERVING } from '../support/serve-blueprints'
 import { allKeys, bootPapersApp, count, expectError, loginAs, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
@@ -194,16 +195,13 @@ describe('Bijak papers API (BE-15)', () => {
     await setPocMarkBudgets(t.db)
     await serveSeededBlueprints(t.db)
     const id = await idOf('1449/2', 2)
-    const gen = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
-    expect(gen.status).toBe(201)
+    const janaId = await seedJanaPaper(t.db, { userId: student.userId, subject: 'MAT', kertas: 2 })
     const bodies = [
       (await student.get('/api/bijak/papers')).body,
       (await student.get(`/api/bijak/papers/${id}`)).body,
-      (await student.get(`/api/bijak/papers/${String((gen.body as { data: { paperId: string } }).data.paperId)}`)).body,
+      (await student.get(`/api/bijak/papers/${janaId}`)).body,
       (await student.get('/api/bijak/contracts')).body,
       (await student.get('/api/bijak/subjects')).body,
-      gen.body,
-      (await student.post('/api/bijak/papers/generate', { subject: 'SN', kertas: 1 })).body,
     ]
     for (const body of bodies) {
       const keys = allKeys(body)
@@ -222,26 +220,17 @@ describe('Bijak papers API (BE-15)', () => {
     it('no session is 401 on every route', async () => {
       const anon = t.agent()
       for (const [, path] of routes) expectError(await anon.get(path), 'UNAUTHORIZED')
-      expectError(await anon.post('/api/bijak/papers/generate').send({ subject: 'MAT', kertas: 1 }), 'UNAUTHORIZED')
     })
 
     it.each(['guru@demo.test', 'admin@demo.test', 'adminsekolah@demo.test'])('%s outside Mod Pelajar is 403 on every route', async (who) => {
       const c = await loginAs(t, who)
       for (const [, path] of routes) expectError(await c.get(path), 'FORBIDDEN')
-      expectError(await c.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'FORBIDDEN')
     })
 
-    it.each(['admin@demo.test', 'adminsekolah@demo.test'])('%s inside Mod Pelajar acts as a student and may read and generate', async (who) => {
+    it.each(['admin@demo.test', 'adminsekolah@demo.test'])('%s inside Mod Pelajar acts as a student and may read', async (who) => {
       const c = await loginAs(t, who)
       await c.enterMod()
       for (const [, path] of routes.filter(([, p]) => !p.endsWith('/1'))) expect((await c.get(path)).status).toBe(200)
-      expect((await c.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })).status).toBe(201)
-    })
-
-    it('a POST without the CSRF token is 403 CSRF_INVALID and creates nothing', async () => {
-      const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
-      expectError(await student.postNoCsrf('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'CSRF_INVALID', 403)
-      expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(before)
     })
   })
 })
