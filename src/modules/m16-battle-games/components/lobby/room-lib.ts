@@ -15,9 +15,12 @@ export const MAX_ANSWER_SECONDS = 15
 export const isHost = (room: RoomView, userId: number | null): boolean =>
   userId !== null && String(room.host.id) === String(userId)
 
-/** The acting player of the room (the host who started it); others watch (BR-M16-19). */
+/**
+ * Whether the caller's seat acts now: the room waits for `state.humanId` (the seat whose turn it is; the host in the games with
+ * simultaneous rounds), and not once the caller has answered the question on the table (`youAnswered`: the waiting state).
+ */
 export const canAct = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.state !== null && String(room.state.humanId) === String(userId)
+  userId !== null && room.state !== null && room.youAnswered !== true && String(room.state.humanId) === String(userId)
 
 /** Whether the host may start (BR-M16-19: the game's minimum players are in). */
 export const canStart = (room: RoomView): boolean =>

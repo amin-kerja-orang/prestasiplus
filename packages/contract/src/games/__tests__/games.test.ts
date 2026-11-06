@@ -143,8 +143,9 @@ const finishedRoom = {
 describe('hub and lobby (M16-22, M16-23)', () => {
   it('parses the hub and rejects more than 6 open rooms and extra fields', () => {
     const room = { game: 'papan-bijak', code: 'PB1234', host: 'Aiman Fiktif', players: 1, max: 4 }
-    ok(GamesHubSchema, { openRooms: [room], chips: { papanBijakPlayed: false, battled: false } })
-    ok(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true } })
+    ok(GamesHubSchema, { openRooms: [room], chips: { papanBijakPlayed: false, battled: false }, enabledGames: ['papan-bijak'] })
+    ok(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true }, enabledGames: [] })
+    rejected(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true } }) // ruling 13 on #497
     rejected(GamesHubSchema, { openRooms: Array(7).fill(room), chips: { papanBijakPlayed: false, battled: false } })
     rejected(GamesHubSchema, { openRooms: [{ ...room, game: 'battle' }], chips: { papanBijakPlayed: false, battled: false } })
     rejected(GamesHubSchema, { openRooms: [{ ...room, code: 'pb12' }], chips: { papanBijakPlayed: false, battled: false } })
@@ -374,9 +375,19 @@ describe('room view (M16-26 to M16-28)', () => {
 describe('room action (M16-28)', () => {
   it('parses roll and answer (perang-fakta boolean, crossword word, seconds default 15)', () => {
     ok(GamesRoomActionRequestSchema, { type: 'roll' })
+    ok(GamesRoomActionRequestSchema, { type: 'leave' })
     ok(GamesRoomActionRequestSchema, { type: 'answer', questionId: '9001', optionId: 1 })
     ok(GamesRoomActionRequestSchema, { type: 'answer', questionId: '9001', optionId: null, value: true, seconds: 3.5 })
     ok(GamesRoomActionRequestSchema, { type: 'answer', questionId: '9003', value: 'KUALA LUMPUR', seconds: 0 })
+  })
+
+  it('adds leave (Keluar) without changing roll or answer, and uses the 48 GAME-R texts for the join refusals', () => {
+    rejected(GamesRoomActionRequestSchema, { type: 'Leave' })
+    expect(firstIssue(GamesRoomActionRequestSchema, { type: 'Leave' }).message).toBe('Tindakan tidak sah.')
+    expect(GAMES_MESSAGES.roomCodeInvalid).toBe('Kod bilik tidak sah.')
+    expect(GAMES_MESSAGES.roomFull).toBe('Bilik sudah penuh.')
+    expect(GAMES_MESSAGES.startAlreadyStarted).toBe('Permainan sudah dimulakan.')
+    expect(GAMES_MESSAGES.roomNotFound).toBe('Bilik tidak dijumpai.')
   })
 
   it('refuses with the exact BM messages', () => {
@@ -908,6 +919,14 @@ describe('openapi registration', () => {
     'GET /admin/games',
     'PUT /admin/games/settings',
   ]
+
+  it('documents the 409 join refusals and the leave action (additive)', () => {
+    const join = doc.paths['/games/{game}/rooms/join']?.post
+    expect(join?.responses?.['409']).toBeDefined()
+    expect(JSON.stringify(join?.responses?.['409'])).toContain('Bilik sudah penuh.')
+    expect(JSON.stringify(join?.responses?.['409'])).toContain('Permainan sudah dimulakan.')
+    expect(JSON.stringify(doc.components?.schemas?.GamesRoomActionRequest)).toContain('leave')
+  })
 
   it('registers exactly the 30 routes of the card under the games tag', () => {
     expect(gamesOps).toHaveLength(30)

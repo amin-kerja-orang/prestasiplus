@@ -849,13 +849,11 @@ export const roomsRepo = defineRepository({
           const ps = playersOf(code)
           if (ps.some((p) => p.userId === viewerId)) return { code }
           const viewer = mustUser(viewerId)
-          if (
-            room.status !== 'waiting' ||
-            ps.length >= room.maxPlayers ||
-            !gradeFits(room, viewer.grade)
-          ) {
-            throw new M16Error('NOT_FOUND', NOT_FOUND_ROOM)
-          }
+          // FR-GM-R.2: not started, a free seat, then the Tingkatan (the real API's order and texts).
+          if (room.status === 'closed') throw new M16Error('NOT_FOUND', NOT_FOUND_ROOM)
+          if (room.status !== 'waiting') throw new M16Error('CONFLICT', 'Permainan sudah dimulakan.')
+          if (ps.length >= room.maxPlayers) throw new M16Error('CONFLICT', 'Bilik sudah penuh.')
+          if (!gradeFits(room, viewer.grade)) throw new M16Error('FORBIDDEN', 'Tindakan tidak sah.')
           addPlayer(code, viewerId, false)
           return { code }
         })
@@ -911,6 +909,22 @@ export const roomsRepo = defineRepository({
         prng: PrngRegistry,
       ): RoomView {
         const b = (typeof body === 'object' && body !== null ? body : {}) as Record<string, unknown>
+        if (b.type === 'leave') {
+          // `Keluar` (48 GAME-R), minimal: waiting frees the seat or, for the host, closes the room; playing ends the room.
+          return transaction(() => {
+            const room = mustRoom(game, code, viewerId)
+            if (room.status === 'waiting') {
+              if (room.hostId === viewerId) store.update(room.id, { status: 'closed' })
+              else {
+                const seat = playersOf(room.id).find((p) => p.userId === viewerId)
+                if (seat) players.remove(seat.id)
+              }
+            } else if (room.status === 'playing') {
+              store.update(room.id, { status: 'finished' })
+            }
+            return viewOf(store.get(room.id) as GameRoomRow)
+          })
+        }
         let action: RoomAction
         if (b.type === 'roll') action = { type: 'roll' }
         else if (b.type === 'answer') {

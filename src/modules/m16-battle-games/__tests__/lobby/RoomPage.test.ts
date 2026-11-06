@@ -133,6 +133,42 @@ describe('waiting room (FR-M16-68)', () => {
     expect(get('room-wait-host').text()).toBe('Menunggu hos memulakan permainan')
   })
 
+  it('the host sees "Robot akan menyertai dalam {s} saat." from robotInSeconds; a guest does not (ruling 53)', async () => {
+    fetchRoom.mockResolvedValue(room({ robotInSeconds: 18 }))
+    await mountRoom()
+    expect(get('room-robot-countdown').text()).toBe('Robot akan menyertai dalam 18 saat.')
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(room({ host: { id: 2, name: 'Pelajar Dua' }, robotInSeconds: 18 }))
+    await mountRoom()
+    expect(wrapper!.find('[data-testid="room-robot-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(room())
+    await mountRoom()
+    expect(wrapper!.find('[data-testid="room-robot-countdown"]').exists()).toBe(false)
+  })
+
+  it('"Keluar" sends the leave action and returns to the lobby', async () => {
+    fetchRoom.mockResolvedValue(room())
+    roomAction.mockResolvedValueOnce(room({ status: 'closed' }))
+    const { router } = await mountRoom()
+    expect(get('room-leave').text()).toBe('Keluar')
+    await get('room-leave').trigger('click')
+    await flushPromises()
+    expect(roomAction).toHaveBeenCalledWith('perang-fakta', 'ABC123', { type: 'leave' })
+    expect(router.currentRoute.value.fullPath).toBe('/perang-fakta')
+  })
+
+  it('a refused "Keluar" shows the red box and stays in the room', async () => {
+    fetchRoom.mockResolvedValue(room())
+    roomAction.mockRejectedValueOnce(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' }),
+    )
+    await mountRoom()
+    await get('room-leave').trigger('click')
+    await flushPromises()
+    expect(get('room-action-errors').text()).toContain('Bilik tidak dijumpai.')
+  })
+
   it('"Mula" starts the room and shows the question', async () => {
     fetchRoom.mockResolvedValue(room())
     startRoom.mockResolvedValueOnce(playing())

@@ -110,6 +110,14 @@ export const roomPath = (game: RoomGame, code: string): string => `/${game}/${co
 /** Exact flash/refusal text of every refused join and unknown room (BR-M16-18). */
 export const ROOM_NOT_FOUND = 'Bilik tidak dijumpai.'
 
+/** ERR-GAME-06 (48 section 3.8): a code that is not 6 characters A-Z0-9 is refused before any request. */
+export const ROOM_CODE_INVALID = 'Kod bilik tidak sah.'
+export const ROOM_CODE_PATTERN = /^[A-Z0-9]{6}$/
+
+/** 48 GAME-R: `Keluar` leaves a room; the robot countdown for the host of a waiting room (marked † in 48). */
+export const ROOM_LEAVE = 'Keluar'
+export const robotCountdown = (seconds: number): string => `Robot akan menyertai dalam ${String(seconds)} saat.`
+
 // --- subjects -------------------------------------------------------------------------------------------------------
 
 export const PB_SUBJECTS: readonly { value: RoomSubject; label: string; emoji: string }[] = [

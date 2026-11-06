@@ -6,7 +6,7 @@ import { clock } from '@/lib/time/clock'
 import { diffForHumans } from '@/lib/time/relative'
 import { toEpochMs, type DateInput } from '@/lib/time/zone'
 
-import type { BattleStartBody, PkskLevel, QuestionType } from '../../api'
+import type { BattleLobby, BattleStartBody, PkskLevel, QuestionType } from '../../api'
 
 /** S3 state select (discovery A.4): "Semua Negeri" (empty value) + 16 states. */
 export const BATTLE_STATES = [
@@ -84,6 +84,20 @@ export function canStart(sel: BattleSelection): boolean {
   if (sel.questionType === 'biasa') return sel.subjectId !== null
   if (sel.questionType === 'pksk') return sel.pkskDomainId !== null && sel.pkskLevel !== null
   return sel.spmSubjectId !== null
+}
+
+/** The lobby with the PKSK grant per level (API-GAME-03, `BattleLobbySchema.pkskAccess`). */
+export type LobbyWithPkskAccess = BattleLobby & { pkskAccess?: Record<PkskLevel, boolean> }
+
+/** True when the pupil has no PKSK grant at all. A lobby without the field (mock mode) has no gate. */
+export function pkskNoGrant(lobby: LobbyWithPkskAccess): boolean {
+  return lobby.pkskAccess !== undefined && !lobby.pkskAccess.T1 && !lobby.pkskAccess.T4
+}
+
+/** True when the no-access state of R1-MUR-19 shows: no grant at all, or none for the chosen level. */
+export function pkskBlocked(lobby: LobbyWithPkskAccess, level: PkskLevel | null): boolean {
+  if (pkskNoGrant(lobby)) return true
+  return lobby.pkskAccess !== undefined && level !== null && !lobby.pkskAccess[level]
 }
 
 /** BR-M16-03 request body of #2, #3 and #8. */
