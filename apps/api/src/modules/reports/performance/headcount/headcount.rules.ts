@@ -5,10 +5,10 @@
 import type { HeadcountBand, HeadcountPairStatus, HeadcountTone, LatestAr } from '../domain/headcount'
 import { gradeOfPercent, round, type Grade } from '../domain/rules'
 
-/** The marks of one pupil in one config (blank slots when the pupil has no entry). */
+/** The marks of one pupil in one config (blank slots when the pupil has no entry). TOV and ETR are the RESOLVED values. */
 export interface HeadcountMarks {
   tov: number | null
-  /** `activeOtrs` slots. */
+  /** `activeOtrs` slots, COMPUTED by `otrTargets` (HC-2); the stored `headcount_entry_marks.target` is never read. */
   targets: readonly (number | null)[]
   /** `activeOtrs` slots. */
   actuals: readonly (number | null)[]
@@ -17,6 +17,64 @@ export interface HeadcountMarks {
 }
 
 export const blankSlots = (n: number): (number | null)[] => Array.from({ length: n }, () => null)
+
+/**
+ * HC-2: OTR_k = round(TOV + (ETR - TOV) * r_k), r_k = floor(100 k / n) / 100, OTR_n = ETR; whole number, half up (computed in integer tenths).
+ * Null slots when TOV or ETR is missing.
+ */
+export function otrTargets(tov: number | null, etr: number | null, n: number): (number | null)[] {
+  if (tov === null || etr === null) return blankSlots(n)
+  return Array.from({ length: n }, (_, i) => {
+    const k = i + 1
+    if (k >= n) return etr
+    // Integer tenths (marks have one decimal), so no float drift: half-up on a non-negative value.
+    const t = Math.round(tov * 10)
+    const e = Math.round(etr * 10)
+    const r = Math.floor((100 * k) / n)
+    return Math.floor((t * 100 + (e - t) * r + 500) / 1000)
+  })
+}
+
+/** What a stored entry (or a roster pupil without one) holds before resolution. */
+export interface RawMarks {
+  tov: number | null
+  etr: number | null
+  rs: number | null
+  /** Stored AR by checkpoint (any length; read up to `activeOtrs`). */
+  actuals: readonly (number | null | undefined)[]
+}
+
+/**
+ * THE marks assembler (HC-1, HC-2, DM-49): resolved TOV = entry TOV else the config default, ETR likewise, OTR targets
+ * computed, actuals sized to `activeOtrs`. Every reader (the service, the facts service, the figures) gets its marks here.
+ */
+export function resolveMarks(
+  raw: RawMarks | null,
+  config: { activeOtrs: number; defaultTov: number | null; defaultEtr: number | null },
+): HeadcountMarks {
+  const tov = raw?.tov ?? config.defaultTov
+  const etr = raw?.etr ?? config.defaultEtr
+  const n = config.activeOtrs
+  return {
+    tov,
+    targets: otrTargets(tov, etr, n),
+    actuals: Array.from({ length: n }, (_, i) => raw?.actuals[i] ?? null),
+    etr,
+    rs: raw?.rs ?? null,
+  }
+}
+
+export type HeadcountStatusReason = 'belum_ada_data' | 'belum_ada_tov'
+export type HeadcountEntryStatus = 'active' | 'draft'
+
+/** HC-SPEC: no ETR = "Belum Ada Data"; an ETR without a TOV = "Belum Ada TOV"; otherwise none. */
+export function statusReasonOf(m: Pick<HeadcountMarks, 'tov' | 'etr'>): HeadcountStatusReason | null {
+  if (m.etr === null) return 'belum_ada_data'
+  return m.tov === null ? 'belum_ada_tov' : null
+}
+
+/** Active exactly when the pupil has an ETR for the config (own or default); TOV alone never makes it Active. */
+export const entryStatusOf = (m: Pick<HeadcountMarks, 'etr'>): HeadcountEntryStatus => (m.etr === null ? 'draft' : 'active')
 
 /** The latest checkpoint that has an AR (BR-M08-01 "latest AR"). */
 export function latestAr(m: Pick<HeadcountMarks, 'targets' | 'actuals'>): LatestAr | null {
@@ -37,15 +95,17 @@ export function pairStatus(m: Pick<HeadcountMarks, 'targets' | 'actuals'>): Head
   return l.ar >= l.target ? 'on' : 'below'
 }
 
-/** BR-M08-08 rule (2): the 2 point band (above > OTR; on OTR - 2 to OTR; below < OTR - 2). */
+/** Ringkasan Kelas bands (HC-SPEC): above = AR - OTR > 2; on = 0 to 2; below = AR < OTR. */
 export function bandStatus(ar: number | null, target: number | null): HeadcountBand {
   if (ar === null || target === null) return 'na'
-  if (ar > target) return 'above'
-  if (ar >= target - 2) return 'on'
+  const d = ar - target
+  if (d > 2) return 'above'
+  if (d >= 0) return 'on'
   return 'below'
 }
 
-export const gradeOrNull = (v: number | null): Grade | null => (v === null ? null : gradeOfPercent(v))
+/** HC-5: the value is first rounded to a whole number (half away from zero), so 89.5 reads A+. */
+export const gradeOrNull = (v: number | null): Grade | null => (v === null ? null : gradeOfPercent(round(v, 0)))
 
 /** Mean of the non-null values, 1 decimal; null when there are none. */
 export function meanOrNull(values: readonly (number | null)[]): number | null {
@@ -65,17 +125,26 @@ export interface ProjectionResult {
   confidence: ConfidenceLabel
 }
 
-/** BR-M08-24: projection = last AR + the mean step, clamped 0 to 100. Null when there is no AR. */
+/**
+ * HC-6: with an AR, a TOV and an ETR, the end = ETR when the latest AR >= TOV, else the latest AR. Trend Meningkat when
+ * end > AR + 2, Menurun when end < AR - 2, else Stabil. Keyakinan Tinggi (AR >= ETR), Sederhana (AR >= TOV), else Rendah.
+ * Null without an AR, a TOV or an ETR.
+ */
 export function projectionOf(m: Pick<HeadcountMarks, 'actuals' | 'tov' | 'etr'>): ProjectionResult | null {
-  const points = m.actuals.filter((v): v is number => v !== null)
-  if (points.length === 0) return null
-  const last = points[points.length - 1] as number
-  const step = points.length < 2 ? 0 : (last - (points[0] as number)) / (points.length - 1)
-  const value = Math.min(100, Math.max(0, round(last + step, 1)))
-  const variant: ProjectionVariant = m.etr === null ? 'red' : value >= m.etr ? 'green' : 'amber'
-  const delta = m.tov === null ? 0 : value - m.tov
-  const trend: TrendLabel = delta > 3 ? 'Meningkat' : delta < -3 ? 'Menurun' : 'Stabil'
-  const confidence: ConfidenceLabel = points.length >= 3 ? 'Tinggi' : points.length === 2 ? 'Sederhana' : 'Rendah'
+  let ar: number | null = null
+  for (let i = m.actuals.length - 1; i >= 0; i--) {
+    const v = m.actuals[i]
+    if (v !== null && v !== undefined) {
+      ar = v
+      break
+    }
+  }
+  if (ar === null || m.tov === null || m.etr === null) return null
+  const end = ar >= m.tov ? m.etr : ar
+  const value = Math.min(100, Math.max(0, round(end, 1)))
+  const variant: ProjectionVariant = value >= m.etr ? 'green' : 'amber'
+  const trend: TrendLabel = end > ar + 2 ? 'Meningkat' : end < ar - 2 ? 'Menurun' : 'Stabil'
+  const confidence: ConfidenceLabel = ar >= m.etr ? 'Tinggi' : ar >= m.tov ? 'Sederhana' : 'Rendah'
   return { value, variant, trend, confidence }
 }
 

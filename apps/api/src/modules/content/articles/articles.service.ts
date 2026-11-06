@@ -162,15 +162,19 @@ export class ArticlesService {
 
   async readerList(q: { search?: string | undefined; category?: string | undefined; page?: string | undefined }) {
     const page = pageOf(q.page)
+    const search = searchOf(q.search)
     const { category, none } = categoryFilter(q.category)
-    if (none) return { data: [], meta: listMeta(page, ARTICLE_READER_PAGE_SIZE, 0) }
+    // Pill counts (FR-MUR-20-2): per category for the current search, whatever category is open.
+    const found = await this.repo.readerCategoryCounts(search)
+    const counts = Object.fromEntries(ARTICLE_CATEGORIES.map((c) => [c, found[c] ?? 0]))
+    if (none) return { data: [], meta: { ...listMeta(page, ARTICLE_READER_PAGE_SIZE, 0), counts } }
     const { rows, total } = await this.repo.readerList({
-      search: searchOf(q.search),
+      search,
       category,
       skip: (page - 1) * ARTICLE_READER_PAGE_SIZE,
       take: ARTICLE_READER_PAGE_SIZE,
     })
-    return { data: rows.map(cardOf), meta: listMeta(page, ARTICLE_READER_PAGE_SIZE, total) }
+    return { data: rows.map(cardOf), meta: { ...listMeta(page, ARTICLE_READER_PAGE_SIZE, total), counts } }
   }
 
   /** `limit` defaults to 5 and is clamped to 1..50; a non-number is the default. */

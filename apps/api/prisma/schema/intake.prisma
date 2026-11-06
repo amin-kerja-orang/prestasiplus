@@ -17,7 +17,7 @@ model IntakeBatch {
   paperType    String    @map("paper_type")
   /// Subject code (upper-case, ^[A-Z0-9]{2,32}$). No FK to subjects yet (deferred).
   subject      String
-  /// 1 or 2 (Kertas). Null only for a guru batch (check constraint).
+  /// 1 to 4 (Kertas; ck_intake_batches_kertas, DM-08). Null only for a guru batch (check constraint).
   kertas       Int?      @db.SmallInt
   year         Int?      @db.SmallInt
   /// Source declaration text (max 200).

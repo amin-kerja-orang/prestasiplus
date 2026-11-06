@@ -25,7 +25,7 @@ export interface DashboardRisk {
 export interface DashboardLevel {
   code: 't4' | 't5'
   name: string
-  accuracy: number
+  accuracy: number | null
 }
 
 export interface DashboardGrade {
@@ -38,6 +38,8 @@ export interface SchoolDashboard {
   school: { id: number; name: string; state: string; ppd: string | null; code: string | null }
   roleLabel: string
   perutusan: DashboardPerutusan[]
+  /** Teachers waiting for approval ("Guru Menunggu"); the callout shows only when above 0. */
+  pendingTeachers: number
   cards: {
     pupils: number
     teachers: number
