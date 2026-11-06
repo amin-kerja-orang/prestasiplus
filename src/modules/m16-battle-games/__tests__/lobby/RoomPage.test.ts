@@ -238,6 +238,18 @@ describe('play and result (FR-M16-69, 70)', () => {
     fetchRoom.mockResolvedValue(pb(2, 'roll'))
     await mountRoom('papan-bijak')
     expect(wrapper!.find('[data-testid="room-roll-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    // No server clock on the caller's roll: no countdown. A clock at 0 shows "0s".
+    const st = pb(1, 'roll').state!
+    const noClock = { ...st }
+    delete noClock.roundSecondsLeft
+    fetchRoom.mockResolvedValue({ ...pb(1, 'roll'), state: noClock })
+    await mountRoom('papan-bijak')
+    expect(wrapper!.find('[data-testid="room-roll-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue({ ...pb(1, 'roll'), state: { ...st, roundSecondsLeft: 0 } })
+    await mountRoom('papan-bijak')
+    expect(get('room-roll-countdown').text()).toBe('0s')
   })
 
   it('a finished room shows the caller\'s reward line (48 section 3.4)', async () => {

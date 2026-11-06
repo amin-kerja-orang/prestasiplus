@@ -314,6 +314,11 @@ describe('rewardLine (48 section 3.4)', () => {
       expect(rewardLine(r({ capped: true, reason }))).toBe(
         'Had ganjaran permainan hari ini telah dicapai. Cuba lagi esok.',
       )
+    // The spec says the result shows the amount: a non-capped zero still reads "+0 mata".
+    expect(rewardLine(r({}))).toBe('Anda dapat +0 mata.')
+    expect(rewardLine(r({ syiling: 4, capped: true, reason: 'xp_cap' }))).toBe(
+      'Anda dapat +0 mata dan +4 syiling.',
+    )
     expect(rewardLine(r({ reason: 'pace_guard' }))).toBe('Keputusan disimpan tanpa ganjaran.')
   })
 })

@@ -186,7 +186,6 @@ export const QM_MESSAGES = {
 export const PB_HOW_TO =
   'Gulung dadu dan bergerak ke petak 50. Petak soalan: jawab dengan betul untuk kekal di petak itu; jawapan salah membawa anda kembali.'
 
-
 /** `USelect` items of the grade select: a label row per group, then its options. */
 export const GRADE_ITEMS: readonly (
   | { type: 'label'; label: string }
