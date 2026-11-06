@@ -82,21 +82,31 @@ describe('Bijak Kuiz hooks (S3-T04)', () => {
     expect((await repo.idleKuizSessions(cutoff)).map((r) => r.id)).toEqual([idle])
     expect(await repo.idleKuizSessions(cutoff)).toEqual([{ id: idle, userId: uid }])
     expect((await repo.idleKuizSessions(hours(10), 1)).length).toBe(1)
-    await repo.abandonSession(idle, hours(3))
+    await repo.abandonSession(idle, hours(1), hours(3))
     expect((await repo.idleKuizSessions(hours(10))).map((r) => r.id)).toEqual([checked])
+  })
+
+  it('abandonSession leaves a session alone when a check landed after the idle listing', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const id = await kuizSession(hours(0))
+    const cutoff = hours(1)
+    expect((await repo.idleKuizSessions(cutoff)).map((r) => r.id)).toEqual([id])
+    await check(id, bank.random[0] as string, hours(2)) // Semak pressed after the listing
+    expect(await repo.abandonSession(id, cutoff, hours(3))).toBe(false)
+    expect((await statusOf(id))?.status).toBe('in_progress')
   })
 
   it('abandonSession moves only an in-progress session, keeps checks, and is false the second time', async () => {
     const repo = t.app.get(PracticeRepository)
     const id = await kuizSession(hours(0))
     await check(id, bank.random[0] as string, hours(0.5))
-    expect(await repo.abandonSession(id, hours(3))).toBe(true)
+    expect(await repo.abandonSession(id, hours(1), hours(3))).toBe(true)
     expect(await statusOf(id)).toEqual({ status: 'abandoned', completed_at: null })
     expect(await countRows(t.db, 'practice_checks', 'session_id = $1', [id])).toBe(1)
-    expect(await repo.abandonSession(id, hours(4))).toBe(false)
-    expect(await repo.abandonSession('not-a-uuid', hours(4))).toBe(false)
+    expect(await repo.abandonSession(id, hours(1), hours(4))).toBe(false)
+    expect(await repo.abandonSession('not-a-uuid', hours(1), hours(4))).toBe(false)
     const done = await session('completed', hours(0))
-    expect(await repo.abandonSession(done, hours(4))).toBe(false)
+    expect(await repo.abandonSession(done, hours(1), hours(4))).toBe(false)
   })
 })
 

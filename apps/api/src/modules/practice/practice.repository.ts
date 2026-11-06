@@ -688,10 +688,17 @@ export class PracticeRepository {
     return rows.map((r) => ({ id: r.id, userId: r.user_id }))
   }
 
-  /** S3-T04: `in_progress` -> `abandoned`, only when it is still `in_progress`. Checks are kept, `completed_at` stays null. Returns whether it changed. */
-  async abandonSession(id: string, now: Date): Promise<boolean> {
+  /**
+   * S3-T04: `in_progress` -> `abandoned`, only when it is still `in_progress` AND still idle at `cutoff` (the same cutoff the
+   * caller listed it with in `idleKuizSessions`). The idle clock is re-checked inside this one UPDATE, so a Semak that landed
+   * after the listing keeps the session alive. Checks are kept, `completed_at` stays null. Returns whether it changed.
+   */
+  async abandonSession(id: string, cutoff: Date, now: Date): Promise<boolean> {
     if (!isUuid(id)) return false
-    const n = await this.db.$executeRaw`UPDATE practice_sessions SET status = 'abandoned', updated_at = ${now}::timestamptz WHERE id = ${id}::uuid AND status = 'in_progress'`
+    const n = await this.db.$executeRaw`
+      UPDATE practice_sessions s SET status = 'abandoned', updated_at = ${now}::timestamptz
+       WHERE s.id = ${id}::uuid AND s.status = 'in_progress'
+         AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz`
     return n === 1
   }
 
