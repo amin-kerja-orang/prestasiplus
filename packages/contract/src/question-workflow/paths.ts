@@ -299,7 +299,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-imports'],
     summary: 'Import questions from a CSV file',
     description:
-      'Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix "Baris {n}: " (exact Q-11 texts); a question is imported only if its row is valid. An unknown header cell is ignored and listed in `warnings` ("Kolum {nama} tidak dikenali dan diabaikan."). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `"` quoting with `""`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: "Import selesai: <x> soalan diimport, <y> gagal.".',
+      'Admin only. Two headers, detected by the first header cell: `question_text` is the legacy positional MCQ header; anything else is the header with codes of 30 Q-11 (S1-T05 part 1: `mcq` rows only; `subject_code`, `tingkatan`, `unit_code`, `sp_kod` separated by `;`, `tp`, `aras`, `kbat`, `bab_kod`, `topik_kod`, `kertas`, `number_label`, `difficulty`). A row of the new header lists every error with `questionKey`, `field`, `code` and a message with the prefix "Baris {n}: " (exact Q-11 texts); a question is imported only if its row is valid. The optional multipart part `zipFile` (ZIP up to 20 MB, at most 100 entries and 40 MB unpacked; JPG, PNG or WebP by their bytes, each up to 2 MB) holds the images named by `stimulus_image` (matched by base name; an unsafe entry name is ignored); a non-ZIP or a breached limit is 422 on `fields.zipFile`. A `stimulus_image` value starting with `https://` is fetched instead (before the import transaction; https only, port 443, resolved address must be public and is pinned, no redirects, 5 s connect and 10 s total timeout, 2 MB streamed cap, type by magic bytes, at most 100 distinct URLs per file else 422 on `fields.csvFile`); any other scheme is a row error. An unknown header cell is ignored and listed in `warnings` ("Kolum {nama} tidak dikenali dan diabaikan."). At most 2,000 data rows. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `"` quoting with `""`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: "Import selesai: <x> soalan diimport, <y> gagal.".',
     request: { headers: [csrf], body: multipart(QuestionImportCreateRequestSchema) },
     responses: {
       201: json(QuestionImportCreatedSchema, 'The run with its failures; status is the flash text.'),
@@ -346,7 +346,7 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     tags: ['question-workflow', 'question-imports'],
     summary: 'Download the CSV template',
     description:
-      'Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, header line plus 2 sample rows. Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).',
+      'Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, the header of 30 Q-11 (all columns in order) plus one MCQ example and one example group of two questions with one Petikan stimulus (S1-T05 part 3). Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).',
     responses: { 200: templateResponse('The template file.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
   })
 
@@ -420,14 +420,15 @@ export function registerQuestionWorkflowPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/diagram-audit/{kind}/{id}/image',
     tags: ['question-workflow', 'diagram-audit'],
-    summary: 'Attach a diagram image and clear the flag',
-    description: `Admin only. multipart/form-data \`image\` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: "${DIAGRAM_AUDIT_MESSAGES.uploaded}".`,
+    summary: 'Attach a diagram image (admin) or submit one for review (teacher)',
+    description: `Admin and teacher (school admin is refused). multipart/form-data \`image\` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash "${DIAGRAM_AUDIT_MESSAGES.uploaded}". Teacher (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: "${DIAGRAM_AUDIT_MESSAGES.submittedForReview}" } and the list row then has pendingReview true. One open image per stimulus group.`,
     request: { params: z.object({ kind: DiagramAuditKindSchema, id: IdSchema }), headers: [csrf], body: multipart(DiagramAuditImageRequestSchema) },
     responses: {
-      200: json(DiagramAuditMutationSchema, 'Image attached; status is the flash text.'),
+      200: json(DiagramAuditMutationSchema, 'Image attached (admin) or submitted for review (teacher); status is the flash text.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_ADMIN_WRITE,
+      403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not admin or teacher), or CSRF_INVALID (missing or wrong X-CSRF-Token).'),
       404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).'),
+      409: err(`CONFLICT "${DIAGRAM_AUDIT_MESSAGES.alreadyPending}" (teacher: the question's stimulus group already has an open image) or "${DIAGRAM_AUDIT_MESSAGES.noStimulusGroup}" (the question has no stimulus group).`),
       422: err(
         `VALIDATION_ERROR fields.image "${DIAGRAM_AUDIT_MESSAGES.fileRequired}" (missing or not an image) "${DIAGRAM_AUDIT_MESSAGES.fileType}" (wrong type) or "${DIAGRAM_AUDIT_MESSAGES.fileSize}" (over 2 MB).`,
       ),

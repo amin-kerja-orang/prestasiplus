@@ -37,7 +37,7 @@ const fail = (
 const summary: Omit<WireBatchDetail, 'files'> = {
   id: 'b1',
   status: 'ready_for_review',
-  statusLabel: 'Sedia untuk semakan',
+  statusLabel: 'Selesai',
   paperType: 'trial',
   subject: 'MAT',
   kertas: 2,
@@ -105,7 +105,7 @@ describe('intake wire mappers', () => {
       title: 'Matematik Kertas 2 2025',
       status: 'draf',
       batchStatus: 'ready_for_review',
-      statusLabel: 'Sedia untuk semakan',
+      statusLabel: 'Selesai',
       sourceKind: 'pdf',
       questionCount: 0,
       reviewedCount: 0,
@@ -124,8 +124,8 @@ describe('intake wire mappers', () => {
   it('maps itemCount, reviewedCount and the wire status of a summary (R1E2E-C1)', () => {
     const s = summaryFromWire({ ...summary, itemCount: 2, reviewedCount: 2 }, () => 'Matematik')
     expect(s.status).toBe('draf') // every http batch stays in the Draf filter bucket
-    expect(batchFromWire({ ...detail, status: 'ready_for_review', statusLabel: 'Sedia untuk semakan' }, [])).toMatchObject({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
-    expect(s).toMatchObject({ questionCount: 2, reviewedCount: 2, batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    expect(batchFromWire({ ...detail, status: 'ready_for_review', statusLabel: 'Selesai' }, [])).toMatchObject({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Selesai' })
+    expect(s).toMatchObject({ questionCount: 2, reviewedCount: 2, batchStatus: 'ready_for_review', statusLabel: 'Selesai' })
     const p = summaryFromWire({ ...summary, status: 'processing', statusLabel: 'Sedang diproses' }, () => 'Matematik')
     expect(p).toMatchObject({ status: 'draf', batchStatus: 'processing', statusLabel: 'Sedang diproses' })
   })
@@ -251,7 +251,7 @@ describe('intake client', () => {
       'GET /api/intake/batches/b1/review': ok({ issues: [] }),
       'GET /api/intake/batches/b1': ok(detail),
     })
-    expect((await server.getIntakeBatch('b1')).statusLabel).toBe('Sedia untuk semakan')
+    expect((await server.getIntakeBatch('b1')).statusLabel).toBe('Selesai')
     const res = await server.submitForReview('b1')
     if (!res.ok) throw new Error('expected ok')
     expect(res.batch.status).toBe('semakan')

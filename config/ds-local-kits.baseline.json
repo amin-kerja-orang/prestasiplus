@@ -8,6 +8,7 @@
     "src/modules/m09-content/pages/AdminNoteFormPage.vue",
     "src/modules/m09-content/pages/AdminNoteListPage.vue",
     "src/modules/m09-content/pages/AdminNotePreviewPage.vue",
+    "src/modules/m22-support-tickets/pages/AdminSettingsPage.vue",
     "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue",
     "src/shells/admin/AdminBottomNav.vue",
     "src/shells/admin/AdminHeader.vue",

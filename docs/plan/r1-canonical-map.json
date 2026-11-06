@@ -2069,6 +2069,36 @@
       "approved_by_card": null
     },
     {
+      "key": "/guru/soalan-guru|",
+      "path": "/guru/soalan-guru",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/cipta|",
+      "path": "/guru/soalan-guru/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/:id(\\d+)/sunting|",
+      "path": "/guru/soalan-guru/:id(\\d+)/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "/guru/soalan-berstruktur|",
       "path": "/guru/soalan-berstruktur",
       "name": null,
@@ -2079,8 +2109,8 @@
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
       "name": null,
       "status": "canonical",
       "sector": "S6",
@@ -2104,8 +2134,19 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/NotFoundPage.vue",
+      "component": "src/modules/m11-teacher-analytics/pages/LaporanMingguanGuruPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/laporan-mingguan|",
+      "path": "/guru/laporan-mingguan",
+      "name": null,
+      "status": "redirect-to:/guru/laporan-mingguan-kelas",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "redirects_to": "/guru/laporan-mingguan-kelas",
       "approved_by_card": null
     },
     {
@@ -2120,6 +2161,17 @@
     },
     {
       "key": "${prefix}|",
+      "path": "${prefix}",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue",
+      "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
+      "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "${prefix}| #2",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -2689,7 +2741,7 @@
       "approved_by_card": null
     },
     {
-      "key": "${prefix}| #2",
+      "key": "${prefix}| #3",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -2769,6 +2821,16 @@
       "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/laporan-sekolah/headcount|m17.laporan-sekolah.headcount",
+      "path": "/admin/laporan-sekolah/headcount",
+      "name": "m17.laporan-sekolah.headcount",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m17-admin-dashboard/pages/CentralReportPage.vue",
+      "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
+      "approved_by_card": "S6-T13"
     },
     {
       "key": "/admin/laporan-sekolah/analisa-item|m17.laporan-sekolah.analisa-item",
@@ -2860,6 +2922,16 @@
       "component": "src/modules/m22-support-tickets/pages/AdminTicketsPage.vue",
       "file": "src/modules/m22-support-tickets/routes/tiket.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/settings|m22.admin-settings",
+      "path": "/admin/settings",
+      "name": "m22.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m22-support-tickets/pages/AdminSettingsPage.vue",
+      "file": "src/modules/m22-support-tickets/routes/tiket.ts",
+      "approved_by_card": "S7-T09"
     },
     {
       "key": "/buku-nota/heatmap|m25.heatmap",
@@ -3104,6 +3176,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/latih-tubi|",
+      "path": "/admin/spm/latih-tubi",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneLatihTubiPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -3112,6 +3194,16 @@
       "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSimulasiPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/subjektif|",
+      "path": "/admin/spm/subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSubjektifPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
     },
     {
       "key": "/admin/spm/kontrak|",
@@ -5078,7 +5170,7 @@
       "source": "user-nav",
       "id": "t-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "teacher"
       ],
@@ -5120,12 +5212,12 @@
       "source": "user-nav",
       "id": "t-laporan-mingguan",
       "label": "Laporan Mingguan",
-      "route": "/laporan-mingguan",
+      "route": "/guru/laporan-mingguan-kelas",
       "roles": [
         "teacher"
       ],
       "status": "redirect-to:/guru/laporan-mingguan-kelas",
-      "sector": "S10",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register R-03: teacher sidebar opens a 403 page; re-point (S0-T06, S6-T01)",
       "approved_by_card": null
@@ -6049,7 +6141,7 @@
       "source": "user-nav",
       "id": "sa-analitik-adaptif",
       "label": "Analitik Adaptif",
-      "route": "/analitik/pelajar",
+      "route": "/analitik/kelas",
       "roles": [
         "school_admin"
       ],
@@ -10435,6 +10527,15 @@
       "approved_by_card": null
     },
     {
+      "name": "ChallengeClaim",
+      "table": "challenge_claims",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "approved_by_card": "S7-T04",
+      "dm": "DM-63"
+    },
+    {
       "name": "Achievement",
       "table": "achievements",
       "status": "canonical",
@@ -10543,14 +10644,14 @@
       "approved_by_card": null
     },
     {
-      "name": "RewardSetting",
-      "table": "reward_settings",
+      "name": "GameRewardEvent",
+      "table": "game_reward_events",
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
-      "approved_by_card": "S7-T05",
-      "dm": "DM-48",
-      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect()."
+      "approved_by_card": "S7-T01",
+      "dm": "DM-87",
+      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult."
     },
     {
       "name": "MysteryBoxOpening",
@@ -10567,6 +10668,16 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/gamification.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "RewardSetting",
+      "table": "reward_settings",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
+      "approved_by_card": "S7-T05",
+      "dm": "DM-48"
     },
     {
       "name": "User",
@@ -10817,6 +10928,15 @@
       "sector": "S0",
       "file": "apps/api/prisma/schema/pksk.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "PkskExamLoad",
+      "table": "pksk_exam_loads",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/pksk.prisma",
+      "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-91)"
     },
     {
       "name": "PracticeSession",
@@ -11739,6 +11859,16 @@
       "sector": "S7",
       "file": "apps/api/src/modules/battle/queue/queue.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/battle/queue/:p/cancel",
+      "method": "POST",
+      "path": "/api/battle/queue/:queueId/cancel",
+      "api_id": "API-GAME-14",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/battle/queue/queue-cancel.controller.ts",
+      "approved_by_card": "S7-T01"
     },
     {
       "key": "POST /api/battle/accept-challenger/:p",
@@ -14351,6 +14481,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/gamification/challenges/:p/claim",
+      "method": "POST",
+      "path": "/api/gamification/challenges/:id/claim",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/gamification.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/gamification/leaderboard",
       "method": "GET",
       "path": "/api/gamification/leaderboard",
@@ -14492,6 +14632,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/intake/files/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/files/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/intake/batches/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/batches/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/intake/files/:p/pages",
       "method": "GET",
       "path": "/api/intake/files/:id/pages",
@@ -14539,6 +14699,26 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/source-papers",
+      "method": "GET",
+      "path": "/api/admin/source-papers",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/source-papers/:p",
+      "method": "GET",
+      "path": "/api/admin/source-papers/:id",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
       "approved_by_card": null
     },
     {
@@ -15412,6 +15592,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/structured-questions",
+      "method": "GET",
+      "path": "/api/guru/structured-questions",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "GET /api/guru/structured-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/structured-questions/:id",
+      "api_id": "API-GUR-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/guru/questions",
       "method": "GET",
       "path": "/api/guru/questions",
@@ -15460,6 +15660,56 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/guru/personal-questions",
+      "method": "GET",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "POST /api/guru/personal-questions",
+      "method": "POST",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "GET /api/guru/personal-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "PUT /api/guru/personal-questions/:p",
+      "method": "PUT",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "DELETE /api/guru/personal-questions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
     },
     {
       "key": "GET /api/admin/questions/regroup-worklist",
@@ -15832,20 +16082,30 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/guru/structured-questions",
-      "method": "GET",
-      "path": "/api/guru/structured-questions",
-      "api_id": "API-GUR-26",
+      "key": "POST /api/guru/intake/structured",
+      "method": "POST",
+      "path": "/api/guru/intake/structured",
+      "api_id": "API-GUR-17",
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "GET /api/guru/structured-questions/:p",
-      "method": "GET",
-      "path": "/api/guru/structured-questions/:id",
-      "api_id": "API-GUR-26",
+      "key": "PUT /api/guru/intake/structured/:p",
+      "method": "PUT",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "DELETE /api/guru/intake/structured/:p",
+      "method": "DELETE",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
@@ -15959,8 +16219,8 @@
       "status": "canonical",
       "sector": "S1",
       "file": "apps/api/src/modules/questions/workflow/imports/imports.controller.ts",
-      "approved_by_card": "S1-T05",
-      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only."
+      "note": "Error report CSV of one import run (FR-ADM-QE6.2): baris, question_key, medan, kod_ralat, mesej. Admin only.",
+      "approved_by_card": "S1-T05"
     },
     {
       "key": "POST /api/question-imports",
@@ -16493,6 +16753,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/weekly-report",
+      "method": "GET",
+      "path": "/api/guru/weekly-report",
+      "api_id": "API-GUR-21",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/http/guru-weekly-report.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/analytics/me",
       "method": "GET",
       "path": "/api/analytics/me",
@@ -16693,6 +16963,16 @@
       "sector": "S10",
       "file": "apps/api/src/modules/reports/performance/timeline/timeline.controllers.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/timeline/:p",
+      "method": "DELETE",
+      "path": "/api/timeline/:id",
+      "api_id": "API-RPT-15",
+      "status": "canonical",
+      "sector": "S10",
+      "file": "apps/api/src/modules/reports/performance/timeline/timeline.controllers.ts",
+      "approved_by_card": "S10-T08"
     },
     {
       "key": "GET /api/amaran/schools/:p",
@@ -17600,6 +17880,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/support/support.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/settings/support",
+      "method": "GET",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/settings/support",
+      "method": "PUT",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
     },
     {
       "key": "GET /api/admin/tiket/:p",

@@ -165,7 +165,7 @@ describe('S3 school detail: the other anchor schools (E2E-M11-31/52)', () => {
     })
   })
 
-  it('8102: 776 · 17 · 1,130 · 118 · 42 (the S2 value, D9), Kritikal 2.2%; statuses 17 · 4 · 755', async () => {
+  it('8102: 776 · 17 · 1,130 · 118 · 42 (the S2 value, D9), Rendah 2.2%; statuses 17 · 4 · 755', async () => {
     const d = await school(8102)
     expect(d.cards).toEqual({
       students: 776,
@@ -174,7 +174,7 @@ describe('S3 school detail: the other anchor schools (E2E-M11-31/52)', () => {
       teachers: 118,
       teachersLoggedIn: 42,
     })
-    expect([d.tahap, d.pct]).toEqual(['Kritikal', 2.2])
+    expect([d.tahap, d.pct]).toEqual(['Rendah', 2.2])
     expect([
       count(d.students, (s) => s.status === 'aktif'),
       count(d.students, (s) => s.status === 'login'),

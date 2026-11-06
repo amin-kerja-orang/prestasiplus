@@ -15,10 +15,10 @@ const session = (role: 'student' | 'teacher' | 'admin' | null) => ({
 describe('S6-T17 structured routes (R1-GUR-44b)', () => {
   const structured = routes.filter((r) => r.path.startsWith('/guru/soalan-berstruktur'))
 
-  it('mounts the list and the numeric detail for the teacher shell with portal guru', () => {
+  it('mounts the list and the numeric or g-id detail for the teacher shell with portal guru', () => {
     expect(structured.map((r) => r.path)).toEqual([
       '/guru/soalan-berstruktur',
-      '/guru/soalan-berstruktur/:id([0-9]+)',
+      '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
     ])
     expect(structured.map((r) => r.name)).toEqual([
       'm10.soalan.berstruktur',
