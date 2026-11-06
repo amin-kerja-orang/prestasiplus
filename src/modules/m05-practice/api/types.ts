@@ -14,6 +14,7 @@ export type PracticeMode =
   | 'chapter'
   | 'revision'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
   | 'mission'
@@ -426,6 +427,8 @@ export interface QuizQuestion {
   wrongTimes: number
   hasDskp: boolean
   contributor: { name: string; profileUrl: string | null } | null
+  /** "Rujukan" link of a personal question in a mission (FR-GUR-44a-9). */
+  referenceUrl?: string | null
   options: { id: number; label: string; text: string }[]
 }
 
