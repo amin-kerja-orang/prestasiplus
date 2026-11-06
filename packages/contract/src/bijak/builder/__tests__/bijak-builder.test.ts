@@ -29,6 +29,7 @@ import {
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
   BijakBuilderPaperPatchSchema,
+  BijakBuilderPaperSourceApplySchema,
   BijakBuilderPaperSchema,
   BijakBuilderPaperSummarySchema,
   BijakBuilderPreviewRequestSchema,
@@ -897,7 +898,7 @@ describe('openapi document', () => {
     (o) => o.op.tags?.includes(BIJAK_BUILDER_TAG) || o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG),
   )
 
-  it('has 27 operations, 22 paper and 5 blueprint, under /admin only', () => {
+  it('has 28 operations, 23 paper and 5 blueprint, under /admin only', () => {
     const keys = mine.map((o) => `${o.method} ${o.path}`).sort()
     expect(keys).toEqual(
       [
@@ -908,6 +909,7 @@ describe('openapi document', () => {
         'delete /admin/papers/{id}',
         'post /admin/papers/preview',
         'post /admin/papers/{id}/publish',
+        'post /admin/papers/{id}/source',
         'post /admin/papers/{id}/withdraw',
         'get /admin/papers/pool-preview',
         'get /admin/papers/{id}/review',
@@ -930,7 +932,7 @@ describe('openapi document', () => {
         'post /admin/blueprints/{subject}/{kertas}/retire',
       ].sort(),
     )
-    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(22)
+    expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BUILDER_TAG))).toHaveLength(23)
     expect(mine.filter((o) => o.op.tags?.includes(BIJAK_BLUEPRINT_ADMIN_TAG))).toHaveLength(5)
     expect(mine.every((o) => o.path.startsWith('/admin/'))).toBe(true)
   })
@@ -979,7 +981,7 @@ describe('openapi document', () => {
       content: Record<string, { schema: { $ref: string } }>
     }
     const writes = mine.filter((o) => o.method !== 'get')
-    expect(writes).toHaveLength(18)
+    expect(writes).toHaveLength(19)
     for (const { path, method, op } of writes) {
       const r = op.responses['429'] as R429 | undefined
       expect(r, `${method} ${path}`).toBeDefined()
@@ -1155,11 +1157,20 @@ describe('openapi document', () => {
     }
   })
 
+  it('describes POST /admin/papers/{id}/source with multipart and JSON bodies and 201/202/409/422 answers (S3-T06, API-BIJAK-14)', () => {
+    const op = doc.paths['/admin/papers/{id}/source']?.post
+    expect(Object.keys((op?.requestBody as { content?: Record<string, unknown> } | undefined)?.content ?? {}).sort()).toEqual(['application/json', 'multipart/form-data'])
+    for (const code of ['201', '202', '401', '403', '404', '409', '422', '429']) expect(op?.responses[code], code).toBeDefined()
+    expect(BijakBuilderPaperSourceApplySchema.safeParse({ apply: true }).success).toBe(true)
+    expect(BijakBuilderPaperSourceApplySchema.safeParse({ apply: false }).success).toBe(false)
+  })
+
   it('keeps answer keys and schemes out of every builder component except the admin-only review shapes', () => {
     const admin = new Set([
       'BijakBuilderReviewQuestion',
       'BijakBuilderSchemeLine',
       'BijakBuilderPreview',
+      'BijakBuilderPaperSourceUpload', // the admin upload body names its `scheme` PDF part
     ])
     const text = JSON.stringify(
       Object.fromEntries(

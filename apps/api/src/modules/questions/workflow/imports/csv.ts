@@ -426,7 +426,10 @@ function planCodeRows(
     if (levelId === null) bad('tingkatan', 'TINGKATAN_INVALID', CODE_MSG.tingkatan)
     const bahasa = get('bahasa').toLowerCase()
     if (!['', 'ms', 'bm', 'en', 'ms+en'].includes(bahasa)) bad('bahasa', 'BAHASA_INVALID', CODE_MSG.bahasa)
-    if (!['', 'rumi', 'arab', 'jawi', 'mixed'].includes(get('jenis_tulisan').toLowerCase())) bad('jenis_tulisan', 'SCRIPT_INVALID', CODE_MSG.jenisTulisan)
+    const jenis = get('jenis_tulisan').toLowerCase()
+    // Known R1 limit (S1-T09b): bilingual is Rumi only, so `ms+en` with Jawi or Arab script is refused with the same code as an unknown language.
+    if (bahasa === 'ms+en' && (jenis === 'jawi' || jenis === 'arab')) bad('bahasa', 'BAHASA_INVALID', CODE_MSG.bahasa)
+    if (!['', 'rumi', 'arab', 'jawi', 'mixed'].includes(jenis)) bad('jenis_tulisan', 'SCRIPT_INVALID', CODE_MSG.jenisTulisan)
     const numberLabel = get('number_label')
     if (numberLabel !== '' && !/^[0-9]{1,3}[A-Za-z]?$/.test(numberLabel)) bad('number_label', 'NUMBER_LABEL_INVALID', CODE_MSG.numberLabel)
     const kertasCell = get('kertas')
@@ -550,7 +553,7 @@ function planCodeRows(
         ...(chapterId === null ? {} : { chapterId }),
         ...(topicId === null ? {} : { topicId }),
         ...(numberLabel === '' ? {} : { numberLabel }),
-        ...(bahasa === 'en' ? { language: 'en' as const } : {}),
+        ...(bahasa === 'en' || bahasa === 'ms+en' ? { language: bahasa } : {}),
       },
       },
     })

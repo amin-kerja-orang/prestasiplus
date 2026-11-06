@@ -5,8 +5,9 @@ import { BijakUnitRefViewSchema } from '../standards/schema'
 /**
  * Bijak SPM (M28) papers, blueprints ("Kontrak") and "Jana Kertas" generation: the read side of
  * BE-15. The mock `BijakServer` (`src/modules/m28-bijak-spm/server/store.ts`, types in
- * `domain/types.ts`) has no HTTP routes; the five routes of this contract are derived from its
- * methods `listPapers`, `getCover`, `listContracts`, `subjects` and `generatePaper`.
+ * `domain/types.ts`) has no HTTP routes; the four routes of this contract are derived from its
+ * methods `listPapers`, `getCover`, `listContracts` and `subjects`. The pupil generate route is removed
+ * (S3-T07); the shortage and error shapes below stay for the admin generate route.
  *
  * Differences from the mock, all forced by the wire conventions:
  * - ids (paper, attempt) are opaque `Id` strings (UD-1); the mock already uses strings;
@@ -247,25 +248,6 @@ export const BijakBlueprintContractSchema = z
   })
   .meta({ id: 'BijakBlueprintContract' })
 export type BijakBlueprintContract = z.infer<typeof BijakBlueprintContractSchema>
-
-/** `POST /bijak/papers/generate` request. */
-export const BijakGenerateRequestSchema = z
-  .object({
-    subject: z
-      .string()
-      .min(1)
-      .max(32)
-      .meta({ description: 'Subject code of a blueprint.', example: 'MAT' }),
-    kertas: z.number().int().min(1).meta({ example: 2 }),
-  })
-  .meta({ id: 'BijakGenerateRequest' })
-export type BijakGenerateRequest = z.infer<typeof BijakGenerateRequestSchema>
-
-/** `201` result: the new private paper (`kind: jana`); open it with `GET /bijak/papers/{id}`. */
-export const BijakGenerateResultSchema = z
-  .strictObject({ paperId: IdSchema })
-  .meta({ id: 'BijakGenerateResult' })
-export type BijakGenerateResult = z.infer<typeof BijakGenerateResultSchema>
 
 export const BIJAK_SHORTAGE_KINDS = [
   'count',

@@ -379,7 +379,7 @@ describe('#15–#17 students (S6; BR-M10-04, BR-M10-30)', () => {
   it('#15 mine: the 8 distinct pupils of the own active classes, by name, with class chips', async () => {
     const a = await call<StudentList>('GET', '/api/guru/students')
     expect(a.status).toBe(200)
-    expect(a.body.meta).toEqual({ count: 8, schoolSet: true })
+    expect(a.body.meta).toEqual({ count: 8, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
     expect(a.body.data.map((s) => s.id)).toEqual([3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008])
     expect(a.body.data[0]).toMatchObject({ name: 'Murid Demo 01', levelName: 'Tingkatan 5' })
     expect(a.body.data[0]?.classNames.sort()).toHaveLength(2)
@@ -479,6 +479,128 @@ describe('#15–#17 students (S6; BR-M10-04, BR-M10-30)', () => {
     expect((await call('PUT', path, { body: { classroomId: newClassId } })).status).toBe(200)
     expect(classrooms.memberIds('classroom', newClassId)).toEqual([PELAJAR])
     await call('DELETE', `${path}?classroomId=${String(newClassId)}`)
+  })
+
+  describe('S6-T10: Cipta Pelajar, paging and the R1-GUR-41 columns', () => {
+    type Row = {
+      id: number
+      name: string
+      username: string | null
+      tugasan: number
+      skorPurata: number | null
+      lastActiveAt: string | null
+      classNames: string[]
+    }
+    type Page = { data: Row[]; meta: { count: number; schoolSet: boolean; page: number; pageSize: number; totalPages: number } }
+    type Created = Data<{ id: number; name: string; username: string; message: string }>
+    const createdIds: number[] = []
+    const post = (body: unknown, as?: number) =>
+      call<Created>('POST', '/api/guru/students', as === undefined ? { body } : { body, as })
+
+    it('POST creates a pupil in an own class: generated username, the success message, enrolled and listed', async () => {
+      const a = await post({ name: 'Ahmad Zaki bin Ali', classroomId: newClassId })
+      expect(a.status).toBe(201)
+      createdIds.push(a.body.data.id)
+      expect(a.body.data.username).toBe('ahmad.zaki.bin.ali01')
+      expect(a.body.data.message).toMatch(/^Pelajar dicipta\. Login: ahmad\.zaki\.bin\.ali01 \/ \S+$/)
+      expect(a.body.data.name).toBe('Ahmad Zaki bin Ali')
+      expect(classrooms.memberIds('classroom', newClassId)).toContain(a.body.data.id)
+      const user = users.get(a.body.data.id)
+      expect(user).toMatchObject({ role: 'student', schoolId: 900001, isActive: true })
+      const mine = await call<Page>('GET', '/api/guru/students?search=Ahmad%20Zaki')
+      expect(mine.body.data.find((r) => r.id === a.body.data.id)).toMatchObject({
+        username: 'ahmad.zaki.bin.ali01',
+        tugasan: 0,
+        skorPurata: null,
+        lastActiveAt: null,
+      })
+    })
+
+    it('POST gives the next suffix to a second pupil of the same name; a string class id works too', async () => {
+      const b = await post({ name: 'Ahmad Zaki bin Ali', classroomId: String(newClassId), ic: '120304011234' })
+      expect(b.status).toBe(201)
+      createdIds.push(b.body.data.id)
+      expect(b.body.data.username).toBe('ahmad.zaki.bin.ali02')
+    })
+
+    it('POST 409 on a duplicate IC names fields.ic', async () => {
+      const dup = await post({ name: 'Orang Lain', classroomId: newClassId, ic: '120304011234' })
+      expect(dup.status).toBe(409)
+      expect(fieldsOf(dup)).toEqual({ ic: 'No. IC sudah didaftarkan.' })
+    })
+
+    it('POST 422 gives the BE message per field', async () => {
+      const msg = async (body: unknown, as?: number) => {
+        const r = await post(body, as)
+        expect(r.status, JSON.stringify(body)).toBe(422)
+        return fieldsOf(r)
+      }
+      expect(await msg({ name: '  ', classroomId: newClassId })).toEqual({ name: 'Sila isi nama.' })
+      expect(await msg({ classroomId: newClassId })).toEqual({ name: 'Sila isi nama.' })
+      expect(await msg({ name: 'x'.repeat(256), classroomId: newClassId })).toEqual({
+        name: 'Nama tidak boleh melebihi 255 aksara.',
+      })
+      expect(await msg({ name: 'Murid Baru' })).toEqual({ classroomId: 'Sila pilih kelas.' })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId, ic: '12-03-04' })).toEqual({
+        ic: 'No. IC mesti 12 digit tanpa sempang.',
+      })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId, ic: '12030401123a' })).toEqual({
+        ic: 'No. IC mesti 12 digit tanpa sempang.',
+      })
+      // a class of teacher 1699 (not the teacher's own): "Sila pilih kelas."; a teacher without any active class: noActiveClass
+      expect(await msg({ name: 'Murid Baru', classroomId: 69 })).toEqual({ classroomId: 'Sila pilih kelas.' })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId }, ADMIN)).toEqual({
+        classroomId: 'Anda belum ada kelas aktif. Cipta kelas dahulu.',
+      })
+    })
+
+    it('POST 401 to a guest and 403 to a pupil', async () => {
+      expect((await post({ name: 'Murid Baru', classroomId: newClassId }, PELAJAR)).status).toBe(403)
+      expect(
+        (await call('POST', '/api/guru/students', { as: null, body: { name: 'M', classroomId: newClassId } })).status,
+      ).toBe(401)
+    })
+
+    it('GET pages 25 per page with page, pageSize and totalPages; a page past the end is the last page', async () => {
+      // teacher 1699 teaches 76 pupils (the F-30 anchor): pages of 25, 25, 25 and 1
+      const T = { as: 1699 }
+      const first = await call<Page>('GET', '/api/guru/students', T)
+      expect(first.body.meta).toMatchObject({ count: 76, page: 1, pageSize: 25, totalPages: 4 })
+      expect(first.body.data).toHaveLength(25)
+      const last = await call<Page>('GET', '/api/guru/students?page=4', T)
+      expect(last.body.data).toHaveLength(1)
+      const second = await call<Page>('GET', '/api/guru/students?page=2', T)
+      expect(second.body.meta.page).toBe(2)
+      expect(second.body.data.length).toBeGreaterThan(0)
+      expect(second.body.data[0]?.id).not.toBe(first.body.data[0]?.id)
+      const names = [...first.body.data, ...second.body.data].map((r) => r.name)
+      expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y)))
+      const past = await call<Page>('GET', '/api/guru/students?page=999', T)
+      expect(past.body.meta.page).toBe(4)
+      const bad = await call<Page>('GET', '/api/guru/students?page=0', T)
+      expect(bad.body.meta.page).toBe(1)
+    })
+
+    it('GET fills username on every row and derives skorPurata and lastActiveAt from the sessions', async () => {
+      const id = createdIds[0] as number
+      practice.addSession(id, { mode: 'latih_tubi', correct: 6, total: 10, timeSpentSec: 60, at: '2026-09-20T10:00:00+08:00' })
+      practice.addSession(id, { mode: 'random', correct: 8, total: 10, timeSpentSec: 60, at: '2026-09-21T10:00:00+08:00' })
+      const a = await call<Page>('GET', '/api/guru/students?search=Ahmad%20Zaki')
+      const row = a.body.data.find((r) => r.id === id)
+      expect(row?.skorPurata).toBe(70) // mean(60, 80), not a pooled figure
+      expect(row?.lastActiveAt).toMatch(/^2026-09-21T10:00:00/)
+      expect(row?.tugasan).toBe(0) // free practice is not an assignment
+      const all = await call<Page>('GET', '/api/guru/students')
+      for (const r of all.body.data) expect(r.username).toMatch(/^[a-z0-9.]+\d\d$/)
+    })
+
+    it('tidies the pupils created above', () => {
+      for (const id of createdIds) {
+        for (const c of classrooms.forTeacher(GURU)) classrooms.unenrol(c.kind, c.classId, id)
+        users.update(id, { isActive: false }, Date.now())
+      }
+      expect(createdIds.length).toBe(2)
+    })
   })
 })
 
@@ -1277,6 +1399,14 @@ describe('#73–#75 student classes and sets (S33, S34; BR-M10-02, BR-M10-18)', 
       { as: 3002 },
     )
     expect(other.body.data.find((s) => s.id === 7402)?.attemptsLeft).toBe(1)
+    // R1-GUR-41 "Tugasan": the completed set 7402 counts once for pupil 3001 of the teacher's class, not for 3002
+    const roster = await call<{ data: { id: number; tugasan: number; skorPurata: number | null }[] }>(
+      'GET',
+      '/api/guru/students',
+    )
+    expect(roster.body.data.find((s) => s.id === 3001)?.tugasan).toBe(1)
+    expect(roster.body.data.find((s) => s.id === 3002)?.tugasan).toBe(0)
+    expect(roster.body.data.find((s) => s.id === 3001)?.skorPurata).not.toBeNull()
   })
 })
 
@@ -1301,7 +1431,8 @@ describe('M08 teacher cards (F-30 invariants) through the handlers', () => {
         '/api/guru/students',
         { as: id },
       )
-      expect(mine.body.data).toHaveLength(pupils)
+      // the roster pages 25 per page (R1-GUR-41); `count` is every match
+      expect(mine.body.data).toHaveLength(Math.min(pupils, 25))
       expect(mine.body.meta.count).toBe(pupils)
     }
   })
