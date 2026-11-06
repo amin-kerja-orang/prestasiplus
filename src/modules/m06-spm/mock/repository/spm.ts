@@ -51,6 +51,7 @@ import {
 
 export interface SetView extends TrackingASetCard {
   subjectId: number
+  year: number
   /** Eligible questions in the set (a deactivated one leaves it). */
   eligibleCount: number
   size: number
