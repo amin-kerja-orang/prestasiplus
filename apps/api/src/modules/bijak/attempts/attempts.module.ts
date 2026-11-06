@@ -5,6 +5,7 @@ import { ThrottleModule } from '../../../common/throttle'
 import { FilesModule } from '../../files'
 import { AttemptSweeper } from './attempt-sweeper'
 import { BijakAttemptsController, PhotoInterceptor } from './attempts.controller'
+import { BijakAttemptHistoryReads } from './history-reads'
 import { AttemptsRepository } from './attempts.repository'
 import { BijakAttemptsService } from './attempts.service'
 import { BijakAttemptPorts } from './ports'
@@ -23,7 +24,7 @@ import { BijakAttemptProgress } from './progress-source'
   imports: [AuditModule, ThrottleModule, FilesModule],
   controllers: [BijakAttemptsController],
   // BijakAttemptProgress is exported but not bound to BE-15's ports here; a later integration PR binds it.
-  providers: [BijakAttemptPorts, BijakAttemptProgress, AttemptsRepository, BijakAttemptsService, AttemptSweeper, PhotoInterceptor],
-  exports: [BijakAttemptPorts, BijakAttemptProgress, BijakAttemptsService],
+  providers: [BijakAttemptPorts, BijakAttemptProgress, AttemptsRepository, BijakAttemptsService, AttemptSweeper, PhotoInterceptor, BijakAttemptHistoryReads],
+  exports: [BijakAttemptPorts, BijakAttemptProgress, BijakAttemptsService, BijakAttemptHistoryReads],
 })
 export class BijakAttemptsModule {}

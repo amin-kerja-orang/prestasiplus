@@ -17782,6 +17782,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/spm/history",
+      "method": "GET",
+      "path": "/api/spm/history",
+      "api_id": "API-BIJAK-07",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/spm/databank",
       "method": "GET",
       "path": "/api/spm/databank",
