@@ -48375,7 +48375,7 @@
           "parts": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
+              "$ref": "#/components/schemas/QuestionPart"
             },
             "minItems": 1
           },
