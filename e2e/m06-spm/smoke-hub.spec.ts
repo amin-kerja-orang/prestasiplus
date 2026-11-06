@@ -47,25 +47,27 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     )
 
     const stats = page.locator('[data-testid^=spm-stat-]')
-    await expect(statValues(stats)).toHaveText(['20,529', '25', '0', '1,769'])
+    await expect(statValues(stats)).toHaveText(['20,529', '25', '1,769'])
     await expect(statLabels(stats)).toHaveText([
       'Jumlah Soalan',
       'Subjek SPM',
-      'Tahun Tersedia',
       'Soalan Tracking A',
     ])
+    // No year source in the mock: the hub hides the tile (never a constant 0).
+    await expect(page.getByText('Tahun Tersedia')).toHaveCount(0)
     const width = viewportWidth(page)
-    expect(await columnsOf(page, 'spm-stats')).toBe(width >= 768 ? 4 : 2)
+    expect(await columnsOf(page, 'spm-stats')).toBe(width >= 768 ? 3 : 2)
 
     const cards = page.locator('[data-testid^=spm-module-]')
-    await expect(cards).toHaveCount(4)
+    await expect(cards).toHaveCount(5)
     const hrefs = await cards.evaluateAll((els) => els.map((e) => e.getAttribute('href')))
-    expect(hrefs).toEqual(['/spm/tahun-lepas', '/spm/latih-tubi', '/spm/ramalan', '/spm/subjektif'])
+    expect(hrefs).toEqual(['/spm/tahun-lepas', '/spm/latih-tubi', '/spm/ramalan', '/spm/subjektif', null])
     await expect(cards.getByTestId('module-chip')).toHaveText([
       '14,673 soalan',
       '14,673 soalan',
       '1,769 soalan',
       '4,059 set subjektif',
+      '0 kertas',
     ])
     await expect(cards.nth(0)).toContainText('Databank Soalan')
     await expect(cards.nth(0)).toContainText(
@@ -76,7 +78,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
       'Set objektif penuh dan lane bahasa khas untuk latihan intensif menjelang SPM.',
     )
     await expect(cards.nth(3)).toContainText(
-      'Latihan soalan esei & jawapan panjang, disemak oleh guru.',
+      'Latihan soalan berstruktur & esei, semak sendiri dengan skema.',
     )
     for (let i = 0; i < 4; i++) await expect(cards.nth(i)).toContainText('Mula')
     // Every tile icon shows a glyph (DV-M06-03).
@@ -84,7 +86,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
       .getByTestId('module-icon')
       .evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width === 0).length)
     expect(blank).toBe(0)
-    expect(await columnsOf(page, 'spm-modules')).toBe(width >= 1024 ? 4 : width >= 768 ? 2 : 1)
+    expect(await columnsOf(page, 'spm-modules')).toBe(width >= 1280 ? 5 : width >= 1024 ? 3 : width >= 768 ? 2 : 1)
 
     // 20,529 is never shown next to a smaller contradicting figure: both chips are below it.
     await expectNoHorizontalScroll(page)
