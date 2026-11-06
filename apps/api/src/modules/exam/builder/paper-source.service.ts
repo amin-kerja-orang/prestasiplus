@@ -16,10 +16,8 @@ import { ZodValidationPipe } from '../../../common/validation/zod-validation.pip
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { FILE_STORAGE, type FileStorage } from '../../files'
 import { bijakCodeOf } from '../../bijak/papers/subject-codes'
 import { IntakeFilesService, type CallerInfo } from '../../intake/files/intake-files.service'
-import { discardStored } from '../../intake/files/intake-storage'
 import { IntakeUploadService, type UploadedPart } from '../../intake/files/intake-upload.service'
 import type { AuditActor } from './actor'
 import { PAPER_SOURCE_MAX_BYTES } from './builder.constants'
@@ -69,7 +67,6 @@ export class PaperSourceService {
     @Inject(BijakBuilderPorts) private readonly ports: BijakBuilderPorts,
     @Inject(IntakeFilesService) private readonly batches: IntakeFilesService,
     @Inject(IntakeUploadService) private readonly uploads: IntakeUploadService,
-    @Inject(FILE_STORAGE) private readonly storage: FileStorage,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -169,28 +166,15 @@ export class PaperSourceService {
         await this.record(actor, paper.id, { from: 'draf', to: 'draf', op: 'source_upload', batchId: batch.id })
       })
     } catch (err) {
-      await this.abandon(auth, batch.id, rawId, who)
+      await this.abandon(auth, batch.id, who)
       throw err
     }
     return { batchId: batch.id }
   }
 
-  /**
-   * The upload path failed after the batch was created (for example a parallel upload won the 409 race, or the link could not be written). The batch is
-   * cancelled; then, because intake has no retention job for the files of a cancelled batch, its file rows (pages cascade) and stored objects are removed too,
-   * so nothing is left behind. Only done when the cancel succeeded (a batch that could not be cancelled is left whole). Never throws.
-   */
-  private async abandon(auth: AuthContext, batchId: string, rawId: string, who: CallerInfo): Promise<void> {
-    try {
-      const id = BigInt(batchId)
-      const rows = await this.prisma.client.intakeFile.findMany({ where: { batchId: id }, select: { fileId: true } })
-      await this.batches.cancelBatch(auth, batchId, who)
-      if (rows.length === 0) return
-      await this.prisma.client.intakeFile.deleteMany({ where: { batchId: id } })
-      await discardStored(this.prisma, this.storage, rows.map((r) => idToString(r.fileId)))
-    } catch (e) {
-      this.log.error(`source batch ${batchId} of paper ${rawId} could not be cleaned up: ${e instanceof Error ? e.message : String(e)}`)
-    }
+  /** The upload path failed after the batch was created: intake cancels it and removes its files (its own store; never throws). */
+  private abandon(auth: AuthContext, batchId: string, who: CallerInfo): Promise<void> {
+    return this.uploads.discardBatch(auth, batchId, who)
   }
 
   /**

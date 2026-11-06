@@ -2,7 +2,6 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
-import { FilesModule } from '../../files'
 import { BijakPapersModule } from '../../bijak/papers'
 import { IntakeFilesModule } from '../../intake/files'
 import { QuestionsModule } from '../../questions'
@@ -21,7 +20,7 @@ import { QuestionBankBuilderSource } from './question-bank.source'
  * `ports.ts`). Tests swap the source by overriding the `QuestionBankBuilderSource` provider.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule, IntakeFilesModule, FilesModule],
+  imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule, IntakeFilesModule],
   controllers: [BuilderController, SectionPoolsController],
   providers: [BijakBuilderPorts, BuilderRepository, BuilderService, PaperSourceService, SectionPoolService, QuestionBankBuilderSource],
   exports: [BijakBuilderPorts, BuilderRepository, BuilderService],
