@@ -61,7 +61,7 @@ interface StudentRef {
 /** Longest username stem before the 2-digit suffix (the BE `USERNAME_STEM_MAX`). */
 const USERNAME_STEM_MAX = 40
 /** The default password of a pupil created in mock mode; the BE reads `PUPIL_DEFAULT_PASSWORD`. */
-const MOCK_PUPIL_PASSWORD = 'Murid#Mock2026'
+const MOCK_PUPIL_PASSWORD = 'demo-murid-01'
 
 /** Username stem of a name (D113), the same rule as the BE `usernameStem`. */
 export function usernameStem(name: string): string {
