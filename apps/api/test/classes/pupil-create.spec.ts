@@ -94,7 +94,7 @@ describe('POST /api/guru/students (Cipta Pelajar)', () => {
     // mean of 60, 80, 70, 70, 70 = 70
 
     const answer = (at: string, isTest: boolean) =>
-      t.db.query(`insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test) values ($1::bigint, $2::bigint, true, $3::timestamptz, $4)`, [
+      t.db.query(`insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test, mode) values ($1::bigint, $2::bigint, true, $3::timestamptz, $4, 'latih_tubi')`, [
         pupil,
         subject.id,
         at,
