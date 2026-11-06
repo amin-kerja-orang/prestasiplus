@@ -38,22 +38,20 @@ test.describe('Bijak SPM US-33 results, http mode @bijak @api', () => {
     await expectNoHorizontalScrollHttp(page)
   })
 
-  test('teacher class view has the Keputusan Bijak SPM section, figures or Tiada data @bijak', async ({
+  test('teacher class view is the full V3 Prestasi Kelas layout, no Bijak-only section @bijak', async ({
     page,
   }) => {
+    // R1 (D115, S10-T06 change 1, fixed by S10-T07 #843): the class view no longer has a reduced
+    // "Keputusan Bijak SPM" section in http mode; Bijak sittings count inside the normal blocks.
     test.skip(!GURU_USER || !GURU_PASS, NEEDS_PASSWORD)
     await httpLogin(page, GURU_USER ?? '', GURU_PASS ?? '')
     await page.goto(US33_ROUTES.classPicker)
     await expectNoHorizontalScrollHttp(page)
     await page.locator('a[href^="/prestasi/kelas/"]').first().click()
     await expectScreen(page, S.classPage)
-    const section = page.getByTestId(S.bijakSummary)
-    await expect(section).toContainText(US33_COPY.label)
-    if (await page.getByTestId(S.bijakEmpty).isVisible()) {
-      await expect(page.getByTestId(S.bijakEmpty)).toContainText(US33_COPY.noData)
-      await expect(page.getByTestId(S.statCards)).toHaveCount(0)
-    } else {
-      await expect(page.getByTestId(S.statCards)).toBeVisible()
-    }
+    await expect(page.getByTestId(S.statCards)).toBeVisible()
+    await expect(page.getByTestId(S.bijakSummary)).toHaveCount(0)
+    await expect(page.getByTestId(S.bijakEmpty)).toHaveCount(0)
+    await expect(page.getByText(US33_COPY.label)).toHaveCount(0)
   })
 })

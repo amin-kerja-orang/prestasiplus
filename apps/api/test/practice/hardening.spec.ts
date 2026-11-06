@@ -99,7 +99,7 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
 })
 
 describe('2 assigned work: parallel starts and submits cannot multiply attempts', () => {
-  it('question_set: parallel starts give one session (resumed), then maxAttempts 1 is spent by one completion', async () => {
+  it('question_set: parallel starts give one session (resumed), then a stored maxAttempts 1 is ignored (R1: no cap)', async () => {
     t.assignments.set('question_set', '7499', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 1, timeLimitSec: 60 })
     const racing = await Promise.all([1, 2, 3, 4, 5].map(() => post(pelajar, { mode: 'question_set', questionSetId: '7499' })))
     expect(racing.map((r) => r.status)).toEqual([201, 201, 201, 201, 201])
@@ -110,10 +110,10 @@ describe('2 assigned work: parallel starts and submits cannot multiply attempts'
     expect(done.map((r) => r.status).sort()).toEqual([200, 409])
     expect(t.reward.calls).toHaveLength(1)
     const again = await post(pelajar, { mode: 'question_set', questionSetId: '7499' })
-    expect(again.body.error.code).toBe('NO_ATTEMPTS_LEFT')
+    expect(again.status).toBe(201)
   })
 
-  it('question_set: two open sessions of an older start cannot both complete (submit re-checks maxAttempts)', async () => {
+  it('question_set: two open sessions of an older start both complete (R1: no attempt cap on submit)', async () => {
     t.assignments.set('question_set', '7500', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 1 })
     const mk = async () =>
       (
@@ -124,11 +124,8 @@ describe('2 assigned work: parallel starts and submits cannot multiply attempts'
       )[0]?.id as string
     const [a, b] = [await mk(), await mk()]
     const results = await Promise.all([submit(pelajar, a), submit(pelajar, b)])
-    expect(results.map((r) => r.status).sort()).toEqual([200, 409])
-    const refused = results.find((r) => r.status === 409)
-    expect(refused?.body.error).toMatchObject({ code: 'NO_ATTEMPTS_LEFT', message: 'Tiada percubaan lagi untuk set ini.' })
-    expect(t.reward.calls).toHaveLength(1)
-    expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(1)
+    expect(results.map((r) => r.status)).toEqual([200, 200])
+    expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(2)
   })
 
   it('question_set with maxAttempts 0 (unlimited) can be completed many times', async () => {
