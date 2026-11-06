@@ -7,6 +7,7 @@
  *
  * What it creates or ensures (all fictitious, idempotent):
  * - a Tingkatan 4 pupil (`murid.t4.e2e@example.test`, grade 10, school DEMO001);
+ * - a Tingkatan 1 pupil (`murid.t1.e2e@example.test`, grade 7) and a Tingkatan 5 pupil (`murid.t5.e2e@example.test`, grade 11), school DEMO001, the CI pupils of AC-X3-1 (card S5-T01); the T5 pupil is served by the `questions-pool` MCQs, the T1 pupil by the 5 MCQs of `e2e-t1.ts`;
  * - an Admin Pusat (`admin.pusat.e2e@example.test`, national scope);
  * - the study evidence of that blueprint entered as admin evidence (H-A15: study rows do not count at Sahkan), labelled as an E2E fixture;
  * - one T4 launch blueprint (default Matematik Tambahan Kertas 2, code `3472/2`, override with `E2E_BLUEPRINT`). It is the one launch blueprint that can pass the checks as
@@ -32,6 +33,7 @@ import { BlueprintsRepository } from '../../src/modules/exam/blueprints/blueprin
 import { checkEvidence, validateForVerification, type EvidenceItem } from '../../src/modules/exam/blueprints/exam-core.adapter'
 import { demoPasswordHash } from './core/demo-password'
 import { linkPracticeChapters } from './e2e-chapter'
+import { seedE2eT1 } from './e2e-t1'
 import { E2E_K2_BLUEPRINT, seedE2eK2 } from './e2e-k2'
 import { seedE2eTrial } from './e2e-trial'
 import { countsAsProduction } from './guard'
@@ -39,6 +41,8 @@ import type { SeedContext, SeedModule } from './index'
 
 export const E2E_FLAG = 'E2E_SEED'
 export const E2E_PUPIL_EMAIL = 'murid.t4.e2e@example.test'
+export const E2E_PUPIL_T1_EMAIL = 'murid.t1.e2e@example.test'
+export const E2E_PUPIL_T5_EMAIL = 'murid.t5.e2e@example.test'
 export const E2E_ADMIN_EMAIL = 'admin.pusat.e2e@example.test'
 export const E2E_DEFAULT_BLUEPRINT = '3472/2'
 /** With `E2E_SEED`: the `@api` browser specs (`playwright.http.config.ts`) use DEMO002..004 as their other schools. */
@@ -186,11 +190,14 @@ export const e2eSeed: SeedModule = {
     const school = await prisma.school.findUnique({ where: { code: 'DEMO001' }, select: { id: true } })
     if (!school) throw new Error('e2e seed: school DEMO001 is missing (core-identity must run first)')
     await ensureUser(ctx, { email: E2E_PUPIL_EMAIL, name: 'Murid Ujian E2E', username: 'murid-t4-e2e', role: 'student', grade: 10, schoolId: school.id, national: false })
+    await ensureUser(ctx, { email: E2E_PUPIL_T1_EMAIL, name: 'Murid T1 Ujian E2E', username: 'murid-t1-e2e', role: 'student', grade: 7, schoolId: school.id, national: false })
+    await ensureUser(ctx, { email: E2E_PUPIL_T5_EMAIL, name: 'Murid T5 Ujian E2E', username: 'murid-t5-e2e', role: 'student', grade: 11, schoolId: school.id, national: false })
     const adminId = await ensureUser(ctx, { email: E2E_ADMIN_EMAIL, name: 'Admin Pusat Ujian E2E', username: 'admin-pusat-e2e', role: 'admin', grade: null, schoolId: null, national: true })
     const code = (ctx.env.E2E_BLUEPRINT ?? E2E_DEFAULT_BLUEPRINT).trim() || E2E_DEFAULT_BLUEPRINT
     await verifyBlueprint(prisma, code, adminId, ctx.clock.now())
     // E2E fixture (T26c): the structured Kertas 2 pool and its published paper, only for the default 3472/2 blueprint (the one that is Disahkan above).
     if (code === E2E_K2_BLUEPRINT) await seedE2eK2(ctx, adminId)
+    await seedE2eT1(ctx, adminId) // E2E fixture (S5-T01): 5 Tingkatan 1 MCQs, written before the chapter link so they are linked
     await linkPracticeChapters(prisma)
     await seedE2eTrial(ctx) // E2E fixture: unsubscribed pupils with one trial answer left (e2e-trial.ts)
     if (ctx.env[E2E_DEMO_SECONDARY_FLAG] === '1') await treatDemoAsSecondary(prisma)

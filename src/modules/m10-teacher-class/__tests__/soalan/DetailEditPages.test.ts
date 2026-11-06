@@ -129,8 +129,8 @@ describe('S24 edit (the create form with every saved field)', () => {
       status: 'pending',
       editable: true,
       difficultyLevel: 4,
-      chapterId: 7,
-      spIds: [111],
+      chapterId: '7',
+      spIds: ['111'],
       tp: 5,
       cognitiveLevel: 'menilai',
     })

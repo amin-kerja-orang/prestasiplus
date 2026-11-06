@@ -1,58 +1,49 @@
 <script setup lang="ts">
 /**
  * S8 `/profile/edit` "Kemaskini Profil - PRESTASIPLUS" (M01-T6; FR-M01-39..45, BR-13..16), v2 restyle (B09 / A1).
- * Four cards in the order of live: "Gambar Profil" (own form), "Maklumat Peribadi" + "Maklumat
- * Sekolah" + actions row (one form, `PUT /api/me`), and "Tukar Kata Laluan" (own form).
- * Native validation only (`required` name, `maxlength` bio). The bio counter is static, as live
- * (its binding is missing there). Outcomes show in the flash outlet at the top of the shell main:
+ * Three cards in the order of live: "Gambar Profil" (own form), "Maklumat Peribadi" + actions row
+ * (one form, `PUT /api/me`: name, phone, bio only; Tingkatan and school change only through the admin
+ * user edit, S5-T05), and "Tukar Kata Laluan" (own form).
+ * Native validation only (`required` name, except the school admin, whose empty Nama shows the app line "Sila isi nama." instead; `maxlength` bio 1000). The bio counter is `{n}/1000` (FR-MUR-A1-11). Outcomes show in the flash outlet at the top of the shell main:
  * success texts and server errors are UNVERIFIED COPY (SRS §8). The form is seeded from the cached
  * session user; a background `GET /api/me` refresh re-seeds it only while the user has not typed.
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { isHttpMode } from '@/api/mode'
 import { useFlash } from '@/composables/useFlash'
 import { useSessionStore } from '@/stores/session'
 
-import { getMe, updateProfile, type SchoolSummary, type UserMe } from '../api'
+import { updateProfile, type UserMe } from '../api'
 import ProfileAvatarCard from '../components/profile/ProfileAvatarCard.vue'
-import ProfileGradePicker from '../components/profile/ProfileGradePicker.vue'
 import ProfilePasswordCard from '../components/profile/ProfilePasswordCard.vue'
-import ProfileSchoolPicker from '../components/profile/ProfileSchoolPicker.vue'
 import { errorLines } from '../lib/error-lines'
 
 const session = useSessionStore()
 const flash = useFlash()
 const user = computed(() => session.user)
+/** S5-T14 (R1-AS-A1): the school admin's form follows the field table of 20 R1-AS-A1 (other roles keep the V3 behaviour). */
+const isSchoolAdmin = computed(() => user.value?.role === 'school_admin')
+const SCHOOL_ADMIN_PROFILE_SAVED = 'Profil dikemaskini.'
+const PHONE = /^\+?\d{9,14}$/
 
 /**
- * DV-28: the real API stores a self-chosen school only when the account has at least one role and EVERY role is
- * student or parent (any other role ignores `schoolId`, so the card would "save" nothing). The client `UserMe`
- * has only the active `role`, so in http mode the whole `roles[]` is read from the raw `GET /api/me` (and the
- * `PUT /api/me` answer); until it is known the card stays hidden. Mock mode (live) shows it for every role.
+ * FR-AS-A1-4, AC-AS-A1-4: Nama required and at most 255 characters; Telefon optional, digits with an optional leading "+",
+ * 9 to 14 digits. Spaces and dashes typed for readability (the placeholder is "012-3456789") are ignored by the check and
+ * the value is sent as typed. Nothing is saved while a check fails.
  */
-const SELF_SCHOOL_ROLES: readonly string[] = ['student', 'parent']
-const http = isHttpMode()
-const roles = ref<readonly string[] | null>(null)
-
-function readRoles(me: unknown): void {
-  const list = (me as { roles?: unknown } | null)?.roles
-  if (Array.isArray(list) && list.every((r) => typeof r === 'string')) roles.value = list
+function schoolAdminProfileErrors(input: { name: string; phone: string }): string[] {
+  const out: string[] = []
+  const trimmed = input.name.trim()
+  if (trimmed === '') out.push('Sila isi nama.')
+  else if (trimmed.length > 255) out.push('Nama tidak boleh melebihi 255 aksara.')
+  const digits = input.phone.trim().replace(/[\s-]/g, '')
+  if (digits !== '' && !PHONE.test(digits)) out.push('Format telefon tidak sah.')
+  return out
 }
-
-const showSchool = computed(
-  () =>
-    !http ||
-    (roles.value !== null &&
-      roles.value.length > 0 &&
-      roles.value.every((r) => SELF_SCHOOL_ROLES.includes(r))),
-)
 
 const name = ref('')
 const phone = ref('')
 const bio = ref('')
-const grade = ref<number | null>(null)
-const school = ref<SchoolSummary | null>(null)
 const saving = ref(false)
 const touched = ref(false)
 
@@ -60,20 +51,11 @@ function seed(me: UserMe): void {
   name.value = me.name
   phone.value = me.phone ?? ''
   bio.value = me.bio ?? ''
-  grade.value = me.grade
-  school.value = me.school
 }
 
 if (session.user) seed(session.user)
 
 onMounted(async () => {
-  if (http) {
-    try {
-      readRoles(await getMe())
-    } catch {
-      // Roles stay unknown: the school card stays hidden (fail closed).
-    }
-  }
   const fresh = await session.refreshUser()
   if (fresh && !touched.value) seed(fresh)
 })
@@ -100,21 +82,28 @@ async function onPictureSaved(status: string): Promise<void> {
 }
 
 async function submit(): Promise<void> {
-  saving.value = true
   flash.clear()
+  if (isSchoolAdmin.value) {
+    const problems = schoolAdminProfileErrors({ name: name.value, phone: phone.value })
+    if (problems.length) {
+      showErrors(problems)
+      return
+    }
+  }
+  saving.value = true
   try {
+    // The school admin's values are sent trimmed, as they were checked (S5-T14).
+    const sentName = isSchoolAdmin.value ? name.value.trim() : name.value
+    const sentPhone = isSchoolAdmin.value ? phone.value.trim() : phone.value
     const result = await updateProfile({
-      name: name.value,
-      phone: phone.value === '' ? null : phone.value,
+      name: sentName,
+      phone: sentPhone === '' ? null : sentPhone,
       bio: bio.value === '' ? null : bio.value,
-      grade: grade.value,
-      ...(showSchool.value ? { schoolId: school.value?.id ?? null } : {}),
     })
-    readRoles(result.data)
     session.setUser(result.data)
     seed(result.data)
     touched.value = false
-    showSuccess(result.status)
+    showSuccess(isSchoolAdmin.value ? SCHOOL_ADMIN_PROFILE_SAVED : result.status)
   } catch (err) {
     showErrors(errorLines(err))
   } finally {
@@ -154,7 +143,7 @@ async function submit(): Promise<void> {
               v-model="name"
               type="text"
               name="name"
-              required
+              :required="!isSchoolAdmin"
               icon="i-ph-user"
               size="lg"
               class="w-full"
@@ -192,30 +181,17 @@ async function submit(): Promise<void> {
               v-model="bio"
               name="bio"
               :rows="3"
-              :maxlength="500"
+              :maxlength="1000"
               placeholder="Tulis sesuatu tentang diri anda..."
               size="lg"
               class="w-full"
               data-testid="profile-bio-input"
             />
             <template #help>
-              <!-- Static, as live: the counter never updates (FR-M01-39). -->
-              <span data-testid="profile-bio-counter">Baki: 500 aksara</span>
+              <!-- FR-MUR-A1-11: the limit is 1000 and the counter is `{n}/1000` (live showed a static "Baki: 500 aksara"). -->
+              <span data-testid="profile-bio-counter">{{ bio.length }}/1000</span>
             </template>
           </UFormField>
-
-          <ProfileGradePicker v-model="grade" @update:model-value="touched = true" />
-        </div>
-      </UCard>
-
-      <UCard v-if="showSchool" data-testid="profile-school-card">
-        <div class="flex flex-col gap-4">
-          <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-            <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />
-            Maklumat Sekolah
-          </h2>
-          <p class="text-body text-muted">Pilih sekolah anda untuk sambung dengan rakan sekelas</p>
-          <ProfileSchoolPicker v-model="school" @update:model-value="touched = true" />
         </div>
       </UCard>
 

@@ -26,6 +26,11 @@ export class InMemoryClasses implements ClassesReadPort {
     return this
   }
 
+  /** Synchronous class ids of a pupil (the answer fake derives its classroom filter from it). */
+  classIdsOf(userId: string): string[] {
+    return [...this.rosters].filter(([, members]) => members.includes(userId)).map(([id]) => id)
+  }
+
   private fresh(c: ClassInfo): ClassInfo {
     return { ...c, studentCount: (this.rosters.get(c.id) ?? []).length }
   }

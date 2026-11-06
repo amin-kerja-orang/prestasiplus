@@ -12,7 +12,7 @@ import type { QuestionStatus, ScriptType } from '../../api/types'
  */
 export const COPY = {
   /** Live (FR-M10-97). */
-  confirmDelete: (id: number): string =>
+  confirmDelete: (id: number | string): string =>
     `Padam soalan #${String(id)}? Tindakan ini tidak boleh dibatalkan.`,
   // UNVERIFIED COPY
   loadFailed: 'Gagal memuatkan data. Sila cuba lagi.',

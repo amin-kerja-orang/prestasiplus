@@ -35,15 +35,13 @@ export interface DirectoryPort {
   teachersOfSchool(schoolId: string): Promise<{ id: string; name: string }[]>
   /** Student accounts of a school (active and inactive; callers filter with `users()`). */
   pupilIdsOfSchool(schoolId: string): Promise<string[]>
-  /** Student accounts per school, one grouped read. Schools without any are present with 0. */
-  countPupils(schoolIds: readonly string[]): Promise<Map<string, number>>
-  /** Teacher accounts per school, one grouped read. Schools without any are present with 0. */
-  countTeachers(schoolIds: readonly string[]): Promise<Map<string, number>>
   /**
    * Curriculum `subjects.id` of each Bijak sitting subject CODE (MAT maps to the MATH row), in one read; a code with no
    * subject is absent from the map. A class stores the curriculum id; a sitting stores the code.
    */
   subjectIdsOfCodes(codes: readonly string[]): Promise<Map<string, string>>
+  /** Curriculum subjects by id (code and BM name), one read; an unknown id is absent from the map. */
+  subjectsOfIds(ids: readonly string[]): Promise<Map<string, { code: string; name: string }>>
 }
 
 export const DIRECTORY_PORT = Symbol('DIRECTORY_PORT')

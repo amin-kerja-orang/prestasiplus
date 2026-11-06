@@ -10,11 +10,11 @@ import {
 } from '../../api/guru'
 import { buildBody, emptyValues } from '../../components/soalan/form'
 import {
-  PAPER_TYPES,
+  QUESTION_SET_PAPER_TYPES as PAPER_TYPES,
   QuestionGuruCreateRequestSchema,
   QuestionGuruUpdateRequestSchema,
   QuestionSetPaperFieldsSchema,
-} from './shapes'
+} from '@pp/contract'
 
 /**
  * Contract-shape test: the bodies the FE really builds (`buildBody` + the api functions in http mode) are validated with

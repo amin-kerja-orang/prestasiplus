@@ -6,9 +6,9 @@
  */
 import { computed } from 'vue'
 
-import { DsGrid, DsGridItem, DsStatTile, formatCount, formatPercent } from '@/ds'
+import { DsGrid, DsGridItem, DsStatTile, formatCount } from '@/ds'
 
-import type { CcLiveData } from '../../api/command-center-board'
+import { accuracyText, type CcLiveData } from '../../api/command-center-board'
 import { accentAt } from '../command-center/cc-format'
 import { S2_COPY } from './board-copy'
 import { useCountUp } from './composables'
@@ -20,7 +20,7 @@ const students = useCountUp(computed(() => props.data?.totalStudents ?? null))
 const answered = useCountUp(computed(() => props.data?.totalAnswered ?? null))
 
 const accuracy = computed(() =>
-  props.data ? formatPercent(props.data.accuracy) : S2_COPY.placeholder,
+  props.data ? accuracyText(props.data.accuracy) : S2_COPY.placeholder,
 )
 const active = computed(() => (props.data ? formatCount(props.data.activeStudents) : '--'))
 

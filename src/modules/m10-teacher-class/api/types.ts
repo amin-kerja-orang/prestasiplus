@@ -222,12 +222,12 @@ export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 /** One row of "Soalan Saya": the server `QuestionGuruSummary` (the teacher's own intake item, API-GUR-18). */
 export interface ContributedQuestion {
   /** The intake item id. */
-  id: number
+  id: string
   questionType: QuestionType
   questionText: string
-  subjectId: number | null
+  subjectId: string | null
   subjectName: string
-  educationLevelId: number | null
+  educationLevelId: string | null
   levelName: string
   /** Kesukaran 1 (Sangat mudah) to 5 (Sangat sukar); never derived from TP. */
   difficultyLevel: number
@@ -249,8 +249,8 @@ export interface ContributedQuestion {
 
 /** The detail: the server `QuestionGuruDetail` (the summary plus the DSKP fields of 44-F1). */
 export interface ContributedQuestionDetail extends ContributedQuestion {
-  chapterId: number | null
-  spIds: number[]
+  chapterId: string | null
+  spIds: string[]
   tp: number | null
   cognitiveLevel: string | null
 }
@@ -303,11 +303,6 @@ export interface JoinedClass {
   subjectName: string | null
   teacherName: string | null
   levelLabel: string
-}
-
-export interface JoinClassResponse {
-  data: { classroomId: number }
-  message: string
 }
 
 // ---------------------------------------------------------------------------------------------

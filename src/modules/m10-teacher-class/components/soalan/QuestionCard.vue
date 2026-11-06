@@ -22,7 +22,7 @@ import {
 } from './lib'
 
 defineProps<{ question: ContributedQuestion; deleting?: boolean }>()
-const emit = defineEmits<{ remove: [id: number] }>()
+const emit = defineEmits<{ remove: [id: string] }>()
 
 const open = ref(false)
 </script>

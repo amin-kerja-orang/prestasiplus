@@ -9,6 +9,7 @@ import remedialProgress from './routes/remedial-progress'
 import setSoalanSaya from './routes/set-soalan-saya'
 import soalan from './routes/soalan'
 import soalanRujukan from './routes/soalan-rujukan'
+import teacherProfile from './routes/teacher-profile'
 
 /**
  * M10 routes (build-plan §S.3 rule 2): only spreads the `routes/<group>.ts` fragments. Each UI task
@@ -24,6 +25,7 @@ const routes: RouteRecordRaw[] = [
   ...setSoalanSaya,
   ...soalan,
   ...soalanRujukan,
+  ...teacherProfile,
 ]
 
 export default routes

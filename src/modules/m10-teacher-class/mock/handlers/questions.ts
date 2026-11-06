@@ -131,17 +131,20 @@ function statusOf(q: Question): 'pending' | 'approved' | 'rejected' {
 // Response shapes
 // ---------------------------------------------------------------------------------------------
 
+/** The contract sends ids as strings (`IdSchema`); storage keeps numbers. */
+const idOrNull = (id: number | null): string | null => (id === null ? null : String(id))
+
 /** One card of "Soalan Saya" (FN-M10-7.1.8). */
 function summaryOf(q: Question) {
   const subject = q.subjectId === null ? undefined : curriculum.subject(q.subjectId)
   const level = q.educationLevelId === null ? undefined : curriculum.level(q.educationLevelId)
   return {
-    id: q.id,
+    id: String(q.id),
     questionType: q.questionType,
     questionText: q.questionText,
-    subjectId: q.subjectId,
+    subjectId: idOrNull(q.subjectId),
     subjectName: subject?.name ?? '',
-    educationLevelId: q.educationLevelId,
+    educationLevelId: idOrNull(q.educationLevelId),
     levelName: level?.name ?? '',
     difficultyLevel: q.difficultyLevel,
     difficultyLabel: DIFFICULTY_LABELS[q.difficultyLevel] ?? '',
@@ -161,8 +164,8 @@ function summaryOf(q: Question) {
 function detailOf(q: Question) {
   return {
     ...summaryOf(q),
-    chapterId: q.curriculumChapterId,
-    spIds: dskpExtra.get(q.id)?.spIds ?? (q.dskpSpId === null ? [] : [q.dskpSpId]),
+    chapterId: idOrNull(q.curriculumChapterId),
+    spIds: (dskpExtra.get(q.id)?.spIds ?? (q.dskpSpId === null ? [] : [q.dskpSpId])).map(String),
     tp: dskpExtra.get(q.id)?.tp ?? null,
     cognitiveLevel: dskpExtra.get(q.id)?.cognitiveLevel ?? null,
   }
