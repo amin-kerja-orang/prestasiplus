@@ -19,7 +19,8 @@ export class ArenaController {
   @Get('lobby')
   @RateLimit(BATTLE_LIMITS.read)
   async lobby(@Req() req: Req) {
-    return ok(await this.arena.lobby(ScopeContext.fromRequest(req).userId))
+    const s = ScopeContext.fromRequest(req)
+    return ok(await this.arena.lobby({ userId: s.userId, role: s.role }))
   }
 
   @Get('arena/:uuid')
