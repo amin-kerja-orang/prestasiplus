@@ -3,12 +3,14 @@ import { createHmac, randomInt } from 'node:crypto'
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import { PASSWORD_ALPHABET, PASSWORD_LENGTH } from './users.constants'
+import { MIN_PASSWORD_LENGTH, PASSWORD_ALPHABET, PASSWORD_LENGTH } from './users.constants'
 
 /** A random initial password (D59b): 14 characters from a 54-letter alphabet, about 80 bits. */
-export function generatePassword(): string {
+export function generatePassword(length: number = PASSWORD_LENGTH): string {
+  // Never issue a password under the minimum (FR-ADM-U02.4); a caller asking for less is a bug, not input.
+  if (!Number.isInteger(length) || length < MIN_PASSWORD_LENGTH) throw new RangeError(`A generated password needs at least ${String(MIN_PASSWORD_LENGTH)} characters.`)
   let out = ''
-  for (let i = 0; i < PASSWORD_LENGTH; i++) out += PASSWORD_ALPHABET.charAt(randomInt(PASSWORD_ALPHABET.length))
+  for (let i = 0; i < length; i++) out += PASSWORD_ALPHABET.charAt(randomInt(PASSWORD_ALPHABET.length))
   return out
 }
 

@@ -151,7 +151,7 @@ const pupilPasswordRules = (): ValidationRule[] => [min(PUPIL_PASSWORD_MIN), max
 
 export const schoolAdminUsers = {
   /**
-   * S9 / S10. BR-M02-08…12 (name, unique e-mail, phone max 14, optional new password min 6 and confirmed);
+   * S9 / S10. BR-M02-08…12 (name, unique e-mail, phone max 14, optional new password min 8 and confirmed);
    * role, school, status and grade are never changed.
    */
   updateUser(
@@ -291,7 +291,7 @@ export const schoolAdminUsers = {
     return reload(id)
   },
 
-  /** BR-M27-34: the new password replaces the hash at once (min 6, confirmed); the account must be active. */
+  /** BR-M27-34: the new password replaces the hash at once (min 8, confirmed); the account must be active. */
   resetPassword(
     schoolId: number,
     role: ManagedRole,

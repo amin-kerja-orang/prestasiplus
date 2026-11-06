@@ -69,7 +69,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/schools',
     tags,
     summary: 'List schools (30 per page, name A to Z)',
-    description: `${access('GET /admin/schools')} \`meta.counts\` {total, active, inactive} covers all schools; \`meta.types\` lists the distinct types present. Responses carry the join code (a bearer secret): no-store.`,
+    description: `${access('GET /admin/schools')} \`meta.counts\` {total, active, inactive} covers all visible schools; \`meta.types\` lists the distinct visible types. Primary types (SK, SJK(C), SJK(T)) are hidden by default; \`includePrimary=true\`, or a \`type\` filter naming one of them, shows them and counts/types follow the same set (rows are never deleted). \`/admin/schools/options\` and the public search stay secondary-only. Responses carry the join code (a bearer secret): no-store.`,
     request: { query: SchoolListQuerySchema },
     responses: {
       200: jsonNoStore(z.object({ data: z.array(AdminSchoolSchema), meta: SchoolListMetaSchema }), 'A page of schools.'),

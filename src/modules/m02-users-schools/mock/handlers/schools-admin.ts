@@ -152,16 +152,18 @@ export const schoolAdminRoutes: RouteDef[] = [
     const search = queryString(req.query, 'search')
     const state = queryString(req.query, 'state')
     const type = queryString(req.query, 'type')
+    const includePrimary = queryString(req.query, 'includePrimary') === 'true'
     const result = schoolsRepo.list({
       ...(search === undefined ? {} : { search }),
       ...(state === undefined ? {} : { state }),
       ...(type === undefined ? {} : { type }),
+      includePrimary,
       page: pageReq.page,
       pageSize: pageReq.pageSize,
     })
     return paged({ rows: result.rows.map(toAdminSchool), total: result.total }, pageReq, {
-      counts: schoolsRepo.counts(),
-      types: schoolsRepo.types(),
+      counts: schoolsRepo.counts(includePrimary),
+      types: schoolsRepo.types(includePrimary),
     })
   }),
 

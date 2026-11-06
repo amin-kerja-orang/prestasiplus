@@ -104,6 +104,11 @@ describe('queries and lookups', () => {
     expect(SchoolListQuerySchema.safeParse({ page: 'abc', state: 'Johor' }).success).toBe(true)
     expect(SchoolListQuerySchema.safeParse({ page: '0' }).success).toBe(true)
   })
+  it('list query accepts includePrimary as text and keeps it optional', () => {
+    expect(SchoolListQuerySchema.safeParse({ includePrimary: 'true' }).success).toBe(true)
+    expect(SchoolListQuerySchema.safeParse({ includePrimary: 'whatever' }).success).toBe(true)
+    expect(SchoolListQuerySchema.parse({}).includePrimary).toBeUndefined()
+  })
   it('options query needs all=1', () => {
     expect(SchoolOptionsQuerySchema.safeParse({ all: '1' }).success).toBe(true)
     expect(SchoolOptionsQuerySchema.safeParse({}).success).toBe(false)

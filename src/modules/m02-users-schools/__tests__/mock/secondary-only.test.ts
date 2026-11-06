@@ -39,8 +39,26 @@ describe('primary-type schools are hidden (default)', () => {
     expect(res.status).toBe(200)
     expect(res.body.data.every((s) => ['SMK', 'MRSM', 'SBP'].includes(s.type))).toBe(true)
     expect(res.body.meta.types).toEqual(['SMK'])
-    const sk = await call<Page<unknown>>('GET', '/api/admin/schools?type=SK', ADMIN)
-    expect(sk.body.data).toEqual([])
+  })
+
+  it('includePrimary=true lists SK, SJK(C), SJK(T) and counts them; a primary type filter shows them too', async () => {
+    const base = await call<Page<{ type: string }>>('GET', '/api/admin/schools', ADMIN)
+    const withPrimary = await call<Page<{ type: string }>>(
+      'GET',
+      '/api/admin/schools?includePrimary=true',
+      ADMIN,
+    )
+    expect(withPrimary.status).toBe(200)
+    expect(withPrimary.body.meta.types).toEqual(['SK', 'SMK'])
+    expect(withPrimary.body.meta.counts?.total).toBeGreaterThan(base.body.meta.counts?.total ?? 0)
+    expect(withPrimary.body.meta.totalItems).toBeGreaterThan(base.body.meta.totalItems ?? 0)
+    // Picking a primary type shows those rows even without the flag.
+    const sk = await call<Page<{ type: string }>>('GET', '/api/admin/schools?type=SK', ADMIN)
+    expect(sk.body.data.length).toBeGreaterThan(0)
+    expect(sk.body.data.every((s) => s.type === 'SK')).toBe(true)
+    // A request without the flag stays secondary-only afterwards (per request, not a switch).
+    const again = await call<Page<{ type: string }>>('GET', '/api/admin/schools', ADMIN)
+    expect(again.body.meta.types).toEqual(['SMK'])
   })
 
   it('the school search and options never return a primary-type school', () => {
