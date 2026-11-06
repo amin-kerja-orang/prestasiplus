@@ -29,6 +29,7 @@ import {
   challengeProgress,
   dayMetrics,
   settleSession,
+  unlockBadges,
   type DaySession,
   type LifetimeFacts,
   type SessionCompletedInput,
@@ -59,7 +60,14 @@ import {
   walletRow,
   walletState,
 } from './ops'
-import { coinsEnabled, hasTeacherRole, mysteryOpenings, practiceReads, userOf } from './reads'
+import {
+  battleWins,
+  coinsEnabled,
+  hasTeacherRole,
+  mysteryOpenings,
+  practiceReads,
+  userOf,
+} from './reads'
 import { PRACTICE_MODES, STREAK_MULTIPLIER, localDate, previousDate, stepStreak } from './rules'
 import type {
   Achievement,
@@ -125,13 +133,14 @@ function perfectDaysBefore(
 
 function lifetimeFacts(
   userId: number,
-  input: SessionCompletedInput,
+  /** The session being completed, or `null` for a badge check outside a session. */
+  input: SessionCompletedInput | null,
   date: string,
   active: readonly DailyChallenge[],
 ): LifetimeFacts {
   const reads = practiceReads()
-  const practice = reads.practiceSessions(userId).filter((s) => s.id !== input.sessionId)
-  const current = PRACTICE_MODES.includes(input.mode)
+  const practice = reads.practiceSessions(userId).filter((s) => s.id !== input?.sessionId)
+  const current = input && PRACTICE_MODES.includes(input.mode)
     ? [{ correct: input.correct, total: input.total }]
     : []
   const all = [...practice.map((s) => ({ correct: s.correct, total: s.total })), ...current]
@@ -152,6 +161,7 @@ function lifetimeFacts(
     rewardedReferrals: referralsTable.count({ referrerId: userId, rewarded: true }),
     completionsBefore: completionsTable.count({ userId }),
     perfectDaysBefore: perfectDaysBefore(userId, date, active),
+    battleWins: battleWins(userId),
   }
 }
 
@@ -164,6 +174,70 @@ function unlockedSet(userId: number): Set<number> {
     userAchievementsTable.query({ where: { userId } }).rows.map((u) => u.achievementId),
   )
 }
+
+/**
+ * The badge check of every trigger outside a practice session (PRD 48 GAME-25: a challenge claim, a
+ * Kotak Misteri opening, a won real battle, a rewarded referral, the first login of the day). It runs
+ * the same unlock loop as the session completion (`unlockBadges`, so a badge in `ctx.unlocked` is never
+ * unlocked or paid twice) and is the one writer of these unlocks: the unlock row, the ledger row
+ * "Pencapaian: {name}" (source `achievement`, none while coins are off) and the badge XP. A user who is
+ * not a student (teacher, admin) unlocks nothing (AC-GM-25.6). Returns the badges unlocked now, in
+ * catalogue order. Joins the caller's transaction. `kinds` narrows the check to some criteria (the
+ * login checks the streak badges only, see `onLogin`).
+ */
+export function awardBadges(
+  userId: number,
+  at: number | string,
+  /** Only the badges whose criterion is one of these kinds (default: all). */
+  kinds?: readonly Achievement['criterion']['kind'][],
+): Achievement[] {
+  if (userOf(userId)?.role !== 'student' || hasTeacherRole(userId)) return []
+  ensurePrimed()
+  const date = localDate(at)
+  const active = activeChallenges()
+  const facts = lifetimeFacts(userId, null, date, active)
+  const claims = challengeClaimsTable.count({ userId })
+  const done = completionsOn(userId, date)
+  const perfectToday = active.length > 0 && active.every((c) => done.has(c.id))
+  const pays = coinsEnabled(userId)
+  const out: Achievement[] = []
+  tx(() => {
+    unlockBadges(
+      {
+        achievements: kinds ? catalogue().filter((a) => kinds.includes(a.criterion.kind)) : catalogue(),
+        unlocked: unlockedSet(userId),
+      },
+      facts,
+      () => ({
+        streak: streakState(userId).current,
+        lifetime: walletState(userId).totalSyilingEarned,
+        completions: claims,
+        perfectDays: perfectToday ? facts.perfectDaysBefore + 1 : 0,
+      }),
+      (a) => {
+        userAchievementsTable.insert({ userId, achievementId: a.id, unlockedAt: isoAt(at) })
+        if (pays && a.rewardSyiling > 0) {
+          creditSyilingOp(
+            userId,
+            a.rewardSyiling,
+            {
+              source: 'achievement',
+              description: `Pencapaian: ${a.name}`,
+              refId: `achievement:${String(a.id)}`,
+            },
+            at,
+          )
+        }
+        addXpOp(userId, a.rewardXp, at)
+        out.push(a)
+      },
+    )
+  })
+  return out
+}
+
+/** The notice text of a new badge (AC-GM-25.1). */
+export const badgeNotice = (a: Pick<Achievement, 'name'>): string => `Lencana baru: ${a.name}!`
 
 export interface SessionCompletedResult {
   coinsEarned: number
@@ -330,15 +404,33 @@ export const gamificationRepo = defineRepository({
             return { credited: false, streakCount: streak.current }
           }
           dailyLoginMarksTable.insert({ userId, date })
-          if (!coinsEnabled(userId)) return { credited: false, streakCount: streak.current }
-          creditSyilingOp(
-            userId,
-            2,
-            { source: 'daily_login', description: 'Streak activity (daily_login)' },
-            at,
-          )
-          return { credited: true, streakCount: streak.current }
+          const credited = coinsEnabled(userId)
+          if (credited) {
+            creditSyilingOp(
+              userId,
+              2,
+              { source: 'daily_login', description: 'Streak activity (daily_login)' },
+              at,
+            )
+          }
+          // The first login of the day evaluates the streak badges (silent: the login has no notice). Only the
+          // streak criterion is read here: the login moves nothing else, and the observed wallet after a
+          // form login (370 + 2 = 372, XL3-30) must not absorb a badge the seed never unlocked.
+          awardBadges(userId, at, ['streak'])
+          return { credited, streakCount: streak.current }
         })
+      },
+
+      /**
+       * Badge check outside a practice session (claim, box opening, battle win, referral, login):
+       * `awardBadges`. Returns the badges unlocked now as the contract's `{code, name}` (the code is
+       * the achievement id as text, `AchievementUnlockedSchema`).
+       */
+      awardBadges(
+        userId: number,
+        at: number | string = nowMs(),
+      ): { code: string; name: string }[] {
+        return awardBadges(userId, at).map((a) => ({ code: String(a.id), name: a.name }))
       },
 
       /** BR-M14-21 (XL3-26): `games_award_syiling` = 1 and the user's `coinsEnabled`. */
@@ -373,6 +465,8 @@ export const gamificationRepo = defineRepository({
           if (coins > 0) creditSyilingOp(userId, coins, gameRow(p.game, p.event, p), at)
           const xp = Math.max(0, Math.floor(p.xp))
           if (xp > 0) addXpOp(userId, xp, at)
+          // A won battle evaluates "Juara Battle" (silent: the result has no notice).
+          if (p.game === 'battle' && p.event === 'win') awardBadges(userId, at)
           return { coinsCredited: coins > 0 ? coins : 0, xpAdded: xp }
         })
       },
@@ -637,11 +731,26 @@ export const challengesRepo = defineRepository({
             }
           }
           if (c.rewardXp > 0) addXpOp(userId, c.rewardXp, at)
+          // Badges after the claim credit; their notices follow the tier notice.
+          for (const a of awardBadges(userId, at)) notices.push(badgeNotice(a))
           return {
             ...stored({ rewardSyiling, rewardXp: c.rewardXp }),
             ...(notices.length > 0 ? { notices } : {}),
           }
         })
+      },
+      /** Seed / fixtures: a claim row of an earlier day (so the claim count reaches a badge target). */
+      seedClaim(userId: number, challengeId: number, date: string): void {
+        tx(() =>
+          challengeClaimsTable.insert({
+            userId,
+            challengeId,
+            date,
+            rewardSyiling: 0,
+            rewardXp: 0,
+            clientUuid: null,
+          }),
+        )
       },
       /** #23: every challenge by (`sortOrder`, `id`). */
       list(): DailyChallenge[] {
@@ -713,7 +822,7 @@ export const achievementQueries = defineNamedQueries(userAchievementsTable, {
   'Q-ACH-UNLOCKED': {
     where: (userId: number) => ({ userId }),
     expected: [{ args: [1], value: 0 }],
-    source: 'M14 §6.10 (S15 "{n}/25")',
+    source: 'M14 §6.10 (S15 "Kemajuan lencana {n} / 26")',
   },
 })
 

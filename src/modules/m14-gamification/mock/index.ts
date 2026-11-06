@@ -50,7 +50,7 @@ import { M14_TABLES } from './tables/tables'
 const plugin = defineMockModule({
   id: 'M14',
   dependsOn: ['core', 'M01', 'M02'],
-  version: 2,
+  version: 3,
   tables: M14_TABLES,
   datasets: { wallets: walletsDataset, coinLedger: ledgerDataset },
   repositories: {

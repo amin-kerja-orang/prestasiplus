@@ -269,7 +269,7 @@ type A = Omit<Achievement, 'progressTarget'> & { progressTarget?: number }
 const ach = (a: A): Achievement => ({ ...a, progressTarget: a.progressTarget ?? null })
 
 /**
- * DATA-M14-06, the 25 badges in live order (discovery §2.15). Criteria per BR-M14-16 (INFERRED);
+ * DATA-M14-06, the 26 badges in live order (discovery §2.15; #26 added by migration 0234, PRD 48 GAME-25). Criteria per BR-M14-16 (INFERRED);
  * progress targets on ids 1, 2, 4, 10, 12.
  */
 export const SEED_ACHIEVEMENTS: readonly Achievement[] = [
@@ -527,6 +527,16 @@ export const SEED_ACHIEVEMENTS: readonly Achievement[] = [
     rewardSyiling: 400,
     rewardXp: 300,
     criterion: { kind: 'perfectDays', min: 30 },
+  }),
+  ach({
+    id: 26,
+    icon: '⚔️',
+    name: 'Juara Battle',
+    description: 'Menang 10 battle',
+    rarity: 'rare',
+    rewardSyiling: 30,
+    rewardXp: 20,
+    criterion: { kind: 'battleWins', min: 10 },
   }),
 ]
 

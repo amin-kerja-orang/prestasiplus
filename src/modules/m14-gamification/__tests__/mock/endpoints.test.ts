@@ -390,7 +390,7 @@ describe('#8 leaderboard', () => {
 })
 
 describe('#9 achievements', () => {
-  it('admin: 0/25, streak card from the single store, 25 cards in catalogue order', async () => {
+  it('admin: 0/26, streak card from the single store, 26 cards in catalogue order', async () => {
     const d = dataOf<{
       unlocked: number
       total: number
@@ -399,19 +399,19 @@ describe('#9 achievements', () => {
     }>(await get('/api/gamification/achievements', admin))
     expect(d).toMatchObject({
       unlocked: 0,
-      total: 25,
+      total: 26,
       streak: { current: 1, best: 5, multiplier: 1 },
     })
-    expect(d.items.map((i) => i.id)).toEqual(Array.from({ length: 25 }, (_, i) => i + 1))
+    expect(d.items.map((i) => i.id)).toEqual(Array.from({ length: 26 }, (_, i) => i + 1))
     expect(d.items.filter((i) => i.progress !== null).map((i) => i.id)).toEqual([1, 2, 4, 10, 12])
   })
 
-  it('filters by rarity (6 / 8 / 6 / 5); an unknown rarity answers no card', async () => {
+  it('filters by rarity (6 / 9 / 6 / 5, #26 is Jarang); an unknown rarity answers no card', async () => {
     const n = async (rarity: string) =>
       dataOf<{ items: unknown[] }>(await get('/api/gamification/achievements', admin, { rarity }))
         .items.length
     expect([await n('common'), await n('rare'), await n('epic'), await n('legendary')]).toEqual([
-      6, 8, 6, 5,
+      6, 9, 6, 5,
     ])
     expect(await n('zzz')).toBe(0)
   })
@@ -1804,13 +1804,26 @@ describe('API-GAME-11 claim a challenge (ruling 20 on #500, mock mirror)', () =>
     expect(first.status).toBe(200)
     expect(dataOf(first)).toMatchObject({ claimed: true, rewardSyiling: 20, rewardXp: 15 })
     // The claim pays (the engine pays nothing on completion): syiling and lifetime +20, XP +15, one ledger row.
+    // The seeded pelajar holds 370 syiling and no badge row, so the badge check after the claim also unlocks
+    // #5 "Pengumpul Syiling" (+10 syiling, +5 XP, its own ledger row, notice after the claim).
+    expect(dataOf<{ notices?: string[] }>(first).notices).toEqual(['Lencana baru: Pengumpul Syiling!'])
     const paid = wallet.summary(2)
-    expect(paid.currentSyiling).toBe(before.currentSyiling + 20)
-    expect(paid.totalSyilingEarned).toBe(before.totalSyilingEarned + 20)
-    expect(paid.xp).toBe(before.xp + 15)
-    expect(coinLedger.forUser(2)).toHaveLength(rowsBefore + 1)
-    expect(coinLedger.forUser(2)[0]).toMatchObject({ source: 'daily_challenge', amount: 20 })
-    expect(dataOf(await claim(2, pelajar, { clientUuid: key }))).toEqual(dataOf(first))
+    expect(paid.currentSyiling).toBe(before.currentSyiling + 20 + 10)
+    expect(paid.totalSyilingEarned).toBe(before.totalSyilingEarned + 20 + 10)
+    expect(paid.xp).toBe(before.xp + 15 + 5)
+    expect(coinLedger.forUser(2)).toHaveLength(rowsBefore + 2)
+    expect(coinLedger.forUser(2)[0]).toMatchObject({
+      source: 'achievement',
+      amount: 10,
+      description: 'Pencapaian: Pengumpul Syiling',
+    })
+    expect(coinLedger.forUser(2)[1]).toMatchObject({ source: 'daily_challenge', amount: 20 })
+    // A replay returns the stored amounts (the notices are not stored) and writes nothing.
+    expect(dataOf(await claim(2, pelajar, { clientUuid: key }))).toEqual({
+      claimed: true,
+      rewardSyiling: 20,
+      rewardXp: 15,
+    })
     expect(wallet.summary(2)).toEqual(paid) // the replay writes nothing
     const again = await claim(2, pelajar)
     expect(again.status).toBe(409)

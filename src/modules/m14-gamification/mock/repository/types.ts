@@ -134,8 +134,10 @@ export type AchievementCriterion =
   | { kind: 'unlocked'; min: number }
   | { kind: 'answersAccuracy'; min: number; accuracy: number }
   | { kind: 'perfectDays'; min: number }
+  /** Won real (non-robot) battles, read from M16 at call time (#26 "Juara Battle"). */
+  | { kind: 'battleWins'; min: number }
 
-/** DATA-M14-06 Achievement (catalogue, ids 1–25 in live order). */
+/** DATA-M14-06 Achievement (catalogue, ids 1–26 in live order). */
 export interface Achievement {
   id: number
   icon: string

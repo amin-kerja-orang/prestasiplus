@@ -385,7 +385,7 @@ describe('other §6.10 queries and §6.11.5 / §6.11.7 seeds', () => {
     expect(challenges.count('Q-CHALLENGES-ACTIVE')).toBe(10)
     expect(gamification.dailyFinishers()).toBe(0)
     expect(achievements.count('Q-ACH-UNLOCKED', 1)).toBe(0)
-    expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 25 })
+    expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 26 })
     expect(referrals.count('Q-REFERRALS', 1)).toBe(0)
     expect(referrals.codeOf(1)).toBe('4JURJTT')
     expect(referrals.codeOf(2)).toMatch(/^[A-Z0-9]{7}$/)
@@ -775,10 +775,19 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
       claimed: true,
       rewardSyiling: done.rewardSyiling,
       rewardXp: done.rewardXp,
-      notices: ['Tahniah! Anda naik ke tier Perak.'],
+      // the tier notice first, then the badge the claim unlocked (user 3 holds 480 lifetime, no #5 row)
+      notices: ['Tahniah! Anda naik ke tier Perak.', 'Lencana baru: Pengumpul Syiling!'],
     })
-    expect(wallet.summary(3)).toMatchObject({ tier: { key: 'silver' }, xp: xpBefore + done.rewardXp })
+    expect(wallet.summary(3)).toMatchObject({
+      tier: { key: 'silver' },
+      xp: xpBefore + done.rewardXp + 5, // + the XP of #5
+    })
     expect(coinLedger.forUser(3)[0]).toMatchObject({
+      description: 'Pencapaian: Pengumpul Syiling',
+      source: 'achievement',
+      amount: 10,
+    })
+    expect(coinLedger.forUser(3)[1]).toMatchObject({
       description: `Cabaran selesai: ${done.title}`,
       amount: done.rewardSyiling,
     })

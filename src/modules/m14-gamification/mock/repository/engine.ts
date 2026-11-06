@@ -91,6 +91,8 @@ export interface LifetimeFacts {
   completionsBefore: number
   /** Consecutive days before today whose completions covered every active challenge. */
   perfectDaysBefore: number
+  /** Won real (non-robot) battles, M16 (#26). */
+  battleWins: number
 }
 
 export const EMPTY_LIFETIME: Readonly<LifetimeFacts> = Object.freeze({
@@ -106,6 +108,7 @@ export const EMPTY_LIFETIME: Readonly<LifetimeFacts> = Object.freeze({
   rewardedReferrals: 0,
   completionsBefore: 0,
   perfectDaysBefore: 0,
+  battleWins: 0,
 })
 
 export interface EngineContext {
@@ -253,6 +256,8 @@ function achieved(
       )
     case 'perfectDays':
       return live.perfectDays >= c.min
+    case 'battleWins':
+      return facts.battleWins >= c.min
   }
 }
 
@@ -294,6 +299,38 @@ export function validateSessionInput(input: SessionCompletedInput): void {
   } catch {
     throw bad('invalid completedAt')
   }
+}
+
+/** What BR-M14-16 reads that moves while badges pay (re-read after every unlock). */
+export interface BadgeLive {
+  streak: number
+  lifetime: number
+  completions: number
+  perfectDays: number
+}
+
+/**
+ * The single unlock loop (BR-M14-16), shared by the session completion and by every other trigger
+ * (claim, box opening, battle win, referral, first login): a badge in `ctx.unlocked` is skipped, so
+ * it unlocks once and pays once; `onUnlock` is the caller's one payer. Returns the ids unlocked now,
+ * in catalogue order.
+ */
+export function unlockBadges(
+  ctx: Pick<EngineContext, 'achievements' | 'unlocked'>,
+  facts: LifetimeFacts,
+  live: () => BadgeLive,
+  onUnlock: (a: Achievement) => void,
+): number[] {
+  const unlocks: number[] = []
+  let unlockedCount = ctx.unlocked.size
+  for (const a of ctx.achievements) {
+    if (ctx.unlocked.has(a.id)) continue
+    if (!achieved(a, facts, { ...live(), unlocked: unlockedCount })) continue
+    unlocks.push(a.id)
+    unlockedCount++
+    onUnlock(a)
+  }
+  return unlocks
 }
 
 /** Applies one session completion (pure). */
@@ -373,22 +410,27 @@ export function settleSession(
     const doneToday = new Set([...ctx.completedToday, ...completions])
     const perfectToday =
       ctx.challenges.length > 0 && ctx.challenges.every((c) => doneToday.has(c.id))
-    let unlockedCount = ctx.unlocked.size
-    for (const a of ctx.achievements) {
-      if (ctx.unlocked.has(a.id)) continue
-      const live = {
-        streak: streak.current,
-        lifetime: w.totalSyilingEarned,
-        completions: lifetime.completionsBefore + completions.length,
-        unlocked: unlockedCount,
-        perfectDays: perfectToday ? lifetime.perfectDaysBefore + 1 : 0,
-      }
-      if (!achieved(a, lifetime, live)) continue
-      unlocks.push(a.id)
-      unlockedCount++
-      earn('achievement', a.rewardSyiling, `Pencapaian: ${a.name}`, `achievement:${String(a.id)}`)
-      xpAdded += a.rewardXp
-    }
+    unlocks.push(
+      ...unlockBadges(
+        ctx,
+        lifetime,
+        () => ({
+          streak: streak.current,
+          lifetime: w.totalSyilingEarned,
+          completions: lifetime.completionsBefore + completions.length,
+          perfectDays: perfectToday ? lifetime.perfectDaysBefore + 1 : 0,
+        }),
+        (a) => {
+          earn(
+            'achievement',
+            a.rewardSyiling,
+            `Pencapaian: ${a.name}`,
+            `achievement:${String(a.id)}`,
+          )
+          xpAdded += a.rewardXp
+        },
+      ),
+    )
   }
 
   // (5) Teacher mirror (BR-M14-24).

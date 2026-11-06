@@ -30,6 +30,7 @@ import * as m02 from '@/modules/m02-users-schools/mock'
 import * as m03 from '@/modules/m03-curriculum/mock'
 import * as m05 from '@/modules/m05-practice/mock'
 import * as m15 from '@/modules/m15-rewards-shop/mock'
+import * as m16 from '@/modules/m16-battle-games/mock'
 
 import { localDate } from './rules'
 
@@ -291,6 +292,45 @@ export function subjectNames(): { name(id: number): string; order(id: number): n
 /** M15 `mysteryBox.openingsCount(userId)` (Q-M15-OPENINGS-COUNT), 0 until M15 exists. */
 export function mysteryOpenings(userId: number): number {
   return m15.mysteryBox.openingsCount(userId)
+}
+
+/**
+ * "Juara Battle" (#26): battles of `userId` that are `finished` (a forfeit is its own status and is not
+ * counted) with the user's side as `winner`, read from the M16 `battles.all()` at call time. Every
+ * opponent in the mock is a simulated real pupil (M16 D4); the mock has no robot battle to exclude,
+ * so no row is skipped for that reason. 0 while M16 is not booted (an M14-only test).
+ */
+export function battleWins(userId: number): number {
+  if (battleWinsOverride) return battleWinsOverride(userId)
+  const repo = Reflect.get(m16, 'battles') as { all?: () => readonly BattleFact[] } | undefined
+  if (typeof repo?.all !== 'function') return 0
+  let rows: readonly BattleFact[]
+  try {
+    rows = repo.all()
+  } catch (e) {
+    if (e instanceof RepositoryError) return 0 // the M16 store is not registered in this runtime
+    throw e
+  }
+  let n = 0
+  for (const b of rows) {
+    if (b.status !== 'finished') continue
+    if ((b.playerA === userId && b.winner === 'A') || (b.playerB === userId && b.winner === 'B')) n++
+  }
+  return n
+}
+
+let battleWinsOverride: ((userId: number) => number) | null = null
+
+/** Test seam: replaces the M16 battle-win read (`null` restores it). */
+export function setBattleWinsForTests(fn: ((userId: number) => number) | null): void {
+  battleWinsOverride = fn
+}
+
+interface BattleFact {
+  status: string
+  winner: string | null
+  playerA: number
+  playerB: number
 }
 
 /** The M01 user row (role, complimentary flag, school), or undefined. */

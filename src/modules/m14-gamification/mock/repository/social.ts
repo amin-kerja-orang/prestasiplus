@@ -35,6 +35,7 @@ import {
   tx,
   walletState,
 } from './ops'
+import { awardBadges } from './gamification'
 import { ADMIN_REFERRAL_CODE, referralCodeFor } from './rules'
 import type {
   Draw,
@@ -119,13 +120,16 @@ export const referralsRepo = defineRepository({
             { type: 'bonus', source: 'referral', description: 'Rujukan kawan berjaya' },
             at,
           )
-          return referralsTable.insert({
+          const row = referralsTable.insert({
             referrerId: owner.userId,
             refereeId: newUserId,
             codeUsed: normalised,
             rewarded: true,
             createdAt: isoAt(at),
           })
+          // The rewarded referral evaluates the referrer's badges (silent: no notice).
+          awardBadges(owner.userId, at)
+          return row
         })
       },
       /** Seed: the codes of accounts 1–11 (admin "4JURJTT"; others deterministic). */
