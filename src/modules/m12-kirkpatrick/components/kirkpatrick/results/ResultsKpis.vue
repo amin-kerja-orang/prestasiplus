@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { DsStatRow, type StatItem } from '@/ds'
 
 import type { Results } from '../../../api/types'
-import { count, gps, pct, plain } from '../common/kirkpatrick-format'
+import { count, gps, pct, plain, accuracyPct } from '../common/kirkpatrick-format'
 
 const props = defineProps<{ kpi: Results['kpi'] }>()
 
@@ -34,42 +34,48 @@ const items = computed<StatItem[]>(() => [
     key: 'gps',
     label: 'GPS Headcount',
     value: props.kpi.gps === null ? '-' : gps(props.kpi.gps),
-    icon: 'i-ph-trophy', accent: 'action',
+    icon: 'i-ph-trophy',
+    accent: 'action',
     sub: gpsCaption.value,
   },
   {
     key: 'pass',
     label: 'Kadar Lulus',
     value: props.kpi.passPct === null ? '-' : pct(props.kpi.passPct),
-    icon: 'i-ph-seal-check', accent: 'win',
+    icon: 'i-ph-seal-check',
+    accent: 'win',
     sub: passCaption.value,
   },
   {
     key: 'gradeA',
     label: 'Pelajar Gred A',
     value: props.kpi.gradeA === null ? '-' : plain(props.kpi.gradeA),
-    icon: 'i-ph-star', accent: 'heat',
+    icon: 'i-ph-star',
+    accent: 'heat',
     sub: gradeACaption.value,
   },
   {
     key: 'accuracy',
     label: 'Ketepatan Platform',
-    value: pct(props.kpi.accuracy),
-    icon: 'i-ph-target', accent: 'trial',
+    value: accuracyPct(props.kpi.accuracy),
+    icon: 'i-ph-target',
+    accent: 'trial',
     sub: `${count(props.kpi.answers)} soalan`,
   },
   {
     key: 'active',
     label: 'Pelajar Aktif',
     value: plain(props.kpi.active),
-    icon: 'i-ph-users', accent: 'friend',
+    icon: 'i-ph-users',
+    accent: 'friend',
     sub: `${pct(props.kpi.activePct)} daripada ${count(props.kpi.t4t5)}`,
   },
   {
     key: 'records',
     label: 'Rekod Headcount',
     value: plain(props.kpi.records),
-    icon: 'i-ph-database', accent: 'action',
+    icon: 'i-ph-database',
+    accent: 'action',
     sub: 'Data OTR',
   },
 ])

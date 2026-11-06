@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { DsCluster, DsIconChip, DsPanel, type DsAccent } from '@/ds'
 
 import type { Overview } from '../../../api/types'
-import { gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
+import { gps, KirkpatrickLink, mean, plain, type KirkpatrickPaths, accuracyPct } from '../common'
 
 const props = defineProps<{ data: Overview; paths: KirkpatrickPaths; detail: boolean }>()
 
@@ -39,7 +39,7 @@ const steps = computed<Step[]>(() => [
     key: 't2',
     label: 'Tahap 2: Pembelajaran',
     sub: 'Peningkatan kemahiran',
-    pill: `${pct(props.data.t2.accuracy)} ketepatan`,
+    pill: `${accuracyPct(props.data.t2.accuracy)} ketepatan`,
     to: to(props.paths.learning),
     icon: 'i-ph-brain',
     accent: 'trial',
