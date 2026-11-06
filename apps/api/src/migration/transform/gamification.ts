@@ -50,7 +50,11 @@ const challengeType = enumMapper('challenge_type', CHALLENGE_TYPE_MAP)
 
 /** Ruling 18: the metric by exact title, else `DEFAULT_METRIC_BY_TYPE` of the (known) type. */
 export function challengeMetric(title: string, type: string): string | null {
-  if (Object.hasOwn(MIGRATED_CHALLENGE_METRICS, title)) return MIGRATED_CHALLENGE_METRICS[title as keyof typeof MIGRATED_CHALLENGE_METRICS]
+  if (Object.hasOwn(MIGRATED_CHALLENGE_METRICS, title)) {
+    const byTitle = MIGRATED_CHALLENGE_METRICS[title as keyof typeof MIGRATED_CHALLENGE_METRICS]
+    // `best_combo` only goes with type `combo`; a staged "Kombo 10" of another type takes that type's default (the script's step 2 repairs it).
+    if (byTitle !== 'best_combo' || type === 'combo') return byTitle
+  }
   return Object.hasOwn(DEFAULT_METRIC_BY_TYPE, type) ? DEFAULT_METRIC_BY_TYPE[type as keyof typeof DEFAULT_METRIC_BY_TYPE] : null
 }
 

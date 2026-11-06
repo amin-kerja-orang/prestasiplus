@@ -124,6 +124,11 @@ describe('tiers and challenges', () => {
       expect(metricOf('kombo')).toBe('best_combo')
     })
 
+    it('gives "Kombo 10" best_combo only with the combo type; another type takes its default', () => {
+      const o = transformChallenge({ title: 'Kombo 10', challenge_type: 'streak', target_value: '10' })
+      expect(o.ok && o.value).toMatchObject({ challenge_type: 'streak', metric: 'streak' })
+    })
+
     it('matches the title exactly (case and spacing are not folded) and keeps an unknown type rejected', () => {
       const o = transformChallenge({ title: 'kombo 10', challenge_type: 'streak', target_value: '3' })
       expect(o.ok && o.value.metric).toBe('streak')

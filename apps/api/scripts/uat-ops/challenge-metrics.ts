@@ -6,6 +6,10 @@
  *     already has a metric is never overwritten, a title not in the table is never touched.
  *  2. KOMBO: "Kombo 10" with a type other than `combo` (migrated as `streak`, ETL map `kombo` -> `streak`) becomes type `combo`, metric
  *     `best_combo` (needs migration 0232 and the contract value of Part 14).
+ * The one exception to "never overwrites a set metric" is step 2: type `combo` with any metric but `best_combo` is inconsistent, so a
+ * moved "Kombo 10" always gets `best_combo` (the report line shows `fromType/fromMetric -> combo/best_combo`).
+ * A missing title does not stop the run: `--apply` still commits the other changes and the exit code is 1 (the missing title is reported).
+ * Every UPDATE is checked: one that hits 0 rows (a concurrent edit) is a FAIL "mismatch" line and is not counted as written.
  * INSERTS NOTHING: an expected title that is not in the table is reported as FAIL. Challenges are platform rows (a teacher challenge has no
  * v2 row), so the report holds titles and counts only, no personal data.
  * Idempotent: a second `--apply` finds nothing to change. The apply runs in one transaction.
@@ -67,7 +71,7 @@ export function planChallengeMetrics(rows: readonly ChallengeRow[]): MetricsPlan
 }
 
 /** Pure: the plan -> report lines (titles and counts only). */
-export function planLines(plan: MetricsPlan, apply: boolean): CheckLine[] {
+export function planLines(plan: MetricsPlan, apply: boolean, written?: number): CheckLine[] {
   const verb = apply ? 'set' : 'would set'
   const lines: CheckLine[] = [line('INFO', `mode: ${apply ? 'apply' : 'dry run'}; expected titles ${String(Object.keys(MIGRATED_CHALLENGE_METRICS).length)}`)]
   lines.push(line('INFO', `step 1 metric: ${verb} ${String(plan.metricUpdates.length)} NULL metric(s); ${String(plan.alreadySet)} row(s) already have one (not overwritten)`))
@@ -77,7 +81,7 @@ export function planLines(plan: MetricsPlan, apply: boolean): CheckLine[] {
     line('INFO', `step 2 kombo: ${verb} ${String(plan.komboMoves.length)} "${KOMBO_TITLE}" row(s) to type ${KOMBO_TYPE}, metric ${KOMBO_METRIC}`),
   )
   for (const m of plan.komboMoves) lines.push(line('INFO', `step 2: "${KOMBO_TITLE}" ${m.fromType}/${m.fromMetric ?? 'NULL'} -> ${KOMBO_TYPE}/${KOMBO_METRIC}`))
-  const changes = plan.metricUpdates.length + plan.komboMoves.length
+  const changes = written ?? plan.metricUpdates.length + plan.komboMoves.length
   lines.push(line(plan.missing.length === 0 ? 'PASS' : 'FAIL', `${String(changes)} change(s) ${apply ? 'written' : 'pending'}; ${String(plan.missing.length)} title(s) missing`))
   return lines
 }
@@ -90,23 +94,30 @@ export async function runChallengeMetrics(client: Pick<Client, 'query'>, options
   try {
     const { rows } = await client.query<ChallengeRow>(SELECT_SQL)
     const plan = planChallengeMetrics(rows)
+    const mismatches: CheckLine[] = []
     if (options.apply) {
+      let written = 0
       for (const u of plan.metricUpdates) {
         // The IS NULL guard is repeated so a concurrent admin edit is never overwritten.
-        await client.query(`UPDATE challenges SET metric = $1, updated_at = now() WHERE id = $2::bigint AND metric IS NULL`, [u.metric, u.id])
+        const res = await client.query(`UPDATE challenges SET metric = $1, updated_at = now() WHERE id = $2::bigint AND metric IS NULL`, [u.metric, u.id])
+        if ((res.rowCount ?? 0) === 1) written += 1
+        else mismatches.push(line('FAIL', `mismatch: step 1 "${u.title}" (id ${u.id}) matched 0 rows, not written`))
       }
       for (const m of plan.komboMoves) {
-        await client.query(`UPDATE challenges SET challenge_type = $1, metric = $2, updated_at = now() WHERE id = $3::bigint AND challenge_type <> $1`, [
+        const res = await client.query(`UPDATE challenges SET challenge_type = $1, metric = $2, updated_at = now() WHERE id = $3::bigint AND challenge_type <> $1`, [
           KOMBO_TYPE,
           KOMBO_METRIC,
           m.id,
         ])
+        if ((res.rowCount ?? 0) === 1) written += 1
+        else mismatches.push(line('FAIL', `mismatch: step 2 "${KOMBO_TITLE}" (id ${m.id}) matched 0 rows, not written`))
       }
       await client.query('COMMIT')
+      return { plan, lines: [...planLines(plan, true, written), ...mismatches] }
     }
-    return { plan, lines: planLines(plan, options.apply) }
+    return { plan, lines: planLines(plan, false) }
   } catch (e) {
-    if (options.apply) await client.query('ROLLBACK')
+    if (options.apply) await client.query('ROLLBACK').catch(() => undefined)
     throw e
   }
 }
@@ -117,7 +128,9 @@ async function main(): Promise<number> {
     const args = parseUatArgs(process.argv.slice(2), SPEC)
     const db = await openDb()
     try {
-      const { lines } = await runChallengeMetrics(db.client, { apply: args.apply })
+      const { lines } = args.apply
+        ? await runChallengeMetrics(db.client, { apply: true })
+        : await db.readOnly((client) => runChallengeMetrics(client, { apply: false }))
       for (const l of lines) console.log(formatLine(l))
       console.log(`INFO report written: ${writeReport('challenge-metrics', lines, { now: started })}`)
       return exitCodeOf(lines)

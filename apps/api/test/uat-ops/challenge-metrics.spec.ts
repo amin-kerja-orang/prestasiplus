@@ -86,6 +86,25 @@ describe('runChallengeMetrics (database)', () => {
     expect(rows.find((r) => r.title === 'Kombo 2 Hari')).toMatchObject({ challenge_type: 'streak', metric: 'streak' })
   })
 
+  it('moves Kombo 10 of type kombo-as-streak with a set metric to combo / best_combo and reports fromType/fromMetric', async () => {
+    await client.query(`UPDATE challenges SET metric = 'streak' WHERE title = 'Kombo 10'`)
+    const { lines } = await runChallengeMetrics(client, { apply: true })
+    expect((await snapshot()).find((r) => r.title === 'Kombo 10')).toMatchObject({ challenge_type: 'combo', metric: 'best_combo' })
+    expect(lines.some((l) => l.text === 'step 2: "Kombo 10" streak/streak -> combo/best_combo')).toBe(true)
+  })
+
+  it('reports an UPDATE that hits 0 rows as a mismatch and does not count it as written', async () => {
+    const real = client.query.bind(client) as (sql: unknown, params?: unknown) => Promise<pg.QueryResult>
+    let n = 0
+    const proxy = {
+      query: (sql: unknown, params?: unknown) => (typeof sql === 'string' && sql.startsWith('UPDATE') && ++n === 1 ? real('SELECT 1 WHERE false').then((r) => ({ ...r, rowCount: 0 })) : real(sql, params)),
+    } as unknown as pg.Client
+    const { lines } = await runChallengeMetrics(proxy, { apply: true })
+    expect(lines.filter((l) => l.text.startsWith('mismatch:'))).toHaveLength(1)
+    // 15 metric updates + 1 Kombo move are planned; the faked one is not counted.
+    expect(lines.some((l) => l.text.startsWith('15 change(s) written'))).toBe(true)
+  })
+
   it('leaves a set metric and an unlisted title alone, and inserts nothing', async () => {
     await client.query(`UPDATE challenges SET metric = 'minutes' WHERE title = 'Si Tepat'`)
     await client.query(`INSERT INTO challenges(title, challenge_type, metric, target_value) VALUES ('Cabaran Lain', 'quiz_count', NULL, 3)`)
