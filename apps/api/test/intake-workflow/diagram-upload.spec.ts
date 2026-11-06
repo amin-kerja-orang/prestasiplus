@@ -203,7 +203,8 @@ describe('teacher image: an intake item, not a change of the question', () => {
       [{ data: makePng({ padTo: 3 * 1024 * 1024 }), name: 'besar.png', type: 'image/png' }, DIAGRAM_AUDIT_MESSAGES.fileSize],
     ]
     for (const [file, message] of cases) {
-      const res = await image(teacher, loneQuestion, file)
+      // A grouped question with no open image: the group and open-item checks run before the bytes are judged, so loneQuestion would be 409.
+      const res = await image(teacher, foreignQuestion, file)
       expect(res.status).toBe(422)
       expect(res.body.error.fields).toEqual({ image: message })
     }
