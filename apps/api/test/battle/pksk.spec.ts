@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { PkskQuestionsService } from '../../src/modules/questions'
-import { bootBattleApp, client, matchBot, parseData, STUDENT_G10, STUDENT_G10_B, type BattleTestApp, type Client } from './arena-helpers'
+import { bootBattleApp, client, matchBot, nextRound, parseData, STUDENT_G10, STUDENT_G10_B, type BattleTestApp, type Client } from './arena-helpers'
 
 type Option = { text: string; isCorrect: boolean }
 const one = (n = 4): Option[] => Array.from({ length: n }, (_, i) => ({ text: `Pilihan ${i + 1}`, isCorrect: i === 1 }))
@@ -107,8 +107,10 @@ describe('Battle PKSK tab', () => {
       expect((await start(a, 'T1', domain.id, '/battle/invite', invite)).status).toBe(200)
       const [inv] = await t.db.query<{ id: string }>(`select id::text from battle_invitations where receiver_id = $1 and question_type = 'pksk' and status = 'pending'`, [b.id])
       const denied = await b.post(`/battle/invite/${inv!.id}/accept`)
-      expect(denied.status).toBe(422)
+      expect(denied.status).toBe(403)
       expect(denied.body).toEqual({ error: BATTLE_MESSAGES.pkskNoAccess })
+      const [still] = await t.db.query<{ status: string }>(`select status from battle_invitations where id = $1::uuid`, [inv!.id])
+      expect(still!.status).toBe('pending')
       await grant(b, 'T1')
       const accepted = await b.post(`/battle/invite/${inv!.id}/accept`)
       expect(accepted.status, JSON.stringify(accepted.body)).toBe(200)
@@ -167,6 +169,15 @@ describe('Battle PKSK tab', () => {
   })
 
   describe('arena', () => {
+    const untilReveal = async (uuid: string) => {
+      for (let i = 0; i < 13; i++) {
+        t.clock.advance(1_000)
+        const v = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
+        if (v.phase === 'reveal') return v
+      }
+      throw new Error('no reveal')
+    }
+
     it('serves text and options with no key, and grades the one correct option', async () => {
       await grant(a, 'ALL')
       const pick = domains[5]!
@@ -184,10 +195,16 @@ describe('Battle PKSK tab', () => {
 
       const wrong = await a.post(`/battle/arena/${uuid}/answer`, { questionId: view.question?.id, optionId: 0, seconds: 1 })
       expect(wrong.status, JSON.stringify(wrong.body)).toBe(200)
-      expect(wrong.body.data).toMatchObject({ correct: false, correctOptionId: 1 })
+      expect(wrong.body.data).toEqual({ accepted: true, phase: 'answering', roundEndsAt: expect.any(String) }) // no key while the round is open
+      // the robot answers 2 to 12 s in: the round closes and the view reveals the key
+      const revealed = await untilReveal(uuid)
+      expect(revealed.reveal).toMatchObject({ index: 1, correctOptionId: 1, you: { optionId: 0, correct: false } })
+      await nextRound(t, a, uuid, 1)
       const second = parseData(BattleArenaViewSchema, await a.get(`/battle/arena/${uuid}`))
       const right = await a.post(`/battle/arena/${uuid}/answer`, { questionId: second.question?.id, optionId: 1, seconds: 1 })
-      expect(right.body.data).toMatchObject({ correct: true, correctOptionId: 1 })
+      expect(right.status).toBe(200)
+      const second2 = await untilReveal(uuid)
+      expect(second2.reveal).toMatchObject({ index: 2, correctOptionId: 1, you: { optionId: 1, correct: true } })
     })
   })
 })
