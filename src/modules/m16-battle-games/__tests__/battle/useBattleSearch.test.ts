@@ -2,13 +2,14 @@
 import { effectScope } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 
-import { useBattleSearch } from '../../composables/useBattleSearch'
+import { lastStartFor, lastStartRequest, useBattleSearch } from '../../composables/useBattleSearch'
 
 const api = vi.hoisted(() => ({
   startBattle: vi.fn(),
   pollMatch: vi.fn(),
   acceptChallenger: vi.fn(),
   rejectChallenger: vi.fn(),
+  cancelQueue: vi.fn(),
   joinQueue: vi.fn(),
   pollChallenger: vi.fn(),
 }))
@@ -21,10 +22,13 @@ let onMatched: Mock<(battleUuid: string) => void>
 let scope: ReturnType<typeof effectScope>
 let s: ReturnType<typeof useBattleSearch>
 
+let hasSchool = true
+
 function setup() {
   onMatched = vi.fn<(battleUuid: string) => void>()
+  hasSchool = true
   scope = effectScope()
-  s = scope.run(() => useBattleSearch({ onMatched }))!
+  s = scope.run(() => useBattleSearch({ onMatched, hasSchool: () => hasSchool }))!
 }
 
 async function started() {
@@ -38,6 +42,7 @@ beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-09-25T08:00:00Z'))
   for (const fn of Object.values(api)) fn.mockReset()
+  api.cancelQueue.mockResolvedValue({ cancelled: true })
   setup()
 })
 afterEach(() => {
@@ -62,7 +67,9 @@ describe('start (#2 / #3)', () => {
   })
 
   it.each([
-    [422, {}, 'Ralat dari server. Sila cuba lagi.'],
+    // 422 {} is ERR-REQ-01 (40:556); other empty refusals keep the page text
+    [422, {}, 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.'],
+    [500, {}, 'Ralat dari server. Sila cuba lagi.'],
     [403, { error: 'Tidak dibenarkan.' }, 'Tidak dibenarkan.'],
     [500, { message: 'Gagal.' }, 'Gagal.'],
   ])('status %i %j shows %s', async (status, body, text) => {
@@ -177,7 +184,9 @@ describe('polling #4 (3 s, stop rules)', () => {
     api.pollMatch.mockResolvedValueOnce(res(200, { status }))
     await tick()
     expect(s.phase.value).toBe('idle')
-    expect(s.errorMsg.value).toBe('Tiada lawan dijumpai. Sila cuba lagi.')
+    // ruling 33 / 48 ERR-GAME-02: the text is "Tiada lawan dijumpai." with a "Cuba Lagi" action
+    expect(s.errorMsg.value).toBe('Tiada lawan dijumpai.')
+    expect(s.canRetry.value).toBe(true)
     await tick(9000)
     expect(api.pollMatch).toHaveBeenCalledTimes(1)
   })
@@ -192,7 +201,9 @@ describe('polling #4 (3 s, stop rules)', () => {
     expect(api.pollMatch).toHaveBeenCalledTimes(39)
     expect(s.phase.value).toBe('idle')
     expect(s.elapsedText.value).toBe('2:00')
-    expect(s.errorMsg.value).toBe('Tiada lawan dijumpai dalam masa 2 minit. Sila cuba lagi.')
+    // 48 AC-GM-01.5: after the queue time the screen shows "Tiada lawan dijumpai." (no fixed minutes)
+    expect(s.errorMsg.value).toBe('Tiada lawan dijumpai.')
+    expect(s.canRetry.value).toBe(true)
   })
 
   it('5 consecutive non-OK polls stop; a success resets the counter', async () => {
@@ -219,16 +230,73 @@ describe('polling #4 (3 s, stop rules)', () => {
     expect(s.errorMsg.value).toBe('Ralat rangkaian berulang. Sila semak internet anda.')
   })
 
-  it('"Batal" stops the polling and sends no request', async () => {
+  it('"Batal" stops the polling and cancels the queue entry once', async () => {
     await started()
     api.pollMatch.mockResolvedValue(res(200, { status: 'waiting' }))
+    api.cancelQueue.mockResolvedValue({ cancelled: true })
     await tick(3000)
     s.cancel()
     expect(s.phase.value).toBe('idle')
     await tick(30_000)
     expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue).toHaveBeenCalledTimes(1)
+    expect(api.cancelQueue.mock.calls[0]?.[0]).toBe(41)
     expect(api.rejectChallenger).not.toHaveBeenCalled()
     expect(s.errorMsg.value).toBe('')
+  })
+
+  it('"Batal" is idle at once and silent when the cancel is refused (404 already matched) or fails', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(new Error('404'))
+    s.cancel()
+    await tick(0)
+    expect(s.phase.value).toBe('idle')
+    expect(s.errorMsg.value).toBe('')
+    expect(onMatched).not.toHaveBeenCalled()
+  })
+
+  const notFound = () => Object.assign(new Error('Giliran tidak dijumpai.'), { status: 404 })
+
+  it('"Batal" answered 404 and the one poll says matched: opens the arena', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(notFound())
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'matched', battle_uuid: 'b-7' }))
+    s.cancel()
+    await tick(0)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(api.pollMatch.mock.calls[0]![0]).toBe(41)
+    expect(onMatched).toHaveBeenCalledWith('b-7')
+    expect(s.phase.value).toBe('idle')
+    await tick(10000)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('"Batal" answered 404 and the poll says not_found: stays idle, silent', async () => {
+    await started()
+    api.cancelQueue.mockRejectedValueOnce(notFound())
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'not_found' }))
+    s.cancel()
+    await tick(0)
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+    expect(onMatched).not.toHaveBeenCalled()
+    expect(s.phase.value).toBe('idle')
+    expect(s.errorMsg.value).toBe('')
+  })
+
+  it('"Batal" answered 200: idle and no poll', async () => {
+    await started()
+    s.cancel()
+    await tick(10000)
+    expect(api.pollMatch).not.toHaveBeenCalled()
+    expect(onMatched).not.toHaveBeenCalled()
+    expect(s.phase.value).toBe('idle')
+  })
+
+  it('"Batal" outside the search (idle, waiting for a join approval) sends no cancel', () => {
+    s.cancel()
+    s.watchWaiting(7, 'Murid A')
+    s.cancel()
+    expect(api.cancelQueue).not.toHaveBeenCalled()
   })
 
   it('disposing the scope clears the timer', async () => {
@@ -344,5 +412,118 @@ describe('waiting for approval (#12, #13; DV-M16-06)', () => {
     s.watchWaiting(7, 'Murid B')
     await tick(3000)
     expect(s.errorMsg.value).toBe('Ralat rangkaian. Sila cuba lagi.')
+  })
+})
+
+describe('GAME-01 (S7-T01 part C): robot overlay, Cuba Lagi, refusals, question_count', () => {
+  it('a matched poll with robot: true shows the overlay for 2 s, then goes to the arena', async () => {
+    await started()
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'matched', battle_uuid: 'b-r', robot: true }))
+    await tick()
+    expect(s.phase.value).toBe('robot')
+    expect(onMatched).not.toHaveBeenCalled()
+    await tick(1999)
+    expect(s.phase.value).toBe('robot')
+    expect(onMatched).not.toHaveBeenCalled()
+    await tick(1)
+    expect(onMatched).toHaveBeenCalledExactlyOnceWith('b-r')
+    expect(s.phase.value).toBe('idle')
+    // the poll loop did not continue behind the overlay
+    expect(api.pollMatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('a matched poll without robot goes straight to the arena', async () => {
+    await started()
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'matched', battle_uuid: 'b-h' }))
+    await tick()
+    expect(onMatched).toHaveBeenCalledExactlyOnceWith('b-h')
+  })
+
+  it('leaving the page during the overlay cancels the pending navigation', async () => {
+    await started()
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'matched', battle_uuid: 'b-r', robot: true }))
+    await tick()
+    scope.stop()
+    await tick(5000)
+    expect(onMatched).not.toHaveBeenCalled()
+  })
+
+  it('"Cuba Lagi" starts the same search again and clears the notice', async () => {
+    await started()
+    api.pollMatch.mockResolvedValueOnce(res(200, { status: 'expired' }))
+    await tick()
+    expect(s.canRetry.value).toBe(true)
+    api.startBattle.mockResolvedValueOnce(res(200, { queue_id: 42 }))
+    await s.retry()
+    expect(api.startBattle).toHaveBeenLastCalledWith('quick-match', PARAMS, expect.anything())
+    expect(s.phase.value).toBe('searching')
+    expect(s.errorMsg.value).toBe('')
+    expect(s.canRetry.value).toBe(false)
+  })
+
+  it('other refusals offer no "Cuba Lagi"', async () => {
+    api.startBattle.mockResolvedValueOnce(res(422, {}))
+    await s.start('quick-match', PARAMS)
+    expect(s.canRetry.value).toBe(false)
+    s.cancel()
+    expect(s.canRetry.value).toBe(false)
+  })
+
+  it('429 BATTLE_DAILY_LIMIT shows the server text inline (no countdown, ruling 35)', async () => {
+    api.startBattle.mockResolvedValueOnce(
+      res(429, {
+        error: {
+          code: 'BATTLE_DAILY_LIMIT',
+          message: 'Had battle hari ini telah dicapai. Cuba lagi esok.',
+          retryAfter: 3600,
+        },
+      }),
+    )
+    await s.start('quick-match', PARAMS)
+    expect(s.errorMsg.value).toBe('Had battle hari ini telah dicapai. Cuba lagi esok.')
+    expect(s.phase.value).toBe('idle')
+    expect(s.canRetry.value).toBe(false)
+  })
+
+  it('Battle Sekolah 422 {} for an account with no school says so; with a school it is ERR-REQ-01', async () => {
+    hasSchool = false
+    api.startBattle.mockResolvedValueOnce(res(422, {}))
+    await s.start('school-battle', PARAMS)
+    expect(s.errorMsg.value).toBe('Akaun anda belum dikaitkan dengan sekolah atau kelas.')
+    // Quick Match does not need a school: its 422 {} stays ERR-REQ-01
+    api.startBattle.mockResolvedValueOnce(res(422, {}))
+    await s.start('quick-match', PARAMS)
+    expect(s.errorMsg.value).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+    hasSchool = true
+    api.startBattle.mockResolvedValueOnce(res(422, {}))
+    await s.start('school-battle', PARAMS)
+    expect(s.errorMsg.value).toBe('Data yang dihantar tidak sah. Sila semak dan cuba lagi.')
+  })
+
+  it('remembers the request with the battle it opened ("Main Lagi"), and only that battle', async () => {
+    api.startBattle.mockResolvedValueOnce(res(200, { matched: true, battle_uuid: 'b-7' }))
+    await s.start('school-battle', { ...PARAMS, question_count: 15 })
+    expect(lastStartFor('b-7')).toEqual({
+      mode: 'school-battle',
+      params: { ...PARAMS, question_count: 15 },
+    })
+    expect(lastStartFor('other')).toBeNull()
+    expect(lastStartRequest()?.mode).toBe('school-battle')
+  })
+
+  it('an error envelope without a message falls back to the page text', async () => {
+    api.startBattle.mockResolvedValueOnce(res(429, { error: { code: 'RATE_LIMITED' } }))
+    await s.start('quick-match', PARAMS)
+    expect(s.errorMsg.value).toBe('Ralat dari server. Sila cuba lagi.')
+  })
+
+  it('question_count travels in the start body untouched', async () => {
+    api.startBattle.mockResolvedValueOnce(res(200, { queue_id: 43 }))
+    await s.start('school-battle', { ...PARAMS, question_count: 15 })
+    expect(api.startBattle).toHaveBeenCalledWith(
+      'school-battle',
+      { ...PARAMS, question_count: 15 },
+      expect.anything(),
+    )
   })
 })
