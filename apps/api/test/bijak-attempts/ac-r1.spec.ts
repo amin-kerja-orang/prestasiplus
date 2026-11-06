@@ -126,7 +126,7 @@ describe('R1-06.2: the band midpoint', () => {
     const sub = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'band', changes: [change(SEJ_ESSAY_1, { text: 'Perlembagaan menjadi asas undang-undang negara.' })] })
     expect(sub.status, JSON.stringify(sub.body)).toBe(200)
     const part = (await result(me, id)).result.questions.flatMap((q) => q.parts).find((p) => p.partId === SEJ_ESSAY_1)!
-    const bands = part.scheme.rubric?.bands ?? []
+    const bands = part.scheme!.rubric?.bands ?? []
     expect(bands.length).toBeGreaterThan(1)
     for (const b of bands) {
       const from = Math.min(b.range[0], part.marks)
@@ -140,7 +140,7 @@ describe('R1-06.2: the band midpoint', () => {
   it('an odd-width band rounds DOWN, and the pupil can still adjust inside the range but not outside it', async () => {
     const id = await startAttempt(me, PAPER.sejK2, 'exam', true)
     await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: 'band2', changes: [change(SEJ_ESSAY_1, { text: 'x' })] })
-    const bands = (await result(me, id)).result.questions.flatMap((q) => q.parts).find((p) => p.partId === SEJ_ESSAY_1)!.scheme.rubric!.bands
+    const bands = (await result(me, id)).result.questions.flatMap((q) => q.parts).find((p) => p.partId === SEJ_ESSAY_1)!.scheme!.rubric!.bands
     const baik = bands.find((b) => b.name === 'Baik')! // [6, 8] on 10 marks
     const mark = (n: number) => me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: SEJ_ESSAY_1, mark: n, band: 'Baik' }).then((r) => BijakAttemptSelfMarkResultSchema.parse(r.body.data).awarded)
     expect(Math.floor((baik.range[0] + baik.range[1]) / 2)).toBe(7)
