@@ -10889,6 +10889,15 @@
       "approved_by_card": null
     },
     {
+      "name": "PkskExamLoad",
+      "table": "pksk_exam_loads",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/pksk.prisma",
+      "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-91)"
+    },
+    {
       "name": "PracticeSession",
       "table": "practice_sessions",
       "status": "canonical",
