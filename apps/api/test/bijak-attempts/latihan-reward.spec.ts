@@ -1,13 +1,13 @@
 /**
  * S3-T04 (46 D-PA-13, FR-PA-16, AC-PA-11, AC-MUR-13-7): a Mod Latihan sitting credits Syiling only for the parts "Semak" never revealed; exam mode pays as before.
  * Syiling per mark = S5-T15 `coinsPerCorrect()` (1 with no `reward_settings` row; the row sets it); XP stays 10 per mark.
- * A question that was checked counts as revealed (all its parts); a DM-68 `revealed` flag on an answer row counts too.
+ * A checked question reveals the parts "Semak" shows (auto-marked kinds; an essay part waits for Hantar and stays paid); a DM-68 `revealed` flag on an answer row counts too.
  */
 import { BijakAttemptPaperViewSchema, BijakAttemptResultViewSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { BANK } from '../../../../src/modules/m28-bijak-spm/data/registry'
-import { leavesOf, type PartAnswer, type SchemeDef } from '../../src/modules/bijak/attempts/exam-core.adapter'
+import { leavesOf, type PartAnswer, type SchemeDef, SEMAK_KINDS } from '../../src/modules/bijak/attempts/exam-core.adapter'
 import { resetCoinsPresenceCache } from '../../src/modules/practice/coins'
 import { type AttemptsTestApp, bootAttemptsApp, change, type Client, correctChoice, loginAs, PAPER, questionIdsOfView, startAttempt, STUDENT } from './helpers'
 
@@ -58,6 +58,12 @@ function correctAnswer(scheme: SchemeDef): PartAnswer | undefined {
     default:
       return undefined
   }
+}
+
+/** The leaves "Semak" reveals of a question (46 section 3.5): an essay or working leaf has no "Semak", so checking never reveals (or unpays) it. */
+const semakLeaves = (qid: string): string[] => {
+  const q = BANK.questions.get(qid)!
+  return q.mcq ? [qid] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id)
 }
 
 /** Correct answers for every leaf of the given PoC questions. */
@@ -119,12 +125,12 @@ describe('Mod Latihan reward, revealed sets', () => {
   const paid = (r: Awaited<ReturnType<typeof result>>, skip: ReadonlySet<string>) =>
     r.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !skip.has(p.partId)).reduce((n, p) => n + p.awarded, 0)
 
-  it('a multi-part question checked on ONE part reveals all its parts', async () => {
+  it('a multi-part question checked on ONE part reveals all the parts "Semak" shows', async () => {
     await setRate(2)
     const id = await startAttempt(me, PAPER.matK2, 'latihan')
     const all = await questions(id)
-    const multi = all.find((q) => leavesOf(BANK.questions.get(q)!.parts ?? []).length >= 2)!
-    const leaves = leavesOf(BANK.questions.get(multi)!.parts ?? []).map((l) => l.id)
+    const multi = all.find((q) => semakLeaves(q).length >= 2)!
+    const leaves = semakLeaves(multi)
     const first = answersOf([multi]).filter((a) => a.partId === leaves[0])
     expect((await check(id, multi, first)).status).toBe(200)
     expect((await submit(id, answersOf(all))).status).toBe(200)
@@ -154,10 +160,10 @@ describe('Mod Latihan reward, revealed sets', () => {
   it('union: an answer-row revealed flag on one question and a check on another are both left unpaid', async () => {
     const id = await startAttempt(me, PAPER.matK2, 'latihan')
     const all = await questions(id)
-    const withMarks = all.filter((q) => answersOf([q]).length > 0)
+    const withMarks = all.filter((q) => answersOf([q]).length > 0 && semakLeaves(q).length > 0)
     const [flagged, checked] = [withMarks[0]!, withMarks[1]!]
     const flaggedLeaf = leavesOf(BANK.questions.get(flagged)!.parts ?? [])[0]!.id
-    const checkedLeaves = leavesOf(BANK.questions.get(checked)!.parts ?? []).map((l) => l.id)
+    const checkedLeaves = semakLeaves(checked)
     await me.put(`/api/bijak/attempts/${id}/answers`, { changes: answersOf(all) })
     await t.db.query(`update attempt_answers set answer = answer || '{"revealed": true}'::jsonb where attempt_id = $1 and part_id = $2`, [id, flaggedLeaf])
     expect((await check(id, checked, [])).status).toBe(200)

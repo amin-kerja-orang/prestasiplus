@@ -250,12 +250,12 @@ export class BijakAttemptsService {
     return new Set([...answers].filter(([, v]) => v.answer.revealed === true).map(([k]) => k))
   }
 
-  /** Revealed parts of a closing attempt: the DM-68 flag, plus (Mod Latihan) every part of a question "Semak" was used on (FR-PA-16, also a part answered after the check). */
+  /** Revealed parts of a closing attempt: the DM-68 flag, plus (Mod Latihan) every part "Semak" reveals of a question it was used on (FR-PA-16, also a part answered after the check). An essay or working part has no "Semak" (46 section 3.5), so it is never revealed and stays paid. */
   private async revealedAtClose(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, bundles: Bundles): Promise<Set<string>> {
     const revealed = this.revealedParts(answers)
     if (row.mode === 'latihan') {
-      const byQuestion = buildLeafIndex(row.composition, bundles).byQuestion
-      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of byQuestion.get(qid) ?? []) revealed.add(id)
+      const index = buildLeafIndex(row.composition, bundles)
+      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of semakParts(index, qid)) revealed.add(id)
     }
     return revealed
   }

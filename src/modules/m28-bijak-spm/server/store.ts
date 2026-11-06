@@ -847,7 +847,7 @@ export class BijakServer implements BijakApi {
 
   /**
    * Coins and points of a result = what the ledger credits (mirrors the API `withPaidFigures`, FR-PA-16, 46 D-PA-13). Exam and Kertas Subjektif: score x coinRate / x XP_PER_MARK.
-   * Mod Latihan: only the counted questions' parts that "Semak" never revealed (answer `revealed` flag, or any part of a checked question) pay. 0 marks is 0/0.
+   * Mod Latihan: only the counted questions' parts that "Semak" never revealed (answer `revealed` flag, or a part "Semak" shows of a checked question) pay. 0 marks is 0/0.
    */
   private paidFigures(a: Attempt, score: number, questions: QuestionResult[]): { coins: number; points: number } {
     const coinRate = COINS_PER_CORRECT
@@ -855,8 +855,7 @@ export class BijakServer implements BijakApi {
     const revealed = new Set<string>()
     for (const [partId, row] of Object.entries(a.answers)) if (row.answer?.revealed === true) revealed.add(partId)
     for (const qid of a.checked) {
-      const q = BANK.questions.get(qid)
-      for (const l of q ? (q.mcq ? [{ id: q.id }] : leavesOf(q.parts ?? [])) : []) revealed.add(l.id)
+      if (BANK.questions.has(qid)) for (const id of this.semakParts(qid)) revealed.add(id)
     }
     const payable = questions
       .filter((q) => q.counted)
