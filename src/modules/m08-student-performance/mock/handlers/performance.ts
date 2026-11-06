@@ -13,9 +13,10 @@ import {
   classCard,
   levelDetail,
   schoolPerformance,
+  xsPupilCount,
   type Scope,
 } from '../repository/performance'
-import { LEVEL_CODES, LEVEL_SLUG, PRACTICE_MODE_SET, answerTotalsOf, type LevelCode } from '../repository/reads'
+import { LEVEL_CODES, LEVEL_SLUG, PRACTICE_MODE_SET, answerTotalsOf, levelStudentIds, type LevelCode } from '../repository/reads'
 import { users } from '@/modules/m01-authentication/mock'
 import { practice } from '@/modules/m05-practice/mock'
 import { ownClasses, subjectColorOf, subjectNameOf, viewerOf, type Viewer } from './common'
@@ -57,13 +58,13 @@ export const performanceRoutes: RouteDef[] = [
       let card: LevelCard
       if (scope.kind === 'platform') {
         const s = classrooms.levelSummary(slug)
-        card = { code, name: LEVEL_NAME[code], classes: s.classes, students: s.students }
+        card = { code, name: LEVEL_NAME[code], classes: s.classes, students: xsPupilCount(scope, levelStudentIds(slug)) }
       } else {
         const cls = classrooms
           .list({ educationLevel: slug, schoolId: scope.schoolId })
           .filter((c) => own === undefined || own.has(c.classId))
         const ids = new Set(cls.flatMap((c) => classrooms.memberIds(c.kind, c.classId)))
-        card = { code, name: LEVEL_NAME[code], classes: cls.length, students: ids.size }
+        card = { code, name: LEVEL_NAME[code], classes: cls.length, students: xsPupilCount(scope, [...ids]) }
       }
       return code === 't4' || code === 't5' || card.classes > 0 || card.students > 0 ? [card] : []
     })
