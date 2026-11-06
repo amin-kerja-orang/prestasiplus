@@ -57,7 +57,7 @@ export async function mapBounded<T, R>(items: readonly T[], limit: number, fn: (
   return out
 }
 
-const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
+const SPM_MODES = ['past_year', 'databank', 'latih_tubi', 'ramalan'] as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 
@@ -94,9 +94,15 @@ export class SpmHubService {
     return this.questions.count({ subjectId, status: 'approved', active: true, type: 'structured' })
   }
 
-  /** Pool sizes of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
+  /** Latih Tubi totals (units the Latih Tubi draw serves, a group once) of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
   private async poolSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
-    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.count(s.subjectId))
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.latihTubiCount(s.subjectId))
+    return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
+  }
+
+  /** Databank sizes (units the Databank draw can serve, a group once) of the listed subjects. */
+  private async databankSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.databankCount(s.subjectId))
     return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
   }
 
@@ -114,17 +120,18 @@ export class SpmHubService {
       this.catalog.spmLevelIds(),
       this.tracking.allSets(),
     ])
-    const sizes = await this.poolSizes(subjects)
+    const [sizes, databankSizes] = await Promise.all([this.poolSizes(subjects), this.databankSizes(subjects.filter((s) => s.databankOrder !== null))])
     const total = sum([...sizes.values()])
-    const databank = sum(subjects.filter((s) => s.databankOrder !== null).map((s) => sizes.get(s.subjectId) ?? 0))
+    const databank = sum([...databankSizes.values()])
     const levelSubjects = await Promise.all(levelIds.map((id) => this.curriculum.subjects({ active: true, educationLevelId: idFromString(id) })))
     const subjectCount = new Set(levelSubjects.flat().map((s) => s.id)).size
     const trackingA = sum([...allSets.values()].map(sumReady))
     const subjektifSets = sum(await Promise.all(SUBJEKTIF_CODES.map((c) => (byCode.get(c) ? this.visibleSets((byCode.get(c) as SubjectMeta).subjectId) : Promise.resolve(0)))))
+    const kertasSubjektif = await this.ports.papers.countPublishedSubjektif()
     const stats = await this.practice.historyStats(caller.userId, { modes: [...SPM_MODES], includeTest: caller.isTest })
     return {
-      stats: { totalQuestions: total, subjectCount, yearsAvailable: 0, trackingAQuestions: trackingA },
-      modules: { databank, latihTubi: total, trackingA, subjektifSets },
+      stats: { totalQuestions: total, subjectCount, trackingAQuestions: trackingA },
+      modules: { databank, latihTubi: total, trackingA, subjektifSets, kertasSubjektif },
       me: { sessions: stats.sessions, avgAccuracy: stats.avgAccuracyPct, coins: stats.coins, answered: stats.answered },
     }
   }
@@ -135,7 +142,7 @@ export class SpmHubService {
     const listed = (await this.catalog.spmSubjects())
       .filter((s) => s.databankOrder !== null)
       .sort((a, b) => (a.databankOrder as number) - (b.databankOrder as number))
-    const sizes = await this.poolSizes(listed)
+    const sizes = await this.databankSizes(listed)
     return listed.map((s) => ({ code: s.code, ...metaOf(s), databankCount: sizes.get(s.subjectId) ?? 0 }))
   }
 
@@ -162,7 +169,7 @@ export class SpmHubService {
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: countOf(facts),
+      total: await this.pool.latihTubiCount(s.subjectId),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),
