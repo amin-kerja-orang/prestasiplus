@@ -79,14 +79,31 @@ server {
   }
 
   # --- uploads: many-file multipart routes (intake batches 11 x 20 MB, audio KBAT 4 x 20 MB, screenshots 20 x 10 MB,
-  #     perutusan, teacher question papers up to 101 MB, paper source upload paper + scheme 2 x 30 MB). The API enforces each purpose itself; this is the outer fence.
+  #     perutusan, teacher question papers up to 101 MB). The API enforces each purpose itself; this is the outer fence.
   #     Value = PP_UPLOAD_BIG_MB. A new many-file route needs a line in this regex.
-  location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers|admin/papers/[^/]+/source)/?$ {
+  location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers)/?$ {
     client_max_body_size ${PP_UPLOAD_BIG_MB}m;
     client_body_timeout 120s;
     limit_conn pp_big_uploads 2;         # per address
     limit_conn pp_big_global 4;          # whole server: bounds the disk and worker use of unauthenticated big bodies
     proxy_request_buffering on;          # the API only sees a complete body (and a half upload costs it nothing)
+    include /etc/nginx/pp-snippets/proxy-common.conf;
+    include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
+    set $api_upstream http://api:3000;
+    proxy_pass $api_upstream;
+    proxy_connect_timeout 5s;
+    proxy_send_timeout 300s;
+    proxy_read_timeout 300s;
+  }
+
+  # --- paper source upload (S3-T06, API-BIJAK-14): paper + scheme 2 x 30 MB plus multipart overhead = 62 MB, NOT the big-upload value.
+  #     Same proxying, snippets, limit_conn and HSTS as the big-upload group above. Anchored: the other /api/admin/papers/* routes keep the default.
+  location ~ ^/api/admin/papers/[^/]+/source/?$ {
+    client_max_body_size 62m;
+    client_body_timeout 120s;
+    limit_conn pp_big_uploads 2;         # per address
+    limit_conn pp_big_global 4;          # whole server
+    proxy_request_buffering on;
     include /etc/nginx/pp-snippets/proxy-common.conf;
     include /etc/nginx/conf.d/snippets/hsts.conf;   # replaces the API's own HSTS (one policy per host)
     set $api_upstream http://api:3000;
