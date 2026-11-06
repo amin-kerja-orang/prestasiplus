@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { BijakAttemptResult } from '@pp/contract'
+import type { BijakAttemptKind, BijakAttemptResult } from '@pp/contract'
 
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
@@ -13,7 +13,7 @@ export interface AttemptRow {
   id: string
   userId: string
   paperId: string | null
-  paperKind: 'pilihan' | 'jana'
+  paperKind: BijakAttemptKind
   title: string
   subject: string
   subjectName: string
@@ -52,7 +52,7 @@ export interface PhotoRow {
 export interface NewAttempt {
   userId: string
   paperId: string
-  paperKind: 'pilihan' | 'jana'
+  paperKind: BijakAttemptKind
   title: string
   subject: string
   subjectName: string
@@ -226,6 +226,23 @@ export class AttemptsRepository {
   async checkCounts(attemptId: string): Promise<{ order: string[]; counts: Map<string, number> }> {
     const rows = await this.prisma.client.attemptCheck.findMany({ where: { attemptId }, orderBy: { id: 'asc' } })
     return { order: rows.map((r) => r.questionId), counts: new Map(rows.map((r) => [r.questionId, r.checkCount])) }
+  }
+
+  /** The result stored by the last "Semak" of each question (null on a row without one). */
+  async checkResults(attemptId: string): Promise<Map<string, unknown>> {
+    const rows = await this.prisma.client.attemptCheck.findMany({ where: { attemptId }, select: { questionId: true, result: true } })
+    return new Map(rows.map((r) => [r.questionId, r.result]))
+  }
+
+  /** DM-68: marks parts as opened by "Semak". An unanswered part gets a row at rev 0, so any later save still wins; the stored answer and its rev are kept. */
+  async markRevealed(attemptId: string, partIds: readonly string[], at: Date): Promise<void> {
+    if (!partIds.length) return
+    await this.prisma.client.$executeRaw`
+      insert into attempt_answers (attempt_id, part_id, answer, rev, saved_at)
+      select ${attemptId}::uuid, x.part_id, '{"revealed": true}'::jsonb, 0, ${at.toISOString()}::timestamptz
+        from jsonb_array_elements_text(${JSON.stringify(partIds)}::jsonb) as x(part_id)
+      on conflict (attempt_id, part_id) do update
+        set answer = attempt_answers.answer || '{"revealed": true}'::jsonb, updated_at = now()`
   }
 
   async saveCheck(attemptId: string, questionId: string, count: number, result: unknown): Promise<void> {

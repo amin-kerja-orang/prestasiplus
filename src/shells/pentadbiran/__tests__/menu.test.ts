@@ -47,6 +47,7 @@ describe('Pentadbiran menu data', () => {
       'KS-14',
       'KS-15',
       'KS-02',
+      'KS-07',
       'KS-08',
       'KS-09',
       'KS-17',
@@ -60,12 +61,29 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
   })
 
+  it('S5-T08: Video (KK-08) is built and opens the admin video list', () => {
+    expect(ALL_ITEMS.find((i) => i.id === 'KK-08')).toMatchObject({
+      label: 'Video',
+      to: '/admin/videos',
+    })
+    expect(itemsOf('Kurikulum & Kandungan')).toContain('KK-08')
+  })
+
   it('REQ-B-039: Bank Soalan (Studio) opens the Studio list', () => {
     const bs08 = ALL_ITEMS.find((i) => i.id === 'BS-08')
     expect(bs08).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
     // it resolves to the real route (T13b), like every other item
     const router = createAppRouter({ history: createMemoryHistory() })
     expect(router.resolve('/admin/studio').matched.length).toBeGreaterThan(0)
+  })
+
+  it('S2-T09: BS-03 Sumber Kertas is visible and opens the source paper register', () => {
+    expect(ALL_ITEMS.find((i) => i.id === 'BS-03')).toMatchObject({
+      label: 'Sumber Kertas',
+      to: '/admin/source-papers',
+    })
+    const router = createAppRouter({ history: createMemoryHistory() })
+    expect(router.resolve('/admin/source-papers').matched.length).toBeGreaterThan(0)
   })
 
   it('never points a visible item at a placeholder route', () => {

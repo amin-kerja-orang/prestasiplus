@@ -1,5 +1,5 @@
-import { Inject, Injectable, type OnModuleInit } from '@nestjs/common'
-import { IntakeFileErrorCodeSchema } from '@pp/contract'
+import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common'
+import { INTAKE_BATCH_TIMEOUT_CODE, INTAKE_FILE_MESSAGES, IntakeFileErrorCodeSchema } from '@pp/contract'
 
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
@@ -19,7 +19,7 @@ import {
   type RenderedPage,
   type TextBlock,
 } from '../../ocr'
-import { INTAKE_JOB_ENTITY, INTAKE_JOB_TYPES } from './intake-files.config'
+import { BATCH_SWEEP_SECONDS, INTAKE_JOB_ENTITY, INTAKE_JOB_TYPES, IntakeFilesConfig } from './intake-files.config'
 import { IntakeFiguresService } from './intake-figures.service'
 import { capText, clampBlocks, MAX_PAGE_TEXT, stripNul } from './intake-mappers'
 import { discardStored } from './intake-storage'
@@ -76,6 +76,8 @@ type PageResult =
  */
 @Injectable()
 export class IntakeProcessingService implements OnModuleInit {
+  private readonly logger = new Logger(IntakeProcessingService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(FilesService) private readonly files: FilesService,
@@ -86,9 +88,10 @@ export class IntakeProcessingService implements OnModuleInit {
     @Inject(OCR_ENGINE) private readonly ocr: OcrEngine,
     @Inject(OcrImageService) private readonly images: OcrImageService,
     @Inject(IntakeFiguresService) private readonly figures: IntakeFiguresService,
+    @Inject(IntakeFilesConfig) private readonly config: IntakeFilesConfig,
   ) {}
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
     const pageBudget = this.ocrConfig.pageTimeoutMs * 4 + 30_000
     this.jobs.register(INTAKE_JOB_TYPES.processFile, (job, signal) => this.processFile(job, signal), {
       timeoutMs: 120_000,
@@ -99,6 +102,95 @@ export class IntakeProcessingService implements OnModuleInit {
       onExhausted: (job, code) => this.onPageExhausted(job, code),
     })
     this.jobs.register(INTAKE_JOB_TYPES.cropFigure, (job, signal) => this.cropFigure(job, signal), { timeoutMs: pageBudget })
+    // S1-T04: the batch clock. A self-rescheduling sweep (the worker has no recurring jobs): every run fails the timed-out batches and
+    // queues the next run. If the chain ever breaks (the job ran out of attempts) the hook starts it again; so does every boot.
+    this.jobs.register(INTAKE_JOB_TYPES.batchTimeout, () => this.runBatchTimeoutJob(), {
+      timeoutMs: 60_000,
+      onExhausted: () => this.scheduleBatchTimeout(),
+    })
+    if (this.config.workerEnabled) {
+      try {
+        await this.scheduleBatchTimeout()
+      } catch {
+        // Database not reachable at boot (the next boot or the hook starts the chain); never block start-up.
+      }
+    }
+  }
+
+  // ---- intake.batch_timeout --------------------------------------------------------------------
+
+  /** Queues the sweep for `delaySeconds` from now. The idempotency key is the time bucket, so any number of callers make one job. */
+  async scheduleBatchTimeout(delaySeconds = 0): Promise<void> {
+    const at = Date.now() + delaySeconds * 1000
+    const bucket = Math.floor(at / (BATCH_SWEEP_SECONDS * 1000))
+    await this.jobs.enqueue({
+      type: INTAKE_JOB_TYPES.batchTimeout,
+      idempotencyKey: `${INTAKE_JOB_TYPES.batchTimeout}:${bucket}`,
+      payload: { bucket },
+      runAfter: delaySeconds > 0 ? new Date(at) : undefined,
+    })
+  }
+
+  private async runBatchTimeoutJob(): Promise<void> {
+    try {
+      await this.sweepBatchTimeouts()
+    } finally {
+      await this.scheduleBatchTimeout(BATCH_SWEEP_SECONDS)
+    }
+  }
+
+  /**
+   * Fails every batch that has been `processing` for longer than `OCR_BATCH_TIMEOUT_MS` (ERR-INT-05, code `OCR_BATCH_TIMEOUT`) and returns
+   * how many. The clock of a batch is the earliest `started_at` of the jobs of its current round (its file jobs and its extraction job,
+   * started since the batch last changed): "the worker picked up the first file". `started_at` is used instead of `locked_at` because the
+   * stuck sweep and a retry backoff clear `locked_at`. A batch that is `submitted` (waiting for the AI budget) is never timed out. The
+   * unread pages fail with `OCR_TIMEOUT`, so a retry can run them again.
+   */
+  async sweepBatchTimeouts(): Promise<number> {
+    const due = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+      SELECT b.id FROM intake_batches b WHERE b.status = 'processing' AND ${this.batchIsStale()}`
+    let failed = 0
+    for (const { id } of due) if (await this.timeOutBatch(id)) failed += 1
+    return failed
+  }
+
+  /** The 15-minute rule on the batch alias `b`: the earliest `started_at` of its current file / extraction jobs is older than the limit. */
+  private batchIsStale(): Prisma.Sql {
+    return Prisma.sql`(
+           SELECT min(j.started_at)
+             FROM jobs j
+            WHERE j.started_at IS NOT NULL
+              AND j.started_at >= b.updated_at - interval '1 minute'
+              AND ((j.entity_type = ${INTAKE_JOB_ENTITY} AND j.entity_id IN (SELECT f.id::text FROM intake_files f WHERE f.batch_id = b.id))
+                OR (j.entity_type = 'intake_batch' AND j.entity_id = b.id::text))
+         ) < now() - make_interval(secs => ${this.config.batchTimeoutMs}::float8 / 1000.0)`
+  }
+
+  private async timeOutBatch(batchId: bigint): Promise<boolean> {
+    return this.prisma.transaction(async (tx) => {
+      // Lock first, then decide again: a retry or a finishing job may have changed the batch since the sweep selected it.
+      await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${batchId} FOR UPDATE`
+      const still = await tx.$queryRaw<{ id: bigint }[]>`
+        SELECT b.id FROM intake_batches b WHERE b.id = ${batchId} AND b.status = 'processing' AND ${this.batchIsStale()}`
+      if (still.length === 0) return false
+      this.logger.warn(`${INTAKE_BATCH_TIMEOUT_CODE}: batch ${idToString(batchId)} is over ${this.config.batchTimeoutMs} ms`)
+      const files = await tx.intakeFile.findMany({ where: { batchId }, select: { id: true } })
+      const open = await tx.intakeFile.findMany({ where: { batchId, status: { in: ['uploaded', 'processing'] } }, select: { id: true } })
+      if (open.length > 0) {
+        const ids = open.map((f) => f.id)
+        await tx.intakePage.updateMany({ where: { intakeFileId: { in: ids }, ocrStatus: 'pending' }, data: { ocrStatus: 'failed', errorCode: 'OCR_TIMEOUT' } })
+        await tx.intakeFile.updateMany({ where: { id: { in: ids } }, data: { status: 'failed', errorCode: 'OCR_TIMEOUT' } })
+      }
+      await this.jobs.cancelFor(INTAKE_JOB_ENTITY, files.map((f) => idToString(f.id)), tx)
+      await this.jobs.cancelFor('intake_batch', [idToString(batchId)], tx)
+      // An extraction run that was still going ends with the batch (its late result is dropped by `persist`).
+      await tx.intakeExtractionRun.updateMany({
+        where: { batchId, state: { in: ['queued', 'running'] } },
+        data: { state: 'failed', reasonCode: 'EXTRACTION_FAILED', finishedAt: new Date() },
+      })
+      await tx.intakeBatch.update({ where: { id: batchId }, data: { status: 'failed', statusReason: INTAKE_FILE_MESSAGES.ocrTimeout } })
+      return true
+    })
   }
 
   // ---- intake.process_file ---------------------------------------------------------------------
@@ -248,8 +340,11 @@ export class IntakeProcessingService implements OnModuleInit {
    * pages fail with it and its queued and running jobs are cancelled.
    */
   private async circuitBreaker(fileId: bigint): Promise<void> {
+    // After a retry the breaker starts again: the TOO_COMPLEX pages the earlier trip failed in bulk (never read) no longer count.
+    const file = await this.prisma.client.intakeFile.findUnique({ where: { id: fileId }, select: { retryCount: true } })
+    const codes = (file?.retryCount ?? 0) > 0 ? BREAKER_CODES.filter((c) => c !== 'TOO_COMPLEX') : [...BREAKER_CODES]
     const tripped = await this.prisma.client.intakePage.count({
-      where: { intakeFileId: fileId, ocrStatus: 'failed', errorCode: { in: [...BREAKER_CODES] } },
+      where: { intakeFileId: fileId, ocrStatus: 'failed', errorCode: { in: codes } },
     })
     if (tripped < BREAKER_PAGES) return
     await this.failFile(fileId, 'TOO_COMPLEX')
@@ -327,7 +422,7 @@ export class IntakeProcessingService implements OnModuleInit {
 
   /**
    * When every page of the file is terminal the file becomes `done` (`failed` when every page failed) and, when
-   * every file of the batch is terminal, the batch becomes `ready_for_review` (at least one file done) or `failed`.
+   * every file of the batch is terminal, the batch becomes `ready_for_review` (at least one page was read) or `failed` (none was).
    * The batch row is locked first, so pages finishing together close the file and the batch exactly once.
    */
   async finalizeIfDone(fileId: bigint): Promise<void> {
@@ -362,6 +457,11 @@ export class IntakeProcessingService implements OnModuleInit {
 
       const open = await tx.intakeFile.count({ where: { batchId: batch.id, status: { in: ['uploaded', 'processing'] } } })
       if (open > 0) return
+      // A pages run (extract with `pages[]`, or a retry on a batch that already has items) closes the batch itself when it has read the pages again.
+      const run = await tx.intakeExtractionRun.count({ where: { batchId: batch.id, state: { in: ['queued', 'running'] } } })
+      if (run > 0) return
+      // End of OCR (45 section 3.3.2 item 7): failed when no page was read. The items do not exist yet, so `selesai_dengan_ralat` is decided
+      // when the extraction ends; failed pages stay listed on their files.
       const done = await tx.intakeFile.count({ where: { batchId: batch.id, status: 'done' } })
       await tx.intakeBatch.updateMany({
         where: { id: batch.id, status: { in: ACTIVE } },

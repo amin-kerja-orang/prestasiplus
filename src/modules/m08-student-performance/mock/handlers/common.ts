@@ -87,6 +87,21 @@ export function ownClasses(viewer: Viewer): ClassroomRow[] {
   return classrooms.forTeacher(viewer.id).filter((c) => c.kind === 'classroom' && c.isActive)
 }
 
+/** S8 (R1-AS-5): the classrooms of the viewer's OWN school, Tingkatan then name (a viewer without a school has none). */
+export function ownSchoolClasses(viewer: Viewer): ClassroomRow[] {
+  if (viewer.role !== 'school_admin' || viewer.schoolId === null) return []
+  return classrooms
+    .forSchool(viewer.schoolId)
+    .filter((c) => c.kind === 'classroom' && c.isActive)
+    .sort((a, b) => a.levelId - b.levelId || a.name.localeCompare(b.name, 'ms', { numeric: true }))
+}
+
+/** S8: `mayOpenClass` plus the school admin's own-school classrooms. */
+export function mayOpenClassAnalysis(viewer: Viewer, cls: ClassroomRow): boolean {
+  if (mayOpenClass(viewer, cls)) return true
+  return viewer.role === 'school_admin' && cls.kind === 'classroom' && viewer.schoolId !== null && cls.schoolId === viewer.schoolId
+}
+
 const subjectNameOf = (subjectId: number | null): string | null =>
   subjectId === null ? null : (curriculum.subject(subjectId)?.name ?? null)
 export { subjectNameOf }

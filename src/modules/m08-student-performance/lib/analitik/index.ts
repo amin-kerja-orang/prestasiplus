@@ -3,7 +3,7 @@
  * BR-M08-11, -14, -16). Pure functions.
  */
 
-import type { Trend, WeakSp } from '../../api/types'
+import type { AnalyticsSubject, Trend, WeakSp } from '../../api/types'
 
 /** The ring circumference of the SVG r=50 (FR-M08-49). */
 export const RING_LENGTH = 314
@@ -125,4 +125,34 @@ export function masteryTone(accuracy: number): {
   if (accuracy >= 80) return { color: 'success', text: 'text-success' }
   if (accuracy >= 60) return { color: 'warning', text: 'text-warning' }
   return { color: 'error', text: 'text-error' }
+}
+
+/** FR-MUR-5-6, AC-MUR-5-2: the message of a subject without any answer. */
+export const noPracticeText = (subject: string): string =>
+  `Belum ada latihan untuk ${subject}. Mula berlatih untuk membuka analitik penuh.`
+
+/** Summary sentence of a subject with answers (reference behaviour 3): "{mahir} daripada {total} Standard Pembelajaran ..." */
+export function masterySummary(subject: Pick<AnalyticsSubject, 'name' | 'counts' | 'ringTotal'>): string {
+  const base = `${String(subject.counts.mahir)} daripada ${String(subject.ringTotal)} Standard Pembelajaran sudah dikuasai untuk ${subject.name}.`
+  return subject.counts.belum > 0 ? `${base} Masih ada ${String(subject.counts.belum)} SP belum dicuba.` : base
+}
+
+/** Tab label of a subject: "{Subjek}" and, only with answers, the accuracy as a whole number (FR-MUR-5-2). */
+export const tabAccuracy = (s: Pick<AnalyticsSubject, 'accuracy' | 'answered'>): string | null =>
+  s.answered > 0 && s.accuracy !== null ? `${String(Math.round(s.accuracy))}%` : null
+
+/** The first subject with at least one answer, else the first (FR-MUR-5-8). */
+export function defaultTab<T extends Pick<AnalyticsSubject, 'answered'>>(subjects: readonly T[]): T | null {
+  return subjects.find((s) => s.answered > 0) ?? subjects[0] ?? null
+}
+
+/** FR-MUR-5-5 / PRD map: the tiles of a subject grouped by strand, in the order the strands first appear. */
+export function groupByStrand<T extends { strand: string | null }>(tiles: readonly T[]): { strand: string | null; tiles: T[] }[] {
+  const groups: { strand: string | null; tiles: T[] }[] = []
+  for (const t of tiles) {
+    const g = groups.find((x) => x.strand === t.strand)
+    if (g) g.tiles.push(t)
+    else groups.push({ strand: t.strand, tiles: [t] })
+  }
+  return groups
 }

@@ -10,7 +10,10 @@ import { api } from '@/api'
 import type {
   Analytics,
   ClassCard,
+  ClassesAggregate,
   ClassItemAnalysis,
+  ItemAnalysisMe,
+  ItemMeTapis,
   LeaderboardPeriod,
   Leaderboard,
   LevelCard,
@@ -19,6 +22,7 @@ import type {
   Ranking,
   SchoolItemAnalysis,
   SchoolPerformance,
+  Tingkatan,
   StudentPerformance,
   Timeline,
   TimelineInput,
@@ -38,13 +42,17 @@ export const fetchSchoolPerformance = (o: Signal = {}) =>
 export const fetchLevels = (o: Signal = {}) =>
   api.get<LevelCard[]>('/api/performance/levels', withSignal(o))
 
-/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t4 / t5. */
+/** #3 `GET /api/performance/levels/:code` (S3); 404 for a code other than t1 to t5. */
 export const fetchLevelDetail = (code: string, o: Signal = {}) =>
   api.get<LevelDetail>(`/api/performance/levels/${encodeURIComponent(code)}`, withSignal(o))
 
 /** #4 `GET /api/performance/classes` (S4, the viewer's own classes). */
 export const fetchOwnClasses = (o: Signal = {}) =>
   api.get<ClassCard[]>('/api/performance/classes', withSignal(o))
+
+/** #4 `GET /api/performance/classes/aggregate` (S4, R1-GUR-4): the cards plus "Pelajar Terbaik" and "Prestasi Mengikut Subjek". */
+export const fetchOwnClassesAggregate = (o: Signal = {}) =>
+  api.get<ClassesAggregate>('/api/performance/classes/aggregate', withSignal(o))
 
 /** #6 `GET /api/performance/students/:userId` (S6); 404 unknown, 403 not permitted. */
 export const fetchStudentPerformance = (userId: number | string, o: Signal = {}) =>
@@ -54,9 +62,9 @@ export const fetchStudentPerformance = (userId: number | string, o: Signal = {})
 export const fetchAnalytics = (o: Signal = {}) =>
   api.get<Analytics>('/api/analytics/me', withSignal(o))
 
-/** #9 `GET /api/item-analysis/school[/:schoolId]` (S9); `tingkatan` T4 / T5 or absent. */
+/** #9 `GET /api/item-analysis/school[/:schoolId]` (S9); `tingkatan` T1 to T5 or absent (API-AS-17). */
 export const fetchSchoolItemAnalysis = (
-  options: { schoolId?: number; tingkatan?: 'T4' | 'T5' | null } & Signal = {},
+  options: { schoolId?: number; tingkatan?: Tingkatan | null } & Signal = {},
 ) =>
   api.get<SchoolItemAnalysis>(
     options.schoolId === undefined
@@ -67,6 +75,22 @@ export const fetchSchoolItemAnalysis = (
       ...(options.tingkatan ? { query: { tingkatan: options.tingkatan } } : {}),
     },
   )
+
+/**
+ * `GET /api/item-analysis/me` (API-RPT-05, R1-MUR-6): the pupil's own Analisa Item. `tapis` filters the items
+ * only; the tiles and counts follow `subjectCode` (S10-T03 decision 7).
+ */
+export const fetchItemAnalysisMe = (
+  options: { subjectCode?: string; tapis?: ItemMeTapis } & Signal = {},
+) => {
+  const query: Record<string, string> = {}
+  if (options.subjectCode) query.subjectCode = options.subjectCode
+  if (options.tapis) query.tapis = options.tapis
+  return api.get<ItemAnalysisMe>('/api/item-analysis/me', {
+    ...withSignal(options),
+    ...(Object.keys(query).length > 0 ? { query } : {}),
+  })
+}
 
 /** #10 `GET /api/item-analysis/classes` (S10). */
 export const fetchItemAnalysisClasses = (o: Signal = {}) =>
@@ -90,6 +114,10 @@ export function createTimelinePost(input: TimelineInput, o: Signal = {}): Promis
   ;(input.captions ?? []).forEach((c, i) => form.append(`captions[${String(i)}]`, c))
   return api.multipart<TimelinePost>('/api/timeline', form, withSignal(o))
 }
+
+/** `DELETE /api/timeline/:id` (API-RPT-15): own post only; 404 for any other id. Answers `{ deleted: 1 }`. */
+export const deleteTimelinePost = (id: number | string, o: Signal = {}) =>
+  api.delete<{ deleted: 1 }>(`/api/timeline/${encodeURIComponent(String(id))}`, withSignal(o))
 
 /** #20 `GET /api/public/students/:id` (S18; no session needed); 404 unknown. */
 export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>

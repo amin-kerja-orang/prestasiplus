@@ -55,6 +55,8 @@ export interface BankInit {
   explanation?: string | null
   contributor?: { name: string; profileUrl: string | null } | null
   hasDskp?: boolean
+  /** A personal question's "Rujukan" link (FR-GUR-44a-9). */
+  referenceUrl?: string | null
 }
 
 interface BankRow {
@@ -93,6 +95,7 @@ export class FakeBank implements PracticeQuestionSource {
       options: Array.from({ length: count }, (_, i) => ({ label: LABELS[i] as string, text: `Pilihan ${LABELS[i]} soalan ${id}` })),
       correctLabel: LABELS[correct] ?? 'A',
       explanation: init.explanation === undefined ? `Penjelasan soalan ${id}` : init.explanation,
+      ...(init.referenceUrl ? { referenceUrl: init.referenceUrl } : {}),
     }
     this.rows.set(id, { versions: [q], liveNo: 1, eligible: true })
     return id

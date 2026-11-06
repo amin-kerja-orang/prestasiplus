@@ -28,6 +28,7 @@ import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeach
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
 import { STIMULI_COMPONENT_SCHEMAS, registerStimuliPaths } from './questions/stimuli'
+import { REGROUP_COMPONENT_SCHEMAS, registerRegroupPaths } from './questions/regroup'
 import { STUDIO_COMPONENT_SCHEMAS, registerStudioPaths } from './questions/studio'
 import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
@@ -42,7 +43,7 @@ import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
-import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
+import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplaceAdminPaths, registerMarketplacePaths } from './marketplace/paths'
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
 import { SCHOOLS_COMPONENT_SCHEMAS, registerSchoolsPaths } from './schools/paths' // BE-05
 import { USERS_COMPONENT_SCHEMAS, registerUsersPaths } from './users/paths' // BE-05
@@ -50,6 +51,7 @@ import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths
 import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
+import { registerTeacherToolsPaths, TEACHER_TOOLS_COMPONENT_SCHEMAS } from './classes/teacher-tools/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
 import { GURU_WEEKLY_REPORT_COMPONENT_SCHEMAS, registerGuruWeeklyReportPaths } from './reports/guru-weekly-report'
@@ -64,6 +66,7 @@ import { AI_COMPONENT_SCHEMAS, registerAiPaths } from './ai/paths'
 import { INTAKE_COMPONENT_SCHEMAS, registerIntakePaths } from './intake/paths'
 import { INTAKE_FILES_COMPONENT_SCHEMAS, registerIntakeFilesPaths } from './intake/files-paths'
 import { INTAKE_DASHBOARD_COMPONENT_SCHEMAS, registerIntakeDashboardPaths } from './intake/dashboard'
+import { SOURCE_PAPERS_COMPONENT_SCHEMAS, registerSourcePapersPaths } from './intake/source-papers'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -110,10 +113,12 @@ export const COMPONENT_SCHEMAS = {
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
+  ...REGROUP_COMPONENT_SCHEMAS, // S1-T07
   ...STUDIO_COMPONENT_SCHEMAS, // R1-T13 (REQ-C-006)
   ...QUESTION_GATE_COMPONENT_SCHEMAS, // R1-B05
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
+  ...TEACHER_TOOLS_COMPONENT_SCHEMAS, // S6-T16 (Soalan & Rujukan)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
   ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
   ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
@@ -142,6 +147,7 @@ export const COMPONENT_SCHEMAS = {
   ...INTAKE_COMPONENT_SCHEMAS, // BE-38
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
+  ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -172,6 +178,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
+  registerMarketplaceAdminPaths(registry) // S7-T08 (M20 admin, API-ADM-19)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
   registerSchoolsPaths(registry) // BE-05
   registerUsersPaths(registry) // BE-05
@@ -181,10 +188,12 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
+  registerRegroupPaths(registry) // S1-T07
   registerStudioPaths(registry) // R1-T13 (REQ-C-006)
   registerQuestionGatePaths(registry) // R1-B05
   registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
+  registerTeacherToolsPaths(registry) // S6-T16 (Soalan & Rujukan)
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)
@@ -200,6 +209,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakePaths(registry) // BE-38
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
+  registerSourcePapersPaths(registry) // S2-T09
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

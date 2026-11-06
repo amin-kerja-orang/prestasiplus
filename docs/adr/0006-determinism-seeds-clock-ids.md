@@ -52,3 +52,7 @@ Canonical seed data (M02 v1.16, XL3 R2-01). The fixture schools are **900001–9
 ## Amendment 3 (2026-11-05, lead ruling 2026-11-05, #481)
 
 The UAT/demo seed profile dates its rows as deterministic offsets from the seed run date (`now − n days`, fixed offsets and named PRNG streams unchanged), and the CI/test seed profile keeps the fixed `SEED_NOW`.
+
+## Amendment 4 (2026-11-05, lead ruling 2026-11-05, #481)
+
+D95 stays: no demo `poc` seed on UAT. The UAT seed profile (`uat-like`, S4-T01) opts in to `SEED_CLOCK=rundate` through a one-line change in the UAT run sheet, so that FR-AS-0-3 holds on UAT; the CI/test profiles keep the fixed `SEED_NOW`. Battle (team-cc, S7) and PKSK (team-bb, S5) seed dates become offsets from the clock anchor so they fall inside the 7-day and "this month" windows; only the dates change and the observed values stay.

@@ -11,6 +11,11 @@ export type Letter = 'A' | 'B' | 'C' | 'D'
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low'
 export type Trend = 'up' | 'down' | 'stable'
+/** Analitik Adaptif class rows: 'new' = answers only in the last 7 days (BARU); 'none' = no answers (Belum Bermula). */
+export type ClassTrend = Trend | 'new'
+export type ClassRiskLevel = RiskLevel | 'none'
+/** Tingkatan 1 to 5, lower case (`/prestasi/tingkatan/t1..t5`). */
+export type LevelCode = 't1' | 't2' | 't3' | 't4' | 't5'
 
 // ---------------------------------------------------------------------------------------------
 // #1 GET /api/performance/school (S1)
@@ -60,7 +65,7 @@ export interface SchoolPerformance {
     achievementPct: number | null
   }[]
   levels: {
-    code: 't4' | 't5'
+    code: LevelCode
     accuracy: number
     classes: number
     students: number
@@ -82,7 +87,7 @@ export interface SchoolPerformance {
 // ---------------------------------------------------------------------------------------------
 
 export interface LevelCard {
-  code: 't4' | 't5'
+  code: LevelCode
   name: string
   classes: number
   students: number
@@ -105,7 +110,7 @@ export interface LevelClassRow {
 }
 
 export interface LevelDetail {
-  code: 't4' | 't5'
+  code: LevelCode
   name: string
   classes: number
   students: number
@@ -123,14 +128,15 @@ export interface LevelDetail {
     answered: number
     accuracy: number
   }[]
+  /** Murid Berisiko (R1-AS-4): whole-number accuracy below 50 or no answer in the last 7 days; 10 rows. */
   atRisk: {
     userId: number
     name: string
     className: string
-    checkpoint: number
-    ar: number
-    target: number
-    gap: number
+    answered: number
+    /** null when the pupil has no answer. */
+    accuracy: number | null
+    lastAnsweredAt: string | null
   }[]
 }
 
@@ -147,6 +153,15 @@ export interface ClassCard {
   year: number
   joinCode: string
   isActive: boolean
+}
+
+/** `GET /api/performance/classes/aggregate` (R1-GUR-4, FR-GUR-4-7): the cards plus the two aggregate sections. */
+export interface ClassesAggregate {
+  classes: ClassCard[]
+  /** Pelajar Terbaik: top 10 with at least 5 answers. */
+  topStudents: { userId: number; name: string; answered: number; accuracy: number }[]
+  /** Prestasi Mengikut Subjek: accuracy descending. */
+  subjects: { subjectId: number; name: string; answered: number; accuracy: number }[]
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -227,10 +242,12 @@ export interface AnalyticsSubject {
   subjectId: number
   name: string
   code: string
-  accuracy: number
+  /** null = no answers in the subject ("—"). */
+  accuracy: number | null
   answered: number
   trend: Trend
-  projection: { low: Grade; high: Grade }
+  /** null = no answers in the subject. */
+  projection: { low: Grade; high: Grade } | null
   counts: { mahir: number; sederhana: number; lemah: number; belum: number }
   ringTotal: number
   weak: WeakSp[]
@@ -241,6 +258,8 @@ export interface AnalyticsSubject {
       code: string
       title: string
       status: 'mahir' | 'sederhana' | 'lemah' | 'belum'
+      /** Strand heading (Tajuk DSKP / SK) the tile is grouped under; null = none. */
+      strand: string | null
     }[]
   }
 }
@@ -255,6 +274,9 @@ export interface Analytics {
 // #9 GET /api/item-analysis/school[/:schoolId] (S9)
 // ---------------------------------------------------------------------------------------------
 
+/** Tingkatan 1 to 5 (R1-AS-6, D101). */
+export type Tingkatan = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+
 export interface SchoolItemQuestion {
   rank: number
   questionId: number
@@ -267,7 +289,8 @@ export interface SchoolItemQuestion {
   pupils: number
   pupilsPct: number
   wrongPupils: { userId: number; name: string; classLabel: string; wrongOption: Letter }[]
-  correctOption: { letter: Letter; text: string }
+  /** null = no recorded key for this question (shown as "—", never a guessed letter). */
+  correctOption: { letter: Letter; text: string } | null
   popularWrongOption: { letter: Letter; text: string } | null
   popularWrongCount: number
 }
@@ -283,7 +306,11 @@ export interface SchoolItemAnalysis {
   }
   /** "" = the route without a school id (own school), else the id copy variant (FR-M08-60 / 143). */
   variant: 'own' | 'byId'
-  tingkatan: 'T4' | 'T5' | null
+  tingkatan: Tingkatan | null
+  /** The Tingkatan that have data in this scope, ascending (AC-AS-6-6): the chips. Absent on an older server. */
+  tingkatanOptions?: Tingkatan[]
+  /** "Soalan Diuji" (XS-7): distinct questions answered in this scope, all modes (FR-AS-6-5); null = no figure for this view. */
+  questionsTested?: number | null
   students: number
   /** null = no header for this view: its question list is observed but no header figure is (D11, DV-M08-32). */
   answers: number | null
@@ -326,7 +353,8 @@ export interface ItemAnalysis {
     index: number
     level: DifficultyLevel
     wrongStudents: { userId: number; name: string; times: number }[]
-    correctOption: { letter: Letter; text: string }
+    /** null = no recorded key for this question (shown as "—", never a guessed letter). */
+    correctOption: { letter: Letter; text: string } | null
     popularWrong: { letter: Letter; text: string; times: number } | null
   }[]
   discrimination: {
@@ -371,9 +399,28 @@ export interface TimelinePost {
   createdAt: string
 }
 
+/**
+ * One row of the feed (R1-MUR-39, `GET /api/timeline` `entries`): a finished session, a badge earned or an own post.
+ * `at` is the event time (MYT, `+08:00`). A post's `id` is the post id (number in the mock, text on the API).
+ */
+export type TimelineEntry =
+  | {
+      kind: 'session'
+      id: string
+      at: string
+      subjectName: string
+      correct: number
+      answered: number
+      accuracy: number
+    }
+  | { kind: 'badge'; id: string; at: string; name: string; icon: string }
+  | { kind: 'post'; id: number | string; at: string; post: TimelinePost }
+
 export interface Timeline {
   profileUrl: string
   posts: TimelinePost[]
+  /** Newest first, at most 100. Absent on an older payload: the page then shows `posts`. */
+  entries?: TimelineEntry[]
 }
 
 /** #19 body fields (multipart `title`, `category`, `eventDate?`, `story?`, `photos[]`, `captions[i]?`). */
@@ -475,7 +522,8 @@ export interface ClassDashboard {
     accuracy: number
     sessions: number
     answered: number
-    avgMinutes: number
+    /** Purata Masa/Sesi in minutes (one decimal); null when no session has finished. */
+    avgMinutes: number | null
     active7d: number
   }
   headcount: {
@@ -488,6 +536,7 @@ export interface ClassDashboard {
     avgEtr: number | null
   } | null
   attention: { userId: number; name: string; sessions: number; accuracy: number | null }[]
+  /** 30 MYT days, oldest first, zero-filled (R1-GUR-4). */
   trend: { date: string; sessions: number; avgAccuracy: number; activeStudents: number }[]
   ranking: {
     rank: number
@@ -507,14 +556,87 @@ export interface ClassAnalytics {
     subjects: { id: number; name: string }[]
     selected: { classroomId: number | null; subjectId: number | null; riskLevel: RiskLevel | '' }
   }
-  summary: { students: number; accuracy: number; atRisk: number; good: number } | null
+  summary: { students: number; accuracy: number | null; atRisk: number; good: number } | null
   rows: {
     userId: number
     name: string
-    accuracy: number
+    /** null = Belum Bermula (no answers). */
+    accuracy: number | null
     answered: number
-    trend: Trend
-    projection: { low: Grade; high: Grade }
-    riskLevel: RiskLevel
+    trend: ClassTrend
+    projection: { low: Grade; high: Grade } | null
+    riskLevel: ClassRiskLevel
+    /** School admin only: names of the classes of the selected scope the pupil is in; [] for a teacher. */
+    classes: string[]
   }[]
+}
+
+// ---------------------------------------------------------------------------------------------
+// GET /api/item-analysis/me (API-RPT-05, R1-MUR-6): the pupil's own Analisa Item
+// ---------------------------------------------------------------------------------------------
+
+export type ItemMeTapis = 'semua' | 'ada_betul' | 'selalu_salah'
+export type ItemMeCategory = 'isyarat_awal' | 'pemulihan' | 'pengukuhan'
+
+/** `QuestionPublic` (contract): no key, no explanation. Ids are numbers in the mock and strings over http. */
+export interface ItemMeQuestion {
+  id: number | string
+  questionText: string
+  questionType: string
+  options: string[] | null
+  language?: string
+  textDirection: 'ltr' | 'rtl'
+  scriptType: 'rumi' | 'arab' | 'jawi' | 'mixed'
+  pointsValue?: number
+}
+
+/** `QuestionStimulusGroup` (contract): the stimulus is shown once above the members of the group (D90, D105). */
+export interface ItemMeStimulusGroup {
+  id: number | string
+  stimuli: {
+    id: number | string
+    kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+    label: string
+    body: { ms: string; en?: string } | null
+    imageId: string | null
+    alt: string | null
+    caption?: string | null
+    sourceCitation?: string | null
+    tableData?: { head: string[]; rows: string[][] } | null
+  }[]
+  questionIds: (number | string)[]
+}
+
+export interface ItemMeItem {
+  questionId: number | string
+  category: ItemMeCategory
+  attempts: number
+  correct: number
+  wrongTimes: number
+  lastAnsweredAt: string
+  subject: string
+  chapter: string | null
+  source: string
+  question: ItemMeQuestion
+  stimulusGroup: ItemMeStimulusGroup | null
+  explanation: string | null
+}
+
+export interface ItemMeSubject {
+  code: string
+  name: string
+  attempts: number
+  uniqueQuestions: number
+  accuracy: number | null
+  wrongAnswers: number
+  weakRepeated: number
+  earlySignalWeak: number
+}
+
+export interface ItemAnalysisMe {
+  tiles: { answered: number; needRemedial: number; needStrengthen: number; mastery: number | null }
+  /** Ascending accuracy. */
+  subjects: ItemMeSubject[]
+  counts: { isyaratAwal: number; pemulihan: number; pengukuhan: number }
+  items: ItemMeItem[]
 }

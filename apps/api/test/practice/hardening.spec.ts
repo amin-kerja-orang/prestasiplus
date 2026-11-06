@@ -55,7 +55,7 @@ const submit = (c: Client, id: string) => c.post(`/api/practice/sessions/${id}/s
 
 describe('1 trial: the limit holds on the check, not only on the start', () => {
   it('at 50 used a first check in an already started session is 402; no check row, the counter stays 50', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.pelajar])
     const res = await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[0]?.id as string, true)
     expect(res.status).toBe(402)
@@ -65,7 +65,7 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   })
 
   it('the 50th check is allowed (49 to 50); a repeat of a checked question still answers at the limit', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 49 where id = $1', [ids.pelajar])
     const q = s.questions[0]?.id as string
     expect((await checkAnswer(pelajar, s.sessionId, t.bank, q, true)).status).toBe(200)
@@ -75,7 +75,7 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   })
 
   it('parallel first checks at 49: exactly one succeeds, one check row, counter 50', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await t.db.query('update users set trial_questions_used = 49 where id = $1', [ids.pelajar])
     const results = await Promise.all(s.questions.map((q) => checkAnswer(pelajar, s.sessionId, t.bank, q.id, true)))
     expect(results.map((r) => r.status).sort()).toEqual([200, 402, 402, 402, 402])
@@ -86,20 +86,20 @@ describe('1 trial: the limit holds on the check, not only on the start', () => {
   it('a subscribed user is never refused', async () => {
     await makeSubscribed(t.db, ids.maju)
     await t.db.query('update users set trial_questions_used = 500 where id = $1', [ids.maju])
-    const s = await startSession(maju, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(maju, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     expect((await checkAnswer(maju, s.sessionId, t.bank, s.questions[0]?.id as string, true)).status).toBe(200)
   })
 
   it('checks of one session get distinct, increasing seq values even in parallel', async () => {
-    const s = await startSession(maju, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const s = await startSession(maju, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     await Promise.all(s.questions.map((q) => checkAnswer(maju, s.sessionId, t.bank, q.id, true)))
     const rows = await t.db.query<{ seq: number }>('select seq from practice_checks where session_id = $1 order by seq', [s.sessionId])
-    expect(rows.map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expect(rows.map((r) => r.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
   })
 })
 
 describe('2 assigned work: parallel starts and submits cannot multiply attempts', () => {
-  it('question_set: parallel starts give one session (resumed), then maxAttempts 1 is spent by one completion', async () => {
+  it('question_set: parallel starts give one session (resumed), then a stored maxAttempts 1 is ignored (R1: no cap)', async () => {
     t.assignments.set('question_set', '7499', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 1, timeLimitSec: 60 })
     const racing = await Promise.all([1, 2, 3, 4, 5].map(() => post(pelajar, { mode: 'question_set', questionSetId: '7499' })))
     expect(racing.map((r) => r.status)).toEqual([201, 201, 201, 201, 201])
@@ -110,10 +110,10 @@ describe('2 assigned work: parallel starts and submits cannot multiply attempts'
     expect(done.map((r) => r.status).sort()).toEqual([200, 409])
     expect(t.reward.calls).toHaveLength(1)
     const again = await post(pelajar, { mode: 'question_set', questionSetId: '7499' })
-    expect(again.body.error.code).toBe('NO_ATTEMPTS_LEFT')
+    expect(again.status).toBe(201)
   })
 
-  it('question_set: two open sessions of an older start cannot both complete (submit re-checks maxAttempts)', async () => {
+  it('question_set: two open sessions of an older start both complete (R1: no attempt cap on submit)', async () => {
     t.assignments.set('question_set', '7500', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 1 })
     const mk = async () =>
       (
@@ -124,11 +124,8 @@ describe('2 assigned work: parallel starts and submits cannot multiply attempts'
       )[0]?.id as string
     const [a, b] = [await mk(), await mk()]
     const results = await Promise.all([submit(pelajar, a), submit(pelajar, b)])
-    expect(results.map((r) => r.status).sort()).toEqual([200, 409])
-    const refused = results.find((r) => r.status === 409)
-    expect(refused?.body.error).toMatchObject({ code: 'NO_ATTEMPTS_LEFT', message: 'Tiada percubaan lagi untuk set ini.' })
-    expect(t.reward.calls).toHaveLength(1)
-    expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(1)
+    expect(results.map((r) => r.status)).toEqual([200, 200])
+    expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(2)
   })
 
   it('question_set with maxAttempts 0 (unlimited) can be completed many times', async () => {

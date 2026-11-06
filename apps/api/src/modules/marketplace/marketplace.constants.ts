@@ -12,3 +12,9 @@ export const MARKETPLACE_RATE = {
   view: { bucket: 'marketplace.view', env: 'THROTTLE_MARKETPLACE_VIEW_PER_MINUTE', default: 120, per: 'user' },
   write: { bucket: 'marketplace.write', env: 'THROTTLE_MARKETPLACE_WRITE_PER_MINUTE', default: 60, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/** Admin limiter specs (S7-T08), per admin; they reuse the shared admin ceilings from env (no new variable). */
+export const MARKETPLACE_ADMIN_RATE = {
+  read: { bucket: 'marketplace.admin.read', env: 'THROTTLE_ADMIN_READ_PER_MINUTE', default: 300, per: 'user' },
+  write: { bucket: 'marketplace.admin.write', env: 'THROTTLE_ADMIN_WRITE_PER_MINUTE', default: 30, per: 'user' },
+} as const satisfies Record<string, RateLimitSpec>

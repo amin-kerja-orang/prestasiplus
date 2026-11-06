@@ -40,4 +40,18 @@ export class StructuredAttemptsRepository {
     if (!row) throw new Error('structured_attempts insert returned no row')
     return idToString(row.id)
   }
+
+  /**
+   * The caller's best attempt per question (highest awarded total, latest wins a tie), for the list cards.
+   * Reading only: the table stops being written later (S5-T11 ruling).
+   */
+  async bestFor(userId: string, questionIds: readonly string[]): Promise<Map<string, { awarded: number; max: number }>> {
+    if (questionIds.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ question_id: bigint; total_awarded: number; total_max: number }[]>`
+      SELECT DISTINCT ON (question_id) question_id, total_awarded, total_max
+      FROM structured_attempts
+      WHERE user_id = ${idFromString(userId)}::bigint AND question_id = ANY(${questionIds.map(idFromString)}::bigint[])
+      ORDER BY question_id, total_awarded DESC, submitted_at DESC`
+    return new Map(rows.map((r) => [idToString(r.question_id), { awarded: r.total_awarded, max: r.total_max }]))
+  }
 }
