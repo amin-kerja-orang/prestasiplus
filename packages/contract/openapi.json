@@ -4949,7 +4949,7 @@
           },
           "claimed": {
             "type": "boolean",
-            "description": "True when the reward was claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "True when the reward was claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5207,7 +5207,7 @@
           "claimed": {
             "type": "integer",
             "minimum": 0,
-            "description": "Rewards claimed this Malaysia day (API-GAME-11). Absent until the claim route is served."
+            "description": "Rewards claimed this Malaysia day (API-GAME-11)."
           }
         },
         "required": [
@@ -5266,6 +5266,13 @@
           "rewardXp": {
             "type": "integer",
             "minimum": 0
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" or \"Lencana baru: {name}!\" (one per badge the claim unlocked). Absent when there is nothing to tell, and always absent on a replay."
           }
         },
         "required": [
@@ -7880,6 +7887,13 @@
           "syilingBalance": {
             "type": "integer",
             "minimum": 0
+          },
+          "achievementsUnlocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AchievementUnlocked"
+            },
+            "description": "Badges this opening unlocked (their reward is a separate ledger row). Absent when none."
           }
         },
         "required": [
@@ -7891,6 +7905,21 @@
           "xp",
           "tokenBalance",
           "syilingBalance"
+        ]
+      },
+      "AchievementUnlocked": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ]
       },
       "RewardCabutanDraw": {
@@ -88989,7 +89018,7 @@
           "gamification"
         ],
         "summary": "Daily challenges with progress",
-        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.",
+        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion is written by the session-completed hook (idempotent per user, challenge and Malaysia day) and pays nothing; `claimed` and `meta.claimed` come from the claims of the current Malaysia day (API-GAME-11).",
         "responses": {
           "200": {
             "description": "Challenges with meta.",
@@ -89020,7 +89049,7 @@
           "gamification"
         ],
         "summary": "Claim the reward of a completed daily challenge (API-GAME-11)",
-        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.",
+        "description": "One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). Order: Mod Pelajar 403, unknown or inactive challenge 404, a claim of the day exists (same clientUuid: 200 with the stored result and nothing written; otherwise 409 CHALLENGE_CLAIMED), the clientUuid sits on another claim of the user 409 CONFLICT (details.reason IDEMPOTENCY_MISMATCH), progress below the target 409 CHALLENGE_NOT_DONE. The result may carry `notices`. The body is optional. Success is 200, not 201.",
         "parameters": [
           {
             "schema": {
@@ -89097,7 +89126,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge).",
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\" (no such challenge, or the challenge is not active).",
             "content": {
               "application/json": {
                 "schema": {
@@ -89107,7 +89136,7 @@
             }
           },
           "409": {
-            "description": "CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
+            "description": "CONFLICT details.reason IDEMPOTENCY_MISMATCH (the clientUuid is already used by another claim of the user); CHALLENGE_NOT_DONE \"Cabaran belum selesai.\" (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED \"Ganjaran sudah dituntut.\" (ERR-GAME-19, second claim the same Malaysia day).",
             "content": {
               "application/json": {
                 "schema": {

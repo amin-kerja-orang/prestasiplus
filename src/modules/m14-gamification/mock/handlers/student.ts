@@ -17,7 +17,7 @@
  * #1 `GET /api/me/gamification-summary` stays the core handler (overview §10).
  */
 
-import { ok, queryString, route, validationError, type RouteDef } from '@/mock/define'
+import { notFound, ok, queryString, route, validationError, type RouteDef } from '@/mock/define'
 
 import { masteryLevel, masteryMultiplier, masteryNextTarget, MASTERY_LABELS } from '../data/mastery'
 import { REFERRAL_REWARD_REFEREE, REFERRAL_REWARD_REFERRER } from '../data/catalogue'
@@ -45,6 +45,7 @@ import {
 } from './common'
 import { intOf, bodyOf } from './input'
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const LEDGER_TYPES: readonly string[] = ['earn', 'spend', 'convert', 'bonus', 'refund']
 
 /** The student-facing ledger row (`LedgerRow` of §7 #4). */
@@ -183,8 +184,20 @@ export const studentRoutes: RouteDef[] = [
 
   // #7 (S13)
   route('GET', '/api/gamification/challenges', [anySession], (req) => {
-    const { items, completed, active } = challengesRepo.today(viewerId(req))
-    return ok(items, { meta: { completed, active } })
+    const { items, completed, active, claimed } = challengesRepo.today(viewerId(req))
+    return ok(items, { meta: { completed, active, claimed } })
+  }),
+
+  // API-GAME-11: claim the reward of a finished challenge (S13). The body is optional; success is 200.
+  route('POST', '/api/gamification/challenges/:id/claim', [anySession], (req) => {
+    const raw = bodyOf(req).clientUuid
+    const uuid = typeof raw === 'string' && UUID_PATTERN.test(raw) ? raw.toLowerCase() : null
+    if (raw !== undefined && raw !== null && uuid === null) {
+      return validationError({ clientUuid: MSG.invalid }, MSG.summary)
+    }
+    const id = intOf(req.params.id)
+    if (id === undefined) return notFound('Cabaran tidak dijumpai.')
+    return ok(guarded(() => challengesRepo.claim(viewerId(req), id, uuid)))
   }),
 
   // #8 (S14): `period` and every other query are ignored (FR-M14-08, FR-M14-42).

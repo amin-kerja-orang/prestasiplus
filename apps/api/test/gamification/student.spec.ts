@@ -108,7 +108,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
     it('10 active in (sortOrder, id) order, nothing done: meta {completed 0, active 10}', async () => {
       const res = await student.get('/gamification/challenges')
       const body = GamificationChallengesResponseSchema.parse(res.body)
-      expect(body.meta).toEqual({ completed: 0, active: 10 })
+      expect(body.meta).toEqual({ completed: 0, active: 10, claimed: 0 })
       expect(body.data).toHaveLength(10)
       expect(body.data.map((c) => c.title).slice(0, 5)).toEqual(['Rajin Berlatih', 'Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Mula Hari Ini'])
       expect(body.data.every((c) => c.progress === 0 && c.pct === 0 && !c.completed)).toBe(true)
@@ -160,19 +160,19 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
   })
 
   describe('GET /api/gamification/achievements (S15)', () => {
-    it('25 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
+    it('26 cards in catalogue order, 0 unlocked, progress only on the 5 "kuiz" badges', async () => {
       const d = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements')))
-      expect(d).toMatchObject({ unlocked: 0, total: 25 })
-      expect(d.items).toHaveLength(25)
+      expect(d).toMatchObject({ unlocked: 0, total: 26 })
+      expect(d.items).toHaveLength(26)
       expect(d.items[0]).toMatchObject({ name: 'Langkah Pertama', rarityLabel: 'Biasa', rarityColor: '#9ca3af', progress: { value: 0, target: 1 }, unlocked: false, unlockedAt: null })
       expect(d.items.filter((i) => i.progress !== null)).toHaveLength(5)
     })
 
-    it('filters by rarity (6 / 8 / 6 / 5) while total stays 25; an unknown rarity answers no card', async () => {
+    it('filters by rarity (6 / 9 / 6 / 5) while total stays 26; an unknown rarity answers no card', async () => {
       const count = async (r: string) => GamificationAchievementsSchema.parse(dataOf(await student.get(`/gamification/achievements?rarity=${r}`))).items.length
-      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 8, 6, 5])
+      expect([await count('common'), await count('rare'), await count('epic'), await count('legendary')]).toEqual([6, 9, 6, 5])
       const none = GamificationAchievementsSchema.parse(dataOf(await student.get('/gamification/achievements?rarity=mythic')))
-      expect(none).toMatchObject({ items: [], total: 25 })
+      expect(none).toMatchObject({ items: [], total: 26 })
     })
 
     it('an unlock shows with its time and progress caps at the target; the progress value follows the practice count', async () => {
@@ -245,7 +245,10 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await t.gamification.applyReferral(await bareUser(t, 'Diri'), 'NOSUCH1', { isTest: false })).toEqual({ applied: false })
       expect(await t.gamification.applyReferral(referrer, code, { isTest: false })).toEqual({ applied: false }) // not your own code
       expect((await walletOf2(friend)).current_syiling).toBe(25)
-      expect((await walletOf2(referrer)).current_syiling).toBe(420)
+      // 370 + 50 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
+      const badges = await t.db.query<{ amount: number; description: string }>(`select amount, description from coin_ledger where user_id = $1 and source = 'achievement'`, [referrer])
+      expect(badges).toEqual([{ amount: 10, description: 'Pencapaian: Pengumpul Syiling' }])
+      expect((await walletOf2(referrer)).current_syiling).toBe(420 + 10)
       const r = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 50 })
     })

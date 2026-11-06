@@ -2,15 +2,24 @@
 /**
  * S13 challenge card (FN-M14-4.1.2; FR-M14-35): icon, title, difficulty badge, description,
  * "💰 +n Syiling", "⭐ +n XP", "Progres: p/t", bar and "{pct}%". A completed card keeps the layout:
- * full bar, "✅" before the title (SRS §8.2, PROPOSED), done state in the success colour.
+ * full bar, "✅" before the title (SRS §8.2, PROPOSED), done state in the success colour. A done card shows
+ * "Tuntut" until its reward is claimed, then "Dituntut" (FR-GM-19.2, S7-T04); the page owns the request.
  */
-import { DsIconChip, DsRewardChip } from '@/ds'
+import { DsCluster, DsIconChip, DsRewardChip, DsText } from '@/ds'
 
 import type { ChallengeProgress } from '../../api'
 import { gamClampPct, gamDifficultyLabel } from '../../lib/student/s11-format'
 import { difficultyColor } from './difficulty'
 
-defineProps<{ challenge: ChallengeProgress }>()
+defineProps<{
+  challenge: ChallengeProgress
+  /** The reward was claimed today (server flag or a claim made on this page). */
+  claimed?: boolean
+  /** A claim request for this card is in flight. */
+  pending?: boolean
+}>()
+
+defineEmits<{ claim: [id: number] }>()
 </script>
 
 <template>
@@ -70,6 +79,22 @@ defineProps<{ challenge: ChallengeProgress }>()
           :data-value="challenge.completed ? 100 : gamClampPct(challenge.pct)"
           data-testid="s13-bar"
         />
+        <DsCluster v-if="challenge.completed" justify="end">
+          <DsText v-if="claimed" as="span" variant="label" tone="success" data-testid="s13-claimed"
+            >Dituntut</DsText
+          >
+          <UButton
+            v-else
+            type="button"
+            size="lg"
+            color="primary"
+            :disabled="pending"
+            :loading="pending"
+            data-testid="s13-claim"
+            @click="$emit('claim', challenge.id)"
+            >Tuntut</UButton
+          >
+        </DsCluster>
       </div>
     </div>
   </UCard>

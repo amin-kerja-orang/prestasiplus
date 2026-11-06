@@ -324,7 +324,7 @@ describe('#7 challenges', () => {
       dataOf<{ id: number; target: number; progress: number; pct: number; completed: boolean }[]>(
         res,
       )
-    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 10 })
+    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 10, claimed: 0 })
     expect(items).toHaveLength(10)
     const kombo = items.find((c) => c.id === 8)
     expect(kombo).toMatchObject({ target: 2, progress: 0, pct: 0, completed: false })
@@ -332,12 +332,12 @@ describe('#7 challenges', () => {
 
   it('designed completions at the clock: pelajar 7/10, pelajarmaju 4/10 (Q-DAILY-FINISHERS 0)', async () => {
     const a = await get('/api/gamification/challenges', pelajar)
-    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 10 })
+    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 10, claimed: 0 })
     const done = dataOf<{ id: number; completed: boolean; progress: number; target: number }[]>(a)
     expect(done.filter((c) => c.completed).map((c) => c.id)).toEqual([2, 4, 5, 6, 7, 8, 10])
     expect(done.filter((c) => c.completed).every((c) => c.progress === c.target)).toBe(true)
     const b = await get('/api/gamification/challenges', pelajarmaju)
-    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 10 })
+    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 10, claimed: 0 })
   })
 })
 
@@ -1784,3 +1784,49 @@ function rewardFixture(id: number, over: { stock: number | null }) {
     createdAt: '2026-09-25T15:40:00.000+08:00',
   }
 }
+
+// Last: the claim writes the wallet and the ledger, which the read-only blocks above assert as seeded totals.
+describe('API-GAME-11 claim a challenge (ruling 20 on #500, mock mirror)', () => {
+  const claim = (id: number | string, token?: string, body?: Record<string, unknown>) =>
+    send(runtime, 'POST', `/api/gamification/challenges/${String(id)}/claim`, { ...(token ? { token } : {}), ...(body ? { body } : {}) })
+
+  it('guest 401; unknown challenge 404; a bad clientUuid 422', async () => {
+    expect((await claim(2)).status).toBe(401)
+    expect((await claim(9999, pelajar)).status).toBe(404)
+    expect((await claim(2, pelajar, { clientUuid: 'x' })).status).toBe(422)
+  })
+
+  it('a completed challenge is claimed once: 200 with the stored amounts, the same key replays, otherwise 409 CHALLENGE_CLAIMED; GET shows claimed', async () => {
+    const key = crypto.randomUUID()
+    const before = wallet.summary(2)
+    const rowsBefore = coinLedger.forUser(2).length
+    const first = await claim(2, pelajar, { clientUuid: key })
+    expect(first.status).toBe(200)
+    expect(dataOf(first)).toMatchObject({ claimed: true, rewardSyiling: 20, rewardXp: 15 })
+    // The claim pays (the engine pays nothing on completion): syiling and lifetime +20, XP +15, one ledger row.
+    const paid = wallet.summary(2)
+    expect(paid.currentSyiling).toBe(before.currentSyiling + 20)
+    expect(paid.totalSyilingEarned).toBe(before.totalSyilingEarned + 20)
+    expect(paid.xp).toBe(before.xp + 15)
+    expect(coinLedger.forUser(2)).toHaveLength(rowsBefore + 1)
+    expect(coinLedger.forUser(2)[0]).toMatchObject({ source: 'daily_challenge', amount: 20 })
+    expect(dataOf(await claim(2, pelajar, { clientUuid: key }))).toEqual(dataOf(first))
+    expect(wallet.summary(2)).toEqual(paid) // the replay writes nothing
+    const again = await claim(2, pelajar)
+    expect(again.status).toBe(409)
+    expect((again.body as { error: { code: string } }).error.code).toBe('CHALLENGE_CLAIMED')
+    const other = await claim(4, pelajar, { clientUuid: key })
+    expect(other.status).toBe(409)
+    expect((other.body as { error: { code: string } }).error.code).toBe('CONFLICT')
+    expect(wallet.summary(2)).toEqual(paid) // neither refusal writes
+    const list = await get('/api/gamification/challenges', pelajar)
+    expect((list.body as { meta: { claimed: number } }).meta.claimed).toBe(1)
+    expect(dataOf<{ id: number; claimed: boolean }[]>(list).find((c) => c.id === 2)?.claimed).toBe(true)
+  })
+
+  it('progress below the target is 409 CHALLENGE_NOT_DONE', async () => {
+    const res = await claim(8, admin)
+    expect(res.status).toBe(409)
+    expect((res.body as { error: { code: string } }).error.code).toBe('CHALLENGE_NOT_DONE')
+  })
+})

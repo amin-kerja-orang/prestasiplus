@@ -8,9 +8,10 @@ import { ClassesModule } from '../classes'
 import { GamesCoreModule, GamesPorts } from '../games'
 import { PerformanceModule } from '../reports/performance/performance.module'
 import { PerformancePorts } from '../reports/performance/ports'
-import { ShopModule } from '../shop'
+import { ShopModule, ShopPorts } from '../shop'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
+import { ChallengeClaimsService } from './challenge-claims.service'
 import { GamificationAdminService } from './admin.service'
 import { GamesRewardsAdapter } from './games-rewards.adapter'
 import { GamificationController } from './gamification.controller'
@@ -24,7 +25,7 @@ import { GamificationPorts } from './ports'
 /**
  * M14 gamification beyond the wallet core (BE-23): the student routes (dashboard, challenges, achievements,
  * leaderboard, referral, share cards, convert), the admin economy and operations routes, and the entry points
- * other cards call inside their own transaction (`GamificationService.settleChallenges`, `claimChallenge`,
+ * other cards call inside their own transaction (`GamificationService.settleChallenges`, `completeChallenge`, and the claim `ChallengeClaimsService`,
  * `unlockAchievement`, `onGameResult`, `canEarnSyiling`, `applyReferral`; `GamificationAdminService.runDraw`).
  * Every movement goes through `WalletService` (BE-11); the repository reads the wallet tables and writes none of
  * them. The teacher economy is NOT built (D53/OWN-10): no `/guru/gamification*` route exists.
@@ -40,11 +41,13 @@ import { GamificationPorts } from './ports'
 @Module({
   imports: [AuditModule, ThrottleModule, AuthPortsModule, AccountPortsModule, WalletModule, PerformanceModule, ClassesModule, GamesCoreModule, ShopModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
-  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter, GamificationLoginHook, GamificationRegistrationHook],
+  providers: [GamificationRepository, GamificationService, ChallengeClaimsService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter, GamificationLoginHook, GamificationRegistrationHook],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],
 })
 export class GamificationModule implements OnModuleInit {
   constructor(
+    @Inject(ShopPorts) private readonly shopPorts: ShopPorts,
+    @Inject(GamificationService) private readonly gamification: GamificationService,
     @Inject(PerformancePorts) private readonly performance: PerformancePorts,
     @Inject(PerformanceGamificationAdapter) private readonly gamificationRead: PerformanceGamificationAdapter,
     @Inject(GamesPorts) private readonly gamesPorts: GamesPorts,
@@ -64,5 +67,7 @@ export class GamificationModule implements OnModuleInit {
     this.accountPorts.provideRegistrationHook(this.registrationHook)
     // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
     this.authPorts.provideLoginHook(this.loginHook)
+    // FR-GM-25.2: the shop cannot import this module (cycle), so a committed Kotak Misteri opening evaluates the badges through this hook.
+    this.shopPorts.provideBoxOpenedHook(async (userId) => (await this.gamification.evaluateAchievementsSafely(userId, { isTest: false })).unlocked)
   }
 }

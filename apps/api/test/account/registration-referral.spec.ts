@@ -31,6 +31,9 @@ const referrals = (db: TestDatabase) =>
   )
 const syiling = async (db: TestDatabase, userId: string): Promise<number | undefined> =>
   (await db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1::bigint`, [userId]))[0]?.current_syiling
+/** Syiling the badges paid (the referrer's lifetime total can cross a badge after the 50: FR-GM-25.2, its own ledger row). */
+const badgeSyiling = async (db: TestDatabase, userId: string): Promise<number> =>
+  Number((await db.query<{ n: string }>(`select coalesce(sum(amount), 0)::text as n from coin_ledger where user_id = $1::bigint and source = 'achievement'`, [userId]))[0]!.n)
 const count = async (db: TestDatabase, table: string): Promise<number> => Number((await db.query<{ n: string }>(`select count(*)::text as n from ${table}`))[0]?.n)
 
 describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', () => {
@@ -69,7 +72,8 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
 
   it('a known code pays the new user 25 and the referrer 50, once each, with one referral row', async () => {
     const referrerBefore = (await syiling(db, referrerId)) ?? 0
-    const referrerLedgerBefore = (await ledger(db, referrerId)).length
+    const referrerLedgerBefore = (await ledger(db, referrerId)).filter((r) => r.source !== 'achievement').length
+    const badgesBefore = await badgeSyiling(db, referrerId)
 
     const res = await register(body({ email: 'b.rujuk@ujian.test', referralCode: code }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
@@ -79,10 +83,10 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
       { type: 'bonus', source: 'referral', source_id: `referral:${b}`, amount: 25, description: `Bonus rujukan: kod ${code}`, is_test: false },
     ])
     expect(await syiling(db, b)).toBe(25)
-    const referrerLedger = await ledger(db, referrerId)
+    const referrerLedger = (await ledger(db, referrerId)).filter((r) => r.source !== 'achievement')
     expect(referrerLedger).toHaveLength(referrerLedgerBefore + 1)
     expect(referrerLedger.at(-1)).toEqual({ type: 'bonus', source: 'referral', source_id: `referral:${b}`, amount: 50, description: 'Rujukan kawan berjaya', is_test: false })
-    expect(await syiling(db, referrerId)).toBe(referrerBefore + 50)
+    expect(await syiling(db, referrerId)).toBe(referrerBefore + 50 + ((await badgeSyiling(db, referrerId)) - badgesBefore))
     expect(await referrals(db)).toEqual([{ referrer_id: referrerId, referee_id: b, code_used: code, rewarded: true }])
   })
 
@@ -95,12 +99,13 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
   it('a second user with the same code is paid too (one reward per referee); replaying the first referee pays nothing', async () => {
     const before = await referrals(db)
     const referrerBefore = await syiling(db, referrerId)
+    const badgesBefore = await badgeSyiling(db, referrerId)
 
     const res = await register(body({ email: 'c.rujuk@ujian.test', referralCode: ` ${code.toLowerCase()} ` }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const c = (await userRow(db, 'c.rujuk@ujian.test'))!.id
     expect(await syiling(db, c)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50)
+    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50 + ((await badgeSyiling(db, referrerId)) - badgesBefore))
     expect(await referrals(db)).toHaveLength(before.length + 1)
     expect((await referrals(db)).at(-1)).toMatchObject({ referrer_id: referrerId, referee_id: c, code_used: code })
 
@@ -110,7 +115,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     expect(again).toEqual({ applied: false })
     expect(await ledger(db, b)).toHaveLength(1)
     expect(await syiling(db, b)).toBe(25)
-    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50)
+    expect(await syiling(db, referrerId)).toBe((referrerBefore ?? 0) + 50 + ((await badgeSyiling(db, referrerId)) - badgesBefore))
     expect(await referrals(db)).toHaveLength(before.length + 1)
     // And a second sign-up with the same e-mail is refused before anything is paid.
     errorOf(await register(body({ email: 'c.rujuk@ujian.test', referralCode: code })), 422, 'VALIDATION_ERROR')

@@ -171,10 +171,11 @@ export class WalletPracticeReward implements PracticeRewardPort {
       { tx },
     )
     // BR-M14-13 (FIX-3 D-07): after the streak and the session credit, every active challenge whose target is now met
-    // is claimed once per Malaysia day (completion row + `daily_challenge` ledger row; Mod Pelajar rows are is_test).
+    // is completed once per Malaysia day (completion row only; Mod Pelajar rows are is_test). Its syiling and XP are paid
+    // only when the pupil claims it (`Tuntut`, API-GAME-11, S7-T04 ruling 12 on #500), never here.
     // The submit response keeps the session credit only (the contract block has no challenge field).
-    // A challenge reward is a bonus too: it runs in a savepoint and its failure only skips the challenge progress and rewards
-    // of this call, never the submit (the session, the answers and the session credit stay committed).
+    // Challenge settlement runs in a savepoint and its failure only skips the challenge progress of this call, never the
+    // submit (the session, the answers and the session credit stay committed).
     await this.inSavepoint('challenges_settle', 'challenge settlement', input, tx, () =>
       this.gamification.settleChallenges(input.userId, { tx, isTest: input.isTest, at: input.completedAt }),
     )

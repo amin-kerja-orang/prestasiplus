@@ -16,6 +16,15 @@ export interface GameRewardEventRecord {
   cappedReason: GameRewardCapReason | null
 }
 
+/** A stored challenge claim (DM-63). */
+export interface ClaimRecord {
+  id: string
+  challengeId: string
+  rewardSyiling: number
+  rewardXp: number
+  clientUuid: string | null
+}
+
 /** A `date` column is read and written as UTC midnight of the calendar day. */
 const dayDate = (day: string): Date => new Date(`${day}T00:00:00Z`)
 const dayOf = (d: Date): string => d.toISOString().slice(0, 10)
@@ -452,23 +461,67 @@ export class GamificationRepository {
     return rows.length === 1
   }
 
-  async completionCount(db: Db, userId: string): Promise<number> {
-    return db.challengeCompletion.count({ where: { userId: idFromString(userId) } })
+  /** Challenge ids the user claimed on the Malaysia day `day` (DM-63, API-GAME-11). */
+  async claimedOn(db: Db, userId: string, day: string): Promise<Set<string>> {
+    const rows = await db.challengeClaim.findMany({ where: { userId: idFromString(userId), mytDate: dayDate(day) }, select: { challengeId: true } })
+    return new Set(rows.map((r) => idToString(r.challengeId)))
   }
 
-  /** Challenge ids the user completed per Malaysia day, for the `days` days BEFORE `day` (BR-M14-16 perfect days). */
+  /** The claim of (user, challenge, Malaysia day), or null. */
+  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
+    const r = await db.challengeClaim.findUnique({
+      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
+    })
+    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
+  }
+
+  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
+  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
+    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
+  }
+
+  /**
+   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
+   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
+   */
+  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
+      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
+      ON CONFLICT DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  /**
+   * Finished challenges for the badges (ruling 12 on #500): a claim counts, and so does a completion that came from the
+   * migration (`legacy_source` set; it was paid on completion before Tuntut). The same (challenge, day) in both counts once.
+   * A V3 completion nobody claimed does not count. The distinct pairs are the unit of both readers below.
+   */
+  async completionCount(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*)::bigint AS n FROM (
+        SELECT challenge_id, myt_date AS d FROM challenge_claims WHERE user_id = ${idFromString(userId)}
+        UNION
+        SELECT challenge_id, completion_date AS d FROM challenge_completions WHERE user_id = ${idFromString(userId)} AND legacy_source IS NOT NULL
+      ) f`
+    return Number(rows[0]?.n ?? 0)
+  }
+
+  /** Challenge ids the user finished per Malaysia day (same rule as `completionCount`), for the `days` days BEFORE `day` (BR-M14-16 perfect days). */
   async completionsByDay(db: Db, userId: string, day: string, days: number): Promise<Map<string, Set<string>>> {
     const from = new Date(dayDate(day).getTime() - days * 86_400_000)
-    const rows = await db.challengeCompletion.findMany({
-      where: { userId: idFromString(userId), completionDate: { gte: from, lte: dayDate(day) } },
-      select: { challengeId: true, completionDate: true },
-    })
+    const rows = await db.$queryRaw<{ challenge_id: bigint; d: string }[]>`
+      SELECT challenge_id, to_char(d, 'YYYY-MM-DD') AS d FROM (
+        SELECT challenge_id, myt_date AS d FROM challenge_claims WHERE user_id = ${idFromString(userId)}
+        UNION
+        SELECT challenge_id, completion_date AS d FROM challenge_completions WHERE user_id = ${idFromString(userId)} AND legacy_source IS NOT NULL
+      ) f WHERE d >= ${dayOf(from)}::date AND d <= ${day}::date`
     const out = new Map<string, Set<string>>()
     for (const r of rows) {
-      const key = dayOf(r.completionDate)
-      const set = out.get(key) ?? new Set<string>()
-      set.add(idToString(r.challengeId))
-      out.set(key, set)
+      const set = out.get(r.d) ?? new Set<string>()
+      set.add(idToString(r.challenge_id))
+      out.set(r.d, set)
     }
     return out
   }
@@ -486,7 +539,8 @@ export class GamificationRepository {
   }
 
   async unlocksOf(db: Db, userId: string): Promise<Map<string, Date>> {
-    const rows = await db.userAchievement.findMany({ where: { userId: idFromString(userId) } })
+    // One rule for every reader of the badge count (Q4): an unlock written under Mod Pelajar (`is_test`) is not the pupil's.
+    const rows = await db.userAchievement.findMany({ where: { userId: idFromString(userId), isTest: false } })
     return new Map(rows.map((r) => [idToString(r.achievementId), r.unlockedAt]))
   }
 
@@ -494,8 +548,12 @@ export class GamificationRepository {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO user_achievements (user_id, achievement_id, unlocked_at, is_test, created_at, updated_at)
       VALUES (${idFromString(row.userId)}, ${idFromString(row.achievementId)}, ${row.at}::timestamptz, ${row.isTest}, ${row.at}::timestamptz, ${row.at}::timestamptz)
-      ON CONFLICT (user_id, achievement_id) DO NOTHING
+      ON CONFLICT (user_id, achievement_id) DO UPDATE
+        SET is_test = false, unlocked_at = EXCLUDED.unlocked_at, updated_at = EXCLUDED.updated_at
+        WHERE user_achievements.is_test AND NOT EXCLUDED.is_test
       RETURNING id`
+    // A row comes back only when this call created the unlock, or upgraded a Mod Pelajar (`is_test`) one to a real unlock:
+    // the caller credits exactly then. A test call never touches an existing row; a real row is never changed.
     return rows.length === 1
   }
 
@@ -520,6 +578,21 @@ export class GamificationRepository {
     const referrerId = idFromString(userId)
     const [referrals, rewarded] = await Promise.all([db.referral.count({ where: { referrerId } }), db.referral.count({ where: { referrerId, rewarded: true } })])
     return { referrals, rewarded }
+  }
+
+  /**
+   * "Juara Battle" (battle_wins): finished battles the user won as a human against a real opponent. Counted: `status`
+   * 'finished' with `winner` = the user's side, `counts_for_ranking`, not a test battle, the user's own row real (not a bot,
+   * not `is_test`). A forfeit is stored as `status = 'forfeited'`, so a forfeit win is not counted (ruling Q2 on #500).
+   */
+  async wonRealBattles(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*)::bigint AS n
+      FROM battles b
+      JOIN battle_participants p ON p.battle_id = b.id AND p.side = b.winner
+      WHERE p.user_id = ${idFromString(userId)} AND NOT p.is_bot AND NOT p.is_test
+        AND b.status = 'finished' AND b.counts_for_ranking AND NOT b.is_test`
+    return Number(rows[0]?.n ?? 0)
   }
 
   async rewardedReferralCount(db: Db, userId: string): Promise<number> {
