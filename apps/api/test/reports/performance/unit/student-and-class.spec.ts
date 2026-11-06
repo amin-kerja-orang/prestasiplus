@@ -98,6 +98,43 @@ describe('Prestasi 360 (student)', () => {
     expect(r.heroAccuracy).toBe(87)
   })
 
+  describe('XS rounding (S6-T03): one decimal half up on integers; the hero rounds the wire value (PRD 10 §0A.4, FR-MUR-4-4)', () => {
+    const one = async (n: number, correct: number) => {
+      answer('1', n, correct, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
+      return w.student.student(ctxOf('student', '1'), '1')
+    }
+
+    it('an exact tie for one decimal stays: 1 of 8 is 12.5', async () => {
+      const r = await one(8, 1)
+      expect(r.stats.accuracy).toBe(12.5)
+      expect(r.mastery[0]?.accuracy).toBe(12.5)
+    })
+
+    it('a one-decimal half-up case: 1 of 16 is 6.25 shown 6.3, hero 6', async () => {
+      const r = await one(16, 1)
+      expect(r.stats.accuracy).toBe(6.3)
+      expect(r.heroAccuracy).toBe(6)
+    })
+
+    it('the hero rounds the 1-decimal wire value half up: 35 of 47 (74.468) is 74.5 on the wire and 75 in the hero, the same number as the cards', async () => {
+      const r = await one(47, 35)
+      expect(r.stats.accuracy).toBe(74.5)
+      expect(r.heroAccuracy).toBe(75)
+    })
+
+    it('hero at exactly 74.5 (149 of 200) is 75', async () => {
+      const r = await one(200, 149)
+      expect(r.stats.accuracy).toBe(74.5)
+      expect(r.heroAccuracy).toBe(75)
+    })
+
+    it('0 answers gives null accuracy and a null hero', async () => {
+      const r = await w.student.student(ctxOf('student', '1'), '1')
+      expect(r.stats.accuracy).toBeNull()
+      expect(r.heroAccuracy).toBeNull()
+    })
+  })
+
   describe('trend (AC-MUR-4-4)', () => {
     it('12 Monday weeks, oldest "Mgg 1" to the current "Mgg 12"; answers of this and last week land at index 11 and 10', async () => {
       answer('1', 4, 3, { mode: 'latih_tubi', subjectId: '1', sessionId: 'sA', answeredAt: d('2026-09-22T10:00:00+08:00') })
