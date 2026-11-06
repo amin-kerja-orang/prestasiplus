@@ -16,6 +16,7 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
+import { attemptUuidOf } from '../../src/modules/practice/answer-log.port'
 import { PKSK_PRACTICE_PORT, PKSK_QUESTIONS_PORT, PkskModule } from '../../src/modules/pksk'
 import { loginAs, START, type LoggedIn } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -107,6 +108,7 @@ describe('PKSK HTTP (BE-42)', () => {
     const s = await as('pelajar@demo.test')
     const q = seedQuestions(world.world, 'PKSK_ESSAY', 'T1', 1)[0]
     const before = (await db.query<{ n: string }>(`select count(*)::text n from pksk_exam_attempts`))[0]?.n
+    expect((await get(s, '/pksk/levels/T1/exam')).status).toBe(200)
     const res = await post(s, '/pksk/levels/T1/exam-attempts', { answers: [{ questionId: q?.id, text: 'x'.repeat(60) }] })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     expect(res.body.data.completedAt).toMatch(/\+08:00$/)
@@ -114,6 +116,165 @@ describe('PKSK HTTP (BE-42)', () => {
     expect(Number(after)).toBe(Number(before) + 1)
     const other = await as('pelajar2@demo.test')
     expect((await get(other, '/pksk/levels/T1/exam-attempts')).status).toBe(403)
+  })
+
+  it('expired grant: 403 FORBIDDEN on set, submit, exam and exam-attempts with no question text (AC-MUR-19-1)', async () => {
+    const s = await as('pelajar2@demo.test')
+    const userId = await idOf('pelajar2@demo.test')
+    const [q] = seedQuestions(world.world, 'PKSK_MATH', 'T1', 2)
+    await db.query(`insert into pksk_accesses (user_id, package_id, expires_at) values ($1::bigint, 1, date '2000-01-01')`, [userId])
+    try {
+      const answers = [{ questionId: q?.id, optionIndex: 0 }]
+      const calls = [
+        await get(s, '/pksk/levels/T1/domains/PKSK_MATH'),
+        await post(s, '/pksk/levels/T1/domains/PKSK_MATH/practice-sessions', { answers }),
+        await get(s, '/pksk/levels/T1/exam'),
+        await post(s, '/pksk/levels/T1/exam-attempts', { answers }),
+      ]
+      for (const res of calls) {
+        expect(res.status, JSON.stringify(res.body)).toBe(403)
+        expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')
+        expect(JSON.stringify(res.body)).not.toContain(q?.text as string)
+      }
+    } finally {
+      await db.query(`delete from pksk_accesses where user_id = $1::bigint`, [userId])
+    }
+  })
+
+  it('practice submit takes only the served set, once, against the real load row', async () => {
+    const s = await as('pelajar@demo.test')
+    const extra = seedQuestions(world.world, 'PKSK_SCI', 'T1', 12)
+    const set = (await get(s, '/pksk/levels/T1/domains/PKSK_SCI')).body.data.questions as { id: string }[]
+    const served = new Set(set.map((q) => q.id))
+    const guessed = extra.find((q) => !served.has(q.id))
+    const url = '/pksk/levels/T1/domains/PKSK_SCI/practice-sessions'
+    const bad = await post(s, url, { answers: [{ questionId: guessed?.id, optionIndex: 0 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.message).toBe('Jawapan tidak sah.')
+    expect(JSON.stringify(bad.body)).not.toMatch(/review|correctIndex|Penjelasan/)
+    const body = { answers: set.map((q) => ({ questionId: q.id, optionIndex: 0 })) }
+    const ok = await post(s, url, body)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    expect(ok.body.data.review).toHaveLength(set.length)
+    const again = await post(s, url, body)
+    expect(again.status).toBe(422)
+    expect(again.body.data).toBeUndefined()
+  })
+
+  it('AC-MUR-19-5: an exam submit writes one pksk answer row per answer (N rows) through the single answer store', async () => {
+    const s = await as('pelajar@demo.test')
+    const userId = await idOf('pelajar@demo.test')
+    seedQuestions(world.world, 'PKSK_INSANIAH', 'T1', 4)
+    seedQuestions(world.world, 'PKSK_MATH', 'T1', 4)
+    const exam = (await get(s, '/pksk/levels/T1/exam')).body.data.sections as { questions: { id: string }[] }[]
+    const ids = exam.flatMap((sec) => sec.questions.map((q) => q.id)).slice(0, 5)
+    expect(ids.length).toBe(5)
+    const res = await post(s, '/pksk/levels/T1/exam-attempts', { answers: ids.map((id, i) => ({ questionId: id, optionIndex: i % 3, text: undefined })) })
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const attemptId = String(res.body.data.id)
+    const rows = await db.query<{ mode: string; user_id: string; question_id: string; marks_max: string; selected_label: string | null; attempt_id: string; is_correct: boolean; is_test: boolean }>(
+      `select mode, user_id::text, question_id::text, marks_max::text, selected_label, attempt_id::text, is_correct, is_test from practice_answers where attempt_id = $1::uuid order by question_id`,
+      [attemptUuidOf(attemptId)],
+    )
+    expect(rows).toHaveLength(5)
+    expect(new Set(rows.map((r) => r.mode))).toEqual(new Set(['pksk']))
+    expect(new Set(rows.map((r) => r.user_id))).toEqual(new Set([userId]))
+    expect(rows.map((r) => r.question_id).sort()).toEqual([...ids].sort())
+    for (const r of rows) expect(r.marks_max).toBe('1.00')
+    // the attempt link: every row hangs on the stable uuid of this attempt; not a test user; correctness stored
+    for (const r of rows) {
+      expect(r.attempt_id).toBe(attemptUuidOf(attemptId))
+      expect(r.is_test).toBe(false)
+      expect(typeof r.is_correct).toBe('boolean')
+    }
+  })
+
+  const countOf = async (t: string) => Number((await db.query<{ n: string }>(`select count(*)::text n from ${t}`))[0]?.n)
+  const servedOf = async (s: LoggedIn) => {
+    const exam = (await get(s, '/pksk/levels/T1/exam')).body.data.sections as { questions: { id: string }[] }[]
+    return exam.flatMap((sec) => sec.questions.map((q) => q.id))
+  }
+
+  it('AC-MUR-19-5 atomicity: a database failure on the 2nd answer row leaves no attempt, no rows and the exam load; the retry succeeds', async () => {
+    const s = await as('pelajar@demo.test')
+    seedQuestions(world.world, 'PKSK_INSANIAH', 'T1', 4)
+    seedQuestions(world.world, 'PKSK_MATH', 'T1', 4)
+    const ids = (await servedOf(s)).slice(0, 3)
+    expect(ids.length).toBe(3)
+    const body = { answers: ids.map((id) => ({ questionId: id, optionIndex: 0 })) }
+    await db.query(`create or replace function t_fail_2nd_answer() returns trigger language plpgsql as $$
+      begin
+        if exists (select 1 from practice_answers where attempt_id = new.attempt_id) then raise exception 'forced failure on the 2nd answer row'; end if;
+        return new;
+      end $$`)
+    await db.query(`create trigger t_fail_2nd_answer before insert on practice_answers for each row execute function t_fail_2nd_answer()`)
+    const before = [await countOf('pksk_exam_attempts'), await countOf('practice_answers'), await countOf('pksk_exam_loads')]
+    try {
+      const bad = await post(s, '/pksk/levels/T1/exam-attempts', body)
+      expect(bad.status).toBeGreaterThanOrEqual(500)
+      expect([await countOf('pksk_exam_attempts'), await countOf('practice_answers'), await countOf('pksk_exam_loads')]).toEqual(before)
+    } finally {
+      await db.query(`drop trigger t_fail_2nd_answer on practice_answers`)
+      await db.query(`drop function t_fail_2nd_answer()`)
+    }
+    const ok = await post(s, '/pksk/levels/T1/exam-attempts', body)
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
+    expect([await countOf('pksk_exam_attempts'), await countOf('practice_answers'), await countOf('pksk_exam_loads')]).toEqual([before[0]! + 1, before[1]! + 3, before[2]! - 1])
+  })
+
+  it('ownership: user B cannot submit against user A\'s served set (422) and A\'s load stays', async () => {
+    const a = await as('pelajar@demo.test')
+    const b = await as('pelajar2@demo.test')
+    const bId = await idOf('pelajar2@demo.test')
+    seedQuestions(world.world, 'PKSK_INSANIAH', 'T1', 4)
+    const ids = (await servedOf(a)).slice(0, 2)
+    await db.query(`insert into pksk_accesses (user_id, package_id) values ($1::bigint, 1)`, [bId])
+    try {
+      const [attempts, rows, loads] = [await countOf('pksk_exam_attempts'), await countOf('practice_answers'), await countOf('pksk_exam_loads')]
+      const res = await post(b, '/pksk/levels/T1/exam-attempts', { answers: ids.map((id) => ({ questionId: id, optionIndex: 0 })) })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.message).toBe('Jawapan tidak sah.')
+      expect([await countOf('pksk_exam_attempts'), await countOf('practice_answers'), await countOf('pksk_exam_loads')]).toEqual([attempts, rows, loads])
+      const mine = await post(a, '/pksk/levels/T1/exam-attempts', { answers: ids.map((id) => ({ questionId: id, optionIndex: 0 })) })
+      expect(mine.status).toBe(201)
+    } finally {
+      await db.query(`delete from pksk_accesses where user_id = $1::bigint`, [bId])
+    }
+  })
+
+  it('a concurrent double submit of one served set: exactly one attempt and one set of rows', async () => {
+    const s = await as('pelajar@demo.test')
+    seedQuestions(world.world, 'PKSK_INSANIAH', 'T1', 4)
+    const ids = (await servedOf(s)).slice(0, 3)
+    const body = { answers: ids.map((id) => ({ questionId: id, optionIndex: 0 })) }
+    const [attempts, rows] = [await countOf('pksk_exam_attempts'), await countOf('practice_answers')]
+    const res = await Promise.all([post(s, '/pksk/levels/T1/exam-attempts', body), post(s, '/pksk/levels/T1/exam-attempts', body)])
+    expect(res.map((r) => r.status).sort()).toEqual([201, 422])
+    expect([await countOf('pksk_exam_attempts'), await countOf('practice_answers')]).toEqual([attempts + 1, rows + 3])
+  })
+
+  it('anti-cheat: an exam submit takes only the served set, once, and a refusal writes no attempt and no answer rows', async () => {
+    const s = await as('pelajar@demo.test')
+    const extra = seedQuestions(world.world, 'PKSK_MATH', 'T1', 80)
+    const exam = (await get(s, '/pksk/levels/T1/exam')).body.data.sections as { questions: { id: string }[] }[]
+    const served = new Set(exam.flatMap((sec) => sec.questions.map((q) => q.id)))
+    const guessed = extra.find((q) => !served.has(q.id))
+    expect(guessed).toBeDefined()
+    const count = async (t: string) => Number((await db.query<{ n: string }>(`select count(*)::text n from ${t}`))[0]?.n)
+    const [attempts, answers] = [await count('pksk_exam_attempts'), await count('practice_answers')]
+    const url = '/pksk/levels/T1/exam-attempts'
+    const bad = await post(s, url, { answers: [{ questionId: guessed?.id, optionIndex: 0 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.message).toBe('Jawapan tidak sah.')
+    expect(JSON.stringify(bad.body)).not.toMatch(/review|correctIndex|Penjelasan/)
+    expect([await count('pksk_exam_attempts'), await count('practice_answers')]).toEqual([attempts, answers])
+    const mine = [...served].slice(0, 3)
+    const body = { answers: mine.map((id) => ({ questionId: id, optionIndex: 0 })) }
+    expect((await post(s, url, body)).status).toBe(201)
+    const again = await post(s, url, body)
+    expect(again.status).toBe(422)
+    expect(again.body.data).toBeUndefined()
+    expect([await count('pksk_exam_attempts'), await count('practice_answers')]).toEqual([attempts + 1, answers + 3])
   })
 
   it('admin routes: 403 for a student, packages list for admin', async () => {

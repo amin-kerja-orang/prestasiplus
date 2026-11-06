@@ -7,10 +7,13 @@
  *   (--dry-run is accepted and means the default; the npm name `uat:bulk-chapter-dry-run` is added by S4-T08)
  *
  * Per offered Subjek x Tingkatan (an active subject linked through `subject_levels` to an active, non-primary level; the same set as
- * `GET /api/admin/curriculum/chapter-coverage`): the approved LIVE questions (live version approved; `questions.is_active` is NOT a condition, like the API; PKSK questions are left out, like the admin filter) with no Bab, with a
- * Bab, and for each active in-tree Bab of that subject and level how many questions are eligible for it. Eligible is the definition of
- * `bulk-chapter.service.ts`, `overwrite=false`: the live version is approved, its subject and level equal the Bab's, and it has no Bab.
- * That count is the same for every Bab of the pair; it is a count, never a per-question mapping.
+ * `GET /api/admin/curriculum/chapter-coverage`, API-DSKP-10): the questions whose LIVE version is approved and not flagged
+ * (`NOT_FLAGGED_SQL`, S1-T07: no stimulus flag, or `stem_duplicated`, or the flag dismissed), counted with no Bab, with a Bab. This is exactly
+ * the predicate of that endpoint: `questions.is_active` is NOT a condition and PKSK questions are NOT excluded (coverage does neither).
+ * For each active in-tree Bab of that subject and level, `eligible` is that pair's "without Bab" count (a planning figure, the same for every
+ * Bab of the pair). NOTE: the bulk write itself (`bulk-chapter.service.ts`, API-DSKP-09) does not look at the flag, so it can also map a
+ * flagged question that this report does not count (ruling R1-FAQ Q11, no change to the bulk eligibility).
+ * It is a count, never a per-question mapping.
  *
  * Report: `.evidence/uat-ops/bulk-chapter-dry-run-<ISO time>.txt` and `.json` (counts and curriculum ids/names only, no personal data).
  * Exit code 0 (INFO lines only), 2 on a usage or environment error.
@@ -65,10 +68,15 @@ export interface Plan {
 }
 
 /**
- * Same eligibility as `bulk-chapter.service.ts` (S4-T03, API-DSKP-09), overwrite=false: no `questions.is_active` condition (the card and
- * the contract say "live approved version", and the admin filter has none, so an inactive approved question is matched and mapped), and
- * PKSK questions are excluded (the admin filter `NOT_PKSK_SQL`).
+ * The same predicate as `ChapterService.coverage()` (API-DSKP-10): live version approved AND `NOT_FLAGGED_SQL`; no `questions.is_active`
+ * condition, no PKSK exclusion.
  */
+/**
+ * Inline copy of `NOT_FLAGGED_SQL` (`modules/questions/learner-visibility.ts`, S1-T07). Copied, not imported, so this script stays plain
+ * `pg` with no Prisma client; `test/uat-ops/bulk-chapter-dry-run-flag.spec.ts` asserts the text equals the exported fragment.
+ */
+export const NOT_FLAGGED_TEXT = `(v.stimulus_flag IS NULL OR v.stimulus_flag = 'stem_duplicated' OR v.flag_dismissed_at IS NOT NULL)`
+
 export const PAIRS_SQL = `
 SELECT s.id::text AS subject_id, s.code AS subject_code, l.id::text AS level_id, l.code AS level_code,
        a.approved::int AS approved, a.with_chapter::int AS with_chapter
@@ -79,8 +87,7 @@ SELECT s.id::text AS subject_id, s.code AS subject_code, l.id::text AS level_id,
     SELECT count(*) AS approved, count(v.chapter_id) AS with_chapter
       FROM question_versions v
       JOIN questions q ON q.id = v.question_id AND q.live_version_no = v.version_no
-     WHERE v.subject_id = s.id AND v.education_level_id = l.id AND v.status = 'approved'
-       AND NOT EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')
+     WHERE v.subject_id = s.id AND v.education_level_id = l.id AND v.status = 'approved' AND ${NOT_FLAGGED_TEXT}
   ) a
  WHERE ($1::text IS NULL OR s.code = $1) AND ($2::text IS NULL OR l.code = $2)
  ORDER BY s.sort_order, s.id, l.sort_order, l.id`

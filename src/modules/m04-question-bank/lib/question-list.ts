@@ -260,3 +260,83 @@ export function failedLines(
 
 /** [PROPOSED] UX-80: shown after "Jana Penjelasan AI" on an approved or archived question; the AI text went to a new draft version. */
 export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Semak dan terbitkan draf itu.'
+
+/* ---- the regroup work-list (R1-ADM-QE-08, PRD45 6.6; API-Q-13 `RegroupWorklistRow` / `RegroupWorklistMeta` of packages/contract/src/questions/regroup.ts). ---- */
+
+export const REGROUP_TAB = 'regroup'
+
+export const REGROUP_COPY = {
+  empty: 'Tiada soalan perlu dikumpulkan semula.',
+  subject: 'Subjek',
+  level: 'Tingkatan',
+  flag: 'Sebab',
+  /** PRD45 6.6.2 and PRD30 QE-08: the dismiss confirm. */
+  dismissConfirm: 'Tandakan sebagai bukan masalah?',
+  dismissYes: 'Ya, Tandakan',
+  cancel: 'Batal',
+  notConsecutive: 'Pilih baris yang berturutan sahaja.',
+  /** PRD45 6.6.3 (R1 copy, D113); the same text the API answers with. */
+  undoConflict: 'Kumpulan telah diubah selepas kumpul semula; tidak boleh dibuat asal.',
+} as const
+
+export const REGROUP_FLAGS = ['stimulus_missing', 'figure_only', 'stem_duplicated'] as const
+export type RegroupFlag = (typeof REGROUP_FLAGS)[number]
+
+export interface RegroupWorkRow {
+  questionId: string
+  numberLabel: string | null
+  stemExcerpt: string
+  subject: string
+  level: string
+  flag: RegroupFlag
+  /** `Rujukan`: numbered ("bernombor") or unnumbered ("tanpa nombor"); null when the detector stored none. */
+  reference: 'numbered' | 'unnumbered' | null
+  paper: { id: string; paperCode: string | null; year: number | null; examType: string | null } | null
+}
+
+export interface RegroupCounts {
+  /** Keyed by subject id / education level id. */
+  bySubject: Record<string, number>
+  byLevel: Record<string, number>
+  byFlag: { stimulus_missing: number; figure_only: number; stem_duplicated: number }
+  open: number
+  done: number
+}
+
+/** "{n} perlu tindakan · {m} selesai" (PRD45 6.6.2). */
+export const regroupHeader = (open: number, done: number): string => `${String(open)} perlu tindakan · ${String(done)} selesai`
+
+/** `Rujukan` (PRD45 6.6.2): `bernombor` or "tanpa nombor", a dash when none is stored. */
+export function regroupReference(row: Pick<RegroupWorkRow, 'reference'>): string {
+  if (row.reference === 'unnumbered') return 'tanpa nombor'
+  return row.reference === 'numbered' ? 'bernombor' : '—'
+}
+
+/** `Kertas sumber` and number: paper code, exam type and year, then "No. n". */
+export function regroupSource(row: Pick<RegroupWorkRow, 'paper' | 'numberLabel'>): string {
+  const p = row.paper
+  const paper =
+    p === null
+      ? '—'
+      : [p.paperCode, p.examType, p.year === null ? null : `(${String(p.year)})`].filter((x): x is string => x !== null && x !== '').join(' ') || '—'
+  return row.numberLabel === null ? paper : `${paper} · No. ${row.numberLabel}`
+}
+
+/**
+ * "Pilih baris yang berturutan sahaja." (PRD45 6.6.2): the selected rows share one source paper and their numbers are whole numbers
+ * with no gap. Fewer than one row, a row with no paper or a non-numeric number is not a run.
+ * Labels such as "14a" or "3(a)" are refused on purpose: they name a sub-part, so "next number" is undefined (is 14b after 14a, or 15?)
+ * and a guess could group questions that are not neighbours. The admin groups those through Studio. Pending lead confirmation.
+ */
+export function isConsecutiveRun(rows: readonly Pick<RegroupWorkRow, 'paper' | 'numberLabel'>[]): boolean {
+  if (rows.length === 0) return false
+  const paperId = rows[0]?.paper?.id
+  if (paperId === undefined) return false
+  const numbers: number[] = []
+  for (const r of rows) {
+    if (r.paper?.id !== paperId || r.numberLabel === null || !/^\d+$/.test(r.numberLabel)) return false
+    numbers.push(Number.parseInt(r.numberLabel, 10))
+  }
+  numbers.sort((x, y) => x - y)
+  return numbers.every((n, i) => i === 0 || n === (numbers[i - 1] ?? 0) + 1)
+}

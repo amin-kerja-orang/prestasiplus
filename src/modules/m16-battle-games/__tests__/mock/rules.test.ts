@@ -1,12 +1,10 @@
 /**
- * M16 pure rules (SRS M16 v1.6 BR-M16-07, BR-M16-10, BR-M16-33, BR-M16-35): the winner and the arena
- * points, the seed correct count, the league share link, the Sekolah Bersaing week and the tournament
- * and league body parsers. No boot.
+ * M16 pure rules (SRS M16 v1.6 BR-M16-07, BR-M16-10, BR-M16-33): the winner and the arena points, the
+ * seed correct count, the league share link, the Sekolah Bersaing ranking and the tournament and league
+ * body parsers. No boot.
  */
 
 import { describe, expect, it } from 'vitest'
-
-import { fromMytParts } from '@/lib/time'
 
 import {
   arenaPoints,
@@ -15,8 +13,8 @@ import {
   sideSkor,
   winnerOf,
 } from '../../mock/repository/common'
-import { parseLeagueBody, shareUrl } from '../../mock/repository/leagues'
-import { weekStartOf } from '../../mock/repository/sekolah-bersaing'
+import { parseLeagueBody } from '../../mock/repository/leagues'
+import { rankBoard } from '../../mock/repository/sekolah-bersaing'
 import { parseTournamentBody } from '../../mock/repository/tournaments'
 import { OBSERVED_BATTLES } from '../../mock/data/battles-observed'
 
@@ -66,29 +64,74 @@ describe('arena points (BR-M16-07)', () => {
   })
 })
 
-describe('league share link (FN-M16-9.3.2)', () => {
-  it('uses + for spaces and %21 for "!" as live', () => {
-    expect(shareUrl('Liga Matematik Sprint Test', 'TEST2026')).toBe(
-      'https://wa.me/?text=Jom+sertai+Liga+Pertandingan+%22Liga+Matematik+Sprint+Test%22+di+PrestasiPlus%21+Kod+Jemputan%3A+TEST2026+%E2%80%94+prestasiplus.my%2Fliga+%F0%9F%8F%86',
+describe('Sekolah Bersaing ranking (FR-AS-45-1, FR-AS-45-3, FR-AS-45-4, GAME-16)', () => {
+  const NAMES: Record<number, string> = { 1: 'Sekolah A', 2: 'Sekolah B', 3: 'Sekolah C', 4: 'Sekolah D' }
+  const register = {
+    get: (id: number) =>
+      id === 404 ? undefined : { name: NAMES[id] ?? `Sekolah ${String(id)}`, state: 'Johor' },
+    isHidden: (id: number) => id === 500,
+  }
+  /** One school's totals: `avg` percent over `sessions` scored sessions of `pupils` pupils. */
+  const totals = (schoolId: number, avg: number, pupils: number, sessions = 10) => ({
+    schoolId,
+    sessions,
+    served: 0,
+    answered: 0,
+    correct: 0,
+    scoredSessions: sessions,
+    scoreSum: avg * sessions,
+    activeStudents: pupils,
+    servedStudents: pupils,
+    sessionStudents: pupils,
+  })
+  const namesOf = (board: ReturnType<typeof rankBoard>) => board.map((r) => r.school)
+
+  it('AC-AS-45-1: ranks by accuracy, with the row shape of the contract', () => {
+    expect(rankBoard([totals(2, 60, 3), totals(1, 80, 5)], register)).toEqual([
+      { rank: 1, school: 'Sekolah A', state: 'Johor', accuracy: 80, pupils: 5 },
+      { rank: 2, school: 'Sekolah B', state: 'Johor', accuracy: 60, pupils: 3 },
+    ])
+  })
+
+  it('the accuracy is the mean over the scored sessions, to one decimal', () => {
+    const t = { ...totals(1, 0, 2, 7), scoredSessions: 3, scoreSum: 200 }
+    expect(rankBoard([t], register)[0]?.accuracy).toBe(66.7)
+  })
+
+  it('AC-AS-45-2: no session anywhere is an empty board', () => {
+    expect(rankBoard([], register)).toEqual([])
+  })
+
+  it('AC-AS-45-3: cuts 40 schools to the top 30', () => {
+    const board = rankBoard(
+      Array.from({ length: 40 }, (_, i) => totals(i + 100, 40 + i, 2)),
+      register,
     )
-  })
-})
-
-describe('Sekolah Bersaing week (BR-M16-35, DV-M16-30)', () => {
-  const now = fromMytParts({ year: 2026, month: 9, day: 25, hour: 15, minute: 40 })
-
-  it('a valid date gives the Monday of its week; the default is the current week', () => {
-    expect(weekStartOf(undefined, now)).toBe('2026-09-21')
-    expect(weekStartOf('2026-09-27', now)).toBe('2026-09-21')
-    expect(weekStartOf('2026-09-28', now)).toBe('2026-09-28')
-    expect(weekStartOf('2025-01-06', now)).toBe('2025-01-06')
-    expect(weekStartOf('2025-01-08', now)).toBe('2025-01-06')
+    expect(board).toHaveLength(30)
+    expect(board[0]).toMatchObject({ rank: 1, accuracy: 79 })
+    expect(board[29]).toMatchObject({ rank: 30, accuracy: 50 })
   })
 
-  it('an invalid value is ignored', () => {
-    for (const bad of ['', 'abc', '2026-02-30', '2026-13-01', '26-09-14', 20260914, null]) {
-      expect(weekStartOf(bad, now), String(bad)).toBe('2026-09-21')
-    }
+  it('AC-AS-45-6: breaks ties by pupils, then sessions, then name', () => {
+    const board = rankBoard(
+      [totals(4, 80, 30), totals(3, 80, 30), totals(2, 80, 30, 20), totals(1, 80, 40)],
+      register,
+    )
+    expect(namesOf(board)).toEqual(['Sekolah A', 'Sekolah B', 'Sekolah C', 'Sekolah D'])
+  })
+
+  it('leaves out a school with no scored session or pupil, a primary school and an unknown id', () => {
+    const board = rankBoard(
+      [
+        totals(1, 80, 5),
+        { ...totals(2, 80, 5), scoredSessions: 0, scoreSum: 0 },
+        totals(3, 80, 0),
+        totals(500, 90, 5),
+        totals(404, 90, 5),
+      ],
+      register,
+    )
+    expect(namesOf(board)).toEqual(['Sekolah A'])
   })
 })
 
@@ -124,30 +167,35 @@ describe('tournament body (V-M16-07…12)', () => {
   })
 })
 
-describe('league body (V-M16-14/15)', () => {
+describe('league body (API-ADM-25, 60 section 2.17.9)', () => {
   const valid = {
     name: 'Liga Baru',
     type: 'friendly',
     scope: 'school',
-    game_mode: 'mixed',
-    scoring_method: 'wins',
-    start_date: '2026-10-01',
-    end_date: '2026-10-01',
-    class_levels: ['T5', 'D1', 'T5'],
-    max_schools: '',
+    mode: 'mixed',
+    scoring: 'wins',
+    schoolLimit: 10,
+    start: '2026-10-01',
+    end: '2026-10-01',
+    levelIds: [5, 1, 5],
   }
 
-  it('parses the form: levels in D1…T5 order, an empty limit is no limit, equal dates are fine', () => {
+  it('parses the form: levelIds 1..5 map to T1..T5 in order, equal dates are fine', () => {
     expect(parseLeagueBody(valid)).toMatchObject({
-      classLevels: ['D1', 'T5'],
-      maxSchools: null,
+      classLevels: ['T1', 'T5'],
+      maxSchools: 10,
       subjectId: null,
     })
   })
 
-  it('refuses an end date before the start and an unknown level', () => {
-    expect(() => parseLeagueBody({ ...valid, end_date: '2026-09-30' })).toThrow()
-    expect(() => parseLeagueBody({ ...valid, class_levels: ['X9'] })).toThrow()
-    expect(() => parseLeagueBody({ ...valid, scoring_method: 'x' })).toThrow()
+  it('refuses an end date before the start, a bad level, a bad enum, a missing or out-of-range limit', () => {
+    expect(() => parseLeagueBody({ ...valid, end: '2026-09-30' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, levelIds: [6] })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, levelIds: [] })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, scoring: 'x' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, type: 'tournament' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: null })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: 1 })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: undefined })).toThrow()
   })
 })

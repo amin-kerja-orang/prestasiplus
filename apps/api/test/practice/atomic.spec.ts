@@ -76,7 +76,7 @@ const TRIGGERS = {
 } as const
 
 /** A started session with 5 checked questions: 2 right, 3 wrong. */
-async function checkedSession(body: Record<string, unknown> = { mode: 'random', subjectCode: 'MATH', count: 5 }) {
+async function checkedSession(body: Record<string, unknown> = { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }) {
   const s = await startSession(pelajar, body)
   for (const [i, q] of s.questions.entries()) await checkAnswer(pelajar, s.sessionId, t.bank, q.id, i < 2)
   return s

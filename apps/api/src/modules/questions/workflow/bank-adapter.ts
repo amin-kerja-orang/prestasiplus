@@ -18,6 +18,7 @@ import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import {
   isStructuredVisible,
+  BANK_ONLY,
   QuestionsRepository,
   QuestionsService,
   STRUCTURED_LEVEL_CODES,
@@ -36,6 +37,7 @@ import type {
   QuestionBrief,
   QuestionGateData,
   QuestionStatusInfo,
+  QuestionVersionBrief,
   SetStatusOptions,
 } from './ports'
 
@@ -78,13 +80,13 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async getStatus(id: string): Promise<QuestionStatusInfo | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     return r ? this.infoOf(r) : null
   }
 
   /** The same facts and the same builder as `QuestionsService.setStatus` (R1-H-A18): no path has its own defaults. */
   async getForGates(id: string): Promise<QuestionGateData | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) return null
     const facts = await this.repo.gateFacts(r.id, r.version.versionNo)
     return gateDataOf(r, facts, await this.repo.isSpmBound(r.version.subjectId, r.version.educationLevelId))
@@ -100,14 +102,14 @@ export class QuestionBankAdapter implements QuestionBankPort {
   async setStatus(id: string, to: QuestionWorkflowStatus, actorId: string, options: SetStatusOptions = {}): Promise<QuestionStatusInfo | null> {
     return this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) return null
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) return null
       const target = options.target ?? 'latest'
       const liveNo = record.liveVersionNo
 
       if (target === 'live') {
         if (liveNo === null) return this.infoOf(record) // nothing live: no-op
-        const live = liveNo === record.latestVersionNo ? record : await this.repo.get(id, 'live')
+        const live = liveNo === record.latestVersionNo ? record : await this.repo.get(id, 'live', BANK_ONLY)
         const current = live?.version.status ?? 'approved'
         if (options.expectedFrom !== undefined && current !== options.expectedFrom) throw transitionConflict(current, to)
         await this.repo.setVersionStatus(id, liveNo, to, { archiveReason: options.archiveReason ?? 'withdrawn' })
@@ -138,12 +140,13 @@ export class QuestionBankAdapter implements QuestionBankPort {
     })
   }
 
-  deactivate(id: string): Promise<boolean> {
-    return this.repo.deactivate(id)
+  // DM-42: a report resolution (admin) never acts on a personal question: it is unknown here, so the call is a no-op that answers false.
+  async deactivate(id: string): Promise<boolean> {
+    return (await this.repo.get(id, 'latest', BANK_ONLY)) !== null && this.repo.deactivate(id)
   }
 
-  reactivate(id: string): Promise<boolean> {
-    return this.repo.reactivate(id)
+  async reactivate(id: string): Promise<boolean> {
+    return (await this.repo.get(id, 'latest', BANK_ONLY)) !== null && this.repo.reactivate(id)
   }
 
   /**
@@ -155,9 +158,9 @@ export class QuestionBankAdapter implements QuestionBankPort {
     if (input.subjectId === null || input.educationLevelId === null || input.difficultyLevel === null) {
       throw new Error('QuestionBankAdapter.create: subject, level and difficulty are required (the import validates them first)')
     }
-    // BE-09 labels options A, B, C, ... in order and needs at least 3 (contract: 3 to 8), so the present
+    // BE-09 labels options A, B, C, ... in order and needs at least 2 (contract: 2 to 8, S1-T09a), so the present
     // options are compacted in order and the correct one is found by its position among them. A row with
-    // fewer than 3 options is refused by BE-09 with 422 (GAP: the CSV rules accept 2, the v2 model does not).
+    // fewer than 2 options is a failed row of the CSV import (csv.ts MIN_OPTIONS).
     const present = input.options.filter((o) => o.text !== '')
     const correctAnswer = present.findIndex((o) => o.label === input.correctLabel)
     const body = {
@@ -182,8 +185,8 @@ export class QuestionBankAdapter implements QuestionBankPort {
       ...(input.language === undefined ? {} : { language: input.language }),
       status: input.status,
     } as unknown as QuestionCreateInput
-    if (input.kbat !== undefined) {
-      // An explicit KBAT value lives on the leaf and the flat body has no field for it: the one leaf is built here and sent as `parts`.
+    if (input.kbat !== undefined || input.partStimulusId !== undefined) {
+      // An explicit KBAT value and a part stimulus live on the leaf and the flat body has no field for them: the one leaf is built here and sent as `parts`.
       const parts = partsFromFlat({
         questionType: 'mcq',
         questionText: input.stemMs,
@@ -192,7 +195,8 @@ export class QuestionBankAdapter implements QuestionBankPort {
         pointsValue: input.marks ?? 1,
         ...(input.cognitiveLevel === undefined ? {} : { cognitiveLevel: input.cognitiveLevel }),
       })
-      ;(parts[0] as { kbat?: string }).kbat = input.kbat
+      if (input.kbat !== undefined) (parts[0] as { kbat?: string }).kbat = input.kbat
+      if (input.partStimulusId !== undefined) (parts[0] as { stimulusId?: string }).stimulusId = input.partStimulusId
       ;(body as unknown as { parts: QuestionPart[] }).parts = parts
     }
     const view = await this.service.create(body, { userId: input.createdById, role: 'teacher' })
@@ -223,19 +227,19 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async liveType(id: string): Promise<'mcq' | 'structured' | null> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     return record ? (record.version.type === 'mcq' ? 'mcq' : 'structured') : null
   }
 
   async structuredVisible(id: string): Promise<boolean> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record) return false
     const levels = new Set((await this.curriculum.levels()).filter((l) => STRUCTURED_LEVEL_CODES.includes(l.code)).map((l) => l.id.toString()))
     return isStructuredVisible(record, levels)
   }
 
   async describe(ids: readonly string[]): Promise<ReadonlyMap<string, QuestionBrief>> {
-    const records = await this.repo.getMany(ids, 'latest')
+    const records = await this.repo.getMany(ids, 'latest', 'exclude', BANK_ONLY)
     const out = new Map<string, QuestionBrief>()
     if (records.length === 0) return out
     const { subjects, levels } = await this.names()
@@ -253,6 +257,22 @@ export class QuestionBankAdapter implements QuestionBankPort {
         educationLevelId: v.educationLevelId,
         levelName: v.educationLevelId === null ? null : (levels.get(v.educationLevelId) ?? null),
         chapterName: v.chapterId === null ? null : (chapters.get(v.chapterId) ?? null),
+      })
+    }
+    return out
+  }
+
+  async describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
+    const out = new Map<string, QuestionVersionBrief>()
+    const records = await this.repo.getVersions(refs)
+    if (records.length === 0) return out
+    const { subjects } = await this.names()
+    for (const r of records) {
+      const v = r.version
+      out.set(`${r.id}:${v.versionNo}`, {
+        stemText: v.stemMs ?? v.stemEn ?? '',
+        subjectId: v.subjectId,
+        subjectName: v.subjectId === null ? null : (subjects.get(v.subjectId) ?? null),
       })
     }
     return out
@@ -304,7 +324,7 @@ export class QuestionBankAdapter implements QuestionBankPort {
   }
 
   async getExplanationSource(id: string): Promise<ExplanationSource | null> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) return null
     const v = r.version
     const all = leaves(v.parts)

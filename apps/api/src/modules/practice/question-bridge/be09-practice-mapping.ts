@@ -49,7 +49,7 @@ export function servableMcq(record: QuestionRecord, { allowStimulus = false }: S
       return { ok: false, reason: 'a stimulus cannot be shown on the practice screen' }
     if (only.options.some((o) => o.imageId != null)) return { ok: false, reason: 'an option image cannot be shown' }
   }
-  if (!only.options.some((o) => o.label === only.key.correct)) return { ok: false, reason: 'the key names no option' }
+  if (!only.options.some((o) => o.label === only.key?.correct)) return { ok: false, reason: 'the key names no option' }
   return { ok: true, leaf: only }
 }
 
@@ -87,6 +87,8 @@ export function toPracticeQuestion(
     options: m.leaf.options.map((o) => (allowStimulus && o.imageId != null ? { label: o.label, text: o.body.ms, imageId: o.imageId } : { label: o.label, text: o.body.ms })),
     correctLabel: m.leaf.key.correct,
     explanation: v.explanationMs,
+    // FR-GUR-44a-9: only a teacher's personal question carries a link; a bank question never does.
+    ...(v.visibility === 'teacher_private' && v.referenceUrl ? { referenceUrl: v.referenceUrl } : {}),
     // Only on a surface that allows it (S1-T06): today's output keeps exactly its fields.
     ...(allowStimulus && v.stemImageId != null ? { stemImageId: v.stemImageId } : {}),
     ...(allowStimulus && record.groupId !== null && group != null ? { groupId: record.groupId, groupPosition: record.groupPosition, stimulusGroup: group } : {}),
