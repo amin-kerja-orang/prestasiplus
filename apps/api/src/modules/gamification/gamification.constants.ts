@@ -71,10 +71,6 @@ export const MAX_PRIZE_QTY = 1_000_000
 export const IDEMPOTENCY_HEADER = 'idempotency-key'
 export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_.:-]{1,100}$/
 
-/** Referral rewards (mock constants, contract `GAMIFICATION_REFERRAL_REWARDS`). */
-export const REFERRAL_REWARD_REFERRER = 50
-export const REFERRAL_REWARD_REFEREE = 25
-
 /** BR-M14-14 / FR-M14-64: the first student password login of a Malaysia day pays this many syiling, with this ledger text. */
 export const DAILY_LOGIN_REWARD = 2
 export const DAILY_LOGIN_DESCRIPTION = 'Streak activity (daily_login)'

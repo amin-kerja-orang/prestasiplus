@@ -339,7 +339,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['gamification'],
     summary: 'Rujuk Kawan: referral code, share links and stats',
     description:
-      'Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.',
+      'Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here; the amounts and the cap are the settings referral_referrer_syiling, referral_referee_syiling and referral_max_rewarded.',
     responses: { 200: json(envelopeOf(GamificationReferralSchema), 'Referral data.'), 401: UNAUTHORIZED },
   })
 
