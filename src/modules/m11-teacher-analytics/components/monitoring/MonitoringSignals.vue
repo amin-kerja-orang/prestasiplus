@@ -32,8 +32,6 @@ function attention(s: Signal): string {
   const ratio = `${count(s.engaged)}/${count(s.registered)}`
   if (s.kind === 'rendah')
     return `${s.name} — ${ratio} pelajar aktif (${pct(s.pct)}). Tahap rendah.`
-  if (s.kind === 'kritikal')
-    return `${s.name} — Hanya ${ratio} pelajar aktif (${pct(s.pct)}). Tahap kritikal.`
   const base = `${s.name} — ${count(s.registered)} pelajar berdaftar tetapi tiada seorang pun yang menjawab soalan. Tiada sebarang tanda penggunaan platform.`
   return s.teachersLoggedIn > 0
     ? `${base} (Nota: ${count(s.teachersLoggedIn)} guru telah login)`
@@ -41,8 +39,6 @@ function attention(s: Signal): string {
 }
 
 function suggestion(s: Signal): string {
-  if (s.kind === 'motivasi')
-    return `${s.name}: Penglibatan sangat rendah. Cadangan: Sesi motivasi dan demonstrasi penggunaan platform kepada pelajar.`
   if (s.kind === 'hubungi')
     return `${s.name}: Hubungi pihak sekolah secara langsung untuk mengenal pasti halangan dan memberi taklimat semula.`
   return `${s.name}: Guru telah login tetapi murid belum aktif. Cadangan: Adakan sesi hands-on dengan pelajar.`
