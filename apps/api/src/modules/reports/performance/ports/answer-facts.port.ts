@@ -94,6 +94,31 @@ export interface SessionDurationRow {
   seconds: number
 }
 
+/**
+ * One finished practice session of one pupil (R1-MUR-39, S10-T08). `sessionKey` is `s:<session id>`, or
+ * `n:<mode>:<MYT day>` for answers with no session (same rule as `SessionCountRow`). `subjectId` is the subject with
+ * most answers in the session ('0' when none is stored); `finishedAt` is the time of its last answer.
+ */
+export interface SessionFactRow {
+  userId: string
+  sessionKey: string
+  subjectId: string
+  mode: string
+  answered: number
+  correct: number
+  finishedAt: Date
+}
+
+export interface SessionFactsQuery {
+  userIds: readonly string[]
+  /** Stored `mode` values (callers pass the session modes, never the game modes). */
+  modes: readonly string[]
+  /** Only sessions whose answers are before this instant. */
+  to?: Date
+  /** Most rows returned: the latest sessions by `finishedAt`, then `sessionKey`, newest first. */
+  limit: number
+}
+
 export interface SpInfo {
   id: string
   kind: 'topic' | 'chapter'
@@ -112,6 +137,8 @@ export interface AnswerFactsPort {
   sessionDurations(query: AnswerFactsQuery): Promise<SessionDurationRow[]>
   /** Added for S10-T01 (not on the card): a distinct count cannot be built from `weeklyFacts` rows. */
   sessionCounts(query: AnswerFactsQuery): Promise<SessionCountRow[]>
+  /** Added for S10-T08 (read-only): one row per finished session, newest first, never `is_test` rows. */
+  sessionFacts(query: SessionFactsQuery): Promise<SessionFactRow[]>
   spInfo(ids: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]>
 }
 
@@ -161,6 +188,9 @@ export class EmptyAnswerFacts implements AnswerFactsPort {
     return []
   }
   async sessionCounts(): Promise<SessionCountRow[]> {
+    return []
+  }
+  async sessionFacts(): Promise<SessionFactRow[]> {
     return []
   }
   async spInfo(): Promise<SpInfo[]> {

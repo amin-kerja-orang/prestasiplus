@@ -40,6 +40,8 @@ const subjects = bijakAdminServer().subjects()
       <DsNativeSelect id="in-kertas" v-model="form.kertas" data-testid="intake-kertas">
         <option value="1">Kertas 1</option>
         <option value="2">Kertas 2</option>
+        <option value="3">Kertas 3</option>
+        <option value="4">Kertas 4</option>
       </DsNativeSelect>
     </DsFormField>
     <DsFormField native for="in-year" label="Tahun" required>

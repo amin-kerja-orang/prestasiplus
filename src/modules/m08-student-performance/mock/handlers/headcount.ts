@@ -26,11 +26,12 @@ import {
   type RouteDef,
 } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
+import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type { HeadcountFormOptions, HeadcountMode, HeadcountSort } from '../../api/headcount-types'
-import { PERFORMANCE_HEADCOUNT_MESSAGES } from '@pp/contract'
+import { PERFORMANCE_HEADCOUNT_MESSAGES, REPORT_SCOPE_MESSAGES } from '@pp/contract'
 
 import { MARK_RANGE_ERROR } from '../../lib/headcount/otr'
 import { headcountRepo } from '../repository/headcount'
@@ -175,6 +176,21 @@ export const headcountRoutes: RouteDef[] = [
 
   route('GET', '/api/headcounts', [guard], (req) => {
     const viewer = viewerOf(req)
+    if (viewer.role === 'admin' && req.query.schoolId !== undefined) {
+      // S6-T13 PM-24 (as the API): an admin who sends `?schoolId=` lists that ONE school (422 malformed, 404 unknown)
+      const raw = queryString(req.query, 'schoolId')
+      if (raw === undefined || !/^[1-9]\d{0,18}$/.test(raw)) {
+        return validationError({ schoolId: REPORT_SCOPE_MESSAGES.schoolIdRequired })
+      }
+      const schoolId = Number(raw)
+      if (!schools.get(schoolId)) return NOT_FOUND()
+      return ok(
+        headcountRepo
+          .configs()
+          .filter((c) => configSchoolId(c) === schoolId)
+          .map(listItem),
+      )
+    }
     return ok(listedConfigs(viewer).map(listItem))
   }),
 
