@@ -14581,6 +14581,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/source-papers",
+      "method": "GET",
+      "path": "/api/admin/source-papers",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/source-papers/:p",
+      "method": "GET",
+      "path": "/api/admin/source-papers/:id",
+      "api_id": "API-Q-23",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/source-papers.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/intake/batches/:p/extract",
       "method": "POST",
       "path": "/api/intake/batches/:id/extract",
