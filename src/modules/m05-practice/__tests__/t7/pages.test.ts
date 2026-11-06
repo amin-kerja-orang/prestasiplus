@@ -73,13 +73,14 @@ const card = (over: Record<string, unknown> = {}) => ({
   levelName: 'Tingkatan 5',
   parts: 1,
   marks: 10,
+  bestScore: null,
   ...over,
 })
 const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
   data: items,
   meta: {
     page: 1,
-    pageSize: 20,
+    pageSize: 12,
     totalItems: items.length,
     totalPages: 1,
     from: 1,
@@ -87,6 +88,7 @@ const listOf = (items: unknown[], meta: Record<string, unknown> = {}) => ({
     scope: null,
     track: null,
     subjectOptions: [{ id: 23, name: 'Perniagaan' }],
+    pendingSchemeCount: 0,
     ...meta,
   },
 })
@@ -121,7 +123,8 @@ describe('S10 StructuredListPage', () => {
     expect(t(w, 'card-author').text()).toBe('Guru Pakar')
     expect(t(w, 'card-footer').text()).toContain('2 soalan · Tingkatan 5')
     expect(t(w, 'card-start').attributes('href')).toBe('/latihan-berstruktur/4454/jawab')
-    expect(w.find('[data-testid=card-parts]').exists()).toBe(false)
+    expect(t(w, 'card-kbat-flag').text()).toBe('KBAT')
+    expect(t(w, 'card-parts').text()).toContain('1 bahagian · 10 markah')
     const subjectSelect = w.findAllComponents({ name: 'Select' })[0]
     expect(
       ((subjectSelect?.props('items') ?? []) as { label: string }[]).map((o) => o.label),
@@ -137,7 +140,12 @@ describe('S10 StructuredListPage', () => {
   it('shows the empty state and no pager', async () => {
     api.fetchStructured.mockResolvedValue(listOf([]))
     const w = await render(StructuredListPage, '/latihan-berstruktur?subject_id=99')
-    expect(t(w, 'structured-empty').text()).toContain('Tiada soalan berstruktur buat masa ini')
+    expect(t(w, 'structured-empty').text()).toContain('Tiada soalan berstruktur ditemui')
+    expect(t(w, 'structured-empty').text()).toContain(
+      'Tiada soalan sepadan dengan tapisan anda. Cuba tapisan lain.',
+    )
+    // R10: the old `subject_id` hand-over is still read.
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ subjectId: '99' })
     expect(w.find('[data-testid=structured-pager]').exists()).toBe(false)
   })
 
@@ -173,10 +181,59 @@ describe('S10 StructuredListPage', () => {
     await t(w, 'structured-filter').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toMatchObject({
-      subject_id: '',
+      subjectId: '',
       kbat_level: '4',
       scope: 'spm',
     })
+  })
+
+  it('has no KBAT flag for LOTS, the PRD KBAT labels, a 100-character search and 12 per page', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card({ kbatLevel: 2 })], { totalItems: 30 }))
+    const w = await render(StructuredListPage, '/latihan-berstruktur?q=aliran')
+    expect(w.find('[data-testid=card-kbat-flag]').exists()).toBe(false)
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ q: 'aliran' })
+    const kbat = w.findAllComponents({ name: 'Select' })[1]
+    expect(((kbat?.props('items') ?? []) as { label: string; value: string }[]).map((o) => o.label)).toEqual(
+      ['Semua', 'LOTS 1', 'LOTS 2', 'MOTS 3', 'HOTS 4', 'HOTS 5', 'HOTS 6'],
+    )
+    expect(w.get('[data-testid=filter-search]').attributes('maxlength')).toBe('100')
+    expect(w.findComponent({ name: 'Pagination' }).props('itemsPerPage')).toBe(12)
+  })
+
+  it('sends markable=1, shows the best score with "Cuba Lagi" and the pending-scheme notice', async () => {
+    api.fetchStructured.mockResolvedValue(
+      listOf(
+        [card({ bestScore: { awarded: 7, max: 10 } }), card({ id: 2 })],
+        { pendingSchemeCount: 3 },
+      ),
+    )
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(api.fetchStructured.mock.calls[0]?.[0]).toMatchObject({ markable: '1' })
+    const cards = w.findAll('[data-testid^=structured-card-]')
+    expect(cards[0]?.get('[data-testid=card-best]').text()).toBe('Skor terbaik: 7/10')
+    expect(cards[0]?.get('[data-testid=card-start]').text()).toBe('Cuba Lagi')
+    expect(cards[1]?.find('[data-testid=card-best]').exists()).toBe(false)
+    expect(cards[1]?.get('[data-testid=card-start]').text()).toBe('Mula')
+    expect(t(w, 'structured-pending').text()).toBe(
+      '3 soalan untuk pilihan ini masih menunggu skema pemarkahan...',
+    )
+  })
+
+  it('hides the pending notice when nothing is pending', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card()]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur')
+    expect(w.find('[data-testid=structured-pending]').exists()).toBe(false)
+  })
+
+  it('sends the search text as q and resets the page', async () => {
+    api.fetchStructured.mockResolvedValue(listOf([card()]))
+    const w = await render(StructuredListPage, '/latihan-berstruktur?page=3')
+    await w.get('[data-testid=filter-search]').setValue('  tenaga ')
+    await t(w, 'structured-filter').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toMatchObject({ q: 'tenaga' })
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    expect(api.fetchStructured.mock.calls.at(-1)?.[0]).toMatchObject({ q: 'tenaga', page: 1 })
   })
 })
 

@@ -62,19 +62,20 @@ describe('start request', () => {
     for (const m of LEGACY_PRACTICE_MODES) expect(PRACTICE_MODES).toContain(m)
     expect(PRACTICE_START_MODES).not.toContain('random')
     expect(StartSessionRequestSchema.safeParse({ mode: 'random', subjectCode: 'MATH', count: 5 }).success).toBe(false)
-    // past_year and ramalan stay startable until the Databank (S3-T07 and others) and Tracking A cards switch the m06-spm
-    // pages to `databank` / `tracking_a` (the card's grep condition); then they leave PRACTICE_START_MODES.
+    // past_year and ramalan stay startable for old clients (the Tracking A page still starts ramalan); S3-T07 part A moved the
+    // Databank page to `databank`, which is startable now.
     expect(PRACTICE_START_MODES).toContain('past_year')
     expect(PRACTICE_START_MODES).toContain('ramalan')
     expect(StartSessionRequestSchema.safeParse({ mode: 'past_year', subjectCode: 'SEJ', count: 5 }).success).toBe(true)
     expect(StartSessionRequestSchema.safeParse({ mode: 'ramalan', subjectCode: 'BM', year: 2025, setNo: 1 }).success).toBe(true)
-    // S5-T15: stored modes now, but not startable until the planner (S5-T03) has a case for them.
-    expect(PRACTICE_START_MODES).not.toContain('databank')
+    // S3-T07 part A: `databank` has a planner case and is startable; `tracking_a` is stored only until its planner case lands.
+    expect(PRACTICE_START_MODES).toContain('databank')
     expect(PRACTICE_START_MODES).not.toContain('tracking_a')
     expect(PRACTICE_MODES).toHaveLength(12)
     expect(PRACTICE_MODES).toContain('databank')
     expect(PRACTICE_MODES).toContain('tracking_a')
-    expect(StartSessionRequestSchema.safeParse({ mode: 'databank', subjectCode: 'SEJ' }).success).toBe(false)
+    expect(StartSessionRequestSchema.safeParse({ mode: 'databank', subjectCode: 'SEJ', count: 5 }).success).toBe(true)
+    expect(StartSessionRequestSchema.safeParse({ mode: 'tracking_a', subjectCode: 'SEJ' }).success).toBe(false)
     for (const bad of [
       { mode: 'pksk' },
       { mode: 'battle' },
@@ -110,6 +111,15 @@ describe('start response', () => {
       expect(StartSessionResponseSchema.safeParse(leaked).success).toBe(false)
     }
     expect(keysOf(start)).not.toEqual(expect.arrayContaining(['correctAnswer']))
+  })
+
+  it('referenceUrl is optional and nullable, http(s) only (FR-GUR-44a-9)', () => {
+    const withUrl = (referenceUrl: unknown) => StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, referenceUrl }] }).success
+    expect(withUrl('https://rujukan.example.org/bab-1')).toBe(true)
+    expect(withUrl('http://rujukan.example.org')).toBe(true)
+    expect(withUrl(null)).toBe(true)
+    expect(withUrl(undefined)).toBe(true)
+    for (const bad of ['javascript:alert(1)', 'ftp://x.org', '/relatif', 'https://u:p@x.org', 'https://x.org/a b', `https://x.org/${'a'.repeat(2048)}`]) expect(withUrl(bad), bad).toBe(false)
   })
 
   it('rejects a non-uuid session id and a bad direction', () => {

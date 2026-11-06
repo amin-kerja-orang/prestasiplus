@@ -141,6 +141,13 @@ export class OverviewCache {
     return this.slot<T>(scope).get(compute, () => this.papersFingerprint())
   }
 
+  private generationCount = 0
+
+  /** Number of invalidations so far: a reader that caches derived figures (the SPM pool counts) compares it to know a question event happened. */
+  get generation(): number {
+    return this.generationCount
+  }
+
   /** What the scope holds now, or null while it is cold. Never computes. */
   peek<T>(scope: string = OVERVIEW_SCOPE_ALL): Cached<T> | null {
     return this.slot<T>(scope).peek()
@@ -148,6 +155,7 @@ export class OverviewCache {
 
   /** Every scope becomes stale (the next read refreshes in the background). Cheap: no query. */
   invalidate(): void {
+    this.generationCount += 1
     for (const s of this.slots.values()) s.invalidate()
   }
 

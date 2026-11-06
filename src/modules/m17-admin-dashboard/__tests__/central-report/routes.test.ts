@@ -1,6 +1,6 @@
 /**
  * R1-ADM-M-07 (S6-T13): the central view routes sit behind `VITE_CENTRAL_REPORTS`. Off (default): no route is
- * registered (the global 404). On: 8 records `/admin/laporan-sekolah/{view}` for the admin only (PM-24 Headcount waits).
+ * registered (the global 404). On: 9 records `/admin/laporan-sekolah/{view}` for the admin only (PM-24 Headcount included).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -23,7 +23,7 @@ describe('central report routes', () => {
     expect(await load()).toEqual([])
   })
 
-  it('registers the eight views for the admin only when the flag is on', async () => {
+  it('registers the nine views for the admin only when the flag is on', async () => {
     vi.stubEnv('VITE_CENTRAL_REPORTS', 'on')
     vi.resetModules()
     const routes = await load()
@@ -34,6 +34,7 @@ describe('central report routes', () => {
       '/admin/laporan-sekolah/dskp-heatmap',
       '/admin/laporan-sekolah/amaran-awal',
       '/admin/laporan-sekolah/laporan-bulanan',
+      '/admin/laporan-sekolah/headcount',
       '/admin/laporan-sekolah/analisa-item',
       '/admin/laporan-sekolah/sekolah-bersaing',
     ])
@@ -41,7 +42,7 @@ describe('central report routes', () => {
       expect(r.meta).toMatchObject({ roles: ['admin'], access: 'auth', layout: 'admin', module: 'M17' })
     }
     const withView = routes.filter((r) => r.props !== undefined)
-    expect(withView).toHaveLength(7)
+    expect(withView).toHaveLength(8)
     for (const r of withView) {
       expect((r.props as { view: string }).view).toBe(String(r.path).split('/').pop())
     }
@@ -49,6 +50,6 @@ describe('central report routes', () => {
     const board = routes.find((r) => r.path === '/admin/laporan-sekolah/sekolah-bersaing')
     expect(board?.redirect).toBe('/sekolah-bersaing')
     expect(board?.component).toBeUndefined()
-    expect(new Set(routes.map((r) => r.name)).size).toBe(8)
+    expect(new Set(routes.map((r) => r.name)).size).toBe(9)
   })
 })

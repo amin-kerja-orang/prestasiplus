@@ -191,7 +191,7 @@ describe('no answer key leaves the server before submit', () => {
 })
 
 describe('Latihan check cap (NFR-05)', () => {
-  it('locks a question after three checks; later payloads cannot change the answer', async () => {
+  it('locks a question after three answer-changing checks (FR-MUR-13-6); later payloads cannot change the answer', async () => {
     const { server } = make()
     const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'latihan')
     const q = (await server.getAttemptView(USER, attemptId)).questions[0]!.id
@@ -200,13 +200,14 @@ describe('Latihan check cap (NFR-05)', () => {
       changes: [{ partId: q, answer: { choice }, rev, savedAt: 1 }],
     })
     for (let i = 1; i <= MAX_CHECKS_PER_QUESTION; i++) {
-      const r = await server.checkQuestion(USER, attemptId, q, save(`${q}-wrong`, i))
+      const r = await server.checkQuestion(USER, attemptId, q, save(`${q}-wrong${i}`, i))
       expect(r.awarded).toBe(0)
+      expect(r.checksUsed).toBe(i)
     }
     await server.saveAnswers(USER, attemptId, save(right, 9))
     const fourth = await server.checkQuestion(USER, attemptId, q, save(right, 10))
     expect(fourth.awarded).toBe(0)
     expect(fourth.parts[0]!.scheme.correctOption).toBe(right)
-    expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe(`${q}-wrong`)
+    expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe(`${q}-wrong${MAX_CHECKS_PER_QUESTION}`)
   })
 })

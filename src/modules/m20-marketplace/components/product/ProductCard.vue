@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsCluster, DsText } from '@/ds'
 
 import type { ProductCard } from '../../api'
 import { MARKETPLACE_COPY, formatPrice, shippingKindOf, type ShippingKind } from './copy'
@@ -118,6 +118,10 @@ const shipping = computed(() => SHIPPING_ICONS[shippingKindOf(props.product.ship
           />
           <span class="min-w-0">{{ product.shippingLine }}</span>
         </p>
+        <DsCluster v-if="variant === 'full'" gap="2xs" align="start" :wrap="false" data-testid="product-card-contact">
+          <UIcon name="i-ph-whatsapp-logo-duotone" class="size-4 shrink-0" aria-hidden="true" />
+          <DsText variant="caption" as="span">{{ MARKETPLACE_COPY.contactWhatsapp }}</DsText>
+        </DsCluster>
       </div>
     </RouterLink>
   </UCard>

@@ -59,7 +59,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
-      ['PM-03', 'Monitoring', '/guru/monitoring'],
+      ['PM-03', 'Monitoring', '/admin/monitoring'],
       ['PM-04', 'Analitik'],
       ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
       ['PM-06', 'Tahap 1: Reaksi', '/admin/kirkpatrick/reaction', K],
@@ -94,7 +94,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['BS-01', 'Bank Soalan', '/admin/questions'],
       ['BS-02', 'Import & Semakan', '/admin/spm/soalan/ekstrak'], // V2 I1: the batch list (same screen as KS-14 Senarai Ekstrak)
-      ['BS-03', 'Sumber Kertas'],
+      ['BS-03', 'Sumber Kertas', '/admin/source-papers'],
       ['BS-04', 'Kualiti Soalan', '/admin/questions/quality'],
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],
       ['BS-06', 'Soalan PKSK', '/admin/pksk/questions'],
@@ -118,7 +118,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KS-04', 'Tracking A'],
       ['KS-05', 'Subjektif'],
       ['KS-06', 'Bijak SPM (Simulasi)'],
-      ['KS-07', 'Kertas Subjektif'],
+      ['KS-07', 'Kertas Subjektif', '/admin/kertas-subjektif'], // PRD30 3.3 KEEP (build), R1-ADM-Q-18 (S3-T06)
       ['KS-08', 'Kontrak Simulasi', '/admin/spm/kontrak'], // V2 K1 / scope R1-21 P4
       ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
       ['KS-17', 'Set Builder', '/admin/studio/sets'],
@@ -177,8 +177,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PG-11', 'Tetapan Permainan', undefined, 'Permainan'],
       ['PG-12', 'Ranking Sekolah (Battle)', undefined, 'Permainan'],
       ['PG-13', 'Leaderboard (Battle)', undefined, 'Permainan'],
-      ['PG-14', 'Produk', undefined, 'Marketplace'],
-      ['PG-15', 'Penjual', undefined, 'Marketplace'],
+      ['PG-14', 'Produk', '/admin/marketplace/products', 'Marketplace'],
+      ['PG-15', 'Penjual', '/admin/marketplace/sellers', 'Marketplace'],
       ['PG-16', 'Penajaan'],
       ['PG-17', 'Anak Angkat'],
       ['PG-18', 'Permohonan Anak Angkat'],
@@ -206,7 +206,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Sistem',
     icon: 'gear',
     items: items([
-      ['SY-01', 'Tetapan'],
+      ['SY-01', 'Tetapan', '/admin/settings'],
       ['SY-02', 'Kawalan Ciri'],
       ['SY-03', 'Prestasi Sistem'],
       ['SY-04', 'Log Audit'],

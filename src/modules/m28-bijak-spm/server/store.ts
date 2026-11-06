@@ -31,11 +31,11 @@ import type {
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
 import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
-import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
+import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
-import { effectiveMarks, leavesOf, type Leaf } from '../domain/paper-model'
+import { effectiveMarks, leavesOf, SEMAK_KINDS, type Leaf } from '../domain/paper-model'
 import type { PastSittings, ReviewPart, SelfMarkOutcome } from '../domain/semakan'
 import type { BankFilter, DecisionAction, PaperPatch, QueueFilter, SectionPoolQuery } from '../domain/admin-types'
 import type {
@@ -49,8 +49,8 @@ import type {
   InProgressInfo,
   PaperCover,
   PaperDef,
-  PaperKind,
   PaperSummary,
+  PaperKind,
   PartResult,
   PartStatus,
   QuestionDef,
@@ -68,9 +68,10 @@ import type {
 } from '../domain/types'
 
 import { BijakError } from './errors'
+import { CHECK_BLANK, sameAnswers } from './semak'
 import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
-import type { BijakApi, SaveResult, SubmitResult } from './types'
+import type { BijakApi, ListedPaper, PaperSurface, SaveResult, SubmitResult } from './types'
 
 // Re-exported so existing imports from './store' keep working (the HTTP client imports the small
 // modules directly and never this one, which pulls the seed registry).
@@ -189,9 +190,12 @@ export class BijakServer implements BijakApi {
     return def.sections.every((s) => s.questionIds.length === 0) || def.sections.some((s) => s.questionIds.some((id) => !BANK.questions.has(id)))
   }
 
-  private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind } {
+  private resolvePaper(id: string, userId: number): PaperDef & { kind: PaperKind | 'subjektif' } {
     const fixed = PAPERS.find((p) => p.id === id)
     if (fixed) return { ...fixed, kind: 'pilihan' }
+    // S3-T06: a published Kertas Subjektif paper; a draft is not found (AC-MUR-13-20).
+    const subjektif = SUBJEKTIF_PAPERS.find((p) => p.id === id && p.published)
+    if (subjektif) return { ...subjektif, kind: 'subjektif' }
     const published = this.ops.publishedPaper(id)
     if (published) return { ...published, kind: 'pilihan' }
     const gen = this.state.generated[id]
@@ -222,7 +226,7 @@ export class BijakServer implements BijakApi {
       .sort((a, b) => b.startedAt - a.startedAt)[0]
   }
 
-  private summary(def: PaperDef & { kind: PaperKind }, userId: number): PaperSummary {
+  private summary(def: PaperDef & { kind: PaperKind | 'subjektif' }, userId: number): PaperSummary {
     const last = this.latestAttempt(userId, def.id)
     const submitted = Object.values(this.state.attempts)
       .filter((a) => a.userId === userId && a.paperId === def.id && a.result)
@@ -239,7 +243,7 @@ export class BijakServer implements BijakApi {
       durationMin: def.durationMin,
       questionCount: def.sections.reduce((n, s) => n + s.questionIds.length, 0),
       marks: this.paperMarks(def.sections),
-      kind: def.kind,
+      kind: def.kind === 'jana' ? 'jana' : 'pilihan',
       status: inProgress ? 'sedang' : submitted ? 'selesai' : 'belum',
       ...(submitted?.result
         ? { lastScore: { score: submitted.result.score, max: submitted.result.max } }
@@ -248,9 +252,16 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  async listPapers(userId: number): Promise<PaperSummary[]> {
+  async listPapers(userId: number, surface: PaperSurface = 'simulasi'): Promise<ListedPaper[]> {
     await this.tick()
     this.sweep()
+    if (surface === 'subjektif') {
+      return SUBJEKTIF_PAPERS.filter((p) => p.published).map((p) => ({
+        ...this.summary({ ...p, kind: 'subjektif' }, userId),
+        surface: 'subjektif' as const,
+        examBoard: p.examBoard,
+      }))
+    }
     return [...PAPERS, ...this.ops.publishedPapers()].map((p) =>
       this.summary({ ...p, kind: 'pilihan' }, userId),
     )
@@ -399,14 +410,17 @@ export class BijakServer implements BijakApi {
   async startAttempt(
     userId: number,
     paperId: string,
-    mode: AttemptMode,
+    requested: AttemptMode,
     opts: { restart?: boolean; fresh?: boolean } = {},
   ): Promise<{ attemptId: string }> {
     await this.tick()
+    let mode = requested
     const def = this.resolvePaper(paperId, userId)
     const open = Object.values(this.state.attempts).filter(
       (a) => a.userId === userId && a.paperId === paperId && a.status === 'in_progress',
     )
+    // DM-83: a Kertas Subjektif sitting is always latihan and untimed, whatever mode is sent.
+    if (def.kind === 'subjektif') mode = 'latihan'
     if (open.length && !opts.restart && !opts.fresh) {
       const keep = open.sort((a, b) => b.startedAt - a.startedAt)[0]!
       return { attemptId: keep.id }
@@ -504,7 +518,13 @@ export class BijakServer implements BijakApi {
     void _s
     const checks =
       a.status === 'in_progress' && a.mode === 'latihan'
-        ? a.checked.map((qid) => this.gradeQuestion(a, qid, numberOf.get(qid)!, true))
+        ? // An edited answer was not checked yet: no verdict until its own "Semak" (the API's `shownChecks`).
+          a.checked
+            .filter((qid) => {
+              const last = a.checkAnswers?.[qid]
+              return !last || [...this.semakParts(qid)].every((id) => sameAnswers(last[id], a.answers[id]?.answer))
+            })
+            .map((qid) => this.semakResult(a, qid, numberOf.get(qid)!))
         : []
     return { attempt: meta, sections, questions, groups, checks }
   }
@@ -544,16 +564,13 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  /** Latihan: after the check cap the answer of a question is final. */
+  /** Latihan: after the check cap the answers of the checked parts are final. */
   private lockedParts(a: Attempt): Set<string> {
     const ids = new Set<string>()
     if (a.mode !== 'latihan') return ids
     for (const [qid, n] of Object.entries(a.checkCounts ?? {})) {
-      if (n < MAX_CHECKS_PER_QUESTION) continue
-      const q = BANK.questions.get(qid)
-      if (!q) continue
-      if (q.mcq) ids.add(q.id)
-      else for (const l of leavesOf(q.parts ?? [])) ids.add(l.id)
+      if (n < MAX_CHECKS_PER_QUESTION || !BANK.questions.has(qid)) continue
+      for (const id of this.semakParts(qid)) ids.add(id)
     }
     return ids
   }
@@ -765,6 +782,7 @@ export class BijakServer implements BijakApi {
     userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme = false,
   ): Promise<SelfMarkOutcome> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
@@ -802,7 +820,7 @@ export class BijakServer implements BijakApi {
       attemptMax: a.result.max,
       provisional: a.result.provisional,
       pendingReview: a.result.pendingReview,
-      result: a.result,
+      result: this.presented(a, a.result, withScheme),
     }
   }
 
@@ -911,35 +929,87 @@ export class BijakServer implements BijakApi {
   ): Promise<QuestionResult> {
     await this.tick()
     const a = this.attemptOf(userId, attemptId)
-    if (a.mode !== 'latihan')
+    if (a.mode !== 'latihan' || (a.paperKind as string) === 'subjektif')
       throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
     if (a.status !== 'in_progress') throw new BijakError('bad_request', 'Percubaan sudah tamat')
     if (!a.sections.some((s) => s.questionIds.includes(questionId)))
       throw new BijakError('not_found', 'Soalan tidak ditemui')
+    if (this.semakParts(questionId).size === 0)
+      throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
+    const parts = this.semakParts(questionId)
     const counts = (a.checkCounts ??= {})
     const used = counts[questionId] ?? 0
-    // After the cap the answer is shown and no further payload can change it.
-    if (used < MAX_CHECKS_PER_QUESTION) {
-      if (payload) {
-        this.merge(a, payload.changes)
-        this.applyMeta(a, payload)
-      }
-      counts[questionId] = used + 1
+    // The API merges the payload and then refuses a blank check inside one transaction, so a refusal saves nothing.
+    const before = jsonClone({ answers: a.answers, flags: a.flags, picks: a.picks, position: a.position })
+    // After the cap the answer is shown and no further payload can change it (nor the count).
+    if (used < MAX_CHECKS_PER_QUESTION && payload) {
+      this.merge(a, payload.changes)
+      this.applyMeta(a, payload)
     }
+    const kinds = this.semakKinds(questionId)
+    if ([...parts].every((id) => isBlank(a.answers[id]?.answer, kinds.get(id)))) {
+      Object.assign(a, before)
+      throw new BijakError('bad_request', CHECK_BLANK)
+    }
+    // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+    const last = used > 0 ? a.checkAnswers?.[questionId] : undefined
+    const changed = !last || [...parts].some((id) => !sameAnswers(last[id], a.answers[id]?.answer))
+    if (used < MAX_CHECKS_PER_QUESTION && changed) counts[questionId] = used + 1
+    ;(a.checkAnswers ??= {})[questionId] = Object.fromEntries(
+      [...parts].map((id) => [id, jsonClone(a.answers[id]?.answer ?? {})]),
+    )
     if (!a.checked.includes(questionId)) a.checked.push(questionId)
     this.persist()
     const number = a.sections.flatMap((s) => s.questionIds).indexOf(questionId) + 1
-    return this.gradeQuestion(a, questionId, number, true)
+    return { ...this.semakResult(a, questionId, number), checksUsed: counts[questionId] ?? used }
   }
 
-  async getResult(userId: number, attemptId: string): Promise<ResultView> {
+  /** The kind each "Semak" part is blank-checked with: `mcq` for an objective question, the part kind otherwise. */
+  private semakKinds(qid: string): Map<string, Leaf['kind'] | 'mcq'> {
+    const q = BANK.questions.get(qid)!
+    if (q.mcq) return new Map([[qid, 'mcq']])
+    return new Map(leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => [l.id, l.kind]))
+  }
+
+  /** The parts "Semak" reveals (46 section 3.5). */
+  private semakParts(qid: string): ReadonlySet<string> {
+    const q = BANK.questions.get(qid)!
+    return new Set(q.mcq ? [qid] : leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => l.id))
+  }
+
+  private semakResult(a: Attempt, qid: string, number: number): QuestionResult {
+    const graded = this.gradeQuestion(a, qid, number, true)
+    const parts = graded.parts.filter((p) => this.semakParts(qid).has(p.partId))
+    return { ...graded, parts, marks: parts.reduce((n, p) => n + p.marks, 0), awarded: parts.reduce((n, p) => n + p.awarded, 0) }
+  }
+
+  /**
+   * AC-MUR-13-21: a Kertas Subjektif result carries no scheme, scheme points or suggestion unless `withScheme`
+   * (API `?scheme=1`). Marks, status and `selfMarkable` stay. Other kinds always carry their scheme after submit.
+   */
+  private presented(a: Attempt, result: AttemptResult, withScheme: boolean): AttemptResult {
+    if (withScheme || (a.paperKind as string) !== 'subjektif') return result
+    return {
+      ...result,
+      questions: result.questions.map((q) => ({
+        ...q,
+        parts: q.parts.map((p) => {
+          const rest = { ...p, points: [], scheme: { marks: p.marks } } as ReviewPart
+          delete rest.suggestion
+          return rest
+        }),
+      })),
+    }
+  }
+
+  async getResult(userId: number, attemptId: string, withScheme = false): Promise<ResultView> {
     await this.tick()
     this.sweep()
     const a = this.attemptOf(userId, attemptId)
     if (!a.result) throw new BijakError('not_submitted', 'Skema hanya didedahkan selepas Hantar')
     const paper = this.buildView(a)
     paper.checks = []
-    return { attempt: paper.attempt, result: a.result, paper }
+    return { attempt: paper.attempt, result: this.presented(a, a.result, withScheme), paper }
   }
 
   /* --------------------------------------------------------------------------- history */
@@ -1006,6 +1076,14 @@ export class BijakServer implements BijakApi {
       marks: paperMarks(b.questions),
       updatedAt: b.updatedAt,
     }
+  }
+
+  /** A mock batch has no `batchStatus`, so the page never offers `Batalkan`; removing it is enough here. */
+  async cancelIntakeBatch(id: string): Promise<void> {
+    await this.tick()
+    const store = this.intakeStore()
+    this.state.intake = Object.fromEntries(Object.entries(store).filter(([key]) => key !== id))
+    this.persist()
   }
 
   async listIntakeBatches(
@@ -1272,6 +1350,10 @@ export class BijakServer implements BijakApi {
   }
   sectionPool(id: string, sectionId: string, query?: SectionPoolQuery) {
     return this.ops.sectionPool(id, sectionId, query)
+  }
+
+  bankUnits(subject: SubjectCode, kertas: number) {
+    return this.ops.bankUnits(subject, kertas)
   }
 
   previewQuestions(ids: string[]) {

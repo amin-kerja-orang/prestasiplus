@@ -188,7 +188,7 @@ void start()
               data-testid="kuiz-score"
             />
             <DsStatTile
-              :value="`${percent(score, shownTotal)}%`"
+              :value="`${percent(score, result?.answered ?? 0)}%`"
               :unit="kuizCopy.accuracy"
               data-testid="kuiz-accuracy"
             />
