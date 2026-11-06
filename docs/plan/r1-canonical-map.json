@@ -10844,8 +10844,8 @@
       "status": "canonical",
       "sector": "S5",
       "file": "apps/api/prisma/schema/pksk.prisma",
-      "note": "S5-T13 rows: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
-      "approved_by_card": "S5-T13"
+      "note": "S5-T13 rows, DM-90: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-90)"
     },
     {
       "name": "PracticeSession",

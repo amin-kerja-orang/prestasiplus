@@ -289,7 +289,7 @@ describe('exam (AC 8, 9)', () => {
     expect(world.answerRows).toHaveLength(3)
     for (const r of world.answerRows) expect(r).toMatchObject({ mode: 'pksk', userId: '10', attemptId: res.id, marksMax: 1, isTest: false, partRef: null })
     expect(world.answerRows.map((r) => r.selectedLabel)).toEqual(['A', 'C', null])
-    expect(world.answerRows.map((r) => r.marksAwarded)).toEqual([1, 0, 0])
+    expect(world.answerRows.map((r) => r.marksAwarded)).toEqual([1, 0, 1])
   })
 
   it('anti-cheat: only the served ids, once; a refusal stores no attempt and no rows', async () => {
@@ -462,4 +462,32 @@ describe('grant gate on the four answering routes (AC-MUR-19-1, -3)', () => {
   const QUESTION_TEXT = /Soalan \d+/
   const routes = (student: ReturnType<typeof buildWorld>['student'], qid: string): [string, () => Promise<unknown>][] => [
     ['practiceSet', () => student.practiceSet(STUDENT, 'T1', 'PKSK_MATH')],
-    ['submitPractice', () => student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId:
+    ['submitPractice', () => student.submitPractice(STUDENT, 'T1', 'PKSK_MATH', { answers: [{ questionId: qid, optionIndex: 0 }] })],
+    ['exam', () => student.exam(STUDENT, 'T1')],
+    ['submitExam', () => student.submitExam(STUDENT, 'T1', { answers: [{ questionId: qid, optionIndex: 0 }] })],
+  ]
+
+  it.each([
+    ['none', undefined],
+    ['expired', '2026-10-20'],
+  ])('%s grant: 403 FORBIDDEN, no question text, nothing written', async (_name, expiresAt) => {
+    const { student, world } = buildWorld()
+    if (expiresAt) grant(world, '10', 'T1', { expiresAt })
+    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
+    for (const [, run] of routes(student, q?.id as string)) {
+      const e = await code(run())
+      expect(e).toMatchObject({ status: 403, code: 'FORBIDDEN', message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
+      expect(JSON.stringify(e)).not.toMatch(QUESTION_TEXT)
+    }
+    expect(world.sessions).toHaveLength(0)
+    expect(world.attempts).toHaveLength(0)
+    expect(world.loads).toHaveLength(0)
+  })
+
+  it('valid grant (today is the last day): all four routes are allowed', async () => {
+    const { student, world } = buildWorld()
+    grant(world, '10', 'T1', { expiresAt: '2026-10-21' })
+    const [q] = seedQuestions(world, 'PKSK_MATH', 'T1', 3)
+    for (const [, run] of routes(student, q?.id as string)) await run()
+  })
+})

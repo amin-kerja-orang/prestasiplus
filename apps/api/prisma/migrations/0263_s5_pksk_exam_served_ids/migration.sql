@@ -1,4 +1,4 @@
--- 0263_s5_pksk_exam_served_ids (S5-T13 part rows; number 0263 assigned by the team-dd lead because the S5 range 0180-0189 is full; DM id pending from the lead).
+-- 0263_s5_pksk_exam_served_ids (S5-T13 part rows; number 0263 assigned by the team-dd lead because the S5 range 0180-0189 is full; DM-90, the counterpart of DM-89 pksk_practice_loads).
 -- The PKSK exam is served before any attempt exists, so the served question ids need a row of their own: one open exam set per
 -- user and level (the same shape as pksk_practice_loads). A submit takes (deletes) the row, so it is accepted only for that
 -- served set and only once (anti-cheat: no key or explanation for guessed ids).
