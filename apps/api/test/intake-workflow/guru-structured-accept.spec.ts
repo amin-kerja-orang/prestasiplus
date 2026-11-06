@@ -121,6 +121,12 @@ describe('admin Terima of a structured teacher submission with a stimulus image'
 
   it('Terima asks only what a Draf needs (S1-T04): 200 and a Draf with no Unit or SP; Terbitkan is refused until they are set', async () => {
     const item = await submit(null, 'Rajah menunjukkan sebuah segi tiga.', false)
+    // The seed has DSKP nodes for MATH T4, so the form sent an SP and Terima would take the unit from it (44-F1). Clear the SP on the
+    // item (as an item with no tag is stored) so this case is a submission with no Unit and no SP.
+    await t.db.query(
+      `update intake_items set payload = jsonb_set(jsonb_set(payload, '{tag,sp}', '[]'::jsonb), '{guru,spIds}', '[]'::jsonb), low_fields = array(select distinct unnest(low_fields || array['tag.sp'])) where id = $1`,
+      [item],
+    )
     // the reviewer confirms the low-confidence tag fields as they are (empty); Draf -> Semakan asks for that, not for a value
     const stored = (await rows<{ low: string[] }>(`select low_fields low from intake_items where id = $1`, [item]))[0]!
     const confirm = await patch(admin, `/intake/items/${item}`, { confirmed: stored.low })
@@ -129,7 +135,7 @@ describe('admin Terima of a structured teacher submission with a stimulus image'
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const questionId = (await rows<{ id: string }>(`select question_id::text id from intake_items where id = $1`, [item]))[0]!.id
     const latest = (await rows<{ status: string; unit: string | null }>(
-      `select q.status, v.unit_node_id::text unit from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
+      `select v.status, v.unit_node_id::text unit from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1`,
       [questionId],
     ))[0]!
     expect(latest).toMatchObject({ status: 'draft', unit: null })
