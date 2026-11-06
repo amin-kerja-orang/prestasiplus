@@ -33,7 +33,7 @@ export const invalidAnswer = (field?: string): ApiError =>
     ...(field ? { fields: { [field]: PRACTICE_MESSAGES.invalidAnswer } } : {}),
   })
 
-/** 422 ERR-PRAC-07 "Mod tidak sah." on `mode`: a start request with a legacy (`random`, `past_year`, `ramalan`) or non-startable mode (S5-T03). */
+/** 422 ERR-PRAC-07 "Mod tidak sah." on `mode`: a start request with a legacy (`random`, `past_year`, `ramalan`) or non-startable (`pksk`, `tracking_a`) mode (S5-T03). */
 export const invalidStartMode = (): ApiError =>
   ApiError.of('VALIDATION_ERROR', {
     message: PRACTICE_MESSAGES.invalidModes,

@@ -342,8 +342,8 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     await expect(page.getByTestId('referral-hero')).toContainText(
       'Jemput kawan anda ke PRESTASIPLUS — dua-dua dapat ganjaran!',
     )
-    await expect(page.getByTestId('reward-you')).toHaveText('50')
-    await expect(page.getByTestId('reward-friend')).toHaveText('25')
+    await expect(page.getByTestId('reward-you')).toHaveText('100')
+    await expect(page.getByTestId('reward-friend')).toHaveText('0')
     await expect(page.getByTestId('referral-tiles')).toContainText('Syiling untuk ANDA')
     await expect(page.getByTestId('referral-tiles')).toContainText('Syiling untuk KAWAN')
     await expect(page.getByTestId('referral-stats')).toContainText('📊 Statistik Rujukan')
@@ -355,7 +355,7 @@ test.describe('M14 S16 /gamification/referral', MODULE, () => {
     const waHref = (await page.getByTestId('referral-whatsapp').getAttribute('href')) ?? ''
     expect(waHref.startsWith('https://wa.me/?text=')).toBe(true)
     expect(decodeURIComponent(waHref)).toBe(
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     )
     await expect(page.getByTestId('referral-whatsapp')).toHaveAttribute('target', '_blank')
     const tgHref = (await page.getByTestId('referral-telegram').getAttribute('href')) ?? ''

@@ -94,10 +94,23 @@ onMounted(() => window.addEventListener('beforeunload', warnOnUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnOnUnload))
 onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : true))
 
-async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
-  const out = await server.selfMark(user.value, attemptId.value, body)
-  refreshed.value = out.result
+/**
+ * The save of one sitting (S3-T06, autosave): bound to the attempt it was rendered for, so a change flushed when a control
+ * unmounts still reaches that attempt; saves run one after another page-wide, so every response holds all earlier marks
+ * and the last one is the newest state; a response for a sitting the page no longer shows is not applied.
+ */
+let saveChain: Promise<unknown> = Promise.resolve()
+function saveFor(id: string): (body: { partId: string; mark: number; band?: string }) => Promise<void> {
+  return (body) => {
+    const run = saveChain.then(async () => {
+      const out = await server.selfMark(user.value, id, body)
+      if (id === attemptId.value) refreshed.value = out.result
+    })
+    saveChain = run.catch(() => undefined)
+    return run
+  }
 }
+const saveSelfMark = computed(() => saveFor(attemptId.value))
 const percent = computed(() => result.value?.percent ?? 0)
 /** OPT-STATUS-ATTEMPT: the status chip of the Semakan (46 section 3.7). */
 const STATUS_LABEL: Record<string, string> = {
