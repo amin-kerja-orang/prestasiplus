@@ -10632,6 +10632,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           }
         },
         "required": [
@@ -10817,6 +10831,20 @@
             "maxLength": 64,
             "description": "The in-progress attempt of the caller; present only when status is sedang.",
             "example": "1042"
+          },
+          "surface": {
+            "type": "string",
+            "enum": [
+              "simulasi",
+              "subjektif"
+            ],
+            "description": "S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list."
+          },
+          "examBoard": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.",
+            "example": "selangor"
           },
           "instructions": {
             "type": "array",
@@ -12689,7 +12717,74 @@
             "$ref": "#/components/schemas/BijakAttemptPartAnswer"
           },
           "scheme": {
-            "$ref": "#/components/schemas/BijakAttemptScheme"
+            "type": "object",
+            "properties": {
+              "marks": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correctOption": {
+                "type": "string",
+                "description": "MCQ: the correct option id."
+              },
+              "correctLetter": {
+                "type": "string",
+                "description": "match_letter: the correct letter."
+              },
+              "acceptedText": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "accepted: the accepted answers as text."
+              },
+              "rubric": {
+                "type": "object",
+                "properties": {
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BijakAttemptRubricBand"
+                    }
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "finalDisplay": {
+                "type": "string",
+                "description": "LaTeX of the model final answer."
+              },
+              "unit": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "marks"
+            ],
+            "additionalProperties": false,
+            "description": "The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too."
           }
         },
         "required": [
@@ -12701,8 +12796,7 @@
           "status",
           "confidence",
           "points",
-          "answer",
-          "scheme"
+          "answer"
         ],
         "additionalProperties": false
       },
@@ -24937,13 +25031,12 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 100
           },
           "type": {
             "type": "string",
             "enum": [
               "friendly",
-              "tournament",
               "league"
             ]
           },
@@ -24956,17 +25049,7 @@
               "national"
             ]
           },
-          "subject_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "minLength": 1,
-            "maxLength": 64,
-            "description": "Existing subject; unknown 422 \"Mata pelajaran tidak sah.\" (subject_id).",
-            "example": "1042"
-          },
-          "game_mode": {
+          "mode": {
             "type": "string",
             "enum": [
               "mixed",
@@ -24974,26 +25057,7 @@
               "multiplayer"
             ]
           },
-          "class_levels": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "D1",
-                "D2",
-                "D3",
-                "D4",
-                "D5",
-                "D6",
-                "T1",
-                "T2",
-                "T3",
-                "T4",
-                "T5"
-              ]
-            }
-          },
-          "scoring_method": {
+          "scoring": {
             "type": "string",
             "enum": [
               "total_score",
@@ -25001,55 +25065,69 @@
               "wins"
             ]
           },
-          "start_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "end_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "max_schools": {
-            "type": [
-              "integer",
-              "null"
-            ],
+          "schoolLimit": {
+            "type": "integer",
             "minimum": 2,
             "maximum": 500
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Existing subject; unknown 422 \"Mata pelajaran tidak sah.\" (subjectId).",
+            "example": "1042"
+          },
+          "levelIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Tingkatan 1..5 = T1..T5; at least one."
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
           }
         },
         "required": [
           "name",
           "type",
           "scope",
-          "game_mode",
-          "scoring_method",
-          "start_date",
-          "end_date"
+          "mode",
+          "scoring",
+          "schoolLimit",
+          "levelIds",
+          "start",
+          "end"
         ]
       },
-      "GamesLeagueIdResult": {
+      "GamesLeagueEnrolRequest": {
         "type": "object",
         "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
+          "schoolIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 500
           }
         },
         "required": [
-          "id"
+          "schoolIds"
         ],
         "additionalProperties": false
-      },
-      "GamesLeagueJoinRequest": {
-        "type": "object",
-        "properties": {
-          "invite_code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "invite_code"
-        ]
       },
       "GamesLeagueStandingRow": {
         "type": "object",
@@ -25140,19 +25218,6 @@
             "items": {
               "$ref": "#/components/schemas/GamesLeagueClassLevel"
             }
-          },
-          "inviteCode": {
-            "type": "string",
-            "pattern": "^[A-Z0-9]{8}$",
-            "description": "Visible to non-members, as live."
-          },
-          "shareUrl": {
-            "type": "string",
-            "description": "WhatsApp share link (https://wa.me/?text=...)."
-          },
-          "canJoin": {
-            "type": "boolean",
-            "description": "Not ended, the caller school is not in, and not full."
           },
           "schools": {
             "type": "array",
@@ -25259,9 +25324,6 @@
           "scoringLabel",
           "creatorName",
           "classLevels",
-          "inviteCode",
-          "shareUrl",
-          "canJoin",
           "schools",
           "standings"
         ],
@@ -53099,16 +53161,20 @@
           "critical",
           "high",
           "medium",
-          "low"
-        ]
+          "low",
+          "none"
+        ],
+        "description": "'none' = Belum Bermula (no answers); only the class analytics rows carry it."
       },
       "PerformanceTrend": {
         "type": "string",
         "enum": [
           "up",
           "down",
-          "stable"
-        ]
+          "stable",
+          "new"
+        ],
+        "description": "'new' = answers only in the last 7 days; only the class analytics rows carry it."
       },
       "PerformanceUserRef": {
         "type": "object",
@@ -54537,7 +54603,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -54546,7 +54615,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -54660,13 +54732,20 @@
                               "lemah",
                               "belum"
                             ]
+                          },
+                          "strand": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
                           "spId",
                           "code",
                           "title",
-                          "status"
+                          "status",
+                          "strand"
                         ]
                       }
                     }
@@ -54807,7 +54886,10 @@
                 "type": "integer"
               },
               "accuracy": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "atRisk": {
                 "type": "integer"
@@ -54835,7 +54917,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -54844,7 +54929,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -54860,6 +54948,12 @@
                 },
                 "riskLevel": {
                   "$ref": "#/components/schemas/PerformanceRiskLevel"
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": [
@@ -54869,7 +54963,8 @@
                 "answered",
                 "trend",
                 "projection",
-                "riskLevel"
+                "riskLevel",
+                "classes"
               ]
             }
           }
@@ -55837,6 +55932,110 @@
           "createdAt"
         ]
       },
+      "PerformanceTimelineEntry": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "subjectName": {
+                "type": "string"
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "subjectName",
+              "correct",
+              "answered",
+              "accuracy"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "badge"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "name",
+              "icon"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "post"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "post": {
+                "$ref": "#/components/schemas/PerformanceTimelinePost"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "post"
+            ]
+          }
+        ]
+      },
       "PerformanceTimeline": {
         "type": "object",
         "properties": {
@@ -55848,11 +56047,32 @@
             "items": {
               "$ref": "#/components/schemas/PerformanceTimelinePost"
             }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelineEntry"
+            }
           }
         },
         "required": [
           "profileUrl",
-          "posts"
+          "posts",
+          "entries"
+        ]
+      },
+      "PerformanceTimelineDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
         ]
       },
       "PerformanceTimelineCreateRequest": {
@@ -65564,7 +65784,6 @@
       "PracticeStartMode": {
         "type": "string",
         "enum": [
-          "random",
           "chapter",
           "revision",
           "past_year",
@@ -93520,7 +93739,24 @@
           "bijak-papers"
         ],
         "summary": "Kertas Pilihan: published curated papers with the caller progress",
-        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "description": "Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. `surface` (DM-23, S3-T06) defaults to `simulasi` (Kertas Pilihan, unchanged); `surface=subjektif` lists the published Kertas Subjektif papers (rows carry `surface`, `examBoard`, the typed Jumlah Markah as `marks`, and the code `K{kertas}` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "simulasi",
+                "subjektif"
+              ],
+              "default": "simulasi",
+              "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23)."
+            },
+            "required": false,
+            "description": "simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23).",
+            "name": "surface",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Published papers with the caller progress.",
@@ -94623,7 +94859,7 @@
           "bijak-attempts"
         ],
         "summary": "The result page with full schemes (after submit only)",
-        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
+        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. A Kertas Subjektif attempt (paperKind subjektif, S3-T06) carries no scheme text unless read with `?scheme=1` (\"Tunjuk Skema Pemarkahan\", AC-MUR-13-21): each part then has no `scheme`, no `suggestion` and empty `points`. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
         "parameters": [
           {
             "schema": {
@@ -94637,6 +94873,19 @@
             "description": "Attempt id (opaque; a UUID on the backend).",
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ],
+              "description": "Kertas Subjektif only: include the scheme."
+            },
+            "required": false,
+            "description": "Kertas Subjektif only: include the scheme.",
+            "name": "scheme",
+            "in": "query"
           }
         ],
         "responses": {
@@ -94893,7 +95142,7 @@
           "bijak-attempts"
         ],
         "summary": "Semakan: record the pupil own mark (\"Markah kendiri\") for one part",
-        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt whose scheme is points or rubric (selfMarkable in the result); another part gives 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\" or \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
+        "description": "R1-B12 (V2 selfMark). Only after the attempt is closed (submitted or auto_submitted); before that 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". The part must be a leaf part of this attempt (else 422 fields.partId \"Bahagian ini tiada dalam kertas ini.\") whose scheme is points or rubric, or that the grader left belum_dimarkah (selfMarkable in the result; 46 section 3.4, K20); an automatically marked part gives 409 CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\". The response result of a Kertas Subjektif attempt carries no scheme text unless the request has `?scheme=1` (the pupil already pressed \"Tunjuk Skema Pemarkahan\"). The mark is clamped to 0..part marks (never rejected for being too high or negative); for a rubric part a band may be sent and the mark is then kept inside the band range (unknown band: 422 fields.band \"Band tidak sah untuk bahagian ini.\"; band on a points part: \"Bahagian ini tidak menggunakan band.\"). No lock: the mark can be changed again. Idempotent: the same body gives the same stored state. The score, the Bahagian totals (best-N choose-N re-ranked), provisional and pendingReview are recomputed and the performance aggregate is updated; the wallet reward given at submit is not repeated. The stored mark replaces the automatic mark of that part and is flagged selfMarked in GET /result. Student role, attempt owner only. A per-Bahagian mark (V2 semak-bahagian) does not exist: no Bahagian of a R1 paper is a single-mark document section (OQ-2).",
         "parameters": [
           {
             "schema": {
@@ -94980,7 +95229,7 @@
             }
           },
           "409": {
-            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed).",
+            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt is not closed), or CONFLICT \"Bahagian ini ditanda automatik; markah kendiri tidak diperlukan.\" (an automatically marked part).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108328,7 +108577,7 @@
           "games"
         ],
         "summary": "Create a league (M16-47)",
-        "description": "Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.",
+        "description": "Admin Pusat only (API-ADM-25). The league is upcoming with an 8-character invite code (A-Z0-9) kept internally; no school joins on create (enrol with `/leagues/{id}/schools`). Body `{ name, type (friendly|league), scope, mode, scoring, schoolLimit 2..500, subjectId?, levelIds 1..5, start, end }`. Success is 201 with the league detail.",
         "parameters": [
           {
             "schema": {
@@ -108354,14 +108603,14 @@
         },
         "responses": {
           "201": {
-            "description": "League created.",
+            "description": "League created: the league detail (as GET /leagues/{id}).",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                      "$ref": "#/components/schemas/GamesLeagueDetail"
                     }
                   },
                   "required": [
@@ -108382,7 +108631,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108392,7 +108641,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR, top-level message = the first field message: \"Sila lengkapkan semua medan wajib.\" (name, type, scope, game_mode, scoring_method, start_date, end_date), \"Tarikh tamat mesti selepas tarikh mula.\" (end_date), \"Had sekolah mesti antara 2 dan 500.\" (max_schools), \"Mata pelajaran tidak sah.\" (subject_id), \"Tingkatan tidak sah.\" (class_levels).",
+            "description": "VALIDATION_ERROR, `fields` keyed by the body names, top-level message = the first failing field in form order (name, type, scope, mode, scoring, schoolLimit, subjectId, levelIds, start, end): \"Sila lengkapkan semua medan wajib.\" (missing), \"Format tidak sah.\" (type, scope, mode, scoring), \"Had sekolah mesti antara 2 dan 500.\" (schoolLimit), \"Mata pelajaran tidak sah.\" (subjectId), \"Tingkatan tidak sah.\" (levelIds), \"Tarikh tamat mesti selepas tarikh mula.\" (end).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108428,9 +108677,83 @@
         "tags": [
           "games"
         ],
-        "summary": "Join a league by invite code (M16-48)",
-        "description": "The caller school joins. Static path: wins over `/leagues/{id}`.",
+        "summary": "Join a league by invite code (M16-48): closed in R1",
+        "description": "Unused in R1 (API-GAME-05): answers 403 FORBIDDEN for every role (AC-GM-15.2). Admin Pusat enrols schools with `/leagues/{id}/schools`. Static path: wins over `/leagues/{id}`.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (every role), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/{id}/schools": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Enrol schools in a league (API-ADM-25)",
+        "description": "Admin Pusat only (FR-GM-15.1). Enrols the given schools, all or nothing, once per school, before the league ends and while schools < max_schools. Returns the league detail.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "League id. Digits only; a non-numeric segment does not match the route."
+            },
+            "required": true,
+            "description": "League id. Digits only; a non-numeric segment does not match the route.",
+            "name": "id",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string",
@@ -108448,21 +108771,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GamesLeagueJoinRequest"
+                "$ref": "#/components/schemas/GamesLeagueEnrolRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Joined.",
+            "description": "Enrolled; the league detail.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                      "$ref": "#/components/schemas/GamesLeagueDetail"
                     }
                   },
                   "required": [
@@ -108483,7 +108806,17 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Liga tidak dijumpai.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -108493,7 +108826,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.invite_code: \"Kod jemputan tidak sah.\", \"Liga ini sudah tamat.\", \"Anda perlu mempunyai sekolah untuk menyertai liga ini.\", \"Sekolah anda sudah menyertai liga ini.\", \"Liga ini sudah penuh.\".",
+            "description": "VALIDATION_ERROR with fields.schoolIds (the first failing school in the given order): \"Liga ini sudah tamat.\", \"Sekolah ini sudah menyertai liga ini.\", \"Liga ini sudah penuh.\", or \"Sila pilih sekolah.\" (empty or missing list), \"Format sekolah tidak sah.\" (non-numeric or unknown school id). A school already enrolled or repeated in the body is \"Sekolah ini sudah menyertai liga ini.\"; nothing is written on any failure.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108530,7 +108863,7 @@
           "games"
         ],
         "summary": "League detail (M16-49)",
-        "description": "The invite code and share link are visible to non-members, as live.",
+        "description": "The league with its member schools and stored standings.",
         "parameters": [
           {
             "schema": {
@@ -108546,7 +108879,7 @@
         ],
         "responses": {
           "200": {
-            "description": "League detail with the invite code; Cache-Control: no-store.",
+            "description": "League detail; Cache-Control: no-store.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
@@ -123149,10 +123482,11 @@
         "tags": [
           "performance"
         ],
-        "summary": "Own timeline (S16)",
+        "summary": "Own timeline feed (S16, API-RPT-14)",
+        "description": "Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).",
         "responses": {
           "200": {
-            "description": "Own timeline (S16)",
+            "description": "Own timeline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -123262,6 +123596,87 @@
         }
       }
     },
+    "/timeline/{id}": {
+      "delete": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Delete an own timeline post (API-RPT-15)",
+        "description": "Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil's post is the same 404 as an unknown id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimelineDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown post id, or a post of another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/public/students/{id}": {
       "get": {
         "tags": [
@@ -123349,6 +123764,19 @@
           "headcount"
         ],
         "summary": "Own headcount configs (S12), newest first",
+        "description": "teacher: own configs; school_admin: the own school (a schoolId sent by the client is ignored); admin: the configs of the school named by schoolId (read-only central view, PM-24); admin without schoolId: all configs, as before; admin with schoolId: VALIDATION_ERROR fields.schoolId \"Sila pilih sekolah.\" when empty, repeated or malformed, NOT_FOUND when no such school. No 422 is listed here so the conformance smoke still picks the teacher list.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher."
+            },
+            "required": false,
+            "description": "Admin Pusat only: the school whose configs are listed (optional: absent keeps the admin list of all configs; 422 fields.schoolId when empty, repeated or malformed, 404 when unknown). Ignored for school_admin and teacher.",
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Own headcount configs (S12), newest first",
