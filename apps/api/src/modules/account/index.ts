@@ -1,4 +1,5 @@
 export { AccountModule } from './account.module'
+export { MoodReadAdapter } from './mood-read.adapter'
 export {
   MAIL_PORT,
   NOTIFICATION_PORT,

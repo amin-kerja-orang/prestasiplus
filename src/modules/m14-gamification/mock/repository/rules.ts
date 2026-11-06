@@ -67,19 +67,19 @@ export function defaultTier(tiers: readonly Tier[]): Tier {
 }
 
 /**
- * BR-M14-08: after a credit, the highest active tier with `minSyiling` ≤ `currentSyiling`, if it is
- * higher than the current tier; never down.
+ * GAME-17 (FR-GM-17.2, replaces the balance rule of BR-M14-08): the highest active tier with
+ * `minSyiling` ≤ the lifetime syiling, if it is higher than the current tier; never down.
  */
 export function upgradedTier(
   tiers: readonly Tier[],
   currentKey: TierKey,
-  currentSyiling: number,
+  lifetimeSyiling: number,
 ): TierKey {
   const current = tiers.find((t) => t.tierName === currentKey)
   const floorMin = current ? current.minSyiling : Number.NEGATIVE_INFINITY
   let best: Tier | null = null
   for (const t of activeTiers(tiers)) {
-    if (t.minSyiling <= currentSyiling && t.minSyiling > floorMin) best = t
+    if (t.minSyiling <= lifetimeSyiling && t.minSyiling > floorMin) best = t
   }
   return best ? best.tierName : currentKey
 }
@@ -91,15 +91,15 @@ export function nextTierOf(tiers: readonly Tier[], currentKey: TierKey): Tier | 
   return activeTiers(tiers).find((t) => t.minSyiling > min) ?? null
 }
 
-/** BR-M14-06: pct with 1 decimal, capped at 100. */
+/** BR-M14-06 on the lifetime total (AC-GM-17.6): pct with 1 decimal, capped at 100. */
 export function nextTierProgress(
-  currentSyiling: number,
+  lifetimeSyiling: number,
   next: Tier,
 ): { pct: number; need: number } {
-  const raw = next.minSyiling > 0 ? (currentSyiling / next.minSyiling) * 100 : 100
+  const raw = next.minSyiling > 0 ? (lifetimeSyiling / next.minSyiling) * 100 : 100
   return {
     pct: Math.min(100, Math.round(raw * 10) / 10),
-    need: Math.max(0, next.minSyiling - currentSyiling),
+    need: Math.max(0, next.minSyiling - lifetimeSyiling),
   }
 }
 

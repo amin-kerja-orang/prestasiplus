@@ -159,8 +159,8 @@ export async function addQuestionSession(
   const id = (rows[0] as { id: string }).id
   for (const a of input.answers) {
     await db.query(
-      `insert into practice_answers (session_id, user_id, question_id, question_version_no, subject_id, chapter_id, topic_id, selected_label, is_correct, answered_at, is_test)
-       values ($1::uuid, $2, $3, 1, $4, $5, $6, $7, $8, $9::timestamptz, $10)`,
+      `insert into practice_answers (session_id, user_id, question_id, question_version_no, subject_id, chapter_id, topic_id, selected_label, is_correct, answered_at, is_test, mode)
+       values ($1::uuid, $2, $3, 1, $4, $5, $6, $7, $8, $9::timestamptz, $10, 'latih_tubi')`,
       [id, input.userId, a.questionId, input.subjectId, a.chapterId ?? null, a.topicId ?? null, a.label, a.correct, a.at ?? input.at, input.isTest ?? false],
     )
   }

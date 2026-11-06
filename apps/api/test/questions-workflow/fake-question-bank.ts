@@ -9,6 +9,7 @@ import type {
   QualityQuestion,
   QuestionBankPort,
   QuestionBrief,
+  QuestionVersionBrief,
   QuestionGateData,
   QuestionStatusInfo,
   SetStatusOptions,
@@ -244,6 +245,16 @@ export class FakeQuestionBank implements QuestionBankPort {
     for (const id of ids) {
       const q = this.questions.get(id)
       if (q) out.set(id, q.brief)
+    }
+    return out
+  }
+
+  async describeVersions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, QuestionVersionBrief>> {
+    const out = new Map<string, QuestionVersionBrief>()
+    for (const r of refs) {
+      const q = this.questions.get(r.questionId)
+      if (!q || r.versionNo > q.latestVersionNo) continue
+      out.set(`${r.questionId}:${r.versionNo}`, { stemText: q.brief.stemText, subjectId: q.brief.subjectId, subjectName: q.brief.subjectName })
     }
     return out
   }

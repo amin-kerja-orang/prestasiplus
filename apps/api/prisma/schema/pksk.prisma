@@ -118,6 +118,8 @@ model PkskPracticeLoad {
   level    String
   domainId BigInt   @map("domain_id")
   loadedAt DateTime @map("loaded_at") @db.Timestamptz(6)
+  /// The question ids served in this set; a submit must be a subset, once.
+  servedIds String[] @default([]) @map("served_ids")
 
   domain PkskDomain @relation(fields: [domainId], references: [id], onDelete: Restrict, map: "fk_pksk_practice_loads_domain_id")
 

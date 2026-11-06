@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ADMIN, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
 import { bootPeopleApp, enrolIn, errorOf, expectNoCache, insertClass, insertSchoolAdmin, insertUser, peopleApiOf, type PeopleApi } from './people-helpers'
-import { addSession, addSubject } from './reports-fixtures'
+import { addSession, addSubject, suspend } from './reports-fixtures'
 
 /**
  * BE-21 Part C: who may read the Amaran routes and which school. DB spec (Testcontainers). All data is fictitious.
@@ -152,7 +152,7 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     expect(names).toEqual(expect.arrayContaining(pupilIds.map((_, i) => `Murid Amaran ${i + 1}`)))
     expect(data.pupils.map((p) => p.rank)).toEqual(data.pupils.map((_, i) => i + 1))
     const scores = data.pupils.map((p) => p.score)
-    expect(scores).toEqual([...scores].sort((a, b) => b - a))
+    expect(scores).toEqual([...scores].sort((a, b) => (b ?? -1) - (a ?? -1)))
     expect(data.tally.total).toBe(data.pupils.length)
     expect(data.levelFilter).toBeNull()
     const weak = data.pupils.find((p) => p.name === 'Murid Amaran 1')
@@ -183,6 +183,17 @@ describe('BE-21 Amaran access: /amaran/*', () => {
     const none = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}?tingkatan=zzz`)).body.data)
     expect(none.levelFilter).toBeNull()
     expect(none.pupils.length).toBeGreaterThan(3)
+  })
+
+  it('tingkatan T1 to T3 are accepted (Tingkatan 1-5, D101 / FR-X3-3)', async () => {
+    for (const [q, code, label] of [['T1', 'T1', 'Tingkatan 1'], ['t2', 'T2', 'Tingkatan 2'], ['3', 'T3', 'Tingkatan 3']] as const) {
+      const res = await schoolAdmin.get(`/amaran/schools/${s1}?tingkatan=${q}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const data = AmaranSchoolRiskSchema.parse(res.body.data)
+      expect(data.levelFilter).toBe(code)
+      expect(data.levelSuffix).toBe(` — ${label}`)
+      expect(data.pupils).toHaveLength(0)
+    }
   })
 
   it('summary: the default scope is the own school for school_admin and teacher; admin has no default (403)', async () => {
@@ -262,5 +273,27 @@ describe('BE-21 Amaran access: /amaran/*', () => {
   it('a teacher sees the interventions of the own pupils only', async () => {
     const data = AmaranEffectivenessResultSchema.parse((await teacher.get('/amaran/effectiveness')).body.data)
     expect(data.report.cards.total).toBe(1)
+  })
+  it('the accuracy is pooled (correct / answered), never the mean of the session percentages (XS-5)', async () => {
+    const id = await insertUser(t.db, { name: 'Murid Amaran Terkumpul', email: 'terkumpul@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    // Session A 1/1 (100%) and session B 1/9 (11.1%): pooled 2/10 = 20.0, the mean of the two session percentages would be 55.6.
+    await addSession(t.db, id, { mode: 'chapter', questions: 1, correct: 1, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await addSession(t.db, id, { mode: 'chapter', questions: 9, correct: 1, completedAt: '2026-10-17T11:00:00+08:00', subjectId: subject })
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Terkumpul')
+    expect(row?.accuracy).toBe(20)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 20%')
+  })
+
+  it('a listed suspended pupil keeps its pooled accuracy (not "Tiada data")', async () => {
+    const id = await insertUser(t.db, { name: 'Murid Amaran Digantung', email: 'digantung@ujian.test', roles: ['student'], schoolId: s1, grade: 10 })
+    await addSession(t.db, id, { mode: 'chapter', questions: 4, correct: 3, completedAt: '2026-10-17T10:00:00+08:00', subjectId: subject })
+    await suspend(t.db, id)
+    const data = AmaranSchoolRiskSchema.parse((await schoolAdmin.get(`/amaran/schools/${s1}`)).body.data)
+    const row = data.pupils.find((p) => p.name === 'Murid Amaran Digantung')
+    expect(row).toBeDefined()
+    expect(row?.accuracy).toBe(75)
+    expect(row?.accuracyText).toBe('Purata ketepatan: 75%')
+    expect(row?.status).not.toBe('not_started')
   })
 })
