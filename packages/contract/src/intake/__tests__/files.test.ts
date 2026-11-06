@@ -9,6 +9,8 @@ import {
   INTAKE_COPYRIGHT_CODES,
   INTAKE_FILE_ERROR_CODES,
   INTAKE_FILE_MESSAGES,
+  INTAKE_MAX_RETRIES,
+  IntakeRetryResultSchema,
   INTAKE_PAPER_TYPE_CODES,
   IntakeBatchCreateSchema,
   IntakeBatchDetailSchema,
@@ -73,15 +75,25 @@ const page = {
 }
 
 describe('BE-37 enums and messages', () => {
-  it('has the five batch statuses with BM labels', () => {
-    expect([...INTAKE_BATCH_STATUSES]).toEqual(['submitted', 'processing', 'ready_for_review', 'failed', 'cancelled'])
+  it('has the six batch statuses with BM labels (OPT-BATCH-STATUS)', () => {
+    expect([...INTAKE_BATCH_STATUSES]).toEqual(['submitted', 'processing', 'ready_for_review', 'selesai_dengan_ralat', 'failed', 'cancelled'])
     expect(INTAKE_BATCH_STATUS_LABELS).toEqual({
       submitted: 'Dihantar',
       processing: 'Sedang diproses',
-      ready_for_review: 'Sedia untuk semakan',
+      ready_for_review: 'Selesai',
+      selesai_dengan_ralat: 'Selesai dengan ralat',
       failed: 'Gagal',
       cancelled: 'Dibatalkan',
     })
+  })
+
+  it('has the retry copy, limit and the retry result shape (API-Q-26)', () => {
+    expect(INTAKE_FILE_MESSAGES.ocrTimeout).toBe('Pengecaman teks mengambil masa terlalu lama.')
+    expect(INTAKE_FILE_MESSAGES.retryExhausted).toBe('Fail ini gagal diproses berulang kali. Sila hubungi sokongan.')
+    expect(INTAKE_MAX_RETRIES).toBe(3)
+    expect(IntakeRetryResultSchema.safeParse({ attempt: 3, retriesLeft: 0 }).success).toBe(true)
+    expect(IntakeRetryResultSchema.safeParse({ attempt: 4, retriesLeft: 0 }).success).toBe(false)
+    expect(IntakeRetryResultSchema.safeParse({ attempt: 1, retriesLeft: 2, x: 1 }).success).toBe(false)
   })
 
   it('keeps the prototype paper type and copyright codes and the error codes', () => {
@@ -111,13 +123,19 @@ describe('BE-37 requests', () => {
     expect(IntakeBatchCreateSchema.safeParse({ ...create, notes: 'Nota' }).success).toBe(true)
   })
 
+  it('accepts kertas 1 to 4 (DM-08) and words the size refusal with the 30 MB limit', () => {
+    for (const kertas of [1, 2, 3, 4]) expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas }).success).toBe(true)
+    expect(INTAKE_FILE_MESSAGES.size(30)).toBe('Fail melebihi had 30 MB.')
+  })
+
   it('rejects unknown keys, a false declaration and out-of-range values', () => {
     expect(IntakeBatchCreateSchema.safeParse({ ...create, ownerId: '1' }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, declaration: false }).success).toBe(false)
     const missing: Record<string, unknown> = { ...create }
     delete missing.declaration
     expect(IntakeBatchCreateSchema.safeParse(missing).success).toBe(false)
-    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 3 }).success).toBe(false)
+    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 5 }).success).toBe(false)
+    expect(IntakeBatchCreateSchema.safeParse({ ...create, kertas: 0 }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, year: 1989 }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, subject: 'mat' }).success).toBe(false)
     expect(IntakeBatchCreateSchema.safeParse({ ...create, paperType: 'mock' }).success).toBe(false)
@@ -170,7 +188,7 @@ describe('BE-37 OpenAPI', () => {
     components: { schemas: Record<string, unknown> }
   }
 
-  it('registers the ten routes', () => {
+  it('registers the ten routes and the two retry routes (S1-T04)', () => {
     const routes: [string, string][] = [
       ['/intake/batches', 'post'],
       ['/intake/batches', 'get'],
@@ -182,6 +200,8 @@ describe('BE-37 OpenAPI', () => {
       ['/intake/files/{id}/pages/{n}/thumb', 'get'],
       ['/intake/figures/{id}/image', 'get'],
       ['/intake/files/{id}/original', 'get'],
+      ['/intake/files/{id}/retry', 'post'],
+      ['/intake/batches/{id}/retry', 'post'],
     ]
     for (const [path, method] of routes) {
       const op = doc.paths[path]?.[method]
@@ -191,6 +211,9 @@ describe('BE-37 OpenAPI', () => {
       if (limited) expect(Object.keys(op!.responses)).toContain('429')
     }
     expect(Object.keys(doc.paths['/intake/batches/{id}/files']!.post!.responses)).toEqual(expect.arrayContaining(['201', '404', '409', '413', '422']))
+    for (const p of ['/intake/files/{id}/retry', '/intake/batches/{id}/retry']) {
+      expect(Object.keys(doc.paths[p]!.post!.responses)).toEqual(expect.arrayContaining(['202', '404', '409']))
+    }
   })
 
   it('uploads as multipart/form-data and serves images and the PDF as binary', () => {

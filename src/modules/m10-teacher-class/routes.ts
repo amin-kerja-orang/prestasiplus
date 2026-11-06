@@ -8,6 +8,7 @@ import pelajar from './routes/pelajar'
 import remedialProgress from './routes/remedial-progress'
 import setSoalanSaya from './routes/set-soalan-saya'
 import soalan from './routes/soalan'
+import soalanRujukan from './routes/soalan-rujukan'
 import teacherProfile from './routes/teacher-profile'
 
 /**
@@ -23,6 +24,7 @@ const routes: RouteRecordRaw[] = [
   ...remedialProgress,
   ...setSoalanSaya,
   ...soalan,
+  ...soalanRujukan,
   ...teacherProfile,
 ]
 

@@ -21,6 +21,8 @@ export interface SubQuestion {
 }
 
 function modelAnswerOf(leaf: Leaf): string {
+  // A leaf read leniently (list page) may have no key at all: no model answer.
+  if ((leaf.key as unknown) === undefined) return ''
   const key = leaf.key as { kind: string; correct?: string; values?: unknown[]; modelText?: string; points?: { label?: string }[] }
   if (key.kind === 'option') return key.correct ?? ''
   if (key.kind === 'accepted') {
