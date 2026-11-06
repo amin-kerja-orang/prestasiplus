@@ -813,7 +813,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
   // S3-T07: no pupil path generates a paper; the generator is the admin Jana Kertas only (`POST /api/admin/papers/generate`, a Draf).
   describe('6. Jana Kertas under the Disahkan Kontrak (admin generator; the pupil route is gone)', () => {
     it('the admin generates a draft from the approved pool; a pupil cannot generate (404) and never sees the draft', async () => {
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 3 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 3, title: 'Set Ujian' })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const id = res.body.data.id as string
       expect((await db.query<{ status: string }>(`select status from papers where id = $1`, [id]))[0]!.status).toBe('draft')
@@ -862,7 +862,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(ok.status, JSON.stringify(ok.body)).toBe(200)
 
       const before = Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4, title: 'Set Ujian' })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
       expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'count', need, have: 0 })])
@@ -923,7 +923,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     it('a Disahkan Kontrak asks for 3 KBAT marks out of 4: the generated paper has exactly 4 questions and exactly 3 KBAT marks', async () => {
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4, title: 'Set Ujian' })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const paperId = res.body.data.id as string
       expect((await db.query<{ kind: string }>(`select kind from papers where id = $1`, [paperId]))[0]!.kind).toBe('pilihan')
@@ -939,7 +939,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const untag = await admin.put(`/api/admin/section-pools/${kbatIds[0]!}`, { pools: [] })
       expect(untag.status, JSON.stringify(untag.body)).toBe(200)
       const before = Number((await db.query<{ n: string }>(`select count(*) n from papers`))[0]!.n)
-      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4 })
+      const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 4, title: 'Set Ujian' })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'SHORTAGE', message: 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.' })
       expect(res.body.error.details.shortages).toEqual([expect.objectContaining({ section: 'Bahagian A', kind: 'kbat', need: 3, have: 2 })])

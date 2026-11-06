@@ -50,7 +50,7 @@ describe('POST /api/bijak/papers/generate is removed (404 for every caller); the
   })
 
   it('the admin route is still there: POST /api/admin/papers/generate is not 404 (201 Draf, or 422 SHORTAGE from the pool), and a pupil is refused 403', async () => {
-    const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers/generate', { subject: 'MAT', kertas: 2, title: 'Set Ujian' })
     expect([201, 422], JSON.stringify(res.body)).toContain(res.status)
     if (res.status === 201) {
       const id = (res.body.data as { paperId: string }).paperId
