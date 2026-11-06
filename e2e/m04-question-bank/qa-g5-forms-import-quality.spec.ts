@@ -60,7 +60,7 @@ test.describe('QA G5 S2 create form', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'q-language').locator('option:checked')).toHaveText('Bahasa Melayu')
     expect(
       (await byId(page, 'q-language').locator('option').allInnerTexts()).map((s) => s.trim()),
-    ).toEqual(['Bahasa Melayu', 'English'])
+    ).toEqual(['Bahasa Melayu', 'English', 'BM + English (dwibahasa)'])
     await expect(byId(page, 'q-points')).toHaveAttribute('min', '1')
     await expect(page.getByText('Mata yang diperoleh jika jawapan betul')).toBeVisible()
     await expect(byId(page, 'form-cancel')).toHaveAttribute('href', '/admin/questions')
