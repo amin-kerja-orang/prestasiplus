@@ -971,6 +971,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     }
     // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
     // Ruling 62: a single robot is "Robot PrestasiPlus"; the robots are numbered only when the room has 2 or more.
+    // Numbering follows the current robot count, so a name can change from "Robot PrestasiPlus" to "... 1" when a second robot joins; seat ids stay stable.
     const manyRobots = players.filter((p) => p.robot !== null).length >= 2
     const seatName = (p: PlayerRow): string =>
       p.robot !== null ? (manyRobots ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : GAMES_ROBOT_NAME) : nameOf(p.seat)

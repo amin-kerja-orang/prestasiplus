@@ -125,7 +125,7 @@ export const GamesRewardSchema = z
   .meta({ id: 'GamesReward' })
 export type GamesReward = z.infer<typeof GamesRewardSchema>
 
-/** 48 section 3.6: a robot is no person: this name, no user, no school. A room adds its number ("Robot PrestasiPlus 1", GAME-R). */
+/** 48 section 3.6: a robot is no person: this name, no user, no school. A room numbers its robots ("Robot PrestasiPlus 1") only when it has 2 or more robots (ruling 62, GAME-R). */
 export const GAMES_ROBOT_NAME = 'Robot PrestasiPlus'
 
 /** Exact BM (and generic English) messages of the mock, by use. Tests assert these. */
