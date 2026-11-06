@@ -222,7 +222,7 @@ const TITLES: TitleCase[] = [
     who: 'admin',
     path: '/timeline',
     title: 'Timeline Saya',
-    subtitle: 'Kongsi pencapaian & cerita anda',
+    subtitle: 'Aktiviti terkini anda — latihan, pencapaian & mata diperoleh',
   },
   {
     who: 'admin',

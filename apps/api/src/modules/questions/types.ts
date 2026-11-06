@@ -22,6 +22,23 @@ export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
+/** S6-T16 (API-GUR-24): what a teacher's personal question writes; already validated against the curriculum by the caller's service rules. */
+export interface PersonalQuestionWrite {
+  subjectId: string
+  educationLevelId: string
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+  /** The typed Kesukaran 1..5. */
+  difficulty: number
+  text: string
+  /** Exactly four, A to D. */
+  options: readonly { text: string }[]
+  correctIndex: number
+  referenceUrl?: string | null | undefined
+}
+
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
 export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 
@@ -134,6 +151,12 @@ export interface QuestionVersionRecord {
   textbookRef: TextbookRef | null
   /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
   rejectionReason: string | null
+  /** DM-42: `bank` (default) or `teacher_private` (Soalan & Rujukan, served by the mission draw only). Optional so older fixtures compile. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the teacher who owns a private question (users.id, decimal); null on every bank row. */
+  ownerUserId?: string | null
+  /** DM-42: http(s) reference link shown to the pupil as "Rujukan"; null when none. */
+  referenceUrl?: string | null
   sourcePage: number | null
   setLabel: string | null
   sourceFile: string | null
@@ -184,6 +207,8 @@ export interface QuestionView extends QuestionRecord {
   imageTokens?: Record<string, string>
   /** Name of the curriculum chapter of the version (the admin "Bab" label), or null. */
   chapterName?: string | null
+  /** S1-T07 (D12): the open stimulus flag of the LIVE approved version, as `flags[]` on the wire. Absent = none. */
+  openFlags?: ('stimulus_missing' | 'figure_only' | 'stem_duplicated')[]
 }
 
 /** Admin detail: DSKP chain (unit/sk/sp) and creator name resolved through the owners' repositories. */
@@ -229,11 +254,20 @@ export interface AdminListFilter {
   /** V2 Studio filters (R1-21.5, D79): year, state or examining body, kertas and exam type of the source paper. */
   tahun?: string
   negeri?: string
-  kertas?: '1' | '2' | '3'
+  kertas?: '1' | '2' | '3' | '4'
   jenis?: 'sebenar' | 'percubaan' | 'modul' | 'topikal' | 'latihan'
   complianceFilter?: string
   sourceFilter?: string
   search?: string
+  /** S1-T07 (API-Q-01): level code T1..T5, chapter (`none` or id), unit node id, source, text-or-id and the open stimulus flag. */
+  tingkatan?: 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+  chapter?: string
+  unit?: string
+  source?: 'manual' | 'pdf' | 'csv' | 'guru'
+  q?: string
+  flag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated'
+  /** DM-58: rejection reason present (`true`) or absent (`false`). */
+  rejected?: 'true' | 'false'
   /** Keyset paging for `listIds`: only ids below this one (then `page` is ignored and no offset is used). */
   idBelow?: string
 }
@@ -268,7 +302,7 @@ export interface QuestionFilter {
   active?: boolean
   excludeIds?: readonly string[]
   type?: StoreQuestionType
-  /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level T4/T5, linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
+  /** R1-B06: `true` = SPM-servable (shared `SPM_SERVABLE_SQL`: offered level: active and not primary, T1 to T5; linked active subject), NOT the legacy `pool` tag; `false` = the complement. */
   spmPool?: boolean
   /**
    * `true`: only questions outside any stimulus group (`questions.group_id IS NULL`), the practice, games and battle servable
@@ -296,6 +330,12 @@ export interface QuestionFilter {
   idIn?: readonly string[]
   /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
   idAfter?: string
+  /**
+   * DM-42 / FR-GUR-44a-10 (the mission draw, the ONLY reader of `teacher_private`): besides the bank, the live personal questions OWNED by this
+   * user (users.id, decimal) are in the pool, at equal weight. The subject and level filters apply to both; `chapterId` and `spmPool` narrow
+   * the bank part only (a personal question carries no SPM pool and its Bab is optional). Any other owner's private question stays out.
+   */
+  ownerPrivateUserId?: string
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
@@ -308,6 +348,9 @@ export interface StructuredListFilter {
   served?: boolean
   /** Order by `created_at` descending instead of id ascending. */
   newestFirst?: boolean
+  /** Row offset and row count that replace the page arithmetic (the teacher union of API-GUR-26). */
+  offset?: number
+  limit?: number
   page: number
   pageSize: number
 }
@@ -415,6 +458,14 @@ export interface TextbookRef {
   /** Last page, when the reference spans pages. */
   hingga?: number
 }
+
+/**
+ * S1-T09a (D4, DM-69): the stored `question_versions.type` values once the DB check is widened (a later S1-T09a part): the 8 above plus
+ * `mcq_multi`, `true_false` and `fill_blank`. The API names and the mapping are `QUESTION_TYPES` / `questionTypeToDb` /
+ * `questionTypeFromDb` in `@pp/contract`. The DB is not changed by this part.
+ */
+export const STORE_QUESTION_TYPES_V3 = [...STORE_QUESTION_TYPES, 'mcq_multi', 'true_false', 'fill_blank'] as const
+export type StoreQuestionTypeV3 = (typeof STORE_QUESTION_TYPES_V3)[number]
 
 /** Teacher structured detail source: the question view of the LIVE version plus its stimulus group (no creator, no DSKP chain). */
 export type GuruStructuredRecord = QuestionView & { stimulusGroup: StimulusGroupRecord | null }

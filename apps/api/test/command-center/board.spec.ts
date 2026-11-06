@@ -77,7 +77,7 @@ describe('GET /admin/command-center/live-data', () => {
     expect(d.kirk.t2Accuracy).toBe(d.accuracy)
     expect(d.kirk.t3Active).toBe(5)
     const students = await t.db.query<{ c: number }>(
-      `select count(*)::int c from users u where u.is_active and (u.grade is null or u.grade >= 7) and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
+      `select count(*)::int c from users u where u.is_active and not u.is_suspended and u.grade between 7 and 11 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`,
     )
     expect(d.totalStudents).toBe(students[0]?.c)
   })
@@ -334,12 +334,12 @@ describe('empty state', () => {
     try {
       const who = await loginRole(e, 'admin')
       const d = CommandCenterLiveDataResponseSchema.parse((await getAs(who, '/admin/command-center/live-data')).body).data
-      expect(d).toMatchObject({ totalAnswered: 0, activeStudents: 0, answeredToday: 0, answeredWeek: 0, answeredLastWeek: 0, weekChange: 0, accuracy: 0 })
+      expect(d).toMatchObject({ totalAnswered: 0, activeStudents: 0, answeredToday: 0, answeredWeek: 0, answeredLastWeek: 0, weekChange: 0, accuracy: null })
       expect(d.topSchools).toEqual([])
       expect(d.topStudents).toEqual([])
       expect(d.recentFeed).toEqual([])
       const day = CommandCenterDailyActivityResponseSchema.parse((await getAs(who, '/command-center/daily-activity')).body).data
-      expect(day.practice).toMatchObject({ totalAnswers: 0, accuracy: 0, sessionsCompleted: 0, avgSessionSeconds: 0 })
+      expect(day.practice).toMatchObject({ totalAnswers: 0, accuracy: null, sessionsCompleted: 0, avgSessionSeconds: 0 })
       expect(day.subjectBreakdown).toEqual([])
       expect(Object.keys(day.hourlyHeatmap)).toHaveLength(24)
       const sa = await loginRole(e, 'school_admin')

@@ -19,6 +19,8 @@ const props = defineProps<{
   modes: SchoolUsage['modes']
   period: SchoolUsage['period']
   label: string
+  /** The route the empty-card links go to (M17 central view); default the school-admin report. */
+  basePath?: string
 }>()
 
 interface Row extends Record<string, unknown> {
@@ -97,14 +99,14 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
       <p v-if="period === 'today'" class="text-body text-muted" data-testid="su-empty-text">
         Belum ada pelajar buat latihan hari ini. Cuba lihat
         <RouterLink
-          :to="{ path: USAGE_PATH, query: { period: '7days' } }"
+          :to="{ path: basePath ?? USAGE_PATH, query: { period: '7days' } }"
           class="inline-flex min-h-11 items-center text-label text-primary-t"
           data-testid="su-empty-7days"
           >7 Hari</RouterLink
         >
         atau
         <RouterLink
-          :to="{ path: USAGE_PATH, query: { period: '30days' } }"
+          :to="{ path: basePath ?? USAGE_PATH, query: { period: '30days' } }"
           class="inline-flex min-h-11 items-center text-label text-primary-t"
           data-testid="su-empty-30days"
           >30 Hari</RouterLink

@@ -131,12 +131,16 @@ describe('isPathInScope', () => {
       '/guru/kirkpatrick/reaction',
       '/guru/kirkpatrick/pelajar/5',
       '/guru/soalan/cipta',
+      '/guru/soalan-berstruktur',
+      '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
       '/guru/laporan-mingguan-kelas',
       '/headcount/12/summary',
       '/prestasi/kelas',
       '/practice/chapter',
       '/analisa-item/kelas',
+      '/perutusan',
+      '/perutusan/7',
     ]) {
       expect(isPathInScope('teacher', path), path).toBe(true)
     }
@@ -157,6 +161,11 @@ describe('isPathInScope', () => {
     }
   })
 
+  it('Murid: no Perutusan in R1 (S5-T09)', () => {
+    expect(isPathInScope('student', '/perutusan')).toBe(false)
+    expect(isPathInScope('student', '/perutusan/7')).toBe(false)
+  })
+
   it('Admin Sekolah: the dashboard is exact, only matrix sub-pages are allowed', () => {
     for (const path of [
       '/admin-sekolah',
@@ -172,6 +181,10 @@ describe('isPathInScope', () => {
       '/headcount',
       '/prestasi/sekolah',
       '/analitik/pelajar',
+      '/perutusan',
+      '/perutusan/7',
+      '/perutusan/saya',
+      '/perutusan/tulis',
     ]) {
       expect(isPathInScope('school_admin', path), path).toBe(true)
     }
@@ -182,7 +195,6 @@ describe('isPathInScope', () => {
       '/admin-sekolah/invois',
       '/admin-sekolah/aktiviti-guru',
       '/amaran/intervensi/5',
-      '/perutusan',
       '/dashboard',
       '/liga',
     ]) {
@@ -237,6 +249,15 @@ describe('the VITE_PROTOTYPE_SCOPE switch', () => {
     expect(isPrototypeScopeOn()).toBe(true)
     expect(isPathAllowed('student', '/admin/users')).toBe(false)
     expect(isPathAllowed('student', '/dashboard')).toBe(true)
+  })
+})
+
+describe('diagram audit /admin/soalan-gambar (S6-T18)', () => {
+  it('is allowed for the teacher (Sumbang Soalan tile) with the scope on, not for school_admin or a student', () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'on')
+    expect(isPathAllowed('teacher', '/admin/soalan-gambar')).toBe(true)
+    expect(isPathAllowed('school_admin', '/admin/soalan-gambar')).toBe(false)
+    expect(isPathAllowed('student', '/admin/soalan-gambar')).toBe(false)
   })
 })
 

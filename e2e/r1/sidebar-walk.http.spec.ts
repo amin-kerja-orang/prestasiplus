@@ -65,16 +65,14 @@ type WalkRole = 'student' | 'guru' | 'adminSekolah'
  * item's PRD module in docs/plan/r1-traceability.md. Calibrated by the CI runs of e08d5575 and 0daa328a.
  *
  * The Alat Soalan tool items of Guru (`GURU_TOOLS` in src/shells/nav/out-of-scope.ts: /guru/soalan-guru,
- * /guru/databank, /guru/kertas-peperiksaan, /guru/soalan-berstruktur ...; S6-T16..S6-T20) are hidden by
+ * /guru/databank, /guru/kertas-peperiksaan ...; S6-T16..S6-T20) are hidden by
  * `navFor` while the prototype scope is on, so they are not rendered and have no row yet. Add a row per
- * route when a card un-hides one.
+ * route when a card un-hides one. S6-T17 un-hid /guru/soalan-berstruktur (item t-soalan-berstruktur, now
+ * rendered and routed by m10), so it needs no EXPECTED_RED row.
  */
 const EXPECTED_RED: Record<WalkRole, Row[]> = {
   student: [
-    // The pupil /prestasi row (S10-T01) was removed once #544 made /prestasi the pupil's own Prestasi 360 page.
-    // The item is visible, but the m08 route currently answers 403 (Akses Ditolak) for the pupil until S10-T09 / S10-T03 land.
-    { id: 'headcount', route: '/headcount', ownerCard: 'S10-T09' },
-    { id: 'analisa-item', route: '/analisa-item', ownerCard: 'S10-T03' },
+    // The pupil /prestasi row (S10-T01, #544), the Analisa Item row (S10-T03) and the /headcount row (S10-T09) were removed when their pages landed.
   ],
   // Guru: the Laporan Mingguan row (S6-T01) was removed after its first CI run showed it passing.
   guru: [],
@@ -84,10 +82,10 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
 
 /**
  * Fewest sidebar links a role must show, from what `sidebarEntries(role)` yields with the scope on:
- * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items
- * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 23. An empty sidebar fails.
+ * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items (Gambar Rajah left the sidebar, S6-T18)
+ * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 22. An empty sidebar fails.
  */
-const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 23 }
+const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 22 }
 
 const ROLE_LABEL: Record<WalkRole, string> = {
   student: 'pupil',

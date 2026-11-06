@@ -4,6 +4,8 @@
  * (sessions, answers, classes, users, wallets) are read through their owners' repositories only (D12).
  */
 
+import type { Tingkatan } from '../../api/types'
+
 import type { Grade } from './rules'
 
 export type Letter = 'A' | 'B' | 'C' | 'D'
@@ -115,7 +117,7 @@ export interface ItemStatisticRow {
   id: string
   scopeKind: 'ppd' | 'state' | 'school'
   scopeId: string | number
-  tingkatan: 'T4' | 'T5' | null
+  tingkatan: Tingkatan | null
   questionId: number
   rank: number
   attempts: number
@@ -140,7 +142,7 @@ export interface ActivityRow {
 export interface ItemSummaryRow {
   id: string
   schoolId: number
-  tingkatan: 'T4' | 'T5' | null
+  tingkatan: Tingkatan | null
   students: number
   answers: number
   accuracy: number

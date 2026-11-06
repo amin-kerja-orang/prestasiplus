@@ -184,9 +184,9 @@ export async function addAnswers(
 ): Promise<void> {
   if (spec.attempts <= 0) return
   await db.query(
-    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test, session_id)
+    `insert into practice_answers (user_id, question_id, subject_id, chapter_id, is_correct, answered_at, is_test, session_id, mode)
      select $1::bigint, $2::bigint, $3::bigint, $4::bigint, g <= $6::int,
-            timestamptz '2026-10-18 10:00+08' + (g || ' seconds')::interval, $7::boolean, $8::uuid
+            timestamptz '2026-10-18 10:00+08' + (g || ' seconds')::interval, $7::boolean, $8::uuid, 'latih_tubi'
        from generate_series(1, $5::int) g`,
     [
       userId,
