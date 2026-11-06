@@ -172,79 +172,62 @@ describe('#5 access (BR-M08-26)', () => {
   })
 })
 
-describe('#8 class analytics: RiskProfile anchors (§6.10)', () => {
-  it('teacher without parameters: the first own class', async () => {
+describe('#8 class analytics: RiskProfile anchors (§6.10) under the R1-GUR-5 rules', () => {
+  it('teacher without parameters: Semua Kelas (every own class) and Semua Subjek', async () => {
     const d = await s8('')
     expect(d.options.classes.map((c) => c.id).sort()).toEqual([2001, 2002])
-    expect(d.options.selected.classroomId).toBe(d.options.classes[0]?.id)
+    expect(d.options.selected).toEqual({ classroomId: null, subjectId: null, riskLevel: '' })
+    expect(d.options.subjects).toHaveLength(31)
+    expect(d.summary?.students).toBe(8)
+    expect(d.rows.every((r) => r.classes.length === 0)).toBe(true)
   })
 
-  it('class 2001 / Kimia: 8 · 41.8 % · 4 · 1 with the risk levels of §6.10', async () => {
+  it('class 2001 / Kimia: pooled 42.6 %, risk on the whole-number accuracy, sorted by accuracy ascending', async () => {
     const d = await s8('?classroomId=2001&subjectId=10')
     expect(d.options.selected).toEqual({ classroomId: 2001, subjectId: 10, riskLevel: '' })
-    expect(d.summary).toEqual({ students: 8, accuracy: 41.8, atRisk: 4, good: 1 })
-    expect(d.rows.map((r) => [r.userId, r.riskLevel])).toEqual([
-      [3001, 'low'],
-      [3002, 'medium'],
-      [3003, 'medium'],
-      [3004, 'high'],
-      [3005, 'medium'],
-      [3006, 'high'],
-      [3007, 'critical'],
-      [3008, 'critical'],
+    expect(d.summary).toEqual({ students: 8, accuracy: 42.6, atRisk: 7, good: 1 })
+    expect(d.rows.map((r) => [r.userId, r.accuracy, r.riskLevel])).toEqual([
+      [3008, 12.5, 'critical'],
+      [3007, 33.3, 'critical'],
+      [3003, 37.5, 'critical'],
+      [3004, 37.5, 'critical'],
+      [3005, 37.5, 'critical'],
+      [3006, 37.5, 'critical'],
+      [3002, 50, 'high'],
+      [3001, 88.9, 'low'],
     ])
-    expect(d.rows[0]).toMatchObject({ accuracy: 88.9, answered: 9, trend: 'stable' })
-    expect(d.rows[0]?.projection).toEqual({ low: 'A-', high: 'A+' })
+    expect(d.rows.at(-1)).toMatchObject({ accuracy: 88.9, answered: 9, trend: 'stable' })
+    expect(d.rows.at(-1)?.projection).toEqual({ low: 'A-', high: 'A+' })
   })
 
-  it('class 2001 filtered by risk level: critical keeps 2 rows; the cards follow the filter', async () => {
+  it('class 2001 filtered by risk level: critical keeps 6 rows; the cards follow the filter', async () => {
     const d = await s8('?classroomId=2001&subjectId=10&riskLevel=critical')
-    expect(d.rows.map((r) => r.userId)).toEqual([3007, 3008])
-    expect(d.summary).toEqual({ students: 2, accuracy: 22.9, atRisk: 2, good: 0 })
+    expect(d.rows.map((r) => r.userId)).toEqual([3008, 3007, 3003, 3004, 3005, 3006])
+    expect(d.summary).toEqual({ students: 6, accuracy: 32.6, atRisk: 6, good: 0 })
   })
 
-  it('admin, class 4 subject 1: 6 pupils, accuracy 0.0, risk medium low low low medium low', async () => {
+  it('admin, class 4: every pupil without answers is Belum Bermula (none, no accuracy, no unjuran) and counted in Jumlah Pelajar', async () => {
     const d = await s8('?classroomId=4&subjectId=1', ADMIN)
     expect(d.options.classes).toEqual([])
-    expect(d.options.subjects.map((s) => s.id)).toEqual([1, 11, 9, 12, 10, 3, 8, 23, 17, 5])
-    expect(d.summary).toEqual({ students: 6, accuracy: 0, atRisk: 0, good: 4 })
-    expect(d.rows.map((r) => r.riskLevel)).toEqual(['medium', 'low', 'low', 'low', 'medium', 'low'])
-    expect(d.rows.map((r) => `${r.projection.low}-${r.projection.high}`)).toEqual([
-      'E-B',
-      'D-A-',
-      'A--A+',
-      'C+-A',
-      'G-B',
-      'C-A-',
-    ])
+    expect(d.options.subjects.map((s) => s.id).slice(0, 3)).toEqual([1, 2, 3])
+    expect(d.summary).toEqual({ students: 51, accuracy: null, atRisk: 0, good: 0 })
+    expect(d.rows.every((r) => r.riskLevel === 'none' && r.accuracy === null && r.projection === null && r.answered === 0)).toBe(true)
   })
 
-  it('admin, class 4: the first subject is selected when none is given; risk_level=low keeps 4 rows', async () => {
-    const d = await s8('?classroomId=4', ADMIN)
-    expect(d.options.selected.subjectId).toBe(1)
+  it('a risk filter never lists Belum Bermula rows', async () => {
     const low = await s8('?classroomId=4&subjectId=1&riskLevel=low', ADMIN)
-    expect(low.rows).toHaveLength(4)
+    expect(low.rows).toEqual([])
+    expect(low.summary).toBeNull()
+    const none = await s8('?classroomId=4&subjectId=1&riskLevel=none', ADMIN)
+    expect(none.options.selected.riskLevel).toBe('')
+    expect(none.rows).toHaveLength(51)
   })
 
-  it('admin, class 4 subject 5: risk medium low low medium medium medium', async () => {
-    const d = await s8('?classroomId=4&subjectId=5', ADMIN)
-    expect(d.rows.map((r) => r.riskLevel)).toEqual([
-      'medium',
-      'low',
-      'low',
-      'medium',
-      'medium',
-      'medium',
-    ])
-  })
-
-  it('a subject without profile and the admin without a class: no summary, no rows', async () => {
-    const none = await s8('?classroomId=4&subjectId=11', ADMIN)
-    expect(none.summary).toBeNull()
-    expect(none.rows).toEqual([])
+  it('the admin without a class: no summary, no rows', async () => {
     const noClass = await s8('', ADMIN)
     expect(noClass.options.selected.classroomId).toBeNull()
     expect(noClass.summary).toBeNull()
+    expect(noClass.rows).toEqual([])
   })
 })
 
@@ -257,10 +240,21 @@ describe('#8 access', () => {
     expect(d.options.selected.classroomId).toBeNull()
   })
 
-  it('pelajar and school admin are 403, a guest 401', async () => {
+  it('pelajar is 403, a guest 401', async () => {
     expect((await getAs(runtime, PELAJAR, '/api/analytics/classes')).status).toBe(403)
-    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/analytics/classes')).status).toBe(403)
     expect((await getAs(runtime, null, '/api/analytics/classes')).status).toBe(401)
+  })
+
+  it('a school admin reads the classes of the own school only, with the Kelas names (R1-AS-5)', async () => {
+    const d = await s8('', ADMIN_SEKOLAH)
+    expect(d.options.classes.map((c) => c.id)).toEqual([2001, 2002])
+    expect(d.options.selected.classroomId).toBeNull()
+    expect(d.rows.length).toBeGreaterThan(0)
+    expect(d.rows.every((r) => r.classes.length > 0)).toBe(true)
+    const one = await s8('?classroomId=2001', ADMIN_SEKOLAH)
+    expect(one.rows.every((r) => r.classes.join() === d.options.classes[0]?.name)).toBe(true)
+    // class 366 belongs to school 8080; class 4 is a teacher class of another school
+    expect((await getAs(runtime, ADMIN_SEKOLAH, '/api/analytics/classes?classroomId=366')).status).toBe(403)
   })
 
   it('an unknown risk level is ignored (every level)', async () => {

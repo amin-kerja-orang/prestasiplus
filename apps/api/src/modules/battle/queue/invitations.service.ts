@@ -126,7 +126,7 @@ export class InvitationsService {
     const inv = await this.prisma.client.battleInvitation.findUnique({ where: { id: uuid } })
     if (!inv || inv.isTest !== isTest || idToString(inv.receiverId) !== who.userId || inv.questionType !== 'pksk') return
     const level = inv.pkskTargetLevel as 'T1' | 'T4'
-    if (!(await this.engine.deps.pkskAccess(who))[level]) throw rawInvalid(BATTLE_MESSAGES.pkskNoAccess)
+    if (!(await this.engine.deps.pkskAccess(who))[level]) throw rawForbidden(BATTLE_MESSAGES.pkskNoAccess)
   }
 
   /** The question draw, made before the transaction (undefined when the invitation does not qualify). */
