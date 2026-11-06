@@ -17,9 +17,11 @@ export const createTicket = (input: { subject: string; body: string }) =>
   api.post<Ticket>('/api/tiket', { body: input })
 
 /** #3 `GET /api/admin/tiket`. */
-export const fetchQueue = (o: { status?: string | null; page?: number; signal?: AbortSignal } = {}) =>
+export const fetchQueue = (
+  o: { status?: string | null; role?: string | null; page?: number; signal?: AbortSignal } = {},
+) =>
   api.get<QueueList>('/api/admin/tiket', {
-    query: { status: o.status ?? null, page: o.page ?? null },
+    query: { status: o.status ?? null, role: o.role ?? null, page: o.page ?? null },
     raw: true,
     ...(o.signal ? { signal: o.signal } : {}),
   })
@@ -31,6 +33,10 @@ export const fetchOpenCount = (o: { signal?: AbortSignal } = {}) =>
 /** API-SUP-05 `GET /api/admin/tiket/:id`. */
 export const fetchTicketDetail = (id: number, o: { signal?: AbortSignal } = {}) =>
   api.get<TicketDetail>(`/api/admin/tiket/${String(id)}`, o.signal ? { signal: o.signal } : {})
+
+/** API-SUP-05 `PUT /api/admin/tiket/:id/reply`. */
+export const replyToTicket = (id: number, text: string) =>
+  api.put<TicketDetail>(`/api/admin/tiket/${String(id)}/reply`, { body: { text } })
 
 /** API-SUP-05 `PATCH /api/admin/tiket/:id/status`. */
 export const setTicketStatus = (id: number, status: TicketStatus) =>

@@ -3,6 +3,8 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 
+import { levelNumber } from '../lib/prestasi/format'
+
 /**
  * M08 route fragment "prestasi" (M08-T5; build-plan §S.3 rule 2): `/prestasi` (S10-T01: the pupil's own
  * Prestasi 360 at the same URL, every other role goes to `/prestasi/sekolah`), S1 `/prestasi/sekolah`, S2, S3, S4 and S21. All user-shell routes; S1–S3 show the own-school
@@ -84,7 +86,7 @@ const routes: RouteRecordRaw[] = [
       roles: PRESTASI_SCHOOL_ROLES,
       onForbidden: '403',
       title: (route) =>
-        `Tingkatan ${route.params.code === 't4' ? '4' : '5'} — Dashboard Tingkatan | PRESTASIPLUS`,
+        `Tingkatan ${String(levelNumber(String(route.params.code ?? '')))} — Dashboard Tingkatan | PRESTASIPLUS`,
       module: 'M08',
       v2: true,
     },
