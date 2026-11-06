@@ -78,7 +78,7 @@ describe('GAME-00 common rules', () => {
       const code = await createRoom(student, 'perang-fakta')
       const v = parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
       expect(v.players.map((p) => [p.name.startsWith('Robot'), p.isBot])).toEqual([[false, false], [true, true]])
-      expect(v.players[1]).toMatchObject({ name: 'Robot PrestasiPlus 1', grade: '' })
+      expect(v.players[1]).toMatchObject({ name: 'Robot PrestasiPlus', grade: '' })
       const seats = await t.db.query<{ user_id: string | null; is_bot: boolean }>('select user_id::text, is_bot from game_room_players where room_code = $1 order by id', [code])
       expect(seats).toEqual([{ user_id: student.userId, is_bot: false }, { user_id: null, is_bot: true }])
       await vote(student, code, true)

@@ -19,6 +19,8 @@ import {
   cmpId,
   computeSettlement,
   handOverSeat,
+  pbPoints,
+  pbSettleDefault,
   shouldWritePoll,
   questionView,
   seatOf,
@@ -1255,5 +1257,115 @@ describe('seat presence and the consecutive timeouts (DM-90, rulings 49 and 54)'
     expect(tick('kuiz-relay', relay2, T0, 10_000).changed).toBe(true) // already absent: closes at once, before the 15 s clock
     const benteng = begin('benteng-ilmu', two(T0 - 100_000, T0))
     expect(tick('benteng-ilmu', benteng, T0 + 14_999, 10_000).changed).toBe(false) // own part: only the full 15 s clock
+  })
+})
+
+describe('Papan Bijak literal acceptance criteria (GAME-02 A)', () => {
+  const r = room('papan-bijak')
+  const fixedDie = (next: number): StreamFactory => (name) => {
+    const base = prngStream(name)
+    return name.includes(':d') ? { ...base, next: () => next } : base
+  }
+  /** `n` human seats on a custom board and tiles; roll `next` gives the die: 0.5 -> 4, 0.34 -> 3. */
+  function setup(n: number, board: Record<number, string>, at: Record<string, number>, correct = 0) {
+    const o = startGame({
+      room: r,
+      players: players(n, false).map((x) => ({ ...x, correct })),
+      humanId: HOST,
+      seed: 'ac',
+      pool: pool(40),
+      quizTiles: 0,
+      p: 0.5,
+      nowMs: T0,
+    })
+    const b = o.state.board.map(() => 'plain')
+    b[0] = 'start'
+    b[49] = 'finish'
+    for (const [tile, kind] of Object.entries(board)) b[Number(tile) - 1] = kind
+    return { ...o, state: { ...o.state, board: b, positions: { ...o.state.positions, ...at } } }
+  }
+  const roll = (o: EngineOut, die: number): EngineOut =>
+    applyAction({ room: r, players: o.players, state: o.state, action: { type: 'roll' }, p: 0.5, nowMs: T0, streams: fixedDie(die === 4 ? 0.5 : 0.34) })
+
+  it('AC-GM-02.1: a pupil on tile 48 who rolls 4 finishes and wins', () => {
+    const o = roll(setup(2, {}, { [HOST]: 48 }), 4)
+    expect(o.finished).toBe(true)
+    expect(o.state.winnerId).toBe(HOST)
+    expect(o.state.positions[HOST]).toBe(50)
+  })
+
+  it('AC-GM-02.2: on tile 10, a roll of 3 lands on quiz tile 13; a WRONG answer returns the token to tile 10', () => {
+    const o = roll(setup(2, { 13: 'quiz' }, { [HOST]: 10 }), 3)
+    expect(o.state.positions[HOST]).toBe(13)
+    expect(o.state.awaiting).toBe('answer')
+    const after = applyAction({ room: r, players: o.players, state: o.state, action: answerWrong(o.state), p: 0.5, nowMs: T0 })
+    expect(after.state.positions[HOST]).toBe(10)
+    expect(after.players.find((x) => x.userId === HOST)?.correct).toBe(0)
+  })
+
+  it('AC-GM-02.4: a winner with 4 correct answers has 4 x 10 + 50 = 90 points; the other seat has 10 x correct', () => {
+    const s = setup(2, {}, { [HOST]: 48 }, 4)
+    const o = roll(s, 4)
+    expect(o.players.find((x) => x.userId === HOST)?.points).toBe(90)
+    expect(o.players.find((x) => x.userId !== HOST)?.points).toBe(40)
+  })
+
+  it('FR-GM-02.5: pbSettleDefault uses the same formula (winner +50, others none) and does not mutate', () => {
+    const ps = players(3, false).map((x, i) => ({ ...x, correct: i + 1 }))
+    const done = pbSettleDefault(ps, '11')
+    expect(done.map((x) => x.points)).toEqual([10, 70, 30])
+    expect(ps.every((x) => x.points === 0)).toBe(true)
+    expect(pbSettleDefault(ps, null).map((x) => x.points)).toEqual([10, 20, 30])
+    expect(pbPoints(4, true)).toBe(90)
+  })
+
+  it('FR-GM-02.3: a landing effect whose target is a special tile is not applied again', () => {
+    // ladder 20 -> 30, and tile 30 is a ladder to 40: the token stays on 30
+    let o = roll(setup(2, { 20: 'ladder:30', 30: 'ladder:40' }, { [HOST]: 17 }), 3)
+    expect(o.state.positions[HOST]).toBe(30)
+    // bonus on 20 (+3 = 23) with a quiz on 23: no question is asked
+    o = roll(setup(2, { 20: 'bonus', 23: 'quiz' }, { [HOST]: 17 }), 3)
+    expect(o.state.positions[HOST]).toBe(23)
+    expect(o.state.awaiting).toBe('roll')
+    expect(o.state.pendingQ).toBeNull()
+    // trap on 20 (-3 = 17) is not a snake or a ladder target
+    o = roll(setup(2, { 20: 'trap', 17: 'snake:5' }, { [HOST]: 17 }), 3)
+    expect(o.state.positions[HOST]).toBe(17)
+  })
+
+  it('FR-GM-02.2: over many seeds the die always gives 1 to 6 and every face shows', () => {
+    const seen = new Set<number>()
+    for (let i = 0; i < 300; i++) {
+      const o = startGame({ room: r, players: players(1, false), humanId: HOST, seed: `die-${String(i)}`, pool: pool(40), quizTiles: 0, p: 0.5, nowMs: T0 })
+      const after = applyAction({ room: r, players: o.players, state: o.state, action: { type: 'roll' }, p: 0.5, nowMs: T0 })
+      const die = Number((after.state.log.find((l) => l.startsWith('roll:')) as string).slice(5))
+      expect(Number.isInteger(die) && die >= 1 && die <= 6).toBe(true)
+      seen.add(die)
+    }
+    expect([...seen].sort()).toEqual([1, 2, 3, 4, 5, 6])
+  })
+
+  describe('FR-GM-02.4 / ruling 56: the pool restarts reshuffled after the 40th question', () => {
+    /** One human, every interior tile a quiz tile, always a wrong answer: the token never gets far and the cursor keeps moving. */
+    function asked(seed: string, n: number): string[] {
+      let o = startGame({ room: r, players: players(1, false), humanId: HOST, seed, pool: pool(40), quizTiles: 0, p: 0.5, nowMs: T0 })
+      o = { ...o, state: { ...o.state, board: o.state.board.map((_, i) => (i === 0 ? 'start' : i === 49 ? 'finish' : 'quiz')) } }
+      const ids: string[] = []
+      while (ids.length < n) {
+        o = applyAction({ room: r, players: o.players, state: o.state, action: { type: 'roll' }, p: 0.5, nowMs: T0 })
+        ids.push(o.state.pendingQ as string)
+        o = applyAction({ room: r, players: o.players, state: o.state, action: answerWrong(o.state), p: 0.5, nowMs: T0 })
+      }
+      return ids
+    }
+    it('the next 40 are the same set in a different order, and the same seed replays the same order', () => {
+      const ids = asked('reshuffle', 80)
+      const first = ids.slice(0, 40)
+      const second = ids.slice(40)
+      expect(new Set(first).size).toBe(40)
+      expect([...second].sort()).toEqual([...first].sort())
+      expect(second).not.toEqual(first)
+      expect(asked('reshuffle', 80)).toEqual(ids)
+    })
   })
 })

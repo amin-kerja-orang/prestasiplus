@@ -487,7 +487,7 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
         ...FORM,
         match_mode: 'same_level',
       })
-      expect(v0.players.find((p) => p.isBot)).toMatchObject({ id: 'robot-1', name: 'Robot PrestasiPlus 1' })
+      expect(v0.players.find((p) => p.isBot)).toMatchObject({ id: 'robot-1', name: 'Robot PrestasiPlus' })
       let v = v0
       while (v.status === 'playing') v = await answerRight('benteng-ilmu', code)
       expect(v.status).toBe('finished')

@@ -187,6 +187,6 @@ describe("children's names rule in the games rankings (issue #76)", () => {
     const stud = VIEWERS[1] as (typeof VIEWERS)[number]
     const view = parseRoom(await as(stud).get(P('kuiz-relay', code)))
     const b = view.players.find((p) => p.id === id.B)
-    expect(b).toMatchObject({ isBot: true, name: 'Robot PrestasiPlus 1', grade: '' })
+    expect(b).toMatchObject({ isBot: true, name: 'Robot PrestasiPlus', grade: '' })
   })
 })
