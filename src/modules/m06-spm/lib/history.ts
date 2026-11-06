@@ -85,9 +85,9 @@ export function scoreColor(percent: number): 'error' | 'warning' | 'success' {
   return 'success'
 }
 
-/** A whole-number accuracy "{n}%", or "—" when there are no answers (`null`). */
+/** A whole-number accuracy "{n}%" (half up, XS-5), or "—" when there are no answers (`null`) or the value is not finite. */
 export function formatAccuracy(value: number | null): string {
-  return value === null ? '—' : `${value}%`
+  return value === null || !Number.isFinite(value) ? '—' : `${Math.round(value)}%`
 }
 
 /** Row duration "{m}m {s}s" (e.g. "37m 32s"). */

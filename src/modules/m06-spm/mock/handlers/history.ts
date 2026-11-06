@@ -48,6 +48,12 @@ export function spmMyStats(userId: number): SpmMyStats {
   }
 }
 
+/** `completedAt` newest first; equal times fall back to the id, descending (a stable order across pages). */
+export function newestFirst(a: Pick<SpmHistoryRow, 'id' | 'completedAt'>, b: Pick<SpmHistoryRow, 'id' | 'completedAt'>): number {
+  if (a.completedAt !== b.completedAt) return a.completedAt < b.completedAt ? 1 : -1
+  return a.id < b.id ? 1 : a.id > b.id ? -1 : 0
+}
+
 function rowsOf(userId: number): SpmHistoryRow[] {
   return practice
     .history(userId, { modes: SPM_MODES })
@@ -69,7 +75,7 @@ function rowsOf(userId: number): SpmHistoryRow[] {
         },
       ]
     })
-    .sort((a, b) => (a.completedAt < b.completedAt ? 1 : a.completedAt > b.completedAt ? -1 : 0))
+    .sort(newestFirst)
 }
 
 function history(req: MockRequest) {

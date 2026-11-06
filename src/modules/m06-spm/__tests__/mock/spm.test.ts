@@ -406,3 +406,16 @@ describe('contributeCells through the poolCells override (seed phase only)', () 
     await runtime.reset()
   }, 300_000)
 })
+
+describe('mock history order', () => {
+  it('sorts completedAt descending, then id descending', async () => {
+    const { newestFirst } = await import('../../mock/handlers/history')
+    const rows = [
+      { id: 'a', completedAt: '2026-05-11T14:22:00+08:00' },
+      { id: 'c', completedAt: '2026-05-19T03:26:00+08:00' },
+      { id: 'b', completedAt: '2026-05-19T03:26:00+08:00' },
+    ]
+    expect([...rows].sort(newestFirst).map((r) => r.id)).toEqual(['c', 'b', 'a'])
+    expect([...rows].reverse().sort(newestFirst).map((r) => r.id)).toEqual(['c', 'b', 'a'])
+  })
+})
