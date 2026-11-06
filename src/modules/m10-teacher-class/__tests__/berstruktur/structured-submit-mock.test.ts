@@ -255,6 +255,16 @@ describe('PUT and DELETE /api/guru/intake/structured/:id', () => {
     expect(r.body.data.form.difficultyLevel).toBe(5)
   })
 
+  it('a returned own item (g1) reads as "rejected"; saving it again sends it back to "review" without a reason', async () => {
+    const before = await call<Detail>('GET', '/api/guru/structured-questions/g1', GURU)
+    expect(before.body.data).toMatchObject({ status: 'rejected', editable: true })
+    expect(before.body.data.form.rejectionReason).toBeTruthy()
+    const r = await call<Detail>('PUT', `${URL}/g1`, GURU, body)
+    expect(r.status).toBe(200)
+    expect(r.body.data.status).toBe('review')
+    expect(r.body.data.form.rejectionReason).toBeNull()
+  })
+
   it('AC-GUR-44b-6: another teacher gets 404 on PUT and DELETE', async () => {
     const made = (await call<Detail>('POST', URL, GURU, body)).body.data
     expect((await call('PUT', `${URL}/${made.id}`, OTHER_GURU, body)).status).toBe(404)

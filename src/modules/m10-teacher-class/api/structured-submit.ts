@@ -17,7 +17,7 @@ import type { CognitiveLevel, StructuredSubmitBody } from '../lib/structured-for
 /** The submission as the create and update answer (`GuruStructuredDetail`; only what the form reads). */
 export interface StructuredSubmission {
   id: string
-  status: 'approved' | 'review'
+  status: 'approved' | 'review' | 'rejected'
   editable: boolean
   totalMarks: number
 }

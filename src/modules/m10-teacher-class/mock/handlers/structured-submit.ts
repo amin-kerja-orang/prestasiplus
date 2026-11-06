@@ -188,7 +188,11 @@ function detailOf(r: GuruSubmission) {
     subject: subject ? { id: subject.id, name: subject.name } : null,
     level: level ? { id: level.id, name: level.name } : null,
     kbat: '',
-    status: r.editable ? ('review' as const) : ('approved' as const),
+    status: !r.editable
+      ? ('approved' as const)
+      : r.rejectionReason
+        ? ('rejected' as const)
+        : ('review' as const),
     stimulus: r.stimulus,
     stimulusImage:
       r.stimulusImageId && !r.stimulusImageId.startsWith('blob:mock/')
