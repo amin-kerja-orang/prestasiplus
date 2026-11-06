@@ -113,6 +113,15 @@ describe('start response', () => {
     expect(keysOf(start)).not.toEqual(expect.arrayContaining(['correctAnswer']))
   })
 
+  it('referenceUrl is optional and nullable, http(s) only (FR-GUR-44a-9)', () => {
+    const withUrl = (referenceUrl: unknown) => StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, referenceUrl }] }).success
+    expect(withUrl('https://rujukan.example.org/bab-1')).toBe(true)
+    expect(withUrl('http://rujukan.example.org')).toBe(true)
+    expect(withUrl(null)).toBe(true)
+    expect(withUrl(undefined)).toBe(true)
+    for (const bad of ['javascript:alert(1)', 'ftp://x.org', '/relatif', 'https://u:p@x.org', 'https://x.org/a b', `https://x.org/${'a'.repeat(2048)}`]) expect(withUrl(bad), bad).toBe(false)
+  })
+
   it('rejects a non-uuid session id and a bad direction', () => {
     expect(StartSessionResponseSchema.safeParse({ ...start, sessionId: '12' }).success).toBe(false)
     expect(StartSessionResponseSchema.safeParse({ ...start, questions: [{ ...question, textDirection: 'up' }] }).success).toBe(false)
