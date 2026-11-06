@@ -2144,6 +2144,17 @@
       "name": null,
       "status": "canonical",
       "sector": "S6",
+      "component": "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue",
+      "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
+      "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "${prefix}| #2",
+      "path": "${prefix}",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
       "component": "src/modules/m11-teacher-analytics/pages/MonitoringPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
       "template": true,
@@ -2709,7 +2720,7 @@
       "approved_by_card": null
     },
     {
-      "key": "${prefix}| #2",
+      "key": "${prefix}| #3",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
