@@ -45,6 +45,8 @@ export interface PracticeSessionFact {
 export interface PracticeAnswerFact {
   /** M05 `AnswerRow.sessionId`; absent/null for an answer outside a session (S7-T04 part 14, best_combo). */
   sessionId?: string | null
+  /** M05 `AnswerRow.id`, the tie-break of equal `answeredAt`. */
+  id?: number
   subjectId: number | null
   chapterId: number | null
   isCorrect: boolean
@@ -62,6 +64,11 @@ export interface PracticeReads {
   practiceSessions(userId: number): PracticeSessionFact[]
   answersOn(userId: number, date: string): PracticeAnswerFact[]
   mastery(userId: number): PracticeMasteryFact[]
+  /**
+   * Mode of any session, in-progress included (M05 public `practice.session(id).mode`); null when unknown.
+   * Optional so test readers may omit it (then no answer is treated as a game answer).
+   */
+  sessionMode?(sessionId: string): string | null
   /** Test seam only (optional): every completed session, all modes (S18). Default: M05 history. */
   allSessions?(userId: number): PracticeSessionFact[]
   /** Test seam only (optional): the totals of every answer (S18). Default: M05 answers. */
@@ -140,6 +147,7 @@ function toAnswer(r: Loose, what: string): PracticeAnswerFact {
     )
   }
   return {
+    id: isInt(r.id) ? r.id : undefined,
     sessionId: typeof r.sessionId === 'string' ? r.sessionId : null,
     chapterId: r.chapterId as number | null,
     subjectId: r.subjectId as number | null,
@@ -169,6 +177,13 @@ const M05_READS: PracticeReads = {
     return arrayOf(method(repo, 'answers')(userId, { date }), what)
       .map((r) => toAnswer(r, what))
       .filter((a) => localDate(a.answeredAt) === date)
+  },
+  sessionMode(sessionId) {
+    const repo = practiceRepo()
+    if (!repo) return null
+    const row = method(repo, 'session')(sessionId)
+    const mode = typeof row === 'object' && row !== null ? (row as Loose).mode : null
+    return typeof mode === 'string' ? mode : null
   },
   mastery(userId) {
     const repo = practiceRepo()
