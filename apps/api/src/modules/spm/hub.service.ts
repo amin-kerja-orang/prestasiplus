@@ -57,7 +57,7 @@ export async function mapBounded<T, R>(items: readonly T[], limit: number, fn: (
   return out
 }
 
-const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
+const SPM_MODES = ['past_year', 'databank', 'latih_tubi', 'ramalan'] as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 
