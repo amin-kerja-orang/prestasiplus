@@ -14,7 +14,7 @@ const nameOrder = (a: { name: string; id: string }, b: { name: string; id: strin
 const levelLabelOf = (grade: number): string => (grade <= 6 ? `Darjah ${grade}` : `Tingkatan ${grade - 6}`)
 
 /**
- * S8 class list (mock `classes`): the classroom-kind classes of the school, active and inactive, name A to Z, 25 per page.
+ * S8 class list (mock `classes`): the active classes of the school, both kinds (classroom and school_class), name A to Z, 25 per page.
  * Read through BE-17's `ClassesRepository` only, always for the session school. `members` is the repository's active enrolment
  * count (it may include pupils of another school, as the contract says). Join codes are shown to the school admin of the same school.
  */
@@ -24,7 +24,9 @@ export class ClassesService {
 
   async list(schoolId: string, query: { level?: string | undefined; search?: string | undefined; page?: string | undefined }): Promise<SchoolAdminClassListResponse> {
     // The explicit school filter is repeated here on purpose: the repository call is by school, and this guards a wrong implementation.
-    const all = (await this.classes.schoolClasses(schoolId)).filter((c) => c.kind === 'classroom' && c.schoolId === schoolId)
+    const everyKind = (await this.classes.schoolClasses(schoolId)).filter((c) => c.schoolId === schoolId)
+    // Rows = the Kelas Aktif tile (FR-AS-53-1): active classes of both kinds, inactive ones hidden.
+    const all = everyKind.filter((c) => c.isActive)
     const levelsById = await this.classes.levelGrades([...new Set(all.map((c) => c.educationLevelId))])
     const gradeOf = (c: ClassRecord): number | null => gradeOfLevel(levelsById.get(c.educationLevelId))
 
@@ -56,8 +58,8 @@ export class ClassesService {
     const data: SchoolAdminClassRow[] = slice.map((c) => {
       const grade = gradeOf(c)
       return {
-        key: `classroom:${c.id}`,
-        kind: 'classroom',
+        key: `${c.kind}:${c.id}`,
+        kind: c.kind,
         id: c.id,
         name: c.name,
         subject: c.subjectId === null ? null : { id: c.subjectId, name: subjects.get(c.subjectId) ?? '' },
@@ -66,14 +68,16 @@ export class ClassesService {
         members: counts.get(c.id) ?? 0,
         joinCode: c.joinCode === null || c.joinCode.trim() === '' ? null : c.joinCode,
         isActive: c.isActive,
-        link: `/prestasi/kelas/${c.id}`,
+        // Only a classroom has a class dashboard (canOpenClassDashboard); a school_class link would answer NOT_FOUND.
+        link: c.kind === 'classroom' ? `/prestasi/kelas/${c.id}` : null,
       }
     })
 
     return {
       data,
       meta: { ...listMeta(page, SCHOOL_ADMIN_PAGE_SIZE, matched.length), displayed: matched.length },
-      tiles: { activeClasses: all.filter((c) => c.isActive).length },
+      // Same count as the dashboard "Kelas Aktif" card (AC-AS-2-1): active classes of BOTH kinds (classroom and school_class).
+      tiles: { activeClasses: all.length },
       levels,
     }
   }

@@ -8,19 +8,35 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
+import { isApiError } from '@/api'
 import { DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
-import { fetchHeadcounts } from '../api/headcount'
+import { fetchHeadcounts, HEADCOUNT_CENTRAL_EMPTY } from '../api/headcount'
 import AutoSetupModal from '../components/headcount/AutoSetupModal.vue'
 import { useHeadcountReadOnly } from '../lib/headcount-access'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 
-const { data, error, reload } = useRouteData((signal) => fetchHeadcounts({ signal }))
-const showAutoSetup = ref(false)
-/** The school admin reads the school's list: no create / Auto-Setup (R1-AS-3). */
-const readOnly = useHeadcountReadOnly()
+/**
+ * Central view (M17 `/admin/laporan-sekolah/headcount`, S6-T13 PM-24): `schoolId` is the school Admin Pusat picked
+ * (sent as `?schoolId=`). The list is read-only, as the school admin's. Without it the list is the viewer's own.
+ */
+const props = defineProps<{ schoolId?: number | string }>()
+const central = computed(() => props.schoolId !== undefined)
 const session = useSessionStore()
+const { data, error, reload } = useRouteData(
+  (signal) => fetchHeadcounts({ schoolId: props.schoolId, signal }),
+  [() => props.schoolId],
+  { skipNotFound: props.schoolId !== undefined },
+)
+const showAutoSetup = ref(false)
+/** The school admin reads the school's list: no create / Auto-Setup (R1-AS-3). The central view too. */
+const schoolAdminReadOnly = useHeadcountReadOnly()
+const readOnly = computed(() => schoolAdminReadOnly.value || central.value)
+/** An unknown school (404) or a refused `schoolId` (422): the M-07 empty copy. */
+const missing = computed(
+  () => central.value && isApiError(error.value) && (error.value.status === 404 || error.value.status === 422),
+)
 /** "Guru" (API-AS-15): the owner of a config; the teacher's own list is all theirs, so no column there. */
 const showTeacher = computed(() => session.role === 'school_admin' || session.role === 'admin')
 
@@ -74,6 +90,7 @@ const cardFields = computed(() => [
     >
       <template #actions>
         <UButton
+          v-if="!central"
           to="/headcount/dashboard"
           color="neutral"
           variant="soft"
@@ -101,7 +118,13 @@ const cardFields = computed(() => [
       </template>
     </DsPageHeader>
 
-    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
+    <DsEmptyState
+      v-if="missing"
+      :title="HEADCOUNT_CENTRAL_EMPTY"
+      icon="buildings"
+      data-testid="headcount-central-empty"
+    />
+    <DsLoadError v-else-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
       <div v-if="data.length === 0" data-testid="headcount-empty">
