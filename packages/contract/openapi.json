@@ -9880,6 +9880,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9888,7 +9892,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -9950,6 +9955,10 @@
               "integer",
               "null"
             ]
+          },
+          "pendingReview": {
+            "type": "boolean",
+            "description": "True while an open teacher image (intake item, source guru) waits for an admin: the chip \"Menunggu Semakan\". Also true for the other questions of the same stimulus group."
           }
         },
         "required": [
@@ -9958,7 +9967,8 @@
           "subject",
           "createdBy",
           "sourceFile",
-          "sourcePage"
+          "sourcePage",
+          "pendingReview"
         ],
         "additionalProperties": false
       },
@@ -10150,9 +10160,7 @@
           },
           "needsDiagram": {
             "type": "boolean",
-            "enum": [
-              false
-            ]
+            "description": "false after the admin upload / dismiss; true after a teacher upload (the question is unchanged until an admin accepts the image)."
           }
         },
         "required": [
@@ -81551,7 +81559,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -81984,7 +81992,7 @@
               "status"
             ],
             "additionalProperties": false,
-            "description": "Set once the item is accepted."
+            "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
           },
           "duplicates": {
             "type": "array",
@@ -83044,7 +83052,7 @@
                   "status"
                 ],
                 "additionalProperties": false,
-                "description": "Set once the item is accepted."
+                "description": "Set once the item is accepted, or preset for a diagram-upload item (the question the image is for; no new question is made on accept)."
               },
               "duplicates": {
                 "type": "array",
@@ -94174,8 +94182,8 @@
           "question-workflow",
           "diagram-audit"
         ],
-        "summary": "Attach a diagram image and clear the flag",
-        "description": "Admin only. multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "summary": "Attach a diagram image (admin) or submit one for review (teacher)",
+        "description": "Admin and teacher (school admin is refused). multipart/form-data `image` (JPG, PNG or WebP, GIF and SVG refused, up to 2 MB; storage: BE-04). Admin: sets needsDiagram false and stores the image reference, flash \"Gambar rajah berjaya dimuat naik.\". Teacher (S6-T18 part 2): the question is NOT changed; the image is stored as the caller's question_image and becomes an intake item (source guru, kind diagram, one per stimulus group) for the admin to accept or reject; answers { data: { id, needsDiagram: true }, status: \"Gambar dihantar untuk semakan.\" } and the list row then has pendingReview true. One open image per stimulus group.",
         "parameters": [
           {
             "schema": {
@@ -94219,7 +94227,7 @@
         },
         "responses": {
           "200": {
-            "description": "Image attached; status is the flash text.",
+            "description": "Image attached (admin) or submitted for review (teacher); status is the flash text.",
             "content": {
               "application/json": {
                 "schema": {
@@ -94239,7 +94247,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin or teacher), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94250,6 +94258,16 @@
           },
           "404": {
             "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Gambar untuk soalan ini sedang menunggu semakan.\" (teacher: the question's stimulus group already has an open image) or \"Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.\" (the question has no stimulus group).",
             "content": {
               "application/json": {
                 "schema": {

@@ -352,7 +352,7 @@ describe('diagram audit', () => {
   const pager = { page: 1, pageSize: 20, totalItems: 1, totalPages: 1, from: 1, to: 1 }
   const list = {
     data: {
-      mcq: { items: [{ id: '41', questionText: 'Rajah menunjukkan sebuah litar.', subject: { id: '2', name: 'Sains' }, createdBy: { id: '7', name: null }, sourceFile: 'kertas.pdf', sourcePage: 3 }], meta: pager },
+      mcq: { items: [{ id: '41', questionText: 'Rajah menunjukkan sebuah litar.', subject: { id: '2', name: 'Sains' }, createdBy: { id: '7', name: null }, sourceFile: 'kertas.pdf', sourcePage: 3, pendingReview: false }], meta: pager },
       structured: { items: [], meta: { ...pager, totalItems: 0, from: null, to: null } },
     },
     meta: { stats: { mcq: 1, structured: 0, total: 1 }, bySubject: [{ name: 'Sains', count: 1 }], unfilteredMcq: 1 },
@@ -362,6 +362,11 @@ describe('diagram audit', () => {
     expect(ok(DiagramAuditResponseSchema, list)).toBe(true)
     expect(ok(DiagramAuditResponseSchema, { ...list, meta: { ...list.meta, bySubject: Array.from({ length: 11 }, (_, i) => ({ name: `S${String(i)}`, count: 1 })) } })).toBe(false)
     expect(ok(DiagramAuditResponseSchema, { data: list.data })).toBe(false)
+    const row = list.data.mcq.items[0]!
+    expect(ok(DiagramAuditResponseSchema, { ...list, data: { ...list.data, mcq: { ...list.data.mcq, items: [{ ...row, pendingReview: true }] } } })).toBe(true)
+    const bare: Record<string, unknown> = { ...row }
+    delete bare.pendingReview
+    expect(ok(DiagramAuditResponseSchema, { ...list, data: { ...list.data, mcq: { ...list.data.mcq, items: [bare] } } })).toBe(false)
   })
 
   it('knows the two kinds only', () => {
@@ -386,7 +391,9 @@ describe('diagram audit', () => {
 
   it('answers image and dismiss with needsDiagram false and the flash', () => {
     expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: false }, status: DIAGRAM_AUDIT_MESSAGES.uploaded })).toBe(true)
-    expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: true }, status: 'x' })).toBe(false)
+    // A teacher image leaves the question flagged (S6-T18 part 2).
+    expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: true }, status: DIAGRAM_AUDIT_MESSAGES.submittedForReview })).toBe(true)
+    expect(ok(DiagramAuditMutationSchema, { data: { id: '41', needsDiagram: 'yes' }, status: 'x' })).toBe(false)
     expect(DIAGRAM_AUDIT_MESSAGES.dismissed).toBe('Soalan telah dikeluarkan daripada senarai audit.')
   })
 })
