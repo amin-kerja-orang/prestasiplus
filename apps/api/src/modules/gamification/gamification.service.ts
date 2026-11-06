@@ -545,10 +545,11 @@ export class GamificationService {
    * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
    * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
    * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
-   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the badges once (savepoint, never fails the login). Idempotent: the day mark
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the badges once (savepoint, never
+   * fails the login). Idempotent: the day mark
    * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
-   * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
+   * (BE-11 lock order).
    */
   async onLogin(userId: string, opts: { tx?: TxClient } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
     return this.run(opts.tx, async (db) => {
@@ -568,6 +569,7 @@ export class GamificationService {
         )
         credited = DAILY_LOGIN_REWARD
       }
+      // `isTest: false` always: a login is never Mod Pelajar (the hook fires on password logins only), so no test unlock is written here.
       await this.evaluateAchievementsSafely(userId, { tx, isTest: false })
       return { firstToday: true, credited, streak: streak.current }
     })

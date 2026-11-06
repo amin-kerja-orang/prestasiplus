@@ -21,8 +21,17 @@ describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
     t.clock.set(START) // 2026-10-19 09:00 MYT
   })
   afterEach(() => {
+    // Every evaluation that came from a login is a real one (is_test exclusion): checked on the spy before it is restored.
+    for (const spy of spies) for (const call of spy.mock.calls) expect(call[1]).toMatchObject({ isTest: false })
+    spies.length = 0
     vi.restoreAllMocks()
   })
+  const spies: { mock: { calls: unknown[][] } }[] = []
+  const watch = () => {
+    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    spies.push(spy as never)
+    return spy
+  }
 
   const badgeRows = async (id: string) => (await ledgerOf(t, id)).filter((r) => r.source === 'achievement')
   const unlocks = (id: string) => t.db.query<{ name: string }>(`select a.name from user_achievements ua join achievements a on a.id = ua.achievement_id where ua.user_id = $1`, [id])
@@ -31,7 +40,7 @@ describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
     const id = await userIdOf(t.db, STUDENT_EMPTY)
     await t.db.query(`delete from streaks where user_id = $1`, [id])
     await t.db.query(`insert into streaks (user_id, current, best, last_activity_date, total_days) values ($1, 2, 2, '2026-10-18', 2)`, [id])
-    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    const spy = watch()
     await loginAs(t as never, STUDENT_EMPTY)
     expect(spy).toHaveBeenCalledTimes(1)
     expect(spy.mock.calls[0]![1]).toMatchObject({ isTest: false })
@@ -46,20 +55,32 @@ describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
   })
 
   it('a teacher login evaluates nothing', async () => {
-    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    const spy = watch()
     await loginAs(t as never, TEACHER)
     expect(spy).not.toHaveBeenCalled()
   })
 
   it('an admin login, and entering Mod Pelajar afterwards, evaluate nothing', async () => {
-    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    const spy = watch()
     await signInMod(t, ADMIN)
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('a pupil who logs in and then asks for Mod Pelajar (admin-only, refused): the login evaluated once as a real one, nothing more', async () => {
+    t.clock.set('2026-10-25T09:00:00+08:00')
+    const spy = watch()
+    const who = await loginAs(t as never, STUDENT_EMPTY)
+    expect(spy).toHaveBeenCalledTimes(1)
+    const res = await who.agent.post('/api/session/mode').set('X-CSRF-Token', who.csrf).send({ mode: 'mod_pelajar' })
+    expect(res.status).toBe(403)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0]![1]).toMatchObject({ isTest: false })
   })
 
   it('an evaluation error does not fail the login or the daily credit', async () => {
     const id = await userIdOf(t.db, STUDENT_EMPTY)
     t.clock.set('2026-10-22T09:00:00+08:00')
+    watch()
     const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievements').mockRejectedValue(new Error('boom'))
     await loginAs(t as never, STUDENT_EMPTY) // asserts the login succeeds
     expect(spy).toHaveBeenCalled()
