@@ -5665,6 +5665,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "maxRewarded": {
+            "type": "integer",
+            "minimum": 0
+          },
           "registerUrl": {
             "type": "string",
             "minLength": 1
@@ -5704,6 +5708,7 @@
           "code",
           "rewardReferrer",
           "rewardReferee",
+          "maxRewarded",
           "registerUrl",
           "whatsappUrl",
           "telegramUrl",
@@ -29596,6 +29601,11 @@
             "maxItems": 3,
             "description": "The first 3 Perutusan posts visible to the caller (content owner BE-24)."
           },
+          "pendingTeachers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teachers waiting for the school admin to approve them (\"Guru Menunggu\"); equals the length of GET /admin-sekolah/guru/pending."
+          },
           "cards": {
             "type": "object",
             "properties": {
@@ -29801,6 +29811,7 @@
           "school",
           "roleLabel",
           "perutusan",
+          "pendingTeachers",
           "cards",
           "performance"
         ]
@@ -30811,13 +30822,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {
@@ -30869,9 +30881,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [
@@ -31904,7 +31919,7 @@
             "items": {
               "$ref": "#/components/schemas/AmaranPupilRisk"
             },
-            "description": "Score descending (not_started last), 1-based rank. Inactive pupils are included."
+            "description": "Score descending (not_started last), 1-based rank. The XS-1 pupils of the school (active, not suspended, Tingkatan 1-5); others are not listed."
           }
         },
         "required": [
@@ -65987,7 +66002,8 @@
           "ramalan",
           "mission",
           "remedial",
-          "question_set"
+          "question_set",
+          "databank"
         ]
       },
       "PracticeSessionId": {
@@ -66176,7 +66192,7 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target."
           },
           "chapterId": {
             "type": "string",
@@ -70389,10 +70405,11 @@
           "Cemerlang",
           "Sederhana",
           "Rendah",
+          "Tiada",
           "Kritikal",
           "Tiada Langsung"
         ],
-        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0."
+        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced."
       },
       "AnalyticsLevel": {
         "type": "string",
@@ -89582,7 +89599,7 @@
           "gamification"
         ],
         "summary": "Rujuk Kawan: referral code, share links and stats",
-        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.",
+        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here; the amounts and the cap are the settings referral_referrer_syiling, referral_referee_syiling and referral_max_rewarded.",
         "responses": {
           "200": {
             "description": "Referral data.",
@@ -103306,7 +103323,7 @@
           "practice-reads"
         ],
         "summary": "Own corrections: first attempt versus later attempt per question (S11)",
-        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
