@@ -52,7 +52,11 @@ function tally(rows: readonly TallyRow[]) {
 /**
  * S1 teacher report (SRS M11 section 6.4; BR-M11-01 to 07). Population: the distinct pupils actively enrolled in the
  * caller's own active classes (or the selected own class); the admin has no class and so an empty population.
- * Activities are the completed non-test practice sessions by `completed_at`; Struktur, Battle and Permainan have no
+ * FR-GUR-42-6 / XS-8: every mode counts. An activity is a completed non-test practice session (all modes; an unknown mode counts as
+ * Kuiz; Set Soalan Guru = `question_set`) by `completed_at`, or a graded Bijak sitting (`practice_attempt_aggregates`, which writes no
+ * session row) by `submitted_at`; "practised" is any such unit or any non-test answer. `notPractised` keeps the contract's first 10;
+ * the page lists `notPractisedAll` (it slices and expands itself).
+ * Struktur, Battle and Permainan have no
  * source in this build and stay 0 (see the deviations log).
  */
 @Injectable()
@@ -73,8 +77,9 @@ export class ReportService {
     const today = mytDayStart(now.getTime())
     const from = today - (range - 1) * DAY_MS
 
-    const rows = await this.repo.sessionsByDay(ids, new Date(from), now)
-    const { byType, sums, perDay, perUser } = tally(rows)
+    const rows = await this.repo.activityByDay(ids, new Date(from), now)
+    // FR-GUR-42-2: Skor Purata = the MEAN of per-session accuracies (c = sum of accuracies, n = sessions with questions), whole number, null ("—") when none.
+    const { byType, sums, perDay, perUser } = tally(rows.map((r) => ({ userId: r.userId, mode: r.mode, day: r.day, sessions: r.sessions, correct: r.accuracySum, questions: r.accuracyN })))
     const rate = (c: number, n: number): number | null => (n > 0 ? Math.round(percent(c, n)) : null)
     const scoreC = sums.kuiz.c + sums.latihTubi.c + sums.trackingA.c
     const scoreN = sums.kuiz.n + sums.latihTubi.n + sums.trackingA.n
@@ -85,7 +90,7 @@ export class ReportService {
       trend.push({ date: ddmm(day), count: perDay.get(dayKey(day)) ?? 0 })
     }
 
-    const practisedSet = await this.repo.practisedAmong(ids)
+    const practisedSet = await this.repo.practisedAnyMode(ids)
     const neverPractised = people.filter((u) => !practisedSet.has(u.id)).map(lite)
     return {
       range,
