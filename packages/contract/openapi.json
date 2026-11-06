@@ -20241,7 +20241,7 @@
               "string",
               "null"
             ],
-            "description": "Login name, shown beneath the name. Absent until the roster API fills it (S6-T10 pelajar)."
+            "description": "Login name, shown beneath the name."
           },
           "tugasan": {
             "type": "integer",
@@ -20273,7 +20273,11 @@
           "name",
           "levelName",
           "classNames",
-          "classes"
+          "classes",
+          "username",
+          "tugasan",
+          "skorPurata",
+          "lastActiveAt"
         ]
       },
       "TeacherStudentsMeta": {

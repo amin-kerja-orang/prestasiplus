@@ -160,17 +160,16 @@ export const TeacherStudentSchema = z
     classes: z
       .array(z.object({ id: IdSchema, name: z.string() }))
       .meta({ description: "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)." }),
-    username: z.string().nullable().optional().meta({ description: 'Login name, shown beneath the name. Absent until the roster API fills it (S6-T10 pelajar).' }),
-    tugasan: z.number().int().min(0).optional().meta({ description: 'Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6).' }),
+    username: z.string().nullable().meta({ description: 'Login name, shown beneath the name.' }),
+    tugasan: z.number().int().min(0).meta({ description: 'Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6).' }),
     skorPurata: z
       .number()
       .int()
       .min(0)
       .max(100)
       .nullable()
-      .optional()
       .meta({ description: 'Mean of per-session accuracy, whole number percent; null without completed sessions.' }),
-    lastActiveAt: TimestampSchema.nullable().optional().meta({ description: 'Latest answer time; null when none.' }),
+    lastActiveAt: TimestampSchema.nullable().meta({ description: 'Latest answer time; null when none.' }),
   })
   .meta({ id: 'TeacherStudent' })
 
