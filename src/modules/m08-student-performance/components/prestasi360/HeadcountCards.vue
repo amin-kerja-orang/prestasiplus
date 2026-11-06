@@ -3,13 +3,15 @@
  * S6 "Headcount — Prestasi SPM" (FR-M08-39): one card per config, newest update first. The status badge by
  * BR-M08-08 rule (1), the chip row TOV → OTRn (AR chips only) → ETR joined by chevrons; the row wraps
  * on narrow screens (DV-M08-10). "Lihat Penuh" → `/headcount/student/{id}`, shown only to a role that may open it (staff; DV-M08-47).
+ * No card: the pupil's own empty copy "Belum ada sasaran headcount daripada cikgu untuk sesi {year}." (FR-MUR-4-6, S10-T01 part 2).
+ * The cards are the pupil's own `GET /headcounts/me` figures (one computation, HC-SPEC; the API reads the shared headcount facts).
  */
 import { DsPanel } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 import { useCanOpen } from '../../lib/route-access'
 
-defineProps<{ userId: number; cards: StudentPerformance['headcount'] }>()
+defineProps<{ userId: number; cards: StudentPerformance['headcount']; year: number }>()
 
 type Card = StudentPerformance['headcount'][number]
 type Chip = Card['chips'][number]
@@ -39,7 +41,10 @@ const chipText = (chip: Chip): string =>
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Headcount — Prestasi SPM
       </h2>
-      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <p v-if="cards.length === 0" class="text-body text-muted" data-testid="headcount-empty">
+        Belum ada sasaran headcount daripada cikgu untuk sesi {{ year }}.
+      </p>
+      <div v-else class="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <article
           v-for="c in cards"
           :key="c.configId"
