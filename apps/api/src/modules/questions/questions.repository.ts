@@ -740,7 +740,7 @@ export class QuestionsRepository {
       return key === null ? [] : [key]
     })
     if (keys.length === 0) return new Set()
-    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return new Set(rows.map((r) => idToString(r.id)))
   }
