@@ -221,6 +221,31 @@ describe('wizard order and completeness (FR-QA-16, FR-ADM-QE4.1)', () => {
     expect((studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>).scriptType).toBe('mixed')
   })
 
+  it('S1-T09b: the wizard has no language choice; Jenis tulisan is the only script control and the save never sends `language`', async () => {
+    lookups.fetchSubjects.mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }, { id: 8, name: 'Bahasa Arab' }], meta: {} })
+    serve({ ...SAVED, subjectId: '8', scriptType: 'rumi' })
+    studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
+    const w = await render('/admin/studio/questions/501/sunting', '501')
+    // No bilingual (or any) language control exists in the wizard; the flat form's "BM + English (dwibahasa)" is not offered.
+    expect(w.text()).not.toContain('dwibahasa')
+    expect(w.find('option[value="ms+en"]').exists()).toBe(false)
+    expect(has(w, 'studio-language')).toBe(false)
+    // The script choice offers Rumi, Arab, Jawi and Campuran (Campuran is stored as bilingual `ms_en` by the API).
+    expect(w.findAll('[data-testid="studio-script"] option').map((o) => [o.attributes('value'), o.text()])).toEqual([
+      ['rumi', 'Rumi'],
+      ['arab', 'Arab'],
+      ['jawi', 'Jawi'],
+      ['mixed', 'Campuran'],
+    ])
+    // Jawi is accepted with nothing else changing: no UI rule couples it to a language, and `language` is not in the payload.
+    await t(w, 'studio-script').setValue('jawi')
+    await t(w, 'studio-form').trigger('submit')
+    await flushPromises()
+    const body = studio.updateStudioQuestion.mock.calls[0]?.[1] as Record<string, unknown>
+    expect(body.scriptType).toBe('jawi')
+    expect('language' in body).toBe(false)
+  })
+
   it('a subject outside the list has no Jenis tulisan, and the save leaves the script alone', async () => {
     serve({ ...SAVED })
     studio.updateStudioQuestion.mockResolvedValue({ data: { id: '501', status: 'draft' }, status: 'ok' })
