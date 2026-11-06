@@ -382,6 +382,14 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     expect((await student.get(`/api/bijak/kuiz/papers/${mine}`)).status).toBe(200)
   })
 
+  it('19b. a published Kertas Subjektif paper (surface subjektif, DM-23) is not a Kuiz paper: 404 (S3-T06)', async () => {
+    const subjektif = await createPaper('Kertas Subjektif', [{ label: 'A', questionIds: [id('SEED-MCQ-MATH-T4')] }])
+    expect((await student.get(`/api/bijak/kuiz/papers/${subjektif}`)).status).toBe(200)
+    await t.db.query(`update papers set surface = 'subjektif', printed_duration_min = coalesce(duration_minutes, 0) where id = $1::bigint`, [subjektif])
+    expect((await student.get(`/api/bijak/kuiz/papers/${subjektif}`)).status).toBe(404)
+    expect((await student.post(`/api/bijak/kuiz/papers/${subjektif}/check`, { itemId: id('SEED-MCQ-MATH-T4'), optionId: 'A' })).status).toBe(404)
+  })
+
   describe('19b. AC-R1-18.4: a paper that places a question the bank no longer serves is refused 403 with the BM line', () => {
     const msg = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
     const refused = async (paper: string, q: string): Promise<void> => {

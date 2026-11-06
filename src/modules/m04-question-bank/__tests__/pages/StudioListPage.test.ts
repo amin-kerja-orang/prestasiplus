@@ -110,6 +110,7 @@ describe('StudioListPage (S1 to S6)', () => {
     for (const chip of ['Tahun: 2024', 'Negeri: Selangor', 'Kertas: 2', 'Jenis: Percubaan']) expect(text).toContain(chip)
     expect(t(w, 'studio-jenis-filter').text()).toContain('Semua jenis')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
+    expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 4')
   })
 
   it('drops a filter value the API would refuse instead of sending it', async () => {
