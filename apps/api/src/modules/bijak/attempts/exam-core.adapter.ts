@@ -53,7 +53,7 @@ export function isBlank(a: PartAnswer | undefined, kind?: LeafKind | 'mcq'): boo
 export function numericValue(raw: string): number | null {
   return engineNumericValue(defuseRootIndex(raw))
 }
-export { effectiveMarks, leavesOf, type Leaf } from '@pp/exam-core/paper-model'
+export { effectiveMarks, leavesOf, SEMAK_KINDS, type Leaf } from '@pp/exam-core/paper-model'
 export type {
   CurriculumTag,
   LeafKind,

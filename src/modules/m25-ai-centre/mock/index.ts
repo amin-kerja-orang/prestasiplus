@@ -23,4 +23,4 @@ const plugin = defineMockModule({
 export default plugin
 
 export { heatmap } from './repository/heatmap'
-export type { HeatmapRow, HiddenTotals } from './repository/heatmap'
+export type { HeatmapRow } from './repository/heatmap'

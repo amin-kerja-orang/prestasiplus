@@ -20,6 +20,15 @@ describe('files contract', () => {
     expect(Object.keys(FILE_PURPOSE_RULES)).toEqual([...FILE_PURPOSES])
   })
 
+  it('has the marketplace_image purpose: JPG/PNG/WebP, 2 MB, one BM message', () => {
+    expect(FILE_PURPOSES).toContain('marketplace_image')
+    const rule = FILE_PURPOSE_RULES.marketplace_image
+    expect(rule.mimes).toEqual(['image/jpeg', 'image/png', 'image/webp'])
+    expect(rule.maxBytes).toBe(2 * 1024 * 1024)
+    expect(rule.typeMessage).toBe('Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.')
+    expect(rule.sizeMessage).toBe(rule.typeMessage)
+  })
+
   it('is registered in the OpenAPI document', () => {
     const doc = buildOpenApiDocument() as { paths: Record<string, unknown>; components: { schemas: Record<string, unknown> } }
     expect(Object.keys(doc.paths)).toEqual(expect.arrayContaining(['/files', '/files/{id}']))

@@ -98,6 +98,15 @@ export const AUDIT_ACTIONS = {
   HEADCOUNT_CONFIG_CREATED: 'headcount.config.created',
   HEADCOUNT_CONFIGS_AUTO_SETUP: 'headcount.configs.auto_setup',
   HEADCOUNT_STUDENTS_DROPPED: 'headcount.students.dropped',
+  // S7-T08 Marketplace admin (API-ADM-19): product writes and the four seller transitions.
+  MARKETPLACE_PRODUCT_CREATED: 'marketplace.product.created',
+  MARKETPLACE_PRODUCT_UPDATED: 'marketplace.product.updated',
+  MARKETPLACE_PRODUCT_DELETED: 'marketplace.product.deleted',
+  MARKETPLACE_PRODUCT_IMAGE_DELETED: 'marketplace.product.image_deleted',
+  MARKETPLACE_SELLER_APPROVED: 'marketplace.seller.approved',
+  MARKETPLACE_SELLER_VERIFIED: 'marketplace.seller.verified',
+  MARKETPLACE_SELLER_SUSPENDED: 'marketplace.seller.suspended',
+  MARKETPLACE_SELLER_BANNED: 'marketplace.seller.banned',
   // S10-T02: Bilangan OTR changed in Tetapan (CF-05 deletes the marks above the new count in the same transaction).
   HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
 } as const

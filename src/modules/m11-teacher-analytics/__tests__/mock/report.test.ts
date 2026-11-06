@@ -38,7 +38,7 @@ const items = (query = '', as: number | null = GURU) =>
 const KIMIA = 10
 
 describe('S1 teacher report: account 5 (§6.8; E2E-M11-10/12/14/16)', () => {
-  it('30 days: 100% 8 / 8, 100% 8 / 8, 14 activities, 46%', async () => {
+  it('30 days: 100% 8 / 8, 100% 8 / 8, 14 activities, 51%', async () => {
     const r = await report()
     expect(r.range).toBe(30)
     expect(r.classroomId).toBeNull()
@@ -52,9 +52,9 @@ describe('S1 teacher report: account 5 (§6.8; E2E-M11-10/12/14/16)', () => {
       battle: 0,
       permainan: 0,
     })
-    expect(r.score.overall).toBe(46)
+    expect(r.score.overall).toBe(51)
     expect(r.score.byType).toEqual({
-      kuiz: 46,
+      kuiz: 51,
       struktur: null,
       latihTubi: null,
       trackingA: null,
@@ -224,7 +224,7 @@ describe('S1 lists and the M16 port (BR-M11-04/05/07, §6.1)', () => {
     const r = await report()
     expect(r.activity.byType.battle).toBe(0)
     expect(r.activity.byType.permainan).toBe(0)
-    expect(r.score.overall).toBe(46)
+    expect(r.score.overall).toBe(51)
     expect(asked.length).toBeGreaterThan(0)
     expect(asked.every((ids) => ids.every((id) => id >= 3001 && id <= 3008))).toBe(true)
   })
@@ -247,7 +247,7 @@ describe('S1 lists and the M16 port (BR-M11-04/05/07, §6.1)', () => {
     expect(r.activity.byType.battle).toBe(2)
     expect(r.score.byType.battle).toBe(60)
     expect(r.activity.total).toBe(16)
-    expect(r.score.overall).toBe(Math.round(((38 + 3) / (83 + 5)) * 100))
+    expect(r.score.overall).toBe(52) // FR-GUR-42-2: mean of per-session accuracies (a battle counts once at its pooled accuracy)
     expect(r.trend.find((t) => t.date === '24/09')?.count).toBe(5)
     expect(r.mostActive[0]).toMatchObject({ id: 3001, activities: 5 })
   })

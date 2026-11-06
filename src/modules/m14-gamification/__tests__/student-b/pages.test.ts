@@ -255,36 +255,126 @@ describe('S15 AchievementsPage', () => {
 })
 
 describe('S16 ReferralPage', () => {
-  const referral = (): Referral => ({
+  const URL8 = 'https://prestasiplus.my/register?ref=AB3CD4EF'
+  const referral = (over: Partial<Referral> = {}): Referral => ({
     code: '4JURJTT',
-    rewardReferrer: 50,
-    rewardReferee: 25,
+    rewardReferrer: 100,
+    rewardReferee: 0,
     maxRewarded: 20,
     registerUrl: 'https://prestasiplus.my/register?ref=4JURJTT',
     whatsappUrl:
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     telegramUrl:
       'https://t.me/share/url?url=https://prestasiplus.my/register?ref=4JURJTT&text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT',
     stats: { referrals: 0, rewarded: 0, syilingEarned: 0 },
+    ...over,
+  })
+  const stats = (referrals: number, rewarded: number, syilingEarned = 0) => ({
+    referrals,
+    rewarded,
+    syilingEarned,
   })
 
-  it('renders the tiles, the code, the links and the statistics', async () => {
+  it('renders the exact copy, the code, the links and the two counters', async () => {
     api.fetchReferral.mockResolvedValue(referral())
     const w = await render(ReferralPage, '/gamification/referral')
-    expect(w.text()).toContain('🤝 Rujuk Kawan, Dapat Syiling!')
-    expect(w.text()).toContain('Jemput kawan anda ke PRESTASIPLUS — dua-dua dapat ganjaran!')
-    expect(w.get('[data-testid=reward-you]').text()).toBe('50')
-    expect(w.get('[data-testid=reward-friend]').text()).toBe('25')
-    expect(w.text()).toContain('Syiling untuk ANDA')
-    expect(w.text()).toContain('Syiling untuk KAWAN')
+    const t = w.text()
+    expect(t).toContain('🤝 Rujuk Kawan, Dapat Syiling!')
+    expect(t).toContain('Jemput kawan sertai PrestasiPlus dan dapatkan syiling bonus')
+    expect(t).toContain('Kod rujukan anda')
+    expect(t).toContain('Pautan jemputan')
+    expect(t).not.toContain('masih perlu kod pendaftaran sekolah')
+    expect(w.get('[data-testid=reward-you]').text()).toBe('100')
+    expect(t).toContain('Syiling untuk ANDA')
     expect(w.get('[data-testid=referral-code]').text()).toBe('4JURJTT')
+    expect(w.get('[data-testid=referral-link]').text()).toBe(referral().registerUrl)
+    const stat = w.get('[data-testid=referral-stats]').text()
+    expect(stat).toContain('Kawan disertakan')
+    expect(stat).toContain('Syiling bonus')
+    expect(stat).not.toContain('Ganjaran Dicapai')
+    expect(tid(w, 'stat-rewarded')).toHaveLength(0)
+    expect(tid(w, 'stat-referrals')[0]?.text()).toBe('0')
+    expect(tid(w, 'stat-earned')[0]?.text()).toBe('0')
+    expect(w.get('[data-testid=referral-joined]').text()).toContain('Kawan yang telah sertai')
+  })
+
+  it('AC-GM-24.5: the sentence uses rewardReferrer (100 and 80)', async () => {
+    api.fetchReferral.mockResolvedValue(referral())
+    let w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-explain]').text()).toBe(
+      'Setiap kawan yang mendaftar melalui pautan ini memberi anda 100 syiling.',
+    )
+    w.unmount()
+    api.fetchReferral.mockResolvedValue(referral({ rewardReferrer: 80 }))
+    w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-explain]').text()).toBe(
+      'Setiap kawan yang mendaftar melalui pautan ini memberi anda 80 syiling.',
+    )
+    expect(w.get('[data-testid=reward-you]').text()).toBe('80')
+  })
+
+  it('AC-MUR-36-3 / AC-GM-24.6: empty text at 0 referrals, none above 0 (and no names)', async () => {
+    api.fetchReferral.mockResolvedValue(referral())
+    let w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-joined-empty]').text()).toBe(
+      'Belum ada kawan mendaftar melalui pautan anda. Kongsi pautan di atas untuk mula.',
+    )
+    w.unmount()
+    api.fetchReferral.mockResolvedValue(referral({ stats: stats(3, 3, 300) }))
+    w = await render(ReferralPage, '/gamification/referral')
+    expect(tid(w, 'referral-joined-empty')).toHaveLength(0)
+    expect(w.text()).not.toContain('Belum ada kawan')
+    expect(w.get('[data-testid=referral-joined]').text()).toBe('Kawan yang telah sertai3 kawan')
+    expect(tid(w, 'stat-referrals')[0]?.text()).toBe('3')
+    expect(tid(w, 'stat-earned')[0]?.text()).toBe('300')
+  })
+
+  it('AC-GM-24.3: the cap line shows at 20/20 and not at 19/20', async () => {
+    api.fetchReferral.mockResolvedValue(referral({ stats: stats(20, 20, 2000) }))
+    let w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-cap]').text()).toBe('Had rujukan dicapai.')
+    w.unmount()
+    api.fetchReferral.mockResolvedValue(referral({ stats: stats(19, 19, 1900) }))
+    w = await render(ReferralPage, '/gamification/referral')
+    expect(tid(w, 'referral-cap')).toHaveLength(0)
+    expect(w.text()).not.toContain('Had rujukan dicapai.')
+  })
+
+  it('shows the KAWAN tile only when rewardReferee > 0', async () => {
+    api.fetchReferral.mockResolvedValue(referral())
+    let w = await render(ReferralPage, '/gamification/referral')
+    expect(tid(w, 'reward-friend')).toHaveLength(0)
+    expect(w.text()).not.toContain('Syiling untuk KAWAN')
+    w.unmount()
+    api.fetchReferral.mockResolvedValue(referral({ rewardReferee: 25 }))
+    w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=reward-friend]').text()).toBe('25')
+    expect(w.text()).toContain('Syiling untuk KAWAN')
+  })
+
+  it('passes the share hrefs through with rel noopener noreferrer', async () => {
+    api.fetchReferral.mockResolvedValue(referral())
+    const w = await render(ReferralPage, '/gamification/referral')
     const wa = w.get('[data-testid=referral-whatsapp]')
     expect(wa.attributes('href')).toBe(referral().whatsappUrl)
     expect(wa.attributes('target')).toBe('_blank')
-    expect(w.get('[data-testid=referral-telegram]').attributes('href')).toBe(referral().telegramUrl)
-    expect(tid(w, 'stat-referrals')[0]?.text()).toBe('0')
-    expect(w.get('[data-testid=referral-stats]').text()).toContain('Statistik Rujukan')
-    expect(w.get('[data-testid=referral-stats]').text()).toContain('Syiling Diperolehi')
+    expect(wa.attributes('rel')).toBe('noopener noreferrer')
+    const tg = w.get('[data-testid=referral-telegram]')
+    expect(tg.attributes('href')).toBe(referral().telegramUrl)
+    expect(tg.attributes('target')).toBe('_blank')
+    expect(tg.attributes('rel')).toBe('noopener noreferrer')
+  })
+
+  it('renders a 7-char stored code and an 8-char new code', async () => {
+    api.fetchReferral.mockResolvedValue(referral())
+    let w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-code]').text()).toBe('4JURJTT')
+    w.unmount()
+    api.fetchReferral.mockResolvedValue(referral({ code: 'AB3CD4EF', registerUrl: URL8 }))
+    w = await render(ReferralPage, '/gamification/referral')
+    expect(w.get('[data-testid=referral-code]').text()).toBe('AB3CD4EF')
+    expect(w.get('[data-testid=referral-link]').text()).toBe(URL8)
+    expect(w.get('[data-testid=referral-code]').classes()).toContain('break-all')
   })
 
   it('copies the code and the link and changes the labels (they stay)', async () => {
@@ -293,7 +383,7 @@ describe('S16 ReferralPage', () => {
     const code = w.get('[data-testid=referral-copy-code]')
     const link = w.get('[data-testid=referral-copy-link]')
     expect(code.text()).toBe('Salin Kod')
-    expect(link.text()).toBe('Salin Link')
+    expect(link.text()).toBe('Salin')
     await code.trigger('click')
     await flushPromises()
     expect(clip.writeText).toHaveBeenLastCalledWith('4JURJTT')
@@ -301,7 +391,7 @@ describe('S16 ReferralPage', () => {
     await link.trigger('click')
     await flushPromises()
     expect(clip.writeText).toHaveBeenLastCalledWith('https://prestasiplus.my/register?ref=4JURJTT')
-    expect(link.text()).toBe('✓ Link Disalin!')
+    expect(link.text()).toBe('Disalin')
     expect(code.text()).toBe('✓ Disalin!')
   })
 

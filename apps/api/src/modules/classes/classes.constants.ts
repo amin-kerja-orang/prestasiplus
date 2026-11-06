@@ -33,6 +33,7 @@ export const CLASS_AUDIT = {
   CLASS_CREATED: 'classes.class.created',
   CLASS_UPDATED: 'classes.class.updated',
   STUDENT_ADDED: 'classes.student.added',
+  STUDENT_CREATED: 'classes.student.created',
   STUDENT_REMOVED: 'classes.student.removed',
   CHAPTER_CREATED: 'curriculum.chapter.created',
   TOPIC_CREATED: 'curriculum.topic.created',
