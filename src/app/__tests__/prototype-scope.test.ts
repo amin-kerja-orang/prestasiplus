@@ -134,6 +134,8 @@ describe('isPathInScope', () => {
       '/guru/soalan-guru',
       '/guru/soalan-guru/cipta',
       '/guru/soalan-guru/12/sunting',
+      '/guru/soalan-berstruktur',
+      '/guru/soalan-berstruktur/4454',
       '/guru/analisis-item',
       '/guru/laporan-mingguan-kelas',
       '/headcount/12/summary',
