@@ -48,7 +48,8 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       await subject.selectOption(subjectValue!)
 
       // The type defaults to MCQ ("Aneka Pilihan (MCQ)"); no image is attached.
-      await page.getByTestId('q-difficulty').selectOption('easy')
+      // Kesukaran is 1 (Sangat mudah) to 5 (Sangat sukar) on the wire (S6-T06, QuestionGuruCreateRequest).
+      await page.getByTestId('q-difficulty').selectOption('1')
       await page.getByTestId('q-text').fill('Soalan ujian regresi SW7-08: pilih jawapan B.')
       for (const [i, text] of ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'].entries()) {
         await page.getByTestId(`q-option-${String(i)}`).fill(text)
@@ -76,11 +77,13 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       const sent = res.request().postDataJSON() as {
         educationLevelId: unknown
         subjectId: unknown
+        difficultyLevel: unknown
       }
       expect(typeof sent.educationLevelId, 'educationLevelId on the wire').toBe('string')
       expect(typeof sent.subjectId, 'subjectId on the wire').toBe('string')
       expect(sent.educationLevelId).toBe(levelValue)
       expect(sent.subjectId).toBe(subjectValue)
+      expect(sent.difficultyLevel).toBe(1)
       expect(res.status(), `POST /api/guru/questions ${body}`).toBe(201)
 
       await expect(page.getByText('Soalan berjaya dihantar untuk semakan.')).toBeVisible()

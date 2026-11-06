@@ -6,11 +6,14 @@
 import {
   SERVABILITY_ACTIVITY_LABELS,
   SERVABILITY_HUB_CARDS,
+  SERVABILITY_HUB_LANES,
   servabilityReasonMs,
   type ServabilityActivity,
   type ServabilityDatabankRow,
   type ServabilityHubCard,
   type ServabilityHubLane,
+  type ServabilityLaneRow,
+  type ServabilityLatihTubiCell,
   type ServabilityOverview,
   type ServabilityPaperRow,
   type ServabilityReason,
@@ -48,10 +51,10 @@ function reasonsOf(status: BankRow['status']): ServabilityReason[] {
 /** Lane status of a mock paper: the store only has draf and terbit, so only draft and published are ever returned. */
 const laneStatusOf = (p: AdminPaperSummary): ServabilityPaperRow['status'] => (p.status === 'terbit' ? 'published' : 'draft')
 
-function page<T>(all: T[], q: LaneQuery, subjects: LaneSubject[]): LanePage<T> {
+function page<T>(all: T[], q: LaneQuery, subjects: LaneSubject[], count = all.length): LanePage<T> {
   const pageSize = q.pageSize ?? 25
   const p = q.page ?? 1
-  return { rows: all.slice((p - 1) * pageSize, p * pageSize), page: p, pageSize, total: all.length, subjects }
+  return { rows: all.slice((p - 1) * pageSize, p * pageSize), page: p, pageSize, total: all.length, subjects, count }
 }
 
 export function createMockKandungan(): KandunganApi {
@@ -62,26 +65,78 @@ export function createMockKandungan(): KandunganApi {
   const cardOf = (
     lane: ServabilityHubLane,
     rows: { attention: readonly unknown[] }[],
-  ): ServabilityHubCard => ({
-    lane,
-    ...SERVABILITY_HUB_CARDS[lane],
-    total: rows.length,
-    attention: rows.filter((r) => r.attention.length > 0).length,
-  })
+    total = rows.length,
+  ): ServabilityHubCard => {
+    const attention = rows.filter((r) => r.attention.length > 0).length
+    const { title, description, attentionLabel } = SERVABILITY_HUB_CARDS[lane]
+    return {
+      lane,
+      title,
+      description,
+      attentionLabel,
+      total,
+      attention,
+      attentionLines: attention > 0 ? [{ count: attention, text: `${String(attention)} ${attentionLabel}` }] : [],
+    }
+  }
 
-  /** Databank lane rows (filtered by `q`) from one bank read. */
-  const databankRows = (rows: BankRow[], q: LaneQuery): ServabilityDatabankRow[] => {
+  /** Rows of a bank read under the filters of `q`; `status` is left to the caller's lane. */
+  const matching = (rows: BankRow[], q: LaneQuery): BankRow[] => {
     const term = q.search?.trim().toLowerCase() ?? ''
     return rows
       .filter((r) => !q.subjectId || r.subject === q.subjectId)
-      .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
       .filter(
         (r) =>
           !term || r.previewPlain.toLowerCase().includes(term) || r.id.toLowerCase().includes(term),
       )
+  }
+  /** Subjektif lane rows: the structured and essay questions of the bank. The mock bank holds no answer keys, so no attention. */
+  const subjektifRows = (rows: BankRow[], q: LaneQuery): ServabilityLaneRow[] =>
+    matching(rows, q)
+      .filter((r) => r.kind !== 'objektif')
+      .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
+      .map((r) => ({
+        id: r.id,
+        title: r.previewPlain.slice(0, 120),
+        meta: `#${r.id} · ${r.subjectName}`,
+        status: WIRE_STATUS[r.status],
+        attention: [],
+        actions: ['preview', 'edit'],
+      }))
+  /** Latih Tubi lane cells: the mock bank has subjects but no Tingkatan, so one cell per subject, every approved question servable. */
+  const latihTubiCells = (rows: BankRow[], q: LaneQuery): ServabilityLatihTubiCell[] => {
+    const totals = new Map<string, { name: string; n: number }>()
+    for (const r of matching(rows, { subjectId: q.subjectId }).filter((x) => x.status === 'terbit')) {
+      const cell = totals.get(r.subject) ?? { name: r.subjectName, n: 0 }
+      cell.n += 1
+      totals.set(r.subject, cell)
+    }
+    const term = q.search?.trim().toLowerCase() ?? ''
+    return [...totals.entries()]
+      .filter(([, c]) => !term || c.name.toLowerCase().includes(term))
+      .map(([id, c]) => ({
+        id: `${id}:`,
+        title: c.name,
+        meta: `#${id} · ${String(c.n)} soalan`,
+        status: 'open' as const,
+        attention: [],
+        actions: [],
+        subject: { id, name: c.name },
+        level: null,
+        servable: c.n,
+        total: c.n,
+      }))
+  }
+
+  /** Databank lane rows (filtered by `q`) from one bank read. */
+  const databankRows = (rows: BankRow[], q: LaneQuery): ServabilityDatabankRow[] => {
+    return matching(rows, q)
+      .filter((r) => r.kind === 'objektif')
+      .filter((r) => !q.status || WIRE_STATUS[r.status] === q.status)
       .map<ServabilityDatabankRow>((r) => ({
         questionId: r.id,
-        title: r.previewPlain.slice(0, 90),
+        title: r.previewPlain.slice(0, 120),
+        meta: `#${r.id} · ${r.subjectName}`,
         subject: { id: r.subject, name: r.subjectName },
         status: WIRE_STATUS[r.status],
         attention: reasonsOf(r.status),
@@ -122,6 +177,14 @@ export function createMockKandungan(): KandunganApi {
       const [rows, allPapers] = await Promise.all([bank(), admin.listAdminPapers()])
       const approved = rows.filter((r) => r.status === 'terbit').length
       const papers = allPapers.filter((p) => p.status === 'terbit')
+      const cells = latihTubiCells(rows, {})
+      /** Lanes the mock has rows for; Tracking A and Kertas Subjektif have none. */
+      const cardRows: Partial<Record<ServabilityHubLane, { attention: readonly unknown[] }[]>> = {
+        databank: databankRows(rows, {}),
+        subjektif: subjektifRows(rows, {}),
+        'bijak-spm': paperRows(allPapers, {}),
+        'latih-tubi': cells,
+      }
       const broken = papers.filter((p) => !p.ok).length
       const count = (a: ServabilityActivity): { served: number; total: number } => {
         if (a === 'simulasi_paper') return { served: papers.length - broken, total: papers.length }
@@ -141,10 +204,9 @@ export function createMockKandungan(): KandunganApi {
             basis: 'evaluated' as const,
           }
         }),
-        cards: [
-          cardOf('databank', databankRows(rows, {})),
-          cardOf('bijak-spm', paperRows(allPapers, {})),
-        ],
+        cards: SERVABILITY_HUB_LANES.map((lane) =>
+          cardOf(lane, cardRows[lane] ?? [], lane === 'latih-tubi' ? cells.reduce((sum, c) => sum + c.total, 0) : undefined),
+        ),
       }
     },
 
@@ -159,6 +221,15 @@ export function createMockKandungan(): KandunganApi {
       const seen = new Map<string, LaneSubject>()
       for (const p of papers) if (!seen.has(p.subject)) seen.set(p.subject, { id: p.subject, name: p.subjectName })
       return page(paperRows(papers, q), q, [...seen.values()])
+    },
+
+    async subjektifLane(q: LaneQuery): Promise<LanePage<ServabilityLaneRow>> {
+      return page(subjektifRows(await bank(), q), q, admin.subjects().map((s) => ({ id: s.code, name: s.name })))
+    },
+
+    async latihTubiLane(q: LaneQuery): Promise<LanePage<ServabilityLatihTubiCell>> {
+      const cells = latihTubiCells(await bank(), q)
+      return page(cells, q, admin.subjects().map((s) => ({ id: s.code, name: s.name })), cells.reduce((sum, c) => sum + c.total, 0))
     },
   }
   return api

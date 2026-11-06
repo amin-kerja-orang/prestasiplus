@@ -134,6 +134,12 @@ export interface QuestionVersionRecord {
   textbookRef: TextbookRef | null
   /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
   rejectionReason: string | null
+  /** DM-42: `bank` (default) or `teacher_private` (Soalan & Rujukan, served by the mission draw only). Optional so older fixtures compile. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the teacher who owns a private question (users.id, decimal); null on every bank row. */
+  ownerUserId?: string | null
+  /** DM-42: http(s) reference link shown to the pupil as "Rujukan"; null when none. */
+  referenceUrl?: string | null
   sourcePage: number | null
   setLabel: string | null
   sourceFile: string | null
@@ -231,7 +237,7 @@ export interface AdminListFilter {
   /** V2 Studio filters (R1-21.5, D79): year, state or examining body, kertas and exam type of the source paper. */
   tahun?: string
   negeri?: string
-  kertas?: '1' | '2' | '3'
+  kertas?: '1' | '2' | '3' | '4'
   jenis?: 'sebenar' | 'percubaan' | 'modul' | 'topikal' | 'latihan'
   complianceFilter?: string
   sourceFilter?: string

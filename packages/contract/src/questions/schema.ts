@@ -151,7 +151,7 @@ export const QuestionRowSchema = z
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
     /** REQ-C-010: V2 Studio columns "Kertas" and "No.": the kertas ('1' to '3', the trailing digit of the paper code) and the printed number label. */
-    kertas: z.enum(['1', '2', '3']).nullable(),
+    kertas: z.enum(['1', '2', '3', '4']).nullable(),
     numberLabel: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
@@ -200,7 +200,7 @@ export const questionFilterShape = {
     )
     .optional(),
   /** V2 "Kertas" (Kertas 1-3). */
-  kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
+  kertas: z.enum(['1', '2', '3', '4'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */
   jenis: z.enum(QUESTION_JENIS, QUESTION_MESSAGES.filterInvalid).optional(),
   // --- S1-T07 (API-Q-01, 30 FR-ADM-Q03.8): all validated, 422 "Nilai penapis tidak sah." ---
@@ -247,7 +247,7 @@ export const QuestionSummarySchema = z
   .meta({ id: 'QuestionSummary' })
 
 /** Kertas of a question for the paper builder (stored as the trailing digit of `paper_code`, e.g. `MATH/2`). */
-export const QuestionKertasSchema = z.enum(['1', '2', '3'], 'Kertas tidak sah.').meta({ id: 'QuestionKertas' })
+export const QuestionKertasSchema = z.enum(['1', '2', '3', '4'], 'Kertas tidak sah.').meta({ id: 'QuestionKertas' })
 
 /** Id of an already uploaded `question_image` file (`POST /files?purpose=question_image`); never a client URL. */
 const ImageFileId = IdSchema.nullable()

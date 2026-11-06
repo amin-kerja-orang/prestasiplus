@@ -147,7 +147,7 @@ export function parseAdminList(raw: unknown): AdminListFilter {
 function filterV2Fields(d: {
   tahun?: string | undefined
   negeri?: string | undefined
-  kertas?: '1' | '2' | '3' | undefined
+  kertas?: '1' | '2' | '3' | '4' | undefined
   jenis?: AdminListFilter['jenis'] | undefined
   tingkatan?: AdminListFilter['tingkatan'] | undefined
   chapter?: string | undefined
