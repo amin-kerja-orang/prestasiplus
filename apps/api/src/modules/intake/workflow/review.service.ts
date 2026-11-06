@@ -41,6 +41,7 @@ import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { guruStimulusImageOf } from '../files/guru-submissions'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
 import { toQuestionInput, ConvertError } from './to-question'
@@ -81,13 +82,13 @@ interface Transition {
  * through `IntakeExtractionService`, which can only produce `generated` or `needs_review`.
  */
 /**
- * Kertas ('1' to '3') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
+ * Kertas ('1' to '4') of a source paper: the trailing digit of its paper code (`1449/2`), else the digit of its printed
  * label (`K2`, `P1`). Null when neither says (the question then carries no kertas and is not a paper-builder candidate).
  */
-export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | null {
+export function kertasOfSourcePaper(paper: { paperCode: string | null; kertas: string | null } | null): '1' | '2' | '3' | '4' | null {
   if (!paper) return null
   const m = (paper.paperCode ? /\/([0-9])\s*$/.exec(paper.paperCode) : null) ?? (paper.kertas ? /^[A-Za-z]*\s*([0-9])\s*$/.exec(paper.kertas) : null)
-  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3') ? m[1] : null
+  return m && (m[1] === '1' || m[1] === '2' || m[1] === '3' || m[1] === '4') ? m[1] : null
 }
 
 @Injectable()
@@ -644,8 +645,22 @@ export class IntakeReviewService {
         ? null
         : await this.prisma.client.intakeFigure.findUnique({ where: { id: s.figureId }, select: { cropFileId: true } })
     let assetFileId: bigint | null = null
-    if (crop?.cropFileId) {
-      const cropped = await this.files.readStored(idToString(crop.cropFileId))
+    let kind = s.kind as IntakeStimulusKind
+    // The picture to copy: the figure crop of a paper item, or (S6-T17) the `question_image` a teacher uploaded for a structured submission.
+    let sourceFileId: string | null = crop?.cropFileId ? idToString(crop.cropFileId) : null
+    if (sourceFileId === null && s.figureId === null) {
+      const token = guruStimulusImageOf(row.payload)
+      if (token !== null) {
+        // A guru batch always has an owner; never match an unowned file (a null owner would).
+        const owner = row.batch.ownerUserId
+        const own = owner === null ? null : await this.prisma.client.file.findFirst({ where: { publicId: token, purpose: 'question_image', ownerUserId: owner }, select: { id: true } })
+        if (!own) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+        sourceFileId = idToString(own.id)
+        kind = 'image'
+      }
+    }
+    if (sourceFileId !== null) {
+      const cropped = await this.files.readStored(sourceFileId)
       if (!cropped) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
       const stored = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: cropped.bytes, isTest })
       made.fileToken = stored.publicId
@@ -654,7 +669,7 @@ export class IntakeReviewService {
     const table = stimulusTableOf(s.tableData)
     const body = s.body ?? (table ? [table.head.join(' | '), ...table.rows.map((r) => r.join(' | '))].join('\n') : null)
     const stimulusId = await this.questions.createStimulus({
-      kind: s.kind as IntakeStimulusKind,
+      kind,
       label: s.label || null,
       bodyMs: body,
       bodyEn: null,

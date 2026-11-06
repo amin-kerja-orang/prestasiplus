@@ -8,10 +8,11 @@ import { optionImageIds } from '../../bijak/kuiz/kuiz.mapper'
 import { withLeafStimuli } from '../../bijak/kuiz/own-stimuli'
 import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
 import { QuestionsBijakPoolSource } from '../bijak-pool'
+import { VERSION_STIMULI_SQL } from '../learner-visibility'
 import { QuestionsRepository } from '../questions.repository'
 import type { QuestionRecord, StimulusGroupRecord } from '../types'
 import { evaluateAll } from './rules'
-import type { LevelFact, ServabilityFacts, SubjectFact } from './types'
+import type { LevelFact, MediaStimulusFact, ServabilityFacts, SubjectFact } from './types'
 
 const big = (ids: Iterable<string>): bigint[] => [...new Set(ids)].map((id) => idFromString(id))
 
@@ -89,6 +90,7 @@ export class ServabilityService {
       return gid ? (groups.get(gid) ?? null) : null
     }
     const gaps = await this.questions.incompleteGroups([...new Set(records.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))])
+    const media = await this.mediaOf([...live.keys()])
     const out = new Map<string, ServabilityFacts>()
     for (const [id, l] of latest) {
       const v = (live.get(id) ?? l).version
@@ -99,6 +101,7 @@ export class ServabilityService {
         subject: subjects.get(`${v.subjectId ?? ''}:${v.educationLevelId ?? ''}`) ?? null,
         group: bridgeGroupOf(id),
         ...((gid) => (gid != null && gaps.has(gid) ? { groupIncomplete: gaps.get(gid) as number } : {}))(live.get(id)?.groupId),
+        media: media.get(id) ?? { stimuli: [], importIssueCodes: [] },
         linkedAssets,
         outside: own.outside,
         fileTokens: tokens,
@@ -106,6 +109,32 @@ export class ServabilityService {
         janaFacts: jana.get(id) ?? null,
         ...(opts.jana === false ? { janaSkipped: true as const } : {}),
       })
+    }
+    return out
+  }
+
+  /**
+   * S1-T06 (FR-X1-4f): the facts of `mediaResolvedSql` per question: the stimuli of its LIVE version (the same set, `VERSION_STIMULI_SQL`) and the version's
+   * import-hold codes. `mediaUnresolved` (rules.ts) is the JS twin applied to them.
+   */
+  private async mediaOf(ids: readonly string[]): Promise<Map<string, NonNullable<ServabilityFacts['media']>>> {
+    if (ids.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<
+      { qid: bigint; kind: string | null; has_file: boolean | null; has_table: boolean | null; body_ms: string | null; body_en: string | null; codes: string[] | null }[]
+    >`
+      SELECT q.id AS qid, s.kind, (s.asset_file_id IS NOT NULL) AS has_file, (s.table_data IS NOT NULL) AS has_table, s.body_ms, s.body_en,
+             ARRAY(SELECT e->>'code' FROM jsonb_array_elements(CASE WHEN jsonb_typeof(v.import_issues) = 'array' THEN v.import_issues ELSE '[]'::jsonb END) e WHERE jsonb_typeof(e) = 'object') AS codes
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+        LEFT JOIN LATERAL (${VERSION_STIMULI_SQL}) l ON TRUE
+        LEFT JOIN stimuli s ON s.id = l.sid
+       WHERE q.id = ANY(${big(ids)}::bigint[])`
+    const out = new Map<string, NonNullable<ServabilityFacts['media']>>()
+    for (const r of rows) {
+      const key = idToString(r.qid)
+      const entry = out.get(key) ?? { stimuli: [], importIssueCodes: r.codes ?? [] }
+      if (r.kind !== null) (entry.stimuli as MediaStimulusFact[]).push({ kind: r.kind, hasFile: r.has_file === true, hasTableData: r.has_table === true, bodyMs: r.body_ms, bodyEn: r.body_en })
+      out.set(key, entry)
     }
     return out
   }

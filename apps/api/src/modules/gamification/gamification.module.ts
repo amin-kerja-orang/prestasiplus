@@ -11,6 +11,7 @@ import { PerformancePorts } from '../reports/performance/ports'
 import { ShopModule } from '../shop'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
+import { ChallengeClaimsService } from './challenge-claims.service'
 import { GamificationAdminService } from './admin.service'
 import { GamesRewardsAdapter } from './games-rewards.adapter'
 import { GamificationController } from './gamification.controller'
@@ -24,7 +25,7 @@ import { GamificationPorts } from './ports'
 /**
  * M14 gamification beyond the wallet core (BE-23): the student routes (dashboard, challenges, achievements,
  * leaderboard, referral, share cards, convert), the admin economy and operations routes, and the entry points
- * other cards call inside their own transaction (`GamificationService.settleChallenges`, `claimChallenge`,
+ * other cards call inside their own transaction (`GamificationService.settleChallenges`, `completeChallenge`, and the claim `ChallengeClaimsService`,
  * `unlockAchievement`, `onGameResult`, `canEarnSyiling`, `applyReferral`; `GamificationAdminService.runDraw`).
  * Every movement goes through `WalletService` (BE-11); the repository reads the wallet tables and writes none of
  * them. The teacher economy is NOT built (D53/OWN-10): no `/guru/gamification*` route exists.
@@ -40,7 +41,7 @@ import { GamificationPorts } from './ports'
 @Module({
   imports: [AuditModule, ThrottleModule, AuthPortsModule, AccountPortsModule, WalletModule, PerformanceModule, ClassesModule, GamesCoreModule, ShopModule],
   controllers: [GamificationController, GamificationAdminController, RewardControlController],
-  providers: [GamificationRepository, GamificationService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter, GamificationLoginHook, GamificationRegistrationHook],
+  providers: [GamificationRepository, GamificationService, ChallengeClaimsService, GamificationAdminService, GamificationPorts, PerformanceGamificationAdapter, GamesRewardsAdapter, GamificationLoginHook, GamificationRegistrationHook],
   exports: [GamificationService, GamificationAdminService, GamificationPorts],
 })
 export class GamificationModule implements OnModuleInit {
@@ -60,7 +61,7 @@ export class GamificationModule implements OnModuleInit {
     this.performance.provideGamification(this.gamificationRead)
     // D-13: the games' syiling follows `games_award_syiling` (seed 0 = XP only) instead of the never-earning default.
     this.gamesPorts.provideRewards(this.gamesRewards)
-    // XR-M14-02(b): a self-registration with a referral code pays the new user 25 and the referrer 50, in the registration transaction.
+    // XR-M14-02(b): a self-registration of a pupil with a referral code pays the amounts of the referral settings, in the registration transaction.
     this.accountPorts.provideRegistrationHook(this.registrationHook)
     // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
     this.authPorts.provideLoginHook(this.loginHook)

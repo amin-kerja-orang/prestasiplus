@@ -259,6 +259,7 @@ describe('S16 ReferralPage', () => {
     code: '4JURJTT',
     rewardReferrer: 50,
     rewardReferee: 25,
+    maxRewarded: 20,
     registerUrl: 'https://prestasiplus.my/register?ref=4JURJTT',
     whatsappUrl:
       'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',

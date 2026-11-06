@@ -244,7 +244,7 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
     path: '/practice/corrections',
     tags: [TAG],
     summary: 'Own corrections: first attempt versus later attempt per question (S11)',
-    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). ${WHO}`,
+    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). ${WHO}`,
     request: { query: PracticeReadCorrectionsQuerySchema },
     responses: { 200: json(envelopeOf(PracticeReadCorrectionsSchema), 'The month report.'), 401: UNAUTHORIZED },
   })

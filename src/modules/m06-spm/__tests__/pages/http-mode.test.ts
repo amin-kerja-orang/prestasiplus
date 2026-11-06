@@ -48,8 +48,8 @@ import MockRunPage from '../../pages/MockRunPage.vue'
 const MOCK_UUID = '6a46860a-d53b-443b-8437-6a0c52570ceb'
 
 const OVERVIEW = {
-  stats: { totalQuestions: 483, subjectCount: 25, yearsAvailable: 0, trackingAQuestions: 370 },
-  modules: { databank: 483, latihTubi: 483, trackingA: 370, subjektifSets: 3 },
+  stats: { totalQuestions: 483, subjectCount: 25, trackingAQuestions: 370 },
+  modules: { databank: 483, latihTubi: 483, trackingA: 370, subjektifSets: 3, kertasSubjektif: 2 },
   me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
 } satisfies SpmOverview
 

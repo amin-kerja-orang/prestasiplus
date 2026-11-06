@@ -14,7 +14,7 @@ import { useBijakUser } from '../../../lib/use-bijak'
 import { bijakAdminServer } from '../../../server/client'
 import IntakeMetaFields, { type IntakeForm } from '../components/IntakeMetaFields.vue'
 import { INTAKE_LIST_PATH, intakeReviewPath } from '../lib/intake-routes'
-import { PAPER_TYPES } from '../types'
+import { PAPER_TYPES, toIntakeKertas } from '../types'
 
 const router = useRouter()
 const route = useRoute()
@@ -40,7 +40,7 @@ onMounted(async () => {
 
 const form = reactive<IntakeForm>({
   subject: knownSubject ? one(q.subject) : 'MAT',
-  kertas: one(q.kertas) === '1' ? '1' : '2',
+  kertas: String(toIntakeKertas(one(q.kertas))),
   year: String(new Date().getFullYear()),
   paperType: PAPER_TYPES[0],
   source: '',
@@ -61,7 +61,7 @@ async function submit(): Promise<void> {
   try {
     const batch = await server.createManualBatch(user.value, {
       subject: form.subject,
-      kertas: Number(form.kertas) === 1 ? 1 : 2,
+      kertas: toIntakeKertas(form.kertas),
       year: Number(form.year) || new Date().getFullYear(),
       paperType: form.paperType,
       source: form.source.trim(),
