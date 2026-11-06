@@ -36,6 +36,12 @@ export class PracticeFactsAdapter implements PracticeFactsProvider {
     }
   }
 
+  /** `date` is a Malaysia day; see `PracticeRepository.bestCombo`. */
+  async bestCombo(userId: string, date: string): Promise<number> {
+    const from = startOfMytDay(new Date(`${date}T12:00:00+08:00`))
+    return this.practice.bestCombo(userId, from, new Date(from.getTime() + DAY_MS))
+  }
+
   async mastery(userId: string): Promise<readonly PracticeMasteryFact[]> {
     const rows = await this.practice.mastery(userId)
     if (rows.length === 0) return []

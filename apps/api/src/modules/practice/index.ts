@@ -5,6 +5,7 @@ export { PracticeService } from './practice.service'
 export { AnswerLogPort, ANSWER_MODES, WRITABLE_ANSWER_MODES } from './answer-log.port'
 export type { AnswerLogEntry, AnswerMode, WritableAnswerMode } from './answer-log.port'
 export { coinsPerCorrect } from './coins'
+export { GAME_ANSWER_MODES, longestRunInSession } from './day-facts'
 export type {
   AnswerFilter,
   DirectCompleted,
