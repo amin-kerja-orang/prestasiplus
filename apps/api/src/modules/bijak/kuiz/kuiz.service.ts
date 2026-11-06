@@ -54,10 +54,10 @@ import {
   toItem,
 } from './kuiz.mapper'
 import { ownStimuliOf } from './own-stimuli'
-/** [PROPOSED] The attempt id of a pupil's per-paper kuiz rows: a name-based uuid (v5 layout) of the pupil and the paper. */
 /** Internal: rolls back a `closeIdle` transaction whose session turned out not to be idle any more. */
 class StillActive extends Error {}
 
+/** [PROPOSED] The attempt id of a pupil's per-paper kuiz rows: a name-based uuid (v5 layout) of the pupil and the paper. */
 export function paperKuizAttemptId(userId: string, paperId: string): string {
   const h = createHash('sha1').update(`bijak-kuiz-paper:${userId}:${paperId}`).digest()
   h[6] = (h[6]! & 0x0f) | 0x50
