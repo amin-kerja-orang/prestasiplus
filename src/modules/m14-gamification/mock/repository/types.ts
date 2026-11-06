@@ -106,6 +106,18 @@ export interface ChallengeCompletion {
   completedAt: string
 }
 
+/** DATA-M14-06 ChallengeClaim (DM-63), unique (userId, challengeId, date). The amounts are what was credited. */
+export interface ChallengeClaimRow {
+  id: number
+  userId: number
+  challengeId: number
+  /** Local date (Asia/Kuala_Lumpur). */
+  date: string
+  rewardSyiling: number
+  rewardXp: number
+  clientUuid: string | null
+}
+
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary'
 /** BR-M14-16 criterion keys (INFERRED from the descriptions). */
 export type AchievementCriterion =

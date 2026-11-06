@@ -127,10 +127,12 @@ export interface DashboardRecentQuestion {
   id: EntityId
   subjectName: string
   difficulty: number
-  /** Cut at 100 characters + "..." (BR-29). */
+  /** Cut at 140 characters + "…" (FR-MUR-2-8). */
   text: string
   createdAt: string
   levelCode: string
+  /** Served URL of the question's first figure, shown as a small thumbnail; null when it has none (FR-MUR-2-8). */
+  figureThumbUrl: string | null
 }
 
 export interface DashboardSubjectStat {
@@ -552,6 +554,8 @@ export interface StructuredAttemptRequest {
 /** #17 DATA-M05-06 StructuredAttempt + the model answers. */
 export interface StructuredAttemptResult {
   id: string
+  /** S5-T11: the Bijak attempt id (self-mark and result routes); equal to `id`. */
+  attemptId: string
   userId: number
   structuredQuestionId: number
   scope: StructuredScope | null

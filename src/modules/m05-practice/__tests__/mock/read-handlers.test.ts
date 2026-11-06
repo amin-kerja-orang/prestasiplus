@@ -26,6 +26,7 @@ import type {
   RevisionSubject,
   SubjectConfig,
 } from '../../api/types'
+import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
 
@@ -302,17 +303,31 @@ describe('#1 GET /api/dashboard (S1)', () => {
     }
   })
 
-  it('"Soalan Terkini": the 5 newest approved questions (BR-29), text cut at 100 characters, no practice anchor', async () => {
+  it('"Soalan Terkini" (FR-MUR-2-8): the 5 newest servable questions of the own form, text cut at 140 characters + "…", a figure field, no answer key', async () => {
     const d = await dash(PELAJAR)
-    expect(d.recentQuestions).toHaveLength(5)
+    expect(d.recentQuestions.length).toBeGreaterThan(0)
+    expect(d.recentQuestions.length).toBeLessThanOrEqual(5)
     const created = d.recentQuestions.map((q) => q.createdAt)
     expect([...created].sort().reverse()).toEqual(created)
+    const grade = users.get(PELAJAR)?.grade ?? null
     for (const q of d.recentQuestions) {
-      expect(q.text.length).toBeLessThanOrEqual(103)
-      if (q.text.length > 100) expect(q.text.endsWith('...')).toBe(true)
+      expect(q.text.length).toBeLessThanOrEqual(141)
+      if (q.text.length > 140) expect(q.text.endsWith('…')).toBe(true)
+      expect(q.text.endsWith('...')).toBe(false)
       expect(q.subjectName).not.toBe('')
       expect(q.levelCode).not.toBe('')
+      if (grade !== null && grade >= 7) expect(q.levelCode).toBe(`T${String(grade - 6)}`)
       expect(q.difficulty).toBeGreaterThanOrEqual(1)
+      expect(q.figureThumbUrl === null || q.figureThumbUrl.startsWith('/api/files/')).toBe(true)
+      expect(Object.keys(q).sort()).toEqual([
+        'createdAt',
+        'difficulty',
+        'figureThumbUrl',
+        'id',
+        'levelCode',
+        'subjectName',
+        'text',
+      ])
       expect(Number(q.id) < 600_001 || Number(q.id) > 600_065).toBe(true) // numeric in the mock
     }
   })

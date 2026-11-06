@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
+import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection } from '../../../db/generated/client'
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { levelScopeAllows } from './rules'
@@ -14,40 +14,6 @@ export interface SubjectRef {
   id: bigint
   code: string
   name: string
-}
-
-export interface NewPlacement {
-  questionId: bigint
-  pinnedVersionNo: number
-}
-
-export interface NewSection {
-  label: string
-  instruction: string | null
-  ruleType: 'all' | 'choose'
-  ruleN: number | null
-  questionCount: number
-  markBudget: number
-  compulsory: boolean
-  placements: NewPlacement[]
-}
-
-export interface NewJanaPaper {
-  title: string
-  subjectId: bigint
-  kertas: number
-  year: number
-  paperCode: string
-  printedDurationMin: number
-  instructions: string[]
-  referenceSheets: Prisma.InputJsonValue
-  blueprintId: bigint
-  userId: bigint
-  isTest: boolean
-  publishedAt: Date
-  /** The standard report of the composition (AC-34.7): blueprint version, per-section achieved marks, seed and solver. */
-  standardReport?: Prisma.InputJsonValue
-  sections: NewSection[]
 }
 
 const TREE = {
@@ -88,35 +54,12 @@ export class PapersRepository {
     return this.prisma.client.paper.findUnique({ where: { id }, include: TREE })
   }
 
-  /** Active blueprints (one per subject and kertas), oldest first. */
-  listActiveBlueprints(): Promise<BlueprintWithSections[]> {
-    return this.prisma.client.blueprint.findMany({
-      where: { status: 'active' },
-      include: { sections: { orderBy: { position: 'asc' } } },
-      orderBy: { id: 'asc' },
-    })
-  }
-
-  findActiveBlueprint(subjectId: bigint, kertas: number): Promise<BlueprintWithSections | null> {
-    return this.prisma.client.blueprint.findFirst({
-      where: { subjectId, kertas, status: 'active' },
-      include: { sections: { orderBy: { position: 'asc' } } },
-    })
-  }
-
-  /** The version students generate from (BJS-02 `serves_students`): may be a retired row while a Spec head is edited. */
-  findServingBlueprint(subjectId: bigint, kertas: number): Promise<BlueprintWithSections | null> {
-    return this.prisma.client.blueprint.findFirst({
-      where: { subjectId, kertas, servesStudents: true, source: 'verified' },
-      include: { sections: { orderBy: { position: 'asc' } } },
-    })
-  }
-
-  /** Every row students generate from (`serves_students`, Disahkan); the key set of `canGenerate` (N1). */
-  listServingBlueprints(): Promise<Pick<Blueprint, 'subjectId' | 'kertas'>[]> {
+  /** Every row students see in the contract list (`serves_students`, Disahkan; one per subject and kertas), oldest first (N1, S3-T01). */
+  listServingBlueprints(): Promise<BlueprintWithSections[]> {
     return this.prisma.client.blueprint.findMany({
       where: { servesStudents: true, source: 'verified' },
-      select: { subjectId: true, kertas: true },
+      include: { sections: { orderBy: { position: 'asc' } } },
+      orderBy: { id: 'asc' },
     })
   }
 
@@ -127,10 +70,6 @@ export class PapersRepository {
       select: { id: true, code: true, name: true },
     })
     return new Map(rows.map((r) => [r.id.toString(), r]))
-  }
-
-  async subjectByCode(code: string): Promise<SubjectRef | null> {
-    return this.prisma.client.subject.findUnique({ where: { code }, select: { id: true, code: true, name: true } })
   }
 
   /** Subjects with an active blueprint or a published curated paper, in curriculum order. */
@@ -150,63 +89,6 @@ export class PapersRepository {
       where: { id: { in: [...new Set(ids)] }, isActive: true },
       select: { id: true, code: true, name: true },
       orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
-    })
-  }
-
-  countJanaPapers(userId: bigint): Promise<number> {
-    return this.prisma.client.paper.count({ where: { kind: 'jana', generatedForUserId: userId } })
-  }
-
-  /** Inserts a generated paper with its sections and placements in one transaction; returns its id. */
-  async createJanaPaper(input: NewJanaPaper): Promise<bigint> {
-    return this.prisma.transaction(async (tx) => {
-      const paper = await tx.paper.create({
-        data: {
-          kind: 'jana',
-          title: input.title,
-          subjectId: input.subjectId,
-          kertas: input.kertas,
-          year: input.year,
-          paperCode: input.paperCode,
-          printedDurationMin: input.printedDurationMin,
-          instructions: input.instructions,
-          referenceSheets: input.referenceSheets,
-          blueprintId: input.blueprintId,
-          status: 'published',
-          version: 1,
-          generatedForUserId: input.userId,
-          isTest: input.isTest,
-          publishedAt: input.publishedAt,
-          ...(input.standardReport === undefined ? {} : { standardReport: input.standardReport }),
-          createdById: input.userId,
-        },
-        select: { id: true },
-      })
-      let position = 0
-      for (const s of input.sections) {
-        position += 1
-        await tx.paperSection.create({
-          data: {
-            paperId: paper.id,
-            position,
-            label: s.label,
-            instruction: s.instruction,
-            ruleType: s.ruleType,
-            ruleN: s.ruleN,
-            questionCount: s.questionCount,
-            markBudget: s.markBudget,
-            compulsory: s.compulsory,
-            placements: {
-              create: s.placements.map((p, i) => ({
-                questionId: p.questionId,
-                pinnedVersionNo: p.pinnedVersionNo,
-                position: i + 1,
-              })),
-            },
-          },
-        })
-      }
-      return paper.id
     })
   }
 }

@@ -10,7 +10,6 @@ import { BijakError } from '../server/errors'
 
 const server = vi.hoisted(() => ({
   getResult: vi.fn(),
-  generatePaper: vi.fn(),
   retryAttempt: vi.fn(),
   pastSittings: vi.fn(),
 }))
@@ -71,7 +70,6 @@ async function render(kind: 'jana' | 'pilihan'): Promise<void> {
 beforeEach(() => {
   setActivePinia(createPinia())
   server.getResult.mockReset()
-  server.generatePaper.mockReset()
   server.retryAttempt.mockReset()
   server.pastSittings.mockResolvedValue({ lastSubmittedAttemptId: null, sittings: [] })
 })
@@ -81,49 +79,14 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('ResultPage retry (Jana Kertas)', () => {
-  it('shortage: stays on the page and shows the capped alert under the button', async () => {
-    server.generatePaper.mockResolvedValue({
-      ok: false,
-      reason: 'shortage',
-      shortages: Array.from({ length: 7 }, (_, i) => ({ section: `Bahagian ${i + 1}`, need: 5, have: 1 })),
-    })
+describe('ResultPage retry (every paper kind: same paper, no generation)', () => {
+  it('a Jana Kertas result: Cuba Lagi starts a new attempt on the same paper', async () => {
+    server.retryAttempt.mockResolvedValue({ attemptId: 'a2' })
     await render('jana')
     q('[data-testid="retry"]')!.click()
     await flushPromises()
-    expect(router.currentRoute.value.path).toBe('/r/a1')
-    expect(document.body.querySelectorAll('[data-testid="shortage-line"]')).toHaveLength(5)
-    expect(q('[data-testid="shortage-more"]')?.textContent).toContain('Tunjuk 2 lagi')
-    expect(q('[data-testid="win-screen"]')).not.toBeNull()
-  })
-
-  it('503 limit: shows the solver-budget message and stays', async () => {
-    server.generatePaper.mockResolvedValue({ ok: false, reason: 'limit', limitSections: [] })
-    await render('jana')
-    q('[data-testid="retry"]')!.click()
-    await flushPromises()
-    expect(q('[data-testid="retry-message"]')?.textContent).toContain(
-      'Kertas tidak dapat disusun sekarang. Cuba lagi.',
-    )
-    expect(router.currentRoute.value.path).toBe('/r/a1')
-  })
-
-  it('no longer usable: shows the AC-03.6 copy', async () => {
-    server.generatePaper.mockResolvedValue({ ok: false, reason: 'no_blueprint' })
-    await render('jana')
-    q('[data-testid="retry"]')!.click()
-    await flushPromises()
-    expect(q('[data-testid="retry-message"]')?.textContent).toContain(
-      'Belum ada kontrak untuk subjek dan kertas ini',
-    )
-  })
-
-  it('success: opens the new paper cover', async () => {
-    server.generatePaper.mockResolvedValue({ ok: true, paperId: 'jana-9' })
-    await render('jana')
-    q('[data-testid="retry"]')!.click()
-    await flushPromises()
-    expect(router.currentRoute.value.params.paperId).toBe('jana-9')
+    expect(server.retryAttempt).toHaveBeenCalledWith(7, 'a1')
+    expect(router.currentRoute.value.params.attemptId).toBe('a2')
   })
 
   it('Kertas Pilihan: Cuba Lagi starts a new attempt on the same paper without generating', async () => {
@@ -131,7 +94,6 @@ describe('ResultPage retry (Jana Kertas)', () => {
     await render('pilihan')
     q('[data-testid="retry"]')!.click()
     await flushPromises()
-    expect(server.generatePaper).not.toHaveBeenCalled()
     expect(server.retryAttempt).toHaveBeenCalledWith(7, 'a1')
     expect(router.currentRoute.value.name).toBe('m28.bijak.attempt')
     expect(router.currentRoute.value.params.attemptId).toBe('a2')

@@ -34,7 +34,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await gotoApp(`/marketplace/${SLUG_1}`)
     await expectTabTitle(page, 'Beg Sekolah Anti-Air Premium - Marketplace | PRESTASIPLUS')
     await expectShellTitle(page, 'Marketplace')
-    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
+    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
     await expect(page.getByTestId('gallery-thumb')).toHaveCount(4)
     await expect(page.getByTestId('gallery-thumb').first()).toHaveAttribute('data-active', 'true')
@@ -54,7 +54,7 @@ test.describe('M20 S7 Product page', MODULE, () => {
     await expect(page.getByTestId('product-shipping-icon')).toBeVisible()
     await expect(page.getByTestId('product-location')).toHaveText('Kuala Lumpur')
     const wa = page.getByTestId('product-whatsapp')
-    await expect(wa).toHaveText('Hubungi Penjual di WhatsApp')
+    await expect(wa).toHaveText('Hubungi penjual melalui WhatsApp')
     await expect(wa).toHaveAttribute('href', `/marketplace/${SLUG_1}/whatsapp`)
     await expect(wa).toHaveAttribute('target', '_blank')
     // B06 (79b5fa2dc) made it a `UButton`, whose link adds this `rel` to every new-tab link; the

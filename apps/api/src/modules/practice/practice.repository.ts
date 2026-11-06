@@ -5,7 +5,7 @@ import type { TxClient } from '../../db/client'
 import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { AnswerLogPort, writableModeOf } from './answer-log.port'
+import { AnswerLogPort, type WritableAnswerMode, writableModeOf } from './answer-log.port'
 import { coinsPerCorrect } from './coins'
 import { GAME_ANSWER_MODES, longestRunInSession } from './day-facts'
 import { alreadySubmitted, notFound } from './errors'
@@ -13,6 +13,9 @@ import { BANK_VISIBLE_SQL } from '../questions/learner-visibility'
 import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** `practice_sessions.legacy_paper` of a Simulasi Kuiz session (R1-B16); the Bijak Kuiz close owns those sessions' idle sweep (S3-T04). */
+export const KUIZ_ORIGIN = 'bijak_kuiz'
 
 /** True when `text` is shaped like a uuid (a non-uuid session id is an unknown session, never a 500). */
 export const isUuid = (text: string): boolean => UUID.test(text)
@@ -195,6 +198,8 @@ export interface CompleteInput {
   /** The client value as sent (never rejected; coerced here). */
   timeSpent: unknown
   isTest: boolean
+  /** The `practice_answers.mode` the rows are written with. Default: the writable mode of the session (S3-T04: a Bijak Kuiz passes `kuiz`). */
+  answerMode?: WritableAnswerMode
 }
 
 export interface CompleteHooks<T> {
@@ -501,7 +506,7 @@ export class PracticeRepository {
           attemptId: locked.id,
           questionId: g.check.questionId,
           partRef: null,
-          mode: writableModeOf(locked.mode),
+          mode: input.answerMode ?? writableModeOf(locked.mode),
           isCorrect: g.isCorrect,
           marksAwarded: g.isCorrect ? 1 : 0,
           marksMax: 1,
@@ -677,11 +682,41 @@ export class PracticeRepository {
        WHERE id IN (
          SELECT s.id FROM practice_sessions s
           WHERE s.status = 'in_progress'
+            AND s.legacy_paper IS DISTINCT FROM ${KUIZ_ORIGIN}
             AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz
           ORDER BY s.started_at
           LIMIT ${limit}::int
           FOR UPDATE OF s SKIP LOCKED)
          AND status = 'in_progress'`
+  }
+
+  /**
+   * S3-T04 (API-BIJAK-06): the Simulasi Kuiz sessions (mode `latih_tubi`, `legacy_paper = 'bijak_kuiz'`) that are `in_progress` and
+   * whose last activity (the newest `practice_checks.checked_at`, else `started_at`) is before `cutoff`, oldest first. Read only;
+   * the Bijak Kuiz close writes their rows and then calls `abandonSession`. `abandonIdle` skips these rows.
+   */
+  async idleKuizSessions(cutoff: Date, limit = 200): Promise<{ id: string; userId: string }[]> {
+    const rows = await this.db.$queryRaw<{ id: string; user_id: string }[]>`
+      SELECT s.id::text AS id, s.user_id::text AS user_id FROM practice_sessions s
+       WHERE s.status = 'in_progress' AND s.mode = 'latih_tubi' AND s.legacy_paper = ${KUIZ_ORIGIN}
+         AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz
+       ORDER BY s.started_at
+       LIMIT ${limit}::int`
+    return rows.map((r) => ({ id: r.id, userId: r.user_id }))
+  }
+
+  /**
+   * S3-T04: `in_progress` -> `abandoned`, only when it is still `in_progress` AND still idle at `cutoff` (the same cutoff the
+   * caller listed it with in `idleKuizSessions`). The idle clock is re-checked inside this one UPDATE, so a Semak that landed
+   * after the listing keeps the session alive. Checks are kept, `completed_at` stays null. Returns whether it changed.
+   */
+  async abandonSession(id: string, cutoff: Date, now: Date): Promise<boolean> {
+    if (!isUuid(id)) return false
+    const n = await this.db.$executeRaw`
+      UPDATE practice_sessions s SET status = 'abandoned', updated_at = ${now}::timestamptz
+       WHERE s.id = ${id}::uuid AND s.status = 'in_progress'
+         AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz`
+    return n === 1
   }
 
   /**

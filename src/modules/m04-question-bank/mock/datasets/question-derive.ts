@@ -469,7 +469,7 @@ export function deriveQuestionFields(key: number, f: Facets): DerivedQuestionFie
     questionImage: null,
     optionImages: [null, null, null, null],
     aiExplanation: null,
-    language: 'bm' as Language,
+    language: 'ms' as Language,
     pointsValue: 1,
     sourcePage: sourcePageOf(key, f),
     sourceSet: sourceSetOf(key, f.sourceType),

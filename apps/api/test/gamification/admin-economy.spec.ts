@@ -116,7 +116,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
     it('completedToday counts users whose real completions today cover every active challenge', async () => {
       const u = await bareUser(t, 'Selesai Semua')
       const all = await t.db.query<{ id: string }>(`select id::text from challenges where is_active`)
-      for (const c of all) await t.gamification.claimChallenge(u, c.id, { isTest: false })
+      for (const c of all) await t.gamification.completeChallenge(u, c.id, { isTest: false })
       const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
       expect(d.cards.completedToday).toBe(1)
     })
@@ -251,10 +251,11 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       fail(await admin.put('/admin/gamification/challenges/abc', CHALLENGE_BODY), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
-    it('deleting a challenge removes its completions (FK cascade) and leaves the ledger rows already paid', async () => {
+    it('deleting a challenge removes its completions (FK cascade) and leaves the ledger rows already paid (the claim credit is written by hand here: completing no longer pays)', async () => {
       const created = GamificationAdminChallengeSchema.parse(dataOf(await admin.post('/admin/gamification/challenges', CHALLENGE_BODY)))
       const u = await bareUser(t, 'Hapus Cabaran')
-      await t.gamification.claimChallenge(u, created.id, { isTest: false })
+      await t.gamification.completeChallenge(u, created.id, { isTest: false })
+      await t.wallet.credit({ userId: u, amount: 5, source: 'challenge', sourceId: `challenge:${created.id}:2026-10-19`, description: 'Cabaran selesai: Ujian', isTest: false })
       await admin.del(`/admin/gamification/challenges/${created.id}`)
       expect((await t.db.query(`select 1 from challenge_completions where challenge_id = $1`, [created.id])).length).toBe(0)
       expect(await ledgerOf(t, u)).toHaveLength(1)

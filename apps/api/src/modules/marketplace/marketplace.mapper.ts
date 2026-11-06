@@ -1,8 +1,14 @@
 import {
+  MARKETPLACE_OFFICIAL_SHOP_NAME,
   marketplaceDiscountPct,
+  marketplaceSellerActions,
   marketplaceInitial,
   marketplaceRatingStars,
   marketplaceShippingLine,
+  type MarketplaceAdminProductDetail,
+  type MarketplaceAdminProductRow,
+  type MarketplaceAdminSellerDetail,
+  type MarketplaceAdminSellerRow,
   type MarketplaceCategory,
   type MarketplaceProductCard,
   type MarketplaceProductDetail,
@@ -13,6 +19,7 @@ import {
 
 import { toMytTimestamp } from '../../common/time/myt'
 import { idToString } from '../../db/ids'
+import type { AdminProductDetailRow, AdminProductListRow, AdminSellerRow } from './marketplace-admin.repository'
 import type { CardRow, DetailRow, SellerStats } from './marketplace.repository'
 
 /** `+08:00` instant at whole seconds, as the mock writes it (the milliseconds are dropped). */
@@ -120,3 +127,75 @@ export function toShop(
     createdAt: wire(s.createdAt),
   }
 }
+
+// --- admin slice (S7-T08) ----------------------------------------------------------------------------
+
+/** "Ahmad Ali" -> "A*** A***": each word cut to its first letter (the owner line never shows a full name). */
+export function maskOwnerName(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return words.map((w) => `${Array.from(w)[0] ?? ''}***`).join(' ')
+}
+
+type AdminProductBase = Pick<
+  AdminProductListRow,
+  'id' | 'slug' | 'name' | 'price' | 'originalPrice' | 'sellerId' | 'categoryId' | 'condition' | 'stockStatus' | 'status' | 'views' | 'createdAt'
+> & { seller: { shopName: string } | null; category: { name: string } }
+
+function adminRow(p: AdminProductBase, thumbnailUrl: string | null): MarketplaceAdminProductRow {
+  return {
+    id: idToString(p.id),
+    slug: p.slug,
+    name: p.name,
+    price: money(p.price),
+    originalPrice: moneyOrNull(p.originalPrice),
+    thumbnailUrl,
+    sellerId: p.sellerId === null ? null : idToString(p.sellerId),
+    sellerName: p.seller?.shopName ?? MARKETPLACE_OFFICIAL_SHOP_NAME,
+    categoryId: idToString(p.categoryId),
+    categoryName: p.category.name,
+    condition: p.condition as MarketplaceAdminProductRow['condition'],
+    stockStatus: p.stockStatus as MarketplaceAdminProductRow['stockStatus'],
+    status: p.status as MarketplaceAdminProductRow['status'],
+    views: p.views,
+    createdAt: wire(p.createdAt),
+  }
+}
+
+export const toAdminProductRow = (p: AdminProductListRow): MarketplaceAdminProductRow => adminRow(p, p.images[0]?.url ?? null)
+
+export function toAdminProductDetail(p: AdminProductDetailRow): MarketplaceAdminProductDetail {
+  return {
+    ...adminRow(p, p.images[0]?.url ?? null),
+    description: p.description,
+    shippingMethod: p.shippingMethod as MarketplaceShippingMethod,
+    shippingFee: moneyOrNull(p.shippingFee),
+    location: p.location,
+    images: p.images.map((i) => ({ id: idToString(i.id), position: i.position, url: i.url })),
+    updatedAt: wire(p.updatedAt),
+  }
+}
+
+export function toAdminSellerRow(s: AdminSellerRow): MarketplaceAdminSellerRow {
+  const status = s.status as MarketplaceAdminSellerRow['status']
+  const verified = s.verifiedAt !== null
+  return {
+    id: idToString(s.id),
+    shopName: s.shopName,
+    initial: marketplaceInitial(s.shopName),
+    ownerMasked: maskOwnerName(s.ownerName),
+    status,
+    verified,
+    productCount: s.productCount,
+    actions: marketplaceSellerActions(status, verified),
+    createdAt: wire(s.createdAt),
+  }
+}
+
+export const toAdminSellerDetail = (s: AdminSellerRow): MarketplaceAdminSellerDetail => ({
+  ...toAdminSellerRow(s),
+  description: s.description,
+  phone: s.phone,
+  whatsapp: s.whatsapp,
+  verifiedAt: s.verifiedAt === null ? null : wire(s.verifiedAt),
+  whatsappClicks: s.whatsappClicks,
+})

@@ -6,6 +6,7 @@
  * generator's solver); it is only there so the screens have honest numbers to show.
  * Loaded by a dynamic import behind the env check (see ./client), so the http build never has it.
  */
+import { BIJAK_BUILDER_MESSAGES as MSG } from '@pp/contract'
 import type {
   BijakBlueprintAdminCreate,
   BijakBlueprintAdminVersionInput,
@@ -28,6 +29,7 @@ import { BLUEPRINTS, SUBJECTS, subjectName } from '../../../data/registry'
 import { formFromView, structuralKey } from '../domain/form'
 import { REASON_BANK_QUERY } from '../domain/pool'
 import { validateForm } from '../domain/validate'
+import { setTitleError } from '../../builder/domain/set-title'
 import { KontrakError, type KontrakApi } from './api'
 
 type Input = BijakBlueprintAdminVersionInput
@@ -87,6 +89,12 @@ interface Ver {
   hash: string
   evidenceIds: string[]
   verification: BijakVerificationRecord | null
+  /**
+   * A registry head seeded as Disahkan: the Sahkan flow already passed its gates when it was verified, but the registry holds no
+   * evidence items, profile or quota to re-derive them (none is invented). While the head stays that verified, the check reports
+   * those gates as met at the time of verification instead of failing next to "Disahkan". Any new version drops the flag.
+   */
+  historical?: boolean
 }
 interface Rec {
   versions: Ver[]
@@ -116,6 +124,7 @@ function sectionView(subject: string, s: SectionInput, position: number, seededU
     label: s.label,
     markBudget: s.markBudget,
     questionCount: s.questionCount,
+    marksPerQuestion: s.marksPerQuestion ?? null,
     compulsory: s.compulsory ?? false,
     instruction: instructionOf(s),
     rule: s.rule,
@@ -165,6 +174,7 @@ function viewOf(
     source,
     code: input.code,
     durationMin: input.durationMin,
+    questionCount: input.questionCount ?? null,
     instructions: input.instructions ?? [],
     totalMarks: sections.reduce((n, s) => n + s.markBudget, 0),
     sections,
@@ -189,7 +199,7 @@ function viewOf(
 
 export interface MockKontrakOptions {
   /** Creates the draft paper behind "Jana draf kertas" (default: the Bijak admin mock). */
-  createPaper?: (subject: string, kertas: number) => Promise<string>
+  createPaper?: (subject: string, kertas: number, title: string) => Promise<string>
 }
 
 export class MockKontrakServer implements KontrakApi {
@@ -255,10 +265,24 @@ export class MockKontrakServer implements KontrakApi {
             ]
           : []
       for (const e of study) this.evidenceStore.set(e.id, e)
-      const view = viewOf(bp.subject, bp.kertas, 1, bp.source, input, null, study.length, bp.subject === 'MAT' && bp.kertas === 2)
+      // A registry head that is Disahkan carries what the Sahkan flow writes at minimum (no evidence items are invented).
+      const seededSummary: BijakVerificationSummary | null =
+        bp.source === 'Disahkan'
+          ? { verifiedAt: now(), verifierName: 'Pentadbir Pusat (contoh)', verifierRole: 'admin', evidenceLabel: '', bodies: [] }
+          : null
+      const view = viewOf(bp.subject, bp.kertas, 1, bp.source, input, seededSummary, study.length, bp.subject === 'MAT' && bp.kertas === 2)
       this.recs.set(id, {
         retired: false,
-        versions: [{ view, createdAt: now(), hash: structuralKey(input), evidenceIds: study.map((e) => e.id), verification: null }],
+        versions: [
+          {
+            view,
+            createdAt: now(),
+            hash: structuralKey(input),
+            evidenceIds: study.map((e) => e.id),
+            verification: seededSummary ? { ...seededSummary, evidence: [], lines: [] } : null,
+            ...(seededSummary ? { historical: true } : {}),
+          },
+        ],
       })
     }
   }
@@ -298,23 +322,44 @@ export class MockKontrakServer implements KontrakApi {
     return this.viewOfHead(this.rec(subject, kertas))
   }
 
+  /** As `assertRuleBounds` of the API: 422 VALIDATION_ERROR with `fields`, before the content check. */
+  private checkRuleBounds(input: Input): void {
+    const fields: Record<string, string> = {}
+    // Tempoh is not bounded here: the API accepts up to the contract's durationMin max (600). The form's own limit of 300
+    // (PRD 30-admin-pusat row 16-04, validate.ts) stays in the UI until the DOC DEFECT on #437 is settled.
+    input.sections.forEach((s, i) => {
+      if (s.rule.type !== 'choose') return
+      if (s.rule.n > s.questionCount) fields[`sections.${i}.rule.n`] = MSG.chooseNRange
+      if (s.compulsory === true) fields[`sections.${i}.compulsory`] = MSG.compulsoryChoose
+    })
+    const first = Object.values(fields)[0]
+    if (first !== undefined) throw new KontrakError('invalid', first, { fields })
+  }
+
   private checkInput(input: Input): void {
     const problems: BijakBlueprintProblem[] = []
     const sum = input.sections.reduce((n, s) => n + s.markBudget, 0)
     if (input.totalMarks !== undefined && input.totalMarks !== sum)
       problems.push({ code: 'TOTAL_MISMATCH', expected: input.totalMarks, actual: sum })
     input.sections.forEach((s, i) => {
-      if (s.rule.type === 'choose' && s.questionCount < s.rule.n)
-        problems.push({ code: 'CHOOSE_N_RANGE', sectionPosition: i + 1, expected: s.rule.n, actual: s.questionCount })
+      if (!s.marksPerQuestion) return
+      const offered = s.rule.type === 'all' ? s.markBudget : (s.markBudget / s.rule.n) * s.questionCount
+      const sum = s.marksPerQuestion.reduce((n, mark) => n + mark, 0)
+      if (s.marksPerQuestion.length !== s.questionCount)
+        problems.push({ code: 'MARKS_PER_QUESTION', sectionPosition: i + 1, expected: s.questionCount, actual: s.marksPerQuestion.length })
+      else if (sum !== offered) problems.push({ code: 'MARKS_PER_QUESTION', sectionPosition: i + 1, expected: offered, actual: sum })
     })
     if (problems.length) throw new KontrakError('invalid', 'Kontrak tidak boleh disimpan. Betulkan masalah yang disenaraikan.', { problems })
   }
 
   async create(body: BijakBlueprintAdminCreate): Promise<BijakBlueprintView> {
     await tick()
+    this.checkRuleBounds(body)
+    // FR-ADM-Q16.7, as the API: no T4 or T5 unit, no contract.
+    if (!UNITS[body.subject]?.length) throw new KontrakError('invalid', MSG.dskpNotLoaded, { fields: { subject: MSG.dskpNotLoaded } })
     const k = this.key(body.subject, body.kertas)
     const old = this.recs.get(k)
-    if (old && !old.retired) throw new KontrakError('conflict', 'Kontrak untuk subjek dan kertas ini sudah wujud.')
+    if (old && !old.retired) throw new KontrakError('conflict', MSG.blueprintExists)
     this.checkInput(body)
     const { subject, kertas, ...input } = body
     const view = viewOf(subject, kertas, 1, input.source ?? 'Draf', input, null, 0)
@@ -328,6 +373,7 @@ export class MockKontrakServer implements KontrakApi {
   async saveVersion(subject: string, kertas: number, body: Input): Promise<BijakBlueprintView> {
     await tick()
     const r = this.rec(subject, kertas)
+    this.checkRuleBounds(body)
     this.checkInput(body)
     const prev = r.versions[r.versions.length - 1]!
     const h = structuralKey(body)
@@ -342,6 +388,7 @@ export class MockKontrakServer implements KontrakApi {
       hash: h,
       evidenceIds: [...prev.evidenceIds],
       verification: keep ? prev.verification : null,
+      ...(keep && prev.historical ? { historical: true } : {}),
     })
     return this.viewOfHead(r)
   }
@@ -433,11 +480,12 @@ export class MockKontrakServer implements KontrakApi {
 
   /** The gate of AC-39.1 and AC-39.7 against the head. */
   private computeCheck(h: Ver): BijakVerificationCheck {
+    if (h.historical && h.view.source === 'Disahkan') return { passes: true, blueprintProblems: [], completeness: [], lines: [] }
     const form = formFromView(h.view)
     const blueprintProblems: BijakBlueprintProblem[] = validateForm(form)
       .filter((i) => i.level === 'error' && i.code !== 'REQUIRED')
       .map((i) => ({
-        code: (['TOTAL_MISMATCH', 'CHOOSE_N_RANGE', 'SLOT_OVERLAP', 'SLOT_GAP', 'PROFILE_SHAPE', 'TP_COUNTS', 'MARKS_BAND', 'QUOTA_SUM', 'QUOTA_UNIT', 'LEVEL_SHARE', 'KBAT_RANGE', 'KBAT_TOTAL'].includes(i.code)
+        code: (['TOTAL_MISMATCH', 'CHOOSE_N_RANGE', 'COMPULSORY_CHOOSE', 'MARKS_PER_QUESTION', 'SLOT_OVERLAP', 'SLOT_GAP', 'PROFILE_SHAPE', 'TP_COUNTS', 'MARKS_BAND', 'QUOTA_SUM', 'QUOTA_UNIT', 'LEVEL_SHARE', 'KBAT_RANGE', 'KBAT_TOTAL'].includes(i.code)
           ? i.code
           : 'PROFILE_SHAPE') as BijakBlueprintProblem['code'],
         ...(i.section !== null ? { sectionPosition: i.section + 1 } : {}),
@@ -574,20 +622,24 @@ export class MockKontrakServer implements KontrakApi {
     }
   }
 
-  async generateDraft(subject: string, kertas: number): Promise<{ paperId: string }> {
+  async generateDraft(subject: string, kertas: number, title: string): Promise<{ id: string }> {
+    // As the API (PRD30 13-04): 422 VALIDATION_ERROR `fields.title`, before anything is read or created.
+    const titleMessage = setTitleError(title)
+    if (titleMessage) throw new KontrakError('invalid', titleMessage, { fields: { title: titleMessage } })
     const pool = await this.pool(subject, kertas)
     if (pool.verdict !== 'boleh' && pool.firstFailure)
       throw new KontrakError('shortage', 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', { shortages: [pool.firstFailure] })
     const make =
       this.options.createPaper ??
-      (async (s: string, k: number) => {
+      (async (s: string, k: number, t: string) => {
         const { bijakAdminServer } = await import('../../../server/client')
-        return (bijakAdminServer() as unknown as { createPaper(i: { subject: string; kertas: 1 | 2 }): Promise<string> }).createPaper({
+        return (bijakAdminServer() as unknown as { createPaper(i: { subject: string; kertas: 1 | 2; title: string }): Promise<string> }).createPaper({
           subject: s,
           kertas: k as 1 | 2,
+          title: t,
         })
       })
-    return { paperId: await make(subject, kertas) }
+    return { id: await make(subject, kertas, title.trim()) }
   }
 
   async listUnits(subject: string): Promise<BijakDskpUnit[]> {
@@ -601,7 +653,8 @@ export class MockKontrakServer implements KontrakApi {
 
   async subjectOptions(): Promise<{ code: string; name: string }[]> {
     await tick()
-    return SUBJECTS.map((s) => ({ code: s.code, name: s.name }))
+    // FR-ADM-Q16.7, as `GET /admin/bijak/subjects`: only subjects with a T4 or T5 unit.
+    return SUBJECTS.filter((s) => UNITS[s.code]?.length).map((s) => ({ code: s.code, name: s.name }))
   }
 }
 
