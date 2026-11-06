@@ -402,7 +402,7 @@ export class QuestionsRepository {
    *    level, active and not primary, and inside the filter's level restriction); else the level of its FIRST member in scope. Nothing in the
    *    database ties a group's level to its members' LIVE versions, so a stale or unoffered value must not move the unit to a level the hub never lists;
    *  - TP: always the TP of its FIRST member in scope (a group has no difficulty of its own).
-   * "First" = lowest `group_position`, then lowest id among the members IN SCOPE: deterministic, and the group's true first member only when every member is in scope.
+   * "First" = lowest `group_position` among the members IN SCOPE (positions are unique per group and never NULL for a grouped question: `ck_questions_group_position`, `uq_questions_group_id_group_position`; the id order is a harmless final tie-break): deterministic, and the group's true first member only when every member is in scope.
    */
   async unitCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
     const { from, where } = this.scope(filter)

@@ -195,18 +195,18 @@ describe('Latih Tubi breakdowns count units like the total', () => {
     expect(cells.reduce((a, c) => a + c.n, 0)).toBe(await pool.latihTubiCount(bio, { fresh: true }))
   })
 
-  it('[CI] AC-MUR-13-13 members with NULL group_position tie-break on the lowest question id', async () => {
+  it('[CI] AC-MUR-13-13 a group is bucketed at its lowest-position member, not its lowest question id', async () => {
+    // ck_questions_group_position ties group_id and group_position together (both NULL or both set) and uq_questions_group_id_group_position
+    // makes positions unique inside a group, so there are no NULL or tied positions to break: the lowest position decides.
     await t.db.query('delete from questions')
     const bio = await subjectId('BIO')
     const a = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 3 })
     const b = await addQuestion(t.db, { subject: 'BIO', level: 'T4', tp: 5 })
-    await groupOf([b, a])
-    await t.db.query('update questions set group_position = null where id = any($1::bigint[])', [[a, b]])
-    const lowest = BigInt(a) < BigInt(b) ? a : b
-    const tp = (await t.db.query<{ tp: number }>(`select v.difficulty_tp tp from questions q join question_versions v on v.question_id = q.id and v.version_no = q.latest_version_no where q.id = $1::bigint`, [lowest]))[0]!.tp
+    expect(BigInt(a)).toBeLessThan(BigInt(b))
+    await groupOf([b, a]) // b is position 1 although a has the lower id
     const rows = await repo.unitCountsByLevelTp(withLtGroups(bio))
     expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ tp, n: 1 })
+    expect(rows[0]).toMatchObject({ tp: 5, n: 1 })
   })
 })
 
