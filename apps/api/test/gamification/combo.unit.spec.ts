@@ -81,7 +81,7 @@ describe('GamificationService reads best_combo only when a challenge needs it', 
     }
     const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock('2026-10-20T09:00:00+08:00'), ports, {} as never, {} as never, {} as never, {} as never, {} as never)
     const res = await svc.challengesToday('5')
-    return { calls, res }
+    return { calls, res, svc, rec }
   }
 
   it('no best_combo challenge: the port is not called', async () => {
@@ -92,5 +92,11 @@ describe('GamificationService reads best_combo only when a challenge needs it', 
     const { calls, res } = await run(['sessions', 'best_combo'])
     expect(calls).toEqual(['2026-10-20'])
     expect(res.data[1]).toMatchObject({ progress: 7, target: 10 })
+  })
+
+  it('the claim check (challengeProgressOn) reads the same run for a best_combo challenge, and nothing for another metric', async () => {
+    const { svc } = await run([])
+    expect(await svc.challengeProgressOn({} as never, '5', '2026-10-20', rec('1', 'best_combo'))).toBe(7)
+    expect(await svc.challengeProgressOn({} as never, '5', '2026-10-20', rec('2', 'sessions'))).toBe(0)
   })
 })
