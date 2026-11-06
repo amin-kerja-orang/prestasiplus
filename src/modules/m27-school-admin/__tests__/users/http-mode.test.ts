@@ -122,7 +122,7 @@ describe('Cipta Guru', () => {
   it('mock: keeps the password pair and redirects to the list', async () => {
     api.createSchoolTeacher.mockResolvedValue({ data: detail({ role: 'teacher' }), status: 'ok' })
     const { wrapper: w, router } = await mountAt(CiptaGuruPage, '/admin-sekolah/guru/baru')
-    expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe('Minimum 6 aksara')
+    expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe('Minimum 8 aksara')
     await w.get('[data-testid="user-name"]').setValue('G')
     await w.get('[data-testid="user-password"]').setValue('rahsia123')
     await w.get('[data-testid="user-password-confirm"]').setValue('rahsia123')
@@ -160,7 +160,7 @@ describe('Menyamar button', () => {
 describe('new password placeholder', () => {
   it.each([
     [true, 'Minimum 8 aksara'],
-    [false, 'Minimum 6 aksara'],
+    [false, 'Minimum 8 aksara'],
   ])('http=%s shows "%s" on the edit form', async (http, copy) => {
     mode.http = http
     api.fetchSchoolPupil.mockResolvedValue(detail())

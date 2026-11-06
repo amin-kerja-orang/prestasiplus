@@ -189,7 +189,7 @@ describe('UserEditPage (M02 S3) student record', () => {
     expect(t(w, 'user-password-panel').isVisible()).toBe(false)
     await t(w, 'user-password-toggle').trigger('click')
     expect(t(w, 'user-password-panel').isVisible()).toBe(true)
-    expect(t(w, 'user-new-password').attributes('placeholder')).toBe('Minimum 6 aksara')
+    expect(t(w, 'user-new-password').attributes('placeholder')).toBe('Minimum 8 aksara')
     expect(t(w, 'user-new-password-confirm').attributes('placeholder')).toBe(
       'Taip semula kata laluan baru',
     )
@@ -246,6 +246,21 @@ describe('UserEditPage (M02 S3) student record', () => {
         newPasswordConfirmation: 'baru1234',
       }),
     )
+  })
+
+  it('refuses a new password shorter than 8 characters before any request (FR-ADM-U02.4)', async () => {
+    const w = await render()
+    await t(w, 'user-password-toggle').trigger('click')
+    await t(w, 'user-new-password').setValue('baru123')
+    await t(w, 'user-new-password-confirm').setValue('baru123')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(users.updateAdminUser).not.toHaveBeenCalled()
+    expect(
+      t(w, 'user-form-alert')
+        .findAll('p')
+        .map((p) => p.text()),
+    ).toEqual(['Kata laluan mesti sekurang-kurangnya 8 aksara.'])
   })
 
   it('draws the school result list in the flow, not floating (SWX4-03)', async () => {

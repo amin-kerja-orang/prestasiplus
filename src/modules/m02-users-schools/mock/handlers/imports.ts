@@ -149,8 +149,8 @@ async function bulkImport(req: MockRequest, ctx: MockContext): Promise<MockRespo
 
   // SEC-M02-03: an empty field falls back to the configured bulk default.
   const typed = text(b, 'defaultPassword')
-  if (typed !== '' && [...typed].length < 6) {
-    fields.defaultPassword = 'The default password field must be at least 6 characters.'
+  if (typed !== '' && [...typed].length < 8) {
+    fields.defaultPassword = 'The default password field must be at least 8 characters.'
   }
   const defaultPassword = typed === '' ? adminDefaults(ctx).bulkImportDefaultPassword : typed
 

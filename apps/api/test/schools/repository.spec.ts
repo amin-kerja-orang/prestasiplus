@@ -101,6 +101,24 @@ describe('SchoolsRepository (the interface other modules use)', () => {
     expect(list).toEqual([...list].sort())
   })
 
+  it('list/counts/types hide primary types unless includePrimary is set', async () => {
+    await db.query(`insert into schools (name, code, type, state, is_active) values ('SK Repo Primary', 'RPRIM01', 'SK', 'Perak', true)`)
+    try {
+      const hidden = await repo.list({ page: 1, pageSize: 100 })
+      const shown = await repo.list({ page: 1, pageSize: 100, includePrimary: true })
+      expect(hidden.rows.some((r) => r.code === 'RPRIM01')).toBe(false)
+      expect(shown.rows.some((r) => r.code === 'RPRIM01')).toBe(true)
+      expect(shown.total).toBe(hidden.total + 1)
+      const c0 = await repo.counts()
+      const c1 = await repo.counts(true)
+      expect(c1).toEqual({ total: c0.total + 1, active: c0.active + 1, inactive: c0.inactive })
+      expect(await repo.types()).not.toContain('SK')
+      expect(await repo.types(true)).toContain('SK')
+    } finally {
+      await db.query(`delete from schools where code = 'RPRIM01'`)
+    }
+  })
+
   it('resolveRegion matches state and district trimmed and case-insensitively; free text gives no PPD', async () => {
     const sgr = (await repo.jpnList()).find((j) => j.code === 'SGR')
     const a = await repo.resolveRegion(' selangor ', ' GOMBAK ')

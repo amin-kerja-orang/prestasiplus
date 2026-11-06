@@ -120,7 +120,7 @@ export type AdminSchool = z.infer<typeof AdminSchoolSchema>
 export const SchoolOptionSchema = z.object({ id: IdSchema, name: z.string().min(1) }).meta({ id: 'SchoolOption' })
 export type SchoolOption = z.infer<typeof SchoolOptionSchema>
 
-/** `meta` of the school list: `counts` over all schools (filters ignored) and the distinct types. */
+/** `meta` of the school list: `counts` over all visible schools (filters ignored; primary types only with includePrimary or a primary type filter) and the distinct types. */
 export const SchoolListMetaSchema = ListMetaSchema.extend({
   counts: z.object({
     total: z.number().int().min(0),
@@ -135,6 +135,10 @@ export const SchoolListQuerySchema = z
     search: z.string().optional().meta({ description: 'Substring of name or code.' }),
     state: z.string().optional().meta({ description: 'Exact full state name.' }),
     type: z.string().optional().meta({ description: 'Exact school type; an unknown value matches nothing.' }),
+    includePrimary: z.string().optional().meta({
+      description:
+        "'true' also lists the primary types SK, SJK(C) and SJK(T) (R1-ADM-U-04, OQ-U1); any other value keeps them hidden. Filtering by one of those types shows them without the flag. When primary rows are visible, meta.counts and meta.types cover the same set.",
+    }),
     page: z.string().optional().meta({ description: 'Page number; a missing, non-numeric or < 1 value is treated as 1 (not an error).' }),
   })
   .meta({ id: 'SchoolListQuery' })
