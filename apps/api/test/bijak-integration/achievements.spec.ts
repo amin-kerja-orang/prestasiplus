@@ -11,7 +11,7 @@ import { ADMIN, bootIntegrationApp, type Client, type IntegrationApp, loginAs, S
 
 /**
  * SW10-03 at the binding: `WalletPracticeReward.onSessionCompleted` evaluates the BR-M14-16 achievements after the
- * challenges, for the practice modes only (`random`, `chapter`, `revision`); the unlock pays once and shows on S15.
+ * challenges, for the practice modes only (`latih_tubi`, `chapter`, `revision`); the unlock pays once and shows on S15.
  */
 let t: IntegrationApp
 let w: World
@@ -39,8 +39,6 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-const RANDOM = { mode: 'random', subjectCode: 'MATH', levelId: undefined as string | undefined, count: 5 }
-
 /** Starts a session, answers every question wrongly and submits (so only the session count moves). */
 async function play(who: Client, body: Record<string, unknown>): Promise<string> {
   const start = await who.post('/api/practice/sessions', body)
@@ -54,7 +52,7 @@ async function play(who: Client, body: Record<string, unknown>): Promise<string>
   expect(done.status, JSON.stringify(done.body)).toBe(200)
   return data.sessionId
 }
-const random = () => ({ ...RANDOM, levelId: w.level.d1 })
+const chapterStart = () => ({ mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
 const unlocks = (userId: string) => t.db.query<{ name: string; is_test: boolean }>(`select a.name, ua.is_test from user_achievements ua join achievements a on a.id = ua.achievement_id where ua.user_id = $1 order by ua.id`, [userId])
 const achievementRows = (userId: string) =>
   t.db.query<{ source_id: string; amount: number; description: string; is_test: boolean }>(`select source_id, amount::int, description, is_test from coin_ledger where user_id = $1 and source = 'achievement' order by id`, [userId])
@@ -75,7 +73,7 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
 
   it('2. a practice-mode session unlocks "Langkah Pertama" (+5 syiling, +3 XP) and, from the seeded 370 lifetime syiling, "Pengumpul Syiling" (+10), each once ("Pencapaian: {name}")', async () => {
     const xpBefore = await xpOf(student.userId)
-    await play(student, random())
+    await play(student, chapterStart())
     const idOf = async (name: string) => (await t.db.query<{ id: string }>(`select id::text from achievements where name = $1`, [name]))[0]!.id
     expect(await unlocks(student.userId)).toEqual([
       { name: 'Langkah Pertama', is_test: false },
@@ -94,13 +92,13 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
   })
 
   it('3. a further session does not unlock or pay it again', async () => {
-    await play(student, random())
+    await play(student, chapterStart())
     expect(await unlocks(student.userId)).toHaveLength(2)
     expect(await achievementRows(student.userId)).toHaveLength(2)
   })
 
   it('4. Mod Pelajar: an admin acting as a pupil unlocks and earns nothing (achievements are the pupil\'s, BR-M14-16)', async () => {
-    await play(admin, random())
+    await play(admin, chapterStart())
     expect(await unlocks(admin.userId)).toEqual([])
     expect(await achievementRows(admin.userId)).toEqual([])
   })
@@ -114,7 +112,7 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
       await gamification.unlockAchievement(userId, rajin, opts) // a partial write inside the submit transaction
       throw new Error('evaluator boom')
     })
-    const sessionId = await play(maju, random()) // play() asserts the submit answers 200
+    const sessionId = await play(maju, chapterStart()) // play() asserts the submit answers 200
     const row = await t.db.query<{ status: string }>(`select status from practice_sessions where id = $1`, [sessionId])
     expect(row[0]?.status).toBe('completed')
     expect((await t.db.query(`select 1 from session_credits where session_id = $1`, [sessionId])).length).toBe(1)
@@ -122,7 +120,7 @@ describe('achievements follow completed practice-mode sessions (BR-M14-16, FR-M1
     expect(await unlocks(maju.userId)).toHaveLength(before) // the partial unlock was rolled back to the savepoint
     expect(await achievementRows(maju.userId)).toHaveLength(ledgerBefore)
     vi.restoreAllMocks()
-    await play(maju, random()) // the next session evaluates normally (10 sessions are not played, so the rolled-back unlock is not re-earned)
+    await play(maju, chapterStart()) // the next session evaluates normally (10 sessions are not played, so the rolled-back unlock is not re-earned)
     expect((await unlocks(maju.userId)).map((r) => r.name)).not.toContain('Pelajar Rajin')
   })
 })

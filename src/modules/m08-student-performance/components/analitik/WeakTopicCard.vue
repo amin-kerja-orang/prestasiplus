@@ -2,7 +2,7 @@
 /**
  * One weak-SP card of S7 (FR-M08-45, FR-M08-47): the accuracy badge, "{code} — {title}" cut at `max`
  * characters, "{Subjek} · {n} soalan dijawab" and the full-width "Latihan Fokus ({k} soalan)" link
- * (k = min(available, 25) in label and link, DV-M08-14). The top block also shows the trend icon.
+ * (k = min(available, 25) in label and link, DV-M08-14); an SP with 0 servable questions has no link (FR-MUR-5-4, AC-MUR-5-6). The top block also shows the trend icon.
  */
 import { DsPanel } from '@/ds'
 import type { Trend, WeakSp } from '../../api/types'
@@ -51,6 +51,7 @@ const TREND_LABEL: Record<Trend, string> = {
       <p class="text-label break-words text-highlighted">{{ weakTitle(sp, max) }}</p>
       <p class="text-caption text-muted">{{ sp.subjectName }} · {{ sp.answered }} soalan dijawab</p>
       <UButton
+        v-if="Math.min(sp.available, 25) > 0"
         :to="href()"
         block
         size="lg"
