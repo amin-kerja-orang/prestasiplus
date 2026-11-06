@@ -130,6 +130,7 @@ describe('GET /intake/dashboard with every store present', () => {
       { status: 'submitted', count: 1 },
       { status: 'processing', count: 1 },
       { status: 'ready_for_review', count: 3 },
+      { status: 'selesai_dengan_ralat', count: 0 },
       { status: 'failed', count: 1 },
       { status: 'cancelled', count: 1 },
     ])

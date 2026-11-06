@@ -34,6 +34,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { loginViaUi } from '../fixtures/api'
+import { roundHalfUp } from '../../src/lib/number/format.ts'
 import {
   account,
   expectNoHScroll,
@@ -58,7 +59,7 @@ interface LiveData {
   totalStudents: number
   activeStudents: number
   totalAnswered: number
-  accuracy: number
+  accuracy: number | null
   topSchools: { schoolId: string; schoolName: string; totalAnswers: number }[]
   recentFeed: { student: string; subject: string; schoolName?: string }[]
   correction: { total: number; avgImprovement: number; improvedCount: number }
@@ -118,7 +119,10 @@ test.describe('M17 Command Center board (Admin Pusat) @api', () => {
     await expect
       .poll(async () => digits(await tile('answered').textContent()), { timeout: 15_000 })
       .toBe(String(data.totalAnswered))
-    await expect(tile('accuracy')).toContainText(String(Math.trunc(data.accuracy)))
+    // The screen shows the whole number half up from the one-decimal wire value, or the dash for null (S6-T03, 40 FR-X4-5).
+    await expect(tile('accuracy')).toContainText(
+      data.accuracy === null ? '—' : String(roundHalfUp(data.accuracy)),
+    )
     if (data.totalSchools > 0) {
       await expect
         .poll(async () => digits(await tile('schools').textContent()), { timeout: 15_000 })

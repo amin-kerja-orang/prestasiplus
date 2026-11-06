@@ -80,7 +80,7 @@ test.describe('M06 SPM hub @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('S2 Tahun Lepas lists GET /api/spm/databank and Q1 starts a past_year session @api', async ({
+  test('S2 Tahun Lepas lists GET /api/spm/databank and Q1 starts a databank session @api', async ({
     page,
   }) => {
     const rows = await openWith<{ code: string; databankCount: number }[]>(
@@ -102,8 +102,8 @@ test.describe('M06 SPM hub @api', () => {
     const started = sessionStart(page)
     await page.getByTestId(`databank-set-${withPool!.code}-10`).click()
     const res = await started
-    expect(res.status(), 'POST /api/practice/sessions (past_year)').toBeLessThan(300)
-    expect(res.request().postDataJSON()).toMatchObject({ mode: 'past_year', subjectCode: withPool!.code, count: 10 })
+    expect(res.status(), 'POST /api/practice/sessions (databank)').toBeLessThan(300)
+    expect(res.request().postDataJSON()).toMatchObject({ mode: 'databank', subjectCode: withPool!.code, count: 10 })
     await expectNoHScroll(page)
   })
 

@@ -282,7 +282,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['gamification'],
     summary: 'Daily challenges with progress',
     description:
-      'Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.',
+      'Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion is written by the session-completed hook (idempotent per user, challenge and Malaysia day) and pays nothing; `claimed` and `meta.claimed` come from the claims of the current Malaysia day (API-GAME-11).',
     responses: { 200: json(GamificationChallengesResponseSchema, 'Challenges with meta.'), 401: UNAUTHORIZED },
   })
 
@@ -292,14 +292,14 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['gamification'],
     summary: 'Claim the reward of a completed daily challenge (API-GAME-11)',
     description:
-      'One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). A challenge deactivated after completion can still be claimed that day. A repeat with the same clientUuid from the same user returns the first result and moves nothing (DM-79). The body is optional. Success is 200, not 201.',
+      'One transaction: credits reward_syiling and reward_xp once (ledger source challenge) and records the claim for the Malaysia day (DM-63). Order: Mod Pelajar 403, unknown or inactive challenge 404, a claim of the day exists (same clientUuid: 200 with the stored result and nothing written; otherwise 409 CHALLENGE_CLAIMED), the clientUuid sits on another claim of the user 409 CONFLICT (details.reason IDEMPOTENCY_MISMATCH), progress below the target 409 CHALLENGE_NOT_DONE. The result may carry `notices`. The body is optional. Success is 200, not 201.',
     request: { params: IdParams, headers: [csrf], body: { ...body(GamificationChallengeClaimRequestSchema), required: false } },
     responses: {
       200: json(envelopeOf(GamificationChallengeClaimResultSchema), 'Claimed.'),
       401: UNAUTHORIZED,
       403: err('CSRF_INVALID (missing or wrong X-CSRF-Token); "Tidak dibenarkan dalam Mod Pelajar." (ERR-GAME-26).'),
-      404: err('NOT_FOUND "Cabaran tidak dijumpai." (no such challenge).'),
-      409: err('CHALLENGE_NOT_DONE "Cabaran belum selesai." (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED "Ganjaran sudah dituntut." (ERR-GAME-19, second claim the same Malaysia day).'),
+      404: err('NOT_FOUND "Cabaran tidak dijumpai." (no such challenge, or the challenge is not active).'),
+      409: err('CONFLICT details.reason IDEMPOTENCY_MISMATCH (the clientUuid is already used by another claim of the user); CHALLENGE_NOT_DONE "Cabaran belum selesai." (ERR-GAME-18, progress below the target); CHALLENGE_CLAIMED "Ganjaran sudah dituntut." (ERR-GAME-19, second claim the same Malaysia day).'),
       422: err('VALIDATION_ERROR fields.clientUuid "Medan ini tidak sah." (not a UUID).'),
     },
   })
