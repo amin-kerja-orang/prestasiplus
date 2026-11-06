@@ -7,14 +7,14 @@ import {
 
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
+import { GameSettingsService } from '../core/game-settings.service'
 import { GameUsers } from '../core/game-users'
 import { enumOfGrade, gradeFits } from '../core/grades'
 import { type Caller, RoomsService } from './rooms.service'
 import { RoomsRepository, type SearchRow } from './rooms.repository'
 
-/** BR-M16-24: the third poll matches; a search older than 120 s expires (clock injected). */
+/** BR-M16-24: the third poll matches; a search older than the game setting `battle_queue_seconds` (default 120 s) expires (clock injected). */
 export const QUICK_MATCH_ON_POLL = 3
-export const QUICK_MATCH_EXPIRES_MS = 120_000
 
 export type QuickStart = { ok: true; body: { status: 'searching' } } | { ok: false; error: string }
 
@@ -27,7 +27,13 @@ export class QuickMatchService {
     @Inject(RoomsService) private readonly rooms: RoomsService,
     @Inject(GameUsers) private readonly users: GameUsers,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
+
+  /** The queue time in ms, read from `battle_queue_seconds` on each request. */
+  private async expiresMs(): Promise<number> {
+    return (await this.settings.get('battle_queue_seconds')) * 1000
+  }
 
   async start(caller: Caller, body: unknown): Promise<QuickStart> {
     const r = GamesQuickMatchStartRequestSchema.safeParse(
@@ -45,6 +51,7 @@ export class QuickMatchService {
   }
 
   async poll(caller: Caller): Promise<GamesQuickMatchPollResponse> {
+    const expiresMs = await this.expiresMs()
     const latest = await this.repo.latestSearch(caller.userId)
     if (!latest || latest.status === 'cancelled') return { status: 'cancelled' }
     if (latest.status === 'expired') return { status: 'expired' }
@@ -58,12 +65,12 @@ export class QuickMatchService {
       if (s.status === 'matched')
         return { status: 'matched', room_code: s.roomCode as string } as const
       const polls = s.polls + 1
-      if (this.clock.now().getTime() - s.createdAt.getTime() >= QUICK_MATCH_EXPIRES_MS) {
+      if (this.clock.now().getTime() - s.createdAt.getTime() >= expiresMs) {
         await this.repo.updateSearch(s.id, { status: 'expired', polls })
         return { status: 'expired' } as const
       }
       // Ruling 16: a pupil is matched before the robot; the third poll only brings the robot when no pupil fits.
-      const paired = await this.pairWithPupil(caller, s)
+      const paired = await this.pairWithPupil(caller, s, expiresMs)
       if (paired !== null) {
         await this.repo.updateSearch(s.id, { status: 'matched', polls, roomCode: paired })
         return { status: 'matched', room_code: paired } as const
@@ -96,7 +103,7 @@ export class QuickMatchService {
    * the other pupil is marked matched and reads the same room code on their next poll. Until R2 the engine still simulates
    * every non-host seat, so play is host-driven. Returns the room code, or null when nobody fits.
    */
-  private async pairWithPupil(caller: Caller, s: SearchRow): Promise<string | null> {
+  private async pairWithPupil(caller: Caller, s: SearchRow, expiresMs: number): Promise<string | null> {
     const now = this.clock.now()
     const viewer = await this.users.get(caller.userId)
     const room = {
@@ -105,12 +112,12 @@ export class QuickMatchService {
       gradeMin: null,
       gradeMax: null,
     }
-    const candidates = await this.repo.pairCandidates(s, new Date(now.getTime() - QUICK_MATCH_EXPIRES_MS), 25)
+    const candidates = await this.repo.pairCandidates(s, new Date(now.getTime() - expiresMs), 25)
     for (const c of candidates) {
       const other = await this.users.get(c.userId)
       if (!other || !gradeFits(room, other.grade ?? null)) continue
       const locked = await this.repo.lockSearchSkipLocked(c.id)
-      if (locked?.status !== 'searching' || now.getTime() - locked.createdAt.getTime() >= QUICK_MATCH_EXPIRES_MS) continue
+      if (locked?.status !== 'searching' || now.getTime() - locked.createdAt.getTime() >= expiresMs) continue
       const code = await this.rooms.createRoom(caller, 'papan-bijak', {
         subject: s.subject as GamesRoomSubject,
         gradeLevel: room.gradeLevel,

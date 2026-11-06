@@ -191,4 +191,46 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     const hub = await student.get('/api/games/hub')
     expect(JSON.stringify(hub.body)).not.toContain(m.room_code)
   })
+  describe('battle_queue_seconds drives the queue time', () => {
+    const FORM2 = { subject: 'BAHASA_INGGERIS', match_mode: 'same_level' }
+    let studentMaju: Client
+    let original: unknown
+    const setQueue = (v: unknown) =>
+      t.db.query(`update gamification_settings set value = $1 where key = 'battle_queue_seconds'`, [v])
+
+    beforeAll(async () => {
+      studentMaju = await loginAs(t, ACCOUNTS.studentMaju)
+      original = (await t.db.query(`select value from gamification_settings where key = 'battle_queue_seconds'`))[0]?.value
+    })
+    afterAll(async () => {
+      if (original !== undefined) await setQueue(original)
+    })
+
+    it('with 30 s, a search older than 30 s expires and is not paired; a younger one is paired', async () => {
+      await setQueue(30)
+      await student2.post(QM, FORM2)
+      t.clock.advance(20_000)
+      await studentMaju.post(QM, FORM2)
+      t.clock.advance(15_000) // student2 is 35 s old, studentMaju 15 s
+      expect(await poll(studentMaju)).toEqual({ status: 'searching' }) // the 35 s search is not a candidate
+      expect(await poll(student2)).toEqual({ status: 'expired' })
+      await studentMaju.post(`${QM}/cancel`)
+
+      await student2.post(QM, FORM2)
+      t.clock.advance(29_000)
+      await studentMaju.post(QM, FORM2)
+      const m = (await poll(studentMaju)) as { status: string; room_code: string }
+      expect(m.status).toBe('matched') // student2 is 29 s old: still inside the queue time
+      expect(await poll(student2)).toEqual({ status: 'matched', room_code: m.room_code })
+    })
+
+    it('a 120 s setting keeps the default behaviour: 119 s searching, 120 s expired', async () => {
+      await setQueue(120)
+      await student2.post(QM, { subject: 'SAINS', match_mode: 'same_level' })
+      t.clock.advance(119_000)
+      expect(await poll(student2)).toEqual({ status: 'searching' })
+      t.clock.advance(1000)
+      expect(await poll(student2)).toEqual({ status: 'expired' })
+    })
+  })
 })
