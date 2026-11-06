@@ -30,7 +30,7 @@ describe('R1-T51 Semak Kertas and Pembina Set: backend criteria', () => {
   })
 
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return res.body.data.id as string
   }
@@ -84,7 +84,7 @@ describe('R1-T51 Semak Kertas and Pembina Set: backend criteria', () => {
       const editor = (await admin.get(`/api/admin/papers/${id}`)).body.data
       expect(editor.blueprint).toMatchObject({ code: '1449/2', subject: 'MAT', kertas: 2 })
       expect(editor.blueprint.sections).toHaveLength(3)
-      const none = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 9 })
+      const none = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 9 })
       expectError(none, 'VALIDATION_ERROR', 422, MSG.noBlueprint)
     })
   })
