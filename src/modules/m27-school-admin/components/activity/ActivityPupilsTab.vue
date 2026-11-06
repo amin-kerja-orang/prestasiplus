@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 import { DsDataTable, DsPillNav, DsStatRow, type CardField, type PillItem, type StatItem } from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
-import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
+import { accuracy, count, duration, lastLogin, matches } from './activity-format'
 
 const props = defineProps<{ report: SchoolActivityReport }>()
 
@@ -85,11 +85,11 @@ const tiles = computed<StatItem[]>(() => [
     icon: 'clipboard-text', accent: 'win',
   },
   { key: 'sessions', label: 'Jumlah Sesi', value: count(t.value.sessions), icon: 'list-numbers', accent: 'heat' },
-  // "no attempts" is not "averaging zero" (S1 rule): the dash without a session (INFERRED)
+  // "no attempts" is not "averaging zero": the BE sends null and the tile shows the dash (XS-5)
   {
     key: 'accuracy',
     label: 'Purata Ketepatan',
-    value: t.value.sessions > 0 ? accuracy(t.value.accuracy) : NO_DATA,
+    value: accuracy(t.value.accuracy),
     icon: 'target', accent: 'friend',
   },
 ])

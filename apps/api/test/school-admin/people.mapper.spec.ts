@@ -14,6 +14,7 @@ const user = (over: Partial<UserRecord> = {}): UserRecord => ({
   schoolId: '5',
   grade: 10,
   bio: null,
+  aspiration: null,
   idDelima: 'DELIMA-1',
   icMasked: 'xxxxxx-xx-xx34',
   isActive: true,

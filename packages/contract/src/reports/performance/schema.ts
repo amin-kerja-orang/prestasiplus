@@ -1,6 +1,8 @@
 import { z } from '../../zod'
 import { IdSchema } from '../../common/ids'
 import { DateOnlySchema, TimestampSchema } from '../../common/time'
+import { QuestionStimulusGroupSchema } from '../../questions/parts'
+import { QuestionPublicSchema } from '../../questions/schema'
 
 /**
  * M08 student performance read models (BE-19). The frontend mock (`src/modules/m08-student-performance`)
@@ -13,6 +15,14 @@ import { DateOnlySchema, TimestampSchema } from '../../common/time'
 const count = z.number().int()
 const pct = z.number()
 const num = z.number()
+
+/** True when `YYYY-MM-DD` is a real calendar day: parsed as a MYT date and re-formatted it equals the input (no rollover). */
+function isRealIsoDay(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const t = new Date(`${value}T00:00:00+08:00`).getTime()
+  if (!Number.isFinite(t)) return false
+  return new Date(t + 8 * 3_600_000).toISOString().slice(0, 10) === value
+}
 
 // --- Exact BM copy (mock handlers) ------------------------------------------------------------
 
@@ -32,6 +42,24 @@ export const PERFORMANCE_HEADCOUNT_MESSAGES = {
   studentsRequired: 'Pilih sekurang-kurangnya seorang murid.',
   studentsInvalid: 'Murid tidak sah.',
   actionInvalid: 'Tindakan tidak sah.',
+  /** S10-T02: any TOV / ETR / RS / AR / default outside 0..100 or not a number. */
+  markRange: 'Markah mesti antara 0 dan 100.',
+  /** S10-T02: Tarikh Rekod RS after today (MYT). */
+  rsDateFuture: 'Tarikh tidak boleh lebih lewat daripada hari ini.',
+  rsDateInvalid: 'Tarikh tidak sah.',
+  /** S10-T02: a Tarikh Rekod RS sent for a pupil whose resulting RS is empty. */
+  rsDateNeedsRs: 'Tarikh Rekod RS memerlukan RS.',
+  checkpointInvalid: 'OTR tidak sah.',
+  /** S10-T02 CF-05 (409 on `PUT /headcounts/:id/settings` without `confirm`): `k` = the new Bilangan OTR + 1. */
+  otrLoweringConfirm: (k: number): string => `OTR${String(k)} ke atas mempunyai markah. Padam markah tersebut?`,
+  /** Toasts of the screens (never sent by the API). */
+  saved: {
+    ar: (n: number): string => `AR OTR${String(n)} disimpan.`,
+    tov: 'TOV/ETR disimpan.',
+    settings: 'Tetapan disimpan.',
+    targets: 'Sasaran disimpan.',
+    targetsFailed: 'Gagal menyimpan sasaran. Cuba lagi.',
+  },
 } as const
 
 export const PERFORMANCE_TIMELINE_MESSAGES = {
@@ -59,7 +87,10 @@ export const PERFORMANCE_GPS_BANDS = ['Cemerlang', 'Baik', 'Sederhana', 'Perlu P
 export const PerformanceGpsBandSchema = z
   .enum(PERFORMANCE_GPS_BANDS)
   .meta({ id: 'PerformanceGpsBand' })
-export const PerformanceLevelCodeSchema = z.enum(['t4', 't5']).meta({ id: 'PerformanceLevelCode' })
+/** Tingkatan 1 to 5, lower case (the route `/prestasi/tingkatan/t1..t5`). Widened from t4/t5 (additive). */
+export const PerformanceLevelCodeSchema = z
+  .enum(['t1', 't2', 't3', 't4', 't5'])
+  .meta({ id: 'PerformanceLevelCode' })
 export const PerformanceLetterSchema = z
   .enum(['A', 'B', 'C', 'D'])
   .meta({ id: 'PerformanceLetter' })
@@ -67,11 +98,11 @@ export const PerformanceDifficultySchema = z
   .enum(['Mudah', 'Sederhana', 'Sukar'])
   .meta({ id: 'PerformanceDifficulty' })
 export const PerformanceRiskLevelSchema = z
-  .enum(['critical', 'high', 'medium', 'low'])
-  .meta({ id: 'PerformanceRiskLevel' })
+  .enum(['critical', 'high', 'medium', 'low', 'none'])
+  .meta({ id: 'PerformanceRiskLevel', description: "'none' = Belum Bermula (no answers); only the class analytics rows carry it." })
 export const PerformanceTrendSchema = z
-  .enum(['up', 'down', 'stable'])
-  .meta({ id: 'PerformanceTrend' })
+  .enum(['up', 'down', 'stable', 'new'])
+  .meta({ id: 'PerformanceTrend', description: "'new' = answers only in the last 7 days; only the class analytics rows carry it." })
 export const PerformanceSpStatusSchema = z.enum(['mahir', 'sederhana', 'lemah', 'belum'])
 export const PerformancePairStatusSchema = z.enum(['on', 'below', 'none'])
 
@@ -95,6 +126,22 @@ export const PerformanceClassCardSchema = z
     isActive: z.boolean(),
   })
   .meta({ id: 'PerformanceClassCard' })
+
+/**
+ * `GET /performance/classes/aggregate` (R1-GUR-4, FR-GUR-4-7): the cards plus "Pelajar Terbaik" and
+ * "Prestasi Mengikut Subjek" over the pupils of those classes. A sibling of `GET /performance/classes`, which still answers the array.
+ */
+export const PerformanceClassesAggregateSchema = z
+  .object({
+    classes: z.array(PerformanceClassCardSchema),
+    topStudents: z
+      .array(z.object({ userId: IdSchema, name: z.string(), answered: count, accuracy: pct }))
+      .meta({ description: 'Top 10 pupils with at least 5 answers, accuracy descending, ties by answers descending.' }),
+    subjects: z
+      .array(z.object({ subjectId: IdSchema, name: z.string(), answered: count, accuracy: pct }))
+      .meta({ description: 'Subjects with answers, accuracy descending.' }),
+  })
+  .meta({ id: 'PerformanceClassesAggregate' })
 
 // --- S1 school performance, S2/S3 levels ------------------------------------------------------
 
@@ -218,17 +265,24 @@ export const PerformanceLevelDetailSchema = z
         accuracy: pct,
       }),
     ),
-    atRisk: z.array(
-      z.object({
-        userId: IdSchema,
-        name: z.string(),
-        className: z.string(),
-        checkpoint: z.number().int(),
-        ar: num,
-        target: num,
-        gap: num,
-      }),
-    ),
+    atRisk: z
+      .array(
+        z.object({
+          userId: IdSchema,
+          name: z.string(),
+          className: z.string(),
+          answered: count,
+          /** Pooled accuracy, one decimal; null when the pupil has no answer. */
+          accuracy: pct.nullable(),
+          lastAnsweredAt: TimestampSchema.nullable(),
+          /** @deprecated Headcount pair fields of the V3 list; the list is now accuracy below 50 or inactive 7 days (R1-AS-4). Not sent. */
+          checkpoint: z.number().int().optional().meta({ deprecated: true }),
+          ar: num.optional().meta({ deprecated: true }),
+          target: num.optional().meta({ deprecated: true }),
+          gap: num.optional().meta({ deprecated: true }),
+        }),
+      )
+      .meta({ description: 'Murid Berisiko: whole-number accuracy below 50 or no answer in the last 7 days; 10 rows, accuracy ascending (no answer last).' }),
   })
   .meta({ id: 'PerformanceLevelDetail' })
 
@@ -249,7 +303,8 @@ export const PerformanceClassDashboardSchema = z
       accuracy: pct,
       sessions: count,
       answered: count,
-      avgMinutes: num,
+      /** "Purata Masa/Sesi": minutes per finished session, one decimal; null when no session has finished. */
+      avgMinutes: num.nullable(),
       active7d: count,
     }),
     headcount: z
@@ -266,9 +321,9 @@ export const PerformanceClassDashboardSchema = z
     attention: z.array(
       z.object({ userId: IdSchema, name: z.string(), sessions: count, accuracy: pct.nullable() }),
     ),
-    trend: z.array(
-      z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }),
-    ),
+    trend: z
+      .array(z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }))
+      .meta({ description: 'Daily, the last 30 Malaysian days including today, oldest first, zero-filled (a day without an answer is sessions 0, avgAccuracy 0, activeStudents 0); `date` is the MYT day.' }),
     ranking: z.array(
       z.object({
         rank: z.number().int(),
@@ -372,10 +427,12 @@ export const PerformanceAnalyticsSchema = z
         subjectId: IdSchema,
         name: z.string(),
         code: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, all modes, one decimal; null = no answers in the subject ("—"). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        /** null = no answers in the subject. */
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         counts: z.object({ mahir: count, sederhana: count, lemah: count, belum: count }),
         ringTotal: count,
         weak: z.array(weakSp),
@@ -387,6 +444,8 @@ export const PerformanceAnalyticsSchema = z
               code: z.string(),
               title: z.string(),
               status: PerformanceSpStatusSchema,
+              /** Heading of the strand (Tajuk DSKP / SK) the SP is grouped under; null = no heading. */
+              strand: z.string().nullable(),
             }),
           ),
         }),
@@ -418,16 +477,19 @@ export const PerformanceClassAnalyticsSchema = z
         riskLevel: z.union([PerformanceRiskLevelSchema, z.literal('')]),
       }),
     }),
-    summary: z.object({ students: count, accuracy: pct, atRisk: count, good: count }).nullable(),
+    summary: z.object({ students: count, accuracy: pct.nullable(), atRisk: count, good: count }).nullable(),
     rows: z.array(
       z.object({
         userId: IdSchema,
         name: z.string(),
-        accuracy: pct,
+        /** Pooled correct over answered, one decimal; null for Belum Bermula (no answers). */
+        accuracy: pct.nullable(),
         answered: count,
         trend: PerformanceTrendSchema,
-        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }),
+        projection: z.object({ low: PerformanceGradeSchema, high: PerformanceGradeSchema }).nullable(),
         riskLevel: PerformanceRiskLevelSchema,
+        /** School admin only: names of the classes of the selected scope the pupil is in; [] for a teacher. */
+        classes: z.array(z.string()),
       }),
     ),
   })
@@ -440,9 +502,13 @@ export const PerformanceItemAnalysisQuerySchema = z
     tingkatan: z
       .string()
       .optional()
-      .meta({ description: 'T4 or T5; any other value is ignored (null).' }),
+      .meta({ description: 'T1 to T5 (staff only); any other value is ignored (null).' }),
   })
   .meta({ id: 'PerformanceItemAnalysisQuery' })
+
+/** Tingkatan chips of the school item analysis (R1-AS-6, D101): T1 to T5. */
+export const PERFORMANCE_ITEM_TINGKATAN = ['T1', 'T2', 'T3', 'T4', 'T5'] as const
+export const PerformanceItemTingkatanSchema = z.enum(PERFORMANCE_ITEM_TINGKATAN).meta({ id: 'PerformanceItemTingkatan' })
 
 export const PerformanceSchoolItemAnalysisSchema = z
   .object({
@@ -455,9 +521,13 @@ export const PerformanceSchoolItemAnalysisSchema = z
       state: z.string(),
     }),
     variant: z.enum(['own', 'byId']),
-    tingkatan: z.enum(['T4', 'T5']).nullable(),
+    tingkatan: PerformanceItemTingkatanSchema.nullable(),
+    /** Tingkatan (T1 to T5) of the school's pupils that have answers: the chips of the page (AC-AS-6-6). Empty for a non-staff viewer. */
+    tingkatanOptions: z.array(PerformanceItemTingkatanSchema),
     students: count,
     answers: count.nullable(),
+    /** "Soalan Diuji" (XS-7): distinct questions answered in the scope, all modes. Null when the figures are withheld, like `answers`. */
+    questionsTested: count.nullable(),
     correct: count.nullable(),
     accuracy: pct.nullable(),
     difficulty: z.object({ mudah: count, sederhana: count, sukar: count }),
@@ -497,7 +567,7 @@ export const PerformanceSchoolItemAnalysisSchema = z
             wrongOption: PerformanceLetterSchema,
           }),
         ),
-        correctOption: optionRef,
+        correctOption: optionRef.nullable(),
         popularWrongOption: optionRef.nullable(),
         popularWrongCount: count,
       }),
@@ -531,7 +601,7 @@ export const PerformanceClassItemAnalysisSchema = z
           index: z.number(),
           level: PerformanceDifficultySchema,
           wrongStudents: z.array(z.object({ userId: IdSchema, name: z.string(), times: count })),
-          correctOption: optionRef,
+          correctOption: optionRef.nullable(),
           popularWrong: optionRef.extend({ times: count }).nullable(),
         }),
       ),
@@ -543,7 +613,7 @@ export const PerformanceClassItemAnalysisSchema = z
             text: z.string(),
             upperPct: pct,
             lowerPct: pct,
-            index: z.number(),
+            index: z.number().meta({ description: 'Discrimination D, 2 decimals (R1 decision D113).' }),
             status: z.enum(['Sangat Baik', 'Baik', 'Sederhana', 'Lemah']),
           }),
         ),
@@ -551,6 +621,64 @@ export const PerformanceClassItemAnalysisSchema = z
     }),
   })
   .meta({ id: 'PerformanceClassItemAnalysis' })
+
+// --- API-RPT-05: the pupil's own item analysis (R1-MUR-6) -------------------------------------
+
+export const PERFORMANCE_ITEM_TAPIS = ['semua', 'ada_betul', 'selalu_salah'] as const
+export const PERFORMANCE_ITEM_CATEGORIES = ['isyarat_awal', 'pemulihan', 'pengukuhan'] as const
+export const PerformanceItemCategorySchema = z.enum(PERFORMANCE_ITEM_CATEGORIES).meta({ id: 'PerformanceItemCategory' })
+
+export const PerformanceItemAnalysisMeQuerySchema = z
+  .object({
+    subjectCode: z.string().max(32).optional().meta({ description: 'Curriculum subject code; narrows tiles, subjects, counts and items. Unknown code = empty result.' }),
+    tapis: z
+      .enum(PERFORMANCE_ITEM_TAPIS)
+      .optional()
+      .meta({ description: 'semua (default) | ada_betul (correct >= 1) | selalu_salah (>= 2 attempts, all wrong). Filters `items` only.' }),
+  })
+  .meta({ id: 'PerformanceItemAnalysisMeQuery' })
+
+export const PerformanceItemAnalysisMeSchema = z
+  .object({
+    tiles: z.object({
+      answered: count.meta({ description: '"Soalan Dijawab": answer rows of every mode (XS-4).' }),
+      needRemedial: count.meta({ description: '"Perlu Pemulihan": questions in Pemulihan.' }),
+      needStrengthen: count.meta({ description: '"Perlu Pengukuhan": questions in Pengukuhan.' }),
+      mastery: pct.nullable().meta({ description: '"Tahap Penguasaan": pooled accuracy, one decimal; null with no answers.' }),
+    }),
+    subjects: z
+      .array(
+        z.object({
+          code: z.string(),
+          name: z.string(),
+          attempts: count,
+          uniqueQuestions: count,
+          accuracy: pct.nullable().meta({ description: 'One decimal.' }),
+          wrongAnswers: count,
+          weakRepeated: count.meta({ description: 'Distinct questions in Pemulihan or Pengukuhan.' }),
+          earlySignalWeak: count.meta({ description: 'Distinct questions in Isyarat Awal.' }),
+        }),
+      )
+      .meta({ description: 'Ascending accuracy.' }),
+    counts: z.object({ isyaratAwal: count, pemulihan: count, pengukuhan: count }),
+    items: z.array(
+      z.object({
+        questionId: IdSchema,
+        category: PerformanceItemCategorySchema,
+        attempts: count,
+        correct: count,
+        wrongTimes: count,
+        lastAnsweredAt: TimestampSchema,
+        subject: z.string(),
+        chapter: z.string().nullable(),
+        source: z.string(),
+        question: QuestionPublicSchema,
+        stimulusGroup: QuestionStimulusGroupSchema.nullable().meta({ description: 'Shown once per group by the client.' }),
+        explanation: z.string().nullable(),
+      }),
+    ),
+  })
+  .meta({ id: 'PerformanceItemAnalysisMe' })
 
 // --- Timeline, public profile, rankings, leaderboard ------------------------------------------
 
@@ -578,9 +706,50 @@ export const PerformanceTimelinePostSchema = z
   })
   .meta({ id: 'PerformanceTimelinePost' })
 
+/**
+ * One row of the pupil's feed (R1-MUR-39, API-RPT-14): a finished practice session, a badge earned, or a manual post.
+ * `at` is the event time in Malaysia time (a post: its `createdAt`). Level-ups are not in R1.
+ */
+export const PerformanceTimelineEntrySchema = z
+  .discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('session'),
+      id: z.string().min(1),
+      at: TimestampSchema,
+      subjectName: z.string(),
+      correct: z.number().int().min(0),
+      answered: z.number().int().min(0),
+      accuracy: z.number().int().min(0).max(100),
+    }),
+    z.object({
+      kind: z.literal('badge'),
+      id: z.string().min(1),
+      at: TimestampSchema,
+      name: z.string(),
+      icon: z.string(),
+    }),
+    z.object({
+      kind: z.literal('post'),
+      id: IdSchema,
+      at: TimestampSchema,
+      post: PerformanceTimelinePostSchema,
+    }),
+  ])
+  .meta({ id: 'PerformanceTimelineEntry' })
+
+/** `entries` is the feed (newest first, at most 100); `posts` stays for older clients (the own posts only). */
 export const PerformanceTimelineSchema = z
-  .object({ profileUrl: z.string(), posts: z.array(PerformanceTimelinePostSchema) })
+  .object({
+    profileUrl: z.string(),
+    posts: z.array(PerformanceTimelinePostSchema),
+    entries: z.array(PerformanceTimelineEntrySchema),
+  })
   .meta({ id: 'PerformanceTimeline' })
+
+/** `{ data }` of `DELETE /timeline/{id}` (status 200). */
+export const PerformanceTimelineDeleteResultSchema = z
+  .object({ deleted: z.literal(1) })
+  .meta({ id: 'PerformanceTimelineDeleteResult' })
 
 export const PERFORMANCE_TIMELINE_LIMITS = {
   titleMax: 150,
@@ -741,6 +910,16 @@ export const PerformanceHeadcountModeSchema = z
   .enum(['auto', 'manual'])
   .meta({ id: 'PerformanceHeadcountMode' })
 const toneCell = z.enum(['above', 'on', 'below', 'na'])
+/** S10-T02 (DOC DEFECT 5): the pupil's entry is Active iff it has an ETR for the config (own or class default), else Draft. */
+export const HeadcountEntryStatusSchema = z.enum(['active', 'draft'])
+/** S10-T02: why the pill is not On Track / Below. */
+export const HeadcountStatusReasonSchema = z.enum(['belum_ada_data', 'belum_ada_tov'])
+const headcountProjection = z.object({
+  value: num,
+  variant: z.enum(['green', 'amber', 'red']),
+  trend: z.enum(['Meningkat', 'Stabil', 'Menurun']),
+  confidence: z.enum(['Tinggi', 'Sederhana', 'Rendah']),
+})
 
 export const PerformanceHeadcountListItemSchema = z
   .object({
@@ -752,6 +931,12 @@ export const PerformanceHeadcountListItemSchema = z
     mode: PerformanceHeadcountModeSchema,
     activeOtrs: z.number().int(),
     students: count,
+    /** S10-T02 ("Guru" column, API-AS-15). */
+    teacherName: z.string(),
+    /** S10-T02. Own list (`/me`): the pupil's own pill (Active iff an ETR, own or default). Staff list: Active iff the class default or any live pupil has an ETR. */
+    entryStatus: HeadcountEntryStatusSchema,
+    /** S10-T02. Own list only (null in the staff list): "Belum Ada Data" (no ETR) / "Belum Ada TOV" (ETR but no TOV). */
+    statusReason: HeadcountStatusReasonSchema.nullable(),
   })
   .meta({ id: 'PerformanceHeadcountListItem' })
 
@@ -765,6 +950,9 @@ export const PerformanceHeadcountDashboardSchema = z
         className: z.string(),
         subjectName: z.string(),
         year: z.number().int(),
+        /** S10-T02. */
+        mode: PerformanceHeadcountModeSchema,
+        teacherName: z.string(),
         onTrack: count,
         offTrack: count,
         noData: count,
@@ -790,7 +978,7 @@ export const PerformanceHeadcountFormOptionsSchema = z
 
 /** Form integer: the mock accepts a number or a digit string (the S14 form posts strings). */
 const intLike = (message: string) =>
-  z.union([z.number().int(), z.string().regex(/^-?\d+$/)], { error: message })
+  z.union([z.number().int(), z.string().regex(/^-?\d+$/, { error: message })], { error: message })
 const inRange = (lo: number, hi: number, message: string) =>
   intLike(message).refine((v) => Number(v) >= lo && Number(v) <= hi, { error: message })
 const idField = (required: string | null, invalid: string) =>
@@ -851,6 +1039,64 @@ export const PerformanceHeadcountDropRequestSchema = z
   })
   .meta({ id: 'PerformanceHeadcountDropRequest' })
 
+/** A 0..100 mark (S10-T02): any other number, or a non-number, answers "Markah mesti antara 0 dan 100.". */
+const markValue = z
+  .number({ error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+  .min(0, { error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+  .max(100, { error: PERFORMANCE_HEADCOUNT_MESSAGES.markRange })
+const pupilId = z
+  .string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid })
+  .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid })
+
+/** `PUT /headcounts/:id/ar` (Key-in AR, Manual config of the owning teacher). A checkpoint outside 1..activeOtrs is 404, not 422. */
+export const PerformanceHeadcountArRequestSchema = z
+  .object({
+    checkpoint: z.number({ error: PERFORMANCE_HEADCOUNT_MESSAGES.checkpointInvalid }).int({ error: PERFORMANCE_HEADCOUNT_MESSAGES.checkpointInvalid }),
+    marks: z.array(
+      z.object({ userId: pupilId, value: markValue.nullable() }),
+      { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid },
+    ),
+  })
+  .meta({ id: 'PerformanceHeadcountArRequest' })
+
+/** `PUT /headcounts/:id/tov` (Edit TOV/ETR + RS). Only the keys present in a row are written; `null` clears. `rs: null` also clears the date. */
+export const PerformanceHeadcountTovRequestSchema = z
+  .object({
+    rows: z.array(
+      z.object({
+        userId: pupilId,
+        tov: markValue.nullable().optional(),
+        etr: markValue.nullable().optional(),
+        rs: markValue.nullable().optional(),
+        /** MYT day; defaults to today on the first RS save; after today = 422 "Tarikh tidak boleh lebih lewat daripada hari ini.". */
+        rsRecordedAt: z
+          .string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .regex(/^\d{4}-\d{2}-\d{2}$/, { error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .refine(isRealIsoDay, { error: PERFORMANCE_HEADCOUNT_MESSAGES.rsDateInvalid })
+          .nullable()
+          .optional(),
+      }),
+      { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid },
+    ),
+  })
+  .meta({ id: 'PerformanceHeadcountTovRequest' })
+
+/** `PUT /headcounts/:id/settings` (Tetapan). The mode is read-only after creation. Lowering with marks above n and no `confirm` is 409. */
+export const PerformanceHeadcountSettingsRequestSchema = z
+  .object({
+    activeOtrs: inRange(2, 5, PERFORMANCE_HEADCOUNT_MESSAGES.otrInvalid),
+    confirm: z.boolean().optional(),
+  })
+  .meta({ id: 'PerformanceHeadcountSettingsRequest' })
+
+/** `PUT /headcounts/:id/defaults` ("Simpan Sasaran"): the class default TOV and ETR (RS Sasaran); null clears. Both keys are required. */
+export const PerformanceHeadcountDefaultsRequestSchema = z
+  .object({
+    defaultTov: markValue.nullable(),
+    defaultEtr: markValue.nullable(),
+  })
+  .meta({ id: 'PerformanceHeadcountDefaultsRequest' })
+
 export const PerformanceHeadcountSortQuerySchema = z
   .object({
     sort: z
@@ -878,18 +1124,23 @@ export const PerformanceHeadcountStudentSchema = z
         levelName: z.string(),
         className: z.string(),
         year: z.number().int(),
+        /** S10-T02: the config's mode (the "Auto" / "Manual" chip). */
+        mode: PerformanceHeadcountModeSchema,
+        /** HC-4: on / below by the latest checkpoint with an AR; none without an AR, an ETR or a TOV. */
         status: PerformancePairStatusSchema,
+        /** S10-T02. */
+        statusReason: HeadcountStatusReasonSchema.nullable(),
+        entryStatus: HeadcountEntryStatusSchema,
+        /** HC-1: ETR - TOV, 1 decimal; null when either is missing. */
+        jurang: num.nullable(),
+        /** HC-6 end value (same number as `projection.value`) and Keyakinan (same as `projection.confidence`); null without AR, TOV and ETR. */
+        unjuran: num.nullable(),
+        keyakinan: z.enum(['Tinggi', 'Sederhana', 'Rendah']).nullable(),
+        /** Resolved values: the entry's own, else the class default. */
         tov: num.nullable(),
         etr: num.nullable(),
         rs: z.object({ value: num, recordedAt: TimestampSchema.nullable() }).nullable(),
-        projection: z
-          .object({
-            value: num,
-            variant: z.enum(['green', 'amber', 'red']),
-            trend: z.enum(['Meningkat', 'Stabil', 'Menurun']),
-            confidence: z.enum(['Tinggi', 'Sederhana', 'Rendah']),
-          })
-          .nullable(),
+        projection: headcountProjection.nullable(),
         rows: z.array(
           cell.extend({
             checkpoint: z.number().int(),
@@ -946,8 +1197,20 @@ export const PerformanceHeadcountDetailSchema = z
       teacherName: z.string(),
       status: z.literal('active'),
       activeOtrs: z.number().int(),
+      /** S10-T02. */
+      mode: PerformanceHeadcountModeSchema,
+      /** Class defaults ("Simpan Sasaran", DM-49); null = none. */
+      defaultTov: num.nullable(),
+      defaultEtr: num.nullable(),
     }),
-    chips: z.object({ onTrack: count, below: count, empty: count, total: count }),
+    chips: z.object({
+      onTrack: count,
+      below: count,
+      empty: count,
+      total: count,
+      /** S10-T02: round(on / (on + below) * 100); 0 when nobody is on or below. */
+      onTrackPct: count,
+    }),
     rows: z.array(
       z.object({
         userId: IdSchema,
@@ -958,6 +1221,13 @@ export const PerformanceHeadcountDetailSchema = z
         etr: num.nullable(),
         etrGrade: PerformanceGradeSchema.nullable(),
         dropped: z.boolean(),
+        /** S10-T02: RS (SPM Sebenar) and its record date (MYT day, YYYY-MM-DD). */
+        rs: num.nullable(),
+        rsRecordedAt: DateOnlySchema.nullable(),
+        status: PerformancePairStatusSchema,
+        statusReason: HeadcountStatusReasonSchema.nullable(),
+        entryStatus: HeadcountEntryStatusSchema,
+        projection: headcountProjection.nullable(),
       }),
     ),
     averages: z.object({

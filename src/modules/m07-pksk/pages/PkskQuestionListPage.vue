@@ -327,7 +327,7 @@ const cardFields: CardField[] = [
           aria-label="Cari"
           placeholder="Cari soalan..."
           icon="i-ph-magnifying-glass"
-          class="w-full md:min-w-0 md:flex-[2]"
+          class="w-full md:min-w-0 md:flex-4"
           data-testid="filter-search"
         />
       </template>
@@ -337,7 +337,7 @@ const cardFields: CardField[] = [
         aria-label="Bahagian"
         placeholder="Semua Bahagian"
         :items="BAHAGIAN_FILTER_OPTIONS"
-        class="md:min-w-0 md:flex-[1.5]"
+        class="md:min-w-0 md:flex-3"
         data-testid="filter-bahagian"
         @change="submitFilter"
       />
@@ -347,7 +347,7 @@ const cardFields: CardField[] = [
         aria-label="Level"
         placeholder="Semua Level"
         :items="LEVEL_FILTER_OPTIONS"
-        class="md:min-w-0 md:flex-1"
+        class="md:min-w-0 md:flex-2"
         data-testid="filter-level"
         @change="submitFilter"
       />
@@ -357,7 +357,7 @@ const cardFields: CardField[] = [
         aria-label="Status"
         placeholder="Semua Status"
         :items="STATUS_OPTIONS"
-        class="md:min-w-0 md:flex-1"
+        class="md:min-w-0 md:flex-2"
         data-testid="filter-status"
         @change="submitFilter"
       />
