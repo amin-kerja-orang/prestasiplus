@@ -16,7 +16,7 @@ export class QuestionSetAssignments {
   constructor(@Inject(QuestionSetsService) private readonly service: QuestionSetsService) {}
 
   async resolve(input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution> {
-    const set = await this.service.visibleSetFor(input.userId, input.id, input.at)
+    const set = await this.service.visibleSetFor(input.userId, input.id)
     if (!set) return { status: 'not_found' }
     const items = await this.service.eligibleItems([set])
     return {

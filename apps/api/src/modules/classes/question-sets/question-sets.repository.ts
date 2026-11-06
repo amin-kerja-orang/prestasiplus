@@ -28,6 +28,9 @@ export interface DskpRow {
 
 const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
 
+/** The kinds a pupil can see and start: one list for the feed (`visibleIn`) and the start rule (`visibleTo`). */
+export const PUPIL_SET_KINDS: string[] = ['set', 'kertas']
+
 /**
  * The only doorway to `question_sets`, `question_set_items` and the teacher DSKP picking tables
  * (`dskp_bidang`, `dskp_sk`, `dskp_sp`; OWN-11, not the admin DSKP tree). Question and practice tables are
@@ -52,13 +55,30 @@ export class QuestionSetsRepository {
     if (keys.length === 0) return []
     const rows = await this.db.questionSet.findMany({
       where: {
-        kind: { in: ['set', 'kertas'] },
+        kind: { in: PUPIL_SET_KINDS },
         status: 'published',
         classrooms: { some: { classroomId: { in: keys } } },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
     return rows.map(toRecord)
+  }
+
+  /**
+   * One set for one pupil, in ONE query and by the same rules as `visibleIn`: kind `set` or `kertas`, published, and the pupil holds an
+   * active enrolment (real or Mod Pelajar) in ANY class the set is assigned to. Null otherwise. (Like the feed, it does not look at
+   * `classrooms.is_active`: `forStudent` keeps an inactive class too, so list and start agree.)
+   */
+  async visibleTo(setId: string, userId: string): Promise<QuestionSetRecord | null> {
+    const key = idOf(setId)
+    const user = idOf(userId)
+    if (key === null || user === null) return null
+    const hit = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT s.id FROM question_sets s
+       WHERE s.id = ${key} AND s.kind = ANY(${PUPIL_SET_KINDS}::text[]) AND s.status = 'published'
+         AND EXISTS (SELECT 1 FROM question_set_classrooms qc JOIN enrolments e ON e.classroom_id = qc.classroom_id
+                      WHERE qc.question_set_id = s.id AND e.student_id = ${user} AND e.status = 'active')`
+    return hit.length === 0 ? null : this.get(setId)
   }
 
   /** The class ids a set is assigned to (`question_set_classrooms`), ascending. */

@@ -115,6 +115,20 @@ describe('BE-18 B: GET /set-soalan-saya and QuestionSetAssignments', () => {
       expect(await t.get(QuestionSetAssignments).resolve({ userId: s1Id, id, at: new Date(NOW) })).toEqual({ status: 'not_found' })
     })
 
+    it('list and start use one rule: a removed enrolment in ONE of two assigned classes keeps access through the other', async () => {
+      const c1 = await classWith(t, teacher, [s1], 'Kelas Aturan Satu')
+      const c2 = await classWith(t, teacher, [s1], 'Kelas Aturan Dua')
+      const id = await insertSet(t, { teacherId, classroomId: null, classroomIds: [c1.id, c2.id], title: 'Set Satu Aturan', questionIds: qs.slice(0, 1) })
+      const a = t.get(QuestionSetAssignments)
+      expect((await list(s1)).map((r) => r.title)).toContain('Set Satu Aturan')
+      expect(await a.resolve({ userId: s1Id, id, at: new Date(NOW) })).toMatchObject({ status: 'ok' })
+      await t.db.query(`update enrolments set status = 'removed' where classroom_id = $1 and student_id = $2`, [c1.id, s1Id])
+      expect(await a.resolve({ userId: s1Id, id, at: new Date(NOW) })).toMatchObject({ status: 'ok' })
+      await t.db.query(`update enrolments set status = 'removed' where classroom_id = $1 and student_id = $2`, [c2.id, s1Id])
+      expect(await a.resolve({ userId: s1Id, id, at: new Date(NOW) })).toEqual({ status: 'not_found' })
+      expect((await list(s1)).map((r) => r.title)).not.toContain('Set Satu Aturan')
+    })
+
     it('resolve works for a member of any assigned class and for kind kertas', async () => {
       const c1 = await classWith(t, teacher, [], 'Kelas Resolve Satu')
       const c2 = await classWith(t, teacher, [s1], 'Kelas Resolve Dua')
