@@ -209,8 +209,8 @@ describe('repository primitives (QLOAD)', () => {
 describe('practice (P1-P4, P6)', () => {
   const source = (): Be09PracticeQuestionSource => t.get(Be09PracticeQuestionSource)
 
-  it('random start hydrates a window of n * 4 ids, never the subject, and serves distinct eligible questions', async () => {
-    const res = await s1.post('/practice/sessions', { mode: 'random', subjectCode: w.subjectCode, levelId: dLevel, count: 10 })
+  it('latih_tubi start hydrates a window of n * 4 ids, never the subject, and serves distinct eligible questions', async () => {
+    const res = await s1.post('/practice/sessions', { mode: 'latih_tubi', subjectCode: w.subjectCode, levelId: dLevel, count: 10 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const ids = (res.body.data.questions as { id: string }[]).map((q) => q.id)
     expect(new Set(ids).size).toBe(10)

@@ -16,6 +16,7 @@ import { classesSeed } from '../../prisma/seed/poc/classes'
 import { PracticeReadsModule } from '../../src/modules/practice/reads'
 import { CLOCK, type Clock } from '../../src/db/clock'
 import { ClassPerformanceService, ItemAnalysisService, PerformancePorts, SchoolPerformanceService } from '../../src/modules/reports/performance'
+import { XsQueries } from '../../src/modules/school-admin/xs-queries'
 import { DIRECTORY_PORT, type DirectoryPort } from '../../src/modules/reports/performance/ports'
 import { InMemoryAnswerFacts } from '../reports/performance/fakes/in-memory-answer-facts'
 import { featureModules } from '../../src/modules'
@@ -171,19 +172,16 @@ describe('PoC Bijak sittings seed', () => {
     expect(dash.stats.sessions).toBeGreaterThan(0)
   })
 
-  it('adding the class leaves the pupil and teacher counts of DEMO001 at the account counts (only the class count grows)', async () => {
+  it('adding the class leaves the Murid and Guru counts of DEMO001 at XS-1 / XS-3 (only the class count grows)', async () => {
     const [school] = await t.db.query<{ id: string }>(`select id::text from schools where code = 'DEMO001'`)
-    const [accounts] = await t.db.query<{ students: number; teachers: number }>(
-      `select count(*) filter (where r.role = 'student')::int students, count(*) filter (where r.role = 'teacher')::int teachers
-         from users u join user_roles r on r.user_id = u.id where u.school_id = $1::bigint and r.role in ('student', 'teacher')`,
-      [school!.id],
-    )
+    // XS-1 / XS-3 (S6-T03, S10-T07): the same named queries as the school admin Dashboard, not the raw account count.
+    const xs = t.app.get(XsQueries, { strict: false })
     const [admin] = await t.db.query<{ id: string }>(`select id::text from users where email = 'admin@demo.test'`)
     const view = await t.app
       .get(SchoolPerformanceService, { strict: false })
       .school({ userId: admin!.id, role: 'school_admin', scope: { level: 'school', schoolId: school!.id, label: 'SMK Demo Satu' }, isTest: false })
-    expect(view.stats.students).toBe(accounts?.students)
-    expect(view.stats.teachers).toBe(accounts?.teachers)
+    expect(view.stats.students).toBe(await xs.pupilCount({ kind: 'school', schoolId: school!.id }))
+    expect(view.stats.teachers).toBe(await xs.teacherCount(school!.id))
     const [classes] = await t.db.query<{ n: number }>(`select count(*)::int n from classrooms where school_id = $1::bigint and is_active and kind = 'classroom'`, [school!.id])
     expect(view.stats.classes).toBe(classes?.n)
   })
