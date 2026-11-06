@@ -1,5 +1,5 @@
 import { AnalyticsItemAnalysisSchema, AnalyticsTeacherReportSchema, envelopeOf } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
   ADMIN,
@@ -108,6 +108,13 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
   })
 
   describe('report S1', () => {
+    // Bijak sittings inserted by the tests below; removed after each test so later tests still find pupils without any activity.
+    const bijakUsers: string[] = []
+    afterEach(async () => {
+      if (bijakUsers.length === 0) return
+      await t.db.query(`delete from practice_attempt_aggregates where source = 'bijak' and user_id = any($1::bigint[])`, [bijakUsers.splice(0)])
+    })
+
     it('population of the own active classes: all-classes view counts every distinct real member once', async () => {
       const body = report(await teacherA.get('/teacher/report'))
       // p1, p2 (Kirkpatrick + others), maju and susp (Kelas Item); the Mod Pelajar and removed enrolments and the inactive class add nobody new... maju is in Kelas Item.
@@ -201,6 +208,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
         [w.schoolA],
       )
       expect(rows.length).toBe(3)
+      bijakUsers.push(...rows.map((r) => r.id))
       for (const r of rows) await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, r.id])
       await t.db.query(
         `insert into practice_attempt_aggregates (source, attempt_id, user_id, subject_code, kertas, mode, status, units_awarded, units_max, submitted_at)
@@ -221,6 +229,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       )
       expect(rows.length).toBe(3)
       const [onlyTest, prov, both] = rows.map((r) => r.id) as [string, string, string]
+      bijakUsers.push(onlyTest, prov, both)
       for (const id of [onlyTest, prov, both]) await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, id])
       const sitting = (user: string, at: string, opts: { isTest?: boolean; provisional?: boolean; awarded?: number } = {}) =>
         t.db.query(
@@ -252,6 +261,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
         [w.schoolA],
       )
       const id = (rows[0] as { id: string }).id
+      bijakUsers.push(id)
       await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, id])
       for (const at of ['2026-10-17T23:30:00+08:00', '2026-10-18T00:10:00+08:00']) {
         await t.db.query(
