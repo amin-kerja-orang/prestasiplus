@@ -22,7 +22,7 @@ import S11TierSystem from '../components/student-a/S11TierSystem.vue'
 const HUB_RECENT_ROWS = 10
 
 const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
-const ledger = useApi((signal) => fetchGamificationTransactions({}, { signal }))
+const ledger = useApi((signal) => fetchGamificationTransactions({ limit: HUB_RECENT_ROWS }, { signal }))
 const recent = computed(() =>
   (ledger.data.value?.data ?? dashboard.data.value?.recent ?? []).slice(0, HUB_RECENT_ROWS),
 )

@@ -16,6 +16,11 @@ export interface HeadcountListItem {
   mode: HeadcountMode
   activeOtrs: number
   students: number
+  /** API-AS-15 "Guru" column. */
+  teacherName: string
+  /** Staff list: Active iff the class default or a live pupil has an ETR. */
+  entryStatus: HeadcountEntryStatus
+  statusReason: HeadcountStatusReason | null
 }
 
 /** #13 one config of S13. `chart` holds the class means per OTR (labels OTR1…OTRn). */
@@ -27,6 +32,8 @@ export interface HeadcountDashboardConfig {
   className: string
   subjectName: string
   year: number
+  mode: HeadcountMode
+  teacherName: string
   onTrack: number
   offTrack: number
   noData: number
@@ -87,7 +94,14 @@ export interface HeadcountSection {
   levelName: string
   className: string
   year: number
+  mode: HeadcountMode
   status: PairStatus
+  statusReason: HeadcountStatusReason | null
+  entryStatus: HeadcountEntryStatus
+  /** HC-1 ETR − TOV (1 decimal) and HC-6 end value / Keyakinan; null when not computable. */
+  jurang: number | null
+  unjuran: number | null
+  keyakinan: ConfidenceLabel | null
   tov: number | null
   etr: number | null
   rs: { value: number; recordedAt: string | null } | null
@@ -143,15 +157,35 @@ export interface HeadcountCell {
   tone: CellTone
 }
 
+/** HC-6 Unjuran of one pupil (contract `headcountProjection`): `value` is the projected end value. */
+export interface HeadcountRowProjection {
+  value: number
+  variant: ProjectionVariant
+  trend: TrendLabel
+  confidence: ConfidenceLabel
+}
+
+export type HeadcountRowStatus = 'on' | 'below' | 'none'
+export type HeadcountStatusReason = 'belum_ada_data' | 'belum_ada_tov'
+export type HeadcountEntryStatus = 'active' | 'draft'
+
 export interface HeadcountRow {
   userId: number
   name: string
   tov: number | null
   tovGrade: HeadcountGrade | null
+  /** Targets are computed whole numbers (HC-2); AR is whole in Auto and 1 decimal in Manual. */
   cells: HeadcountCell[]
   etr: number | null
   etrGrade: HeadcountGrade | null
   dropped: boolean
+  /** RS (SPM Sebenar) and its record date (`YYYY-MM-DD`). */
+  rs: number | null
+  rsRecordedAt: string | null
+  status: HeadcountRowStatus
+  statusReason: HeadcountStatusReason | null
+  entryStatus: HeadcountEntryStatus
+  projection: HeadcountRowProjection | null
 }
 
 /** #25 S23 table; `averages` are 1-decimal means over the shown (not dropped) rows. */
@@ -165,8 +199,12 @@ export interface HeadcountDetail {
     teacherName: string
     status: 'active'
     activeOtrs: number
+    mode: HeadcountMode
+    /** The subject-card targets (API-RPT-16): the default TOV / ETR of every pupil entry. */
+    defaultTov: number | null
+    defaultEtr: number | null
   }
-  chips: { onTrack: number; below: number; empty: number; total: number }
+  chips: { onTrack: number; below: number; empty: number; total: number; onTrackPct: number }
   rows: HeadcountRow[]
   averages: {
     tov: number | null
@@ -185,3 +223,33 @@ export interface DropStudentsInput {
 }
 
 export type HeadcountSort = 'ranking' | 'name'
+
+/** API-RPT-10 `PUT /api/headcounts/:id/ar` (Manual configs only). */
+export interface SaveArInput {
+  checkpoint: number
+  marks: { userId: number | string; value: number | null }[]
+}
+
+/** API-RPT-10 `PUT /api/headcounts/:id/tov` (TOV/ETR and RS of each pupil). */
+export interface SaveTovInput {
+  rows: {
+    userId: number | string
+    tov?: number | null
+    etr?: number | null
+    rs?: number | null
+    /** `YYYY-MM-DD`, not in the future. */
+    rsRecordedAt?: string | null
+  }[]
+}
+
+/** API-RPT-10 `PUT /api/headcounts/:id/settings`; without `confirm` a lower count over marks is a 409. */
+export interface SaveSettingsInput {
+  activeOtrs: number
+  confirm?: boolean
+}
+
+/** API-RPT-16 `PUT /api/headcounts/:id/defaults` (Simpan Sasaran). */
+export interface SaveDefaultsInput {
+  defaultTov: number | null
+  defaultEtr: number | null
+}

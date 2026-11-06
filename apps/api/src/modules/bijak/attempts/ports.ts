@@ -23,6 +23,8 @@ export interface AttemptPaper {
   /** Decimal-string id of `papers.id` (the wire id of the paper). */
   id: string
   kind: 'pilihan' | 'jana'
+  /** DM-23. Absent = `simulasi`. A `subjektif` paper starts a Kertas Subjektif attempt: `paper_kind = 'subjektif'`, latihan, untimed. */
+  surface?: 'simulasi' | 'subjektif'
   title: string
   /** Subject code, for example `MAT`. */
   subject: string

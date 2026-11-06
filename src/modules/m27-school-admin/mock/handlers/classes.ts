@@ -3,11 +3,11 @@
 import { list, queryString, route, type RouteDef } from '@/mock/define'
 
 import { listSchoolClasses } from '../read-models/classes'
-import { requireSchoolAdminWithSchool, schoolOf } from '../read-models/school-scope'
+import { reportSchoolOf, requireSchoolAdminOrAdminReport } from '../read-models/school-scope'
 
 export const classRoutes: RouteDef[] = [
-  route('GET', '/api/admin-sekolah/kelas', [requireSchoolAdminWithSchool], (req) => {
-    const out = listSchoolClasses(schoolOf(req), {
+  route('GET', '/api/admin-sekolah/kelas', [requireSchoolAdminOrAdminReport], (req) => {
+    const out = listSchoolClasses(reportSchoolOf(req), {
       level: queryString(req.query, 'level'),
       search: queryString(req.query, 'search'),
       page: queryString(req.query, 'page'),

@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type {
   BijakBlueprintContract,
+  BijakCoverUnavailableReason,
   BijakGenerateRequest,
   BijakGenerateResult,
   BijakPaperCover,
   BijakPaperSummary,
+  BijakPaperSurface,
   BijakSubject,
 } from '@pp/contract'
 
@@ -15,9 +17,9 @@ import { toStandard } from '../../exam/blueprints/blueprint-standard'
 import { shortageToWire } from '../../exam/builder/standard'
 import { composeStandardPaper, describeQuestion, effectiveMarks } from './exam-core.adapter'
 import { generateLimit, noBlueprint, paperNotFound, shortage } from './errors'
-import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, pinKey } from './ports'
+import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, placesUnservable } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
-import { generationSeed, mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
+import { generationSeed, mytYear, paperCodeOf, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf, curriculumCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
@@ -78,10 +80,11 @@ export class PapersService {
 
   /* ------------------------------------------------------------------------------ reads */
 
-  async listPapers(userId: string): Promise<BijakPaperSummary[]> {
+  async listPapers(userId: string, surface: BijakPaperSurface = 'simulasi'): Promise<BijakPaperSummary[]> {
     // A published paper missing a printed code or a section would break the contract (code min 1,
     // sections min 1): it is not listed (BE-39 may create such rows; they stay out of the hub).
-    const papers = (await this.repo.listPublishedPilihan()).filter((p) => p.paperCode && p.sections.length > 0)
+    // A Kertas Subjektif paper has no printed-code field on its form (Q-18): it is listed with the code `K{kertas}` (paperCodeOf).
+    const papers = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
     if (papers.length === 0) return []
     const [subjects, info, progress] = await Promise.all([
       this.repo.subjectsByIds(papers.map((p) => p.subjectId)),
@@ -93,19 +96,21 @@ export class PapersService {
     // Lead decision: a pupil who has ANY sitting on it, open or submitted, keeps the card, so the result and Semakan stay reachable.
     // REQ-B-058: a pinned version that is taken down refuses a new sitting too, so the paper is not offered either (one read for the whole list).
     const down = await this.takenDownOf(papers)
-    const listed = papers.filter((p) => progress.has(idToString(p.id)) || p.sections.every((s) => s.placements.every((pl) => info.has(idToString(pl.questionId)) && !down.has(pinKey({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))))
+    const listed = papers.filter((p) => progress.has(idToString(p.id)) || !placesUnservable(this.pinsOf(p), info, down))
     const marked = await this.withPinned(info, listed)
     return listed.map((p) => this.summary(p, subjects, marked, progress))
   }
 
   async getCover(userId: string, paperId: string): Promise<BijakPaperCover> {
     const paper = await this.visiblePaper(userId, paperId)
-    const [subjects, info, progress] = await Promise.all([
+    const [subjects, info, progress, down] = await Promise.all([
       this.repo.subjectsByIds([paper.subjectId]),
       this.infoFor([paper]),
       this.ports.progressSource.progressFor(userId, [idToString(paper.id)]),
+      this.takenDownOf([paper]),
     ])
     const marked = await this.withPinned(info, [paper])
+    const unavailableReason = this.coverUnavailableReason(paper, info, down)
     return {
       ...this.summary(paper, subjects, marked, progress),
       instructions: paper.instructions,
@@ -123,6 +128,8 @@ export class PapersService {
           ...(rule.type === 'choose' ? { chooseN: rule.n } : {}),
         }
       }),
+      unavailable: unavailableReason !== null,
+      ...(unavailableReason ? { unavailableReason } : {}),
     }
   }
 
@@ -170,7 +177,7 @@ export class PapersService {
       subjectName: subject?.name ?? code,
       kertas: paper.kertas,
       year: this.yearOf(paper),
-      code: paper.paperCode ?? '',
+      code: paperCodeOf(paper),
       durationMin: paper.printedDurationMin,
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
@@ -305,8 +312,19 @@ export class PapersService {
     return ok
   }
 
+  private pinsOf(paper: PaperWithTree): PinRef[] {
+    return paper.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo })))
+  }
+
+  /** Null when a new sitting can start: the same answer `BijakPapersAttemptSource.resolveForAttempt` gives (`not_eligible`), before any click. */
+  private coverUnavailableReason(paper: PaperWithTree, info: Info, down: ReadonlySet<string>): BijakCoverUnavailableReason | null {
+    const pins = this.pinsOf(paper)
+    if (pins.length === 0) return 'NO_QUESTIONS'
+    return placesUnservable(pins, info, down) ? 'QUESTION_WITHDRAWN' : null
+  }
+
   private async takenDownOf(papers: readonly PaperWithTree[]): Promise<ReadonlySet<string>> {
-    const pins: PinRef[] = papers.flatMap((p) => p.sections.flatMap((s) => s.placements.map((pl) => ({ questionId: idToString(pl.questionId), versionNo: pl.pinnedVersionNo }))))
+    const pins = papers.flatMap((p) => this.pinsOf(p))
     return pins.length === 0 ? new Set() : this.ports.questionSource.takenDownPins(pins)
   }
 
@@ -356,11 +374,13 @@ export class PapersService {
       subjectName: subject?.name ?? code,
       kertas: paper.kertas,
       year: this.yearOf(paper),
-      code: paper.paperCode ?? '',
+      code: paperCodeOf(paper),
       durationMin: paper.printedDurationMin,
       questionCount: paper.sections.reduce((n, s) => n + s.placements.length, 0),
-      marks: paper.sections.reduce((n, s) => n + this.sectionMarks(s, info), 0),
+      // A Kertas Subjektif paper shows the Jumlah Markah the admin typed ("{marks_total} markah", DM-23, INV-17).
+      marks: paper.surface === 'subjektif' && paper.totalMarks !== null ? paper.totalMarks : paper.sections.reduce((n, s) => n + this.sectionMarks(s, info), 0),
       kind: paper.kind === 'jana' ? 'jana' : 'pilihan',
+      ...(paper.surface === 'subjektif' ? { surface: 'subjektif' as const, ...(paper.examBoard ? { examBoard: paper.examBoard } : {}) } : {}),
       status: mine?.attemptId ? 'sedang' : mine?.lastScore ? 'selesai' : 'belum',
       ...(mine?.lastScore ? { lastScore: { score: mine.lastScore.score, max: mine.lastScore.max } } : {}),
       ...(mine?.attemptId ? { attemptId: mine.attemptId } : {}),
