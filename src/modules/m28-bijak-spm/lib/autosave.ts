@@ -59,6 +59,12 @@ export interface Autosave {
   setPosition(position: number): void
   flush(): Promise<boolean>
   /**
+   * The flush for the automatic triggers (15 s dirty timer, field blur, question change): does nothing while the
+   * offline retry is armed or the browser reports offline, so no request, no saving/offline flicker. The retry timer
+   * and the page's "online" handler (which call `flush()`) send the pending changes once the connection is back.
+   */
+  flushAuto(): Promise<boolean>
+  /**
    * `pagehide` / tab hidden: sends only the dirty changes with a keepalive `fetch`. True when a request went out.
    * Nothing is marked saved (the reply is not awaited): the changes stay pending, a later flush repeats them (idempotent per revision).
    */
@@ -139,7 +145,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     dirtyTimer = setTimeout(() => {
       dirtyTimer = undefined
       if (!doc.pending.length && !doc.metaDirty) return
-      void flush()
+      void flushAuto()
       armDirtyFlush()
     }, dirtyFlushMs)
   }
@@ -178,11 +184,18 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       setStatus((e as { code?: string }).code === 'offline' ? 'offline' : 'error')
       if (!disposed) {
         if (retry) clearTimeout(retry)
-        retry = setTimeout(() => void flush(), retryMs)
+        retry = setTimeout(() => {
+          retry = undefined
+          void flush()
+        }, retryMs)
       }
       return false
     }
     // Keep a part pending when it changed again while the request was in flight.
+    if (retry) {
+      clearTimeout(retry)
+      retry = undefined
+    }
     doc.pending = doc.pending.filter((p) => (doc.answers[p]?.rev ?? 0) !== revs.get(p))
     if (!doc.pending.length && metaChanges === metaSent) doc.metaDirty = false
     writeLocal()
@@ -190,7 +203,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   }
 
   async function flush(): Promise<boolean> {
-    if (closed) return false
+    if (closed || disposed) return false
     if (timer) {
       clearTimeout(timer)
       timer = undefined
@@ -209,6 +222,14 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       if (!ok) return false
     }
     return !doc.pending.length
+  }
+
+  const offlineNow = (): boolean =>
+    retry !== undefined || (typeof navigator !== 'undefined' && navigator.onLine === false)
+
+  async function flushAuto(): Promise<boolean> {
+    if (offlineNow()) return false
+    return flush()
   }
 
   return {
@@ -266,6 +287,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       armDirtyFlush()
     },
     flush,
+    flushAuto,
     flushHidden() {
       if (closed || disposed || !opts.api.saveKeepalive) return false
       if (!doc.pending.length && !doc.metaDirty) return false

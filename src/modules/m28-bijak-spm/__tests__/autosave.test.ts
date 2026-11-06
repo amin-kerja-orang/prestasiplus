@@ -246,4 +246,63 @@ describe('flushHidden (lead ruling Q4: keepalive PUT on pagehide / hidden tab)',
     expect(auto.flushHidden()).toBe(false)
     expect(calls).toHaveLength(0)
   })
+
+  it('dispose clears the dirty timer, the debounce and the retry: no timer is left', async () => {
+    const { auto, view } = await setup()
+    const q = view.questions[0]!.id
+    auto.setAnswer(q, { choice: 'a' })
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+    auto.dispose()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('a flush after dispose (late blur or question change) sends nothing', async () => {
+    const { auto, server, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    auto.setAnswer(q, { choice: 'a' })
+    auto.dispose()
+    expect(await auto.flush()).toBe(false)
+    expect(await auto.flushAuto()).toBe(false)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  describe('offline', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('the 15 s dirty flush is skipped while the browser is offline, and the pending change goes when it is back', async () => {
+      const { auto, server, view } = await setup()
+      const q = view.questions[0]!.id
+      const save = vi.spyOn(server, 'saveAnswers')
+      vi.stubGlobal('navigator', { onLine: false })
+      for (let i = 1; i <= 40; i++) {
+        auto.setAnswer(q, { choice: `c${i}` })
+        await vi.advanceTimersByTimeAsync(500)
+      }
+      expect(await auto.flushAuto()).toBe(false)
+      expect(save).not.toHaveBeenCalled()
+      vi.stubGlobal('navigator', { onLine: true })
+      await auto.flush() // the page's "online" handler
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(auto.pendingCount()).toBe(0)
+    })
+
+    it('while the retry is armed the automatic flushes are skipped, and the retry still sends the change', async () => {
+      const { auto, server, view } = await setup()
+      const q = view.questions[0]!.id
+      const err = Object.assign(new Error('offline'), { code: 'offline' })
+      const save = vi.spyOn(server, 'saveAnswers').mockRejectedValueOnce(err)
+      auto.setAnswer(q, { choice: 'a' })
+      await vi.advanceTimersByTimeAsync(800)
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(auto.status()).toBe('offline')
+      expect(await auto.flushAuto()).toBe(false) // blur / goTo
+      await vi.advanceTimersByTimeAsync(500) // before the 1000 ms retry
+      expect(save).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(600) // retryMs 1000 passed
+      expect(save).toHaveBeenCalledTimes(2)
+      expect(auto.status()).toBe('saved')
+    })
+  })
 })

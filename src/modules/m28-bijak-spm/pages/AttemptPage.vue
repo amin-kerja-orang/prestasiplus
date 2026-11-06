@@ -386,7 +386,7 @@ onBeforeUnmount(() => {
 })
 /** FR-MUR-13-10: leaving a field sends what it holds now. Moving focus with nothing unsent sends nothing. */
 function onFieldBlur(): void {
-  if (autosave?.pendingCount()) void autosave.flush()
+  if (autosave?.pendingCount()) void autosave.flushAuto()
 }
 function onVisibility(): void {
   if (document.visibilityState === 'hidden') flushOnLeave()
@@ -480,7 +480,7 @@ async function goTo(i: number): Promise<void> {
   index.value = i
   autosave?.setPosition(i)
   // FR-MUR-13-10: the answers of the question just left go now, not after the debounce.
-  void autosave?.flush()
+  void autosave?.flushAuto()
   writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()

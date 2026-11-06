@@ -197,3 +197,26 @@ describe('pagehide and a hidden tab (lead ruling Q4)', () => {
     }
   })
 })
+
+describe('page unmount', () => {
+  it('removes the pagehide and visibilitychange listeners, and a late blur or pagehide sends nothing', async () => {
+    const onWindow = vi.spyOn(window, 'removeEventListener')
+    const onDocument = vi.spyOn(document, 'removeEventListener')
+    const input = type('jawapan')
+    await flushPromises()
+    server.saveAnswers.mockClear()
+    wrapper?.unmount()
+    wrapper = null
+    expect(onWindow.mock.calls.map((c) => c[0])).toContain('pagehide')
+    expect(onDocument.mock.calls.map((c) => c[0])).toContain('visibilitychange')
+    server.saveAnswers.mockClear()
+    // The unmount flush may have gone; anything after dispose must not.
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    window.dispatchEvent(new Event('pagehide'))
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flushPromises()
+    expect(server.saveAnswers).not.toHaveBeenCalled()
+    onWindow.mockRestore()
+    onDocument.mockRestore()
+  })
+})
