@@ -70,6 +70,26 @@ describe('M08 prestasi route roles (SW4-04)', () => {
     }
   })
 
+  // Ch4 click-test of the Tingkatan / Kelas pills and the quick-nav: every target they link to opens for the teacher and the school admin.
+  it.each(['teacher', 'school_admin'] as const)(
+    'the Tingkatan (T1-T5) and Kelas pills and the quick-nav targets open for the %s, and the title names the level',
+    (role) => {
+      const targets = [
+        '/prestasi/tingkatan',
+        '/prestasi/kelas',
+        '/prestasi/sekolah',
+        ...['t1', 't2', 't3', 't4', 't5'].map((c) => `/prestasi/tingkatan/${c}`),
+      ]
+      for (const path of targets) expect(decide(path, role)).toEqual({ kind: 'allow' })
+      for (const n of [1, 2, 3, 4, 5]) {
+        const title = router.resolve(`/prestasi/tingkatan/t${String(n)}`).meta.title
+        expect(typeof title === 'function' ? title(router.resolve(`/prestasi/tingkatan/t${String(n)}`) as never) : title).toBe(
+          `Tingkatan ${String(n)} — Dashboard Tingkatan | PRESTASIPLUS`,
+        )
+      }
+    },
+  )
+
   it('a pupil gets 403 on every school-wide Prestasi route', () => {
     for (const path of ['/prestasi/sekolah', '/prestasi/tingkatan', '/prestasi/tingkatan/t4', '/prestasi/kelas']) {
       expect(decide(path, 'student')).toEqual({ kind: 'in-place', status: 403 })

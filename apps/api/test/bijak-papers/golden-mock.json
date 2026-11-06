@@ -97,7 +97,8 @@
           "compulsory": false
         }
       ],
-      "examinerGrid": false
+      "examinerGrid": false,
+      "unavailable": false
     },
     {
       "id": "mat-k2-2025-a",
@@ -153,7 +154,8 @@
           "chooseN": 1
         }
       ],
-      "examinerGrid": true
+      "examinerGrid": true,
+      "unavailable": false
     },
     {
       "id": "sn-k2-2025-a",
@@ -190,7 +192,8 @@
           "chooseN": 1
         }
       ],
-      "examinerGrid": true
+      "examinerGrid": true,
+      "unavailable": false
     },
     {
       "id": "sej-k2-2025-a",
@@ -228,7 +231,8 @@
           "chooseN": 1
         }
       ],
-      "examinerGrid": true
+      "examinerGrid": true,
+      "unavailable": false
     }
   ],
   "contracts": [

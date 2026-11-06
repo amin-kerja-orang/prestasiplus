@@ -52,7 +52,7 @@ afterEach(() => vi.clearAllMocks())
 
 describe('S22 save path', () => {
   it('AC-GUR-44-1: 201 goes to /guru/soalan with "Soalan dihantar untuk semakan."', async () => {
-    guru.createContributedQuestion.mockResolvedValue(detail({ id: 9000001 }))
+    guru.createContributedQuestion.mockResolvedValue(detail({ id: '9000001' }))
     const w = await mountPage()
     await fill(w)
     await w.find('form').trigger('submit')
