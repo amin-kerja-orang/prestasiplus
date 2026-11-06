@@ -1,4 +1,6 @@
 import {
+  BijakAttemptResultViewSchema,
+  BijakAttemptSelfMarkResultSchema,
   PracticeReadStructuredAttemptResultSchema,
   PracticeReadStructuredDetailSchema,
   PracticeReadStructuredListResponseSchema,
@@ -8,7 +10,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { toMytTimestamp } from '../../../src/common/time/myt'
 import { QuestionsRepository } from '../../../src/modules/questions'
-import { MARK_MIN_CHARS, markStructured } from '../../../src/modules/practice/reads/writes/rules'
 import {
   type Client,
   type WritesTestApp,
@@ -54,6 +55,27 @@ const list = async (c: Client, query = '') => {
 const attemptRows = (userId: string) =>
   t.db.query<{ id: string; question_id: string; question_version_no: number; scope: string | null; track: string | null; total_awarded: number; total_max: number; is_test: boolean; marks: unknown; answers: unknown }>(
     'select id::text, question_id::text, question_version_no, scope, track, total_awarded, total_max, is_test, marks, answers from structured_attempts where user_id = $1 order by id',
+    [userId],
+  )
+
+/** S5-T11: the structured attempts of a user in `exam_attempts` (the new store; `structured_attempts` is no longer written). */
+const examRows = (userId: string) =>
+  t.db.query<{
+    id: string
+    paper_id: string | null
+    paper_kind: string
+    mode: string
+    status: string
+    duration_min: number
+    deadline_at: Date | null
+    submitted_at: Date | null
+    is_test: boolean
+    title: string
+    subject: string
+    composition: { questionIds: string[]; versions?: Record<string, number>; rule: { type: string } }[]
+  }>(
+    `select id::text, paper_id::text, paper_kind, mode, status, duration_min, deadline_at, submitted_at, is_test, title, subject, composition
+       from exam_attempts where user_id = $1 and paper_kind = 'structured' order by started_at, id`,
     [userId],
   )
 
@@ -260,15 +282,50 @@ describe('AC1 GET /api/practice/structured', () => {
     try {
       const card = async (c: Client) => (await list(c, '?q=skor+terbaik')).data[0]
       expect((await card(student))?.bestScore).toBeNull()
-      const body = (n: number) => ({ answers: [{ subQuestionId: `${id}-(a)`, text: 'x'.repeat(n) }, { subQuestionId: `${id}-(b)`, text: 'x'.repeat(n) }] })
-      const post = (n: number) => student.post(`/api/practice/structured/${id}/attempts`, body(n))
-      expect((await post(30)).status).toBe(201)
+      const body = (right: boolean) => ({
+        answers: [{ subQuestionId: `${id}-(a)`, text: right ? 'jawapan (a)' : 'salah' }, { subQuestionId: `${id}-(b)`, text: right ? 'jawapan (b)' : 'salah' }],
+      })
+      const post = (right: boolean) => student.post(`/api/practice/structured/${id}/attempts`, body(right))
+      expect((await post(true)).status).toBe(201)
       expect((await card(student))?.bestScore).toEqual({ awarded: 5, max: 5 })
-      expect((await post(0)).status).toBe(201)
+      expect((await post(false)).status).toBe(201)
       expect((await card(student))?.bestScore).toEqual({ awarded: 5, max: 5 })
       expect((await card(await loginAs(t, 'teacher')))?.bestScore).toBeNull()
     } finally {
       await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
+  it('S5-T11 bestScore is the max of the legacy structured_attempts and the new structured exam_attempts, per question', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set skor gabungan' })
+    const c = await loginAs(t, 'student2')
+    const uid = c.userId
+    const legacy = (awarded: number, max: number) =>
+      t.db.query(
+        `insert into structured_attempts (user_id, question_id, question_version_no, answers, marks, total_awarded, total_max, submitted_at, is_test)
+         values ($1, $2, 1, '[]'::jsonb, '[]'::jsonb, $3, $4, '2026-10-01T00:00:00Z'::timestamptz, false)`,
+        [uid, id, awarded, max],
+      )
+    try {
+      const card = async () => (await list(c, '?q=skor+gabungan')).data[0]
+      const post = (a: string, b: string) =>
+        c.post(`/api/practice/structured/${id}/attempts`, { answers: [{ subQuestionId: `${id}-(a)`, text: a }, { subQuestionId: `${id}-(b)`, text: b }] })
+      // new row only: 2 of 5
+      expect((await post('jawapan (a)', 'salah')).status).toBe(201)
+      expect((await card())?.bestScore).toEqual({ awarded: 2, max: 5 })
+      // a better legacy row wins; a worse one does not
+      await legacy(4, 5)
+      expect((await card())?.bestScore).toEqual({ awarded: 4, max: 5 })
+      await legacy(1, 5)
+      expect((await card())?.bestScore).toEqual({ awarded: 4, max: 5 })
+      // a better new row wins over the legacy best
+      expect((await post('jawapan (a)', 'jawapan (b)')).status).toBe(201)
+      expect((await card())?.bestScore).toEqual({ awarded: 5, max: 5 })
+      // another pupil sees nothing of it
+      expect((await list(student, '?q=skor+gabungan')).data[0]?.bestScore).toBeNull()
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+      await t.db.query('delete from structured_attempts where user_id = $1 and question_id = $2', [uid, id])
     }
   })
 
@@ -406,70 +463,125 @@ describe('AC1 GET /api/practice/structured/:id', () => {
 })
 
 describe('AC7 POST /api/practice/structured/:id/attempts', () => {
-  const long = 'Jawapan yang cukup panjang untuk markah penuh.'
   const subs = (id: string) => [`${id}-(a).(i).(A)`, `${id}-(a).(i).(B)`, `${id}-(a).(ii)`, `${id}-(b)`]
   const post = (c: Client, body: unknown, id = tree) => c.post(`/api/practice/structured/${id}/attempts`, body)
+  const resultOf = async (c: Client, attemptId: string) => {
+    const res = await c.get(`/api/bijak/attempts/${attemptId}/result`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    return BijakAttemptResultViewSchema.parse(res.body.data)
+  }
 
-  it('marks per sub-question with the placeholder rule, stores the attempt and returns the model answers', async () => {
+  it('S5-T11 grades with the one grader: auto parts by their key, the shape plus attemptId, the model answers', async () => {
     const [a, b, c, d] = subs(tree) as [string, string, string, string]
     const res = await post(student, {
       answers: [
-        { subQuestionId: a, text: long },
-        { subQuestionId: b, text: 'terlalu pendek' },
-        { subQuestionId: c, text: 'x'.repeat(MARK_MIN_CHARS) },
-        { subQuestionId: d, text: `   ${'y'.repeat(MARK_MIN_CHARS - 1)}   ` },
+        { subQuestionId: a, text: '3' },
+        { subQuestionId: b, text: 'tidak tahu' },
+        { subQuestionId: c, text: '(x-1)(x-3) x = 1 x = 3' },
+        { subQuestionId: d, text: '-1' },
       ],
       scope: 'spm',
       track: null,
     })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const out = Attempt.parse(res.body).data
-    expect(out).toMatchObject({ userId: student.userId, structuredQuestionId: tree, scope: 'spm', track: null, totalAwarded: 1 + 3, totalMax: 7 })
+    expect(out).toMatchObject({ userId: student.userId, structuredQuestionId: tree, scope: 'spm', track: null })
+    expect(out.attemptId).toBe(out.id)
     expect(out.submittedAt).toBe(toMytTimestamp(t.clock.now()))
     const byId = new Map(out.marks.map((m) => [m.subQuestionId, m]))
+    // (A) numeric 3 = key; (B) short_text wrong; (b) numeric -1 = key: the grader's mark, not a length rule.
     expect(byId.get(a)).toEqual({ subQuestionId: a, awarded: 1, max: 1 })
     expect(byId.get(b)).toEqual({ subQuestionId: b, awarded: 0, max: 1 })
-    expect(byId.get(c)).toEqual({ subQuestionId: c, awarded: 3, max: 3 })
-    expect(byId.get(d)).toEqual({ subQuestionId: d, awarded: 0, max: 2 })
+    expect(byId.get(d)).toEqual({ subQuestionId: d, awarded: 2, max: 2 })
+    expect(byId.get(c)?.max).toBe(3)
     // One mark entry per sub-question of the set, branches included (max 0), in the detail order.
     const detail = Detail.parse((await student.get(`/api/practice/structured/${tree}`)).body).data
     expect(out.marks.map((m) => m.subQuestionId)).toEqual(detail.subQuestions.map((s) => s.id))
-    expect(out.totalMax).toBe(out.marks.reduce((n, m) => n + m.max, 0))
+    expect(out.totalMax).toBe(7)
+    expect(out.totalAwarded).toBe(out.marks.reduce((n, m) => n + m.awarded, 0))
     expect(out.modelAnswers.map((m) => m.subQuestionId)).toEqual(detail.subQuestions.map((s) => s.id))
     expect(out.modelAnswers.find((m) => m.subQuestionId === a)?.text).toBe('3')
-    expect(out.modelAnswers.find((m) => m.subQuestionId === d)?.text).toBe('-1')
     expect(out.answers).toEqual([
-      { subQuestionId: a, text: long },
-      { subQuestionId: b, text: 'terlalu pendek' },
-      { subQuestionId: c, text: 'x'.repeat(MARK_MIN_CHARS) },
-      { subQuestionId: d, text: `   ${'y'.repeat(MARK_MIN_CHARS - 1)}   ` },
+      { subQuestionId: a, text: '3' },
+      { subQuestionId: b, text: 'tidak tahu' },
+      { subQuestionId: c, text: '(x-1)(x-3) x = 1 x = 3' },
+      { subQuestionId: d, text: '-1' },
     ])
-    // The row: question id + live version number, own user, scope, not a test row.
-    const row = (await attemptRows(student.userId)).find((r) => r.id === out.id)
-    expect(row).toMatchObject({ question_id: tree, question_version_no: 1, scope: 'spm', track: null, total_awarded: 4, total_max: 7, is_test: false })
-    expect(row?.marks).toEqual(out.marks)
+    // The stored result is the grader's: the same marks as the response.
+    const view = await resultOf(student, out.attemptId)
+    expect(view.result.score).toBe(out.totalAwarded)
+    expect(view.result.max).toBe(out.totalMax)
   })
 
-  it('stores scope spm + track bahasa; missing answers score 0; scope and track default to null; each call stores a new row', async () => {
+  it('S5-T11 the row: paper_kind structured, no paper, latihan, untimed, closed, one section holding the question pinned to its version', async () => {
     const c = await loginAs(t, 'student2')
+    const legacyBefore = (await attemptRows(c.userId)).length
+    const out = Attempt.parse((await post(c, { answers: [{ subQuestionId: subs(tree)[3], text: '-1' }] })).body).data
+    const row = (await examRows(c.userId)).find((r) => r.id === out.attemptId)
+    expect(row).toMatchObject({ paper_id: null, paper_kind: 'structured', mode: 'latihan', status: 'submitted', duration_min: 0, deadline_at: null, is_test: false, subject: 'MATH' })
+    expect(row?.submitted_at).not.toBeNull()
+    expect(row?.title).toBe('Diberi fungsi kuadratik f(x) = x² − 4x + 3.')
+    expect(row?.composition).toHaveLength(1)
+    expect(row?.composition[0]).toMatchObject({ rule: { type: 'all' }, questionIds: [tree], versions: { [tree]: 1 } })
+    const answers = await t.db.query<{ part_id: string; answer: unknown }>('select part_id, answer from attempt_answers where attempt_id = $1', [out.attemptId])
+    expect(answers).toEqual([{ part_id: `${tree}.b`, answer: { final: '-1' } }])
+    // Ruling R1: nothing is written to structured_attempts any more.
+    expect(await attemptRows(c.userId)).toHaveLength(legacyBefore)
+  })
+
+  it('S5-T11 a part the grader cannot mark is belum_dimarkah and provisional (0 until the pupil marks it); an auto part is not', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set bahagian belum dimarkah' })
+    try {
+      const c = await loginAs(t, 'student2')
+      // (a) is the key: marked now. (b) is a wrong answer of several words: the grader cannot tell it from an unreadable one, so a person decides.
+      const out = Attempt.parse((await post(c, { answers: [{ subQuestionId: `${id}-(a)`, text: 'jawapan (a)' }, { subQuestionId: `${id}-(b)`, text: 'jawapan yang salah sekali' }] }, id)).body).data
+      expect(out.marks).toEqual([
+        { subQuestionId: `${id}-(a)`, awarded: 2, max: 2 },
+        { subQuestionId: `${id}-(b)`, awarded: 0, max: 3 },
+      ])
+      expect([out.totalAwarded, out.totalMax]).toEqual([2, 5])
+      const view = await resultOf(c, out.attemptId)
+      expect(view.result).toMatchObject({ provisional: true, pendingReview: 1, score: 2, max: 5 })
+      const parts = view.result.questions[0]?.parts ?? []
+      expect(parts.map((p) => [p.status, p.awarded, p.marks])).toEqual([['betul', 2, 2], ['belum_dimarkah', 0, 3]])
+      const stored = await t.db.query<{ provisional: boolean; pending_review: number }>('select provisional, pending_review from attempt_results where attempt_id = $1', [out.attemptId])
+      expect(stored).toEqual([{ provisional: true, pending_review: 1 }])
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
+  it('S5-T11 self-mark (API-BIJAK-05) works on the attempt unchanged: a pending part takes the pupil mark, an auto part is 409', async () => {
+    const id = await publishStructured(t, 'SEED-MCQ-MATH-T4', { stem: 'Set semak kendiri' })
+    try {
+      const c = await loginAs(t, 'student2')
+      const made = Attempt.parse((await post(c, { answers: [{ subQuestionId: `${id}-(a)`, text: 'jawapan (a)' }, { subQuestionId: `${id}-(b)`, text: 'jawapan yang salah sekali' }] }, id)).body).data
+      const [auto, pending] = (await resultOf(c, made.attemptId)).result.questions[0]?.parts.map((p) => p.partId) as [string, string]
+      const url = `/api/bijak/attempts/${made.attemptId}/self-mark`
+      const mark = await c.post(url, { partId: pending, mark: 2 })
+      expect(mark.status, JSON.stringify(mark.body)).toBe(200)
+      expect(BijakAttemptSelfMarkResultSchema.parse(mark.body.data)).toMatchObject({ partId: pending, awarded: 2, max: 3, attemptScore: 4, attemptMax: 5, provisional: false, pendingReview: 0 })
+      // the list takes the self-marked total as the best
+      expect((await list(c, '?q=semak+kendiri')).data.find((x) => x.id === id)?.bestScore).toEqual({ awarded: 4, max: 5 })
+      // an automatically marked part answers 409
+      expectError(await c.post(url, { partId: auto, mark: 1 }), 'CONFLICT')
+      // someone else's attempt is 403
+      expect((await student.post(url, { partId: pending, mark: 1 })).status).toBe(403)
+    } finally {
+      await t.db.query('update questions set is_active = false where id = $1', [id])
+    }
+  })
+
+  it('stores scope spm + track bahasa; missing answers score 0; scope and track default to null; each call is a new attempt', async () => {
+    const c = await loginAs(t, 'student2')
+    const before = { exam: (await examRows(c.userId)).length, legacy: (await attemptRows(c.userId)).length }
     const r1 = Attempt.parse((await post(c, { answers: [], scope: 'spm', track: 'bahasa' })).body).data
     expect(r1).toMatchObject({ scope: 'spm', track: 'bahasa', totalAwarded: 0, totalMax: 7, answers: [] })
     const r2 = Attempt.parse((await post(c, { answers: [] })).body).data
     expect(r2).toMatchObject({ scope: null, track: null })
     expect(r2.id).not.toBe(r1.id)
-    expect(await attemptRows(c.userId)).toHaveLength(2)
-  })
-
-  it('the pure rule gives full marks from 20 characters (trimmed), else 0', () => {
-    const got = markStructured(
-      [{ id: 'a', marks: 2 }, { id: 'b', marks: 3 }, { id: 'c', marks: 0 }],
-      new Map([['a', 'x'.repeat(20)], ['b', ` ${'x'.repeat(19)} `]]),
-    )
-    expect(got).toEqual([
-      { subQuestionId: 'a', awarded: 2, max: 2 },
-      { subQuestionId: 'b', awarded: 0, max: 3 },
-      { subQuestionId: 'c', awarded: 0, max: 0 },
-    ])
+    expect(await examRows(c.userId)).toHaveLength(before.exam + 2)
+    expect(await attemptRows(c.userId)).toHaveLength(before.legacy)
   })
 
   it('is 422 VALIDATION_ERROR for a malformed body, and nothing is stored', async () => {
@@ -496,6 +608,7 @@ describe('AC7 POST /api/practice/structured/:id/attempts', () => {
     expect(expectError(await post(c, { answers: [{ subQuestionId: sub, text: 'x'.repeat(5001) }] }), 'VALIDATION_ERROR').message).toBe('Jawapan tidak boleh melebihi 5000 aksara.')
     expect(expectError(await post(c, { answers: 'x' }), 'VALIDATION_ERROR').message).toBe('Jawapan tidak sah.')
     expect(expectError(await post(c, { answers: [], scope: 'x' }), 'VALIDATION_ERROR').message).toBe('Skop tidak sah.')
+    expect(await examRows(c.userId)).toHaveLength(0)
     expect(await attemptRows(c.userId)).toHaveLength(0)
   })
 
@@ -506,41 +619,42 @@ describe('AC7 POST /api/practice/structured/:id/attempts', () => {
     await t.db.query('update questions set is_active = false where id = $1', [anyn])
     expectError(await post(c, { answers: [] }, anyn), 'NOT_FOUND')
     await t.db.query('update questions set is_active = true where id = $1', [anyn])
-    expect(await attemptRows(c.userId)).toHaveLength(0)
+    expect(await examRows(c.userId)).toHaveLength(0)
   })
 
   it('AC4: attempts are the caller own; the body cannot name another user', async () => {
     const a = await loginAs(t, 'student')
     const b = await loginAs(t, 'student2')
-    const before = (await attemptRows(b.userId)).length
+    const before = (await examRows(b.userId)).length
     const out = Attempt.parse((await post(a, { answers: [], userId: b.userId })).body).data
     expect(out.userId).toBe(a.userId)
-    expect(await attemptRows(b.userId)).toHaveLength(before)
-    expect((await attemptRows(a.userId)).every((r) => r.id !== undefined)).toBe(true)
+    expect(await examRows(b.userId)).toHaveLength(before)
+    expect((await examRows(a.userId)).some((r) => r.id === out.attemptId)).toBe(true)
   })
 
   it('AC9: without the CSRF token it is 403 CSRF_INVALID and nothing is stored', async () => {
     const c = await loginAs(t, 'teacher')
     expectCsrfInvalid(await c.noCsrf.post(`/api/practice/structured/${tree}/attempts`, { answers: [] }))
-    expect(await attemptRows(c.userId)).toHaveLength(0)
+    expect(await examRows(c.userId)).toHaveLength(0)
   })
 
   it('an attempt made in Mod Pelajar is stored with is_test, and still returned to its owner', async () => {
     const pelajar = await loginModPelajar(t, 'admin@demo.test')
     const out = Attempt.parse((await post(pelajar, { answers: [] })).body).data
-    const rows = await attemptRows(pelajar.userId)
-    expect(rows.map((r) => [r.id, r.is_test])).toEqual([[out.id, true]])
-    // No other user's attempt is touched or flagged.
-    const others = await t.db.query<{ n: string }>('select count(*)::text n from structured_attempts where user_id <> $1 and is_test', [pelajar.userId])
+    const rows = await examRows(pelajar.userId)
+    expect(rows.map((r) => [r.id, r.is_test])).toEqual([[out.attemptId, true]])
+    // No other user's attempt is flagged.
+    const others = await t.db.query<{ n: string }>(`select count(*)::text n from exam_attempts where paper_kind = 'structured' and user_id <> $1 and is_test`, [pelajar.userId])
     expect(others[0]?.n).toBe('0')
   })
 
   it('a new live version is the version recorded; sub-question ids stay addressable while labels stay', async () => {
     const id = await publishStructured(t, 'SEED-MCQ-SCI-T4', { stem: 'Versi', parts: [{ label: '(a)', prompt: { ms: 'Bahagian' }, children: [leaf('(i)', 2)] }] as never })
     const c = await loginAs(t, 'student2')
-    const out = Attempt.parse((await post(c, { answers: [{ subQuestionId: `${id}-(a).(i)`, text: long }] }, id)).body).data
+    const out = Attempt.parse((await post(c, { answers: [{ subQuestionId: `${id}-(a).(i)`, text: 'jawapan (i)' }] }, id)).body).data
     expect(out).toMatchObject({ totalAwarded: 2, totalMax: 2 })
-    expect((await attemptRows(c.userId)).find((r) => r.id === out.id)?.question_version_no).toBe(1)
+    const row = (await examRows(c.userId)).find((r) => r.id === out.attemptId)
+    expect(row?.composition[0]?.versions).toEqual({ [id]: 1 })
   })
 })
 

@@ -15,6 +15,7 @@ import { defineAppModule } from '../../../src/app.module'
 import { configureApp } from '../../../src/configure-app'
 import { CLOCK, FixedClock } from '../../../src/db/clock'
 import { AuthModule } from '../../../src/modules/auth'
+import { BijakIntegrationModule } from '../../../src/modules/bijak/integration'
 import { PracticeTargetsStructuredModule } from '../../../src/modules/practice/reads/writes/writes.module'
 import { QuestionsService } from '../../../src/modules/questions'
 import { adminActor, mcqInput, rich, tagBody, tagOf } from '../../questions/fixtures'
@@ -33,7 +34,7 @@ export interface WritesTestApp {
   close(): Promise<void>
 }
 
-/** Nest app with auth + the BE-13 writes module on a private migrated database seeded with identity, curriculum and questions. */
+/** Nest app with auth + the BE-13 writes module (plus the Bijak integration that binds the structured attempt port, S5-T11) on a private migrated database seeded with identity, curriculum and questions. */
 export async function bootWritesApp(opts: { env?: Record<string, string> } = {}): Promise<WritesTestApp> {
   const db = await createTestDatabase()
   await runSeeds([identitySeed, curriculumSeed, questionsSeed], { prisma: db.prisma })
@@ -49,7 +50,7 @@ export async function bootWritesApp(opts: { env?: Record<string, string> } = {})
     ...opts.env,
   })
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeTargetsStructuredModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, PracticeTargetsStructuredModule, BijakIntegrationModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
