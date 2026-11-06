@@ -319,15 +319,19 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
             >
           </div>
           <!-- Waiting for the opponent -->
-          <div
+          <DsText
             v-if="phase === 'answering' && answered"
-            class="flex items-center justify-center text-muted"
+            as="div"
+            variant="label"
+            tone="muted"
             aria-busy="true"
             data-testid="battle-arena-waiting"
           >
-            <UIcon name="i-ph-hourglass-duotone" class="size-6" aria-hidden="true" />
-            <span class="ms-2 text-label">{{ BATTLE_MSG.waitingOpponent }}</span>
-          </div>
+            <DsCluster justify="center" gap="xs">
+              <UIcon name="i-ph-hourglass-duotone" class="size-6" aria-hidden="true" />
+              <span>{{ BATTLE_MSG.waitingOpponent }}</span>
+            </DsCluster>
+          </DsText>
           <p
             v-if="reveal"
             class="text-center text-label"

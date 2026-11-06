@@ -424,24 +424,28 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Bilangan Soalan (48 GAME-01: chips 5, 10, 15, 20) -->
-        <div class="mt-4" data-testid="battle-count">
-          <p class="mb-2 text-overline text-muted">{{ BATTLE_MSG.questionCount }}</p>
-          <div class="grid grid-cols-4 gap-2">
-            <UButton
-              v-for="n in BATTLE_QUESTION_COUNTS"
-              :key="n"
-              size="lg"
-              :color="sel.questionCount === n ? 'primary' : 'neutral'"
-              :variant="sel.questionCount === n ? 'solid' : 'soft'"
-              class="min-h-12 justify-center"
-              :aria-pressed="sel.questionCount === n"
-              :data-testid="`battle-count-${n}`"
-              @click="sel.questionCount = n"
-            >
-              {{ n }}
-            </UButton>
-          </div>
-        </div>
+        <DsStack gap="md" data-testid="battle-count">
+          <DsSpacer />
+          <DsStack gap="xs">
+            <DsText variant="label" tone="muted">{{ BATTLE_MSG.questionCount }}</DsText>
+            <DsGrid :cols="4" gap="xs">
+              <UButton
+                v-for="n in BATTLE_QUESTION_COUNTS"
+                :key="n"
+                size="lg"
+                block
+                :color="sel.questionCount === n ? 'primary' : 'neutral'"
+                :variant="sel.questionCount === n ? 'solid' : 'soft'"
+                class="min-h-12"
+                :aria-pressed="sel.questionCount === n"
+                :data-testid="`battle-count-${n}`"
+                @click="sel.questionCount = n"
+              >
+                {{ n }}
+              </UButton>
+            </DsGrid>
+          </DsStack>
+        </DsStack>
       </UCard>
 
       <!-- Searching / incoming / waiting -->
@@ -473,10 +477,10 @@ onBeforeUnmount(() => {
         </div>
       </UCard>
       <UCard v-else-if="search.phase.value === 'robot'" data-testid="battle-robot">
-        <div class="flex flex-col items-center gap-2 text-center">
+        <DsStack gap="xs" align="center" class="text-center">
           <DsArt3D name="bolt" size="hero" float />
-          <p class="text-body text-highlighted" role="status">{{ BATTLE_MSG.robotOverlay }}</p>
-        </div>
+          <DsText variant="body" tone="highlighted" role="status">{{ BATTLE_MSG.robotOverlay }}</DsText>
+        </DsStack>
       </UCard>
       <UCard
         v-else-if="search.phase.value === 'incoming' && search.challenger.value"

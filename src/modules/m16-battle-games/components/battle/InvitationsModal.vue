@@ -64,14 +64,13 @@ async function decline(inv: BattleInvitation): Promise<void> {
     :dismissible="false"
     @update:open="emit('update:open', false)"
   >
-    <div data-testid="battle-invitations-modal">
+    <DsStack gap="sm" data-testid="battle-invitations-modal">
       <UAlert
         v-if="notice"
         color="neutral"
         variant="subtle"
         icon="i-ph-info-duotone"
         :description="notice"
-        class="mb-3"
         role="alert"
         data-testid="battle-invitation-notice"
       />
@@ -109,7 +108,7 @@ async function decline(inv: BattleInvitation): Promise<void> {
       <p v-else class="py-3 text-center text-body text-muted" data-testid="battle-invitations-empty">
         Tiada cabaran buat masa ini
       </p>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton
         color="neutral"
