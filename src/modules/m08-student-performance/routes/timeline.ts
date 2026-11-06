@@ -15,8 +15,8 @@ const routes: RouteRecordRaw[] = [
     meta: {
       layout: 'user',
       access: 'auth',
-      title: 'Timeline Saya - PRESTASIPLUS',
-      header: { title: 'Timeline Saya', subtitle: 'Kongsi pencapaian & cerita anda' },
+      title: 'Timeline Saya — PRESTASIPLUS',
+      header: { title: 'Timeline Saya', subtitle: 'Aktiviti terkini anda — latihan, pencapaian & mata diperoleh' },
       module: 'M08',
       v2: true,
     },

@@ -11,13 +11,13 @@ describe('game reward events', () => {
   const session = (gameKey = 'betul-salah') => ({ id: `00000000-0000-4000-8000-${String(++sequence).padStart(12, '0')}`, gameKey })
   const finish = (xp: number, coins: number, s = session()) => ({ game: 'betul_salah', event: 'finish', coins, xp, correct: 3, total: 5, detail: { maxStreak: 2 }, session: s })
   const setting = (key: string, value: number) => t.db.query(`update gamification_settings set value = $1 where key = $2`, [value, key])
+  /** `games_award_syiling` lives in `reward_settings` (48 section 2, DM-48). */
+  const coinsOn = (on: boolean) => t.db.query('update reward_settings set mini_games_give_coins = $1', [on])
   const eventsOf = (userId: string) =>
     t.db.query<{ game_session_id: string; xp: number; syiling: number; capped_reason: string | null }>(
       `select game_session_id::text, xp, syiling, capped_reason from game_reward_events where user_id = $1::bigint order by id`,
       [userId],
     )
-  /** `games_award_syiling` lives in `reward_settings` (48 section 2, DM-48). */
-  const coinsOn = (on: boolean) => t.db.query('update reward_settings set mini_games_give_coins = $1', [on])
   /** MYT noon of the test day, so that a case stays inside one Malaysia day. */
   const NOON = new Date('2026-10-20T04:00:00Z')
 
