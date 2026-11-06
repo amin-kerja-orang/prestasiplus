@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * S3 `/prestasi/tingkatan/{t4|t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28). An unknown code is the
+ * S3 `/prestasi/tingkatan/{t1..t5}` "Dashboard Tingkatan" (M08-T5; FR-M08-23…28; R1-AS-4). An unknown code is the
  * standard 404 (the API answers 404). "On Track" / "Below Target", the class On Track / Below and the
  * "Murid Berisiko" rows are headcount figures (M08-T1b) and read 0 / empty until they exist. The "Lihat →"
  * class link (and its "Aksi" column) is shown only to a role that may open the class page (staff), so a pupil gets
@@ -12,20 +12,20 @@ import type { TableColumn } from '@nuxt/ui'
 
 import { DsBackLink, DsDataTable, DsLeaderRow, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStatRow, type PillItem } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { clock } from '@/lib/time'
 
-import { fetchLevelDetail } from '../api/performance'
+import { fetchLevelDetail, fetchLevels } from '../api/performance'
 import { usePhIcon } from '../lib/icons'
 import {
   TONE_TEXT,
-  accuracyTone,
+  accuracyToneWhole,
   capPct,
-  dec2,
-  gapText,
   grouped,
+  isLevelCode,
   levelNumber,
-  pct1,
-  pctTrim,
+  pctWhole,
   plain,
+  riskText,
 } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useCanOpen } from '../lib/route-access'
@@ -40,7 +40,7 @@ const pageMeta = usePageMeta()
 const icon = usePhIcon()
 
 watchEffect(() => {
-  if (code.value === 't4' || code.value === 't5') {
+  if (isLevelCode(code.value)) {
     pageMeta.setHeader({
       title: `Tingkatan ${String(levelNumber(code.value))}`,
       subtitle: 'Dashboard Prestasi Tingkatan',
@@ -53,6 +53,8 @@ const { data, error, reload } = useRouteData(
   () => code.value,
 )
 const loadFailed = computed(() => isLoadError(error.value))
+// The pills are built from data: only the levels that have classes (R1-AS-4).
+const { data: levels } = useRouteData((signal) => fetchLevels({ signal }))
 
 const stats = computed<StatSpec[]>(() => {
   const d = data.value
@@ -60,7 +62,7 @@ const stats = computed<StatSpec[]>(() => {
   return [
     { id: 'kelas', label: 'Kelas', value: plain(d.classes), icon: 'chalkboard' },
     { id: 'murid', label: 'Murid', value: plain(d.students), icon: 'users' },
-    { id: 'ketepatan', label: 'Purata Ketepatan', value: pct1(capPct(d.accuracy)), icon: 'target' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(capPct(d.accuracy)), icon: 'target' },
     { id: 'sesi', label: 'Jumlah Sesi', value: grouped(d.sessions), icon: 'lightning' },
     { id: 'on', label: 'On Track', value: plain(d.onTrack), icon: 'check-circle' },
     {
@@ -95,7 +97,7 @@ const rows = computed<Row[]>(() =>
     teacher: r.teacher ?? '—',
     students: r.students,
     sessions: r.sessions,
-    accuracyText: pctTrim(capPct(r.accuracy)),
+    accuracyText: pctWhole(capPct(r.accuracy)),
     accuracy: r.accuracy,
     onTrack: r.onTrack,
     below: r.below,
@@ -126,11 +128,15 @@ const cardFields = [
   { key: 'onTrack', label: 'On Track' },
   { key: 'below', label: 'Below' },
 ]
-const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
-  key: c,
-  label: c.toUpperCase(),
-  to: `/prestasi/tingkatan/${c}`,
-}))
+type RiskRow = NonNullable<typeof data.value>['atRisk'][number]
+const riskLine = (r: RiskRow): string => riskText(r, clock.now())
+const levelPills = computed<PillItem<string>[]>(() =>
+  (levels.value ?? []).map((l) => ({
+    key: l.code,
+    label: l.code.toUpperCase(),
+    to: `/prestasi/tingkatan/${l.code}`,
+  })),
+)
 </script>
 
 <template>
@@ -148,6 +154,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
         </template>
         <template #actions>
           <DsPillNav
+            v-if="levelPills.length > 0"
             :items="levelPills"
             :active="data.code"
             label="Tingkatan"
@@ -193,7 +200,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           caption="Perbandingan kelas"
           card-title="name"
           :card-fields="cardFields"
-          :page-size="100"
+          :page-size="25"
           data-testid="class-table"
         >
           <template #name-cell="{ row }">
@@ -204,7 +211,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
             >
           </template>
           <template #accuracyText-cell="{ row }">
-            <span :class="[TONE_TEXT[accuracyTone(row.original.accuracy)], 'text-label']">{{
+            <span :class="[TONE_TEXT[accuracyToneWhole(row.original.accuracy)], 'text-label']">{{
               row.original.accuracyText
             }}</span>
           </template>
@@ -256,7 +263,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
                 :rank="i + 1"
                 :name="s.name"
                 :school="`${s.sessions} sesi · ${s.answered} soalan`"
-                :points="pctTrim(capPct(s.accuracy))"
+                :points="pctWhole(capPct(s.accuracy))"
                 :data-testid="`top-${s.userId}`"
               />
             </ol>
@@ -269,7 +276,7 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
             <div class="flex max-h-96 flex-col gap-2 overflow-y-auto">
               <RouterLink
                 v-for="r in data.atRisk"
-                :key="`${r.userId}-${r.className}-${r.checkpoint}`"
+                :key="`${r.userId}-${r.className}`"
                 :to="`/prestasi/${r.userId}`"
                 class="flex min-h-11 items-center gap-3 bg-soft p-3"
                 data-testid="at-risk-row"
@@ -277,12 +284,9 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
                 <UIcon :name="icon('warning')" class="size-5 shrink-0 text-error" />
                 <span class="flex min-w-0 grow flex-col">
                   <span class="text-label break-words text-highlighted">{{ r.name }}</span>
-                  <span class="text-caption text-muted"
-                    >{{ r.className }} · OTR{{ r.checkpoint }}: {{ dec2(r.ar) }}% (sasaran
-                    {{ dec2(r.target) }}%)</span
-                  >
+                  <span class="text-caption text-muted">{{ r.className }} · {{ riskLine(r) }}</span>
                 </span>
-                <span class="tabular shrink-0 text-label text-error">{{ gapText(r.gap) }}</span>
+                <span class="tabular shrink-0 text-label text-error">{{ pctWhole(r.accuracy) }}</span>
               </RouterLink>
             </div>
           </div>

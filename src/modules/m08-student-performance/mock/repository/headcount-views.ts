@@ -15,7 +15,6 @@ import { curriculum } from '@/modules/m03-curriculum/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
-  ConfidenceLabel,
   HeadcountDashboardConfig,
   HeadcountDetail,
   HeadcountGrade,
@@ -29,8 +28,8 @@ import type {
   PredictionVerdict,
   ProjectionVariant,
   RowTone,
-  TrendLabel,
 } from '../../api/headcount-types'
+import { projectionOfAr } from '../../lib/headcount/otr'
 import { headcountRepo, entryView } from './headcount'
 import { bandStatus, latestAr, pairStatus, type HeadcountEntryView } from './headcount-port'
 import type { HeadcountConfigRow, HeadcountEntryRow } from './headcount-types'
@@ -110,6 +109,10 @@ export function listItem(c: HeadcountConfigRow): HeadcountListItem {
     mode: c.mode,
     activeOtrs: c.activeOtrs,
     students: live(rosterOf(c)).length,
+    teacherName: nameOf(c.teacherId),
+    entryStatus:
+      c.defaultEtr != null || live(rosterOf(c)).some((l) => l.view.etr !== null) ? 'active' : 'draft',
+    statusReason: null,
   }
 }
 
@@ -132,6 +135,8 @@ export function dashboardItem(c: HeadcountConfigRow): HeadcountDashboardConfig {
     className: classNameOf(c),
     subjectName: subjectName(c.subjectId),
     year: c.academicYear,
+    mode: c.mode,
+    teacherName: nameOf(c.teacherId),
     onTrack: on,
     offTrack: off,
     noData: none,
@@ -177,6 +182,26 @@ export function summaryOf(c: HeadcountConfigRow): HeadcountSummary {
   }
 }
 
+/** HC-4: the pupil status and, for "none", why (no ETR: Belum Ada Data; ETR without TOV: Belum Ada TOV). */
+function statusOf(v: HeadcountEntryView): Pick<HeadcountRow, 'status' | 'statusReason' | 'entryStatus'> {
+  const status = pairStatus(v)
+  // FR-GUR-3-9: Active iff the pupil has an ETR (own or default), else Draft.
+  const entryStatus = v.etr === null ? 'draft' : 'active'
+  if (status !== 'none') return { status, statusReason: null, entryStatus }
+  if (v.etr === null) return { status, statusReason: 'belum_ada_data', entryStatus }
+  if (v.tov === null) return { status, statusReason: 'belum_ada_tov', entryStatus }
+  return { status, statusReason: null, entryStatus }
+}
+
+/** HC-6 Unjuran of one pupil: the end value, its grade (whole-number rounding), trend and Keyakinan. */
+function rowProjection(v: HeadcountEntryView): HeadcountRow['projection'] {
+  const last = latestAr(v)
+  const p = projectionOfAr({ tov: v.tov, etr: v.etr, ar: last?.ar ?? null })
+  if (p === null) return null
+  const variant: ProjectionVariant = v.etr === null ? 'red' : p.end >= v.etr ? 'green' : 'amber'
+  return { value: p.end, variant, trend: p.trend, confidence: p.confidence }
+}
+
 export function detailOf(c: HeadcountConfigRow, sort: HeadcountSort): HeadcountDetail {
   const lines = rosterOf(c)
   const items = lines.map((l) => {
@@ -202,6 +227,10 @@ export function detailOf(c: HeadcountConfigRow, sort: HeadcountSort): HeadcountD
       etr: v.etr,
       etrGrade: gradeOrNull(v.etr),
       dropped: l.dropped,
+      rs: v.rs,
+      rsRecordedAt: l.entry?.rsRecordedAt ?? null,
+      ...statusOf(v),
+      projection: rowProjection(v),
     }
     return { row, latest: latestAr(v)?.ar ?? null }
   })
@@ -222,10 +251,9 @@ export function detailOf(c: HeadcountConfigRow, sort: HeadcountSort): HeadcountD
   let below = 0
   let empty = 0
   for (const l of live(lines)) {
-    const last = latestAr(l.view)
-    const band = last === null ? 'na' : bandStatus(last.ar, last.target)
-    if (band === 'above' || band === 'on') onTrack++
-    else if (band === 'below') below++
+    const s = pairStatus(l.view)
+    if (s === 'on') onTrack++
+    else if (s === 'below') below++
     else empty++
   }
   return {
@@ -238,8 +266,17 @@ export function detailOf(c: HeadcountConfigRow, sort: HeadcountSort): HeadcountD
       teacherName: nameOf(c.teacherId),
       status: 'active',
       activeOtrs: c.activeOtrs,
+      mode: c.mode,
+      defaultTov: c.defaultTov ?? null,
+      defaultEtr: c.defaultEtr ?? null,
     },
-    chips: { onTrack, below, empty, total: shown.length },
+    chips: {
+      onTrack,
+      below,
+      empty,
+      total: shown.length,
+      onTrackPct: onTrack + below === 0 ? 0 : Math.round((onTrack / (onTrack + below)) * 100),
+    },
     rows,
     averages: {
       tov: mean(shown.map((r) => r.tov)),
@@ -311,26 +348,20 @@ export function csvOf(c: HeadcountConfigRow, sort: HeadcountSort): string {
 // #17 pupil sections (S15)
 // ---------------------------------------------------------------------------------------------
 
-/** BR-M08-24 (INFERRED): Unjuran = last AR + mean step, clamped 0–100; anchors keep their observed chips. */
+/** HC-6 Unjuran of S15: end = ETR when AR >= TOV else AR; anchors keep their observed chips. */
 function projectionOf(
   e: HeadcountEntryView,
   entry: HeadcountEntryRow,
 ): HeadcountSection['projection'] {
-  const points = e.actuals.filter((v): v is number => v !== null)
-  if (points.length === 0) return null
-  const last = points[points.length - 1] as number
-  const step = points.length < 2 ? 0 : (last - (points[0] as number)) / (points.length - 1)
-  const value = Math.min(100, Math.max(0, round(last + step, 1)))
-  const variant: ProjectionVariant = e.etr === null ? 'red' : value >= e.etr ? 'green' : 'amber'
-  const delta = e.tov === null ? 0 : value - e.tov
-  const trend: TrendLabel = delta > 3 ? 'Meningkat' : delta < -3 ? 'Menurun' : 'Stabil'
-  const confidence: ConfidenceLabel =
-    points.length >= 3 ? 'Tinggi' : points.length === 2 ? 'Sederhana' : 'Rendah'
+  const last = latestAr(e)
+  const p = projectionOfAr({ tov: e.tov, etr: e.etr, ar: last?.ar ?? null })
+  if (p === null) return null
+  const variant: ProjectionVariant = e.etr === null ? 'red' : p.end >= e.etr ? 'green' : 'amber'
   return {
-    value,
+    value: p.end,
     variant,
-    trend: entry.trendOverride ?? trend,
-    confidence: entry.confidenceOverride ?? confidence,
+    trend: entry.trendOverride ?? p.trend,
+    confidence: entry.confidenceOverride ?? p.confidence,
   }
 }
 
@@ -387,7 +418,12 @@ function sectionOf(
     levelName: levelNameOf(c.educationLevelId),
     className: classNameOf(c),
     year: c.academicYear,
+    mode: c.mode,
     status,
+    ...(({ statusReason, entryStatus }) => ({ statusReason, entryStatus }))(statusOf(e)),
+    jurang: e.tov === null || e.etr === null ? null : round(e.etr - e.tov, 1),
+    unjuran: projection?.value ?? null,
+    keyakinan: projection?.confidence ?? null,
     tov: e.tov,
     etr: e.etr,
     rs: e.rs === null ? null : { value: e.rs, recordedAt: entry.rsRecordedAt },
@@ -420,4 +456,58 @@ export function studentOf(
   }
   sections.sort((a, b) => a.configId - b.configId)
   return { student: { id: user.id, name: user.name, school }, sections }
+}
+
+// ---------------------------------------------------------------------------------------------
+// API-RPT-08 the pupil's own views (S10-T09)
+// ---------------------------------------------------------------------------------------------
+
+/** The pupil's own live roster line of a config (class member or entry holder, not dropped), else undefined. */
+function ownLineOf(c: HeadcountConfigRow, studentId: number): RosterLine | undefined {
+  const line = rosterOf(c).find((l) => l.studentId === studentId)
+  return line && !line.dropped ? line : undefined
+}
+
+/** The configs the pupil sees: own class configs where the pupil is not dropped, newest first. */
+export function ownConfigsOf(studentId: number): HeadcountConfigRow[] {
+  return headcountRepo
+    .configs()
+    .filter((c) => ownLineOf(c, studentId) !== undefined)
+    // like the API (FR-MUR-3-2): only the current year; the seeds are dated, so the latest seeded year stands in
+    .filter((c, _i, all) => c.academicYear === Math.max(...all.map((x) => x.academicYear)))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt) || b.id - a.id)
+}
+
+/** One card of `GET /headcounts/me`: the pupil's own pill (Active iff an ETR, own or default) and reason. */
+export function ownListItem(c: HeadcountConfigRow, studentId: number): HeadcountListItem {
+  const line = ownLineOf(c, studentId) as RosterLine
+  const { entryStatus, statusReason } = statusOf(line.view)
+  return { ...listItem(c), entryStatus, statusReason }
+}
+
+/** `GET /headcounts/me/detail`: the pupil's own line of one config only (no classmate data). */
+export function ownStudentOf(
+  studentId: number,
+  c: HeadcountConfigRow | undefined,
+): HeadcountStudent | undefined {
+  const user = users.get(studentId)
+  if (!user) return undefined
+  const school = user.schoolId === null ? null : (schools.get(user.schoolId)?.name ?? null)
+  const student = { id: user.id, name: user.name, school }
+  if (!c) return { student, sections: [] }
+  const line = ownLineOf(c, studentId)
+  if (!line) return undefined
+  const entry: HeadcountEntryRow = line.entry ?? {
+    id: 0,
+    configId: c.id,
+    studentId,
+    tov: null,
+    targets: blank(c.activeOtrs),
+    actuals: blank(c.activeOtrs),
+    etr: null,
+    rs: null,
+    rsRecordedAt: null,
+    dropped: false,
+  }
+  return { student, sections: [sectionOf(c, entry, school)] }
 }

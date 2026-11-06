@@ -2,7 +2,12 @@
  * Small pure helpers of the S1 dashboard blocks (M05-T3; SRS M05 v1.17 FR-M05-02…28, §6.10).
  */
 
-import type { DashboardBanner, PracticeSubject, QuestDifficulty } from '../../api/types'
+import type {
+  DashboardBanner,
+  PracticeSubject,
+  ProgressSubject,
+  QuestDifficulty,
+} from '../../api/types'
 
 /** FR-M05-12 / 14: the widget counts out of 10 quests (the M14 catalogue). */
 export const QUEST_TOTAL = 10
@@ -29,11 +34,23 @@ export const DIFFICULTY_ROWS: readonly { level: number; label: string; color: st
 /** FR-M05-27: the bar of row `i` grows after 150, 300, 450, 600, 750 ms. */
 export const DIFFICULTY_BAR_DELAY_MS = 150
 
-/**
- * BR-11 (D72): practice offers Tingkatan 4 and 5 only, so the dashboard "Tahap Pendidikan" links to these
- * level codes alone (the API may still list the other Tingkatan, with 0 questions).
- */
-export const OFFERED_LEVEL_CODES: readonly string[] = ['T4', 'T5']
+/** FR-MUR-2-11: "Tahap Pendidikan" lists Tingkatan 1 to 5 only, never Darjah. */
+export const OFFERED_LEVEL_CODES: readonly string[] = ['T1', 'T2', 'T3', 'T4', 'T5']
+
+const MONTHS_BM = ['Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun', 'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis']
+
+/** "Sah sehingga" date: `YYYY-MM-DD` -> `d M YYYY` with BM month abbreviations (e.g. `3 Nov 2027`). */
+export function formatValidUntil(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  const month = m ? MONTHS_BM[Number(m[2]) - 1] : undefined
+  if (!m || !month) return iso
+  return `${Number(m[3])} ${month} ${m[1]}`
+}
+
+/** FR-MUR-2-13: the Ketepatan tile shows the whole number rounded half up, "—" with 0 answers. */
+export function accuracyDisplay(pct: number | null): string {
+  return pct === null ? '—' : `${Math.floor(pct + 0.5)}%`
+}
 
 /** FR-M05-25: the secondary level groups, by `DashboardLevelPill.stage` (v2: no primary group). */
 export const LEVEL_GROUPS = [
@@ -165,4 +182,25 @@ export function greetingText(period: string, name: string): string {
 /** FR-M05-15 (PROPOSED, SRS §8.3): a completed quest is drawn with a full bar. */
 export function questBarPct(q: { progress: number; target: number; completed: boolean }): number {
   return q.completed ? 100 : questPct(q.progress, q.target)
+}
+
+/** FR-MUR-2-6: a subject is "perlu diperkuat" below this accuracy (percent) in the last 30 days. */
+export const WEAK_TOPIC_BELOW_PCT = 60
+
+/** FR-MUR-2-6: the window of the Topik Perlu Diperkuat card, as the `GET /api/practice/progress` period. */
+export const WEAK_TOPIC_PERIOD = '30'
+
+/**
+ * FR-MUR-2-6: the subjects answered in the window with accuracy under 60, worst first (ties keep the
+ * order of the read: most answers first). A subject with no answer has no accuracy and is not listed.
+ * XS-5: the accuracy is rounded half-up to a whole percent before the threshold and for display, so
+ * 59.5 counts as 60 and is not listed.
+ */
+export function weakTopics(subjects: readonly ProgressSubject[]): ProgressSubject[] {
+  return subjects
+    .map((s) => ({ ...s, accuracyPct: Math.round(s.accuracyPct) }))
+    .filter((s) => s.answered > 0 && s.accuracyPct < WEAK_TOPIC_BELOW_PCT)
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => a.s.accuracyPct - b.s.accuracyPct || a.i - b.i)
+    .map(({ s }) => s)
 }
