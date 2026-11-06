@@ -76,17 +76,14 @@ describe('daily challenges follow completed practice sessions', () => {
     expect(moved[0]).toMatchObject({ progress: 1, target: 2 })
   })
 
-  it('2. one completed session: sessions challenges advance, the target-1 challenge is claimed once (ledger daily_challenge, key challenge:<id>:<day>)', async () => {
-    const before = Number((await t.db.query('select current_syiling from wallets where user_id = $1', [student.userId]))[0]?.current_syiling ?? 0)
+  it('2. one completed session: sessions challenges advance, the target-1 challenge is completed once and pays nothing (ruling 12 on #500: the reward is claimed with API-GAME-11)', async () => {
     await play(student)
     const c = await challenges(student)
     expect(c['Mula Hari Ini']).toMatchObject({ progress: 1, target: 1, completed: true })
     expect(c['Rajin Berlatih']).toMatchObject({ progress: 1, target: 3, completed: false })
     const mula = await idOfChallenge('Mula Hari Ini')
-    expect(await challengeRows(student.userId)).toEqual([{ source_id: `challenge:${mula}:${DAY}`, amount: 10, is_test: false }])
+    expect(await challengeRows(student.userId)).toEqual([]) // ruling 12: completing credits nothing (it used to write a 10-syiling daily_challenge row)
     expect(await completions(student.userId)).toEqual([{ challenge_id: mula, completion_date: DAY, is_test: false }])
-    const after = Number((await t.db.query('select current_syiling from wallets where user_id = $1', [student.userId]))[0]?.current_syiling ?? 0)
-    expect(after).toBeGreaterThanOrEqual(before + 10)
   })
 
   it('3. another pupil is not affected by the sessions of the first', async () => {
@@ -102,15 +99,15 @@ describe('daily challenges follow completed practice sessions', () => {
     const c = await challenges(student)
     expect(c['Rajin Berlatih']).toMatchObject({ progress: 3, target: 3, completed: true })
     const rajin = await idOfChallenge('Rajin Berlatih')
-    const rows = await challengeRows(student.userId)
-    // the random draw also touched 3 chapters, so Penjelajah Topik is met too: every met challenge is paid exactly once
-    const keys = rows.map((r) => r.source_id)
-    expect(keys).toEqual(expect.arrayContaining([`challenge:${await idOfChallenge('Mula Hari Ini')}:${DAY}`, `challenge:${rajin}:${DAY}`]))
-    expect(new Set(keys).size).toBe(keys.length)
-    const paid = keys.length
+    const done = (await completions(student.userId)).map((r) => r.challenge_id)
+    // the random draw also touched 3 chapters, so Penjelajah Topik is met too: every met challenge is completed exactly once, and none is paid
+    expect(done).toEqual(expect.arrayContaining([await idOfChallenge('Mula Hari Ini'), rajin]))
+    expect(new Set(done).size).toBe(done.length)
+    expect(await challengeRows(student.userId)).toEqual([])
+    const paid = done.length
     await play(student)
     expect((await challenges(student))['Rajin Berlatih']).toMatchObject({ progress: 3, completed: true })
-    expect(await challengeRows(student.userId)).toHaveLength(paid)
+    expect(await challengeRows(student.userId)).toEqual([])
     expect(await completions(student.userId)).toHaveLength(paid)
   })
 
@@ -137,7 +134,7 @@ describe('daily challenges follow completed practice sessions', () => {
   })
 
   it("6. yesterday's sessions do not count: the next Malaysia day starts at 0 and can be claimed again", async () => {
-    const paidToday = (await challengeRows(student.userId)).length
+    const doneToday = (await completions(student.userId)).filter((r) => r.completion_date === DAY).length
     t.clock.set('2026-10-21T09:00:00+08:00')
     student = await loginAs(t, STUDENT) // the session of the first day is older than the clock now
     const c = await challenges(student)
@@ -146,18 +143,19 @@ describe('daily challenges follow completed practice sessions', () => {
     await play(student)
     expect((await challenges(student))['Mula Hari Ini']).toMatchObject({ progress: 1, completed: true })
     const mula = await idOfChallenge('Mula Hari Ini')
-    const rows = (await challengeRows(student.userId)).map((r) => r.source_id)
-    expect(rows).toContain(`challenge:${mula}:2026-10-21`)
-    expect(rows.filter((k) => k.endsWith(':2026-10-20'))).toHaveLength(paidToday)
+    const rows = await completions(student.userId)
+    expect(rows).toContainEqual({ challenge_id: mula, completion_date: '2026-10-21', is_test: false })
+    expect(rows.filter((r) => r.completion_date === DAY)).toHaveLength(doneToday)
+    expect(await challengeRows(student.userId)).toEqual([])
     t.clock.set('2026-10-20T09:00:00+08:00')
   })
 
-  it('7. Mod Pelajar: the completion and the ledger row are stamped is_test', async () => {
+  it('7. Mod Pelajar: the completion is stamped is_test (and nothing is paid)', async () => {
     t.clock.set('2026-10-20T10:00:00+08:00')
     await play(admin)
     const mula = await idOfChallenge('Mula Hari Ini')
     expect(await completions(admin.userId)).toEqual([{ challenge_id: mula, completion_date: DAY, is_test: true }])
-    expect(await challengeRows(admin.userId)).toEqual([{ source_id: `challenge:${mula}:${DAY}`, amount: 10, is_test: true }])
+    expect(await challengeRows(admin.userId)).toEqual([])
     // real figures of the pupils stay untouched
     expect((await t.db.query(`select count(*)::int as n from challenge_completions where is_test = false and user_id = $1`, [admin.userId]))[0]?.n).toBe(0)
   })

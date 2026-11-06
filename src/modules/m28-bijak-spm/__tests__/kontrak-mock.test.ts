@@ -187,7 +187,7 @@ describe('Kontrak mock: pool preview and draft', () => {
     expect(pool.excluded.byReason.map((r) => r.reason)).toEqual(['no_unit', 'no_tp', 'no_marks', 'no_key', 'tag_review'])
     expect(pool.excluded.byReason.find((r) => r.reason === 'no_tp')!.bankQuery.missing).toBe('tp')
     if (pool.verdict === 'boleh') {
-      await expect(s.generateDraft('SN', 2)).resolves.toEqual({ paperId: 'paper-1' })
+      await expect(s.generateDraft('SN', 2)).resolves.toEqual({ id: 'paper-1' })
     } else {
       await expect(s.generateDraft('SN', 2)).rejects.toMatchObject({ kind: 'shortage' })
     }

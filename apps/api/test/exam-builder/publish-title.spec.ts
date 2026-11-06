@@ -6,11 +6,13 @@ import { ACCOUNTS, bootBuilderApp, loginAs, type BuilderTestApp, type Client } f
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 /**
- * D9 (R1 smoke): a paper created without a title is named "Percubaan SPM {subjek} Kertas {n} (draf)". The " (draf)" is a wrong label once the
+ * D9 (R1 smoke): (S3-T02: the title is now required, PRD30 13-01) a paper whose title is typed as "Percubaan SPM {subjek} Kertas {n} (draf)" (the old default). The " (draf)" is a wrong label once the
  * paper is Terbit and a pupil reads it. Terbit drops it from that exact default title only; every other title is the admin's and stays as typed.
  */
 const Editor = envelopeOf(BijakBuilderEditorSchema)
 const Created = envelopeOf(BijakBuilderPaperCreateResultSchema)
+/** The title an admin types that equals the system default of MAT kertas 2: only this exact text loses " (draf)" at Terbit. */
+const AUTO = 'Percubaan SPM Matematik Kertas 2 (draf)'
 const FULL = { A: ['700001', '700002', '700003'], B: ['700004'], C: ['700005', '700006'] }
 
 describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
@@ -31,7 +33,7 @@ describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
   })
 
   async function terbit(body: Record<string, unknown> = {}, kertas = 2): Promise<{ id: string; draftTitle: string }> {
-    const made = await admin.post('/api/admin/papers', { subject: 'MAT', kertas, ...body })
+    const made = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas, ...body })
     expect(made.status, JSON.stringify(made.body)).toBe(201)
     const id = Created.parse(made.body).data.id
     const [sa, sb, sc] = Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data.paper.sections
@@ -53,7 +55,7 @@ describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
   const pupilTitle = async (id: string) => ((await student.get('/api/bijak/papers')).body.data as { id: string; title: string }[]).find((p) => p.id === id)?.title
 
   it('(a) the auto default title loses " (draf)" at Terbit', async () => {
-    const { id, draftTitle } = await terbit()
+    const { id, draftTitle } = await terbit({ title: AUTO })
     expect(draftTitle).toMatch(/^Percubaan SPM .+ Kertas 2 \(draf\)$/)
     expect(await dbTitle(id)).toBe(draftTitle.slice(0, -' (draf)'.length))
     expect(await dbTitle(id)).not.toContain('(draf)')
@@ -75,7 +77,7 @@ describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
   })
 
   it('(d) the pupil list shows the clean title of an auto-titled paper and the typed title of a custom one', async () => {
-    const auto = await terbit()
+    const auto = await terbit({ title: AUTO })
     expect(await pupilTitle(auto.id)).toBe(auto.draftTitle.slice(0, -' (draf)'.length))
     const custom = await terbit({ title: 'Set Akhir (draf)' })
     expect(await pupilTitle(custom.id)).toBe('Set Akhir (draf)')
@@ -84,7 +86,7 @@ describe('Terbit drops "(draf)" from the auto title only (D9)', () => {
   })
 
   it('(e) withdraw then re-publish keeps the clean title and bumps the version; the audit row names the title change once', async () => {
-    const { id, draftTitle } = await terbit()
+    const { id, draftTitle } = await terbit({ title: AUTO })
     const clean = draftTitle.slice(0, -' (draf)'.length)
     const version = async () => Number((await t.db.query<{ version: number }>('select version from papers where id = $1', [id]))[0]!.version)
     const v1 = await version()

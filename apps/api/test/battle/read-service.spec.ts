@@ -133,7 +133,6 @@ describe('BattleDeps reads (empty owner data)', () => {
     expect(await deps.arenaQuestion('999')).toBeNull()
     expect(await deps.gradeAnswer('999', 0)).toBeNull()
     expect(await deps.platformAccuracy()).toBe(0)
-    expect(deps.pkskDomains()).toEqual([])
     expect(await deps.drawQuestions({ questionType: 'pksk', subjectId: null, levelId: null }, 10, { next: () => 0, int: () => 0, pick: (a) => a[0]! })).toBeNull()
   })
 })
