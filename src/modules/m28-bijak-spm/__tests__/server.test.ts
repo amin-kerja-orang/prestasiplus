@@ -271,3 +271,50 @@ describe('result: choose-N, marks and rewards', () => {
     expect(result.pendingReview).toBe(1)
   })
 })
+
+describe('Mod Latihan result and history pay only the unrevealed marks (S3-T04, FR-PA-16)', () => {
+  const answerAll = (qs: string[], rev = 1) =>
+    qs.map((q) => ({ partId: q, answer: { choice: correctChoice(q) }, rev, savedAt: 1 }))
+
+  it('partly revealed: result coins/points and history coins show the credited amount only', async () => {
+    const { server } = make()
+    const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'latihan')
+    const qs = (await server.getAttemptView(USER, attemptId)).questions.map((q) => q.id)
+    expect(qs.length).toBeGreaterThanOrEqual(3)
+    for (const q of qs.slice(0, 2)) await server.checkQuestion(USER, attemptId, q, { changes: answerAll([q]) })
+    await server.submit(USER, attemptId, { idempotencyKey: 'k1', changes: answerAll(qs) })
+    const { result } = await server.getResult(USER, attemptId)
+    const paid = qs.length - 2
+    expect(result.score).toBe(qs.length)
+    expect(result.coins).toBe(paid)
+    expect(result.points).toBe(paid * 10)
+    const row = (await server.history(USER)).find((r) => r.attemptId === attemptId)!
+    expect(row.coins).toBe(paid)
+  })
+
+  it('every question revealed: the sitting records 0 coins and 0 points', async () => {
+    const { server } = make()
+    const { attemptId } = await server.startAttempt(USER, 'mat-k1-2025-a', 'latihan')
+    const qs = (await server.getAttemptView(USER, attemptId)).questions.map((q) => q.id)
+    for (const q of qs) await server.checkQuestion(USER, attemptId, q, { changes: answerAll([q]) })
+    await server.submit(USER, attemptId, { idempotencyKey: 'k2', changes: answerAll(qs) })
+    const { result } = await server.getResult(USER, attemptId)
+    expect(result.score).toBe(qs.length)
+    expect([result.coins, result.points]).toEqual([0, 0])
+    expect((await server.history(USER))[0]!.coins).toBe(0)
+  })
+
+  it('nothing revealed pays the whole score, and an exam sitting pays score x 1 and x 10', async () => {
+    const { server } = make()
+    const lat = await server.startAttempt(USER, 'mat-k1-2025-a', 'latihan')
+    const qs = (await server.getAttemptView(USER, lat.attemptId)).questions.map((q) => q.id)
+    await server.submit(USER, lat.attemptId, { idempotencyKey: 'k3', changes: answerAll(qs) })
+    expect((await server.getResult(USER, lat.attemptId)).result.coins).toBe(qs.length)
+    const ex = await server.startAttempt(USER, 'mat-k1-2025-a', 'exam')
+    await server.submit(USER, ex.attemptId, { idempotencyKey: 'k4', changes: answerAll(qs) })
+    const { result } = await server.getResult(USER, ex.attemptId)
+    expect([result.coins, result.points]).toEqual([qs.length, qs.length * 10])
+    const rows = await server.history(USER)
+    expect(rows.find((r) => r.attemptId === ex.attemptId)!.coins).toBe(qs.length)
+  })
+})

@@ -59,6 +59,7 @@ import {
   type LeafIndex,
   lockedParts,
   rewardMarks,
+  withPaidFigures,
   questionIdsOf,
   XP_PER_MARK,
 } from './marking'
@@ -186,12 +187,23 @@ export class BijakAttemptsService {
     return new Map([...answers].map(([k, v]) => [k, v.answer]))
   }
 
+  /** Read at the time of each close or self-mark (not cached): a later change of the rate never touches a sitting already closed. */
   private coinRate(): Promise<number> {
     return coinsPerCorrect(this.prisma.client, this.now().getTime())
   }
 
   private revealedParts(answers: ReadonlyMap<string, AnswerRow>): Set<string> {
     return new Set([...answers].filter(([, v]) => v.answer.revealed === true).map(([k]) => k))
+  }
+
+  /** Revealed parts of a closing attempt: the DM-68 flag, plus (Mod Latihan) every part of a question "Semak" was used on (FR-PA-16, also a part answered after the check). */
+  private async revealedAtClose(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, bundles: Bundles): Promise<Set<string>> {
+    const revealed = this.revealedParts(answers)
+    if (row.mode === 'latihan') {
+      const byQuestion = buildLeafIndex(row.composition, bundles).byQuestion
+      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of byQuestion.get(qid) ?? []) revealed.add(id)
+    }
+    return revealed
   }
 
   private toMeta(row: AttemptRow, answers: ReadonlyMap<string, AnswerRow>, checks: { order: string[]; counts: Map<string, number> }): BijakAttemptMeta {
@@ -581,7 +593,9 @@ export class BijakAttemptsService {
     const changed = await this.merge(row, answers, ok, index, new Set())
     if (!changed) return false
     const bundles = await load() // memoised by `lazyBundles`: one load for the grading and the self-marks
-    const base = gradeAttempt(row.composition, bundles, this.answerMap(answers), await this.coinRate())
+    const coinRate = await this.coinRate()
+    // The stored coins/points of a Latihan result are the PAID figures (unrevealed marks only), as at the first close.
+    const base = withPaidFigures(row.paperKind === 'subjektif' ? 'exam' : row.mode, gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate), await this.revealedAtClose(row, answers, bundles), coinRate)
     // A self-mark made in between (R1-B12) stays: the new automatic grading gets the pupil's marks on top again.
     const selfMarks = (await this.repo.gradedWithMarks(row.id))?.selfMarks ?? {}
     const result = applySelfMarks(base, row.composition, selfMarks, bundles)
@@ -610,13 +624,10 @@ export class BijakAttemptsService {
     }
     const bundles = await load()
     const coinRate = await this.coinRate()
-    const result = gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate)
-    const revealed = this.revealedParts(answers)
-    // FR-PA-16: "Semak" shows the scheme of the whole question, so every part of a checked question counts as revealed (also a part answered after the check).
-    if (row.mode === 'latihan') {
-      const byQuestion = buildLeafIndex(row.composition, bundles).byQuestion
-      for (const qid of (await this.repo.checkCounts(row.id)).order) for (const id of byQuestion.get(qid) ?? []) revealed.add(id)
-    }
+    // FR-PA-16: "Semak" shows the scheme of the whole question, so every part of a checked question counts as revealed.
+    const revealed = await this.revealedAtClose(row, answers, bundles)
+    // The stored result carries the PAID figures: a Latihan sitting shows what the ledger credits (unrevealed marks only). Exam and Kertas Subjektif keep score x rate.
+    const result = withPaidFigures(row.paperKind === 'subjektif' ? 'exam' : row.mode, gradeAttempt(row.composition, bundles, this.answerMap(answers), coinRate), revealed, coinRate)
     const closed = await this.repo.close(row.id, { status, submittedAt: at, lateBySeconds: late, idempotencyKey: opts.key })
     if (!closed) throw new Error('Attempt was closed by another request while locked')
     await this.repo.saveResult(row.id, result)

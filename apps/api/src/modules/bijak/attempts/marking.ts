@@ -132,6 +132,13 @@ export function rewardMarks(mode: string, result: BijakAttemptResult, revealed: 
   return unrevealedScore(result, revealed)
 }
 
+/** The result with the PAID figures (FR-PA-16): in Mod Latihan `coins`/`points` are the unrevealed marks x rate / x XP_PER_MARK, the amount the ledger credits; other modes keep score x rate / x XP_PER_MARK. */
+export function withPaidFigures(mode: string, result: BijakAttemptResult, revealed: ReadonlySet<string>, coinRate: number): BijakAttemptResult {
+  if (mode !== 'latihan') return result
+  const marks = unrevealedScore(result, revealed)
+  return { ...result, coins: marks * coinRate, points: marks * XP_PER_MARK }
+}
+
 /** Awarded marks of the counted questions' parts that are not in `revealed`. */
 export function unrevealedScore(result: BijakAttemptResult, revealed: ReadonlySet<string>): number {
   return result.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !revealed.has(p.partId)).reduce((n, p) => n + p.awarded, 0)

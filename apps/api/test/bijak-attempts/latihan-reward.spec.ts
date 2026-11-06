@@ -86,6 +86,9 @@ describe('Mod Latihan reward, rate 1 (no reward_settings row)', () => {
     expect(call).toMatchObject({ attemptId: id, score: qs.length })
     expect(call.coins).toBe(unrevealed)
     expect(call.points).toBe(unrevealed * 10)
+    // the result tile shows the credited amount, not score x rate
+    const r = await result(id)
+    expect([r.coins, r.points]).toEqual([call.coins, call.points])
   })
 
   it('every question revealed: the port is still called once, with 0 coins and 0 points (streak event only)', async () => {
@@ -131,6 +134,7 @@ describe('Mod Latihan reward, revealed sets', () => {
     expect(total).toBeGreaterThan(expected) // the checked question did earn marks, so the test is not vacuous
     expect(expected).toBeGreaterThan(0)
     expect(t.reward.calls[0]).toMatchObject({ coins: expected * 2, points: expected * 10 })
+    expect([r.coins, r.points]).toEqual([expected * 2, expected * 10]) // result = credit
   })
 
   it('choose-N: checking the question that does NOT count leaves the pay unchanged', async () => {
@@ -163,6 +167,56 @@ describe('Mod Latihan reward, revealed sets', () => {
     expect(paid(r, skip)).toBeLessThan(paid(r, new Set([flaggedLeaf])))
     expect(paid(r, skip)).toBeLessThan(paid(r, new Set(checkedLeaves)))
     expect(t.reward.calls[0]).toMatchObject({ coins: paid(r, skip), points: paid(r, skip) * 10 })
+  })
+})
+
+describe('the result coins/points are the credited amount (FR-PA-16)', () => {
+  it('a partly revealed Latihan sitting: result.coins/points equal the reward credit and the stored columns', async () => {
+    await setRate(3)
+    const id = await startAttempt(me, PAPER.matK1, 'latihan')
+    const qs = await questions(id)
+    for (const q of qs.slice(0, 2)) expect((await check(id, q, [change(q, { choice: correctChoice(q) })])).status).toBe(200)
+    expect((await submit(id, allCorrect(qs))).status).toBe(200)
+    const unrevealed = qs.length - 2
+    const call = t.reward.calls[0]!
+    expect(call).toMatchObject({ attemptId: id, coins: unrevealed * 3, points: unrevealed * 10 })
+    const r = await result(id)
+    expect(r.score).toBe(qs.length) // the full score is still shown; only the pay figures drop
+    expect([r.coins, r.points]).toEqual([call.coins, call.points])
+    const row = (await t.db.query<{ coins: number; points: number }>('select coins, points from attempt_results where attempt_id = $1', [id]))[0]!
+    expect([Number(row.coins), Number(row.points)]).toEqual([call.coins, call.points])
+  })
+
+  it('every question revealed: the result shows 0 coins and 0 points', async () => {
+    const id = await startAttempt(me, PAPER.matK1, 'latihan')
+    const qs = await questions(id)
+    for (const q of qs) await check(id, q, [change(q, { choice: correctChoice(q) })])
+    expect((await submit(id, allCorrect(qs))).status).toBe(200)
+    const r = await result(id)
+    expect([r.coins, r.points]).toEqual([0, 0])
+  })
+
+  it('an exam result is unchanged: score x rate and score x 10', async () => {
+    await setRate(2)
+    const id = await startAttempt(me, PAPER.matK1, 'exam')
+    const qs = await questions(id)
+    expect((await submit(id, allCorrect(qs))).status).toBe(200)
+    const r = await result(id)
+    expect([r.coins, r.points]).toEqual([qs.length * 2, qs.length * 10])
+  })
+})
+
+describe('the rate is read at the time of each close or self-mark', () => {
+  it('a rate changed between the close and a self-mark: the close pays the old rate, the self-mark carries the new one', async () => {
+    await setRate(1)
+    const id = await startAttempt(me, PAPER.sainsK2, 'exam', true)
+    expect((await submit(id, [change('sn2-sel-q2-b', { text: 'bahan terlarut dalam sel itu' })])).status).toBe(200)
+    const closed = t.reward.calls.at(-1)!
+    expect(closed.coins).toBe(closed.score * 1)
+    await setRate(3)
+    const res = await me.post(`/api/bijak/attempts/${id}/self-mark`, { partId: 'sn2-sel-q2-b', mark: 2 })
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect(t.reward.selfMarkCalls.map((c) => c.coinRate)).toEqual([3])
   })
 })
 
