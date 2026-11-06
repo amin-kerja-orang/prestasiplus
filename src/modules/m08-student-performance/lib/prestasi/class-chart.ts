@@ -1,5 +1,5 @@
 /**
- * S5 "Trend Aktiviti Kelas (30 Hari)" series for `DsChart` (FR-M08-35): labels MM-DD. The accuracy
+ * S5 "Trend Aktiviti Kelas (30 Hari)" series for `DsChart` (FR-M08-35): one point per day (30, zero-filled), labelled MM-DD. The accuracy
  * ("Purata Ketepatan (%)", 0–100) and the sessions ("Sesi") have different scales, so each gets its own chart.
  */
 

@@ -179,7 +179,7 @@ describe('leagues, tournaments and Sekolah Bersaing seeds', () => {
     expect(leagues.schoolCount(2)).toBe(2)
     expect(leagues.count('Q-LEAGUE-OPEN')).toBe(1)
     expect(leagues.list(900002)).toMatchObject({ mine: [], open: [{ id: 1 }] })
-    expect(leagues.get(2, 900002)?.standings.T4?.[0]).toMatchObject({
+    expect(leagues.get(2)?.standings.T4?.[0]).toMatchObject({
       schoolId: 8090,
       peserta: 8,
       skor: 2935,
