@@ -245,7 +245,10 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await t.gamification.applyReferral(await bareUser(t, 'Diri'), 'NOSUCH1', { isTest: false })).toEqual({ applied: false })
       expect(await t.gamification.applyReferral(referrer, code, { isTest: false })).toEqual({ applied: false }) // not your own code
       expect((await walletOf2(friend)).current_syiling).toBe(25)
-      expect((await walletOf2(referrer)).current_syiling).toBe(420)
+      // 370 + 50 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
+      const badges = await t.db.query<{ amount: number; description: string }>(`select amount, description from coin_ledger where user_id = $1 and source = 'achievement'`, [referrer])
+      expect(badges).toEqual([{ amount: 10, description: 'Pencapaian: Pengumpul Syiling' }])
+      expect((await walletOf2(referrer)).current_syiling).toBe(420 + 10)
       const r = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 50 })
     })
