@@ -48,6 +48,11 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S8-T04 | AC-PA-21 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-21 (warning once at every width; at 0 submits with auto:true; offline at 0 locks, banner, submits on reconnect); result-auto-banner.test.ts::AC-PA-21: auto=1 shows "Masa tamat. Jawapan anda telah dihantar secara automatik." once |
+| S8-T04 | AC-PA-22 | CI | Pass | 2026-11-05 | team-aa/S-1 | attempt-page-phone.test.ts::AC-PA-22 (3 blank: "Anda belum menjawab 3 soalan." then "Hantar jawapan anda sekarang?"; focus starts on the safe button; Esc chooses the safe button) |
+| S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
+| S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
+| S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 
@@ -78,6 +83,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T03 | AC-XS-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
 | S6-T03 | AC-XS-3 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.unit.spec.ts |
 | S6-T03 | AC-X4-2 | CI | Pass | 2026-11-05 | team-dd/S-4 | xs-queries.spec.ts |
+| S7-T02 | AC-AS-45-1 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-1: the mean of session accuracy per school, in order, with the register name and state; sekolah-bersaing.test.ts::AC-AS-45-1: A rank 1 with a success 80% pill and 5, B rank 2 with a warning 60% pill and 3; rules.test.ts::AC-AS-45-1: ranks by accuracy, with the row shape of the contract |
+| S7-T02 | AC-AS-45-2 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31); sekolah-bersaing.test.ts::AC-AS-45-2: an empty board shows both exact lines and no table; rules.test.ts::AC-AS-45-2: no session anywhere is an empty board |
+| S7-T02 | AC-AS-45-3 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-3: 40 schools give exactly 30 rows; rules.test.ts::AC-AS-45-3: cuts 40 schools to the top 30 |
+| S7-T02 | AC-AS-45-6 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name; sekolah-bersaing.test.ts::AC-AS-45-6: the colour follows the rounded value; rules.test.ts::AC-AS-45-6: breaks ties by pupils, then sessions, then name |
 
 ## Sprint 2
 
@@ -125,6 +134,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T04 | AC-MUR-2-10 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::a second submit the same day is 409 ALREADY_CHECKED_IN and the row is unchanged (AC-MUR-2-10) |
 | S5-T04 | AC-MUR-2-11 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood-command-center.spec.ts::Guru Command Center "Mood Pelajar" counts 1 for Tertekan; mood-command-center.spec.ts::the Mood Pelajar drill lists the pupil; mood-command-center.spec.ts::the Admin Sekolah "Aktiviti Harian" mood panel counts it for the school; mood-command-center.spec.ts::and no other school |
 | S5-T04 | AC-MUR-2-12 | CI | Pass | 2026-11-06 | team-bb/S-4 | mood.spec.ts::answers 401 without a session and 403 for every other role (AC-MUR-2-12) |
+| S4-T06 | AC-X3-1 | CI | Pass | 2026-11-06 | team-bb/S-3 | bab-mode-t1.spec.ts; offered-levels-serving.spec.ts; offered-levels.spec.ts |
+| S10-T01 | AC-MUR-4-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-headcount-block.spec.ts |
 
 ## Sprint 5
 
