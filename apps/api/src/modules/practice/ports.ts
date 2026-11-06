@@ -17,6 +17,7 @@
  */
 import { Injectable } from '@nestjs/common'
 
+import type { AuthContext } from '../../common/scope/auth-context'
 import type { TxClient } from '../../db/client'
 import type { Prng } from '../../db/prng'
 import type { StimulusGroupRecord } from '../questions/types'
@@ -279,8 +280,16 @@ export class NoReward implements PracticeRewardPort {
  * its one grader and closes it. A leaf is addressed by its label path (`(a).(i)`: the labels of its ancestors and itself joined with `.`, the
  * sub-question id without its `<questionId>-` prefix), so practice never sees a Bijak part id.
  */
+export interface PracticeStructuredAudit {
+  auth: AuthContext | null
+  ip: string | null
+  requestId: string | null
+}
+
 export interface PracticeStructuredAttemptInput {
   userId: string
+  /** The caller the submit audit line is attributed to (actor, role, scope, IP, request id); absent: a system line. */
+  audit?: PracticeStructuredAudit
   /** Mod Pelajar: the attempt is stamped `is_test`. */
   isTest: boolean
   questionId: string

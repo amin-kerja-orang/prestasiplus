@@ -27,6 +27,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
+import { AnswerLogPort, type WritableAnswerMode } from '../../practice'
 import {
   AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
@@ -108,6 +109,8 @@ export interface StructuredAttemptInput {
   /** Curriculum code (MATH, SCI ...); stored as the Bijak code (`bijakCodeOf`, MAT, SN ...). Null: the question's own subject tag. */
   subject: string | null
   subjectName: string | null
+  /** `bahasa`: a Tracking A Bahasa set, whose answer rows carry `mode = tracking_a` (R1-MUR-17, D-PA-12); otherwise `structured`. */
+  track?: 'bahasa' | null
   answers: readonly { path: string; text: string }[]
 }
 
@@ -166,6 +169,7 @@ export class BijakAttemptsService {
     @Inject(BijakAttemptPorts) private readonly ports: BijakAttemptPorts,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(FilesService) private readonly files: FilesService,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   /* ------------------------------------------------------------------------------ helpers */
@@ -339,9 +343,11 @@ export class BijakAttemptsService {
    * S5-T11 (API-PRAC-10): a Soalan Berstruktur attempt, single shot. In ONE transaction: the composition is frozen as one section holding the
    * question (pinned to the served version), an `exam_attempts` row is made (`paper_kind 'structured'`, no paper, `latihan`, untimed), the
    * answers are stored, the ONE grader (`gradeAttempt`) marks them, the result is saved and the attempt is closed as `submitted`. A part the grader
-   * cannot mark stays `belum_dimarkah` (provisional) for the pupil's own mark (API-BIJAK-05, unchanged). The reward and the per-leaf practice rows are part 4b.
+   * cannot mark stays `belum_dimarkah` (provisional) for the pupil's own mark (API-BIJAK-05, unchanged). In the same transaction one `practice_answers` row per leaf is
+   * written through `AnswerLogPort` (mode `structured`, `tracking_a` for the Bahasa track; the self-mark updates the same row). After the commit `emit` writes the audit line,
+   * pays the reward (A9) and feeds the aggregate, as every other submit.
    */
-  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput): Promise<StructuredAttemptOutput> {
+  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput, auth: AuthContext | null = null, caller: CallerInfo | null = null): Promise<StructuredAttemptOutput> {
     const composition: SectionSnapshot[] = [
       { id: 's1', label: 'Soalan Berstruktur', rule: { type: 'all' }, questionIds: [input.questionId], versions: { [input.questionId]: input.versionNo } },
     ]
@@ -388,8 +394,10 @@ export class BijakAttemptsService {
       const closed = await this.repo.close(row.id, { status: 'submitted', submittedAt: now, lateBySeconds: null, idempotencyKey: null })
       if (!closed) throw new Error('A new structured attempt could not be closed')
       await this.repo.saveResult(row.id, result)
-      return row
+      await this.writeStructuredRows(who, row.id, input.questionId, input.versionNo, input.track === 'bahasa' ? 'tracking_a' : 'structured', result.questions[0]?.parts ?? [], paths, now, new Set(answers.keys()))
+      return { ...row, status: 'submitted' as const, submittedAt: now, lateBySeconds: null }
     }, TX)
+    await this.emit([{ attempt, status: 'submitted', result, swept: false, regraded: false }], auth, caller)
     const graded = result.questions[0]?.parts ?? []
     return {
       attemptId: attempt.id,
@@ -399,6 +407,50 @@ export class BijakAttemptsService {
         return path === undefined ? [] : [{ path, awarded: p.awarded, max: p.marks, pending: p.status === 'belum_dimarkah' }]
       }),
     }
+  }
+
+  /**
+   * One `practice_answers` row per graded leaf of a structured attempt, through the single writer (`AnswerLogPort.record`, joining the caller's
+   * transaction). A part waiting for the pupil's mark (`belum_dimarkah`) has `marksAwarded` null; `isCorrect` is awarded = max. The key is
+   * (attempt, user, question, part path), so the self-mark's second call updates the SAME row. A leaf with no marks has no row (the port refuses 0).
+   */
+  private async writeStructuredRows(
+    who: { userId: string; isTest: boolean },
+    attemptId: string,
+    questionId: string,
+    versionNo: number,
+    mode: WritableAnswerMode,
+    parts: readonly { partId: string; awarded: number; marks: number; status: string }[],
+    paths: ReadonlyMap<string, string>,
+    answeredAt: Date,
+    /** Submit: only the leaves the pupil answered (46 section 4.6); a blank leaf gets its row when she marks it. Absent: every given part. */
+    answered?: ReadonlySet<string>,
+  ): Promise<void> {
+    for (const p of parts) {
+      const partRef = paths.get(p.partId)
+      if (partRef === undefined || !(p.marks > 0) || (answered && !answered.has(p.partId))) continue
+      const marksAwarded = p.status === 'belum_dimarkah' ? null : p.awarded
+      await this.answerLog.record({
+        userId: who.userId,
+        attemptId,
+        questionId,
+        partRef,
+        mode,
+        isCorrect: marksAwarded !== null && marksAwarded === p.marks,
+        marksAwarded,
+        marksMax: p.marks,
+        answeredAt,
+        isTest: who.isTest,
+        questionVersionNo: versionNo,
+      })
+    }
+  }
+
+  /** The mode the rows of a structured attempt were written under (`tracking_a` for a Bahasa set); `structured` when there is none yet. */
+  private async structuredModeOf(attemptId: string, userId: string): Promise<WritableAnswerMode> {
+    const rows = await this.prisma.client.$queryRaw<{ mode: string }[]>`
+      SELECT mode FROM practice_answers WHERE attempt_id = ${attemptId}::uuid AND user_id = ${BigInt(userId)}::bigint LIMIT 1`
+    return rows[0]?.mode === 'tracking_a' ? 'tracking_a' : 'structured'
   }
 
   /* ---------------------------------------------------------------------------------- views */
@@ -512,6 +564,23 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
+        if (row.paperKind === 'structured') {
+          const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)
+          const qid = found.q.questionId
+          const path = leafPaths(bundleOf(bundles, qid).question.parts ?? []).get(body.partId)
+          if (part && path !== undefined) {
+            await this.writeStructuredRows(
+              { userId: row.userId, isTest: row.isTest },
+              id,
+              qid,
+              row.composition.find((s) => s.versions?.[qid] !== undefined)?.versions?.[qid] ?? 1,
+              await this.structuredModeOf(id, row.userId),
+              [part],
+              new Map([[body.partId, path]]),
+              this.now(),
+            )
+          }
+        }
         events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
@@ -945,6 +1014,28 @@ export class BijakAttemptsService {
     }
   }
 
+  /** A9: the reward of a structured attempt (submit or self-mark gain), after the commit; a failing port never fails the request. */
+  private async payStructured(e: ClosedEvent, touchStreak: boolean): Promise<void> {
+    const a = e.attempt
+    const questionId = e.result.questions[0]?.questionId
+    if (questionId === undefined) return
+    try {
+      await this.ports.reward.awardStructured({
+        attemptId: a.id,
+        userId: a.userId,
+        questionId,
+        isTest: a.isTest,
+        score: e.result.score,
+        max: e.result.max,
+        touchStreak,
+        submittedAt: a.submittedAt,
+        description: BIJAK_REWARD_DESCRIPTION,
+      })
+    } catch (err) {
+      this.logger.error(`Structured reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   /** Runs after the commit; a failing port never fails the request (the attempt is already closed). */
   private async emit(events: readonly ClosedEvent[], auth: AuthContext | null = null, who: CallerInfo | null = null): Promise<void> {
     for (const e of events) {
@@ -958,7 +1049,8 @@ export class BijakAttemptsService {
         })
         // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward. A Kertas Subjektif
         // sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
-        if (a.mode === 'exam' || a.paperKind === 'subjektif') {
+        if (a.paperKind === 'structured') await this.payStructured(e, true)
+        else if (a.mode === 'exam' || a.paperKind === 'subjektif') {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
@@ -978,7 +1070,8 @@ export class BijakAttemptsService {
         }
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
-      if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
+      if (e.regraded && e.selfMark && a.paperKind === 'structured') await this.payStructured(e, false)
+      else if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
