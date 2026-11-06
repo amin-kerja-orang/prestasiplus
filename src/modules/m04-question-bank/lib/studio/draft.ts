@@ -41,7 +41,7 @@ export interface LeafDraft {
   numeric: { value: string; tolerance: string; unit: string }
 }
 
-export type Kertas = '' | '1' | '2' | '3'
+export type Kertas = '' | '1' | '2' | '3' | '4'
 /** FR-ADM-QE3.7: `Tahap kesukaran` 1 to 5 (DM-47), the labels of the question list. */
 export const KESUKARAN = [1, 2, 3, 4, 5].map((value) => ({ value, label: DIFFICULTY_LABELS[value] ?? String(value) }))
 
@@ -530,7 +530,7 @@ export function hydrate(q: WireQuestion): Hydrated {
   const draft: StudioDraft = {
     subjectId: q.subjectId ?? '',
     educationLevelId: q.educationLevelId ?? '',
-    kertas: q.kertas === '1' || q.kertas === '2' || q.kertas === '3' ? q.kertas : '',
+    kertas: q.kertas === '1' || q.kertas === '2' || q.kertas === '3' || q.kertas === '4' ? q.kertas : '',
     numberLabel: q.numberLabel ?? '',
     stem: q.questionText,
     stemImageToken: q.questionImage,

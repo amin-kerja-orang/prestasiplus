@@ -9,6 +9,9 @@ import routes from './routes'
 // Public API of M02 (M01 imports the school lookups from here; ADR-0009, build-plan §S.3 rule 6).
 export { searchSchools, type SchoolSummary } from './api/schools'
 
+// M17 central report views (S6-T13, R1-ADM-M-07): the required "Sekolah" picker of Admin Pusat.
+export { default as AdminSchoolPicker } from './components/AdminSchoolPicker.vue'
+
 // L45 Jemput Ibu Bapa: the acceptance page (M01) and the student screen use these (SRS L45 §7).
 export {
   acceptParentInvite,

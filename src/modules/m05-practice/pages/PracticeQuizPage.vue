@@ -2,7 +2,7 @@
 /**
  * Q1 `/practice/:code/quiz?level=&difficulty=&count=` — the random-drill quiz (M05-T4; FR-M05-51…56,
  * LS-1/2/8; provisional: live never opened it). The page only starts the session through `QuizRunner`
- * (mode `random`) and gives it the Q1 labels (§8.3 PROPOSED COPY):
+ * (mode `latih_tubi`, S5-T03) and gives it the Q1 labels (§8.3 PROPOSED COPY):
  *
  * - 402 `TRIAL_EXHAUSTED` → `/pricing` without a message; an unknown code → the global 404 page;
  * - header card title "{subject name}", tab title "{subject name} - Latihan" (UNVERIFIED);
@@ -25,7 +25,7 @@ const code = computed(() => String(route.params.code ?? ''))
 const query = computed(() => parseQuizQuery(route.query))
 
 const start = computed<StartSessionRequest>(() => ({
-  mode: 'random',
+  mode: 'latih_tubi',
   subjectCode: code.value,
   ...(query.value.levelId !== null ? { levelId: query.value.levelId } : {}),
   ...(query.value.difficulty !== null ? { difficulty: query.value.difficulty } : {}),

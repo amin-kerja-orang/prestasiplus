@@ -33,7 +33,7 @@ import { GATES } from './workflow/lifecycle/gates'
 import { GroupMembers } from './group-members'
 import { assertServableSomewhere } from './serving/approval-guard'
 import { ServabilityService } from './serving/servability.service'
-import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
+import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
@@ -194,7 +194,7 @@ interface Normalized {
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
-  kertas?: '1' | '2' | '3' | null | undefined
+  kertas?: '1' | '2' | '3' | '4' | null | undefined
   /** A source paper code stored verbatim (intake); wins over `kertas`. */
   paperCode?: string | null | undefined
   /** Who writes: image files must be theirs (or the actor is an admin) when they are new to the question. */
@@ -271,7 +271,7 @@ export class QuestionsService {
   }
 
   async getAdmin(id: string): Promise<QuestionDetailView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
@@ -337,7 +337,7 @@ export class QuestionsService {
   }
 
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.viewOf(await this.applyUpdate(record, input, actor))
   }
@@ -354,7 +354,7 @@ export class QuestionsService {
     let versionNo = 0
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw questionNotFound()
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) throw questionNotFound()
       const v = record.version
       if (v.status === 'draft' || v.status === 'review') {
@@ -399,8 +399,14 @@ export class QuestionsService {
     return { id, versionNo }
   }
 
+  /** DM-42: an admin action by id treats a personal (teacher_private) question as unknown (404, no existence oracle). Guru `removeOwn` does not use it. */
+  private async assertBankQuestion(id: string): Promise<void> {
+    if (!(await this.repo.get(id, 'latest', BANK_ONLY))) throw questionNotFound()
+  }
+
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
+    await this.assertBankQuestion(id)
     if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
@@ -441,7 +447,7 @@ export class QuestionsService {
     let done = false
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) return
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) return
       const v = record.version
       if (v.status === 'approved' || v.status === 'archived' || (await this.repo.versionIsPinned(id, v.versionNo))) {
@@ -501,6 +507,7 @@ export class QuestionsService {
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
+          await this.assertBankQuestion(id)
           if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
@@ -569,7 +576,7 @@ export class QuestionsService {
     const actor = options.actor ?? 'admin'
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw questionNotFound()
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) throw questionNotFound()
       const v = record.version
       if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
@@ -618,7 +625,7 @@ export class QuestionsService {
     }, TX)
     // Approve (Terbit), archive (Tarik balik) and the other transitions change what pupils are served (H-A21).
     this.overview?.invalidate()
-    const after = await this.repo.get(id, 'latest')
+    const after = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!after) throw questionNotFound()
     return this.viewOf(after)
   }
@@ -629,7 +636,7 @@ export class QuestionsService {
    * Empty = the gate holds. 404 for an unknown id.
    */
   async gateFieldsOf(id: string, gate: 'submit' | 'approve'): Promise<Record<string, string>> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.gateFields(gate, record, record.version)
   }
@@ -640,7 +647,7 @@ export class QuestionsService {
   }
 
   async getStatus(id: string): Promise<QuestionStatusInfo> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) throw questionNotFound()
     return {
       id: r.id,
@@ -653,11 +660,13 @@ export class QuestionsService {
   }
 
   async deactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.deactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
 
   async reactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.reactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
@@ -685,7 +694,7 @@ export class QuestionsService {
   }
 
   async getStructured(id: string): Promise<QuestionDetailView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record || record.version.type !== 'structured') throw questionNotFound()
     return this.detail(record)
   }
@@ -717,14 +726,16 @@ export class QuestionsService {
 
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
 
+  // DM-42: these two have no caller in the mission path (the mission is served by the practice session, which reads by id and grades
+  // pinned versions), so a private question is simply not found here: a bank-only read, no owner option that nobody passes.
   async getPublicForLearner(id: string): Promise<PublicQuestion> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return toPublic(record)
   }
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
@@ -906,7 +917,7 @@ export class QuestionsService {
       if (status === 'approved') await assertServableSomewhere(this.servability, String(created))
       return created
     }, TX)
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.viewOf(record)
   }
@@ -1188,7 +1199,7 @@ export class QuestionsService {
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
       if (!(await this.repo.lock(record.id))) throw questionNotFound()
-      const fresh = await this.repo.get(record.id, 'latest')
+      const fresh = await this.repo.get(record.id, 'latest', BANK_ONLY)
       if (!fresh) throw questionNotFound()
       // The image set, stimuli and paper code were derived from the record read before the lock. If another edit landed in
       // between, derive them again from the version read under the lock.
@@ -1219,7 +1230,7 @@ export class QuestionsService {
         await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
-    const after = await this.repo.get(record.id, 'latest')
+    const after = await this.repo.get(record.id, 'latest', BANK_ONLY)
     if (!after) throw questionNotFound()
     return after
   }
@@ -1269,8 +1280,10 @@ export class QuestionsService {
       (chapterIds.length === 0 ? [] : await this.curriculum.chaptersByIds(chapterIds)).map((c) => [idToString(c.id), c.name]),
     )
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
+    const liveFlags = await this.repo.openLiveFlags(records.map((r) => r.id))
     return records.map((r) => ({
       ...r,
+      openFlags: liveFlags.has(r.id) ? [liveFlags.get(r.id) as 'stimulus_missing' | 'figure_only' | 'stem_duplicated'] : [],
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
       imageTokens: Object.fromEntries(tokens),

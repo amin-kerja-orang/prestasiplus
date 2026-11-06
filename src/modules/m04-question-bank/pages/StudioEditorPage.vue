@@ -416,6 +416,7 @@ async function save(): Promise<void> {
               <option value="1">Kertas 1</option>
               <option value="2">Kertas 2</option>
               <option value="3">Kertas 3</option>
+              <option value="4">Kertas 4</option>
             </DsNativeSelect>
           </DsFormField>
           <DsFormField v-slot="{ id: fid }" native label="Nombor soalan" for="studio-number" required :error="fieldProblems.numberLabel">
