@@ -63,7 +63,7 @@ test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) 
     },
   })
   expect(sent.status(), await sent.text()).toBe(201)
-  const batchId = ((await sent.json()) as { data: { id: string } }).data.id
+  const batchId = ((await sent.json()) as { data: { batchId: string } }).data.batchId // QuestionSetPaper since #684
   await expect
     .poll(async () => ((await (await page.request.get(`/api/intake/batches/${batchId}`)).json()) as { data: { status: string } }).data.status, { timeout: 60_000, intervals: [2_000] })
     .toBe('ready_for_review')
