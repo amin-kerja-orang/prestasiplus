@@ -2144,6 +2144,17 @@
       "name": null,
       "status": "canonical",
       "sector": "S6",
+      "component": "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue",
+      "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
+      "template": true,
+      "approved_by_card": null
+    },
+    {
+      "key": "${prefix}| #2",
+      "path": "${prefix}",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
       "component": "src/modules/m11-teacher-analytics/pages/MonitoringPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/monitoring.ts",
       "template": true,
@@ -2709,7 +2720,7 @@
       "approved_by_card": null
     },
     {
-      "key": "${prefix}| #2",
+      "key": "${prefix}| #3",
       "path": "${prefix}",
       "name": null,
       "status": "canonical",
@@ -10878,6 +10889,15 @@
       "approved_by_card": null
     },
     {
+      "name": "PkskExamLoad",
+      "table": "pksk_exam_loads",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/pksk.prisma",
+      "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-91)"
+    },
+    {
       "name": "PracticeSession",
       "table": "practice_sessions",
       "status": "canonical",
@@ -15541,6 +15561,56 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/personal-questions",
+      "method": "GET",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "POST /api/guru/personal-questions",
+      "method": "POST",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "GET /api/guru/personal-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "PUT /api/guru/personal-questions/:p",
+      "method": "PUT",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "DELETE /api/guru/personal-questions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "GET /api/admin/questions/regroup-worklist",
       "method": "GET",
       "path": "/api/admin/questions/regroup-worklist",
@@ -15909,6 +15979,36 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/structured.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/intake/structured",
+      "method": "POST",
+      "path": "/api/guru/intake/structured",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "PUT /api/guru/intake/structured/:p",
+      "method": "PUT",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "DELETE /api/guru/intake/structured/:p",
+      "method": "DELETE",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
     },
     {
       "key": "GET /api/questions/studio/dskp",

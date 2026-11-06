@@ -10882,6 +10882,10 @@
             },
             "minItems": 1
           },
+          "kuizAvailable": {
+            "type": "boolean",
+            "description": "S3-T07: false when the paper is outside the caller's form (`level_scope`) and the caller has no open sitting on it, so the paper Kuiz answers 404 and the cover omits its action. Absent means available."
+          },
           "unavailable": {
             "type": "boolean",
             "description": "PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees \"Mula\" disabled with the message \"Kertas belum tersedia\" before any click. A sitting already open can still be resumed."
@@ -48691,8 +48695,22 @@
             "type": "string",
             "enum": [
               "approved",
-              "review"
-            ]
+              "review",
+              "rejected"
+            ],
+            "description": "`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned (\"Ditolak\"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "question",
+              "submission"
+            ],
+            "description": "`question`: an approved question (numeric `id`). `submission`: the caller's own structured submission (an intake item; `id` is `g{itemId}`, never a question id)."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "True for an own `submission` the admin has not accepted yet (edit and delete allowed); always false for a `question`."
           }
         },
         "required": [
@@ -48704,7 +48722,9 @@
           "kbat",
           "subCount",
           "marks",
-          "status"
+          "status",
+          "source",
+          "editable"
         ]
       },
       "GuruStructuredSub": {
@@ -48755,6 +48775,337 @@
           "depth"
         ]
       },
+      "GuruStructuredForm": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "chapterId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "spIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "$ref": "#/components/schemas/QuestionCognitiveLevel"
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "stimulusImageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Token of the uploaded `question_image` file."
+          },
+          "rejectionReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The admin's reason once the item was returned, else null."
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "chapterId",
+          "spIds",
+          "tp",
+          "cognitiveLevel",
+          "difficultyLevel",
+          "stimulusImageId",
+          "rejectionReason"
+        ]
+      },
+      "GuruStructuredCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "stimulus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "stimulusImageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "marks": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "scheme": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "cognitiveLevel": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "mengingat",
+                    "memahami",
+                    "mengaplikasi",
+                    "menganalisis",
+                    "menilai",
+                    "mencipta",
+                    null
+                  ]
+                }
+              },
+              "required": [
+                "text",
+                "marks",
+                "scheme"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "parts"
+        ],
+        "additionalProperties": false
+      },
+      "GuruStructuredUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "stimulus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4000
+          },
+          "stimulusImageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "marks": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                },
+                "scheme": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                },
+                "cognitiveLevel": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "mengingat",
+                    "memahami",
+                    "mengaplikasi",
+                    "menganalisis",
+                    "menilai",
+                    "mencipta",
+                    null
+                  ]
+                }
+              },
+              "required": [
+                "text",
+                "marks",
+                "scheme"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 1,
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel",
+          "parts"
+        ],
+        "additionalProperties": false
+      },
       "GuruStructuredDetail": {
         "type": "object",
         "properties": {
@@ -48794,8 +49145,10 @@
             "type": "string",
             "enum": [
               "approved",
-              "review"
-            ]
+              "review",
+              "rejected"
+            ],
+            "description": "`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned (\"Ditolak\"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value."
           },
           "stimulus": {
             "type": "string",
@@ -48806,7 +49159,7 @@
               "string",
               "null"
             ],
-            "description": "Always null this round: the file read rule has no teacher branch for a question picture."
+            "description": "Null for an approved question (the file read rule has no teacher branch for a question picture). For an own submission: `/api/files/{token}` of the uploaded image, or null."
           },
           "totalMarks": {
             "type": "integer",
@@ -48824,6 +49177,92 @@
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "question",
+              "submission"
+            ],
+            "description": "`question`: an approved question (numeric `id`). `submission`: the caller's own structured submission (an intake item; `id` is `g{itemId}`, never a question id)."
+          },
+          "editable": {
+            "type": "boolean"
+          },
+          "form": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "subjectId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "educationLevelId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "chapterId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "spIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Id"
+                }
+              },
+              "tp": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1,
+                "maximum": 6
+              },
+              "cognitiveLevel": {
+                "$ref": "#/components/schemas/QuestionCognitiveLevel"
+              },
+              "difficultyLevel": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "stimulusImageId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Token of the uploaded `question_image` file."
+              },
+              "rejectionReason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The admin's reason once the item was returned, else null."
+              }
+            },
+            "required": [
+              "subjectId",
+              "educationLevelId",
+              "chapterId",
+              "spIds",
+              "tp",
+              "cognitiveLevel",
+              "difficultyLevel",
+              "stimulusImageId",
+              "rejectionReason"
+            ],
+            "description": "The stored form fields for the edit screen; null for a `question`."
           }
         },
         "required": [
@@ -48837,7 +49276,10 @@
           "totalMarks",
           "subCount",
           "subQuestions",
-          "createdAt"
+          "createdAt",
+          "source",
+          "editable",
+          "form"
         ]
       },
       "QuestionStructuredSub": {
@@ -52882,6 +53324,267 @@
         },
         "required": [
           "error"
+        ]
+      },
+      "PersonalQuestionOption": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
+      "PersonalQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Tingkatan 1 to 5.",
+            "example": "1042"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "text": {
+            "type": "string"
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Bab (D89).",
+            "example": "1042"
+          },
+          "spIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalQuestionOption"
+            }
+          },
+          "correctIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "referenceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "subjectName",
+          "educationLevelId",
+          "difficulty",
+          "text",
+          "chapterId",
+          "spIds",
+          "tp",
+          "cognitiveLevel",
+          "options",
+          "correctIndex",
+          "referenceUrl",
+          "createdAt"
+        ]
+      },
+      "PersonalQuestionWrite": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "chapterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "spIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 3
+          },
+          "tp": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 6
+          },
+          "cognitiveLevel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "mengingat",
+              "memahami",
+              "mengaplikasi",
+              "menganalisis",
+              "menilai",
+              "mencipta",
+              null
+            ]
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalQuestionOption"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "correctIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "referenceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficulty",
+          "text",
+          "options",
+          "correctIndex"
+        ]
+      },
+      "PersonalQuestionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalQuestion"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PersonalQuestionResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PersonalQuestion"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PersonalQuestionDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              }
+            },
+            "required": [
+              "deleted"
+            ]
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "PerformanceGrade": {
@@ -65681,6 +66384,14 @@
             ],
             "additionalProperties": false,
             "description": "Teacher who wrote the question (\"Soalan oleh:\"), else null."
+          },
+          "referenceUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "The teacher's \"Rujukan\" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9)."
           },
           "options": {
             "type": "array",
@@ -118241,7 +118952,7 @@
           "guru"
         ],
         "summary": "Teacher list of approved structured questions (20 per page, newest first)",
-        "description": "API-GUR-26, read-only. Teacher or Admin Pusat. Only approved, live, active questions a pupil is served; a question that needs a figure it lacks is left out. `meta.totalItems` is the dataset count. `status=review` answers an empty page.",
+        "description": "API-GUR-26 read. Teacher or Admin Pusat. Approved, live, active questions a pupil is served (a question that needs a figure it lacks is left out), plus the CALLER's own `review` structured submissions (`source: submission`, id `g{itemId}`), listed first, newest first. `status=approved`: questions only; `status=review`: own submissions only; never another teacher's. `meta.totalItems` is the union count.",
         "parameters": [
           {
             "schema": {
@@ -118268,10 +118979,10 @@
                 "approved",
                 "review"
               ],
-              "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists."
+              "description": "Omitted: approved questions, then the caller's own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher's."
             },
             "required": false,
-            "description": "Omitted: approved. `review` (the teacher's own submissions) is an empty page until the submission part exists.",
+            "description": "Omitted: approved questions, then the caller's own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller's own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher's.",
             "name": "status",
             "in": "query"
           },
@@ -118351,8 +119062,8 @@
           "questions",
           "guru"
         ],
-        "summary": "Teacher detail of an approved structured question",
-        "description": "No admin-only fields. A question that is not approved, not served or unknown is 404.",
+        "summary": "Teacher detail of an approved structured question or of an own submission",
+        "description": "No admin-only fields. A question that is not approved, not served or unknown is 404; so is an id `g{itemId}` of another teacher's submission.",
         "parameters": [
           {
             "schema": {
@@ -118405,6 +119116,290 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/intake/structured": {
+      "post": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Submit a structured question for review (API-GUR-17, structured variant, ADD-13)",
+        "description": "JSON body. Creates ONE `source = guru` intake batch (paper type `umum`) with ONE structured intake item: the stimulus once on the group and 1..10 parts; no `questions` row exists until the admin accepts it. Image: upload through `POST /files?purpose=question_image` and send its token as `stimulusImageId` (jpg, png or webp, at most 2 MB). Returns the detail with `status: review`, `source: submission`, id `g{itemId}`. Success text: \"Soalan berstruktur dihantar untuk semakan.\"",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruStructuredCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/intake/structured/{id}": {
+      "put": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Edit an own structured submission (only while the admin has not accepted it)",
+        "description": "`id` is the `g{itemId}` of the row. Another teacher's id is 404. An accepted item is 409. A returned item goes back to review.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuruStructuredUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GuruStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the item was already accepted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages), `message` = first message plus the count of the others.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "questions",
+          "guru"
+        ],
+        "summary": "Delete an own structured submission (only while the admin has not accepted it)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionGuruRemoveResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN, or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the item was already accepted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -122772,6 +123767,439 @@
           },
           "403": {
             "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/personal-questions": {
+      "get": {
+        "tags": [
+          "personal-questions"
+        ],
+        "summary": "Own personal questions (Soalan & Rujukan, API-GUR-24)",
+        "description": "Teacher only. The caller's own personal questions, newest first, 20 per page; `educationLevelId` filters by Tingkatan. Never lists another teacher's question or a bank question.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Own personal questions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalQuestionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "personal-questions"
+        ],
+        "summary": "Create a personal question (API-GUR-24)",
+        "description": "Teacher only. Saved already approved with `visibility = teacher_private`, `owner_user_id` = the caller and `created_by_id` NULL; it never enters admin review, the bank, Databank, Set Soalan pickers or any count (FR-GUR-44a-4). Tingkatan 1 to 5 only; `referenceUrl` must start with http:// or https:// (max 2048); the DSKP fields are conditional (D112).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalQuestionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalQuestionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields`: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficulty, text, options, correctIndex, referenceUrl (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/personal-questions/{id}": {
+      "get": {
+        "tags": [
+          "personal-questions"
+        ],
+        "summary": "One own personal question (API-GUR-24)",
+        "description": "Teacher only. The same `PersonalQuestion` shape as a list row. Another teacher's id, a bank question id and an unknown id are all 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalQuestionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: the question does not exist or is not the caller's own (another teacher's id is 404, never 403).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "personal-questions"
+        ],
+        "summary": "Edit an own personal question (API-GUR-24)",
+        "description": "Teacher only. Same body and rules as the create; replaces the content in place. Owner and visibility never change.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalQuestionWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalQuestionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: the question does not exist or is not the caller's own (another teacher's id is 404, never 403).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (422) with `fields`: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficulty, text, options, correctIndex, referenceUrl (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "personal-questions"
+        ],
+        "summary": "Delete an own personal question (API-GUR-24, ADD-21)",
+        "description": "Teacher only. 409 CONFLICT \"Soalan sedang digunakan dalam misi.\" while an active Misi draws the question: the mission date is today (Malaysia) or later AND a session of that mission holds it. Pool membership alone does not block.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonalQuestionDeleteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: the question does not exist or is not the caller's own (another teacher's id is 404, never 403).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT (\"Soalan sedang digunakan dalam misi.\"): an active Misi draws the question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {

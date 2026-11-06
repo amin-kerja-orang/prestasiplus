@@ -126,3 +126,16 @@ model PkskPracticeLoad {
   @@unique([userId, level, domainId], map: "uq_pksk_practice_loads_user_id_level_domain_id")
   @@map("pksk_practice_loads")
 }
+
+/// The open exam set of one user and level: the question ids served by GET exam. A submit takes it, so it is accepted once and only for those ids.
+model PkskExamLoad {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt   @map("user_id")
+  /// T1, T4 (check constraint).
+  level     String
+  loadedAt  DateTime @map("loaded_at") @db.Timestamptz(6)
+  servedIds String[] @default([]) @map("served_ids")
+
+  @@unique([userId, level], map: "uq_pksk_exam_loads_user_id_level")
+  @@map("pksk_exam_loads")
+}
