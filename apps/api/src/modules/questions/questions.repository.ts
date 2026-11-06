@@ -707,9 +707,10 @@ export class QuestionsRepository {
     }
     const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const offset = filter.offset ?? (filter.page - 1) * filter.pageSize
+    const limit = filter.limit ?? filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${limit} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
@@ -722,6 +723,18 @@ export class QuestionsRepository {
     const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
+  }
+
+  /** Of these question ids, those the teacher list serves (the same `served` rule as `structuredIds` and `isStructuredServed`). */
+  async structuredServedAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = ids.flatMap((id) => {
+      const key = bi(id)
+      return key === null ? [] : [key]
+    })
+    if (keys.length === 0) return new Set()
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return new Set(rows.map((r) => idToString(r.id)))
   }
 
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */

@@ -51,10 +51,12 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
     expect(d.cards.activeClasses).toBe(0)
     expect(d.cards.subscription).toEqual({ status: 'none', label: 'Belum Ada' })
     expect(d.performance.practice).toEqual({ accuracy: null, sessions: 0, questions: 0 })
-    // S6-T13 A: the Amaran Awal tally of the school (the seeded pupils have no practice, so they all score into "high").
+    // S6-T13 A: the Amaran Awal tally of the school. The seeded pupils have no practice, so since S6-T04 (#650, FR-X4-3)
+    // they are "Belum Bermula": outside Hijau / Kuning / Merah, so the panel shows 0 in every group.
     const amaran = AmaranSchoolRiskSchema.parse((await admin.get(`/amaran/schools/${s1}`)).body.data)
-    expect(d.performance.risk).toEqual({ safe: 0, watch: 0, high: amaran.tally.red, total: amaran.tally.total })
-    expect(d.performance.risk?.total).toBeGreaterThan(0)
+    expect(d.performance.risk).toEqual({ safe: 0, watch: 0, high: 0, total: 0 })
+    expect(d.performance.risk?.total).toBe(amaran.tally.total)
+    expect(amaran.tally.notStarted).toBeGreaterThan(0)
     expect(d.performance.total).toBe(0)
     expect(d.perutusan.length).toBeLessThanOrEqual(3)
   })
@@ -312,7 +314,9 @@ describe('GET /admin-sekolah/dashboard: Amaran Awal panel and Kelas Aktif tile (
     expect(d.performance.risk).toEqual({ safe: amaran.tally.green, watch: amaran.tally.yellow, high: amaran.tally.red, total: amaran.tally.total })
     const risk = d.performance.risk!
     expect(risk.total).toBe(risk.safe + risk.watch + risk.high)
-    expect(risk.total).toBe(amaran.pupils.length)
+    // The panel counts the three AS-49 groups only; Belum Bermula pupils are listed by Amaran but are in none of them (S6-T04).
+    expect(risk.total).toBe(amaran.pupils.filter((p) => p.status !== 'not_started').length)
+    expect(risk.total + (amaran.tally.notStarted ?? 0)).toBe(amaran.pupils.length)
     // The mixed pupils really spread over the groups, so the equality is not trivially 0 = 0.
     expect(risk.safe).toBeGreaterThan(0)
     expect(risk.high).toBeGreaterThan(0)
