@@ -11,7 +11,7 @@ import { builderCopy as t } from '../domain/copy'
 import { setTitleError } from '../domain/set-title'
 import type { HeaderPatch } from '../server/api'
 
-const props = defineProps<{ paper: AdminPaper; readonly?: boolean; busy?: boolean }>()
+const props = defineProps<{ paper: AdminPaper; readonly?: boolean; busy?: boolean; titleServerError?: string }>()
 /** The set title, shared with the page header so both fields stay in sync. */
 const title = defineModel<string>('title', { required: true })
 const emit = defineEmits<{ save: [patch: HeaderPatch] }>()
@@ -35,6 +35,8 @@ watch(
 const parsedYear = computed(() => Number(year.value))
 const parsedDuration = computed(() => Number(duration.value))
 const titleError = computed(() => setTitleError(title.value))
+/** The rule first; else the API's 422 `fields.title`, which the page clears on the next edit. */
+const titleShown = computed(() => titleError.value ?? props.titleServerError)
 const titleOk = computed(() => !titleError.value)
 const valid = computed(
   () =>
@@ -65,7 +67,7 @@ function submit(): void {
 <template>
   <form class="flex flex-col gap-3" data-testid="meta-form" @submit.prevent="submit">
     <h3 class="text-heading text-highlighted">{{ t.meta }}</h3>
-    <UFormField :label="t.fTitle" required :error="titleError">
+    <UFormField :label="t.fTitle" required :error="titleShown">
       <UInput v-model="title" class="w-full" :disabled="readonly" :aria-label="t.fTitle" data-testid="meta-title" />
     </UFormField>
     <div class="grid gap-3 sm:grid-cols-3">

@@ -26,7 +26,7 @@ import { builderCopy as bt } from '../builder/domain/copy'
 import { publishGate } from '../builder/domain/publish-gate'
 import { usePaperActions } from '../builder/lib/use-paper-actions'
 import { uploadQuestionImage } from '@/api/files'
-import { BUILDER_PATH, builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
+import { BUILDER_PATH, BuilderError, builderMessage, builderPath, type ReferencePanel } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { KIND_LABEL, detailMessage } from './ui'
@@ -52,6 +52,9 @@ const actions = usePaperActions({
 const { review, viewOpen, view, viewError } = actions
 
 const title = ref('')
+/** `Tajuk set`: the API's 422 `fields.title`, shown on the field and cleared on the next edit. */
+const titleServerError = ref<string | undefined>()
+watch(title, () => (titleServerError.value = undefined))
 const busy = ref(false)
 
 watch(
@@ -172,12 +175,14 @@ async function unpublish(): Promise<void> {
 /* ---------------------------------------------------------------------------- metadata */
 async function saveMeta(patchData: Parameters<ReturnType<typeof builderServer>['updateHeader']>[1]): Promise<void> {
   busy.value = true
+  titleServerError.value = undefined
   try {
     await builderServer().updateHeader(id.value, patchData)
     flash.show({ type: 'success', message: bt.metaSaved(data.value?.paper.title ?? title.value) })
     await reload()
   } catch (e) {
-    flash.show({ type: 'error', message: builderMessage(e, bt.errMeta) })
+    if (e instanceof BuilderError && e.fields.title) titleServerError.value = e.fields.title
+    else flash.show({ type: 'error', message: builderMessage(e, bt.errMeta) })
   } finally {
     busy.value = false
   }
@@ -456,6 +461,7 @@ const previewBlocks = computed(() => {
           :paper="data.paper"
           :readonly="readonly"
           :busy="busy"
+          :title-server-error="titleServerError"
           @save="saveMeta"
         />
       </DsPanel>

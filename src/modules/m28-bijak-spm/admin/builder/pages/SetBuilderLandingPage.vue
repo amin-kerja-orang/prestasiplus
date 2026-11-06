@@ -55,7 +55,7 @@ watch([blankSubject, blankKertas], ([s, k]) => {
 const blankTitleServerError = ref<string | undefined>()
 const blankTitleError = computed(() => {
   const rule = setTitleError(blankTitle.value)
-  if (rule && (blankTried.value || blankTitle.value.trim())) return rule
+  if (rule && (blankTried.value || blankTitleEdited.value)) return rule
   return blankTitleServerError.value
 })
 const blankSubjectError = computed(() => (blankTried.value && !blankSubject.value ? t.subjectRequired : undefined))
@@ -267,6 +267,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
             :label="t.blankTitle"
             class="min-h-11 self-start"
             :loading="blankBusy"
+            :disabled="!!setTitleError(blankTitle)"
             data-testid="blank-submit"
           />
         </form>

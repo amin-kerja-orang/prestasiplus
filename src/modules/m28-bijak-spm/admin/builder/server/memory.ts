@@ -16,6 +16,7 @@ import type {
 import { scaleSectionCounts } from '@pp/exam-core'
 
 import type { AdminPaperSummary, BuilderQuestion, PaperEditorData } from '../../../domain/admin-types'
+import type { BijakServer } from '../../../server/store'
 import { addUnit, checkPaper, removeUnit, unitsOf } from '../../../domain/paper-builder'
 import { setTitleError } from '../domain/set-title'
 import { kontrakServer } from '../../kontrak/server/client'
@@ -173,12 +174,17 @@ export class MockBuilderServer implements BuilderApi {
   /** The mock's Jana set (API-BIJAK-11): the sections of the contract at the size asked, filled from the bank, a group whole or not at all. */
   async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
     titleGuard(options.title)
-    const { id: paperId } = await kontrakServer().generateDraft(subject, kertas)
+    // As the API: the contract and the size are checked BEFORE a paper exists, so a refused draft leaves nothing in `listSets`.
+    const contract = await kontrakServer().pool(subject, kertas)
+    const total = contract.sections.reduce((n, s) => n + s.slots, 0)
+    const count = options.count ?? total
+    if (count > total) {
+      const message = BIJAK_SET_BUILDER_PROPOSED.countAboveContract(total)
+      throw new BuilderError('invalid', message, { fields: { count: message } })
+    }
+    const { id: paperId } = await kontrakServer().generateDraft(subject, kertas, options.title!)
     const a = await this.a()
     const ed = await a.getPaperEditor(paperId)
-    const total = ed.paper.sections.reduce((n, s) => n + s.questionCount, 0)
-    const count = options.count ?? total
-    if (count > total) throw new BuilderError('invalid', BIJAK_SET_BUILDER_PROPOSED.countAboveContract(total))
     const shares = scaleSectionCounts(ed.paper.sections.map((s) => s.questionCount), count)
     const used = new Set<string>()
     const fill: { id: string; questionIds: string[] }[] = []
@@ -217,7 +223,8 @@ export class MockBuilderServer implements BuilderApi {
   async poolPreview(subject: string, kertas: number, filters: JanaFilters = {}): Promise<BijakPoolPreview> {
     const base = await kontrakServer().pool(subject, kertas)
     const contractTotal = base.sections.reduce((n, s) => n + s.slots, 0)
-    const bank = await this.bankIdsOf(subject, kertas)
+    const bank = await this.bankUnits(subject, kertas)
+    const units = bank.filter((u) => u.questionIds.some((q) => originMatches(q, filters.years ?? [], filters.negeri ?? [])))
     const shrink = (filters.years?.length ? filters.years.length / MOCK_YEARS.length : 1) * (filters.negeri?.length ? filters.negeri.length / MOCK_NEGERI.length : 1)
     const eligibleTotal = Math.floor(base.eligibleTotal * shrink)
     const asked = filters.count ?? contractTotal
@@ -226,23 +233,18 @@ export class MockBuilderServer implements BuilderApi {
       eligibleTotal,
       verdict: base.verdict === 'boleh' && asked > eligibleTotal ? 'tidak_boleh' : base.verdict,
       contractTotal,
-      groupTotal: 1,
-      filters: filtersOf(bank),
+      // FR-ADM-Q13.3, as the API: the groups among the candidates that match the filters.
+      groupTotal: units.filter((u) => u.groupId).length,
+      filters: filtersOf(bank.flatMap((u) => u.questionIds)),
       levelScope: 't4_t5',
     }
   }
 
   /** The bank ids of a subject and kertas, for the filter values of the mock. */
-  private async bankIdsOf(subject: string, kertas: number): Promise<string[]> {
-    const a = await this.a()
-    const id = await a.createPaper({ subject, kertas: kertas as 1 | 2, title: 'pratonton' })
-    try {
-      const ed = await a.getPaperEditor(id)
-      const sid = ed.paper.sections[0]?.id
-      return sid ? (await a.sectionPool(id, sid, { pageSize: 5000 })).units.flatMap((u) => u.questionIds) : []
-    } finally {
-      await a.deletePaper(id)
-    }
+  /** The bank units of a subject and kertas: a read-only lookup, no paper is created. */
+  private async bankUnits(subject: string, kertas: number): Promise<ReturnType<BijakServer['bankUnits']>> {
+    const server = (await this.a()) as unknown as Pick<BijakServer, 'bankUnits'>
+    return server.bankUnits(subject, kertas)
   }
 
   async deleteSet(id: string): Promise<void> {

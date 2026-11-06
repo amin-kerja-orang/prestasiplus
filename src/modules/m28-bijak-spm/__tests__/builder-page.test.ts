@@ -110,7 +110,7 @@ afterEach(() => {
 })
 
 describe('SetBuilderPage', () => {
-  it('S3-T02: the header title follows the server rule: blank and 121 are refused, a 422 fields.title is shown', async () => {
+  it('S3-T02: the header title follows the server rule: blank and 121 are refused, a 422 fields.title is shown on the field', async () => {
     const { m, api } = stub()
     const show = vi.spyOn(useFlashStore(), 'show')
     const w = await render(api)
@@ -118,19 +118,26 @@ describe('SetBuilderPage', () => {
     await input.setValue('   ')
     await input.trigger('keydown.enter')
     await flushPromises()
-    expect(show).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'error', message: 'Tajuk set diperlukan.' }))
+    expect(w.text()).toContain('Tajuk set diperlukan.')
     await input.setValue('x'.repeat(121))
     await input.trigger('keydown.enter')
     await flushPromises()
-    expect(show).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'error', message: 'Tajuk set tidak boleh melebihi 120 aksara.' }))
+    expect(w.text()).toContain('Tajuk set tidak boleh melebihi 120 aksara.')
     expect(m.updateHeader).not.toHaveBeenCalled()
-    expect((input.element as HTMLInputElement).value).toBe('Set Ujian')
-    m.updateHeader!.mockRejectedValueOnce(new BuilderError('invalid', 'Tajuk set diperlukan.', { fields: { title: 'Tajuk set diperlukan.' } }))
+    // The rule is on the field, not a flash; the next edit clears it.
+    expect(show).not.toHaveBeenCalled()
     await input.setValue('Set Baharu')
+    expect(w.text()).not.toContain('Tajuk set tidak boleh melebihi 120 aksara.')
+    m.updateHeader!.mockRejectedValueOnce(new BuilderError('invalid', 'Tajuk set diperlukan.', { fields: { title: 'Tajuk set diperlukan.' } }))
     await input.trigger('keydown.enter')
     await flushPromises()
     expect(m.updateHeader).toHaveBeenCalledWith('p1', { title: 'Set Baharu' })
-    expect(show).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'error', message: 'Tajuk set diperlukan.' }))
+    // The API's 422 fields.title shows on the title field, never as a flash, and keeps what was typed.
+    expect(w.text()).toContain('Tajuk set diperlukan.')
+    expect(show).not.toHaveBeenCalled()
+    expect((input.element as HTMLInputElement).value).toBe('Set Baharu')
+    await input.setValue('Set Baharu 2')
+    expect(w.text()).not.toContain('Tajuk set diperlukan.')
   })
 
   it('shows a stimulus group once, as one unit with all its members and no group marks', async () => {

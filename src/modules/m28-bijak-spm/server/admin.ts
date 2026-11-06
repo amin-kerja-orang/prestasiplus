@@ -1090,26 +1090,19 @@ export class AdminOps {
     this.host.persist()
   }
 
-  /**
-   * The section pool (REQ-B-042): every approved question of the paper's subject and kertas that is not
-   * placed elsewhere, as units (a stimulus group is ONE unit, D90), filtered by text and paged. Mirrors the
-   * real endpoint's shape so the editor picker works the same in the mock.
-   */
-  async sectionPool(id: string, sectionId: string, query: SectionPoolQuery = {}): Promise<SectionPoolPage> {
-    await this.host.tick()
-    const paper = this.papers[id]
-    if (!paper) throw this.host.error('not_found', 'Kertas tidak ditemui')
-    if (!paper.sections.some((s) => s.id === sectionId)) throw this.host.error('bad_request', 'Bahagian tidak sah')
-    const placed = new Set(paper.sections.flatMap((s) => s.questionIds))
-    const bp = BLUEPRINTS.find((b) => b.subject === paper.subject && b.kertas === paper.kertas)
-    const sectionPoolId = bp?.sections[paper.sections.findIndex((s) => s.id === sectionId)]?.pool ?? null
-    const term = (query.q ?? '').trim().toLowerCase()
+  /** The units (a group is ONE unit) of the subject's servable bank for a kertas, read-only; no paper is needed. */
+  private bankUnitsOf(
+    subject: SubjectCode,
+    kertas: number,
+    opts: { placed: ReadonlySet<string>; sectionPoolId: string | null; term: string },
+  ): SectionPoolPage['units'] {
+    const { placed, sectionPoolId, term } = opts
     const done = new Set<string>()
     const units: SectionPoolPage['units'] = []
     for (const qid of this.allQuestionIds()) {
       const q = getQ(qid)
       if (!q || done.has(qid) || this.statusOf(qid) !== 'terbit') continue
-      if (q.curriculum.subject !== paper.subject) continue
+      if (q.curriculum.subject !== subject) continue
       // Like the real service: the candidates are the subject's bank for this kertas (kertas = the LOWEST digit of the
       // question's pool codes, as apps/api question-bank.mapping.ts kertasOf; a K1 MCQ's own `kertas` tag is not the filter).
       // Eligibility is then decided per Bahagian from the blueprint pool.
@@ -1119,11 +1112,11 @@ export class AdminOps {
         const m = /^[A-Z]+(\d)-/.exec(p)
         return m ? [Number(m[1])] : []
       })
-      const kertas = digits.length ? Math.min(...digits) : kertasOf(qid)
-      if (kertas !== paper.kertas) continue
+      const qKertas = digits.length ? Math.min(...digits) : kertasOf(qid)
+      if (qKertas !== kertas) continue
       const full = q.groupId ? membersOf(q.groupId) : [qid]
       full.forEach((m) => done.add(m))
-      const members = full.filter((m) => getQ(m)?.curriculum.subject === paper.subject && this.statusOf(m) === 'terbit')
+      const members = full.filter((m) => getQ(m)?.curriculum.subject === subject && this.statusOf(m) === 'terbit')
       // D90: a group with a member that is not offered (groupSize > members) is not offered at all.
       if (members.length < full.length) continue
       const questions = members.map((m) => this.builderQuestion(m))
@@ -1142,6 +1135,28 @@ export class AdminOps {
         placed: members.some((m) => placed.has(m)),
       })
     }
+    return units
+  }
+
+  /** Read-only lookup of the bank units of a subject and kertas (the Jana set preview), with no throw-away paper. */
+  bankUnits(subject: SubjectCode, kertas: number): SectionPoolPage['units'] {
+    return this.bankUnitsOf(subject, kertas, { placed: new Set(), sectionPoolId: null, term: '' })
+  }
+
+  /**
+   * The section pool (REQ-B-042): every approved question of the paper's subject and kertas that is not
+   * placed elsewhere, as units (a stimulus group is ONE unit, D90), filtered by text and paged. Mirrors the
+   * real endpoint's shape so the editor picker works the same in the mock.
+   */
+  async sectionPool(id: string, sectionId: string, query: SectionPoolQuery = {}): Promise<SectionPoolPage> {
+    await this.host.tick()
+    const paper = this.papers[id]
+    if (!paper) throw this.host.error('not_found', 'Kertas tidak ditemui')
+    if (!paper.sections.some((s) => s.id === sectionId)) throw this.host.error('bad_request', 'Bahagian tidak sah')
+    const placed = new Set(paper.sections.flatMap((s) => s.questionIds))
+    const bp = BLUEPRINTS.find((b) => b.subject === paper.subject && b.kertas === paper.kertas)
+    const sectionPoolId = bp?.sections[paper.sections.findIndex((s) => s.id === sectionId)]?.pool ?? null
+    const units = this.bankUnitsOf(paper.subject, paper.kertas, { placed, sectionPoolId, term: (query.q ?? '').trim().toLowerCase() })
     const pageSize = query.pageSize ?? 20
     const page = query.page ?? 1
     return {

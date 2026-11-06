@@ -127,6 +127,9 @@ watch(
   (v) => (titleDraft.value = v ?? ''),
   { immediate: true },
 )
+/** `Tajuk set` error on the field: the rule, or the server's 422 `fields.title`; cleared on the next edit. */
+const titleError = ref<string | undefined>()
+watch(titleDraft, () => (titleError.value = undefined))
 async function rename(): Promise<void> {
   const next = titleDraft.value.trim()
   if (!paper.value || locked.value || next === paper.value.title) {
@@ -135,16 +138,19 @@ async function rename(): Promise<void> {
   }
   const rule = setTitleError(next)
   if (rule) {
-    titleDraft.value = paper.value.title
-    flash.show({ type: 'error', message: rule })
+    titleError.value = rule
     return
   }
   try {
     editor.value = await api.updateHeader(id.value, { title: next })
     flash.show({ type: 'success', message: t.renamed(next) })
   } catch (e) {
+    if (e instanceof BuilderError && e.fields.title) {
+      titleError.value = e.fields.title
+      return
+    }
     titleDraft.value = paper.value.title
-    flash.show({ type: 'error', message: e instanceof BuilderError && e.fields.title ? e.fields.title : builderMessage(e, t.errRename) })
+    flash.show({ type: 'error', message: builderMessage(e, t.errRename) })
   }
 }
 
@@ -379,15 +385,17 @@ const dskpItems = computed(() => [
                 {{ editor?.blueprint?.subjectName ?? paper.subject }} · Kertas {{ paper.kertas }} · {{ paper.code }}
               </span>
             </div>
-            <UInput
-              v-model="titleDraft"
-              :aria-label="t.titleAria"
-              class="w-full"
-              :disabled="locked"
-              data-testid="builder-title"
-              @blur="rename"
-              @keydown.enter.prevent="rename"
-            />
+            <UFormField :error="titleError">
+              <UInput
+                v-model="titleDraft"
+                :aria-label="t.titleAria"
+                class="w-full"
+                :disabled="locked"
+                data-testid="builder-title"
+                @blur="rename"
+                @keydown.enter.prevent="rename"
+              />
+            </UFormField>
             <p class="text-body font-semibold" data-testid="builder-total">{{ t.totalMarks(totalMarks) }}</p>
           </div>
           <div class="flex flex-wrap gap-2">
