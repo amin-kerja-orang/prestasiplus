@@ -66,7 +66,7 @@ export const practiceScenarios: Scenario[] = [
       ctx.check(errorOf(bad).message === 'Nilai tidak sah.' && fieldsOf(bad).mode === 'Nilai tidak sah.', 'invalid mode message differs')
       const pksk = await student.request('POST', '/practice/sessions', { body: { mode: 'pksk' } })
       expectError(ctx, pksk, 422, 'VALIDATION_ERROR')
-      const unknown = await student.request('POST', '/practice/sessions', { body: { mode: 'random', subjectCode: 'TIADA', count: 5 } })
+      const unknown = await student.request('POST', '/practice/sessions', { body: { mode: 'latih_tubi', subjectCode: 'TIADA', count: 5 } })
       expectError(ctx, unknown, 404, 'NOT_FOUND')
       ctx.check(errorOf(unknown).message === 'Rekod tidak dijumpai.', 'not-found message differs')
       ctx.check(unknown.headers['cache-control']?.includes('no-store') === true, 'a practice answer is cacheable')
@@ -130,7 +130,7 @@ export const practiceScenarios: Scenario[] = [
       ctx.check(leaked.length === 0, `the start response leaks ${leaked.join(', ')}`)
       // A subject with no question in the bank cannot fill a draw (Darjah is hidden, D72, and the SPM levels of MATH are stocked by the
       // battle fixture, so the empty case is a subject nobody seeded).
-      const empty = await student.request('POST', '/practice/sessions', { body: { mode: 'random', subjectCode: 'SEJ', count: 5 } })
+      const empty = await student.request('POST', '/practice/sessions', { body: { mode: 'latih_tubi', subjectCode: 'SEJ', count: 5 } })
       expectError(ctx, empty, 422, 'NOT_ENOUGH_QUESTIONS')
     },
   },
