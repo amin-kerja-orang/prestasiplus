@@ -88,7 +88,7 @@ async function sendPaper(request: APIRequestContext, csrf: string): Promise<Sent
     },
   })
   expect(sent.status(), await sent.text()).toBe(201)
-  const batchId = ((await sent.json()) as { data: { id: string } }).data.id
+  const batchId = ((await sent.json()) as { data: { batchId: string } }).data.batchId // QuestionSetPaper since #684
   // The PDF is read first; the extract route has a small limit per minute, so it is called once.
   await expect
     .poll(
