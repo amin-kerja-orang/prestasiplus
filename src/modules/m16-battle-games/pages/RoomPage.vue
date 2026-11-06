@@ -343,13 +343,14 @@ const meters = computed(() => {
               Menunggu pemain... {{ room.players.length }}/{{ room.settings.maxPlayers }} (minimum
               {{ room.settings.minPlayers }})
             </p>
-            <p
+            <DsText
               v-if="isHost && room.robotInSeconds !== undefined"
-              class="text-label text-muted"
+              variant="label"
+              tone="muted"
               data-testid="room-robot-countdown"
             >
               {{ robotCountdown(room.robotInSeconds) }}
-            </p>
+            </DsText>
             <UButton
               v-if="isHost"
               size="xl"
@@ -369,7 +370,8 @@ const meters = computed(() => {
               color="neutral"
               variant="outline"
               :disabled="acting"
-              class="min-h-12 justify-center sm:self-start"
+              block
+              class="min-h-12 sm:w-fit"
               data-testid="room-leave"
               @click="leave"
             >
@@ -452,7 +454,8 @@ const meters = computed(() => {
               color="neutral"
               variant="outline"
               :disabled="acting"
-              class="min-h-12 justify-center sm:self-start"
+              block
+              class="min-h-12 sm:w-fit"
               data-testid="room-leave"
               @click="leave"
             >
