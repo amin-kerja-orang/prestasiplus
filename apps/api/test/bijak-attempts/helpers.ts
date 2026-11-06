@@ -26,6 +26,7 @@ import {
   type BijakRewardInput,
   type BijakRewardPort,
   type BijakSelfMarkRewardInput,
+  type BijakStructuredRewardInput,
   type AttemptPaper,
   type PaperResolution,
 } from '../../src/modules/bijak/attempts/ports'
@@ -120,6 +121,12 @@ export class SpyReward implements BijakRewardPort {
   }
   async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
     this.selfMarkCalls.push(input)
+    if (this.fail) throw new Error('wallet down')
+  }
+  /** S5-T11: the structured gains handed to the port (submit and self-mark). */
+  structuredCalls: BijakStructuredRewardInput[] = []
+  async awardStructured(input: BijakStructuredRewardInput): Promise<void> {
+    this.structuredCalls.push(input)
     if (this.fail) throw new Error('wallet down')
   }
 }

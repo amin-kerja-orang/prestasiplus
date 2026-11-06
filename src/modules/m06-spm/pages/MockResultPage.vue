@@ -129,9 +129,7 @@ class="text-display" :class="
             </li>
           </ul>
           <p v-if="isAlesaAiOn()" class="text-body text-muted" data-testid="result-tip">
-            💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan
-            <ULink to="/pusat-nota-ringkas" class="text-primary-t">jana nota ringkas</ULink>
-            untuk topik tersebut.
+            💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu.
           </p>
         </div>
       </DsPanel>
@@ -172,14 +170,6 @@ class="text-display" :class="
       <div class="flex flex-wrap gap-3" data-testid="result-actions">
         <UButton to="/spm-mock" size="lg" class="min-h-11 max-sm:flex-1 max-sm:justify-center"
           >📝 Mock Lain</UButton
-        >
-        <UButton
-          to="/pusat-nota-ringkas"
-          size="lg"
-          color="neutral"
-          variant="soft"
-          class="min-h-11 max-sm:flex-1 max-sm:justify-center"
-          >📚 Belajar Topik Lemah</UButton
         >
       </div>
     </template>

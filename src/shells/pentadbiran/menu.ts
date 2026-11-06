@@ -118,7 +118,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['KS-04', 'Tracking A'],
       ['KS-05', 'Subjektif'],
       ['KS-06', 'Bijak SPM (Simulasi)'],
-      ['KS-07', 'Kertas Subjektif'],
+      ['KS-07', 'Kertas Subjektif', '/admin/kertas-subjektif'], // PRD30 3.3 KEEP (build), R1-ADM-Q-18 (S3-T06)
       ['KS-08', 'Kontrak Simulasi', '/admin/spm/kontrak'], // V2 K1 / scope R1-21 P4
       ['KS-09', 'Pembina Kertas', '/admin/spm/kertas'],
       ['KS-17', 'Set Builder', '/admin/studio/sets'],
@@ -177,8 +177,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PG-11', 'Tetapan Permainan', undefined, 'Permainan'],
       ['PG-12', 'Ranking Sekolah (Battle)', undefined, 'Permainan'],
       ['PG-13', 'Leaderboard (Battle)', undefined, 'Permainan'],
-      ['PG-14', 'Produk', undefined, 'Marketplace'],
-      ['PG-15', 'Penjual', undefined, 'Marketplace'],
+      ['PG-14', 'Produk', '/admin/marketplace/products', 'Marketplace'],
+      ['PG-15', 'Penjual', '/admin/marketplace/sellers', 'Marketplace'],
       ['PG-16', 'Penajaan'],
       ['PG-17', 'Anak Angkat'],
       ['PG-18', 'Permohonan Anak Angkat'],

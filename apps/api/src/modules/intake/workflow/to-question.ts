@@ -218,7 +218,7 @@ export function toQuestionInput(q: IntakeQuestion, ids: TagIds, stimulusGroupId:
     questionText: q.stem,
     parts,
     tag: { unitId: ids.unitId, spIds: ids.spIds, tp: ids.tp },
-    language: 'bm',
+    language: 'ms',
     status: 'draft',
     ...(stimulusGroupId === null ? {} : { stimulusGroupId }),
   } as QuestionCreateInput

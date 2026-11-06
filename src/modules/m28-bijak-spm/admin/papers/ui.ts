@@ -2,6 +2,7 @@
 import type { DsStatus } from '@/ds'
 
 import type { Confidence, QuestionKind, QuestionStatus } from '../../domain/admin-types'
+import { KANDUNGAN_ROUTES } from '../kandungan/api'
 
 /**
  * http mode: the review queue is the BE-38 extracted items. Accepting creates a Draf question (it
@@ -18,6 +19,12 @@ export const ADMIN_ROUTES = {
   papers: 'm28.admin.papers',
   paperNew: 'm28.admin.papers.new',
   paperEdit: 'm28.admin.papers.edit',
+} as const
+
+/** S3-T06 Kertas Subjektif: the list carries the name reserved in `KANDUNGAN_ROUTES`. */
+export const SUBJEKTIF_ROUTES = {
+  list: KANDUNGAN_ROUTES.kertasSubjektif,
+  detail: 'm28.admin.kandungan.kertas-subjektif.detail',
 } as const
 
 export const STATUS_BADGE: Record<QuestionStatus, DsStatus> = {

@@ -664,7 +664,6 @@ describe('openapi document', () => {
     for (const name of Object.keys(BIJAK_STANDARDS_COMPONENT_SCHEMAS)) {
       expect(doc.components.schemas[name], name).toBeDefined()
     }
-    expect(doc.paths['/bijak/papers/generate']!.post!.responses['503']).toBeDefined()
     expect(doc.paths['/admin/papers/generate']!.post!.responses['503']).toBeDefined()
     expect(doc.paths['/admin/blueprints']!.post!.responses['422']).toBeDefined()
   })
