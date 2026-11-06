@@ -102,6 +102,8 @@ function flatBase(q: QuestionView) {
     textDirection: f.textDirection,
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
+    // S1-T07 (API-Q-12): the stored flag unless dismissed ("Bukan masalah").
+    flags: q.openFlags ?? [],
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,
@@ -168,6 +170,7 @@ export function rowView(q: QuestionView): QuestionRow {
     kertas: kertasOfPaperCode(q.version.paperCode),
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
+    flags: q.openFlags ?? [],
   })
 }
 
@@ -355,6 +358,8 @@ export function guruStructuredRowView(q: QuestionView, number: number): z.output
     subCount: countLeaves(parts),
     marks: marksOf(parts),
     status: 'approved',
+    source: 'question',
+    editable: false,
   })
 }
 
@@ -390,5 +395,8 @@ export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<type
       depth: x.depth,
     })),
     createdAt: toMytTimestamp(d.createdAt),
+    source: 'question',
+    editable: false,
+    form: null,
   })
 }

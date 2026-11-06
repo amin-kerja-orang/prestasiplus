@@ -2,6 +2,7 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 
 import { BannersModule } from '../../../content/banners/banners.module'
 import { CurriculumModule, CurriculumPorts } from '../../../curriculum'
+import { FilesModule } from '../../../files'
 import { QuestionsModule } from '../../../questions'
 import { SubscriptionsModule } from '../../../subscriptions'
 import { UsersModule } from '../../../users'
@@ -17,7 +18,7 @@ import { OverviewTopicProgress } from './topic-progress.provider'
  * its own `onModuleInit` (the pattern of `providers.ts`); no curriculum file is edited.
  */
 @Module({
-  imports: [CurriculumModule, QuestionsModule, SubscriptionsModule, UsersModule, WalletModule, BannersModule],
+  imports: [CurriculumModule, FilesModule, QuestionsModule, SubscriptionsModule, UsersModule, WalletModule, BannersModule],
   controllers: [OverviewController],
   providers: [OverviewRepository, OverviewService, OverviewTopicProgress, { provide: OVERVIEW_OPTIONS, useValue: DEFAULT_OVERVIEW_OPTIONS }],
   exports: [OverviewTopicProgress],

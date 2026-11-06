@@ -10,14 +10,13 @@ import {
   ClassEnrolmentSchema,
   ClassEnrolmentSourceSchema,
   ClassEnrolmentStatusSchema,
-  ClassJoinRequestSchema,
-  ClassJoinResponseSchema,
-  ClassJoinResultSchema,
   ClassJoinedClassSchema,
   ClassQrDataSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
   ClassStudentRemovedSchema,
+  GuruStudentCreateRequestSchema,
+  GuruStudentCreatedSchema,
   ClassroomKindSchema,
   TeacherChapterCreateRequestSchema,
   TeacherChapterOptionSchema,
@@ -51,6 +50,8 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   ClassStudentRemoveQuery: ClassStudentRemoveQuerySchema,
   ClassEnrolment: ClassEnrolmentSchema,
   ClassStudentRemoved: ClassStudentRemovedSchema,
+  GuruStudentCreateRequest: GuruStudentCreateRequestSchema,
+  GuruStudentCreated: GuruStudentCreatedSchema,
   TeacherDashboard: TeacherDashboardSchema,
   TeacherChaptersQuery: TeacherChaptersQuerySchema,
   TeacherTopicsQuery: TeacherTopicsQuerySchema,
@@ -62,9 +63,6 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   TeacherGalleryQuery: TeacherGalleryQuerySchema,
   TeacherGallery: TeacherGallerySchema,
   ClassJoinedClass: ClassJoinedClassSchema,
-  ClassJoinRequest: ClassJoinRequestSchema,
-  ClassJoinResult: ClassJoinResultSchema,
-  ClassJoinResponse: ClassJoinResponseSchema,
 } as const
 
 const json = (schema: z.ZodType, description: string) => ({
@@ -144,6 +142,25 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
       ),
       401: unauthorized,
       403: teacherOnly,
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/students',
+    ...teacher,
+    summary: 'Cipta Pelajar: create a pupil in an own class (API-GUR-06)',
+    description:
+      'Creates the pupil in the school of the class with a generated unique username and the configured default password, and enrols the pupil (source "teacher"). The message carries the password once.',
+    request: { headers: [csrf], body: body(GuruStudentCreateRequestSchema) },
+    responses: {
+      201: json(envelopeOf(GuruStudentCreatedSchema), '`{ data: { id, name, username, message } }`.'),
+      401: unauthorized,
+      403: err('FORBIDDEN role / CSRF_INVALID.'),
+      409: err('CONFLICT fields.ic "No. IC sudah didaftarkan."'),
+      422: err(
+        'VALIDATION_ERROR fields.name "Sila isi nama." / "Nama tidak boleh melebihi 255 aksara."; fields.classroomId "Sila pilih kelas." or "Anda belum ada kelas aktif. Cipta kelas dahulu." (not an own active class); fields.ic "No. IC mesti 12 digit tanpa sempang."; a teacher without a school "Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir."',
+      ),
     },
   })
 
@@ -270,23 +287,5 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
     summary: 'Classes the signed-in user has joined (newest first)',
     description: 'School classes are not joined classes and are left out. Single-page list meta.',
     responses: { 200: json(listEnvelopeOf(ClassJoinedClassSchema), 'Joined classes.'), 401: unauthorized },
-  })
-
-  registry.registerPath({
-    method: 'post',
-    path: '/kelas-saya/join',
-    tags: ['classes'],
-    summary: 'Join a class by code',
-    description:
-      'classCode is trimmed and compared case-insensitively. Only student (and admin) may join. The enrolment source is "code".',
-    request: { headers: [csrf], body: body(ClassJoinRequestSchema) },
-    responses: {
-      201: json(ClassJoinResponseSchema, '`{ data: { classroomId }, message }`.'),
-      401: unauthorized,
-      403: err('FORBIDDEN: role may not join; or CSRF_INVALID.'),
-      404: err('NOT_FOUND "Kod kelas tidak sah."'),
-      409: err('CONFLICT "Anda sudah menyertai kelas ini."'),
-      422: err('VALIDATION_ERROR fields.classCode "Sila masukkan kod kelas."'),
-    },
   })
 }

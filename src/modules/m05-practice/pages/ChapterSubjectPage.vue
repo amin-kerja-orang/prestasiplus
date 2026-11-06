@@ -3,7 +3,7 @@
  * S5 `/practice/chapter/:code` (`?level=`) "Chapter {subject} - PRESTASIPLUS" (M05-T5; FR-M05-59…65,
  * 67, 132; BR-11, BR-15, BR-16; DV-M05-07, DV-M05-09, DV-M05-15), restyled for v2 (batch B01).
  *
- * - Title block: "Semua Subjek" → S4, "Progressive Unlock", the subject and the level select; a change
+ * - Title block: "Semua Subjek" → S4, the subject and the level select; a change
  *   navigates to `?level={id}`. With no offered level the select is not rendered (DV-M05-07).
  * - One card per chapter of the level: with its count links to Q2 (no chapter lock, D98);
  *   no chapter → `Tiada bab tersedia untuk tahap ini.`.

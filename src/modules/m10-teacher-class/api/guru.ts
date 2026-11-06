@@ -7,15 +7,7 @@
  * to the created record or to `{error}` and never throw for a refusal.
  */
 
-import {
-  api,
-  isHttpMode,
-  uploadQuestionImage,
-  wireId,
-  wireIdOpt,
-  type BlobResult,
-  type ListResult,
-} from '@/api'
+import { api, wireId, wireIdOpt, type BlobResult, type ListResult } from '@/api'
 
 import type {
   BidangOption,
@@ -33,11 +25,9 @@ import type {
   GuruStudent,
   GuruStudentsMeta,
   ImportResult,
-  JoinClassResponse,
   JoinedClass,
   QuestionPaper,
   QuestionPaperRequest,
-  RajahGallery,
   RemedialProgress,
   StudentQuestionSet,
   SkOption,
@@ -240,82 +230,31 @@ export function fetchContributedQuestions(
   })
 }
 
-/** Image files of #53: the question image and one optional image per option (A–D = index 0–3). */
-export interface QuestionImages {
-  questionImage?: Blob | null
-  optionImages?: readonly (Blob | null | undefined)[]
-}
-
-/** Writes `body` into `form`: arrays as `key[]`, arrays of objects as `key[i][field]`. */
-function appendFields(form: FormData, body: object): void {
-  for (const [key, value] of Object.entries(body)) {
-    if (value === undefined || value === null) continue
-    if (Array.isArray(value)) {
-      value.forEach((v: unknown, i) => {
-        if (typeof v === 'object' && v !== null) {
-          for (const [k, x] of Object.entries(v)) {
-            form.append(`${key}[${String(i)}][${k}]`, String(x))
-          }
-        } else form.append(`${key}[]`, String(v))
-      })
-    } else form.append(key, String(value))
+/**
+ * The wire body of #53 / #55 (the same form): the contract ids are opaque strings (`GuruId`, `idOrBlank`), so http
+ * mode sends `educationLevelId`, `subjectId`, `chapterId` and `spIds` as strings (a number is 422 "Sila pilih
+ * tingkatan." etc., SW7-08). null stays null, undefined stays absent.
+ */
+function wireQuestionBody(body: CreateQuestionRequest) {
+  return {
+    ...body,
+    educationLevelId: wireId(body.educationLevelId),
+    subjectId: wireId(body.subjectId),
+    ...(body.chapterId !== undefined ? { chapterId: wireIdOpt(body.chapterId) } : {}),
+    ...(body.spIds !== undefined ? { spIds: body.spIds.map((id) => wireId(id)) } : {}),
   }
 }
 
 /**
- * #53 `POST /api/guru/questions`: the new question (`pending_review`, active). Mock mode: with any
- * image the request is multipart (`questionImage`, `optionImages[i]`), otherwise JSON. http mode: every
- * chosen image is uploaded first (`POST /api/files`; a failure is a 422 on `questionImage` /
- * `optionImages.<i>`) and the JSON carries `questionImageFileId` / `optionImageFileIds`. The second argument
- * is a `QuestionImages`, or a single Blob (the question image, the earlier signature).
+ * #53 `POST /api/guru/questions` (API-GUR-18): one MCQ submitted as a `source = guru` intake item,
+ * shown as "Menunggu Semakan". JSON only (the teacher flow has no image fields).
  */
-export async function createContributedQuestion(
+export function createContributedQuestion(
   body: CreateQuestionRequest,
-  images?: Blob | QuestionImages | null,
 ): Promise<ContributedQuestionDetail> {
-  const files: QuestionImages = images instanceof Blob ? { questionImage: images } : (images ?? {})
-  const optionFiles = (files.optionImages ?? []).flatMap((f, i) => (f ? [[i, f] as const] : []))
-  // The contract ids are opaque strings (`idWith` / `idOrBlank`): http mode sends them as strings
-  // (a number is 422 "Sila pilih tahap pendidikan." etc., SW7-08). null stays null, undefined absent.
-  const wired = {
-    ...body,
-    educationLevelId: wireId(body.educationLevelId),
-    subjectId: wireId(body.subjectId),
-    ...(body.curriculumChapterId !== undefined
-      ? { curriculumChapterId: wireIdOpt(body.curriculumChapterId) }
-      : {}),
-    ...(body.curriculumTopicId !== undefined
-      ? { curriculumTopicId: wireIdOpt(body.curriculumTopicId) }
-      : {}),
-    ...(body.dskpSpId !== undefined ? { dskpSpId: wireIdOpt(body.dskpSpId) } : {}),
-  }
-  if (isHttpMode()) {
-    const ids: { questionImageFileId?: string; optionImageFileIds?: (string | null)[] } = {}
-    if (files.questionImage) {
-      ids.questionImageFileId = await uploadQuestionImage(files.questionImage, 'questionImage')
-    }
-    const last = optionFiles[optionFiles.length - 1]?.[0]
-    if (last !== undefined) {
-      const picked = files.optionImages ?? []
-      const list: (string | null)[] = []
-      for (let i = 0; i <= last; i += 1) {
-        const f = picked[i]
-        list.push(f ? await uploadQuestionImage(f, `optionImages.${String(i)}`) : null)
-      }
-      ids.optionImageFileIds = list
-    }
-    return api.post<ContributedQuestionDetail>('/api/guru/questions', {
-      body: { ...wired, ...ids },
-    })
-  }
-  if (!files.questionImage && optionFiles.length === 0) {
-    return api.post<ContributedQuestionDetail>('/api/guru/questions', { body: wired })
-  }
-  const form = new FormData()
-  appendFields(form, wired)
-  if (files.questionImage) form.append('questionImage', files.questionImage)
-  for (const [i, f] of optionFiles) form.append(`optionImages[${String(i)}]`, f)
-  return api.multipart<ContributedQuestionDetail>('/api/guru/questions', form)
+  return api.post<ContributedQuestionDetail>('/api/guru/questions', {
+    body: wireQuestionBody(body),
+  })
 }
 
 /** #54 `GET /api/guru/questions/:id` (404 when not own). */
@@ -329,39 +268,27 @@ export function fetchContributedQuestion(
   )
 }
 
-/**
- * #55 `PUT /api/guru/questions/:id` (404 when not own, 422). Mock mode: with an `image` the request is
- * one multipart PUT (the options as `options[i][id]` / `options[i][optionText]`), otherwise JSON. http
- * mode: the image is uploaded first and the JSON carries `questionImageFileId`.
- */
-export async function updateContributedQuestion(
+/** #55 `PUT /api/guru/questions/:id` (404 when not own, 409 when not editable, 422). A rejected item returns to pending. */
+export function updateContributedQuestion(
   id: number,
   body: UpdateQuestionRequest,
-  image?: Blob | null,
 ): Promise<ContributedQuestionDetail> {
-  const url = `/api/guru/questions/${String(id)}`
-  if (!image) return api.put<ContributedQuestionDetail>(url, { body })
-  if (isHttpMode()) {
-    const questionImageFileId = await uploadQuestionImage(image, 'questionImage')
-    return api.put<ContributedQuestionDetail>(url, { body: { ...body, questionImageFileId } })
-  }
-  const form = new FormData()
-  appendFields(form, body)
-  form.append('questionImage', image)
-  return api.multipart<ContributedQuestionDetail>(url, form, { method: 'PUT' })
+  return api.put<ContributedQuestionDetail>(`/api/guru/questions/${String(id)}`, {
+    body: wireQuestionBody(body),
+  })
 }
 
 /** #56 `DELETE /api/guru/questions/:id` (404 when not own). */
-export function deleteContributedQuestion(id: number): Promise<{ removed: number }> {
+export function deleteContributedQuestion(id: number | string): Promise<{ removed: number }> {
   return api.delete<{ removed: number }>(`/api/guru/questions/${String(id)}`)
 }
 
-/** #57 `GET /api/guru/questions/template`: the CSV file `template-import-soalan.csv`. */
+/** #57 `GET /api/guru/questions/template` (API-GUR-19): the CSV file `templat-soalan.csv`. */
 export function downloadQuestionTemplate(): Promise<BlobResult> {
   return api.blob('/api/guru/questions/template')
 }
 
-/** #58 `POST /api/guru/questions/import` (multipart `csvFile`): valid rows kept, bad rows listed. */
+/** #58 `POST /api/guru/questions/import` (API-GUR-19, multipart `csvFile`): valid rows kept, bad rows listed under `errors`. */
 export function importQuestions(csvFile: Blob): Promise<ImportResult> {
   const form = new FormData()
   form.append('csvFile', csvFile)
@@ -375,11 +302,6 @@ export function fetchJoinedClasses(options: Signal = {}): Promise<ListResult<Joi
   return api.list<JoinedClass>('/api/kelas-saya', withSignal(options))
 }
 
-/** #74 `POST /api/kelas-saya/join` (404 unknown code, 409 already joined; the `message` is shown). */
-export function joinClass(classCode: string): Promise<JoinClassResponse> {
-  return api.post<JoinClassResponse>('/api/kelas-saya/join', { body: { classCode }, raw: true })
-}
-
 // --- student "Set Soalan Guru" (S34) --------------------------------------------------------
 
 /** #75 `GET /api/set-soalan-saya`: the sets the signed-in user may start (BR-M10-18). */
@@ -387,19 +309,12 @@ export function fetchMyQuestionSets(options: Signal = {}): Promise<ListResult<St
   return api.list<StudentQuestionSet>('/api/set-soalan-saya', withSignal(options))
 }
 
-// --- gallery, question papers, Audio KBAT templates (S21, S22) --------------------------------
-
-/** #59 `GET /api/guru/galeri-rajah`: always empty (DV-M10-09); `?folder=` answers `{images: []}`. */
-export function fetchRajahGallery(folder?: string, options: Signal = {}): Promise<RajahGallery> {
-  return api.get<RajahGallery>('/api/guru/galeri-rajah', {
-    query: { folder },
-    ...withSignal(options),
-  })
-}
+// --- question papers, Audio KBAT templates (S21, S22) --------------------------------
 
 /**
- * #60 `POST /api/guru/question-papers` (multipart; 422 with `fields`): a paper for the admin, stored
- * `pending` by M04. `files` are 1–5 PDF / Word / Excel files of at most 20 MB each.
+ * #60 `POST /api/guru/question-papers` (API-GUR-17; multipart; 422 with `fields`): a paper for the
+ * admin, stored as a `source = guru` intake batch; answers `{batchId}`. `files` are 1–5 PDF / DOCX /
+ * XLSX files of at most 20 MB each.
  */
 export function submitQuestionPaper(
   body: QuestionPaperRequest,
@@ -409,7 +324,7 @@ export function submitQuestionPaper(
   for (const [key, value] of Object.entries(body)) {
     if (value !== undefined && value !== '') form.append(key, String(value))
   }
-  for (const f of files) form.append('files[]', f)
+  for (const f of files) form.append('files', f)
   return api.multipart<QuestionPaper>('/api/guru/question-papers', form)
 }
 

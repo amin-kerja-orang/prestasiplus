@@ -208,7 +208,7 @@ describe('HttpBijakServer: reads', () => {
     const { server } = setup({
       'GET /api/bijak/attempts/att-1/result': ok({
         attempt: { ...META, status: 'submitted', submittedAt: T1, lateBySeconds: 3 },
-        result: { score: 1, max: 1, percent: 100 },
+        result: { score: 1, max: 1, percent: 100, questions: [] },
         paper: VIEW,
       }),
     })
@@ -216,6 +216,19 @@ describe('HttpBijakServer: reads', () => {
     expect(r.attempt).toMatchObject({ submittedAt: T1_MS, lateBySeconds: 3, startedAt: T0_MS })
     expect(r.paper.attempt.deadline).toBe(T1_MS)
     expect(r.result.score).toBe(1)
+  })
+
+  it('getResult of a Kertas Subjektif attempt without the scheme gives each part an empty reveal (S3-T06, AC-MUR-13-21)', async () => {
+    const part = { partId: 'p1', label: '(a)', prompt: 'Terangkan.', marks: 4, awarded: 0, status: 'belum_dimarkah', confidence: 'low', points: [], answer: { text: 'x' } }
+    const { server } = setup({
+      'GET /api/bijak/attempts/att-1/result': ok({
+        attempt: { ...META, paperKind: 'subjektif', status: 'submitted', submittedAt: T1 },
+        result: { score: 0, max: 4, percent: 0, questions: [{ questionId: 'q1', parts: [part] }] },
+        paper: VIEW,
+      }),
+    })
+    const r = await server.getResult(7, 'att-1')
+    expect(r.result.questions[0]!.parts[0]!.scheme).toEqual({ marks: 4 })
   })
 })
 
@@ -395,6 +408,18 @@ describe('HttpBijakServer: errors', () => {
     })
     const e = await code(server.checkQuestion(7, 'att-1', 'q-1'))
     expect(e).toMatchObject({ code: 'bad_request', message: 'Percubaan sudah tamat' })
+  })
+
+  it('422 on a blank check is bad_request with the fields.questionId line, like the mock', async () => {
+    const { server } = setup({
+      'POST /api/bijak/attempts/att-1/questions/q-1/check': fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+        fields: { questionId: 'Jawab dahulu sebelum menyemak.' },
+      }),
+    })
+    expect(await code(server.checkQuestion(7, 'att-1', 'q-1'))).toMatchObject({
+      code: 'bad_request',
+      message: 'Jawab dahulu sebelum menyemak.',
+    })
   })
 
   it('403 on a check in exam mode is forbidden with the scheme message', async () => {

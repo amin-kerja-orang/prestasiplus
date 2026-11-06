@@ -34,9 +34,9 @@ interface Ctx {
   s1: Client
   svc: QuestionsService
   source: Be09PracticeQuestionSource
-  /** A secondary level (Tingkatan 5, not the world's T4) offered to random sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
+  /** A secondary level (Tingkatan 5, not the world's T4) offered to practice sessions of the world's subject (the Darjah levels are hidden, secondary-only D72). */
   dLevel: string
-  /** A secondary level that is NOT SPM-servable (not T4/T5): a question there is outside every SPM activity. */
+  /** A level that is NOT SPM-servable (a primary-stage Darjah, hidden; T1 to T5 are all offered since S4-T06): a question there is outside every SPM activity. */
   nonSpmLevel: string
   chapterId: string
 }
@@ -88,14 +88,9 @@ beforeAll(async () => {
     )
   )[0]?.id
   if (!dLevel) throw new Error('the world subject has no second SPM-servable secondary level')
-  const nonSpmLevel = (
-    await t.db.query<{ id: string }>(
-      `select l.id::text id from education_levels l join subject_levels sl on sl.education_level_id = l.id
-        where sl.subject_id = $1 and l.stage <> 'primary' and l.is_active and l.code not in ('T4','T5') order by l.sort_order, l.id limit 1`,
-      [w.tag.subjectId],
-    )
-  )[0]?.id
-  if (!nonSpmLevel) throw new Error('the world subject has no secondary level outside T4/T5')
+  // S4-T06: every active secondary level (T1 to T5) is offered, so the one level a question can sit at and not be SPM-servable is a primary-stage level (Darjah).
+  const nonSpmLevel = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage = 'primary' order by sort_order, id limit 1`))[0]?.id
+  if (!nonSpmLevel) throw new Error('the seed has no primary-stage level')
   // The seed already fills that level: switch those rows off so the questions made here are the only eligible ones.
   await t.db.query(`update questions set is_active = false where id in (select question_id from question_versions where subject_id = $1 and education_level_id = $2)`, [w.tag.subjectId, dLevel])
   const chapterId = (
@@ -124,13 +119,13 @@ describe('wiring', () => {
   })
 })
 
-describe('random sessions start with published questions only', () => {
+describe('latih_tubi sessions start with published questions only', () => {
   let eligible: string[]
   let ineligible: Record<string, string>
 
   beforeAll(async () => {
     eligible = []
-    for (let i = 0; i < 5; i++) eligible.push(await mcq({ level: c.dLevel, text: `Soalan rawak ${String(i)}` }))
+    for (let i = 0; i < 5; i++) eligible.push(await mcq({ level: c.dLevel, text: `Soalan latih tubi ${String(i)}` }))
     const deactivated = await mcq({ level: c.dLevel, text: 'Soalan nyahaktif' })
     await c.svc.deactivate(deactivated)
     const otherSubject = await tagOf(c.t.db, 'SEED-MCQ-SCI-T4')
@@ -152,9 +147,9 @@ describe('random sessions start with published questions only', () => {
     expect(live.has(ineligible.deactivated as string)).toBe(false)
   })
 
-  it('POST /practice/sessions (random) is 201 with exactly the eligible questions and no answer key', async () => {
+  it('POST /practice/sessions (latih_tubi) is 201 with exactly the eligible questions and no answer key', async () => {
     const subjectCode = c.w.subjectCode
-    const res = await start({ mode: 'random', subjectCode, levelId: c.dLevel, count: 5 })
+    const res = await start({ mode: 'latih_tubi', subjectCode, levelId: c.dLevel, count: 5 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const questions = res.body.data.questions as { id: string; options: unknown[]; questionText: string; contributor: unknown; hasDskp: boolean }[]
     expect(questions).toHaveLength(5)
@@ -172,10 +167,15 @@ describe('random sessions start with published questions only', () => {
     expect(check.body.data).toMatchObject({ isCorrect: true, correctOptionId: 1, explanation: SECRET_EXPLANATION })
   })
 
-  it('too few eligible questions is still 422 NOT_ENOUGH_QUESTIONS', async () => {
-    const res = await start({ mode: 'random', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 10 })
+  it('a draw with no eligible question is still 422 NOT_ENOUGH_QUESTIONS (latih_tubi serves what exists, so only an empty draw is refused)', async () => {
+    // The five eligible questions are tp 3 (difficulty 3): difficulty 5 matches none.
+    const res = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 5, difficulty: 5 })
     expect(res.status, JSON.stringify(res.body)).toBe(422)
     expect(res.body.error.code).toBe('NOT_ENOUGH_QUESTIONS')
+    // A pool smaller than the count is served as is: 5 eligible, 10 asked.
+    const short = await start({ mode: 'latih_tubi', subjectCode: c.w.subjectCode, levelId: c.dLevel, count: 10 })
+    expect(short.status, JSON.stringify(short.body)).toBe(201)
+    expect(short.body.data.questions).toHaveLength(5)
   })
 
   it('a deactivated or unpublished question is never served, over many draws', async () => {
@@ -195,7 +195,7 @@ describe('filters, pinned versions and the contributor', () => {
       const id = await mcq({ text: `Soalan SPM ${String(i)}` })
       pooled.push(id)
     }
-    // Not SPM-servable: the level is outside the offered T4/T5 (the SPM pool is defined by level, not by a tag; R1-B06).
+    // Not SPM-servable: the level is not an offered one (primary stage; the SPM pool is defined by level, not by a tag; R1-B06, S4-T06).
     const plain = await mcq({ level: c.nonSpmLevel, text: 'Soalan bukan SPM' })
     const ids = await c.source.sample({ subjectId: c.w.tag.subjectId, spmPool: true }, 1000, prngStream('p'))
     expect(ids).not.toContain(plain)

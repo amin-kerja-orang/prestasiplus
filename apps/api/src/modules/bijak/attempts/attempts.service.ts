@@ -43,12 +43,14 @@ import {
 } from './attempts.constants'
 import {
   type AnswerRow,
+  type AttemptMode,
   type AttemptRow,
   AttemptsRepository,
   type PhotoRow,
 } from './attempts.repository'
-import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type PartAnswer, type SectionSnapshot } from './exam-core.adapter'
 import {
+  type AnswerMap,
   type Bundles,
   buildLeafIndex,
   buildServedPaper,
@@ -57,6 +59,9 @@ import {
   type LeafIndex,
   lockedParts,
   questionIdsOf,
+  revealedOnly,
+  sameAnswersAsCheck,
+  semakParts,
 } from './marking'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
@@ -96,6 +101,8 @@ const ts = (d: Date) => toMytTimestamp(d)
 export const NO_ELIGIBLE_QUESTIONS = 'Tiada soalan layak untuk kertas ini.'
 const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_ELIGIBLE_QUESTIONS })
 
+/** 422 fields.questionId of a "Semak" on a question whose auto-markable parts are all blank. */
+const CHECK_BLANK = 'Jawab dahulu sebelum menyemak.'
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
@@ -222,6 +229,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
+      if (resolved.reason === 'out_of_scope') {
+        // S3-T07: outside the pupil's form, a NEW sitting or a restart is 404, but the pupil's own open sitting still resumes.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
+      }
       if (resolved.reason === 'not_eligible') {
         // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
         if (!body.restart && !opts.fresh) {
@@ -233,6 +248,10 @@ export class BijakAttemptsService {
       throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     }
     const paper = resolved.paper
+    // DM-83 / API-BIJAK-04: the attempt kind follows the paper surface, never the body. A Kertas Subjektif sitting is always
+    // `latihan` and untimed (46 section 4.7), whatever mode the client sent.
+    const subjektif = paper.surface === 'subjektif'
+    const mode: AttemptMode = subjektif ? 'latihan' : body.mode
     const composition = freezeComposition(paper.sections)
     if (!composition.length || questionIdsOf(composition).length === 0) {
       this.logger.error('A paper without questions was offered for an attempt')
@@ -251,33 +270,50 @@ export class BijakAttemptsService {
       const attempt = await this.repo.create({
         userId,
         paperId: body.paperId,
-        paperKind: paper.kind,
+        paperKind: subjektif ? 'subjektif' : paper.kind,
         title: paper.title,
         subject: paper.subject,
         subjectName: paper.subjectName,
         kertas: paper.kertas,
         code: paper.code,
-        mode: body.mode,
+        mode,
         startedAt,
-        deadlineAt: body.mode === 'exam' ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
+        // A paper with no Tempoh (durationMin 0, an untimed Kertas Subjektif paper; PO decision 2026-11-05, item 17) never gets a deadline.
+        deadlineAt: mode === 'exam' && paper.durationMin > 0 ? new Date(startedAt.getTime() + paper.durationMin * 60_000) : null,
         durationMin: paper.durationMin,
         composition,
         isTest,
       })
       return { attempt, created: true, abandoned: open.length }
     }, TX)
-    if (out.created) await this.record(AUDIT_ACTIONS.BIJAK_ATTEMPT_STARTED, auth, out.attempt.id, who, { mode: body.mode, restart: body.restart === true })
+    if (out.created) await this.record(AUDIT_ACTIONS.BIJAK_ATTEMPT_STARTED, auth, out.attempt.id, who, { mode, restart: body.restart === true })
     return { attemptId: out.attempt.id, created: out.created }
   }
 
   /* ---------------------------------------------------------------------------------- views */
+
+  /**
+   * The stored "Semak" of each checked question while its answers are still the ones it was made on. An edited answer was not checked yet: it shows
+   * no verdict until its own "Semak" (a reload must not mark it for free). Only the parts "Semak" reveals, also for a row stored before that rule.
+   */
+  private async shownChecks(row: AttemptRow, order: readonly string[], bundles: Bundles, answers: AnswerMap): Promise<BijakAttemptQuestionResult[]> {
+    if (!order.length) return []
+    const stored = await this.repo.checkResults(row.id)
+    const index = buildLeafIndex(row.composition, bundles)
+    return order.flatMap((qid) => {
+      const result = stored.get(qid) as BijakAttemptQuestionResult | null | undefined
+      if (!result) return []
+      const shown = revealedOnly(result, new Set(semakParts(index, qid)))
+      return sameAnswersAsCheck(shown, answers) ? [shown] : []
+    })
+  }
 
   private async buildView(row: AttemptRow, withChecks: boolean, preloaded?: Bundles): Promise<BijakAttemptPaperView> {
     const [answers, checks, bundles] = await Promise.all([this.repo.answers(row.id), this.repo.checkCounts(row.id), preloaded ?? this.loadBundles(row.composition)])
     const served = buildServedPaper(row.composition, bundles)
     const showChecks = withChecks && row.status === 'in_progress' && row.mode === 'latihan'
     const map = this.answerMap(answers)
-    const results: BijakAttemptQuestionResult[] = showChecks ? checks.order.map((qid) => checkResult(row.composition, bundles, map, qid)) : []
+    const results = showChecks ? await this.shownChecks(row, checks.order, bundles, map) : []
     return {
       serverNow: ts(this.now()),
       attempt: this.toMeta(row, answers, checks),
@@ -297,7 +333,11 @@ export class BijakAttemptsService {
     return this.buildView(row, true)
   }
 
-  async result(userId: string, id: string): Promise<BijakAttemptResultView> {
+  /**
+   * `withScheme` is `?scheme=1` ("Tunjuk Skema Pemarkahan"). A Kertas Subjektif attempt carries no scheme text without it
+   * (AC-MUR-13-21, 46 section 3.5); every other attempt kind always carries its scheme after submit.
+   */
+  async result(userId: string, id: string, withScheme = false): Promise<BijakAttemptResultView> {
     let row = await this.owned(userId, id)
     if (this.expired(row)) {
       await this.closeExpired(row.id)
@@ -309,7 +349,7 @@ export class BijakAttemptsService {
     const bundles = await this.loadBundles(row.composition)
     const paper = await this.buildView(row, false, bundles)
     const result = this.present(row, stored, this.answerMap(await this.repo.answers(row.id)), bundles)
-    return { attempt: paper.attempt, result, paper }
+    return { attempt: paper.attempt, result: withholdScheme(row, result, withScheme), paper }
   }
 
   /** The result as served: automatic grading + keyword suggestions (R1-B13) + the pupil's self-marks on top (R1-B12). */
@@ -327,7 +367,7 @@ export class BijakAttemptsService {
    * replaces its earlier figures). The reward given at submit is NOT repeated; D94: a mark that raises the best-N total pays the gain through
    * `reward.awardSelfMark` (2 syiling and 10 XP per mark of the net gain over the highest paid total, once per level, capped at the maximum), the stored result's coins stay as at submit.
    */
-  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest): Promise<BijakAttemptSelfMarkResult> {
+  async selfMark(auth: AuthContext, id: string, body: BijakAttemptSelfMarkRequest, withScheme = false): Promise<BijakAttemptSelfMarkResult> {
     await this.owned(auth.userId, id)
     const events: ClosedEvent[] = []
     const out = await this.prisma.transaction(async (): Promise<BijakAttemptSelfMarkResult> => {
@@ -343,7 +383,9 @@ export class BijakAttemptsService {
       const found = stored.result.questions.flatMap((q) => q.parts.map((p) => ({ q, p }))).find((x) => x.p.partId === body.partId)
       if (!found) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkPartUnknown } })
       const scheme = bundles.get(found.q.questionId)?.schemes[body.partId]
-      if (!isSelfMarkable(scheme)) throw ApiError.of('VALIDATION_ERROR', { fields: { partId: MSG.selfMarkNotSubjective } })
+      // 46 section 3.4: a part a person marks (scheme points or rubric, or any part left `belum_dimarkah`, K20); an
+      // automatically marked part answers 409.
+      if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('CONFLICT', { message: MSG.selfMarkNotSubjective })
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {
@@ -372,7 +414,8 @@ export class BijakAttemptsService {
         attemptMax: result.max,
         provisional: result.provisional,
         pendingReview: result.pendingReview,
-        result,
+        // A Kertas Subjektif attempt carries its scheme only when the request says it was revealed (`?scheme=1`, AC-MUR-13-21).
+        result: withholdScheme(row, result, withScheme),
       }
     }, TX)
     await this.emit(events)
@@ -465,12 +508,25 @@ export class BijakAttemptsService {
       const leaf = index.parts.get(c.partId)
       if (!leaf || locked.has(c.partId)) continue
       // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
-      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      if (leaf.topicIds) {
+        for (const key of ['choice', 'topicId'] as const) {
+          const topic = c.answer[key]
+          if (topic !== undefined && !leaf.topicIds.includes(topic)) {
+            throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.${key}`]: MSG.essayTopicUnknown } })
+          }
+        }
       }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
-      let answer = c.answer
+      // DM-68: `revealed` belongs to the server ("Semak" sets it, nothing clears it). `topicId` wins and is copied to `choice`, which every reader of an open essay_choice answer still uses.
+      let answer: PartAnswer = {
+        ...c.answer,
+        ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
+      }
+      delete answer.revealed
+      // A leaf with no topic choice has nowhere to keep a topic: a client `topicId` is dropped (not stored, not an error).
+      if (!leaf.topicIds) delete answer.topicId
+      if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
           photos = new Map()
@@ -687,26 +743,39 @@ export class BijakAttemptsService {
   ): Promise<BijakAttemptQuestionResult> {
     if (payload) assertAttemptPayload(payload)
     const first = await this.owned(userId, id)
-    if (first.mode !== 'latihan') throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
+    // A Kertas Subjektif sitting has no "Semak": its scheme comes only after "Hantar & Semak" (FR-PA-20, AC-PA-10).
+    if (first.mode !== 'latihan' || first.paperKind === 'subjektif') throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
     return this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw notFoundAttempt()
       const row = (await this.repo.find(id)) as AttemptRow
       if (row.status !== 'in_progress') throw attemptClosed()
       if (!row.composition.some((s) => s.questionIds.includes(questionId))) throw ApiError.of('NOT_FOUND', { message: MSG.questionNotFound })
       const load = this.lazyBundles(row)
+      const index = await this.leafIndexOf(row, load)
+      // 46 section 3.5: essay, working, drawing and table_fill have no "Semak"; their scheme comes after "Hantar".
+      const parts = semakParts(index, questionId)
+      if (parts.length === 0) throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
       const answers = await this.repo.answers(id)
       const checks = await this.repo.checkCounts(id)
       const used = checks.counts.get(questionId) ?? 0
       // After the cap the answer is shown and no further payload can change it (nor the count).
       if (used < MAX_CHECKS_PER_QUESTION && payload) {
-        const index = await this.leafIndexOf(row, load)
         await this.merge(row, answers, payload.changes, index, lockedParts(row.mode, checks.counts, index))
         await this.applyMeta(row, payload)
       }
-      const result = checkResult(row.composition, await load(), this.answerMap(answers), questionId)
-      if (used < MAX_CHECKS_PER_QUESTION) await this.repo.saveCheck(id, questionId, used + 1, result)
-      else await this.repo.saveCheck(id, questionId, used, result)
-      return result
+      const map = this.answerMap(answers)
+      // Lead ruling Q3: a blank part never consumes a check nor reveals the key (the UI disables "Semak" too).
+      if (parts.every((pid) => isBlank(map.get(pid), index.parts.get(pid)?.kind as LeafKind | 'mcq' | undefined))) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionId: CHECK_BLANK } })
+      }
+      const result = checkResult(row.composition, await load(), map, questionId, new Set(parts))
+      // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+      const last = used > 0 ? ((await this.repo.checkResults(id)).get(questionId) as BijakAttemptQuestionResult | null | undefined) : null
+      const changed = !last || !sameAnswersAsCheck(revealedOnly(last, new Set(parts)), map)
+      const checksUsed = used < MAX_CHECKS_PER_QUESTION && changed ? used + 1 : used
+      await this.repo.saveCheck(id, questionId, checksUsed, result)
+      await this.repo.markRevealed(id, parts, this.now())
+      return { ...result, checksUsed }
     }, TX)
   }
 
@@ -776,8 +845,9 @@ export class BijakAttemptsService {
           swept: e.swept,
           isTestAttempt: a.isTest,
         })
-        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward.
-        if (a.mode === 'exam') {
+        // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward. A Kertas Subjektif
+        // sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
+        if (a.mode === 'exam' || a.paperKind === 'subjektif') {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
@@ -797,7 +867,7 @@ export class BijakAttemptsService {
         }
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
-      if (e.regraded && e.selfMark && a.mode === 'exam') {
+      if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
@@ -861,3 +931,23 @@ function cleanFileName(raw: string | undefined, mime: string): string {
 }
 
 export { PAYLOAD_LIMITS }
+
+/**
+ * AC-MUR-13-21: a Kertas Subjektif attempt read without `?scheme=1` carries no scheme text: each part loses its `scheme`, its
+ * scheme `points` and the keyword `suggestion` (which quotes the scheme points). Marks, status and `selfMarkable` stay.
+ */
+export function withholdScheme(row: Pick<AttemptRow, 'paperKind'>, result: BijakAttemptResult, withScheme: boolean): BijakAttemptResult {
+  if (withScheme || row.paperKind !== 'subjektif') return result
+  return {
+    ...result,
+    questions: result.questions.map((q) => ({
+      ...q,
+      parts: q.parts.map((p) => {
+        const rest = { ...p, points: [] }
+        delete rest.scheme
+        delete rest.suggestion
+        return rest
+      }),
+    })),
+  }
+}

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 
+import { z } from 'zod'
+
 import {
   BijakDifficultyProfileViewSchema,
   BijakTopicQuotaViewSchema,
@@ -44,6 +46,14 @@ export function quotaOfDoc(doc: unknown): BijakTopicQuotaView | null {
     ? raw.lines.map((l: unknown) => ({ ...(l as Record<string, unknown>), reviewed: (l as { reviewed?: unknown }).reviewed !== false }))
     : []
   return BijakTopicQuotaViewSchema.parse({ ...raw, lines })
+}
+
+/** DM-57 list element shape: a jsonb array of integers. */
+const MARKS_PER_QUESTION_DOC = z.array(z.number().int())
+
+/** DM-57 list as stored: a jsonb array of integers; null = no list. Parsed like `quotaOfDoc`: a malformed row fails loudly, it never reads as no list. */
+export function marksPerQuestionOfDoc(doc: unknown): number[] | null {
+  return doc === null || doc === undefined ? null : MARKS_PER_QUESTION_DOC.parse(doc)
 }
 
 /** Profile as written by the admin: a plain jsonb document (the strict input schema already vetted it). */
@@ -113,6 +123,7 @@ export function toStandard(row: BlueprintWithSections, subjectCode: string): Sta
       quota: quotaOfDoc(s.quota),
       kbatMarks: s.kbatMarks,
       kbatReviewed: s.kbatReviewed,
+      marksPerQuestion: marksPerQuestionOfDoc(s.marksPerQuestion),
     }))
   return {
     subject: subjectCode,
@@ -125,6 +136,7 @@ export function toStandard(row: BlueprintWithSections, subjectCode: string): Sta
     kbatMarks: row.kbatMarks,
     levelShare: (row.levelShare as { t4: number; t5: number } | null) ?? null,
     subPartRamp: row.subPartRamp,
+    questionCount: row.questionCount,
   }
 }
 

@@ -65,3 +65,24 @@ export function bulkFilterFailedHeading(action: QuestionFilterAction, m: number)
 
 /** Rows listed before the "Lihat {m - 10} lagi" expander. */
 export const BULK_FILTER_FAILED_SHOWN = 10
+
+/* ---- bulk "Tetapkan Bab" (S2-T08, field 03-14, C-05) ---------------------------------------------------- */
+
+/** PRD 4.04-11 / 03-14. */
+export const BULK_CHAPTER_CHOOSE = 'Sila pilih Bab.'
+export const BULK_CHAPTER_MISMATCH = 'Bab tidak sepadan dengan subjek dan tahap.'
+/** The 404 of API-DSKP-09 (`chapterNotFound`). */
+export const BULK_CHAPTER_NOT_FOUND = 'Bab tidak dijumpai.'
+/** INFERRED: a selection above 64 ids is refused and points to "Semua hasil tapisan". */
+export const BULK_CHAPTER_MAX_IDS_MESSAGE =
+  'Pilih paling banyak 64 soalan. Untuk lebih banyak, gunakan "Semua hasil tapisan".'
+
+/** Field 03-14 dry-run line. */
+export const bulkChapterDryLine = (n: number, chapterLabel: string): string =>
+  `${String(n)} soalan akan dipautkan ke ${chapterLabel}`
+
+/** D115 result strings (card S2-T08). */
+export const bulkChapterResultLine = (r: { applied: number; refused: number; remaining: number }): string =>
+  `${String(r.applied)} dikemas kini, ${String(r.refused)} ditolak, baki ${String(r.remaining)}`
+export const bulkChapterCapped = (remaining: number): string =>
+  `Had setiap larian dicapai. Jalankan semula untuk baki ${String(remaining)}.`

@@ -32,7 +32,7 @@ export const MAX_EDITOR_CANDIDATES = 1000
 /** Extra candidates the source returns, because the editor drops those already on the paper before it caps. */
 export const CANDIDATE_SLACK = 500
 
-/** D90/D93: a stimulus group needs at least this many member questions to be placed in a paper. */
+/** D90/D93, D108-1: a stimulus group of 1..n members is placed whole; only an empty group cannot be placed. */
 export const MIN_GROUP_MEMBERS = 1
 
 /** D93 builder blocker (exact BM text): the contract's `STIMULUS_MESSAGES.builderBlocker` (T32). */
