@@ -5,7 +5,7 @@ import { MONITORING_START_DATE } from '../analytics.constants'
  * No database and no clock; unit-tested.
  */
 
-export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Kritikal' | 'Tiada Langsung'
+export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Tiada'
 export type Period = '' | '7d' | '30d' | '3m'
 
 export const DAY_MS = 86_400_000
@@ -23,13 +23,12 @@ export const discriminationGroup = (n: number): number => Math.max(1, Math.ceil(
 /** `part / whole * 100`; 0 when `whole` is 0. */
 export const percent = (part: number, whole: number): number => (whole <= 0 ? 0 : (part / whole) * 100)
 
-/** BR-M11-12: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0. */
+/** R1-AS-10 / R1-GUR-10: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. */
 export function tahapOf(p: number): TahapKey {
   if (p > 60) return 'Cemerlang'
   if (p >= 20) return 'Sederhana'
-  if (p >= 5) return 'Rendah'
-  if (p > 0) return 'Kritikal'
-  return 'Tiada Langsung'
+  if (p > 0) return 'Rendah'
+  return 'Tiada'
 }
 
 /** BR-M11-28 bands: p > 70 mudah; 40 <= p <= 70 sederhana; p < 40 sukar. */
