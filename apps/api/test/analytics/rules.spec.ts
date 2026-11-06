@@ -5,7 +5,9 @@ import {
   bandOf,
   byName,
   compareIds,
+  DISCRIMINATION_MIN_PUPILS,
   ddmm,
+  discriminationGroup,
   levelLabelOf,
   percent,
   periodFromMs,
@@ -13,6 +15,7 @@ import {
   rangeOf,
   reportTypeOfMode,
   round1,
+  round2,
   severityOf,
   statusOf,
   stripHtml,
@@ -25,19 +28,59 @@ import { scopeOf } from '../../src/modules/reports/analytics/services/scope'
 // Replay of the pure cases of the mock test src/modules/m11-teacher-analytics/__tests__/mock/rules.test.ts.
 const NOW = Date.parse('2026-09-25T15:40:00+08:00')
 
-describe('tahap (BR-M11-12)', () => {
+describe('tahap (R1-AS-10 four bands)', () => {
   it.each([
     [100, 'Cemerlang'],
     [60.1, 'Cemerlang'],
     [60, 'Sederhana'],
     [20, 'Sederhana'],
+    [20.1, 'Sederhana'],
     [19.99, 'Rendah'],
+    [19.9, 'Rendah'],
     [5, 'Rendah'],
-    [4.99, 'Kritikal'],
-    [0.1, 'Kritikal'],
-    [0, 'Tiada Langsung'],
+    [4.99, 'Rendah'],
+    [0.1, 'Rendah'],
+    [0, 'Tiada'],
   ] as const)('%s%% is %s', (p, tahap) => {
     expect(tahapOf(p)).toBe(tahap)
+  })
+})
+
+describe('tahap follows the displayed 1-decimal figure (round1 then tahapOf)', () => {
+  it.each([
+    [19.96, 20, 'Sederhana'],
+    [0.04, 0, 'Tiada'],
+    [60.04, 60, 'Sederhana'],
+    [60.05, 60.1, 'Cemerlang'],
+    [19.94, 19.9, 'Rendah'],
+  ] as const)('raw %s shows %s and is %s', (raw, shown, tahap) => {
+    expect(round1(raw)).toBe(shown)
+    expect(tahapOf(round1(raw))).toBe(tahap)
+  })
+})
+
+describe('discrimination rule (R1 decision D113, FR-GUR-6-9)', () => {
+  it('needs 10 pupils', () => {
+    expect(DISCRIMINATION_MIN_PUPILS).toBe(10)
+  })
+
+  it.each([
+    [1, 1],
+    [4, 2],
+    [10, 3],
+    [11, 3],
+    [15, 5],
+    [100, 27],
+    [101, 28],
+  ])('N = %s gives a group of %s (ceil of 27 percent, at least 1)', (n, g) => {
+    expect(discriminationGroup(n)).toBe(g)
+  })
+
+  it('D is rounded to 2 decimals', () => {
+    expect(round2(1 / 3)).toBe(0.33)
+    expect(round2(2 / 3)).toBe(0.67)
+    expect(round2(-1 / 3)).toBe(-0.33)
+    expect(round2(1)).toBe(1)
   })
 })
 

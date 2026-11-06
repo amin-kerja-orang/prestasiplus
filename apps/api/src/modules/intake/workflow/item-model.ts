@@ -12,6 +12,8 @@ import {
 
 import { z } from 'zod'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { DiagramTargetSchema } from '../files/guru-diagram'
+import { GuruSubmissionSchema } from '../files/guru-submissions'
 import { idToString } from '../../../db/ids'
 import { Prisma } from '../../../db/generated/client'
 
@@ -34,6 +36,10 @@ export type Payload = z.infer<typeof PayloadSchema>
 /** Where the item came from as extracted; later edits of the label or the page do not change it (contract `provenance`). */
 export const StoredPayloadSchema = PayloadSchema.extend({
   origin: z.strictObject({ label: z.string().max(32), page: z.number().int().min(1) }).optional(),
+  /** S6-T06 (D113, L-6): the fields of a teacher's question submission (`source = 'guru'`); S2-T02 pre-fills the Draf from them. */
+  guru: GuruSubmissionSchema.optional(),
+  /** S6-T18 part 2: a teacher's diagram image for an existing question / stimulus group (no question is made from the item). */
+  target: DiagramTargetSchema.optional(),
 })
 export type StoredPayload = z.infer<typeof StoredPayloadSchema>
 
@@ -78,8 +84,10 @@ export function regionOf(row: { region: unknown }): IntakeRegion | null {
 
 /** The editable question content of an item, in the prototype `IntakeQuestion` shape (what the gate reads). */
 export function questionOf(row: ItemRow): IntakeQuestion {
-  const { origin: _origin, ...p } = payloadOf(row)
+  const { origin: _origin, guru: _guru, target: _target, ...p } = payloadOf(row)
   void _origin
+  void _guru
+  void _target
   return {
     id: idToString(row.id),
     label: row.numberLabel,

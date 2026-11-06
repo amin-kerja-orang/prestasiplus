@@ -17,14 +17,20 @@ import { idToString } from '../../../../db/ids'
 import { BannersRepository } from '../../../content/banners/banners.repository'
 import { ArticlesService } from '../../../content/articles/articles.service'
 import { CurriculumRepository, type SubjectWithLevels } from '../../../curriculum'
+import { FilesService } from '../../../files'
 import { QuestionsRepository } from '../../../questions'
+import { ALL_GROUP_SURFACES, filterOf } from '../../../questions/serving'
 import { SubscriptionService } from '../../../subscriptions'
 import { UsersRepository } from '../../../users'
+import { classLevelOfGrade } from '../../../users/class-level'
 import { StreakService, WalletService } from '../../../wallet'
-import { OFFERED_LEVEL_CODES } from '../../rules'
 import { BankFacts } from './bank-facts'
 import { OverviewRepository } from './overview.repository'
-import { bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, round, weekEndMyt, weekStartMyt } from './rules'
+import { DASHBOARD_LEVEL_CODES, bannerAudiences, cutQuestionText, difficultyLevelOfTp, greetingPeriod, pct, pooledAccuracy, round, weekEndMyt, weekStartMyt } from './rules'
+
+/** An open window over the answer store (all time) for the pooled accuracy. */
+const ALL_TIME_FROM = new Date(0)
+const ALL_TIME_TO = new Date('9999-12-31T00:00:00Z')
 
 /** The caller of a read: own data only (card AC4), in the mode (real or Mod Pelajar) of the request. */
 export interface Reader {
@@ -43,6 +49,12 @@ export const OVERVIEW_OPTIONS = Symbol('OVERVIEW_OPTIONS')
 /** The bank counts are global and change only when staff publish; a few seconds of reuse keeps the dashboard under the card budget on a 130k-question bank (AC5). */
 export const DEFAULT_OVERVIEW_OPTIONS: OverviewOptions = { bankTtlMs: 60_000 }
 
+/** FR-MUR-2-8: five rows, read from a window of the newest candidates (the MCQ shape is checked on the window only). */
+const RECENT_LIMIT = 5
+const RECENT_WINDOW = 60
+/** At most 20 pages of 60 candidates (1200 rows) are read before the list is returned short. */
+const RECENT_MAX_PAGES = 20
+
 const notFound = (): ApiError => ApiError.of('NOT_FOUND', { message: PRACTICE_READS_MESSAGES.notFound })
 
 /**
@@ -54,6 +66,9 @@ export const subjectView = (s: SubjectWithLevels, bank: BankFacts, offeredIds: r
   const n = bank.practice(id, offeredIds)
   return { id, code: s.code, name: s.name, nameEn: s.nameEn, icon: s.icon, color: s.color, isCore: s.isCore, approvedCount: n, bankCount: n }
 }
+
+/** The Bab-mode level shown first when the subject offers it; otherwise the first offered level. */
+const DEFAULT_CHAPTER_LEVEL_CODE = 'T4'
 
 /**
  * Overview reads of M05 (SRS section 7 #1, #2, #3, #7, #8): the dashboard (S1), the practice subjects (S2, S3)
@@ -80,6 +95,7 @@ export class OverviewService {
     @Inject(ModuleRef) private readonly moduleRef: ModuleRef,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(OVERVIEW_OPTIONS) private readonly options: OverviewOptions,
+    @Inject(FilesService) private readonly files: FilesService,
   ) {}
 
   /**
@@ -130,9 +146,10 @@ export class OverviewService {
     const now = this.clock.now()
     const from = weekStartMyt(now)
     const to = weekEndMyt(from)
-    const [subjects, levels, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent] = await Promise.all([
+    const [subjects, levels, offeredIds, bank, user, trial, streak, wallet, week, weekSessions, revisionTotal, usage, banners, articles, recent, pooled, activePackage] = await Promise.all([
       this.curriculum.subjects({ active: true }),
       this.curriculum.levels({ active: true }),
+      this.offeredIds(),
       this.bankFacts(),
       this.users.get(who.userId),
       this.subscriptions.trial(who.userId, now),
@@ -144,9 +161,11 @@ export class OverviewService {
       this.repo.subjectUsage(),
       this.activeBanners(who.role, now),
       this.latestArticles(),
-      this.recentQuestions(),
+      this.recentQuestions(who),
+      this.repo.answerFigures(who.userId, ALL_TIME_FROM, ALL_TIME_TO, who.isTest),
+      this.subscriptions.activePackage(who.userId, now),
     ])
-    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const views = subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
     const subjectStats = views
       .map((v) => ({
         id: v.id,
@@ -166,6 +185,8 @@ export class OverviewService {
       streak: { count: streak.current, practisedToday: streak.lastActivityDate === mytDay(now) },
       wallet: { coins: wallet.currentSyiling, points: wallet.xp, level: wallet.level, levelProgressPct: wallet.levelProgressPct },
       week: { sessions: weekSessions, accuracyPct: Math.round(pct(week.correct, week.answered)) },
+      accuracyPct: pooledAccuracy(pooled.correct, pooled.answered),
+      package: activePackage,
       banners,
       // BE-23 (challenges, badges) has not merged: nothing to show yet (open question).
       quests: [],
@@ -181,7 +202,17 @@ export class OverviewService {
         activeLevels: levels.length,
         approvedQuestions: bank.count(),
       },
-      levelPills: levels.map((l) => ({ code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count: bank.count({ levelId: idToString(l.id) }) })),
+      // FR-MUR-2-11, D91: Tingkatan 1-5 only; each count is the Latih Tubi figure the subject chips use (`bank.practice` per subject that offers the level, summed).
+      levelPills: levels
+        .filter((l) => DASHBOARD_LEVEL_CODES.includes(l.code))
+        .map((l) => {
+          const levelId = idToString(l.id)
+          const count = subjects.reduce(
+            (n, s) => (this.offeredOf(s, levels, offeredIds).some((o) => idToString(o.id) === levelId) ? n + bank.practice(idToString(s.id), [levelId]) : n),
+            0,
+          )
+          return { code: l.code, name: l.name, stage: l.stage as 'primary' | 'lower_secondary' | 'upper_secondary', count }
+        }),
       recentQuestions: recent,
       difficultyChart: bank.difficultyChart(),
       subjectStats,
@@ -212,32 +243,102 @@ export class OverviewService {
     }
   }
 
-  /** BR-29: the five newest published objective questions, text cut at 100 characters. */
-  private async recentQuestions(): Promise<PracticeReadDashboard['recentQuestions']> {
-    const ids = await this.repo.newestPublishedMcqIds(5)
+  /**
+   * The Education level id of the caller's own form (D101: T1 to T5, from `users.grade`), `null` when the caller has no form (a staff
+   * role, or a user without a grade: no form filter), and `'none'` when the form has no level row (the list is then empty, never another form's).
+   */
+  private async formLevelId(userId: string): Promise<string | null | 'none'> {
+    const user = await this.users.get(userId)
+    const code = classLevelOfGrade(user?.grade ?? null)
+    if (code === null) return null
+    const level = (await this.curriculum.levels()).find((l) => l.code === code)
+    return level ? idToString(level.id) : 'none'
+  }
+
+  /**
+   * FR-MUR-2-8: the five newest SERVABLE questions of the caller's own form, text cut at 140 characters, with the first figure as a thumbnail and no
+   * answer key (the wire has no option or key field). "Servable" is the Latih Tubi definition (`filterOf('latih_tubi_spm')` with the figure-capable shape, D91, D105), so a card, a list and a draw agree:
+   * the window of the newest candidates is read through the shared scope (`scopeSql`), and the MCQ shape is checked on that window only (`eligibleAmong`).
+   */
+  private async recentQuestions(who: Reader): Promise<PracticeReadDashboard['recentQuestions']> {
+    const form = await this.formLevelId(who.userId)
+    if (form === 'none') return []
+    // D105: the dashboard lists figure questions and whole stimulus groups, so it reads the figure-capable shape of `filterOf` (every INCLUDE
+    // surface, `ALL_GROUP_SURFACES`), not the card's `this.surfaces` (text-only until the Latih Tubi screen lists figures).
+    const servableFilter = filterOf('latih_tubi_spm', {}, ALL_GROUP_SURFACES)
+    const windowFilter = { ...servableFilter, mcqShape: undefined }
+    const formFilter = form === null ? {} : { educationLevelId: form }
+    const scope = this.questions.scopeSql({ ...windowFilter, ...formFilter, status: 'approved', active: true }, true)
+    // Page backwards through the newest candidates until five pass the shape check or the scope is exhausted (bounded).
+    const ids: string[] = []
+    let below: string | undefined
+    for (let page = 0; page < RECENT_MAX_PAGES && ids.length < RECENT_LIMIT; page++) {
+      const candidates = await this.repo.newestIdsOf(scope, RECENT_WINDOW, below)
+      if (candidates.length === 0) break
+      const servable = new Set(await this.questions.eligibleAmong(candidates, { ...servableFilter, ...formFilter }))
+      ids.push(...candidates.filter((id) => servable.has(id)))
+      if (candidates.length < RECENT_WINDOW) break
+      below = candidates[candidates.length - 1]
+    }
+    ids.splice(RECENT_LIMIT)
     // A stored question that fails to load (a bad stored key fails closed in the bank) must not take the dashboard down.
     const records = await this.questions.getMany(ids, 'live').catch((err: unknown) => {
       this.logger.warn(`dashboard: latest questions unavailable (${err instanceof Error ? err.message : String(err)})`)
       return []
     })
-    const [subjects, levels] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels()])
+    const [subjects, levels, figures] = await Promise.all([this.curriculum.subjects(), this.curriculum.levels(), this.figureUrls(records)])
     const subjectName = new Map(subjects.map((s) => [idToString(s.id), s.name]))
     const levelCode = new Map(levels.map((l) => [idToString(l.id), l.code]))
     return records.map((r) => ({
-        id: r.id,
-        subjectName: (r.version.subjectId && subjectName.get(r.version.subjectId)) || '',
-        difficulty: difficultyLevelOfTp(r.version.difficultyTp ?? 1),
-        text: cutQuestionText(r.version.stemMs ?? r.version.stemEn ?? ''),
-        createdAt: toMytTimestamp(r.createdAt),
-        levelCode: (r.version.educationLevelId && levelCode.get(r.version.educationLevelId)) || '',
-      }))
+      id: r.id,
+      subjectName: (r.version.subjectId && subjectName.get(r.version.subjectId)) || '',
+      difficulty: difficultyLevelOfTp(r.version.difficultyTp ?? 1),
+      text: cutQuestionText(r.version.stemMs ?? r.version.stemEn ?? ''),
+      createdAt: toMytTimestamp(r.createdAt),
+      levelCode: (r.version.educationLevelId && levelCode.get(r.version.educationLevelId)) || '',
+      figureThumbUrl: figures.get(r.id) ?? null,
+    }))
+  }
+
+  /**
+   * The served file URL (`/api/files/<token>`, the form the question display uses) of the first figure of each question: its own first image
+   * (`stemImageId`), else the first picture of its stimulus group. A pupil may read it because the question passes the same servable rule
+   * (`pupilMayReadQuestionImageSql`). A figure whose file is gone gives no entry (null), never a broken link.
+   */
+  private async figureUrls(records: readonly { id: string; groupId: string | null; version: { stemImageId?: string | null } }[]): Promise<Map<string, string>> {
+    const own = new Map<string, string>()
+    const groupIds = new Set<string>()
+    for (const r of records) {
+      if (r.version.stemImageId) own.set(r.id, r.version.stemImageId)
+      else if (r.groupId) groupIds.add(r.groupId)
+    }
+    const firstOfGroup = new Map<string, string>()
+    if (groupIds.size > 0) {
+      for (const g of await this.questions.groupsByIds([...groupIds])) {
+        const pic = g.stimuli.find((s) => s.kind !== 'passage' && s.kind !== 'table' && s.assetFileId !== null)
+        if (pic?.assetFileId) firstOfGroup.set(g.id, pic.assetFileId)
+      }
+    }
+    const fileOf = new Map<string, string>()
+    for (const r of records) {
+      const file = own.get(r.id) ?? (r.groupId ? firstOfGroup.get(r.groupId) : undefined)
+      if (file) fileOf.set(r.id, file)
+    }
+    if (fileOf.size === 0) return new Map()
+    const tokens = await this.files.publicIdsOf([...new Set(fileOf.values())])
+    const out = new Map<string, string>()
+    for (const [questionId, file] of fileOf) {
+      const token = tokens.get(file)
+      if (token) out.set(questionId, `/api/files/${token}`)
+    }
+    return out
   }
 
   // --- S2 / S3 --------------------------------------------------------------------------------------
 
   async subjects(): Promise<PracticeReadSubject[]> {
-    const [subjects, levels, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.bankFacts()])
-    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels).map((l) => idToString(l.id))))
+    const [subjects, levels, offeredIds, bank] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels(), this.offeredIds(), this.bankFacts()])
+    return subjects.map((s) => subjectView(s, bank, this.offeredOf(s, levels, offeredIds).map((l) => idToString(l.id))))
   }
 
   async subjectConfig(who: Reader, code: string): Promise<PracticeReadSubjectConfig> {
@@ -262,22 +363,30 @@ export class OverviewService {
 
   // --- S4 / S5 --------------------------------------------------------------------------------------
 
-  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number }[]> {
+  async chapterSubjects(): Promise<{ code: string; name: string; icon: string | null; color: string; chapterCount: number; questionCount: number; levels: { id: string; code: string; name: string; chapterCount: number; questionCount: number }[] }[]> {
     const subjects = await this.curriculum.subjects({ active: true })
     const out = []
-    const levels = await this.curriculum.levels()
-    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels) }))
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    const perSubject = subjects.map((s) => ({ s, offered: this.offeredOf(s, levels, offeredIds) }))
     // One chapter read per pair, then ONE question count over every chapter id.
     const { byPair, counts } = await this.practiceChaptersOf(perSubject.flatMap(({ s, offered }) => offered.map((l) => ({ subject: s, levelId: l.id }))))
     for (const { s, offered } of perSubject) {
       const chapterCount = offered.reduce((n, l) => n + (byPair.get(`${s.id}:${l.id}`)?.length ?? 0), 0)
       // BR-15: subjects with at least one chapter at an offered level.
       if (chapterCount === 0) continue
+      // FR-MUR-9-5 (S5-T02): the levels that have chapters, each with its own counts (the page filters by the chosen level).
+      const levelRows = offered
+        .map((l) => {
+          const chapters = byPair.get(`${s.id}:${l.id}`) ?? []
+          return { id: idToString(l.id), code: l.code, name: l.name, chapterCount: chapters.length, questionCount: chapters.reduce((m, c) => m + (counts.get(idToString(c.id)) ?? 0), 0) }
+        })
+        .filter((l) => l.chapterCount > 0)
       out.push({
         code: s.code,
         name: s.name,
         icon: s.icon,
         color: s.color,
+        levels: levelRows,
         chapterCount,
         // FR-M05-58, D91, V2 section 2.3 (R1E2E-09): the tile counts what the chapter draw can serve (chaptered, ungrouped, approved),
         // the sum of the per-chapter counts, not Q-PRACTICE(subject).
@@ -297,9 +406,10 @@ export class OverviewService {
       name: p.level.name,
       count: p.chapters.reduce((n, c) => n + (counts.get(idToString(c.id)) ?? 0), 0),
     }))
-    // Default: the first offered level; an unknown, non-offered or non-numeric `levelId` falls back to it.
+    // Default: Tingkatan 4 when the subject offers it, otherwise the first offered level (S4-T06 keeps T4 as the Bab-mode default now that T1..T3 are offered).
+    // An unknown, non-offered or non-numeric `levelId` falls back to it.
     const asked = levelIdQuery !== undefined && /^\d+$/.test(levelIdQuery.trim()) ? BigInt(levelIdQuery.trim()).toString() : undefined
-    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel[0]
+    const shown = perLevel.find((p) => idToString(p.level.id) === asked) ?? perLevel.find((p) => p.level.code === DEFAULT_CHAPTER_LEVEL_CODE) ?? perLevel[0]
     const chapters: PracticeReadChapterSubjectDetail['chapters'] = []
     if (shown) {
       const ids = shown.chapters.map((c) => idToString(c.id))
@@ -344,12 +454,18 @@ export class OverviewService {
 
   /** BR-11: the subject's level links at Darjah 1 to 4 (by code), in level order. */
   private async offeredLevels(subject: SubjectWithLevels) {
-    return this.offeredOf(subject, await this.curriculum.levels())
+    const [levels, offeredIds] = await Promise.all([this.curriculum.levels(), this.offeredIds()])
+    return this.offeredOf(subject, levels, offeredIds)
   }
 
-  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>) {
+  /** S4-T06: the level ids offered (active, non-primary, `offeredLevels`), read once per request by the callers. */
+  private async offeredIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).map((l) => l.id))
+  }
+
+  private offeredOf(subject: SubjectWithLevels, levels: Awaited<ReturnType<CurriculumRepository['levels']>>, offeredIds: ReadonlySet<string>) {
     const linked = new Set(subject.educationLevelIds.map(idToString))
-    return levels.filter((l) => linked.has(idToString(l.id)) && OFFERED_LEVEL_CODES.includes(l.code))
+    return levels.filter((l) => linked.has(idToString(l.id)) && offeredIds.has(idToString(l.id)))
   }
 
   /**

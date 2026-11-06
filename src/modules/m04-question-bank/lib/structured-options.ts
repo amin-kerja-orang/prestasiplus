@@ -33,3 +33,26 @@ export function partLabelText(questionNumber: number | null, partLabel: string):
   const letter = partLabel.toUpperCase()
   return questionNumber === null ? letter : `${String(questionNumber)}(${letter})`
 }
+
+/** Teacher status words (FR-GUR-44-10): the status chip and the Status filter. */
+/** An own submission the admin returned with a reason (R1-GUR-44 state machine, "Tolak"). */
+export const GURU_REJECTED_LABEL = 'Ditolak'
+export const GURU_STATUS_LABEL: Record<'approved' | 'review' | 'rejected', string> = {
+  approved: 'Diluluskan',
+  review: 'Menunggu Semakan',
+  rejected: GURU_REJECTED_LABEL,
+}
+export const guruRejectionLine = (reason: string): string => `Sebab: ${reason}`
+
+export const GURU_STATUS_FILTER_OPTIONS = [
+  { value: 'approved', label: GURU_STATUS_LABEL.approved },
+  { value: 'review', label: GURU_STATUS_LABEL.review },
+] as const
+
+/** PRD R1-GUR-44b wording and icon of the teacher mount (kept here, outside the page templates). */
+export const GURU_APPLY_LABEL = 'Tapis'
+export const GURU_BACK_LABEL = 'Kembali ke Senarai'
+export const GURU_VIEW_ICON = 'i-ph-eye'
+export const GURU_EDIT_LABEL = 'Edit'
+export const GURU_EDIT_ICON = 'i-ph-pencil-simple'
+export const GURU_CREATE_LABEL = 'Cipta Soalan Berstruktur'

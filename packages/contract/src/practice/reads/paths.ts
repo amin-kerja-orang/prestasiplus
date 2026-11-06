@@ -31,6 +31,9 @@ import {
   PracticeReadProgressSubjectSchema,
   PracticeReadQuestSchema,
   PracticeReadRecentQuestionSchema,
+  PracticeReadRemedialCompletedSchema,
+  PracticeReadRemedialNeededSchema,
+  PracticeReadRemedialSuggestionsSchema,
   PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubjectCardSchema,
   PracticeReadRevisionSubjectSchema,
@@ -84,6 +87,9 @@ export const PRACTICE_READS_COMPONENT_SCHEMAS = {
   PracticeReadRevisionSubjectCard: PracticeReadRevisionSubjectCardSchema,
   PracticeReadRevisionOverview: PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubject: PracticeReadRevisionSubjectSchema,
+  PracticeReadRemedialCompleted: PracticeReadRemedialCompletedSchema,
+  PracticeReadRemedialNeeded: PracticeReadRemedialNeededSchema,
+  PracticeReadRemedialSuggestions: PracticeReadRemedialSuggestionsSchema,
   PracticeReadProgressSubject: PracticeReadProgressSubjectSchema,
   PracticeReadProgress: PracticeReadProgressSchema,
   PracticeReadHistoryItem: PracticeReadHistoryItemSchema,
@@ -206,6 +212,15 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
 
   registerRoute(registry, {
     method: 'get',
+    path: '/practice/remedial-suggestions',
+    tags: [TAG],
+    summary: 'Own remedial suggestions: completed drills and subjects needing recovery (S5-T07)',
+    description: `GET /api/practice/remedial-suggestions (API-PRAC-08). completed: the newest 20 completed non-test revision sessions with Sebelum / Selepas. needed: subjects whose pooled accuracy (correct / answered over the non-test answer rows, whole number half up) is below 60 and whose revision drill has at least one servable question (FD-MUR-36). Pupils only; staff roles get empty arrays. Assigned tests stay on GET /remedial-tests/mine. ${WHO}`,
+    responses: { 200: json(envelopeOf(PracticeReadRemedialSuggestionsSchema), 'The completed sets and the needed subjects.'), 401: UNAUTHORIZED },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
     path: '/practice/progress',
     tags: [TAG],
     summary: 'Own progress analytics (S8)',
@@ -229,7 +244,7 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
     path: '/practice/corrections',
     tags: [TAG],
     summary: 'Own corrections: first attempt versus later attempt per question (S11)',
-    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). ${WHO}`,
+    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). ${WHO}`,
     request: { query: PracticeReadCorrectionsQuerySchema },
     responses: { 200: json(envelopeOf(PracticeReadCorrectionsSchema), 'The month report.'), 401: UNAUTHORIZED },
   })

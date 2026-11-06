@@ -19,6 +19,8 @@ export const INTAKE_AUDIT = {
   itemAccepted: 'intake.item_accepted',
   itemAdded: 'intake.item_added',
   itemEdited: 'intake.item_edited',
+  /** S6-T06: a teacher deletes their own pending or returned question submission. */
+  itemDeleted: 'intake.item_deleted',
   itemRejected: 'intake.item_rejected',
   itemDuplicate: 'intake.item_duplicate_decided',
   itemsBulk: 'intake.items_bulk',
@@ -32,6 +34,7 @@ export const MAX_STIMULI_PER_BATCH = 200
 export const MAX_DUPLICATE_ENTRIES_PER_ITEM = 50
 
 export const WORKFLOW_MESSAGES = {
+  diagramTargetGone: 'Soalan atau kumpulan rangsangan untuk gambar ini sudah tiada.',
   tooManyItems: 'Terlalu banyak soalan dalam kumpulan ini.',
   pageTooLarge: 'Nombor halaman terlalu besar.',
   tooManyStimuli: 'Terlalu banyak rajah atau petikan dalam kumpulan ini.',

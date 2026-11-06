@@ -116,7 +116,10 @@ describe('TRIAGE-1: teacher report and monitoring APIs are scoped to the own sch
     expect((await get(`/api/monitoring/schools/${own}`)).status).toBe(200)
     expect((await get(`/api/monitoring/schools/${foreignSchoolOfPupil}/students/${foreignPupil}`)).status).toBe(404)
     expect((await get(`/api/monitoring/schools/${own}/students/${foreignPupil}`)).status).toBe(404)
-    expect((await get(`/api/kirkpatrick/students/${foreignPupil}`)).status).toBe(403)
+    // D-T02-2: a pupil of another school answers 404 NOT_FOUND on the Kirkpatrick pupil endpoint (was 403)
+    const kp = await get(`/api/kirkpatrick/students/${foreignPupil}`)
+    expect(kp.status).toBe(404)
+    expect(json(kp.body)).toContain('NOT_FOUND')
     if (foreignTeacher) {
       expect((await get(`/api/monitoring/schools/${foreignTeacher.schoolId}/teachers/${foreignTeacher.id}`)).status).toBe(404)
       expect((await get(`/api/monitoring/schools/${own}/teachers/${foreignTeacher.id}`)).status).toBe(404)
