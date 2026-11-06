@@ -242,6 +242,41 @@ describe('QuizRunner question', () => {
     expect(t(w, 'question-contributor').text()).toContain('Soalan oleh:')
   })
 
+  it('shows the "Rujukan" link only for an http(s) referenceUrl (FR-GUR-44a-9)', async () => {
+    const base = session()
+    const [first, second] = base.questions
+    api.start.mockResolvedValue({
+      ...base,
+      questions: [
+        { ...first!, referenceUrl: 'https://rujukan.example.org/bab-1' },
+        { ...second!, referenceUrl: 'javascript:alert(1)' },
+      ],
+    })
+    const w = await render()
+    const link = t(w, 'question-reference-link')
+    expect(link.text()).toBe('Rujukan')
+    expect(link.attributes('href')).toBe('https://rujukan.example.org/bab-1')
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener noreferrer')
+    expect(t(w, 'question-text').html()).not.toContain('Rujukan')
+  })
+
+  it('hides the link when referenceUrl is absent, null, javascript: or an internal path', async () => {
+    const base = session()
+    for (const referenceUrl of [
+      undefined,
+      null,
+      'javascript:alert(1)',
+      '/dalaman',
+      'https://u:p@x.org',
+    ]) {
+      api.start.mockResolvedValue({ ...base, questions: [{ ...base.questions[0]!, referenceUrl }] })
+      const w = await render()
+      expect(w.find('[data-testid=question-reference]').exists(), String(referenceUrl)).toBe(false)
+      wrapper?.unmount()
+    }
+  })
+
   it('shows the revision chips and the "Salah {n}x" pill with revisionChips (S7)', async () => {
     const w = await render({ revisionChips: true })
     expect(t(w, 'chip-revision').text()).toContain(

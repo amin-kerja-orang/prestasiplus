@@ -4,7 +4,8 @@
  * A pupil must never be offered a link the app refuses afterwards:
  *   (a) /timeline: no "Profil Awam Anda" link to /pelajar/:id (outside the pupil's prototype scope);
  *   (b) /prestasi/tingkatan/t4: the 403 page (FR-MUR-4-2), no "Lihat →" link to /prestasi/kelas/:id, no 404 page;
- *   (c) own /prestasi/:id: no "Lihat Penuh" link to /headcount/student/:id (staff only);
+ *   (c) own /prestasi/:id: every "Lihat Penuh" goes to the pupil's own /headcount/student/:id, which opens
+ *       (S10-T09 #806 lets the pupil open its own page; R1-MUR-4 FR-MUR-4-6 lists the link), never a 403 or 404 page;
  *   (d) a teacher keeps the class links on the same page (no regression);
  *   (e) /kelas-saya: there is no join box and no POST to /api/kelas-saya/join (API-MUR-04).
  * Preconditions are asserted (the page rendered its data), never skipped, so an empty page cannot pass.
@@ -101,7 +102,7 @@ test.describe('pupil sweep: no dead links @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('(c) pupil own /prestasi/:id has no "Lihat Penuh" link to the headcount page @api', async ({
+  test('(c) pupil own /prestasi/:id: "Lihat Penuh" opens the own headcount page, no dead link @api', async ({
     page,
   }) => {
     const { user, pass } = account('studentB')
@@ -109,11 +110,23 @@ test.describe('pupil sweep: no dead links @api', () => {
     const id = await ownId(page)
     await page.goto(`/prestasi/${id}`)
     await expect(page.getByTestId('prestasi360-page')).toBeVisible({ timeout: 20_000 })
-    // Precondition: the pupil has headcount cards, so the link would have been rendered before the fix.
+    // Precondition: the pupil has headcount cards, so the link is rendered.
     await expect(page.getByTestId('headcount-block')).toBeVisible({ timeout: 20_000 })
-    await expect(page.locator(`a[href="/headcount/student/${id}"]`)).toHaveCount(0)
-    await expect(page.locator('a[href^="/headcount/"]')).toHaveCount(0)
+    await expect(page.getByTestId('headcount-empty')).toHaveCount(0)
+    const links = page.locator('a[href^="/headcount/"]')
+    await expect(links.first()).toBeVisible()
+    // Every headcount link is the pupil's own page; no other pupil and no staff-only headcount page.
+    const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+    expect(
+      hrefs.every((h) => h === `/headcount/student/${id}`),
+      JSON.stringify(hrefs),
+    ).toBe(true)
     await expectNoHScroll(page)
+    await links.first().click()
+    await expect(page).toHaveURL(new RegExp(`/headcount/student/${id}$`))
+    await expect(page).not.toHaveTitle('Akses Ditolak | PRESTASIPLUS')
+    await expectNot404(page)
+    await expect(page.getByTestId('headcount-student-page')).toBeVisible({ timeout: 20_000 })
   })
 
   test('(d) guru /prestasi/tingkatan/t4 still has the class links @api', async ({ page }) => {

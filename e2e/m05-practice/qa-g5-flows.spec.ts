@@ -391,7 +391,7 @@ test.describe('QA-G5 L22 structured flow', { tag: [moduleTag(5)] }, () => {
     )
 
     await gotoApp('/latihan-berstruktur?subject_id=3&scope=spm&kbat_level=6')
-    await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur buat masa ini')
+    await expect(tid(page, 'structured-empty')).toContainText('Tiada soalan berstruktur ditemui')
   })
 })
 
