@@ -84389,6 +84389,16 @@
               }
             ]
           },
+          "targetPaperId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "DM-45: the id of the paper whose `source_batch_id` is this batch (the draft paper made from it); null until one exists.",
+            "example": "1042"
+          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -84426,6 +84436,7 @@
           "itemCount",
           "reviewedCount",
           "owner",
+          "targetPaperId",
           "createdAt",
           "updatedAt",
           "submittedAt"
@@ -84567,6 +84578,16 @@
               }
             ]
           },
+          "targetPaperId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "DM-45: the id of the paper whose `source_batch_id` is this batch (the draft paper made from it); null until one exists.",
+            "example": "1042"
+          },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
           },
@@ -84610,6 +84631,7 @@
           "itemCount",
           "reviewedCount",
           "owner",
+          "targetPaperId",
           "createdAt",
           "updatedAt",
           "submittedAt",
