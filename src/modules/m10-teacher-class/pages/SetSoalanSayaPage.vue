@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S34 `/set-soalan-saya` "Set Soalan Guru", student (M10-T7b; FR-M10-73, FN-M10-5.7.1/5.7.2).
- * Empty: the observed card "Tiada Set Soalan". Populated rows are PROPOSED; "Mula" opens the M05
+ * Empty: the observed card "Tiada Set Soalan" (R1-MUR-26). Populated rows are PROPOSED; "Mula" opens the M05
  * quiz `/set-soalan-saya/:id/jawab`.
  */
 import { useApi } from '@/composables'
@@ -36,7 +36,7 @@ const { data, error, loading, reload } = useApi((signal) => fetchMyQuestionSets(
     <DsPanel v-else-if="data && data.data.length === 0" data-testid="sets-empty">
       <DsEmptyState
         :title="SET_COPY.emptyTitle"
-        :description="SET_COPY.emptyText"
+        :description="`${SET_COPY.emptyText} ${SET_COPY.emptyHint}`"
         icon="clipboard-text"
       />
     </DsPanel>

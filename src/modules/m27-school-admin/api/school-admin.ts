@@ -495,9 +495,9 @@ export const fetchSchoolPupilFormOptions = (o: { signal?: AbortSignal } = {}) =>
 // --- #16 S8 classes ----------------------------------------------------------------------------
 
 export interface SchoolClassRow {
-  /** `classroom:{id}`. */
+  /** `{kind}:{id}`. */
   key: string
-  kind: 'classroom'
+  kind: 'classroom' | 'school_class'
   id: number
   name: string
   subject: { id: number; name: string } | null
@@ -508,8 +508,8 @@ export interface SchoolClassRow {
   members: number
   joinCode: string | null
   isActive: boolean
-  /** `/prestasi/kelas/{id}`. */
-  link: string
+  /** `/prestasi/kelas/{id}` for a classroom; null for a school_class (no class dashboard). */
+  link: string | null
 }
 
 export interface SchoolClassListMeta {

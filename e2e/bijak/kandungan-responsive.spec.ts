@@ -19,7 +19,14 @@ test('Kandungan SPM hub and lanes fit the viewport', async ({ page, loginAs, got
   await gotoApp('/admin/spm')
   await expect(page.getByTestId('kandungan-cards')).toBeVisible({ timeout: 30_000 })
   await expect(page.getByTestId('kandungan-card-databank')).toBeVisible()
-  await expect(page.getByTestId('kandungan-card-tracking-a')).toHaveCount(0)
+  await expect(page.getByTestId('kandungan-card-subjektif')).toBeVisible()
+  await expect(page.getByTestId('kandungan-card-latih-tubi')).toBeVisible()
+  await expect(page.getByTestId('kandungan-card-tracking-a')).toHaveCount(0) // S3-T05 adds the screen
+  await expect(page.getByTestId('kandungan-card-kertas-subjektif')).toHaveCount(0) // S3-T06 adds the screen
+  // Hub columns (4.R): one at 375, two at 768, three at 1280.
+  const width = page.viewportSize()!.width
+  const tops = await page.locator('[data-testid^="kandungan-card-"]').evaluateAll((cards) => cards.map((c) => Math.round(c.getBoundingClientRect().top)))
+  expect(tops.filter((t) => t === tops[0]).length, `hub columns at ${String(width)}`).toBe(width >= 1280 ? 3 : width >= 768 ? 2 : 1)
   await fits(page, 'kandungan-hub')
 
   await gotoApp('/admin/spm/databank')
@@ -30,4 +37,13 @@ test('Kandungan SPM hub and lanes fit the viewport', async ({ page, loginAs, got
   await gotoApp('/admin/spm/simulasi')
   await expect(page.getByTestId('lane-simulasi')).toBeVisible({ timeout: 30_000 })
   await fits(page, 'kandungan-simulasi')
+
+  await gotoApp('/admin/spm/subjektif')
+  await expect(page.getByTestId('lane-subjektif')).toBeVisible({ timeout: 30_000 })
+  await fits(page, 'kandungan-subjektif')
+
+  await gotoApp('/admin/spm/latih-tubi')
+  await expect(page.getByTestId('lane-latih-tubi')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('lane-status')).toHaveCount(0)
+  await fits(page, 'kandungan-latih-tubi')
 })

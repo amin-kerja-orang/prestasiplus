@@ -467,6 +467,20 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     expect(done.body.error).toMatchObject({ code: 'ALREADY_COMPLETED', message: 'Misi ini sudah diselesaikan.' })
   })
 
+  it('mission: referenceUrl is served by the start and by the replay for a private question, and absent for one without (FR-GUR-44a-9)', async () => {
+    const url = 'https://rujukan.example.org/bab-1'
+    const withLink = t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1, referenceUrl: url })
+    const plain = t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1 })
+    t.assignments.set('mission', '9003', { status: 'ok', subjectId: w.subject.math, questionIds: [withLink, plain] })
+    const first = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
+    const replay = await startSession(pelajar, { mode: 'mission', missionId: '9003' })
+    for (const res of [first, replay]) {
+      expect(StartSessionResponseSchema.safeParse(res.body).success).toBe(true)
+      expect(res.questions.find((q) => q.id === withLink)?.referenceUrl).toBe(url)
+      expect(res.questions.find((q) => q.id === plain)).not.toHaveProperty('referenceUrl')
+    }
+  })
+
   it('mission: no coin rate is stored (S5-T03, the rate is read when the credit is written)', async () => {
     t.assignments.set('mission', '9002', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 2) })
     const s = await startSession(pelajar, { mode: 'mission', missionId: '9002' })
@@ -487,22 +501,28 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     expect(stored[0]?.remedial_test_id).toBe('7700')
   })
 
-  it('question_set: timeLimitSec is returned and stored; NO_ATTEMPTS_LEFT "Tiada percubaan lagi untuk set ini." once maxAttempts sessions are completed', async () => {
+  it('question_set (R1, S5-T11 B2): a stored time limit and attempt cap are ignored: timeLimitSec is null and the set can be started again after a completion', async () => {
     t.assignments.set('question_set', '7499', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 1, timeLimitSec: 600 })
     const first = await startSession(pelajar, { mode: 'question_set', questionSetId: '7499' })
-    expect(first.body.timeLimitSec).toBe(600)
-    await pelajar.post(`/api/practice/sessions/${first.sessionId}/submit`, { timeSpent: 10 })
-    const second = await post(pelajar, { mode: 'question_set', questionSetId: '7499' })
-    expect(second.status).toBe(409)
-    expect(second.body.error).toMatchObject({ code: 'NO_ATTEMPTS_LEFT', message: 'Tiada percubaan lagi untuk set ini.' })
-    // maxAttempts 0 is unlimited.
-    t.assignments.set('question_set', '7500', { status: 'ok', subjectId: null, questionIds: bank.random.slice(0, 3), maxAttempts: 0 })
-    const a = await startSession(pelajar, { mode: 'question_set', questionSetId: '7500' })
-    await pelajar.post(`/api/practice/sessions/${a.sessionId}/submit`, { timeSpent: 1 })
-    const b = await startSession(pelajar, { mode: 'question_set', questionSetId: '7500' })
-    expect(b.body.timeLimitSec).toBeNull()
-    expect(b.body.subject).toMatchObject({ code: 'MATH' })
+    expect(first.body.timeLimitSec).toBeNull()
+    const stored = await t.db.query<{ time_limit_sec: number | null }>('select time_limit_sec from practice_sessions where id = $1', [first.sessionId])
+    expect(stored[0]?.time_limit_sec).toBeNull()
+    expect((await pelajar.post(`/api/practice/sessions/${first.sessionId}/submit`, { timeSpent: 10 })).status).toBe(200)
+    // No ERR-PRAC-05 although maxAttempts was 1.
+    const second = await startSession(pelajar, { mode: 'question_set', questionSetId: '7499' })
+    expect(second.sessionId).not.toBe(first.sessionId)
+    expect(second.body.timeLimitSec).toBeNull()
+    expect(second.body.subject).toMatchObject({ code: 'MATH' })
     expectError(await post(pelajar, { mode: 'question_set', questionSetId: '1' }), 'NOT_FOUND')
+  })
+
+  it('question_set (R7): a resumed legacy in-progress session that stored a time limit returns timeLimitSec null', async () => {
+    t.assignments.set('question_set', '7498', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 3), maxAttempts: 2, timeLimitSec: 600 })
+    const first = await startSession(pelajar, { mode: 'question_set', questionSetId: '7498' })
+    await t.db.query('update practice_sessions set time_limit_sec = 600 where id = $1', [first.sessionId])
+    const again = await startSession(pelajar, { mode: 'question_set', questionSetId: '7498' })
+    expect(again.sessionId).toBe(first.sessionId)
+    expect(again.body.timeLimitSec).toBeNull()
   })
 
   it('assigned questions that are no longer eligible are not served; none left is NOT_ENOUGH_QUESTIONS', async () => {

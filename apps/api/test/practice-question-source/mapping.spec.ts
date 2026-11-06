@@ -14,7 +14,7 @@ const mcqLeaf = (over: Record<string, unknown> = {}): QuestionPart =>
     ...over,
   }) as unknown as QuestionPart
 
-function record(over: { parts?: QuestionPart[]; type?: string; groupId?: string | null; stimulusIds?: string[]; stem?: string | null; language?: string; tp?: number | null; chapterId?: string | null } = {}): QuestionRecord {
+function record(over: { visibility?: 'bank' | 'teacher_private'; referenceUrl?: string | null; parts?: QuestionPart[]; type?: string; groupId?: string | null; stimulusIds?: string[]; stem?: string | null; language?: string; tp?: number | null; chapterId?: string | null } = {}): QuestionRecord {
   const now = new Date('2026-10-21T00:00:00Z')
   return {
     id: '42',
@@ -59,6 +59,8 @@ function record(over: { parts?: QuestionPart[]; type?: string; groupId?: string 
       setLabel: null,
       sourceFile: null,
       spIds: [],
+      ...(over.visibility ? { visibility: over.visibility } : {}),
+      ...(over.referenceUrl === undefined ? {} : { referenceUrl: over.referenceUrl }),
       stimulusIds: over.stimulusIds ?? [],
       parts: over.parts ?? [mcqLeaf()],
       createdAt: now,
@@ -110,6 +112,14 @@ describe('BE-09 -> practice mapping', () => {
   ])('refuses %s (never served half-mapped)', (_name, r) => {
     expect(servableMcq(r).ok).toBe(false)
     expect(toPracticeQuestion(r, null)).toBeNull()
+  })
+
+  it('referenceUrl: a private question carries its link, a bank question never does (FR-GUR-44a-9)', () => {
+    const url = 'https://rujukan.example.org/bab-1'
+    expect(toPracticeQuestion(record({ visibility: 'teacher_private', referenceUrl: url }), null)?.referenceUrl).toBe(url)
+    expect(toPracticeQuestion(record({ visibility: 'teacher_private', referenceUrl: null }), null)).not.toHaveProperty('referenceUrl')
+    expect(toPracticeQuestion(record({ visibility: 'bank', referenceUrl: url }), null)).not.toHaveProperty('referenceUrl')
+    expect(toPracticeQuestion(record({ referenceUrl: url }), null)).not.toHaveProperty('referenceUrl')
   })
 
   it('difficulty <-> TP', () => {
