@@ -1,5 +1,9 @@
 <script setup lang="ts">
-/** "Soalan Terkini" (FR-M05-26): the latest questions with subject, star difficulty, age and level. */
+/**
+ * "Soalan Terkini" (FR-M05-26, FR-MUR-2-8): the latest questions of the pupil's form with subject, star difficulty, age and level;
+ * a question with a figure shows the figure as a small thumbnail. Read only: no answer key, no link.
+ */
+import { DsArt3D } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import type { DashboardRecentQuestion } from '../../api/types'
@@ -40,6 +44,15 @@ defineProps<{ questions: DashboardRecentQuestion[] }>()
           <p class="text-label break-words text-default" data-testid="dash-recent-text">
             {{ q.text }}
           </p>
+          <DsArt3D
+            v-if="q.figureThumbUrl"
+            variant="plain"
+            ratio="square"
+            :src="q.figureThumbUrl"
+            alt="Rajah soalan"
+            class="w-24"
+            data-testid="dash-recent-figure"
+          />
           <div class="flex items-center justify-between gap-2 text-caption text-muted">
             <span>{{ diffForHumans(q.createdAt) }}</span>
             <UBadge color="primary" variant="subtle" size="sm" data-testid="dash-recent-level">{{

@@ -24,7 +24,9 @@ import { hashKey } from '@/mock/dataset'
 import type { SeedContext } from '@/mock/define'
 
 import { masterNotesRepo, type MasterNote } from '../repository/master-notes'
+import { guruSubmissions } from '../repository/guru-structured'
 import { questionsRepo } from '../repository/questions'
+import { structuredRepo } from '../repository/structured'
 import { submissionsRepo, type QuestionSubmission } from '../repository/submissions'
 
 /** `masterNotes: { flagged?: number[], approved?: number[] }` (E2E-M04-52). */
@@ -262,4 +264,60 @@ export function seedWorkflow(): void {
 export function finaliseWorkflow(ctx: SeedContext): void {
   masterNotesRepo.seedRows(defaultMasterNotes((id) => questionsRepo.exists(id)))
   masterNotesRepo.applySeedOverride(ctx.overrides[MASTER_NOTES_OVERRIDE])
+  seedGuruStructuredSubmissions()
+}
+
+/**
+ * Own structured submissions of the canonical Guru (M01 id 5) for the S6-T17 teacher list (PROPOSED, no
+ * live value exists): one waiting, one returned with a reason. The subject and level are those of the
+ * first two visible structured questions, so the filters find them; the texts are fictitious.
+ */
+export const GURU_SEED_OWNER = 5
+
+export function seedGuruStructuredSubmissions(): void {
+  guruSubmissions.reset()
+  const [a, b] = structuredRepo.visible({ pageSize: 2 }).rows
+  if (!a || !b) return
+  const base = Date.parse('2026-09-24T09:00:00+08:00')
+  const part = (text: string, marks: number, scheme: string) => ({
+    text,
+    marks,
+    scheme,
+    cognitiveLevel: null,
+  })
+  guruSubmissions.seed({
+    ownerId: GURU_SEED_OWNER,
+    subjectId: b.subjectId,
+    educationLevelId: b.educationLevelId,
+    chapterId: null,
+    spIds: [],
+    tp: null,
+    cognitiveLevel: null,
+    difficultyLevel: 3,
+    stimulus: 'Rajah menunjukkan aliran tunai sebuah kedai runcit dalam tempoh tiga bulan.',
+    stimulusImageId: null,
+    parts: [part('Nyatakan satu punca aliran tunai negatif.', 2, 'Belanja melebihi jualan tunai.')],
+    createdAtMs: base,
+    rejectionReason: 'Skema jawapan bahagian (a) tidak lengkap.',
+    editable: true,
+  })
+  guruSubmissions.seed({
+    ownerId: GURU_SEED_OWNER,
+    subjectId: a.subjectId,
+    educationLevelId: a.educationLevelId,
+    chapterId: null,
+    spIds: [],
+    tp: 3,
+    cognitiveLevel: 'mengaplikasi',
+    difficultyLevel: 2,
+    stimulus: 'Petikan pendek tentang kitar semula di sebuah sekolah menengah.',
+    stimulusImageId: null,
+    parts: [
+      part('Berikan dua kebaikan kitar semula.', 4, 'Mengurangkan sampah; menjimatkan sumber.'),
+      part('Cadangkan satu langkah untuk sekolah anda.', 3, 'Mana-mana jawapan munasabah.'),
+    ],
+    createdAtMs: base + 3_600_000,
+    rejectionReason: null,
+    editable: true,
+  })
 }
