@@ -333,7 +333,7 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/generate',
     tags: [BIJAK_STANDARDS_TAG],
     summary: 'Jana draf kertas: a draft Kertas Pilihan generated from the head blueprint (AC-29.2)',
-    description: `Same generator as Jana Kertas. Creates a draft pilihan paper that is opened for editing and never published automatically. Admin Pusat may use a Spec or Disahkan head. 422 NO_BLUEPRINT, 422 SHORTAGE and 503 GENERATE_LIMIT have the same shapes as POST /bijak/papers/generate. ${SPEC} ${ROLE_NOTE}`,
+    description: `Same generator as Jana Kertas. Creates a draft pilihan paper that is opened for editing and never published automatically. Admin Pusat may use a Spec or Disahkan head. 422 NO_BLUEPRINT, 422 SHORTAGE and 503 GENERATE_LIMIT have the error shapes of BijakGenerateNoBlueprintError, BijakGenerateShortageError and BijakGenerateLimitError. ${SPEC} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakDraftGenerateRequestSchema) },
     responses: {
       201: json(envelopeOf(BijakDraftGenerateResultSchema), 'The draft paper id.'),
