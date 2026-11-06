@@ -1246,10 +1246,10 @@ export class BijakServer implements BijakApi {
   async acceptUnreviewed(
     id: string,
     only?: readonly string[],
-  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[]; batch: IntakeBatch }> {
     const b0 = this.intakeBatch(id)
     let done = 0
-    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[] = []
     for (const q of jsonClone(b0.questions)) {
       if (only && !only.includes(q.id)) continue
       if (q.lowFields.some((f) => !q.confirmed.includes(f))) {

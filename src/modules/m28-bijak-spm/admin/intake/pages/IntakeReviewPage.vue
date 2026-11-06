@@ -424,8 +424,13 @@ const DUPLICATE_KIND: Record<IntakeDuplicate['kind'], string> = { exact: 'Sama',
 const DUPLICATE_STATUS: Record<IntakeDuplicate['status'], string> = { open: 'Terbuka', linked: 'Dipautkan', dismissed: 'Diketepikan' }
 
 const duplicatesOf = (id: string): IntakeDuplicate[] => batch.value?.duplicates?.[resolveId(id)] ?? []
-/** An open `Sama` or `Hampir sama` blocks Terima until it is resolved (FR-QA-36); a `Varian` is only information. */
-const blockedByDuplicate = (id: string): boolean => duplicatesOf(id).some((d) => d.status === 'open' && d.kind !== 'variant')
+/**
+ * An open or linked `Sama` or `Hampir sama` blocks Terima (FR-QA-36): the server keeps a linked item in state `duplicate`
+ * and refuses to accept it (409 itemIsDuplicate; the bulk accept skips it as WRONG_STATE). Only `Diketepikan` releases
+ * it. A `Varian` is only information.
+ */
+const blockedByDuplicate = (id: string): boolean =>
+  duplicatesOf(id).some((d) => (d.status === 'open' || d.status === 'linked') && d.kind !== 'variant')
 
 async function resolveDuplicate(id: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan'): Promise<void> {
   const b = batch.value
@@ -498,26 +503,36 @@ async function confirmReject(): Promise<void> {
 async function acceptAll(): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
-  // Unreviewed = still open (the batch holds no accepted or rejected item), minus an item an open duplicate blocks.
-  const pending = b.questions.filter((q) => !blockedByDuplicate(q.id)).map((q) => q.id)
+  // Unreviewed = still open (the batch holds no accepted or rejected item), minus an item a duplicate (open or linked) blocks.
+  const pending = b.questions.filter((q) => !blockedByDuplicate(q.id)).map((q) => resolveId(q.id))
   if (pending.length === 0) return
-  const ok = await confirm({
-    message: `Terima ${pending.length} item yang belum disemak?`,
-    confirmLabel: 'Ya, Terima Semua',
-    cancelLabel: 'Batal',
-  })
-  if (!ok) return
+  // Hold the guard while the dialog is open, so a second click or the key A cannot start another run.
   deciding.value = true
-  decisionErrors.value = []
-  decisionNote.value = ''
   try {
+    const ok = await confirm({
+      message: `Terima ${pending.length} item yang belum disemak?`,
+      confirmLabel: 'Ya, Terima Semua',
+      cancelLabel: 'Batal',
+    })
+    if (!ok) return
+    decisionErrors.value = []
+    decisionNote.value = ''
     if (!(await settle())) return
-    const r = await server.acceptUnreviewed(b.id, pending.map(resolveId))
+    // settle() may adopt server ids: compare resolved ids on both sides so an adopted item is kept.
+    const keep = new Set(pending.map(resolveId))
+    const ids = (batch.value?.questions ?? []).map((q) => resolveId(q.id)).filter((qid) => keep.has(qid))
+    const r = await server.acceptUnreviewed(b.id, ids)
     decisionNote.value = `${r.done} diterima, ${r.skipped.length} gagal`
     // Failed items open first (09-06).
     afterDecision(r.batch, r.skipped[0]?.id)
   } catch (e) {
     decisionErrors.value = [failMessage(e)]
+    // A chunk may have been accepted before the failure: read the batch back so the screen is not stale.
+    try {
+      afterDecision(await server.getIntakeBatch(b.id), current.value ?? undefined)
+    } catch {
+      /* the error above stays; the next action reloads */
+    }
   } finally {
     deciding.value = false
   }

@@ -4,7 +4,7 @@
  * Writes: one batch per run and viewport, sent by Admin Pusat, with two questions of the same text.
  * Needs AI_PROVIDER=mock and the job worker on.
  */
-import type { APIRequestContext } from '@playwright/test'
+import type { APIRequestContext, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
@@ -43,8 +43,7 @@ async function login(request: APIRequestContext): Promise<string> {
   return ((await (await request.get('/api/session')).json()) as { data: { csrf: string } }).data.csrf
 }
 
-test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) => {
-  test.setTimeout(180_000)
+async function seedDuplicatePair(page: Page): Promise<string> {
   const csrf = await login(page.request)
   const token = `PENDUA${String(Date.now())}`
   const stem = `Soalan ${token} tentang fungsi jantung manusia [1 markah]`
@@ -73,6 +72,12 @@ test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) 
     .poll(async () => ((await (await page.request.get(`/api/intake/items?batchId=${batchId}`)).json()) as { data: unknown[] }).data.length, { timeout: 90_000, intervals: [2_000] })
     .toBe(2)
 
+  return batchId
+}
+
+test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) => {
+  test.setTimeout(180_000)
+  const batchId = await seedDuplicatePair(page)
   await page.goto(`/admin/spm/soalan/ekstrak/${batchId}`)
   await expect(page.getByTestId('item-provenance')).toContainText('Cadangan Provenans')
   await expect(page.getByTestId('item-provenance')).toContainText('Tahun 2025')
@@ -90,4 +95,22 @@ test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) 
   await expect(findings).toContainText('Diketepikan')
   await expect(page.getByTestId('item-duplicate-dismiss')).toHaveCount(0)
   await expect(page.getByTestId('item-accept')).toBeEnabled()
+})
+
+test('a linked duplicate keeps Terima disabled and Terima semua does not count it @api', async ({ page }) => {
+  test.setTimeout(180_000)
+  const batchId = await seedDuplicatePair(page)
+  await page.goto(`/admin/spm/soalan/ekstrak/${batchId}`)
+  await page.getByTestId('item-next').click()
+  await expect(page.getByTestId('item-counter')).toContainText('Item 2 / 2')
+  await expect(page.getByTestId('item-accept')).toBeDisabled()
+  await page.getByTestId('item-duplicate-link').click()
+  await expect(page.getByTestId('item-duplicates')).toContainText('Dipautkan')
+  // The server keeps a linked item in `duplicate` and refuses to accept it: Terima stays disabled.
+  await expect(page.getByTestId('item-counter')).toContainText('Item 2 / 2')
+  await expect(page.getByTestId('item-accept')).toBeDisabled()
+  // Terima semua counts only the item that can be accepted (item 1).
+  await page.getByTestId('accept-all').click()
+  await expect(page.getByText('Terima 1 item yang belum disemak?')).toBeVisible()
+  await page.getByRole('button', { name: 'Batal' }).click()
 })
