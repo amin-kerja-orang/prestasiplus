@@ -112,10 +112,10 @@ async function remove(id: number): Promise<void> {
 
 function actionsOf(id: number): RowAction[] {
   return [
-    { label: 'Edit', icon: 'pencil-simple', to: videoEditPath(id) },
+    { label: 'Edit', icon: 'i-ph-pencil-simple', to: videoEditPath(id) },
     {
       label: 'Padam',
-      icon: 'trash',
+      icon: 'i-ph-trash',
       danger: true,
       disabled: deleting.value,
       onSelect: () => void remove(id),
