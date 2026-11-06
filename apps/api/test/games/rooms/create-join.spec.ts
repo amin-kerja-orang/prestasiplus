@@ -13,10 +13,10 @@ import {
 import {
   FORM,
   P,
+  ageRoom,
+  demo001Students,
   PB_FORM,
   createRoom,
-  demo001Students,
-  ListBots,
   parseRoom,
   roomOf,
   userId,
@@ -31,7 +31,6 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
   let maju: Client
   let teacher: Client
   let admin: Client
-  let bots: ListBots
 
   beforeAll(async () => {
     t = await bootGamesApp()
@@ -40,9 +39,6 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
     maju = await loginAs(t, ACCOUNTS.studentMaju)
     teacher = await loginAs(t, ACCOUNTS.teacher)
     admin = await loginAs(t, ACCOUNTS.admin)
-    const kids = await demo001Students(t.db)
-    bots = new ListBots(kids.map((k) => ({ id: k.id, name: k.name, grade: k.grade })))
-    t.ports.provideBotPool(bots)
   })
   afterAll(async () => {
     await t.close()
@@ -314,13 +310,15 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
         ['unknown', 'perang-fakta', 'ZZZZZZ'],
         ['other game', 'benteng-ilmu', code],
         ['other game 2', 'perang-fakta', waitingBenteng],
-        ['not waiting', 'perang-fakta', started],
       ]
       for (const [name, game, value] of attempts) {
         const res = await student2.post(P(game, undefined, '/join'), joinBody(value))
         expectError(res, 'NOT_FOUND', M.roomNotFound)
         expect(res.status, name).toBe(404)
       }
+      // A started room is no longer "not found": ERR-GAME-09 (409), FR-GM-R.2 (tests in lifecycle.spec.ts)
+      const startedRes = await student2.post(P('perang-fakta', undefined, '/join'), joinBody(started))
+      expectError(startedRes, 'CONFLICT', M.startAlreadyStarted)
       expectError(
         await student2.post(P('perang-fakta', undefined, '/join'), undefined),
         'NOT_FOUND',
@@ -341,8 +339,8 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       })
       expectError(
         await maju.post(P('perang-fakta', undefined, '/join'), { room_code: sameGrade }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'FORBIDDEN',
+        M.actionType, // AC-GM-R.6 (ruling on DOC DEFECT 48): 403 "Tindakan tidak sah."
       )
       expect(
         (await student2.post(P('perang-fakta', undefined, '/join'), { room_code: sameGrade }))
@@ -366,8 +364,8 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       })
       expectError(
         await maju.post(P('papan-bijak', undefined, '/join'), { room_code: custom }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'FORBIDDEN',
+        M.actionType, // AC-GM-R.6 (ruling on DOC DEFECT 48): 403 "Tindakan tidak sah."
       )
       expect(
         (await student2.post(P('papan-bijak', undefined, '/join'), { room_code: custom })).status,
@@ -384,15 +382,15 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       ).toBe(200)
     })
 
-    it('a full room refuses (404)', async () => {
+    it('a full room refuses (409 ERR-GAME-08)', async () => {
       const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' })
       expect(
         (await student2.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status,
       ).toBe(200)
       expectError(
         await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code }),
-        'NOT_FOUND',
-        M.roomNotFound,
+        'CONFLICT',
+        M.roomFull,
       )
     })
 
@@ -420,10 +418,10 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
           clients.map((c) => c.post(P(game, undefined, '/join'), { room_code: code })),
         )
         const ok = results.filter((r) => r.status === 200).length
-        const refused = results.filter((r) => r.status === 404)
+        const refused = results.filter((r) => r.status === 409)
         expect(ok).toBe(max - 1)
         expect(refused).toHaveLength(clients.length - ok)
-        for (const r of refused) expectError(r, 'NOT_FOUND', M.roomNotFound)
+        for (const r of refused) expectError(r, 'CONFLICT', M.roomFull)
         const rows = await t.db.query<{ n: string }>(
           'select count(*)::text as n from game_room_players where room_code = $1',
           [code],
@@ -518,27 +516,61 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       expect(JSON.stringify(res.body)).not.toMatch(/@demo|email|phone|password/i)
     })
 
-    it('a host poll below the minimum adds exactly one bot per poll; a non-host poll or a full minimum adds none', async () => {
+    it('FR-GM-00.4, 48 GAME-R: before the wait no robot; after it a host poll seats one robot per missing seat, with no user, and then none', async () => {
       const code = await createRoom(student, 'kuiz-relay') // minimum 4
-      const sizes: number[] = []
-      for (let i = 0; i < 5; i++) {
-        sizes.push(parseRoom(await student.get(P('kuiz-relay', code))).players.length)
-      }
-      // poll 1 sees 2 players (one bot added on that poll) ... the 4th poll reaches 4; further polls add none
-      expect(sizes).toEqual([2, 3, 4, 4, 4])
+      expect(parseRoom(await student.get(P('kuiz-relay', code))).players).toHaveLength(1)
+      t.clock.advance(29_000)
+      expect(parseRoom(await student.get(P('kuiz-relay', code))).players).toHaveLength(1)
+      t.clock.advance(1_000) // battle_bot_fallback_seconds = 30
       const view = parseRoom(await student.get(P('kuiz-relay', code)))
-      expect(view.players.filter((p) => p.isBot)).toHaveLength(3)
+      expect(view.players.map((p) => [p.name, p.grade, p.isBot])).toEqual([
+        [view.players[0]?.name, 'Tingkatan 4', false],
+        ['Robot PrestasiPlus 1', '', true],
+        ['Robot PrestasiPlus 2', '', true],
+        ['Robot PrestasiPlus 3', '', true],
+      ])
       expect(view.players[0]).toMatchObject({ id: student.userId, isBot: false })
+      expect(parseRoom(await student.get(P('kuiz-relay', code))).players).toHaveLength(4)
       const rows = await t.db.query(
-        'select is_bot, is_test from game_room_players where room_code = $1 order by id',
+        'select user_id, is_bot from game_room_players where room_code = $1 order by id',
         [code],
       )
-      expect(rows.map((r) => r.is_bot)).toEqual([false, true, true, true])
+      expect(rows).toEqual([
+        { user_id: expect.anything(), is_bot: false },
+        { user_id: null, is_bot: true },
+        { user_id: null, is_bot: true },
+        { user_id: null, is_bot: true },
+      ])
     })
 
-    it('a non-host player poll never adds a bot', async () => {
+    it('48 section 3.6, humans first: a pupil joining takes a robot seat, even the only free seat; a room full of pupils still refuses', async () => {
+      const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' }) // 2 seats
+      await ageRoom(t, code)
+      expect(parseRoom(await student.get(P('benteng-ilmu', code))).players.map((p) => p.isBot)).toEqual([false, true])
+      const joined = await student2.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })
+      expect(joined.status, JSON.stringify(joined.body)).toBe(200)
+      const view = parseRoom(await student.get(P('benteng-ilmu', code)))
+      expect(view.players.map((p) => [p.id, p.isBot])).toEqual([
+        [student.userId, false],
+        [student2.userId, false],
+      ])
+      expect((await maju.post(P('benteng-ilmu', undefined, '/join'), { room_code: code })).status).toBe(409) // ERR-GAME-08: full
+    })
+
+    it('a robot seat does not hide a room from the open-rooms strip: only pupils count', async () => {
+      t.clock.advance(1_000) // the newest room of the strip
+      const code = await createRoom(student, 'benteng-ilmu', { ...FORM, match_mode: 'same_level' })
+      t.clock.advance(30_000)
+      expect(parseRoom(await student.get(P('benteng-ilmu', code))).players).toHaveLength(2)
+      const hub = await student2.get('/api/games/hub')
+      const open = (hub.body as { data: { openRooms: { code: string; players: number; max: number }[] } }).data.openRooms
+      expect(open.find((r) => r.code === code)).toMatchObject({ players: 1, max: 2 })
+    })
+
+    it('a non-host player poll never adds a robot', async () => {
       const code = await createRoom(student, 'perang-fakta')
       await student2.post(P('perang-fakta', undefined, '/join'), { room_code: code })
+      await ageRoom(t, code)
       // the room already has the minimum (2): not even the host adds one
       parseRoom(await student.get(P('perang-fakta', code)))
       parseRoom(await student2.get(P('perang-fakta', code)))
@@ -546,24 +578,17 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
         (await t.db.query('select 1 from game_room_players where room_code = $1', [code])).length,
       ).toBe(2)
       const solo = await createRoom(student, 'benteng-ilmu')
-      const before = (
-        await t.db.query('select 1 from game_room_players where room_code = $1', [solo])
-      ).length
-      await student2.get(P('benteng-ilmu', solo)) // not a player: 404, no bot
+      await ageRoom(t, solo)
+      await student2.get(P('benteng-ilmu', solo)) // not a player: 404, no robot
       expect(
         (await t.db.query('select 1 from game_room_players where room_code = $1', [solo])).length,
-      ).toBe(before)
+      ).toBe(1)
     })
 
-    it('bots fit the room grade when possible, are never the host or a present player, and bots of a test room are test rows', async () => {
-      const code = await createRoom(student, 'perang-fakta')
-      parseRoom(await student.get(P('perang-fakta', code)))
-      const pick = bots.picks.at(-1)
-      expect(pick?.hostId).toBe(student.userId)
-      expect(pick?.exclude).toEqual([student.userId])
-      expect(pick?.stream).toMatch(new RegExp(`^m16:room:${code}:[0-9a-f]{32}:bot:1$`))
+    it('robots of a test room are test rows', async () => {
       const mod = await loginAs(t, ACCOUNTS.admin, { mod: true })
       const testRoom = await createRoom(mod, 'perang-fakta')
+      await ageRoom(t, testRoom)
       parseRoom(await mod.get(P('perang-fakta', testRoom)))
       expect(
         await t.db.query(
@@ -576,13 +601,17 @@ describe('create, join and view a room (M16-24, M16-25, M16-26)', () => {
       ])
     })
 
-    it('with no bot available the poll adds none (no error)', async () => {
+    it.each([
+      ['games_room_bots_enabled', 0],
+      ['battle_bot_fallback_seconds', 0],
+    ])('%s = %i: the host waits for humans', async (key, value) => {
       const code = await createRoom(student, 'perang-fakta')
-      const saved = bots.list.splice(0)
+      await ageRoom(t, code)
+      await t.db.query(`update gamification_settings set value = $2 where key = $1`, [key, value])
       try {
         expect(parseRoom(await student.get(P('perang-fakta', code))).players).toHaveLength(1)
       } finally {
-        bots.list.push(...saved)
+        await t.db.query(`update gamification_settings set value = $2 where key = $1`, [key, key === 'games_room_bots_enabled' ? 1 : 30])
       }
     })
 

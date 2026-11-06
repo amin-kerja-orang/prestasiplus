@@ -20998,6 +20998,21 @@
           }
         ]
       },
+      "BattleQueueCancelled": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "additionalProperties": false
+      },
       "BattleAcceptChallengerResponse": {
         "type": "object",
         "properties": {
@@ -21404,6 +21419,9 @@
               "$ref": "#/components/schemas/BattleLobbyPkskDomain"
             }
           },
+          "pkskAccess": {
+            "$ref": "#/components/schemas/PkskAccess"
+          },
           "spmSubjects": {
             "type": "array",
             "items": {
@@ -21416,9 +21434,25 @@
           "gradeLabel",
           "spmUnlocked",
           "subjects",
-          "pkskDomains"
+          "pkskDomains",
+          "pkskAccess"
         ],
         "additionalProperties": false
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
       },
       "BattleArenaOption": {
         "type": "object",
@@ -21486,6 +21520,44 @@
           "scoreB": {
             "type": "integer",
             "minimum": 0
+          },
+          "reward": {
+            "type": "object",
+            "properties": {
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "capped": {
+                "type": "boolean",
+                "description": "A daily cap reduced the reward."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "xp_cap",
+                  "syiling_cap",
+                  "xp_and_syiling_cap",
+                  "pace_guard",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "xp",
+              "syiling",
+              "capped",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "description": "What this battle gave the caller."
           }
         },
         "required": [
@@ -21522,6 +21594,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -21538,6 +21614,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -21599,6 +21679,13 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 15
+          },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While active: when the caller's question times out, grace included (48 section 3.3).",
+            "example": "2026-10-16T09:30:00+08:00"
           },
           "result": {
             "$ref": "#/components/schemas/BattleArenaResult"
@@ -21749,7 +21836,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
             "example": "1042"
           },
           "name": {
@@ -21964,7 +22051,7 @@
                 ],
                 "minLength": 1,
                 "maxLength": 64,
-                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                 "example": "1042"
               },
               "name": {
@@ -21999,7 +22086,7 @@
                 ],
                 "minLength": 1,
                 "maxLength": 64,
-                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                 "example": "1042"
               },
               "name": {
@@ -22169,7 +22256,7 @@
                   ],
                   "minLength": 1,
                   "maxLength": 64,
-                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                   "example": "1042"
                 },
                 "name": {
@@ -22856,11 +22943,19 @@
               "battled"
             ],
             "additionalProperties": false
+          },
+          "enabledGames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Game keys (48 section 3.5, plus `roda-nasib`) switched on in `game_enabled_*` whose pool for the caller's Tingkatan holds the draw size (FR-GM-00.1; Battle 5). A hub card of a game not listed is absent."
           }
         },
         "required": [
           "openRooms",
-          "chips"
+          "chips",
+          "enabledGames"
         ],
         "additionalProperties": false
       },
@@ -22878,7 +22973,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
@@ -22941,12 +23036,12 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Full name, or first name + initial (children's names rule)."
+            "description": "Full name, or first given name (children's names rule)."
           },
           "value": {
             "type": "integer",
@@ -23150,11 +23245,15 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Keys `state.positions` / `meter`: the user id, or an opaque seat id for a robot (no user).",
+            "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). A robot is \"Robot PrestasiPlus {n}\"."
           },
           "grade": {
             "type": "string",
@@ -23260,7 +23359,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "description": "The only player who may act (the host; every other player is a bot).",
+            "description": "The seat the room waits for now: the seat whose turn it is (Papan Bijak, Kuiz Relay); in the games with simultaneous rounds (own part) the one acting human, the host.",
             "example": "1042"
           },
           "board": {
@@ -23300,7 +23399,7 @@
           "roundSecondsLeft": {
             "type": "integer",
             "minimum": 0,
-            "description": "Perang Fakta: seconds left in the 10 s round (server clock)."
+            "description": "Seconds left of the current turn or round by the server clock (48 GAME-02 to GAME-06; Perang Fakta 10 s). Absent for Teka Silang Kata."
           },
           "secondsLeft": {
             "type": "integer",
@@ -23379,6 +23478,44 @@
               ],
               "additionalProperties": false
             }
+          },
+          "reward": {
+            "type": "object",
+            "properties": {
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "capped": {
+                "type": "boolean",
+                "description": "A daily cap reduced the reward."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "xp_cap",
+                  "syiling_cap",
+                  "xp_and_syiling_cap",
+                  "pace_guard",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "xp",
+              "syiling",
+              "capped",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "description": "What this game gave the caller."
           }
         },
         "required": [
@@ -23444,8 +23581,27 @@
             "minimum": 0,
             "description": "Present with `state`."
           },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While playing: when the server clock ends the current turn or round (Teka Silang Kata: the game).",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "robotInSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "A waiting room below its minimum with robots on: seconds until robots may join, counted from the creation of the room (48 GAME-R). Absent otherwise."
+          },
           "question": {
             "$ref": "#/components/schemas/GamesKeylessQuestion"
+          },
+          "youAnswered": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The caller has already answered the question the room awaits now; the page shows the waiting state. Absent otherwise."
           },
           "result": {
             "$ref": "#/components/schemas/GamesRoomResult"
@@ -23469,6 +23625,20 @@
             "type": "string",
             "enum": [
               "roll"
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "GamesRoomLeaveAction": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "leave"
             ]
           }
         },
@@ -23529,13 +23699,17 @@
           },
           {
             "$ref": "#/components/schemas/GamesRoomAnswerAction"
+          },
+          {
+            "$ref": "#/components/schemas/GamesRoomLeaveAction"
           }
         ],
         "discriminator": {
           "propertyName": "type",
           "mapping": {
             "roll": "#/components/schemas/GamesRoomRollAction",
-            "answer": "#/components/schemas/GamesRoomAnswerAction"
+            "answer": "#/components/schemas/GamesRoomAnswerAction",
+            "leave": "#/components/schemas/GamesRoomLeaveAction"
           }
         }
       },
@@ -23619,7 +23793,7 @@
             "additionalProperties": false
           }
         ],
-        "description": "The caller latest search: none or cancelled = cancelled; older than 120 s = expired; the third poll matches (a Papan Bijak room, 4 seats, caller grade level, one bot) and answers matched with room_code; before that searching."
+        "description": "The caller latest search: none or cancelled = cancelled; older than 120 s = expired; a poll that finds another compatible searching pupil matches both of them into one Papan Bijak room (the polling pupil is the host, both seated as players; the other pupil gets matched with the same room_code on their next poll); otherwise the third poll matches (a Papan Bijak room, 4 seats, caller grade level, one bot) and answers matched with room_code; before that searching."
       },
       "GamesQuickMatchCancelResponse": {
         "type": "object",
@@ -24723,6 +24897,9 @@
               "credited": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "reward": {
+                "$ref": "#/components/schemas/GamesReward"
               }
             },
             "required": [
@@ -24735,6 +24912,43 @@
         "required": [
           "correct",
           "level"
+        ],
+        "additionalProperties": false
+      },
+      "GamesReward": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capped": {
+            "type": "boolean",
+            "description": "A daily cap reduced the reward."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "xp_cap",
+              "syiling_cap",
+              "xp_and_syiling_cap",
+              "pace_guard",
+              null
+            ]
+          }
+        },
+        "required": [
+          "xp",
+          "syiling",
+          "capped",
+          "reason"
         ],
         "additionalProperties": false
       },
@@ -24791,12 +25005,12 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule)."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule)."
           },
           "sesi": {
             "type": "integer",
@@ -66387,21 +66601,6 @@
           "updatedAt"
         ]
       },
-      "PkskAccess": {
-        "type": "object",
-        "properties": {
-          "T1": {
-            "type": "boolean"
-          },
-          "T4": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "T1",
-          "T4"
-        ]
-      },
       "PkskDashboardDomain": {
         "type": "object",
         "properties": {
@@ -104570,6 +104769,110 @@
         }
       }
     },
+    "/battle/queue/{queueId}/cancel": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Cancel a queue entry (API-GAME-14)",
+        "description": "The \"Batal\" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil's entry, an unknown id and an entry that already has its battle answer 404.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleQueueCancelled"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Giliran tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/battle/accept-challenger/{queueId}": {
       "post": {
         "tags": [
@@ -105179,7 +105482,7 @@
             }
           },
           "422": {
-            "description": "{error:\"Soalan tidak mencukupi.\"}.",
+            "description": "{error:\"Soalan tidak mencukupi.\"}, or {error:\"Anda belum mempunyai akses PKSK PRO\"} (a PKSK battle and the receiver has no grant for its level).",
             "content": {
               "application/json": {
                 "schema": {
@@ -105413,7 +105716,7 @@
         "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
         "responses": {
           "200": {
-            "description": "Lobby data.",
+            "description": "Lobby data. `pkskAccess` is the PKSK grant of the caller per level.",
             "content": {
               "application/json": {
                 "schema": {
@@ -106144,7 +106447,7 @@
           "games"
         ],
         "summary": "Permainan hub: open rooms and chips (M16-22)",
-        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.",
+        "description": "Up to 6 newest waiting rooms with a free seat whose match mode fits the caller's Tingkatan (any school), newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.",
         "responses": {
           "200": {
             "description": "Open rooms and chips; Cache-Control: no-store.",
@@ -106194,7 +106497,7 @@
           "games"
         ],
         "summary": "Lobby of a room game (M16-23)",
-        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
+        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first given name with a null userId unless the viewer may see the name (children's names rule, issue #76).",
         "parameters": [
           {
             "schema": {
@@ -106403,7 +106706,7 @@
           "games"
         ],
         "summary": "Join a waiting room by code (M16-25)",
-        "description": "Every refusal is 404 \"Bilik tidak dijumpai.\" (blank code, unknown room, other game, not waiting, full, grade not allowed by the match mode). Already a player: 200 with the same code, no second row.",
+        "description": "Checked in this order (FR-GM-R.2): the room exists (404 \"Bilik tidak dijumpai.\": blank or malformed code, unknown room, other game, closed room, a waiting room past room_waiting_minutes), it has not started (409 \"Permainan sudah dimulakan.\"), it has a free seat (409 \"Bilik sudah penuh.\"), the Tingkatan fits the match mode (403 \"Tindakan tidak sah.\"). Already a player: 200 with the same code, no second row.",
         "parameters": [
           {
             "schema": {
@@ -106486,7 +106789,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Tindakan tidak sah.\" (AC-GM-R.6: the Tingkatan is not allowed by the match mode), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106496,7 +106799,17 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" for every refusal, or \"Permainan tidak dijumpai.\" (unknown game).",
+            "description": "NOT_FOUND \"Bilik tidak dijumpai.\" (unknown, closed or past room_waiting_minutes), or \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Permainan sudah dimulakan.\" (ERR-GAME-09: playing or finished) or \"Bilik sudah penuh.\" (ERR-GAME-08: no free seat).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106717,7 +107030,17 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting), \"Pemain belum mencukupi.\" (below the minimum players) or \"Soalan tidak mencukupi.\" (question pool).",
+            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting) or \"Pemain belum mencukupi.\" (below the minimum players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106754,7 +107077,7 @@
           "games"
         ],
         "summary": "Roll the dice or answer (M16-28)",
-        "description": "Only the room human (the host) acts; every other player is a bot. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.",
+        "description": "Roll and answer: only the room human (the host) acts; every other player is a bot. {type:'leave'} (Keluar): any seated player. Waiting: a non-host frees the seat; the host leaving closes the room (status closed, the others see it closed). Playing: the seat is forfeited with 0 XP and no reward and no standing; the leaver's seat is taken over by a robot or skipped per the setting games_room_bots_enabled; the game ends when fewer than the minimum players remain (the host leaving counts the same way): the last present human wins by default, and with nobody present it ends unsettled; the leaver's jumlah is written only in settle. A seated human who times out 3 times is removed, polled or not (rulings 49 and 50, 48 section 3.6). A finished or closed room answers its view unchanged. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.",
         "parameters": [
           {
             "schema": {
@@ -106837,7 +107160,7 @@
             }
           },
           "403": {
-            "description": "FORBIDDEN \"Bukan giliran anda.\" (caller is not the room human), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Bukan giliran anda.\" (caller is not the seat on turn), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -106997,7 +107320,7 @@
           "games"
         ],
         "summary": "Poll the quick match (M16-30)",
-        "description": "RAW body, polled every 3 s. The third poll matches and creates the room (host = caller, 4 seats, one bot).",
+        "description": "RAW body, polled every 3 s. A poll first looks for another pupil searching with the same subject and match mode (same Tingkatan for same_grade, same level for same_level; Mod Pelajar and normal users never meet): then one room is made with the polling pupil as host and both seated as players. Otherwise the third poll matches and creates the room (host = caller, 4 seats, one bot).",
         "responses": {
           "200": {
             "description": "Search state.",
@@ -107173,7 +107496,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11.",
+            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11; or \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108271,10 +108594,11 @@
           "games"
         ],
         "summary": "Weekly competition board (M16-40)",
-        "description": "`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
+        "deprecated": true,
+        "description": "Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.",
         "responses": {
           "200": {
-            "description": "Weekly board.",
+            "description": "Not served in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108300,6 +108624,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "NOT_FOUND (the route does not exist in R1, FR-GM-00.1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -108310,10 +108644,11 @@
           "games"
         ],
         "summary": "Uji Minda placeholder (M16-41)",
-        "description": "Constant `{ data: { challenge: null } }`.",
+        "deprecated": true,
+        "description": "Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.",
         "responses": {
           "200": {
-            "description": "No challenge.",
+            "description": "Not served in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108332,6 +108667,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (the route does not exist in R1, FR-GM-00.1).",
             "content": {
               "application/json": {
                 "schema": {

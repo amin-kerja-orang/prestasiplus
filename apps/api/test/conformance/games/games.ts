@@ -70,8 +70,8 @@ export const gamesScenarios: Scenario[] = [
       // The host may start with a bot added by polling; the seeded bank is small, so "Soalan tidak mencukupi." is the documented refusal.
       await s.request('GET', `/games/papan-bijak/rooms/${code}`)
       const start = await s.request('POST', `/games/papan-bijak/rooms/${code}/start`)
-      oneOf(ctx, start, [200, 409], 'start')
-      if (start.status === 409) ctx.check(errorOf(start).message !== undefined, 'a 409 start carries a message')
+      oneOf(ctx, start, [200, 409, 422], 'start')
+      if (start.status !== 200) ctx.check(errorOf(start).message !== undefined, 'a refused start carries a message')
       const action = await s.request('POST', `/games/papan-bijak/rooms/${code}/action`, { body: { type: 'roll' } })
       oneOf(ctx, action, start.status === 200 ? [200, 409, 422] : [409], 'action')
     },
@@ -111,7 +111,12 @@ export const gamesScenarios: Scenario[] = [
       expectError(ctx, await s.request('GET', '/games/solo/betul-salah?darjah=99'), 422, 'VALIDATION_ERROR')
       for (const game of SOLO_GAMES) {
         const get = await s.request('GET', `/games/solo/${game}?darjah=10`)
-        ctx.expectStatus(get, 200)
+        oneOf(ctx, get, [200, 422], `${game} start`)
+        if (get.status === 422) {
+          // AC-GM-00.6: the seeded bank is small, so "Soalan tidak mencukupi." is the documented refusal.
+          ctx.check(errorOf(get).message === 'Soalan tidak mencukupi.', `${game}: a thin bank is refused with "Soalan tidak mencukupi."`)
+          continue
+        }
         const body = JSON.stringify(get.body)
         ctx.check(!/"(is_true|correct|answer|pair_id|correctAnswer|is_correct)"/.test(body), `${game}: the payload must carry no answer key`)
         const d = dataOf(get)
@@ -198,20 +203,6 @@ export const gamesScenarios: Scenario[] = [
       }
       expectError(ctx, await s.request('POST', `/games/jutawan/${MISSING_UUID}/answer`, { body: { questionId: '1', optionId: 0 } }), 404, 'NOT_FOUND')
       expectError(ctx, await s.request('POST', `/games/jutawan/${MISSING_UUID}/lifeline`, { body: { type: '50:50' } }), 404, 'NOT_FOUND')
-    },
-  },
-  {
-    id: 'games-api/weekly competition board and Uji Minda (constant)',
-    domain: 'games',
-    targets: API_ONLY,
-    async run(ctx) {
-      const s = await ctx.as('student')
-      const board = await s.request('GET', '/games/pertandingan')
-      ctx.expectStatus(board, 200)
-      ctx.check(JSON.stringify(dataOf(board).prizes) === '[100,50,25]', 'prizes are 100, 50, 25')
-      const uji = await s.request('GET', '/games/uji-minda')
-      ctx.expectStatus(uji, 200)
-      ctx.check(JSON.stringify(uji.body) === JSON.stringify({ data: { challenge: null } }), 'Uji Minda is the constant { data: { challenge: null } }')
     },
   },
   {

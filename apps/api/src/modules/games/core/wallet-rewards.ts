@@ -1,8 +1,52 @@
 import { Inject, Injectable } from '@nestjs/common'
+import type { GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../db/client'
+import { coinsPerCorrect } from '../../practice/coins'
 import { WalletService } from '../../wallet'
+import type { GameSettingsService } from './game-settings.service'
 import type { GameResultInput, GameResultOutcome, GameRewardsPort } from './ports'
+
+/** What decides a reward (48 section 3.4). `forfeit` is a pupil who left early; a solo game is always `play`. */
+export interface GameRewardFacts {
+  correct: number
+  outcome: 'win' | 'draw' | 'play' | 'forfeit'
+  /** Every other participant was a robot (rule 3). */
+  robotsOnly: boolean
+  /** A gap between answers under the minimum: stored and scored, credits nothing (rule 5). */
+  fastGap: boolean
+}
+
+const REWARD_SETTINGS = ['xp_per_correct', 'game_win_xp', 'game_draw_xp', 'game_play_xp', 'game_win_bonus_syiling'] as const
+type RewardSettings = Record<(typeof REWARD_SETTINGS)[number], number>
+
+/**
+ * FR-GM-00.3, 48 section 3.4 rules 1, 2, 3 and 5: the one reward formula of every game. `coins` is what the result asks for:
+ * `GamificationService.onGameResult` applies `games_award_syiling`, the daily caps and the replay (DM-87).
+ */
+export function gameReward(facts: GameRewardFacts, s: RewardSettings, coinRate: number): { xp: number; coins: number } {
+  if (facts.fastGap || facts.outcome === 'forfeit') return { xp: 0, coins: 0 }
+  const won = facts.outcome === 'win' && !facts.robotsOnly
+  const outcomeXp = won ? s.game_win_xp : facts.outcome === 'draw' && !facts.robotsOnly ? s.game_draw_xp : s.game_play_xp
+  return {
+    xp: s.xp_per_correct * facts.correct + outcomeXp,
+    coins: coinRate * facts.correct + (won ? s.game_win_bonus_syiling : 0),
+  }
+}
+
+/** `gameReward` over the settings as they are now, so a saved change applies to later games only (FR-GM-00.10). */
+export async function rewardNow(settings: GameSettingsService, tx: TxClient, facts: GameRewardFacts): Promise<{ xp: number; coins: number }> {
+  return gameReward(facts, await settings.getMany(REWARD_SETTINGS, tx), await coinsPerCorrect(tx))
+}
+
+/** The reward block of a result (API-GAME-01..03). */
+export function rewardBlock(o: GameResultOutcome): GamesReward {
+  const reason = o.cappedReason ?? null
+  return { xp: o.xpAdded, syiling: o.coinsCredited, capped: reason !== null, reason }
+}
+
+/** Rule 5: stored and scored, credits nothing. */
+export const PACE_GUARD_REWARD: GamesReward = { xp: 0, syiling: 0, capped: false, reason: 'pace_guard' }
 
 /** Static BM ledger wording of a game result (copy of the M14 mock `gameRow`; no personal data). */
 export function gameRow(
@@ -37,6 +81,18 @@ export function gameRow(
       return { source: 'cabaran_kilat', description: `Cabaran Kilat: ${correct} betul, combo ${String(n(d['maxCombo'], 1))}x` }
     case 'betul_salah':
       return { source: 'betul_salah', description: `Betul/Salah: ${correct} betul, streak ${String(n(d['maxStreak'], 1))}` }
+    case 'battle':
+      return { source: 'battle', description: `Battle Arena: ${correct} betul` }
+    case 'kuiz_relay':
+      return { source: game, description: `Kuiz Relay: ${correct} betul` }
+    case 'teka_silang_kata':
+      return { source: game, description: `Teka Silang Kata: ${correct} betul` }
+    case 'tembak_jawapan':
+      return { source: game, description: `Tembak Jawapan: ${correct} betul` }
+    case 'susun_jawapan':
+      return { source: game, description: `Susun Jawapan: ${correct} betul` }
+    case 'kad_memori':
+      return { source: game, description: `Kad Memori: ${correct} pasangan` }
     default:
       return { source: game, description: `${game}: ${correct} betul` }
   }
@@ -62,6 +118,10 @@ export class WalletGameRewards implements GameRewardsPort {
 
   async tierRates(): Promise<{ correct: number; win: number }> {
     return { correct: 0, win: 0 }
+  }
+
+  async firstGameResult(): Promise<GameResultOutcome | null> {
+    return null
   }
 
   async onGameResult(

@@ -13,7 +13,7 @@ import { IdSchema } from '../common/ids'
  * - The solo game session id is a uuid string in v2 (the mock's `tf_`, `speed_`... prefixes are gone);
  *   clients treat it as opaque.
  * - D54(d), amended by the children's names rule (LEAD 2026-10-21, issue #76): leaderboards, room players and the
- *   weekly board show another pupil's first name + initial and a null `userId`, unless the viewer is the pupil,
+ *   weekly board show another pupil's first given name and a null `userId`, unless the viewer is the pupil,
  *   an admin, the school admin of the pupil's school or the teacher of the pupil's class (full name + id);
  *   every response object below is strict, so no other personal field (IC, e-mail, phone, birth date)
  *   can ride along.
@@ -21,7 +21,7 @@ import { IdSchema } from '../common/ids'
 
 /** Shared description of a ranking row's `userId` (children's names rule, LEAD 2026-10-21, issue #76). */
 export const GAMES_NAME_RULE =
-  "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null."
+  "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null."
 
 /** The six room games (mock `RoomGame`). */
 export const GAMES_ROOM_GAMES = [
@@ -111,12 +111,33 @@ export const GamesRoomCodeSchema = z
 /** Non-negative integer (counts, scores). */
 export const gamesCount = z.number().int().min(0)
 
+/**
+ * API-GAME-01, API-GAME-02, API-GAME-03: what a finished game gave the pupil (48 section 3.4), absent for Mod Pelajar and for
+ * a seat that did not play. `reason` says what held it back: a daily cap, or the pace guard (credits nothing).
+ */
+export const GamesRewardSchema = z
+  .strictObject({
+    xp: gamesCount,
+    syiling: gamesCount,
+    capped: z.boolean().meta({ description: 'A daily cap reduced the reward.' }),
+    reason: z.enum(['xp_cap', 'syiling_cap', 'xp_and_syiling_cap', 'pace_guard']).nullable(),
+  })
+  .meta({ id: 'GamesReward' })
+export type GamesReward = z.infer<typeof GamesRewardSchema>
+
+/** 48 section 3.6: a robot is no person: this name, no user, no school. A room adds its number ("Robot PrestasiPlus 1", GAME-R). */
+export const GAMES_ROBOT_NAME = 'Robot PrestasiPlus'
+
 /** Exact BM (and generic English) messages of the mock, by use. Tests assert these. */
 export const GAMES_MESSAGES = {
   unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
   unauthorized: 'Anda tidak dibenarkan melakukan tindakan ini.',
   gameNotFound: 'Permainan tidak dijumpai.',
   roomNotFound: 'Bilik tidak dijumpai.',
+  /** ERR-GAME-06: refused by the client before any request (48 GAME-R, FR-GM-R.1). */
+  roomCodeInvalid: 'Kod bilik tidak sah.',
+  /** ERR-GAME-08: join with no free seat (409). */
+  roomFull: 'Bilik sudah penuh.',
   roomSubject: 'Subjek tidak sah.',
   roomGradeLevel: 'Tahap soalan tidak sah.',
   roomRange: 'Julat tahap tidak sah.',
@@ -141,6 +162,7 @@ export const GAMES_MESSAGES = {
   level: 'Tahap tidak sah.',
   soloInvalidResult: 'Keputusan tidak sah.',
   soloAlreadySubmitted: 'Keputusan sudah dihantar.',
+  soloTimeUp: 'Masa sudah tamat.',
   soloSessionNotFound: 'Sesi tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloItemNotFound: 'Soalan tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloAlreadyChecked: 'Soalan sudah dijawab.', // [PROPOSED]

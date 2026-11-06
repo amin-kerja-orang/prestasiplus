@@ -2,12 +2,10 @@ import {
   GamesHubSchema,
   GamesLeagueDetailSchema,
   GamesLobbySchema,
-  GamesWeeklyCompetitionSchema,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { classesSeed } from '../../../prisma/seed/poc/classes'
-import type { WeeklyPracticeSource } from '../../../src/modules/games'
 import { displayName } from '../../../src/modules/games/core/name-privacy'
 import { ACCOUNTS, bootGamesApp, loginAs, parseData, type Client, type GamesTestApp } from '../helpers'
 import { P, createRoom, parseRoom, userId } from '../rooms/support'
@@ -51,14 +49,8 @@ describe("children's names rule in the games rankings (issue #76)", () => {
   const expectedName = (v: (typeof VIEWERS)[number], k: Key): string => (v.sees.includes(k) ? full[k] : displayName(full[k]))
   const expectedId = (v: (typeof VIEWERS)[number], k: Key): string | null => (v.sees.includes(k) ? id[k] : null)
 
-  const weekly: WeeklyPracticeSource = {
-    async week() {
-      return { me: null, rows: KEYS.map((k, i) => ({ rank: i + 1, userId: id[k], name: full[k], sesi: 3, betul: 20 - i, tepat: 80 })) }
-    },
-  }
-
   beforeAll(async () => {
-    t = await bootGamesApp({ seeds: [classesSeed], ports: { weeklyPractice: weekly } })
+    t = await bootGamesApp({ seeds: [classesSeed] })
     for (const k of KEYS) {
       id[k] = await userId(t.db, EMAILS[k])
       full[k] = (await t.db.query<{ name: string }>('select name from users where id = $1', [id[k]]))[0]?.name as string
@@ -112,16 +104,6 @@ describe("children's names rule in the games rankings (issue #76)", () => {
         const lobby = parseData(await as(v).get('/api/games/kuiz-relay/lobby'), GamesLobbySchema)
         if (!('leaders' in lobby)) throw new Error('expected leaders')
         expect(lobby.leaders.map((l) => [l.userId, l.name])).toEqual(KEYS.map((k) => [expectedId(v, k), expectedName(v, k)]))
-      })
-    }
-  })
-
-  describe('weekly competition board', () => {
-    for (const v of VIEWERS) {
-      it(`rows for ${v.who}`, async () => {
-        const board = parseData(await as(v).get('/api/games/pertandingan'), GamesWeeklyCompetitionSchema)
-        expect(board.rows.map((r) => [r.userId, r.name])).toEqual(KEYS.map((k) => [expectedId(v, k), expectedName(v, k)]))
-        expect(board.rows.map((r) => r.betul)).toEqual([20, 19, 18, 17]) // figures untouched
       })
     }
   })
@@ -198,13 +180,13 @@ describe("children's names rule in the games rankings (issue #76)", () => {
     })
   })
 
-  it('bots are real pupils of the host school: a bot player is redacted like any other pupil', async () => {
+  it('a seat marked is_bot that still points at a pupil (before FR-GM-00.4) shows the robot label, never the pupil', async () => {
     const code = (await t.db.query<{ code: string }>('select code from game_rooms limit 1'))[0]?.code as string
     await t.db.query(`delete from game_room_players where room_code = $1 and user_id = $2::bigint`, [code, id.B])
     await t.db.query(`insert into game_room_players (room_code, user_id, is_bot, is_test, joined_at) values ($1, $2::bigint, true, false, now())`, [code, id.B])
     const stud = VIEWERS[1] as (typeof VIEWERS)[number]
     const view = parseRoom(await as(stud).get(P('kuiz-relay', code)))
     const b = view.players.find((p) => p.id === id.B)
-    expect(b).toMatchObject({ isBot: true, name: displayName(full.B) })
+    expect(b).toMatchObject({ isBot: true, name: 'Robot PrestasiPlus 1', grade: '' })
   })
 })

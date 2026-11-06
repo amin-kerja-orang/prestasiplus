@@ -8,6 +8,7 @@ import {
   gamesCount,
   gamesGradeNumber,
   type GamesSoloGame,
+  GamesRewardSchema,
 } from './common'
 
 /**
@@ -478,7 +479,7 @@ export const GamesJutawanAnswerResponseSchema = z
     correct: z.boolean(),
     level: z.number().int().min(0).max(15),
     next: GamesKeylessQuestionSchema.optional(),
-    result: z.strictObject({ level: z.number().int().min(0).max(15), credited: gamesCount }).optional(),
+    result: z.strictObject({ level: z.number().int().min(0).max(15), credited: gamesCount, reward: GamesRewardSchema.optional() }).optional(),
   })
   .refine((v) => (v.next === undefined) !== (v.result === undefined), {
     error: 'Exactly one of next and result is present.',
@@ -507,7 +508,7 @@ export const GamesWeeklyRowSchema = z
   .strictObject({
     rank: z.number().int().min(1),
     userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
-    name: z.string().meta({ description: 'Display name only (D54(d)); first name + initial outside the viewer\'s scope (children\'s names rule).' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule).' }),
     sesi: gamesCount,
     betul: gamesCount,
     tepat: z.number().min(0).max(100),
