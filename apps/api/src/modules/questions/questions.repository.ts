@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, mediaResolvedSql, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, mediaResolvedSql, VERSION_STIMULI_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { adminFilterConds, bi, likePattern } from './admin-filter'
 import { kbatOf, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
@@ -701,7 +701,7 @@ export class QuestionsRepository {
   async isStructuredServed(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
   }
