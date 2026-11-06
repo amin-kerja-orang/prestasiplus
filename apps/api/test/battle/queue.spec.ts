@@ -99,7 +99,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       const m = parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))
       expect(m.status).toBe('matched')
       const uuid = (m as { battle_uuid: string }).battle_uuid
-      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid: uuid })
+      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid: uuid, robot: true })
       const [battle] = await rows<{ status: string; mode: string; is_test: boolean; winner: string | null; level_id: string; counts_for_ranking: boolean }>(
         `select status, mode, is_test, winner, level_id::text, counts_for_ranking from battles where id = $1`,
         [uuid],
@@ -202,7 +202,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(accepted.status).toBe(200)
       const { battle_uuid } = parse(BattleAcceptChallengerResponseSchema, accepted)
       expect(parse(BattlePollChallengerResponseSchema, await b.get(`/battle/poll-challenger/${qid}`))).toEqual({ status: 'matched', battle_uuid })
-      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid })
+      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid, robot: false })
       const parts = await rows<{ side: string; user_id: string; is_bot: boolean }>(`select side, user_id::text, is_bot from battle_participants where battle_id = $1 order by side`, [battle_uuid])
       expect(parts).toEqual([{ side: 'A', user_id: a.id, is_bot: false }, { side: 'B', user_id: b.id, is_bot: false }])
       // the queue is matched: a second accept is the documented not-found

@@ -1,7 +1,7 @@
 import { Prisma } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { missingLeafSql } from './effective-leaf'
-import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
+import { BANK_VISIBLE_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import type { AdminListFilter, QuestionStatus } from './types'
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
@@ -22,7 +22,7 @@ const NOT_PKSK = NOT_PKSK_SQL
  * admin list, the filter-based bulk actions and the bulk Bab mapping (S4-T03), so a filter means the same everywhere.
  */
 export function adminFilterConds(f: AdminListFilter): Prisma.Sql[] {
-  const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+  const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
   const id = (text: string | undefined, column: Prisma.Sql): void => {
     if (text === undefined) return
     const key = bi(text)

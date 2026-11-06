@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   BATTLE_STATES,
+  BATTLE_MSG,
   battleRelativeTime,
   canStart,
   formatMss,
@@ -58,6 +59,54 @@ describe('canStart / matchParams (FN-M16-2.1.6, BR-M16-03)', () => {
     const sel = { ...spm, spmSubjectId: 9 }
     expect(canStart(sel)).toBe(true)
     expect(matchParams(sel)).toEqual({ question_type: 'spm', open_to_all: false, subject_id: 9 })
+  })
+
+  it('the chosen count goes out as question_count for every type; no chip, no field', () => {
+    expect(matchParams({ ...base, subjectId: 3, questionCount: 15 })).toEqual({
+      question_type: 'biasa',
+      open_to_all: false,
+      subject_id: 3,
+      question_count: 15,
+    })
+    expect(
+      matchParams({
+        ...base,
+        questionType: 'pksk',
+        pkskDomainId: 2,
+        pkskLevel: 'T1',
+        questionCount: 5,
+      }),
+    ).toMatchObject({ question_type: 'pksk', question_count: 5 })
+    expect(
+      matchParams({ ...base, questionType: 'spm', spmSubjectId: 9, questionCount: 20 }),
+    ).toMatchObject({ question_type: 'spm', subject_id: 9, question_count: 20 })
+    expect(matchParams({ ...base, subjectId: 3 })).not.toHaveProperty('question_count')
+  })
+})
+
+describe('BATTLE_MSG copy (48 GAME-01)', () => {
+  it('uses the exact BM of the spec', () => {
+    expect(BATTLE_MSG.noOpponent).toBe('Tiada lawan dijumpai.')
+    expect(BATTLE_MSG.retry).toBe('Cuba Lagi')
+    expect(BATTLE_MSG.robotOverlay).toBe(
+      'Tiada lawan setakat ini. Anda akan bermain dengan Robot PrestasiPlus (latihan).',
+    )
+    expect(BATTLE_MSG.invitationExpired).toBe('Cabaran tamat tempoh.')
+    expect([
+      BATTLE_MSG.resultWin,
+      BATTLE_MSG.resultLose,
+      BATTLE_MSG.resultDraw,
+      BATTLE_MSG.resultOpponentForfeit,
+      BATTLE_MSG.resultOwnForfeit,
+      BATTLE_MSG.backToArena,
+    ]).toEqual([
+      'Anda menang!',
+      'Anda kalah.',
+      'Seri!',
+      'Lawan menyerah. Anda menang!',
+      'Anda telah menyerah.',
+      'Kembali ke Arena',
+    ])
   })
 })
 
