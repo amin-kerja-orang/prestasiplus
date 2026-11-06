@@ -22,7 +22,6 @@ import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
   LATIH_TUBI_TARGETS,
-  MISSION_COINS_PER_CORRECT,
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
 } from './rules'
@@ -160,8 +159,6 @@ export class PracticeStartPlanner {
 
     const plan = blank(req.mode)
     switch (req.mode) {
-      case 'random':
-        return this.random(plan, userId, req, now)
       case 'chapter':
         return this.chapter(plan, userId, req, isTest)
       case 'revision':
@@ -202,10 +199,10 @@ export class PracticeStartPlanner {
   }
 
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
-  private async serve(ids: readonly string[], activity?: PracticeDrillActivity): Promise<PracticeQuestion[]> {
+  private async serve(ids: readonly string[], activity?: PracticeDrillActivity, allowPrivate = false): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
     // `activity` is the drill surface (S1-T06): only a drill whose surface allows it serves figures and whole groups; the rest stay text-only.
-    const live = await this.ports.questions.live(unique, activity)
+    const live = await this.ports.questions.live(unique, activity, { allowPrivate })
     const out: PracticeQuestion[] = []
     for (const id of unique) {
       const q = live.get(id)
@@ -238,27 +235,6 @@ export class PracticeStartPlanner {
   }
 
   // --- modes ------------------------------------------------------------------------------------
-
-  private async random(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
-    const subject = await this.subjectOf(req.subjectCode)
-    const offeredIds = await this.offeredLevelIds()
-    const offered = subject.educationLevelIds.map(idToString).filter((id) => offeredIds.has(id))
-    const levelId = req.levelId ?? null
-    if (levelId !== null && !offered.includes(levelId)) throw invalidField('levelId')
-    const difficulty = req.difficulty ?? null
-    const count = countIn(req.count, COUNT_OPTIONS)
-    const levels = levelId !== null ? [levelId] : offered
-    if (levels.length === 0) throw notEnoughQuestions()
-    const subjectId = idToString(subject.id)
-    const ids = await this.ports.questions.sample(
-      { subjectId, educationLevelIds: levels, activity: 'databank', ...(difficulty !== null ? { difficulty } : {}) },
-      count,
-      await this.rng(userId, now),
-    )
-    const served = await this.serve(ids, 'databank')
-    if (served.length < count) throw notEnoughQuestions()
-    return Object.assign(plan, { subjectId, levelId, difficulty, served })
-  }
 
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
     const chapterId = idFromString(validId(req.chapterId))
@@ -323,7 +299,7 @@ export class PracticeStartPlanner {
     const levelId = req.levelId ?? null
     if (levelId !== null && !offeredIds.has(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
-    if (difficulty !== null && (difficulty < 2 || difficulty > 5)) throw invalidField('difficulty')
+    if (difficulty !== null && (difficulty < 1 || difficulty > 5)) throw invalidField('difficulty')
     const subjectId = idToString(subject.id)
 
     if (req.targetQuestionId !== undefined && req.targetQuestionId !== null) {
@@ -338,7 +314,8 @@ export class PracticeStartPlanner {
     }
 
     const target = LATIH_TUBI_TARGETS[subject.code]
-    const count = target !== undefined ? countIn(req.count, [target]) : countIn(req.count, LATIH_TUBI_COUNTS)
+    // OPT-BILANGAN-LT (R1-MUR-16): the config page's 5/10/15/20 are always accepted, next to the subject target / free counts.
+    const count = countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
     const ids = await this.ports.questions.sample(
       {
         subjectId,
@@ -376,13 +353,14 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, missionId: req.missionId, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    // DM-42: the one mode that may serve a personal question (the assignment draw only adds the mission owner's).
+    const served = await this.serve(res.questionIds, undefined, true)
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId,
       missionId: req.missionId,
       served,
-      coinsPerCorrect: res.coinsPerCorrect || MISSION_COINS_PER_CORRECT,
+      coinsPerCorrect: null,
     })
   }
 

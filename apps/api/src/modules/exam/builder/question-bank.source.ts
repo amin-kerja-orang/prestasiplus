@@ -20,8 +20,8 @@ import type { BijakAttemptOption, BijakAttemptStimulus, BijakBuilderReviewQuesti
 import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
-import { QuestionsRepository } from '../../questions'
-import { ACTIVE_SUBJECT_SQL, ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
+import { BANK_ONLY, QuestionsRepository } from '../../questions'
+import { ACTIVE_SUBJECT_SQL, ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
@@ -79,7 +79,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
        WHERE q.is_active AND v.status = 'approved' AND v.subject_id = ${subject.id}
-         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ACTIVE_SUBJECT_SQL}
+         AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ACTIVE_SUBJECT_SQL} AND ${BANK_VISIBLE_SQL}
          AND COALESCE(
                (SELECT min((substring(t.code from ${pool}))::int) FROM question_tags t
                  WHERE t.question_id = q.id AND t.kind = 'pool' AND t.code ~ ${pool}),
@@ -283,7 +283,7 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
       SELECT q.id FROM questions q
         JOIN unnest(${pairs.map((p) => p.id)}::bigint[], ${pairs.map((p) => p.versionNo)}::int[]) AS pin(qid, vno) ON pin.qid = q.id
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = pin.vno
-       WHERE ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`
+       WHERE ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
     return new Set(rows.map((r) => r.id))
   }
 
@@ -296,16 +296,16 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
     const rows = await this.db.$queryRaw<{ id: bigint }[]>`
       SELECT q.id FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
-       WHERE q.id = ANY(${[...new Set(ids)]}::bigint[]) AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL}`
+       WHERE q.id = ANY(${[...new Set(ids)]}::bigint[]) AND ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
     return new Set(rows.map((r) => r.id))
   }
 
   async review(ids: readonly string[]): Promise<BuilderPreview> {
     const unique = [...new Set(ids)]
-    const live = await this.questions.getMany(unique, 'live')
+    const live = await this.questions.getMany(unique, 'live', 'exclude', BANK_ONLY)
     const have = new Set(live.map((r) => r.id))
     const rest = unique.filter((id) => !have.has(id))
-    const latest = rest.length ? await this.questions.getMany(rest, 'latest') : []
+    const latest = rest.length ? await this.questions.getMany(rest, 'latest', 'exclude', BANK_ONLY) : []
     const byId = new Map([...live, ...latest].map((r) => [r.id, r]))
     const records = unique.flatMap((id) => {
       const r = byId.get(id)
