@@ -107,7 +107,7 @@ export interface ReadinessTile {
   /** round((bersih + bankBesar) / total x 100), 0 without sets. */
   readiness: number
   /** First 6 locked sets. */
-  lockedSets: { setNo: number; readyCount: number; target: number }[]
+  lockedSets: { year: number; setNo: number; readyCount: number; target: number }[]
   hasBankBesar: boolean
 }
 export interface Readiness {

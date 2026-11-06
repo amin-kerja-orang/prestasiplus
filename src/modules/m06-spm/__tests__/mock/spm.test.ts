@@ -224,7 +224,7 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
     ])
     const tile = (c: string) => r?.tiles.find((t) => t.code === c)
     expect(tile('BM')).toMatchObject({ bersih: 0, bankBesar: 0, locked: 1, total: 1, readiness: 0 })
-    expect(tile('BM')?.lockedSets).toEqual([{ setNo: 1, readyCount: 9, target: 34 }])
+    expect(tile('BM')?.lockedSets).toEqual([{ year: 2026, setNo: 1, readyCount: 9, target: 34 }])
     expect(tile('BI')).toMatchObject({ total: 0, readiness: 0, lockedSets: [] })
     expect(tile('GEO')).toMatchObject({
       bersih: 0,
