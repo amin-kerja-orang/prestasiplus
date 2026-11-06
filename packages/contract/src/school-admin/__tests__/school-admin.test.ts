@@ -191,7 +191,7 @@ const teacherListRow = {
   canEdit: false,
 }
 
-const tally = { green: 40, yellow: 10, red: 9, total: 59, pct: { green: 68, yellow: 17, red: 15 } }
+const tally = { green: 40, yellow: 10, red: 9, notStarted: 3, total: 59, pct: { green: 68, yellow: 17, red: 15 } }
 const weak = { subjectId: '3', subjectName: 'Matematik', weak: 12, total: 59, pct: 20 }
 const risk = {
   rank: 1,
@@ -202,8 +202,8 @@ const risk = {
   tingkatan: 4,
   className: '4 Amanah',
   classLabel: 'Tingkatan 4 4 Amanah',
-  score: 80,
-  status: 'high',
+  score: null,
+  status: 'not_started',
   accuracy: null,
   engagement: null,
   mastery: null,
@@ -214,6 +214,7 @@ const risk = {
 const schoolRisk = {
   school,
   levelFilter: 'T4',
+  levels: [4, 5],
   levelSuffix: ' — Tingkatan 4',
   tally,
   weakness: [weak],
@@ -454,7 +455,13 @@ describe('school-admin contract: Amaran', () => {
   it('parses the school risk page, with and without a level filter', () => {
     expect(ok(AmaranSchoolRiskSchema, schoolRisk)).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: null, levelSuffix: '', pupils: [] })).toBe(true)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: 'T1' })).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levelFilter: 'T6' })).toBe(false)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: [] })).toBe(true)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: [6] })).toBe(false)
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, levels: undefined, tally: { ...tally, notStarted: undefined } })).toBe(true) // additive: older payloads still parse
+    // FR-X4-3: a not_started pupil has no score; a scored pupil keeps its number.
+    expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, score: 52, status: 'watch' }] })).toBe(true)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, tally: { ...tally, pct: { green: 101, yellow: 0, red: 0 } } })).toBe(false)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, status: 'critical' }] })).toBe(false)
     expect(ok(AmaranSchoolRiskSchema, { ...schoolRisk, pupils: [{ ...risk, rank: 0 }] })).toBe(false)
@@ -494,11 +501,11 @@ describe('school-admin contract: Amaran', () => {
   })
 
   it('keeps the mock labels, header row and file name', () => {
-    expect(AMARAN_STATUS_LABELS).toEqual({ on_track: 'On Track', watch: 'Perlu Perhatian', high: 'Berisiko Tinggi' })
+    expect(AMARAN_STATUS_LABELS).toEqual({ on_track: 'On Track', watch: 'Perlu Perhatian', high: 'Berisiko Tinggi', not_started: 'Belum Bermula' })
     expect(AMARAN_TYPE_LABELS.kaunseling).toBe('Sesi Kaunseling')
     expect(AMARAN_TYPE_LABELS.mentor_rakan).toBe('Mentor Rakan Sebaya')
     expect(AMARAN_MONTH_ABBREVIATIONS.join(' ')).toBe('Jan Feb Mac Apr Mei Jun Jul Ogo Sep Okt Nov Dis')
-    expect(AMARAN_CSV_COLUMNS.join(',')).toBe('Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
+    expect(AMARAN_CSV_COLUMNS.join(',')).toBe('Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
     expect(amaranCsvFilename('8880', '20260925')).toBe('amaran-sekolah-8880-20260925.csv')
   })
 })

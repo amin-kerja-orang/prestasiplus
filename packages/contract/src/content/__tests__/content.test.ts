@@ -187,6 +187,9 @@ describe('banners', () => {
   it('update: partial, and a stored legacy code is accepted', () => {
     expect(ok(AdminBannerUpdateRequestSchema, { bannerType: 'FEATURE' })).toBe(true)
     expect(ok(AdminBannerUpdateRequestSchema, { isActive: false })).toBe(true)
+    expect(ok(AdminBannerUpdateRequestSchema, { bannerType: 'PROMOTIONAL', linkType: 'LEGACY', targetAudience: 'PARENT' })).toBe(true)
+    // S5-T09 (a): a full unchanged save of a legacy FEATURE row parses (V3 DB CHECK cannot store FEATURE, so no DB case).
+    expect(ok(AdminBannerUpdateRequestSchema, { title: 'Hebahan', description: null, imageUrl: null, bannerType: 'FEATURE', linkType: 'NONE', targetAudience: 'STUDENT', displayOrder: 2, startDate: '2026-10-01', endDate: null, isActive: true })).toBe(true)
     expect(ok(AdminBannerUpdateRequestSchema, { startDate: '2026-10-31', endDate: '2026-10-01' })).toBe(false)
     expect(ok(AdminBannerUpdateRequestSchema, { title: '' })).toBe(false)
   })
@@ -509,8 +512,12 @@ describe('screenshots and support config', () => {
   })
 
   it('support config', () => {
-    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', whatsappNumber: '60123456789' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', phone: '', whatsapp: '60123456789', hours: '' })).toBe(true)
     expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test' })).toBe(false)
+    expect(ok(ContentSupportConfigSchema, { email: '', whatsappNumber: '' })).toBe(false)
+    expect(ok(ContentSupportConfigSchema, { email: '', phone: '', whatsapp: '', hours: '', whatsappNumber: '60123456789' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: '', phone: '', whatsapp: '', hours: '' })).toBe(true)
+    expect(ok(ContentSupportConfigSchema, { email: 'bantuan@example.test', phone: '', whatsapp: '', hours: '' })).toBe(true)
   })
 })
 

@@ -3,7 +3,7 @@
  *
  * A pupil must never be offered a link the app refuses afterwards:
  *   (a) /timeline: no "Profil Awam Anda" link to /pelajar/:id (outside the pupil's prototype scope);
- *   (b) /prestasi/tingkatan/t4: no "Lihat →" link to /prestasi/kelas/:id (staff only), no 404 page;
+ *   (b) /prestasi/tingkatan/t4: the 403 page (FR-MUR-4-2), no "Lihat →" link to /prestasi/kelas/:id, no 404 page;
  *   (c) own /prestasi/:id: no "Lihat Penuh" link to /headcount/student/:id (staff only);
  *   (d) a teacher keeps the class links on the same page (no regression);
  *   (e) /kelas-saya: the "already joined" refusal clears when the code is emptied.
@@ -24,7 +24,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll } from './helpers'
+import { account, expectNoHScroll, FORBIDDEN_TITLE } from './helpers'
 
 const NOT_FOUND_TITLE = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 const ALREADY_JOINED = 'Anda sudah menyertai kelas ini.'
@@ -47,8 +47,7 @@ async function expectNot404(page: Page): Promise<void> {
 /**
  * Opens /prestasi/tingkatan/t4 and asserts the precondition: the API answered 200 with at least one class
  * row, and the class card rendered (a table on desktop, cards on mobile). `staff` also requires a row with a
- * link target. A pupil gets every `href` as null from the API since SW5-04 (#248), so the pupil test checks
- * that no class link renders whatever the API sends.
+ * link target. Only the guru test uses it: a pupil gets the 403 page there (FR-MUR-4-2, S10-T01).
  */
 async function openTingkatan(page: Page, staff: boolean): Promise<void> {
   const levelCall = page.waitForResponse(
@@ -86,12 +85,22 @@ test.describe('pupil sweep: no dead links @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('(b) pupil /prestasi/tingkatan/t4 has no class links and no 404 page @api', async ({
+  test('(b) pupil /prestasi/tingkatan/t4 is the 403 page: no class links, no 404 page @api', async ({
     page,
   }) => {
     const { user, pass } = account('studentB')
     await loginViaUi(page, user, pass)
-    await openTingkatan(page, false)
+    // FR-MUR-4-2 (S10-T01): a pupil has no school or level view; the 403 page renders in place and the
+    // level API is never called.
+    let levelCalls = 0
+    page.on('request', (r) => {
+      if (r.url().includes('/api/performance/levels/')) levelCalls += 1
+    })
+    await page.goto('/prestasi/tingkatan/t4')
+    await expect(page).toHaveTitle(FORBIDDEN_TITLE, { timeout: 20_000 })
+    await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
+    await expect(page.getByTestId('tingkatan-page')).toHaveCount(0)
+    expect(levelCalls, 'no level request for a pupil').toBe(0)
     await expect(page.locator('a[href^="/prestasi/kelas/"]')).toHaveCount(0)
     await expectNot404(page)
     await expectNoHScroll(page)
