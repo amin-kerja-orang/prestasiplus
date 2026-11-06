@@ -19,8 +19,8 @@ const subjectCode = z.string().min(1).meta({ description: 'Curriculum subject co
 
 /**
  * `GET /spm/overview` data. `totalQuestions` and the two pool chips are display constants in the
- * mock (DV-M06-01); the real backend computes them (open question 1). `yearsAvailable` is 0 (the
- * bank has no year). `me` covers the caller's practice history over the modes `past_year`,
+ * mock (DV-M06-01); the real backend computes them (open question 1). `yearsAvailable` is omitted
+ * while there is no year source (the hub hides the tile; never a constant 0). `me` covers the caller's practice history over the modes `past_year`,
  * `latih_tubi` and `ramalan` (same figures as the stats of `GET /practice/sessions`; the field is
  * `avgAccuracy` here, `avgAccuracyPct` there).
  */
@@ -29,7 +29,7 @@ export const SpmOverviewSchema = z
     stats: z.strictObject({
       totalQuestions: count,
       subjectCount: count.meta({ description: 'Distinct active subjects at the two SPM levels (Tingkatan 4 and 5).' }),
-      yearsAvailable: count,
+      yearsAvailable: count.optional().meta({ description: 'Distinct exam years among servable papers or questions. Absent while there is no year source.' }),
       trackingAQuestions: count.meta({ description: 'Sum of the ready counts of all Tracking A sets.' }),
     }),
     modules: z.strictObject({
@@ -37,6 +37,7 @@ export const SpmOverviewSchema = z
       latihTubi: count.meta({ description: 'Latih Tubi chip.' }),
       trackingA: count,
       subjektifSets: count.meta({ description: 'Visible structured sets across the Subjektif subjects.' }),
+      kertasSubjektif: count.meta({ description: 'Published papers with surface subjektif (level_scope is not applied); the Kertas Subjektif chip.' }),
     }),
     me: z.strictObject({
       sessions: count,

@@ -22,8 +22,13 @@ export class InMemorySpMap implements SpMapPort {
   async spTree(query: { levelId: string | null }): Promise<SpSubjectTree[]> {
     return query.levelId === null ? [] : (this.trees.get(query.levelId) ?? [])
   }
+  /** Like the SQL adapter: duplicate input ids give no duplicate rows; rows sorted by question, then SP (numeric ids). */
   async spOf(questionIds: readonly string[]): Promise<SpTagRow[]> {
-    return this.tags.filter((t) => questionIds.includes(t.questionId))
+    const wanted = new Set(questionIds)
+    const seen = new Set<string>()
+    return this.tags
+      .filter((t) => wanted.has(t.questionId) && !seen.has(`${t.questionId}:${t.spNodeId}`) && seen.add(`${t.questionId}:${t.spNodeId}`))
+      .sort((a, b) => Number(a.questionId) - Number(b.questionId) || Number(a.spNodeId) - Number(b.spNodeId))
   }
 }
 

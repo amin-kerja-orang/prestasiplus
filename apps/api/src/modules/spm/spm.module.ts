@@ -45,9 +45,12 @@ export class SpmModule implements OnModuleInit {
   constructor(
     private readonly practicePorts: PracticePorts,
     private readonly tracking: SpmTrackingService,
+    private readonly ports: SpmPorts,
+    private readonly repo: SpmRepository,
   ) {}
 
   onModuleInit(): void {
     this.practicePorts.provideRamalan(this.tracking)
+    this.ports.providePapers({ countPublishedSubjektif: () => this.repo.countPublishedSubjektifPapers() })
   }
 }
