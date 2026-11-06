@@ -2420,6 +2420,7 @@
     "src/modules/m07-pksk/components/MasteryBar.vue": 1,
     "src/modules/m07-pksk/components/OptionsCard.vue": 1,
     "src/modules/m09-content/components/video/VideoPlayerFrame.vue": 1,
+    "src/modules/m10-teacher-class/components/soalan/QuestionForm.vue": 1,
     "src/modules/m11-teacher-analytics/pages/MonitoringSchoolPage.vue": 1,
     "src/modules/m14-gamification/pages/GamificationHistoryPage.vue": 1,
     "src/modules/m16-battle-games/components/hub/GameCard.vue": 1,

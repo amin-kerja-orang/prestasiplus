@@ -4,6 +4,7 @@ import type { ServabilityActivity } from '@pp/contract'
 import { isIdString } from '../../../db/ids'
 import { mulberry32, type Prng } from '../../../db/prng'
 import { QuestionsRepository } from '../../questions'
+import { isBankVersion } from '../../questions/learner-visibility'
 import { GROUP_SURFACES, drawUnits, filterOf as servingFilterOf, type DrawCandidate } from '../../questions/serving'
 import type { QuestionFilter, QuestionRecord, StimulusGroupRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
@@ -158,15 +159,16 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return out
   }
 
-  async live(ids: readonly string[], activity?: PracticeDrillActivity): Promise<ReadonlyMap<string, PracticeQuestion>> {
+  async live(ids: readonly string[], activity?: PracticeDrillActivity, opts: { allowPrivate?: boolean } = {}): Promise<ReadonlyMap<string, PracticeQuestion>> {
+    const allowPrivate = opts.allowPrivate === true
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
     if (this.allows(activity)) {
       // S1-T06: figures and whole groups. A member of a group with a member that cannot be served is dropped with the whole group.
-      const { records, groups } = await this.servableRecords(wanted)
+      const { records, groups } = await this.servableRecords(wanted, allowPrivate)
       return this.mapServable([...records.values()], (r) => r.id, true, groups)
     }
-    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter(eligible)
+    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
     return this.mapAll(records, (r) => r.id)
   }
 
@@ -207,11 +209,11 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
    * kept only when its WHOLE group is: every eligible member of the group must pass the shape check and the group must hold a
    * stimulus (the same rule as `wholeGroups` in SQL, plus the per-record shape), else the whole group is out.
    */
-  private async servableRecords(ids: readonly string[]): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit> }> {
+  private async servableRecords(ids: readonly string[], allowPrivate = false): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit> }> {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
-    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible))
+    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r))))
     const groupIds = [...new Set(loaded.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
     if (groupIds.length > 0) {
       const have = new Map(loaded.map((r) => [r.id, r]))
@@ -316,6 +318,8 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 
 /** Q-2: the live version is published and the question is active. */
 const eligible = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'approved'
+/** DM-42: a personal question is served by a mission session only. */
+const notPrivate = (r: QuestionRecord): boolean => isBankVersion(r.version)
 
 /** The drill surface of a selection (`PracticeSelection.activity`, else Latih Tubi SPM for the SPM pool, Databank for the rest). */
 const activityOf = (s: PracticeSelection): PracticeDrillActivity => s.activity ?? (s.spmPool ? 'latih_tubi_spm' : 'databank')

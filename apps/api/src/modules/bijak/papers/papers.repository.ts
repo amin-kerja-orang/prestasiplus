@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection, Prisma } from '../../../db/generated/client'
+import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { levelScopeAllows } from './rules'
 
 export type { Blueprint, BlueprintSection, Paper, PaperPlacement, PaperSection }
 
@@ -70,6 +72,18 @@ export class PapersRepository {
     })
   }
 
+  /** `users.grade` (1..11) of a user, or null when the user has none or does not exist. Read-only, one column (the owner is M01). */
+  async gradeOf(userId: string): Promise<number | null> {
+    let id: bigint
+    try {
+      id = idFromString(userId)
+    } catch {
+      return null
+    }
+    const row = await this.prisma.client.user.findUnique({ where: { id }, select: { grade: true } })
+    return row?.grade ?? null
+  }
+
   findPaper(id: bigint): Promise<PaperWithTree | null> {
     return this.prisma.client.paper.findUnique({ where: { id }, include: TREE })
   }
@@ -120,13 +134,17 @@ export class PapersRepository {
   }
 
   /** Subjects with an active blueprint or a published curated paper, in curriculum order. */
-  async hubSubjects(): Promise<SubjectRef[]> {
+  async hubSubjects(grade: number | null): Promise<SubjectRef[]> {
     const [bp, papers] = await Promise.all([
       this.prisma.client.blueprint.findMany({ where: { status: 'active' }, select: { subjectId: true } }),
       // Kertas Subjektif papers (DM-23) have their own lane; they do not put a subject on the Bijak hub.
-      this.prisma.client.paper.findMany({ where: { kind: 'pilihan', status: 'published', surface: 'simulasi' }, select: { subjectId: true } }),
+      // Same level rule as the list (S3-T07): only the papers in the pupil's form, so no subject shows with zero papers.
+      this.prisma.client.paper.findMany({
+        where: { kind: 'pilihan', status: 'published', surface: 'simulasi' },
+        select: { subjectId: true, levelScope: true },
+      }),
     ])
-    const ids = [...bp, ...papers].map((r) => r.subjectId)
+    const ids = [...bp, ...papers.filter((p) => levelScopeAllows(p.levelScope, grade))].map((r) => r.subjectId)
     if (ids.length === 0) return []
     return this.prisma.client.subject.findMany({
       where: { id: { in: [...new Set(ids)] }, isActive: true },
