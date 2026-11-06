@@ -17,6 +17,7 @@ import ClassPanel from '../components/command-center/ClassPanel.vue'
 import ClassSummaryModal from '../components/command-center/ClassSummaryModal.vue'
 import { useCountUp, useLiveData } from '../components/command-center/composables'
 import {
+  accuracyText,
   type DrillRequest,
   EMPTY_LIVE,
   gpsText,
@@ -115,7 +116,7 @@ onBeforeUnmount(() => {
         />
         <KpiTile
           label="Ketepatan Purata"
-          :value="`${String(d.accuracy)}%`"
+          :value="accuracyText(d.accuracy)"
           sub="keseluruhan sekolah"
           icon="target"
           accent="heat"

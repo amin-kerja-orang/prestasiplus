@@ -19,6 +19,7 @@ import { users } from '@/modules/m01-authentication/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import { headcountConfigsTable, headcountEntriesTable } from '../tables/headcount'
+import { otrTargets } from '../../lib/headcount/otr'
 import { latestAr, type HeadcountEntryView } from './headcount-port'
 import type { HeadcountConfigRow, HeadcountEntryRow, HeadcountMode } from './headcount-types'
 import { gradeOfPercent, type Grade } from './rules'
@@ -64,6 +65,18 @@ export interface HeadcountScopeFilter {
 
 const blankSlots = (n: number): (number | null)[] => Array.from({ length: n }, () => null)
 
+const blankEntry = (c: HeadcountConfigRow, studentId: number): Omit<HeadcountEntryRow, 'id'> => ({
+  configId: c.id,
+  studentId,
+  tov: null,
+  targets: blankSlots(c.activeOtrs),
+  actuals: blankSlots(c.activeOtrs),
+  etr: null,
+  rs: null,
+  rsRecordedAt: null,
+  dropped: false,
+})
+
 const gradeOfEntry = (e: HeadcountEntryView): Grade | null => {
   const l = latestAr(e)
   return l === null ? null : gradeOfPercent(l.ar)
@@ -71,6 +84,10 @@ const gradeOfEntry = (e: HeadcountEntryView): Grade | null => {
 
 /** A config and one of its entries as the headcount port reads them. */
 export function entryView(c: HeadcountConfigRow, e: HeadcountEntryRow): HeadcountEntryView {
+  // HC-1 / HC-2: an entry without its own TOV / ETR reads the config default; the OTR targets are
+  // computed from them, never read from the stored slots (the stored values are ignored).
+  const tov = e.tov ?? c.defaultTov ?? null
+  const etr = e.etr ?? c.defaultEtr ?? null
   return {
     configId: c.id,
     studentId: e.studentId,
@@ -81,10 +98,11 @@ export function entryView(c: HeadcountConfigRow, e: HeadcountEntryRow): Headcoun
     configUpdatedAt: c.updatedAt,
     academicYear: c.academicYear,
     activeOtrs: c.activeOtrs,
-    tov: e.tov,
-    targets: e.targets,
-    actuals: e.actuals,
-    etr: e.etr,
+    tov,
+    targets: otrTargets(tov, etr, c.activeOtrs),
+    // HC-3: an Auto AR is a whole number (round(correct / answered × 100)).
+    actuals: c.mode === 'auto' ? e.actuals.map((v) => (v === null ? null : Math.round(v))) : e.actuals,
+    etr,
     rs: e.rs,
     dropped: e.dropped,
   }
@@ -275,6 +293,103 @@ export const headcountRepo = defineRepository({
           touch(configId, now)
         })
         return changed
+      },
+
+      /** API-RPT-10 `PUT .../ar`: sets the AR of checkpoint `n` (1-based) of the given pupils (blank entry created). */
+      setAr(
+        configId: number,
+        n: number,
+        marks: readonly { studentId: number; value: number | null }[],
+        now: number,
+      ): void {
+        const config = store.get(configId)
+        if (!config) return
+        transaction(() => {
+          for (const m of marks) {
+            const entry = entriesStore.query({ where: { configId, studentId: m.studentId } }).rows[0]
+            const actuals = [...(entry?.actuals ?? blankSlots(config.activeOtrs))]
+            while (actuals.length < config.activeOtrs) actuals.push(null)
+            actuals[n - 1] = m.value
+            if (entry) entriesStore.update(entry.id, { actuals })
+            else entriesStore.insert({ ...blankEntry(config, m.studentId), actuals })
+          }
+          touch(configId, now)
+        })
+      },
+
+      /** API-RPT-10 `PUT .../tov`: TOV / ETR / RS per pupil; an absent field stays, `null` clears it. */
+      setTov(
+        configId: number,
+        rows: readonly {
+          studentId: number
+          tov?: number | null
+          etr?: number | null
+          rs?: number | null
+          rsRecordedAt?: string | null
+        }[],
+        today: string,
+        now: number,
+      ): void {
+        const config = store.get(configId)
+        if (!config) return
+        transaction(() => {
+          for (const r of rows) {
+            const entry = entriesStore.query({ where: { configId, studentId: r.studentId } }).rows[0]
+            const base = entry ?? blankEntry(config, r.studentId)
+            const patch: Partial<Omit<HeadcountEntryRow, 'id'>> = {}
+            if (r.tov !== undefined) patch.tov = r.tov
+            if (r.etr !== undefined) patch.etr = r.etr
+            if (r.rs !== undefined) {
+              patch.rs = r.rs
+              // FR-GUR-3-12: the date defaults to the day RS is first saved; clearing RS clears it.
+              patch.rsRecordedAt =
+                r.rs === null ? null : (r.rsRecordedAt ?? base.rsRecordedAt ?? today)
+            } else if (r.rsRecordedAt !== undefined && base.rs !== null) {
+              patch.rsRecordedAt = r.rsRecordedAt
+            }
+            if (entry) entriesStore.update(entry.id, patch)
+            else entriesStore.insert({ ...blankEntry(config, r.studentId), ...patch })
+          }
+          touch(configId, now)
+        })
+      },
+
+      /** The highest checkpoint above `n` that holds an AR (CF-05), or null. */
+      marksAbove(configId: number, n: number): number | null {
+        let top: number | null = null
+        for (const e of entriesStore.query({ where: { configId } }).rows) {
+          e.actuals.forEach((v, i) => {
+            if (v !== null && i + 1 > n && (top === null || i + 1 > top)) top = i + 1
+          })
+        }
+        return top
+      },
+
+      /** API-RPT-10 `PUT .../settings`: the OTR count; the slots above it are deleted (CF-05). */
+      setActiveOtrs(configId: number, n: number, now: number): void {
+        if (!store.get(configId)) return
+        transaction(() => {
+          for (const e of entriesStore.query({ where: { configId } }).rows) {
+            const fit = (v: readonly (number | null)[]): (number | null)[] =>
+              Array.from({ length: n }, (_, i) => v[i] ?? null)
+            entriesStore.update(e.id, { targets: fit(e.targets), actuals: fit(e.actuals) })
+          }
+          store.update(configId, { activeOtrs: n })
+          touch(configId, now)
+        })
+      },
+
+      /** API-RPT-16 `PUT .../defaults`: the subject-card TOV and ETR. */
+      setDefaults(
+        configId: number,
+        defaults: { defaultTov: number | null; defaultEtr: number | null },
+        now: number,
+      ): void {
+        if (!store.get(configId)) return
+        transaction(() => {
+          store.update(configId, defaults)
+          touch(configId, now)
+        })
       },
 
       /** M17 `GET /api/command-center/headcount/{configId}`: the config and its non-dropped entries. */

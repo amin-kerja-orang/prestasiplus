@@ -3,6 +3,7 @@ import type { QuestionSetStudentItem } from '@pp/contract'
 
 import { isIdString } from '../../../db/ids'
 import { PracticeRepository } from '../../practice'
+import { servableMcq } from '../../practice/question-bridge'
 import { ATTEMPT_LOOKUP_CONCURRENCY } from './question-sets.constants'
 import { QuestionsRepository } from '../../questions'
 import type { ClassActor } from '../actor'
@@ -27,17 +28,40 @@ export class QuestionSetsService {
 
   /**
    * Served question ids per set, in `position` order, keeping only questions that are still eligible
-   * (published live version, active). A deactivated question is skipped, never removed from the set. A set
-   * that needs a rebuild (migrated header only) has no served items.
+   * (approved live version, active). A deactivated question is skipped, never removed from the set. A set
+   * that needs a rebuild (migrated header only) has no served items. A stimulus group is whole or not at all (D91):
+   * when any member of its full list is ineligible or not in the set, or the group is incomplete, every member drops.
    */
   async eligibleItems(sets: readonly QuestionSetRecord[]): Promise<Map<string, string[]>> {
     const buildable = sets.filter((s) => !s.needsRebuild)
     const stored = await this.repo.itemIds(buildable.map((s) => s.id))
     const all = [...new Set([...stored.values()].flat())]
-    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live')
-    const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved').map((q) => q.id))
+    const live = all.length === 0 ? [] : await this.questions.getMany(all, 'live', 'exclude', { lenientKeys: true })
+    // The same verdict play applies (`servableMcq` with stimulus allowed, as `servableRecords` does via `check(m, true)`), so the list count matches what a start serves.
+    // Dependency on S5-T03: play serves groups on the 'bab' surface only once `GROUP_SURFACES` lists it; the count follows the final shape.
+    const eligible = new Set(live.filter((q) => q.isActive && q.version.status === 'approved' && servableMcq(q, { allowStimulus: true }).ok).map((q) => q.id))
+    const groupOf = new Map(live.filter((q) => eligible.has(q.id) && q.groupId !== null).map((q) => [q.id, q.groupId as string]))
+    const defs = groupOf.size === 0 ? [] : await this.questions.groupsByIds([...new Set(groupOf.values())])
+    const incomplete = groupOf.size === 0 ? new Map<string, number>() : await this.questions.incompleteGroups(defs.map((g) => g.id))
+    const members = new Map(defs.filter((g) => g.stimuli.length > 0).map((g) => [g.id, g.questionIds]))
     const out = new Map<string, string[]>()
-    for (const s of sets) out.set(s.id, (stored.get(s.id) ?? []).filter((id) => eligible.has(id)))
+    for (const s of sets) {
+      const ids = (stored.get(s.id) ?? []).filter((id) => eligible.has(id))
+      const inSet = new Set(ids)
+      const whole = (g: string): boolean => !incomplete.has(g) && members.has(g) && (members.get(g) ?? []).every((m) => inSet.has(m))
+      // A kept group is placed once, in its own group order, at the position of its first member in the set; other items keep their order.
+      const placed = new Set<string>()
+      const kept: string[] = []
+      for (const id of ids) {
+        const g = groupOf.get(id)
+        if (g === undefined) kept.push(id)
+        else if (whole(g) && !placed.has(g)) {
+          placed.add(g)
+          kept.push(...(members.get(g) ?? []))
+        }
+      }
+      out.set(s.id, kept)
+    }
     return out
   }
 
