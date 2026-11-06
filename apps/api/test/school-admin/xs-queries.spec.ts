@@ -73,8 +73,8 @@ async function session(userId: string, mode: string, status: 'completed' | 'in_p
 /** `n` answers one second apart from `AT`, the first `correct` correct, on questions `firstQuestion` .. `firstQuestion + n - 1` (no foreign key on question_id yet). */
 async function answers(userId: string, n: number, correct: number, firstQuestion: number, o: { sessionId?: string; isTest?: boolean } = {}): Promise<void> {
   await t.db.query(
-    `insert into practice_answers (user_id, session_id, question_id, is_correct, answered_at, is_test)
-     select $1::bigint, $2::uuid, $3::bigint + g - 1, g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6 from generate_series(1, $7::int) g`,
+    `insert into practice_answers (user_id, session_id, question_id, is_correct, answered_at, is_test, mode)
+     select $1::bigint, $2::uuid, $3::bigint + g - 1, g <= $4, $5::timestamptz + (g || ' seconds')::interval, $6, 'latih_tubi' from generate_series(1, $7::int) g`,
     [userId, o.sessionId ?? null, firstQuestion, correct, AT, o.isTest ?? false, n],
   )
 }
@@ -325,7 +325,7 @@ describe('XsQueries edge cases', () => {
   const mk = async (name: string, grade: number | null, o: { role?: 'student' | 'teacher'; isActive?: boolean } = {}) =>
     (await createUser(t.db, { role: o.role ?? 'student', schoolId: e, name, grade, ...(o.isActive === undefined ? {} : { isActive: o.isActive }) })).id
   const answerAt = async (userId: string, at: string, q: number) =>
-    t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at) values ($1::bigint, $2::bigint, true, $3::timestamptz)`, [userId, q, at])
+    t.db.query(`insert into practice_answers (user_id, question_id, is_correct, answered_at, mode) values ($1::bigint, $2::bigint, true, $3::timestamptz, 'latih_tubi')`, [userId, q, at])
 
   beforeAll(async () => {
     e = (await t.db.query<{ id: string }>(`insert into schools (name, type) values ('Sekolah Fixture XS Tepi', 'SMK') returning id::text`))[0]?.id as string
@@ -416,8 +416,8 @@ describe('Laporan Bulanan on XS-4 (a month with answers but no completed session
     const ids: string[] = []
     const put = async (userId: string, n: number, correct: number, at: string, sessionId: string | null = null) =>
       t.db.query(
-        `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at)
-         select $1::bigint, $2::uuid, $3::bigint, g <= $4, $5::timestamptz + (g || ' seconds')::interval from generate_series(1, $6::int) g`,
+        `insert into practice_answers (user_id, session_id, subject_id, is_correct, answered_at, mode)
+         select $1::bigint, $2::uuid, $3::bigint, g <= $4, $5::timestamptz + (g || ' seconds')::interval, 'latih_tubi' from generate_series(1, $6::int) g`,
         [userId, sessionId, subject, correct, at, n],
       )
     for (let i = 1; i <= 5; i++) {

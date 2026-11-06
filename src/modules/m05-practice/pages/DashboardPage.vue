@@ -36,6 +36,7 @@ import HomeStats from '../components/dashboard-v2/HomeStats.vue'
 import HomeSubjects from '../components/dashboard-v2/HomeSubjects.vue'
 import HomeSubjectStats from '../components/dashboard-v2/HomeSubjectStats.vue'
 import HomeTrial from '../components/dashboard-v2/HomeTrial.vue'
+import HomeWeakTopics from '../components/dashboard-v2/HomeWeakTopics.vue'
 import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -103,6 +104,7 @@ watch(
         :is-admin="data.user.role === 'admin'"
       />
       <HomeArticles :articles="data.articles" />
+      <HomeWeakTopics />
       <HomeSubjects :subjects="data.subjects" />
       <HomePlatform :stats="data.stats" />
       <HomeLevels :pills="data.levelPills" />

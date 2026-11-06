@@ -251,9 +251,9 @@ export class VideosService {
   }
 
   /**
-   * The columns to store. The server decides the visibility by role and ignores any `visibility` in the body: a teacher's video is
-   * `school` with the uploader's school (422 under `visibility` when there is none, fail closed); an admin's new video is `global`
-   * with no school, and an admin who edits an existing video keeps its stored visibility and school.
+   * The columns to store. The server decides the visibility and ignores any `visibility` in the body. On CREATE a teacher's video is
+   * `school` with the uploader's school (422 under `visibility` when there is none, fail closed) and an admin's is `global` with no
+   * school. On UPDATE the stored visibility and school are kept, whoever edits.
    */
   private async writeOf(
     actor: VideoActor,
@@ -263,12 +263,16 @@ export class VideosService {
   ): Promise<VideoWrite> {
     const subjectId = body.subjectId ?? null
     if (subjectId !== null && (!isIdString(subjectId) || !(await this.subjects.exists(subjectId)))) throw fieldError('subjectId', FIELD_INVALID)
-    let visibility: VideoWrite['visibility'] = 'global'
-    let schoolId: string | null = null
-    if (actor.role === 'admin' && existing !== null) {
+    let visibility: VideoWrite['visibility']
+    let schoolId: string | null
+    if (existing !== null) {
+      // An edit never changes who can see the video, whoever edits it.
       visibility = existing.visibility
       schoolId = existing.visibility === 'school' ? existing.schoolId : null
-    } else if (actor.role !== 'admin') {
+    } else if (actor.role === 'admin') {
+      visibility = 'global'
+      schoolId = null
+    } else {
       schoolId = (await this.users.get(uploaderId))?.schoolId ?? null
       if (schoolId === null) throw fieldError('visibility', CONTENT_MESSAGES.videoNoSchool)
       visibility = 'school'

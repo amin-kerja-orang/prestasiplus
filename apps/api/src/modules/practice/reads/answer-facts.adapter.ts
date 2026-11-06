@@ -9,9 +9,13 @@ import type {
   AnswerFactRow,
   AnswerFactsPort,
   AnswerFactsQuery,
+  DailyFactRow,
   QuestionContent,
   QuestionContentPort,
   SessionCountRow,
+  SessionDurationRow,
+  SessionFactRow,
+  SessionFactsQuery,
   SpInfo,
   WeeklyFactRow,
 } from '../../reports/performance/ports'
@@ -90,6 +94,29 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
 
   async answerFacts(q: AnswerFactsQuery): Promise<AnswerFactRow[]> {
     if (q.modes && q.modes.length === 0) return []
+    if (q.grain === 'user-subject') {
+      const coarse = await this.db.$queryRaw<{ userId: bigint; subjectId: bigint; attempts: bigint; correct: bigint; lastAnsweredAt: Date; firstCorrect: boolean | null; firstAnsweredAt: Date }[]>`
+        SELECT a.user_id AS "userId", coalesce(a.subject_id, 0)::bigint AS "subjectId",
+               count(*)::bigint AS attempts, (count(*) FILTER (WHERE a.is_correct))::bigint AS correct, max(a.answered_at) AS "lastAnsweredAt",
+               (array_agg(a.is_correct ORDER BY a.answered_at, a.id))[1] AS "firstCorrect", min(a.answered_at) AS "firstAnsweredAt"
+          ${this.from}
+         WHERE ${this.where(q)}
+         GROUP BY a.user_id, coalesce(a.subject_id, 0)
+         ORDER BY a.user_id, 2`
+      return coarse.map((r) => ({
+        userId: idToString(r.userId),
+        subjectId: idToString(r.subjectId),
+        questionId: '0',
+        chapterId: null,
+        topicId: null,
+        mode: '*',
+        attempts: num(r.attempts),
+        correct: num(r.correct),
+        lastAnsweredAt: r.lastAnsweredAt,
+        firstCorrect: r.firstCorrect === true,
+        firstAnsweredAt: r.firstAnsweredAt,
+      }))
+    }
     const rows = await this.db.$queryRaw<
       { userId: bigint; subjectId: bigint; questionId: bigint; chapterId: bigint | null; topicId: bigint | null; mode: string; attempts: bigint; correct: bigint; lastAnsweredAt: Date; firstCorrect: boolean | null; firstAnsweredAt: Date }[]
     >`
@@ -133,6 +160,39 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
     return rows.map((r) => ({ userId: idToString(r.userId), weekStart: r.weekStart, attempts: num(r.attempts), correct: num(r.correct), sessions: num(r.sessions) }))
   }
 
+  async dailyFacts(q: AnswerFactsQuery): Promise<DailyFactRow[]> {
+    if (q.modes && q.modes.length === 0) return []
+    const rows = await this.db.$queryRaw<{ userId: bigint; day: string; attempts: bigint; correct: bigint; sessions: bigint }[]>`
+      WITH base AS (
+        SELECT a.user_id, a.is_correct, a.session_id, ${MODE} AS mode, (a.answered_at AT TIME ZONE ${MYT}) AS local_at
+          ${this.from}
+         WHERE ${this.where(q)})
+      SELECT b.user_id AS "userId", to_char(b.local_at::date, 'YYYY-MM-DD') AS day,
+             count(*)::bigint AS attempts, (count(*) FILTER (WHERE b.is_correct))::bigint AS correct,
+             (count(DISTINCT b.session_id) + count(DISTINCT b.mode) FILTER (WHERE b.session_id IS NULL))::bigint AS sessions
+        FROM base b
+       GROUP BY b.user_id, b.local_at::date
+       ORDER BY b.user_id, day`
+    return rows.map((r) => ({ userId: idToString(r.userId), day: r.day, attempts: num(r.attempts), correct: num(r.correct), sessions: num(r.sessions) }))
+  }
+
+  async sessionDurations(q: AnswerFactsQuery): Promise<SessionDurationRow[]> {
+    if (q.modes && q.modes.length === 0) return []
+    const c: Prisma.Sql[] = [Prisma.sql`ps.is_test = false`, Prisma.sql`ps.status = 'completed'`, Prisma.sql`ps.completed_at IS NOT NULL`]
+    if (q.userIds) c.push(this.inList(Prisma.sql`ps.user_id`, q.userIds))
+    if (q.subjectId !== undefined) c.push(Prisma.sql`ps.subject_id = ${this.one(q.subjectId)}`)
+    if (q.modes) c.push(Prisma.sql`ps.mode IN (${Prisma.join([...q.modes])})`)
+    if (q.from) c.push(Prisma.sql`ps.completed_at >= ${q.from}`)
+    if (q.to) c.push(Prisma.sql`ps.completed_at < ${q.to}`)
+    const rows = await this.db.$queryRaw<{ userId: bigint; sessions: bigint; seconds: bigint }[]>`
+      SELECT ps.user_id AS "userId", count(*)::bigint AS sessions, coalesce(sum(ps.time_spent_sec), 0)::bigint AS seconds
+        FROM practice_sessions ps
+       WHERE ${Prisma.join(c, ' AND ')}
+       GROUP BY ps.user_id
+       ORDER BY ps.user_id`
+    return rows.map((r) => ({ userId: idToString(r.userId), sessions: num(r.sessions), seconds: num(r.seconds) }))
+  }
+
   async sessionCounts(q: AnswerFactsQuery): Promise<SessionCountRow[]> {
     if (q.modes && q.modes.length === 0) return []
     // One grouped distinct count: GROUPING SETS gives the per-subject rows and the all-subject total (subject null).
@@ -148,6 +208,36 @@ export class AnswerFactsAdapter implements AnswerFactsPort {
        GROUP BY GROUPING SETS ((b.user_id), (b.user_id, b.subject_id))
        ORDER BY b.user_id, b.subject_id NULLS FIRST`
     return rows.map((r) => ({ userId: idToString(r.userId), subjectId: r.subjectId === null ? null : idToString(r.subjectId), sessions: num(r.sessions) }))
+  }
+
+  async sessionFacts(q: SessionFactsQuery): Promise<SessionFactRow[]> {
+    if (q.modes.length === 0 || q.userIds.length === 0 || q.limit <= 0) return []
+    // One row per (pupil, session key): the same key rule as `sessionCounts`; the subject is the one with most answers.
+    const limit = Math.min(Math.floor(q.limit), 1000)
+    const rows = await this.db.$queryRaw<
+      { userId: bigint; sessionKey: string; subjectId: bigint; mode: string; answered: bigint; correct: bigint; finishedAt: Date }[]
+    >`
+      WITH base AS (
+        SELECT a.user_id, coalesce(a.subject_id, 0) AS subject_id, a.is_correct, a.answered_at, ${MODE} AS mode,
+               coalesce('s:' || a.session_id::text, 'n:' || ${MODE} || ':' || to_char(a.answered_at AT TIME ZONE ${MYT}, 'YYYY-MM-DD')) AS skey
+          ${this.from}
+         WHERE ${this.where({ userIds: q.userIds, modes: q.modes, to: q.to })})
+      SELECT b.user_id AS "userId", b.skey AS "sessionKey",
+             (mode() WITHIN GROUP (ORDER BY b.subject_id))::bigint AS "subjectId", max(b.mode) AS mode,
+             count(*)::bigint AS answered, (count(*) FILTER (WHERE b.is_correct))::bigint AS correct, max(b.answered_at) AS "finishedAt"
+        FROM base b
+       GROUP BY b.user_id, b.skey
+       ORDER BY max(b.answered_at) DESC, b.skey DESC
+       LIMIT ${limit}`
+    return rows.map((r) => ({
+      userId: idToString(r.userId),
+      sessionKey: r.sessionKey,
+      subjectId: idToString(r.subjectId),
+      mode: r.mode,
+      answered: num(r.answered),
+      correct: num(r.correct),
+      finishedAt: r.finishedAt,
+    }))
   }
 
   async spInfo(q: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]> {
