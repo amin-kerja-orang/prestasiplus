@@ -1289,7 +1289,7 @@ export class BuilderService {
    * re-read under the lock, and only then are the candidates read and the paper composed, all in one transaction, so a concurrent
    * retire / new version / edit of the Kontrak cannot slip in between composing and writing.
    */
-  async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ paperId: string }> {
+  async generateDraft(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
     const body = parseWith(BijakDraftGenerateRequestSchema, rawBody)
     const first = await this.generationBlueprint(body.subject, body.kertas)
     if (!first.subject || !first.blueprint) throw noBlueprint()
@@ -1320,7 +1320,7 @@ export class BuilderService {
       await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, paperId, { from: null, to: 'draf', mode: 'generate', sections: blueprint.sections.length })
       return paperId
     })
-    return { paperId: idToString(id) }
+    return { id: idToString(id) }
   }
 
   private newPaperFrom(blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['activeBlueprint']>>>, subject: SubjectRef, kertas: number, actor: AuditActor, now: Date, title: string) {

@@ -488,7 +488,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       setPools({ a: ['700001', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
       const res = await generate()
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const paperId = (res.body.data as { paperId: string }).paperId
+      const paperId = (res.body.data as { id: string }).id
       const e = await editor(paperId)
       expect(e.paper.status).toBe('draf')
       expect([...ids(e, 0)].sort()).toEqual(['700001', '700021', '700022'])
@@ -512,7 +512,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
         setPools({ a: ['700001', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
         const res = await generate()
         expect(res.status, JSON.stringify(res.body)).toBe(201)
-        const a = ids(await editor((res.body.data as { paperId: string }).paperId), 0)
+        const a = ids(await editor((res.body.data as { id: string }).id), 0)
         expect(a).toHaveLength(3)
         expect(a.includes('700021') && a.includes('700022')).toBe(true)
         expect(a.indexOf('700022')).toBe(a.indexOf('700021') + 1)
@@ -522,7 +522,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
         setPools({ a: ['700001', '700002', '700003', '700021', '700022'], b: ['700004'], c: ['700005', '700006'] })
         const res = await generate()
         expect(res.status, JSON.stringify(res.body)).toBe(201)
-        const a = ids(await editor((res.body.data as { paperId: string }).paperId), 0)
+        const a = ids(await editor((res.body.data as { id: string }).id), 0)
         expect(a.includes('700021')).toBe(a.includes('700022'))
         if (a.includes('700021')) expect(a.indexOf('700022')).toBe(a.indexOf('700021') + 1)
       }
@@ -532,7 +532,7 @@ describe('paper builder R1-B09a: placements, D90 groups, review, publish, copy, 
       setPools({ a: ['700001', '700002', '700003', '700021'], b: ['700004'], c: ['700005', '700006'] })
       const res = await generate()
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      expect([...ids(await editor((res.body.data as { paperId: string }).paperId), 0)].sort()).toEqual(['700001', '700002', '700003'])
+      expect([...ids(await editor((res.body.data as { id: string }).id), 0)].sort()).toEqual(['700001', '700002', '700003'])
     })
 
     it('a pool that is one question short refuses with the shortage report and creates nothing', async () => {
