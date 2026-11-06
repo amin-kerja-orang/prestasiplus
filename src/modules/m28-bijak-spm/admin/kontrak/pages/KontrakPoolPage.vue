@@ -9,7 +9,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFlash } from '@/composables/useFlash'
-import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatRow, type StatItem } from '@/ds'
+import { DsEmptyState, DsFormField, DsLoadError, DsPage, DsPanel, DsStatRow, type StatItem } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { setTitleError } from '../../builder/domain/set-title'
@@ -167,16 +167,18 @@ async function generate(): Promise<void> {
   >
     <template v-if="view" #meta><SourceBadge :source="view.source" /></template>
     <template #actions>
-      <UFormField label="Tajuk set" required :error="titleError" class="w-full sm:w-80">
+      <DsFormField v-slot="f" native for="draft-title" label="Tajuk set" required :error="titleError">
         <UInput
+          :id="f.id"
           v-model="title"
-          class="w-full"
           placeholder="cth: Latih Tubi Sejarah Mac"
+          :aria-describedby="f.describedby"
+          :aria-invalid="f.invalid ? 'true' : undefined"
           data-testid="draft-title"
           @update:model-value="((titleServerError = undefined), (titleTouched = true))"
           @blur="titleTouched = true"
         />
-      </UFormField>
+      </DsFormField>
       <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
         <UButton color="neutral" variant="soft" class="min-h-11" icon="i-ph-arrow-clockwise" label="Muat Semula" :loading="status === 'loading'" data-testid="pool-reload" @click="load" />
         <UButton
