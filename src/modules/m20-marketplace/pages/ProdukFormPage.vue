@@ -11,7 +11,7 @@
  * - `Status Produk` is edit only; a new product is `Aktif`.
  */
 import { MARKETPLACE_ADMIN_LIMITS, MARKETPLACE_ADMIN_MESSAGES, MARKETPLACE_ADMIN_PROPOSED, type MarketplaceAdminProductDetail } from '@pp/contract'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
@@ -39,6 +39,7 @@ import {
 import {
   createAdminProduct,
   deleteAdminProductImage,
+  discardMarketplaceImage,
   fetchAdminProduct,
   fetchAdminSellerOptions,
   fetchMarketplaceCategories,
@@ -173,7 +174,17 @@ async function onPick(next: File | File[] | null): Promise<void> {
 function discard(url: string): void {
   added.value = added.value.filter((i) => i.url !== url)
   delete messages.value.images
+  // The file was uploaded but is not attached to anything: remove it from storage too.
+  void discardMarketplaceImage(url)
 }
+
+/** Set once the product is saved: the uploaded files are then attached and must stay. */
+let saved = false
+// Leaving the form (Batal, back, another route) without saving leaves no unattached upload behind.
+onBeforeUnmount(() => {
+  if (saved) return
+  for (const img of added.value) void discardMarketplaceImage(img.url)
+})
 
 const deleting = ref<string | null>(null)
 /** Its own request: the form values are untouched and nothing else is saved. */
@@ -211,6 +222,7 @@ async function submit(): Promise<void> {
       await createAdminProduct(urls.length > 0 ? { ...body, images: urls } : body)
       flash.success(MARKETPLACE_ADMIN_PROPOSED.flash.productCreated)
     }
+    saved = true
     await router.push(ADMIN_PRODUCTS_PATH)
   } catch (err) {
     const fields = fieldErrorsOf(err)

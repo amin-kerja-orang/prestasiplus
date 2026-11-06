@@ -47,6 +47,7 @@ import {
   ADMIN_ROUTES,
   conditionLabel,
   errorText,
+  productActivateConfirm,
   productDeleteConfirm,
   queryPage,
   queryText,
@@ -145,6 +146,15 @@ const busyId = ref<string | null>(null)
 /** `Nyahaktif` sets `draft`; the way back is `Aktifkan` (decision 6 on #506). */
 async function toggle(row: MarketplaceAdminProductRow): Promise<void> {
   if (busyId.value !== null) return
+  // `Aktifkan` on a rejected product overrides the rejection: ask first (R-1 minor on #912).
+  if (row.status === 'rejected') {
+    const yes = await confirm({
+      message: productActivateConfirm.message,
+      confirmLabel: productActivateConfirm.confirmLabel,
+      cancelLabel: ADMIN_COPY.cancel,
+    })
+    if (!yes) return
+  }
   busyId.value = row.id
   try {
     await updateAdminProduct(row.id, { status: row.status === 'active' ? 'draft' : 'active' })
@@ -339,6 +349,7 @@ const cardFields: CardField[] = [
             </DsStack>
           </DsCluster>
           <DsCluster gap="2xs">
+            <UButton v-if="(row as unknown as TableRow).raw.status === 'active'" :to="`/marketplace/${(row as unknown as TableRow).raw.slug}`" color="neutral" variant="ghost" aria-label="Buka" title="Buka" data-testid="admin-product-open"><DsIcon name="arrow-square-out" /></UButton>
             <UButton :to="{ name: ADMIN_ROUTES.productEdit, params: { id: String(row.id) } }" color="neutral" variant="ghost" :aria-label="ADMIN_COPY.edit" data-testid="admin-product-edit"><DsIcon name="pencil-simple" /></UButton>
             <UButton type="button" color="neutral" variant="ghost" :label="(row as unknown as TableRow).raw.status === 'active' ? MARKETPLACE_ADMIN_PROPOSED.productDeactivateLabel : MARKETPLACE_ADMIN_PROPOSED.productActivateLabel" :disabled="busyId !== null" data-testid="admin-product-toggle" @click="toggle((row as unknown as TableRow).raw)" />
             <UButton type="button" color="error" variant="ghost" :aria-label="ADMIN_COPY.delete" :disabled="busyId !== null" data-testid="admin-product-delete" @click="remove((row as unknown as TableRow).raw)"><DsIcon name="trash" /></UButton>

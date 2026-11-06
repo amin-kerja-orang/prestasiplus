@@ -169,6 +169,21 @@ function mockImageUrl(): string {
   return `/api/files/${`mockmpimg${String(mockUploads).padStart(13, '0')}`}`
 }
 
+/**
+ * Best-effort cleanup of an image uploaded in the form and never attached to a product (`DELETE /api/files/:token`,
+ * owner only). Never throws: a failed cleanup must not block the form. Mock mode stores nothing, so it does nothing.
+ */
+export async function discardMarketplaceImage(url: string): Promise<void> {
+  if (!isHttpMode()) return
+  const token = url.split('/').pop() ?? ''
+  if (token === '') return
+  try {
+    await api.delete(`/api/files/${encodeURIComponent(token)}`)
+  } catch {
+    /* an orphan is left to the purge; the form carries on */
+  }
+}
+
 /** Fallback text when an image upload is refused without a message of its own (P12-09). */
 const IMAGE_REFUSED = 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.'
 

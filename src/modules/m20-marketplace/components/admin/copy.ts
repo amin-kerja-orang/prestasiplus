@@ -146,6 +146,14 @@ export const sellerOptionValue = (o: MarketplaceAdminSellerOption): string => o.
 
 /** Confirm texts: "Padam produk ini?" and "{Tindakan} penjual ini?" with `Ya, {Tindakan}` / `Batal`. */
 export const productDeleteConfirm = MARKETPLACE_ADMIN_PROPOSED.productDeleteConfirm
+/**
+ * [PROPOSED] No PRD row gives a confirm for `Aktifkan` on a rejected product (R-1 minor on #912). It follows the
+ * pattern of the seller confirms: "{Tindakan} produk ini?" with `Ya, {Tindakan}` / `Batal`.
+ */
+export const productActivateConfirm = {
+  message: `${MARKETPLACE_ADMIN_PROPOSED.productActivateLabel} produk ini?`,
+  confirmLabel: `Ya, ${MARKETPLACE_ADMIN_PROPOSED.productActivateLabel}`,
+} as const
 export const sellerConfirm = (a: MarketplaceSellerAction): string => MARKETPLACE_ADMIN_PROPOSED.sellerConfirm(a)
 export const sellerConfirmYes = (a: MarketplaceSellerAction): string => `Ya, ${MARKETPLACE_SELLER_ACTION_LABELS[a]}`
 

@@ -34,6 +34,7 @@ const api = vi.hoisted(() => ({
   fetchAdminSeller: vi.fn(),
   runAdminSellerAction: vi.fn(),
   uploadMarketplaceImage: vi.fn(),
+  discardMarketplaceImage: vi.fn(),
 }))
 vi.mock('../../api', () => api)
 
@@ -235,6 +236,54 @@ describe('AdminProdukPage (P2-12)', () => {
     await flushPromises()
     expect(api.updateAdminProduct).toHaveBeenLastCalledWith('2', { status: 'active' })
     expect(api.fetchAdminProducts.mock.calls.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('Aktifkan on a rejected product asks "Aktifkan produk ini?" first; Batal keeps it, "Ya, Aktifkan" sends active', async () => {
+    api.updateAdminProduct.mockResolvedValue({})
+    api.fetchAdminProducts.mockResolvedValue(productList([product(3, { status: 'rejected' })]))
+    const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
+    const toggle = () => w.get(t('admin-product-toggle'))
+    expect(toggle().text()).toBe('Aktifkan')
+    await toggle().trigger('click')
+    await flushPromises()
+    let seen = await answerConfirm(false)
+    expect(seen).toEqual({ message: 'Aktifkan produk ini?', confirmLabel: 'Ya, Aktifkan', cancelLabel: 'Batal' })
+    expect(api.updateAdminProduct).not.toHaveBeenCalled()
+    await toggle().trigger('click')
+    await flushPromises()
+    seen = await answerConfirm(true)
+    expect(seen.confirmLabel).toBe('Ya, Aktifkan')
+    expect(api.updateAdminProduct).toHaveBeenCalledWith('3', { status: 'active' })
+  })
+
+  it('Aktifkan on a draft product needs no confirm', async () => {
+    api.updateAdminProduct.mockResolvedValue({})
+    const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
+    await w.findAll(t('admin-product-toggle'))[1]!.trigger('click')
+    await flushPromises()
+    expect(confirmState.open).toBe(false)
+    expect(api.updateAdminProduct).toHaveBeenCalledWith('2', { status: 'active' })
+  })
+
+  it('the mobile card of an active product has a Buka link to the public page; a draft has none', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }))
+    try {
+      const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
+      const cards = w.findAll('[data-ds=data-table-cards] > li')
+      expect(cards).toHaveLength(2)
+      const open = cards[0]!.find(t('admin-product-open'))
+      expect(open.exists()).toBe(true)
+      expect(open.attributes('aria-label')).toBe('Buka')
+      expect(open.attributes('href')).toBe('/marketplace/produk-1')
+      expect(cards[1]!.find(t('admin-product-open')).exists()).toBe(false)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('delete asks "Padam produk ini?" with Batal / Ya, Padam; Batal keeps the product, Ya deletes and reloads', async () => {
@@ -483,6 +532,39 @@ describe('ProdukFormPage (P12-02..11)', () => {
     })
     expect(router.currentRoute.value.path).toBe('/admin/marketplace/products')
     expect(queuedFlash()).toBe('Produk berjaya ditambah.')
+  })
+
+  it('a discarded upload is deleted from storage; one that was saved is kept', async () => {
+    api.createAdminProduct.mockResolvedValue({})
+    api.uploadMarketplaceImage.mockResolvedValueOnce('/api/files/AAAAAAAAAAAAAAAAAAAAAA').mockResolvedValueOnce('/api/files/BBBBBBBBBBBBBBBBBBBBBB')
+    const w = await create()
+    await fill(w, { 'mp-name': 'Pen', 'mp-category': '4', 'mp-price': '12.50', 'mp-shipping': 'pickup', 'mp-location': 'Ipoh' })
+    await pick(w, [png('a.png'), png('b.png')])
+    await flushPromises()
+    await w.findAll(t('mp-added-image-discard'))[0]!.trigger('click')
+    await flushPromises()
+    expect(api.discardMarketplaceImage).toHaveBeenCalledTimes(1)
+    expect(api.discardMarketplaceImage).toHaveBeenCalledWith('/api/files/AAAAAAAAAAAAAAAAAAAAAA')
+    await w.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.createAdminProduct).toHaveBeenCalledWith(expect.objectContaining({ images: ['/api/files/BBBBBBBBBBBBBBBBBBBBBB'] }))
+    w.unmount()
+    wrapper = undefined
+    expect(api.discardMarketplaceImage).toHaveBeenCalledTimes(1)
+  })
+
+  it('abandoning the form removes every unattached upload', async () => {
+    api.uploadMarketplaceImage.mockResolvedValueOnce('/api/files/AAAAAAAAAAAAAAAAAAAAAA').mockResolvedValueOnce('/api/files/BBBBBBBBBBBBBBBBBBBBBB')
+    const w = await create()
+    await pick(w, [png('a.png'), png('b.png')])
+    await flushPromises()
+    expect(api.discardMarketplaceImage).not.toHaveBeenCalled()
+    w.unmount()
+    wrapper = undefined
+    expect(api.discardMarketplaceImage.mock.calls.map((c) => c[0] as string).sort()).toEqual([
+      '/api/files/AAAAAAAAAAAAAAAAAAAAAA',
+      '/api/files/BBBBBBBBBBBBBBBBBBBBBB',
+    ])
   })
 
   it('shows a 422 from the API under its field and keeps the input', async () => {
