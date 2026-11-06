@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminDskpHeatmapSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import type { TestDatabase } from '../support/db'
-import { ADMIN, apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
+import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
 import { addLevel, addPupil, addSchoolAdmin, addSession, addSubject } from './reports-fixtures'
 
 async function node(db: TestDatabase, o: { subject: string; level: string; kind: string; code: string; title: string; parent?: string | null; order?: number; edition?: string }): Promise<string> {
@@ -113,9 +113,9 @@ describe('GET /admin-sekolah/dskp-heatmap', () => {
     expect(JSON.stringify(res.body)).not.toContain('Murid Peta')
   })
 
-  it('401 without a session; 403 for admin, teacher and student', async () => {
+  it('401 without a session; 403 for teacher and student (admin: see admin-central-read.spec.ts)', async () => {
     expect((await t.http().get('/api/admin-sekolah/dskp-heatmap')).status).toBe(401)
-    for (const who of [ADMIN, TEACHER, STUDENT]) {
+    for (const who of [TEACHER, STUDENT]) {
       const res = await apiOf(await login(t, who)).get('/admin-sekolah/dskp-heatmap')
       expect(res.status, who).toBe(403)
       expect(ErrorBodySchema.parse(res.body).error.code).toBe('FORBIDDEN')

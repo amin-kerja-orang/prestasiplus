@@ -2,7 +2,7 @@
 /**
  * S4 `/pksk/level/:level/history` "Sejarah PKSK - {L}" (M07-T2; FR-M07-14, FR-M07-15; DV-M07-01,
  * PROPOSED COPY, L-4: live answers HTTP 500). Read-only list of the user's completed full exams,
- * newest first. Provisional page. The Tarikh / Skor / Gred table is a semantic table inside one
+ * newest first. The Tarikh / Skor / Gred table is a semantic table inside one
  * card (no row lines) so the columns stay readable at 375px.
  */
 import { computed, watch } from 'vue'
@@ -54,7 +54,6 @@ const loadFailed = computed(() => isLoadError(error.value))
     :back-to="`/pksk/level/${level}`"
     back-label="Kembali ke Dashboard"
     data-testid="pksk-history"
-    data-provisional="L-4"
   >
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 

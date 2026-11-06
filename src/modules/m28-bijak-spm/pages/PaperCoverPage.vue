@@ -11,7 +11,8 @@ import { DsEmptyState, DsHeroCard } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import PastSittingsLink from '../components/PastSittingsLink.vue'
-import { RichText } from '../../../components/question-display'
+import { PaperView, RichText } from '../../../components/question-display'
+import { sectionMeta } from '../../../components/question-display/copy'
 import { formatClock } from '../domain/paper-model'
 import type { AttemptMode } from '../domain/types'
 import { useBijakUser, useLearnerTheme } from '../lib/use-bijak'
@@ -31,6 +32,16 @@ const { data: open, reload: reloadOpen } = useApi(
   paperId,
 )
 
+/** Cover sections as question-less PaperView sections; the head slot keeps the stored question count. */
+const coverSections = computed(() =>
+  (cover.value?.sections ?? []).map((s, i) => ({ ...s, id: String(i), questions: [] })),
+)
+
+function coverMeta(id: string): string {
+  const s = cover.value?.sections[Number(id)]
+  return s ? sectionMeta(s.marks, s.questionCount, s.instruction, s.compulsory) : ''
+}
+
 const mode = ref<AttemptMode>('exam')
 const starting = ref(false)
 const confirmRestart = ref(false)
@@ -49,6 +60,8 @@ const modeItems = [
   },
 ]
 const needsChoice = computed(() => !!open.value && !open.value.fresh)
+/** PO decision 12: a new sitting would be refused, so nothing offers one. A sitting already open keeps its pinned version and can still be resumed. */
+const unavailable = computed(() => cover.value?.unavailable === true)
 
 async function begin(restart: boolean): Promise<void> {
   starting.value = true
@@ -102,6 +115,21 @@ async function begin(restart: boolean): Promise<void> {
         :cta-label="open ? 'Sambung' : 'Mula'"
         data-testid="cover-hero"
         @cta="begin(false)"
+      >
+        <template v-if="unavailable && !open" #cta>
+          <UButton color="neutral" size="lg" disabled class="mt-2 min-h-12" data-testid="cover-start-disabled"
+            >Mula</UButton
+          >
+        </template>
+      </DsHeroCard>
+      <UAlert
+        v-if="unavailable"
+        color="warning"
+        variant="soft"
+        icon="i-ph-file-x"
+        title="Kertas belum tersedia"
+        role="status"
+        data-testid="cover-unavailable"
       />
       <PastSittingsLink :paper-id="paperId" class="self-start" />
 
@@ -124,19 +152,20 @@ async function begin(restart: boolean): Promise<void> {
           <p>Masa berlalu setakat ini: {{ formatClock(open.elapsedSeconds) }}</p>
           <div class="mt-3 flex flex-col gap-2 sm:flex-row">
             <UButton :loading="starting" data-testid="resume" @click="begin(false)"
-              >Sambung — teruskan jawapan &amp; masa sedia ada</UButton
+              >Sambung - teruskan jawapan &amp; masa sedia ada</UButton
             >
-            <UButton color="neutral" data-testid="restart" @click="confirmRestart = true"
-              >Mula Semula — kosongkan jawapan &amp; masa</UButton
+            <UButton v-if="!unavailable" color="neutral" data-testid="restart" @click="confirmRestart = true"
+              >Mula Semula - kosongkan jawapan &amp; masa</UButton
             >
           </div>
-          <p class="mt-2 text-caption">
-            “Sambung” mengekalkan semua jawapan anda. “Mula Semula” tidak boleh diundur.
+          <p v-if="!unavailable" class="mt-2 text-caption">
+            "Sambung" mengekalkan semua jawapan anda. "Mula Semula" tidak boleh diundur.
           </p>
         </template>
       </UAlert>
 
       <UButton
+        v-if="!unavailable && cover.kuizAvailable !== false"
         :to="`/simulasi/${paperId}/kuiz`"
         color="neutral"
         variant="outline"
@@ -150,12 +179,12 @@ async function begin(restart: boolean): Promise<void> {
         <ol class="flex flex-col gap-1 text-body text-default" data-testid="instructions">
           <li v-for="(line, i) in cover.instructions" :key="i">{{ i + 1 }}. {{ line }}</li>
         </ol>
-        <ul class="flex flex-col gap-1 text-body text-default" data-testid="cover-sections">
-          <li v-for="s in cover.sections" :key="s.label">
-            <strong>{{ s.label }}</strong> · [{{ s.marks }} markah] · {{ s.questionCount }} soalan ·
-            {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
-          </li>
-        </ul>
+        <PaperView :sections="coverSections" compact class="text-body text-default" data-testid="cover-sections">
+          <template #section-head="{ section }"
+            ><strong>{{ section.label }}</strong
+            >{{ coverMeta(section.id) }}</template
+          >
+        </PaperView>
       </section>
 
       <section
@@ -181,7 +210,7 @@ async function begin(restart: boolean): Promise<void> {
         </UCollapsible>
       </section>
 
-      <section v-if="!needsChoice" class="flex flex-col gap-3" aria-labelledby="h-mod">
+      <section v-if="!needsChoice && !unavailable" class="flex flex-col gap-3" aria-labelledby="h-mod">
         <h2 id="h-mod" class="text-heading text-highlighted">Pilih mod</h2>
         <URadioGroup
           v-model="mode"

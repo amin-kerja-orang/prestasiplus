@@ -4,7 +4,10 @@ import {
   barWidths,
   bannerKind,
   bannerStyle,
+  accuracyDisplay,
   chestDots,
+  formatValidUntil,
+  OFFERED_LEVEL_CODES,
   COUNT_RULES,
   greetingText,
   questBarPct,
@@ -12,8 +15,10 @@ import {
   QUEST_DIFFICULTY,
   revisionBadge,
   showKombo,
+  bestStreakText,
   starStates,
   subjectColorByName,
+  weakTopics,
 } from '../../components/dashboard/dashboard-lib'
 
 describe('dashboard-lib', () => {
@@ -76,5 +81,71 @@ describe('dashboard-lib', () => {
     expect(COUNT_RULES.accuracy.step(70)).toBe(3)
     expect(COUNT_RULES.totalQuestions.step(130152)).toBe(4339)
     expect(COUNT_RULES.approvedQuestions.intervalMs).toBe(30)
+  })
+
+  it('keeps answered subjects under 60 % only, worst first, ties in read order (FR-MUR-2-6)', () => {
+    const p = (code: string, answered: number, accuracyPct: number) => ({
+      code,
+      name: code,
+      color: '#000',
+      answered,
+      correct: 0,
+      wrong: 0,
+      accuracyPct,
+      trend: [],
+    })
+    const out = weakTopics([p('A', 9, 59.4), p('B', 5, 60), p('C', 20, 30), p('D', 0, 0), p('E', 3, 30)])
+    expect(out.map((s) => s.code)).toEqual(['C', 'E', 'A'])
+  })
+
+  it('XS-5: rounds half-up before the threshold and for display (59.5 counts as 60)', () => {
+    const p = (code: string, accuracyPct: number) => ({
+      code,
+      name: code,
+      color: '#000',
+      answered: 4,
+      correct: 0,
+      wrong: 0,
+      accuracyPct,
+      trend: [],
+    })
+    const out = weakTopics([p('A', 59.5), p('B', 59.4), p('C', 33.3)])
+    expect(out.map((s) => [s.code, s.accuracyPct])).toEqual([
+      ['C', 33],
+      ['B', 59],
+    ])
+  })
+
+  it('formats the package end date with BM month abbreviations', () => {
+    expect(formatValidUntil('2027-11-03')).toBe('3 Nov 2027')
+    expect(formatValidUntil('2027-01-15')).toBe('15 Jan 2027')
+    expect(formatValidUntil('2027-03-01')).toBe('1 Mac 2027')
+    expect(formatValidUntil('2027-05-09')).toBe('9 Mei 2027')
+    expect(formatValidUntil('2027-08-31')).toBe('31 Ogo 2027')
+    expect(formatValidUntil('2027-10-02')).toBe('2 Okt 2027')
+    expect(formatValidUntil('2027-12-25')).toBe('25 Dis 2027')
+    expect(formatValidUntil('bukan-tarikh')).toBe('bukan-tarikh')
+  })
+
+  it('shows accuracy as a half-up whole number or a dash', () => {
+    expect(accuracyDisplay(null)).toBe('—')
+    expect(accuracyDisplay(66.5)).toBe('67%')
+    expect(accuracyDisplay(66.4)).toBe('66%')
+    expect(accuracyDisplay(0)).toBe('0%')
+  })
+
+  it('offers Tingkatan 1 to 5 and no Darjah', () => {
+    expect(OFFERED_LEVEL_CODES).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+  })
+})
+
+describe('bestStreakText (FR-MUR-2-3)', () => {
+  it('formats the record, zero included, and never shows less than the live streak', () => {
+    expect(bestStreakText(5, 2)).toBe('Rekod terbaik: 5 hari')
+    expect(bestStreakText(0, 0)).toBe('Rekod terbaik: 0 hari')
+    expect(bestStreakText(1, 3)).toBe('Rekod terbaik: 3 hari')
+  })
+  it('gives no line when the record is missing', () => {
+    expect(bestStreakText(null, 2)).toBeNull()
   })
 })

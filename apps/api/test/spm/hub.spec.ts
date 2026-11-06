@@ -93,6 +93,21 @@ beforeAll(async () => {
   await session(a, 'ramalan', 4, 2, 3)
   await session(a, 'past_year', 6, 6, 8, true)
 
+  // Papers for the Kertas Subjektif count: 2 published subjektif (one with a level_scope, one without), and the ones that do not count.
+  const mathId = await idOf(db, 'subjects', 'MATH')
+  // `ck_papers_duration` (0161) allows a 0 duration for `surface = 'subjektif'` only.
+  const paper = (status: string, surface: string, levelScope: string | null, title: string) =>
+    db.query(
+      `insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, surface, level_scope, published_at)
+       values ('pilihan', $1, $2, 2, case when $4 = 'subjektif' then 0 else 60 end, $3, $4, $5, case when $3 = 'published' then now() end)`,
+      [title, mathId, status, surface, levelScope],
+    )
+  await paper('published', 'subjektif', null, 'Kertas hub 1')
+  await paper('published', 'subjektif', 't5', 'Kertas hub 2')
+  await paper('draft', 'subjektif', null, 'Kertas hub 3')
+  await paper('withdrawn', 'subjektif', null, 'Kertas hub 4')
+  await paper('published', 'simulasi', null, 'Kertas hub 5')
+
   student = await loginAs(t, 'student')
   student2 = await loginAs(t, 'student2')
   admin = await loginAs(t, 'admin')
@@ -179,17 +194,56 @@ describe('AC3 Latih Tubi setup (M06-04)', () => {
 })
 
 describe('AC8 overview (M06-01)', () => {
-  it('computes the hub figures from the pool; yearsAvailable is 0; Tracking A is the sum of all ready counts', async () => {
+  it('computes the hub figures from the pool; yearsAvailable is absent; Tracking A is the sum of all ready counts', async () => {
     const o = parseData(await student.get('/api/spm/overview'), SpmOverviewSchema)
     const subjectCount = Number((await t.db.query<{ n: string }>(`select count(distinct sl.subject_id)::text n from subject_levels sl join subjects s on s.id = sl.subject_id join education_levels l on l.id = sl.education_level_id where s.is_active and l.grade in (10, 11)`))[0]?.n)
     // Pool over the 19 subjects: SEJ 8 + MATH 40 + PERNIAGA 3 + BA 2 = 53; the databank list leaves BA out.
-    expect(o.stats).toMatchObject({ totalQuestions: 53, yearsAvailable: 0, subjectCount })
+    expect(o.stats).toMatchObject({ totalQuestions: 53, subjectCount })
+    expect('yearsAvailable' in o.stats).toBe(false)
     expect(o.modules).toMatchObject({ databank: 51, latihTubi: 53 })
     expect(o.modules.databank).toBeLessThanOrEqual(o.stats.totalQuestions)
     // ADDMATH 20+20+5+20+2 = 67, SEJ 40, GEO 8 sets x 3.
     expect(o.stats.trackingAQuestions).toBe(67 + 40 + 24)
     expect(o.modules.trackingA).toBe(o.stats.trackingAQuestions)
     expect(o.modules.subjektifSets).toBe(7)
+  })
+
+  it('kertasSubjektif counts published subjektif papers only, whatever their level_scope', async () => {
+    const o = parseData(await student.get('/api/spm/overview'), SpmOverviewSchema)
+    expect(o.modules.kertasSubjektif).toBe(2)
+    await t.db.query(`update papers set status = 'withdrawn' where title = 'Kertas hub 1'`)
+    try {
+      expect(parseData(await student.get('/api/spm/overview'), SpmOverviewSchema).modules.kertasSubjektif).toBe(1)
+    } finally {
+      await t.db.query(`update papers set status = 'published' where title = 'Kertas hub 1'`)
+    }
+    expect(parseData(await student.get('/api/spm/overview'), SpmOverviewSchema).modules.kertasSubjektif).toBe(2)
+  })
+
+  it('each chip equals its details view, for all five cards (AC-PA-33)', async () => {
+    const o = parseData(await student.get('/api/spm/overview'), SpmOverviewSchema)
+    // Databank: the sum of the per-subject databank counts.
+    const databank = parseData(await student.get('/api/spm/databank'), z.array(SpmDatabankSubjectSchema))
+    expect(o.modules.databank).toBe(databank.reduce((a, r) => a + r.databankCount, 0))
+    // Latih Tubi: the sum of the card totals.
+    const lt = parseData(await student.get('/api/spm/latih-tubi'), SpmLatihTubiListSchema)
+    expect(o.modules.latihTubi).toBe([...lt.teras, ...lt.elektif].reduce((a, c) => a + c.total, 0))
+    // Tracking A: the ready questions over every subject page, and the hub tile.
+    const codes = (await t.db.query<{ code: string }>(`select distinct s.code from spm_tracking_sets ts join subjects s on s.id = ts.subject_id`)).map((r) => r.code)
+    let ready = 0
+    for (const code of codes) {
+      const r = parseData(await student.get(`/api/spm/tracking-a/${code}`), SpmTrackingASubjectResultSchema)
+      if ('summary' in r) ready += r.summary.readyQuestions
+    }
+    expect(o.modules.trackingA).toBe(ready)
+    expect(o.modules.trackingA).toBe(o.stats.trackingAQuestions)
+    // Subjektif: the sets of the Subjektif page.
+    const sub = parseData(await student.get('/api/spm/subjektif'), SpmSubjektifOverviewSchema)
+    expect(o.modules.subjektifSets).toBe(sub.subjects.reduce((a, x) => a + x.sets, 0))
+    // Kertas Subjektif: the published subjektif papers (the S3-T06 list is not in this base, so the table is the details view).
+    // To be re-pointed at the S3-T06 list endpoint (GET /api/bijak/papers?surface=subjektif) once it lands.
+    const rows = await t.db.query<{ n: string }>(`select count(*)::text n from papers where surface = 'subjektif' and status = 'published'`)
+    expect(o.modules.kertasSubjektif).toBe(Number(rows[0]?.n))
   })
 
   it('me: only the SPM modes of the caller; Mod Pelajar rows count only in Mod Pelajar', async () => {

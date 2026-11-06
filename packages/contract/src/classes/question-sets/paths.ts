@@ -95,10 +95,10 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
     tags: ['question-sets'],
     summary: 'Upload a question paper (S22, BR-M10-25, FR-M10-98)',
     description:
-      'SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates a question bank submission with status pending for the admin to review. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .doc .docx .xls .xlsx, each at most 20 MB) are on the uploaded parts.',
+      'SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates an intake batch with source = guru for the admin to review (API-GUR-17). Answers 201 with only the batch id. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .docx .xlsx, each at most 20 MB; a scanned PDF is refused; any invalid file rejects the whole submission). The answer-scheme confirmation must be true.',
     request: { headers: [csrf], body: { required: true, content: { 'multipart/form-data': { schema: QuestionSetPaperUploadSchema } } } },
     responses: {
-      201: json(envelopeOf(QuestionSetPaperSchema), 'The pending submission.'),
+      201: json(envelopeOf(QuestionSetPaperSchema), 'The id of the guru intake batch created (message shown by the client: "Kertas dihantar kepada admin.").'),
       401: unauthorized,
       403: teacherOnly,
       422: json(QuestionSetPaperFieldErrorSchema, 'VALIDATION_ERROR with fields.'),

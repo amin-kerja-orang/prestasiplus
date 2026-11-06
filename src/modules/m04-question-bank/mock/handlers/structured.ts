@@ -12,12 +12,27 @@
  */
 
 import { curriculum } from '@/modules/m03-curriculum/mock'
-import { int, notFound, ok, pageParams, paged, route, type RouteDef } from '@/mock/define'
+import {
+  int,
+  notFound,
+  ok,
+  pageParams,
+  paged,
+  queryString,
+  requireRole,
+  route,
+  type RouteDef,
+} from '@/mock/define'
 
 import type { StructuredDetail, StructuredRow } from '../../api/structured'
+import type { GuruStructuredDetail, GuruStructuredRow } from '../../api/structured-guru'
 import { structuredRepo } from '../repository/structured'
 import type { StructuredQuestion } from '../repository/types'
 import { adminOnly, excerpt, nameLookup, queryFilterId, userRef } from './workflow-common'
+
+/** API-GUR-26 (S6-T17): teacher read mount; the admin routes below are unchanged. */
+const teacherRead = requireRole('teacher', 'admin')
+export const GURU_PAGE_SIZE = 20
 
 export const STRUCTURED_EXCERPT_LENGTH = 100
 const PAGE_SIZE = 25
@@ -56,7 +71,89 @@ export function toDetail(
   }
 }
 
+/** The KBAT chip text of a cognitive level: LOTS 1-2, MOTS 3, HOTS 4-6; empty without a level. */
+function kbatChip(level: number): string {
+  if (level < 1 || level > 6) return ''
+  return level <= 2 ? `LOTS ${String(level)}` : level === 3 ? `MOTS 3` : `HOTS ${String(level)}`
+}
+
+function toGuruRow(
+  q: StructuredQuestion,
+  number: number,
+  names: ReturnType<typeof nameLookup>,
+): GuruStructuredRow {
+  return {
+    id: q.id,
+    number,
+    textExcerpt: excerpt(q.stimulus, STRUCTURED_EXCERPT_LENGTH),
+    level: names.level(q.educationLevelId),
+    subject: names.subject(q.subjectId),
+    kbat: kbatChip(q.kbatLevel),
+    subCount: q.subQuestions.length,
+    marks: q.totalMarks,
+    status: 'approved',
+  }
+}
+
+function toGuruDetail(
+  q: StructuredQuestion,
+  names: ReturnType<typeof nameLookup>,
+): GuruStructuredDetail {
+  return {
+    id: q.id,
+    subject: names.subject(q.subjectId),
+    level: names.level(q.educationLevelId),
+    kbat: kbatChip(q.kbatLevel),
+    status: 'approved',
+    totalMarks: q.totalMarks,
+    subCount: q.subQuestions.length,
+    createdAt: q.createdAt,
+    stimulus: q.stimulus,
+    // The real endpoint serves no question picture this round.
+    stimulusImage: null,
+    subQuestions: [...q.subQuestions]
+      .sort((a, b) => a.order - b.order)
+      .map((s) => ({
+        partLabel: s.partLabel,
+        questionText: s.questionText,
+        marks: s.marks,
+        cognitiveLevel: null,
+        modelAnswer: s.modelAnswer,
+        depth: 0,
+      })),
+  }
+}
+
 export const structuredRoutes: RouteDef[] = [
+  route('GET', '/api/guru/structured-questions', [teacherRead], (req) => {
+    const page = pageParams(req.query, { pageSize: GURU_PAGE_SIZE })
+    // `review` (the caller's own submissions) has no source yet: an empty page.
+    if (queryString(req.query, 'status') === 'review') return paged({ rows: [], total: 0 }, page)
+    const subjectId = queryFilterId(req.query, 'subjectId')
+    const educationLevelId = queryFilterId(req.query, 'educationLevelId')
+    const result = structuredRepo.visible({
+      ...(subjectId !== undefined ? { subjectId } : {}),
+      ...(educationLevelId !== undefined ? { educationLevelId } : {}),
+      page: page.page,
+      pageSize: GURU_PAGE_SIZE,
+    })
+    const names = nameLookup()
+    const offset = (page.page - 1) * GURU_PAGE_SIZE
+    return paged(
+      { rows: result.rows.map((q, i) => toGuruRow(q, offset + i + 1, names)), total: result.total },
+      page,
+    )
+  }),
+  route(
+    'GET',
+    '/api/guru/structured-questions/:id',
+    [teacherRead],
+    (req) => {
+      const q = structuredRepo.getVisible(req.params.id as number)
+      return q ? ok(toGuruDetail(q, nameLookup())) : notFound()
+    },
+    { params: { id: int() } },
+  ),
   route('GET', '/api/structured-questions', [adminOnly], (req) => {
     const page = pageParams(req.query, { pageSize: PAGE_SIZE })
     const subjectId = queryFilterId(req.query, 'subjectId')

@@ -4,6 +4,7 @@ import { ErrorBodySchema } from '../../common/error'
 import { buildOpenApiDocument } from '../../openapi'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS } from '../paths'
 import {
+  DIAGRAM_AUDIT_IMAGE_MIME_TYPES,
   DIAGRAM_AUDIT_MESSAGES,
   DiagramAuditImageRequestSchema,
   DiagramAuditKindSchema,
@@ -21,6 +22,7 @@ import {
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_REQUIRED_COLUMNS,
   QUESTION_IMPORT_ROW_MESSAGES,
+  QUESTION_IMPORT_CODE_HEADER,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_QUALITY_BANDS,
   QUESTION_REPORT_DISPLAY_LABELS,
@@ -196,6 +198,7 @@ describe('reports', () => {
     createdAt: AT,
     updatedAt: AT,
     question,
+    reporterRole: 'murid',
     reporter: { id: '12', name: 'Aina Pelapor' },
   }
   const counts = { pending: 0, reviewed: 0, fixed: 1, dismissed: 0, all: 1 }
@@ -240,13 +243,14 @@ describe('reports', () => {
 })
 
 describe('imports', () => {
-  it('keeps the mock template header, required columns and sample file', () => {
+  it('keeps the legacy header and required columns; the template is the code header with one MCQ and one group', () => {
     expect(QUESTION_IMPORT_HEADER.join(',')).toBe('question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas')
     expect([...QUESTION_IMPORT_REQUIRED_COLUMNS]).toEqual(['question_text', 'option_a', 'option_b', 'correct_answer'])
     const lines = QUESTION_IMPORT_TEMPLATE_CSV.split('\r\n')
-    expect(lines).toHaveLength(4)
-    expect(lines[0]).toBe(QUESTION_IMPORT_HEADER.join(','))
-    expect(lines[3]).toBe('')
+    expect(lines).toHaveLength(5)
+    expect(lines[0]).toBe(QUESTION_IMPORT_CODE_HEADER.join(','))
+    expect(lines[4]).toBe('')
+    for (const l of lines.slice(1, 4)) expect(l.split(',').length).toBeGreaterThanOrEqual(QUESTION_IMPORT_CODE_HEADER.length)
   })
 
   it('keeps the exact BM copy of the file and row messages', () => {
@@ -303,7 +307,7 @@ describe('imports', () => {
   })
 
   it('parses the Guru result (200, no flash)', () => {
-    expect(ok(QuestionImportGuruResultSchema, { imported: 2, failed: [{ row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' }] })).toBe(true)
+    expect(ok(QuestionImportGuruResultSchema, { imported: 2, errors: [{ row: 3, message: 'Soalan tidak boleh melebihi 2000 aksara.' }] })).toBe(true)
     expect(ok(QuestionImportGuruResultSchema, { imported: 2 })).toBe(false)
   })
 })
@@ -369,11 +373,15 @@ describe('diagram audit', () => {
 
   it('validates the image part', () => {
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.png', { type: 'image/png' }) })).toBe(true)
-    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.webp', { type: 'image/webp' }) })).toBe(true)
+    expect(ok(DiagramAuditImageRequestSchema, { image: new File(['x'], 'rajah.gif', { type: 'image/gif' }) })).toBe(false)
+    expect(DIAGRAM_AUDIT_IMAGE_MIME_TYPES).toEqual(['image/jpeg', 'image/png', 'image/webp'])
     expect(ok(DiagramAuditImageRequestSchema, { image: new File(['<svg/>'], 'rajah.svg', { type: 'image/svg+xml' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, { image: new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'besar.png', { type: 'image/png' }) })).toBe(false)
     expect(ok(DiagramAuditImageRequestSchema, {})).toBe(false)
-    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileType).toBe('Fail mesti berupa imej (jpg, png atau webp).')
+    expect(DIAGRAM_AUDIT_MESSAGES.fileSize).toBe('Saiz imej tidak boleh melebihi 2 MB.')
+    expect(DIAGRAM_AUDIT_MESSAGES.submittedForReview).toBe('Gambar dihantar untuk semakan.')
   })
 
   it('answers image and dismiss with needsDiagram false and the flash', () => {
@@ -445,7 +453,7 @@ describe('openapi registration', () => {
 
   const ROUTES: readonly [string, string][] = [
     ['get', '/question-reports'], ['post', '/question-reports'], ['get', '/question-reports/mine'], ['patch', '/question-reports/{id}'],
-    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'],
+    ['get', '/question-imports'], ['post', '/question-imports'], ['get', '/question-imports/template'], ['get', '/question-imports/{id}/errors'],
     ['get', '/guru/questions/template'], ['post', '/guru/questions/import'],
     ['get', '/question-quality'], ['post', '/question-quality/audit'],
     ['get', '/diagram-audit'], ['post', '/diagram-audit/{kind}/{id}/image'], ['post', '/diagram-audit/{kind}/{id}/dismiss'],
@@ -460,9 +468,9 @@ describe('openapi registration', () => {
         .map(([method, op]): [string, string, Operation] => [method, path, op]),
     )
 
-  it('registers the 20 routes, and only those, under the question-workflow tag', () => {
-    expect(ROUTES).toHaveLength(20)
-    expect(operations()).toHaveLength(20)
+  it('registers the 21 routes, and only those, under the question-workflow tag', () => {
+    expect(ROUTES).toHaveLength(21)
+    expect(operations()).toHaveLength(21)
     for (const [method, path] of ROUTES) {
       const op = doc.paths[path]?.[method]
       expect(op, `${method} ${path}`).toBeDefined()
