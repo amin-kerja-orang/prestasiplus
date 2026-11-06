@@ -54,20 +54,12 @@ export class PapersRepository {
     return this.prisma.client.paper.findUnique({ where: { id }, include: TREE })
   }
 
-  /** Active blueprints (one per subject and kertas), oldest first. */
-  listActiveBlueprints(): Promise<BlueprintWithSections[]> {
-    return this.prisma.client.blueprint.findMany({
-      where: { status: 'active' },
-      include: { sections: { orderBy: { position: 'asc' } } },
-      orderBy: { id: 'asc' },
-    })
-  }
-
-  /** Every row students generate from (`serves_students`, Disahkan); the key set of `canGenerate` (N1). */
-  listServingBlueprints(): Promise<Pick<Blueprint, 'subjectId' | 'kertas'>[]> {
+  /** Every row students see in the contract list (`serves_students`, Disahkan; one per subject and kertas), oldest first (N1, S3-T01). */
+  listServingBlueprints(): Promise<BlueprintWithSections[]> {
     return this.prisma.client.blueprint.findMany({
       where: { servesStudents: true, source: 'verified' },
-      select: { subjectId: true, kertas: true },
+      include: { sections: { orderBy: { position: 'asc' } } },
+      orderBy: { id: 'asc' },
     })
   }
 

@@ -708,6 +708,7 @@ export class BuilderService {
       const view = blockerView(blockers)
       const review = structural.notes.length > 0 ? { notes: structural.notes, blueprintNeedsReview: true } : {}
       // R1-T34 (V2 `studio.paper.published_override`): only the blueprint-conformance blockers (incl. a contract that is not Disahkan) can be overridden, with a reason, audited.
+      // S3-T01: under a Disahkan contract nothing can (`canOverride` is false), so the exception path stays for Spec and Draf contracts.
       const override = request.override === true && view.canOverride
       if (errors.length > 0 && !override) return { ok: false, errors, ...view, ...review }
       if (paper.status === 'published') return { ok: true, errors: [], ...review }
@@ -792,8 +793,8 @@ export class BuilderService {
    * (`fixed`: the audited override never lifts it) and every other check still runs. AC-R1-16.2 (R1E2E-07): a
    * contract that is not Disahkan is a blocker (`blockers`, so the audited override applies).
    */
-  private async structuralCheck(paper: PaperTree, ev: Evaluation): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null }> {
-    const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null }
+  private async structuralCheck(paper: PaperTree, ev: Evaluation): Promise<{ blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; notes: string[]; report: unknown | null; contractDisahkan: boolean }> {
+    const none = { blockers: [] as BlockerDraft[], contract: [] as BlockerDraft[], fixed: [] as BlockerDraft[], notes: [] as string[], report: null, contractDisahkan: false }
     // REQ-B-079 (B2 re-check of T34): a paper with no Kontrak (a null `blueprint_id`, or a row that is gone) used to skip the Disahkan gate altogether.
     // App-created papers always carry one; only the demo seeds write a null. It is the same class of blocker as a Kontrak that is not Disahkan:
     // refused at Terbit, listed in the review, lifted only by the audited override, and skipped once the paper is Terbit (`collectBlockers`).
@@ -803,22 +804,23 @@ export class BuilderService {
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
     if (!subject) return none
     if (!blueprint) return noContract
+    const contractDisahkan = blueprint.source === 'verified'
     const contract: BlockerDraft[] = [
-      ...(blueprint.source === 'verified' ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]),
+      ...(contractDisahkan ? [] : [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: contractNotVerifiedLine(blueprint.code, blueprint.version, sourceToWire(blueprint.source)) }]),
       ...this.contractConformance(paper, blueprint),
     ]
     // An admin-added Bahagian has no Kontrak figures: its count and budget follow its placements (R1-T48).
     const view: PaperTree = { ...paper, sections: paper.sections.map((s) => (s.adminCreated ? { ...s, ...sectionFigures(s, (id) => ev.info.get(id)?.marks ?? 0) } : s)) }
     const std = standardForPaper(view, blueprint, bijakCodeOf(subject.code))
-    if (!std) return { ...none, contract }
+    if (!std) return { ...none, contract, contractDisahkan }
     const composed = paper.sections.map((s, i) => ({ position: i + 1, questionIds: s.placements.map((pl) => idToString(pl.questionId)) }))
-    if (composed.every((c) => c.questionIds.length === 0)) return { ...none, contract }
+    if (composed.every((c) => c.questionIds.length === 0)) return { ...none, contract, contractDisahkan }
     const facts = await this.factsFor(subject, paper.kertas)
     const labelOf = (pos: number) => std.sections.find((s) => s.position === pos)?.label ?? `Bahagian ${String(pos)}`
     const lines = violationLines(verifyComposition(std, composed, facts), labelOf)
     // The frozen report needs a clean composition; the contract line alone does not stop it (an override publishes with it).
     const report = lines.blockerIssues.length === 0 && lines.fixedIssues.length === 0 ? buildStandardReport(std, composed, facts, { seed: 0, solverVersion: SOLVER_VERSION }) : null
-    return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report }
+    return { blockers: lines.blockerIssues, contract, fixed: lines.fixedIssues, notes: lines.notes, report, contractDisahkan }
   }
 
   /**
@@ -841,8 +843,8 @@ export class BuilderService {
 
   /**
    * R1-T48: the paper against the Kontrak it conforms to, beyond the question checks. A Bahagian the admin added is not in the Kontrak, and
-   * a Bahagian whose answering rule the admin changed differs from the Kontrak's. Both are blueprint conformance (overridable, like the
-   * V2 "Terbitkan walaupun tidak memenuhi kontrak blueprint"); the printed counts and marks are checked by `checkPaper` (hard).
+   * a Bahagian whose answering rule the admin changed differs from the Kontrak's. Both are blueprint conformance (overridable under a Kontrak that is
+   * not Disahkan, like the V2 "Terbitkan walaupun tidak memenuhi kontrak blueprint"; hard under a Disahkan one, S3-T01); the printed counts and marks are checked by `checkPaper` (hard).
    */
   private contractConformance(paper: PaperTree, blueprint: NonNullable<Awaited<ReturnType<BuilderRepository['blueprintById']>>>): BlockerDraft[] {
     const out: BlockerDraft[] = []
@@ -866,12 +868,12 @@ export class BuilderService {
    * The Terbit blockers of a paper, in display order, with the single `overridable` rule (contract `BIJAK_BUILDER_BLOCKER_OVERRIDABLE`). Used by
    * `review` AND `publish`, so the two always agree. Hard (never overridable): the paper's own checks (incl. D93 groups), a placed question missing
    * from the pool, a question pupils cannot be served. Overridable: the Kontrak is not Disahkan (not for a paper that is already Terbit) and the
-   * structural blueprint blockers.
+   * structural blueprint blockers, which are hard too under a Disahkan Kontrak (S3-T01, `contractDisahkan`).
    */
   private collectBlockers(
     paper: PaperTree,
     ev: Evaluation,
-    structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[] },
+    structural: { blockers: BlockerDraft[]; contract: BlockerDraft[]; fixed: BlockerDraft[]; contractDisahkan: boolean },
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
     referenceImages: readonly BlockerDraft[],
@@ -885,7 +887,7 @@ export class BuilderService {
       ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
       ...(paper.status === 'published' ? [] : structural.contract),
       ...structural.blockers,
-    ])
+    ], structural.contractDisahkan)
   }
 
   /**
