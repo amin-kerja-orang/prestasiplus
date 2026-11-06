@@ -63,7 +63,11 @@ export function slugBase(name: string): string {
 export const slugWithSuffix = (name: string): string =>
   `${slugBase(name)}-${Array.from({ length: 5 }, () => SLUG_ALPHABET[randomInt(SLUG_ALPHABET.length)]).join('')}`
 
-const pageOf = (raw: string | undefined): number => (raw === undefined || raw === '' ? 1 : Math.max(1, Number(raw)))
+/** 1-based page from the raw query text; anything that is not a positive integer (NaN, 0, a fraction, Infinity) is page 1. */
+export const pageOf = (raw: string | undefined): number => {
+  const n = Number(raw)
+  return Number.isSafeInteger(n) && n >= 1 ? n : 1
+}
 
 /**
  * Admin side of the marketplace (S7-T08, API-ADM-19). Every write runs in one transaction with its audit row.

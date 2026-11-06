@@ -37,6 +37,8 @@ model Blueprint {
   /// Default duration (Q-S1); each paper stores its own printed duration.
   durationMin   Int      @map("duration_min")
   totalMarks    Int?     @map("total_marks")
+  /// DM-57 "Bilangan soalan dalam kertas"; null = not stated. No rule ties it to the section counts.
+  questionCount Int?     @map("question_count") @db.SmallInt
   languageMode  String?  @map("language_mode")
   autoMarkable  Boolean? @map("auto_markable")
   instructions  String[] @default([])
@@ -96,6 +98,8 @@ model BlueprintSection {
   kbatMarks     Int?    @map("kbat_marks") @db.SmallInt
   /// false = seeded from layer 2 and not yet reviewed by Admin Pusat; the server sets true on any admin write of kbatMarks.
   kbatReviewed  Boolean @default(true) @map("kbat_reviewed")
+  /// DM-57 "Markah setiap soalan": json array of integers, one per offered question. NULL = no list. Not the Int `paper_sections.marks_per_question`.
+  marksPerQuestion Json? @map("marks_per_question") @db.JsonB
 
   blueprint Blueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade, map: "fk_blueprint_sections_blueprint_id")
 

@@ -79,6 +79,24 @@ describe('list, detail, options and global stats', () => {
     expect(banned.actions).toEqual([])
   })
 
+  it('the owner is masked in the seller list and the detail (never the full account name)', async () => {
+    const ownerName = async (id: string) =>
+      (await t.db.query<{ name: string }>(`select u.name from marketplace_sellers s join users u on u.id = s.user_id where s.id = $1`, [id]))[0]!.name
+    const mask = (name: string) => name.trim().split(/\s+/).map((w) => `${Array.from(w)[0]}***`).join(' ')
+    const id = ids.pending!
+    const full = await ownerName(id)
+    const expected = mask(full)
+    expect(expected).not.toBe(full)
+    const row = MarketplaceAdminSellerListResponseSchema.parse((await admin.get(`${BASE}/sellers?status=pending`)).body).data.find((s) => s.id === id)!
+    expect(row.ownerMasked).toBe(expected)
+    const detail = MarketplaceAdminSellerResponseSchema.parse((await admin.get(`${BASE}/sellers/${id}`)).body).data
+    expect(detail.ownerMasked).toBe(expected)
+    for (const w of full.split(/\s+/).filter((x) => x.length > 1)) {
+      expect(JSON.stringify(row)).not.toContain(w)
+      expect(JSON.stringify(detail)).not.toContain(w)
+    }
+  })
+
   it('detail "Semak Penjual"; unknown and non-numeric ids are 404', async () => {
     const d = MarketplaceAdminSellerResponseSchema.parse((await admin.get(`${BASE}/sellers/${ids.pending}`)).body).data
     expect(d).toMatchObject({ shopName: 'Kedai Pending', description: 'Penerangan ujian', phone: '0111111111', whatsapp: '60111111111', verifiedAt: null, whatsappClicks: 0 })
