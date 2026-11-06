@@ -33,9 +33,6 @@ export const GAMIFICATION_MESSAGES = {
 /** Largest amount one admin award may grant (`AWARD_MAX`). */
 export const GAMIFICATION_AWARD_MAX = 10_000
 
-/** Referral rewards in syiling (mock constants `REFERRAL_REWARD_REFERRER` / `_REFEREE`). */
-export const GAMIFICATION_REFERRAL_REWARDS = { referrer: 50, referee: 25 } as const
-
 
 // ---------------------------------------------------------------------------------------------
 // Enums
@@ -421,6 +418,8 @@ export const GamificationReferralSchema = z
     code: z.string().min(1),
     rewardReferrer: count,
     rewardReferee: count,
+    /** `referral_max_rewarded`: rewarded friends per referrer; at `stats.rewarded >= maxRewarded` the page shows "Had rujukan dicapai.". */
+    maxRewarded: count,
     registerUrl: z.string().min(1),
     whatsappUrl: z.string().min(1),
     telegramUrl: z.string().min(1),

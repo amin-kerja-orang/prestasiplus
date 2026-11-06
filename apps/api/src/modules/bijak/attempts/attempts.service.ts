@@ -238,6 +238,14 @@ export class BijakAttemptsService {
     if (!isIdString(body.paperId)) throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
     const resolved = await this.ports.paperSource.resolveForAttempt({ userId, paperId: body.paperId, isTest })
     if (!resolved.ok) {
+      if (resolved.reason === 'out_of_scope') {
+        // S3-T07: outside the pupil's form, a NEW sitting or a restart is 404, but the pupil's own open sitting still resumes.
+        if (!body.restart && !opts.fresh) {
+          const open = (await this.repo.openFor(userId, body.paperId))[0]
+          if (open) return { attemptId: open.id, created: false }
+        }
+        throw ApiError.of('NOT_FOUND', { message: MSG.paperNotFound })
+      }
       if (resolved.reason === 'not_eligible') {
         // H-A13: a sitting already open keeps its pinned version, so "Mula" resumes it even though a new sitting is refused.
         if (!body.restart && !opts.fresh) {
@@ -873,9 +881,7 @@ export class BijakAttemptsService {
           attemptId: a.id,
           userId: a.userId,
           isTest: a.isTest,
-          // The aggregate's start_type knows only the paper kinds; `subjektif` / `structured` (DM-83) are
-          // passed once S5 widens `ck_practice_attempt_aggregates_start_type` (S3-T06 cross-sector PR).
-          paperKind: a.paperKind === 'pilihan' || a.paperKind === 'jana' ? a.paperKind : undefined,
+          paperKind: a.paperKind,
           startedAt: a.startedAt,
           submittedAt: a.submittedAt,
           paperId: a.paperId,
