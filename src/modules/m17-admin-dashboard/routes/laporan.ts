@@ -12,7 +12,7 @@ import type { Role } from '@/stores/session-types'
  *
  * Hidden (routes not registered -> the global 404) unless `VITE_CENTRAL_REPORTS=on` (`src/app/features.ts`).
  * `sekolah-bersaing` redirects to the existing national board `/sekolah-bersaing`.
- * PM-24 Headcount has no record yet: it waits for the Headcount list of S10-T09.
+ * PM-24 Headcount mounts the existing M08 Headcount list read-only for the picked school.
  */
 
 const adminLaporanRoutes: RouteRecordRaw[] = [
@@ -32,7 +32,7 @@ const adminLaporanRoutes: RouteRecordRaw[] = [
   },
 ]
 
-/** The central views and their menu label (PM-12, 13, 15, 21, 22, 23, 27, 28). */
+/** The central views and their menu label (PM-12, 13, 15, 21, 22, 23, 24, 27, 28). */
 export const CENTRAL_REPORT_VIEWS = {
   'laporan-aktiviti': 'Laporan Aktiviti',
   'amaran-wellbeing': 'Amaran Wellbeing',
@@ -40,6 +40,7 @@ export const CENTRAL_REPORT_VIEWS = {
   'dskp-heatmap': 'DSKP Heatmap',
   'amaran-awal': 'Amaran Awal',
   'laporan-bulanan': 'Laporan Bulanan',
+  headcount: 'Headcount',
   'analisa-item': 'Analisa Item',
   'sekolah-bersaing': 'Sekolah Bersaing',
 } as const
@@ -100,6 +101,13 @@ const centralReportRoutes: RouteRecordRaw[] = [
     component: () => import('../pages/CentralReportPage.vue'),
     props: { view: 'laporan-bulanan' },
     meta: meta('laporan-bulanan'),
+  },
+  {
+    path: '/admin/laporan-sekolah/headcount',
+    name: 'm17.laporan-sekolah.headcount',
+    component: () => import('../pages/CentralReportPage.vue'),
+    props: { view: 'headcount' },
+    meta: meta('headcount'),
   },
   {
     path: '/admin/laporan-sekolah/analisa-item',

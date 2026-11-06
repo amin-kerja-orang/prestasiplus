@@ -158,7 +158,7 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expect((await sessionRow(sessionId))?.submitted_at).not.toBeNull()
       expect(await statsOf(student.userId)).toMatchObject({ best_level: before.best_level, games: before.games + 1 })
       expect(rewards.calls).toHaveLength(1)
-      expect(rewards.calls[0]?.input).toEqual({ game: 'jutawan', event: 'finish', coins: 0, xp: 0, correct: 0, total: 15, detail: { level: 0, subject: mathName }, key: sessionId })
+      expect(rewards.calls[0]?.input).toEqual({ game: 'jutawan', event: 'finish', coins: 0, xp: 0, correct: 0, total: 15, detail: { level: 0, subject: mathName }, key: sessionId, session: { id: sessionId, gameKey: 'jutawan' } })
       expectError(await answer(student, sessionId, items[0] as DbItem, true), 'CONFLICT', M.jutawanOver)
       expectError(await student.post(`/api/games/jutawan/${sessionId}/lifeline`, { type: '50:50' }), 'CONFLICT', M.jutawanOver)
     })
@@ -204,13 +204,14 @@ describe('Jutawan Ilmu (M16-36 to M16-39)', () => {
       expect((await statsOf(student.userId))?.best_level).toBeGreaterThanOrEqual(10)
     })
 
-    it('no reward call when syiling cannot be earned', async () => {
+    it('the result is reported also when syiling cannot be earned (DM-87 event); nothing is paid', async () => {
       rewards.canEarn = false
       const { sessionId, items } = await startRun(student)
       for (let i = 0; i < 10; i++) await answer(student, sessionId, items[i] as DbItem, true)
       const out = parseData(await answer(student, sessionId, items[10] as DbItem, false), GamesJutawanAnswerResponseSchema)
       expect(out.result).toEqual({ level: 10, credited: 0 })
-      expect(rewards.calls).toHaveLength(0)
+      expect(rewards.calls).toHaveLength(1)
+      expect(rewards.calls[0]?.input.session).toEqual({ id: sessionId, gameKey: 'jutawan' })
       expect(await sessionRow(sessionId)).toMatchObject({ coins_computed: 50, coins_credited: 0 })
     })
 
