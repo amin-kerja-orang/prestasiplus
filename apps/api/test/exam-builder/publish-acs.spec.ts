@@ -176,8 +176,9 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       await q(`update question_versions set unit_node_id = null where question_id = $1`, [ids[0]])
       let res = await publish(paper)
       expect(res.ok).toBe(false)
-      expect(res.blockerDetails).toContainEqual(expect.objectContaining({ code: 'INELIGIBLE', questionId: ids[0], overridable: true }))
-      expect(res.canOverride).toBe(true)
+      // S3-T01: the Kontrak is Disahkan here, so INELIGIBLE is hard.
+      expect(res.blockerDetails).toContainEqual(expect.objectContaining({ code: 'INELIGIBLE', questionId: ids[0], overridable: false }))
+      expect(res.canOverride).toBe(false)
       await q(`update questions set is_active = false where id = $1`, [ids[1]])
       res = await publish(paper)
       expect(codes(res)).toEqual(expect.arrayContaining(['NOT_PUBLISHED']))
