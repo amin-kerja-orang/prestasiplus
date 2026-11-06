@@ -2124,8 +2124,19 @@
       "name": "m11.laporan-mingguan-kelas",
       "status": "canonical",
       "sector": "S6",
-      "component": "src/pages/NotFoundPage.vue",
+      "component": "src/modules/m11-teacher-analytics/pages/LaporanMingguanGuruPage.vue",
       "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/laporan-mingguan|",
+      "path": "/guru/laporan-mingguan",
+      "name": null,
+      "status": "redirect-to:/guru/laporan-mingguan-kelas",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m11-teacher-analytics/routes/laporan-mingguan.ts",
+      "redirects_to": "/guru/laporan-mingguan-kelas",
       "approved_by_card": null
     },
     {
@@ -10887,6 +10898,15 @@
       "sector": "S0",
       "file": "apps/api/prisma/schema/pksk.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "PkskExamLoad",
+      "table": "pksk_exam_loads",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/pksk.prisma",
+      "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-91)"
     },
     {
       "name": "PracticeSession",

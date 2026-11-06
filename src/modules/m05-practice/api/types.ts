@@ -127,10 +127,12 @@ export interface DashboardRecentQuestion {
   id: EntityId
   subjectName: string
   difficulty: number
-  /** Cut at 100 characters + "..." (BR-29). */
+  /** Cut at 140 characters + "…" (FR-MUR-2-8). */
   text: string
   createdAt: string
   levelCode: string
+  /** Served URL of the question's first figure, shown as a small thumbnail; null when it has none (FR-MUR-2-8). */
+  figureThumbUrl: string | null
 }
 
 export interface DashboardSubjectStat {
