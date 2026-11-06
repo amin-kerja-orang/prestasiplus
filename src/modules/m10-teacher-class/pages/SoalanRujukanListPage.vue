@@ -92,7 +92,9 @@ async function remove(id: number): Promise<void> {
   try {
     await deletePersonalQuestion(id)
     flash.show({ type: 'success', message: COPY.deleted })
-    await list.reload()
+    // The last row of a page after the first: step back, the page no longer exists (the route change reloads).
+    if (page.value > 1 && list.data.value?.data.length === 1) go(page.value - 1)
+    else await list.reload()
   } catch (err) {
     deleteError.value = [moduleMessage(err) ?? COPY.saveFailed]
   } finally {

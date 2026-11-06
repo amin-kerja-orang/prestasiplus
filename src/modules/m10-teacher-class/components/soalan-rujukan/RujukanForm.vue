@@ -103,6 +103,7 @@ const spOptions = computed(() =>
 )
 
 // --- Kesukaran: min(5, TP) once a TP is chosen and until the teacher touches it ----------------
+// The default is asked by the PRD-20 R1-GUR-44a field table (docs/prd/r1/20-guru-admin-sekolah.md, row "Kesukaran *"; OPT-KESUKARAN); the API never derives it.
 watch(
   () => v.tp,
   (tp) => {

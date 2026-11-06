@@ -8,7 +8,7 @@
  *   conditional rule of D112 (`placement` of the bank form: same ids and texts), `difficulty` 1..5, `text` (2000),
  *   four `options {text}` (500 each), `correctIndex` 0..3 and `referenceUrl` (http or https only, 2048).
  * - DELETE answers `{deleted: 1}`; a question drawn into an active Misi is `409` "Soalan sedang digunakan dalam misi."
- *   and stays (the seed rule sets `inActiveMission`, see `seeds/personal-questions.ts`).
+ *   and stays; PUT answers the same 409 after the body passed validation (the API's edit lock) (the seed rule sets `inActiveMission`, see `seeds/personal-questions.ts`).
  */
 
 import {
@@ -56,12 +56,24 @@ export const PQ_MESSAGES = {
 const LETTERS = ['A', 'B', 'C', 'D'] as const
 const len = (text: string): number => [...text].length
 
-/** Only an http or https address with a host (`javascript:`, `ftp:`, `data:` are refused). */
+/**
+ * Whether a link is an absolute http or https address, the rule of the API (`isHttpUrl` of the teacher-tools contract): no other
+ * scheme (`javascript:`, `ftp:`), no whitespace or control character, and no userinfo (`user:pass@host`).
+ */
 function isHttpUrl(value: string): boolean {
-  if (!/^https?:\/\//i.test(value)) return false
+  if (!/^https?:\/\/\S+$/i.test(value)) return false
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0
+    if (code <= 0x1f || code === 0x7f) return false
+  }
   try {
     const u = new URL(value)
-    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname !== ''
+    return (
+      (u.protocol === 'http:' || u.protocol === 'https:') &&
+      u.hostname !== '' &&
+      u.username === '' &&
+      u.password === ''
+    )
   } catch {
     return false
   }
@@ -200,6 +212,7 @@ export const personalQuestionRoutes: RouteDef[] = [
       if (!current) return notFound()
       const parsed = parsePersonal(bodyOf(req), current.ownerId)
       if (!parsed.ok) return validationError(parsed.fields)
+      if (current.inActiveMission) return conflict(PQ_MESSAGES.inUse)
       return ok(viewOf(personalQuestionsRepo.update(current.id, parsed.input)))
     },
     { params: { id: int() } },

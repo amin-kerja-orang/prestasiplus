@@ -84,6 +84,20 @@ describe('validateForm (R1-GUR-44a field table)', () => {
     }
   })
 
+  it('refuses userinfo, whitespace and control characters like the API', () => {
+    for (const bad of [
+      'https://user:pass@example.org/a',
+      'https://user@example.org/a',
+      'https://example.org/a b',
+      'https://example.org/a\tb',
+      'https://example.org/a\u0001b',
+      'https://example.org/a\u007fb',
+    ]) {
+      expect(isHttpUrl(bad), JSON.stringify(bad)).toBe(false)
+    }
+    expect(isHttpUrl('https://example.org/a?x=1@2')).toBe(true)
+  })
+
   it('accepts http and https and an empty link (optional)', () => {
     for (const ok of ['http://example.org/a', 'https://example.org/rujukan', '']) {
       expect(validateForm(filled({ referenceUrl: ok }), NO_DSKP).referenceUrl, ok).toBeUndefined()

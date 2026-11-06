@@ -246,6 +246,15 @@ describe('409 delete guard (AC-GUR-44a-9)', () => {
     expect((await call('GET', `${BASE}/7801`)).status).toBe(200)
   })
 
+  it('PUT of a question drawn into an active Misi is refused with the same 409 and the question is unchanged', async () => {
+    const a = await call('PUT', `${BASE}/7801`, { body: body({ text: 'Teks baharu?' }) })
+    expect(a.status).toBe(409)
+    expect((a.body as ErrorBody).error.code).toBe('CONFLICT')
+    expect(messageOf(a)).toBe('Soalan sedang digunakan dalam misi.')
+    const got = await call<{ data: Row }>('GET', `${BASE}/7801`)
+    expect(got.body.data.text).not.toBe('Teks baharu?')
+  })
+
   it('a question outside any active Misi deletes', async () => {
     expect((await call('DELETE', `${BASE}/7802`)).status).toBe(200)
     expect((await call('GET', `${BASE}/7802`)).status).toBe(404)
@@ -253,8 +262,8 @@ describe('409 delete guard (AC-GUR-44a-9)', () => {
 })
 
 describe('seed rows vs D112', () => {
-  it('re-saving an untouched seeded row passes the rule (every seed pair has Bab and SP)', async () => {
-    for (const id of [7803, 7804, 7805, 7806]) {
+  it('re-saving an untouched seeded row passes the rule (every seed pair has Bab and SP; rows in an active Misi are 409 on PUT, so they are left out)', async () => {
+    for (const id of [7803, 7805, 7806]) {
       const got = await call<{ data: Row & Record<string, unknown> }>(
         'GET',
         `${BASE}/${String(id)}`,

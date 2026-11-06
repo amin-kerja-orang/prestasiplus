@@ -392,6 +392,24 @@ describe('List', () => {
     confirm.mockRestore()
   })
 
+  it('deleting the only row of page 2 steps back to page 1 instead of reloading an empty page', async () => {
+    pq.fetchPersonalQuestions.mockResolvedValue({
+      data: [personal({ id: 7802 })],
+      meta: listMeta(21),
+    })
+    const w = await mountList('/guru/soalan-guru?page=2')
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true)
+    pq.deletePersonalQuestion.mockResolvedValue({ deleted: 1 })
+    await all(w, 'rujukan-delete')[0]!.trigger('click')
+    await flushPromises()
+    expect(pq.deletePersonalQuestion).toHaveBeenCalledWith(7802)
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    expect(pq.fetchPersonalQuestions).toHaveBeenLastCalledWith(
+      { page: 1 },
+      expect.objectContaining({ signal: expect.any(AbortSignal) as AbortSignal }),
+    )
+  })
+
   it('AC-GUR-44a-9: a 409 shows "Soalan sedang digunakan dalam misi." and the question stays', async () => {
     const w = await mountList()
     vi.spyOn(window, 'confirm').mockReturnValue(true)

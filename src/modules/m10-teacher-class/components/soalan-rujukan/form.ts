@@ -105,12 +105,24 @@ const len = (text: string): number => [...text].length
 const LETTERS = ['A', 'B', 'C', 'D'] as const
 export const URL_MAX = 2048
 
-/** Whether a link is an http or https address (`javascript:`, `ftp:` and the like are refused). */
+/**
+ * Whether a link is an absolute http or https address, the rule of the API (`isHttpUrl` of the teacher-tools contract): no other
+ * scheme (`javascript:`, `ftp:`), no whitespace or control character, and no userinfo (`user:pass@host`).
+ */
 export function isHttpUrl(value: string): boolean {
-  if (!/^https?:\/\//i.test(value)) return false
+  if (!/^https?:\/\/\S+$/i.test(value)) return false
+  for (const ch of value) {
+    const code = ch.codePointAt(0) ?? 0
+    if (code <= 0x1f || code === 0x7f) return false
+  }
   try {
     const u = new URL(value)
-    return (u.protocol === 'http:' || u.protocol === 'https:') && u.hostname !== ''
+    return (
+      (u.protocol === 'http:' || u.protocol === 'https:') &&
+      u.hostname !== '' &&
+      u.username === '' &&
+      u.password === ''
+    )
   } catch {
     return false
   }

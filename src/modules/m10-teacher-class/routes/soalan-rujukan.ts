@@ -1,8 +1,10 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { GURU_API_ROLES } from './roles'
+
 /**
  * M10 route fragment: Soalan & Rujukan (`/guru/soalan-guru…`), S6-T16 (PRD-20 R1-GUR-44a). The teacher's private MCQ
- * with a reference link; the tool opens from the "Alat Soalan" tile of Sumbang Soalan. User shell; Guru and Admin.
+ * with a reference link; the tool opens from the "Alat Soalan" tile of Sumbang Soalan. User shell; `GURU_API_ROLES` (the API is teacher-only: Guru in http mode, Guru and Admin in the mock; DV-M10-37).
  * The tab title of the form is the PRD text; the list and edit titles follow it. A foreign or unknown id is the
  * standard 404 (FR-GUR-44a-1), raised by the edit page.
  */
@@ -15,7 +17,7 @@ export const SOALAN_RUJUKAN_ROUTES = {
 const base = {
   layout: 'user' as const,
   access: 'auth' as const,
-  roles: ['teacher', 'admin'] as const,
+  roles: GURU_API_ROLES,
   module: 'M10' as const,
   v2: true as const,
 }
