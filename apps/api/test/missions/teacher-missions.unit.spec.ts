@@ -312,7 +312,7 @@ describe('S6-T07 the practice adapter serves harian like latih_tubi', () => {
 
   const adapterFor = (m: MissionRecord) => {
     const draws: unknown[] = []
-    const repo = { missionOfRecipient: () => Promise.resolve(m) }
+    const repo = { missionOfRecipient: () => Promise.resolve(m), pupilLevelIds: () => Promise.resolve([] as string[]) }
     const pool = { draw: (filter: unknown) => (draws.push(filter), Promise.resolve(['q1', 'q2', 'q3'])) }
     return { draws, adapter: new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never) }
   }
