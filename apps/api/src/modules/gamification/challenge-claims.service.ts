@@ -74,6 +74,9 @@ export class ChallengeClaimsService {
         if (after && before && after.id !== before.id) notices.push(CLAIM_NOTICES.tierUp(after.labelMs))
       }
       if (xp > 0) await this.wallet.addXp({ userId, amount: xp, isTest: false }, { tx: tx as TxClient })
+      // FR-GM-25.2: a claim moves the completions badges (#15, #20, #25) and the syiling ones. A bonus, so it never fails the claim (savepoint).
+      const unlocked = await this.gamification.evaluateAchievementsSafely(userId, { tx: tx as TxClient, isTest: false, at: now })
+      for (const b of unlocked.unlocked) notices.push(CLAIM_NOTICES.badge(b.name))
       return { claimed: true, rewardSyiling: syiling, rewardXp: xp, ...(notices.length > 0 ? { notices } : {}) }
     })
   }
