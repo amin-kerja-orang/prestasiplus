@@ -4,6 +4,8 @@
  * status is stored and never changed by dates (DV-M16-11).
  */
 
+import { gamesLevelIdToClassLevel } from '@pp/contract'
+
 import type { PrngRegistry } from '@/mock/determinism'
 import { defineNamedQueries } from '@/mock/dataset'
 import { defineRepository } from '@/mock/repository'
@@ -12,7 +14,6 @@ import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 
 import {
-  CLASS_LEVELS,
   LEAGUE_SCOPE_LABELS,
   LEAGUE_SCORING_LABELS,
   LEAGUE_STATUS_LABELS,
@@ -60,9 +61,6 @@ export interface LeagueDetail extends Omit<LeagueCard, 'schools'> {
   scoringLabel: string
   creatorName: string
   classLevels: string[]
-  inviteCode: string
-  shareUrl: string
-  canJoin: boolean
   schools: { id: number; name: string }[]
   standings: Record<string, LeagueStandingView[]>
 }
@@ -77,74 +75,83 @@ export interface LeagueInput {
   scoringMethod: LeagueScoring
   startDate: string
   endDate: string
-  maxSchools: number | null
+  maxSchools: number
 }
 
-const TYPES = Object.keys(LEAGUE_TYPE_LABELS)
+const TYPES = ['friendly', 'league'] // the create form offers these two (API-ADM-25)
 const SCOPES = Object.keys(LEAGUE_SCOPE_LABELS)
 const SCORINGS = Object.keys(LEAGUE_SCORING_LABELS)
 const GAME_MODES = ['mixed', 'quiz', 'multiplayer']
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
-/** S26 body to a typed input (V-M16-14/15; PROPOSED messages). */
+/**
+ * API-ADM-25 create body (60 section 2.17.9) to a typed input, 422 `fields` keyed by the body names; the top-level
+ * message is the first failing field in form order (P14-09..14).
+ */
 export function parseLeagueBody(body: unknown): LeagueInput {
   const b = (typeof body === 'object' && body !== null ? body : {}) as Record<string, unknown>
   const required = 'Sila lengkapkan semua medan wajib.'
+  const format = 'Format tidak sah.'
   const f: Record<string, string> = {}
   const name = typeof b.name === 'string' ? b.name.trim() : ''
-  if (name === '' || name.length > 255) f.name = required
-  if (!TYPES.includes(b.type as string)) f.type = required
-  if (!SCOPES.includes(b.scope as string)) f.scope = required
-  if (!GAME_MODES.includes(b.game_mode as string)) f.game_mode = required
-  if (!SCORINGS.includes(b.scoring_method as string)) f.scoring_method = required
-  const start = typeof b.start_date === 'string' ? b.start_date : ''
-  const end = typeof b.end_date === 'string' ? b.end_date : ''
-  if (!DATE.test(start) || Number.isNaN(Date.parse(start))) f.start_date = required
-  if (!DATE.test(end) || Number.isNaN(Date.parse(end))) f.end_date = required
-  if (!f.start_date && !f.end_date && end < start)
-    f.end_date = 'Tarikh tamat mesti selepas tarikh mula.'
-  let maxSchools: number | null = null
-  if (b.max_schools !== undefined && b.max_schools !== null && b.max_schools !== '') {
-    const n = Number(b.max_schools)
-    if (Number.isInteger(n) && n >= 2 && n <= 500) maxSchools = n
-    else f.max_schools = 'Had sekolah mesti antara 2 dan 500.'
+  if (name === '' || name.length > 100) f.name = required
+  const pick = (field: string, allowed: string[]): void => {
+    const v = b[field]
+    if (v === undefined || v === null || v === '') f[field] = required
+    else if (!allowed.includes(v as string)) f[field] = format
+  }
+  pick('type', TYPES)
+  pick('scope', SCOPES)
+  pick('mode', GAME_MODES)
+  pick('scoring', SCORINGS)
+  let maxSchools = 0
+  if (b.schoolLimit === undefined) f.schoolLimit = required
+  else {
+    const n = b.schoolLimit
+    if (typeof n === 'number' && Number.isInteger(n) && n >= 2 && n <= 500) maxSchools = n
+    else f.schoolLimit = 'Had sekolah mesti antara 2 dan 500.'
   }
   let subjectId: number | null = null
-  if (b.subject_id !== undefined && b.subject_id !== null && b.subject_id !== '') {
-    const n = Number(b.subject_id)
+  if (b.subjectId !== undefined && b.subjectId !== null && b.subjectId !== '') {
+    const n = Number(b.subjectId)
     if (Number.isInteger(n) && curriculum.subject(n)) subjectId = n
-    else f.subject_id = 'Mata pelajaran tidak sah.'
+    else f.subjectId = 'Mata pelajaran tidak sah.'
   }
-  const levels = Array.isArray(b.class_levels) ? b.class_levels : []
-  const classLevels = CLASS_LEVELS.filter((l) => levels.includes(l)) as string[]
-  if (levels.some((l) => !CLASS_LEVELS.includes(l as (typeof CLASS_LEVELS)[number]))) {
-    f.class_levels = 'Tingkatan tidak sah.'
+  const levels = b.levelIds
+  let classLevels: string[] = []
+  if (levels === undefined || (Array.isArray(levels) && levels.length === 0)) f.levelIds = required
+  else if (
+    !Array.isArray(levels) ||
+    levels.length > 5 ||
+    levels.some((l) => !(typeof l === 'number' && Number.isInteger(l) && l >= 1 && l <= 5))
+  ) {
+    f.levelIds = 'Tingkatan tidak sah.'
+  } else {
+    // One shared mapper: 1..5 = T1..T5, stored in Tingkatan order.
+    classLevels = [...new Set(levels as number[])].sort((x, y) => x - y).map(gamesLevelIdToClassLevel)
   }
+  const start = typeof b.start === 'string' ? b.start : ''
+  const end = typeof b.end === 'string' ? b.end : ''
+  if (!DATE.test(start) || Number.isNaN(Date.parse(start))) f.start = required
+  if (!DATE.test(end) || Number.isNaN(Date.parse(end))) f.end = required
+  if (!f.start && !f.end && end < start) f.end = 'Tarikh tamat mesti selepas tarikh mula.'
   if (Object.keys(f).length > 0) {
-    throw new M16Error('VALIDATION_ERROR', Object.values(f)[0] as string, undefined, f)
+    const order = ['name', 'type', 'scope', 'mode', 'scoring', 'schoolLimit', 'subjectId', 'levelIds', 'start', 'end']
+    const first = order.find((k) => f[k] !== undefined) as string
+    throw new M16Error('VALIDATION_ERROR', f[first] as string, undefined, f)
   }
   return {
     name,
     type: b.type as LeagueType,
     scope: b.scope as LeagueScope,
     subjectId,
-    gameMode: b.game_mode as LeagueGameMode,
+    gameMode: b.mode as LeagueGameMode,
     classLevels,
-    scoringMethod: b.scoring_method as LeagueScoring,
+    scoringMethod: b.scoring as LeagueScoring,
     startDate: start,
     endDate: end,
     maxSchools,
   }
-}
-
-/** WhatsApp share link of FN-M16-9.3.2 (`+` for spaces and `%21` for "!", as live). */
-export function shareUrl(name: string, code: string): string {
-  const enc = (s: string) =>
-    encodeURIComponent(s)
-      .replace(/%20/g, '+')
-      .replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
-  const text = `Jom sertai Liga Pertandingan "${name}" di PrestasiPlus! Kod Jemputan: ${code} — prestasiplus.my/liga 🏆`
-  return `https://wa.me/?text=${enc(text)}`
 }
 
 const subjectNameOf = (id: number | null): string | null =>
@@ -199,8 +206,8 @@ export const leaguesRepo = defineRepository({
         return { mine: mine.map(card), open: all.filter((l) => l.status !== 'ended').map(card) }
       },
 
-      /** #49: the detail (invite code visible to non-members, as live). */
-      get(id: number, viewerSchoolId: number | null): LeagueDetail | undefined {
+      /** #49: the detail (no invite code, share link or join flag: Admin Pusat enrols schools, FR-GM-15.1). */
+      get(id: number): LeagueDetail | undefined {
         const l = store.get(id)
         if (!l) return undefined
         const ids = schoolIds(id)
@@ -228,18 +235,12 @@ export const leaguesRepo = defineRepository({
           scoringLabel: LEAGUE_SCORING_LABELS[l.scoringMethod],
           creatorName: users.get(l.creatorId)?.name ?? '',
           classLevels: l.classLevels,
-          inviteCode: l.inviteCode,
-          shareUrl: shareUrl(l.name, l.inviteCode),
-          canJoin:
-            l.status !== 'ended' &&
-            (viewerSchoolId === null || !ids.includes(viewerSchoolId)) &&
-            (l.maxSchools === null || ids.length < l.maxSchools),
           schools: ids.map((sid) => ({ id: sid, name: schools.get(sid)?.name ?? '' })),
           standings: byLevel,
         }
       },
 
-      /** #47 (BR-M16-33): creates a league, `upcoming`, 8-character invite code, the creator's school joins. */
+      /** #47 (API-ADM-25): creates a league, `upcoming`, internal 8-character code; no school joins on create. */
       create(input: LeagueInput, creatorId: number, prng: PrngRegistry): LeagueRow {
         return transaction(() => {
           let code = ''
@@ -258,47 +259,40 @@ export const leaguesRepo = defineRepository({
             status: 'upcoming',
             createdAt: nowIso(),
           })
-          const schoolId = users.get(creatorId)?.schoolId ?? null
-          if (schoolId !== null)
-            leagueSchools.insert({ leagueId: league.id, schoolId, joinedAt: nowIso() })
           return league
         })
       },
 
-      /** #48 (BR-M16-33, V-M16-13): the viewer's school joins by invite code. Returns the league id. */
-      join(code: unknown, viewerId: number): number {
-        return transaction(() => {
-          const text = typeof code === 'string' ? code.trim().toUpperCase() : ''
-          const league =
-            text === '' ? undefined : store.query({ where: { inviteCode: text } }).rows[0]
-          if (!league)
-            throw new M16Error('VALIDATION_ERROR', 'Kod jemputan tidak sah.', 'invite_code')
-          if (league.status === 'ended') {
-            throw new M16Error('VALIDATION_ERROR', 'Liga ini sudah tamat.', 'invite_code')
+      /**
+       * API-ADM-25 `POST /leagues/:id/schools`: all or nothing. 404, then ended (by `endDate` at 23:59:59 MYT against
+       * the clock), then each school in order: already in or repeated, or over the limit.
+       */
+      enrol(id: number, ids: unknown): void {
+        transaction(() => {
+          const league = store.get(id)
+          if (!league) throw new M16Error('NOT_FOUND', 'Liga tidak dijumpai.')
+          const fail = (message: string): never => {
+            throw new M16Error('VALIDATION_ERROR', message, 'schoolIds')
           }
-          const schoolId = users.get(viewerId)?.schoolId ?? null
-          if (schoolId === null) {
-            throw new M16Error(
-              'VALIDATION_ERROR',
-              'Anda perlu mempunyai sekolah untuk menyertai liga ini.',
-              'invite_code',
-            )
+          if (!Array.isArray(ids) || ids.length === 0) fail('Sila pilih sekolah.')
+          const list = ids as unknown[]
+          if (list.length > 500 || list.some((x) => typeof x !== 'number' || !schools.get(x))) {
+            fail('Format sekolah tidak sah.')
           }
-          if (leagueSchools.count({ leagueId: league.id, schoolId }) > 0) {
-            throw new M16Error(
-              'VALIDATION_ERROR',
-              'Sekolah anda sudah menyertai liga ini.',
-              'invite_code',
-            )
+          if (Date.parse(`${league.endDate}T23:59:59.999+08:00`) < Date.parse(nowIso())) {
+            fail('Liga ini sudah tamat.')
           }
-          if (
-            league.maxSchools !== null &&
-            leagueSchools.count({ leagueId: league.id }) >= league.maxSchools
-          ) {
-            throw new M16Error('VALIDATION_ERROR', 'Liga ini sudah penuh.', 'invite_code')
+          const seen = new Set<number>()
+          let count = leagueSchools.count({ leagueId: id })
+          for (const schoolId of list as number[]) {
+            if (seen.has(schoolId) || leagueSchools.count({ leagueId: id, schoolId }) > 0) {
+              fail('Sekolah ini sudah menyertai liga ini.')
+            }
+            if (league.maxSchools !== null && count >= league.maxSchools) fail('Liga ini sudah penuh.')
+            seen.add(schoolId)
+            count++
           }
-          leagueSchools.insert({ leagueId: league.id, schoolId, joinedAt: nowIso() })
-          return league.id
+          for (const schoolId of seen) leagueSchools.insert({ leagueId: id, schoolId, joinedAt: nowIso() })
         })
       },
 

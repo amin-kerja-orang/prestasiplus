@@ -437,9 +437,17 @@ describe('S7 Analitik Pembelajaran', () => {
     expect(bm?.weak.find((w) => w.spId === 194)?.focusCount).toBe(25)
   })
 
-  it('pelajarmaju has no SP record: the no-data state (its M05 answers carry no dskpSpId)', async () => {
+  it('pelajarmaju has no SP record (its M05 answers carry no dskpSpId): a tab per mapped subject, none practised (FR-MUR-5-2, FR-MUR-5-6)', async () => {
     const a = await get<Analytics>(MAJU, '/api/analytics/me')
-    expect(a.subjects).toEqual([])
+    expect(a.userLevelId).not.toBeNull()
+    expect(a.subjects.length).toBeGreaterThan(0)
+    for (const sub of a.subjects) {
+      expect(sub).toMatchObject({ accuracy: null, answered: 0, projection: null, trend: 'stable', weak: [] })
+      expect(sub.counts).toEqual({ mahir: 0, sederhana: 0, lemah: 0, belum: sub.map.tiles.length })
+      expect(sub.ringTotal).toBe(sub.map.tiles.length)
+      expect(sub.map.caption).toBe(`Peta DSKP — Standard Pembelajaran · ${sub.name}`)
+      expect(sub.map.tiles.every((t) => t.status === 'belum' && typeof t.strand === 'string')).toBe(true)
+    }
     expect(a.topWeak).toEqual([])
   })
 

@@ -142,7 +142,8 @@ describe('request types', () => {
   })
 
   it('rejects a bad kertas, an inline data URL image and extra keys', () => {
-    expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'ocr' }], subject: 'MAT', kertas: 3 })).toBe(false)
+    expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'ocr' }], subject: 'MAT', kertas: 5 })).toBe(false)
+    for (const kertas of [1, 2, 3, 4]) expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'ocr' }], subject: 'MAT', kertas })).toBe(true)
     expect(ok(AiPageImageRefSchema, { page: 1, dataUrl: 'data:image/png;base64,AAAA', width: 1, height: 1 })).toBe(false)
     expect(ok(AiPageImageRefSchema, { page: 1, fileId: '', width: 1, height: 1 })).toBe(false)
     expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'scan' }], subject: 'MAT', kertas: 1 })).toBe(false)
