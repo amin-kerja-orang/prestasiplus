@@ -30,8 +30,27 @@ export function sittingSeconds(row: Pick<ClosedAttemptRow, 'startedAt' | 'deadli
   return Math.max(0, Math.floor((end.getTime() - row.startedAt.getTime()) / 1000))
 }
 
+/** Compares two ids: numeric strings numerically (so "10" sorts after "9"), anything else (uuids) as text, which is also the database order of a uuid. */
+export function compareIds(a: string, b: string): number {
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) {
+    const x = BigInt(a)
+    const y = BigInt(b)
+    return x < y ? -1 : x > y ? 1 : 0
+  }
+  return a < b ? -1 : a > b ? 1 : 0
+}
+
 /** Newest first: `completedAt` descending, then id descending (the order the two sources are sorted in). */
-const NEWEST_FIRST = (a: SpmHistoryRowData, b: SpmHistoryRowData): number => b.completedAt.getTime() - a.completedAt.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0)
+export const compareNewestFirst = (a: SpmHistoryRowData, b: SpmHistoryRowData): number => b.completedAt.getTime() - a.completedAt.getTime() || compareIds(b.id, a.id)
+
+/**
+ * Whether the requested page starts at or after the end of `total` rows. The caller then answers an empty page and reads no rows, so
+ * a huge `halaman` can neither overflow a `take` nor load the history. A page that is not a safe positive integer is also past the end.
+ */
+export function isPastEnd(page: number, pageSize: number, total: number): boolean {
+  if (!Number.isSafeInteger(page) || page < 1) return true
+  return (page - 1) * pageSize >= total
+}
 
 /**
  * `SpmHistorySource` (S3-T07 part F, ruling Q6): the Sejarah Kuiz SPM list merged from completed `practice_sessions` (S5, read here)
@@ -65,14 +84,19 @@ export class PracticeSpmHistory implements SpmHistorySource {
   }
 
   async page(query: SpmHistoryPageQuery): Promise<{ rows: SpmHistoryRowData[]; total: number }> {
-    const depth = query.page * query.pageSize
     const where = this.sessionWhere(query)
     const withAttempts = query.chip === 'all'
-    const [sessionRows, sessionTotal, attemptRows, attemptTotal, subjects] = await Promise.all([
-      this.prisma.client.practiceSession.findMany({ where, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: depth }),
+    // Totals first: a page past the end reads nothing, and `take` below never exceeds total + pageSize.
+    const [sessionTotal, attemptTotal] = await Promise.all([
       this.prisma.client.practiceSession.count({ where }),
-      withAttempts ? this.attempts.closedNewest(query.userId, { includeTest: query.includeTest }, depth) : Promise.resolve([]),
       withAttempts ? this.attempts.closedCount(query.userId, { includeTest: query.includeTest }) : Promise.resolve(0),
+    ])
+    const total = sessionTotal + attemptTotal
+    if (isPastEnd(query.page, query.pageSize, total)) return { rows: [], total }
+    const depth = query.page * query.pageSize
+    const [sessionRows, attemptRows, subjects] = await Promise.all([
+      this.prisma.client.practiceSession.findMany({ where, orderBy: [{ completedAt: 'desc' }, { id: 'desc' }], take: depth }),
+      withAttempts ? this.attempts.closedNewest(query.userId, { includeTest: query.includeTest }, depth) : Promise.resolve([]),
       this.curriculum.subjects(),
     ])
     const names = new Map(subjects.map((s) => [idToString(s.id), { code: s.code, name: s.name }]))
@@ -108,8 +132,8 @@ export class PracticeSpmHistory implements SpmHistorySource {
         completedAt: a.completedAt,
       }
     })
-    const merged = [...fromSessions, ...fromAttempts].sort(NEWEST_FIRST)
+    const merged = [...fromSessions, ...fromAttempts].sort(compareNewestFirst)
     const start = (query.page - 1) * query.pageSize
-    return { rows: merged.slice(start, start + query.pageSize), total: sessionTotal + attemptTotal }
+    return { rows: merged.slice(start, start + query.pageSize), total }
   }
 }

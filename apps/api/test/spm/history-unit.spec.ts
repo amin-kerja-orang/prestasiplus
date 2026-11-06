@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { SpmHistoryService, chipOf } from '../../src/modules/spm/history.service'
 import { SpmPorts, type SpmHistoryPageQuery, type SpmHistoryRowData } from '../../src/modules/spm'
-import { rowModeOfKind, rowModeOfSession, sittingSeconds } from '../../src/modules/practice/reads/spm'
+import { compareIds, compareNewestFirst, isPastEnd, rowModeOfKind, rowModeOfSession, sittingSeconds } from '../../src/modules/practice/reads/spm'
 
 const caller = { userId: '12', role: 'student', isTest: false }
 
@@ -44,6 +44,41 @@ describe('sittingSeconds: elapsed time capped at the deadline', () => {
   it('uses the submit when it is before the deadline, and never goes negative', () => {
     expect(sittingSeconds({ startedAt: at(0), deadlineAt: at(60), completedAt: at(10) })).toBe(600)
     expect(sittingSeconds({ startedAt: at(10), deadlineAt: null, completedAt: at(0) })).toBe(0)
+  })
+})
+
+describe('compareIds and compareNewestFirst', () => {
+  const row = (id: string, iso: string) => ({ id, completedAt: new Date(iso) }) as SpmHistoryRowData
+  it('compares numeric ids numerically, so 10 is after 9', () => {
+    expect(compareIds('10', '9')).toBe(1)
+    expect(compareIds('9', '10')).toBe(-1)
+    expect(compareIds('7', '7')).toBe(0)
+    expect(compareIds('12345678901234567890', '12345678901234567891')).toBe(-1)
+  })
+  it('compares uuids as text (the database order of a uuid), and mixed ids as text', () => {
+    expect(compareIds('4b1f6c1e-2c4e-4d7e-9a3b-0f5e1c2d3a4b', '4b1f6c1e-2c4e-4d7e-9a3b-0f5e1c2d3a4c')).toBe(-1)
+    expect(compareIds('10', 'a')).toBe(-1)
+  })
+  it('sorts newest first, ties by id descending, numerically', () => {
+    const same = '2026-10-10T00:00:00Z'
+    const rows = [row('9', same), row('10', same), row('2', '2026-10-11T00:00:00Z'), row('1', '2026-10-09T00:00:00Z')]
+    expect([...rows].sort(compareNewestFirst).map((r) => r.id)).toEqual(['2', '10', '9', '1'])
+  })
+})
+
+describe('isPastEnd: a page that starts after the last row reads nothing', () => {
+  it('is false inside the history and true from the first page past it', () => {
+    expect(isPastEnd(1, 15, 23)).toBe(false)
+    expect(isPastEnd(2, 15, 23)).toBe(false)
+    expect(isPastEnd(3, 15, 23)).toBe(true)
+    expect(isPastEnd(2, 15, 15)).toBe(true)
+    expect(isPastEnd(1, 15, 0)).toBe(true)
+  })
+  it('treats a huge or unsafe page as past the end', () => {
+    expect(isPastEnd(99999999999, 15, 23)).toBe(true)
+    expect(isPastEnd(1e20, 15, 23)).toBe(true)
+    expect(isPastEnd(Number.NaN, 15, 23)).toBe(true)
+    expect(isPastEnd(0, 15, 23)).toBe(true)
   })
 })
 
@@ -91,6 +126,13 @@ describe('SpmHistoryService over fake ports', () => {
     expect(seen[0]).toEqual({ userId: '12', includeTest: false, chip: 'all', page: 1, pageSize: 15 })
     expect(r.meta).toMatchObject({ page: 1, pageSize: 15, pageCount: 3, total: 31, mod: 'all' })
     expect(r.data[0]?.completedAt).toBe('2026-10-10T08:18:00.000+08:00')
+  })
+
+  it('history: completedAt is Malaysia time across the midnight boundary', async () => {
+    const ports = new SpmPorts()
+    ports.provideHistory({ page: async () => ({ rows: [{ ...row, completedAt: new Date('2026-01-01T16:30:00Z') }, { ...row, completedAt: new Date('2026-01-01T15:59:59Z') }], total: 2 }) })
+    const r = await new SpmHistoryService(ports).history(caller, {})
+    expect(r.data.map((x) => x.completedAt)).toEqual(['2026-01-02T00:30:00.000+08:00', '2026-01-01T23:59:59.000+08:00'])
   })
 
   it('history: mod wins over type, legacy values resolve, halaman is passed through, the pager has at least one page', async () => {

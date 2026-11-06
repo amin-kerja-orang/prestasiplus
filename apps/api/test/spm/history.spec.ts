@@ -112,6 +112,16 @@ describe('merge order, page size and pager', () => {
     expect(past.meta).toMatchObject({ page: 3, pageCount: 2, total: 23 })
   })
 
+  it('a huge halaman answers 200 with no rows and the real total (nothing is read for it)', async () => {
+    for (const halaman of ['99999999999', '2147483648']) {
+      const r = await get(student, `?halaman=${halaman}`)
+      expect(r.data).toEqual([])
+      expect(r.meta).toMatchObject({ page: Number(halaman), pageCount: 2, total: 23 })
+      expect(r.meta.stats.sessions).toBe(23)
+    }
+    expectError(await student.get('/api/spm/history?halaman=1e20'), 'VALIDATION_ERROR')
+  })
+
   it('a page 1 and a page 2 never overlap and together hold every listed row once', async () => {
     const all = [...(await get(student)).data, ...(await get(student, '?halaman=2')).data].map((x) => x.id)
     expect(new Set(all).size).toBe(23)
