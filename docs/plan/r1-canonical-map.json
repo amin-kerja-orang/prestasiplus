@@ -14291,6 +14291,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/reward-control/draws",
+      "method": "GET",
+      "path": "/api/admin/reward-control/draws",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
       "key": "POST /api/admin/reward-control/draws",
       "method": "POST",
       "path": "/api/admin/reward-control/draws",
@@ -14299,6 +14309,26 @@
       "sector": "S7",
       "file": "apps/api/src/modules/gamification/admin.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/open",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/open",
+      "api_id": "API-ADM-24",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
+    },
+    {
+      "key": "POST /api/admin/reward-control/draws/:p/close",
+      "method": "POST",
+      "path": "/api/admin/reward-control/draws/:id/close",
+      "api_id": "API-GAME-09",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/gamification/admin.controller.ts",
+      "approved_by_card": "S7-T07"
     },
     {
       "key": "GET /api/gamification/dashboard",

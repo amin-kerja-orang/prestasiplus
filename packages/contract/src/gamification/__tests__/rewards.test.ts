@@ -320,12 +320,12 @@ describe('openapi registration', () => {
     has('/admin/hadiah/{id}', 'put')
   })
 
-  it('registers exactly 43 operations: the 42 of BE-23 and the claim of API-GAME-11', () => {
+  it('registers exactly 46 operations: the 42 of BE-23, the claim of API-GAME-11 and the draw list, Buka and Tutup of S7-T07', () => {
     // Count by BE-23 tags, not by path prefix: BE-11 adds /gamification/wallet and /gamification/transactions (tag 'wallet').
     const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
     const count = Object.values(doc.paths)
       .flatMap((ops) => Object.values(ops as Record<string, { tags?: string[] }>))
       .filter((op) => op.tags?.some((t) => be23Tags.includes(t))).length
-    expect(count).toBe(43)
+    expect(count).toBe(46)
   })
 })

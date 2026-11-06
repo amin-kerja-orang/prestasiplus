@@ -2,6 +2,7 @@ import { GamificationDrawSchema, GamificationEconomySettingsSchema, Gamification
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { cryptoDrawRandom } from '../../src/modules/gamification/ports'
+import { mytDay } from '../../src/db/clock'
 import { prngStream } from '../../src/db/prng'
 import { GamificationPorts } from '../../src/modules/gamification'
 import { RewardSettingsService } from '../../src/modules/shop'
@@ -10,6 +11,7 @@ import { ADMIN, bareUser, bootGamificationApp, dataOf, fail, signIn, userIdOf, t
 const KEYS = ['coins_per_question', 'cash_rate_coins', 'cash_rate_sen', 'min_cash_withdrawal', 'cash_withdrawal_enabled', 'reward_budget_sen_session', 'reward_budget_sen_month', 'current_session_year', 'flat_quiz_reward', 'games_award_syiling']
 const SUMMARY = 'Sila lengkapkan semua medan wajib.'
 const POOL_MSG = 'Format JSON kolam hadiah tidak sah.'
+const POOL = [{ label: 'Hadiah', valueSen: 100, qty: 1 }]
 
 describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC4, AC5, AC9)', () => {
   let t: GamificationTestApp
@@ -210,13 +212,13 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       expect(list[0]!.id).toBe(d.id)
     })
 
-    it('"Buka serta-merta" opens it; the pool may be the JSON text of the live form; no pool is an empty pool; the closing day stays the day shown', async () => {
+    it('"Buka serta-merta" opens it; the pool may be the JSON text of the live form; no closing date is allowed; the closing day stays the day shown', async () => {
       const open = GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { ...body, openNow: true, prizePool: '[{"label":"A","value_sen":100,"qty":2}]' })))
       expect(open).toMatchObject({ status: 'open', prizePool: [{ label: 'A', valueSen: 100, qty: 2 }], closesAt: '2026-12-31' })
       const stored = (await t.db.query<{ c: string }>(`select closes_at::text c from draws where id = $1`, [open.id]))[0]!.c
       expect(Date.parse(stored)).toBe(Date.parse('2026-12-31T23:59:59.999+08:00')) // the end of that Malaysia day
-      const bare = GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Tanpa Hadiah', ticketCostSyiling: 1, maxTicketsPerStudent: 1, openNow: 'on', prizePool: '' })))
-      expect(bare).toMatchObject({ status: 'open', prizePool: [], closesAt: null, description: '' })
+      const bare = GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Tanpa Tarikh', ticketCostSyiling: 1, maxTicketsPerStudent: 1, openNow: 'on', prizePool: [{ label: 'A', valueSen: 0, qty: 1 }] })))
+      expect(bare).toMatchObject({ status: 'open', prizePool: [{ label: 'A', valueSen: 0, qty: 1 }], closesAt: null, description: '' })
     })
 
     it('422: invalid JSON, a non-array pool and a pool line the table would refuse are "Format JSON kolam hadiah tidak sah." with fields.prizePool', async () => {
@@ -229,9 +231,46 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
 
     it('422: a missing title, cost or limit, a malformed date and a date that does not exist', async () => {
       const err = fail(await admin.post('/admin/reward-control/draws', { description: 'x'.repeat(1001), ticketCostSyiling: 0, closesAt: '31/12/2026' }), 422, 'VALIDATION_ERROR', SUMMARY)
-      expect(err.fields).toEqual({ title: 'Medan ini diperlukan.', description: 'Medan ini tidak sah.', ticketCostSyiling: 'Medan ini tidak sah.', maxTicketsPerStudent: 'Medan ini diperlukan.', closesAt: 'Medan ini tidak sah.' })
-      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, closesAt: '2026-02-31' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ closesAt: 'Medan ini tidak sah.' })
-      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, title: '   ' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ title: 'Medan ini diperlukan.' })
+      expect(err.fields).toEqual({ title: 'Tajuk diperlukan.', description: 'Medan ini tidak sah.', ticketCostSyiling: 'Harga tiket tidak sah.', maxTicketsPerStudent: 'Medan ini diperlukan.', closesAt: 'Medan ini tidak sah.', prizePool: 'Hadiah diperlukan.' })
+      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, prizePool: POOL, closesAt: '2026-02-31' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ closesAt: 'Medan ini tidak sah.' })
+      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, prizePool: POOL, title: '   ' }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ title: 'Tajuk diperlukan.' })
+    })
+
+    it('P10-01..P10-04: the limits are title 120, description 500, price 1 to 10000 and tickets per pupil 1 to 100, at the edge and one past it', async () => {
+      const ok = { ...body, prizePool: POOL }
+      for (const edge of [{ title: 'T'.repeat(120) }, { description: 'D'.repeat(500) }, { ticketCostSyiling: 1 }, { ticketCostSyiling: 10_000 }, { maxTicketsPerStudent: 1 }, { maxTicketsPerStudent: 100 }]) {
+        expect((await admin.post('/admin/reward-control/draws', { ...ok, ...edge })).status).toBe(201)
+      }
+      const past: [Record<string, unknown>, Record<string, string>][] = [
+        [{ title: 'T'.repeat(121) }, { title: 'Medan ini tidak sah.' }],
+        [{ description: 'D'.repeat(501) }, { description: 'Medan ini tidak sah.' }],
+        [{ ticketCostSyiling: 0 }, { ticketCostSyiling: 'Harga tiket tidak sah.' }],
+        [{ ticketCostSyiling: 10_001 }, { ticketCostSyiling: 'Harga tiket tidak sah.' }],
+        [{ ticketCostSyiling: 1.5 }, { ticketCostSyiling: 'Harga tiket tidak sah.' }],
+        [{ ticketCostSyiling: undefined }, { ticketCostSyiling: 'Harga tiket tidak sah.' }],
+        [{ maxTicketsPerStudent: 0 }, { maxTicketsPerStudent: 'Medan ini tidak sah.' }],
+        [{ maxTicketsPerStudent: 101 }, { maxTicketsPerStudent: 'Medan ini tidak sah.' }],
+        [{ title: undefined }, { title: 'Tajuk diperlukan.' }],
+      ]
+      for (const [change, fields] of past) expect(fail(await admin.post('/admin/reward-control/draws', { ...ok, ...change }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual(fields)
+    })
+
+    it('P10-05: a prize is required (no pool, an empty list, a blank label) and its label is at most 120; the message is also the top-level one when it is the only error', async () => {
+      for (const prizePool of [undefined, null, '', '   ', '[]', [], [{ label: '   ', valueSen: 1, qty: 1 }], [{ label: '', valueSen: 1, qty: 1 }], [{ label: 'A', valueSen: 1, qty: 1 }, { label: ' ', valueSen: 1, qty: 1 }]]) {
+        expect(fail(await admin.post('/admin/reward-control/draws', { ...body, prizePool }), 422, 'VALIDATION_ERROR', 'Hadiah diperlukan.').fields).toEqual({ prizePool: 'Hadiah diperlukan.' })
+      }
+      expect((await admin.post('/admin/reward-control/draws', { ...body, prizePool: [{ label: 'H'.repeat(120), valueSen: 1, qty: 1 }] })).status).toBe(201)
+      fail(await admin.post('/admin/reward-control/draws', { ...body, prizePool: [{ label: 'H'.repeat(121), valueSen: 1, qty: 1 }] }), 422, 'VALIDATION_ERROR', POOL_MSG)
+      // with another error as well, the summary is the top-level message
+      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, title: '', prizePool: [] }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ title: 'Tajuk diperlukan.', prizePool: 'Hadiah diperlukan.' })
+    })
+
+    it('P10-05: the closing day must not be before today (Malaysia): today is allowed, yesterday is "Tarikh tutup mesti pada masa hadapan."', async () => {
+      const today = mytDay(t.clock.now())
+      const yesterday = mytDay(new Date(t.clock.now().getTime() - 86_400_000))
+      const res = await admin.post('/admin/reward-control/draws', { ...body, prizePool: POOL, closesAt: today, openNow: true })
+      expect(GamificationDrawSchema.parse(dataOf(res))).toMatchObject({ closesAt: today, status: 'open' })
+      expect(fail(await admin.post('/admin/reward-control/draws', { ...body, prizePool: POOL, closesAt: yesterday }), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ closesAt: 'Tarikh tutup mesti pada masa hadapan.' })
     })
 
     it('a refused create writes no draw and no prize row', async () => {
@@ -249,6 +288,88 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       await t.db.query(`delete from draw_tickets where draw_id = $1`, [d.id])
       await t.db.query(`delete from draws where id = $1`, [d.id])
       expect(await prizeRows(d.id)).toEqual([])
+    })
+  })
+
+  describe('draw list, Buka and Tutup (API-GAME-09, API-ADM-24, DM-65)', () => {
+    const mk = async (extra: Record<string, unknown> = {}) =>
+      GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Cabutan Senarai', ticketCostSyiling: 5, maxTicketsPerStudent: 3, prizePool: POOL, ...extra })))
+    const stored = async (id: string) => (await t.db.query<{ status: string; cancelled_at: string | null }>(`select status, cancelled_at::text from draws where id = $1`, [id]))[0]!
+
+    it('GET /draws lists every draw newest first in the GamificationDraw shape, with ticketsSold', async () => {
+      const a = await mk()
+      const b = await mk({ openNow: true })
+      const u = await bareUser(t, 'Tiket Senarai')
+      await t.db.query(`insert into draw_tickets (draw_id, user_id) values ($1, $2)`, [b.id, u])
+      const list = dataOf<unknown[]>(await admin.get('/admin/reward-control/draws')).map((d) => GamificationDrawSchema.parse(d))
+      expect(list.map((d) => d.id).slice(0, 2)).toEqual([b.id, a.id])
+      expect(list.find((d) => d.id === b.id)).toMatchObject({ status: 'open', ticketsSold: 1 })
+      expect(list.find((d) => d.title === 'Cabutan Demo')).toMatchObject({ status: 'open' })
+      // the same rows as the Kawalan Reward read
+      expect(GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control'))).draws).toEqual(list)
+    })
+
+    it('Buka moves a draft to open, writes one audit event and leaves the rest of the draw unchanged; Tutup moves it to closed', async () => {
+      const d = await mk({ closesAt: '2026-12-31' })
+      const opened = GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${d.id}/open`)))
+      expect(opened).toEqual({ ...d, status: 'open' })
+      expect(await stored(d.id)).toEqual({ status: 'open', cancelled_at: null })
+      const closed = GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${d.id}/close`)))
+      expect(closed).toEqual({ ...d, status: 'closed' })
+      expect((await stored(d.id)).status).toBe('closed')
+      const events = await t.db.query<{ action: string; detail: { from: string; to: string }; target_id: string }>(`select action, detail, target_id::text from audit_events where target_type = 'draw' and target_id = $1 order by id`, [d.id])
+      expect(events.map((e) => [e.action, e.detail.from, e.detail.to])).toEqual([['gamification.draw.opened', 'draft', 'open'], ['gamification.draw.closed', 'open', 'closed']])
+    })
+
+    it('409 CONFLICT when the stored state is not the one the step starts from (a second press, Buka on a closed draw, Tutup on a draft), with no second audit event', async () => {
+      const d = await mk()
+      fail(await admin.post(`/admin/reward-control/draws/${d.id}/close`), 409, 'CONFLICT')
+      await admin.post(`/admin/reward-control/draws/${d.id}/open`)
+      const before = await auditCount('gamification.draw.opened')
+      fail(await admin.post(`/admin/reward-control/draws/${d.id}/open`), 409, 'CONFLICT')
+      await admin.post(`/admin/reward-control/draws/${d.id}/close`)
+      fail(await admin.post(`/admin/reward-control/draws/${d.id}/close`), 409, 'CONFLICT')
+      fail(await admin.post(`/admin/reward-control/draws/${d.id}/open`), 409, 'CONFLICT')
+      expect(await auditCount('gamification.draw.opened')).toBe(before)
+      for (const status of ['drawn', 'cancelled']) {
+        const x = await mk({ openNow: true })
+        await t.db.query(`update draws set status = $2 where id = $1`, [x.id, status])
+        fail(await admin.post(`/admin/reward-control/draws/${x.id}/open`), 409, 'CONFLICT')
+        fail(await admin.post(`/admin/reward-control/draws/${x.id}/close`), 409, 'CONFLICT')
+        expect((await stored(x.id)).status).toBe(status)
+      }
+    })
+
+    it('404 for an unknown draw and for an id that is not a number', async () => {
+      for (const verb of ['open', 'close']) {
+        fail(await admin.post(`/admin/reward-control/draws/999999/${verb}`), 404, 'NOT_FOUND')
+        fail(await admin.post(`/admin/reward-control/draws/abc/${verb}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      }
+    })
+
+    it('an open draw past its closing day reads closed and nothing is written; Tutup still closes the stored row; a draft past its day cannot be opened', async () => {
+      const yesterday = mytDay(new Date(t.clock.now().getTime() - 86_400_000))
+      const lapse = (id: string) => t.db.query(`update draws set closes_at = $2::timestamptz where id = $1`, [id, `${yesterday}T23:59:59.999+08:00`])
+      const d = await mk({ openNow: true, closesAt: '2026-12-31' })
+      const lapsed = await mk({ closesAt: '2026-12-31' })
+      await lapse(d.id)
+      await lapse(lapsed.id)
+      const list = dataOf<{ id: string; status: string }[]>(await admin.get('/admin/reward-control/draws'))
+      expect(list.find((x) => x.id === d.id)!.status).toBe('closed')
+      expect(GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control'))).draws.find((x) => x.id === d.id)!.status).toBe('closed')
+      expect((await stored(d.id)).status).toBe('open')
+      expect(fail(await admin.post(`/admin/reward-control/draws/${lapsed.id}/open`), 422, 'VALIDATION_ERROR', SUMMARY).fields).toEqual({ closesAt: 'Tarikh tutup mesti pada masa hadapan.' })
+      expect((await stored(lapsed.id)).status).toBe('draft')
+      expect(GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${d.id}/close`))).status).toBe('closed')
+      expect((await stored(d.id)).status).toBe('closed')
+    })
+
+    it('on its closing day itself a draft opens and reads open; a draw with no closing date opens and stays open', async () => {
+      const same = await mk({ closesAt: mytDay(t.clock.now()) })
+      expect(GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${same.id}/open`))).status).toBe('open')
+      const none = await mk()
+      expect(GamificationDrawSchema.parse(dataOf(await admin.post(`/admin/reward-control/draws/${none.id}/open`))).status).toBe('open')
+      expect(dataOf<{ id: string; status: string }[]>(await admin.get('/admin/reward-control/draws')).find((x) => x.id === none.id)!.status).toBe('open')
     })
   })
 
@@ -353,7 +474,7 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       const { id } = await newDraw([1], 1)
       await t.admin.runDraw(id, null)
       await expect(t.admin.runDraw(id, null)).rejects.toMatchObject({ code: 'DRAW_CLOSED', status: 409, message: 'Cabutan ditutup.' })
-      const draft = GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Draf', ticketCostSyiling: 1, maxTicketsPerStudent: 1 })))
+      const draft = GamificationDrawSchema.parse(dataOf(await admin.post('/admin/reward-control/draws', { title: 'Draf', ticketCostSyiling: 1, maxTicketsPerStudent: 1, prizePool: POOL })))
       await expect(t.admin.runDraw(draft.id, null)).rejects.toMatchObject({ code: 'DRAW_CLOSED' })
       await expect(t.admin.runDraw('999999', null)).rejects.toMatchObject({ code: 'NOT_FOUND' })
     })

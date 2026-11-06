@@ -777,6 +777,12 @@ export class GamificationRepository {
     return r.count === 1
   }
 
+  /** Moves a draw from `from` to `to` (`Buka`, `Tutup`): zero rows = somebody else moved it first. */
+  async setDrawStatus(db: Db, id: bigint, from: string, to: string, at: Date): Promise<boolean> {
+    const r = await db.draw.updateMany({ where: { id, status: from }, data: { status: to, updatedAt: at } })
+    return r.count === 1
+  }
+
   // --- reads for BE-19's reports (PerformanceGamificationAdapter) ---------------------------------
 
   /** Wallet level, syiling and cached tier of many users in one read; users without a wallet row are absent. */

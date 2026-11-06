@@ -12,7 +12,7 @@ const TIER = { labelMs: 'Perak Konformans', icon: 'x', color: '#c0c0c0', minSyil
 const CHALLENGE = { title: 'Cabaran Konformans', description: 'Selesaikan 2 kuiz', icon: 'x', challengeType: 'quiz_count', targetValue: 2, rewardSyiling: 10, rewardXp: 5, difficulty: 'easy', sortOrder: 10 }
 
 const STUDENT_READS = ['dashboard', 'challenges', 'achievements', 'leaderboard', 'referral', 'share-cards', 'convert']
-const ADMIN_READS = ['/admin/gamification/overview', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/settings', '/admin/reward-control']
+const ADMIN_READS = ['/admin/gamification/overview', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/settings', '/admin/reward-control', '/admin/reward-control/draws']
 const ADMIN_WRITES: [string, string][] = [
   ['POST', '/admin/gamification/award'],
   ['POST', '/admin/gamification/challenges'],
@@ -24,6 +24,8 @@ const ADMIN_WRITES: [string, string][] = [
   ['POST', '/admin/gamification/tiers/1/toggle'],
   ['PUT', '/admin/gamification/settings'],
   ['POST', '/admin/reward-control/draws'],
+  ['POST', '/admin/reward-control/draws/1/open'],
+  ['POST', '/admin/reward-control/draws/1/close'],
   ['PUT', '/admin/reward-control/rewards/1/cost'],
   ['PUT', '/admin/reward-control/settings'],
 ]
@@ -149,6 +151,12 @@ export const gamificationScenarios: Scenario[] = [
       })
       ctx.expectStatus(draw, 201)
       ctx.check(dataOf(draw).status === 'draft', 'a new draw must be a draft')
+      const drawId = String(dataOf(draw).id)
+      ctx.check(listOf(await admin.request('GET', '/admin/reward-control/draws')).some((d) => d.id === drawId), 'the draw list must hold the new draw')
+      expectError(ctx, await admin.request('POST', `/admin/reward-control/draws/${drawId}/close`), 409, 'CONFLICT')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${drawId}/open`)).status === 'open', 'Buka must open a draft')
+      expectError(ctx, await admin.request('POST', `/admin/reward-control/draws/${drawId}/open`), 409, 'CONFLICT')
+      ctx.check(dataOf(await admin.request('POST', `/admin/reward-control/draws/${drawId}/close`)).status === 'closed', 'Tutup must close an open draw')
       expectError(ctx, await admin.request('POST', '/admin/reward-control/draws', { body: {} }), 422, 'VALIDATION_ERROR')
       expectError(ctx, await admin.request('PUT', '/admin/reward-control/rewards/999999/cost', { body: { costValueSen: 100 } }), 404, 'NOT_FOUND')
     },

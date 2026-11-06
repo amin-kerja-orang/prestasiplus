@@ -187,10 +187,12 @@ model Draw {
   ticketCostSyiling    Int       @map("ticket_cost_syiling")
   maxTicketsPerStudent Int       @map("max_tickets_per_student")
   closesAt             DateTime? @map("closes_at") @db.Timestamptz(6)
-  /// draft, open, closed (check).
+  /// draft, open, closed, drawn, cancelled (check `ck_draws_status`, DM-65).
   status               String    @default("draft")
   winnerUserId         BigInt?   @map("winner_user_id")
   drawnAt              DateTime? @map("drawn_at") @db.Timestamptz(6)
+  /// DM-65: set when the draw is cancelled.
+  cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(6)
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   legacySource         String?   @map("legacy_source")

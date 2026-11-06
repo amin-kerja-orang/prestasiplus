@@ -6761,7 +6761,9 @@
         "type": "object",
         "properties": {
           "label": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "\\S"
           },
           "valueSen": {
             "type": "integer"
@@ -6784,7 +6786,9 @@
         "enum": [
           "draft",
           "open",
-          "closed"
+          "closed",
+          "drawn",
+          "cancelled"
         ]
       },
       "GamificationDraw": {
@@ -6855,25 +6859,27 @@
         "properties": {
           "title": {
             "type": "string",
-            "maxLength": 150,
+            "maxLength": 120,
             "pattern": "\\S"
           },
           "description": {
             "type": "string",
-            "maxLength": 1000
+            "maxLength": 500
           },
           "ticketCostSyiling": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 10000
           },
           "maxTicketsPerStudent": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 100
           },
           "closesAt": {
             "type": "string",
             "format": "date",
-            "description": "YYYY-MM-DD, a real calendar date.",
+            "description": "YYYY-MM-DD, a real calendar date, today (Malaysia) or later.",
             "example": "2026-10-16"
           },
           "openNow": {
@@ -6886,7 +6892,8 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/GamificationDrawPrizeInput"
-                }
+                },
+                "minItems": 1
               },
               {
                 "type": "string"
@@ -6897,7 +6904,8 @@
         "required": [
           "title",
           "ticketCostSyiling",
-          "maxTicketsPerStudent"
+          "maxTicketsPerStudent",
+          "prizePool"
         ]
       },
       "GamificationRewardControl": {
@@ -90427,12 +90435,62 @@
       }
     },
     "/admin/reward-control/draws": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "List the lucky draws (Cabutan Bertuah), newest first (API-GAME-09)",
+        "description": "Every draw with its prize pool and ticketsSold. An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written. Winners are listed by the winners route (not in this part).",
+        "responses": {
+          "200": {
+            "description": "The draws, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GamificationDraw"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "gamification-admin"
         ],
         "summary": "Create a lucky draw (Cabutan Bertuah)",
-        "description": "status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets); there is no route that draws winners (open question).",
+        "description": "status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines and holds at least one; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets). Limits (30 P10-01..05): title 120, description 500, ticket price 1 to 10000, tickets per pupil 1 to 100, prize label 120, closesAt today or later.",
         "parameters": [
           {
             "schema": {
@@ -90496,7 +90554,207 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message), or \"Tarikh tutup tidak sah.\" (closesAt), or fields.closesAt \"Medan ini tidak sah.\" (not a real date).",
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Field messages: fields.title \"Tajuk diperlukan.\" (missing or blank), fields.ticketCostSyiling \"Harga tiket tidak sah.\", fields.prizePool \"Hadiah diperlukan.\" (no prize line, or a blank label; also the top-level message when it is the only error), fields.closesAt \"Tarikh tutup mesti pada masa hadapan.\" (a past day) or \"Medan ini tidak sah.\" (not a real date). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/open": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Open a draft draw: Buka (API-ADM-24)",
+        "description": "No body. draft to open; the draw then sells tickets until its closing day ends or the admin closes it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is not a draft).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.closesAt \"Tarikh tutup mesti pada masa hadapan.\" (the closing day of the draft has passed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/close": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Close an open draw: Tutup (API-GAME-09)",
+        "description": "No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by the winners route (not in this part).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the stored state of the draw is not open).",
             "content": {
               "application/json": {
                 "schema": {
