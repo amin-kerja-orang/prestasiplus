@@ -18,7 +18,7 @@ import LevelAndTeachers from '../components/prestasi/LevelAndTeachers.vue'
 import SubjectGpsTable from '../components/prestasi/SubjectGpsTable.vue'
 import { canOpenHeadcount } from '../lib/headcount-access'
 import { usePhIcon } from '../lib/icons'
-import { grouped, pct1, plain } from '../lib/prestasi/format'
+import { grouped, pctWhole, plain } from '../lib/prestasi/format'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
 import { useStatItems, type StatSpec } from '../lib/stat-items'
 
@@ -39,7 +39,7 @@ const cards = computed<StatSpec[]>(() => {
     { id: 'subjek', label: 'Subjek', value: plain(s.subjects), icon: 'books' },
     { id: 'sesi', label: 'Sesi Latihan', value: plain(s.sessions), icon: 'lightning' },
     { id: 'soalan', label: 'Soalan Dijawab', value: grouped(s.answered), icon: 'question' },
-    { id: 'ketepatan', label: 'Purata Ketepatan', value: pct1(s.accuracy), icon: 'target' },
+    { id: 'ketepatan', label: 'Purata Ketepatan', value: pctWhole(s.accuracy), icon: 'target' },
   ]
 })
 

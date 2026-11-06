@@ -6,6 +6,7 @@ export const ALERT_TYPES: { value: AlertType; label: string }[] = [
   { value: 'mood', label: 'Mood / Kesejahteraan' },
   { value: 'inactive', label: 'Tidak Aktif' },
   { value: 'declining', label: 'Prestasi Menurun' },
+  { value: 'other', label: 'Lain-lain' },
 ]
 
 export const MOODS: { value: Mood; label: string }[] = [
