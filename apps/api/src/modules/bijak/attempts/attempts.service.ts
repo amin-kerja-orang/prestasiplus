@@ -347,7 +347,7 @@ export class BijakAttemptsService {
    * written through `AnswerLogPort` (mode `structured`, `tracking_a` for the Bahasa track; the self-mark updates the same row). After the commit `emit` writes the audit line,
    * pays the reward (A9) and feeds the aggregate, as every other submit.
    */
-  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput): Promise<StructuredAttemptOutput> {
+  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput, auth: AuthContext | null = null, caller: CallerInfo | null = null): Promise<StructuredAttemptOutput> {
     const composition: SectionSnapshot[] = [
       { id: 's1', label: 'Soalan Berstruktur', rule: { type: 'all' }, questionIds: [input.questionId], versions: { [input.questionId]: input.versionNo } },
     ]
@@ -394,10 +394,10 @@ export class BijakAttemptsService {
       const closed = await this.repo.close(row.id, { status: 'submitted', submittedAt: now, lateBySeconds: null, idempotencyKey: null })
       if (!closed) throw new Error('A new structured attempt could not be closed')
       await this.repo.saveResult(row.id, result)
-      await this.writeStructuredRows(who, row.id, input.questionId, input.versionNo, input.track === 'bahasa' ? 'tracking_a' : 'structured', result.questions[0]?.parts ?? [], paths, now)
+      await this.writeStructuredRows(who, row.id, input.questionId, input.versionNo, input.track === 'bahasa' ? 'tracking_a' : 'structured', result.questions[0]?.parts ?? [], paths, now, new Set(answers.keys()))
       return { ...row, status: 'submitted' as const, submittedAt: now, lateBySeconds: null }
     }, TX)
-    await this.emit([{ attempt, status: 'submitted', result, swept: false, regraded: false }])
+    await this.emit([{ attempt, status: 'submitted', result, swept: false, regraded: false }], auth, caller)
     const graded = result.questions[0]?.parts ?? []
     return {
       attemptId: attempt.id,
@@ -423,10 +423,12 @@ export class BijakAttemptsService {
     parts: readonly { partId: string; awarded: number; marks: number; status: string }[],
     paths: ReadonlyMap<string, string>,
     answeredAt: Date,
+    /** Submit: only the leaves the pupil answered (46 section 4.6); a blank leaf gets its row when she marks it. Absent: every given part. */
+    answered?: ReadonlySet<string>,
   ): Promise<void> {
     for (const p of parts) {
       const partRef = paths.get(p.partId)
-      if (partRef === undefined || !(p.marks > 0)) continue
+      if (partRef === undefined || !(p.marks > 0) || (answered && !answered.has(p.partId))) continue
       const marksAwarded = p.status === 'belum_dimarkah' ? null : p.awarded
       await this.answerLog.record({
         userId: who.userId,

@@ -3,13 +3,17 @@
  * "Digunakan" count of a Soalan Berstruktur attempt. The attempt itself (A3, A4) is `structured.spec.ts`.
  */
 import { BijakAttemptResultViewSchema, PracticeReadStructuredAttemptResultSchema, envelopeOf } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { PrismaService } from '../../../src/db/prisma.service'
+import { WalletService } from '../../../src/modules/wallet'
 import { usedCountQuery } from '../../../src/modules/classes/question-bridge/teacher-question-stats.provider'
 import { type Client, type WritesTestApp, bootWritesApp, leaf, loginAs, loginModPelajar, publishStructured } from './helpers'
 
 const Attempt = envelopeOf(PracticeReadStructuredAttemptResultSchema)
+/** A leaf the grader never marks (a points scheme): the pupil marks it herself, also when she left it blank. */
+const working = (label: string, marks: number) =>
+  ({ label, prompt: { ms: `Bahagian ${label}` }, mode: 'working', marks, cognitiveLevel: 'mengaplikasi', key: { kind: 'points', marks, points: [{ id: 'p', code: 'M', label: 'Kaedah', marks }] } }) as never
 /** An answer the grader cannot tell from a wrong one: the part waits for the pupil's own mark. */
 const UNSURE = 'jawapan yang salah sekali'
 
@@ -73,14 +77,23 @@ describe('A5 one practice_answers row per leaf', () => {
     expect(bad).toHaveLength(0)
   })
 
-  it('a blank leaf has a row too (0 of its marks, not correct); a nested leaf is addressed by its label path', async () => {
+  it('46 section 4.6: only the ANSWERED leaves get a row at submit; a blank leaf has none, and a nested leaf is addressed by its label path', async () => {
     const id = await publish([{ label: '(a)', prompt: { ms: 'Bahagian' }, children: [leaf('(i)', 1), leaf('(ii)', 2)] }] as never)
     const c = await loginAs(t, 'student')
     const out = await submit(c, id, { '(a).(i)': 'jawapan (i)' })
     const rows = await rowsOf(out.attemptId)
-    expect(rows.map((r) => [r.part_ref, r.marks_awarded, r.marks_max, r.is_correct])).toEqual([
-      ['(a).(i)', 1, 1, true],
-      ['(a).(ii)', 0, 2, false],
+    expect(rows.map((r) => [r.part_ref, r.marks_awarded, r.marks_max, r.is_correct])).toEqual([['(a).(i)', 1, 1, true]])
+  })
+
+  it('a self-mark on a leaf left blank at submit creates its row then, with the marks', async () => {
+    const id = await publish([{ label: '(a)', prompt: { ms: 'Bahagian' }, children: [leaf('(i)', 1), working('(ii)', 3)] }] as never)
+    const c = await loginAs(t, 'student')
+    const out = await submit(c, id, { '(a).(i)': 'jawapan (i)' })
+    expect((await rowsOf(out.attemptId)).map((r) => r.part_ref)).toEqual(['(a).(i)'])
+    await selfMark(c, out.attemptId, 2, 1)
+    expect((await rowsOf(out.attemptId)).map((r) => [r.part_ref, r.marks_awarded, r.marks_max, r.is_correct, r.mode])).toEqual([
+      ['(a).(i)', 1, 1, true, 'structured'],
+      ['(a).(ii)', 2, 3, false, 'structured'],
     ])
   })
 
@@ -239,6 +252,83 @@ describe('A9 reward: rate x the gain over the highest total paid for the questio
   })
 })
 
+describe('A9 reward: concurrency, the rate at pay time, retry after a failure', () => {
+  it('two simultaneous submits of the same question pay the gain once: one ledger row for the level, the balance rises by the marks only', async () => {
+    const id = await publish()
+    const c = await loginAs(t, 'student2')
+    const [bal, xp] = [await balance(c.userId), await xpOf(c.userId)]
+    const made = await Promise.all([submit(c, id, { '(a).(i)': 'jawapan (i)' }), submit(c, id, { '(a).(i)': 'jawapan (i)' })])
+    const ids = made.map((m) => m.attemptId)
+    const paid = (await ledger(c.userId)).filter((l) => ids.some((a) => l.source_id.startsWith(a)))
+    expect(paid.map((l) => [l.source_id.split(':')[2], l.amount])).toEqual([['4', 4]])
+    expect([await balance(c.userId), await xpOf(c.userId)]).toEqual([bal + 4, xp + 40])
+  })
+
+  it('a submit racing a self-mark of an earlier attempt of the question pays the total once', async () => {
+    const id = await publish()
+    const c = await loginAs(t, 'student')
+    const first = await submit(c, id, { '(a).(i)': UNSURE }) // waits for the pupil's mark
+    const bal = await balance(c.userId)
+    const partId = (await partsOf(c, first.attemptId))[0]?.partId as string
+    const [second] = await Promise.all([
+      submit(c, id, { '(a).(i)': 'jawapan (i)' }), // 4 marks
+      c.post(`/api/bijak/attempts/${first.attemptId}/self-mark`, { partId, mark: 4 }), // 4 marks
+    ])
+    const paid = (await ledger(c.userId)).filter((l) => l.source_id.startsWith(first.attemptId) || l.source_id.startsWith(second.attemptId))
+    expect(paid).toHaveLength(1)
+    expect(paid[0]?.amount).toBe(4)
+    expect(await balance(c.userId)).toBe(bal + 4)
+  })
+
+  it('the rate is read at pay time: after the admin changes it, the next gain pays at the new rate', async () => {
+    try {
+      await setRate(1)
+      const id = await publish([leaf('(a)', 2), leaf('(b)', 3)])
+      const c = await loginAs(t, 'student')
+      const bal = await balance(c.userId)
+      await submit(c, id, { '(a)': 'jawapan (a)' }) // 2 marks at rate 1
+      await setRate(3)
+      await submit(c, id, { '(a)': 'jawapan (a)', '(b)': 'jawapan (b)' }) // gain 3 at rate 3
+      expect(await balance(c.userId)).toBe(bal + 2 + 9)
+    } finally {
+      await setRate(1)
+    }
+  })
+
+  it('a failed payment does not mark the level paid: a later attempt at the same level pays it', async () => {
+    const id = await publish()
+    const c = await loginAs(t, 'student2')
+    const bal = await balance(c.userId)
+    const spy = vi.spyOn(t.app.get(WalletService), 'credit').mockRejectedValueOnce(new Error('wallet down'))
+    try {
+      const failed = await submit(c, id, { '(a).(i)': 'jawapan (i)' }) // 4 marks, the payment throws
+      expect(failed.totalAwarded).toBe(4)
+      expect(await balance(c.userId)).toBe(bal)
+      expect((await ledger(c.userId)).filter((l) => l.source_id.startsWith(failed.attemptId))).toHaveLength(0)
+    } finally {
+      spy.mockRestore()
+    }
+    await submit(c, id, { '(a).(i)': 'jawapan (i)' })
+    expect(await balance(c.userId)).toBe(bal + 4)
+  })
+
+  it('a failed self-mark payment is recovered by the next raise, which pays the whole gain over the highest paid level', async () => {
+    const id = await publish()
+    const c = await loginAs(t, 'student')
+    const bal = await balance(c.userId)
+    const out = await submit(c, id, { '(a).(i)': UNSURE })
+    const spy = vi.spyOn(t.app.get(WalletService), 'credit').mockRejectedValueOnce(new Error('wallet down'))
+    try {
+      await selfMark(c, out.attemptId, 2) // the payment throws
+    } finally {
+      spy.mockRestore()
+    }
+    expect(await balance(c.userId)).toBe(bal)
+    await selfMark(c, out.attemptId, 3)
+    expect(await balance(c.userId)).toBe(bal + 3)
+  })
+})
+
 describe('emit at submit: audit and aggregate', () => {
   it('writes the BIJAK_ATTEMPT_SUBMITTED audit line and one aggregate row at submit; a self-mark then regrades it once (regrade_count 1)', async () => {
     const id = await publish()
@@ -246,6 +336,13 @@ describe('emit at submit: audit and aggregate', () => {
     const out = await submit(c, id, { '(a).(i)': UNSURE })
     const audit = await t.db.query<{ action: string; target_type: string }>(`select action, target_type from audit_events where target_id = $1`, [out.attemptId])
     expect(audit).toEqual([{ action: 'bijak.attempt.submitted', target_type: 'bijak_attempt' }])
+    const who = await t.db.query<{ actor_user_id: string; actor_role: string; ip_hash: string | null; request_id: string | null }>(
+      `select actor_user_id::text, actor_role, ip_hash, request_id from audit_events where target_id = $1`,
+      [out.attemptId],
+    )
+    expect(who[0]).toMatchObject({ actor_user_id: c.userId, actor_role: 'student' })
+    expect(who[0]?.request_id).toEqual(expect.any(String))
+    expect(who[0]?.ip_hash).toEqual(expect.any(String))
     const agg = () =>
       t.db.query<{ regrade_count: number; units_awarded: number; units_max: number; provisional: boolean; is_test: boolean; paper_id: string | null }>(
         `select regrade_count, units_awarded::float8, units_max::float8, provisional, is_test, paper_id::text from practice_attempt_aggregates where attempt_id = $1`,

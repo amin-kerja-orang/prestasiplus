@@ -261,6 +261,6 @@ export class BijakStructuredAttempts implements PracticeStructuredAttemptPort {
   constructor(@Inject(BijakAttemptsService) private readonly attempts: BijakAttemptsService) {}
 
   submit(input: PracticeStructuredAttemptInput): Promise<PracticeStructuredAttemptOutput> {
-    return this.attempts.submitStructured({ userId: input.userId, isTest: input.isTest }, input)
+    return this.attempts.submitStructured({ userId: input.userId, isTest: input.isTest }, input, input.audit?.auth ?? null, input.audit ? { ip: input.audit.ip, requestId: input.audit.requestId } : null)
   }
 }

@@ -8,7 +8,7 @@ import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
-import { PracticePorts } from '../../ports'
+import { PracticePorts, type PracticeStructuredAudit } from '../../ports'
 import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
@@ -33,6 +33,8 @@ type Track = 'bahasa' | null
 export interface StructuredCaller {
   userId: string
   isTest: boolean
+  /** Who to attribute the submit audit line to (the session context and request coordinates); absent: a system line. */
+  audit?: PracticeStructuredAudit
 }
 
 /** The raw query values of the list and detail routes (a repeated key arrives as an array: the first wins). */
@@ -333,6 +335,7 @@ export class StructuredService {
     const graded = await this.ports.structuredAttempts.submit({
       userId: caller.userId,
       isTest: caller.isTest,
+      ...(caller.audit ? { audit: caller.audit } : {}),
       questionId: q.id,
       versionNo: q.version.versionNo,
       title: firstText.trim().slice(0, TITLE_MAX_CHARS) || null,
