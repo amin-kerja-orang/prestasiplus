@@ -164,8 +164,12 @@ describe('guard SA on every read endpoint (FR-M27-39 to 41; SEC-M27-06)', () => 
     expect((await call(null, url)).status).toBe(401)
   })
 
+  // API-ADM-22: the platform admin may read the five reports (with `?schoolId=`); everything else stays refused
+  const adminReports = [`${BASE}/usage`, `${BASE}/dskp-heatmap`, `${BASE}/laporan-bulanan`, `${BASE}/kelas`]
+
   it.each(urls)('answers 403 to a platform admin, teacher and pupil on %s', async (url) => {
-    for (const id of [ADMIN, GURU, PELAJAR]) expect((await call(id, url)).status).toBe(403)
+    const ids = adminReports.includes(url) ? [GURU, PELAJAR] : [ADMIN, GURU, PELAJAR]
+    for (const id of ids) expect((await call(id, url)).status).toBe(403)
   })
 
   it('answers 403 to a school admin without a school, and the body names no school', async () => {
