@@ -100,6 +100,12 @@ export class NoBattle implements BattleReadPort {
   }
 }
 
+/**
+ * FR-GM-25.2: runs after a REAL battle (human opponent, not Mod Pelajar, no forfeit) was won, in the caller's transaction
+ * and after the battle row is `finished`; the badges it may unlock are evaluated. Must not throw.
+ */
+export type BattleWonHook = (userId: string, options: { tx: TxClient }) => Promise<unknown>
+
 /* ------------------------------------------------------------------------------------------ answers */
 
 /**
@@ -128,6 +134,7 @@ export class GamesPorts {
   private rewardsPort: GameRewardsPort
   private accuracySource: PlatformAccuracySource
   private battlePort: BattleReadPort = new NoBattle()
+  private battleWon: BattleWonHook | null = null
   private readonly bound = new Set<string>()
 
   constructor(
@@ -164,6 +171,20 @@ export class GamesPorts {
   providePlatformAccuracy(source: PlatformAccuracySource): void {
     this.once('platform accuracy source')
     this.accuracySource = source
+  }
+  /** M14 badges (`GamificationModule`): evaluated after a real battle win. */
+  provideBattleWonHook(hook: BattleWonHook): void {
+    this.once('battle-won hook')
+    this.battleWon = hook
+  }
+  /** Calls the hook when bound; a failure of the hook never reaches the caller. */
+  async afterBattleWon(userId: string, options: { tx: TxClient }): Promise<void> {
+    if (this.battleWon === null) return
+    try {
+      await this.battleWon(userId, options)
+    } catch {
+      // The hook is a bonus: the battle result stands.
+    }
   }
   /** BE-44. */
   provideBattle(port: BattleReadPort): void {

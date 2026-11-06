@@ -67,6 +67,8 @@ export class GamificationModule implements OnModuleInit {
     this.accountPorts.provideRegistrationHook(this.registrationHook)
     // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
     this.authPorts.provideLoginHook(this.loginHook)
+    // FR-GM-25.2: a real battle win evaluates the badges (Juara Battle) in the battle's transaction, in a savepoint.
+    this.gamesPorts.provideBattleWonHook((userId, { tx }) => this.gamification.evaluateAchievementsSafely(userId, { tx, isTest: false }))
     // FR-GM-25.2: the shop cannot import this module (cycle), so a committed Kotak Misteri opening evaluates the badges through this hook.
     this.shopPorts.provideBoxOpenedHook(async (userId) => (await this.gamification.evaluateAchievementsSafely(userId, { isTest: false })).unlocked)
   }

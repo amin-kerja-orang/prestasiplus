@@ -61,6 +61,8 @@ export interface BootOptions {
   /** Keep the M14 login hook (streak + the daily +2) on form logins. Default false: the other specs read the seeded wallets as they are (the doc's `setUser` fast login calls no hook). */
   loginHook?: boolean
   seeds?: SeedModule[]
+  /** More feature modules to boot next to auth, wallet and gamification. */
+  modules?: Parameters<typeof defineAppModule>[0]
   env?: Record<string, string | undefined>
   start?: string
 }
@@ -92,7 +94,7 @@ export async function bootGamificationApp(opts: BootOptions = {}): Promise<Gamif
     else process.env[k] = v
   }
   const clock = new FixedClock(opts.start ?? START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, WalletModule, GamificationModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, WalletModule, GamificationModule, ...(opts.modules ?? [])])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()

@@ -153,6 +153,8 @@ export class BattleEngine {
     if (args.isTest) return undefined
     const won = args.winner === args.side
     const left = args.forfeited && !won
+    // FR-GM-25.2: a real battle (human opponent) won on the arena path; a forfeit win does not count for the badge.
+    if (won && !args.forfeited && !args.robotsOnly) await this.ports.afterBattleWon(args.userId, { tx: args.tx })
     if (!left && (await this.paceTripped(args.battleId, args.userId, args.startedAt))) return PACE_GUARD_REWARD
     const event = args.forfeited ? (won ? 'forfeit_win' : 'forfeit') : won ? 'win' : 'finish'
     const outcome = left ? 'forfeit' : won ? 'win' : args.winner === null ? 'draw' : 'play'
