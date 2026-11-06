@@ -131,7 +131,7 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
     })
 
     it('422 on a Simulasi paper, 404 on an unknown paper, 403 without CSRF', async () => {
-      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi' })).body.data.id as string
       const res = await upload(sim, { declaration: 'true' })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect((await upload('999999999', { declaration: 'true' })).status).toBe(404)
@@ -165,7 +165,7 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
     it('422 on a bad body and on a Simulasi paper', async () => {
       const id = await paperOf()
       expect((await admin.post(`/api/admin/papers/${id}/source`, { apply: false })).status).toBe(422)
-      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })).body.data.id as string
+      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi' })).body.data.id as string
       expect((await apply(sim)).status).toBe(422)
     })
 
