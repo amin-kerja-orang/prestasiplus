@@ -32,7 +32,7 @@ export const MAX_EDITOR_CANDIDATES = 1000
 /** Extra candidates the source returns, because the editor drops those already on the paper before it caps. */
 export const CANDIDATE_SLACK = 500
 
-/** D90/D93: a stimulus group needs at least this many member questions to be placed in a paper. */
+/** D90/D93, D108-1: a stimulus group of 1..n members is placed whole; only an empty group cannot be placed. */
 export const MIN_GROUP_MEMBERS = 1
 
 /** D93 builder blocker (exact BM text): the contract's `STIMULUS_MESSAGES.builderBlocker` (T32). */
@@ -53,3 +53,6 @@ export const DESCRIBE_CHUNK = 1000
 
 /** A placed question whose servability report could not be read (the bank failed closed): hard NOT_SERVABLE, never silently allowed [PROPOSED copy]. */
 export const unreadableLine = (questionId: string): string => `Soalan ${questionId} tidak dapat disemak untuk murid; cuba lagi.`
+
+/** S3-T06 (API-BIJAK-14, field 18-09): each source PDF (`paper`, `scheme`) is at most 30 MB. */
+export const PAPER_SOURCE_MAX_BYTES = 30 * 1024 * 1024

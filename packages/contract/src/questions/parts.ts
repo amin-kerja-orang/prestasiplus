@@ -581,6 +581,7 @@ export const QuestionStimulusSchema = z
     imageId: IdSchema.nullable(),
     alt: z.string().nullable(),
     caption: z.string().nullable().optional(),
+    captionEn: z.string().nullable().optional(),
     sourceCitation: z.string().nullable().optional(),
     tableData: QuestionStimulusTableSchema.nullable().optional(),
   })

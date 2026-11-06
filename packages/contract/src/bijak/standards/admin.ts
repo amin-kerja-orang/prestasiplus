@@ -316,7 +316,7 @@ export const BijakDraftGenerateRequestSchema = z
       .max(4, BIJAK_BUILDER_MESSAGES.kertasInvalid)
       .meta({ description: 'OPT-KERTAS.', example: 2 }),
     title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
-      description: '`Tajuk set`. Omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)".',
+      description: '`Tajuk set` (PRD30 13-04). Required by the server: omitted, blank or only spaces = 422 `fields.title` "Tajuk set diperlukan."; more than 120 characters after trim = 422 `fields.title` "Tajuk set tidak boleh melebihi 120 aksara." (the schema accepts up to 200 so the server answers with the field message).',
     }),
     years: z.array(z.number().int().min(1900).max(2100)).max(30).optional().meta({ description: '`Tahun`: the source paper year, any of them. Omitted or empty = all.' }),
     negeri: z.array(z.string().trim().min(1).max(64)).max(30).optional().meta({ description: '`Negeri`: the source paper exam board, any of them, case-insensitive. Omitted or empty = all.' }),

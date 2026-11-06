@@ -56,7 +56,7 @@ describe('ProductInfo', () => {
   it('the WhatsApp button opens W in a new tab with no `rel` (FR-M20-57)', () => {
     const w = mount(ProductInfo, { props: { product: DETAIL_1 }, global: { plugins: [router()] } })
     const a = w.get('[data-testid="product-whatsapp"]')
-    expect(a.text()).toBe('Hubungi Penjual di WhatsApp')
+    expect(a.text()).toBe('Hubungi penjual melalui WhatsApp')
     expect(a.attributes('href')).toBe(`/marketplace/${DETAIL_1.slug}/whatsapp`)
     expect(a.attributes('target')).toBe('_blank')
   })

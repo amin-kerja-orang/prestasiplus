@@ -72,6 +72,7 @@ describe('GET /api/missions/today (M05 #21, BR-M10-17)', () => {
       resourceTitle: 'Video Rujukan',
       resourceUrl: 'https://example.test/video',
       resourceNote: 'Tonton dahulu',
+      description: null,
       status: 'new',
     })
   })
