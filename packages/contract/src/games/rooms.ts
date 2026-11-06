@@ -195,7 +195,7 @@ export type GamesRoomJoinRequest = z.infer<typeof GamesRoomJoinRequestSchema>
 export const GamesRoomPlayerSchema = z
   .strictObject({
     id: IdSchema.meta({ description: 'Keys `state.positions` / `meter`: the user id, or an opaque seat id for a robot (no user).' }),
-    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule). A robot is "Robot PrestasiPlus {n}".' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule). A robot is "Robot PrestasiPlus", numbered ("Robot PrestasiPlus {n}") only when the room has 2 or more robots (ruling 62).' }),
     grade: z.string().meta({ description: '"Darjah n", "Tingkatan n" or "" without a grade.' }),
     team: z.number().int().optional().meta({ description: 'Kuiz Relay team number, once teams are set.' }),
     points: z.number().int(),

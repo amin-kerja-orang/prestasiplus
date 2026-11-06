@@ -699,6 +699,21 @@ describe('Perlumbaan Matematik (20 steps)', () => {
   })
 })
 
+describe('Perlumbaan Matematik pool wrap (GAME-05: not reshuffled)', () => {
+  const r = room('perlumbaan-matematik')
+
+  it('after 40 questions the questions come again in the same order (the Papan Bijak reshuffle does not apply)', () => {
+    let o = start('perlumbaan-matematik', 2, 0)
+    const ids: string[] = []
+    for (let i = 0; i < 45; i++) {
+      ids.push(o.state.pendingQ as string)
+      o = step(r, o, answerWrong(o.state), 0)
+    }
+    expect(new Set(ids.slice(0, 40)).size).toBe(40)
+    expect(ids.slice(40)).toEqual(ids.slice(0, 5))
+  })
+})
+
 describe('Kuiz Relay (10 rounds, two teams)', () => {
   const r = room('kuiz-relay')
 

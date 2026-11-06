@@ -52,8 +52,8 @@ const human = (c: Ctx): EnginePlayer =>
   c.players.find((x) => x.userId === c.s.humanId) as EnginePlayer
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
 const nextQ = (c: Ctx): string => {
-  // Ruling 56, FR-GM-02.4: when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
-  if (c.s.qIds.length > 0 && c.s.cursor > 0 && c.s.cursor % c.s.qIds.length === 0) {
+  // Ruling 56, FR-GM-02.4 (Papan Bijak only; GAME-05 gives each player their own questions): when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
+  if (c.room.game === 'papan-bijak' && c.s.qIds.length > 0 && c.s.cursor > 0 && c.s.cursor % c.s.qIds.length === 0) {
     const pass = c.s.cursor / c.s.qIds.length
     c.s.qIds = shuffle([...c.s.qIds], c.streams(`m16:room:${c.room.code}:${c.s.seed}:pool${String(pass)}`))
   }
