@@ -16,6 +16,15 @@ export interface GameRewardEventRecord {
   cappedReason: GameRewardCapReason | null
 }
 
+/** A stored challenge claim (DM-63). */
+export interface ClaimRecord {
+  id: string
+  challengeId: string
+  rewardSyiling: number
+  rewardXp: number
+  clientUuid: string | null
+}
+
 /** A `date` column is read and written as UTC midnight of the calendar day. */
 const dayDate = (day: string): Date => new Date(`${day}T00:00:00Z`)
 const dayOf = (d: Date): string => d.toISOString().slice(0, 10)
@@ -448,6 +457,38 @@ export class GamificationRepository {
       INSERT INTO game_reward_events (game_session_id, user_id, xp, syiling, capped_reason, created_at)
       VALUES (${row.gameSessionId}::uuid, ${idFromString(row.userId)}, ${row.xp}, ${row.syiling}, ${row.cappedReason}, ${row.at}::timestamptz)
       ON CONFLICT (game_session_id, user_id) DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
+  /** Challenge ids the user claimed on the Malaysia day `day` (DM-63, API-GAME-11). */
+  async claimedOn(db: Db, userId: string, day: string): Promise<Set<string>> {
+    const rows = await db.challengeClaim.findMany({ where: { userId: idFromString(userId), mytDate: dayDate(day) }, select: { challengeId: true } })
+    return new Set(rows.map((r) => idToString(r.challengeId)))
+  }
+
+  /** The claim of (user, challenge, Malaysia day), or null. */
+  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
+    const r = await db.challengeClaim.findUnique({
+      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
+    })
+    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
+  }
+
+  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
+  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
+    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
+  }
+
+  /**
+   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
+   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
+   */
+  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
+      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
+      ON CONFLICT DO NOTHING
       RETURNING id`
     return rows.length === 1
   }
