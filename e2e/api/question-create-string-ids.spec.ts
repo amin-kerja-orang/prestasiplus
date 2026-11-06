@@ -107,7 +107,7 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       expect(sent.difficultyLevel).toBe(1)
       expect(res.status(), `POST /api/guru/questions ${body}`).toBe(201)
 
-      await expect(page.getByText('Soalan berjaya dihantar untuk semakan.')).toBeVisible()
+      await expect(page.getByText('Soalan dihantar untuk semakan.')).toBeVisible()
       await expect(page).toHaveURL(/\/guru\/soalan$/)
       await expectNoHScroll(page)
       expect(dialogs).toEqual([])
