@@ -15,10 +15,12 @@ import {
 import { InMemoryAnswerFacts, InMemoryQuestionContent, type AnswerRow } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
+import { InMemoryPupilRoster } from './in-memory-pupil-roster'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
 import { InMemoryPracticeRead } from './in-memory-practice-read'
+import { InMemorySpMap } from './in-memory-sp-map'
 import { InMemoryXsCounts } from './in-memory-xs-counts'
 
 /** The clock of every unit test: Friday 2026-09-25 15:40 MYT. */
@@ -100,6 +102,7 @@ export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { le
 
 export interface World {
   practice: InMemoryPracticeRead
+  spMap: InMemorySpMap
   answers: InMemoryAnswerFacts
   content: InMemoryQuestionContent
   bijak: InMemoryBijakAggregate
@@ -129,10 +132,12 @@ export function world(): World {
   const answers = new InMemoryAnswerFacts((id) => ({ id, schoolId: directory.schoolOf(id), classroomIds: classes.classIdsOf(id) }))
   const practice = new InMemoryPracticeRead()
   const content = new InMemoryQuestionContent()
-  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, content)
+  const spMap = new InMemorySpMap()
+  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, content, spMap)
   const clock = new FixedClock(NOW)
   return {
     practice,
+    spMap,
     answers,
     content,
     bijak,
@@ -143,7 +148,7 @@ export function world(): World {
     facts,
     ports,
     clock,
-    analytics: new AnalyticsService(ports, directory, clock),
+    analytics: new AnalyticsService(ports, directory, clock, new InMemoryPupilRoster(directory)),
     student: new StudentPerformanceService(ports, directory, clock, facts),
     school: new SchoolPerformanceService(ports, directory, clock, xs, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),

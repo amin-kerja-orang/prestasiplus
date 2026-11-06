@@ -291,7 +291,7 @@ async function downloadTemplate(): Promise<void> {
               <code class="bg-elevated px-1 text-caption">explanation</code>
             </li>
             <li>
-              <code class="bg-elevated px-1 text-caption">kertas</code> — Kertas (1, 2 atau 3)
+              <code class="bg-elevated px-1 text-caption">kertas</code> — Kertas (1, 2, 3 atau 4)
             </li>
           </ul>
         </DsPanel>

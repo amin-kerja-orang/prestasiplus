@@ -22,6 +22,23 @@ export type QuestionCreateInput = z.output<typeof QuestionCreateRequestSchema>
 export type QuestionUpdateInput = z.output<typeof QuestionUpdateRequestSchema>
 export type QuestionBulkAction = z.output<typeof QuestionBulkRequestSchema>['action']
 export type QuestionTag = z.output<typeof QuestionCurriculumTagSchema>
+/** S6-T16 (API-GUR-24): what a teacher's personal question writes; already validated against the curriculum by the caller's service rules. */
+export interface PersonalQuestionWrite {
+  subjectId: string
+  educationLevelId: string
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+  /** The typed Kesukaran 1..5. */
+  difficulty: number
+  text: string
+  /** Exactly four, A to D. */
+  options: readonly { text: string }[]
+  correctIndex: number
+  referenceUrl?: string | null | undefined
+}
+
 /** What a learner may see (`QuestionPublicSchema`): never a key, explanation, model answer or source. */
 export type PublicQuestion = z.output<typeof QuestionPublicSchema>
 
@@ -134,6 +151,12 @@ export interface QuestionVersionRecord {
   textbookRef: TextbookRef | null
   /** DM-58: why the version went back from Semakan to Draf ("Ditolak"); null otherwise. */
   rejectionReason: string | null
+  /** DM-42: `bank` (default) or `teacher_private` (Soalan & Rujukan, served by the mission draw only). Optional so older fixtures compile. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the teacher who owns a private question (users.id, decimal); null on every bank row. */
+  ownerUserId?: string | null
+  /** DM-42: http(s) reference link shown to the pupil as "Rujukan"; null when none. */
+  referenceUrl?: string | null
   sourcePage: number | null
   setLabel: string | null
   sourceFile: string | null
@@ -231,7 +254,7 @@ export interface AdminListFilter {
   /** V2 Studio filters (R1-21.5, D79): year, state or examining body, kertas and exam type of the source paper. */
   tahun?: string
   negeri?: string
-  kertas?: '1' | '2' | '3'
+  kertas?: '1' | '2' | '3' | '4'
   jenis?: 'sebenar' | 'percubaan' | 'modul' | 'topikal' | 'latihan'
   complianceFilter?: string
   sourceFilter?: string
@@ -307,6 +330,12 @@ export interface QuestionFilter {
   idIn?: readonly string[]
   /** Keyset: only ids strictly above this one (use with `eligibleIdsPage`, ascending id). */
   idAfter?: string
+  /**
+   * DM-42 / FR-GUR-44a-10 (the mission draw, the ONLY reader of `teacher_private`): besides the bank, the live personal questions OWNED by this
+   * user (users.id, decimal) are in the pool, at equal weight. The subject and level filters apply to both; `chapterId` and `spmPool` narrow
+   * the bank part only (a personal question carries no SPM pool and its Bab is optional). Any other owner's private question stays out.
+   */
+  ownerPrivateUserId?: string
 }
 export type SampleFilter = QuestionFilter
 export type GroupCountBy = 'subject' | 'level' | 'status' | 'difficultyTp' | 'unit' | 'chapter'
@@ -319,6 +348,9 @@ export interface StructuredListFilter {
   served?: boolean
   /** Order by `created_at` descending instead of id ascending. */
   newestFirst?: boolean
+  /** Row offset and row count that replace the page arithmetic (the teacher union of API-GUR-26). */
+  offset?: number
+  limit?: number
   page: number
   pageSize: number
 }
