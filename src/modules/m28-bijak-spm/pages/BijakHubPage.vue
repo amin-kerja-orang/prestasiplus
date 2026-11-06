@@ -19,8 +19,6 @@ const router = useRouter()
 const user = useBijakUser()
 const server = bijakServer()
 
-const SUBJECTS = server.subjects()
-
 const {
   data: papers,
   error: papersError,
