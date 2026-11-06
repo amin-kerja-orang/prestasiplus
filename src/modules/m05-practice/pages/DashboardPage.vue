@@ -24,6 +24,9 @@ import HomeDifficulty from '../components/dashboard-v2/HomeDifficulty.vue'
 import HomeGreeting from '../components/dashboard-v2/HomeGreeting.vue'
 import HomeKombo from '../components/dashboard-v2/HomeKombo.vue'
 import HomeLevels from '../components/dashboard-v2/HomeLevels.vue'
+import HomeCabaran from '../components/dashboard-v2/HomeCabaran.vue'
+import HomePakej from '../components/dashboard-v2/HomePakej.vue'
+import HomeMood from '../components/dashboard-v2/HomeMood.vue'
 import HomePlatform from '../components/dashboard-v2/HomePlatform.vue'
 import HomeQuests from '../components/dashboard-v2/HomeQuests.vue'
 import HomeQuickActions from '../components/dashboard-v2/HomeQuickActions.vue'
@@ -33,6 +36,7 @@ import HomeStats from '../components/dashboard-v2/HomeStats.vue'
 import HomeSubjects from '../components/dashboard-v2/HomeSubjects.vue'
 import HomeSubjectStats from '../components/dashboard-v2/HomeSubjectStats.vue'
 import HomeTrial from '../components/dashboard-v2/HomeTrial.vue'
+import HomeWeakTopics from '../components/dashboard-v2/HomeWeakTopics.vue'
 import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -73,7 +77,8 @@ watch(
       />
       <HomeRewards :data="data" />
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <HomeTrial v-if="data.trial.active" :trial="data.trial" />
+        <HomePakej v-if="data.package" :name="data.package.name" :valid-until="data.package.validUntil" />
+        <HomeTrial v-else-if="data.trial.active" :trial="data.trial" />
         <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
         <HomeKombo
           :count="data.streak.count"
@@ -82,16 +87,24 @@ watch(
           :best="bestStreak"
         />
       </div>
-      <HomeStats :wallet="data.wallet" :streak="data.streak" :week="data.week" />
+      <HomeStats
+        :wallet="data.wallet"
+        :streak="data.streak"
+        :week="data.week"
+        :accuracy-pct="data.accuracyPct"
+      />
       <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
       </div>
+      <HomeCabaran />
+      <HomeMood v-if="data.user.role === 'student'" />
       <HomeQuickActions
         :revision-total="data.revisionTotal"
         :is-admin="data.user.role === 'admin'"
       />
       <HomeArticles :articles="data.articles" />
+      <HomeWeakTopics />
       <HomeSubjects :subjects="data.subjects" />
       <HomePlatform :stats="data.stats" />
       <HomeLevels :pills="data.levelPills" />

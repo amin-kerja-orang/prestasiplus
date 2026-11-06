@@ -104,7 +104,7 @@ function toGuruRow(
   }
 }
 
-/** Row of an own submission (`g{n}` id, status `review`, editable until the admin accepts it). */
+/** Row of an own submission (`g{n}` id, status `review`, or `rejected` once returned, editable until the admin accepts it). */
 function toSubmissionRow(
   r: GuruSubmission,
   number: number,
@@ -119,7 +119,7 @@ function toSubmissionRow(
     kbat: r.cognitiveLevel ? kbatChip(COGNITIVE_INDEX[r.cognitiveLevel]) : '',
     subCount: r.parts.length,
     marks: r.parts.reduce((sum, p) => sum + p.marks, 0),
-    status: 'review',
+    status: r.rejectionReason ? 'rejected' : 'review',
     source: 'submission',
     editable: r.editable,
   }
@@ -144,7 +144,7 @@ function toSubmissionDetail(
     subject: row.subject,
     level: row.level,
     kbat: row.kbat,
-    status: 'review',
+    status: row.status,
     stimulus: r.stimulus,
     // A `blob:mock/` reference (mock-mode upload, D22) cannot load: no image.
     stimulusImage:

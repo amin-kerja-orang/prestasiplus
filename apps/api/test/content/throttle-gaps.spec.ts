@@ -88,7 +88,7 @@ describe('videos and perutusan write overload', () => {
   it('video create: a pool error in the transaction is 429 with retryAfter 5, nothing stored', async () => {
     const me = await login(t, TEACHER)
     const spy = vi.spyOn(t.app.get(PrismaService), 'transaction').mockRejectedValueOnce(overload())
-    const res = await apiOf(me).post('/videos', { videoUrl: 'https://example.test/clip.mp4', title: 'Tekanan video', category: 'tutorial', visibility: 'global' })
+    const res = await apiOf(me).post('/videos', { videoUrl: 'https://youtu.be/aB3_dE-7hJk', title: 'Tekanan video', category: 'lain-lain' })
     spy.mockRestore()
     expectLimited(res, 5)
     expect(await t.db.query(`select 1 from videos`)).toHaveLength(0)

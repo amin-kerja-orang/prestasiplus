@@ -29,6 +29,11 @@ const base = {
   v2: true as const,
 }
 
+/** An approved question id is numeric; an own submission id is `g{n}` and stays a string (API-GUR-26). */
+export function structuredRouteId(raw: string): number | string {
+  return /^[0-9]+$/.test(raw) ? Number(raw) : raw
+}
+
 const routes: RouteRecordRaw[] = [
   {
     path: '/guru/soalan',
@@ -100,7 +105,7 @@ const routes: RouteRecordRaw[] = [
     path: '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
     name: GURU_STRUCTURED_ROUTES.detail,
     component: structuredPages.detail,
-    props: (route) => ({ id: String(route.params.id), portal: 'guru' }),
+    props: (route) => ({ id: structuredRouteId(String(route.params.id)), portal: 'guru' }),
     meta: {
       ...base,
       title: 'Soalan Berstruktur - PRESTASIPLUS',

@@ -29,6 +29,8 @@ export interface PkskAnswerKey {
   domainCode: string
   optionCount: number
   correctIndexes: number[]
+  /** Revealed to the pupil only after the answers are scored and stored. */
+  explanation: string | null
 }
 
 export interface PkskQuestionRow {
@@ -81,6 +83,8 @@ export interface PkskStats {
 export interface PkskQuestionsPort {
   /** Approved questions per domain code at one level. */
   countApproved(level: PkskLevel): Promise<Record<string, number>>
+  /** Approved, active questions per domain code over both levels; a question tagged T1 and T4 counts once (D91). */
+  countApprovedAllLevels(): Promise<Record<string, number>>
   /** Every approved question of the given domains at the level, in a stable order (the caller shuffles). */
   approvedPool(level: PkskLevel, domainCodes: readonly string[]): Promise<PkskServed[]>
   /** Scoring facts of those ids that are APPROVED PKSK questions of the level; any other id is simply absent. */
@@ -108,6 +112,9 @@ export class UnavailablePkskQuestions implements PkskQuestionsPort {
     throw ApiError.of('SERVER_ERROR', { message: QUESTIONS_UNAVAILABLE })
   }
   countApproved(): Promise<Record<string, number>> {
+    return this.fail()
+  }
+  countApprovedAllLevels(): Promise<Record<string, number>> {
     return this.fail()
   }
   approvedPool(): Promise<PkskServed[]> {

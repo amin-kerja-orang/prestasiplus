@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { MockRuntime } from '@/mock/index'
+import { users } from '@/modules/m01-authentication/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
@@ -43,7 +44,7 @@ afterAll(() => {
 })
 
 const get = <T>(as: number | null, url: string) => data<T>(runtime, as, 'GET', url)
-const send = (as: number | null, method: 'GET' | 'POST' | 'DELETE', url: string, body?: unknown) =>
+const send = (as: number | null, method: 'GET' | 'POST' | 'PUT' | 'DELETE', url: string, body?: unknown) =>
   call<ErrorBody>(runtime, as, method, url, body)
 
 // ---------------------------------------------------------------------------------------------
@@ -111,8 +112,10 @@ describe('access', () => {
       ]) {
         expect((await send(as, 'GET', url)).status, `${String(as)} ${url}`).toBe(403)
       }
-      expect((await send(as, 'POST', '/api/headcounts/213/reset')).status).toBe(403)
-      expect((await send(as, 'DELETE', '/api/headcounts/213')).status).toBe(403)
+      // Writes (decision 7): a config that is not the viewer's to see is 404 (like the API); 403 only when it is visible.
+      const denied = 404
+      expect((await send(as, 'POST', '/api/headcounts/213/reset')).status).toBe(denied)
+      expect((await send(as, 'DELETE', '/api/headcounts/213')).status).toBe(denied)
       expect(
         (
           await send(as, 'POST', '/api/headcounts/213/drop-students', {
@@ -120,7 +123,7 @@ describe('access', () => {
             studentIds: [3201],
           })
         ).status,
-      ).toBe(403)
+      ).toBe(denied)
     }
     expect(headcount.config(213)).toBeDefined()
   })
@@ -145,7 +148,7 @@ describe('#12 list', () => {
   it('guru: the own six configs, newest first', async () => {
     const list = await get<HeadcountListItem[]>(GURU, '/api/headcounts')
     expect(list.map((c) => c.id)).toEqual([504, 501, 502, 503, 505, 506])
-    expect(list[1]).toEqual({
+    expect(list[1]).toMatchObject({
       id: 501,
       className: '5 MARIKH - Kimia',
       subjectName: 'Kimia',
@@ -158,9 +161,29 @@ describe('#12 list', () => {
     expect(list.find((c) => c.id === 502)?.mode).toBe('manual')
   })
 
-  it('admin and school admin own no config: the empty state (S12)', async () => {
-    expect(await get<HeadcountListItem[]>(ADMIN, '/api/headcounts')).toEqual([])
-    expect(await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts')).toEqual([])
+  it('admin lists every config, the school admin the configs of the own school; each has "Guru"', async () => {
+    const all = await get<HeadcountListItem[]>(ADMIN, '/api/headcounts')
+    expect(all.map((c) => c.id)).toEqual(expect.arrayContaining([213, 501]))
+    const own = await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts')
+    expect(own.map((c) => c.id)).toContain(501)
+    expect(own.map((c) => c.id)).not.toContain(213)
+    for (const c of [...all, ...own]) expect(c.teacherName).not.toBe('')
+  })
+
+  it('admin with schoolId lists that school only (= the school admin list); a school admin ignores schoolId (S6-T13 PM-24)', async () => {
+    const own = await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts')
+    const schoolId = users.get(ADMIN_SEKOLAH)?.schoolId
+    expect(await get<HeadcountListItem[]>(ADMIN, `/api/headcounts?schoolId=${String(schoolId)}`)).toEqual(own)
+    expect(await get<HeadcountListItem[]>(ADMIN_SEKOLAH, '/api/headcounts?schoolId=abc')).toEqual(own)
+  })
+
+  it('admin with a malformed schoolId is 422 "Sila pilih sekolah.", an unknown school is 404', async () => {
+    for (const q of ['?schoolId=', '?schoolId=abc', '?schoolId=0', '?schoolId=01']) {
+      const r = await call<ErrorBody>(runtime, ADMIN, 'GET', `/api/headcounts${q}`)
+      expect(r.status, q).toBe(422)
+      expect(r.body.error.fields?.schoolId, q).toBe('Sila pilih sekolah.')
+    }
+    expect((await call<ErrorBody>(runtime, ADMIN, 'GET', '/api/headcounts?schoolId=987654321')).status).toBe(404)
   })
 })
 
@@ -171,14 +194,15 @@ describe('#13 dashboard', () => {
     const sum = (f: (c: HeadcountDashboard['configs'][number]) => number) =>
       configs.reduce((a, c) => a + f(c), 0)
     expect(sum((c) => c.totalStudents)).toBe(48)
-    expect(sum((c) => c.onTrack)).toBe(3)
-    expect(sum((c) => c.offTrack)).toBe(3)
-    expect(sum((c) => c.noData)).toBe(42)
+    // HC-2: the targets are computed from TOV / ETR (only 3001 and 3002 of config 501 / 504 have an ETR).
+    expect(sum((c) => c.onTrack)).toBe(1)
+    expect(sum((c) => c.offTrack)).toBe(2)
+    expect(sum((c) => c.noData)).toBe(45)
     const c501 = configs.find((c) => c.id === 501)
-    expect(c501).toMatchObject({ level: 11, onTrack: 2, offTrack: 2, noData: 4, totalStudents: 8 })
+    expect(c501).toMatchObject({ level: 11, mode: 'auto', onTrack: 1, noData: 7, totalStudents: 8 })
     expect(c501?.chart.labels).toEqual(['OTR1', 'OTR2', 'OTR3'])
-    // Class means per OTR: targets 62, 58, 52, 45 → 54.3; ARs 65, 50, 52, 30 → 49.3.
-    expect(c501?.chart.target[0]).toBe(54.3)
+    // Class means per OTR: the only target is 3001's OTR1 (TOV 60, ETR 75 → 65); ARs 65, 50, 52, 30 → 49.3.
+    expect(c501?.chart.target[0]).toBe(65)
     expect(c501?.chart.actual[0]).toBe(49.3)
     expect(c501?.chart.actual[2]).toBeNull()
   })
@@ -191,10 +215,11 @@ describe('#13 dashboard', () => {
     ])
   })
 
-  it('admin: empty', async () => {
-    expect(await get<HeadcountDashboard>(ADMIN, '/api/headcounts/dashboard')).toEqual({
-      configs: [],
-    })
+  it('admin: every config, with the mode and "Guru"', async () => {
+    const { configs } = await get<HeadcountDashboard>(ADMIN, '/api/headcounts/dashboard')
+    expect(configs.map((c) => c.id)).toEqual(expect.arrayContaining([213, 501]))
+    expect(configs.find((c) => c.id === 213)?.teacherName).toBeTruthy()
+    expect(configs.find((c) => c.id === 502)?.mode).toBe('manual')
   })
 })
 
@@ -231,7 +256,7 @@ describe('#17 pupil sections (S15)', () => {
       levelName: 'Tingkatan 4',
       className: '4 Simulasi',
       year: 2026,
-      status: 'below',
+      status: 'on',
       tov: 67,
       etr: 56,
       rs: { value: 56.4, recordedAt: '2026-04-13' },
@@ -239,12 +264,12 @@ describe('#17 pupil sections (S15)', () => {
       prediction: { etr: 56, rs: 56.4, diff: 0.4, verdict: 'Ramalan Tepat' },
     })
     expect(sej?.rows).toEqual([
-      { checkpoint: 1, target: 72, targetGrade: 'A-', ar: null, arGrade: null, tone: 'noAr' },
-      { checkpoint: 2, target: 77, targetGrade: 'A-', ar: null, arGrade: null, tone: 'noAr' },
-      { checkpoint: 3, target: 82, targetGrade: 'A', ar: 56, arGrade: 'C+', tone: 'below' },
+      { checkpoint: 1, target: 63, targetGrade: 'B', ar: null, arGrade: null, tone: 'noAr' },
+      { checkpoint: 2, target: 60, targetGrade: 'B', ar: null, arGrade: null, tone: 'noAr' },
+      { checkpoint: 3, target: 56, targetGrade: 'C+', ar: 56, arGrade: 'C+', tone: 'on' },
     ])
     expect(sej?.chart.labels).toEqual(['TOV', 'OTR1', 'OTR2', 'OTR3', 'ETR', 'RS'])
-    expect(sej?.chart.target).toEqual([67, 72, 77, 82, 56, null])
+    expect(sej?.chart.target).toEqual([67, 63, 60, 56, 56, null])
     expect(sej?.chart.actual).toEqual([67, null, null, 56, null, null])
     expect(sej?.chart.projection).toEqual([null, null, null, 56, 56, null])
     expect(sej?.chart.rs).toBe(56.4)
@@ -261,8 +286,9 @@ describe('#17 pupil sections (S15)', () => {
     })
     const a = await get<HeadcountStudent>(ADMIN, '/api/headcounts/students/3201')
     const sci = a.sections.find((x) => x.configId === 212)
-    expect(sci?.status).toBe('none')
-    expect(sci?.rows[2]).toMatchObject({ target: null, ar: 61, arGrade: 'B', tone: 'noTarget' })
+    // HC-2: the target of the last checkpoint is the ETR, so a pupil with an ETR always has one.
+    expect(sci?.rows[2]).toMatchObject({ ar: 61, arGrade: 'B' })
+    expect(sci?.rows[2]?.target).not.toBeNull()
     expect(sci?.projection?.variant).toBe('green')
   })
 
@@ -293,8 +319,13 @@ describe('#17 pupil sections (S15)', () => {
       confidence: 'Sederhana',
     })
     const sej = s.sections.find((x) => x.configId === 504)
-    // ARs 40 → 45 → Unjuran 50 < ETR 65 → amber; 50 - TOV 50 → Stabil.
-    expect(sej?.projection).toMatchObject({ value: 50, variant: 'amber', trend: 'Stabil' })
+    // HC-6: AR 45 < TOV 50, so the end is the AR (45) < ETR 65 → amber; Stabil; Keyakinan Rendah.
+    expect(sej?.projection).toMatchObject({
+      value: 45,
+      variant: 'amber',
+      trend: 'Stabil',
+      confidence: 'Rendah',
+    })
     const tovOnly = s.sections.find((x) => x.configId === 502)
     expect(tovOnly?.projection).toBeNull()
     expect(tovOnly?.status).toBe('none')
@@ -303,7 +334,7 @@ describe('#17 pupil sections (S15)', () => {
 })
 
 describe('#24 summary (S22) and #25 detail (S23)', () => {
-  it('213 summary: 15 pupils, Purata TOV 62.1, ETR 71.9, OTR3 Above 5 · On Track 2 · Below 8, OTR1 / 2 N/A', async () => {
+  it('213 summary: 15 pupils, Purata TOV 62.1, ETR 71.9, OTR3 On Track 15 (target = ETR = AR), OTR1 / 2 N/A', async () => {
     const s = await get<HeadcountSummary>(ADMIN, '/api/headcounts/213/summary')
     expect(s.config).toEqual({
       id: 213,
@@ -317,14 +348,15 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
     expect(s.otrs).toEqual([
       { n: 1, above: 0, onTrack: 0, below: 0, na: 15 },
       { n: 2, above: 0, onTrack: 0, below: 0, na: 15 },
-      { n: 3, above: 5, onTrack: 2, below: 8, na: 0 },
+      { n: 3, above: 0, onTrack: 15, below: 0, na: 0 },
     ])
   })
 
-  it('213 detail: chips by the ±2 % rule 7 / 8 / 0, ranking order, averages with the class means', async () => {
+  it('213 detail: chips 15 / 0 / 0 (computed targets), ranking order, averages with the class means', async () => {
     const d = await get<HeadcountDetail>(ADMIN, '/api/headcounts/213')
     expect(d.config).toMatchObject({ id: 213, teacherName: 'Guru Demo KL-01', status: 'active' })
-    expect(d.chips).toEqual({ onTrack: 7, below: 8, empty: 0, total: 15 })
+    expect(d.chips).toEqual({ onTrack: 15, below: 0, empty: 0, total: 15, onTrackPct: 100 })
+    expect(d.config).toMatchObject({ mode: 'auto', defaultTov: null, defaultEtr: null })
     expect(d.rows.map((r) => r.userId).slice(0, 4)).toEqual([3204, 3205, 3206, 3207])
     expect(d.rows[0]).toMatchObject({
       userId: 3204,
@@ -333,12 +365,14 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
       etr: 93,
       etrGrade: 'A+',
     })
+    // HC-2: OTR3 is the ETR (93) and OTR1 / OTR2 are computed whole numbers (73 → 93: 80, 86).
+    expect(d.rows[0]?.cells.map((c) => c.target)).toEqual([80, 86, 93])
     expect(d.rows[0]?.cells[2]).toEqual({
-      target: 88,
-      targetGrade: 'A',
+      target: 93,
+      targetGrade: 'A+',
       ar: 93,
       arGrade: 'A+',
-      tone: 'above',
+      tone: 'on',
     })
     expect(d.rows[0]?.cells[0]).toMatchObject({ ar: null, tone: 'na' })
     // Rank by the latest AR, descending.
@@ -346,13 +380,12 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
     expect(ars).toEqual([...ars].sort((a, b) => b - a))
     expect(d.averages).toEqual({
       tov: 62.1,
-      otrs: [67.1, 72.1, 77.1],
+      otrs: [65.5, 68.6, 71.9],
       ars: [null, null, 71.9],
       etr: 71.9,
     })
-    // Tones: 3205 (gap 0) and 3207 (gap -2) are On Track, 3210 (-14) Below.
-    const tone = (id: number) => d.rows.find((r) => r.userId === id)?.cells[2]?.tone
-    expect([tone(3205), tone(3207), tone(3210)]).toEqual(['on', 'on', 'below'])
+    // The last target is the ETR, which the seeds set to the latest AR: every pupil is On Track.
+    expect(d.rows.every((r) => r.cells[2]?.tone === 'on' && r.status === 'on')).toBe(true)
   })
 
   it('sort=name lists A-Z; an unknown sort ranks', async () => {
@@ -366,7 +399,7 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
 
   it('a config with TOV only and a config without an entry: members count as "Belum Diisi"', async () => {
     const d503 = await get<HeadcountDetail>(GURU, '/api/headcounts/503')
-    expect(d503.chips).toEqual({ onTrack: 0, below: 0, empty: 8, total: 8 })
+    expect(d503.chips).toEqual({ onTrack: 0, below: 0, empty: 8, total: 8, onTrackPct: 0 })
     expect(d503.averages.tov).toBe(53.5)
     const d506 = await get<HeadcountDetail>(GURU, '/api/headcounts/506')
     expect(d506.rows).toHaveLength(8)
@@ -381,7 +414,7 @@ describe('#24 summary (S22) and #25 detail (S23)', () => {
   it('S5 block basis: config 504 (the class latest-updated) has 0 / 1 / 7 and Purata TOV 50, ETR 65', async () => {
     const d = await get<HeadcountDetail>(GURU, '/api/headcounts/504')
     // ±2 % rule at the latest AR: AR 45 vs OTR2 60 → Below.
-    expect(d.chips).toEqual({ onTrack: 0, below: 1, empty: 7, total: 8 })
+    expect(d.chips).toEqual({ onTrack: 0, below: 1, empty: 7, total: 8, onTrackPct: 0 })
     expect(d.averages.tov).toBe(50)
     expect(d.averages.etr).toBe(65)
   })
@@ -411,16 +444,16 @@ describe('#29 CSV export', () => {
     expect(first.slice(2)).toEqual([
       '73',
       'A-',
-      '78',
-      'A-',
-      '',
-      '',
-      '83',
+      '80',
       'A',
       '',
       '',
-      '88',
+      '86',
       'A',
+      '',
+      '',
+      '93',
+      'A+',
       '93',
       'A+',
       '93',
@@ -470,7 +503,7 @@ describe('#15 create, #16 auto-setup', () => {
     expect(headcount.entriesOf(id)).toEqual([])
     const d = await get<HeadcountDetail>(GURU, `/api/headcounts/${String(id)}`)
     expect(d.rows).toHaveLength(8)
-    expect(d.chips).toEqual({ onTrack: 0, below: 0, empty: 8, total: 8 })
+    expect(d.chips).toEqual({ onTrack: 0, below: 0, empty: 8, total: 8, onTrackPct: 0 })
   })
 
   it('accepts form strings (S14 posts text), including a Manual config of the same class + subject', async () => {
@@ -630,7 +663,8 @@ describe('#26 reset, #27 delete, #28 drop / restore and the S1 / S3 figures', ()
     expect(r.body).toMatchObject({ data: { updated: 1 } })
     const d = await get<HeadcountDetail>(GURU, '/api/headcounts/501')
     expect(d.rows.find((x) => x.userId === 3001)?.dropped).toBe(true)
-    expect(d.chips).toEqual({ onTrack: 1, below: 2, empty: 4, total: 7 })
+    // Config 501: only 3001 has an ETR, so with 3001 dropped nobody is tracked.
+    expect(d.chips).toEqual({ onTrack: 0, below: 0, empty: 7, total: 7, onTrackPct: 0 })
     // Fingerprint: the cached school-admin S1 follows (A- leaves: (6 + 6 + 9 + 7 + 2) / 5 = 6).
     expect((await schoolS1(ADMIN_SEKOLAH)).gps).toMatchObject({ value: 6, entries: 5 })
     expect(
@@ -724,13 +758,137 @@ describe('#26 reset, #27 delete, #28 drop / restore and the S1 / S3 figures', ()
     expect((await schoolS1(ADMIN_SEKOLAH)).gps).toMatchObject({ value: 7, entries: 1 })
   })
 
-  it('the admin may reset and delete any config by URL; S3 Tingkatan 4 follows (34 / 41 → 28 / 32 after 213 goes)', async () => {
+  it('only the owner resets and deletes (admin 403); S3 Tingkatan 4 follows 213', async () => {
     const t4 = () => get<{ onTrack: number; below: number }>(ADMIN, '/api/performance/levels/t4')
-    expect(await t4()).toMatchObject({ onTrack: 34, below: 41 })
-    expect((await send(ADMIN, 'POST', '/api/headcounts/213/reset')).status).toBe(200)
-    // All 15 pairs of 213 lose their AR: the 6 on become Below.
-    expect(await t4()).toMatchObject({ onTrack: 28, below: 47 })
-    expect((await send(ADMIN, 'DELETE', '/api/headcounts/213')).status).toBe(200)
-    expect(await t4()).toMatchObject({ onTrack: 28, below: 32 })
+    // Computed targets (HC-2): every seeded pair of Tingkatan 4 is On Track (ETR = latest AR).
+    expect(await t4()).toMatchObject({ onTrack: 75, below: 0 })
+    // Writes are the owning teacher's only (decision 7): the admin is 403.
+    expect((await send(ADMIN, 'POST', '/api/headcounts/213/reset')).status).toBe(403)
+    expect((await send(ADMIN, 'DELETE', '/api/headcounts/213')).status).toBe(403)
+    const owner = headcount.config(213)?.teacherId as number
+    expect((await send(owner, 'POST', '/api/headcounts/213/reset')).status).toBe(200)
+    // All 15 pairs of 213 lose their AR: they leave the On Track count.
+    expect(await t4()).toMatchObject({ onTrack: 60, below: 15 })
+    expect((await send(owner, 'DELETE', '/api/headcounts/213')).status).toBe(200)
+    expect(await t4()).toMatchObject({ onTrack: 60, below: 0 })
+  })
+})
+
+describe('PUT ar / tov / settings / defaults (S10-T02, API-RPT-10 / 16)', () => {
+  beforeAll(async () => {
+    await runtime.reset()
+  }, 180_000)
+
+  const put = (as: number, url: string, body: unknown) => send(as, 'PUT', `/api/headcounts/${url}`, body)
+  const detail = (id: number) => get<HeadcountDetail>(GURU, `/api/headcounts/${String(id)}`)
+
+  it('ar: a Manual config keeps the keyed AR (1 decimal) and answers the updated detail', async () => {
+    const r = await put(GURU, '502/ar', { checkpoint: 1, marks: [{ userId: 3001, value: 62.5 }] })
+    expect(r.status).toBe(200)
+    const d = (r.body as unknown as { data: HeadcountDetail }).data
+    expect(d.rows.find((x) => x.userId === 3001)?.cells[0]?.ar).toBe(62.5)
+    expect(d.config.mode).toBe('manual')
+  })
+
+  it('ar: 404 on an Auto config and on a checkpoint out of range; 422 "Markah mesti antara 0 dan 100."', async () => {
+    expect((await put(GURU, '501/ar', { checkpoint: 1, marks: [{ userId: 3001, value: 50 }] })).status).toBe(404)
+    for (const checkpoint of [0, 4]) {
+      expect((await put(GURU, '502/ar', { checkpoint, marks: [{ userId: 3001, value: 50 }] })).status).toBe(404)
+    }
+    const bad = await put(GURU, '502/ar', { checkpoint: 1, marks: [{ userId: 3001, value: 101 }] })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({ 'marks.0.value': 'Markah mesti antara 0 dan 100.' })
+  })
+
+  it('writes are the owning teacher only: admin and school admin 403, another teacher 404', async () => {
+    const body = { checkpoint: 1, marks: [{ userId: 3001, value: 50 }] }
+    expect((await put(ADMIN, '502/ar', body)).status).toBe(403)
+    expect((await put(ADMIN_SEKOLAH, '502/tov', { rows: [] })).status).toBe(403)
+    expect((await put(ADMIN_SEKOLAH, '502/settings', { activeOtrs: 3 })).status).toBe(403)
+    expect((await put(ADMIN, '502/defaults', { defaultTov: 1, defaultEtr: 2 })).status).toBe(403)
+    const other = headcount.config(213)?.teacherId as number
+    expect((await put(other, '502/ar', body)).status).toBe(404)
+    // A config of another school is not visible to the school admin: 404, not 403.
+    expect((await put(ADMIN_SEKOLAH, '213/ar', body)).status).toBe(404)
+    expect((await put(ADMIN_SEKOLAH, '213/settings', { activeOtrs: 3 })).status).toBe(404)
+  })
+
+  it('ar / tov accept an empty list (200); a non-integer checkpoint is 422 "OTR tidak sah."', async () => {
+    expect((await put(GURU, '502/ar', { checkpoint: 1, marks: [] })).status).toBe(200)
+    expect((await put(GURU, '502/tov', { rows: [] })).status).toBe(200)
+    for (const checkpoint of [1.5, '1', null]) {
+      const r = await put(GURU, '502/ar', { checkpoint, marks: [] })
+      expect(r.status, String(checkpoint)).toBe(422)
+      expect(r.body.error.fields).toEqual({ checkpoint: 'OTR tidak sah.' })
+    }
+  })
+
+  it('tov: an impossible date is 422 "Tarikh tidak sah."; a date without an RS is 422 "Tarikh Rekod RS memerlukan RS."', async () => {
+    const bad = await put(GURU, '502/tov', {
+      rows: [
+        { userId: 3002, rs: 50, rsRecordedAt: '2025-13-01' },
+        { userId: 3002, rs: 50, rsRecordedAt: '2026-02-31' },
+        { userId: 3001, rs: null, rsRecordedAt: '2025-01-01' },
+      ],
+    })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({
+      'rows.0.rsRecordedAt': 'Tarikh tidak sah.',
+      'rows.1.rsRecordedAt': 'Tarikh tidak sah.',
+      'rows.2.rsRecordedAt': 'Tarikh Rekod RS memerlukan RS.',
+    })
+  })
+
+  it('tov: TOV / ETR / RS per pupil; the targets are computed (TOV 40, ETR 80, n = 3 → 53 / 66 / 80); RS date defaults to today', async () => {
+    const r = await put(GURU, '502/tov', { rows: [{ userId: 3002, tov: 40, etr: 80, rs: 70 }] })
+    expect(r.status).toBe(200)
+    const row = (r.body as unknown as { data: HeadcountDetail }).data.rows.find((x) => x.userId === 3002)
+    expect(row?.cells.map((c) => c.target)).toEqual([53, 66, 80])
+    expect(row).toMatchObject({ rs: 70, entryStatus: 'active' })
+    expect(row?.rsRecordedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('tov: 422 for a mark out of range, a future date and an unknown pupil', async () => {
+    const bad = await put(GURU, '502/tov', {
+      rows: [
+        { userId: 3002, tov: 120 },
+        { userId: 3002, rs: 50, rsRecordedAt: '2999-01-01' },
+        { userId: 99999999, tov: 10 },
+      ],
+    })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({
+      'rows.0.tov': 'Markah mesti antara 0 dan 100.',
+      'rows.1.rsRecordedAt': 'Tarikh tidak boleh lebih lewat daripada hari ini.',
+      'rows.2.userId': 'Murid tidak sah.',
+    })
+  })
+
+  it('defaults: a pupil without its own TOV / ETR reads the default and is Active (AC-GUR-3-13/15)', async () => {
+    const r = await put(GURU, '503/defaults', { defaultTov: 40, defaultEtr: 80 })
+    expect(r.status).toBe(200)
+    const d = (r.body as unknown as { data: HeadcountDetail }).data
+    expect(d.config).toMatchObject({ defaultTov: 40, defaultEtr: 80 })
+    expect(d.rows.every((x) => x.tov !== null && x.etr === 80 && x.entryStatus === 'active')).toBe(true)
+    const bad = await put(GURU, '503/defaults', { defaultTov: 40, defaultEtr: 101 })
+    expect(bad.status).toBe(422)
+    expect(bad.body.error.fields).toEqual({ defaultEtr: 'Markah mesti antara 0 dan 100.' })
+  })
+
+  it('settings: 422 outside 2..5; lowering over keyed AR is a 409 (CF-05) until confirmed, then the marks above are gone', async () => {
+    expect((await put(GURU, '502/settings', { activeOtrs: 6 })).status).toBe(422)
+    await put(GURU, '502/ar', { checkpoint: 3, marks: [{ userId: 3001, value: 70 }] })
+    const refused = await put(GURU, '502/settings', { activeOtrs: 2 })
+    expect(refused.status).toBe(409)
+    expect(refused.body.error.message).toBe('OTR3 ke atas mempunyai markah. Padam markah tersebut?')
+    expect((await detail(502)).config.activeOtrs).toBe(3)
+    const ok = await put(GURU, '502/settings', { activeOtrs: 2, confirm: true })
+    expect(ok.status).toBe(200)
+    const d = (ok.body as unknown as { data: HeadcountDetail }).data
+    expect(d.config.activeOtrs).toBe(2)
+    expect(d.rows[0]?.cells).toHaveLength(2)
+    // Raising it again does not need a confirmation; there is nothing above.
+    expect((await put(GURU, '502/settings', { activeOtrs: 3 })).status).toBe(200)
+    expect((await detail(502)).rows.find((x) => x.userId === 3001)?.cells[2]?.ar).toBeNull()
   })
 })

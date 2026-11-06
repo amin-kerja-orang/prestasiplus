@@ -28,7 +28,7 @@ interface Page {
  * GuruStructuredDetail, API-GUR-26). Keep in step with the contract.
  */
 const Ref = z.object({ id: z.number().int(), name: z.string() }).nullable()
-const Status = z.enum(['approved', 'review'])
+const Status = z.enum(['approved', 'review', 'rejected'])
 const Source = z.enum(['question', 'submission'])
 const RowSchema = z.strictObject({
   id: z.union([z.number().int(), z.string().regex(/^g\d+$/)]),
@@ -137,7 +137,9 @@ describe('GET /api/guru/structured-questions', () => {
     const review = await call<Page>('GET', '/api/guru/structured-questions?status=review', GURU)
     expect(review.body.meta.totalItems).toBe(2)
     expect(review.body.data.map((x) => x.id)).toEqual(['g2', 'g1'])
-    expect(review.body.data.every((x) => x.status === 'review' && x.editable)).toBe(true)
+    expect(review.body.data.every((x) => x.editable)).toBe(true)
+    // g2 waits; g1 was returned and is a `rejected` row that the `review` filter still lists.
+    expect(review.body.data.map((x) => x.status)).toEqual(['review', 'rejected'])
     expect(review.body.data[0]).toMatchObject({ subCount: 2, marks: 7, number: 1 })
     const none = await call<Page>('GET', '/api/guru/structured-questions?status=review', ADMIN)
     expect(none.body.data).toEqual([])
@@ -207,7 +209,7 @@ describe('GET /api/guru/structured-questions/:id', () => {
     )
     expect(r.status).toBe(200)
     expect(() => DetailSchema.parse(r.body.data)).not.toThrow()
-    expect(r.body.data).toMatchObject({ source: 'submission', status: 'review', editable: true })
+    expect(r.body.data).toMatchObject({ source: 'submission', status: 'rejected', editable: true })
     expect(r.body.data.form?.rejectionReason).toBe('Skema jawapan bahagian (a) tidak lengkap.')
     const g2 = await call<{ data: GuruStructuredDetail }>(
       'GET',

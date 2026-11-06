@@ -76,7 +76,7 @@ describe('planner: group-ready', () => {
     expect(seen.liveActivities).toEqual(['latih_tubi_spm'])
   })
 
-  it('random (Databank) and past year pass the databank surface; revision-like paths pass none', async () => {
+  it('past year passes the databank surface; revision-like paths pass none', async () => {
     const bank = [question('s1'), question('s2')]
     const a = planner({ drawn: ['s1', 's2'], bank })
     await a.p.plan('u', req({ mode: 'past_year', subjectCode: 'ZZ', count: 10 }), now, false)

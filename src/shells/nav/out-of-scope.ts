@@ -52,7 +52,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/streak', ...M26 },
   { to: '/kombo', ...M26 },
   { to: '/liga', ...M26 },
-  { to: '/perutusan', ...M26 },
   { to: '/wellbeing/alerts', module: 'M26 Wellbeing', reason: 'belum dibina' },
 
   // ── Pusat AI (M25) selain Heatmap Topik Lemah
@@ -79,7 +78,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/guru/live-kelas', ...GURU_TOOLS },
   { to: '/guru/perbandingan-kelas', module: 'M11 Analitik Guru (S7)', reason: 'M11-T4 belum dibina; bukan baris 1.0' },
   { to: '/guru/soalan-guru', ...GURU_TOOLS },
-  { to: '/guru/soalan-berstruktur', ...GURU_TOOLS },
   { to: '/guru/databank', ...GURU_TOOLS },
   { to: '/guru/set-soalan', ...GURU_TOOLS },
   { to: '/guru/kertas-peperiksaan', ...GURU_TOOLS },

@@ -6,6 +6,7 @@ import { ApiError } from '@/api'
 
 import KirkpatrickOverviewPage from '../../../pages/KirkpatrickOverviewPage.vue'
 import {
+  SESSION_SCHOOL,
   all,
   flat,
   has,
@@ -31,9 +32,19 @@ vi.mock('@/app/router/outcome', () => outcome)
 
 let wrapper: VueWrapper | undefined
 
-async function open(url = '/admin/kirkpatrick', props: Record<string, unknown> = {}) {
+async function open(
+  url = '/admin/kirkpatrick',
+  props: Record<string, unknown> = {},
+  school: Partial<typeof SESSION_SCHOOL> | null = null,
+) {
   const prefix = url.split('?')[0]!
-  const m = await mountPage(KirkpatrickOverviewPage, { basePath: prefix, ...props }, url, prefix)
+  const m = await mountPage(
+    KirkpatrickOverviewPage,
+    { basePath: prefix, ...props },
+    url,
+    prefix,
+    school,
+  )
   wrapper = m.wrapper
   return m
 }
@@ -64,10 +75,10 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
       'Tahap 4: Hasil 4.30 GPS Sekolah · 4,378 rekod headcount Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t3'))).toBe(
-      'Tahap 3: Tingkah Laku 946 /4,158 Pelajar aktif · 20,991 sesi · 82.8% ketepatan Lihat detail',
+      'Tahap 3: Tingkah Laku 946 /4,158 Pelajar aktif · 20,991 sesi · 83% ketepatan Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t2'))).toBe(
-      'Tahap 2: Pembelajaran 82.8% Ketepatan · 306,133 soalan dijawab Lihat detail',
+      'Tahap 2: Pembelajaran 83% Ketepatan · 306,133 soalan dijawab Lihat detail',
     )
     expect(flat(t(w, 'kirk-level-t1'))).toBe(
       'Tahap 1: Reaksi 4.6 /5 Kepuasan purata · 336 respon Lihat detail',
@@ -81,7 +92,7 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
     const pills = t(w, 'kirk-flow-circles').findAll('[data-testid="kirk-flow-pill"]')
     expect(pills.map((p) => p.text())).toEqual([
       '4.6/5',
-      '82.8% ketepatan',
+      '83% ketepatan',
       '946 pelajar aktif',
       'GPS 4.30',
     ])
@@ -102,16 +113,8 @@ describe('S1 level cards and flow (AC-M12-06.1, 06.2, 07.1)', () => {
 describe('S1 filter (AC-M12-05.1, 05.2)', () => {
   it('lists the options, no Reset by default, and calls the API without a scope', async () => {
     const { wrapper: w } = await open()
-    expect(nativeLabels(w, 'school_id')).toEqual([
-      'Semua Sekolah',
-      'SMK Demo Satu',
-      'SMK Demo Dua',
-    ])
-    expect(nativeLabels(w, 'state')).toEqual([
-      'Semua Negeri',
-      'Johor',
-      'Kelantan',
-    ])
+    expect(nativeLabels(w, 'school_id')).toEqual(['Semua Sekolah', 'SMK Demo Satu', 'SMK Demo Dua'])
+    expect(nativeLabels(w, 'state')).toEqual(['Semua Negeri', 'Johor', 'Kelantan'])
     expect(t(w, 'kirk-filter').get('button[type="submit"]').text()).toBe('Tapis')
     expect(resetLink(w).exists()).toBe(false)
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
@@ -163,9 +166,9 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       t(w, id)
         .findAll('[data-testid="kirk-panel-value"]')
         .map((e) => e.text())
-    expect(panel('kirk-panel-before')).toEqual(['2', '33.3%', '3', '0'])
+    expect(panel('kirk-panel-before')).toEqual(['2', '33%', '3', '0'])
     expect(panel('kirk-panel-after')).toEqual(['58', '87%', '13,968', '28'])
-    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+53.7%', '+13,965', '+28'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['+56', '+54%', '+13,965', '+28'])
     for (const d of t(w, 'kirk-deltas').element.children) {
       expect(d.getAttribute('data-tone')).toBe('up')
     }
@@ -188,7 +191,7 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
       }),
     )
     const { wrapper: w } = await open('/admin/kirkpatrick?school_id=8080')
-    expect(values(w, 'kirk-delta-value')).toEqual(['-11', '-16.6%', '-451', '-2'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['-11', '-17%', '-451', '-2'])
     expect(t(w, 'kirk-delta-active').attributes('data-tone')).toBe('down')
   })
 
@@ -212,7 +215,14 @@ describe('S1 comparison (AC-M12-08.1..08.5)', () => {
         .findAll('[data-testid="kirk-panel-value"]')
         .map((e) => e.text()),
     ).toEqual(['0', '0%', '0', '0'])
-    expect(values(w, 'kirk-delta-value')).toEqual(['0', '0%', '0', '0'])
+    expect(values(w, 'kirk-delta-value')).toEqual(['\u2014', '\u2014', '\u2014', '\u2014'])
+    const deltas = t(w, 'kirk-deltas')
+    expect(deltas.findAll('i, svg, [class*="i-ph-arrow"]')).toHaveLength(0)
+    expect(deltas.html()).not.toMatch(/arrow-up|arrow-down|text-success|text-error/)
+    for (const d of deltas.element.children) {
+      expect(d.getAttribute('data-tone')).toBe('none')
+      expect(d.querySelector('[data-testid="kirk-delta-value"]')?.className).toContain('text-muted')
+    }
     expect(t(w, 'kirk-summary').text()).toContain('Data tidak mencukupi untuk perbandingan.')
   })
 })
@@ -231,7 +241,7 @@ describe('S1 KPI row, bands and info (AC-M12-09.1..09.3)', () => {
       ['Pelajar Berdaftar (T4/T5)', '4,158'],
       ['Soalan Dijawab', '306,133'],
       ['Guru Aktif', '277/522'],
-      ['Ketepatan Keseluruhan', '82.8%'],
+      ['Ketepatan Keseluruhan', '83%'],
     ])
   })
 
@@ -277,7 +287,7 @@ describe('mounts', () => {
     expect(t(w, 'kirk-kpi-registered').get('a').attributes('href')).toBe('/guru/monitoring')
   })
 
-  it('alias (detailLinks off): no level links, no "Lihat detail", monitoring links stay', async () => {
+  it('plain boxes when detailLinks is off: no level links, no "Lihat detail", monitoring links stay', async () => {
     const { wrapper: w } = await open('/admin-sekolah/kirkpatrick', { detailLinks: false })
     const hrefs = w.findAll('a').map((a) => a.attributes('href') ?? '')
     expect(hrefs).toEqual(['/admin-sekolah/monitoring', '/admin-sekolah/monitoring'])
@@ -291,17 +301,67 @@ describe('S1 alias with a forced scope (BUG-11)', () => {
   const url = '/admin-sekolah/kirkpatrick?school_id=8080&state=Johor'
 
   it('shows no filter chips and sends no scope when the API forces the own school', async () => {
-    const { wrapper: w } = await open(url, { detailLinks: false, scopeForced: true })
+    const { wrapper: w } = await open(url, { detailLinks: true, scopeForced: true }, SESSION_SCHOOL)
     expect(has(w, 'active-filters-reset')).toBe(false)
     expect(w.text()).not.toContain('Penapis aktif')
     expect(w.text()).not.toContain('Sekolah: SMK Demo Satu')
     expect(w.text()).not.toContain('Negeri: Johor')
     expect(resetLink(w).exists()).toBe(false)
-    expect((w.get('select[name="school_id"]').element as HTMLSelectElement).value).toBe('')
     expect(api.fetchKirkpatrickOverview).toHaveBeenCalledWith(
       { schoolId: null, state: '' },
       expect.anything(),
     )
+  })
+
+  it('FR-AS-11-2: a locked school label instead of the selects, "Semua" options and Tapis / Reset', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { detailLinks: true, scopeForced: true },
+      SESSION_SCHOOL,
+    )
+    const label = t(w, 'kirk-school-label')
+    expect(label.findAll('p').map((p) => p.text())).toEqual([
+      'SMK Contoh Ujian',
+      'ABC1234 · PPD Contoh · Johor',
+    ])
+    expect(w.find('select').exists()).toBe(false)
+    expect(w.find('[data-testid="kirk-filter-school"]').exists()).toBe(false)
+    expect(w.find('[data-testid="kirk-filter-state"]').exists()).toBe(false)
+    const text = squash(w.text())
+    for (const gone of ['Semua Sekolah', 'Semua Negeri', 'Tapis', 'Reset', 'Negeri']) {
+      expect(text).not.toContain(gone)
+    }
+    expect(w.findAll('button').map((b) => squash(b.text()))).not.toContain('Tapis')
+    expect(api.fetchKirkpatrickFilterOptions).not.toHaveBeenCalled()
+  })
+
+  it('skips an empty district in the second line', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { scopeForced: true },
+      { ...SESSION_SCHOOL, district: null as never },
+    )
+    expect(t(w, 'kirk-school-label').findAll('p')[1]?.text()).toBe('ABC1234 · Johor')
+  })
+
+  it('AC-AS-11-1: the level cards, the flow and the bands link to the school-admin screens (detailLinks on)', async () => {
+    const { wrapper: w } = await open(
+      '/admin-sekolah/kirkpatrick',
+      { detailLinks: true, scopeForced: true },
+      SESSION_SCHOOL,
+    )
+    expect(
+      t(w, 'kirk-levels')
+        .findAll('a')
+        .map((c) => c.attributes('href')),
+    ).toEqual([
+      '/admin-sekolah/kirkpatrick/reaction',
+      '/admin-sekolah/kirkpatrick/learning',
+      '/admin-sekolah/kirkpatrick/behavior',
+      '/admin-sekolah/kirkpatrick/results',
+    ])
+    expect(w.text()).toContain('Lihat detail')
+    expect(has(w, 'kirk-comparison')).toBe(true)
   })
 
   it('still shows the chips of a normal mount with the same query', async () => {
@@ -312,6 +372,31 @@ describe('S1 alias with a forced scope (BUG-11)', () => {
       { schoolId: 8080, state: 'Johor' },
       expect.anything(),
     )
+  })
+})
+
+describe('AC-GUR-11-2 Guru Ringkasan', () => {
+  it('shows no "Perbandingan Sebelum & Selepas" panel and no "Penurunan" with showComparison off', async () => {
+    api.fetchKirkpatrickOverview.mockResolvedValue(
+      overview({
+        comparison: {
+          subtitle: 'Januari 2026 vs November 2026',
+          before: null,
+          after: null,
+          delta: { active: -2, accuracy: -73.3, answers: -3, champions: 0 },
+          sentences: ['Penurunan 73.3% dalam ketepatan jawapan.'],
+        },
+      }),
+    )
+    const { wrapper: w } = await open('/guru/kirkpatrick', { showComparison: false })
+    expect(has(w, 'kirk-comparison')).toBe(false)
+    expect(w.text()).not.toContain('Perbandingan Sebelum & Selepas')
+    expect(w.text()).not.toContain('Penurunan')
+  })
+
+  it('the school-admin and admin overviews keep the panel (default)', async () => {
+    const { wrapper: w } = await open('/admin/kirkpatrick')
+    expect(has(w, 'kirk-comparison')).toBe(true)
   })
 })
 

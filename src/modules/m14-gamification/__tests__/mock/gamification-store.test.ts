@@ -388,7 +388,7 @@ describe('other §6.10 queries and §6.11.5 / §6.11.7 seeds', () => {
     expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 25 })
     expect(referrals.count('Q-REFERRALS', 1)).toBe(0)
     expect(referrals.codeOf(1)).toBe('4JURJTT')
-    expect(referrals.codeOf(2)).toMatch(/^[A-Z0-9]{7}$/)
+    expect(referrals.codeOf(2)).toMatch(/^[A-Z0-9]{8}$/)
     expect(referrals.stats(1)).toEqual({ referrals: 0, rewarded: 0, syilingEarned: 0 })
     expect(settings.get('flat_quiz_reward')).toBe(1)
     expect(settings.get('games_award_syiling')).toBe(0)
@@ -636,6 +636,17 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     expect(coinLedger.forUser(3)).toHaveLength(3)
     expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
     // No achievement for SPM modes.
+    expect(achievements.forUser(3).unlocked).toBe(0)
+  })
+
+  it('databank (S3-T07): credits quiz_spm with the "SPM Tahun Lepas" wording, like past_year', () => {
+    gamification.onSessionCompleted(session(3, { mode: 'databank', correct: 4 }))
+    expect(rowsOf(3).reverse()).toEqual([
+      ['SPM Tahun Lepas: 4 betul — 40%', 4],
+      ['Streak activity (spm)', 7],
+      ['Cabaran selesai: Mula Hari Ini', 10],
+    ])
+    expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
     expect(achievements.forUser(3).unlocked).toBe(0)
   })
 
@@ -920,18 +931,46 @@ describe('games, tokens, draws, referrals, teacher events (BR-M14-19/21/22/23/26
     )
   })
 
-  it('referrals.onRegistered: +25 / +50 once; unknown or own code → nothing', () => {
-    expect(referrals.onRegistered(3, '4JURJTT')).toMatchObject({
-      referrerId: 1,
+  it('referrals.onRegistered: the settings amounts (100 / 0) once; unknown, own, admin or teacher → nothing', () => {
+    const code = referrals.codeOf(2)
+    const before = wallet.summary(2).currentSyiling
+    expect(referrals.onRegistered(3, code)).toMatchObject({
+      referrerId: 2,
       refereeId: 3,
       rewarded: true,
     })
-    expect(wallet.summary(3).currentSyiling).toBe(25)
-    expect(wallet.summary(1).currentSyiling).toBe(306)
-    expect(referrals.stats(1)).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 50 })
-    expect(referrals.onRegistered(3, '4JURJTT')).toBeNull()
-    expect(referrals.onRegistered(11, 'ZZZZZZZ')).toBeNull()
-    expect(referrals.onRegistered(1, '4JURJTT')).toBeNull()
+    expect(wallet.summary(3).currentSyiling).toBe(0) // referral_referee_syiling = 0: no ledger row
+    expect(coinLedger.forUser(3)).toHaveLength(0)
+    expect(wallet.summary(2).currentSyiling).toBe(before + 100)
+    expect(referrals.stats(2)).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 100 })
+    expect(referrals.onRegistered(3, code)).toBeNull()
+    expect(referrals.onRegistered(11, 'ZZZZZZZZ')).toBeNull()
+    expect(referrals.onRegistered(2, code)).toBeNull()
+    expect(referrals.onRegistered(11, '4JURJTT')).toBeNull() // the code of a non-pupil
+  })
+
+  it('referral share text: a friend reward above 0 keeps the live clause; at 0 it is dropped', async () => {
+    const { referralShareText } = await import('../../mock/handlers/student')
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 0)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234! https://x.test/register?ref=ABCD1234',
+    )
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 25)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234 untuk dapat 25 syiling PERCUMA! https://x.test/register?ref=ABCD1234',
+    )
+  })
+
+  it('referrals.onRegistered: beyond the cap the referral is stored without a reward', () => {
+    const code = referrals.codeOf(2)
+    const pupils = Array.from({ length: 58 }, (_, i) => i + 3).filter(
+      (id) => users.get(id)?.role === 'student',
+    )
+    expect(pupils.length).toBeGreaterThan(20)
+    const before = wallet.summary(2).currentSyiling
+    const rows = pupils.slice(0, 21).map((id) => referrals.onRegistered(id, code))
+    expect(rows.filter((r) => r?.rewarded).length).toBe(20)
+    expect(rows[20]).toMatchObject({ rewarded: false })
+    expect(wallet.summary(2).currentSyiling).toBe(before + 2000)
+    expect(referrals.stats(2)).toEqual({ referrals: 21, rewarded: 20, syilingEarned: 2000 })
   })
 
   it('teacherGamification.onQuestionContributed: +10 per question; a badge bonus once', () => {
@@ -1078,8 +1117,8 @@ describe('review follow-ups (idempotency, validation, shim, claims, complimentar
     expect(wallet.get(5901)).toBeUndefined()
   })
 
-  it('tier upgrade through onSessionCompleted (BR-M14-08): 495 + credits ≥ 500 → silver', () => {
-    wallet.setFields(3, { syiling: 495, tierKey: 'bronze' })
+  it('tier upgrade through onSessionCompleted (FR-GM-17.2): 495 lifetime + credits ≥ 500 → silver', () => {
+    wallet.setFields(3, { syiling: 495, lifetime: 495, tierKey: 'bronze' })
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
     expect(wallet.summary(3)).toMatchObject({
       currentSyiling: 495 + 6 + 7 + 10 + 12,

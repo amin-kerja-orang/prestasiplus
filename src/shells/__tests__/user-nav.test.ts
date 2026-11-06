@@ -313,7 +313,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Analisis Item',
       'Bantuan',
       'Tiket Bantuan',
-      'Gambar Rajah',
     ])
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
@@ -401,7 +400,6 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Panduan',
       'Bantuan',
       'Tiket Bantuan',
-      'Gambar Rajah',
     ])
   })
 
@@ -464,6 +462,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '/guru/laporan',
       '/guru/laporan-mingguan-kelas',
       '/guru/soalan',
+      '/guru/soalan-berstruktur',
       '/guru/monitoring',
       '/guru/kirkpatrick',
     ]) {
@@ -582,7 +581,8 @@ describe('S0-T06 nav integrity (scope on)', () => {
       't-pelajar-saya', 't-prestasi', 't-laporan', 't-monitoring', 't-kirk-ringkasan',
       't-kirk-reaksi', 't-kirk-pembelajaran', 't-kirk-tingkah-laku', 't-kirk-hasil',
       't-kirk-rantaian', 't-kirk-intervensi', 't-analitik-adaptif', 't-analisa-item',
-      't-laporan-mingguan', 't-sumbang-soalan', 't-video', 't-profil-saya', 'tetapan-peribadi',
+      't-laporan-mingguan', 't-sumbang-soalan', 't-soalan-berstruktur', 't-perutusan', 't-video', 't-profil-saya',
+      'tetapan-peribadi',
       't-panduan', 't-analisis-item', 'tiket-bantuan',
     ],
     school_admin: [
@@ -600,4 +600,19 @@ describe('S0-T06 nav integrity (scope on)', () => {
       expect(items(navFor(role, 'sidebar')).map((i) => i.id)).toEqual(SIDEBAR_IDS[role])
     })
   }
+})
+
+describe('Perutusan sidebar items (S5-T09)', () => {
+  const ids = (role: Role, options: { includeOutOfScope?: boolean } = {}) =>
+    items(navFor(role, 'sidebar', USER_NAV, options)).map((i) => i.id)
+
+  it('the teacher sees t-perutusan, the pupil has no Perutusan item, Admin Pusat keeps it', () => {
+    expect(ids('teacher')).toContain('t-perutusan')
+    expect(ids('student')).not.toContain('perutusan')
+    expect(ids('admin')).toContain('perutusan')
+  })
+
+  it('sa-perutusan is hidden for the school admin (Delivery A)', () => {
+    expect(ids('school_admin')).not.toContain('sa-perutusan')
+  })
 })

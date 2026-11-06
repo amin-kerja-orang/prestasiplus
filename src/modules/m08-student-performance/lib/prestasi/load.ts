@@ -17,6 +17,8 @@ export const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 export interface RouteDataOptions {
   /** An unknown id is the 403 page, not the 404 page (S11, FR-M08-08). */
   notFoundAs403?: boolean
+  /** The page shows its own empty copy for a 404 (the M17 central view of an unknown school): no 404 page. */
+  skipNotFound?: boolean
 }
 
 export function useRouteData<T>(
@@ -29,8 +31,9 @@ export function useRouteData<T>(
     result.error,
     (err) => {
       if (!isApiError(err)) return
-      if (err.status === 404) setRouteOutcome(options.notFoundAs403 ? 403 : 404)
-      else if (err.status === 403) setRouteOutcome(403)
+      if (err.status === 404) {
+        if (!options.skipNotFound) setRouteOutcome(options.notFoundAs403 ? 403 : 404)
+      } else if (err.status === 403) setRouteOutcome(403)
     },
     { immediate: true },
   )

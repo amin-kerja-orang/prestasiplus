@@ -114,6 +114,7 @@ const cardFields: CardField[] = [
 const STATUS: Record<string, DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
+  rejected: 'rejected',
 }
 
 /** A window of up to five page numbers around the current page. */

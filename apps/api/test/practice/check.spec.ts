@@ -46,7 +46,7 @@ beforeEach(async () => {
   bank = fillBank(t.bank, w)
 })
 
-const start = (c: Client = pelajar, count = 5) => startSession(c, { mode: 'random', subjectCode: 'MATH', count })
+const start = (c: Client = pelajar, count = 5) => startSession(c, { mode: 'chapter', chapterId: w.chapter.c1, count })
 const check = (c: Client, sessionId: string, body: unknown) => c.post(`/api/practice/sessions/${sessionId}/check-answer`, body)
 
 describe('check-answer: grading and the stored check', () => {
@@ -194,7 +194,7 @@ describe('AC2 trial (BR-07)', () => {
     await t.db.query('update users set trial_questions_used = 49 where id = $1', [ids.pelajar])
     await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[3]?.id as string, true)
     expect(await trialUsed(t.db, ids.pelajar)).toBe(50)
-    const blocked = await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const blocked = await pelajar.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     expect(blocked.status).toBe(402)
     expect(blocked.body.error).toMatchObject({ code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' })
     // A first check in an already started session is refused too (402, nothing stored); a repeat still answers.
@@ -212,7 +212,7 @@ describe('AC2 trial (BR-07)', () => {
     for (const q of s.questions) await checkAnswer(maju, s.sessionId, t.bank, q.id, true)
     expect(await trialUsed(t.db, ids.maju)).toBe(0)
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.maju])
-    expect((await maju.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })).status).toBe(201)
+    expect((await maju.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })).status).toBe(201)
   })
 })
 

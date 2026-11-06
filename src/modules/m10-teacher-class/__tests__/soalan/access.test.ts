@@ -32,7 +32,7 @@ describe('S6-T17 structured routes (R1-GUR-44b)', () => {
     ])
     expect(structured[0]?.props).toEqual({ portal: 'guru' })
     const detailProps = structured[1]?.props as (r: unknown) => unknown
-    expect(detailProps({ params: { id: '4454' } })).toEqual({ id: '4454', portal: 'guru' })
+    expect(detailProps({ params: { id: '4454' } })).toEqual({ id: 4454, portal: 'guru' })
     for (const r of structured) {
       expect(r.meta?.layout).toBe('user')
       expect(r.meta?.roles).toEqual(['teacher', 'admin'])

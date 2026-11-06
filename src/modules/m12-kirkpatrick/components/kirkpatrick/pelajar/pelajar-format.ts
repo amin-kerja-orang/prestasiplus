@@ -1,7 +1,7 @@
 /** Texts and bar colours of S8 (SRS M12 BR-M12-28 / 29 / 30). */
 
 import type { StudentKirkpatrick } from '../../../api/types'
-import { pct, pct1 } from '../common/kirkpatrick-format'
+import { accuracyPct } from '../common/kirkpatrick-format'
 
 /** BR-M12-29 PROPOSED threshold of the accuracy sentence. */
 export const GOOD_ACCURACY = 70
@@ -12,10 +12,10 @@ export function alesaParagraph(d: StudentKirkpatrick): string {
     `Penggunaan Prestasi Plus oleh ${d.student.name} masih pada tahap minimum dengan hanya ${d.activeDays} hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi.`,
   ]
   if (d.accuracy >= GOOD_ACCURACY) {
-    parts.push(`Ketepatan jawapan pada ${pct(d.accuracy)} menunjukkan pemahaman yang baik.`)
+    parts.push(`Ketepatan jawapan pada ${accuracyPct(d.accuracy)} menunjukkan pemahaman yang baik.`)
   }
   if (d.strongest) {
-    parts.push(`Subjek terkuat: ${d.strongest.subjectName} (${pct1(d.strongest.accuracy)}).`)
+    parts.push(`Subjek terkuat: ${d.strongest.subjectName} (${accuracyPct(d.strongest.accuracy)}).`)
   }
   return parts.join(' ')
 }

@@ -20,7 +20,6 @@ import type { DsStatus } from '@/ds'
 
 import type { GuruStructuredDetail } from '../api/structured-guru'
 import {
-  GURU_REJECTED_LABEL,
   GURU_STATUS_LABEL,
   guruRejectionLine,
 } from '../lib/structured-options'
@@ -30,20 +29,15 @@ const props = defineProps<{ detail: GuruStructuredDetail }>()
 const STATUS: Record<GuruStructuredDetail['status'], DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
+  rejected: 'rejected',
 }
-/** An own submission the admin returned: the chip reads "Ditolak" and the reason shows under it. */
+/** An own submission the admin returned (`status` rejected): the reason shows under the "Ditolak" chip. */
 const rejectionReason = computed(() => {
   const reason = props.detail.form?.rejectionReason?.trim()
-  return props.detail.source === 'submission' && reason ? reason : null
+  return props.detail.status === 'rejected' && reason ? reason : null
 })
-const statusKey = computed<DsStatus>(() =>
-  rejectionReason.value ? 'rejected' : STATUS[props.detail.status],
-)
-const statusLabel = computed(() =>
-  rejectionReason.value
-    ? GURU_REJECTED_LABEL
-    : (GURU_STATUS_LABEL[props.detail.status] ?? props.detail.status),
-)
+const statusKey = computed<DsStatus>(() => STATUS[props.detail.status] ?? 'awaiting-review')
+const statusLabel = computed(() => GURU_STATUS_LABEL[props.detail.status] ?? props.detail.status)
 /** Only an http(s), root-relative or blob URL is rendered as the stimulus figure. */
 const figure = computed(() => {
   const url = props.detail.stimulusImage
