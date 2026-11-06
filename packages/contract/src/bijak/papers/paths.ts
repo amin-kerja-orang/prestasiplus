@@ -16,6 +16,7 @@ import {
   BijakPaperCoverSchema,
   BijakPaperCoverSectionSchema,
   BijakPaperReferencePanelSchema,
+  BijakPaperListQuerySchema,
   BijakPaperSummarySchema,
   BijakSubjectSchema,
 } from './schema'
@@ -72,7 +73,8 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/papers',
     tags: ['bijak-papers'],
     summary: 'Kertas Pilihan: published curated papers with the caller progress',
-    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. \`surface\` (DM-23, S3-T06) defaults to \`simulasi\` (Kertas Pilihan, unchanged); \`surface=subjektif\` lists the published Kertas Subjektif papers (rows carry \`surface\`, \`examBoard\`, the typed Jumlah Markah as \`marks\`, and the code \`K{kertas}\` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    request: { query: BijakPaperListQuerySchema },
     responses: {
       200: json(
         envelopeOf(z.array(BijakPaperSummarySchema)),

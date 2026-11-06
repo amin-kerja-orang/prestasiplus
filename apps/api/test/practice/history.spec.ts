@@ -167,18 +167,18 @@ describe('GET /practice/sessions: the caller\'s own completed sessions', () => {
   it('a session played through the API is listed with its figures', async () => {
     const bank = fillBank(t.bank, w)
     expect(bank.random.length).toBeGreaterThan(0)
-    const { started } = await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 10 }, 7, 95)
-    const res = await pelajar.get('/api/practice/sessions?modes=random')
+    const { started } = await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 4, 95)
+    const res = await pelajar.get('/api/practice/sessions?modes=chapter')
     expect(res.body.data).toEqual([
       {
         id: started.sessionId,
-        mode: 'random',
+        mode: 'chapter',
         subjectId: w.subject.math,
         subjectCode: 'MATH',
-        questionCount: 10,
-        correctCount: 7,
-        percent: 70,
-        coinsEarned: 7,
+        questionCount: 5,
+        correctCount: 4,
+        percent: 80,
+        coinsEarned: 4,
         timeSpent: 95,
         completedAt: '2026-10-19T09:00:00.000+08:00',
       },

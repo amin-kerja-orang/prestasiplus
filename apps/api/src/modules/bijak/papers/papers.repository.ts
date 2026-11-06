@@ -27,10 +27,10 @@ const TREE = {
 export class PapersRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  /** Published curated papers (Kertas Pilihan), oldest first. */
-  listPublishedPilihan(): Promise<PaperWithTree[]> {
+  /** Published curated papers of one surface (DM-23: `simulasi` = Kertas Pilihan, `subjektif` = Kertas Subjektif), oldest first. */
+  listPublishedPilihan(surface: 'simulasi' | 'subjektif' = 'simulasi'): Promise<PaperWithTree[]> {
     return this.prisma.client.paper.findMany({
-      where: { kind: 'pilihan', status: 'published' },
+      where: { kind: 'pilihan', status: 'published', surface },
       include: TREE,
       orderBy: { id: 'asc' },
     })
@@ -70,7 +70,8 @@ export class PapersRepository {
   async hubSubjects(): Promise<SubjectRef[]> {
     const [bp, papers] = await Promise.all([
       this.prisma.client.blueprint.findMany({ where: { status: 'active' }, select: { subjectId: true } }),
-      this.prisma.client.paper.findMany({ where: { kind: 'pilihan', status: 'published' }, select: { subjectId: true } }),
+      // Kertas Subjektif papers (DM-23) have their own lane; they do not put a subject on the Bijak hub.
+      this.prisma.client.paper.findMany({ where: { kind: 'pilihan', status: 'published', surface: 'simulasi' }, select: { subjectId: true } }),
     ])
     const ids = [...bp, ...papers].map((r) => r.subjectId)
     if (ids.length === 0) return []

@@ -349,23 +349,16 @@ describe('#2 / #3 practice subjects (S2, S3)', () => {
     expect(Object.values(c.difficultyStats).reduce((a, b) => a + b, 0)).toBe(641)
   })
 
-  it('a random session at a Darjah level is rejected (422 on levelId), at Tingkatan 4 it starts (D72, BR-11)', async () => {
+  it('a start with a legacy mode (random) is 422 "Mod tidak sah." (S5-T03, N-5)', async () => {
     const token = setUser(MAJU).token
-    const d1 = await request(runtime, 'POST', '/api/practice/sessions', token, {
-      mode: 'random',
-      subjectCode: 'MATH',
-      levelId: 1,
-      count: 5,
-    })
-    expect(d1.status).toBe(422)
-    expect(JSON.stringify(d1.body)).toContain('levelId')
-    const t4 = await request(runtime, 'POST', '/api/practice/sessions', token, {
+    const res = await request(runtime, 'POST', '/api/practice/sessions', token, {
       mode: 'random',
       subjectCode: 'MATH',
       levelId: 10,
       count: 5,
     })
-    expect(t4.status).toBe(201)
+    expect(res.status).toBe(422)
+    expect(JSON.stringify(res.body)).toContain('Mod tidak sah.')
   })
 
   it('#3 BM: D1–D4 counts 958 / 2,540 / 805 / 530 = 4,833 and the difficulty splits (BR-12), Darjah offered', async () => {

@@ -94,6 +94,15 @@ export function toComposerBlueprint(subject: string, kertas: number, row: Bluepr
   }
 }
 
+/**
+ * The printed code of a paper. A Kertas Subjektif paper (DM-23) has no code field on its form (Q-18): when none is stored it is
+ * `K{kertas}` (for example `K2`), the same fallback as an imported paper (45 section 3.5). Other papers keep `paper_code` or ''.
+ */
+export function paperCodeOf(paper: { paperCode: string | null; surface: string; kertas: number }): string {
+  if (paper.paperCode) return paper.paperCode
+  return paper.surface === 'subjektif' ? `K${paper.kertas}` : ''
+}
+
 /** Calendar year in Malaysia time (UTC+8, no daylight saving). */
 export function mytYear(at: Date): number {
   return new Date(at.getTime() + 8 * 60 * 60 * 1000).getUTCFullYear()

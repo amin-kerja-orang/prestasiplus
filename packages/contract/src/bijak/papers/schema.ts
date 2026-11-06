@@ -68,6 +68,19 @@ export const BijakAttemptKindSchema = z.enum(BIJAK_ATTEMPT_KINDS).meta({
 })
 export type BijakAttemptKind = z.infer<typeof BijakAttemptKindSchema>
 
+/** DM-23: `simulasi` = Set Builder papers (Bijak hub, Kuiz); `subjektif` = Kertas Subjektif papers (S3-T06). */
+export const BIJAK_PAPER_SURFACES = ['simulasi', 'subjektif'] as const
+export const BijakPaperSurfaceSchema = z.enum(BIJAK_PAPER_SURFACES).meta({
+  description: 'simulasi = Simulasi / Kertas Pilihan lane; subjektif = Kertas Subjektif lane (DM-23).',
+})
+export type BijakPaperSurface = z.infer<typeof BijakPaperSurfaceSchema>
+
+/** Query of `GET /api/bijak/papers` (API-BIJAK-01/04): `surface` defaults to `simulasi`, so existing callers are unchanged. */
+export const BijakPaperListQuerySchema = z
+  .object({ surface: BijakPaperSurfaceSchema.default('simulasi') })
+  .meta({ id: 'BijakPaperListQuery' })
+export type BijakPaperListQuery = z.infer<typeof BijakPaperListQuerySchema>
+
 /** Caller progress on a paper: `belum` not started, `sedang` an attempt is in progress, `selesai` has a result. */
 export const BIJAK_PAPER_PROGRESS = ['belum', 'sedang', 'selesai'] as const
 export const BijakPaperProgressSchema = z.enum(BIJAK_PAPER_PROGRESS).meta({
@@ -108,6 +121,13 @@ const summaryShape = {
     }),
   attemptId: IdSchema.optional().meta({
     description: 'The in-progress attempt of the caller; present only when status is sedang.',
+  }),
+  surface: BijakPaperSurfaceSchema.optional().meta({
+    description: 'S3-T06: present (`subjektif`) on the rows of the Kertas Subjektif list; absent on the Simulasi list.',
+  }),
+  examBoard: z.string().min(1).optional().meta({
+    description: 'S3-T06: Negeri or badan peperiksaan (slug of OPT-NEGERI-KERTAS) of a Kertas Subjektif paper.',
+    example: 'selangor',
   }),
 }
 

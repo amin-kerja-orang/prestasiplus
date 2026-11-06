@@ -1,10 +1,12 @@
-import { Controller, Get, Inject, Param, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Controller, Get, Inject, Param, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { BijakPaperListQuerySchema, type BijakPaperListQuery } from '@pp/contract'
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../../common/http'
 import { Roles } from '../../../common/guards'
 import { type RequestWithAuth, ScopeContext } from '../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
+import { ZodValidationPipe } from '../../../common/validation/zod-validation.pipe'
 import { BIJAK_PAPERS_LIMITS } from './papers.constants'
 import { PapersService } from './papers.service'
 
@@ -26,8 +28,9 @@ export class PapersController {
 
   @Get('papers')
   @RateLimit(BIJAK_PAPERS_LIMITS.read)
-  async list(@Req() req: Req) {
-    return { data: await this.papers.listPapers(ScopeContext.fromRequest(req).userId) }
+  async list(@Req() req: Req, @Query(new ZodValidationPipe(BijakPaperListQuerySchema)) query: BijakPaperListQuery) {
+    // `surface` defaults to `simulasi` (Bijak hub, unchanged); `subjektif` is the Kertas Subjektif list (API-BIJAK-04, S3-T06).
+    return { data: await this.papers.listPapers(ScopeContext.fromRequest(req).userId, query.surface) }
   }
 
   @Get('papers/:id')

@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
+import { DsCluster, DsEmptyState, DsHeroCard, DsLoadError, DsPage, DsText } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import type { PaperSummary } from '../domain/types'
@@ -29,16 +29,24 @@ const {
 
 /* ----------------------------------------------------------------- Kertas Pilihan */
 const subjectFilter = ref<string>('semua')
-const kertasFilter = ref<'semua' | '1' | '2'>('semua')
-const subjectItems = computed(() => [
-  { label: 'Semua subjek', value: 'semua' },
-  ...SUBJECTS.map((s) => ({ label: s.name, value: s.code })),
-])
-const kertasItems = [
+const kertasFilter = ref<string>('semua')
+/** 46 section 4.2 row 1: only the subjects of listed (Terbit) papers, name asc. */
+const subjectItems = computed(() => {
+  const names = new Map((papers.value ?? []).map((p) => [p.subject, p.subjectName]))
+  return [
+    { label: 'Semua subjek', value: 'semua' },
+    ...[...names]
+      .sort(([, a], [, b]) => a.localeCompare(b, 'ms'))
+      .map(([value, label]) => ({ label, value })),
+  ]
+})
+/** OPT-KERTAS: the kertas numbers the listed papers hold, ascending. */
+const kertasItems = computed(() => [
   { label: 'Semua kertas', value: 'semua' },
-  { label: 'Kertas 1', value: '1' },
-  { label: 'Kertas 2', value: '2' },
-]
+  ...[...new Set((papers.value ?? []).map((p) => p.kertas))]
+    .sort((a, b) => a - b)
+    .map((k) => ({ label: `Kertas ${k}`, value: String(k) })),
+])
 
 const filtered = computed(() =>
   (papers.value ?? []).filter(
@@ -53,8 +61,16 @@ const grouped = computed(() => {
     if (!map.has(p.subject)) map.set(p.subject, { name: p.subjectName, papers: [] })
     map.get(p.subject)!.papers.push(p)
   }
-  return [...map.entries()].map(([code, v]) => ({ code, ...v }))
+  // FR-MUR-13-5: groups by paper count, most first; equal counts by name.
+  return [...map.entries()]
+    .map(([code, v]) => ({ code, ...v, setLine: setLine(v.papers) }))
+    .sort((a, b) => b.papers.length - a.papers.length || a.name.localeCompare(b.name, 'ms'))
 })
+/** "{n} set · {kod}". [PROPOSED] {kod} is the SPM subject code, the paper code before the slash (1449/2 -> 1449; lead ruling DD3, provisional). No code: "{n} set" alone. */
+function setLine(list: readonly PaperSummary[]): string {
+  const kod = [...new Set(list.map((p) => (p.code ?? '').split('/')[0]!.trim()).filter(Boolean))].join(', ')
+  return kod ? `${list.length} set · ${kod}` : `${list.length} set`
+}
 /** Hero: the sitting in progress ("Sambung kertas"), else the next paper to start ("Mula kertas"). */
 const heroPaper = computed(() => {
   const all = papers.value ?? []
@@ -162,16 +178,18 @@ function open(p: PaperSummary): void {
           class="flex flex-col gap-3"
           :aria-label="g.name"
         >
-          <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
+          <DsCluster align="baseline" gap="xs">
+            <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
+            <DsText variant="caption" tabular data-testid="group-sets">{{ g.setLine }}</DsText>
+          </DsCluster>
           <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div class="flex min-w-0 flex-col gap-2">
                 <h4 class="text-body text-highlighted">{{ p.title }}</h4>
-                <div class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2" data-testid="paper-chips">
                   <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.durationMin }} minit</UBadge>
-                  <UBadge color="neutral" variant="subtle">{{ p.year }}</UBadge>
+                  <UBadge color="neutral" variant="subtle">{{ p.durationMin }} min</UBadge>
                   <UBadge
                     :color="
                       p.status === 'belum' ? 'neutral' : p.status === 'sedang' ? 'info' : 'success'

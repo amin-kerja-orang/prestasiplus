@@ -4,6 +4,7 @@ import type {
   BijakCoverUnavailableReason,
   BijakPaperCover,
   BijakPaperSummary,
+  BijakPaperSurface,
   BijakSubject,
 } from '@pp/contract'
 
@@ -13,7 +14,7 @@ import { effectiveMarks } from './exam-core.adapter'
 import { paperNotFound } from './errors'
 import { BijakPapersPorts, type BijakQuestionInfo, type PinRef, placesUnservable } from './ports'
 import { PapersRepository, type PaperWithTree, type SubjectRef } from './papers.repository'
-import { mytYear, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
+import { mytYear, paperCodeOf, referencePanels, ruleOf, sectionInstruction, sourceToWire } from './rules'
 import { bijakCodeOf } from './subject-codes'
 
 type Info = ReadonlyMap<string, BijakQuestionInfo>
@@ -61,10 +62,11 @@ export class PapersService {
 
   /* ------------------------------------------------------------------------------ reads */
 
-  async listPapers(userId: string): Promise<BijakPaperSummary[]> {
+  async listPapers(userId: string, surface: BijakPaperSurface = 'simulasi'): Promise<BijakPaperSummary[]> {
     // A published paper missing a printed code or a section would break the contract (code min 1,
     // sections min 1): it is not listed (BE-39 may create such rows; they stay out of the hub).
-    const papers = (await this.repo.listPublishedPilihan()).filter((p) => p.paperCode && p.sections.length > 0)
+    // A Kertas Subjektif paper has no printed-code field on its form (Q-18): it is listed with the code `K{kertas}` (paperCodeOf).
+    const papers = (await this.repo.listPublishedPilihan(surface)).filter((p) => paperCodeOf(p) !== '' && p.sections.length > 0)
     if (papers.length === 0) return []
     const [subjects, info, progress] = await Promise.all([
       this.repo.subjectsByIds(papers.map((p) => p.subjectId)),
@@ -157,7 +159,7 @@ export class PapersService {
       subjectName: subject?.name ?? code,
       kertas: paper.kertas,
       year: this.yearOf(paper),
-      code: paper.paperCode ?? '',
+      code: paperCodeOf(paper),
       durationMin: paper.printedDurationMin,
       instructions: paper.instructions,
       reference: referencePanels(paper.referenceSheets),
@@ -252,11 +254,13 @@ export class PapersService {
       subjectName: subject?.name ?? code,
       kertas: paper.kertas,
       year: this.yearOf(paper),
-      code: paper.paperCode ?? '',
+      code: paperCodeOf(paper),
       durationMin: paper.printedDurationMin,
       questionCount: paper.sections.reduce((n, s) => n + s.placements.length, 0),
-      marks: paper.sections.reduce((n, s) => n + this.sectionMarks(s, info), 0),
+      // A Kertas Subjektif paper shows the Jumlah Markah the admin typed ("{marks_total} markah", DM-23, INV-17).
+      marks: paper.surface === 'subjektif' && paper.totalMarks !== null ? paper.totalMarks : paper.sections.reduce((n, s) => n + this.sectionMarks(s, info), 0),
       kind: paper.kind === 'jana' ? 'jana' : 'pilihan',
+      ...(paper.surface === 'subjektif' ? { surface: 'subjektif' as const, ...(paper.examBoard ? { examBoard: paper.examBoard } : {}) } : {}),
       status: mine?.attemptId ? 'sedang' : mine?.lastScore ? 'selesai' : 'belum',
       ...(mine?.lastScore ? { lastScore: { score: mine.lastScore.score, max: mine.lastScore.max } } : {}),
       ...(mine?.attemptId ? { attemptId: mine.attemptId } : {}),
