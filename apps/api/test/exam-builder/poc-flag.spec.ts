@@ -36,7 +36,7 @@ describe('BIJAK_POC_QUESTIONS=true is a no-op: the builder sees the bank only', 
   })
 
   it('offers no PoC question (reserved id block) and publishes nothing from them', async () => {
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const e = Editor.parse((await admin.get(`/api/admin/papers/${Created.parse(created.body).data.id}`)).body).data
     expect(e.questions).toEqual([]) // the empty fake bank; the flag adds nothing
@@ -70,7 +70,7 @@ describe('paper builder with the test-only PoC double plugged and an empty bank'
   }
 
   it('lists > 0 candidate questions for a new paper', async () => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const e = await editor(Created.parse(res.body).data.id)
     expect(e.questions.length).toBeGreaterThan(0)
@@ -98,7 +98,7 @@ describe('paper builder with the test-only PoC double plugged and an empty bank'
     let published = 0
     for (const scope of scopes) {
       const [subject, kertas] = scope.split(':')
-      const created = await admin.post('/api/admin/papers', { subject, kertas: Number(kertas) })
+      const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject, kertas: Number(kertas) })
       if (created.status !== 201) continue
       const id = Created.parse(created.body).data.id
       const fresh = await editor(id)

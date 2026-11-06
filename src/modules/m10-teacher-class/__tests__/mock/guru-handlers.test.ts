@@ -14,7 +14,7 @@ import type { MockRuntime } from '@/mock/index'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
-import { questions } from '@/modules/m04-question-bank/mock'
+import { questions, submissions } from '@/modules/m04-question-bank/mock'
 import { practice } from '@/modules/m05-practice/mock'
 import { teacherWallet } from '@/modules/m14-gamification/mock'
 
@@ -1539,14 +1539,11 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   })
 
   it('AC-GUR-44-14: a scanned PDF is refused with the file-field text and nothing is stored', async () => {
-    const before = (
-      await call<{ data: unknown[] }>('GET', '/api/question-submissions', { as: ADMIN })
-    ).body.data.length
+    const before = submissions.list().length
     const a = await paper(valid, [pdf('imbasan-scan.pdf')])
     expect(a.status).toBe(422)
     expect(fieldsOf(a).files).toBe('PDF imbasan imej tidak diterima — teks mesti boleh disalin.')
-    const after = await call<{ data: unknown[] }>('GET', '/api/question-submissions', { as: ADMIN })
-    expect(after.body.data.length).toBe(before)
+    expect(submissions.list().length).toBe(before)
   })
 
   it('#60 stores an M04 submission as pending and answers 201 {data:{batchId}}', async () => {
@@ -1562,21 +1559,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
     )
     expect(a.status).toBe(201)
     expect(Object.keys(a.body.data)).toEqual(['batchId'])
-    const m04 = await call<{
-      data: {
-        id: number
-        status: string
-        teacherId: number
-        subjectText: string
-        levelCode: string
-        year: number
-        paperType: string
-        authorCredit: string
-        note: string
-        files: { name: string }[]
-      }[]
-    }>('GET', '/api/question-submissions', { as: ADMIN })
-    const row = m04.body.data.find((x) => x.id === (a.body.data.batchId as number))
+    const row = submissions.get(a.body.data.batchId as number)
     expect(row).toMatchObject({
       teacherId: GURU,
       subjectText: 'SEJARAH SPM',
@@ -1593,14 +1576,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   it('#60 an empty level, year and note are optional; "Kiriman guru" is the default credit', async () => {
     const a = await paper({ ...valid, levelId: '', year: '' })
     expect(a.status).toBe(201)
-    const m04 = await call<{ data: Record<string, unknown>[] }>(
-      'GET',
-      '/api/question-submissions',
-      {
-        as: ADMIN,
-      },
-    )
-    expect(m04.body.data.find((x) => x.id === (a.body.data.batchId as number))).toMatchObject({
+    expect(submissions.get(a.body.data.batchId as number)).toMatchObject({
       levelCode: null,
       year: new Date(runtime.clock.now()).getUTCFullYear(),
       authorCredit: 'Kiriman guru',

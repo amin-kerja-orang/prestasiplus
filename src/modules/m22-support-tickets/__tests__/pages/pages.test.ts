@@ -10,6 +10,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { ApiError } from '@/api'
 
 import type { QueueList, Ticket, TicketList } from '../../api/types'
+import AdminSettingsPage from '../../pages/AdminSettingsPage.vue'
 import AdminTicketsPage from '../../pages/AdminTicketsPage.vue'
 import TicketsPage from '../../pages/TicketsPage.vue'
 import routes from '../../routes'
@@ -18,6 +19,8 @@ const api = vi.hoisted(() => ({
   fetchTickets: vi.fn(),
   createTicket: vi.fn(),
   fetchQueue: vi.fn(),
+  fetchSupportSettings: vi.fn(),
+  saveSupportSettings: vi.fn(),
   fetchTicketDetail: vi.fn(),
   setTicketStatus: vi.fn(),
   replyToTicket: vi.fn(),
@@ -79,7 +82,7 @@ describe('routes (FR-M22-01, 28, 36, 27)', () => {
       roles: ['admin'],
       title: 'Tiket Sokongan - PRESTASIPLUS',
     })
-    expect(routes.map((r) => r.path).sort()).toEqual(['/admin/tiket', '/pusat-tuisyen/tiket'])
+    expect(routes.map((r) => r.path).sort()).toEqual(['/admin/settings', '/admin/tiket', '/pusat-tuisyen/tiket'])
   })
 })
 
@@ -523,5 +526,52 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     const { w } = await open('/admin/tiket', AdminTicketsPage)
     expect(tid(w, 'tq-error').text()).toContain('Ralat pelayan.')
     expect(w.findAll('button').some((b) => b.text() === 'Cuba Semula')).toBe(true)
+  })
+})
+
+describe('S3 settings (R1-ADM-N-07)', () => {
+  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: '' }
+
+  it('shows the section with the saved values and no field for hours', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    expect(w.text()).toContain('Hubungi Sokongan')
+    expect(w.text()).toContain('E-mel sokongan')
+    expect(w.text()).toContain('Telefon / WhatsApp sokongan')
+    expect(w.text()).not.toContain('Waktu perkhidmatan')
+    expect((tid(w, 'st-email').element as HTMLInputElement).value).toBe(contact.email)
+    expect((tid(w, 'st-whatsapp').element as HTMLInputElement).value).toBe(contact.whatsapp)
+    expect(tid(w, 'st-save').text()).toBe('Simpan Tetapan')
+  })
+
+  it('a save sends both fields and shows the flash', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockResolvedValue({ ...contact, email: 'bantuan@demo.test' })
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    await tid(w, 'st-email').setValue('bantuan@demo.test')
+    await tid(w, 'st-form').trigger('submit')
+    await flushPromises()
+    expect(api.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
+    expect(tid(w, 'st-flash').text()).toContain('Tetapan disimpan.')
+  })
+
+  it('AC-ADM-N07.2 a refused save shows the field message and no flash', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockRejectedValue(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'E-mel tidak sah.', fields: { email: 'E-mel tidak sah.' } }),
+    )
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    await tid(w, 'st-form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('E-mel tidak sah.')
+    expect(tid(w, 'st-flash').exists()).toBe(false)
+  })
+
+  it('a failed load shows the error', async () => {
+    api.fetchSupportSettings.mockRejectedValue(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),
+    )
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    expect(w.text()).toContain('Ralat pelayan.')
   })
 })
