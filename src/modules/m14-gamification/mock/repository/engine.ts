@@ -173,6 +173,7 @@ export function dayMetrics(day: DayFacts, streakCurrent: number): Record<string,
     chapters: new Set(day.chapterIds).size,
     minutes: Math.floor(seconds / 60),
     streak: streakCurrent,
+    bestCombo: 0, // no mock evaluator until Part 18; the API computes best_combo
   }
 }
 

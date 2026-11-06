@@ -17,6 +17,8 @@ export const CHALLENGE_ROWS = [
   { title: 'Kombo 2 Hari', description: 'Kekalkan kombo latihan selama 2 hari berturut-turut', icon: '🔥', challengeType: 'streak', metric: 'streak', targetValue: 2, rewardSyiling: 25, rewardXp: 20, difficulty: 'medium', sortOrder: 8, isActive: true },
   { title: 'Ketepatan 90%', description: 'Capai ketepatan 90% dalam sesi latihan', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 90, rewardSyiling: 35, rewardXp: 30, difficulty: 'hard', sortOrder: 9, isActive: true },
   { title: 'Cabaran Kilat', description: 'Jawab 20 soalan betul dalam satu sesi', icon: '⚡', challengeType: 'quiz_count', metric: 'best_correct_in_session', targetValue: 20, rewardSyiling: 40, rewardXp: 35, difficulty: 'hard', sortOrder: 10, isActive: true },
+  // S7-T04 part 14: V2 position 8. Difficulty `medium` follows ruling 19 and Part 6; only the icon is unobserved (D9-style deviation, DOC DEFECT 19).
+  { title: 'Kombo 10', description: 'Capai kombo 10 jawapan betul', icon: '🔥', challengeType: 'combo', metric: 'best_combo', targetValue: 10, rewardSyiling: 120, rewardXp: 200, difficulty: 'medium', sortOrder: 8, isActive: true },
 ] as const
 
 export const ACHIEVEMENT_ROWS = [

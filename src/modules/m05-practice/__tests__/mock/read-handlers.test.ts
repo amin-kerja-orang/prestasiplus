@@ -133,7 +133,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.streak.count).toBe(3)
     expect(d.week).toEqual({ sessions: 4, accuracyPct: 70 })
     expect(d.questsCompleted).toBe(4)
-    expect(d.quests).toHaveLength(10)
+    expect(d.quests).toHaveLength(11)
     expect(d.revisionTotal).toBe(4)
     expect(d.trial.active).toBe(false)
   })
@@ -171,7 +171,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.badges).toEqual([])
   })
 
-  it('the 10 quests of the M14 catalogue, in order, with the chip label and the syiling reward', async () => {
+  it('the 11 quests of the M14 catalogue, in order, with the chip label and the syiling reward', async () => {
     const d = await dash(PELAJAR2)
     expect(d.quests.map((q) => q.title)).toEqual([
       'Rajin Berlatih',
@@ -182,10 +182,11 @@ describe('#1 GET /api/dashboard (S1)', () => {
       'Jawab 5 Betul',
       'Latihan 10 Minit',
       'Kombo 2 Hari',
+      'Kombo 10',
       'Ketepatan 90%',
       'Cabaran Kilat',
     ])
-    expect(d.quests.map((q) => q.reward)).toEqual([15, 20, 25, 30, 10, 12, 20, 25, 35, 40])
+    expect(d.quests.map((q) => q.reward)).toEqual([15, 20, 25, 30, 10, 12, 20, 25, 120, 35, 40])
     expect(d.quests[0]).toMatchObject({
       key: '1',
       emoji: '📝',

@@ -4639,7 +4639,8 @@
           "accuracy",
           "topic_variety",
           "streak",
-          "time_spent"
+          "time_spent",
+          "combo"
         ]
       },
       "GamificationRarity": {

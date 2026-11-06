@@ -56,6 +56,8 @@ export const GAMIFICATION_CHALLENGE_TYPES = [
   'topic_variety',
   'streak',
   'time_spent',
+  // S7-T04 part 14: evaluator `best_combo` (longest correct run inside one session of the day).
+  'combo',
 ] as const
 export const GamificationChallengeTypeSchema = z
   .enum(GAMIFICATION_CHALLENGE_TYPES)

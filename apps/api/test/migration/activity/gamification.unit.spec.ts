@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { MIGRATED_CHALLENGE_METRICS } from '../../../src/modules/gamification/gamification.constants'
 import { generateTinyFixture } from '../fixtures/generate-tiny'
 
 import {
@@ -71,16 +72,68 @@ describe('tiers and challenges', () => {
     expect(challengeTarget(null)).toBeNull()
   })
 
-  it('maps the challenge type with an explicit table and rejects the rest; metric stays null', () => {
+  it('maps the challenge type with an explicit table and rejects the rest', () => {
     expect(Object.keys(CHALLENGE_TYPE_MAP).sort()).toEqual([
-      'accuracy', 'bilangan_kuiz', 'ketepatan', 'kombo', 'masa', 'quiz_count', 'streak', 'time_spent', 'topic_variety', 'topik_berbeza',
+      'accuracy', 'bilangan_kuiz', 'combo', 'ketepatan', 'kombo', 'masa', 'quiz_count', 'streak', 'time_spent', 'topic_variety', 'topik_berbeza',
     ])
     const ok = transformChallenge({ title: ' Cabaran  Satu ', challenge_type: 'Quiz Count', target_value: '3.00' })
-    expect(ok.ok && ok.value).toMatchObject({ title: 'Cabaran Satu', challenge_type: 'quiz_count', metric: null, target_value: 3, difficulty: 'medium' })
+    expect(ok.ok && ok.value).toMatchObject({ title: 'Cabaran Satu', challenge_type: 'quiz_count', metric: 'sessions', target_value: 3, difficulty: 'medium' })
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'harian', target_value: '3' }))).toBe('UNKNOWN_ENUM:challenge_type')
     expect(rejectOf(transformChallenge({ title: 'A', challenge_type: 'accuracy', target_value: 'teks' }))).toBe('INVALID_VALUE:target_value')
     expect(rejectOf(transformChallenge({ title: '', challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
     expect(rejectOf(transformChallenge({ title: 'x'.repeat(201), challenge_type: 'accuracy', target_value: '3' }))).toBe('INVALID_VALUE:title')
+  })
+
+  describe('the metric by title (S7-T04 part 15, ruling 18)', () => {
+    const TABLE: ReadonlyArray<readonly [string, string, string]> = [
+      ['Rajin Berlatih', 'quiz_count', 'sessions'],
+      ['Si Tepat', 'accuracy', 'best_accuracy'],
+      ['Penjelajah Topik', 'topic_variety', 'chapters'],
+      ['Kilat Matematik', 'quiz_count', 'correct'],
+      ['Selesai 5 Kuiz', 'quiz_count', 'sessions'],
+      ['Ketepatan 80%', 'accuracy', 'best_accuracy'],
+      ['3 Topik Berbeza', 'topic_variety', 'chapters'],
+      ['Kombo 10', 'kombo', 'best_combo'],
+      ['Belajar 15 Minit', 'time_spent', 'minutes'],
+      ['Mula Hari Ini', 'quiz_count', 'sessions'],
+      ['Jawab 5 Betul', 'quiz_count', 'correct'],
+      ['Latihan 10 Minit', 'time_spent', 'minutes'],
+      ['Kombo 2 Hari', 'streak', 'streak'],
+      ['Ketepatan 90%', 'accuracy', 'best_accuracy'],
+      ['Cabaran Kilat', 'quiz_count', 'best_correct_in_session'],
+    ]
+    it.each(TABLE)('%s (%s) -> %s', (title, type, metric) => {
+      const o = transformChallenge({ title, challenge_type: type, target_value: '3' })
+      expect(o.ok && o.value.metric).toBe(metric)
+    })
+
+    it('has exactly the 15 titles', () => {
+      expect(Object.keys(MIGRATED_CHALLENGE_METRICS).sort()).toEqual(TABLE.map((r) => r[0]).sort())
+    })
+
+    it('gives another title the default metric of its type, whatever the type', () => {
+      const metricOf = (type: string) => {
+        const o = transformChallenge({ title: 'Cabaran Lain', challenge_type: type, target_value: '3' })
+        return o.ok ? o.value.metric : rejectOf(o)
+      }
+      expect(metricOf('quiz_count')).toBe('sessions')
+      expect(metricOf('ketepatan')).toBe('best_accuracy')
+      expect(metricOf('topik_berbeza')).toBe('chapters')
+      expect(metricOf('streak')).toBe('streak')
+      expect(metricOf('masa')).toBe('minutes')
+      expect(metricOf('kombo')).toBe('best_combo')
+    })
+
+    it('gives "Kombo 10" best_combo only with the combo type; another type takes its default', () => {
+      const o = transformChallenge({ title: 'Kombo 10', challenge_type: 'streak', target_value: '10' })
+      expect(o.ok && o.value).toMatchObject({ challenge_type: 'streak', metric: 'streak' })
+    })
+
+    it('matches the title exactly (case and spacing are not folded) and keeps an unknown type rejected', () => {
+      const o = transformChallenge({ title: 'kombo 10', challenge_type: 'streak', target_value: '3' })
+      expect(o.ok && o.value.metric).toBe('streak')
+      expect(rejectOf(transformChallenge({ title: 'Kombo 10', challenge_type: 'harian', target_value: '3' }))).toBe('UNKNOWN_ENUM:challenge_type')
+    })
   })
 
   describe('the .cloud challenge_type codes map to the v2 types (FIT-FIX OQ5, LEAD 25 Oct 13:15 MYT)', () => {
@@ -92,14 +145,14 @@ describe('tiers and challenges', () => {
       ['bilangan_kuiz', 'quiz_count'],
       ['ketepatan', 'accuracy'],
       ['topik_berbeza', 'topic_variety'],
-      ['kombo', 'streak'],
+      ['kombo', 'combo'],
       ['masa', 'time_spent'],
     ])('maps %s to %s', (code, v2) => {
       expect(typeOf(code)).toBe(v2)
     })
 
     it('is case- and space-insensitive (the enumKey rule)', () => {
-      expect(typeOf(' KOMBO ')).toBe('streak')
+      expect(typeOf(' KOMBO ')).toBe('combo')
       expect(typeOf('Topik Berbeza')).toBe('topic_variety')
       expect(typeOf('Bilangan-Kuiz')).toBe('quiz_count')
       expect(typeOf('MASA')).toBe('time_spent')
@@ -109,12 +162,12 @@ describe('tiers and challenges', () => {
     it('maps every challenge of the cloud-tiny fixture except its one unknown code (harian)', () => {
       const rows = generateTinyFixture().get('challenges.ndjson')!.trim().split('\n').map((l) => JSON.parse(l) as Record<string, string>)
       expect(rows.map((r) => typeOf(r.challenge_type ?? null))).toEqual([
-        'UNKNOWN_ENUM:challenge_type', 'quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent',
+        'UNKNOWN_ENUM:challenge_type', 'quiz_count', 'accuracy', 'topic_variety', 'combo', 'time_spent',
       ])
     })
 
     it('keeps the identity codes and still rejects an unknown or blank code', () => {
-      for (const v2 of ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent']) expect(typeOf(v2)).toBe(v2)
+      for (const v2 of ['quiz_count', 'accuracy', 'topic_variety', 'streak', 'time_spent', 'combo']) expect(typeOf(v2)).toBe(v2)
       expect(typeOf('harian')).toBe('UNKNOWN_ENUM:challenge_type')
       expect(typeOf('kombo_harian')).toBe('UNKNOWN_ENUM:challenge_type')
       expect(typeOf('')).toBe('INVALID_VALUE:challenge_type')

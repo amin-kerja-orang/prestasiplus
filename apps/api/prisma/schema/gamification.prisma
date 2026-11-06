@@ -16,9 +16,9 @@ model Challenge {
   title         String
   description   String   @default("")
   icon          String   @default("")
-  /// quiz_count, accuracy, topic_variety, streak, time_spent (check).
+  /// quiz_count, accuracy, topic_variety, streak, time_spent, combo (check).
   challengeType String   @map("challenge_type")
-  /// sessions, correct, best_accuracy, best_correct_in_session, chapters, minutes, streak (check). Null for a migrated row whose metric could not be mapped (OD-25).
+  /// sessions, correct, best_accuracy, best_correct_in_session, chapters, minutes, streak, best_combo (check). Null for a migrated row whose metric could not be mapped (OD-25).
   metric        String?
   targetValue   Int      @map("target_value")
   rewardSyiling Int      @default(0) @map("reward_syiling")
