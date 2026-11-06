@@ -1,43 +1,81 @@
 /**
- * S10 "Sejarah Kuiz SPM" helpers (SRS M06 FR-M06-62…66, BR-M06-20; rows are M05 #23 sessions).
+ * "Sejarah Kuiz SPM" helpers (S3-T07 part F; `GET /api/spm/history`, API-BIJAK-07). The list is one merged,
+ * server-paged list (15 per page) of the caller's closed SPM sittings; the page reads the chip from `?mod=`
+ * (the old `?type=` link key is still read) and the page number from `?halaman=`.
  */
 
-import type { PracticeMode } from '@/modules/m05-practice'
+import { SPM_HISTORY_PAGE_SIZE, type SpmHistoryRowMode } from '@pp/contract'
 
-export type HistoryType = 'past_year' | 'databank' | 'latih_tubi' | 'ramalan'
+import { formatMinSec, formatMyt } from '@/lib/time'
 
-export const SPM_MODES: readonly HistoryType[] = ['past_year', 'databank', 'latih_tubi', 'ramalan']
+export { SPM_HISTORY_PAGE_SIZE }
+
+/** A chip filter value sent to the API (`all` is "no filter" and is never sent). */
+export type HistoryChip = 'databank' | 'latih_tubi' | 'tracking_a'
 
 export interface HistoryFilter {
   /** `null` is "Semua" (`/spm/history`). */
-  type: HistoryType | null
+  mod: HistoryChip | null
   label: string
   /** Phosphor icon of the pill. */
   icon: string
 }
 
 export const HISTORY_FILTERS: readonly HistoryFilter[] = [
-  { type: null, label: 'Semua', icon: 'i-ph-squares-four-bold' },
-  { type: 'past_year', label: 'Tahun Lepas', icon: 'i-ph-scroll-bold' },
-  { type: 'latih_tubi', label: 'Latih Tubi', icon: 'i-ph-barbell-bold' },
-  { type: 'ramalan', label: 'Tracking A', icon: 'i-ph-magic-wand-bold' },
+  { mod: null, label: 'Semua', icon: 'i-ph-squares-four-bold' },
+  { mod: 'databank', label: 'Tahun Lepas', icon: 'i-ph-scroll-bold' },
+  { mod: 'latih_tubi', label: 'Latih Tubi', icon: 'i-ph-barbell-bold' },
+  { mod: 'tracking_a', label: 'Tracking A', icon: 'i-ph-magic-wand-bold' },
 ]
 
-/** Type badge text and colour (FR-M06-63/66; Tracking A purple INFERRED). */
-export const TYPE_BADGES: Record<
-  HistoryType,
-  { label: string; color: 'warning' | 'info' | 'secondary' }
-> = {
-  past_year: { label: 'Tahun Lepas', color: 'warning' },
+type BadgeColor = 'warning' | 'info' | 'secondary' | 'primary' | 'neutral'
+
+/** Row mode label and badge colour (OPT-MODE-SESI; a `databank` row reads "Tahun Lepas", as the chip does). */
+export const MODE_BADGES: Record<SpmHistoryRowMode, { label: string; color: BadgeColor }> = {
   databank: { label: 'Tahun Lepas', color: 'warning' },
   latih_tubi: { label: 'Latih Tubi', color: 'info' },
-  ramalan: { label: 'Tracking A', color: 'secondary' },
+  tracking_a: { label: 'Tracking A', color: 'secondary' },
+  simulasi: { label: 'Bijak SPM', color: 'primary' },
+  subjektif: { label: 'Subjektif', color: 'neutral' },
+  structured: { label: 'Soalan Berstruktur', color: 'neutral' },
+  kuiz: { label: 'Simulasi - Kuiz', color: 'neutral' },
 }
 
-/** The `?type=` value when it is one of the three, else `null` (absent or unknown → all rows). */
-export function parseHistoryType(raw: unknown): HistoryType | null {
-  const v = Array.isArray(raw) ? raw[0] : raw
-  return v === 'past_year' || v === 'latih_tubi' || v === 'ramalan' ? v : null
+const first = (raw: unknown): unknown => (Array.isArray(raw) ? raw[0] : raw)
+
+/** The chip a `?mod=` / `?type=` value stands for; the legacy `past_year` and `ramalan` map to their chips. */
+const CHIP_OF: Record<string, HistoryChip | null> = {
+  all: null,
+  databank: 'databank',
+  past_year: 'databank',
+  latih_tubi: 'latih_tubi',
+  tracking_a: 'tracking_a',
+  ramalan: 'tracking_a',
+}
+
+/**
+ * The chip of the page URL: `mod` wins over the old `type` key. `undefined` = a missing or unknown value (no filter is
+ * sent and, when the value is present but unknown, no pill is active); `null` = "Semua".
+ */
+export function parseHistoryMod(query: { mod?: unknown; type?: unknown }): HistoryChip | null | undefined {
+  const raw = first(query.mod) ?? first(query.type)
+  if (raw === undefined) return null
+  return typeof raw === 'string' && raw in CHIP_OF ? CHIP_OF[raw] : undefined
+}
+
+/** The 1-based `?halaman=`; anything that is not a positive whole number is page 1. */
+export function parseHistoryPage(raw: unknown): number {
+  const v = first(raw)
+  const n = typeof v === 'string' && /^\d+$/.test(v) ? Number(v) : 1
+  return Number.isSafeInteger(n) && n >= 1 ? n : 1
+}
+
+/** The page URL of a chip and page (`halaman` is left out on page 1). */
+export function historyHref(mod: HistoryChip | null, page = 1): string {
+  const parts: string[] = []
+  if (mod !== null) parts.push(`mod=${mod}`)
+  if (page > 1) parts.push(`halaman=${page}`)
+  return parts.length === 0 ? '/spm/history' : `/spm/history?${parts.join('&')}`
 }
 
 /** Score badge colour: error below 50%, warning 50–79%, success from 80% (FR-M06-66). */
@@ -47,5 +85,16 @@ export function scoreColor(percent: number): 'error' | 'warning' | 'success' {
   return 'success'
 }
 
-export const isSpmMode = (m: PracticeMode): m is HistoryType =>
-  (SPM_MODES as readonly string[]).includes(m)
+/** A whole-number accuracy "{n}%", or "—" when there are no answers (`null`). */
+export function formatAccuracy(value: number | null): string {
+  return value === null ? '—' : `${value}%`
+}
+
+/** Row duration "{m}m {s}s" (e.g. "37m 32s"). */
+export const formatHistoryDuration = (seconds: number): string => formatMinSec(seconds)
+
+/** Row date with BM month names, 12-hour clock: "23 Okt 2026, 08:06 PM". */
+export const formatHistoryDate = (iso: string): string => formatMyt(iso, 'd MMM yyyy, hh:mm A')
+
+/** The pager text "Halaman {p} daripada {n}". */
+export const pagerText = (page: number, pageCount: number): string => `Halaman ${page} daripada ${pageCount}`
