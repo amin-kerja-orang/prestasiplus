@@ -17,7 +17,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, gotoApi, loginViaUi, test } from '../fixtures/api'
-import { account, expectNoHScroll } from './helpers'
+import { account, expectNoHScroll, FORBIDDEN_TITLE } from './helpers'
 
 const NOT_FOUND = 'Halaman Tidak Dijumpai'
 const OUT_OF_SCOPE = 'Peranan ini belum menggunakan sistem ini.'
@@ -155,18 +155,17 @@ test.describe('sweep 23 Oct @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('D5: pupil /prestasi/kelas has no "Cipta kelas" button or /guru/kelas/cipta link @api', async ({
+  test('D5: pupil /prestasi/kelas is the 403 page: no "Cipta kelas" button or /guru/kelas/cipta link @api', async ({
     page,
   }) => {
     const { user, pass } = account('student')
     await loginViaUi(page, user, pass)
     await open(page, '/prestasi/kelas')
     await expectNotFoundPage(page, false)
-    await expect(page.getByTestId('prestasi-kelas-pilih-page')).toBeVisible({ timeout: 20_000 })
-    // The page loads its classes asynchronously: wait for either state before asserting absence.
-    await expect(page.getByTestId('kelas-empty').or(page.getByTestId('kelas-list'))).toBeVisible({
-      timeout: 20_000,
-    })
+    // FR-MUR-4-2 (S10-T01): a pupil has no class view, so the 403 page renders in place.
+    await expect(page).toHaveTitle(FORBIDDEN_TITLE, { timeout: 20_000 })
+    await expect(page.getByText('Akses Ditolak').first()).toBeVisible()
+    await expect(page.getByTestId('prestasi-kelas-pilih-page')).toHaveCount(0)
     await expect(page.getByTestId('kelas-create')).toHaveCount(0)
     await expect(page.getByRole('button', { name: /cipta kelas/i })).toHaveCount(0)
     await expect(page.getByRole('link', { name: /cipta kelas/i })).toHaveCount(0)

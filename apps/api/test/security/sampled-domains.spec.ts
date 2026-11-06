@@ -198,7 +198,7 @@ describe('BE-33 AC1 b to e: sampled routes of every domain', () => {
       [
         // #100 (BE-12): the start body is strict; the forged owner is refused before any session row is written.
         'practice: POST /practice/sessions with ownerId',
-        () => call(student, 'post', '/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5, ownerId: '1' }),
+        () => call(student, 'post', '/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 5, ownerId: '1' }),
         () => count(t.db, 'practice_sessions'),
         'ownerId',
       ],

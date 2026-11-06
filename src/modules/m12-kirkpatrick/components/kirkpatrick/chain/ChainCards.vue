@@ -11,7 +11,15 @@ import { computed } from 'vue'
 import { DsIconChip, type DsAccent } from '@/ds'
 
 import type { Chain } from '../../../api/types'
-import { count, gps, mean, pct, plain, type KirkColor } from '../common/kirkpatrick-format'
+import {
+  count,
+  gps,
+  mean,
+  pct,
+  plain,
+  type KirkColor,
+  accuracyPct,
+} from '../common/kirkpatrick-format'
 
 const props = withDefaults(defineProps<{ chain: Chain; stacked?: boolean }>(), { stacked: false })
 
@@ -60,7 +68,7 @@ const steps = computed<Step[]>(() => {
       icon: 'brain',
       accent: 'trial',
       rows: [
-        { label: 'Ketepatan', value: pct(c.t2.accuracy) },
+        { label: 'Ketepatan', value: accuracyPct(c.t2.accuracy) },
         { label: 'Soalan Dijawab', value: count(c.t2.answers) },
         { label: 'Skor Purata', value: pct(c.t2.avgScore) },
       ],

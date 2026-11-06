@@ -246,7 +246,14 @@ export type QuestionReportView = z.infer<typeof QuestionReportViewSchema>
 
 /** Reporter row (`GET /question-reports/mine`): the `question` block carries only `{ exists, type, id }`. */
 export const QuestionReportMineViewSchema = z
-  .object({ ...reportRow, question: QuestionReportQuestionRefSchema })
+  .object({
+    ...reportRow,
+    question: QuestionReportQuestionRefSchema,
+    /** DD1 (pupil card): subject of the reported version; `null` when unknown, for a Guru row or when the question is gone. */
+    subject: z.object({ id: IdSchema, name: z.string() }).nullable().optional(),
+    /** DD1: plain-text preview (at most 200 characters) of the reported version's stem; `null` for a Guru row or when the version is gone. */
+    questionText: z.string().nullable().optional(),
+  })
   .meta({ id: 'QuestionReportMineView' })
 export type QuestionReportMineView = z.infer<typeof QuestionReportMineViewSchema>
 

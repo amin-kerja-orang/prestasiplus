@@ -6,7 +6,7 @@
 defineProps<{
   variant: 'correct' | 'wrong'
   title: string
-  letter: string
+  letter: string | null
   text: string
 }>()
 </script>
@@ -15,13 +15,16 @@ defineProps<{
   <UAlert :color="variant === 'correct' ? 'success' : 'warning'" variant="subtle" :title="title">
     <template #description>
       <span class="flex items-start gap-2 text-body text-default">
-        <UBadge
-          :color="variant === 'correct' ? 'success' : 'warning'"
-          variant="solid"
-          size="sm"
-          :label="letter"
-        />
-        <span class="min-w-0 break-words">{{ text }}</span>
+        <span v-if="letter === null || text === ''" data-testid="option-none">—</span>
+        <template v-else>
+          <UBadge
+            :color="variant === 'correct' ? 'success' : 'warning'"
+            variant="solid"
+            size="sm"
+            :label="letter"
+          />
+          <span class="min-w-0 break-words">{{ text }}</span>
+        </template>
       </span>
     </template>
   </UAlert>

@@ -5,7 +5,11 @@
 
 import type { ChartData, ChartOptions } from 'chart.js'
 
-import type { HeadcountDashboardConfig, HeadcountSection } from '../../api/headcount-types'
+import type {
+  HeadcountDashboardConfig,
+  HeadcountDetail,
+  HeadcountSection,
+} from '../../api/headcount-types'
 
 // ---- S13 ----------------------------------------------------------------------------------------
 
@@ -124,4 +128,48 @@ export const studentChartOptions: ChartOptions<'line'> = {
     y: { min: 0, max: 100, title: { display: true, text: 'Markah (%)' } },
     x: { grid: { display: false } },
   },
+}
+
+// ---- Unjuran page (S10-T02) ---------------------------------------------------------------------
+
+/** One DsChart line; a missing point is `NaN` (DsChart takes plain numbers, a gap in the line). */
+export interface ClassLineSeries {
+  label: string
+  data: number[]
+  slot: number
+}
+
+const gap = (v: number | null | undefined): number => (v === null || v === undefined ? Number.NaN : v)
+
+/**
+ * The class projection chart of `/headcount/{id}/unjuran`: the class mean target from TOV to OTR{n}
+ * ("Sasaran"), the mean AR per checkpoint ("Sebenar (AR)") and "Unjuran" from the latest mean AR to the
+ * mean projected end value at the last checkpoint (HC-6). Lines without a point are left out.
+ */
+export function classProjectionChart(detail: HeadcountDetail): {
+  labels: string[]
+  series: ClassLineSeries[]
+} {
+  const n = detail.config.activeOtrs
+  const labels = ['TOV', ...Array.from({ length: n }, (_, i) => `OTR${String(i + 1)}`)]
+  const target = [gap(detail.averages.tov), ...detail.averages.otrs.map(gap)]
+  const actual = [Number.NaN, ...detail.averages.ars.map(gap)]
+  const ends = detail.rows
+    .filter((r) => !r.dropped && r.projection !== null)
+    .map((r) => r.projection?.value as number)
+  const projection = labels.map(() => Number.NaN)
+  const lastAr = actual.reduce((last, v, i) => (Number.isNaN(v) ? last : i), -1)
+  if (lastAr >= 0 && ends.length > 0) {
+    projection[lastAr] = actual[lastAr] as number
+    projection[labels.length - 1] = Math.round((ends.reduce((a, b) => a + b, 0) / ends.length) * 10) / 10
+  }
+  const series: ClassLineSeries[] = [
+    { label: 'Sasaran (OTR)', data: target, slot: 1 },
+    { label: 'Sebenar (AR)', data: actual, slot: 2 },
+    { label: 'Unjuran', data: projection, slot: 3 },
+  ]
+  return {
+    labels,
+    series: series.filter((s) => s.data.some((v) => !Number.isNaN(v))),
+  }
 }

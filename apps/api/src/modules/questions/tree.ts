@@ -87,10 +87,20 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   const parsed = QuestionLeafPartSchema.safeParse(emptyPrompt ? { ...candidate, prompt: { ...rich(row.promptMs, row.promptEn), ms: '-' } } : candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
+    // #805: an MCQ whose key names no option is tolerated (and only that: the leaf must parse once the key is pointed at a real option);
+    // `servableMcq` then refuses it ("the key names no option"), so it is never served or scored.
+    if (lenient && row.mode === 'mcq' && keyNamesNoOption(candidate)) return candidate as unknown as QuestionLeaf
     throw new StoredKeyError(idToString(row.id))
   }
   const leaf = parsed.data as QuestionLeaf
   return emptyPrompt ? ({ ...leaf, prompt: rich(row.promptMs, row.promptEn) } as QuestionLeaf) : leaf
+}
+
+function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
+  const first = (candidate.options as { label: string }[] | undefined)?.[0]
+  const k = candidate.key as { kind?: unknown } | undefined
+  if (first === undefined || k?.kind !== 'option') return false
+  return QuestionLeafPartSchema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------

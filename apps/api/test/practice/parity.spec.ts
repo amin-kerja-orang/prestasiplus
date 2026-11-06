@@ -53,7 +53,6 @@ beforeEach(async () => {
 })
 
 const MODES: readonly [string, () => Record<string, unknown>][] = [
-  ['random', () => ({ mode: 'random', subjectCode: 'MATH', levelId: w.level.d1, count: 5 })],
   ['chapter', () => ({ mode: 'chapter', chapterId: w.chapter.c1, count: 5 })],
   ['revision', () => ({ mode: 'revision', subjectCode: 'MATH', count: 20 })],
   ['past_year', () => ({ mode: 'past_year', subjectCode: 'SEJ', count: 5 })],
@@ -128,7 +127,7 @@ describe('AC9 write path: one completion updates the log, the queue and the coun
 describe('AC9 the other assertions of the mock write-path block', () => {
   it('an abandoned session writes nothing (BR-06); a second submit answers 409; a foreign session and an unknown one are 404', async () => {
     const repo = t.app.get(PracticeRepository)
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[0]?.id as string, false)
     expect(await countRows(t.db, 'practice_answers')).toBe(0)
     expect(await repo.history(ids.pelajar, { modes: ['random'], includeTest: true })).toEqual([])
@@ -145,7 +144,7 @@ describe('AC9 the other assertions of the mock write-path block', () => {
   })
 
   it('a throwing reward call rolls the whole completion back (mock: "a throwing M14 call rolls the whole completion back")', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     for (const q of s.questions) await checkAnswer(pelajar, s.sessionId, t.bank, q.id, false)
     t.reward.failWith = new Error('boom')
     const failed = await pelajar.post(`/api/practice/sessions/${s.sessionId}/submit`, { timeSpent: 30 })
@@ -157,7 +156,7 @@ describe('AC9 the other assertions of the mock write-path block', () => {
     expect(await countRows(t.db, 'practice_sessions', "status = 'completed'")).toBe(0)
   })
 
-  it('mission: coinsPerCorrect 3 is passed; 3 x 4 correct is stored on the session; the response coins come from the reward port', async () => {
+  it('mission: no per-mission rate is passed; 1 x 4 correct is stored on the session; the response coins come from the reward port', async () => {
     t.assignments.set('mission', '9001', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4), coinsPerCorrect: 3 })
     t.reward.result = { coinsEarned: 99, streakCount: 1, totalBalance: 99 }
     const open1 = await startSession(pelajar, { mode: 'mission', missionId: '9001' })
@@ -166,10 +165,10 @@ describe('AC9 the other assertions of the mock write-path block', () => {
     for (const q of open1.questions) await checkAnswer(pelajar, open1.sessionId, t.bank, q.id, true)
     const done = await pelajar.post(`/api/practice/sessions/${open1.sessionId}/submit`, { timeSpent: 60 })
     expect(done.status).toBe(200)
-    expect(t.reward.calls[0]).toMatchObject({ mode: 'mission', correct: 4, coinsPerCorrect: 3 })
+    expect(t.reward.calls[0]).toMatchObject({ mode: 'mission', correct: 4 })
     expect(done.body.data.results.gamification.coinsEarned).toBe(99)
     const coins = await t.db.query<{ coins_earned: number }>('select coins_earned from practice_sessions where id = $1', [open1.sessionId])
-    expect(coins[0]?.coins_earned).toBe(12)
+    expect(coins[0]?.coins_earned).toBe(4)
     const again = await pelajar.post('/api/practice/sessions', { mode: 'mission', missionId: '9001' })
     expect(again.status).toBe(409)
     expect(again.body.error.code).toBe('ALREADY_COMPLETED')
@@ -177,10 +176,10 @@ describe('AC9 the other assertions of the mock write-path block', () => {
   })
 
   it('BR-30: the stored timeSpent is capped at 180 s per question and floored at 0', async () => {
-    const a = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const a = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await checkAnswer(pelajar, a.sessionId, t.bank, a.questions[0]?.id as string, true)
     await pelajar.post(`/api/practice/sessions/${a.sessionId}/submit`, { timeSpent: 99_999 })
-    const b = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const b = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await pelajar.post(`/api/practice/sessions/${b.sessionId}/submit`, { timeSpent: -5 })
     const rows = await t.db.query<{ id: string; time_spent_sec: number }>('select id::text, time_spent_sec from practice_sessions where id = any($1::uuid[])', [[a.sessionId, b.sessionId]])
     expect(Object.fromEntries(rows.map((r) => [r.id, r.time_spent_sec]))).toEqual({ [a.sessionId]: 5 * 180, [b.sessionId]: 0 })

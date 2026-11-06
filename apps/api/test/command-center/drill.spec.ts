@@ -103,7 +103,7 @@ describe('GET /command-center/school/:sid/teacher/:uid', () => {
     expect(data.teacher).toEqual({ id: w.ta.id, name: 'Guru Alpha' })
     expect(data.classes).toEqual([
       { id: w.a1, name: 'Kelas A1', level: 'T4', students: 2, active30d: 2, answers: 19, accuracy: 68.4 },
-      { id: w.a2, name: 'Kelas A2', level: 'D3', students: 1, active30d: 0, answers: 0, accuracy: 0 },
+      { id: w.a2, name: 'Kelas A2', level: 'D3', students: 1, active30d: 0, answers: 0, accuracy: null },
     ])
   })
 
