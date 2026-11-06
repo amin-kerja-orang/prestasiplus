@@ -223,9 +223,10 @@ export class GamificationService {
   async challengesToday(userId: string): Promise<GamificationChallengesResponse> {
     const db = this.repo.handle()
     const day = mytDay(this.clock.now())
-    const [active, done, streak, facts] = await Promise.all([
+    const [active, done, claimedSet, streak, facts] = await Promise.all([
       this.repo.challenges(db, true),
       this.repo.completedOn(db, userId, day),
+      this.repo.claimedOn(db, userId, day),
       this.repo.streakOf(db, userId),
       this.ports.practiceFacts.dayFacts(userId, day),
     ])
@@ -245,9 +246,10 @@ export class GamificationService {
         progress,
         pct: c.targetValue > 0 ? Math.round((progress / c.targetValue) * 100) : 0,
         completed,
+        claimed: claimedSet.has(c.id),
       }
     })
-    return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length } }
+    return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length, claimed: data.filter((i) => i.claimed).length } }
   }
 
   /**
@@ -489,38 +491,35 @@ export class GamificationService {
   }
 
   /**
-   * Claims one daily challenge for the Malaysia day of `opts.at` (AC2). Idempotent: the completion row is
-   * `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day), and the reward is credited ONLY by
-   * the call that inserted the row (ledger key `daily_challenge` / `challenge:<id>:<yyyy-mm-dd>`). A second call
-   * the same day adds nothing. The caller decides that the target is met (see `settleChallenges`).
+   * Records that one daily challenge is complete for the Malaysia day of `opts.at` (AC2). Idempotent: the completion
+   * row is `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day). Ruling 12 on #500: completing
+   * credits NOTHING (no syiling, no XP, no ledger row); the pupil claims the reward with API-GAME-11
+   * (`ChallengeClaimsService`). Returns whether THIS call wrote the row. The caller decides that the target is met.
    */
-  async claimChallenge(userId: string, challengeId: string, opts: EntryOptions): Promise<{ claimed: boolean; syiling: number; xp: number }> {
+  async completeChallenge(userId: string, challengeId: string, opts: EntryOptions): Promise<{ completed: boolean }> {
     return this.run(opts.tx, async (db) => {
       const challenge = await this.repo.challenge(db, idFromString(challengeId))
       if (!challenge) throw ApiError.of('NOT_FOUND', { message: MSG.challengeNotFound })
-      if (!challenge.isActive) return { claimed: false, syiling: 0, xp: 0 }
+      if (!challenge.isActive) return { completed: false }
       const at = opts.at ?? this.clock.now()
       const day = mytDay(at)
-      if (!(await this.repo.insertCompletion(db, { userId, challengeId, day, at, isTest: opts.isTest }))) return { claimed: false, syiling: 0, xp: 0 }
-      let syiling = 0
-      if (challenge.rewardSyiling > 0 && (await this.coinsEnabled(userId, { tx: db as TxClient }))) {
-        await this.wallet.credit(
-          { userId, amount: challenge.rewardSyiling, source: 'daily_challenge', sourceId: `challenge:${challengeId}:${day}`, description: `Cabaran selesai: ${challenge.title}`, isTest: opts.isTest },
-          { tx: db as TxClient },
-        )
-        syiling = challenge.rewardSyiling
-      }
-      if (challenge.rewardXp > 0) await this.wallet.addXp({ userId, amount: challenge.rewardXp, isTest: opts.isTest }, { tx: db as TxClient })
-      return { claimed: true, syiling, xp: challenge.rewardXp }
+      return { completed: await this.repo.insertCompletion(db, { userId, challengeId, day, at, isTest: opts.isTest }) }
     })
+  }
+
+  /** The progress (0..target) of `c` on the Malaysia day `day`, from the same facts as `challengesToday` (BR-M14-12). */
+  async challengeProgressOn(db: Db, userId: string, day: string, c: ChallengeRecord): Promise<number> {
+    const [streak, facts] = await Promise.all([this.repo.streakOf(db, userId), this.ports.practiceFacts.dayFacts(userId, day)])
+    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0))
   }
 
   /**
    * Called after a practice session completes (BE-12/BE-18, inside their transaction, after the streak step):
-   * every active challenge whose progress of the day reached its target and is not completed yet is claimed, in
-   * (`sortOrder`, `id`) order (BR-M14-12/13). Returns the ids claimed by THIS call.
+   * every active challenge whose progress of the day reached its target and is not completed yet gets its completion
+   * row, in (`sortOrder`, `id`) order (BR-M14-12/13). No reward is paid here (ruling 12 on #500): the pupil claims it.
+   * Returns the ids completed by THIS call.
    */
-  async settleChallenges(userId: string, opts: EntryOptions): Promise<{ claimedIds: string[]; syiling: number; xp: number }> {
+  async settleChallenges(userId: string, opts: EntryOptions): Promise<{ completedIds: string[] }> {
     return this.run(opts.tx, async (db) => {
       const at = opts.at ?? this.clock.now()
       const day = mytDay(at)
@@ -531,14 +530,11 @@ export class GamificationService {
         this.ports.practiceFacts.dayFacts(userId, day),
       ])
       const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
-      const out = { claimedIds: [] as string[], syiling: 0, xp: 0 }
+      const out = { completedIds: [] as string[] }
       for (const c of active) {
         if (done.has(c.id) || progressOf(c, metrics) < c.targetValue) continue
-        const r = await this.claimChallenge(userId, c.id, { ...opts, tx: db as TxClient, at })
-        if (!r.claimed) continue
-        out.claimedIds.push(c.id)
-        out.syiling += r.syiling
-        out.xp += r.xp
+        const r = await this.completeChallenge(userId, c.id, { ...opts, tx: db as TxClient, at })
+        if (r.completed) out.completedIds.push(c.id)
       }
       return out
     })
