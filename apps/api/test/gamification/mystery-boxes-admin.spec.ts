@@ -7,7 +7,7 @@ import { ADMIN, STUDENT, TEACHER, bootGamificationApp, dataOf, fail, signIn, use
 /**
  * S7-T07 part P7, DM-37, API-GAME-09 (boxes): the Kotak Misteri admin routes. FR-GM-23.1 (one box, seven rows),
  * AC-GM-23.5 (weights must total 100), AC-GM-23.6 (stock on prize rows), AC-ADM-P2-11.1 and 11.2 (backend half: boxes,
- * daily limit, openings per day). The pupil flow is unchanged and is not tested here.
+ * daily limit, openings per day). The pupil flow is tested in test/shop/mystery-box.spec.ts.
  */
 const SUMMARY = 'Sila lengkapkan semua medan wajib.'
 const ODDS = 'Jumlah peluang mesti 100%.'
@@ -212,7 +212,7 @@ describe('Kotak Misteri admin (S7-T07 P7, DM-37, API-GAME-09)', () => {
       expect((await t.db.query(`select id from mystery_boxes where is_active`)).map((r) => (r as { id: number }).id)).toEqual([5])
     })
 
-    it('an active box whose every prize has stock 0 is saved as is today (pins the behaviour; TODO-P8 answers an empty box at draw time)', async () => {
+    it('an active box whose every prize has stock 0 is saved as is today (the pupil side answers it with 409 BOX_UNAVAILABLE at open time, see test/shop/mystery-box.spec.ts)', async () => {
       const empty = SEVEN.map((p) => ({ ...p, stock: 0 }))
       const res = await admin.put(`${PATH}/5`, body({ prizes: empty }))
       expect(res.status).toBe(200)
