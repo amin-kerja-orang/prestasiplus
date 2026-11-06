@@ -4518,6 +4518,55 @@
         ],
         "additionalProperties": false
       },
+      "SupportSettings": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "whatsapp": {
+            "type": "string"
+          },
+          "hours": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "phone",
+          "whatsapp",
+          "hours"
+        ],
+        "additionalProperties": false
+      },
+      "SupportSettingsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "whatsapp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "SupportTicketDetail": {
         "type": "object",
         "properties": {
@@ -6925,15 +6974,17 @@
               "liabilityRm": {
                 "type": "number",
                 "minimum": 0,
-                "description": "Sum of costValueSen of the claims in the session year / 100."
+                "description": "Sum of the real cost snapshots of the pending_admin and delivered reward redemptions created in the Malaysia calendar year of the session year / 100 (the sum the session budget uses; DM-48, DM-77)."
               },
               "students": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Pupils with such a redemption."
               },
               "claims": {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0,
+                "description": "Number of such redemptions, digital ones included."
               }
             },
             "required": [
@@ -7013,6 +7064,7 @@
         "enum": [
           "OUT_OF_STOCK",
           "MONTHLY_CAP",
+          "REDEEM_BUDGET",
           "INSUFFICIENT_TOKENS",
           "DRAW_CLOSED",
           "TICKET_LIMIT",
@@ -7538,6 +7590,10 @@
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
+          },
+          "doubleSubmit": {
+            "type": "boolean",
+            "description": "The same pupil has another non-cancelled redemption of the same reward within 60 seconds of this one (FR-ADM-P2-08.3); computed, never stored."
           }
         },
         "required": [
@@ -7549,7 +7605,8 @@
           "denominationRm",
           "tokenCost",
           "status",
-          "createdAt"
+          "createdAt",
+          "doubleSubmit"
         ]
       },
       "RewardRedemptionListMeta": {
@@ -48586,7 +48643,7 @@
           "parts": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/QuestionWritePart"
+              "$ref": "#/components/schemas/QuestionPart"
             },
             "minItems": 1
           },
@@ -76538,7 +76595,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" (the mock ignores a blank title on create)."
+            "description": "Trimmed, at most 200 characters (422 `fields.title` \"Tajuk kertas tidak boleh melebihi 200 aksara.\"); required by the server (PRD30 13-01): omitted, blank or only spaces = 422 `fields.title` \"Tajuk set diperlukan.\"; more than 120 characters after trim = 422 `fields.title` \"Tajuk set tidak boleh melebihi 120 aksara.\" (the schema accepts up to 200 so the server answers with the field message)."
           },
           "levelScope": {
             "type": "string",
@@ -79783,7 +79840,7 @@
           "title": {
             "type": "string",
             "maxLength": 200,
-            "description": "`Tajuk set`. Omitted or blank = the default \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\"."
+            "description": "`Tajuk set` (PRD30 13-04). Required by the server: omitted, blank or only spaces = 422 `fields.title` \"Tajuk set diperlukan.\"; more than 120 characters after trim = 422 `fields.title` \"Tajuk set tidak boleh melebihi 120 aksara.\" (the schema accepts up to 200 so the server answers with the field message)."
           },
           "years": {
             "type": "array",
@@ -90300,6 +90357,135 @@
         }
       }
     },
+    "/admin/settings/support": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Support contact settings (API-ADM-10)",
+        "description": "Admin only. Empty strings when nothing is saved.",
+        "responses": {
+          "200": {
+            "description": "The contact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportSettings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Save the support contact (API-ADM-10)",
+        "description": "Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The saved contact.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportSettings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: email \"E-mel tidak sah.\"; whatsapp \"No. telefon tidak sah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/tiket/{id}": {
       "get": {
         "tags": [
@@ -92604,7 +92790,7 @@
           "rewards"
         ],
         "summary": "Redeem a catalogue reward with tokens",
-        "description": "One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).",
+        "description": "One transaction: snapshot redemption row (with the reward token cost and real cost at this moment), token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), session budget (only a reward with a real cost above 0; the real cost snapshots of every pupil's pending_admin and delivered redemptions created in the Malaysia calendar year of the session year, plus this reward, must not pass the budget; DM-48), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).",
         "parameters": [
           {
             "schema": {
@@ -92678,7 +92864,7 @@
             }
           },
           "409": {
-            "description": "OUT_OF_STOCK \"Stok hadiah telah habis.\"; MONTHLY_CAP \"Had tebusan bulanan dicapai.\"; INSUFFICIENT_TOKENS \"Token tidak mencukupi.\".",
+            "description": "OUT_OF_STOCK \"Stok hadiah telah habis.\"; MONTHLY_CAP \"Had tebusan bulanan dicapai.\"; REDEEM_BUDGET \"Had tebusan sesi ini telah dicapai.\" (ERR-GAME-22); INSUFFICIENT_TOKENS \"Token tidak mencukupi.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -131268,7 +131454,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: create a paper (createPaper)",
-        "description": "Body { subject, kertas, title? }. The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the default title is \"Percubaan SPM {subjectName} Kertas {kertas} (draf)\" and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { subject, kertas, title }. `title` (`Tajuk set`, PRD30 13-01) is required by the server: blank, only spaces or omitted = 422 VALIDATION_ERROR `fields.title` \"Tajuk set diperlukan.\"; more than 120 characters after trim = 422 `fields.title` \"Tajuk set tidak boleh melebihi 120 aksara.\". The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the title is the one sent (trimmed) and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -131567,7 +131753,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, at most 32 characters, else 422 \"Kod kertas terlalu panjang (paling banyak 32 aksara)\"; blank = the subject code, as the V2 cover) and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\"; a Pilih N on a Bahagian without a question: 422 \"Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan\"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, code?, reference?, sections?: [{ id, questionIds?, label?, instruction?, compulsory?, rule? }] }; only the keys sent change (R1-T34: `reference` replaces the whole list of reference panels, max 10, a panel image must be a stored question image; a section can be renamed, get an instruction (null clears it) or be marked compulsory; R1-T48 below adds the answering rule; the mark budget stays the Kontrak's). This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title blank \"Tajuk set diperlukan.\", or more than 120 characters after trim \"Tajuk set tidak boleh melebihi 120 aksara.\" (`fields.title`, the same rule as create, PRD30 13-01); a section id that is not a section of the paper \"Bahagian tidak sah\"; a question id that does not exist, or whose curriculum subject differs from the paper subject, \"Soalan tidak sah untuk kertas ini\" (an existence and subject check only, not a kertas or status check). R1-B09a / D90: a stimulus group is one unit, so a list that holds a member of a group is stored with the WHOLE group (all members, contiguous, in the group's published order); a question twice on the paper is refused with \"Soalan berulang dalam kertas: {ids}\". Status is not checked here (publish reports \"{N} soalan belum Terbit\"); POST /placements is the servable-checked way to add. R1-T48: `code` (V2 \"Kod kertas (kulit)\", the printed paper code, trimmed, at most 32 characters, else 422 \"Kod kertas terlalu panjang (paling banyak 32 aksara)\"; blank = the subject code, as the V2 cover) and, per section, `rule` ({ type: all } or { type: choose, n }, V2 \"Peraturan menjawab\" / \"Bilangan soalan dipilih\"; n from 1 to the printed question count (an admin-added Bahagian: the questions placed in it), else 422 \"Bilangan soalan dipilih mesti antara 1 dan {count}\"; a Pilih N on a Bahagian without a question: 422 \"Letakkan soalan dalam bahagian ini dahulu sebelum memilih bilangan soalan\"; a Pilih N that later exceeds the questions in the Bahagian is the hard blocker RULE_N_EXCEEDS_QUESTIONS) are editable on a draf. The Kontrak keeps the final say: a rule that differs shows at Terbit as the overridable blocker RULE_NOT_IN_CONTRACT, and a mark total that no longer matches the budget as MARKS_MISMATCH. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the prototype m28-bijak-spm (feature/student-prototype at 9af43134; the earlier snapshot docs/reference/bijak-paper-builder-mock is a subset of it); anything the prototype does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
