@@ -20,6 +20,7 @@ const uatEntries = Object.entries(pkg.scripts).filter(([name]) => name.startsWit
 const ALLOW_LIST: Record<string, string> = {
   'lib.ts': 'shared helper imported by the scripts, not a script',
   'group-integrity.sql': 'read-only SQL run with psql (U-OP-18), not tsx',
+  'paper-group-integrity.sql': 'read-only SQL run with psql (DM-26, S3-T02), not tsx',
   'tag-integrity.sql': 'read-only SQL run with psql, no U-OP number',
 }
 

@@ -84,7 +84,7 @@ describe('D90 builder sweep: a stimulus group is one unit on every builder path'
     return { groupId: made.body.data.id as string, members }
   }
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return res.body.data.id as string
   }

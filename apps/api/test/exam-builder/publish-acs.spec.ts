@@ -71,7 +71,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
     return id
   }
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return res.body.data.id as string
   }
@@ -204,7 +204,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
         select b.id, (select min(id) from users), 'admin', b.structure_hash, '{}'::jsonb, '[]'::jsonb from blueprints b where b.code = 'MAT/Z'`)
       await q(`update blueprints b set source = 'verified', serves_students = true, verification_id = (select max(v.id) from blueprint_verifications v where v.blueprint_id = b.id) where b.code = 'MAT/Z'`)
       const id = await approved({ kertas: '3' })
-      const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 3 })
+      const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 3 })
       expect(created.status, JSON.stringify(created.body)).toBe(201)
       const paper = created.body.data.id as string
       expect((await place(paper, (await sectionsOf(paper))[0]!, id)).status).toBe(201)
@@ -406,7 +406,7 @@ describe('R1 T43b publish ACs (PIPE AC-07.4 to AC-07.9)', () => {
       expect((await student.post(`/api/bijak/attempts/${first.attempt}/abandon`)).status).toBe(204)
 
       // an addition after Terbit is refused: the paper is read-only, so no "added after publish" question can exist
-      const extra = await approved({ questionText: 'Soalan tambahan selepas tarik balik: berapakah 9 + 9?' })
+      const extra = await approved({ questionText: 'Soalan tambahan selepas tarik balik: berapakah 9 + 9?', pointsValue: 2 }) // S3-T02 FR-QA-41: Bahagian C is Pilih N, its units carry equal marks
       const added = await place(paper, sections[0]!, extra)
       expect(added.status).toBe(422)
       expect(added.body.error.message).toBe(MSG_ALL.paperLocked)
