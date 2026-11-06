@@ -149,13 +149,24 @@ describe('Kontrak pool page: Tajuk set', () => {
     expect(input.attributes('placeholder')).toBe('cth: Latih Tubi Sejarah Mac')
     const button = w.get('[data-testid="generate-draft"]')
     expect(button.attributes('disabled')).toBeDefined()
+    // untouched: no error on first render, the button already stays off
+    expect(w.text()).not.toContain(REQUIRED)
+    await input.trigger('blur')
     expect(w.text()).toContain(REQUIRED)
+    expect(button.attributes('disabled')).toBeDefined()
     await input.setValue(x(121))
     expect(w.text()).toContain(TOO_LONG)
     expect(button.attributes('disabled')).toBeDefined()
     await button.trigger('click')
     await flushPromises()
     expect(gen).not.toHaveBeenCalled()
+  })
+
+  it('shows the rule error after input too, not only after blur', async () => {
+    const w = await render('boleh', vi.fn())
+    expect(w.text()).not.toContain(TOO_LONG)
+    await w.get('[data-testid="draft-title"]').setValue(x(121))
+    expect(w.text()).toContain(TOO_LONG)
   })
 
   it('sends the title and opens the draft', async () => {

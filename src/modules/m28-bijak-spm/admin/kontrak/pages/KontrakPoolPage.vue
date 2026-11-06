@@ -123,10 +123,13 @@ const canGenerate = computed(() => verdict.value === 'boleh')
 const title = ref('')
 const titleServerError = ref<string | undefined>()
 const titleRule = computed(() => setTitleError(title.value))
-const titleError = computed(() => titleRule.value ?? titleServerError.value)
+/** The rule error shows only once the field was touched (blur, input or a submit attempt), not on first render. */
+const titleTouched = ref(false)
+const titleError = computed(() => (titleTouched.value ? titleRule.value : undefined) ?? titleServerError.value)
 const reasonText = 'Tidak boleh dijana - lihat baris kurang di atas.'
 
 async function generate(): Promise<void> {
+  titleTouched.value = true
   if (!canGenerate.value || generating.value || titleRule.value) return
   generating.value = true
   draftError.value = null
@@ -170,7 +173,8 @@ async function generate(): Promise<void> {
           class="w-full"
           placeholder="cth: Latih Tubi Sejarah Mac"
           data-testid="draft-title"
-          @update:model-value="titleServerError = undefined"
+          @update:model-value="((titleServerError = undefined), (titleTouched = true))"
+          @blur="titleTouched = true"
         />
       </UFormField>
       <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
