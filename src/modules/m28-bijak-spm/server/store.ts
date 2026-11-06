@@ -30,8 +30,7 @@ import type {
   SaveExtractedPayload,
 } from '../admin/intake/types'
 import { AdminOps, seedAdminSlice, type AdminSlice } from './admin'
-import { composeFromBlueprint, poolUnits, type PoolUnit } from '../domain/blueprint'
-import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
+import { BANK, PAPERS, SUBJECTS, SUBJEKTIF_PAPERS, subjectName } from '../data/registry'
 import { countedIds } from '../domain/choose-n'
 import { gradePart, isBlank } from '../domain/grading'
 import { numericValue } from '../domain/math-expr'
@@ -43,7 +42,6 @@ import type {
   AttemptMode,
   AttemptPaperView,
   AttemptResult,
-  GenerateOutcome,
   GroupView,
   HistoryRow,
   InProgressInfo,
@@ -293,91 +291,8 @@ export class BijakServer implements BijakApi {
     }
   }
 
-  /** Kontrak list for Jana Kertas: which (subject, kertas) can be generated. */
-  async listContracts(): Promise<
-    {
-      subject: SubjectCode
-      subjectName: string
-      kertas: number
-      source: string
-      code: string
-      durationMin: number
-      sections: { label: string; take: number }[]
-      canGenerate: boolean
-      unavailableReason?: 'NO_BLUEPRINT'
-    }[]
-  > {
-    await this.tick()
-    return BLUEPRINTS.map((b) => ({
-      subject: b.subject,
-      subjectName: subjectName(b.subject),
-      kertas: b.kertas,
-      source: b.source,
-      code: b.code,
-      durationMin: b.durationMin,
-      sections: b.sections.map((s) => ({ label: s.label, take: s.take })),
-      canGenerate: b.source !== 'Draf',
-      ...(b.source === 'Draf' ? { unavailableReason: 'NO_BLUEPRINT' as const } : {}),
-    }))
-  }
-
   subjects() {
     return SUBJECTS
-  }
-
-  /** Jana Kertas (US-03). Returns a shortage list instead of a short paper. */
-  async generatePaper(
-    userId: number,
-    subject: SubjectCode,
-    kertas: number,
-  ): Promise<GenerateOutcome> {
-    await this.tick()
-    const bp = BLUEPRINTS.find((b) => b.subject === subject && b.kertas === kertas)
-    if (!bp || bp.source === 'Draf') return { ok: false, reason: 'no_blueprint' }
-    const unitsByPool = new Map<string, PoolUnit[]>()
-    for (const s of bp.sections) {
-      unitsByPool.set(
-        s.pool,
-        poolUnits(s.pool, BANK.pool, BANK.groups, (qid) => BANK.questions.get(qid)?.groupId),
-      )
-    }
-    const seen = new Set(
-      Object.values(this.state.attempts)
-        .filter((a) => a.userId === userId)
-        .flatMap((a) => a.sections.flatMap((s) => s.questionIds)),
-    )
-    this.state.seq += 1
-    const outcome = composeFromBlueprint(bp, unitsByPool, {
-      seed: this.now() + this.state.seq * 7919 + userId,
-      seen,
-    })
-    if (!outcome.ok) return { ok: false, reason: 'shortage', shortages: outcome.shortages }
-    const id = `jana-${subject.toLowerCase()}-k${kertas}-${this.state.seq}`
-    const gen: GeneratedPaper = {
-      id,
-      userId,
-      createdAt: this.now(),
-      title: `Kertas Jana ${subjectName(subject)} Kertas ${kertas} (#${this.state.seq})`,
-      subject,
-      kertas: kertas as 1 | 2,
-      year: new Date(this.now()).getFullYear(),
-      code: bp.code,
-      durationMin: bp.durationMin,
-      instructions: bp.instructions,
-      reference: bp.reference,
-      sections: outcome.sections.map((s, i) => ({
-        ...s,
-        id: `${id}-s${i + 1}`,
-        questionCount: s.questionIds.length,
-        markBudget: effectiveMarks(
-          s.rule,
-          s.questionIds.map((qid) => this.questionMarks(BANK.questions.get(qid)!)),
-        ),
-      })),
-    }
-    this.state.generated[id] = gen
-    this.persist()
-    return { ok: true, paperId: id }
   }
 
   /* -------------------------------------------------------------------------- attempts */
