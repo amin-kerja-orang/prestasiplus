@@ -47,7 +47,7 @@ export function performanceBlock(view: SchoolPerformanceView, xs: PracticeXs, ta
     },
     levels: LEVELS.map(({ code, name }) => {
       const level = view.levels.find((l) => l.code === code)
-      return { code, name, accuracy: level ? level.accuracy : 0 }
+      return { code, name, accuracy: level ? level.accuracy : null }
     }),
     distribution,
     total: distribution.reduce((sum, d) => sum + d.count, 0),

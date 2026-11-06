@@ -22,10 +22,8 @@ import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
   LATIH_TUBI_TARGETS,
-  MISSION_COINS_PER_CORRECT,
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
-  SPM_LEVEL_CODES,
 } from './rules'
 
 /** What a start resolves to, before the session row exists. */
@@ -161,8 +159,6 @@ export class PracticeStartPlanner {
 
     const plan = blank(req.mode)
     switch (req.mode) {
-      case 'random':
-        return this.random(plan, userId, req, now)
       case 'chapter':
         return this.chapter(plan, userId, req, isTest)
       case 'revision':
@@ -202,16 +198,6 @@ export class PracticeStartPlanner {
     return new Set((await this.repo.offeredLevels()).map((l) => l.id))
   }
 
-  /**
-   * Latih Tubi draws through `SPM_SERVABLE_SQL` (S1 file `questions/learner-visibility.ts`), which still serves T4 and T5 only
-   * (`OFFERED_LEVEL_CODES`) until S4-T06 PR 3 (after S1-T07). Until then the Latih Tubi levels are the offered levels that the SPM rule can serve,
-   * so a T1..T3 start is refused as an invalid level instead of being accepted and drawing nothing.
-   * TODO(S4-T06 PR3): return `offeredLevelIds()` here and drop `SPM_LEVEL_CODES` once the SQL twin follows `offeredLevels`.
-   */
-  private async latihTubiLevelIds(): Promise<Set<string>> {
-    return new Set((await this.repo.offeredLevels()).filter((l) => SPM_LEVEL_CODES.includes(l.code)).map((l) => l.id))
-  }
-
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
   private async serve(ids: readonly string[], activity?: PracticeDrillActivity): Promise<PracticeQuestion[]> {
     const unique = [...new Set(ids)]
@@ -249,27 +235,6 @@ export class PracticeStartPlanner {
   }
 
   // --- modes ------------------------------------------------------------------------------------
-
-  private async random(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
-    const subject = await this.subjectOf(req.subjectCode)
-    const offeredIds = await this.offeredLevelIds()
-    const offered = subject.educationLevelIds.map(idToString).filter((id) => offeredIds.has(id))
-    const levelId = req.levelId ?? null
-    if (levelId !== null && !offered.includes(levelId)) throw invalidField('levelId')
-    const difficulty = req.difficulty ?? null
-    const count = countIn(req.count, COUNT_OPTIONS)
-    const levels = levelId !== null ? [levelId] : offered
-    if (levels.length === 0) throw notEnoughQuestions()
-    const subjectId = idToString(subject.id)
-    const ids = await this.ports.questions.sample(
-      { subjectId, educationLevelIds: levels, activity: 'databank', ...(difficulty !== null ? { difficulty } : {}) },
-      count,
-      await this.rng(userId, now),
-    )
-    const served = await this.serve(ids, 'databank')
-    if (served.length < count) throw notEnoughQuestions()
-    return Object.assign(plan, { subjectId, levelId, difficulty, served })
-  }
 
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
     const chapterId = idFromString(validId(req.chapterId))
@@ -330,11 +295,11 @@ export class PracticeStartPlanner {
 
   private async latihTubi(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    const offeredIds = await this.latihTubiLevelIds()
+    const offeredIds = await this.offeredLevelIds()
     const levelId = req.levelId ?? null
     if (levelId !== null && !offeredIds.has(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
-    if (difficulty !== null && (difficulty < 2 || difficulty > 5)) throw invalidField('difficulty')
+    if (difficulty !== null && (difficulty < 1 || difficulty > 5)) throw invalidField('difficulty')
     const subjectId = idToString(subject.id)
 
     if (req.targetQuestionId !== undefined && req.targetQuestionId !== null) {
@@ -349,7 +314,8 @@ export class PracticeStartPlanner {
     }
 
     const target = LATIH_TUBI_TARGETS[subject.code]
-    const count = target !== undefined ? countIn(req.count, [target]) : countIn(req.count, LATIH_TUBI_COUNTS)
+    // OPT-BILANGAN-LT (R1-MUR-16): the config page's 5/10/15/20 are always accepted, next to the subject target / free counts.
+    const count = countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
     const ids = await this.ports.questions.sample(
       {
         subjectId,
@@ -393,7 +359,7 @@ export class PracticeStartPlanner {
       subjectId: res.subjectId,
       missionId: req.missionId,
       served,
-      coinsPerCorrect: res.coinsPerCorrect || MISSION_COINS_PER_CORRECT,
+      coinsPerCorrect: null,
     })
   }
 
@@ -421,7 +387,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    const served = await this.serve(res.questionIds, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,

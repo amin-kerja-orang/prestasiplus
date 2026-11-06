@@ -5,22 +5,55 @@
  * "Latih Tubi Rawak" and one card per chapter subject (#7; grid 1 / `md` 2 / `xl` 3) linking to S5.
  * DV-M05-15: "Latih Tubi Rawak" is 44 px high below `lg`.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
-import { LOWER_FORM_COPY, useIsLowerForm } from '@/lib/lower-form'
 import { formatCount } from '@/lib/number'
+import { useSessionStore } from '@/stores/session'
 
 import { fetchChapterSubjects } from '../api/practice'
+import {
+  chapterLevelOptions,
+  chapterListHref,
+  levelCodeOfGrade,
+} from '../components/chapter/chapter-lib'
 import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
-const lowerForm = useIsLowerForm()
 const { data, error, reload } = useApi((signal) => fetchChapterSubjects({ signal }))
-const subjects = computed(() => data.value?.data ?? [])
+const allSubjects = computed(() => data.value?.data ?? [])
+
+// FR-MUR-9-5: "Pilih Tahap". Default = the pupil's own form (D101); a teacher: the first level that has chapters.
+const session = useSessionStore()
+const levelOptions = computed(() => chapterLevelOptions(allSubjects.value))
+const levelItems = computed(() =>
+  levelOptions.value.map((l) => ({
+    label: `${l.name} — ${formatCount(l.questionCount)} soalan`,
+    value: l.code,
+  })),
+)
+const picked = ref<string | null>(null)
+const levelCode = computed(
+  () =>
+    picked.value ??
+    (session.user?.role === 'student' ? levelCodeOfGrade(session.user.grade) : null) ??
+    // A teacher, or a pupil without a T1-T5 grade: the first level that has chapters.
+    levelOptions.value[0]?.code ??
+    null,
+)
+// Only the chosen level's chapters and servable questions are counted (D91).
+const subjects = computed(() =>
+  allSubjects.value.flatMap((s) => {
+    const l = s.levels.find((x) => x.code === levelCode.value)
+    return l ? [{ ...s, level: l, chapterCount: l.chapterCount, questionCount: l.questionCount }] : []
+  }),
+)
+function onLevelChange(code: unknown): void {
+  if (typeof code === 'string') picked.value = code
+}
 </script>
 
 <template>
@@ -44,16 +77,19 @@ const subjects = computed(() => data.value?.data ?? [])
       >
     </template>
 
-    <DsEmptyState
-      v-if="lowerForm"
-      icon="books"
-      :title="LOWER_FORM_COPY.title"
-      :description="LOWER_FORM_COPY.description"
-      data-testid="lower-form-empty"
-    />
+    <UFormField v-if="levelItems.length > 0" label="Pilih Tahap" class="w-full lg:w-80">
+      <USelect
+        :model-value="levelCode ?? undefined"
+        :items="levelItems"
+        size="xl"
+        class="w-full"
+        data-testid="chapter-index-level-select"
+        @update:model-value="onLevelChange"
+      />
+    </UFormField>
 
     <DsEmptyState
-      v-else-if="data && subjects.length === 0"
+      v-if="data && subjects.length === 0"
       icon="stack"
       title="Tiada subjek bab tersedia untuk tahap ini."
       data-testid="chapter-subjects-empty"
@@ -66,7 +102,7 @@ const subjects = computed(() => data.value?.data ?? [])
     >
       <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
         <RouterLink
-          :to="`/practice/chapter/${s.code}`"
+          :to="chapterListHref(s.code, s.level.id)"
           class="block h-full"
           :data-testid="`chapter-subject-${s.code}`"
         >

@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type RouteLocationNormalized } from 'vue-router'
 
 import { decideAccess, type GuardSession } from '@/app/router/guards'
 import type { Role } from '@/stores/session-types'
+
+const store = vi.hoisted(() => ({ role: null as string | null }))
+vi.mock('@/stores/session', () => ({ useSessionStore: () => store }))
 
 import analisaItem, { analisaItemTarget } from '../../routes/analisa-item'
 
@@ -29,16 +32,20 @@ const session = (role: Role | null): GuardSession => ({
 const decide = (path: string, role: Role | null) =>
   decideAccess(router.resolve(path) as unknown as RouteLocationNormalized, session(role))
 
-describe('M08 analisa-item route roles (SW5-15)', () => {
+describe('M08 analisa-item route roles (SW5-15, S10-T03)', () => {
   it('the id-less S9 answers the in-place 403 page to the admin, who has no school', () => {
     expect(router.resolve('/analisa-item/sekolah').name).toBe('m08.analisa-item.sekolah')
     expect(decide('/analisa-item/sekolah', 'admin')).toEqual({ kind: 'in-place', status: 403 })
   })
 
-  it('the id-less S9 stays open to teacher, student and school admin and the other roles', () => {
-    for (const role of ALL_ROLES.filter((r) => r !== 'admin')) {
+  it('the id-less S9 stays open to teacher, school admin and the other roles, but not to the pupil', () => {
+    for (const role of ALL_ROLES.filter((r) => r !== 'admin' && r !== 'student')) {
       expect(decide('/analisa-item/sekolah', role)).toEqual({ kind: 'allow' })
     }
+  })
+
+  it('the pupil gets the in-place 403 page on the id-less S9 (FR-MUR-6-2, AC-MUR-6-5)', () => {
+    expect(decide('/analisa-item/sekolah', 'student')).toEqual({ kind: 'in-place', status: 403 })
   })
 
   it('S9 /{id} stays open to the admin (any school) and to every other role', () => {
@@ -58,6 +65,39 @@ describe('M08 analisa-item route roles (SW5-15)', () => {
         )
       }
     }
+  })
+
+  it('/analisa-item is the pupil page, a component route and no longer a redirect record', () => {
+    const rec = analisaItem.find((r) => r.path === '/analisa-item')
+    expect(rec?.redirect).toBeUndefined()
+    expect(rec?.component).toBeTypeOf('function')
+    expect(router.resolve('/analisa-item').name).toBe('m08.analisa-item.murid')
+    expect(decide('/analisa-item', 'student')).toEqual({ kind: 'allow' })
+  })
+
+  it('beforeEnter keeps the pupil and sends every other role through analisaItemTarget', () => {
+    const rec = analisaItem.find((r) => r.path === '/analisa-item')
+    const guard = rec?.beforeEnter as () => unknown
+    const expected: [string | null, string | true][] = [
+      ['student', true],
+      ['teacher', '/analisa-item/kelas'],
+      ['admin', '/analisa-item/kelas'],
+      ['school_admin', '/analisa-item/sekolah'],
+      ['parent', '/dashboard'],
+      [null, '/login'],
+    ]
+    for (const [role, target] of expected) {
+      store.role = role
+      expect(guard(), String(role)).toBe(target)
+    }
+  })
+
+  it('analisaItemTarget: guest → /login, pupil → own page', () => {
+    expect(analisaItemTarget(null)).toBe('/login')
+    expect(analisaItemTarget('student')).toBe('/analisa-item')
+    expect(analisaItemTarget('teacher')).toBe('/analisa-item/kelas')
+    expect(analisaItemTarget('admin')).toBe('/analisa-item/kelas')
+    expect(analisaItemTarget('school_admin')).toBe('/analisa-item/sekolah')
   })
 
   it('a guest still goes to /login', () => {

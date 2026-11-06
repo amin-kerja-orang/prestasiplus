@@ -5,6 +5,8 @@ import type { TxClient } from '../../db/client'
 import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
+import { AnswerLogPort, writableModeOf } from './answer-log.port'
+import { coinsPerCorrect } from './coins'
 import { alreadySubmitted, notFound } from './errors'
 import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
@@ -41,7 +43,7 @@ export interface SessionRecord {
   questionSetId: string | null
   timeLimitSec: number | null
   questionCount: number
-  status: 'in_progress' | 'completed'
+  status: 'in_progress' | 'completed' | 'abandoned'
   correctCount: number
   timeSpentSec: number
   coinsEarned: number
@@ -285,7 +287,10 @@ export function queueOrder(a: QueueRecord, b: QueueRecord): number {
  */
 @Injectable()
 export class PracticeRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
+  ) {}
 
   private get db() {
     return this.prisma.client
@@ -484,32 +489,27 @@ export class PracticeRepository {
       const userId = idFromString(locked.userId)
 
       // (2) answer rows, then the checks they replace.
-      if (graded.length > 0) {
-        await this.db.practiceAnswer.createMany({
-          data: graded.map((g) => ({
-            sessionId: locked.id,
-            userId,
-            questionId: idFromString(g.check.questionId),
-            questionVersionNo: g.check.questionVersionNo,
-            subjectId: bigOrNull(g.subjectId),
-            educationLevelId: bigOrNull(g.educationLevelId),
-            chapterId: bigOrNull(g.chapterId),
-            topicId: bigOrNull(g.topicId),
-            difficulty: g.difficulty,
-            questionType: g.questionType,
-            selectedLabel: g.check.selectedLabel,
-            isCorrect: g.isCorrect,
-            answeredAt: g.check.checkedAt,
-            historical: false,
-            clientUuid: locked.clientUuid,
-            isTest: test,
-          })),
+      // The port writes the row and copies the dimensions of the served version (the check's version); it joins this transaction.
+      for (const g of graded) {
+        await this.answerLog.record({
+          userId: locked.userId,
+          attemptId: locked.id,
+          questionId: g.check.questionId,
+          partRef: null,
+          mode: writableModeOf(locked.mode),
+          isCorrect: g.isCorrect,
+          marksAwarded: g.isCorrect ? 1 : 0,
+          marksMax: 1,
+          answeredAt: g.check.checkedAt,
+          isTest: test,
+          selectedLabel: g.check.selectedLabel,
+          questionVersionNo: g.check.questionVersionNo,
         })
       }
       await this.db.practiceCheck.deleteMany({ where: { sessionId: locked.id } })
 
       // (3) the session.
-      const coins = sessionCoins(locked.mode, correct, locked.coinsPerCorrect)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.update({
         where: { id: locked.id },
@@ -557,7 +557,7 @@ export class PracticeRepository {
       const correct = input.answers.filter((a) => a.isCorrect).length
       const cap = MAX_SECONDS_PER_QUESTION * total
       const spent = Math.max(0, Math.min(cap, Math.round((input.completedAt.getTime() - input.startedAt.getTime()) / 1000)))
-      const coins = sessionCoins('pksk', correct)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.create({
         data: {
@@ -576,18 +576,21 @@ export class PracticeRepository {
           isTest: input.isTest,
         },
       })
-      await this.db.practiceAnswer.createMany({
-        data: input.answers.map((a) => ({
-          sessionId: row.id,
-          userId: idFromString(input.userId),
-          questionId: idFromString(a.questionId),
-          selectedLabel: a.optionIndex === null ? null : String.fromCharCode(65 + a.optionIndex),
+      for (const a of input.answers) {
+        await this.answerLog.record({
+          userId: input.userId,
+          attemptId: row.id,
+          questionId: a.questionId,
+          partRef: null,
+          mode: 'pksk',
           isCorrect: a.isCorrect,
+          marksAwarded: a.isCorrect ? 1 : 0,
+          marksMax: 1,
           answeredAt: input.completedAt,
-          historical: false,
           isTest: input.isTest,
-        })),
-      })
+          selectedLabel: a.optionIndex === null ? null : String.fromCharCode(65 + a.optionIndex),
+        })
+      }
       const done: DirectCompleted = { session: toSession(row), correct, total, timeSpentSec: spent, coinsEarned: coins, pointsEarned: points, completedAt: input.completedAt }
       return { done, result: await completed(done, tx) }
     })
@@ -646,6 +649,24 @@ export class PracticeRepository {
   }
 
   // --- reads ------------------------------------------------------------------------------------
+
+  /**
+   * DM-66 sweeper statement: every `in_progress` session whose last activity (the newest of its
+   * `practice_checks.checked_at` and `started_at`) is before `cutoff` becomes `abandoned`. Its checks are kept, no
+   * answer row is written, no reward is paid, `completed_at` stays null. Returns the rows changed.
+   */
+  async abandonIdle(cutoff: Date, limit = 500): Promise<number> {
+    return this.db.$executeRaw`
+      UPDATE practice_sessions SET status = 'abandoned', updated_at = now()
+       WHERE id IN (
+         SELECT s.id FROM practice_sessions s
+          WHERE s.status = 'in_progress'
+            AND greatest(s.started_at, coalesce((SELECT max(c.checked_at) FROM practice_checks c WHERE c.session_id = s.id), s.started_at)) < ${cutoff}::timestamptz
+          ORDER BY s.started_at
+          LIMIT ${limit}::int
+          FOR UPDATE OF s SKIP LOCKED)
+         AND status = 'in_progress'`
+  }
 
   /**
    * Completed sessions of a user in `modes`, newest first (completed_at desc, then id desc). Other modules

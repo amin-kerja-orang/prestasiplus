@@ -71,8 +71,7 @@ describe('GET /guru/command-center/live-data', () => {
     expect(body.recentFeed).toHaveLength(10)
     expect(body.recentFeed[0]?.time).toMatch(/^\d{2}:\d{2}$/)
     expect(body.kirkT2Accuracy).toBe(72.2)
-    expect(body.kirkT2Prev).toBe(0)
-    // no answers in the 30 days before: there is no delta (not +72)
+    expect(body.kirkT2Prev).toBeNull()
     expect(body.kirkT2Delta).toBeNull()
     expect(body.kirkT3Active).toBe(3)
     expect(body.kirkT3Prev).toBe(0)
@@ -87,7 +86,7 @@ describe('GET /guru/command-center/live-data', () => {
     expect(body.classes).toEqual([])
     expect(body.topStudents).toEqual([])
     expect(body.engagement).toEqual({ champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 })
-    expect(body.accuracy).toBe(0)
+    expect(body.accuracy).toBeNull()
   })
 
   it('a second teacher sees only own school 2 pupil', async () => {
@@ -125,15 +124,15 @@ describe('GET /guru/command-center/evaluate and /predictive', () => {
   it('predictive: all three pupils have >= 10 answers; distribution sums to the total', async () => {
     const body = CommandCenterGuruPredictiveSchema.parse((await getAs(teacher, '/guru/command-center/predictive')).body)
     expect(body.totalPredicted).toBe(3)
-    expect(body.predictions.map((p) => p.overallAccuracy)).toEqual([67, 75, 75])
+    expect(body.predictions.map((p) => p.overallAccuracy)).toEqual([66.7, 75, 75])
     expect(body.predictions.map((p) => p.predictedGrade)).toEqual(['B+', 'A-', 'A-'])
     expect(Object.keys(body.gradeDistribution)).toHaveLength(10)
     expect(Object.values(body.gradeDistribution).reduce((a, b) => a + b, 0)).toBe(body.totalPredicted)
     expect(body.gradeDistribution['A-']).toBe(2)
     expect(body.atRiskCount).toBe(0)
     expect(body.avgPredictedGps).toBe(2.33)
-    expect(body.predictions[0]?.trend).toBe(0)
-    expect(body.predictions[0]?.trendLabel).toBe('Stabil')
+    expect(body.predictions[0]?.trend).toBeNull()
+    expect(body.predictions[0]?.trendLabel).toBeNull()
     expect(body.predictions[0]?.consistency).toBe(7)
   })
 
