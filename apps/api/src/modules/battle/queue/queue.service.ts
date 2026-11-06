@@ -292,11 +292,18 @@ export class QueueService {
 
   /**
    * Creates the battle of two waiting pupils in the poller's transaction (the poller's row is already locked). The other
-   * row is locked with SKIP LOCKED, so two pupils polling at once never wait for each other: the one that cannot lock simply
-   * tries again on its next poll. Null when the other entry moved on (matched, cancelled, expired, a joiner arrived).
+   * row is locked blocking when the poller is the earlier entry and with SKIP LOCKED when it is the later one, so two pupils
+   * polling at once end in one battle (the later poll skips, the earlier one waits for it) and never deadlock. Null when the other entry moved on (matched, cancelled, expired, a joiner arrived).
    */
   private async matchWithHuman(q: QueueRow, human: HumanMatch, isTest: boolean, now: Date): Promise<string | null> {
-    const locked = await this.prisma.client.$queryRaw<{ id: bigint }[]>`SELECT id FROM battle_queues WHERE id = ${human.otherQueue} FOR UPDATE SKIP LOCKED`
+    // Lock the other row in one fixed direction only: the earlier entry of the two waits (blocking) for the later one, the later
+    // entry skips. Two polls at the same moment hold their own rows, so with SKIP LOCKED on both sides each skipped the other and
+    // both stayed waiting (a lost match). Wait-for edges only ever point to a later entry, so there is no deadlock cycle, and the
+    // wait is bounded by the other poll's transaction (which never waits for this one).
+    const waitForOther = human.forQueue === human.streamQueue
+    const locked = waitForOther
+      ? await this.prisma.client.$queryRaw<{ id: bigint }[]>`SELECT id FROM battle_queues WHERE id = ${human.otherQueue} FOR UPDATE`
+      : await this.prisma.client.$queryRaw<{ id: bigint }[]>`SELECT id FROM battle_queues WHERE id = ${human.otherQueue} FOR UPDATE SKIP LOCKED`
     if (locked.length === 0) return null
     const c = (await this.prisma.client.battleQueue.findUnique({ where: { id: human.otherQueue } })) as QueueRow | null
     if (
