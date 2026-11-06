@@ -40,7 +40,7 @@ import { gradeOfLevel, toTeacherClass, type ClassNames } from './classes.mapper'
 import { ClassesRepository, type ClassRecord } from './classes.repository'
 import { gradeOfSlug, levelLabelOfGrade } from './level-slug'
 import { ClassesPorts } from './ports'
-import { invalid, tryParseStrict } from './strict-body'
+import { invalid, parseStrict, tryParseStrict } from './strict-body'
 import type { TeacherQuestionStats } from './ports'
 import type { ClassEnrolment, ClassJoinedClass, TeacherChapterOption, TeacherStudent, TeacherTopicOption } from './types'
 
