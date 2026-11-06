@@ -124,7 +124,7 @@ describe('search and invitations (M16-07 to M16-11)', () => {
         [{ subject_id: '987654' }, 'Subjek tidak sah.'],
         [{ question_type: 'spm', subject_id: phy }, 'Subjek tidak sah.'],
         [{ subject_id: s.sci }, 'Soalan tidak mencukupi.'],
-        [{ question_type: 'pksk', subject_id: undefined, pksk_domain_id: '1', pksk_target_level: 'T1' }, 'Domain PKSK tidak sah.'],
+        [{ question_type: 'pksk', subject_id: undefined, pksk_domain_id: '999999', pksk_target_level: 'T1' }, 'Domain PKSK tidak sah.'],
         [{ question_type: 'spm', subject_id: s.sci }, 'Soalan tidak mencukupi.'], // R1-B06: math has T4 questions, so it has an SPM pool; science (3) is too small
       ]
       for (const [over, error] of cases) {

@@ -59,7 +59,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
-      ['PM-03', 'Monitoring', '/guru/monitoring'],
+      ['PM-03', 'Monitoring', '/admin/monitoring'],
       ['PM-04', 'Analitik', '/admin/analytics'],
       ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
       ['PM-06', 'Tahap 1: Reaksi', '/admin/kirkpatrick/reaction', K],
@@ -96,7 +96,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['BS-01', 'Bank Soalan', '/admin/questions'],
       ['BS-02', 'Import & Semakan', '/admin/spm/soalan/ekstrak'], // V2 I1: the batch list (same screen as KS-14 Senarai Ekstrak)
-      ['BS-03', 'Sumber Kertas'],
+      ['BS-03', 'Sumber Kertas', '/admin/source-papers'],
       ['BS-04', 'Kualiti Soalan', '/admin/questions/quality'],
       ['BS-05', 'Laporan Soalan', '/admin/question-reports'],
       ['BS-06', 'Soalan PKSK', '/admin/pksk/questions'],
@@ -208,7 +208,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Sistem',
     icon: 'gear',
     items: items([
-      ['SY-01', 'Tetapan'],
+      ['SY-01', 'Tetapan', '/admin/settings'],
       ['SY-02', 'Kawalan Ciri'],
       ['SY-03', 'Prestasi Sistem'],
       ['SY-04', 'Log Audit'],

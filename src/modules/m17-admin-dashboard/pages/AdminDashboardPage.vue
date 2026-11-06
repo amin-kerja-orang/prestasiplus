@@ -86,6 +86,7 @@ const tiles = computed(() => {
       unit: 'Battle Arena',
       value: d.battles.total,
       sub: `PvP Quiz Battles · ${n(d.battles.total)} Total · ${n(d.battles.active)} Aktif · ${n(d.battles.finished)} Selesai`,
+      // Bundled offline (D-09): the Nuxt UI scanner reads the literals i-ph-sword and i-ph-sword-duotone from this source.
       icon: 'sword',
     },
   ]

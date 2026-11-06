@@ -76,6 +76,15 @@ describe('Pentadbiran menu data', () => {
     expect(router.resolve('/admin/studio').matched.length).toBeGreaterThan(0)
   })
 
+  it('S2-T09: BS-03 Sumber Kertas is visible and opens the source paper register', () => {
+    expect(ALL_ITEMS.find((i) => i.id === 'BS-03')).toMatchObject({
+      label: 'Sumber Kertas',
+      to: '/admin/source-papers',
+    })
+    const router = createAppRouter({ history: createMemoryHistory() })
+    expect(router.resolve('/admin/source-papers').matched.length).toBeGreaterThan(0)
+  })
+
   it('never points a visible item at a placeholder route', () => {
     for (const item of ALL_ITEMS) expect(item.to, item.id).not.toContain('/admin/p/')
   })

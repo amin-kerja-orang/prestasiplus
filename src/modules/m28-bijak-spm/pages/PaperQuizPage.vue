@@ -92,6 +92,9 @@ const blocks = computed<Block[]>(() => {
   return out
 })
 
+/** A page can hold several groups: only the first opens its sheet by itself, the others wait for their chip (FR-X6-6, one modal sheet at a time). */
+const firstGroupBlock = computed(() => blocks.value.findIndex((b) => b.stimuli.length > 0))
+
 /** Only the API's "paper is being updated" 403 is this state; any other 403 ("Akses ditolak") stays an error. */
 function isPaperUnavailable(e: unknown): e is BijakError {
   return e instanceof BijakError && e.code === 'forbidden' && e.message === BIJAK_KUIZ_MESSAGES.paperUnavailable
@@ -239,6 +242,7 @@ void load()
           v-if="b.stimuli.length"
           :stimuli="b.stimuli"
           :group-id="b.key"
+          :initial-open="bi === firstGroupBlock"
         >
           <KuizItem
             v-for="e in b.items"

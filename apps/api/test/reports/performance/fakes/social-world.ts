@@ -41,7 +41,7 @@ export function socialWorld(): SocialWorld {
     ranking: new RankingService(ports, directory),
     board: new LeaderboardService(ports, clock, directory),
     profile: new PublicProfileService(ports, directory, clock),
-    weekly: new WeeklyReportService(),
+    weekly: new WeeklyReportService(ports, clock, {} as never),
   }
 }
 

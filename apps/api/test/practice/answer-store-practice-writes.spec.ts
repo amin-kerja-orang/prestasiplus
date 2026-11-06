@@ -151,14 +151,13 @@ describe('legacy session modes are written under a writable mode', () => {
   it.each([
     ['past_year', 'databank'],
     ['ramalan', 'tracking_a'],
-    ['random', 'latih_tubi'],
   ])('a %s session writes %s', async (mode, written) => {
     const body: Record<string, unknown> =
       mode === 'past_year'
         ? { mode, subjectCode: 'SEJ', count: 5 }
         : mode === 'ramalan'
           ? { mode, subjectCode: 'MATH', year: 2026, setNo: 1 }
-          : { mode, subjectCode: 'MATH', levelId: w.level.d1, count: 5 }
+          : { mode, subjectCode: 'MATH', count: 5 }
     if (mode === 'ramalan') t.ramalan.set(w.subject.math, 2026, 1, bank.random.slice(0, 4))
     const { started, submit } = await play(pelajar, t.bank, body, 1)
     expect(submit.status, JSON.stringify(submit.body)).toBe(200)
@@ -167,6 +166,12 @@ describe('legacy session modes are written under a writable mode', () => {
     expect(new Set(rows.map((r) => r.mode))).toEqual(new Set([written]))
     const s = await t.db.query<{ mode: string }>('select mode from practice_sessions where id = $1', [started.sessionId])
     expect(s[0]?.mode).toBe(mode)
+  })
+
+  it('S5-T03: a random session can no longer be started (422 "Mod tidak sah."); old rows keep the mapping above', async () => {
+    const res = await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Mod tidak sah.' })
   })
 })
 
@@ -190,6 +195,24 @@ describe('PKSK direct completion', () => {
     expect(rows.map((r) => r.selected_label)).toEqual(['A', 'C', null])
     expect(rows.map((r) => r.marks_awarded)).toEqual([1, 0, 0])
     for (const r of rows) expect(r).toMatchObject({ mode: 'pksk', attempt_id: done.session.id, marks_max: 1, is_test: false, historical: false })
+  })
+})
+
+describe('PKSK direct completion, 10 rows (AC-MUR-19-5)', () => {
+  it('a 10-question practice submit writes exactly 10 rows with mode pksk', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const ids = bank.random.slice(0, 10)
+    expect(ids).toHaveLength(10)
+    const { done } = await repo.completeDirect(
+      {
+        userId, isTest: false, domainCode: 'D1', level: 'T1', startedAt: new Date(START), completedAt: new Date('2026-10-19T09:05:00+08:00'),
+        answers: ids.map((q, i) => ({ questionId: q as string, isCorrect: i % 2 === 0, optionIndex: i % 4 })),
+      },
+      async () => null,
+    )
+    const rows = await rowsOf(done.session.id)
+    expect(rows).toHaveLength(10)
+    expect(new Set(rows.map((r) => r.mode))).toEqual(new Set(['pksk']))
   })
 })
 

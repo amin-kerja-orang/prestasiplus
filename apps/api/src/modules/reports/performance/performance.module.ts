@@ -6,15 +6,17 @@ import { CurriculumModule } from '../../curriculum/curriculum.module'
 import { FilesModule } from '../../files'
 import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
-import { UsersDirectoryAdapter } from './adapters'
+import { XsQueries } from '../../school-admin/xs-queries'
+import { UsersDirectoryAdapter, XsPupilRosterAdapter } from './adapters'
 import { HeadcountFactsService } from './headcount/headcount-facts.service'
 import { HeadcountController } from './headcount/headcount.controllers'
 import { HeadcountRepository } from './headcount/headcount.repository'
 import { HeadcountService } from './headcount/headcount.service'
+import { GuruWeeklyReportController } from './http/guru-weekly-report.controller'
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
 import { PublicStudentController, SocialController } from './http/social.controllers'
-import { PerformancePorts, DIRECTORY_PORT, TIMELINE_READ_PORT } from './ports'
+import { PerformancePorts, DIRECTORY_PORT, PUPIL_ROSTER_PORT, TIMELINE_READ_PORT, XS_COUNTS_PORT } from './ports'
 import {
   AnalyticsService,
   ClassPerformanceService,
@@ -42,10 +44,14 @@ import { TimelineService } from './timeline/timeline.service'
  */
 @Module({
   imports: [AuditModule, ThrottleModule, UsersModule, SchoolsModule, CurriculumModule, FilesModule],
-  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, SocialController, PublicStudentController, HeadcountController, TimelineController],
+  controllers: [AnalyticsController, PerformanceController, ItemAnalysisController, SocialController, GuruWeeklyReportController, PublicStudentController, HeadcountController, TimelineController],
   providers: [
     PerformancePorts,
     { provide: DIRECTORY_PORT, useClass: UsersDirectoryAdapter },
+    // XS-1 / XS-3 (S6-T03): Prestasi sekolah counts its Murid and Guru with the same named queries as the school admin Dashboard.
+    XsQueries,
+    { provide: XS_COUNTS_PORT, useExisting: XsQueries },
+    { provide: PUPIL_ROSTER_PORT, useClass: XsPupilRosterAdapter },
     CtxFactory,
     StatsService,
     AnalyticsService,

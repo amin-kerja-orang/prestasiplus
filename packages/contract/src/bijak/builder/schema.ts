@@ -6,6 +6,7 @@ import {
   BIJAK_PAPERS_MESSAGES,
   BijakBlueprintSourceSchema,
   BijakPaperReferencePanelSchema,
+  BijakPaperSurfaceSchema,
 } from '../papers/schema'
 import {
   BijakBlueprintClientSourceSchema,
@@ -73,8 +74,64 @@ export const BIJAK_BUILDER_MESSAGES = {
   blueprintExists: 'Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.',
   /** [PROPOSED] (blueprint admin has no prototype counterpart) */
   blueprintAlreadyRetired: 'Kontrak ini sudah dipersara.',
-  /** [PROPOSED] R1-T34: V2 Panel has the override tick "Terbitkan walaupun tidak memenuhi kontrak blueprint" (audited). */
-  overrideReasonRequired: 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint',
+  /** S3-T01, PRD30 field 14-07: the audited override tick "Terbitkan walaupun tidak memenuhi kontrak" needs a reason of 5 to 500 characters. */
+  overrideReasonRequired: 'Sebab pengecualian diperlukan (sekurang-kurangnya 5 aksara).',
+  /** S3-T01, FR-ADM-Q16.7: create refused for a Subjek with no DSKP unit at T4 or T5. */
+  dskpNotLoaded: 'DSKP belum dimuatkan untuk subjek ini. Kontrak tidak boleh dicipta.',
+  /** S3-T01, FR-QA-41: a section cannot be both `Wajib dijawab` and `Pilih N` (problem code COMPULSORY_CHOOSE). */
+  compulsoryChoose: 'Bahagian wajib dijawab tidak boleh digabungkan dengan Pilih N.',
+  /** S3-T01, PRD45 section 5.5: `Pilih N` out of range (problem code CHOOSE_N_RANGE). */
+  chooseNRange: 'Nombor N tidak sah.',
+  /** S3-T01, PRD30 field 16-18: `Markah setiap soalan` against the section (problem code MARKS_PER_QUESTION). */
+  marksPerQuestionMismatch: 'Markah setiap soalan mesti sama dengan markah bahagian.',
+  /** S3-T02, PRD30 13-01 and 13-04. */
+  setTitleRequired: 'Tajuk set diperlukan.',
+  /** S3-T02, PRD30 13-02 and 13-05. */
+  subjectRequired: 'Sila pilih subjek.',
+  /** S3-T02, PRD30 13-06, OPT-KERTAS. */
+  kertasInvalid: 'Kertas tidak sah.',
+  /** S3-T02, PRD30 13-07. */
+  countRange: 'Bilangan soalan mesti antara 1 dan 100.',
+  /** S3-T02, FR-ADM-QE7.5, FR-QA-41: `Pilih N` over units that differ in marks (blocker CHOICE_UNITS_UNEQUAL). */
+  choiceUnitsUnequal: 'Markah antara unit mesti sama.',
+  /** S3-T02, PRD30 Q-13 row action `Padam`. */
+  deleteTerbitSet: 'Tarik balik set ini ke draf dahulu.',
+  /** S3-T06, PRD30 field 18-02. */
+  subjektifTitleRequired: 'Tajuk diperlukan.',
+  /** S3-T06, PRD30 field 18-02: Tajuk at most 150 characters. [DOC DEFECT: no BM text in the PRD; default] */
+  subjektifTitleTooLong: 'Tajuk tidak boleh melebihi 150 aksara.',
+  /** S3-T06, PRD30 field 18-05. */
+  examBoardRequired: 'Negeri atau badan diperlukan.',
+  /** S3-T06, PRD30 field 18-06. */
+  yearRequired: 'Tahun diperlukan.',
+  /** S3-T06, PRD30 field 18-07 (PO decision 2026-11-05, item 17: 0 or empty = untimed). */
+  durationRange: 'Tempoh mesti antara 0 dan 300 minit.',
+  /** S3-T06, PRD30 field 18-08: Jumlah Markah 1 to 200 on create/edit. [DOC DEFECT: no BM text in the PRD for the range; default] */
+  totalMarksRange: 'Jumlah markah mesti antara 1 dan 200.',
+  /** S3-T06, PRD30 field 18-08 at Terbit: {a} = Jumlah Markah, {b} = the sum of the placed questions' marks. */
+  totalMarksMismatch: 'Jumlah markah ({a}) mesti sama dengan jumlah markah bahagian ({b}).',
+  /** S3-T06, FR-ADM-Q18.3: Terbit with no placed question. */
+  subjektifNoContent: '“{title}” tiada kandungan — tidak boleh diterbitkan.',
+  /** S3-T06, FR-ADM-Q18.8 / field 18-10: Terbit with a question that has no scheme. */
+  subjektifNoScheme: 'tiada skema — tidak disajikan',
+  /** S3-T06, field 18-09 (API-BIJAK-14 source upload). */
+  sourcePdfInvalid: 'Format fail tidak sah. Gunakan .pdf.',
+  /** S3-T06, field 18-09. */
+  sourcePdfTooLarge: 'Fail melebihi had 30 MB.',
+  /** S3-T06, API-BIJAK-14 apply (same rule as API-Q-25). */
+  paperPublishedWithdrawFirst: 'Kertas ini sudah diterbitkan. Tarik balik ke draf dahulu.',
+  /** S3-T06, API-BIJAK-14 apply: `{n}` = items of the batch still open (same as API-Q-25, ERR-CON-05). */
+  itemsUndecided: '{n} item belum diputuskan.',
+  /** S3-T06, API-BIJAK-14: the paper has no source batch yet. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
+  /** S3-T06, flashes of PRD30 field 18-11. */
+  subjektifCreated: '“{title}” telah dicipta sebagai draf.',
+  subjektifUpdated: '“{title}” telah dikemas kini.',
+  subjektifDeleted: '“{title}” telah dipadam.',
+  /** S3-T06 [DOC DEFECT: no BM text in the PRD]: Negeri, Tahun, Tempoh or Jumlah Markah sent for a Simulasi paper. */
+  subjektifOnly: 'Hanya untuk Kertas Subjektif.',
+  subjektifPublished: '“{title}” kini diterbitkan.',
+  subjektifHidden: '“{title}” disembunyikan daripada pelajar.',
   /** [PROPOSED] R1-T34 */
   groupNotOnPaper: 'Kumpulan rangsangan ini tiada dalam kertas ini',
   /** [PROPOSED] R1-T34 */
@@ -112,6 +169,22 @@ export const BIJAK_BUILDER_MESSAGES = {
   /** [PROPOSED] R1-T48 */
   groupEditEmpty: 'Tiada perubahan untuk disimpan',
 } as const
+
+/**
+ * S3-T02: every text of the card that the PRD does not give. [PROPOSED]: one place, listed in the PR, for the lead to confirm.
+ * `countAboveContract` is the "lead to confirm" message of FR-ADM-Q13.2.
+ */
+export const BIJAK_SET_BUILDER_PROPOSED = {
+  countAboveContract: (total: number) => `Bilangan soalan melebihi jumlah kontrak (${String(total)}).`,
+  poolGroups: (groups: number) => `${String(groups)} kumpulan rangsangan`,
+  scaledHint: (total: number) => `Kurang daripada ${String(total)}: setiap Bahagian dikecilkan mengikut kadar kontrak.`,
+  terbitFromPreview: 'Kertas diimport diterbitkan daripada pratonton.',
+  /** PRD30 13-01 and 13-04: `Tajuk set` is at most 120 characters (the PRD gives no message for the limit; the form follows N07-03). */
+  setTitleTooLong: 'Tajuk set tidak boleh melebihi 120 aksara.',
+} as const
+
+/** PRD30 13-01 and 13-04: `Tajuk set` is required and at most this many characters (after trim) on create, Jana set and update. */
+export const BIJAK_SET_TITLE_MAX = 120
 
 /**
  * R1-T48 texts that take a value. `numberUsed` and the section / question wording follow the V2 Panel "Semak Kertas Simulasi"
@@ -166,6 +239,8 @@ export const BIJAK_BUILDER_CHECK_LINES = {
   ruleExceeds: (n: number, count: number) => `peraturan menjawab Pilih ${String(n)} melebihi bilangan soalan (${String(count)})`,
   /** R1-T48: a Bahagian an admin added; the Kontrak has none (blueprint conformance, overridable). */
   sectionNotInContract: 'bahagian ini tiada dalam Kontrak',
+  /** S3-T02, FR-QA-25, 45 section 5.4 item 7: the placed question differs from `Markah setiap soalan` of the Kontrak (blueprint conformance, overridable). `no` is the question number on the paper. */
+  marksNotInContract: (no: string) => `Markah soalan ${no} tidak sepadan dengan kontrak.`,
 } as const
 
 /** The V2 label of an answering rule ("Jawab Semua" / "Pilih N"). */
@@ -209,7 +284,8 @@ export const BIJAK_BUILDER_INELIGIBLE_TEXT = {
  * Hard (false) = the paper's own checks (duplicates, split / incomplete / out-of-order / too-small groups, counts, marks, not Terbit), a placed
  * question missing from the candidate pool, a question pupils cannot be served, and the structural failures of a question (no answer key, no marks,
  * answer mode not allowed in the section, a broken group). Overridable (true) = only the blueprint-conformance blockers (PIPE AC-07.5, AC-26.3):
- * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review.
+ * the Kontrak is not Disahkan, and a question without DSKP unit, TP or with tags awaiting review. These values hold under a Kontrak that is not
+ * Disahkan; `bijakBuilderBlockerOverridable` applies the S3-T01 rule on top (under a Disahkan Kontrak nothing is overridable).
  */
 export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   NO_QUESTIONS: false,
@@ -242,9 +318,27 @@ export const BIJAK_BUILDER_BLOCKER_OVERRIDABLE = {
   SECTION_NOT_IN_CONTRACT: true,
   /** R1-T48 (B2): an admin-added Bahagian with no question; a paper cannot be published with an empty Bahagian, whatever the override says. */
   SECTION_EMPTY: false,
+  /** S3-T02, FR-QA-41: `Pilih N` over choice units with different marks. */
+  CHOICE_UNITS_UNEQUAL: false,
+  /** S3-T02, FR-QA-41: a section that is both `Wajib dijawab` and `Pilih N`. */
+  COMPULSORY_CHOOSE: false,
+  /** S3-T02, S3-T01 decision 15: a placed question differs from `Markah setiap soalan` of the Kontrak. */
+  MARKS_NOT_IN_CONTRACT: true,
+  /** S3-T06, PRD30 field 18-08: `Jumlah Markah` differs from the marks of the placed questions (Kertas Subjektif). */
+  TOTAL_MARKS_MISMATCH: false,
+  /** S3-T06, FR-ADM-Q18.8: a placed question of a Kertas Subjektif has a leaf with no scheme. */
+  NO_SCHEME: false,
 } as const
 export type BijakBuilderBlockerCode = keyof typeof BIJAK_BUILDER_BLOCKER_OVERRIDABLE
 export const BIJAK_BUILDER_BLOCKER_CODES = Object.keys(BIJAK_BUILDER_BLOCKER_OVERRIDABLE) as [BijakBuilderBlockerCode, ...BijakBuilderBlockerCode[]]
+
+/**
+ * S3-T01 (PRD30 field 14-07, PRD45 section 5.5): the exception tick is hidden when the paper's Kontrak is Disahkan, so INELIGIBLE,
+ * RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT are hard there (BLUEPRINT_NOT_VERIFIED cannot occur there). Under any other Kontrak the map decides.
+ */
+export function bijakBuilderBlockerOverridable(code: BijakBuilderBlockerCode, contractDisahkan: boolean): boolean {
+  return !contractDisahkan && BIJAK_BUILDER_BLOCKER_OVERRIDABLE[code]
+}
 
 /** CSRF failure of every mutation (copy of `AUTH_ERROR_MESSAGES.CSRF_INVALID`). */
 export const BIJAK_BUILDER_CSRF_MESSAGE = AUTH_ERROR_MESSAGES.CSRF_INVALID
@@ -258,7 +352,10 @@ const Kertas = z.number().int().min(1).meta({ description: 'Kertas number.', exa
 export const BijakBuilderSectionRuleSchema = z
   .discriminatedUnion('type', [
     z.strictObject({ type: z.literal('all') }),
-    z.strictObject({ type: z.literal('choose'), n: z.number().int().min(1) }),
+    z.strictObject({
+      type: z.literal('choose'),
+      n: z.number({ error: BIJAK_BUILDER_MESSAGES.chooseNRange }).int(BIJAK_BUILDER_MESSAGES.chooseNRange).min(1, BIJAK_BUILDER_MESSAGES.chooseNRange),
+    }),
   ])
   .meta({
     id: 'BijakBuilderSectionRule',
@@ -266,6 +363,73 @@ export const BijakBuilderSectionRuleSchema = z
       '{ type: all } = answer every question; { type: choose, n } = answer n of the questions (choose-N counts only the N largest questions in the section marks).',
   })
 export type BijakBuilderSectionRule = z.infer<typeof BijakBuilderSectionRuleSchema>
+
+/**
+ * S3-T02, PO decision 2026-11-05 item 6 (FR-ADM-Q13.1): which Tingkatan pupils see a paper at, stored in `papers.level_scope`. Chosen when the
+ * paper is created, default from the contract (`bijakDefaultLevelScope`). A stored null (a paper older than the decision) is not restricted.
+ */
+export const BIJAK_LEVEL_SCOPES = ['t4', 't5', 't4_t5'] as const
+export const BijakLevelScopeSchema = z.enum(BIJAK_LEVEL_SCOPES).meta({
+  id: 'BijakLevelScope',
+  description: '`Dilihat murid`: t4 = Tingkatan 4, t5 = Tingkatan 5, t4_t5 = Tingkatan 4 dan 5.',
+})
+export type BijakLevelScope = z.infer<typeof BijakLevelScopeSchema>
+
+/** The labels of `Dilihat murid` (FR-ADM-Q13.1). */
+export const BIJAK_LEVEL_SCOPE_LABELS: Readonly<Record<BijakLevelScope, string>> = {
+  t4: 'Tingkatan 4',
+  t5: 'Tingkatan 5',
+  t4_t5: 'Tingkatan 4 dan 5',
+}
+
+/** The default of `Dilihat murid` from the contract's stated T4:T5 share; a contract that states none covers both forms. */
+export function bijakDefaultLevelScope(share: { t4: number; t5: number } | null | undefined): BijakLevelScope {
+  if (share && share.t4 > 0 && share.t5 <= 0) return 't4'
+  if (share && share.t5 > 0 && share.t4 <= 0) return 't5'
+  return 't4_t5'
+}
+
+/** Whether a pupil sees a paper: no scope stored, or no Tingkatan known for the user (Mod Pelajar of an admin), is not restricted. `grade` is `users.grade` (T4 = 10, T5 = 11). */
+export function bijakLevelScopeAllows(scope: string | null | undefined, grade: number | null | undefined): boolean {
+  if (!scope || grade === null || grade === undefined) return true
+  return (grade === 10 && (scope === 't4' || scope === 't4_t5')) || (grade === 11 && (scope === 't5' || scope === 't4_t5'))
+}
+
+/**
+ * The order of the Negeri options (OPT-NEGERI-KERTAS, 40-cross-cutting, V2 order). List filters offer only the values present in the data, in this
+ * order; a value that is not listed comes after them, A-Z. Until the central reference list of S0-T12 (OPT-RUJUKAN-PUSAT) is on the base this is the only copy of the order.
+ */
+export const BIJAK_NEGERI_ORDER = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak',
+  'Selangor', 'Terengganu', 'WP Kuala Lumpur', 'WP Labuan', 'WP Putrajaya', 'MRSM', 'SBP', 'SABK', 'SMKA', 'SPM(U)', 'PPD',
+] as const
+
+/** The one comparison of a Negeri value (OPT-NEGERI-KERTAS stores the lower-case slug): `WP Kuala Lumpur`, `wp kuala lumpur` and `wp-kuala-lumpur` are the same value. */
+export const bijakNegeriSlug = (value: string): string => value.trim().toLowerCase().replace(/[\s_-]+/g, '-')
+
+/** `values` as filter options: trimmed, one per slug, ordered by `BIJAK_NEGERI_ORDER`. */
+export function bijakNegeriOptions(values: readonly string[]): string[] {
+  const slug = bijakNegeriSlug
+  const rank = new Map<string, number>(BIJAK_NEGERI_ORDER.map((v, i) => [slug(v), i]))
+  const seen = new Map<string, string>()
+  for (const v of values) if (v.trim() && !seen.has(slug(v))) seen.set(slug(v), rank.has(slug(v)) ? BIJAK_NEGERI_ORDER[rank.get(slug(v))!]! : v.trim())
+  return [...seen.entries()]
+    .sort(([a, av], [b, bv]) => (rank.get(a) ?? 99) - (rank.get(b) ?? 99) || av.localeCompare(bv, 'ms'))
+    .map(([, v]) => v)
+}
+
+/** S3-T02: the values the Tahun and Negeri filters offer. A filter with no value is hidden (its column holds no data). */
+export const BijakBuilderSourceFiltersSchema = z
+  .strictObject({
+    years: z.array(z.number().int()).meta({ description: 'OPT-TAHUN: years present in the data, descending.' }),
+    negeri: z.array(z.string()).meta({ description: 'OPT-NEGERI-KERTAS: values present in the data, in the order of the list.' }),
+  })
+  .meta({ id: 'BijakBuilderSourceFilters' })
+export type BijakBuilderSourceFilters = z.infer<typeof BijakBuilderSourceFiltersSchema>
+
+/** A repeated query parameter (`?negeri=a&negeri=b`): one value arrives as a string, several as an array. */
+const queryList = <T extends z.ZodType>(item: T, max: number) =>
+  z.preprocess((v) => (v === undefined || Array.isArray(v) ? v : [v]), z.array(item).max(max).optional())
 
 /** Paper lifecycle of the mock (`AdminPaperStatus`, admin-types.ts:167). */
 export const BIJAK_BUILDER_PAPER_STATUSES = ['draf', 'terbit'] as const
@@ -361,7 +525,7 @@ export const BijakBuilderPaperSchema = z
     kertas: Kertas,
     year: z.number().int(),
     code: z.string().min(1).meta({ description: 'Printed paper code.', example: '1449/2' }),
-    durationMin: z.number().int().min(1),
+    durationMin: z.number().int().min(0).meta({ description: 'Printed duration; 0 only on an untimed Kertas Subjektif paper (S3-T06).' }),
     instructions: z.array(z.string()).meta({ description: 'Cover instruction lines, verbatim.' }),
     reference: ReferencePanels.optional().meta({
       description: 'Reference-sheet panels; absent when the paper has none.',
@@ -373,6 +537,16 @@ export const BijakBuilderPaperSchema = z
     publishedAt: TimestampSchema.optional().meta({
       description: 'Time of the latest publish; absent while the paper has never been published.',
     }),
+    levelScope: BijakLevelScopeSchema.nullable().optional().meta({
+      description: 'S3-T02 `Dilihat murid` (`papers.level_scope`); null = not restricted (a paper older than PO decision item 6). Always sent by the server.',
+    }),
+    sourceBatchId: IdSchema.optional().meta({
+      description: 'S3-T02, FR-ADM-Q07.7: present on a draft imported from an intake batch (DM-45, filled by S1-T10): `Terbitkan` is then offered only from the preview. Absent on every other paper.',
+    }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06 (DM-23): always sent by the server; `subjektif` = a Kertas Subjektif paper.' }),
+    examBoard: z.string().min(1).nullable().optional().meta({ description: 'S3-T06 `Negeri` (OPT-NEGERI-KERTAS slug); null when unset.' }),
+    durationMinutes: z.number().int().min(0).max(300).nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`; null or 0 = untimed, shown as "—".' }),
+    totalMarks: z.number().int().min(1).nullable().optional().meta({ description: 'S3-T06 `Jumlah Markah` typed by the admin; null on a Simulasi paper.' }),
   })
   .meta({ id: 'BijakBuilderPaper' })
 export type BijakBuilderPaper = z.infer<typeof BijakBuilderPaperSchema>
@@ -403,6 +577,21 @@ export const BijakBuilderPaperSummarySchema = z
         'checkPaper `ok`: no paper-wide error and every section ok (publish would succeed).',
     }),
     updatedAt: TimestampSchema,
+    levelScope: BijakLevelScopeSchema.nullable().optional().meta({
+      description: 'S3-T02 `Dilihat murid` column; null = not restricted. Always sent by the server.',
+    }),
+    origins: z
+      .array(z.strictObject({ negeri: z.string(), count: z.number().int().min(1) }))
+      .optional()
+      .meta({ description: 'S3-T02 origin of the placed questions per Negeri (`source_papers.exam_board`), largest first; empty when none is known.' }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06 (DM-23); always sent by the server.' }),
+    examBoard: z.string().min(1).nullable().optional().meta({ description: 'S3-T06 column `Negeri` (OPT-NEGERI-KERTAS slug).' }),
+    year: z.number().int().optional().meta({ description: 'S3-T06 column `Tahun`.' }),
+    schemeCount: z.number().int().min(0).optional().meta({
+      description: 'S3-T06 column `Kandungan` "{q} soalan, {s} bersekema": placed questions whose every self-marked/auto-marked leaf has a scheme (s). Sent on `surface=subjektif` rows.',
+    }),
+    totalMarks: z.number().int().min(1).nullable().optional().meta({ description: 'S3-T06 `Jumlah Markah` of a Kertas Subjektif paper.' }),
+    durationMinutes: z.number().int().min(0).max(300).nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`; null or 0 = untimed.' }),
   })
   .meta({ id: 'BijakBuilderPaperSummary' })
 export type BijakBuilderPaperSummary = z.infer<typeof BijakBuilderPaperSummarySchema>
@@ -439,6 +628,11 @@ export const BijakBuilderQuestionSchema = z
       description:
         'R1-T48 / REQ-C-017 (V2 "Disematkan"): on a question PLACED on this paper (editor `questions[]`, the questions of a section pool unit and the review rows), true when its version and marks are frozen (the paper is Terbit); false while the paper is a draf (the placement follows the question in force). Absent on a candidate that is not placed.',
     }),
+    servable: z.boolean().optional().meta({
+      description:
+        'S3-T02, FR-ADM-Q14.7, API-BIJAK-10 (g): on a question placed on this paper in the editor, false when pupils cannot be served it (chip `Tidak disajikan`, blocks Terbit). A Terbit paper serves its pinned version, so it reads true there (AC-ADM-Q14.3). Absent on a candidate that is not placed.',
+    }),
+    notServedReason: z.string().optional().meta({ description: 'S3-T02: the BM reason of `Dilihat murid di` (tooltip of `Tidak disajikan`); present when `servable` is false.' }),
   })
   .meta({ id: 'BijakBuilderQuestion' })
 export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
@@ -534,6 +728,9 @@ export const BijakBlueprintViewSchema = z
       description: '"Boleh tanda auto" (R1-21.4, PIPE AC-06.2): null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
     }),
     kbatMarks: z.number().int().min(0).nullable().meta({ description: 'Paper-level KBAT marks.' }),
+    questionCount: z.number().int().min(1).nullable().optional().meta({
+      description: 'DM-57 "Bilangan soalan dalam kertas": null = not stated. Always sent by the server; optional on the wire so older clients still parse.',
+    }),
     levelShare: z
       .strictObject({ t4: z.number().int().min(0), t5: z.number().int().min(0) })
       .nullable()
@@ -581,15 +778,44 @@ export const BijakBuilderEditorSchema = z
   .meta({ id: 'BijakBuilderEditor' })
 export type BijakBuilderEditor = z.infer<typeof BijakBuilderEditorSchema>
 
-/** `POST /admin/papers` body (`createPaper`): the blueprint is found by subject and kertas. */
+/** S3-T06: `Tempoh (minit)` 0..300 or null (untimed), PO decision 2026-11-05 item 17. */
+const SubjektifDuration = z.number({ error: BIJAK_BUILDER_MESSAGES.durationRange }).int(BIJAK_BUILDER_MESSAGES.durationRange).min(0, BIJAK_BUILDER_MESSAGES.durationRange).max(300, BIJAK_BUILDER_MESSAGES.durationRange)
+/** S3-T06: `Jumlah Markah` 1..200. */
+const SubjektifTotalMarks = z.number({ error: BIJAK_BUILDER_MESSAGES.totalMarksRange }).int(BIJAK_BUILDER_MESSAGES.totalMarksRange).min(1, BIJAK_BUILDER_MESSAGES.totalMarksRange).max(200, BIJAK_BUILDER_MESSAGES.totalMarksRange)
+
+/**
+ * `POST /admin/papers` body (`createPaper`). Simulasi (default): the blueprint is found by subject and kertas. Kertas Subjektif
+ * (`surface: 'subjektif'`, S3-T06, form 18-02..18-08 of PRD30 Q-18): no Kontrak; `title` (<= 150), `examBoard`, `year` and
+ * `totalMarks` are required, `kertas` is 2, 3 or 4, `durationMinutes` is optional (0..300, null/0 = untimed).
+ */
 export const BijakBuilderPaperCreateSchema = z
   .strictObject({
-    subject: z.string().trim().min(1).max(32).meta({ example: 'MAT' }),
+    subject: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.subjectRequired).max(32).meta({ example: 'MAT' }),
     kertas: Kertas,
     title: z.string().trim().max(200, BIJAK_BUILDER_MESSAGES.titleTooLong).optional().meta({
       description:
-        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); omitted or blank = the default "Percubaan SPM {subjectName} Kertas {kertas} (draf)" (the mock ignores a blank title on create).',
+        'Trimmed, at most 200 characters (422 `fields.title` "Tajuk kertas tidak boleh melebihi 200 aksara."); required by the server (PRD30 13-01): omitted, blank or only spaces = 422 `fields.title` "Tajuk set diperlukan."; more than 120 characters after trim = 422 `fields.title` "Tajuk set tidak boleh melebihi 120 aksara." (the schema accepts up to 200 so the server answers with the field message). Kertas Subjektif: required, at most 150 (the 120 set rule does not apply).',
     }),
+    levelScope: BijakLevelScopeSchema.optional().meta({ description: 'S3-T02 `Dilihat murid`; omitted = the default from the contract.' }),
+    surface: BijakPaperSurfaceSchema.optional().meta({ description: 'S3-T06: omitted = `simulasi`.' }),
+    examBoard: z.string().trim().max(60).optional().meta({ description: 'S3-T06 `Negeri` (OPT-NEGERI-KERTAS); stored as its slug. Required for subjektif.', example: 'selangor' }),
+    year: z.number().int().min(1900).max(2100).optional().meta({ description: 'S3-T06 `Tahun` (OPT-TAHUN). Required for subjektif.' }),
+    durationMinutes: SubjektifDuration.nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)`.' }),
+    totalMarks: SubjektifTotalMarks.optional().meta({ description: 'S3-T06 `Jumlah Markah`. Required for subjektif.' }),
+  })
+  .superRefine((b, ctx) => {
+    if (b.surface !== 'subjektif') {
+      for (const k of ['examBoard', 'year', 'durationMinutes', 'totalMarks'] as const) {
+        if (b[k] !== undefined) ctx.addIssue({ code: 'custom', path: [k], message: BIJAK_BUILDER_MESSAGES.subjektifOnly })
+      }
+      return
+    }
+    if (!b.title) ctx.addIssue({ code: 'custom', path: ['title'], message: BIJAK_BUILDER_MESSAGES.subjektifTitleRequired })
+    else if (b.title.length > 150) ctx.addIssue({ code: 'custom', path: ['title'], message: BIJAK_BUILDER_MESSAGES.subjektifTitleTooLong })
+    if (b.kertas < 2 || b.kertas > 4) ctx.addIssue({ code: 'custom', path: ['kertas'], message: BIJAK_BUILDER_MESSAGES.kertasInvalid })
+    if (!b.examBoard) ctx.addIssue({ code: 'custom', path: ['examBoard'], message: BIJAK_BUILDER_MESSAGES.examBoardRequired })
+    if (b.year === undefined) ctx.addIssue({ code: 'custom', path: ['year'], message: BIJAK_BUILDER_MESSAGES.yearRequired })
+    if (b.totalMarks === undefined) ctx.addIssue({ code: 'custom', path: ['totalMarks'], message: BIJAK_BUILDER_MESSAGES.totalMarksRange })
   })
   .meta({ id: 'BijakBuilderPaperCreate' })
 export type BijakBuilderPaperCreate = z.infer<typeof BijakBuilderPaperCreateSchema>
@@ -626,7 +852,7 @@ export const BijakBuilderPaperPatchSchema = z
     title: z
       .string()
       .trim()
-      .min(1, BIJAK_BUILDER_MESSAGES.titleRequired)
+      .min(1, BIJAK_BUILDER_MESSAGES.setTitleRequired)
       .max(200, BIJAK_BUILDER_MESSAGES.titleTooLong)
       .optional()
       .meta({ example: 'Percubaan SPM Matematik Kertas 2 Set B' }),
@@ -647,6 +873,9 @@ export const BijakBuilderPaperPatchSchema = z
       .optional()
       .meta({ description: 'R1-T34 "Bahan rujukan (kulit kertas)": replaces the whole reference-sheet list (a panel may carry an uploaded image, `imageFileId`).' }),
     sections: z.array(BijakBuilderSectionPatchSchema).max(20).optional(),
+    examBoard: z.string().trim().min(1, BIJAK_BUILDER_MESSAGES.examBoardRequired).max(60).optional().meta({ description: 'S3-T06 `Negeri` of a Kertas Subjektif paper (Sunting).' }),
+    durationMinutes: SubjektifDuration.nullable().optional().meta({ description: 'S3-T06 `Tempoh (minit)` of a Kertas Subjektif paper; null/0 = untimed.' }),
+    totalMarks: SubjektifTotalMarks.optional().meta({ description: 'S3-T06 `Jumlah Markah` of a Kertas Subjektif paper.' }),
   })
   .meta({ id: 'BijakBuilderPaperPatch' })
 export type BijakBuilderPaperPatch = z.infer<typeof BijakBuilderPaperPatchSchema>
@@ -670,10 +899,10 @@ export const BijakBuilderBlockerSchema = z
   .strictObject({
     code: z.enum(BIJAK_BUILDER_BLOCKER_CODES).meta({
       description:
-        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question).',
+        'Stable code. Hard (overridable false): NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE (PIPE AC-07.4: no question, a Bahagian with questions but 0 marks, a total under 1), DUPLICATE_QUESTION, GROUP_MIN_MEMBERS (D93), GROUP_SPLIT, COUNT_TOO_FEW, COUNT_TOO_MANY, MARKS_MISMATCH, GROUP_NOT_CONSECUTIVE, GROUP_INCOMPLETE, GROUP_OUT_OF_ORDER, NOT_PUBLISHED, UNKNOWN_QUESTION (placed question missing from the pool), NOT_SERVABLE (R1E2E-06, pupils cannot be served). Hard also: REFERENCE_IMAGE_INVALID (a reference-sheet picture that is not a stored question image, re-checked at Terbit), NO_KEY, NO_MARKS, MODE_NOT_ALLOWED (structural failures of a question) and GROUP_BROKEN. Overridable: BLUEPRINT_NOT_VERIFIED (Kontrak not Disahkan) and INELIGIBLE (a question without DSKP unit or TP, or with tags awaiting review). Overridable also (R1-T48): RULE_NOT_IN_CONTRACT (the rule of a Bahagian differs from the Kontrak) and SECTION_NOT_IN_CONTRACT (admin-added Bahagian). Hard also (R1-T48): RULE_N_EXCEEDS_QUESTIONS (Pilih N with fewer than N questions in the Bahagian) and SECTION_EMPTY (an admin-added Bahagian without a question). S3-T01: under a Disahkan Kontrak nothing is overridable; INELIGIBLE, RULE_NOT_IN_CONTRACT and SECTION_NOT_IN_CONTRACT come with overridable false there.',
     }),
     message: z.string().meta({ description: 'The BM line, identical to the string in `blockers` / `errors`.' }),
-    overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker.' }),
+    overridable: z.boolean().meta({ description: 'true when the audited override can lift this blocker. Always false under a Disahkan Kontrak (S3-T01).' }),
     section: z.string().optional().meta({ description: 'Label of the Bahagian the line belongs to (the line is prefixed "{label}: "); absent for paper-wide blockers.' }),
     questionId: IdSchema.optional().meta({ description: 'The question the blocker names (INELIGIBLE, UNKNOWN_QUESTION, NOT_SERVABLE).' }),
   })
@@ -703,7 +932,7 @@ export const BijakBuilderPublishResultSchema = z
       description: 'R1-T34 follow-up: on a refusal (ok false) the same blockers as `errors`, structured (same order, same lines, same rule as the review). Absent when ok is true.',
     }),
     canOverride: z.boolean().optional().meta({
-      description: 'On a refusal: no hard blocker and at least one overridable one, so the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". Absent when ok is true.',
+      description: 'On a refusal: no hard blocker and at least one overridable one, so the UI may offer "Terbitkan walaupun tidak memenuhi kontrak blueprint". Always false under a Disahkan Kontrak (S3-T01). Absent when ok is true.',
     }),
   })
   .meta({ id: 'BijakBuilderPublishResult' })
@@ -882,8 +1111,26 @@ export const BijakBuilderPaperListQuerySchema = z
     search: z.string().trim().max(100).optional().meta({
       description: 'R12 "Cari": case-insensitive substring of the paper title or code (kod kertas). Blank = no filter.',
     }),
+    surface: BijakPaperSurfaceSchema.default('simulasi').meta({
+      description: 'S3-T06 (DM-23): `simulasi` (default, Set Builder list unchanged) or `subjektif` (Kertas Subjektif list; `meta.counts` = {total, published, withScheme}).',
+    }),
+    kertas: z.coerce.number().int().min(1).max(9).optional().meta({ description: 'S3-T06 filter `Semua Kertas`.' }),
+    year: z.coerce.number().int().min(1900).max(2100).optional().meta({ description: 'S3-T06 filter `Tahun`.' }),
+    negeri: z.string().trim().max(60).optional().meta({ description: 'S3-T06 filter `Negeri` (compared by slug with `exam_board`).' }),
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
+
+/** S3-T06 API-BIJAK-14: `POST /admin/papers/{id}/source` with a JSON body `{ apply: true }` appends the accepted items of the paper's source batch. */
+export const BijakBuilderPaperSourceApplySchema = z.strictObject({ apply: z.literal(true) }).meta({ id: 'BijakBuilderPaperSourceApply' })
+export type BijakBuilderPaperSourceApply = z.infer<typeof BijakBuilderPaperSourceApplySchema>
+
+/** S3-T06 API-BIJAK-14: answer of the source upload (multipart `paper`, optional `scheme`): the intake batch created for THIS paper. */
+export const BijakBuilderPaperSourceUploadResultSchema = z.strictObject({ batchId: IdSchema }).meta({ id: 'BijakBuilderPaperSourceUploadResult' })
+export type BijakBuilderPaperSourceUploadResult = z.infer<typeof BijakBuilderPaperSourceUploadResultSchema>
+
+/** S3-T06 API-BIJAK-14: answer of `{ apply: true }`: the number of placements appended by this call (0 on a repeat with nothing new). */
+export const BijakBuilderPaperSourceApplyResultSchema = z.strictObject({ placements: z.number().int().min(0) }).meta({ id: 'BijakBuilderPaperSourceApplyResult' })
+export type BijakBuilderPaperSourceApplyResult = z.infer<typeof BijakBuilderPaperSourceApplyResultSchema>
 export type BijakBuilderPaperListQuery = z.infer<typeof BijakBuilderPaperListQuerySchema>
 
 /* ----------------------------------------------------------------------------- error bodies */
@@ -1043,7 +1290,7 @@ export const BijakBuilderReviewSchema = z
       description: 'R1-T34 follow-up: the same blockers as `blockers`, structured (same order and lines) with a stable code and `overridable`. The publish refusal carries the same list.',
     }),
     canOverride: z.boolean().meta({
-      description: 'No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the "Terbitkan walaupun tidak memenuhi kontrak blueprint" tick.',
+      description: 'No hard blocker and at least one overridable one (the Kontrak is the only thing in the way): the UI may show the "Terbitkan walaupun tidak memenuhi kontrak blueprint" tick. Always false under a Disahkan Kontrak (S3-T01): the tick is hidden there.',
     }),
     notes: z.array(z.string()).meta({ description: 'Standard-tier notes; never block a curated paper (D78 O-2).' }),
     blueprintNeedsReview: z.boolean().meta({ description: '"Blueprint perlu semakan".' }),
@@ -1099,6 +1346,8 @@ export const BijakBuilderSectionPoolQuerySchema = z
     q: z.string().trim().max(100).optional(),
     level: z.enum(['t4', 't5', 't1_t3']).optional(),
     unit: z.string().max(40).optional().meta({ description: 'DSKP unit node id.' }),
+    tahun: z.coerce.number().int().min(1900).max(2100).optional().meta({ description: 'S3-T02 `Tahun` (14-01): the year of the source paper.' }),
+    negeri: queryList(z.string().trim().min(1).max(64), 30).meta({ description: 'S3-T02 `Negeri` (14-02, repeated parameter): the exam board of the source paper, any of them, case-insensitive.' }),
     page: z.coerce.number().int().min(1).optional(),
     pageSize: z.coerce.number().int().min(1).max(100).optional(),
   })
@@ -1125,8 +1374,14 @@ export const BijakBuilderPoolPreviewQuerySchema = z
   .object({
     subject: z.string().trim().min(1).max(32),
     kertas: z.coerce.number().int().min(1),
+    years: queryList(z.coerce.number().int().min(1900).max(2100), 30).meta({ description: 'S3-T02 `Tahun` (13-08, repeated parameter); empty = all.' }),
+    negeri: queryList(z.string().trim().min(1).max(64), 30).meta({ description: 'S3-T02 `Negeri` (13-09, repeated parameter); empty = all.' }),
+    count: z.coerce.number().int().min(1).max(100).optional().meta({ description: 'S3-T02 `Bilangan soalan` (1 to 100): the verdict is the one of a set of this size, scaled as Jana set does. Omitted = the contract total.' }),
   })
   .meta({ id: 'BijakBuilderPoolPreviewQuery' })
+
+/** S3-T02: `GET .../sections/{sid}/pool` carries the values of its Tahun and Negeri filters next to the page. */
+export const BijakBuilderSectionPoolExtrasShape = { filters: BijakBuilderSourceFiltersSchema } as const
 
 
 /* ---------------------------------------------------------------- R1-T34: paper-review edits, section pools */

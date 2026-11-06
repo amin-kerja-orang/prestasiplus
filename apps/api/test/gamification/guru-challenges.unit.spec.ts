@@ -34,7 +34,7 @@ function build(now: string, byDay: Record<string, Record<string, number>>) {
       return new Map(Object.entries(byDay[day] ?? {}))
     },
   }
-  const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock(now), {} as never, {} as never, {} as never, {} as never, {} as never)
+  const svc = new GamificationService(repo as never, {} as never, {} as never, new FixedClock(now), {} as never, {} as never, {} as never, {} as never, {} as never, {} as never)
   return { svc, asked }
 }
 

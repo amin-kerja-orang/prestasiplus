@@ -24,6 +24,8 @@ const props = defineProps<{
   answers: Record<string, PartAnswer>
   attemptId: string
   disabled?: boolean
+  /** Latihan: leaf parts locked one by one after the "Semak" cap; the others stay open. */
+  lockedPartIds?: readonly string[]
   depth?: number
   optionBank?: McqOption[]
   /** Lookup (by id) for a leaf's `stimulusId`: the group's and the question's own stimuli. */
@@ -79,6 +81,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
         :answers="answers"
         :attempt-id="attemptId"
         :disabled="disabled"
+        :locked-part-ids="lockedPartIds"
         :depth="(depth ?? 0) + 1"
         :option-bank="optionBank"
         :stimuli="stimuli"
@@ -128,7 +131,7 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
       }"
       :model-value="answers[part.id]"
       :attempt-id="attemptId"
-      :disabled="disabled"
+      :disabled="disabled || lockedPartIds?.includes(part.id)"
       :option-bank="optionBank"
       @update:model-value="emit('answer', part.id, $event)"
     />

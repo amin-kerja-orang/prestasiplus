@@ -54,6 +54,80 @@ async function check(sessionId: string, questionId: string, at: Date): Promise<v
 
 const statusOf = async (id: string) => (await t.db.query<{ status: string; completed_at: Date | null }>('select status, completed_at from practice_sessions where id = $1', [id]))[0]
 
+async function kuizSession(startedAt: Date): Promise<string> {
+  const id = randomUUID()
+  await t.db.query(
+    `insert into practice_sessions (id, user_id, mode, question_count, status, started_at, legacy_paper) values ($1, $2, 'latih_tubi', 5, 'in_progress', $3, 'bijak_kuiz')`,
+    [id, uid, startedAt],
+  )
+  return id
+}
+
+describe('Bijak Kuiz hooks (S3-T04)', () => {
+  it('abandonIdle skips a bijak_kuiz session; the Kuiz close owns it', async () => {
+    const kuiz = await kuizSession(hours(0))
+    const plain = await session('in_progress', hours(0))
+    expect(await sweeper.sweep(hours(5))).toBe(1)
+    expect((await statusOf(kuiz))?.status).toBe('in_progress')
+    expect((await statusOf(plain))?.status).toBe('abandoned')
+  })
+
+  it('idleKuizSessions lists only idle in-progress kuiz sessions (last check, else start, older than the cutoff)', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const idle = await kuizSession(hours(0))
+    const checked = await kuizSession(hours(0))
+    await check(checked, bank.random[0] as string, hours(2.5))
+    await session('in_progress', hours(0)) // not a kuiz
+    const cutoff = hours(3 - 2)
+    expect((await repo.idleKuizSessions(cutoff)).map((r) => r.id)).toEqual([idle])
+    expect(await repo.idleKuizSessions(cutoff)).toEqual([{ id: idle, userId: uid }])
+    expect((await repo.idleKuizSessions(hours(10), 1)).length).toBe(1)
+    await repo.abandonSession(idle, hours(1), hours(3))
+    expect((await repo.idleKuizSessions(hours(10))).map((r) => r.id)).toEqual([checked])
+  })
+
+  it('abandonSession leaves a session alone when a check landed after the idle listing', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const id = await kuizSession(hours(0))
+    const cutoff = hours(1)
+    expect((await repo.idleKuizSessions(cutoff)).map((r) => r.id)).toEqual([id])
+    await check(id, bank.random[0] as string, hours(2)) // Semak pressed after the listing
+    expect(await repo.abandonSession(id, cutoff, hours(3))).toBe(false)
+    expect((await statusOf(id))?.status).toBe('in_progress')
+  })
+
+  it('abandonSession moves only an in-progress session, keeps checks, and is false the second time', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const id = await kuizSession(hours(0))
+    await check(id, bank.random[0] as string, hours(0.5))
+    expect(await repo.abandonSession(id, hours(1), hours(3))).toBe(true)
+    expect(await statusOf(id)).toEqual({ status: 'abandoned', completed_at: null })
+    expect(await countRows(t.db, 'practice_checks', 'session_id = $1', [id])).toBe(1)
+    expect(await repo.abandonSession(id, hours(1), hours(4))).toBe(false)
+    expect(await repo.abandonSession('not-a-uuid', hours(1), hours(4))).toBe(false)
+    const done = await session('completed', hours(0))
+    expect(await repo.abandonSession(done, hours(1), hours(4))).toBe(false)
+  })
+})
+
+describe('completeSession answerMode (S3-T04)', () => {
+  const regrade = (_s: unknown, _q: unknown, checks: readonly import('../../src/modules/practice/practice.repository').StoredCheck[]) =>
+    Promise.resolve(checks.map((check) => ({ check, isCorrect: check.isCorrect, subjectId: null, educationLevelId: null, chapterId: null, topicId: null, difficulty: null, questionType: 'mcq' })))
+  const modesOf = async (id: string) => (await t.db.query<{ mode: string }>('select mode from practice_answers where attempt_id = $1::uuid', [id])).map((r) => r.mode)
+
+  it('writes the rows with the given answerMode, and with the session mode when none is given', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const a = await kuizSession(hours(0))
+    await check(a, bank.random[0] as string, hours(0.5))
+    await repo.completeSession({ sessionId: a, userId: uid, now: hours(1), timeSpent: 1, isTest: false, answerMode: 'kuiz' }, { regrade, completed: () => Promise.resolve(null) })
+    expect(await modesOf(a)).toEqual(['kuiz'])
+    const b = await session('in_progress', hours(0))
+    await check(b, bank.random[0] as string, hours(0.5))
+    await repo.completeSession({ sessionId: b, userId: uid, now: hours(1), timeSpent: 1, isTest: false }, { regrade, completed: () => Promise.resolve(null) })
+    expect(await modesOf(b)).toEqual(['latih_tubi'])
+  })
+})
+
 describe('sweep', () => {
   it('abandons a session idle for more than 2 h, keeping its checks and writing nothing else', async () => {
     const idle = await session('in_progress', hours(0))
@@ -92,10 +166,10 @@ describe('sweep', () => {
   })
 
   it('an abandoned session is not in the history (repo and GET /practice/sessions)', async () => {
-    const started = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const started = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const q = started.questions[0]?.id as string
     expect((await checkAnswer(pelajar, started.sessionId, t.bank, q, true)).status).toBe(200)
-    const done = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const done = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     for (const x of done.questions) await checkAnswer(pelajar, done.sessionId, t.bank, x.id, true)
     expect((await pelajar.post(`/api/practice/sessions/${done.sessionId}/submit`, { timeSpent: 10 })).status).toBe(200)
     t.reward.calls.length = 0
@@ -105,11 +179,11 @@ describe('sweep', () => {
     expect(t.reward.calls).toHaveLength(0)
     expect(await countRows(t.db, 'practice_checks', 'session_id = $1', [started.sessionId])).toBe(1)
 
-    const list = await pelajar.get('/api/practice/sessions?modes=random')
+    const list = await pelajar.get('/api/practice/sessions?modes=chapter')
     expect(list.body.data.map((r: { id: string }) => r.id)).toEqual([done.sessionId])
     const repo = t.app.get(PracticeRepository)
-    expect((await repo.history(uid, { modes: ['random'] })).map((s) => s.id)).toEqual([done.sessionId])
-    expect(await repo.historyCount(uid, { modes: ['random'] })).toBe(1)
+    expect((await repo.history(uid, { modes: ['chapter'] })).map((s) => s.id)).toEqual([done.sessionId])
+    expect(await repo.historyCount(uid, { modes: ['chapter'] })).toBe(1)
   })
 
   it('one pass loops full batches until a short one and sums them', async () => {

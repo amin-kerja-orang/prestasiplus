@@ -284,8 +284,8 @@ describe('Admin Pusat central screens (S6-T11)', () => {
         )
       )[0] as { id: string }
       await t.db.query(
-        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at)
-         select $1::uuid, $2, $3, g <= 2, $4::timestamptz from generate_series(1, 3) g`,
+        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, mode)
+         select $1::uuid, $2, $3, g <= 2, $4::timestamptz, 'latih_tubi' from generate_series(1, 3) g`,
         [session.id, w.ids.p2, w.subjects[0], '2026-10-18T09:00:00+08:00'],
       )
       const after = await read()
@@ -311,8 +311,8 @@ describe('Admin Pusat central screens (S6-T11)', () => {
         )
       )[0] as { id: string }
       await t.db.query(
-        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at)
-         select $1::uuid, $2, $3, g <= 4, $4::timestamptz from generate_series(1, 5) g`,
+        `insert into practice_answers (session_id, user_id, subject_id, is_correct, answered_at, mode)
+         select $1::uuid, $2, $3, g <= 4, $4::timestamptz, 'latih_tubi' from generate_series(1, 5) g`,
         [session.id, w.ids.p2, w.subjects[0], '2026-10-18T10:00:00+08:00'],
       )
       const afterA = await readA()

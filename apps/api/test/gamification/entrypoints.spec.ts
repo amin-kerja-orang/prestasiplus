@@ -16,89 +16,80 @@ describe('entry points other modules call (AC2, card open question 3)', () => {
 
   const completions = async (userId: string) => t.db.query<{ challenge_id: string; completion_date: string; is_test: boolean }>(`select challenge_id::text, completion_date::text, is_test from challenge_completions where user_id = $1 order by id`, [userId])
 
-  describe('claimChallenge: idempotent per user, challenge and Malaysia day (AC2)', () => {
-    it('the first claim pays the reward once; a second claim the same day adds nothing', async () => {
+  // Ruling 12 on #500: completing a challenge writes the completion row and pays NOTHING (the reward is claimed with API-GAME-11,
+  // see challenge-claim.spec.ts). These cases used to assert the automatic credit; they now assert that none is paid.
+  describe('completeChallenge: idempotent per user, challenge and Malaysia day (AC2), pays nothing', () => {
+    it('the first call writes the completion and no reward; a second call the same day adds nothing', async () => {
       const u = await bareUser(t, 'Cabaran Satu')
-      const first = await t.gamification.claimChallenge(u, kilat, { isTest: false })
-      const second = await t.gamification.claimChallenge(u, kilat, { isTest: false })
-      expect(first).toEqual({ claimed: true, syiling: 30, xp: 25 })
-      expect(second).toEqual({ claimed: false, syiling: 0, xp: 0 })
-      expect(await walletOf(t, u)).toMatchObject({ current_syiling: 30, total_syiling_earned: 30, xp: 25 })
-      const rows = await ledgerOf(t, u)
-      expect(rows).toHaveLength(1)
-      expect(rows[0]).toMatchObject({ type: 'earn', source: 'daily_challenge', source_id: `challenge:${kilat}:2026-10-19`, amount: 30, description: 'Cabaran selesai: Kilat Matematik', is_test: false })
+      const first = await t.gamification.completeChallenge(u, kilat, { isTest: false })
+      const second = await t.gamification.completeChallenge(u, kilat, { isTest: false })
+      expect(first).toEqual({ completed: true })
+      expect(second).toEqual({ completed: false })
+      expect(await walletOf(t, u)).toBeUndefined()
+      expect(await ledgerOf(t, u)).toEqual([])
       expect(await completions(u)).toEqual([{ challenge_id: kilat, completion_date: '2026-10-19', is_test: false }])
     })
 
-    it('parallel claims write ONE completion and ONE reward', async () => {
+    it('parallel calls write ONE completion and no reward', async () => {
       const u = await bareUser(t, 'Cabaran Selari')
-      const out = await Promise.all(Array.from({ length: 6 }, () => t.gamification.claimChallenge(u, kilat, { isTest: false })))
-      expect(out.filter((r) => r.claimed)).toHaveLength(1)
+      const out = await Promise.all(Array.from({ length: 6 }, () => t.gamification.completeChallenge(u, kilat, { isTest: false })))
+      expect(out.filter((r) => r.completed)).toHaveLength(1)
       expect(await completions(u)).toHaveLength(1)
-      expect(await ledgerOf(t, u)).toHaveLength(1)
-      expect((await walletOf(t, u))!.xp).toBe(25)
+      expect(await ledgerOf(t, u)).toEqual([])
+      expect(await walletOf(t, u)).toBeUndefined()
     })
 
     it('the Malaysia day decides: 23:59 +08:00 and 00:01 the next day are two days, 00:01 UTC after midnight MYT is the same one', async () => {
       const u = await bareUser(t, 'Cabaran Hari')
       const at = (iso: string) => ({ isTest: false, at: new Date(iso) })
-      expect((await t.gamification.claimChallenge(u, kilat, at('2026-10-20T15:59:00Z'))).claimed).toBe(true) // 23:59 MYT on the 20th
-      expect((await t.gamification.claimChallenge(u, kilat, at('2026-10-20T16:01:00Z'))).claimed).toBe(true) // 00:01 MYT on the 21st
-      expect((await t.gamification.claimChallenge(u, kilat, at('2026-10-21T10:00:00Z'))).claimed).toBe(false) // still the 21st
+      expect((await t.gamification.completeChallenge(u, kilat, at('2026-10-20T15:59:00Z'))).completed).toBe(true) // 23:59 MYT on the 20th
+      expect((await t.gamification.completeChallenge(u, kilat, at('2026-10-20T16:01:00Z'))).completed).toBe(true) // 00:01 MYT on the 21st
+      expect((await t.gamification.completeChallenge(u, kilat, at('2026-10-21T10:00:00Z'))).completed).toBe(false) // still the 21st
       expect((await completions(u)).map((c) => c.completion_date)).toEqual(['2026-10-20', '2026-10-21'])
-      expect((await ledgerOf(t, u)).map((r) => r.source_id)).toEqual([`challenge:${kilat}:2026-10-20`, `challenge:${kilat}:2026-10-21`])
+      expect(await ledgerOf(t, u)).toEqual([])
     })
 
-    it('inside a rolled-back caller transaction nothing is kept (completion and reward are one unit)', async () => {
+    it('inside a rolled-back caller transaction nothing is kept', async () => {
       const u = await bareUser(t, 'Cabaran Undur')
       await expect(
         t.prisma.transaction(async (tx) => {
-          await t.gamification.claimChallenge(u, kilat, { isTest: false, tx })
-          throw new Error('caller fails after the claim')
+          await t.gamification.completeChallenge(u, kilat, { isTest: false, tx })
+          throw new Error('caller fails after the completion')
         }),
       ).rejects.toThrow('caller fails')
       expect(await completions(u)).toEqual([])
-      expect(await walletOf(t, u)).toBeUndefined()
-      expect((await t.gamification.claimChallenge(u, kilat, { isTest: false })).claimed).toBe(true)
+      expect((await t.gamification.completeChallenge(u, kilat, { isTest: false })).completed).toBe(true)
     })
 
-    it('Mod Pelajar: the completion and every wallet row are stamped is_test', async () => {
+    it('Mod Pelajar: the completion is stamped is_test and there is still no wallet row', async () => {
       const u = await bareUser(t, 'Cabaran Ujian')
-      await t.gamification.claimChallenge(u, kilat, { isTest: true })
+      await t.gamification.completeChallenge(u, kilat, { isTest: true })
       expect((await completions(u))[0]!.is_test).toBe(true)
-      expect((await ledgerOf(t, u))[0]!.is_test).toBe(true)
+      expect(await ledgerOf(t, u)).toEqual([])
     })
 
-    it('an inactive challenge pays nothing, an unknown one is 404', async () => {
+    it('an inactive challenge records nothing, an unknown one is 404', async () => {
       const u = await bareUser(t, 'Cabaran Mati')
       await t.db.query(`update challenges set is_active = false where id = $1`, [kilat])
-      expect((await t.gamification.claimChallenge(u, kilat, { isTest: false })).claimed).toBe(false)
+      expect((await t.gamification.completeChallenge(u, kilat, { isTest: false })).completed).toBe(false)
       await t.db.query(`update challenges set is_active = true where id = $1`, [kilat])
-      await expect(t.gamification.claimChallenge(u, '999999', { isTest: false })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Cabaran tidak dijumpai.' })
-    })
-
-    it('a student with coins switched off (complimentary) gets the completion and the XP but no syiling', async () => {
-      const u = await bareUser(t, 'Cabaran Percuma')
-      await t.db.query(`update users set is_complimentary = true where id = $1`, [u])
-      expect(await t.gamification.claimChallenge(u, kilat, { isTest: false })).toEqual({ claimed: true, syiling: 0, xp: 25 })
-      expect(await ledgerOf(t, u)).toEqual([])
-      expect((await walletOf(t, u))!).toMatchObject({ current_syiling: 0, xp: 25 })
+      await expect(t.gamification.completeChallenge(u, '999999', { isTest: false })).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Cabaran tidak dijumpai.' })
     })
   })
 
   describe('settleChallenges (the session-completed hook)', () => {
-    it('claims exactly the active challenges whose target is reached, once, in (sortOrder, id) order', async () => {
+    it('completes exactly the active challenges whose target is reached, once, in (sortOrder, id) order, and pays nothing', async () => {
       const u = await bareUser(t, 'Selesai')
       t.facts.day = { sessions: [{ sessionId: 's1', mode: 'random', correct: 12, total: 12, timeSpent: 660 }], chapterIds: ['1', '2', '3'] }
       const first = await t.gamification.settleChallenges(u, { isTest: false })
       // sessions 1, correct 12, best_accuracy 100, best correct 12, chapters 3, minutes 11 -> Mula Hari Ini, Rajin? (needs 3 sessions: no)
       const titles = (await t.db.query<{ title: string }>(`select c.title from challenge_completions cc join challenges c on c.id = cc.challenge_id where cc.user_id = $1 order by cc.id`, [u])).map((r) => r.title)
       expect(titles).toEqual(['Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Mula Hari Ini', 'Jawab 5 Betul', 'Latihan 10 Minit', 'Ketepatan 90%'])
-      expect(first.claimedIds).toHaveLength(7)
-      expect(first.syiling).toBe(20 + 25 + 30 + 10 + 12 + 20 + 35)
+      expect(first.completedIds).toHaveLength(7)
       const again = await t.gamification.settleChallenges(u, { isTest: false })
-      expect(again).toEqual({ claimedIds: [], syiling: 0, xp: 0 })
-      expect(await ledgerOf(t, u)).toHaveLength(7)
+      expect(again).toEqual({ completedIds: [] })
+      expect(await ledgerOf(t, u)).toEqual([])
+      expect(await walletOf(t, u)).toBeUndefined()
       t.facts.day = { sessions: [], chapterIds: [] }
     })
   })
