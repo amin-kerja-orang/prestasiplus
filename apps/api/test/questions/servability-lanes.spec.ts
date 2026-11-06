@@ -438,16 +438,24 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
   })
 
   it('S3-T03: once papers carry a surface, a Kertas Subjektif paper leaves the Bijak SPM lane for its own', async () => {
-    await t.db.query(`alter table papers add column surface text not null default 'simulasi'`)
+    // S3-T06 migration 0161 adds `papers.surface` (with the subjektif duration checks); add it here only when it is absent.
+    const cols = await t.db.query(`select 1 from information_schema.columns where table_name = 'papers' and column_name = 'surface'`)
+    const added = cols.length === 0
+    if (added) await t.db.query(`alter table papers add column surface text not null default 'simulasi'`)
+    const hasDurationMinutes = (await t.db.query(`select 1 from information_schema.columns where table_name = 'papers' and column_name = 'duration_minutes'`)).length > 0
+    // 0161: a subjektif paper keeps printed_duration_min equal to duration_minutes (ck_papers_subjektif_duration).
+    const toSubjektif = hasDurationMinutes
+      ? `update papers set surface = 'subjektif', duration_minutes = printed_duration_min where id = $1`
+      : `update papers set surface = 'subjektif' where id = $1`
     try {
-      await t.db.query(`update papers set surface = 'subjektif' where id = $1`, [made.sciPaper])
+      await t.db.query(toSubjektif, [made.sciPaper])
       const own = await wholeLane<ServabilityLaneRow>('kertas-subjektif', ServabilityLaneRowSchema)
       expect(own.rows.map((r) => r.id)).toEqual([made.sciPaper])
       const bijak = await wholeLane<ServabilityPaperRow>('bijak-spm', ServabilityPaperRowSchema)
       expect(bijak.rows.map((r) => r.paperId)).not.toContain(made.sciPaper)
 
       // FR-ADM-Q18.3: a paper with no placement reads "tiada kandungan", and the hub counts the same rows.
-      await t.db.query(`update papers set surface = 'subjektif' where id = $1`, [made.refusedPaper])
+      await t.db.query(toSubjektif, [made.refusedPaper])
       ;(t.app.get(OverviewCache) as unknown as { slots: Map<string, unknown> }).slots.clear()
       const both = await wholeLane<ServabilityLaneRow>('kertas-subjektif', ServabilityLaneRowSchema)
       expect(both.rows.find((r) => r.id === made.sciPaper)?.attention).toEqual(['tiada kandungan'])
@@ -455,7 +463,12 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
       const card = parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'kertas-subjektif')!
       expect(card).toMatchObject({ total: 2, attention: 1, attentionLines: [{ count: 1, text: '1 tiada kandungan' }] })
     } finally {
-      await t.db.query(`alter table papers drop column surface`)
+      if (added) await t.db.query(`alter table papers drop column surface`)
+      else
+        await t.db.query(
+          `update papers set surface = 'simulasi'${hasDurationMinutes ? ', duration_minutes = null' : ''} where id = any($1)`,
+          [[made.sciPaper, made.refusedPaper]],
+        )
     }
   })
 

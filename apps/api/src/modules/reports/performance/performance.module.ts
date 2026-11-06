@@ -14,7 +14,8 @@ import { HeadcountService } from './headcount/headcount.service'
 import { CtxFactory } from './http/request'
 import { AnalyticsController, ItemAnalysisController, PerformanceController } from './http/performance.controllers'
 import { PublicStudentController, SocialController } from './http/social.controllers'
-import { PerformancePorts, DIRECTORY_PORT, TIMELINE_READ_PORT } from './ports'
+import { XsQueries } from '../../school-admin/xs-queries'
+import { PerformancePorts, DIRECTORY_PORT, TIMELINE_READ_PORT, XS_COUNTS_PORT } from './ports'
 import {
   AnalyticsService,
   ClassPerformanceService,
@@ -46,6 +47,9 @@ import { TimelineService } from './timeline/timeline.service'
   providers: [
     PerformancePorts,
     { provide: DIRECTORY_PORT, useClass: UsersDirectoryAdapter },
+    // XS-1 / XS-3 (S6-T03): Prestasi sekolah counts its Murid and Guru with the same named queries as the school admin Dashboard.
+    XsQueries,
+    { provide: XS_COUNTS_PORT, useExisting: XsQueries },
     CtxFactory,
     StatsService,
     AnalyticsService,

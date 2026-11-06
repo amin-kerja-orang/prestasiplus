@@ -402,6 +402,24 @@ describe('PaperQuizPage', () => {
     expect(text.indexOf('Teks pertama.')).toBeLessThan(text.indexOf('Teks kedua.'))
   })
 
+  it('FR-X6-6: a page with two groups opens only the first sheet at 375; the second waits for its chip', async () => {
+    const stim = (body: string) => ({ kind: 'passage', label: 'Petikan', body, imageToken: null, alt: null })
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G1' }), mcq('q9'), mcq('g2', { groupId: 'G2' })],
+      groups: [{ id: 'G1', stimuli: [stim('Teks kumpulan satu.')] }, { id: 'G2', stimuli: [stim('Teks kumpulan dua.')] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    const chips = document.querySelectorAll<HTMLElement>('[data-testid="stimulus-chip"]')
+    expect(chips.length).toBe(2)
+    const open = (): string => [...document.querySelectorAll('[data-testid="group-stimuli"]')].map((b) => b.textContent).join('|')
+    expect(open()).toContain('Teks kumpulan satu.')
+    expect(open()).not.toContain('Teks kumpulan dua.')
+    chips[1]!.click()
+    await flushPromises()
+    expect(open()).toContain('Teks kumpulan dua.')
+  })
+
   it('S8-T02: a group whose picture has no source keeps its questions visible and answerable', async () => {
     const pic = { kind: 'image', label: 'Rajah 1', body: null, imageToken: null, alt: null }
     server.getKuizPaperPage.mockResolvedValue({
