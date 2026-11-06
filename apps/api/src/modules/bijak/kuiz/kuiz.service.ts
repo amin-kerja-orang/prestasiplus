@@ -24,8 +24,9 @@ import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import { FilesService } from '../../files'
 import { AnswerLogPort } from '../../practice/answer-log.port'
+import { KUIZ_ORIGIN } from '../../practice'
 import { PracticePorts, type PracticeRewardResult, practiceRewardSource } from '../../practice/ports'
-import { type CompletedSession, type GradedAnswer, KUIZ_ORIGIN, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
+import { type CompletedSession, type GradedAnswer, PracticeRepository, type ServedRef, type SessionRecord, type StoredCheck } from '../../practice/practice.repository'
 import { pinServableForNewSitting, QuestionsRepository } from '../../questions'
 import { type DrawCandidate, drawUnits } from '../../questions/serving'
 import type { QuestionRecord, StimulusGroupRecord } from '../../questions/types'
@@ -53,6 +54,9 @@ import {
 } from './kuiz.mapper'
 import { ownStimuliOf } from './own-stimuli'
 /** [PROPOSED] The attempt id of a pupil's per-paper kuiz rows: a name-based uuid (v5 layout) of the pupil and the paper. */
+/** Internal: rolls back a `closeIdle` transaction whose session turned out not to be idle any more. */
+class StillActive extends Error {}
+
 export function paperKuizAttemptId(userId: string, paperId: string): string {
   const h = createHash('sha1').update(`bijak-kuiz-paper:${userId}:${paperId}`).digest()
   h[6] = (h[6]! & 0x0f) | 0x50
@@ -345,7 +349,12 @@ export class KuizService {
         const graded = await this.regrade(await this.practice.sessionQuestions(session.id), checks)
         await this.writeRows(session, graded, session.isTest)
       }
-      return this.practice.abandonSession(session.id, now)
+      // Re-checks the same cutoff in its UPDATE; false means the session is no longer idle, so undo the rows written above.
+      if (!(await this.practice.abandonSession(session.id, cutoff, now))) throw new StillActive()
+      return true
+    }).catch((err: unknown) => {
+      if (err instanceof StillActive) return false
+      throw err
     })
   }
 
