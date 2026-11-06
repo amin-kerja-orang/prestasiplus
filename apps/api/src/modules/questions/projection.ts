@@ -186,6 +186,8 @@ export function partsFromFlat(src: FlatSource): QuestionPart[] {
 export interface FlatFields {
   questionType: FlatType
   questionText: string
+  /** English stem (`stem_en`), null when none. */
+  questionTextEn: string | null
   options: string[] | null
   /** Option file ids in order (decimal strings); the service turns them into URLs. */
   optionImageIds: (string | null)[]
@@ -197,24 +199,46 @@ export interface FlatFields {
   /** R1-H-A7: the topics of an `essay_choice` leaf, else null. */
   essayTopics: { id: string; label: string }[] | null
   explanation: string | null
-  language: 'bm' | 'en'
+  language: WireLanguage
   scriptType: 'rumi' | 'arab' | 'jawi' | 'mixed'
   textDirection: 'ltr' | 'rtl'
   pointsValue: number
   difficultyLevel: number
 }
 
-export function languageToStore(language: 'bm' | 'en' | undefined, script: 'rumi' | 'arab' | 'jawi' | 'mixed' | undefined): QuestionVersionRecord['language'] {
+/** The wire tokens of `language` (60 API-Q-03). `bm` is only an input alias of `ms`; it is never produced. */
+export type WireLanguage = 'ms' | 'en' | 'ms+en'
+export type WireLanguageIn = WireLanguage | 'bm'
+
+/**
+ * Wire language and script to the stored `question_versions.language` (one column holds both).
+ *
+ * Known R1 limit (S1-T09b, lead ruling 3): bilingual (`ms+en`, stored `ms_en`) is Rumi only. The column cannot hold "Jawi and bilingual",
+ * and `jawi` / `ar` take priority over the language, so a request that is both bilingual and Jawi/Arab is refused with
+ * `bilingualScriptConflict` (the callers answer 422 on `language`) instead of silently dropping the English.
+ */
+export function languageToStore(language: WireLanguageIn | undefined, script: 'rumi' | 'arab' | 'jawi' | 'mixed' | undefined): QuestionVersionRecord['language'] {
   if (script === 'jawi') return 'jawi'
   if (script === 'arab') return 'ar'
   if (script === 'mixed') return 'ms_en'
+  if (language === 'ms+en') return 'ms_en'
   return language === 'en' ? 'en' : 'ms'
 }
 
+/** True when a request asks for a bilingual question in the Jawi or Arab script (not supported in R1). */
+export const bilingualScriptConflict = (language: WireLanguageIn | undefined, script: 'rumi' | 'arab' | 'jawi' | 'mixed' | QuestionVersionRecord['language'] | undefined): boolean =>
+  language === 'ms+en' && (script === 'jawi' || script === 'arab' || script === 'ar')
+
+/** English text of the wire: blank is no text (null, so a draft saves with it empty); undefined keeps what is stored. */
+export const enText = (v: string | null | undefined): string | null | undefined => (v === undefined ? undefined : v === null || v.trim() === '' ? null : v.trim())
+
+// `ms_en` reads as `mixed` because the row holds BM and English text (the practice bridge and the remedial service consume this). Per the
+// bilingual ruling a bilingual question is always Rumi script: Jawi and Arab cannot be bilingual in R1.
 export const scriptOf = (l: QuestionVersionRecord['language']): FlatFields['scriptType'] =>
   l === 'jawi' ? 'jawi' : l === 'ar' ? 'arab' : l === 'ms_en' ? 'mixed' : 'rumi'
 
-export const flatLanguageOf = (l: QuestionVersionRecord['language']): 'bm' | 'en' => (l === 'en' ? 'en' : 'bm')
+/** Stored language to the wire token: `ms_en` is `ms+en`; Jawi and Arab questions are Bahasa Melayu (`ms`). */
+export const flatLanguageOf = (l: QuestionVersionRecord['language']): WireLanguage => (l === 'en' ? 'en' : l === 'ms_en' ? 'ms+en' : 'ms')
 export const directionOf = (l: QuestionVersionRecord['language']): 'ltr' | 'rtl' => (l === 'ar' || l === 'jawi' ? 'rtl' : 'ltr')
 
 const firstText = (parts: readonly QuestionPart[]): string => {
@@ -230,6 +254,7 @@ export function flatFromVersion(v: QuestionVersionRecord): FlatFields {
   const out: FlatFields = {
     questionType: 'essay',
     questionText: v.stemMs ?? firstText(parts),
+    questionTextEn: v.stemEn,
     options: null,
     optionImageIds: [],
     correctAnswer: null,

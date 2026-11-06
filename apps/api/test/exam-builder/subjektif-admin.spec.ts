@@ -226,6 +226,9 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
       expect(res.meta.counts).toEqual({ total: 3, published: 0, withScheme: 1 })
       const schemeOf = (id: string) => (res.data.find((r) => r.id === id) as unknown as { schemeCount: number }).schemeCount
       expect([schemeOf(pd), schemeOf(pk), schemeOf(pg)]).toEqual([0, 0, 1])
+      // the editor wire carries the same rule per placed question (`hasScheme`), also once the paper is Terbit
+      const flagOf = async (paper: string, qid: string) => ((await admin.get(`/api/admin/papers/${paper}`)).body.data.questions as { id: string; hasScheme?: boolean }[]).find((x) => x.id === qid)?.hasScheme
+      expect([await flagOf(pd, draftId), await flagOf(pk, keyless), await flagOf(pg, keyed)]).toEqual([false, false, true])
       for (const [paper, qid] of [[pd, draftId], [pk, keyless]] as const) {
         const refused = await publish(paper)
         expect(refused.ok).toBe(false)
@@ -233,6 +236,7 @@ describe('S3-T06 Kertas Subjektif admin lane on /api/admin/papers', () => {
         expect(refused.errors).toContain(`Soalan ${qid} ${M.subjektifNoScheme}`)
       }
       expect((await publish(pg)).ok).toBe(true)
+      expect(await flagOf(pg, keyed)).toBe(true)
       expect((await list('&surface=subjektif&negeri=sabah')).meta.counts).toEqual({ total: 3, published: 1, withScheme: 1 })
     })
   })

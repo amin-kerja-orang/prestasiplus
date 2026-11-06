@@ -29,6 +29,10 @@ import {
   BijakSectionPoolsSchema,
   BijakBuilderBlockerSchema,
   BijakBuilderOkSchema,
+  BijakBuilderPaperSourceApplyResultSchema,
+  BijakBuilderPaperSourceApplySchema,
+  BijakBuilderPaperSourceUploadResultSchema,
+  BijakBuilderPaperSourceUploadSchema,
   BijakBuilderPaperCreateResultSchema,
   BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
@@ -87,6 +91,10 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderPaperPatch: BijakBuilderPaperPatchSchema,
   BijakBuilderBlocker: BijakBuilderBlockerSchema,
   BijakBuilderOk: BijakBuilderOkSchema,
+  BijakBuilderPaperSourceUpload: BijakBuilderPaperSourceUploadSchema,
+  BijakBuilderPaperSourceApply: BijakBuilderPaperSourceApplySchema,
+  BijakBuilderPaperSourceUploadResult: BijakBuilderPaperSourceUploadResultSchema,
+  BijakBuilderPaperSourceApplyResult: BijakBuilderPaperSourceApplyResultSchema,
   BijakBuilderPublishResult: BijakBuilderPublishResultSchema,
   BijakBuilderPreviewRequest: BijakBuilderPreviewRequestSchema,
   BijakBuilderReviewQuestion: BijakBuilderReviewQuestionSchema,
@@ -301,6 +309,34 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
       422: err(`VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.overrideReasonRequired}" (override without a reason).`),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
+    path: '/admin/papers/{id}/source',
+    tags: [BIJAK_BUILDER_TAG],
+    summary: 'Paper builder: source PDF of a Kertas Subjektif (upload, then apply) [API-BIJAK-14]',
+    description: `S3-T06. Kertas Subjektif only. Two request shapes on one path. (1) multipart/form-data with \`paper\` (required PDF), optional \`scheme\` (PDF) and \`declaration\` ("true"): each file is at most 30 MB, checked by the %PDF- magic bytes and the .pdf name; the API creates the intake batch of THIS paper and answers 202 { data: { batchId } }. (2) JSON { apply: true } appends the accepted items of that batch as placements of the paper in one transaction (idempotent; a repeat appends 0) and answers 201 { data: { placements } }. Errors: 404 "${BIJAK_BUILDER_MESSAGES.paperNotFound}"; 409 for a Terbit paper "${BIJAK_BUILDER_MESSAGES.paperPublishedWithdrawFirst}", an upload when the paper already has a source batch "${BIJAK_BUILDER_MESSAGES.sourceBatchExists}", and on apply open items "${BIJAK_BUILDER_MESSAGES.itemsUndecided}" or a batch that is not ready "${BIJAK_BUILDER_MESSAGES.sourceBatchNotReady}"; 422 on fields.paper / fields.scheme "${BIJAK_BUILDER_MESSAGES.sourcePdfInvalid}" or "${BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge}", fields.declaration "${BIJAK_BUILDER_MESSAGES.declarationRequired}", fields.surface "${BIJAK_BUILDER_MESSAGES.subjektifOnly}", fields.source "${BIJAK_BUILDER_MESSAGES.sourceBatchMissing}" (apply before upload). The edge allows 62 MB for this path (2 x 30 MB plus overhead). ${ROLE_NOTE}`,
+    request: {
+      params: PaperIdParams,
+      headers: [csrf],
+      body: {
+        required: true as const,
+        content: {
+          'multipart/form-data': { schema: BijakBuilderPaperSourceUploadSchema },
+          'application/json': { schema: BijakBuilderPaperSourceApplySchema },
+        },
+      },
+    },
+    responses: {
+      201: json(envelopeOf(BijakBuilderPaperSourceApplyResultSchema), 'JSON { apply: true }: the number of placements appended by this call.'),
+      202: json(envelopeOf(BijakBuilderPaperSourceUploadResultSchema), 'Multipart: the intake batch created for this paper.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      404: PAPER_NOT_FOUND,
+      409: err('CONFLICT (Terbit paper, source batch already exists, open items or batch not ready; BM text as listed above).'),
+      422: err('VALIDATION_ERROR (not a Kertas Subjektif, invalid or oversize PDF, declaration not ticked, or apply before upload; BM text as listed above).'),
     },
   })
 
