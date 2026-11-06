@@ -52,11 +52,13 @@ test('an open duplicate blocks Terima until Diketepikan @api', async ({ page }) 
   const sent = await page.request.post('/api/guru/question-papers', {
     headers: { 'x-csrf-token': csrf },
     multipart: {
-      jenisSoalan: 'Trial Paper',
+      // QuestionSetPaperFields since #684 (S6-T06): OPT-JENIS-HANTARAN slug, levelId, year, preparedBy, and the confirmed answer scheme.
+      paperType: 'trial',
       subject: 'Sains',
-      tingkatan: '4',
-      tahun: '2025',
-      disediakanOleh: 'Pengarang Ujian',
+      levelId: '4',
+      year: '2025',
+      preparedBy: 'Pengarang Ujian',
+      answerSchemeConfirmed: 'true',
       files: { name: `${token}.pdf`, mimeType: 'application/pdf', buffer: paperPdf(lines) },
     },
   })
