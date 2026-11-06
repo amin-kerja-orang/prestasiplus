@@ -9,14 +9,15 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/api'
 
-import { users } from '@/modules/m01-authentication/mock'
+import { roundHalfUp } from '@/lib/number'
+import { schools } from '@/modules/m02-users-schools/mock'
+import { kirkpatrick } from '@/modules/m05-practice/mock'
 import {
   fetchActiveTournaments,
   fetchLeague,
   fetchSchoolDetail,
   fetchSchoolStandings,
   fetchSekolahBersaing,
-  joinLeague,
   pollMatch,
   startBattle,
 } from '../../api'
@@ -29,6 +30,7 @@ const D5_STUDENT = 3 // no school
 // A pupil of school 8880, which is in no seeded league (account 4 shares SMK DEMO with account 2 since D72).
 const D1_STUDENT = 3201
 const ANCHOR_8106 = 4301 // logged-in anchor of school 8106
+const SCHOOL_ADMIN = 8
 
 let booted: Booted
 
@@ -517,7 +519,7 @@ describe('#46-#49 leagues', () => {
     expect(await data('/api/leagues', ANCHOR_8106)).toEqual({ mine: [liga1], open: [liga1] })
   })
 
-  it('#49 liga 1: header, invite code, share link, join button, no standings', async () => {
+  it('#49 liga 1: header and no standings; the detail has no invite code, share link or canJoin', async () => {
     const l = await data<Record<string, unknown>>('/api/leagues/1', ADMIN)
     expect(l).toMatchObject({
       id: 1,
@@ -526,22 +528,15 @@ describe('#46-#49 leagues', () => {
       scoringLabel: 'Jumlah Markah',
       creatorName: 'Cikgu Demo 4401',
       classLevels: ['T5'],
-      inviteCode: 'RMU4VCBS',
-      canJoin: true,
       standings: {},
-      shareUrl:
-        'https://wa.me/?text=Jom+sertai+Liga+Pertandingan+%22Liga+Sejarah+2026+5ST%22+di+PrestasiPlus%21+Kod+Jemputan%3A+RMU4VCBS+%E2%80%94+prestasiplus.my%2Fliga+%F0%9F%8F%86',
     })
+    for (const key of ['inviteCode', 'shareUrl', 'canJoin']) expect(l).not.toHaveProperty(key)
     expect((l.schools as { id: number }[]).map((s) => s.id).sort()).toEqual([8080, 8082, 8106])
-    // A member cannot join again.
-    expect((await data<{ canJoin: boolean }>('/api/leagues/1', ANCHOR_8106)).canJoin).toBe(false)
   })
 
-  it('#49 liga 2 (Tamat): the stored standings per level; nobody can join', async () => {
+  it('#49 liga 2 (Tamat): the stored standings per level', async () => {
     const l = await data<{
-      canJoin: boolean
       statusLabel: string
-      inviteCode: string
       standings: Record<
         string,
         {
@@ -555,7 +550,7 @@ describe('#46-#49 leagues', () => {
         }[]
       >
     }>('/api/leagues/2', ADMIN)
-    expect(l).toMatchObject({ canJoin: false, statusLabel: 'Tamat', inviteCode: 'TEST2026' })
+    expect(l).toMatchObject({ statusLabel: 'Tamat' })
     expect(Object.keys(l.standings)).toEqual(['T4', 'T5'])
     expect(l.standings.T4?.map((r) => [r.rank, r.schoolId, r.peserta, r.skor, r.purata])).toEqual([
       [1, 8090, 8, 2935, 77.2],
@@ -578,137 +573,95 @@ describe('#46-#49 leagues', () => {
     name: 'Liga Sains Daerah Kluang 2026',
     type: 'league',
     scope: 'district',
-    subject_id: 4,
-    game_mode: 'mixed',
-    class_levels: ['T4', 'T5'],
-    scoring_method: 'total_score',
-    start_date: '2026-10-01',
-    end_date: '2026-10-31',
-    max_schools: 2,
+    subjectId: 4,
+    mode: 'mixed',
+    levelIds: [4, 5],
+    scoring: 'total_score',
+    start: '2026-10-01',
+    end: '2026-10-31',
+    schoolLimit: 2,
   }
+  type LeagueDto = { id: number; status: string; schools: { id: number }[]; classLevels: string[] }
 
-  it('#47 validates the required fields, the dates and the school limit (V-M16-14/15)', async () => {
-    const empty = await post<ErrorBody>('/api/leagues', D1_STUDENT, {})
+  it('#47 (API-ADM-25) is Admin Pusat only: a pupil gets 403', async () => {
+    expect((await post('/api/leagues', D1_STUDENT, form)).status).toBe(403)
+    expect((await post('/api/leagues', SCHOOL_ADMIN, form)).status).toBe(403)
+  })
+
+  it('#47 validates the required fields, the enums, the dates and the school limit', async () => {
+    const empty = await post<ErrorBody>('/api/leagues', ADMIN, {})
     expect(empty.status).toBe(422)
     expect(Object.keys(empty.body.error.fields ?? {}).sort()).toEqual([
-      'end_date',
-      'game_mode',
+      'end',
+      'levelIds',
+      'mode',
       'name',
+      'schoolLimit',
       'scope',
-      'scoring_method',
-      'start_date',
+      'scoring',
+      'start',
       'type',
     ])
     expect(empty.body.error.fields?.name).toBe('Sila lengkapkan semua medan wajib.')
-    const bad = await post<ErrorBody>('/api/leagues', D1_STUDENT, {
-      ...form,
-      end_date: '2026-09-30',
-      max_schools: 1,
-    })
+    const bad = await post<ErrorBody>('/api/leagues', ADMIN, { ...form, end: '2026-09-30', schoolLimit: 1, type: 'tournament' })
     expect(bad.body.error.fields).toMatchObject({
-      end_date: 'Tarikh tamat mesti selepas tarikh mula.',
-      max_schools: 'Had sekolah mesti antara 2 dan 500.',
+      type: 'Format tidak sah.',
+      end: 'Tarikh tamat mesti selepas tarikh mula.',
+      schoolLimit: 'Had sekolah mesti antara 2 dan 500.',
     })
-    expect(
-      (await post<ErrorBody>('/api/leagues', D1_STUDENT, { ...form, max_schools: 501 })).status,
-    ).toBe(422)
+    expect(bad.body.error.message).toBe('Format tidak sah.')
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, schoolLimit: 501 })).status).toBe(422)
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, name: 'x'.repeat(101) })).body.error.fields?.name).toBe('Sila lengkapkan semua medan wajib.')
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, levelIds: [6] })).body.error.fields?.levelIds).toBe('Tingkatan tidak sah.')
+    expect((await post<ErrorBody>('/api/leagues', ADMIN, { ...form, levelIds: [1, 2, 3, 4, 5, 1] })).body.error.fields?.levelIds).toBe('Tingkatan tidak sah.')
   })
 
-  it("#47 creates an upcoming league with an 8-character code; the creator's school joins first", async () => {
-    const r = await post<{ data: { id: number } }>('/api/leagues', D1_STUDENT, form)
+  it('#47 creates an upcoming league and answers its detail; NO school joins on create', async () => {
+    const r = await post<{ data: LeagueDto }>('/api/leagues', ADMIN, form)
     expect(r.status).toBe(201)
-    expect(r.body.data.id).toBe(3)
-    const l = await data<{
-      id: number
-      status: string
-      inviteCode: string
-      creatorName: string
-      classLevels: string[]
-      schools: { id: number }[]
-      typeLabel: string
-      scopeLabel: string
-      subjectName: string
-      canJoin: boolean
-    }>('/api/leagues/3', D1_STUDENT)
-    expect(l).toMatchObject({
-      status: 'upcoming',
-      creatorName: users.get(D1_STUDENT)?.name,
-      classLevels: ['T4', 'T5'],
-      typeLabel: 'Liga',
-      scopeLabel: 'Daerah',
-      canJoin: false,
-    })
-    expect(l.inviteCode).toMatch(/^[A-Z0-9]{8}$/)
-    expect(l.schools.map((s) => s.id)).toEqual([8880])
-    expect(
-      (
-        await data<{ mine: { id: number }[]; open: { id: number }[] }>('/api/leagues', D1_STUDENT)
-      ).mine.map((c) => c.id),
-    ).toEqual([3])
-    // A creator without a school creates a league with no participant; the codes differ.
-    const second = await post<{ data: { id: number } }>('/api/leagues', D5_STUDENT, {
-      ...form,
-      max_schools: undefined,
-    })
-    const l2 = await data<{ schools: unknown[]; inviteCode: string }>(
-      `/api/leagues/${String(second.body.data.id)}`,
-      D5_STUDENT,
-    )
-    expect(l2.schools).toEqual([])
-    expect(l2.inviteCode).not.toBe(l.inviteCode)
+    expect(r.body.data).toMatchObject({ id: 3, status: 'upcoming', classLevels: ['T4', 'T5'], schools: [] })
+    for (const key of ['inviteCode', 'shareUrl', 'canJoin']) expect(r.body.data).not.toHaveProperty(key)
+    expect(await data<LeagueDto>('/api/leagues/3', ADMIN)).toEqual(r.body.data)
   })
 
-  it('#48 joins by code (any case) and refuses the other cases with their messages (V-M16-13)', async () => {
-    const msg = async (code: unknown, as: number) => {
-      const r = await post<ErrorBody>('/api/leagues/join', as, { invite_code: code })
+  it('#48 AC-GM-15.2: join answers 403 for every role', async () => {
+    for (const as of [D1_STUDENT, T4_STUDENT, SCHOOL_ADMIN, ADMIN]) {
+      expect((await post('/api/leagues/join', as, { invite_code: 'RMU4VCBS' })).status).toBe(403)
+    }
+  })
+
+  it('API-ADM-25 enrol: Admin Pusat only, all or nothing, with the exact refusals under schoolIds', async () => {
+    const created = await post<{ data: LeagueDto }>('/api/leagues', ADMIN, { ...form, name: 'Liga Daftar', schoolLimit: 2 })
+    const id = created.body.data.id
+    const url = `/api/leagues/${String(id)}/schools`
+    expect((await post(url, D1_STUDENT, { schoolIds: [8880] })).status).toBe(403)
+    expect((await post(url, SCHOOL_ADMIN, { schoolIds: [8880] })).status).toBe(403)
+    const msg = async (body: unknown) => {
+      const r = await post<ErrorBody>(url, ADMIN, body)
       expect(r.status).toBe(422)
-      expect(r.body.error.fields?.invite_code).toBe(r.body.error.message)
+      expect(r.body.error.fields?.schoolIds).toBe(r.body.error.message)
       return r.body.error.message
     }
-    expect(await msg('ZZZZZZZZ', D1_STUDENT)).toBe('Kod jemputan tidak sah.')
-    expect(await msg(undefined, D1_STUDENT)).toBe('Kod jemputan tidak sah.')
-    expect(await msg('TEST2026', D1_STUDENT)).toBe('Liga ini sudah tamat.')
-    expect(await msg('RMU4VCBS', D5_STUDENT)).toBe(
-      'Anda perlu mempunyai sekolah untuk menyertai liga ini.',
-    )
-
-    const ok = await post<{ data: { id: number } }>('/api/leagues/join', D1_STUDENT, {
-      invite_code: ' rmu4vcbs ',
-    })
-    expect([ok.status, ok.body.data.id]).toEqual([200, 1])
+    expect(await msg({ schoolIds: [] })).toBe('Sila pilih sekolah.')
+    expect(await msg({ schoolIds: [999999] })).toBe('Format sekolah tidak sah.')
+    expect(await msg({ schoolIds: Array.from({ length: 501 }, (_, i) => 900000 + i) })).toBe('Format sekolah tidak sah.')
+    expect(await msg({ schoolIds: [8880, 8880] })).toBe('Sekolah ini sudah menyertai liga ini.')
+    expect(await msg({ schoolIds: [8880, 8082, 8090] })).toBe('Liga ini sudah penuh.')
+    expect((await data<LeagueDto>(`/api/leagues/${String(id)}`, ADMIN)).schools).toEqual([])
+    const ok = await post<{ data: LeagueDto }>(url, ADMIN, { schoolIds: [8880, 8082] })
+    expect(ok.status).toBe(200)
+    expect(ok.body.data.schools.map((s) => s.id)).toEqual([8880, 8082])
+    expect(await msg({ schoolIds: [8082] })).toBe('Sekolah ini sudah menyertai liga ini.')
     expect(
-      await data<{ schools: unknown[]; canJoin: boolean }>('/api/leagues/1', D1_STUDENT),
-    ).toMatchObject({ canJoin: false })
-    expect(await msg('RMU4VCBS', D1_STUDENT)).toBe('Sekolah anda sudah menyertai liga ini.')
-    // Liga Terbuka for another school lists it; the count is now 4.
-    expect(
-      (await data<{ open: { id: number; schools: number }[] }>('/api/leagues', ADMIN)).open.find(
-        (c) => c.id === 1,
-      )?.schools,
-    ).toBe(4)
+      (await data<{ mine: { id: number }[] }>('/api/leagues', D1_STUDENT)).mine.map((c) => c.id),
+    ).toContain(id)
+    // Unknown league: 404; an ended league (liga 2) is refused.
+    expect((await post('/api/leagues/999/schools', ADMIN, { schoolIds: [8880] })).status).toBe(404)
+    expect(await msgAt('/api/leagues/2/schools', { schoolIds: [8880] })).toBe('Liga ini sudah tamat.')
+    expect(await msgAt('/api/leagues/2/schools', { schoolIds: [8880, 999999] })).toBe('Format sekolah tidak sah.')
   })
 
-  it('#48 refuses a full league (max_schools reached)', async () => {
-    const created = await post<{ data: { id: number } }>('/api/leagues', D1_STUDENT, {
-      ...form,
-      name: 'Liga Penuh',
-      max_schools: 2,
-    })
-    const code = (
-      await data<{ inviteCode: string }>(`/api/leagues/${String(created.body.data.id)}`, D1_STUDENT)
-    ).inviteCode
-    // A pupil of school 8102 joins (the central admin has no school since D72).
-    expect((await post('/api/leagues/join', 5901, { invite_code: code })).status).toBe(200)
-    const full = await post<ErrorBody>('/api/leagues/join', T4_STUDENT, { invite_code: code })
-    expect(full.status).toBe(422)
-    expect(full.body.error.message).toBe('Liga ini sudah penuh.')
-    // the detail agrees with join: a full league cannot be joined
-    const detail = await data<{ canJoin: boolean }>(
-      `/api/leagues/${String(created.body.data.id)}`,
-      T4_STUDENT,
-    )
-    expect(detail.canJoin).toBe(false)
-  })
+  const msgAt = async (url: string, body: unknown) => (await post<ErrorBody>(url, ADMIN, body)).body.error.message
 })
 
 describe('API client (api/)', () => {
@@ -738,14 +691,13 @@ describe('API client (api/)', () => {
   })
 
   it('the envelope calls unwrap {data} and reject with ApiError (404, 422 with fields)', async () => {
-    expect((await fetchLeague(1)).inviteCode).toBe('RMU4VCBS')
+    expect((await fetchLeague(1)).name).toBe('Liga Sejarah 2026 5ST')
     await expect(fetchLeague(999)).rejects.toMatchObject({ status: 404 })
-    await expect(joinLeague('NOPE')).rejects.toMatchObject({
-      status: 422,
-      fields: { invite_code: 'Kod jemputan tidak sah.' },
-    })
     expect((await fetchSchoolStandings({ period: 'all_time' })).rows).toHaveLength(7)
-    expect((await fetchSekolahBersaing('2026-09-14')).count).toBe(48)
+    token = setUser(SCHOOL_ADMIN).token
+    expect((await fetchSekolahBersaing()).length).toBeGreaterThan(0)
+    token = setUser(D5_STUDENT).token
+    await expect(fetchSekolahBersaing()).rejects.toMatchObject({ status: 403 })
     expect((await fetchSchoolDetail(8106)).allTime.battles).toBe(19)
   })
 
@@ -757,105 +709,61 @@ describe('API client (api/)', () => {
   })
 })
 
-describe('#50 Sekolah Bersaing (S28)', () => {
-  type SB = {
-    weekStart: string
-    count: number
-    rows: {
-      rank: number
-      schoolName: string
-      state: string
-      aktifPct: number
-      streakAvg: number
-      notaPer10: number
-      anonymous: boolean
-    }[]
-  }
+describe('API-AS-14 Sekolah Bersaing (R1-AS-45)', () => {
+  type Board = { rank: number; school: string; state: string; accuracy: number; pupils: number }[]
+  const URL = '/api/sekolah-bersaing'
 
-  it('defaults to the current week: Monday 21 Sep 2026, 49 observed rows', async () => {
-    const sb = await data<SB>('/api/sekolah-bersaing', D5_STUDENT)
-    expect(sb.weekStart).toBe('2026-09-21')
-    expect(sb.count).toBe(49)
-    expect(sb.rows).toHaveLength(49)
-    expect(sb.rows.map((r) => r.rank)).toEqual(Array.from({ length: 49 }, (_, i) => i + 1))
-    expect(sb.rows.slice(0, 5).map((r) => [r.state, r.aktifPct, r.streakAvg, r.notaPer10])).toEqual(
-      [
-        ['Kelantan', 0, 15, 0],
-        ['Johor', 0, 9.3, 0],
-        ['Sabah', 0, 8.6, 0],
-        ['Sabah', 0, 8.4, 0],
-        ['Selangor', 0, 8.2, 0],
-      ],
-    )
-    expect(sb.rows[16]).toMatchObject({
-      rank: 17,
-      state: 'Selangor',
-      aktifPct: 0.5,
-      streakAvg: 1.6,
-    })
-    expect(sb.rows[18]).toMatchObject({ rank: 19, aktifPct: 0.4, streakAvg: 1.1 })
-    expect(sb.rows[45]).toMatchObject({ rank: 46, state: 'Kuala Lumpur' })
-    expect(sb.rows[48]).toMatchObject({ rank: 49, state: 'Selangor', streakAvg: 0 })
-    // Per state: Selangor 22, Johor 5, Sabah 4, Kuala Lumpur 4, Kedah 3, Pahang 3, others 2.
-    const perState = new Map<string, number>()
-    for (const r of sb.rows) perState.set(r.state, (perState.get(r.state) ?? 0) + 1)
-    expect(Object.fromEntries(perState)).toEqual({
-      Selangor: 22,
-      Johor: 5,
-      Sabah: 4,
-      'Kuala Lumpur': 4,
-      Kedah: 3,
-      Pahang: 3,
-      Kelantan: 2,
-      Perak: 2,
-      Melaka: 2,
-      Terengganu: 2,
-    })
-    // 49 different register schools, none of the battle anchors or fixture schools.
-    expect(new Set(sb.rows.map((r) => r.schoolName)).size).toBeGreaterThan(40)
-    expect(sb.rows.every((r) => r.schoolName !== '' && !r.anonymous)).toBe(true)
-  })
-
-  it('?week= takes any date of the week; the earlier weeks hold 48 rows (the 21 Sep list without row 46)', async () => {
-    const w14 = await data<SB>('/api/sekolah-bersaing?week=2026-09-17', D5_STUDENT)
-    expect([w14.weekStart, w14.count]).toEqual(['2026-09-14', 48])
-    expect(w14.rows[17]).toMatchObject({ rank: 18, state: 'Kelantan', streakAvg: 2.4 })
-    expect(w14.rows[19]).toMatchObject({ rank: 20, state: 'Kuala Lumpur', streakAvg: 1.5 })
-    const w07 = await data<SB>('/api/sekolah-bersaing?week=2026-09-07', D5_STUDENT)
-    expect([w07.weekStart, w07.count]).toEqual(['2026-09-07', 48])
-    expect(w07.rows[17]).toMatchObject({ aktifPct: 0.4, streakAvg: 1.8 })
-    const w31 = await data<SB>('/api/sekolah-bersaing?week=2026-08-31', D5_STUDENT)
-    expect([w31.weekStart, w31.count]).toEqual(['2026-08-31', 48])
-    expect(w31.rows[19]).toMatchObject({ aktifPct: 0, streakAvg: 1.6 })
-  })
-
-  it('a week without a snapshot is the empty state; an invalid week shows the current week (DV-M16-30)', async () => {
-    expect(await data('/api/sekolah-bersaing?week=2025-01-06', D5_STUDENT)).toEqual({
-      weekStart: '2025-01-06',
-      count: 0,
-      rows: [],
-    })
-    for (const week of ['abc', '2026-02-30', '', '2026-13-01', '21-09-2026']) {
-      const sb = await data<SB>(`/api/sekolah-bersaing?week=${week}`, D5_STUDENT)
-      expect([week, sb.weekStart, sb.count]).toEqual([week, '2026-09-21', 49])
+  it.each([
+    ['the school admin', SCHOOL_ADMIN],
+    ['the admin', ADMIN],
+  ])('%s gets the rows, ranked from 1, at most 30', async (_who, as) => {
+    const board = await data<Board>(URL, as)
+    expect(board.length).toBeGreaterThan(0)
+    expect(board.length).toBeLessThanOrEqual(30)
+    expect(board.map((r) => r.rank)).toEqual(board.map((_, i) => i + 1))
+    for (const r of board) {
+      expect(Object.keys(r).sort()).toEqual(['accuracy', 'pupils', 'rank', 'school', 'state'])
+      expect(r.school).not.toBe('')
+      expect(Math.round(r.accuracy * 10) / 10).toBe(r.accuracy)
     }
   })
 
-  it('a school opted out of the board shows as "Sekolah anonim" (fixture)', async () => {
-    m16Hooks.m16Fixture('anonymousSchool', { rank: 3 })
-    const sb = await data<SB>('/api/sekolah-bersaing', D5_STUDENT)
-    expect(sb.rows[2]).toMatchObject({ rank: 3, schoolName: 'Sekolah anonim', anonymous: true })
-    expect(sb.rows[1]?.anonymous).toBe(false)
+  it('orders the rows by accuracy, highest first', async () => {
+    const accuracy = (await data<Board>(URL, SCHOOL_ADMIN)).map((r) => r.accuracy)
+    expect(accuracy).toEqual([...accuracy].sort((a, b) => b - a))
   })
 
-  it('the repository windows follow the clock: next week is empty', async () => {
+  it('the accuracy is the mean of the per-session percent of the M05 owner', async () => {
+    const [first] = await data<Board>(URL, SCHOOL_ADMIN)
+    const owner = kirkpatrick
+      .schools()
+      .find((s) => schools.get(s.schoolId)?.name === first?.school)
+    expect(owner).toBeDefined()
+    expect(first?.pupils).toBe(owner?.sessionStudents)
+    expect(first?.accuracy).toBe(
+      roundHalfUp((owner?.scoreSum ?? 0) / (owner?.scoredSessions ?? 1), 1),
+    )
+  })
+
+  it.each([
+    ['a student', T4_STUDENT],
+    ['a student with no school', D5_STUDENT],
+  ])('%s gets 403 with the shared error shape', async (_who, as) => {
+    const res = await call<ErrorBody>('GET', URL, as)
+    expect(res.status).toBe(403)
+    expect(res.body.error.code).toBe('FORBIDDEN')
+    expect(res.body.error.message).toEqual(expect.any(String))
+  })
+
+  it('an unknown query parameter is ignored (FR-AS-45-3)', async () => {
+    const plain = await data<Board>(URL, SCHOOL_ADMIN)
+    expect(await data<Board>(`${URL}?week=2026-09-14&zzz=1`, SCHOOL_ADMIN)).toEqual(plain)
+  })
+})
+
+describe('the repository windows follow the clock', () => {
+  it('a week later the monthly school standings are October (empty)', async () => {
     booted.clock.advance(7 * 24 * 3_600_000)
-    expect(await data('/api/sekolah-bersaing', D5_STUDENT)).toEqual({
-      weekStart: '2026-09-28',
-      count: 0,
-      rows: [],
-    })
-    // The school standings follow too: the monthly period is now October (empty).
     const s3 = await data<{ rows: unknown[] }>(
       '/api/battle/standings/schools?period=monthly',
       ADMIN,

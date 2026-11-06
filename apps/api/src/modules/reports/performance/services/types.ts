@@ -4,13 +4,16 @@ import type {
   PerformanceClassAnalyticsQuerySchema,
   PerformanceClassAnalyticsSchema,
   PerformanceClassCardSchema,
+  PerformanceClassesAggregateSchema,
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
+  PerformanceItemAnalysisMeSchema,
   PerformanceLevelCardSchema,
   PerformanceLeaderboardSchema,
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
   PerformanceRankingSchema,
+  PerformanceTimelineEntrySchema,
   PerformanceTimelinePostSchema,
   PerformanceSchoolItemAnalysisSchema,
   PerformanceSchoolSchema,
@@ -34,6 +37,7 @@ export type PerformanceAnalytics = z.infer<typeof PerformanceAnalyticsSchema>
 export type PerformanceClassAnalyticsQuery = z.infer<typeof PerformanceClassAnalyticsQuerySchema>
 export type PerformanceClassAnalytics = z.infer<typeof PerformanceClassAnalyticsSchema>
 export type PerformanceClassCard = z.infer<typeof PerformanceClassCardSchema>
+export type PerformanceClassesAggregate = z.infer<typeof PerformanceClassesAggregateSchema>
 export type PerformanceClassDashboard = z.infer<typeof PerformanceClassDashboardSchema>
 export type PerformanceClassItemAnalysis = z.infer<typeof PerformanceClassItemAnalysisSchema>
 export type PerformanceLevelCard = z.infer<typeof PerformanceLevelCardSchema>
@@ -42,12 +46,21 @@ export type PerformanceSchool = z.infer<typeof PerformanceSchoolSchema>
 export type PerformanceSchoolItemAnalysis = z.infer<typeof PerformanceSchoolItemAnalysisSchema>
 export type PerformanceStudent = z.infer<typeof PerformanceStudentSchema>
 
-/** Query of the school item analysis: `tingkatan` is T4 or T5, anything else is ignored. */
+/** Query of the school item analysis: `tingkatan` is T1 to T5 (staff only), anything else is ignored. */
 export interface ItemAnalysisSchoolQuery {
   tingkatan?: string
+}
+
+export type PerformanceItemAnalysisMe = z.infer<typeof PerformanceItemAnalysisMeSchema>
+
+/** Query of the pupil's own item analysis (API-RPT-05); the controller parses it with the contract schema. */
+export interface ItemAnalysisMeQuery {
+  subjectCode?: string | undefined
+  tapis?: 'semua' | 'ada_betul' | 'selalu_salah' | undefined
 }
 
 export type PerformanceRanking = z.infer<typeof PerformanceRankingSchema>
 export type PerformanceLeaderboard = z.infer<typeof PerformanceLeaderboardSchema>
 export type PerformancePublicProfile = z.infer<typeof PerformancePublicProfileSchema>
 export type PerformanceTimelinePost = z.infer<typeof PerformanceTimelinePostSchema>
+export type PerformanceTimelineEntry = z.infer<typeof PerformanceTimelineEntrySchema>

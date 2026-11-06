@@ -10,7 +10,9 @@ export type Grade = (typeof GRADES)[number]
 export const gradePoints = (grade: Grade): number => GRADES.indexOf(grade)
 
 /** BR-M08-02: percentage → grade (A+ 90–100 … G < 40; INFERRED beyond the S15 values). */
-export function gradeOfPercent(value: number): Grade {
+export function gradeOfPercent(raw: number): Grade {
+  // HC-5: round to a whole number first (half away from zero), so 89.5 reads as 90 = A+.
+  const value = Math.sign(raw) * Math.round(Math.abs(raw) + Number.EPSILON)
   if (value >= 90) return 'A+'
   if (value >= 80) return 'A'
   if (value >= 70) return 'A-'
@@ -51,15 +53,20 @@ export const pct = (part: number, whole: number): number => (whole === 0 ? 0 : (
 /** DV-07 / FR-M08-124: every displayed accuracy is capped at 100. */
 export const capPercent = (value: number): number => Math.min(value, 100)
 
-/** BR-M08-18: Indeks = 1 − p (2 decimals half up); Tahap Sukar > 0.70, Mudah ≤ 0.30, else Sederhana. */
+/**
+ * Indeks Kesukaran = 1 − p (2 decimals half up), kept for display only. Tahap is on the whole-number % betul
+ * (S10-T03 change 2, R1-GUR-6 DV-GUR-6-1): > 70 Mudah, 40–70 Sederhana, < 40 Sukar.
+ */
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 export function difficultyIndex(correct: number, attempts: number): number {
   return attempts === 0 ? 0 : round(1 - correct / attempts, 2)
 }
-export function difficultyLevel(index: number): DifficultyLevel {
-  if (index > 0.7) return 'Sukar'
-  if (index <= 0.3) return 'Mudah'
-  return 'Sederhana'
+/** Tahap of a % betul (any decimals; rounded half up to the whole number first, decision 11). */
+export function difficultyLevel(accuracyPct: number): DifficultyLevel {
+  const whole = Math.round(accuracyPct)
+  if (whole > 70) return 'Mudah'
+  if (whole >= 40) return 'Sederhana'
+  return 'Sukar'
 }
 
 /** BR-M08-19 status of a discrimination index D. */

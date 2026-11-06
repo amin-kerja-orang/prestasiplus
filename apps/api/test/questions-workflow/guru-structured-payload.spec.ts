@@ -2,7 +2,7 @@ import type { IntakeQuestion, IntakeStimulus } from '@pp/contract'
 import { describe, expect, it } from 'vitest'
 
 import { guruPayloadOf, guruStimulusImageOf, guruStructuredPayloadOf, guruStructuredTotal, readGuruStructured, readGuruSubmission } from '../../src/modules/intake/files/guru-submissions'
-import { itemIssues } from '../../src/modules/intake/workflow/gate'
+import { draftIssues, itemIssues } from '../../src/modules/intake/workflow/gate'
 import { StoredPayloadSchema } from '../../src/modules/intake/workflow/item-model'
 import { toQuestionInput } from '../../src/modules/intake/workflow/to-question'
 
@@ -65,11 +65,11 @@ describe('S6-T17 the stored payload of a structured submission', () => {
     ])
   })
 
-  it('a fresh submission is stopped only by the tag the admin still has to complete (unit), never by its scheme or stimulus', () => {
+  it('a fresh submission passes the Terima check (draftIssues, S1-T04) and is stopped at Terbitkan only by the tag the admin still has to complete (unit)', () => {
     const q = questionOf(guruStructuredPayloadOf(input, codes), { stimulusId: '9' })
     const stimulus: IntakeStimulus = { id: '9', kind: 'passage', label: 'Rangsangan', alt: 'Rangsangan' }
-    const messages = itemIssues(q, stimulus, facts).map((i) => i.message)
-    expect(messages).toEqual(['Unit DSKP belum dipilih.'])
+    expect(draftIssues(q, stimulus, facts)).toEqual([])
+    expect(itemIssues(q, stimulus, facts).map((i) => i.message)).toEqual(['Unit DSKP belum dipilih.'])
   })
 
   it('round-trips through readGuruStructured and is invisible to the MCQ reader', () => {

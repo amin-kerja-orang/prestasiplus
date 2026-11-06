@@ -30,7 +30,7 @@ import {
   type SessionRecord,
   type StoredCheck,
 } from './practice.repository'
-import { HISTORY_PAGE_SIZE, feedbackText } from './rules'
+import { HISTORY_PAGE_SIZE, feedbackText, selectedLabelOf } from './rules'
 import { PracticeStartPlanner } from './start.planner'
 
 export interface Caller {
@@ -214,7 +214,7 @@ export class PracticeService {
         userId: caller.userId,
         questionId: ref.questionId,
         questionVersionNo: ref.versionNo,
-        selectedLabel: chosen.label,
+        selectedLabel: selectedLabelOf([chosen.label]) ?? chosen.label,
         isCorrect,
         checkedAt: now,
         isTest: caller.isTest || session.isTest,
@@ -258,7 +258,6 @@ export class PracticeService {
               completedAt: completed.completedAt,
               pointsEarned: completed.pointsEarned,
               sessionCoins: completed.coinsEarned,
-              ...(s.mode === 'mission' && s.coinsPerCorrect !== null ? { coinsPerCorrect: s.coinsPerCorrect } : {}),
               isTest: test,
             },
             tx,
@@ -387,7 +386,9 @@ export class PracticeService {
   async history(caller: Caller, query: HistoryQuery): Promise<SessionListResponse> {
     const modes = query.modes
     const activeType = query.type && (modes as readonly string[]).includes(query.type) ? (query.type as PracticeMode) : null
-    const narrowed = activeType ? [activeType] : modes
+    // S3-T07: the "Tahun Lepas" pill (`past_year`) lists the legacy `past_year` sessions and the new `databank` ones.
+    const typeModes: readonly PracticeMode[] = activeType === 'past_year' ? ['past_year', 'databank'] : activeType ? [activeType] : []
+    const narrowed = activeType ? typeModes.filter((m) => (modes as readonly string[]).includes(m)) : modes
     const paged = query.page !== undefined || query.pageSize !== undefined
     const stats = await this.repo.historyStats(caller.userId, { modes, includeTest: true })
     const total = activeType ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true }) : stats.sessions

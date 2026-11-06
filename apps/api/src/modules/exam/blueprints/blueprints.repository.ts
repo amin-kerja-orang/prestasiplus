@@ -370,7 +370,8 @@ export class BlueprintsRepository {
   /** Newest published Kertas Pilihan of a subject and kertas, with sections and placements (architecture 6.3a: newest 20). */
   publishedPilihan(subjectId: bigint, kertas: number, take: number): Promise<PublishedPilihan[]> {
     return this.db.paper.findMany({
-      where: { kind: 'pilihan', status: 'published', subjectId, kertas },
+      // Simulasi papers only: a Kertas Subjektif paper (DM-23, S3-T06) is not evidence for a Kontrak.
+      where: { kind: 'pilihan', status: 'published', surface: 'simulasi', subjectId, kertas },
       include: { sections: { orderBy: { position: 'asc' }, include: { placements: { orderBy: { position: 'asc' } } } } },
       orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
       take,

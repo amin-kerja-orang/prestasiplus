@@ -36,6 +36,10 @@ describe('API-GUR-17 structured variant: request schema', () => {
     expect(fields({ ...ok, parts: [{ ...part, scheme: '' }] })['parts.0.scheme']).toBe('Sila isi skema jawapan.')
     expect(fields({ ...ok, stimulus: 'x'.repeat(4001) }).stimulus).toBe('Rangsangan tidak boleh melebihi 4000 aksara.')
     expect(GuruStructuredCreateRequestSchema.safeParse({ ...ok, stimulus: 'x'.repeat(4000) }).success).toBe(true)
+    // ERR-REQ-12 instances (GLB-1 "{Medan} tidak boleh melebihi {n} aksara.", Medan = the 44b field label) and the ERR-REQ-15 range
+    expect(fields({ ...ok, parts: [{ ...part, text: 'x'.repeat(2001) }] })['parts.0.text']).toBe('Teks sub-soalan tidak boleh melebihi 2000 aksara.')
+    expect(fields({ ...ok, parts: [{ ...part, scheme: 'x'.repeat(2001) }] })['parts.0.scheme']).toBe('Skema jawapan tidak boleh melebihi 2000 aksara.')
+    expect(GURU_STRUCTURED_MESSAGES.partsMax).toBe('Bilangan sub-soalan mesti antara 1 dan 10.')
   })
 
   it('refuses a client-sent total (the total is computed)', () => {
