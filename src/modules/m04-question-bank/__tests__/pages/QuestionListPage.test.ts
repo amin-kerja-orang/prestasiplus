@@ -132,6 +132,14 @@ afterEach(() => {
 })
 
 describe('QuestionListPage (M04 S1)', () => {
+  it('the tab Perlu dikumpulkan semula takes over and reads nothing of the list (S2-T04)', async () => {
+    const w = await render('/admin/questions?tab=regroup')
+    expect(w.find('[data-testid="regroup-page"]').exists()).toBe(true)
+    expect(w.find('[data-testid="questions-page"]').exists()).toBe(false)
+    expect(questions.fetchQuestions).not.toHaveBeenCalled()
+    expect(questions.fetchQuestionSummary).not.toHaveBeenCalled()
+  })
+
   it('shows the header, the KPI strip and the collapsible subject breakdown with full names', async () => {
     const w = await render()
     expect(w.text()).toContain('Urus bank soalan untuk platform PRESTASIPLUS')
