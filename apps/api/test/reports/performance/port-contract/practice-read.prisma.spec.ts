@@ -72,8 +72,8 @@ async function translating(seed: PracticeSeed): Promise<PracticeReadPort> {
   for (const a of seed.answers) {
     for (let i = 0; i < a.n; i++) {
       await t.db.query(
-        `insert into practice_answers (user_id, subject_id, education_level_id, is_correct, answered_at, is_test)
-         values ($1::bigint, $2::bigint, $3::bigint, $4, now(), $5)`,
+        `insert into practice_answers (user_id, subject_id, education_level_id, is_correct, answered_at, is_test, mode)
+         values ($1::bigint, $2::bigint, $3::bigint, $4, now(), $5, 'latih_tubi')`,
         [userOf.get(a.userId)!, subjects[Number(a.subjectId ?? '1') - 1]!, levels[a.levelCode ?? 't4']!, i < a.correct, a.isTest === true],
       )
     }

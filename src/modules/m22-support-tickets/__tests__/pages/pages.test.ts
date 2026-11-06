@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * M22 S1 and S2 component tests against a mocked client (SRS M22 v1.1 FR-M22-05…23, 28…37, 44…47; AC-M22-01…09,
- * 12): exact BM copy, tabs, empty and error states, the create flow, plain-text rendering, read-only queue.
+ * 12): exact BM copy, tabs, empty and error states, the create flow, plain-text rendering, admin queue and detail.
  */
 import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,6 +21,9 @@ const api = vi.hoisted(() => ({
   fetchQueue: vi.fn(),
   fetchSupportSettings: vi.fn(),
   saveSupportSettings: vi.fn(),
+  fetchTicketDetail: vi.fn(),
+  setTicketStatus: vi.fn(),
+  replyToTicket: vi.fn(),
 }))
 vi.mock('../../api/tickets', () => api)
 
@@ -254,6 +257,8 @@ const queue = (over: Partial<QueueList> = {}): QueueList => ({
       subject: 'Soalan kuiz tidak dipaparkan',
       status: 'dibuka',
       replied: false,
+      roleLabel: 'Murid',
+      school: 'SMK Demo',
     },
     {
       id: 6,
@@ -262,36 +267,56 @@ const queue = (over: Partial<QueueList> = {}): QueueList => ({
       subject: 'Kata laluan',
       status: 'selesai',
       replied: true,
+      roleLabel: null,
+      school: null,
     },
   ],
   meta: {
     total: 3,
     counts: [
       { status: 'dibuka', count: 2 },
+      { status: 'dalam_proses', count: 0 },
+      { status: 'menunggu_balas', count: 0 },
       { status: 'selesai', count: 1 },
+      { status: 'ditutup', count: 0 },
     ],
+    page: 1,
+    perPage: 25,
+    matched: 2,
   },
   ...over,
 })
 
 describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
-  it('heading, chips with counts, columns, cells, no action in rows', async () => {
+  it('heading, all five chips with counts and labels, columns, cells', async () => {
     api.fetchQueue.mockResolvedValue(queue())
     const { w } = await open('/admin/tiket', AdminTicketsPage)
     expect(w.get('h1').text()).toBe('Tiket Sokongan')
     expect(w.text()).toContain('Permohonan bantuan daripada pengguna.')
     const chips = w.findAll('[data-testid="tq-chips"] a')
-    expect(chips.map((c) => c.text())).toEqual(['Semua (3)', 'Dibuka (2)', 'Selesai (1)'])
+    expect(chips.map((c) => c.text())).toEqual([
+      'Semua (3)',
+      'Dibuka (2)',
+      'Dalam Proses (0)',
+      'Menunggu Balas (0)',
+      'Selesai (1)',
+      'Ditutup (0)',
+    ])
     expect(chips.map((c) => c.attributes('href'))).toEqual([
       '/admin/tiket',
       '/admin/tiket?status=dibuka',
+      '/admin/tiket?status=dalam_proses',
+      '/admin/tiket?status=menunggu_balas',
       '/admin/tiket?status=selesai',
+      '/admin/tiket?status=ditutup',
     ])
     expect(chips[0]?.attributes('data-active')).toBe('true')
     expect(chips[1]?.attributes('data-active')).toBe('false')
     expect(w.findAll('th').map((t) => t.text())).toEqual([
       'Tarikh',
       'Pengguna',
+      'Peranan',
+      'Sekolah',
       'Subjek',
       'Status',
       'Dibalas',
@@ -303,6 +328,8 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     expect(cells).toEqual([
       '2026-09-25 09:30:00',
       'Pelajar Maju Demo',
+      'Murid',
+      'SMK Demo',
       'Soalan kuiz tidak dipaparkan',
       'Dibuka',
       '—',
@@ -312,19 +339,184 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       ?.findAll('td')
       .map((c) => c.text())
     expect(second?.[1]).toBe('—')
-    expect(second?.[4]).toBe('Ya')
+    expect(second?.[2]).toBe('—')
+    expect(second?.[3]).toBe('—')
+    expect(second?.[6]).toBe('Ya')
     expect(w.find('tbody a, tbody button, tbody input').exists()).toBe(false)
-    expect(w.find('input, textarea, select, button').exists()).toBe(false)
+  })
+
+  it('asks for the page in the URL, and the pager keeps the status filter', async () => {
+    api.fetchQueue.mockResolvedValue(
+      queue({ meta: { ...queue().meta, page: 2, matched: 60 } }),
+    )
+    const { w, router } = await open('/admin/tiket?status=dibuka&page=2', AdminTicketsPage)
+    expect(api.fetchQueue.mock.calls[0]?.[0]).toMatchObject({ status: 'dibuka', page: 2 })
+    const table = w.findComponent({ name: 'DsDataTable' })
+    expect(table.props()).toMatchObject({ total: 60, page: 2, pageSize: 25 })
+    table.vm.$emit('update:page', 3)
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/tiket?status=dibuka&page=3')
+  })
+
+  it('the role filter asks for the role, lists 30 P20-02, and chips keep it', async () => {
+    api.fetchQueue.mockResolvedValue(queue())
+    const { w, router } = await open('/admin/tiket?role=teacher&page=3', AdminTicketsPage)
+    expect(api.fetchQueue.mock.calls[0]?.[0]).toMatchObject({ role: 'teacher', page: 3 })
+    const select = tid(w, 'tq-role')
+    expect(Array.from((select.element as HTMLSelectElement).options).map((o) => o.text)).toEqual([
+      'Semua Peranan',
+      'Murid',
+      'Guru',
+      'Admin Sekolah',
+    ])
+    expect(w.findAll('[data-testid="tq-chips"] a')[1]?.attributes('href')).toBe(
+      '/admin/tiket?status=dibuka&role=teacher',
+    )
+    await select.setValue('student')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/tiket?role=student')
+    await select.setValue('')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/tiket')
+  })
+
+  describe('detail (FR-ADM-P2-20.2)', () => {
+    const detail = {
+      id: 7,
+      subject: 'Soalan kuiz tidak dipaparkan',
+      body: 'Skrin kosong.',
+      status: 'dibuka',
+      roleLabel: null,
+      school: null,
+      createdAt: '2026-09-25T09:30:00+08:00',
+      adminReply: null,
+      repliedAt: null,
+    }
+    const body = (id: string) => document.body.querySelector(`[data-testid="${id}"]`)
+    const openRow = async (w: VueWrapper) => {
+      await w.findAll('tbody tr')[0]?.trigger('click')
+      await flushPromises()
+    }
+    const pick = async (value: string) => {
+      const select = new DOMWrapper(body('tq-detail-status') as HTMLSelectElement)
+      await select.setValue(value)
+      await flushPromises()
+    }
+
+    it('a row opens the subject, the body and the status select', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue(detail)
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(api.fetchTicketDetail.mock.calls[0]?.[0]).toBe(queue().data[0]?.id)
+      expect(body('def-subject')?.textContent).toContain(detail.subject)
+      expect(body('def-subject')?.textContent).toContain('Subjek')
+      expect(body('def-body')?.textContent).toContain('Butiran')
+      expect(body('def-body')?.querySelector('textarea')?.value).toBe(detail.body)
+      expect(body('def-reply')).toBeNull()
+      expect(body('def-role')?.textContent).toContain('Peranan')
+      expect(body('def-school')?.textContent).toContain('Sekolah')
+      expect((body('tq-detail-status') as HTMLSelectElement).value).toBe('dibuka')
+      expect(Array.from((body('tq-detail-status') as HTMLSelectElement).options).map((o) => o.text)).toEqual([
+        'Dibuka',
+        'Dalam Proses',
+        'Menunggu Balas',
+        'Selesai',
+        'Ditutup',
+      ])
+    })
+
+    it('choosing a status saves it, shows the flash and reloads the list', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue(detail)
+      api.setTicketStatus.mockResolvedValue({ ...detail, status: 'selesai' })
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      await pick('selesai')
+      expect(api.setTicketStatus).toHaveBeenCalledWith(detail.id, 'selesai')
+      expect(body('tq-detail-flash')?.textContent).toContain('Status dikemas kini.')
+      expect(api.fetchQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('a refused save shows the message and keeps the status', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue(detail)
+      api.setTicketStatus.mockRejectedValue(
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
+      )
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      await pick('selesai')
+      expect(document.body.textContent).toContain('Rekod tidak dijumpai.')
+      expect(body('tq-detail-flash')).toBeNull()
+      expect(api.fetchQueue).toHaveBeenCalledTimes(1)
+    })
+
+    const replyBox = () => body('tq-reply-text') as HTMLTextAreaElement | null
+
+    it('the reply box holds the saved reply; a save sends the text, shows the flash and keeps the status', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue({ ...detail, adminReply: 'Lama.' })
+      api.replyToTicket.mockResolvedValue({ ...detail, adminReply: 'Baharu.', repliedAt: detail.createdAt })
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(replyBox()?.value).toBe('Lama.')
+      await new DOMWrapper(replyBox()).setValue('Baharu.')
+      await new DOMWrapper(body('tq-reply-form') as HTMLFormElement).trigger('submit')
+      await flushPromises()
+      expect(api.replyToTicket).toHaveBeenCalledWith(detail.id, 'Baharu.')
+      expect(api.setTicketStatus).not.toHaveBeenCalled()
+      expect(body('tq-reply-flash')?.textContent).toContain('Balasan disimpan.')
+      expect(replyBox()?.value).toBe('Baharu.')
+      expect(api.fetchQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('a refused reply shows the field message and no flash', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue(detail)
+      api.replyToTicket.mockRejectedValue(
+        new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Sila tulis balasan.', fields: { text: 'Sila tulis balasan.' } }),
+      )
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      await new DOMWrapper(body('tq-reply-form') as HTMLFormElement).trigger('submit')
+      await flushPromises()
+      expect(document.body.textContent).toContain('Sila tulis balasan.')
+      expect(body('tq-reply-flash')).toBeNull()
+    })
+
+    it.each(['selesai', 'ditutup'])('%s hides the reply box and shows a saved reply as text', async (status) => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue({ ...detail, status, adminReply: 'Lama.' })
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(body('tq-reply-form')).toBeNull()
+      expect(body('def-reply')?.querySelector('textarea')?.value).toBe('Lama.')
+    })
+
+    it('a failed load shows its message', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockRejectedValue(
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
+      )
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(document.body.textContent).toContain('Rekod tidak dijumpai.')
+    })
   })
 
   it('empty states for no tickets and for a filter', async () => {
-    api.fetchQueue.mockResolvedValue(queue({ data: [], meta: { total: 0, counts: [] } }))
+    api.fetchQueue.mockResolvedValue(
+      queue({ data: [], meta: { ...queue().meta, total: 0, matched: 0 } }),
+    )
     const a = await open('/admin/tiket', AdminTicketsPage)
     expect(tid(a.w, 'tq-empty').text()).toBe('Belum ada tiket sokongan.')
     expect(a.w.find('table').exists()).toBe(false)
     const b = await open('/admin/tiket?status=xyz', AdminTicketsPage)
     expect(tid(b.w, 'tq-empty').text()).toBe('Tiada tiket berstatus “xyz”.')
     expect(api.fetchQueue.mock.calls.at(-1)?.[0].status).toBe('xyz')
+    const c = await open('/admin/tiket?status=dalam_proses', AdminTicketsPage)
+    expect(tid(c.w, 'tq-empty').text()).toBe('Tiada tiket berstatus “Dalam Proses”.')
   })
 
   it('shows the error with retry', async () => {

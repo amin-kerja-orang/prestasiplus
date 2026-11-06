@@ -100,6 +100,30 @@ describe('?peranan= mapping', () => {
   })
 })
 
+describe('S5-T14 Admin Sekolah guide (20 R1-AS-A3: FR-AS-A3-5, AC-AS-A3-6; card change AS-A3)', () => {
+  it('?peranan=admin-sekolah shows "Cara Mula Sebagai Admin Sekolah", "Fungsi Admin Sekolah" and "Soalan Lazim Admin"; /panduan alone shows the pupil guide', async () => {
+    const w = await render('/panduan?peranan=admin-sekolah')
+    const panel = w.get('[data-testid="panduan-panel-admin"]').text()
+    for (const t of ['Cara Mula Sebagai Admin Sekolah', 'Hubungi Admin PRESTASIPLUS', 'Daftar Guru', 'Import Pelajar', 'Fungsi Admin Sekolah', 'Soalan Lazim Admin']) {
+      expect(panel).toContain(t)
+    }
+    w.unmount()
+    const plain = await render('/panduan')
+    expect(plain.find('[data-testid="panduan-tab-pelajar"]').attributes('data-active')).toBe('true')
+  })
+
+  it('the Admin FAQ follows the final Senarai Pelajar import (AS-51): header nama,email,kelas, .csv/.txt, 2 MB, 1000 rows, approval; no grade or Darjah', () => {
+    const admin = GUIDE_ROLES.find((g) => g.id === 'admin')!
+    const answers = admin.faqs.map((f) => f.a).join(' ')
+    expect(answers).toContain('nama,email,kelas')
+    expect(answers).toContain('2 MB')
+    expect(answers).toContain('1000 baris')
+    expect(answers).toContain('menunggu kelulusan Admin Pusat')
+    expect(answers).toContain('"Reset Kata Laluan"')
+    expect(answers).not.toMatch(/grade|D1-D6/)
+  })
+})
+
 describe('PanduanPage ?peranan=', () => {
   it.each([
     ['pelajar', 'pelajar'],

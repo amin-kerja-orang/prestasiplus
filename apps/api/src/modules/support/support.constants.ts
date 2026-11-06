@@ -4,6 +4,8 @@ import type { RateLimitSpec } from '../../common/throttle'
 export const SUPPORT_AUDIT = {
   TICKET_CREATED: 'support.ticket.created',
   CONFIG_UPDATED: 'support.config.updated',
+  TICKET_STATUS_CHANGED: 'support.ticket.status_changed',
+  TICKET_REPLIED: 'support.ticket.replied',
 } as const
 
 /**
@@ -14,6 +16,7 @@ export const SUPPORT_LIMITS = {
   create: { bucket: 'support.ticket.create', env: 'THROTTLE_SUPPORT_TICKET_CREATE_PER_HOUR', default: 10, per: 'user', windowSeconds: 3600 },
   read: { bucket: 'support.ticket.read', env: 'THROTTLE_SUPPORT_READ_PER_MINUTE', default: 120, per: 'user' },
   settingsWrite: { bucket: 'support.settings.write', env: 'THROTTLE_SUPPORT_SETTINGS_WRITE_PER_MINUTE', default: 30, per: 'user' },
+  adminWrite: { bucket: 'support.ticket.admin_write', env: 'THROTTLE_SUPPORT_ADMIN_WRITE_PER_MINUTE', default: 60, per: 'user' },
   config: { bucket: 'support.config', env: 'THROTTLE_SUPPORT_CONFIG_PER_MINUTE', default: 60, per: 'ip' },
 } as const satisfies Record<string, RateLimitSpec>
 

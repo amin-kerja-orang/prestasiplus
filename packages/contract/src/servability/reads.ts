@@ -56,7 +56,7 @@ export const ServabilityOverviewActivitySchema = z
 /**
  * The hub "SPM" (`/admin/spm`, R1-ADM-Q-01): one card per lane, in the PRD order (FR-ADM-Q01.1). The screen hides a card whose route
  * does not exist (FR-ADM-Q01.4), so the API returns all six. Titles and descriptions are V2's own text. `attentionLabel` is printed
- * after the count; it is empty on Kertas Subjektif, whose attention rule is still open (see `attentionOpen` on the card). Subjektif has
+ * after the count. On Kertas Subjektif it counts papers with no placement (FR-ADM-Q18.3, D9: "kandungan" replaces "halaman"). Subjektif has
  * a second line, "{n} tiada kunci jawapan".
  */
 export const SERVABILITY_HUB_LANES = ['databank', 'tracking-a', 'subjektif', 'bijak-spm', 'kertas-subjektif', 'latih-tubi'] as const
@@ -68,7 +68,7 @@ export const SERVABILITY_HUB_CARDS: Readonly<Record<ServabilityHubLane, { title:
   'tracking-a': { title: 'Tracking A', description: 'Set objektif penuh dan lane bahasa.', attentionLabel: 'set tidak lengkap' },
   subjektif: { title: 'Subjektif', description: 'Soalan berstruktur dan esei.', attentionLabel: 'tiada skema — tidak disajikan' },
   'bijak-spm': { title: 'Bijak SPM', description: 'Kertas SPM penuh dalam format sebenar.', attentionLabel: 'tiada kunci jawapan' },
-  'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: '' },
+  'kertas-subjektif': { title: 'Kertas Subjektif', description: 'Kertas 2, 3 & 4 percubaan negeri.', attentionLabel: 'tiada kandungan' },
   'latih-tubi': { title: 'Latih Tubi', description: 'Latihan ikut topik dan bab.', attentionLabel: 'tidak boleh ditanda' },
 }
 
@@ -220,7 +220,7 @@ export const trackingSetAttentionMs = (filled: number, size: number, available: 
   `Hanya ${String(filled)} daripada ${String(size)} soalan — ${String(available)} tersedia untuk diisi`
 
 /** The Perhatian text of a Latih Tubi cell. */
-export const latihTubiCellAttentionMs = (n: number): string => `${String(n)} tidak boleh ditanda`
+export const latihTubiCellAttentionMs = (n: number): string => `${n.toLocaleString('en-US')} tidak boleh ditanda`
 
 /**
  * Lane "Latih Tubi" (FR-ADM-Q02.4): one row per subject x Tingkatan. It carries counts, not a question, so `actions` is always empty.

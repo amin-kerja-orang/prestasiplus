@@ -116,8 +116,8 @@ describe('servability reads contract (R1-T30)', () => {
       expect(SERVABILITY_HUB_COPY.intro).toBe('Setiap kad di bawah ialah satu laluan yang pelajar boleh buka. Nombor merah menunjukkan berapa banyak item yang perlu diperiksa.')
     })
 
-    it('carries no attention text for Kertas Subjektif, whose rule is open', () => {
-      expect(SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel).toBe('')
+    it('Kertas Subjektif reads "tiada kandungan", and a card still validates its lines', () => {
+      expect(SERVABILITY_HUB_CARDS['kertas-subjektif'].attentionLabel).toBe('tiada kandungan')
       expect(SERVABILITY_HUB_CARDS.subjektif.attentionLabel).toBe('tiada skema — tidak disajikan')
       const card = { lane: 'kertas-subjektif', title: 'Kertas Subjektif', description: 'x', total: 3, attention: 0, attentionLabel: '' }
       expect(ServabilityHubCardSchema.safeParse({ ...card, attentionOpen: true }).success).toBe(true)
@@ -147,6 +147,7 @@ describe('servability reads contract (R1-T30)', () => {
     it('builds the exact BM attention sentences', () => {
       expect(trackingSetAttentionMs(8, 40, 28471)).toBe('Hanya 8 daripada 40 soalan — 28471 tersedia untuk diisi')
       expect(latihTubiCellAttentionMs(3)).toBe('3 tidak boleh ditanda')
+      expect(latihTubiCellAttentionMs(1234)).toBe('1,234 tidak boleh ditanda')
     })
   })
 

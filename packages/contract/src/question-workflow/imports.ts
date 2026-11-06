@@ -91,6 +91,24 @@ export const QUESTION_IMPORT_CODE_ROW_MESSAGES = {
   correctRequired: 'Sila pilih jawapan betul.',
   marksMin: 'Nilai mata mesti sekurang-kurangnya 1.',
   marksMax: 'Markah bahagian tidak boleh melebihi 100.',
+  /** Groups and stimuli (30 Q-11 and FR-ADM-QE6.4). The two texts that carry their own "Baris {n}: " are `groupMixed` and `stimulusFirstRowOnly`: no second prefix. */
+  groupNotConsecutive: 'Baris kumpulan mesti berturutan.',
+  groupMixed: (line: number, key: string): string => `Baris ${String(line)}: kumpulan ${echoed(key)} bercampur subjek atau kertas.`,
+  stimulusFirstRowOnly: (line: number): string => `Baris ${String(line)}: rangsangan hanya pada baris pertama kumpulan.`,
+  groupAlreadyImported: (key: string): string => `Kumpulan ${echoed(key)} sudah diimport dalam kelompok ini.`,
+  groupOrder: 'Susunan kumpulan tidak sah.',
+  groupUnavailable: 'Kumpulan tidak dijumpai atau sedang dipaparkan kepada murid.',
+  stimulusLabel: 'Sila isi label rangsangan.',
+  stimulusKind: 'Sila pilih jenis rangsangan.',
+  stimulusPassage: 'Petikan mesti mempunyai teks.',
+  stimulusTable: 'Jadual mesti mempunyai kepala dan sekurang-kurangnya satu baris, atau imej.',
+  stimulusImage: 'Imej rangsangan tidak dapat dimuat turun.',
+  stimulusAlt: 'Sila isi teks alternatif imej.',
+  stimulusCaption: 'Kapsyen tidak boleh melebihi 300 aksara.',
+  stimuliCount: 'Satu kumpulan mesti mempunyai 1 hingga 3 rangsangan.',
+  partStimulus: 'Rangsangan bahagian mesti daripada kumpulan soalan ini.',
+  /** ERR-REQ-01 (40 X10): interim for a rule without its own text (a stimulus column outside a group, a label over 100, `group_id` with stimulus columns). */
+  requestInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
 } as const
 
 /** `failures[].code` of the new header: one stable code per row message (the `kod_ralat` column of the error CSV). */
@@ -100,6 +118,9 @@ export const QUESTION_IMPORT_ERROR_CODES = [
   'SP_REQUIRED', 'SP_TOO_MANY', 'SP_UNKNOWN', 'TP_REQUIRED', 'TP_RANGE', 'ARAS_REQUIRED', 'ARAS_INVALID', 'KBAT_INVALID',
   'CHAPTER_MISMATCH', 'TOPIC_INVALID', 'DIFFICULTY_INVALID', 'PROMPT_SHORT', 'PROMPT_LONG', 'OPTIONS_BLANK', 'OPTIONS_MIN', 'OPTION_LONG',
   'CORRECT_REQUIRED', 'MARKS_MIN', 'MARKS_MAX',
+  'GROUP_NOT_CONSECUTIVE', 'GROUP_ALREADY_IMPORTED', 'GROUP_MIXED', 'GROUP_STIMULUS_FIRST_ROW_ONLY', 'GROUP_ORDER_INVALID', 'GROUP_UNAVAILABLE',
+  'GROUP_FIELDS_INVALID', 'GROUP_REJECTED', 'STIMULI_COUNT', 'STIMULUS_LABEL_REQUIRED', 'STIMULUS_KIND_INVALID', 'STIMULUS_TEXT_REQUIRED',
+  'STIMULUS_TABLE_INVALID', 'STIMULUS_IMAGE_UNAVAILABLE', 'STIMULUS_ALT_REQUIRED', 'STIMULUS_CAPTION_LONG', 'PART_STIMULUS_INVALID',
 ] as const
 export type QuestionImportErrorCode = (typeof QUESTION_IMPORT_ERROR_CODES)[number]
 
@@ -266,26 +287,94 @@ export const QuestionImportListQuerySchema = z
 
 /* --------------------------------------------------------------------------------- Guru import */
 
+/**
+ * S6-T06 (API-GUR-19, docs/prd/r1/20-guru-admin-sekolah.md 44-F3): the teacher's CSV is its own format (BM columns by NAME, not by id) and
+ * its rows become items of ONE `source = 'guru'` intake batch (L-6), "Menunggu Semakan". The admin import above is unchanged.
+ */
+export const QUESTION_IMPORT_GURU_HEADER = [
+  'subjek',
+  'tingkatan',
+  'bab',
+  'sp',
+  'tp',
+  'aras',
+  'kesukaran',
+  'soalan',
+  'pilihan_a',
+  'pilihan_b',
+  'pilihan_c',
+  'pilihan_d',
+  'jawapan',
+  'penerangan',
+] as const
+
+/** Columns the file must have; `bab`, `sp`, `tp`, `aras`, `kesukaran` and `penerangan` may be left out (the admin completes them, D112). */
+export const QUESTION_IMPORT_GURU_REQUIRED_COLUMNS = ['subjek', 'tingkatan', 'soalan', 'pilihan_a', 'pilihan_b', 'pilihan_c', 'pilihan_d', 'jawapan'] as const
+
+/** The template file text: the header and the PRD example row, CRLF, trailing CRLF. */
+export const QUESTION_IMPORT_GURU_TEMPLATE_CSV = [
+  QUESTION_IMPORT_GURU_HEADER.join(','),
+  'Matematik,4,Bab 1,1.1.1,3,mengaplikasi,3,Contoh soalan?,A,B,C,D,A,Contoh penerangan',
+  '',
+].join('\r\n')
+export const QUESTION_IMPORT_GURU_TEMPLATE_FILENAME = 'templat-soalan.csv'
+/** Teacher caps (44-F3): at most 2 MB and 500 data rows. */
+export const QUESTION_IMPORT_GURU_MAX_BYTES = 2 * 1024 * 1024
+export const QUESTION_IMPORT_GURU_MAX_ROWS = 500
+
+export const QUESTION_IMPORT_GURU_MESSAGES = {
+  /** ERR-REQ-04 with the list "CSV". */
+  fileType: 'Jenis fail tidak disokong. Format dibenarkan: CSV.',
+  /** ERR-REQ-05 with 2. */
+  fileSize: 'Fail melebihi saiz maksimum 2 MB.',
+  /** ERR-REQ-07. */
+  fileRequired: 'Sila pilih fail.',
+  tooManyRows: 'Fail melebihi 500 baris.',
+  noData: 'Fail CSV tiada baris data.',
+  /** ERR-IMP-02. */
+  missingColumns: (columns: readonly string[]): string => `Lajur wajib tiada: ${columns.join(', ')}. Gunakan templat yang disediakan.`,
+  /** ERR-IMP-01 (the screen builds it from the counts). */
+  imported: (imported: number, failed: number): string => `${String(imported)} soalan diimport, ${String(failed)} baris gagal.`,
+} as const
+
+/** Row reasons (`errors[].message`), exact copy of 44-F3 and the next ERR-GUR ids of 40 X10. */
+export const QUESTION_IMPORT_GURU_ROW_MESSAGES = {
+  subject: 'Subjek tidak dikenali.',
+  level: 'Tingkatan mesti antara 1 dan 5.',
+  tp: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+  cognitive: 'Aras pemikiran tidak sah.',
+  /** A row of the code header whose `type` is not `mcq`: the teacher route takes objective questions only. */
+  mcqOnly: 'Hanya soalan objektif (mcq) diterima.',
+  difficulty: 'Kesukaran mesti antara 1 dan 5.',
+  answer: 'Jawapan mesti A, B, C atau D.',
+  chapterNotFound: (value: string): string => `Bab tidak dijumpai: ${value}`,
+  spNotFound: (value: string): string => `SP tidak dijumpai: ${value}`,
+  text: 'Soalan diperlukan.',
+  option: (letter: string): string => `Pilihan ${letter} diperlukan.`,
+  textTooLong: 'Soalan tidak boleh melebihi 2000 aksara.',
+  optionTooLong: (letter: string): string => `Pilihan ${letter} tidak boleh melebihi 500 aksara.`,
+  explanationTooLong: 'Penerangan tidak boleh melebihi 2000 aksara.',
+} as const
+
 const guruCsvFile = questionWorkflowFile({
-  maxBytes: QUESTION_WORKFLOW_CSV_MAX_BYTES,
+  maxBytes: QUESTION_IMPORT_GURU_MAX_BYTES,
   mimes: QUESTION_IMPORT_MIME_TYPES,
-  extensions: ['csv', 'txt'],
-  description: 'CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level.',
+  extensions: ['csv'],
+  description: 'CSV file, UTF-8, at most 2 MB and 500 data rows (BM, code or legacy header; or the JSON field `csv` with the file text, limited to the default 100 kb JSON body).',
 })
 
 /**
- * Body of `POST /guru/questions/import`, `multipart/form-data`. There are no form defaults, so each
- * row must carry `subject_id`, `education_level_id` and `difficulty_level`; the Guru caps apply on
- * top (question text up to 2000, each option up to 500 characters). Same `csvFile` 422 messages.
+ * Body of `POST /guru/questions/import`: `multipart/form-data` with `csvFile`, or JSON `{ csv: "<file text>" }` (the JSON path is limited to the default 100 kb body parser). 422 `fields.csvFile` for:
+ * none chosen, not CSV, over 2 MB, over 500 data rows ("Fail melebihi 500 baris."), a missing required column, no data row. A bad ROW never
+ * fails the request: it is listed in `errors` and the valid rows still become intake items.
  */
 export const QuestionImportGuruRequestSchema = z.object({ csvFile: guruCsvFile }).meta({ id: 'QuestionImportGuruRequest' })
 
-/** `data` of the Guru import (200, not 201): valid rows are created, bad rows listed ordered by file row. */
+/** `data` of the Guru import (200, not 201): `imported` valid rows became items of one guru batch; bad rows are listed ordered by file row. */
 export const QuestionImportGuruResultSchema = z
   .strictObject({
     imported: z.number().int().min(0),
-    failed: z.array(QuestionImportFailureSchema),
-    warnings: z.array(z.string()).optional(),
+    errors: z.array(QuestionImportFailureSchema),
   })
   .meta({ id: 'QuestionImportGuruResult' })
 export type QuestionImportGuruResult = z.infer<typeof QuestionImportGuruResultSchema>

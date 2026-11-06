@@ -200,7 +200,7 @@ const UNAUTHORIZED = err('UNAUTHORIZED "Sesi anda telah tamat. Sila log masuk se
  * scope to), or a school admin without a school.
  */
 const FORBIDDEN_SA = err(
-  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, or the school admin has no school; a missing school never means "all schools"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.',
+  'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, or the school admin has no school; a missing school never means "all schools"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).',
 )
 const FORBIDDEN_SA_WRITE = err(
   'FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
@@ -220,6 +220,9 @@ const FIELD_RULES =
 
 const SCHOOL_ONLY =
   'Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).'
+
+const REPORT_SCOPE =
+  'school_admin: always the session school (a schoolId sent by the client is ignored). admin (API-ADM-22): read-only, schoolId is required (VALIDATION_ERROR fields.schoolId "Sila pilih sekolah." when absent or malformed, NOT_FOUND when no such school).'
 
 const contentDisposition = {
   description: 'attachment; filename="..."; the exact file name is in the route description.',
@@ -261,7 +264,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/usage',
     tags: ['school-admin'],
     summary: 'School usage statistics (S1)',
-    description: `Window: today = 00:00 Malaysia time to now; 7days / 30days = the last N x 24 hours. An unknown period is 30days. ${SCHOOL_ONLY}`,
+    description: `Window: today = 00:00 Malaysia time to now; 7days / 30days = the last N x 24 hours. An unknown period is 30days. ${REPORT_SCOPE}`,
     request: { query: SchoolAdminUsageQuerySchema },
     responses: { 200: json(envelopeOf(SchoolAdminUsageSchema), 'Tiles and sessions per mode.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -271,7 +274,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/laporan-aktiviti',
     tags: ['school-admin'],
     summary: 'Activity report (S3)',
-    description: `The M17 statistics report in the school scope, window = 00:00 Malaysia time of (today - range + 1 days) to now. An unknown range is 30. ${SCHOOL_ONLY}`,
+    description: `The M17 statistics report in the school scope, window = 00:00 Malaysia time of (today - range + 1 days) to now. An unknown range is 30. ${REPORT_SCOPE}`,
     request: { query: SchoolAdminActivityQuerySchema },
     responses: { 200: json(envelopeOf(SchoolAdminActivityReportSchema), 'The report.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -281,7 +284,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/laporan-bulanan',
     tags: ['school-admin'],
     summary: 'Monthly report (S5)',
-    description: `12-month series and subject strengths. A future or invalid bulan gives the current month; a month without data returns the empty shape (months [], total null, accuracy null, no strongest / weakest). ${SCHOOL_ONLY}`,
+    description: `12-month series and subject strengths. A future or invalid bulan gives the current month; a month without data returns the empty shape (months [], total null, accuracy null, no strongest / weakest). ${REPORT_SCOPE}`,
     request: { query: SchoolAdminMonthlyQuerySchema },
     responses: { 200: json(envelopeOf(SchoolAdminMonthlyReportSchema), 'The monthly report.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -291,7 +294,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/dskp-heatmap',
     tags: ['school-admin'],
     summary: 'DSKP heatmap of the school pupils (S2)',
-    description: `Per SP, pooled over the school pupils (sum correct / sum answered). Unknown query values fall back to the defaults (first subject by name, T4). ${SCHOOL_ONLY}`,
+    description: `Per SP, pooled over the school pupils (sum correct / sum answered). Unknown query values fall back to the defaults (first subject by name, T4). ${REPORT_SCOPE}`,
     request: { query: SchoolAdminHeatmapQuerySchema },
     responses: { 200: json(envelopeOf(SchoolAdminDskpHeatmapSchema), 'The heatmap.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -301,7 +304,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/kelas',
     tags: ['school-admin'],
     summary: 'Class list of the school (S8)',
-    description: `Classroom classes of the school, active and inactive, by name A to Z (Malay collation) then id; 25 per page. Body is {data, meta, tiles, levels}: tiles and levels are top-level extras next to data / meta. ${SCHOOL_ONLY}`,
+    description: `Classroom classes of the school, active and inactive, by name A to Z (Malay collation) then id; 25 per page. Body is {data, meta, tiles, levels}: tiles and levels are top-level extras next to data / meta. ${REPORT_SCOPE}`,
     request: { query: SchoolAdminClassListQuerySchema },
     responses: { 200: json(SchoolAdminClassListResponseSchema, 'Classes with meta, tiles and levels.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -557,7 +560,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       403: err('FORBIDDEN "Anda tidak dibenarkan melakukan tindakan ini." (role not allowed, the district / state scope for a role other than admin, or no default scope).'),
       404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown school, a school outside the caller reach, or a district / state with no schools).'),
       422: err(
-        'VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId "The school id is required."; scope=district without district and state -> fields.district "The district and state are required."; scope=state without a state -> fields.state "The state is required."; any other scope -> fields.scope "The scope must be school, district or state.".',
+        'VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId "Sila pilih sekolah."; scope=district without district and state -> fields.district "The district and state are required."; scope=state without a state -> fields.state "The state is required."; any other scope -> fields.scope "The scope must be school, district or state.".',
       ),
     },
   })

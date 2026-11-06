@@ -5,10 +5,11 @@ import { buildOpenApiDocument } from '../../openapi'
 import { SUPPORT_COMPONENT_SCHEMAS } from '../paths'
 import {
   SUPPORT_ADMIN_MESSAGES,
-  SUPPORT_ADMIN_PROPOSED_COPY,
+  SUPPORT_ADMIN_FLASH,
   SUPPORT_BODY_MAX,
   SUPPORT_MESSAGES,
   SUPPORT_NEW_TICKET_NOTIFICATION,
+  SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_SETTINGS_MESSAGES,
   SUPPORT_SUBJECT_MAX,
   SUPPORT_TICKET_CREATED_FLASH,
@@ -97,20 +98,26 @@ describe('create request', () => {
 })
 
 describe('admin queue', () => {
-  const row = { id: '31', createdAt: AT, userName: 'Murid Contoh', subject: 'Tidak boleh log masuk', status: 'dibuka', replied: false }
-  const meta = { total: 2, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 1 }] }
+  const row = { id: '31', createdAt: AT, userName: 'Murid Contoh', subject: 'Tidak boleh log masuk', status: 'dibuka', replied: false, roleLabel: 'Murid', school: null }
+  const meta = { total: 2, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 1 }], page: 1, perPage: 25, matched: 2 }
 
   it('parses rows with meta.total and meta.counts', () => {
     expect(SupportQueueResponseSchema.safeParse({ data: [row], meta }).success).toBe(true)
-    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, userName: null }], meta: { total: 0, counts: [] } }).success).toBe(true)
+    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, userName: null }], meta: { total: 0, counts: [], page: 1, perPage: 25, matched: 0 } }).success).toBe(true)
   })
 
-  it('never exposes the body, e-mail or user id, and is capped at 200 rows', () => {
+  it('never exposes the body, e-mail or user id, and is capped at one page', () => {
     for (const leak of ['body', 'email', 'userId']) {
       expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, [leak]: 'x' }], meta }).success).toBe(false)
     }
-    expect(SupportQueueResponseSchema.safeParse({ data: Array(201).fill(row), meta }).success).toBe(false)
-    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { total: 1, counts: [{ status: 'dibuka', count: 0 }] } }).success).toBe(false)
+    expect(SupportQueueResponseSchema.safeParse({ data: Array(SUPPORT_QUEUE_PER_PAGE + 1).fill(row), meta }).success).toBe(false)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...meta, counts: [{ status: 'dibuka', count: -1 }] } }).success).toBe(false)
+  })
+
+  it('takes a chip at 0, the pager meta and the role and school of a row (defects on #507)', () => {
+    const paged = { total: 1, counts: [{ status: 'dibuka', count: 1 }, { status: 'selesai', count: 0 }], page: 1, perPage: 25, matched: 1 }
+    expect(SupportQueueResponseSchema.safeParse({ data: [{ ...row, roleLabel: 'Murid', school: null }], meta: paged }).success).toBe(true)
+    expect(SupportQueueResponseSchema.safeParse({ data: [row], meta: { ...paged, page: 0 } }).success).toBe(false)
   })
 
   it('takes the pager meta and the role and school of a row (defects on #507)', () => {
@@ -144,11 +151,11 @@ describe('admin ticket detail, reply and status (API-SUP-05)', () => {
 
   it('the status is one of the five codes', () => {
     for (const status of SUPPORT_TICKET_STATUSES) expect(SupportTicketStatusRequestSchema.safeParse({ status }).success).toBe(true)
-    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).error?.issues[0]?.message).toBe(SUPPORT_ADMIN_MESSAGES.statusRequired)
+    expect(SupportTicketStatusRequestSchema.safeParse({ status: 'baru' }).error?.issues[0]?.message).toBe(SUPPORT_ADMIN_MESSAGES.statusInvalid)
   })
 
-  it('keeps the unapproved copy in one [PROPOSED] constant', () => {
-    expect(Object.keys(SUPPORT_ADMIN_PROPOSED_COPY).sort()).toEqual(['allRolesOption', 'replyNoticeTitle', 'replyNoticeType', 'replySavedFlash', 'statusSavedFlash'])
+  it('keeps the two approved flashes', () => {
+    expect(SUPPORT_ADMIN_FLASH).toEqual({ replySaved: 'Balasan disimpan.', statusSaved: 'Status dikemas kini.' })
   })
 })
 

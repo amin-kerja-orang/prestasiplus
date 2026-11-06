@@ -1,7 +1,7 @@
 /**
  * Helpers shared by the M05-T1 read handlers (#1–#3, #7–#14): the caller, rounding, the MYT week
  * and month windows, the practice-subject view (BR-01, BR-05), the offered levels (BR-11) and the
- * chapter list with its unlock state (BR-15, BR-16). Nothing here writes.
+ * chapter list (BR-15; no chapter lock, D98). Nothing here writes.
  */
 
 import type { MockRequest } from '@/mock/define'
