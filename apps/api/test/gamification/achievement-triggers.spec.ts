@@ -117,6 +117,80 @@ describe('achievements: triggers, battle_wins, count (S7-T04 part 16)', () => {
     })
   })
 
+  describe('Mod Pelajar unlock rows (insertUnlock)', () => {
+    const rowOf = async (u: string) => (await t.db.query<{ is_test: boolean }>(`select is_test from user_achievements where user_id = $1`, [u]))
+    it('a test row does not block the real unlock: it is upgraded and credited once', async () => {
+      const u = await bareStudent(t, 'Uji Dulu')
+      const id = await idOf('Langkah Pertama')
+      await t.db.query(`insert into user_achievements (user_id, achievement_id, is_test) values ($1::bigint, $2::bigint, true)`, [u, id])
+      t.facts.counts = { all: 1, practice: 1 }
+      const out = await t.gamification.evaluateAchievements(u, { isTest: false })
+      expect(out).toMatchObject({ syiling: 5, xp: 3, unlocked: [{ name: 'Langkah Pertama' }] })
+      expect(await rowOf(u)).toEqual([{ is_test: false }])
+      expect(await t.gamification.evaluateAchievements(u, { isTest: false })).toMatchObject({ unlocked: [] })
+      expect(await achievementRows(u)).toHaveLength(1)
+    })
+
+    it('a test evaluation never overwrites a real row and credits nothing', async () => {
+      const u = await bareStudent(t, 'Sebenar Dulu')
+      t.facts.counts = { all: 1, practice: 1 }
+      await t.gamification.evaluateAchievements(u, { isTest: false })
+      const repo = (t.gamification as unknown as { repo: { insertUnlock(db: unknown, r: object): Promise<boolean>; handle(): unknown } }).repo
+      expect(await repo.insertUnlock(repo.handle(), { userId: u, achievementId: await idOf('Langkah Pertama'), at: new Date(), isTest: true })).toBe(false)
+      expect(await rowOf(u)).toEqual([{ is_test: false }])
+      expect(await achievementRows(u)).toHaveLength(1)
+    })
+
+    it('concurrent real unlocks over a test row pay one ledger row', async () => {
+      const u = await bareStudent(t, 'Selari Uji')
+      await t.db.query(`insert into user_achievements (user_id, achievement_id, is_test) values ($1::bigint, $2::bigint, true)`, [u, await idOf('Langkah Pertama')])
+      t.facts.counts = { all: 1, practice: 1 }
+      const runs = await Promise.all(Array.from({ length: 5 }, () => t.gamification.evaluateAchievements(u, { isTest: false })))
+      expect(runs.filter((r) => r.unlocked.length === 1)).toHaveLength(1)
+      expect(await achievementRows(u)).toHaveLength(1)
+    })
+  })
+
+  describe('claim replay and race with a badge', () => {
+    const setup = async (label: string) => {
+      const u = await bareStudent(t, label)
+      t.facts.day = { sessions: [{ sessionId: 's1', mode: 'random', correct: 12, total: 12, timeSpent: 660 }], chapterIds: ['1', '2', '3'] }
+      const claims = t.app.get((await import('../../src/modules/gamification/challenge-claims.service')).ChallengeClaimsService)
+      return { u, claims, id: BigInt(await challengeIdByTitle(t, 'Mula Hari Ini')) }
+    }
+    const badgeRows = async (u: string) => (await achievementRows(u)).filter((r) => r.description === 'Pencapaian: Cabaran Selesai')
+
+    it('a replay with the same key returns the stored result, no badge notice, no second credit', async () => {
+      const { u, claims, id } = await setup('Ulang Tuntut')
+      await setMin('Cabaran Selesai', 1)
+      try {
+        const key = '4f1c2a7e-9b3d-4c8e-8a51-0d6f2b7e9a10'
+        const first = await claims.claim({ userId: u, isTest: false } as never, id, key)
+        expect(first.notices).toContain('Lencana baru: Cabaran Selesai!')
+        const again = await claims.claim({ userId: u, isTest: false } as never, id, key)
+        expect(again.notices).toBeUndefined()
+        expect(await badgeRows(u)).toHaveLength(1)
+      } finally {
+        await setMin('Cabaran Selesai', 20)
+      }
+    })
+
+    it.each([
+      ['the same key', ['4f1c2a7e-9b3d-4c8e-8a51-0d6f2b7e9a11', '4f1c2a7e-9b3d-4c8e-8a51-0d6f2b7e9a11']],
+      ['different keys', ['4f1c2a7e-9b3d-4c8e-8a51-0d6f2b7e9a12', '4f1c2a7e-9b3d-4c8e-8a51-0d6f2b7e9a13']],
+    ])('two concurrent claims (%s) leave one claim and one badge ledger row', async (_n, keys) => {
+      const { u, claims, id } = await setup(`Lumba ${keys[1]!.slice(-2)}`)
+      await setMin('Cabaran Selesai', 1)
+      try {
+        await Promise.allSettled(keys.map((k) => claims.claim({ userId: u, isTest: false } as never, id, k)))
+        expect(await t.db.query(`select 1 from challenge_claims where user_id = $1`, [u])).toHaveLength(1)
+        expect(await badgeRows(u)).toHaveLength(1)
+      } finally {
+        await setMin('Cabaran Selesai', 20)
+      }
+    })
+  })
+
   describe('referral trigger (Q6)', () => {
     it('the referrer\'s "Sahabat Belajar" unlocks right after the referral reward is paid', async () => {
       const referrer = await bareStudent(t, 'Perujuk')

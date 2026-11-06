@@ -478,7 +478,7 @@ export class GamificationRepository {
         SELECT challenge_id, myt_date AS d FROM challenge_claims WHERE user_id = ${idFromString(userId)}
         UNION
         SELECT challenge_id, completion_date AS d FROM challenge_completions WHERE user_id = ${idFromString(userId)} AND legacy_source IS NOT NULL
-      ) f WHERE d >= ${from}::date AND d <= ${dayDate(day)}::date`
+      ) f WHERE d >= ${dayOf(from)}::date AND d <= ${day}::date`
     const out = new Map<string, Set<string>>()
     for (const r of rows) {
       const set = out.get(r.d) ?? new Set<string>()
@@ -510,8 +510,12 @@ export class GamificationRepository {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO user_achievements (user_id, achievement_id, unlocked_at, is_test, created_at, updated_at)
       VALUES (${idFromString(row.userId)}, ${idFromString(row.achievementId)}, ${row.at}::timestamptz, ${row.isTest}, ${row.at}::timestamptz, ${row.at}::timestamptz)
-      ON CONFLICT (user_id, achievement_id) DO NOTHING
+      ON CONFLICT (user_id, achievement_id) DO UPDATE
+        SET is_test = false, unlocked_at = EXCLUDED.unlocked_at, updated_at = EXCLUDED.updated_at
+        WHERE user_achievements.is_test AND NOT EXCLUDED.is_test
       RETURNING id`
+    // A row comes back only when this call created the unlock, or upgraded a Mod Pelajar (`is_test`) one to a real unlock:
+    // the caller credits exactly then. A test call never touches an existing row; a real row is never changed.
     return rows.length === 1
   }
 
