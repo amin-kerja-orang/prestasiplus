@@ -414,17 +414,24 @@ export class HttpBijakServer implements BijakApi {
     await this.send<null>('POST', `/api/bijak/attempts/${encodeURIComponent(attemptId)}/abandon`)
   }
 
-  checkQuestion(
+  async checkQuestion(
     _userId: number,
     attemptId: string,
     questionId: string,
     payload?: SavePayload,
   ): Promise<QuestionResult> {
-    return this.send<BijakAttemptQuestionResult>(
-      'POST',
-      `/api/bijak/attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}/check`,
-      payload ? payloadToWire(payload) : undefined,
-    ).then(questionFromWire)
+    try {
+      const wire = await this.exec<BijakAttemptQuestionResult>(
+        'POST',
+        `/api/bijak/attempts/${encodeURIComponent(attemptId)}/questions/${encodeURIComponent(questionId)}/check`,
+        payload ? payloadToWire(payload) : undefined,
+      )
+      return questionFromWire(wire)
+    } catch (e) {
+      // 422 VALIDATION_ERROR fields.questionId "Jawab dahulu sebelum menyemak." (a blank Semak): the mock's bad_request with the same line.
+      if (e instanceof ApiError && e.status === 422 && e.fields?.questionId) throw new BijakError('bad_request', e.fields.questionId)
+      throw toBijakError(e)
+    }
   }
 
   async getResult(_userId: number, attemptId: string, withScheme = false): Promise<ResultView> {
