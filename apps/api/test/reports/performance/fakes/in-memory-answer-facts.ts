@@ -260,7 +260,7 @@ export class InMemoryQuestionContent implements QuestionContentPort {
         questionText: `Soalan ${c.questionId}`,
         questionType: 'mcq',
         options: ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
-        language: 'bm',
+        language: 'ms',
         textDirection: 'ltr',
         scriptType: 'rumi',
         pointsValue: 1,
