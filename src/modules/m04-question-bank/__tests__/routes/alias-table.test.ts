@@ -24,8 +24,8 @@ const ALIASES: Alias[] = [
   // Waits for the KPI strip in the Studio list header (S2-T01); a later part of S2-T03 removes the flag.
   { from: '/admin/spm/soalan', to: '/admin/spm/databank', owner: 'S2-T03 after S2-T01', pending: true },
   { from: '/admin/spm/soalan?status=approved', to: '/admin/spm/databank', owner: 'S2-T03 after S2-T01', pending: true },
-  { from: '/admin/spm/kertas', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
-  { from: '/admin/spm/kertas/baharu', to: '/admin/studio/sets', owner: 'S3-T02', pending: true },
+  { from: '/admin/spm/kertas', to: '/admin/studio/sets', owner: 'S3-T02' },
+  { from: '/admin/spm/kertas/baharu', to: '/admin/studio/sets', owner: 'S3-T02' },
   { from: '/admin/spm/kertas-subjektif', to: '/admin/kertas-subjektif', owner: 'S3-T06' },
 ]
 

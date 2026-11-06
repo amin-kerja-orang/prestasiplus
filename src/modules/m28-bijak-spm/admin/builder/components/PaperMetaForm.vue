@@ -2,21 +2,22 @@
 /**
  * "Kemas kini metadata" of Semak Kertas (S4.4; V2 cloud-student-mechanism 3.4): Tajuk (shared with
  * the page header), Tahun, Tempoh (minit), Kod kertas and the cover instructions, one line per
- * numbered instruction. Kod kertas is read-only here: the paper contract has no cover-code write
- * (deviation UX-51; V2 edits it).
+ * numbered instruction, and the cover code (`Kod kertas (kulit)`, blank = the subject code).
  */
 import { computed, ref, watch } from 'vue'
 
 import type { AdminPaper } from '../../../domain/admin-types'
 import { builderCopy as t } from '../domain/copy'
+import { setTitleError } from '../domain/set-title'
 import type { HeaderPatch } from '../server/api'
 
-const props = defineProps<{ paper: AdminPaper; readonly?: boolean; busy?: boolean }>()
+const props = defineProps<{ paper: AdminPaper; readonly?: boolean; busy?: boolean; titleServerError?: string }>()
 /** The set title, shared with the page header so both fields stay in sync. */
 const title = defineModel<string>('title', { required: true })
 const emit = defineEmits<{ save: [patch: HeaderPatch] }>()
 
 const year = ref('')
+const code = ref('')
 const duration = ref('')
 const lines = ref('')
 
@@ -24,6 +25,7 @@ watch(
   () => props.paper,
   (p) => {
     year.value = String(p.year)
+    code.value = p.code
     duration.value = String(p.durationMin)
     lines.value = p.instructions.join('\n')
   },
@@ -32,7 +34,10 @@ watch(
 
 const parsedYear = computed(() => Number(year.value))
 const parsedDuration = computed(() => Number(duration.value))
-const titleOk = computed(() => title.value.trim().length > 0 && title.value.trim().length <= 200)
+const titleError = computed(() => setTitleError(title.value))
+/** The rule first; else the API's 422 `fields.title`, which the page clears on the next edit. */
+const titleShown = computed(() => titleError.value ?? props.titleServerError)
+const titleOk = computed(() => !titleError.value)
 const valid = computed(
   () =>
     titleOk.value &&
@@ -50,6 +55,7 @@ function submit(): void {
     title: title.value.trim(),
     year: parsedYear.value,
     durationMin: parsedDuration.value,
+    ...(code.value.trim() === props.paper.code ? {} : { code: code.value.trim() }),
     instructions: lines.value
       .split('\n')
       .map((l) => l.trim())
@@ -61,7 +67,7 @@ function submit(): void {
 <template>
   <form class="flex flex-col gap-3" data-testid="meta-form" @submit.prevent="submit">
     <h3 class="text-heading text-highlighted">{{ t.meta }}</h3>
-    <UFormField :label="t.fTitle" required :error="titleOk ? undefined : t.titleRequired">
+    <UFormField :label="t.fTitle" required :error="titleShown">
       <UInput v-model="title" class="w-full" :disabled="readonly" :aria-label="t.fTitle" data-testid="meta-title" />
     </UFormField>
     <div class="grid gap-3 sm:grid-cols-3">
@@ -90,8 +96,8 @@ function submit(): void {
           data-testid="meta-duration"
         />
       </UFormField>
-      <UFormField :label="t.fCode">
-        <UInput :model-value="paper.code" readonly disabled class="w-full" data-testid="meta-code" />
+      <UFormField :label="t.fCode" :hint="t.fCodeHint(paper.subject)">
+        <UInput v-model="code" class="w-full" maxlength="32" :disabled="readonly" data-testid="meta-code" />
       </UFormField>
     </div>
     <UFormField :label="t.fInstructions" :hint="t.fInstructionsHint">
