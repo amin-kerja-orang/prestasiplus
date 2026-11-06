@@ -89,5 +89,12 @@ describe('migration 0226 challenge_claims', () => {
     await claim(u, c, '2026-11-05')
     await db.query(`delete from challenges where id = $1::bigint`, [c])
     expect(await count(u)).toBe(0)
+
+    const [u2, c2] = [await user(), await challenge()]
+    await claim(u2, c2, '2026-11-05')
+    expect(await count(u2)).toBe(1)
+    await db.query(`delete from users where id = $1::bigint`, [u2])
+    expect(await count(u2)).toBe(0)
+    expect(await db.query(`select 1 from challenges where id = $1::bigint`, [c2])).toHaveLength(1) // the challenge stays
   })
 })

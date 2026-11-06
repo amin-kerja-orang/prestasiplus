@@ -267,12 +267,12 @@ export class SoloService {
       if (s.closedAt !== null) return refuse(404, M.soloSessionNotFound)
       if (s.submittedAt !== null) return refuse(409, M.soloAlreadySubmitted)
       const at = this.clock.now()
-      const earn = await this.canEarn(caller, { tx })
+      // Reported also while syiling is off, for the reward event (DM-87); the port decides what is paid. Mod Pelajar never reports.
       const report = async (coins: number, correct: number, total: number, detail: Record<string, unknown>): Promise<number> => {
-        if (!earn) return 0
+        if (caller.isTest) return 0
         const out = await this.ports.rewards.onGameResult(
           caller.userId,
-          { game: info.token, event: 'finish', coins, xp: 0, correct, total, detail, key: s.id },
+          { game: info.token, event: 'finish', coins, xp: 0, correct, total, detail, key: s.id, session: { id: s.id, gameKey: game } },
           { tx, isTest: false },
         )
         return out.coinsCredited

@@ -198,6 +198,24 @@ describe('PKSK direct completion', () => {
   })
 })
 
+describe('PKSK direct completion, 10 rows (AC-MUR-19-5)', () => {
+  it('a 10-question practice submit writes exactly 10 rows with mode pksk', async () => {
+    const repo = t.app.get(PracticeRepository)
+    const ids = bank.random.slice(0, 10)
+    expect(ids).toHaveLength(10)
+    const { done } = await repo.completeDirect(
+      {
+        userId, isTest: false, domainCode: 'D1', level: 'T1', startedAt: new Date(START), completedAt: new Date('2026-10-19T09:05:00+08:00'),
+        answers: ids.map((q, i) => ({ questionId: q as string, isCorrect: i % 2 === 0, optionIndex: i % 4 })),
+      },
+      async () => null,
+    )
+    const rows = await rowsOf(done.session.id)
+    expect(rows).toHaveLength(10)
+    expect(new Set(rows.map((r) => r.mode))).toEqual(new Set(['pksk']))
+  })
+})
+
 describe('the optional pass-through fields are validated', () => {
   const base: AnswerLogEntry = {
     userId: '1', attemptId: '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d', questionId: '2', partRef: null, mode: 'chapter',
