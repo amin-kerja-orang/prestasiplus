@@ -20,8 +20,9 @@ export const studentRoutes: RouteDef[] = [
     (req, ctx) => {
       const pupil = users.get(req.params.userId as number)
       if (!pupil) return notFound()
-      if (!mayOpenStudent(viewerOf(req), pupil)) return forbidden()
-      return ok(studentPerformance(pupil, ctx.clock.now()))
+      const viewer = viewerOf(req)
+      if (!mayOpenStudent(viewer, pupil)) return forbidden()
+      return ok(studentPerformance(pupil, ctx.clock.now(), viewer.user.id === pupil.id))
     },
     { params: { userId: int() } },
   ),
