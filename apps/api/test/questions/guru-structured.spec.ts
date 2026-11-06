@@ -196,7 +196,7 @@ describe('structured question reads (teacher mount, API-GUR-26)', () => {
     expect((await list('?subjectId=999999')).data).toHaveLength(0)
   })
 
-  it('status=review is an empty page; status=approved is the default list; another value is 422', async () => {
+  it('status=review is an empty page while the caller has no submission; status=approved is the default list; another value is 422', async () => {
     const review = await list('?status=review')
     expect(review.data).toHaveLength(0)
     expect(review.meta.totalItems).toBe(0)

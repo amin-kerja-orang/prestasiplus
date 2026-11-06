@@ -1014,7 +1014,9 @@ export const practiceRepo = defineRepository({
           options.type && options.modes.includes(options.type)
             ? (options.type as PracticeMode)
             : null
-        const rows = activeType ? all.filter((s) => s.mode === activeType) : all
+        // S3-T07: the `past_year` ("Tahun Lepas") type lists legacy `past_year` and new `databank` sessions.
+        const typeModes: readonly string[] = activeType === 'past_year' ? ['past_year', 'databank'] : [activeType ?? '']
+        const rows = activeType ? all.filter((s) => typeModes.includes(s.mode)) : all
         const accs = all
           .filter((s) => s.questionCount > 0)
           .map((s) => (s.correctCount / s.questionCount) * 100)

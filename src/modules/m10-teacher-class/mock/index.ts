@@ -13,6 +13,8 @@
  * - `remedialTests` — `forStudent(userId)`, `complete(id, {afterAccuracy, completedAt})` (M05
  *   seams), `get(id, viewer)` (Q4 preview: own teacher or admin);
  * - `questionSets` — `visibleFor(userId)` (M05 seam);
+ * - `personalQuestions` — the Soalan & Rujukan store (S6-T16, API-GUR-24): per owner, never shared (no public read seam yet;
+ *   the mission draw of API-GUR-25 reads it later);
  * - `teacherProfiles` — `forUser`, `schoolOf`, `save` (DATA-M10-03);
  * - the row types.
  *
@@ -32,6 +34,7 @@ import { dskpRepo } from './repository/dskp'
 import { m10Routes } from './handlers'
 import { m10Hooks } from './hooks'
 import { missionsRepo } from './repository/missions'
+import { personalQuestionsRepo } from './repository/personal-questions'
 import { questionSetsRepo } from './repository/question-sets'
 import { remedialTestsRepo } from './repository/remedial'
 import { teacherProfilesRepo, teacherProfilesTable } from './repository/teacher-profiles'
@@ -41,7 +44,7 @@ import { M10_TABLES } from './tables/tables'
 const plugin = defineMockModule({
   id: 'M10',
   dependsOn: ['core', 'M01', 'M02', 'M03', 'M04'],
-  version: 5,
+  version: 6,
   tables: { ...M10_TABLES, teacherProfiles: teacherProfilesTable },
   repositories: {
     classrooms: classroomsRepo,
@@ -49,6 +52,7 @@ const plugin = defineMockModule({
     missions: missionsRepo,
     remedialTests: remedialTestsRepo,
     questionSets: questionSetsRepo,
+    personalQuestions: personalQuestionsRepo,
     teacherProfiles: teacherProfilesRepo,
   },
   seed: seedM10,
@@ -59,7 +63,15 @@ const plugin = defineMockModule({
 
 export default plugin
 
-export const { classrooms, dskp, missions, remedialTests, questionSets, teacherProfiles } =
+export const {
+  classrooms,
+  dskp,
+  missions,
+  remedialTests,
+  questionSets,
+  personalQuestions,
+  teacherProfiles,
+} =
   plugin.repositories
 
 export type { ClassFilter, ClassInput, EnrolInput, LevelSummary } from './repository/classrooms'
