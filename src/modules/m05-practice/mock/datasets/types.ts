@@ -12,6 +12,7 @@ export type PracticeMode =
   | 'chapter'
   | 'revision'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
   | 'mission'
