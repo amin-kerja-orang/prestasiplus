@@ -387,7 +387,9 @@ export class PracticeService {
   async history(caller: Caller, query: HistoryQuery): Promise<SessionListResponse> {
     const modes = query.modes
     const activeType = query.type && (modes as readonly string[]).includes(query.type) ? (query.type as PracticeMode) : null
-    const narrowed = activeType ? [activeType] : modes
+    // S3-T07: the "Tahun Lepas" pill (`past_year`) lists the legacy `past_year` sessions and the new `databank` ones.
+    const typeModes: readonly PracticeMode[] = activeType === 'past_year' ? ['past_year', 'databank'] : activeType ? [activeType] : []
+    const narrowed = activeType ? typeModes.filter((m) => (modes as readonly string[]).includes(m)) : modes
     const paged = query.page !== undefined || query.pageSize !== undefined
     const stats = await this.repo.historyStats(caller.userId, { modes, includeTest: true })
     const total = activeType ? await this.repo.historyCount(caller.userId, { modes: narrowed, includeTest: true }) : stats.sessions

@@ -786,6 +786,29 @@ describe('write path (BR-31)', () => {
     expect(users.trial(3, toEpochMs('2026-09-26T09:00:00+08:00')).used).toBe(trialBefore)
   })
 
+  it('S3-T07: the past_year type (Tahun Lepas pill) lists legacy past_year and new databank sessions; stats cover every mode', async () => {
+    await spyM14()
+    const ids = questions.practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: 2, seed: 'db' }).map((q) => q.id)
+    const done = (mode: SessionRow['mode'], startedAt: string, completedAt: string) =>
+      practice.completeSession({
+        userId: 3,
+        mode,
+        subjectId: 3,
+        answers: ids.map((id, i) => ({ questionId: id, isCorrect: i === 0, selected: null })),
+        startedAt,
+        completedAt,
+      })
+    const modes = ['past_year', 'databank', 'latih_tubi', 'ramalan']
+    const before = practice.historyPage(3, { modes }).stats.sessions
+    const legacy = done('past_year', '2026-09-26T08:00:00+08:00', '2026-09-26T08:10:00+08:00')
+    const fresh = done('databank', '2026-09-26T08:20:00+08:00', '2026-09-26T08:30:00+08:00')
+    const page = practice.historyPage(3, { modes, type: 'past_year' })
+    const ids2 = page.rows.map((s) => s.id)
+    expect(ids2).toEqual(expect.arrayContaining([legacy.session.id, fresh.session.id]))
+    expect(page.rows.every((s) => s.mode === 'past_year' || s.mode === 'databank')).toBe(true)
+    expect(page.stats.sessions).toBe(before + 2)
+  })
+
   it('mission: no per-mission rate is passed (S5-T03); a completed mission answers 409; an open one resumes', async () => {
     await spyM14()
     const ids = questions
