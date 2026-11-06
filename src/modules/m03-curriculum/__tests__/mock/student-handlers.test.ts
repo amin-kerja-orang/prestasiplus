@@ -5,7 +5,7 @@ import { defineMockCore } from '@/mock/define'
 import { bootMock, type MockRuntime } from '@/mock/index'
 
 import type { LearningMap, TopicCard, TopicDetail } from '../../api/student-curriculum'
-import { islandStates, mapSubjectLabel, MAP_SUBJECTS } from '../../mock/handlers/student-curriculum'
+import { islandStates, mapSubjectLabel, mapSubjectPills, MAP_SUBJECTS } from '../../mock/handlers/student-curriculum'
 import { curriculum } from '../../mock'
 import { connectAnswerLog, EMPTY_ANSWER_LOG } from '../../mock/repository/progress'
 
@@ -285,18 +285,27 @@ describe('GET /api/learning-map (#27, S14)', () => {
     expect(d.topics[0]).toMatchObject({ progress: 0, sessions: 0, questionsAnswered: 0 })
   })
 
-  it('lists the 7 subject pills with observed colours; Geografi is not a pill (DV-M03-08)', async () => {
+  it('lists the 7 known pills first with observed colours, then every other active subject with its name and no emoji', async () => {
     const d = (await get<{ data: LearningMap }>('/api/learning-map')).body.data
-    expect(d.subjects).toEqual([
-      { code: 'MATEMATIK', label: 'Matematik', emoji: '🔢', color: '#3B82F6' },
-      { code: 'BAHASA_MELAYU', label: 'Bahasa Melayu', emoji: '📝', color: '#10B981' },
-      { code: 'BAHASA_INGGERIS', label: 'Bahasa Inggeris', emoji: '🇬🇧', color: '#8B5CF6' },
-      { code: 'SAINS', label: 'Sains', emoji: '🔬', color: '#F59E0B' },
-      { code: 'PENDIDIKAN_ISLAM', label: 'Pend. Islam', emoji: '☪️', color: '#14B8A6' },
-      { code: 'PENDIDIKAN_MORAL', label: 'Pend. Moral', emoji: '🤝', color: '#F97316' },
-      { code: 'SEJARAH', label: 'Sejarah', emoji: '🏛️', color: '#EF4444' },
+    expect(d.subjects.slice(0, 7)).toEqual(MAP_SUBJECTS.map((s) => ({ ...s })))
+    for (const s of d.subjects.slice(7)) expect(s).toMatchObject({ emoji: '', color: '' })
+    expect(d.subjects.find((s) => s.code === 'GEOGRAFI')?.label).toBeTruthy()
+  })
+
+  it('mapSubjectPills: inactive known subjects drop out, others follow in the given order, GEO maps to GEOGRAFI', () => {
+    const pills = mapSubjectPills([
+      { code: 'GEO', name: 'Geografi' },
+      { code: 'SCI', name: 'Sains' },
+      { code: 'EKO', name: 'Ekonomi' },
+      { code: 'EKO', name: 'Ekonomi 2' },
+      { code: 'ABC', name: 'Abc' },
     ])
-    expect(d.subjects.some((s) => s.code === 'GEOGRAFI')).toBe(false)
+    expect(pills.map((p) => [p.code, p.label, p.emoji])).toEqual([
+      ['SAINS', 'Sains', '🔬'],
+      ['GEOGRAFI', 'Geografi', ''],
+      ['EKO', 'Ekonomi', ''],
+      ['ABC', 'Abc', ''],
+    ])
   })
 
   it('accepts only TINGKATAN_4/5; anything else (Darjah included) is served as TINGKATAN_4 (BR-15, D54)', async () => {

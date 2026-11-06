@@ -296,14 +296,9 @@ export function fetchLeagues(
   return api.get<{ mine: LeagueCard[]; open: LeagueCard[] }>('/api/leagues', withSignal(options))
 }
 
-/** #47 `POST /api/leagues` (422 with `fields`). */
-export function createLeague(body: LeagueBody): Promise<{ id: number }> {
-  return api.post<{ id: number }>('/api/leagues', { body })
-}
-
-/** #48 `POST /api/leagues/join` (422 with the message under `invite_code`). */
-export function joinLeague(inviteCode: string): Promise<{ id: number }> {
-  return api.post<{ id: number }>('/api/leagues/join', { body: { invite_code: inviteCode } })
+/** #47 `POST /api/leagues` (Admin Pusat; 422 with `fields`; answers the league detail). */
+export function createLeague(body: LeagueBody): Promise<LeagueDetail> {
+  return api.post<LeagueDetail>('/api/leagues', { body })
 }
 
 /** #49 `GET /api/leagues/{id}` (404 for an unknown id). */

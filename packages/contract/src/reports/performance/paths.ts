@@ -10,6 +10,7 @@ import {
   PerformanceClassAnalyticsQuerySchema,
   PerformanceClassAnalyticsSchema,
   PerformanceClassCardSchema,
+  PerformanceClassesAggregateSchema,
   PerformanceClassDashboardSchema,
   PerformanceClassItemAnalysisSchema,
   PerformanceDifficultySchema,
@@ -65,6 +66,7 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceTrend: PerformanceTrendSchema,
   PerformanceUserRef: PerformanceUserRefSchema,
   PerformanceClassCard: PerformanceClassCardSchema,
+  PerformanceClassesAggregate: PerformanceClassesAggregateSchema,
   PerformanceSchool: PerformanceSchoolSchema,
   PerformanceLevelCard: PerformanceLevelCardSchema,
   PerformanceLevelDetail: PerformanceLevelDetailSchema,
@@ -178,12 +180,12 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     {},
     'Admin sees the platform; every other role the own school (a user without a school gets an empty school scope).',
   )
-  get('/performance/levels', 'Level cards T4/T5 (S2)', z.array(PerformanceLevelCardSchema), { 403: E403('role not admin, teacher or school_admin') })
+  get('/performance/levels', 'Level cards T1-T5: T4 and T5 always, T1-T3 when the scope has classes or pupils (S2)', z.array(PerformanceLevelCardSchema), { 403: E403('role not admin, teacher or school_admin') })
   get(
     '/performance/levels/{code}',
     'Level detail (S3)',
     PerformanceLevelDetailSchema,
-    { 403: E403('role not admin, teacher or school_admin'), 404: E404('code is not t4 or t5') },
+    { 403: E403('role not admin, teacher or school_admin'), 404: E404('code is not t1 to t5') },
     { params: z.object({ code: PerformanceLevelCodeSchema }) },
   )
   get(
@@ -192,7 +194,15 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     z.array(PerformanceClassCardSchema),
     { 403: E403('role not admin, teacher or school_admin') },
     {},
-    'A teacher gets the own active classrooms; every other role gets [].',
+    'A teacher gets the own active classrooms, a school admin the active classrooms of the own school; every other role gets [].',
+  )
+  get(
+    '/performance/classes/aggregate',
+    'Own classes with Pelajar Terbaik and Prestasi Mengikut Subjek (S4, R1-GUR-4)',
+    PerformanceClassesAggregateSchema,
+    { 403: E403('role not admin, teacher or school_admin') },
+    {},
+    'Same classes as `GET /performance/classes` plus the top 10 pupils (at least 5 answers, accuracy descending) and the accuracy per subject over their pupils. Registered before `/performance/classes/{id}`.',
   )
   get(
     '/performance/classes/{id}',

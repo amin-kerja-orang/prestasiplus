@@ -12,7 +12,7 @@ import { RouterLink } from 'vue-router'
 import { DsDataTable, DsPanel } from '@/ds'
 
 import type { BandKey, ResultsSchoolRow, WireId } from '../../../api/types'
-import { BAND, count, mean, pct, plain } from '../common/kirkpatrick-format'
+import { BAND, count, mean, plain, accuracyPct } from '../common/kirkpatrick-format'
 
 const props = defineProps<{ rows: ResultsSchoolRow[]; schoolPath: (id: WireId) => string }>()
 
@@ -45,7 +45,7 @@ const data = computed<Row[]>(() =>
     active: r.active,
     activeText: plain(r.active),
     accuracy: r.accuracy,
-    accuracyText: r.accuracy === null ? '-' : pct(r.accuracy),
+    accuracyText: r.accuracy === null ? '-' : accuracyPct(r.accuracy),
     answers: r.answers === null ? '-' : count(r.answers),
     engagement: r.engagement === null ? '-' : mean(r.engagement),
     tahap: r.tahap,
@@ -97,7 +97,7 @@ const pageSize = ref(20)
         <RouterLink
           :to="schoolPath(row.original.schoolId)"
           :class="[
-            'block max-w-72 whitespace-normal break-words text-label',
+            'block max-w-72 text-label break-words whitespace-normal',
             row.original.faded ? 'text-dimmed' : 'text-primary-t',
           ]"
           :data-faded="row.original.faded ? 'true' : 'false'"
