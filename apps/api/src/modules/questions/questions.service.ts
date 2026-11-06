@@ -24,6 +24,8 @@ import { gradeQuestion } from './grading'
 import {
   flatFromVersion,
   kertasOfPaperCode,
+  bilingualScriptConflict,
+  enText,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -184,6 +186,8 @@ interface Normalized {
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
   stem: string
+  /** English stem: text sets it, null clears it, undefined keeps what is stored. */
+  stemEn?: string | null | undefined
   parts: QuestionPart[]
   language: VersionDraft['language']
   explanation: string | null
@@ -315,6 +319,7 @@ export class QuestionsService {
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
         stem: input.questionText,
+        stemEn: enText(input.questionTextEn),
         parts,
         language: languageToStore(input.language, undefined),
         explanation: input.explanation?.trim() || null,
@@ -1170,7 +1175,7 @@ export class QuestionsService {
       status,
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
-      stemEn: v?.stemEn ?? null,
+      stemEn: n.stemEn === undefined ? (v?.stemEn ?? null) : n.stemEn,
       numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
@@ -1273,9 +1278,12 @@ export class QuestionsService {
 
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
+    // Known R1 limit: a Jawi or Arab question cannot be bilingual. Their stored script stays (the flat body has no script field); asking
+    // them to become `ms+en` is a 422 on `language`. A bilingual (`ms_en`) row follows the language sent, so it can go back to `ms` or `en`.
+    if (bilingualScriptConflict(input.language, v.language)) throw fail({ language: QUESTION_MESSAGES.language })
     const language = input.language === undefined
       ? v.language
-      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+      : v.language === 'ar' || v.language === 'jawi'
         ? v.language
         : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
@@ -1286,6 +1294,7 @@ export class QuestionsService {
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,
+      stemEn: enText(input.questionTextEn),
       parts,
       language,
       explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,

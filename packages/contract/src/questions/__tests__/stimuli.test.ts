@@ -169,3 +169,11 @@ describe('S1-T01 group action schemas (API-Q-31..35)', () => {
     expect(StimulusGroupPublishGateErrorSchema.safeParse({ error: { code: 'CONFLICT', message: 'x', details: { gate: [] } } }).success).toBe(false)
   })
 })
+
+describe('English caption twin (S1-T09b, DM-50)', () => {
+  it('accepts captionEn on create and update, null clears', () => {
+    expect(StimulusCreateRequestSchema.parse({ kind: 'diagram', imageFileId: 'abc', caption: 'Rajah 1', captionEn: 'Figure 1' }).captionEn).toBe('Figure 1')
+    expect(StimulusUpdateRequestSchema.parse({ captionEn: null }).captionEn).toBeNull()
+    expect(StimulusUpdateRequestSchema.safeParse({ captionEn: 'x'.repeat(STIMULUS_LIMITS.caption + 1) }).success).toBe(false)
+  })
+})

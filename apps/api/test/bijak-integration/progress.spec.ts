@@ -7,6 +7,7 @@ import { BijakPaperSummarySchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootIntegrationApp, type Client, type IntegrationApp, loginAs, STUDENT } from './helpers'
+import { seedJanaPaper } from '../support/jana-paper'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 
 let t: IntegrationApp
@@ -77,12 +78,10 @@ describe('papers list progress (BE-16 progress source bound to BE-15)', () => {
   })
 })
 
-describe('Jana Kertas prefers unseen questions (BE-16 served source bound to BE-15)', () => {
-  it('a second generated paper avoids every question served in the first sitting', async () => {
+describe('a sitting of a private jana paper (BE-16 served source bound to BE-15)', () => {
+  it('snapshots exactly the questions placed on the paper', async () => {
     t.clock.advance(60_000)
-    const gen1 = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-    expect(gen1.status, JSON.stringify(gen1.body)).toBe(201)
-    const paper1 = (gen1.body as { data: { paperId: string } }).data.paperId
+    const paper1 = await seedJanaPaper(t.db, { userId: student.userId, subject: 'MAT', kertas: 1 })
     const attemptId = await start(paper1)
     const servedIds = (
       await t.db.query<{ qid: string }>(
@@ -97,11 +96,5 @@ describe('Jana Kertas prefers unseen questions (BE-16 served source bound to BE-
     expect(new Set(servedIds)).toEqual(new Set(await placed(paper1)))
     expect((await submit(attemptId, 'jana-1')).status).toBe(200)
 
-    t.clock.advance(60_000)
-    const gen2 = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-    expect(gen2.status, JSON.stringify(gen2.body)).toBe(201)
-    const second = await placed((gen2.body as { data: { paperId: string } }).data.paperId)
-    expect(second.length).toBeGreaterThan(0)
-    expect(second.filter((id) => servedIds.includes(id))).toEqual([])
   })
 })

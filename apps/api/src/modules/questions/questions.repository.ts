@@ -286,6 +286,7 @@ interface StimulusRow {
   bodyMs: string | null
   bodyEn: string | null
   caption: string | null
+  captionEn: string | null
   altText: string | null
   sourceCitation: string | null
   tableData: unknown
@@ -309,6 +310,7 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
     alt: row.altText,
     caption: row.caption,
+    captionEn: row.captionEn,
     sourceCitation: row.sourceCitation,
     tableData: row.tableData ?? null,
   }
