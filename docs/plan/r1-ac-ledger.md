@@ -83,6 +83,11 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S10-T04 | AC-GUR-5-2 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-GUR-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-GUR-5-8 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-AS-5-1 | CI | Pass | 2026-11-05 | team-bb/S-2 | student-and-class.spec.ts |
+| S10-T04 | AC-AS-5-3 | CI | Pass | 2026-11-05 | team-bb/S-2 | class-pages.test.ts |
 | S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted |
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |

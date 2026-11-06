@@ -27,6 +27,13 @@ export const DEFAULT_SUBJECT_COLOR = '#6366F1'
 export const TREND_WINDOW_DAYS = 30
 /** Accuracy change (points) that counts as a trend. */
 export const TREND_DELTA = 5
+/** Analitik Adaptif class view (R1-GUR-5): last 7 days against the 7 before; strict change in points. Prestasi keeps the 30-day rule above. */
+export const ANALYTICS_TREND_DAYS = 7
+export const ANALYTICS_TREND_DELTA = 3
+/** Analitik Adaptif risk bands on the whole-number accuracy (OPT-RISIKO): below 40 Kritikal, below 55 Tinggi, below 70 Sederhana, else Rendah. */
+export const RISK_CRITICAL_BELOW = 40
+export const RISK_HIGH_BELOW = 55
+export const RISK_MEDIUM_BELOW = 70
 /** Projection range: grade(accuracy - band) to grade(accuracy + band). */
 export const PROJECTION_BAND = 10
 export const HEATMAP_DAYS = 90

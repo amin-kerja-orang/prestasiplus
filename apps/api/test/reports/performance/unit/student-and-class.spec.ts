@@ -7,6 +7,7 @@ import {
 } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { analyticsTrendOf, riskOfWholePercent } from '../../../../src/modules/reports/performance/domain'
 import { answers, ctxOf, sitting, world, type World } from '../fakes/fixtures'
 
 const d = (iso: string) => new Date(iso)
@@ -582,47 +583,230 @@ describe('Analitik', () => {
     PerformanceAnalyticsSchema.parse(r)
   })
 
-  describe('classes', () => {
-    it('a class without members does not call the port (empty guard)', async () => {
+  describe('classes (Analitik Adaptif, S10-T04 part 2: the shared answer reader, all modes)', () => {
+    const THIS_WEEK = d('2026-09-23T10:00:00+08:00') // inside [2026-09-19, 2026-09-26)
+    const LAST_WEEK = d('2026-09-15T10:00:00+08:00') // inside [2026-09-12, 2026-09-19)
+    const OLD = d('2026-08-01T10:00:00+08:00')
+    const put = (userId: string, n: number, correct: number, over: Partial<{ mode: string; subjectId: string; answeredAt: Date; isTest: boolean }> = {}) =>
+      w.answers.addMany(userId, n, correct, { mode: 'latih_tubi', subjectId: '1', answeredAt: OLD, ...over })
+
+    beforeEach(() => {
+      w.directory.addSubject('BM', '1', 'Bahasa Melayu').addSubject('MT', '2', 'Matematik')
+      put('1', 10, 9)
+      put('2', 10, 3)
+      put('3', 10, 5)
+    })
+
+    it('a class without members does not call the answer reader (empty guard)', async () => {
       w.classes.add({ id: '70', schoolId: 's1', teacherId: 't8' }, [])
       let calls = 0
-      const inner = w.ports.bijak.sittings.bind(w.ports.bijak)
-      w.ports.bijak.sittings = async (q) => {
+      const inner = w.ports.answerFacts.answerFacts.bind(w.ports.answerFacts)
+      w.ports.answerFacts.answerFacts = async (q) => {
         calls++
         return inner(q)
       }
       const r = await w.analytics.classes(ctxOf('teacher', 't8'), {})
       expect(r.rows).toEqual([])
-      expect(calls).toBe(0)
-      await w.klass.classDashboard(ctxOf('teacher', 't8'), '70')
+      expect(r.summary).toBeNull()
       expect(calls).toBe(0)
     })
 
-    beforeEach(() => {
-      w.bijak
-        .addSitting(sitting({ userId: '1', score: 9, maxScore: 10 }))
-        .addSitting(sitting({ userId: '2', score: 3, maxScore: 10 }))
-        .addSitting(sitting({ userId: '3', score: 5, maxScore: 10 }))
-        .addSitting(sitting({ userId: '3', score: 10, maxScore: 10 }), { isTest: true })
-    })
-
-    it('a teacher defaults to the first own class and subject; risk comes from the accuracy grade', async () => {
+    it('Semua Kelas and Semua Subjek by default: every own class, every active subject; sorted by accuracy; pooled Purata Ketepatan', async () => {
       const r = await w.analytics.classes(ctxOf('teacher', 't1'), {})
-      expect(r.options.selected).toEqual({ classroomId: '10', subjectId: '1', riskLevel: '' })
+      expect(r.options.selected).toEqual({ classroomId: null, subjectId: null, riskLevel: '' })
       expect(r.options.classes).toEqual([{ id: '10', name: 'Kelas 10' }])
-      expect(r.rows.map((x) => [x.userId, x.accuracy, x.riskLevel])).toEqual([
-        ['1', 90, 'low'],
-        ['2', 30, 'critical'],
-        ['3', 50, 'medium'],
+      expect(r.options.subjects).toEqual([
+        { id: '1', name: 'Bahasa Melayu' },
+        { id: '2', name: 'Matematik' },
       ])
-      expect(r.summary).toEqual({ students: 3, accuracy: 56.7, atRisk: 1, good: 1 })
+      expect(r.rows.map((x) => [x.userId, x.accuracy, x.riskLevel, x.classes])).toEqual([
+        ['2', 30, 'critical', []],
+        ['3', 50, 'high', []],
+        ['1', 90, 'low', []],
+      ])
+      expect(r.summary).toEqual({ students: 3, accuracy: 56.7, atRisk: 2, good: 1 })
       PerformanceClassAnalyticsSchema.parse(r)
     })
 
-    it('filters by risk level; an unknown level means all', async () => {
+    it('AC-GUR-5-7: answers of every mode count (Latih Tubi 7 of 10 plus Battle 30 of 40 = 37 of 50 = 74%, Rendah); test rows never count', async () => {
+      w.directory.addPupil({ id: '5', name: 'Eman Contoh', schoolId: 's1' })
+      w.classes.add({ id: '30', schoolId: 's1', teacherId: 't3' }, ['5'])
+      put('5', 10, 7)
+      put('5', 40, 30, { mode: 'battle' })
+      put('5', 10, 10, { isTest: true })
+      const r = await w.analytics.classes(ctxOf('teacher', 't3'), {})
+      expect(r.rows).toHaveLength(1)
+      expect(r.rows[0]).toMatchObject({ userId: '5', accuracy: 74, answered: 50, riskLevel: 'low' })
+    })
+
+    it('AC-GUR-5-3: a pupil with no answers is Belum Bermula (none, no accuracy, no projection), last, counted in Jumlah Pelajar, not in the average', async () => {
+      w.directory.addPupil({ id: '4', name: 'Aaa Contoh', schoolId: 's1' })
+      w.classes.add({ id: '14b', schoolId: 's1', teacherId: 't1' }, ['4'])
+      const r = await w.analytics.classes(ctxOf('teacher', 't1'), {})
+      expect(r.rows.map((x) => x.userId)).toEqual(['2', '3', '1', '4'])
+      expect(r.rows.at(-1)).toMatchObject({ userId: '4', accuracy: null, answered: 0, trend: 'stable', projection: null, riskLevel: 'none' })
+      expect(r.summary).toEqual({ students: 4, accuracy: 56.7, atRisk: 2, good: 1 })
+      // an inactive account and a non-student are not on the roster
+      w.directory.addPupil({ id: '6', name: 'Off Contoh', schoolId: 's1', isActive: false }).addPupil({ id: '7', name: 'Guru Contoh', schoolId: 's1', isStudent: false })
+      w.classes.add({ id: '15b', schoolId: 's1', teacherId: 't1' }, ['6', '7'])
+      expect((await w.analytics.classes(ctxOf('teacher', 't1'), {})).summary?.students).toBe(4)
+      // "Semua Risiko" shows them; a risk filter never does; nobody is Belum Bermula-only: summary accuracy is null
+      expect((await w.analytics.classes(ctxOf('teacher', 't1'), { riskLevel: 'low' })).rows.map((x) => x.userId)).toEqual(['1'])
+    })
+
+    it('only Belum Bermula pupils: a summary with null accuracy', async () => {
+      w.directory.addPupil({ id: '4', name: 'Aaa Contoh', schoolId: 's1' })
+      w.classes.add({ id: '31', schoolId: 's1', teacherId: 't4' }, ['4'])
+      const r = await w.analytics.classes(ctxOf('teacher', 't4'), {})
+      expect(r.summary).toEqual({ students: 1, accuracy: null, atRisk: 0, good: 0 })
+      PerformanceClassAnalyticsSchema.parse(r)
+    })
+
+    it('a pupil in two own classes is one row and one in Jumlah Pelajar', async () => {
+      w.classes.add({ id: '16', schoolId: 's1', teacherId: 't1' }, ['1', '2'])
+      const r = await w.analytics.classes(ctxOf('teacher', 't1'), {})
+      expect(r.rows).toHaveLength(3)
+      expect(r.summary?.students).toBe(3)
+    })
+
+    it('a named class narrows the roster; a subject narrows the answers', async () => {
+      w.classes.add({ id: '16', schoolId: 's1', teacherId: 't1' }, ['1'])
+      put('1', 10, 1, { subjectId: '2' })
+      const one = await w.analytics.classes(ctxOf('teacher', 't1'), { classroomId: '16' })
+      expect(one.options.selected.classroomId).toBe('16')
+      expect(one.rows.map((x) => [x.userId, x.accuracy, x.answered])).toEqual([['1', 50, 20]])
+      const bm = await w.analytics.classes(ctxOf('teacher', 't1'), { classroomId: '16', subjectId: '1' })
+      expect(bm.rows.map((x) => [x.accuracy, x.answered])).toEqual([[90, 10]])
+      const mt = await w.analytics.classes(ctxOf('teacher', 't1'), { subjectId: '2' })
+      expect(mt.rows.map((x) => [x.userId, x.accuracy, x.riskLevel])).toEqual([
+        ['1', 10, 'critical'],
+        ['2', null, 'none'],
+        ['3', null, 'none'],
+      ])
+    })
+
+    describe('risk bands on the whole-number accuracy (AC-GUR-5-2, AC-GUR-5-8)', () => {
+      it.each([
+        [39, 'critical'],
+        [40, 'high'],
+        [54, 'high'],
+        [55, 'medium'],
+        [69, 'medium'],
+        [70, 'low'],
+        [39.5, 'high'],
+        [54.5, 'medium'],
+        [69.5, 'low'],
+        [0, 'critical'],
+        [100, 'low'],
+      ])('%s%% is %s', (value, level) => {
+        expect(riskOfWholePercent(value)).toBe(level)
+      })
+
+      it('8 of 20 is Tinggi, 7 of 20 Kritikal, 14 of 20 Rendah; the filter lists exactly the band', async () => {
+        const accuracies: [string, number][] = [['21', 39], ['22', 40], ['23', 54], ['24', 55], ['25', 69], ['26', 70]]
+        for (const [id, acc] of accuracies) {
+          w.directory.addPupil({ id, name: `P${id} Contoh`, schoolId: 's1' })
+          put(id, 100, acc)
+        }
+        w.classes.add({ id: '40', schoolId: 's1', teacherId: 't5' }, accuracies.map(([id]) => id))
+        const ids = async (riskLevel: string) => (await w.analytics.classes(ctxOf('teacher', 't5'), { riskLevel })).rows.map((x) => x.userId).sort()
+        expect(await ids('critical')).toEqual(['21'])
+        expect(await ids('high')).toEqual(['22', '23'])
+        expect(await ids('medium')).toEqual(['24', '25'])
+        expect(await ids('low')).toEqual(['26'])
+        w.directory.addPupil({ id: '31', name: 'Q31 Contoh', schoolId: 's1' }).addPupil({ id: '32', name: 'Q32 Contoh', schoolId: 's1' }).addPupil({ id: '33', name: 'Q33 Contoh', schoolId: 's1' })
+        put('31', 20, 8)
+        put('32', 20, 7)
+        put('33', 20, 14)
+        w.classes.add({ id: '41', schoolId: 's1', teacherId: 't6' }, ['31', '32', '33'])
+        const r = await w.analytics.classes(ctxOf('teacher', 't6'), {})
+        expect(r.rows.map((x) => [x.userId, x.riskLevel])).toEqual([
+          ['32', 'critical'],
+          ['31', 'high'],
+          ['33', 'low'],
+        ])
+        // 14 of 20 is 70%: Rendah
+        expect(r.rows.find((x) => x.userId === '33')).toMatchObject({ accuracy: 70, riskLevel: 'low' })
+      })
+    })
+
+    it('R-2: the band is applied to the whole-number accuracy rounded half up from the UNROUNDED percentage (39.46 is 39 Kritikal; 39.5 is 40 Tinggi)', async () => {
+      w.directory.addPupil({ id: '61', name: 'B61 Contoh', schoolId: 's1' }).addPupil({ id: '62', name: 'B62 Contoh', schoolId: 's1' })
+      w.classes.add({ id: '62c', schoolId: 's1', teacherId: 't9' }, ['61', '62'])
+      put('61', 5000, 1973) // 39.46%: shown 39.5 at one decimal, but the band uses 39.46 -> 39
+      put('62', 200, 79) // 39.5% -> 40
+      const r = await w.analytics.classes(ctxOf('teacher', 't9'), {})
+      expect(r.rows.map((x) => [x.userId, x.accuracy, x.riskLevel])).toEqual([
+        ['61', 39.5, 'critical'],
+        ['62', 39.5, 'high'],
+      ])
+    })
+
+    it('R-2: the roster is the XS-1 pupils; a suspended pupil and a non-Tingkatan 1-5 member are out of the cards and the table', async () => {
+      w.directory
+        .addPupil({ id: '71', name: 'X71 Contoh', schoolId: 's1' })
+        .addPupil({ id: '72', name: 'X72 Contoh', schoolId: 's1', isSuspended: true })
+        .addPupil({ id: '73', name: 'X73 Contoh', schoolId: 's1', grade: 12, levelSlug: 't6' })
+        .addPupil({ id: '74', name: 'X74 Contoh', schoolId: 's1', grade: 6, levelSlug: null })
+      w.classes.add({ id: '71c', schoolId: 's1', teacherId: 't10' }, ['71', '72', '73', '74'])
+      put('71', 10, 9)
+      put('72', 10, 1) // would be Pelajar Berisiko if counted
+      put('73', 10, 1)
+      put('74', 10, 1)
+      for (const [role, id] of [['teacher', 't10'], ['school_admin', 'sa1']] as const) {
+        const r = await w.analytics.classes(ctxOf(role, id), role === 'school_admin' ? { classroomId: '71c' } : {})
+        expect(r.rows.map((x) => x.userId)).toEqual(['71'])
+        expect(r.summary).toEqual({ students: 1, accuracy: 90, atRisk: 0, good: 1 })
+      }
+    })
+
+    describe('trend: last 7 days against the 7 before (strict +/-3 points), BARU for first-week activity', () => {
+      const trendOf = async (userId: string) => (await w.analytics.classes(ctxOf('teacher', 't7'), {})).rows.find((x) => x.userId === userId)?.trend
+      beforeEach(() => {
+        for (const id of ['41', '42', '43', '44', '45', '46']) w.directory.addPupil({ id, name: `T${id} Contoh`, schoolId: 's1' })
+        w.classes.add({ id: '50', schoolId: 's1', teacherId: 't7' }, ['41', '42', '43', '44', '45', '46'])
+        // 41: 50% last week, 60% this week (+10): up
+        put('41', 10, 5, { answeredAt: LAST_WEEK })
+        put('41', 10, 6, { answeredAt: THIS_WEEK })
+        // 42: 60 then 50: down
+        put('42', 10, 6, { answeredAt: LAST_WEEK })
+        put('42', 10, 5, { answeredAt: THIS_WEEK })
+        // 43: 50 then 80 on the same questions is up, but +3 exactly (100 answers 50 then 53) is stable
+        put('43', 100, 50, { answeredAt: LAST_WEEK })
+        put('43', 100, 53, { answeredAt: THIS_WEEK })
+        // 44: -3 exactly: stable
+        put('44', 100, 53, { answeredAt: LAST_WEEK })
+        put('44', 100, 50, { answeredAt: THIS_WEEK })
+        // 45: only this week: BARU
+        put('45', 10, 5, { answeredAt: THIS_WEEK })
+        // 46: only before: stable (nothing this week)
+        put('46', 10, 5, { answeredAt: LAST_WEEK })
+      })
+
+      it('up above +3, down below -3, exactly 3 is stable', async () => {
+        expect(await trendOf('41')).toBe('up')
+        expect(await trendOf('42')).toBe('down')
+        expect(await trendOf('43')).toBe('stable')
+        expect(await trendOf('44')).toBe('stable')
+      })
+
+      it('only this week is new; nothing this week is stable', async () => {
+        expect(await trendOf('45')).toBe('new')
+        expect(await trendOf('46')).toBe('stable')
+      })
+
+      it('the pure rule: no earlier answers is new, no recent answers is stable', () => {
+        expect(analyticsTrendOf({ correct: 1, attempts: 1 }, { correct: 0, attempts: 0 })).toBe('new')
+        expect(analyticsTrendOf({ correct: 0, attempts: 0 }, { correct: 1, attempts: 1 })).toBe('stable')
+      })
+    })
+
+    it('an unknown risk level means all', async () => {
       expect((await w.analytics.classes(ctxOf('teacher', 't1'), { riskLevel: 'critical' })).rows.map((x) => x.userId)).toEqual(['2'])
       expect((await w.analytics.classes(ctxOf('teacher', 't1'), { riskLevel: 'bogus' })).rows).toHaveLength(3)
       expect((await w.analytics.classes(ctxOf('teacher', 't1'), { riskLevel: 'bogus' })).options.selected.riskLevel).toBe('')
+      // Belum Bermula is not a filter value
+      expect((await w.analytics.classes(ctxOf('teacher', 't1'), { riskLevel: 'none' })).rows).toHaveLength(3)
     })
 
     it('an unknown classroom and another teacher class give the same 403 (M3); other roles are 403', async () => {
@@ -630,26 +814,60 @@ describe('Analitik', () => {
       const forbidden = await w.analytics.classes(ctxOf('teacher', 't2'), { classroomId: '10' }).catch((e: unknown) => e)
       expect(unknown).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
       expect(forbidden).toMatchObject({ status: 403, message: 'Anda tidak dibenarkan melakukan tindakan ini.' })
-      await expect(w.analytics.classes(ctxOf('teacher', 't2'), { classroomId: '10' })).rejects.toMatchObject({ status: 403 })
       await expect(w.analytics.classes(ctxOf('student', '1'), {})).rejects.toMatchObject({ status: 403 })
       await expect(w.analytics.classes(ctxOf('ppd_officer', 'o1', { level: 'national', label: 'Nasional' }), {})).rejects.toMatchObject({ status: 403 })
     })
 
-    describe('S10-T04 Change (2): a school admin opens the classes of the own school only (API-AS-16 / API-RPT-04)', () => {
+    it('a teacher never sees a pupil of a class of another teacher (own classes only)', async () => {
+      const r = await w.analytics.classes(ctxOf('teacher', 't2'), {})
+      expect(r.rows.map((x) => x.userId)).toEqual(['3'])
+    })
+
+    it('an admin without a classroom gets no roster; with a classroom reads it like its teacher', async () => {
+      const admin = ctxOf('admin', 'a', { level: 'national', label: 'x' })
+      const none = await w.analytics.classes(admin, {})
+      expect(none.options.selected.classroomId).toBeNull()
+      expect(none.rows).toEqual([])
+      const r = await w.analytics.classes(admin, { classroomId: '10' })
+      expect(r.rows.map((x) => x.userId)).toEqual(['2', '3', '1'])
+      expect(r.rows.every((x) => x.classes.length === 0)).toBe(true)
+    })
+
+    describe('S10-T04 Change (2) and part 2: a school admin reads the own school only (API-AS-16, R1-AS-5)', () => {
       beforeEach(() => {
-        w.classes.add({ id: '80', schoolId: 's2', teacherId: 't9' }, ['1'])
+        // another school: a pupil at 20% and a class
+        w.classes.add({ id: '80', schoolId: 's2', teacherId: 't9' }, ['9'])
+        put('9', 10, 2)
+        // own school: pupil 2 is at 30%
+        w.classes.add({ id: '13', schoolId: 's1', teacherId: 't1', levelSlug: 't5', name: 'A Kelas' }, ['1'])
+        w.classes.add({ id: '14', schoolId: 's1', teacherId: 't1', levelSlug: 't4', name: 'B Kelas' }, ['2'])
+        w.classes.add({ id: '15', schoolId: 's1', teacherId: 't1', levelSlug: 't4', name: 'A Kelas' }, [])
       })
 
-      it('lists and defaults to the own school classrooms; reads the class like a teacher does', async () => {
+      it('AC-AS-5-6: Kritikal lists only the own school pupil at 30%, not the other school pupil at 20%', async () => {
+        const r = await w.analytics.classes(ctxOf('school_admin', 'sa1'), { riskLevel: 'critical' })
+        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([['2', 30]])
+        expect(r.rows.map((x) => x.userId)).not.toContain('9')
+      })
+
+      it('lists the school classes by Tingkatan then name, defaults to Semua Kelas, and gives each pupil the Kelas names', async () => {
         const r = await w.analytics.classes(ctxOf('school_admin', 'sa1'), {})
+        expect(r.options.classes.map((c) => c.id)).toEqual(['15', '14', '10', '11', '13'])
+        expect(r.options.selected.classroomId).toBeNull()
         expect(r.options.classes.map((c) => c.id)).not.toContain('80')
-        expect(r.options.classes.map((c) => c.id)).toContain('10')
-        expect(r.options.selected.classroomId).toBe(r.options.classes[0]?.id)
+        expect(r.rows.map((x) => x.userId)).not.toContain('9')
+        expect(r.rows.find((x) => x.userId === '1')?.classes).toEqual(['Kelas 10', 'A Kelas'])
+        expect(r.rows.find((x) => x.userId === '2')?.classes).toEqual(['B Kelas', 'Kelas 10'])
+        expect(r.summary?.students).toBe(3)
+        PerformanceClassAnalyticsSchema.parse(r)
+      })
+
+      it('one class narrows to that class; same rules as a teacher on the same class', async () => {
         const own = await w.analytics.classes(ctxOf('school_admin', 'sa1'), { classroomId: '10' })
         const teacher = await w.analytics.classes(ctxOf('teacher', 't1'), { classroomId: '10' })
-        expect(own.rows).toEqual(teacher.rows)
+        expect(own.rows.map((r) => ({ ...r, classes: [] }))).toEqual(teacher.rows)
         expect(own.summary).toEqual(teacher.summary)
-        PerformanceClassAnalyticsSchema.parse(own)
+        expect(own.rows.every((x) => x.classes.join() === 'Kelas 10')).toBe(true)
       })
 
       it('a class of another school is 403, the same answer as an unknown class', async () => {
@@ -663,61 +881,6 @@ describe('Analitik', () => {
         expect(r.rows).toEqual([])
         await expect(w.analytics.classes(ctxOf('school_admin', 'sa1', { level: 'national', label: 'Nasional' }), { classroomId: '10' })).rejects.toMatchObject({ status: 403 })
       })
-    })
-
-    describe('SW5-05: a sitting stores the Bijak subject code, a class stores the curriculum subject id', () => {
-      beforeEach(() => {
-        w.directory.addSubject('MAT', '3')
-        w.directory.addPupil({ id: '4', name: 'Eman Contoh', schoolId: 's1' }).addPupil({ id: '5', name: 'Farah Contoh', schoolId: 's1' })
-        w.classes.add({ id: '20', schoolId: 's1', teacherId: 't5', subjectId: '3', subjectName: 'Matematik' }, ['4', '5'])
-        const mat = { subjectId: 'MAT', subjectCode: 'MAT', subjectName: 'Matematik' }
-        w.bijak
-          .addSitting(sitting({ userId: '4', score: 9, maxScore: 10, ...mat }))
-          .addSitting(sitting({ userId: '5', score: 3, maxScore: 10, ...mat }))
-      })
-
-      it('facts of code MAT land under the curriculum id, with one option per subject', async () => {
-        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
-        expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
-        expect(r.options.selected.subjectId).toBe('3')
-        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
-          ['4', 90],
-          ['5', 30],
-        ])
-      })
-
-      it("a migrated 'legacy' sitting is not a subject option", async () => {
-        w.bijak.addSitting(sitting({ userId: '4', score: 5, maxScore: 10, subjectId: 'legacy', subjectCode: 'legacy', subjectName: 'Tidak diketahui' }))
-        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
-        expect(r.options.subjects).toEqual([{ id: '3', name: 'Matematik' }])
-        expect(r.rows.map((x) => [x.userId, x.accuracy])).toEqual([
-          ['4', 90],
-          ['5', 30],
-        ])
-      })
-
-      it('filtering by the curriculum id returns data', async () => {
-        const r = await w.analytics.classes(ctxOf('teacher', 't5'), { classroomId: '20', subjectId: '3' })
-        expect(r.summary).toEqual({ students: 2, accuracy: 60, atRisk: 1, good: 1 })
-      })
-
-      it('a code with no curriculum subject keeps the sitting id; other subjects stay separate options', async () => {
-        w.bijak.addSitting(sitting({ userId: '4', score: 5, maxScore: 10, subjectId: 'XYZ', subjectCode: 'XYZ', subjectName: 'Lain' }))
-        const r = await w.analytics.classes(ctxOf('teacher', 't5'), {})
-        expect(r.options.subjects).toEqual([
-          { id: '3', name: 'Matematik' },
-          { id: 'XYZ', name: 'Lain' },
-        ])
-      })
-    })
-
-    it('an admin names a class; members without graded marks are not rows', async () => {
-      w.bijak.addSitting(sitting({ userId: '2', score: 2, maxScore: 10, subjectId: '2', subjectCode: 'MT', subjectName: 'Matematik', provisional: true }))
-      const admin = ctxOf('admin', 'a', { level: 'national', label: 'x' })
-      expect((await w.analytics.classes(admin, {})).options.selected.classroomId).toBeNull()
-      const r = await w.analytics.classes(admin, { classroomId: '10', subjectId: '2' })
-      expect(r.rows).toEqual([])
-      expect(r.options.subjects.map((s) => s.id)).toEqual(['1', '2'])
     })
   })
 })

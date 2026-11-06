@@ -3,13 +3,22 @@ import { Inject, Injectable } from '@nestjs/common'
 import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { ANALYTICS_CLASS_ROLES, canOpenClassAnalysis, viewerSchoolId } from '../domain/access-policy'
-import { COUNTED_MODES, isLegacySubject } from '../domain/constants'
-import { addFact, emptyFigures, figuresOf } from '../domain/reduce'
-import { accuracyOf, compareIds, parseRiskLevel, projection, riskOfAccuracy, round, trendOf, type Trend } from '../domain/rules'
-import { inWindow, trendWindows } from '../domain/windows'
-import { DIRECTORY_PORT, PerformancePorts, type BijakSittingFact, type ClassInfo, type DirectoryPort } from '../ports'
-import { groupBy, nameMap } from './support'
+import { ANALYTICS_TREND_DAYS, COUNTED_MODES, isLegacySubject } from '../domain/constants'
+import { figuresOf } from '../domain/reduce'
+import { accuracyOf, analyticsTrendOf, compareIds, parseRiskLevel, pct, projection, riskOfWholePercent, trendOf, type ClassRiskLevel, type Trend } from '../domain/rules'
+import { inWindow, startOfDaysAgo, trendWindows } from '../domain/windows'
+import { startOfMytDay } from '../../../../db/clock'
+import { DIRECTORY_PORT, PUPIL_ROSTER_PORT, PerformancePorts, type AnswerFactRow, type BijakSittingFact, type ClassInfo, type DirectoryPort, type PupilRosterPort } from '../ports'
+import { groupBy } from './support'
 import type { Ctx, PerformanceAnalytics, PerformanceClassAnalytics, PerformanceClassAnalyticsQuery } from './types'
+
+
+/** Tingkatan number of a level slug ('t4' = 4, 'tingkatan-5' = 5); unknown sorts last. */
+const levelNumber = (slug: string): number => {
+  const n = Number(/(\d+)/.exec(slug)?.[1])
+  return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER
+}
+const byLevelThenName = (a: ClassInfo, b: ClassInfo): number => levelNumber(a.levelSlug) - levelNumber(b.levelSlug) || a.name.localeCompare(b.name, 'ms', { numeric: true })
 
 /** Trend of one pupil in one subject from graded sittings (provisional ones never count). */
 function trendOfFacts(facts: readonly BijakSittingFact[], now: Date): Trend {
@@ -37,6 +46,7 @@ export class AnalyticsService {
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Inject(PUPIL_ROSTER_PORT) protected readonly roster: PupilRosterPort,
   ) {}
 
   async me(ctx: Ctx): Promise<PerformanceAnalytics> {
@@ -75,78 +85,117 @@ export class AnalyticsService {
   async classes(ctx: Ctx, query: PerformanceClassAnalyticsQuery): Promise<PerformanceClassAnalytics> {
     if (!ANALYTICS_CLASS_ROLES.includes(ctx.role)) throw ApiError.of('FORBIDDEN')
     const riskLevel = parseRiskLevel(query.riskLevel)
+    const isSchoolAdmin = ctx.role === 'school_admin'
     // A school admin picks among the active classrooms of the own school only (S10-T04 Change (2)).
-    const school = ctx.role === 'school_admin' ? viewerSchoolId(ctx) : null
+    const school = isSchoolAdmin ? viewerSchoolId(ctx) : null
     const own =
       ctx.role === 'teacher'
         ? (await this.ports.classes.classesForTeacher(ctx.userId)).filter((c) => c.kind === 'classroom' && c.isActive)
         : school !== null
           ? (await this.ports.classes.classesOfSchool(school)).filter((c) => c.kind === 'classroom' && c.isActive)
           : []
+    // School admin: Tingkatan then name (R1-AS-5); a teacher keeps the own order.
+    if (isSchoolAdmin) own.sort(byLevelThenName)
     const classes = own.map((c) => ({ id: c.id, name: c.name }))
+    const subjects = await this.directory.activeSubjects()
 
-    let cls: ClassInfo | null = null
+    // "Semua Kelas" (no classroomId): every active classroom of the teacher / of the school. A named class must be openable.
+    let scope: ClassInfo[] = own
     if (query.classroomId !== undefined) {
       // Unknown and not-openable give the same 403, so class ids cannot be enumerated.
-      cls = await this.ports.classes.classById(query.classroomId)
+      const cls = await this.ports.classes.classById(query.classroomId)
       if (!cls || !canOpenClassAnalysis(ctx, cls)) throw ApiError.of('FORBIDDEN')
-    } else if (ctx.role === 'teacher' || ctx.role === 'school_admin') {
-      cls = own[0] ?? null
+      scope = [cls]
     }
-    if (!cls) {
-      return { options: { classes, subjects: [], selected: { classroomId: null, subjectId: null, riskLevel } }, summary: null, rows: [] }
-    }
+    const selected = { classroomId: query.classroomId ?? null, subjectId: query.subjectId ?? null, riskLevel }
 
-    const members = await this.ports.classes.memberIds(cls.id)
-    const facts = members.length === 0 ? [] : await this.ports.bijak.sittings({ userIds: members, modes: COUNTED_MODES.analytics })
-    // A sitting stores the Bijak subject CODE; a class stores the curriculum subject id. Group by the curriculum id so
-    // the options and the class subject agree (a code with no curriculum subject keeps the sitting's own id).
-    // Migrated 'legacy' sittings are not a subject option (SW13-08); there are no class totals to keep them in.
-    const named = facts.filter((f) => !isLegacySubject(f))
-    const codes = [...new Set(named.map((f) => f.subjectCode))]
-    const idOfCode = await this.directory.subjectIdsOfCodes(codes)
-    const bySubject = groupBy(named, (f) => idOfCode.get(f.subjectCode) ?? f.subjectId)
-    const subjectIds = [...bySubject.keys()].sort(compareIds)
-    if (cls.subjectId !== null) {
-      const i = subjectIds.indexOf(cls.subjectId)
-      if (i >= 0) subjectIds.splice(i, 1)
-      subjectIds.unshift(cls.subjectId)
+    // Roster: the XS-1 pupils (active, not suspended, Tingkatan 1-5; S6-T03 `XsQueries.pupils`) of the viewer's scope, intersected with
+    // the members of the scope classes, each once; pupils with no answers are part of it.
+    const membersByClass = scope.length === 0 ? new Map<string, string[]>() : await this.ports.classes.membersOf(scope.map((c) => c.id))
+    const classNamesOf = new Map<string, string[]>()
+    for (const c of scope) {
+      for (const id of membersByClass.get(c.id) ?? []) classNamesOf.set(id, [...(classNamesOf.get(id) ?? []), c.name])
     }
-    const subjectName = (id: string): string =>
-      bySubject.get(id)?.[0]?.subjectName ?? (id === cls.subjectId ? (cls.subjectName ?? '') : '')
-    const subjects = subjectIds.map((id) => ({ id, name: subjectName(id) }))
-    const subjectId = query.subjectId ?? subjects[0]?.id ?? null
+    const xsPupils = new Set<string>()
+    if (classNamesOf.size > 0) {
+      const scopes = ctx.role === 'teacher' ? [{ kind: 'teacher' as const, teacherId: ctx.userId }] : [...new Set(scope.map((c) => c.schoolId))].map((schoolId) => ({ kind: 'school' as const, schoolId }))
+      for (const s of scopes) for (const id of await this.roster.xsPupilIds(s)) xsPupils.add(id)
+    }
+    const users = classNamesOf.size === 0 ? new Map() : await this.directory.users([...classNamesOf.keys()])
+    const roster = [...classNamesOf.keys()].filter((id) => xsPupils.has(id) && users.has(id))
+    if (roster.length === 0) return { options: { classes, subjects, selected }, summary: null, rows: [] }
 
-    const names = await nameMap(this.directory, members)
+    // Three set-based reads of the one answer store: all time, this week, the week before (all modes, test rows never count).
     const now = this.clock.now()
-    const byUser = groupBy(subjectId === null ? [] : (bySubject.get(subjectId) ?? []), (f) => f.userId)
-    const rows = members.flatMap((userId) => {
-      const list = byUser.get(userId) ?? []
-      const f = list.reduce((acc, s) => addFact(acc, s), emptyFigures())
-      if (f.gradedMax === 0) return []
-      const accuracy = accuracyOf(f.gradedScore, f.gradedMax)
-      return [
-        {
-          userId,
-          name: names.get(userId) ?? '',
-          accuracy,
-          answered: f.answered,
-          trend: trendOfFacts(list, now),
-          projection: projection(accuracy),
-          riskLevel: riskOfAccuracy(accuracy),
-        },
-      ]
+    const recentFrom = startOfDaysAgo(now, ANALYTICS_TREND_DAYS - 1)
+    const beforeFrom = startOfDaysAgo(now, 2 * ANALYTICS_TREND_DAYS - 1)
+    const scopeQuery = { userIds: roster, ...(query.subjectId !== undefined ? { subjectId: query.subjectId } : {}) }
+    const [allTime, recent, before] = await Promise.all([
+      this.ports.answerFacts.answerFacts(scopeQuery),
+      this.ports.answerFacts.answerFacts({ ...scopeQuery, from: recentFrom, to: new Date(startOfMytDay(now).getTime() + 86_400_000) }),
+      this.ports.answerFacts.answerFacts({ ...scopeQuery, from: beforeFrom, to: recentFrom }),
+    ])
+    const totals = (rows: readonly AnswerFactRow[]): Map<string, { correct: number; attempts: number }> => {
+      const m = new Map<string, { correct: number; attempts: number }>()
+      for (const r of rows) {
+        const t = m.get(r.userId) ?? { correct: 0, attempts: 0 }
+        t.correct += r.correct
+        t.attempts += r.attempts
+        m.set(r.userId, t)
+      }
+      return m
+    }
+    const all = totals(allTime)
+    const recentBy = totals(recent)
+    const beforeBy = totals(before)
+    const none = { correct: 0, attempts: 0 }
+
+    const everyone = roster.map((userId) => {
+      const t = all.get(userId) ?? none
+      const hasAnswers = t.attempts > 0
+      const accuracy = hasAnswers ? accuracyOf(t.correct, t.attempts) : null
+      // The band is applied to the whole-number accuracy rounded half up from the UNROUNDED percentage (never from the 1-decimal one).
+      const rawPercent = hasAnswers ? Math.min(pct(t.correct, t.attempts), 100) : null
+      return {
+        userId,
+        name: users.get(userId)?.name ?? '',
+        accuracy,
+        correct: t.correct,
+        answered: t.attempts,
+        trend: hasAnswers ? analyticsTrendOf(recentBy.get(userId) ?? none, beforeBy.get(userId) ?? none) : ('stable' as const),
+        projection: accuracy === null ? null : projection(accuracy),
+        riskLevel: (rawPercent === null ? 'none' : riskOfWholePercent(rawPercent)) as ClassRiskLevel,
+        classes: isSchoolAdmin ? (classNamesOf.get(userId) ?? []) : [],
+      }
     })
-    const shown = rows.filter((r) => riskLevel === '' || r.riskLevel === riskLevel)
-    const summary =
-      shown.length === 0
-        ? null
-        : {
-            students: shown.length,
-            accuracy: round(shown.reduce((a, r) => a + r.accuracy, 0) / shown.length, 1),
-            atRisk: shown.filter((r) => r.riskLevel === 'critical' || r.riskLevel === 'high').length,
-            good: shown.filter((r) => r.riskLevel === 'low').length,
-          }
-    return { options: { classes, subjects, selected: { classroomId: cls.id, subjectId, riskLevel } }, summary, rows: shown }
+    // Accuracy ascending, then name; Belum Bermula last (also by name).
+    everyone.sort((a, b) => {
+      if ((a.accuracy === null) !== (b.accuracy === null)) return a.accuracy === null ? 1 : -1
+      return (a.accuracy ?? 0) - (b.accuracy ?? 0) || a.name.localeCompare(b.name, 'ms') || compareIds(a.userId, b.userId)
+    })
+    const shown = everyone.filter((r) => riskLevel === '' || r.riskLevel === riskLevel)
+    if (shown.length === 0) return { options: { classes, subjects, selected }, summary: null, rows: [] }
+
+    // Pooled over the pupils with answers (XS-5); Belum Bermula pupils are in Jumlah Pelajar only.
+    const answered = shown.filter((r) => r.accuracy !== null)
+    const sumCorrect = answered.reduce((a, r) => a + r.correct, 0)
+    const sumAnswered = answered.reduce((a, r) => a + r.answered, 0)
+    const summary = {
+      students: shown.length,
+      accuracy: sumAnswered === 0 ? null : accuracyOf(sumCorrect, sumAnswered),
+      atRisk: shown.filter((r) => r.riskLevel === 'critical' || r.riskLevel === 'high').length,
+      good: shown.filter((r) => r.riskLevel === 'low').length,
+    }
+    const rows = shown.map((r) => ({
+      userId: r.userId,
+      name: r.name,
+      accuracy: r.accuracy,
+      answered: r.answered,
+      trend: r.trend,
+      projection: r.projection,
+      riskLevel: r.riskLevel,
+      classes: r.classes,
+    }))
+    return { options: { classes, subjects, selected }, summary, rows }
   }
 }

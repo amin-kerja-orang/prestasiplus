@@ -2,7 +2,7 @@
  * Pure performance rules, ported from the M08 mock (`rules.ts`, SRS M08 v1.11 section 4): grades,
  * rounding, accuracy cap, difficulty, discrimination, trend, projection, risk. No store access.
  */
-import { PROJECTION_BAND, TREND_DELTA } from './constants'
+import { ANALYTICS_TREND_DELTA, PROJECTION_BAND, RISK_CRITICAL_BELOW, RISK_HIGH_BELOW, RISK_MEDIUM_BELOW, TREND_DELTA } from './constants'
 
 export const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
 export type Grade = (typeof GRADES)[number]
@@ -95,6 +95,31 @@ export function riskOfAccuracy(accuracy: number): RiskLevel {
   if (g === 'D') return 'high'
   if (g === 'C' || g === 'C+') return 'medium'
   return 'low'
+}
+
+/** Analitik Adaptif class row risk: 'none' = Belum Bermula (no answers). */
+export type ClassRiskLevel = RiskLevel | 'none'
+
+/** OPT-RISIKO: the accuracy is rounded half up to a whole number first (39.5 is 40), then <40 critical, <55 high, <70 medium, else low. */
+export function riskOfWholePercent(accuracy: number): RiskLevel {
+  const whole = Math.round(accuracy)
+  if (whole < RISK_CRITICAL_BELOW) return 'critical'
+  if (whole < RISK_HIGH_BELOW) return 'high'
+  if (whole < RISK_MEDIUM_BELOW) return 'medium'
+  return 'low'
+}
+
+export type ClassTrend = Trend | 'new'
+
+/**
+ * Analitik Adaptif trend: last 7 days against the 7 before, pooled correct over answered. A change above +3 points is up,
+ * below -3 down; answers only in the recent week are 'new'; no answers in the recent week is stable.
+ */
+export function analyticsTrendOf(recent: { correct: number; attempts: number }, before: { correct: number; attempts: number }): ClassTrend {
+  if (recent.attempts === 0) return 'stable'
+  if (before.attempts === 0) return 'new'
+  const d = pct(recent.correct, recent.attempts) - pct(before.correct, before.attempts)
+  return d > ANALYTICS_TREND_DELTA ? 'up' : d < -ANALYTICS_TREND_DELTA ? 'down' : 'stable'
 }
 
 export const RISK_LEVELS: readonly RiskLevel[] = ['critical', 'high', 'medium', 'low']
