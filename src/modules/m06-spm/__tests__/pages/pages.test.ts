@@ -424,7 +424,7 @@ describe('S10 HistoryPage', () => {
     ;['4', '21.8%', '26', '84'].forEach((v, i) => expect(hs[i]!.text()).toContain(v))
     expect(w.text()).toContain('Jumlah Syiling')
     expect(m05.fetchSessions).toHaveBeenCalledWith(
-      { modes: ['past_year', 'latih_tubi', 'ramalan'], type: null },
+      { modes: ['past_year', 'databank', 'latih_tubi', 'ramalan'], type: null },
       expect.anything(),
     )
     const rows = w.findAll('[data-testid=history-row]')
@@ -447,7 +447,7 @@ describe('S10 HistoryPage', () => {
     })
     const w = await render(HistoryPage, '/spm/history?type=past_year')
     expect(m05.fetchSessions.mock.calls[0]?.[0]).toEqual({
-      modes: ['past_year', 'latih_tubi', 'ramalan'],
+      modes: ['past_year', 'databank', 'latih_tubi', 'ramalan'],
       type: 'past_year',
     })
     expect(t(w, 'history-filter-past_year').attributes('data-active')).toBe('true')

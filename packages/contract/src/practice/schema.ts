@@ -39,13 +39,13 @@ export const LEGACY_PRACTICE_MODES = ['random', 'past_year', 'ramalan'] as const
 
 /**
  * Modes `POST /practice/sessions` accepts: `PRACTICE_MODES` without `pksk` (created by M07, not here) and without `random`.
- * `past_year` and `ramalan` are legacy too but STAY startable for now: the live m06-spm Databank / Tracking A pages still start
- * them. They leave this list when the Databank / Tracking A cards (S3-T07 and others) switch those pages to `databank` /
- * `tracking_a` (the card's grep condition). `databank` and `tracking_a` have no planner case yet, so they are not startable.
+ * `past_year` and `ramalan` are legacy too but STAY startable for now (old clients; the Tracking A page still starts `ramalan`).
+ * They leave this list in the follow-up that removes the last page / spec starting them. S3-T07 part A: `databank` has a planner
+ * case (the m06-spm Databank page starts it), so it is startable. `tracking_a` has no planner case yet, so it is not.
  */
-type NotStartable = 'pksk' | 'random' | 'databank' | 'tracking_a'
+type NotStartable = 'pksk' | 'random' | 'tracking_a'
 export const PRACTICE_START_MODES = PRACTICE_MODES.filter(
-  (m) => m !== 'pksk' && m !== 'random' && m !== 'databank' && m !== 'tracking_a',
+  (m) => m !== 'pksk' && m !== 'random' && m !== 'tracking_a',
 ) as unknown as readonly [Exclude<PracticeMode, NotStartable>, ...Exclude<PracticeMode, NotStartable>[]]
 export const PracticeStartModeSchema = z.enum(PRACTICE_START_MODES).meta({ id: 'PracticeStartMode' })
 
@@ -68,6 +68,7 @@ export const PRACTICE_ERROR_CODES = [
   'SET_NOT_READY',
   'NO_WRONG_QUESTIONS',
   'ALREADY_COMPLETED',
+  /** Not raised in R1: a question_set has no attempt cap (S5-T11, R7). Kept for legacy clients. */
   'NO_ATTEMPTS_LEFT',
   'ALREADY_SUBMITTED',
 ] as const
@@ -114,7 +115,7 @@ export const StartSessionRequestSchema = z
     levelId: IdSchema.nullable().optional(),
     difficulty: z.number().int().min(1).max(5).nullable().optional(),
     count: z.number().int().min(1).optional().meta({
-      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target.',
+      description: 'random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target.',
     }),
     chapterId: intId('chapter mode').optional(),
     year: z.number().int().optional().meta({ description: 'ramalan mode.' }),
