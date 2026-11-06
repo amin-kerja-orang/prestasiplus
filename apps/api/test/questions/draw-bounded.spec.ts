@@ -524,7 +524,7 @@ describe('G4 follow-ups', () => {
     const twoPart = (await t.db.query<{ id: string }>(`select question_id::text id from question_versions v where v.number_label like 'QL-CA-%' and (select count(*) from question_parts p where p.question_version_id = v.id) = 2`))[0]?.id as string
     const before = await pool.count(w.tag.subjectId)
     await t.db.query(`insert into question_tags (question_id, kind, code) values ($1, 'pool', 'spm')`, [twoPart])
-    const after = await new SpmPoolService(repo, { get: () => '0' } as never, { now: () => new Date() } as never).count(w.tag.subjectId)
+    const after = await new SpmPoolService(repo, { get: () => '0' } as never, { now: () => new Date() } as never, { generation: 0 } as never).count(w.tag.subjectId)
     expect(after).toBe(before)
     const drawn = await pool.sample(w.tag.subjectId, 400, prngStream('shape'))
     expect(drawn.map((r) => r.id)).not.toContain(twoPart)

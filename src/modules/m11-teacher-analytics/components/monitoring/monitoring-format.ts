@@ -42,13 +42,31 @@ export interface TahapStyle {
   bar: 'inside' | 'outside' | 'empty'
 }
 
+const MUTED = 'text-muted'
+
 export const TAHAP: Record<TahapKey, TahapStyle> = {
   Cemerlang: { color: 'success', text: 'text-success', bar: 'inside' },
   Sederhana: { color: 'warning', text: 'text-warning', bar: 'inside' },
   Rendah: { color: 'error', text: 'text-error', bar: 'outside' },
   Kritikal: { color: 'error', text: 'text-error', bar: 'outside' },
-  'Tiada Langsung': { color: 'neutral', text: 'text-muted', bar: 'empty' },
+  Tiada: { color: 'neutral', text: MUTED, bar: 'empty' },
+  'Tiada Langsung': { color: 'neutral', text: MUTED, bar: 'empty' },
 }
+
+/**
+ * R1-AS-10 / R1-GUR-10 (lead decision): four Tahap bands, Cemerlang > 60, Sederhana 20-60, Rendah > 0 and
+ * < 20, Tiada 0. The API still sends the V1 keys, so "Kritikal" shows as "Rendah" and "Tiada Langsung"
+ * as "Tiada" until the backend `tahapOf` changes.
+ */
+export const TAHAP_LABEL: Record<TahapKey, string> = {
+  Cemerlang: 'Cemerlang',
+  Sederhana: 'Sederhana',
+  Rendah: 'Rendah',
+  Kritikal: 'Rendah',
+  Tiada: 'Tiada',
+  'Tiada Langsung': 'Tiada',
+}
+export const tahapLabel = (t: TahapKey) => TAHAP_LABEL[t]
 
 /** BR-M11-22: >= 70 good; 50-69.9 mid; < 50 low. */
 export type AccuracyBand = 'good' | 'mid' | 'low'

@@ -345,8 +345,9 @@ describe('POST /api/auth/register (#2)', () => {
   })
 
   it('gives no referral reward for a pending teacher, but does for a student (AM2-N1)', async () => {
-    const code = referrals.codeOf(1)
-    const before = referrals.stats(1).referrals
+    // The referrer is a pupil (id 2, pelajar@demo.test): R6, 48 GAME-24.
+    const code = referrals.codeOf(2)
+    const before = referrals.stats(2).referrals
     const t = await call('POST', '/api/auth/register', {
       ...student,
       role: 'teacher',
@@ -354,14 +355,26 @@ describe('POST /api/auth/register (#2)', () => {
       referralCode: code,
     })
     expect(t.status).toBe(201)
-    expect(referrals.stats(1).referrals).toBe(before)
+    expect(referrals.stats(2).referrals).toBe(before)
     const s = await call('POST', '/api/auth/register', {
       ...student,
       email: 'murid.rujukan@demo.test',
       referralCode: code,
     })
     expect(s.status).toBe(201)
-    expect(referrals.stats(1).referrals).toBe(before + 1)
+    expect(referrals.stats(2).referrals).toBe(before + 1)
+  })
+
+  it('gives no referral for a student when the code belongs to a non-pupil (R6)', async () => {
+    const adminCode = referrals.codeOf(1)
+    const before = referrals.stats(1).referrals
+    const s = await call('POST', '/api/auth/register', {
+      ...student,
+      email: 'murid.kod.admin@demo.test',
+      referralCode: adminCode,
+    })
+    expect(s.status).toBe(201)
+    expect(referrals.stats(1).referrals).toBe(before)
   })
 
   it('needs no grade for teacher or parent, but requires it for a student', async () => {

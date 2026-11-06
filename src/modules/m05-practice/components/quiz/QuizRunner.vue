@@ -35,6 +35,7 @@ import {
   comboOf,
   dsOptionState,
   formatTime,
+  isHttpUrl,
   optionState,
   planStartError,
   safeHref,
@@ -213,6 +214,10 @@ const timeText = computed(() => formatTime(clock.value))
 const takenText = computed(() => formatTime(elapsed.value))
 const progressPct = computed(() => (total.value > 0 ? ((index.value + 1) / total.value) * 100 : 0))
 const revisionMeta = computed(() => active.value?.revisionMeta ?? null)
+const referenceHref = computed(() => {
+  const url = current.value?.referenceUrl
+  return isHttpUrl(url) ? url : null
+})
 const contributorHref = computed(() => safeHref(current.value?.contributor?.profileUrl))
 const tints = computed(() => props.report.tints ?? DEFAULT_TINTS)
 
@@ -448,6 +453,20 @@ const feedbackExplanation = computed(() =>
               >
                 {{ current.questionText }}
               </h2>
+
+              <div v-if="referenceHref" data-testid="question-reference">
+                <UButton
+                  :to="referenceHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="neutral"
+                  variant="link"
+                  icon="i-ph-arrow-square-out-bold"
+                  class="min-h-11"
+                  data-testid="question-reference-link"
+                  >Rujukan</UButton
+                >
+              </div>
 
               <p
                 v-if="current.contributor"

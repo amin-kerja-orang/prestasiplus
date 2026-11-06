@@ -538,12 +538,18 @@ async function submit(): Promise<void> {
     <!-- Pilihan Jawapan (multiple choice only) -->
     <DsFormSection title="Pilihan Jawapan" icon="list-checks" accent="trial" data-testid="mcq-card">
       <p class="mb-4 text-body text-muted">Masukkan 4 pilihan dan pilih jawapan yang betul.</p>
+      <!-- ds-debt exception (lead ruling): AC-GUR-44-7 44 px tap target (the label covers the dot, so the whole item selects); S8 to replace with a theme slot later. -->
       <URadioGroup
         id="q-correct"
         :model-value="v.correct ?? undefined"
         legend="Jawapan betul"
         orientation="horizontal"
         :items="CORRECT_ITEMS"
+        :ui="{
+          item: 'items-stretch',
+          container: 'self-center',
+          label: 'flex min-h-11 min-w-11 -ms-6 ps-6 items-center',
+        }"
         class="mb-4"
         data-testid="q-correct"
         @update:model-value="v.correct = Number($event)"
