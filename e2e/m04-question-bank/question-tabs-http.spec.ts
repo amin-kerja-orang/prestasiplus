@@ -35,6 +35,67 @@ async function expectNoPageScroll(page: Page): Promise<void> {
   expect(over, 'horizontal page overflow in px').toBeLessThanOrEqual(0)
 }
 
+/** Leaf parts of a stored question (a part with no `children`), at any depth. */
+type PartNode = Record<string, unknown> & { children?: PartNode[] }
+const isLeafPart = (p: PartNode): boolean => !Array.isArray(p.children) || p.children.length === 0
+const withLeafAras = (parts: PartNode[], aras: string): PartNode[] =>
+  parts.map((p) => (isLeafPart(p) ? { ...p, cognitiveLevel: p.cognitiveLevel ?? aras } : { ...p, children: withLeafAras(p.children ?? [], aras) }))
+
+/**
+ * Test-data completion: the demo seed predates today's approve gate (Bab, an Aras on every leaf, Kertas), and the seeds are not edited in
+ * this PR. On a draft, set the three fields from the API (admin PUT), keep every other field as stored, so `review` and `approved` can pass.
+ * Bab: the chapter of the question's own unit (the unit title from the Studio DSKP list, matched by name to a chapter of the same subject
+ * and level in the curriculum tree; else the chapter with the unit's number; else the first one). Aras: the first of QUESTION_COGNITIVE_LEVELS.
+ * Kertas: '2' (QuestionKertasSchema takes '1'..'4'; a structured question is Kertas 2).
+ */
+async function completeApproveGate(request: APIRequestContext, csrf: string, id: string): Promise<void> {
+  const got = await request.get(`/api/questions/${id}`)
+  expect(got.ok(), `detail ${id}`).toBe(true)
+  const q = ((await got.json()) as {
+    data: {
+      subject: { id: string }
+      level: { id: string }
+      difficultyLevel: number
+      questionText: string
+      curriculumChapterId: string | null
+      kertas: string | null
+      parts: PartNode[]
+      tag: { unitId: string | null }
+    }
+  }).data
+  const subjectId = q.subject.id
+  const levelId = q.level.id
+  let chapterId = q.curriculumChapterId
+  if (chapterId === null) {
+    const units = ((await (await request.get(`/api/questions/studio/dskp?subjectId=${subjectId}&educationLevelId=${levelId}`)).json()) as {
+      data: { units: { id: string; code: string; title: string }[] }
+    }).data.units
+    const unit = units.find((u) => u.id === q.tag.unitId)
+    const chapters = ((await (await request.get(`/api/admin/curriculum?subjectId=${subjectId}&educationLevelId=${levelId}`)).json()) as {
+      data: { chapters: { id: string; name: string; chapterNumber: number; isActive: boolean }[] }
+    }).data.chapters.filter((c) => c.isActive)
+    const own =
+      chapters.find((c) => c.name.trim().toLowerCase() === unit?.title.trim().toLowerCase()) ??
+      chapters.find((c) => unit !== undefined && c.chapterNumber === Number.parseInt(unit.code, 10)) ??
+      chapters[0]
+    expect(own, `a chapter of subject ${subjectId} level ${levelId}`).toBeDefined()
+    chapterId = (own as { id: string }).id
+  }
+  const put = await request.put(`/api/questions/${id}`, {
+    headers: { 'x-csrf-token': csrf },
+    data: {
+      subjectId,
+      educationLevelId: levelId,
+      difficultyLevel: q.difficultyLevel,
+      questionText: q.questionText,
+      curriculumChapterId: chapterId,
+      kertas: q.kertas ?? '2',
+      parts: withLeafAras(q.parts, 'mengingat'),
+    },
+  })
+  expect(put.ok(), `complete approve gate of ${id}: ${await put.text()}`).toBe(true)
+}
+
 interface Report {
   id: string
   questionId: string
@@ -280,6 +341,7 @@ test.describe('S2-T06 Laporan Soalan row actions (gap 5.1) @api', () => {
       // gates.ts) are logged and attached so the cause is visible, and the test fails loudly unless the question is live again.
       const refused: { action: string; failed: unknown[] }[] = []
       for (const action of ['draft', 'review', 'approved']) {
+        if (action === 'review') await completeApproveGate(page.request, csrf, r.questionId)
         const res = await page.request.post('/api/questions/bulk-action', {
           headers: { 'x-csrf-token': csrf },
           data: { action, ids: [r.questionId] },
