@@ -4,7 +4,6 @@ import { runSeeds, seedModules } from '../../../prisma/seed'
 import { QUESTION_COUNT_SQL } from '../../../src/modules/account/account-data.repository'
 import { BankFacts } from '../../../src/modules/practice/reads/overview/bank-facts'
 import { OverviewRepository } from '../../../src/modules/practice/reads/overview/overview.repository'
-import { OFFERED_LEVEL_CODES } from '../../../src/modules/practice/rules'
 import { createTestDatabase, type TestDatabase } from '../../support/db'
 
 /**
@@ -22,7 +21,7 @@ beforeAll(async () => {
   db = await createTestDatabase()
   await runSeeds(seedModules, { prisma: db.prisma })
   bank = new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix())
-  offeredIds = (await db.query<{ id: string }>(`select id::text id from education_levels where code = any($1)`, [[...OFFERED_LEVEL_CODES]])).map((r) => r.id)
+  offeredIds = (await db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
 }, 600_000)
 
 afterAll(async () => {
@@ -44,6 +43,29 @@ describe('practice card counts ungrouped servable questions only (D91)', () => {
     expect(login).toBe(493)
     const ungrouped = Number((await db.query<{ c: string }>(`${QUESTION_COUNT_SQL} AND q.group_id IS NULL`))[0]?.c)
     expect(login - ungrouped).toBe(3)
+  })
+})
+
+describe('a flagged question is not counted on the practice card (S1-T07)', () => {
+  it('[CI] bankMatrix excludes a stimulus_missing question (not dismissed); a dismissed one is counted again', async () => {
+    const bm = await subjectId('BM')
+    const before = bank.practice(bm, offeredIds)
+    const target = (await db.query<{ question_id: string; version_no: number }>(
+      `select q.id::text question_id, v.version_no from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+        where q.is_active and v.status = 'approved' and v.type = 'mcq' and q.group_id is null and v.subject_id = $1 and v.stimulus_flag is null
+          and v.education_level_id = any($2::bigint[]) order by q.id limit 1`, [bm, offeredIds]))[0]
+    expect(target).toBeDefined()
+    const where = [target?.question_id, target?.version_no]
+    const count = async () => new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix()).practice(bm, offeredIds)
+    try {
+      await db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where question_id = $1::bigint and version_no = $2`, where)
+      expect(await count()).toBe(before - 1)
+      await db.query(`update question_versions set flag_dismissed_at = now() where question_id = $1::bigint and version_no = $2`, where)
+      expect(await count()).toBe(before)
+    } finally {
+      await db.query(`update question_versions set stimulus_flag = null, stimulus_flag_ref = null, stimulus_flag_at = null, flag_dismissed_at = null where question_id = $1::bigint and version_no = $2`, where)
+    }
+    expect(await count()).toBe(before)
   })
 })
 

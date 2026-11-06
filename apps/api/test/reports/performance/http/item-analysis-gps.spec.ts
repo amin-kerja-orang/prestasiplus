@@ -13,13 +13,13 @@ beforeAll(async () => {
   for (const k of ['guru', 'adminsekolah', 'admin2', 'pelajar']) as[k] = await loginAs(w, `${k}@demo.test`)
 
   // 2026, class DEMO4S: five pupils with one latest AR each = A+ (0), A (1), A- (2), B (4), C (6).
-  const cfg2026 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId, year: 2026 })
+  const cfg2026 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId, year: 2026, mode: 'manual' })
   const pupils = ['pelajar@demo.test', 'pelajar2@demo.test', ...PUPILS.slice(0, 2)]
   const ars = [95, 85, 75, 62]
   for (const [i, email] of pupils.entries()) await insertEntry(w, cfg2026, email, { marks: [[80, ars[i] as number]] })
   await insertEntry(w, cfg2026, PUPILS[2] as string, { marks: [[80, 52]] })
   // 2025, another class and subject: one pupil, D (7). Below the cohort on its own.
-  const cfg2025 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId2, subjectId: w.subjectId2, year: 2025 })
+  const cfg2025 = await insertConfig(w, { teacher: 'guru@demo.test', classroomId: w.classId2, subjectId: w.subjectId2, year: 2025, mode: 'manual' })
   await insertEntry(w, cfg2025, 'pelajar@demo.test', { marks: [[60, 45]] })
 }, 180_000)
 afterAll(async () => {
@@ -41,9 +41,9 @@ describe('Analisa Item sekolah GPS card (SW5-07)', () => {
     ])
   })
 
-  it('a pupil gets the same figure, but the whole series is withheld because 2025 is below the cohort of 5 pupils', async () => {
-    const s9 = await itemSchool(as.pelajar as Client)
-    expect(s9.gps).toEqual({ value: 3.33, band: 'Baik', entries: 6, years: [] })
+  it('a pupil is refused (403): the school item analysis is not a pupil screen (AC-MUR-6-5); the withheld series of a non-staff reader is covered by the unit spec', async () => {
+    const res = await (as.pelajar as Client).get('/api/item-analysis/school')
+    expect(res.status).toBe(403)
   })
 
   it('a school without headcount entries keeps the empty card', async () => {

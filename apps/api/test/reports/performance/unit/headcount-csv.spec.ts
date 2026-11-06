@@ -13,6 +13,8 @@ const info: ConfigInfo = {
   mode: 'auto',
   activeOtrs: 2,
   teacherName: 'Guru Contoh',
+  defaultTov: null,
+  defaultEtr: null,
 }
 
 const line = (studentId: string, name: string, over: Partial<RosterLine['marks']> = {}, dropped = false): RosterLine => ({

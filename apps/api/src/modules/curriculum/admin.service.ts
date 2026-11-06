@@ -22,6 +22,7 @@ import type { AuditActor } from './actor'
 import {
   type DbErrorMap,
   chapterNotFound,
+  chapterHasQuestions,
   hasChildren,
   levelNotFound,
   primaryLevelActive,
@@ -363,6 +364,7 @@ export class CurriculumAdminService {
     const level = await this.repo.level(l.value as bigint)
     if (!level) throw levelNotFound()
     const chapters = await this.repo.tree(subject.id, level.id)
+    const questionCounts = await this.repo.chapterQuestionCounts(chapters.map((c) => c.id))
     const topicCount = chapters.reduce((n, c) => n + c.topics.length, 0)
     const subtopicCount = chapters.reduce((n, c) => n + c.topics.reduce((m, t) => m + t.subtopics.length, 0), 0)
     return {
@@ -371,6 +373,8 @@ export class CurriculumAdminService {
       stats: { chapters: chapters.length, topics: topicCount, subtopics: subtopicCount },
       chapters: chapters.map((c) => ({
         ...chapterView(c),
+        questionCount: questionCounts.get(c.id)?.questionCount ?? 0,
+        servableCount: questionCounts.get(c.id)?.servableCount ?? 0,
         topics: c.topics.map((t) => ({ ...topicView(t), subtopics: t.subtopics.map(subtopicView) })),
       })),
     }
@@ -536,6 +540,8 @@ export class CurriculumAdminService {
       async () => {
         if (!(await this.repo.lockChapter(current.id))) throw chapterNotFound()
         if (await this.repo.chapterHasTopics(current.id)) throw hasChildren('chapter')
+        const linked = await this.repo.chapterQuestionVersionCount(current.id)
+        if (linked > 0) throw chapterHasQuestions(linked)
         await this.repo.deleteChapter(current.id)
         // Only an empty chapter is deleted, so no topic or subtopic goes with it.
         return { chapters: 1 as const, topics: 0, subtopics: 0 }
