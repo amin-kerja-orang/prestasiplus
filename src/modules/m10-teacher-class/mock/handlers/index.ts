@@ -12,7 +12,7 @@ import { dashboardRoutes } from './dashboard'
 import { extraRoutes } from './extras'
 import { lookupRoutes } from './lookups'
 import { personalQuestionRoutes } from './personal-questions'
-import { questionRoutes } from './questions'
+import { databankRoutes, questionRoutes } from './questions'
 import { structuredSubmitRoutes } from './structured-submit'
 import { studentRoutes } from './students'
 import { studentSideRoutes } from './student-side'
@@ -25,6 +25,7 @@ export const m10Routes: RouteDef[] = [
   ...studentRoutes,
   ...lookupRoutes,
   ...questionRoutes,
+  ...databankRoutes,
   ...structuredSubmitRoutes,
   ...personalQuestionRoutes,
   ...extraRoutes,
