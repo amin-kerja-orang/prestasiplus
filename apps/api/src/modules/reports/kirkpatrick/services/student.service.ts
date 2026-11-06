@@ -33,16 +33,16 @@ export class StudentService {
   ) {}
 
   /**
-   * S8. One uniform 403 for an unknown id, a non-pupil and (teacher, school_admin) a pupil of another school, so
-   * ids cannot be probed (FR-M12-17, SEC-M12-02). A pupil with no sessions gets the zero state.
+   * S8. One uniform 404 for an unknown id, a non-pupil and (teacher, school_admin) a pupil out of scope, so
+   * ids cannot be probed (FR-M12-17, SEC-M12-02, ERR-ACC-02, D-T02-2). A pupil with no sessions gets the zero state.
    */
   async student(ctx: Ctx, id: string): Promise<KirkpatrickStudent> {
     const pupil = await this.repo.pupil(id)
-    if (!pupil?.isStudent) throw ApiError.of('FORBIDDEN')
+    if (!pupil?.isStudent) throw ApiError.of('NOT_FOUND')
     if (ctx.role === 'teacher') {
       // A teacher opens only pupils of the own ACTIVE classes (data minimisation).
-      if (!(await this.classes.teacherStudentIds(ctx.userId)).includes(id)) throw ApiError.of('FORBIDDEN')
-    } else if (isSchoolForced(ctx.role) && (ctx.schoolId === null || pupil.schoolId !== ctx.schoolId)) throw ApiError.of('FORBIDDEN')
+      if (!(await this.classes.teacherStudentIds(ctx.userId)).includes(id)) throw ApiError.of('NOT_FOUND')
+    } else if (isSchoolForced(ctx.role) && (ctx.schoolId === null || pupil.schoolId !== ctx.schoolId)) throw ApiError.of('NOT_FOUND')
 
     const now = this.clock.now()
     const today = mytDay(now)
