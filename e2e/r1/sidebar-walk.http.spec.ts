@@ -82,10 +82,10 @@ const EXPECTED_RED: Record<WalkRole, Row[]> = {
 
 /**
  * Fewest sidebar links a role must show, from what `sidebarEntries(role)` yields with the scope on:
- * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 27 items
- * minus the 7 Kirkpatrick pages plus their one row = 21, Admin Sekolah 23. An empty sidebar fails.
+ * pupil 42 items with Laporan Soalan (S5-T06; 40 allowed here because the Cikgu ALESA item depends on VITE_ALESA_AI), Guru 26 items (Gambar Rajah left the sidebar, S6-T18)
+ * minus the 7 Kirkpatrick pages plus their one row = 20, Admin Sekolah 22. An empty sidebar fails.
  */
-const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 21, adminSekolah: 23 }
+const MIN_LINKS: Record<WalkRole, number> = { student: 40, guru: 20, adminSekolah: 22 }
 
 const ROLE_LABEL: Record<WalkRole, string> = {
   student: 'pupil',

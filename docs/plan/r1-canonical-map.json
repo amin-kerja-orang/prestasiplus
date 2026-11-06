@@ -10889,6 +10889,15 @@
       "approved_by_card": null
     },
     {
+      "name": "PkskExamLoad",
+      "table": "pksk_exam_loads",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/prisma/schema/pksk.prisma",
+      "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
+      "approved_by_card": "S5-T13 (DM-91)"
+    },
+    {
       "name": "PracticeSession",
       "table": "practice_sessions",
       "status": "canonical",
@@ -15970,6 +15979,36 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/structured.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/intake/structured",
+      "method": "POST",
+      "path": "/api/guru/intake/structured",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "PUT /api/guru/intake/structured/:p",
+      "method": "PUT",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "DELETE /api/guru/intake/structured/:p",
+      "method": "DELETE",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
     },
     {
       "key": "GET /api/questions/studio/dskp",
