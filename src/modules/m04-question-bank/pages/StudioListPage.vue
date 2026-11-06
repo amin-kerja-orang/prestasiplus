@@ -74,8 +74,8 @@ const STUDIO_PATH = '/admin/studio'
 const CREATE_PATH = '/admin/studio/questions/create'
 const editPath = (id: string): string => `${STUDIO_PATH}/questions/${id}/sunting`
 
-/** Kertas 1 to 3 and the exam types of the source paper (V2 "Jenis"). */
-const KERTAS_OPTIONS = ['1', '2', '3']
+/** Kertas 1 to 4 and the exam types of the source paper (V2 "Jenis"). */
+const KERTAS_OPTIONS = ['1', '2', '3', '4']
 const JENIS_OPTIONS = [
   { value: 'sebenar', label: 'Sebenar' },
   { value: 'percubaan', label: 'Percubaan' },

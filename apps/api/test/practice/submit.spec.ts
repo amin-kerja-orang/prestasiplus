@@ -69,22 +69,22 @@ const sessionRow = async (id: string) =>
 
 describe('AC5 rewards: points, coins and the reward port', () => {
   it('points are 10 x correct, the session keeps coins = correct, the response carries the reward port figures', async () => {
-    const { started, submit: res } = await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 10 }, 7)
+    const { started, submit: res } = await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 4)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const parsed = SubmitSessionResponseSchema.parse(res.body.data)
-    expect(parsed).toEqual({ results: { score: 7, total: 10, gamification: { coinsEarned: 7, streakCount: 3, pointsEarned: 70, totalBalance: 120 } } })
+    expect(parsed).toEqual({ results: { score: 4, total: 5, gamification: { coinsEarned: 7, streakCount: 3, pointsEarned: 40, totalBalance: 120 } } })
     const row = await sessionRow(started.sessionId)
-    expect(row).toMatchObject({ status: 'completed', correct_count: 7, question_count: 10, points_earned: 70, coins_earned: 7, time_spent_sec: 120 })
+    expect(row).toMatchObject({ status: 'completed', correct_count: 4, question_count: 5, points_earned: 40, coins_earned: 4, time_spent_sec: 120 })
     expect(row?.completed_at?.toISOString()).toBe(new Date('2026-10-19T09:00:00+08:00').toISOString())
   })
 
   it('the reward port is called once per session, inside the transaction, with the session figures', async () => {
-    const { started } = await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 2, 45)
+    const { started } = await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 2, 45)
     expect(t.reward.calls).toHaveLength(1)
     expect(t.reward.calls[0]).toEqual({
       userId: ids.pelajar,
       sessionId: started.sessionId,
-      mode: 'random',
+      mode: 'chapter',
       source: 'quiz_practice',
       correct: 2,
       total: 5,
@@ -99,33 +99,34 @@ describe('AC5 rewards: points, coins and the reward port', () => {
     expect(t.reward.calls).toHaveLength(1)
   })
 
-  it('mission: coinsPerCorrect is passed to the port and multiplies the session coins (mission rate 5; default 3)', async () => {
+  it('mission: the per-mission rate is ignored; the session coins are correct x the one rate (S5-T03, DM-48: 1 until S7-T05)', async () => {
     t.assignments.set('mission', '9001', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4), coinsPerCorrect: 5 })
     const { started } = await play(pelajar, t.bank, { mode: 'mission', missionId: '9001' }, 3)
-    expect(t.reward.calls[0]).toMatchObject({ mode: 'mission', correct: 3, coinsPerCorrect: 5, sessionCoins: 15, pointsEarned: 30 })
-    expect((await sessionRow(started.sessionId))?.coins_earned).toBe(15)
+    expect(t.reward.calls[0]).toMatchObject({ mode: 'mission', correct: 3, sessionCoins: 3, pointsEarned: 30 })
+    expect(t.reward.calls[0]).not.toHaveProperty('coinsPerCorrect')
+    expect((await sessionRow(started.sessionId))?.coins_earned).toBe(3)
     t.assignments.set('mission', '9002', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 4) })
     const second = await play(maju, t.bank, { mode: 'mission', missionId: '9002' }, 4)
-    expect(t.reward.calls[1]).toMatchObject({ coinsPerCorrect: 3, sessionCoins: 12 })
-    expect((await sessionRow(second.started.sessionId))?.coins_earned).toBe(12)
+    expect(t.reward.calls[1]).toMatchObject({ sessionCoins: 4 })
+    expect((await sessionRow(second.started.sessionId))?.coins_earned).toBe(4)
   })
 
   it('the port gets the ledger source of the mode: practice modes quiz_practice, SPM modes quiz_spm (M14 BR-M14-03)', async () => {
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 1)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 1)
     await play(pelajar, t.bank, { mode: 'past_year', subjectCode: 'SEJ', count: 5 }, 2)
     expect(t.reward.calls.map((c) => [c.mode, c.source])).toEqual([
-      ['random', 'quiz_practice'],
+      ['chapter', 'quiz_practice'],
       ['past_year', 'quiz_spm'],
     ])
   })
 
   it('a non-mission session reports no coinsPerCorrect to the port', async () => {
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 5)
     expect(t.reward.calls[0]).not.toHaveProperty('coinsPerCorrect')
   })
 
   it('a session with no check completes with score 0, no answer rows and still calls the port once', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const res = await submit(pelajar, s.sessionId, { timeSpent: 3 })
     expect(res.body.data.results).toMatchObject({ score: 0, total: 5 })
     expect(await countRows(t.db, 'practice_answers')).toBe(0)
@@ -145,14 +146,14 @@ describe('timeSpent is coerced, never rejected (BR-30)', () => {
     [undefined, 0],
     [{ a: 1 }, 0],
   ])('timeSpent %j is stored as %i', async (sent, stored) => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const res = await submit(pelajar, s.sessionId, sent === undefined ? {} : { timeSpent: sent })
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     expect((await sessionRow(s.sessionId))?.time_spent_sec).toBe(stored)
   })
 
   it('a missing body is accepted too', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const res = await pelajar.post(`/api/practice/sessions/${s.sessionId}/submit`)
     expect(res.status).toBe(200)
   })
@@ -217,14 +218,14 @@ describe('AC6 the answer row', () => {
 
   it('the answer rows no longer carry the session clientUuid (nothing reads practice_answers.client_uuid, S5-T15 part 2)', async () => {
     const clientUuid = '1a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid }, 1)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid }, 1)
     expect(await countRows(t.db, 'practice_answers', 'client_uuid is null')).toBe(5)
   })
 })
 
 describe('AC7 abandoned and foreign sessions', () => {
   it('a started session that is never submitted records no answers, queue or counters', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     await checkAnswer(pelajar, s.sessionId, t.bank, s.questions[0]?.id as string, false)
     expect(await countRows(t.db, 'practice_answers')).toBe(0)
     expect(await countRows(t.db, 'revision_queue')).toBe(0)
@@ -235,7 +236,7 @@ describe('AC7 abandoned and foreign sessions', () => {
   })
 
   it('another student cannot submit the session: 404 "Rekod tidak dijumpai.", the session stays open', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     const res = await submit(maju, s.sessionId)
     expect(res.status).toBe(404)
     expect(res.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' })
@@ -245,7 +246,7 @@ describe('AC7 abandoned and foreign sessions', () => {
   })
 
   it('409 ALREADY_SUBMITTED "Sesi ini sudah dihantar." on a second submit; nothing is written twice', async () => {
-    const { started } = await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 3)
+    const { started } = await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 3)
     const again = await submit(pelajar, started.sessionId)
     expect(again.status).toBe(409)
     expect(again.body.error).toMatchObject({ code: 'ALREADY_SUBMITTED', message: 'Sesi ini sudah dihantar.' })
@@ -253,16 +254,16 @@ describe('AC7 abandoned and foreign sessions', () => {
   })
 
   it('parallel submits give one 200 and one 409, and the answers are written once', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     for (const [i, q] of s.questions.entries()) await checkAnswer(pelajar, s.sessionId, t.bank, q.id, i % 2 === 0)
     const results = await Promise.all([submit(pelajar, s.sessionId), submit(pelajar, s.sessionId), submit(pelajar, s.sessionId)])
     const statuses = results.map((r) => r.status).sort()
     expect(statuses).toEqual([200, 409, 409])
     for (const r of results.filter((x) => x.status === 409)) expect(r.body.error.code).toBe('ALREADY_SUBMITTED')
-    expect(await countRows(t.db, 'practice_answers')).toBe(10)
+    expect(await countRows(t.db, 'practice_answers')).toBe(12)
     expect(t.reward.calls).toHaveLength(1)
     const mastery = await t.db.query<{ answered: number; correct: number }>('select answered, correct from mastery where user_id = $1', [ids.pelajar])
-    expect(mastery).toEqual([{ answered: 10, correct: 5 }])
+    expect(mastery).toEqual([{ answered: 12, correct: 6 }])
   })
 })
 
@@ -317,15 +318,15 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
   it('mastery counters add the session per subject; a user with answers but no counters starts from the log', async () => {
     // Two earlier answers (one right) exist in the log without counters (migrated history).
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, historical) values
-        ($1, 1, $2, true, '2026-01-01T00:00:00Z', true), ($1, 2, $2, false, '2026-01-02T00:00:00Z', true)`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, historical, mode) values
+        ($1, 1, $2, true, '2026-01-01T00:00:00Z', true, 'latih_tubi'), ($1, 2, $2, false, '2026-01-02T00:00:00Z', true, 'latih_tubi')`,
       [ids.pelajar, w.subject.math],
     )
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 3)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 3)
     let rows = await mastery(ids.pelajar)
     expect(rows.map((r) => [r.subject_id, r.correct, r.answered])).toEqual([[w.subject.math, 4, 7]])
     t.clock.advance(3_600_000)
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 5)
     rows = await mastery(ids.pelajar)
     expect(rows.map((r) => [r.subject_id, r.correct, r.answered])).toEqual([[w.subject.math, 9, 12]])
     expect(rows[0]?.last_answered_at.toISOString()).toBe(new Date('2026-10-19T10:00:00+08:00').toISOString())
@@ -349,7 +350,7 @@ describe('BR-14 revision queue and BR-20 mastery counters', () => {
   })
 
   it('trial counters are not touched by a submit', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const s = await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     for (const q of s.questions) await checkAnswer(pelajar, s.sessionId, t.bank, q.id, true)
     const before = await trialUsed(t.db, ids.pelajar)
     await submit(pelajar, s.sessionId)
@@ -368,7 +369,7 @@ describe('remedial mode completes its test (ADR-0014 amendment 2)', () => {
   })
 
   it('a non-remedial session never calls it', async () => {
-    await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 5 }, 5)
+    await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 5)
     expect(t.assignments.remedialCalls).toEqual([])
   })
 })

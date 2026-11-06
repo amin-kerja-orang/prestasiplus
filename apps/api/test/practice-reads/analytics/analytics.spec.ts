@@ -349,6 +349,17 @@ describe('S11 corrections', () => {
     })
   })
 
+  it('S3-T07: a databank session is left out like past_year, while a normal practice session answer is kept', async () => {
+    await seed()
+    const before = await get()
+    const databank = await addSession(t.db, { user: me, mode: 'databank', count: 1, correct: 0, completedAt: '2026-10-07T10:00:00+08:00' })
+    await addAnswer(t.db, { user: me, question: '8', subject: math, correct: false, at: '2026-10-07T10:00:00+08:00', session: databank })
+    expect(await get()).toEqual(before)
+    const chapter = await addSession(t.db, { user: me, mode: 'chapter', count: 1, correct: 0, completedAt: '2026-10-07T10:00:00+08:00' })
+    await addAnswer(t.db, { user: me, question: '9', subject: math, correct: false, at: '2026-10-07T10:00:00+08:00', session: chapter })
+    expect((await get()).summary?.questions).toBe((before.summary?.questions ?? 0) + 1)
+  })
+
   it('a past month links forward; a question is counted in the month of its first attempt', async () => {
     await seed()
     const sep = await get('?month=2026-09')
@@ -372,8 +383,8 @@ describe('S11 corrections', () => {
 describe('S12 mastery', () => {
   const bulk = (subject: string, answered: number, correct: number) =>
     t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at)
-       select $1, g, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz from generate_series(1, $3::int) g`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, mode)
+       select $1, g, $2, g <= $4, '2026-10-01T10:00:00+08:00'::timestamptz, 'latih_tubi' from generate_series(1, $3::int) g`,
       [me, subject, answered, correct],
     )
   const get = async () => PracticeReadMasterySchema.parse((await pelajar.get('/api/practice/mastery')).body.data)

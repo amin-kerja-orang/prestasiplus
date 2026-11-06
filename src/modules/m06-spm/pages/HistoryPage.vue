@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S10 `/spm/history` "Sejarah Kuiz SPM" (M06-T2; FR-M06-62…66, BR-M06-20), restyled for v2. Rows are
- * the caller's completed SPM sessions from M05 #23 (`modes=past_year,latih_tubi,ramalan&type=`); the
+ * the caller's completed SPM sessions from M05 #23 (`modes=past_year,databank,latih_tubi,ramalan&type=`); the
  * four stats are all-type (filter-independent). An unknown `type` shows every row with no filter
  * active. Rows are not links.
  */

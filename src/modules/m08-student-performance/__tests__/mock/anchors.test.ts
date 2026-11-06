@@ -63,8 +63,10 @@ describe('S1 Dashboard Sekolah (admin: the platform)', () => {
     })
   })
 
-  it('level cards equal the S2 / S3 aggregates (DV-05)', () => {
-    const [t4, t5] = s1.levels
+  it('level cards equal the S2 / S3 aggregates (DV-05); T1 to T5 where the level has classes (DOC DEFECT 2)', () => {
+    expect(s1.levels.map((l) => l.code)).toEqual(['t1', 't2', 't3', 't4', 't5'])
+    const t4 = s1.levels.find((l) => l.code === 't4')
+    const t5 = s1.levels.find((l) => l.code === 't5')
     expect(t4).toEqual({ code: 't4', accuracy: 63.9, classes: 13, students: 149, sessions: 11 })
     expect(t5).toEqual({
       code: 't5',
@@ -180,6 +182,9 @@ describe('S2 / S3 levels', () => {
   it('S2 cards', async () => {
     const cards = await get<LevelCard[]>(ADMIN, '/api/performance/levels')
     expect(cards).toEqual([
+      { code: 't1', name: 'Tingkatan 1', classes: 10, students: 0 },
+      { code: 't2', name: 'Tingkatan 2', classes: 12, students: 0 },
+      { code: 't3', name: 'Tingkatan 3', classes: 9, students: 0 },
       { code: 't4', name: 'Tingkatan 4', classes: 13, students: 149 },
       { code: 't5', name: 'Tingkatan 5', classes: 645, students: 3911 },
     ])
@@ -190,9 +195,10 @@ describe('S2 / S3 levels', () => {
     expect(t4).toMatchObject({ classes: 13, students: 149, accuracy: 63.9, sessions: 11 })
     const rows = Object.fromEntries(t4.classRows.map((r) => [`${r.kind}:${String(r.classId)}`, r]))
     expect(t4.classRows).toHaveLength(13)
-    expect(t4.classRows.map((r) => r.classId)).toEqual([
-      419, 516, 4, 5, 6, 90, 25, 115, 8, 9, 10, 419, 806,
-    ])
+    // Perbandingan Kelas: accuracy descending (R1-AS-4).
+    const accs = t4.classRows.map((r) => r.accuracy)
+    expect(accs).toEqual([...accs].sort((a, b) => b - a))
+    expect(t4.classRows.slice(0, 2).map((r) => r.classId)).toEqual([6, 10])
     const at = (
       key: string,
       name: string,
@@ -217,54 +223,62 @@ describe('S2 / S3 levels', () => {
     // DV-06: no link on "Kelas Sekolah" rows, and they have no teacher.
     expect(rows['school_class:419']).toMatchObject({ href: null, teacher: null })
     expect(rows['classroom:5']?.href).toBe('/prestasi/kelas/5')
-    // Murid Terbaik: "3 sesi · 30 soalan 93.3%" and "4 sesi · 60 soalan 64%" (R4-01 session means).
-    expect(t4.topStudents.map((s) => [s.sessions, s.answered, s.accuracy])).toEqual([
+    // Murid Terbaik: at least 5 answers, accuracy descending, ties by answers (R1-AS-4).
+    expect(t4.topStudents.slice(0, 2).map((s) => [s.sessions, s.answered, s.accuracy])).toEqual([
       [3, 30, 93.3],
-      [4, 60, 64],
+      [4, 60, 81.7],
     ])
+    expect(t4.topStudents).toHaveLength(10)
+    expect(t4.topStudents.every((s) => s.answered >= 5)).toBe(true)
+    const accT4 = t4.topStudents.map((s) => s.accuracy)
+    expect(accT4).toEqual([...accT4].sort((a, b) => b - a))
   })
 
   it('S3 Tingkatan 5: 645 classes, 3,911 pupils, 29,971 sessions at 79.7 % and 10 top rows at 100 %', async () => {
     const t5 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t5')
     expect(t5).toMatchObject({ classes: 645, students: 3911, accuracy: 79.7, sessions: 29971 })
     expect(t5.classRows).toHaveLength(645)
-    // The 10 observed rows [sessions, questions] in live order; every session fully correct (100.0 %).
-    expect(t5.topStudents.map((s) => [s.sessions, s.answered, s.accuracy])).toEqual([
-      [3, 15, 100],
-      [4, 50, 100],
-      [6, 60, 100],
-      [3, 84, 100],
-      [5, 30, 100],
-      [3, 114, 100],
-      [5, 100, 100],
-      [6, 55, 100],
-      [3, 35, 100],
-      [13, 295, 100],
+    // Ten pupils at 100 %, ties listed by answers descending (R1-AS-4), each with at least 5 answers.
+    expect(t5.topStudents).toHaveLength(10)
+    expect(t5.topStudents.every((s) => s.accuracy === 100 && s.answered >= 5)).toBe(true)
+    const answered = t5.topStudents.map((s) => s.answered)
+    expect(answered).toEqual([...answered].sort((a, b) => b - a))
+    expect(t5.topStudents.slice(0, 3).map((s) => [s.sessions, s.answered])).toEqual([
+      [13, 295],
+      [3, 114],
+      [5, 100],
     ])
-    // Ties at 100 % are listed by user id ascending (BR-M08-07).
-    const ids = t5.topStudents.map((s) => s.userId)
-    expect(ids).toEqual([...ids].sort((a, b) => a - b))
   })
 
-  it('S3 answers 404 for a level other than t4 / t5, and 401 without a session', async () => {
+  it('S3 answers 404 for a level other than t1 to t5, and 401 without a session', async () => {
     const r = await getAs(runtime, ADMIN, '/api/performance/levels/t6')
     expect(r.status).toBe(404)
     expect((await getAs(runtime, null, '/api/performance/levels/t4')).status).toBe(401)
   })
 
-  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; the at-risk list is empty', async () => {
+  it('S3 Tingkatan 4: computed targets (HC-2) leave every seeded pair On Track; Murid Berisiko by the answer rule', async () => {
     const t4 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t4')
     expect([t4.onTrack, t4.below, t4.onTrackPct]).toEqual([75, 0, 100])
     expect(t4.classRows.find((r) => r.classId === 516)).toMatchObject({ onTrack: 15, below: 0 })
-    expect(t4.atRisk.map((r) => r.gap).every((g) => g < 0)).toBe(true)
+    // Murid Berisiko by the answer rule (R1-AS-4, DOC DEFECT 5): whole-number accuracy below 50 or no answer in 7 days; 10 rows;
+    // accuracy ascending, pupils with no answer last. The rule does not read the targets, so the list stays full while Below is 0.
+    expect(t4.atRisk).toHaveLength(10)
+    expect(t4.atRisk[0]).toMatchObject({ userId: 156, className: '4 Cemerlang - BM', answered: 35, accuracy: 8.6 })
+    const accs = t4.atRisk.map((r) => r.accuracy)
+    expect(accs.filter((a): a is number => a !== null)).toEqual(
+      accs.filter((a): a is number => a !== null).sort((a, b) => a - b),
+    )
+    for (const r of t4.atRisk) expect('checkpoint' in r).toBe(false)
   })
 
-  it('S3 Tingkatan 5: 309 On Track / 94 Below (77 %), the at-risk list in gap order', async () => {
+  it('S3 Tingkatan 5: 309 On Track / 94 Below (77 %) and the at-risk rows of the answer rule, the observed Kimia pupils first', async () => {
     const t5 = await get<LevelDetail>(ADMIN, '/api/performance/levels/t5')
     expect([t5.onTrack, t5.below, t5.onTrackPct]).toEqual([309, 94, 77])
-    const gaps = t5.atRisk.map((r) => r.gap)
-    expect(gaps.every((g) => g < 0)).toBe(true)
-    expect(gaps).toEqual([...gaps].sort((a, b) => a - b))
+    expect(t5.atRisk).toHaveLength(10)
+    expect(t5.atRisk.slice(0, 2).map((r) => [r.userId, r.answered, r.accuracy])).toEqual([
+      [3008, 8, 12.5],
+      [3007, 9, 33.3],
+    ])
   })
 })
 
@@ -423,9 +437,17 @@ describe('S7 Analitik Pembelajaran', () => {
     expect(bm?.weak.find((w) => w.spId === 194)?.focusCount).toBe(25)
   })
 
-  it('pelajarmaju has no SP record: the no-data state (its M05 answers carry no dskpSpId)', async () => {
+  it('pelajarmaju has no SP record (its M05 answers carry no dskpSpId): a tab per mapped subject, none practised (FR-MUR-5-2, FR-MUR-5-6)', async () => {
     const a = await get<Analytics>(MAJU, '/api/analytics/me')
-    expect(a.subjects).toEqual([])
+    expect(a.userLevelId).not.toBeNull()
+    expect(a.subjects.length).toBeGreaterThan(0)
+    for (const sub of a.subjects) {
+      expect(sub).toMatchObject({ accuracy: null, answered: 0, projection: null, trend: 'stable', weak: [] })
+      expect(sub.counts).toEqual({ mahir: 0, sederhana: 0, lemah: 0, belum: sub.map.tiles.length })
+      expect(sub.ringTotal).toBe(sub.map.tiles.length)
+      expect(sub.map.caption).toBe(`Peta DSKP — Standard Pembelajaran · ${sub.name}`)
+      expect(sub.map.tiles.every((t) => t.status === 'belum' && typeof t.strand === 'string')).toBe(true)
+    }
     expect(a.topWeak).toEqual([])
   })
 

@@ -288,26 +288,23 @@ export interface LeagueDetail extends Omit<LeagueCard, 'schools'> {
   scoringLabel: string
   creatorName: string
   classLevels: string[]
-  inviteCode: string
-  shareUrl: string
-  canJoin: boolean
   schools: { id: number; name: string }[]
   /** One entry per class level that has standings. */
   standings: Record<string, LeagueStandingRow[]>
 }
 
-/** Body of #47 (S26 fields, live names). */
+/** Body of #47 (API-ADM-25, Admin Pusat): `levelIds` 1..5 = T1..T5. */
 export interface LeagueBody {
   name: string
-  type: 'friendly' | 'tournament' | 'league'
+  type: 'friendly' | 'league'
   scope: 'school' | 'district' | 'state' | 'national'
-  subject_id?: number | null
-  game_mode: 'mixed' | 'quiz' | 'multiplayer'
-  class_levels?: string[]
-  scoring_method: 'total_score' | 'avg_accuracy' | 'wins'
-  start_date: string
-  end_date: string
-  max_schools?: number | null
+  mode: 'mixed' | 'quiz' | 'multiplayer'
+  scoring: 'total_score' | 'avg_accuracy' | 'wins'
+  schoolLimit: number
+  subjectId?: number | null
+  levelIds: number[]
+  start: string
+  end: string
 }
 
 /** API-AS-14, in rank order. `[]` is the empty state. */
