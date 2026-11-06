@@ -2,11 +2,11 @@
  * FR-MUR-13-6, 46 section 3.5 (Mod Latihan "Semak"): auto-markable parts only; at most 3 answer-changing checks per question; a question with only
  * essay, working, drawing or table_fill parts has no "Semak"; DM-68 `revealed` is set by the check. An edited answer shows no verdict until its own check.
  */
-import { BijakAttemptPaperViewSchema, BijakAttemptQuestionResultSchema, envelopeOf } from '@pp/contract'
+import { BijakAttemptPaperViewSchema, BijakAttemptQuestionResultSchema, BijakAttemptResultViewSchema, envelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { BijakAttemptPorts, type BijakQuestionBundle } from '../../src/modules/bijak/attempts'
-import { type AttemptsTestApp, bootAttemptsApp, change, type Client, correctChoice, FakePaperSource, FakeQuestionSource, loginAs, PAPER, SpyAggregate, SpyReward, startAttempt, STUDENT } from './helpers'
+import { type AttemptsTestApp, bootAttemptsApp, change, type Client, correctChoice, FakePaperSource, FakeQuestionSource, loginAs, OTHER_STUDENT, PAPER, SpyAggregate, SpyReward, startAttempt, STUDENT } from './helpers'
 
 const AUTO_PART = 'sn2-sel-q2-a'
 const ESSAY_PART = 'sn2-sel-q2-b'
@@ -32,6 +32,7 @@ class MixedSource extends FakeQuestionSource {
 
 let t: AttemptsTestApp
 let me: Client
+let other: Client
 beforeAll(async () => {
   t = await bootAttemptsApp({ THROTTLE_BIJAK_CHECK_PER_MINUTE: '100000' }, { plugPorts: false })
   const ports = t.app.get(BijakAttemptPorts)
@@ -40,6 +41,7 @@ beforeAll(async () => {
   ports.provideReward(new SpyReward())
   ports.provideAggregate(new SpyAggregate())
   me = await loginAs(t, STUDENT)
+  other = await loginAs(t, OTHER_STUDENT)
 })
 afterAll(async () => {
   await t.close()
@@ -51,6 +53,7 @@ const check = async (id: string, q: string, body: object = {}) => {
   expect(res.status, JSON.stringify(res.body)).toBe(200)
   return BijakAttemptQuestionResultSchema.parse(res.body.data)
 }
+const submit = (id: string) => me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: `k-${id}`, changes: [] })
 const save = (id: string, changes: object[]) => me.put(`/api/bijak/attempts/${id}/answers`, { changes })
 const stored = async (id: string, part: string) =>
   (await t.db.query<{ answer: Record<string, unknown>; rev: number }>(`select answer, rev from attempt_answers where attempt_id = $1 and part_id = $2`, [id, part]))[0]
@@ -128,6 +131,35 @@ describe('Semak (FR-MUR-13-6)', () => {
     const v = await view(id)
     expect(v.checks).toEqual([])
     expect(v.attempt.checkCounts ?? {}).toEqual({})
+  })
+
+  it('Semak on another pupil\'s attempt is 403 FORBIDDEN "Akses ditolak"; nothing is stored or counted', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
+    const q = await mixedQuestion(id)
+    const res = await other.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: [change(AUTO_PART, { text: 'curi' }, 1)] })
+    expect(res.status).toBe(403)
+    expect(res.body.error.code).toBe('FORBIDDEN')
+    expect(res.body.error.message).toBe('Akses ditolak')
+    expect(await stored(id, AUTO_PART)).toBeUndefined()
+    const v = await view(id)
+    expect(v.checks).toEqual([])
+    expect(v.attempt.checkCounts ?? {}).toEqual({})
+  })
+
+  it('a part that holds only the DM-68 marker {revealed:true} (rev 0) is unanswered: blank for Semak, not attempted at Hantar, no score', async () => {
+    const id = await startAttempt(me, PAPER.sainsK2, 'latihan', true)
+    const q = await mixedQuestion(id)
+    // a stored marker-only row, as the check leaves on a blank sibling part
+    await t.db.query(`insert into attempt_answers (attempt_id, part_id, answer, rev, saved_at) values ($1, $2, '{"revealed": true}'::jsonb, 0, now())`, [id, AUTO_PART])
+    const res = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, {})
+    expect(res.status).toBe(422)
+    expect(res.body.error.fields.questionId).toBe('Jawab dahulu sebelum menyemak.')
+    expect((await submit(id)).status).toBeLessThan(300)
+    const result = envelopeOf(BijakAttemptResultViewSchema).parse((await me.get(`/api/bijak/attempts/${id}/result`)).body).data.result
+    const question = result.questions.find((x) => x.questionId === q)!
+    expect(question.attempted).toBe(false)
+    expect(question.awarded).toBe(0)
+    expect(result.score).toBe(0)
   })
 
   it('an edited answer shows no verdict in the view until its own Semak, so a reload never marks it for free', async () => {

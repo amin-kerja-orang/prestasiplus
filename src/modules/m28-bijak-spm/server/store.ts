@@ -68,6 +68,7 @@ import type {
 } from '../domain/types'
 
 import { BijakError } from './errors'
+import { CHECK_BLANK, sameAnswers } from './semak'
 import { MockKuiz } from './kuiz-mock'
 import { MemoryStorage, type KeyValueStore } from './storage'
 import type { BijakApi, ListedPaper, PaperSurface, SaveResult, SubmitResult } from './types'
@@ -517,7 +518,13 @@ export class BijakServer implements BijakApi {
     void _s
     const checks =
       a.status === 'in_progress' && a.mode === 'latihan'
-        ? a.checked.map((qid) => this.semakResult(a, qid, numberOf.get(qid)!))
+        ? // An edited answer was not checked yet: no verdict until its own "Semak" (the API's `shownChecks`).
+          a.checked
+            .filter((qid) => {
+              const last = a.checkAnswers?.[qid]
+              return !last || [...this.semakParts(qid)].every((id) => sameAnswers(last[id], a.answers[id]?.answer))
+            })
+            .map((qid) => this.semakResult(a, qid, numberOf.get(qid)!))
         : []
     return { attempt: meta, sections, questions, groups, checks }
   }
@@ -929,20 +936,39 @@ export class BijakServer implements BijakApi {
       throw new BijakError('not_found', 'Soalan tidak ditemui')
     if (this.semakParts(questionId).size === 0)
       throw new BijakError('forbidden', 'Skema hanya didedahkan selepas Hantar')
+    const parts = this.semakParts(questionId)
     const counts = (a.checkCounts ??= {})
     const used = counts[questionId] ?? 0
-    // After the cap the answer is shown and no further payload can change it.
-    if (used < MAX_CHECKS_PER_QUESTION) {
-      if (payload) {
-        this.merge(a, payload.changes)
-        this.applyMeta(a, payload)
-      }
-      counts[questionId] = used + 1
+    // The API merges the payload and then refuses a blank check inside one transaction, so a refusal saves nothing.
+    const before = jsonClone({ answers: a.answers, flags: a.flags, picks: a.picks, position: a.position })
+    // After the cap the answer is shown and no further payload can change it (nor the count).
+    if (used < MAX_CHECKS_PER_QUESTION && payload) {
+      this.merge(a, payload.changes)
+      this.applyMeta(a, payload)
     }
+    const kinds = this.semakKinds(questionId)
+    if ([...parts].every((id) => isBlank(a.answers[id]?.answer, kinds.get(id)))) {
+      Object.assign(a, before)
+      throw new BijakError('bad_request', CHECK_BLANK)
+    }
+    // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+    const last = used > 0 ? a.checkAnswers?.[questionId] : undefined
+    const changed = !last || [...parts].some((id) => !sameAnswers(last[id], a.answers[id]?.answer))
+    if (used < MAX_CHECKS_PER_QUESTION && changed) counts[questionId] = used + 1
+    ;(a.checkAnswers ??= {})[questionId] = Object.fromEntries(
+      [...parts].map((id) => [id, jsonClone(a.answers[id]?.answer ?? {})]),
+    )
     if (!a.checked.includes(questionId)) a.checked.push(questionId)
     this.persist()
     const number = a.sections.flatMap((s) => s.questionIds).indexOf(questionId) + 1
     return { ...this.semakResult(a, questionId, number), checksUsed: counts[questionId] ?? used }
+  }
+
+  /** The kind each "Semak" part is blank-checked with: `mcq` for an objective question, the part kind otherwise. */
+  private semakKinds(qid: string): Map<string, Leaf['kind'] | 'mcq'> {
+    const q = BANK.questions.get(qid)!
+    if (q.mcq) return new Map([[qid, 'mcq']])
+    return new Map(leavesOf(q.parts ?? []).filter((l) => SEMAK_KINDS.has(l.kind)).map((l) => [l.id, l.kind]))
   }
 
   /** The parts "Semak" reveals (46 section 3.5). */
