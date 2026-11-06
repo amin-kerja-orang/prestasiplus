@@ -75,7 +75,7 @@ describe('battle schema (migration 0027_battle)', () => {
     expect(await rejects(`insert into battles (mode, question_type, status) values ('quick_match', 'biasa', 'done')`)).toMatch(/ck_battles_status/)
     expect(await rejects(`insert into battles (mode, question_type, winner) values ('quick_match', 'biasa', 'C')`)).toMatch(/ck_battles_winner/)
     expect(await rejects(`insert into battles (mode, question_type, pksk_target_level) values ('quick_match', 'pksk', 'T2')`)).toMatch(/ck_battles_pksk_target_level/)
-    expect(await rejects(`insert into battles (mode, question_type, answered) values ('quick_match', 'biasa', 11)`)).toMatch(/ck_battles_answered/)
+    expect(await rejects(`insert into battles (mode, question_type, answered) values ('quick_match', 'biasa', 21)`)).toMatch(/ck_battles_answered/)
     for (const mode of ['school_battle', 'challenge', 'queue_join']) await db.query(`insert into battles (mode, question_type) values ($1, 'spm')`, [mode])
   })
 
@@ -118,7 +118,7 @@ describe('battle schema (migration 0027_battle)', () => {
     expect(await rejects(`insert into battle_participants (battle_id, side, user_id) values ($1, 'A', $2)`, [b, u2])).toMatch(/uq_battle_participants_battle_id_side/)
     expect(await rejects(`insert into battle_participants (battle_id, side, user_id) values ($1, 'C', $2)`, [b, u2])).toMatch(/ck_battle_participants_side/)
     expect(await rejects(`insert into battle_participants (battle_id, side, user_id, score) values ($1, 'B', $2, -1)`, [b, u2])).toMatch(/ck_battle_participants_score/)
-    expect(await rejects(`insert into battle_participants (battle_id, side, user_id, correct) values ($1, 'B', $2, 11)`, [b, u2])).toMatch(/ck_battle_participants_correct/)
+    expect(await rejects(`insert into battle_participants (battle_id, side, user_id, correct) values ($1, 'B', $2, 21)`, [b, u2])).toMatch(/ck_battle_participants_correct/)
     expect(await rejects(`insert into battle_participants (battle_id, side, user_id) values ($1, 'B', 999999999)`, [b])).toMatch(/fk_battle_participants_user_id/)
     const [school] = await db.query<{ id: string }>(`insert into schools (name) values ('Sekolah Contoh') returning id::text`)
     await db.query(`insert into battle_participants (battle_id, side, user_id, school_id, is_bot) values ($1, 'B', $2, $3, true)`, [b, u2, school!.id])
@@ -126,23 +126,23 @@ describe('battle schema (migration 0027_battle)', () => {
     expect(await db.query(`select school_id from battle_participants where battle_id = $1 and side = 'B'`, [b])).toEqual([{ school_id: null }])
   })
 
-  it('battle_questions: position 1..10 unique per battle; battle_answers: one per (battle, user, position), option 0..3 or null, seconds 0..15', async () => {
+  it('battle_questions: position 1..20 unique per battle; battle_answers: one per (battle, user, position), option 0..7 or null, seconds 0..15', async () => {
     const b = await battle()
     const u = await user()
     const q = await question()
     await db.query(`insert into battle_questions (battle_id, position, question_id) values ($1, 1, $2)`, [b, q])
     expect(await rejects(`insert into battle_questions (battle_id, position, question_id) values ($1, 1, $2)`, [b, q])).toMatch(/uq_battle_questions_battle_id_position/)
     expect(await rejects(`insert into battle_questions (battle_id, position, question_id) values ($1, 0, $2)`, [b, q])).toMatch(/ck_battle_questions_position/)
-    expect(await rejects(`insert into battle_questions (battle_id, position, question_id) values ($1, 11, $2)`, [b, q])).toMatch(/ck_battle_questions_position/)
+    expect(await rejects(`insert into battle_questions (battle_id, position, question_id) values ($1, 21, $2)`, [b, q])).toMatch(/ck_battle_questions_position/)
 
     const answer = (pos: number, opt: string, sec: number, pts = 0) =>
       db.query(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, ${String(pos)}, $3, ${opt}, false, ${String(sec)}, ${String(pts)})`, [b, u, q])
     await answer(1, 'null', 15) // timeout
     await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 1, $3, 0, false, 1, 0)`, [b, u, q]).then((m) => expect(m).toMatch(/uq_battle_answers_battle_id_user_id_position/))
     await answer(2, '3', 0, 1000)
-    expect(await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 3, $3, 4, false, 1, 0)`, [b, u, q])).toMatch(/ck_battle_answers_option_id/)
+    expect(await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 3, $3, 8, false, 1, 0)`, [b, u, q])).toMatch(/ck_battle_answers_option_id/)
     expect(await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 3, $3, 1, false, 16, 0)`, [b, u, q])).toMatch(/ck_battle_answers_seconds/)
-    expect(await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 11, $3, 1, false, 1, 0)`, [b, u, q])).toMatch(/ck_battle_answers_position/)
+    expect(await rejects(`insert into battle_answers (battle_id, user_id, position, question_id, option_id, correct, seconds, points) values ($1, $2, 21, $3, 1, false, 1, 0)`, [b, u, q])).toMatch(/ck_battle_answers_position/)
     // Deleting the battle removes its questions, answers and participants.
     await db.query(`delete from battles where id = $1`, [b])
     expect(await db.query(`select 1 from battle_answers where battle_id = $1`, [b])).toHaveLength(0)

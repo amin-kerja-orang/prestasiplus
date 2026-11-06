@@ -2,7 +2,7 @@
  * Pure performance rules, ported from the M08 mock (`rules.ts`, SRS M08 v1.11 section 4): grades,
  * rounding, accuracy cap, difficulty, discrimination, trend, projection, risk. No store access.
  */
-import { PROJECTION_BAND, TREND_DELTA } from './constants'
+import { ANALYTICS_TREND_DELTA, PROJECTION_BAND, RISK_CRITICAL_BELOW, RISK_HIGH_BELOW, RISK_MEDIUM_BELOW, SP_MAHIR_FROM, SP_SEDERHANA_FROM, TREND_DELTA } from './constants'
 
 export const GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
 export type Grade = (typeof GRADES)[number]
@@ -38,16 +38,25 @@ export const accuracyOf = (score: number, max: number): number => round(capPerce
 
 export type DifficultyLevel = 'Mudah' | 'Sederhana' | 'Sukar'
 
-/** BR-M08-18: index = 1 - p, 2 decimals. */
+/** BR-M08-18: index = 1 - p, 2 decimals. Shown as a number only (R1-GUR-6); it no longer decides the Tahap. */
 export function difficultyIndex(correct: number, attempts: number): number {
   return attempts === 0 ? 0 : round(1 - correct / attempts, 2)
 }
 
-export function difficultyLevel(index: number): DifficultyLevel {
-  if (index > 0.7) return 'Sukar'
-  if (index <= 0.3) return 'Mudah'
-  return 'Sederhana'
+/**
+ * Tahap Kesukaran on the WHOLE-NUMBER % betul (R1-GUR-6, DV-GUR-6-1, AC-GUR-6-11): > 70 Mudah, 40 to 70 Sederhana, < 40 Sukar.
+ * `accuracy` is the percentage (0 to 100); it is rounded to one decimal (the wire value) and then half up to a whole number,
+ * so the badge always agrees with the number the screen shows (70.4 shows 70, Sederhana; 70.5 shows 71, Mudah).
+ */
+export function difficultyLevel(accuracy: number): DifficultyLevel {
+  const whole = Math.round(round(accuracy, 1))
+  if (whole > 70) return 'Mudah'
+  if (whole >= 40) return 'Sederhana'
+  return 'Sukar'
 }
+
+/** Group size of the 27 percent upper and lower groups: g = max(1, ceil(0.27 x N)) (R1 decision D113, PRD 20 R1-GUR-6). */
+export const discriminationGroupSize = (n: number, share: number): number => Math.max(1, Math.ceil(round(share * n, 6)))
 
 export type DiscriminationStatus = 'Sangat Baik' | 'Baik' | 'Sederhana' | 'Lemah'
 
@@ -88,6 +97,31 @@ export function riskOfAccuracy(accuracy: number): RiskLevel {
   return 'low'
 }
 
+/** Analitik Adaptif class row risk: 'none' = Belum Bermula (no answers). */
+export type ClassRiskLevel = RiskLevel | 'none'
+
+/** OPT-RISIKO: the accuracy is rounded half up to a whole number first (39.5 is 40), then <40 critical, <55 high, <70 medium, else low. */
+export function riskOfWholePercent(accuracy: number): RiskLevel {
+  const whole = Math.round(accuracy)
+  if (whole < RISK_CRITICAL_BELOW) return 'critical'
+  if (whole < RISK_HIGH_BELOW) return 'high'
+  if (whole < RISK_MEDIUM_BELOW) return 'medium'
+  return 'low'
+}
+
+export type ClassTrend = Trend | 'new'
+
+/**
+ * Analitik Adaptif trend: last 7 days against the 7 before, pooled correct over answered. A change above +3 points is up,
+ * below -3 down; answers only in the recent week are 'new'; no answers in the recent week is stable.
+ */
+export function analyticsTrendOf(recent: { correct: number; attempts: number }, before: { correct: number; attempts: number }): ClassTrend {
+  if (recent.attempts === 0) return 'stable'
+  if (before.attempts === 0) return 'new'
+  const d = pct(recent.correct, recent.attempts) - pct(before.correct, before.attempts)
+  return d > ANALYTICS_TREND_DELTA ? 'up' : d < -ANALYTICS_TREND_DELTA ? 'down' : 'stable'
+}
+
 export const RISK_LEVELS: readonly RiskLevel[] = ['critical', 'high', 'medium', 'low']
 
 /** Unknown filter value means "all". */
@@ -98,3 +132,13 @@ export const parseRiskLevel = (v: string | undefined): RiskLevel | '' =>
 export const compareIds = (a: string, b: string): number => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0)
 
 export const mean = (values: readonly number[]): number => (values.length === 0 ? 0 : values.reduce((a, b) => a + b, 0) / values.length)
+
+export type SpBand = 'mahir' | 'sederhana' | 'lemah'
+
+/** FR-MUR-5-3: the accuracy is rounded half up to a whole number first (74.5 is 75), then 75+ Mahir, 50-74 Sederhana, below 50 Lemah. */
+export function spBandOfPercent(accuracy: number): SpBand {
+  const whole = Math.round(accuracy)
+  if (whole >= SP_MAHIR_FROM) return 'mahir'
+  if (whole >= SP_SEDERHANA_FROM) return 'sederhana'
+  return 'lemah'
+}

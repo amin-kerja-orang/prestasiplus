@@ -164,7 +164,7 @@ export interface StudioRow {
   dskpComplete?: boolean | undefined
   sourceType: string | null
   sourceFile: string | null
-  /** REQ-C-010: V2 columns "Kertas" ('1' to '3') and "No." (printed number label); absent or null on an older server. */
+  /** REQ-C-010: V2 columns "Kertas" ('1' to '4') and "No." (printed number label); absent or null on an older server. */
   kertas?: string | null | undefined
   numberLabel?: string | null | undefined
 }

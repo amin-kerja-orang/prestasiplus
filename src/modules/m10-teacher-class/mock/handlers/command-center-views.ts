@@ -199,13 +199,13 @@ export function liveData(ctx: CcContext): CcLiveData {
   const leaderboardWeek = ctx.students
     .map((s) => rank(s, w.week))
     .filter((r) => r.answered > 0)
-    .sort((a, b) => b.answered - a.answered || b.accuracy - a.accuracy || a.studentId - b.studentId)
+    .sort((a, b) => b.answered - a.answered || (b.accuracy ?? 0) - (a.accuracy ?? 0) || a.studentId - b.studentId)
     .slice(0, 10)
 
   const topStudents = ctx.students
     .map((s) => rank(s))
     .filter((r) => r.answered >= PREDICT_MIN_ANSWERS)
-    .sort((a, b) => b.accuracy - a.accuracy || b.answered - a.answered || a.studentId - b.studentId)
+    .sort((a, b) => (b.accuracy ?? 0) - (a.accuracy ?? 0) || b.answered - a.answered || a.studentId - b.studentId)
     .slice(0, 5)
 
   const recentFeed = ctx.students
