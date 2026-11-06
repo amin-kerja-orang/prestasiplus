@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsPanel, DsText } from '@/ds'
+import { DsCallout, DsPanel, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import type { ContractForm } from '../domain/form'
@@ -143,11 +143,10 @@ const title = computed(() => (wide.value ? 'Semakan Kontrak' : `Semakan Kontrak 
         </ul>
       </section>
 
-      <UAlert
+      <DsCallout
         v-if="unknown"
-        color="warning"
-        variant="subtle"
-        icon="i-ph-warning"
+        tone="warning"
+        icon="warning-circle"
         role="alert"
         :title="PROPOSED_COPY.checkUnknownTitle"
         :description="PROPOSED_COPY.checkUnknownDescription"
