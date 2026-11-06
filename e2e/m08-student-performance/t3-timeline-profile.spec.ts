@@ -48,11 +48,13 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     await expectTabTitle(page, 'Timeline Saya | PRESTASIPLUS')
     await expect(page.getByTestId('shell-user-title')).toHaveText('Timeline Saya')
     await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
-      'Kongsi pencapaian & cerita anda',
+      'Aktiviti terkini anda — latihan, pencapaian & mata diperoleh',
     )
     await expect(page.getByRole('heading', { name: 'Timeline Saya', level: 2 })).toBeVisible()
-    await expect(page.getByText('Kongsi sijil, pencapaian, aktiviti & cerita anda')).toBeVisible()
-    await expect(page.getByText('Mula kongsi pencapaian, sijil, dan cerita anda')).toBeVisible()
+    await expect(
+      page.getByText('Aktiviti terkini anda — latihan, pencapaian & mata diperoleh').first(),
+    ).toBeVisible()
+    await expect(page.getByText('Belum ada aktiviti lagi. Mula buat latihan')).toBeVisible()
     await expect(page.getByTestId('add-post')).toHaveAttribute('href', '/timeline/create')
     await expect(page.getByTestId('add-first')).toHaveText('Tambah Post Pertama')
     await expect(page.getByTestId('add-first')).toHaveAttribute('href', '/timeline/create')

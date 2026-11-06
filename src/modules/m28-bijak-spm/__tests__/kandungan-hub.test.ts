@@ -142,8 +142,11 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
     expect(text('[data-testid=kandungan-failed-subjektif]')).toContain('Tidak dapat dimuatkan.')
     expect(q('[data-testid=kandungan-total-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-total-databank]')).toBe('1,234')
+    expect(server.overview).toHaveBeenCalledTimes(1)
     q('[data-testid=kandungan-retry-subjektif]')!.click()
     await flushPromises()
+    // The API answers the first retry with a fresh compute (#555), so one click is enough.
+    expect(server.overview).toHaveBeenCalledTimes(2)
     expect(q('[data-testid=kandungan-failed-subjektif]')).toBeNull()
     expect(text('[data-testid=kandungan-total-subjektif]')).toBe('10')
   })
@@ -351,12 +354,22 @@ describe('lane Latih Tubi (FR-ADM-Q02.4)', () => {
     const body = document.body.textContent ?? ''
     expect(body).toContain('Sains · Tingkatan 4')
     expect(body).toContain('#7 · 30 soalan')
-    expect(body).not.toContain('30 boleh ditanda')
+    expect(body).not.toMatch(/(?<!tidak )boleh ditanda/)
     expect(body).toContain('Dibuka')
     expect(text('[data-testid="attention-7:open"]')).toBe('10 tidak boleh ditanda')
     expect(q('[data-testid=lane-status]')).toBeNull()
     expect(q('[data-testid=lane-subject]')).not.toBeNull()
     expect(body).not.toContain('Tindakan')
+  })
+
+  it('shows the servable count on the 375 px card too', async () => {
+    media(false)
+    server.latihTubiLane.mockResolvedValue({ rows: [cell('open', 30, 40, ['10 tidak boleh ditanda'])], page: 1, pageSize: 25, total: 1, subjects: SUBJECTS, count: 40 })
+    await mountAt(LaneLatihTubiPage, '/admin/spm/latih-tubi')
+    const body = document.body.textContent ?? ''
+    expect(body).toContain('#7 · 30 soalan')
+    expect(body).toContain('10 tidak boleh ditanda')
+    expect(body).toContain('Dibuka')
   })
 
   it('labels a closed switch Ditutup', async () => {
