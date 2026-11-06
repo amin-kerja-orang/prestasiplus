@@ -1,8 +1,9 @@
 import type { GamesRoomView } from '@pp/contract'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ACCOUNTS, bootGamesApp, loginAs, START, type Client, type GamesTestApp } from '../helpers'
 import { RoomsRepository } from '../../../src/modules/games/rooms/rooms.repository'
+import { RoomSecrets } from '../../../src/modules/games/rooms/room-secrets'
 import { RoomsService } from '../../../src/modules/games/rooms/rooms.service'
 import { P, PB_FORM, createRoom, parseRoom, stateOf } from './support'
 
@@ -11,6 +12,8 @@ import { P, PB_FORM, createRoom, parseRoom, stateOf } from './support'
  * `consecutive_timeouts`. Poll writes it (at most every 5 s), an action writes it and resets the count, a timeout adds one,
  * 3 remove the seat, and an absent seat's turn closes at games_absent_seconds instead of the full clock.
  */
+const PINNED_SEED = 'ab12cd34ef56ab12cd34ef56ab12cd34'
+
 describe('room seat presence (R3)', () => {
   let t: GamesTestApp
   let a: Client
@@ -19,6 +22,9 @@ describe('room seat presence (R3)', () => {
 
   beforeAll(async () => {
     t = await bootGamesApp({ withGamification: true })
+    // The dice and the question order come from the room's secret seed, random per room: pin it for the whole file, or
+    // a run in N lets a room finish (a tile-50 win) before the step under test, whichever test plays turns.
+    vi.spyOn(t.app.get(RoomSecrets, { strict: false }), 'newSeed').mockReturnValue(PINNED_SEED)
     const { insertShortMcqs } = await import('./support')
     await insertShortMcqs(t.db, { subject: 'MATH', level: 'T4', count: 60, prefix: 'PR' })
     a = await loginAs(t, ACCOUNTS.student)
@@ -27,6 +33,7 @@ describe('room seat presence (R3)', () => {
     await t.db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
   })
   afterAll(async () => {
+    vi.restoreAllMocks()
     await t.close()
   })
   beforeEach(async () => {
@@ -213,7 +220,10 @@ describe('room seat presence (R3)', () => {
         t.clock.advance(15_000)
         await b.get(P('papan-bijak', code))
         v = parseRoom(await a.get(P('papan-bijak', code))) // solo never polls or acts; a and b play their turns
-        if (v.status === 'playing' && v.state?.humanId !== solo.userId && v.state && who[v.state.humanId]) v = await playUntil(code, solo.userId, who)
+        // only while solo is still seated: once it is removed there is no turn of solo's to play up to, and playUntil
+        // would keep a and b acting (up to 20 actions) on a two-human board, which can finish the game
+        const soloSeated = v.players.length === 3 && !v.players.some((p) => p.isBot)
+        if (soloSeated && v.status === 'playing' && v.state?.humanId !== solo.userId && v.state && who[v.state.humanId]) v = await playUntil(code, solo.userId, who)
       }
       const rows = await t.db.query<{ user_id: string | null; is_bot: boolean; consecutive_timeouts: number }>(
         'select user_id::text, is_bot, consecutive_timeouts from game_room_players where room_code = $1 order by id',
