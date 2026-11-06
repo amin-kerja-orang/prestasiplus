@@ -17,7 +17,17 @@
  */
 
 import {
+  GURU_STUDENT_MESSAGES,
+  GuruStudentCreateRequestSchema,
+  TEACHER_STUDENTS_PAGE_SIZE,
+  guruStudentCreatedMessage,
+} from '@pp/contract'
+
+import { toIsoMyt } from '@/lib/time'
+import {
   conflict,
+  created,
+  fail,
   forbidden,
   int,
   notFound,
@@ -30,9 +40,12 @@ import {
 } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
+import { practice } from '@/modules/m05-practice/mock'
 
 import { classroomsRepo } from '../repository/classrooms'
 import type { ClassroomRow } from '../repository/types'
+import { missionsRepo } from '../repository/missions'
+import { questionSetsRepo } from '../repository/question-sets'
 import { teacherProfilesRepo } from '../repository/teacher-profiles'
 import { bodyOf, intOf, MSG, teacherOnly, viewerId } from './common'
 
@@ -42,6 +55,76 @@ interface StudentRef {
   id: number
   name: string
   grade: number | null
+  username?: string | null
+}
+
+/** Longest username stem before the 2-digit suffix (the BE `USERNAME_STEM_MAX`). */
+const USERNAME_STEM_MAX = 40
+/** The default password of a pupil created in mock mode; the BE reads `PUPIL_DEFAULT_PASSWORD`. */
+const MOCK_PUPIL_PASSWORD = 'Murid#Mock2026'
+
+/** Username stem of a name (D113), the same rule as the BE `usernameStem`. */
+export function usernameStem(name: string): string {
+  const words = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => w.replace(/[^a-z0-9]/g, ''))
+    .filter((w) => w !== '')
+  if (words.length === 0) return 'pelajar'
+  const full = words.join('.')
+  if (full.length <= USERNAME_STEM_MAX) return full
+  let out = ''
+  for (const w of words) {
+    const next = out === '' ? w : `${out}.${w}`
+    if (next.length > USERNAME_STEM_MAX) break
+    out = next
+  }
+  return out !== '' ? out : (words[0] as string).slice(0, USERNAME_STEM_MAX)
+}
+
+/** A pupil's login name: the stored one (created in mock mode) or, for seeded rows, stem plus a suffix from the id. */
+export const usernameOf = (s: StudentRef): string =>
+  s.username ?? `${usernameStem(s.name)}${String((s.id % 99) + 1).padStart(2, '0')}`
+
+interface StudentStats {
+  tugasan: number
+  skorPurata: number | null
+  lastActiveAt: string | null
+}
+
+/**
+ * The R1-GUR-41 figures of one pupil, derived from the M05 sessions as the BE `studentStats` does:
+ * - tugasan: distinct completed Set Soalan sets and Misi of THIS teacher assigned to a class the pupil is in
+ *   (a mission has no class in the mock: the pupil is one of its recipients);
+ * - skorPurata: round(mean of correct / total x 100) over completed sessions with questions, null without;
+ * - lastActiveAt: the latest completed session (the mock keeps no per-answer log for the roster).
+ */
+function statsOf(teacherId: number, studentId: number): StudentStats {
+  const sessions = practice.history(studentId).filter((x) => x.status === 'completed')
+  const done = new Set<string>()
+  for (const x of sessions) {
+    if (x.mode === 'question_set' && x.questionSetId !== null) {
+      const set = questionSetsRepo.get(x.questionSetId)
+      if (set && set.teacherId === teacherId && classroomsRepo.memberIds(set.classroomKind, set.classroomId).includes(studentId)) {
+        done.add(`set:${String(set.id)}`)
+      }
+    } else if (x.mode === 'mission' && x.missionId !== null) {
+      const mission = missionsRepo.get(x.missionId)
+      if (mission && mission.teacherId === teacherId && mission.recipientIds.includes(studentId)) {
+        done.add(`mission:${String(mission.id)}`)
+      }
+    }
+  }
+  const scored = sessions.filter((x) => x.total > 0)
+  const ratio = scored.reduce((sum, x) => sum + x.correct / x.total, 0)
+  const last = sessions.reduce((max, x) => Math.max(max, x.completedAtMs), 0)
+  return {
+    tugasan: done.size,
+    skorPurata: scored.length > 0 ? Math.round((ratio / scored.length) * 100) : null,
+    lastActiveAt: last > 0 ? toIsoMyt(last) : null,
+  }
 }
 
 interface ClassRef {
@@ -65,7 +148,7 @@ function classesByStudent(userId: number): Map<number, ClassRef[]> {
 }
 
 /** SW5-03: `classes` is `classNames` with the ids, same order; class names are not unique. */
-function studentBody(s: StudentRef, classes: Map<number, ClassRef[]>) {
+function studentBody(s: StudentRef, classes: Map<number, ClassRef[]>, teacherId: number) {
   const own = classes.get(s.id) ?? []
   return {
     id: s.id,
@@ -73,11 +156,8 @@ function studentBody(s: StudentRef, classes: Map<number, ClassRef[]>) {
     levelName: s.grade === null ? null : (curriculum.levelForGrade(s.grade)?.name ?? null),
     classNames: own.map((c) => c.name),
     classes: own.map((c) => ({ id: c.id, name: c.name })),
-    // R1-GUR-41 columns: the mock has no sessions or logins, so the figures are the empty ones.
-    username: (s as StudentRef & { username?: string | null }).username ?? null,
-    tugasan: 0,
-    skorPurata: null,
-    lastActiveAt: null,
+    username: usernameOf(s),
+    ...statsOf(teacherId, s.id),
   }
 }
 
@@ -109,9 +189,22 @@ export const studentRoutes: RouteDef[] = [
     const match = (s: StudentRef) => term === '' || s.name.toLowerCase().includes(term)
     const names = classesByStudent(id)
     const schoolId = teacherProfilesRepo.schoolOf(id)
+    const pageSize = TEACHER_STUDENTS_PAGE_SIZE
+    /** `page` is clamped to 1..totalPages like the BE; `count` is the match total before the school cap. */
+    const pageOf = (rows: StudentRef[], count: number, schoolSet: boolean) => {
+      const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
+      const asked = Number(queryString(req.query, 'page'))
+      const page = Number.isInteger(asked) && asked >= 1 ? Math.min(asked, totalPages) : 1
+      return ok(
+        rows.slice((page - 1) * pageSize, page * pageSize).map((s) => studentBody(s, names, id)),
+        { meta: { count, schoolSet, page, pageSize, totalPages } },
+      )
+    }
 
     if (tab === 'school') {
-      if (schoolId === null) return ok([], { meta: { count: 0, schoolSet: false } })
+      if (schoolId === null) {
+        return ok([], { meta: { count: 0, schoolSet: false, page: 1, pageSize, totalPages: 1 } })
+      }
       // every active student of the school, then the name filter, the A→Z order and the 200 cap
       const { rows } = users.adminList({
         role: 'student',
@@ -120,17 +213,75 @@ export const studentRoutes: RouteDef[] = [
         pageSize: Number.MAX_SAFE_INTEGER,
       })
       const matching = rows.filter(match).sort(byName)
-      return ok(
-        matching.slice(0, SCHOOL_TAB_LIMIT).map((s) => studentBody(s, names)),
-        { meta: { count: matching.length, schoolSet: true } },
-      )
+      return pageOf(matching.slice(0, SCHOOL_TAB_LIMIT), matching.length, true)
     }
 
     const rows = users.getMany(classroomsRepo.teacherStudentIds(id)).filter(match).sort(byName)
-    return ok(
-      rows.map((s) => studentBody(s, names)),
-      { meta: { count: rows.length, schoolSet: schoolId !== null } },
+    return pageOf(rows, rows.length, schoolId !== null)
+  }),
+
+  route('POST', '/api/guru/students', [teacherOnly], (req, ctx) => {
+    // Mock mode sends the class id as a number; the contract (and the BE) read it as an opaque string.
+    const raw = bodyOf(req)
+    const parsed = GuruStudentCreateRequestSchema.safeParse(
+      typeof raw.classroomId === 'number' ? { ...raw, classroomId: String(raw.classroomId) } : raw,
     )
+    if (!parsed.success) {
+      const fields: Record<string, string> = {}
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? 'name')
+        if (!(key in fields)) fields[key] = issue.message
+      }
+      return validationError(fields)
+    }
+    const body = parsed.data
+    const viewer = viewerId(req)
+    const cls = classroomsRepo.get('classroom', Number(body.classroomId))
+    if (!cls || cls.teacherId !== viewer || !cls.isActive) {
+      const own = classroomsRepo.forTeacher(viewer).some((c) => c.isActive)
+      return validationError({
+        classroomId: own ? GURU_STUDENT_MESSAGES.classroom : GURU_STUDENT_MESSAGES.noActiveClass,
+      })
+    }
+    const schoolId = teacherProfilesRepo.schoolOf(viewer)
+    if (schoolId === null) return validationError({ classroomId: GURU_STUDENT_MESSAGES.noSchool })
+    if (body.ic !== undefined && users.icInUse(body.ic)) {
+      return fail(409, 'CONFLICT', GURU_STUDENT_MESSAGES.icTaken, { ic: GURU_STUDENT_MESSAGES.icTaken })
+    }
+
+    const taken = new Set(
+      users.adminList({ role: 'student', schoolId, pageSize: Number.MAX_SAFE_INTEGER }).rows.map(usernameOf),
+    )
+    const stem = usernameStem(body.name)
+    let username: string | undefined
+    for (let n = 1; n <= 99 && username === undefined; n++) {
+      const candidate = `${stem}${String(n).padStart(2, '0')}`
+      if (!taken.has(candidate)) username = candidate
+    }
+    if (username === undefined) return conflict()
+
+    const now = ctx.clock.now()
+    const user = users.create(
+      {
+        name: body.name,
+        email: `${username}.${String(schoolId)}@pelajar.mock.test`,
+        username,
+        role: 'student',
+        grade: cls.levelId,
+        schoolId,
+        createdById: viewer,
+      },
+      now,
+    )
+    users.setPassword(user.id, MOCK_PUPIL_PASSWORD)
+    if (body.ic !== undefined) users.setIcNumber(user.id, body.ic)
+    classroomsRepo.enrol({ kind: cls.kind, classId: cls.classId, studentId: user.id, source: 'teacher' }, now)
+    return created({
+      id: user.id,
+      name: body.name,
+      username,
+      message: guruStudentCreatedMessage(username, MOCK_PUPIL_PASSWORD),
+    })
   }),
 
   route(

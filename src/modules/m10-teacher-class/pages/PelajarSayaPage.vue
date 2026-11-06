@@ -82,6 +82,19 @@ watch(targetClass, () => {
 
 const minePages = computed(() => mine.data.value?.meta.totalPages ?? 1)
 const schoolPages = computed(() => school.data.value?.meta.totalPages ?? 1)
+// The API clamps a page past the end (a removal can empty the last page): follow the page it answered.
+watch(
+  () => mine.data.value?.meta.page,
+  (page) => {
+    if (page !== undefined && page !== minePage.value) minePage.value = page
+  },
+)
+watch(
+  () => school.data.value?.meta.page,
+  (page) => {
+    if (page !== undefined && page !== schoolPage.value) schoolPage.value = page
+  },
+)
 
 const tabs = computed<PillItem<StudentTab>[]>(() => [
   { key: 'school', label: PELAJAR_COPY.tabSchool, icon: 'i-ph-buildings' },
