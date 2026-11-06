@@ -2099,8 +2099,8 @@
       "approved_by_card": "S6-T17"
     },
     {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+)",
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
       "name": null,
       "status": "canonical",
       "sector": "S6",

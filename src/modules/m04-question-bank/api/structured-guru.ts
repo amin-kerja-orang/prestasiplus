@@ -8,7 +8,7 @@
 
 import { api, type ListResult } from '@/api'
 
-export type GuruStructuredStatus = 'approved' | 'review'
+export type GuruStructuredStatus = 'approved' | 'review' | 'rejected'
 
 export type GuruStructuredSource = 'question' | 'submission'
 

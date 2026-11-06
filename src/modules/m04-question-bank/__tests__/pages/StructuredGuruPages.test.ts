@@ -402,7 +402,7 @@ describe('own submissions in the guru list and detail (S6-T17, ruling B)', () =>
     api.fetchGuruStructuredQuestion.mockResolvedValue({
       ...detail,
       id: 'g1',
-      status: 'review',
+      status: 'rejected',
       source: 'submission',
       editable: true,
       form: {
@@ -422,6 +422,39 @@ describe('own submissions in the guru list and detail (S6-T17, ruling B)', () =>
     expect(w.get('[data-testid=structured-rejection]').text()).toBe(
       'Sebab: Skema jawapan bahagian (a) tidak lengkap.',
     )
+  })
+
+  it('a returned row shows "Ditolak" in the list with the same chip as the detail, and they agree', async () => {
+    api.fetchGuruStructuredQuestions.mockResolvedValue(
+      result([submissionRow(1, { status: 'rejected' })], 1),
+    )
+    const list = await renderList('/guru/soalan-berstruktur', FORM_ROUTES)
+    const listChip = list.get('[data-testid=structured-status-chip]')
+    expect(listChip.text()).toBe('Ditolak')
+
+    api.fetchGuruStructuredQuestion.mockResolvedValue({
+      ...detail,
+      id: 'g1',
+      status: 'rejected',
+      source: 'submission',
+      editable: true,
+      form: {
+        subjectId: 9,
+        educationLevelId: 11,
+        chapterId: null,
+        spIds: [],
+        tp: null,
+        cognitiveLevel: null,
+        difficultyLevel: 3,
+        stimulusImageId: null,
+        rejectionReason: 'Skema jawapan bahagian (a) tidak lengkap.',
+      },
+    })
+    const det = await renderDetail('g1')
+    const detChip = det.get('[data-testid=structured-status]')
+    expect(detChip.text()).toBe(listChip.text())
+    expect(detChip.classes()).toEqual(listChip.classes())
+    expect(detChip.attributes('data-status') ?? '').toBe(listChip.attributes('data-status') ?? '')
   })
 
   it('a submission without a stimulus hides the "Rangsangan" block', async () => {
