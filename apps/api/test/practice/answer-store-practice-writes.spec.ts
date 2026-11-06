@@ -151,14 +151,13 @@ describe('legacy session modes are written under a writable mode', () => {
   it.each([
     ['past_year', 'databank'],
     ['ramalan', 'tracking_a'],
-    ['random', 'latih_tubi'],
   ])('a %s session writes %s', async (mode, written) => {
     const body: Record<string, unknown> =
       mode === 'past_year'
         ? { mode, subjectCode: 'SEJ', count: 5 }
         : mode === 'ramalan'
           ? { mode, subjectCode: 'MATH', year: 2026, setNo: 1 }
-          : { mode, subjectCode: 'MATH', levelId: w.level.d1, count: 5 }
+          : { mode, subjectCode: 'MATH', count: 5 }
     if (mode === 'ramalan') t.ramalan.set(w.subject.math, 2026, 1, bank.random.slice(0, 4))
     const { started, submit } = await play(pelajar, t.bank, body, 1)
     expect(submit.status, JSON.stringify(submit.body)).toBe(200)
@@ -167,6 +166,12 @@ describe('legacy session modes are written under a writable mode', () => {
     expect(new Set(rows.map((r) => r.mode))).toEqual(new Set([written]))
     const s = await t.db.query<{ mode: string }>('select mode from practice_sessions where id = $1', [started.sessionId])
     expect(s[0]?.mode).toBe(mode)
+  })
+
+  it('S5-T03: a random session can no longer be started (422 "Mod tidak sah."); old rows keep the mapping above', async () => {
+    const res = await pelajar.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', count: 5 })
+    expect(res.status, JSON.stringify(res.body)).toBe(422)
+    expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Mod tidak sah.' })
   })
 })
 
