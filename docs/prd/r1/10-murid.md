@@ -1367,7 +1367,7 @@ Same template as section 3 (Action, Screen specification (from V2), change list)
 - **Field & behaviour spec** (read only for the pupil)
   | Label | Type | Req | Default | Options / source | Validation + exact BM error | Depends on | Stored as | API |
   |---|---|---|---|---|---|---|---|---|
-  | League/tournament list, standings | read-only | - | `Tiada liga atau tournament buat masa ini.` | the leagues the pupil's school is enrolled in; enrolment is done by Admin Pusat only (no Guru/AS menu, D113); formats `single_match` and `league` only (48 D-GAME-4) | - | school enrolment | - | 48 GAME-15 |
+  | League/tournament list, standings | read-only | - | `Tiada liga atau tournament buat masa ini.` | the leagues the pupil's school is enrolled in; enrolment is done by Admin Pusat only (no Guru, AS or pupil menu item, D113; `/liga` only redirects to `/tournament?tab=liga`, lead ruling 2026-11-05, #504); formats `single_match` and `league` only (48 D-GAME-4) | - | school enrolment | - | 48 GAME-15 |
   | Shell banner | link | - | not rendered | rendered only when a tournament is active; opens `/tournament` | - | - | - | - |
   - New requirements: FR-MUR-23-5 There is no pupil or teacher control to join a league: enrolment is by Admin Pusat. 
   - New acceptance criteria: AC-MUR-23-4 Given a school not enrolled, then the list shows `Tiada liga atau tournament buat masa ini.`.

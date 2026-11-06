@@ -43,6 +43,7 @@ import type {
   BuilderGroupInfo,
   BuilderPreview,
   BuilderQuestionInfo,
+  BuilderQuestionOrigin,
   BuilderQuestionRef,
   BuilderQuestionSource,
 } from './ports'
@@ -202,6 +203,22 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
             END) ILIKE ${pattern}
            OR COALESCE(u.title, '') ILIKE ${pattern})`
     return new Set(rows.map((r) => r.id.toString()))
+  }
+
+  /** S3-T02: `source_papers.year` and the trimmed `exam_board` of the version `describe` shows (the live one, else the latest), in one read. */
+  async originsOf(ids: readonly string[]): Promise<ReadonlyMap<string, BuilderQuestionOrigin>> {
+    const keys = [...new Set(ids)].flatMap((id) => {
+      const k = toBigint(id)
+      return k === null ? [] : [k]
+    })
+    if (keys.length === 0) return new Map()
+    const rows = await this.db.$queryRaw<{ id: bigint; year: number | null; negeri: string | null }[]>`
+      SELECT q.id, sp.year::int AS year, NULLIF(btrim(sp.exam_board), '') AS negeri
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = COALESCE(q.live_version_no, q.latest_version_no)
+        JOIN source_papers sp ON sp.id = v.source_paper_id
+       WHERE q.id = ANY(${keys}::bigint[])`
+    return new Map(rows.map((r) => [r.id.toString(), { year: r.year, negeri: r.negeri }]))
   }
 
   async groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>> {
