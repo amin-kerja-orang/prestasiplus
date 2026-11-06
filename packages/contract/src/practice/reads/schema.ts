@@ -667,10 +667,15 @@ export const PracticeReadStructuredAttemptRequestSchema = z
   .meta({ id: 'PracticeReadStructuredAttemptRequest' })
 export type PracticeReadStructuredAttemptRequest = z.infer<typeof PracticeReadStructuredAttemptRequestSchema>
 
-/** The stored attempt (DATA-M05-06) plus the model answers, revealed after submitting. */
+/**
+ * The submitted attempt plus the model answers, revealed after submitting. S5-T11: the attempt is a Bijak attempt (`exam_attempts`, graded
+ * by the one grader), so `id` and `attemptId` are that attempt's id; the Bijak self-mark and result routes take it. A part the grader cannot
+ * mark counts 0 in `marks` until the pupil marks it herself.
+ */
 export const PracticeReadStructuredAttemptResultSchema = z
   .strictObject({
     id: IdSchema,
+    attemptId: IdSchema.meta({ description: 'The Bijak attempt (`exam_attempts.id`): the id of the self-mark and result routes. Same value as `id`.' }),
     userId: IdSchema,
     structuredQuestionId: IdSchema,
     scope: PracticeReadStructuredScopeSchema.nullable(),

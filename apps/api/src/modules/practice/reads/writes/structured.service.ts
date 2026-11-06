@@ -6,9 +6,9 @@ import type { z } from 'zod'
 import { ApiError, DEFAULT_ERROR_MESSAGES } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
-import { CLOCK, type Clock } from '../../../../db/clock'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
+import { PracticePorts } from '../../ports'
 import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
@@ -25,7 +25,6 @@ import {
   STRUCTURED_LEVEL_CODES,
   STRUCTURED_PAGE_SIZE,
   SUBJEKTIF_SUBJECT_CODES,
-  markStructured,
 } from './rules'
 
 type Scope = 'spm' | null
@@ -90,6 +89,9 @@ interface CardSource {
   subs: { top: boolean; marks: number }[]
 }
 
+/** The attempt title is the start of the stem (or of the first part). */
+const TITLE_MAX_CHARS = 100
+
 const invalid = (fields: Record<string, string>): ApiError => {
   const [message] = Object.values(fields)
   return ApiError.of('VALIDATION_ERROR', { message: message ?? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR, fields })
@@ -101,9 +103,9 @@ const invalid = (fields: Record<string, string>): ApiError => {
  * Tingkatan 4 or 5 (BR-M04-03). Model answers and keys never leave in a read; they come back in the
  * attempt result.
  *
- * Marking is the mock placeholder (LS-7): see `markStructured`. `@pp/exam-core` is not used: the wire
- * carries free text per sub-question (no option, number or mapping kind), and the subjective modes it
- * marks need a human or AI mark, so it does not map onto the mock's rule.
+ * The attempt is a Bijak attempt (S5-T11): `PracticePorts.structuredAttempts` creates, grades with the one
+ * grader and closes it; this service keeps the body checks and the wire shape. Nothing is written to
+ * `structured_attempts` any more (the table and its readers stay).
  */
 @Injectable()
 export class StructuredService {
@@ -116,7 +118,7 @@ export class StructuredService {
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(StructuredAttemptsRepository) private readonly attempts: StructuredAttemptsRepository,
     @Inject(StructuredListingRepository) private readonly listing: StructuredListingRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(PracticePorts) private readonly ports: PracticePorts,
   ) {}
 
   // --- lookups -------------------------------------------------------------------------------------
@@ -323,26 +325,34 @@ export class StructuredService {
       answers.set(a.subQuestionId, a.text)
     }
 
-    const marks = markStructured(subs, answers)
-    const totalAwarded = marks.reduce((n, m) => n + m.awarded, 0)
-    const totalMax = marks.reduce((n, m) => n + m.max, 0)
-    const submittedAt = this.clock.now()
+    const subjects = await this.subjects()
+    const subject = subjects.get(q.version.subjectId ?? '')
+    const firstText = q.version.stemMs ?? q.version.parts[0]?.prompt.ms ?? ''
     const stored = [...answers].map(([subQuestionId, text]) => ({ subQuestionId, text }))
-    const attemptId = await this.attempts.add({
+    const pathOf = new Map(subs.map((s) => [s.id, s.label]))
+    const graded = await this.ports.structuredAttempts.submit({
       userId: caller.userId,
+      isTest: caller.isTest,
       questionId: q.id,
-      questionVersionNo: q.version.versionNo,
+      versionNo: q.version.versionNo,
+      title: firstText.trim().slice(0, TITLE_MAX_CHARS) || null,
+      subject: subject?.code ?? null,
+      subjectName: subject?.name ?? null,
       scope,
       track,
-      answers: stored,
-      marks,
-      totalAwarded,
-      totalMax,
-      submittedAt,
-      isTest: caller.isTest,
+      answers: stored.map((a) => ({ path: pathOf.get(a.subQuestionId) as string, text: a.text })),
     })
+    const byPath = new Map(graded.parts.map((p) => [p.path, p]))
+    // One entry per sub-question of the set, branches included (max 0). A part the grader leaves to the pupil (`pending`) counts 0 until she marks it.
+    const marks = subs.map((s) => {
+      const part = byPath.get(s.label)
+      return { subQuestionId: s.id, awarded: part?.awarded ?? 0, max: part?.max ?? s.marks }
+    })
+    const totalAwarded = marks.reduce((n, m) => n + m.awarded, 0)
+    const totalMax = marks.reduce((n, m) => n + m.max, 0)
     return {
-      id: attemptId,
+      id: graded.attemptId,
+      attemptId: graded.attemptId,
       userId: caller.userId,
       structuredQuestionId: q.id,
       scope,
@@ -351,7 +361,7 @@ export class StructuredService {
       marks,
       totalAwarded,
       totalMax,
-      submittedAt: toMytTimestamp(submittedAt),
+      submittedAt: toMytTimestamp(graded.submittedAt),
       modelAnswers: subs.map((s) => ({ subQuestionId: s.id, text: s.modelAnswer })),
     }
   }
