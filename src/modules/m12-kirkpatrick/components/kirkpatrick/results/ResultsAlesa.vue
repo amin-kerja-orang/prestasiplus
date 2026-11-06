@@ -10,7 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { DsDataTable, DsPanel } from '@/ds'
 
 import type { Results, SpmGrade, WireId } from '../../../api/types'
-import { pct, plain } from '../common/kirkpatrick-format'
+import { plain, accuracyPct } from '../common/kirkpatrick-format'
 import { CADANGAN, CONFIDENCE, GRADE_PILL } from './results-format'
 
 const props = defineProps<{ alesa: Results['alesa'] }>()
@@ -37,7 +37,7 @@ const data = computed<Row[]>(() =>
     index: i + 1,
     name: r.name,
     schoolName: r.schoolName,
-    accuracy: pct(r.accuracy),
+    accuracy: accuracyPct(r.accuracy),
     grade: r.grade,
     confidence: r.confidence,
     confidenceText: CONFIDENCE[r.confidence].label,

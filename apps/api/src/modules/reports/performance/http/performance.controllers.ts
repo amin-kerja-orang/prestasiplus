@@ -93,7 +93,7 @@ export class PerformanceController {
     return ok(await overloadTo429(async () => this.school.levels(await this.ctx.of(req))))
   }
 
-  /** The level code is t4 or t5; the service answers 404 for anything else. */
+  /** The level code is t1 to t5; the service answers 404 for anything else. */
   @Roles('admin', 'teacher', 'school_admin')
   @Get('levels/:code')
   async level(@Param('code') code: string, @Req() req: Req) {
@@ -104,6 +104,13 @@ export class PerformanceController {
   @Get('classes')
   async ownClasses(@Req() req: Req) {
     return ok(await overloadTo429(async () => this.classes.ownClasses(await this.ctx.of(req))))
+  }
+
+  /** The additive block of `/prestasi/kelas` (Pelajar Terbaik, Prestasi Mengikut Subjek). Declared before `classes/:id`. */
+  @Roles('admin', 'teacher', 'school_admin')
+  @Get('classes/aggregate')
+  async classesAggregate(@Req() req: Req) {
+    return ok(await overloadTo429(async () => this.classes.classesAggregate(await this.ctx.of(req))))
   }
 
   @Roles('admin', 'teacher', 'school_admin')
