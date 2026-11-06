@@ -52,10 +52,18 @@ const human = (c: Ctx): EnginePlayer =>
   c.players.find((x) => x.userId === c.s.humanId) as EnginePlayer
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
 const nextQ = (c: Ctx): string => {
-  // Ruling 56, FR-GM-02.4 (Papan Bijak only; GAME-05 gives each player their own questions): when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
-  if (c.room.game === 'papan-bijak' && c.s.qIds.length > 0 && c.s.cursor > 0 && c.s.cursor % c.s.qIds.length === 0) {
+  // Ruling 56, FR-GM-02.4 (Papan Bijak): when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
+  // GAME-05 (DOC DEFECT 63, lead ruling a): Perlumbaan Matematik does the same per player, so the stream is keyed by the player
+  // whose cursor it is (the acting human seat); no question repeats until that player's pool is used up.
+  if (
+    (c.room.game === 'papan-bijak' || c.room.game === 'perlumbaan-matematik') &&
+    c.s.qIds.length > 0 &&
+    c.s.cursor > 0 &&
+    c.s.cursor % c.s.qIds.length === 0
+  ) {
     const pass = c.s.cursor / c.s.qIds.length
-    c.s.qIds = shuffle([...c.s.qIds], c.streams(`m16:room:${c.room.code}:${c.s.seed}:pool${String(pass)}`))
+    const who = c.room.game === 'perlumbaan-matematik' ? `${c.s.humanId}:` : ''
+    c.s.qIds = shuffle([...c.s.qIds], c.streams(`m16:room:${c.room.code}:${c.s.seed}:${who}pool${String(pass)}`))
   }
   const id = c.s.qIds[c.s.cursor % c.s.qIds.length] as string
   c.s.cursor += 1
