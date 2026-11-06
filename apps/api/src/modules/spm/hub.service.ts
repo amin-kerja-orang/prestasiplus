@@ -57,7 +57,7 @@ export async function mapBounded<T, R>(items: readonly T[], limit: number, fn: (
   return out
 }
 
-const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
+const SPM_MODES = ['past_year', 'databank', 'latih_tubi', 'ramalan'] as const
 
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 
@@ -169,7 +169,7 @@ export class SpmHubService {
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: countOf(facts),
+      total: await this.pool.latihTubiCount(s.subjectId),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),

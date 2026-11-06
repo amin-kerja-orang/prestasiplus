@@ -82,6 +82,16 @@ describe('S33 Kelas Saya (student)', () => {
     expect(t(w, 'class-level').text()).toBe('Ting. 5')
   })
 
+  it('with a class added by the teacher there is still no join field or "Sertai" button (AC-MUR-8-3)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    const w = await mountPage()
+    expect(t(w, 'class-name').text()).toBe('5 MARIKH - Sejarah')
+    expect(w.text()).not.toContain('Masukkan Kod Kelas')
+    expect(w.find('input').exists()).toBe(false)
+    expect(w.find('[data-testid="join-form"]').exists()).toBe(false)
+    expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
+  })
+
   it('shows an error state with retry when the list fails (@provisional not on live)', async () => {
     api.fetchJoinedClasses.mockRejectedValueOnce(new Error('x'))
     const w = await mountPage()

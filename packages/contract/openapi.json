@@ -5665,6 +5665,10 @@
             "type": "integer",
             "minimum": 0
           },
+          "maxRewarded": {
+            "type": "integer",
+            "minimum": 0
+          },
           "registerUrl": {
             "type": "string",
             "minLength": 1
@@ -5704,6 +5708,7 @@
           "code",
           "rewardReferrer",
           "rewardReferee",
+          "maxRewarded",
           "registerUrl",
           "whatsappUrl",
           "telegramUrl",
@@ -65569,7 +65574,8 @@
           "ramalan",
           "mission",
           "remedial",
-          "question_set"
+          "question_set",
+          "databank"
         ]
       },
       "PracticeSessionId": {
@@ -65758,7 +65764,7 @@
           "count": {
             "type": "integer",
             "minimum": 1,
-            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year / databank 5|10|20; latih_tubi per subject target."
           },
           "chapterId": {
             "type": "string",
@@ -69412,6 +69418,28 @@
             "type": "integer",
             "minimum": 0,
             "description": "\"{marks} markah\"."
+          },
+          "bestScore": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "awarded": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "awarded",
+              "max"
+            ],
+            "additionalProperties": false,
+            "description": "The caller's best attempt on this set (highest awarded total); null when there is no attempt."
           }
         },
         "required": [
@@ -69428,7 +69456,8 @@
           "subQuestionCount",
           "levelName",
           "parts",
-          "marks"
+          "marks",
+          "bestScore"
         ],
         "additionalProperties": false
       },
@@ -69512,6 +69541,11 @@
               "additionalProperties": false
             },
             "description": "The \"Subjek\" options (without \"Semua Subjek\"): plain list by name; SPM variants in the FR-M05-134 order."
+          },
+          "pendingSchemeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sets in the current filter (q, subject, KBAT; ignoring `markable`) with no usable scheme: the \"{n} soalan untuk pilihan ini masih menunggu skema pemarkahan...\" notice."
           }
         },
         "required": [
@@ -69521,7 +69555,8 @@
           "totalPages",
           "scope",
           "track",
-          "subjectOptions"
+          "subjectOptions",
+          "pendingSchemeCount"
         ],
         "additionalProperties": {}
       },
@@ -69971,10 +70006,11 @@
           "Cemerlang",
           "Sederhana",
           "Rendah",
+          "Tiada",
           "Kritikal",
           "Tiada Langsung"
         ],
-        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0."
+        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced."
       },
       "AnalyticsLevel": {
         "type": "string",
@@ -89164,7 +89200,7 @@
           "gamification"
         ],
         "summary": "Rujuk Kawan: referral code, share links and stats",
-        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.",
+        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here; the amounts and the cap are the settings referral_referrer_syiling, referral_referee_syiling and referral_max_rewarded.",
         "responses": {
           "200": {
             "description": "Referral data.",
@@ -101997,7 +102033,7 @@
             }
           },
           "409": {
-            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "description": "ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial). A question_set has no attempt cap in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -102888,7 +102924,7 @@
           "practice-reads"
         ],
         "summary": "Own corrections: first attempt versus later attempt per question (S11)",
-        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
         "parameters": [
           {
             "schema": {
@@ -103003,10 +103039,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20."
+              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12."
             },
             "required": false,
-            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20.",
+            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 12.",
             "name": "page",
             "in": "query"
           },
@@ -103028,6 +103064,33 @@
             "required": false,
             "description": "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored.",
             "name": "track",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search."
+            },
+            "required": false,
+            "description": "Case-insensitive search in the stem or a linked stimulus text, at most 100 characters (422 above). Empty = no search.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "0",
+                "1",
+                "true",
+                "false"
+              ],
+              "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all."
+            },
+            "required": false,
+            "description": "'1' or 'true': only sets whose every leaf part has an answer key (a usable scheme). Absent = all.",
+            "name": "markable",
             "in": "query"
           }
         ],
