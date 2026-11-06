@@ -22,23 +22,25 @@ import { prngStream } from '../../../../db/prng'
 import { PrismaService } from '../../../../db/prisma.service'
 import type { GamesCaller } from '../../caller'
 import { GameQuestions, type ServedQuestion } from '../../core/game-questions.service'
+import { GameSettingsService } from '../../core/game-settings.service'
 import { GameSubjects } from '../../core/subjects'
 import { GameUsers } from '../../core/game-users'
-import { GamesPorts } from '../../core/ports'
-import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound } from '../../errors'
+import { GamesPorts, gameAnswerEntry } from '../../core/ports'
+import { rewardNow } from '../../core/wallet-rewards'
+import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound, startNotEnoughQuestions } from '../../errors'
 import { SoloItemBuilder } from './solo-items'
 import { type ItemRecord, SoloRepository } from './solo.repository'
 import {
   DEFAULT_GRADE,
   isSoloGame,
-  MEMORY_COINS,
   MEMORY_PAIRS,
   memoryAccuracy,
   normaliseAnswer,
   scoreRun,
   hasFastGap,
-  MIN_MS_PER_ITEM,
+  SOLO_CHECK_GRACE_SECONDS,
   SOLO_INFO,
+  SOLO_SECONDS,
 } from './solo.rules'
 
 const M = GAMES_MESSAGES
@@ -80,6 +82,7 @@ export class SoloService {
     @Inject(GameUsers) private readonly users: GameUsers,
     @Inject(GamesPorts) private readonly ports: GamesPorts,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
 
   /** Mod Pelajar never earns, so it never reports `canEarnSyiling`. */
@@ -105,8 +108,9 @@ export class SoloService {
     // Question sampling and puzzle scrambling use a named stream; every secret-bearing value (statement truth, card layout and
     // ids) is drawn from node:crypto inside the builder, because a 32-bit seeded stream could be recovered by a client.
     const stem = `games:solo:${caller.userId}:${game}:${randomBytes(12).toString('hex')}`
-    const built = await this.builder.build(game, levelIds, prngStream(stem))
+    const built = await this.builder.build(game, levelIds, prngStream(stem), caller.userId)
     const itemCount = game === 'kad-memori' ? built.rows.length / 2 : built.rows.length
+    if (itemCount < SOLO_INFO[game].items) throw startNotEnoughQuestions() // ERR-GAME-01, AC-GM-00.6: nothing starts
     const sessionId = await this.prisma.transaction(async () => {
       await this.repo.supersede(caller.userId, game, this.clock.now())
       const id = await this.repo.createSession({ userId: caller.userId, game, darjah, itemCount, maxScore: built.maxScore, isTest: caller.isTest, createdAt: this.clock.now() })
@@ -177,13 +181,18 @@ export class SoloService {
       const s = await this.repo.lockOwn(sessionId, caller.userId)
       if (!s || s.game !== game || s.closedAt !== null) throw soloSessionNotFound()
       if (s.submittedAt !== null) throw alreadySubmitted()
+      const seconds = SOLO_SECONDS[game]
+      if (seconds !== undefined && this.clock.now().getTime() - s.createdAt.getTime() > (seconds + SOLO_CHECK_GRACE_SECONDS) * 1000) throw ApiError.of('CONFLICT', { message: M.soloTimeUp })
       const item = await this.repo.itemByQuestion(s.id, itemId)
       if (!item) throw soloItemNotFound()
       if (item.checkedSeq !== null) throw soloAlreadyChecked()
       const j = await judge(item)
       const seq = s.checks + 1
-      await this.repo.storeCheck(item.id, { seq, correct: j.correct, answer: j.answer, at: this.clock.now() })
+      const at = this.clock.now()
+      await this.repo.storeCheck(item.id, { seq, correct: j.correct, answer: j.answer, at })
       await this.repo.updateSession(s.id, { checks: seq, correctCount: s.correctCount + (j.correct ? 1 : 0) })
+      // FR-GM-00.5, 48 section 3.5: in the same transaction as the check; Mod Pelajar writes no row.
+      if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: item.questionId, gameKey: game, position: seq, isCorrect: j.correct, answeredAt: at }))
       return { correct: j.correct, ...j.result }
     })
   }
@@ -216,12 +225,15 @@ export class SoloService {
       const at = this.clock.now()
       const board = await this.repo.items(s.id)
       const lastMove = board.reduce((m, i) => (i.checkedAt !== null && i.checkedAt > m ? i.checkedAt : m), s.createdAt)
-      const fastMove = at.getTime() - lastMove.getTime() < MIN_MS_PER_ITEM
+      const fastMove = at.getTime() - lastMove.getTime() < (await this.settings.get('games_min_ms_per_answer'))
       const match = a.pairKey !== null && a.pairKey === c.pairKey
       const seq = s.checks + 1
       if (match) {
         await this.repo.storeCheck(a.id, { seq, correct: true, answer: d.other_card_id, at, matched: true })
         await this.repo.storeCheck(c.id, { seq, correct: true, answer: d.card_id, at, matched: true })
+        // 48 GAME-12: one row per matched pair, a mismatch writes nothing.
+        const position = board.filter((i) => i.matched).length / 2 + 1
+        if (!caller.isTest) await this.ports.answers.record(gameAnswerEntry({ userId: caller.userId, attemptId: s.id, questionId: a.questionId, gameKey: 'kad-memori', position, isCorrect: true, answeredAt: at }))
       } else {
         await this.repo.touch(a.id, at)
       }
@@ -267,29 +279,30 @@ export class SoloService {
       if (s.closedAt !== null) return refuse(404, M.soloSessionNotFound)
       if (s.submittedAt !== null) return refuse(409, M.soloAlreadySubmitted)
       const at = this.clock.now()
-      const earn = await this.canEarn(caller, { tx })
-      const report = async (coins: number, correct: number, total: number, detail: Record<string, unknown>): Promise<number> => {
-        if (!earn) return 0
+      // FR-GM-00.3, GAME-S: a finished solo game is "played". Reported also while syiling is off, for the reward event (DM-87);
+      // the port decides what is paid. A fast gap credits nothing and makes no call; Mod Pelajar never reports.
+      const report = async (fast: boolean, correct: number, total: number, detail: Record<string, unknown>): Promise<{ coins: number; credited: number }> => {
+        const asked = await rewardNow(this.settings, tx, { correct, outcome: 'play', robotsOnly: false, fastGap: false })
+        if (caller.isTest || fast) return { coins: asked.coins, credited: 0 }
         const out = await this.ports.rewards.onGameResult(
           caller.userId,
-          { game: info.token, event: 'finish', coins, xp: 0, correct, total, detail, key: s.id },
+          { game: info.token, event: 'finish', coins: asked.coins, xp: asked.xp, correct, total, detail, key: s.id, session: { id: s.id, gameKey: game } },
           { tx, isTest: false },
         )
-        return out.coinsCredited
+        return { coins: asked.coins, credited: out.coinsCredited }
       }
 
       if (game === 'kad-memori') {
         const items = await this.repo.items(s.id)
         if (items.filter((i) => i.matched).length < MEMORY_PAIRS * 2) return refuse(422, M.soloInvalidResult)
         // pacing guard: `fast_moves` counts the moves made less than 1 s after the previous one
-        const fast = s.fastMoves > 0
-        const credited = fast ? 0 : await report(MEMORY_COINS, MEMORY_PAIRS, MEMORY_PAIRS, { moves: s.moves })
-        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: MEMORY_COINS, coinsCredited: credited })
+        const r = await report(s.fastMoves > 0, MEMORY_PAIRS, MEMORY_PAIRS, { moves: s.moves })
+        await this.repo.updateSession(s.id, { submittedAt: at, correctCount: MEMORY_PAIRS, coinsComputed: r.coins, coinsCredited: r.credited })
         return {
           status: 200,
           body: {
             results: {
-              syiling_earned: credited,
+              syiling_earned: r.credited,
               accuracy: memoryAccuracy(s.moves),
               moves: s.moves,
               time_seconds: Math.max(0, Math.floor((at.getTime() - s.createdAt.getTime()) / 1000)),
@@ -302,23 +315,22 @@ export class SoloService {
       if (checked.length === 0) return refuse(422, M.soloInvalidResult)
       const run = scoreRun(game, checked.map((c) => ({ correct: c.correct === true, points: c.points })))
       // pacing guard: a run faster than a human can play keeps its score but earns nothing and is no record
-      const fast = hasFastGap(s.createdAt, checked.map((c) => c.checkedAt as Date), MIN_MS_PER_ITEM)
-      const coins = run.coins
+      const fast = hasFastGap(s.createdAt, checked.map((c) => c.checkedAt as Date), await this.settings.get('games_min_ms_per_answer'))
       const isNewRecord = fast ? false : await this.repo.recordBest(caller.userId, game, run.score, s.isTest, at)
       const detail =
         game === 'betul-salah' ? { maxStreak: run.best } : game === 'cabaran-kilat' ? { maxCombo: run.best } : game === 'tembak-jawapan' ? { level: run.best } : { solved: run.best }
-      const credited = fast ? 0 : await report(coins, run.correct, run.total, detail)
+      const r = await report(fast, run.correct, run.total, detail)
       await this.repo.updateSession(s.id, {
         submittedAt: at,
         score: run.score,
         correctCount: run.correct,
-        coinsComputed: coins,
-        coinsCredited: credited,
+        coinsComputed: r.coins,
+        coinsCredited: r.credited,
         isNewRecord,
       })
       return {
         status: 200,
-        body: { is_new_record: isNewRecord, syiling_awarded: credited, score: run.score, correct_count: run.correct, total_answered: run.total },
+        body: { is_new_record: isNewRecord, syiling_awarded: r.credited, score: run.score, correct_count: run.correct, total_answered: run.total },
       }
     })
   }

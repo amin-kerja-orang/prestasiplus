@@ -3,7 +3,7 @@
  * who may act, the per-game metric text, the result headline, board tiles and the answer body.
  */
 
-import type { RoomActionBody, RoomView } from '../../api'
+import type { RoomActionBody, RoomReward, RoomView } from '../../api'
 import { teamLabel } from './lobby-lib'
 
 type Player = RoomView['players'][number]
@@ -15,9 +15,12 @@ export const MAX_ANSWER_SECONDS = 15
 export const isHost = (room: RoomView, userId: number | null): boolean =>
   userId !== null && String(room.host.id) === String(userId)
 
-/** The acting player of the room (the host who started it); others watch (BR-M16-19). */
+/**
+ * Whether the caller's seat acts now: the room waits for `state.humanId` (the seat whose turn it is; the host in the games with
+ * simultaneous rounds), and not once the caller has answered the question on the table (`youAnswered`: the waiting state).
+ */
 export const canAct = (room: RoomView, userId: number | null): boolean =>
-  userId !== null && room.state !== null && String(room.state.humanId) === String(userId)
+  userId !== null && room.state !== null && room.youAnswered !== true && String(room.state.humanId) === String(userId)
 
 /** Whether the host may start (BR-M16-19: the game's minimum players are in). */
 export const canStart = (room: RoomView): boolean =>
@@ -149,4 +152,19 @@ export function roundText(room: RoomView): string {
 /** Play-area mode of the question card for a game. */
 export function questionMode(room: RoomView): 'mcq' | 'word' {
   return room.game === 'teka-silang-kata' ? 'word' : 'mcq'
+}
+
+/**
+ * The reward line of a finished room (48 section 3.4 "Result screen messages", exact BM), from the caller's `result.reward`.
+ * Pace guard: nothing credited. A daily cap that left nothing to credit: the cap message; a cap that only reduced the reward
+ * shows the capped amount. Null when the room gave the caller no reward block.
+ */
+export function rewardLine(reward: RoomReward | undefined): string | null {
+  if (!reward) return null
+  if (reward.reason === 'pace_guard') return 'Keputusan disimpan tanpa ganjaran.'
+  if (reward.capped && reward.xp === 0 && reward.syiling === 0)
+    return 'Had ganjaran permainan hari ini telah dicapai. Cuba lagi esok.'
+  if (reward.syiling > 0)
+    return `Anda dapat +${String(reward.xp)} mata dan +${String(reward.syiling)} syiling.`
+  return `Anda dapat +${String(reward.xp)} mata.`
 }

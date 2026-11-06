@@ -124,11 +124,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     const how = wrapper!.get('[data-testid="pb-how-to"]')
     expect(how.text()).toContain('Cara Bermain:')
     expect(how.findAll('li').map((l) => l.text())).toEqual([
-      '🎲 1. Gulung dadu dan bergerak di papan',
-      '📝 2. Jatuh di petak kuiz — jawab soalan!',
-      '🪜 3. Naik tangga untuk shortcut',
-      '🐍 4. Elak ular yang menarik turun',
-      '🏆 5. Sampai petak 50 dulu = MENANG!',
+      'Gulung dadu dan bergerak ke petak 50. Petak soalan: jawab dengan betul untuk kekal di petak itu; jawapan salah membawa anda kembali.',
     ])
   })
 
@@ -238,6 +234,20 @@ describe('S7 create and join (FR-M16-56, 57)', () => {
     expect(wrapper!.get('[data-testid="join-submit"]').text()).toBe('🚀 Masuk Bilik')
     await input.setValue('abc123')
     expect(input.element.value).toBe('ABC123')
+  })
+
+  it('a code that is not 6 characters A-Z0-9 shows "Kod bilik tidak sah." and sends no request (AC-GM-R.1)', async () => {
+    const { router } = await mountPage()
+    for (const bad of ['AB12C', 'AB-12C', '']) {
+      await wrapper!.get('[data-testid="join-input"]').setValue(bad)
+      await wrapper!.get('[data-testid="join-form"]').trigger('submit')
+      await flushPromises()
+      expect(wrapper!.get('[data-testid="join-card"]').text()).toContain('Kod bilik tidak sah.')
+    }
+    expect(joinRoom).not.toHaveBeenCalled()
+    expect(router.currentRoute.value.fullPath).toBe('/papan-bijak')
+    await wrapper!.get('[data-testid="join-input"]').setValue('AB12CD') // typing again clears the message
+    expect(wrapper!.get('[data-testid="join-card"]').text()).not.toContain('Kod bilik tidak sah.')
   })
 
   it('joins by code, opening the room', async () => {

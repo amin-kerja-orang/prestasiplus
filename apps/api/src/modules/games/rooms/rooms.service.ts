@@ -1,12 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { randomUUID } from 'node:crypto'
+
+import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import {
   GamesRoomActionRequestSchema,
   GamesRoomGameSchema,
+  GAMES_ROBOT_NAME,
   GAMES_ROOM_LIMITS,
   gamesRoomCreateRequestFor,
   gamesRoomMaxPlayers,
   type GamesHub,
   type GamesLobby,
+  type GamesReward,
   type GamesRoomGame,
   type GamesRoomSubject,
   type GamesRoomView,
@@ -14,6 +19,7 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
+import { toMytTimestamp } from '../../../common/time/myt'
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
@@ -22,7 +28,10 @@ import {
   fieldError,
   gameNotFound,
   roomGradeLevelInvalid,
+  roomFull,
+  roomGradeRefused,
   roomNotFound,
+  roomStarted,
   startAlreadyStarted,
   startHostOnly,
   startNotEnoughPlayers,
@@ -32,21 +41,35 @@ import {
 } from '../errors'
 import { DEFAULT_QUIZ_TILES } from '../games.constants'
 import { NamePrivacy } from '../core/name-privacy.service'
-import { GamesPorts } from '../core/ports'
+import { GamesPorts, gameAnswerEntry } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
+import { GameSettingsService } from '../core/game-settings.service'
 import { GameSubjects } from '../core/subjects'
+import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../core/wallet-rewards'
 import { GameUsers, type GameUser } from '../core/game-users'
 import { enumOfGrade, gradeFits, gradeLabel, gradeName } from '../core/grades'
+import { startGameSweep } from '../core/time'
 import { initialsOf, kadarOf, truncateName } from '../core/names'
 import {
   applyAction,
   computeSettlement,
   EngineRefusal,
+  handOverSeat,
+  pbSettleDefault,
+  skipSeat,
+  shouldWritePoll,
+  ABSENT_TIMEOUTS,
+  SEEN_GAP_MS,
+  playedHumans,
+  seatPresent,
   POOL_SIZE,
   questionView,
   resolveClocks,
+  roundEndsAtMs,
+  startedHumans,
   startGame,
   stateView,
+  youAnswered,
   type EngineOut,
   type EnginePlayer,
   type EngineRoom,
@@ -54,10 +77,29 @@ import {
   type RoomAction,
   type RoomState,
 } from './engine'
+import { DEFAULT_GRADE, hasFastGap, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
 import { RoomSecrets } from './room-secrets'
 import { type PlayerRow, type RoomRow, RoomsRepository } from './rooms.repository'
 
 const CODE_PATTERN = /^[A-Z0-9]{6}$/
+
+/** The hub's games: game key, draw size and whether it needs exactly 4 options (48 sections 3.2 and 3.5; Battle 5, ruling 13; Roda Nasib has no questions). */
+const HUB_GAMES = [
+  ['papan-bijak', POOL_SIZE['papan-bijak'], false],
+  ['battle', 5, false],
+  ['perang-fakta', POOL_SIZE['perang-fakta'], false],
+  ['benteng-ilmu', POOL_SIZE['benteng-ilmu'], false],
+  ['perlumbaan-matematik', POOL_SIZE['perlumbaan-matematik'], false],
+  ['kuiz-relay', POOL_SIZE['kuiz-relay'], false],
+  ['teka-silang-kata', POOL_SIZE['teka-silang-kata'], false],
+  ['betul-salah', SOLO_INFO['betul-salah'].items, false],
+  ['cabaran-kilat', SOLO_INFO['cabaran-kilat'].items, true],
+  ['tembak-jawapan', SOLO_INFO['tembak-jawapan'].items, true],
+  ['susun-jawapan', SOLO_INFO['susun-jawapan'].items, false],
+  ['kad-memori', SOLO_INFO['kad-memori'].items, false],
+  ['jutawan', JUTAWAN_QUESTIONS, false],
+  ['roda-nasib', 0, false],
+] as const
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -94,8 +136,15 @@ export interface NewRoomInput {
 
 const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_players']
 
+/** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
+const SHORTEST_CLOCK_MS = 10_000
+const SWEEP_ROOMS = 200
+
 @Injectable()
-export class RoomsService {
+export class RoomsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(RoomsService.name)
+  private stopSweep: () => void = () => undefined
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RoomsRepository) private readonly repo: RoomsRepository,
@@ -106,12 +155,74 @@ export class RoomsService {
     @Inject(GameSubjects) private readonly subjects: GameSubjects,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(RoomSecrets) private readonly secrets: RoomSecrets,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
+
+  onModuleInit(): void {
+    this.stopSweep = startGameSweep(RoomsService.name, this.config.get<string>('NODE_ENV'), () => this.sweepAll())
+  }
+
+  onModuleDestroy(): void {
+    this.stopSweep()
+  }
+
+  private async sweepAll(): Promise<number> {
+    return (await this.sweepClocks()) + (await this.closeStaleWaiting())
+  }
+
+  /** FR-GM-00.7: one pass over the rooms with no poller; every room takes its lock and re-checks. Returns how many moved. */
+  async sweepClocks(): Promise<number> {
+    const codes = await this.repo.playingIdleSince(new Date(this.clock.now().getTime() - SHORTEST_CLOCK_MS), SWEEP_ROOMS)
+    let moved = 0
+    for (const code of codes) {
+      try {
+        const changed = await this.prisma.transaction(async (tx) => {
+          await this.repo.lock(code)
+          const room = await this.repo.room(code)
+          if (room?.status !== 'playing') return false
+          return (await this.advance(tx, room, await this.repo.players(code))).room !== room
+        })
+        if (changed) moved += 1
+      } catch (err) {
+        this.logger.warn(`Room clock failed for ${code}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return moved
+  }
+
+  /** Rooms created at or before this instant have waited `room_waiting_minutes` and are closed (FR-GM-R.5, ruling 51). */
+  private async waitingNotBefore(): Promise<Date> {
+    const minutes = await this.settings.get('room_waiting_minutes')
+    return new Date(this.clock.now().getTime() - minutes * 60_000)
+  }
+
+  /** FR-GM-R.5: closes the waiting rooms past `room_waiting_minutes` since creation; every room takes its lock and re-checks. Returns how many closed. */
+  async closeStaleWaiting(): Promise<number> {
+    const before = await this.waitingNotBefore()
+    let closed = 0
+    for (const code of await this.repo.waitingCreatedBefore(before, SWEEP_ROOMS)) {
+      try {
+        const done = await this.prisma.transaction(async () => {
+          await this.repo.lock(code)
+          const room = await this.repo.room(code)
+          if (room?.status !== 'waiting' || room.createdAt.getTime() > before.getTime()) return false
+          await this.repo.updateRoom(code, { status: 'closed' }, this.clock.now())
+          return true
+        })
+        if (done) closed += 1
+      } catch (err) {
+        this.logger.warn(`Waiting room close failed for ${code}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return closed
+  }
 
   // --- hub and lobby ---------------------------------------------------------------------------------------
 
   async hub(caller: Caller): Promise<GamesHub> {
-    const open = await this.repo.openRooms(6)
+    const viewer = await this.users.get(caller.userId)
+    const open = await this.repo.openRooms(6, viewer?.grade ?? null, await this.waitingNotBefore())
     const names = await this.users.getMany(open.map((r) => r.hostId))
     const seen = await this.privacy.resolver(caller)
     const hostName = (id: string): string => {
@@ -131,7 +242,26 @@ export class RoomsService {
         max: r.max,
       })),
       chips: { papanBijakPlayed: played, battled },
+      enabledGames: await this.enabledGames(caller),
     }
+  }
+
+  /**
+   * FR-GM-00.1, AC-GM-00.6, 48 section 3.1, ruling 13 on #497: the games switched on (`game_enabled_*`) whose pool for the
+   * caller's Tingkatan holds the draw. Text-length rules (Susun Jawapan, Teka Silang Kata) are applied at the start, not here.
+   */
+  private async enabledGames(caller: Caller): Promise<string[]> {
+    const levelId = await this.subjects.levelIdOfGrade((await this.users.get(caller.userId))?.grade ?? DEFAULT_GRADE)
+    const filter = levelId === null ? {} : { educationLevelId: levelId }
+    const [settings, pool, fourOptionPool, quizTiles] = await Promise.all([
+      this.settings.getMany(HUB_GAMES.map(([game]) => `game_enabled_${game}` as const)),
+      this.questions.eligibleCount(filter),
+      this.questions.eligibleCount({ ...filter, exactOptions: 4 }),
+      this.repo.quizTiles(),
+    ])
+    // AC-GM-02.3: with 0 quiz tiles Papan Bijak needs no questions, so its draw is 0.
+    const drawOf = (game: string, draw: number): number => (game === 'papan-bijak' && (quizTiles ?? DEFAULT_QUIZ_TILES) === 0 ? 0 : draw)
+    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= drawOf(game, draw)).map(([game]) => game)
   }
 
   async lobby(caller: Caller, gameParam: string): Promise<GamesLobby> {
@@ -239,7 +369,7 @@ export class RoomsService {
         seed,
       )
       if (inserted) {
-        await this.repo.addPlayer(code, host.userId, false, host.isTest, now)
+        await this.repo.addPlayer(code, host.userId, host.isTest, now)
         return code
       }
     }
@@ -259,16 +389,19 @@ export class RoomsService {
       if (!room || room.game !== game) throw roomNotFound()
       const ps = await this.repo.players(code)
       if (ps.some((p) => p.userId === caller.userId)) return { code }
+      // FR-GM-R.2, 48 GAME-R: exists (above), not started, a free seat, then the Tingkatan; a closed room no longer joins.
+      // A waiting room past `room_waiting_minutes` is as good as closed before the sweep writes it (ruling 51).
+      const stale = room.status === 'waiting' && room.createdAt.getTime() <= (await this.waitingNotBefore()).getTime()
+      if (room.status === 'closed' || stale || room.isTest !== caller.isTest) throw roomNotFound() // no mixed rooms: test actors and normal users never share one
+      if (room.status !== 'waiting') throw roomStarted()
+      const robots = ps.filter((p) => p.robot !== null)
+      if (ps.length - robots.length >= room.maxPlayers) throw roomFull()
       const viewer = await this.users.get(caller.userId)
-      if (
-        room.status !== 'waiting' ||
-        ps.length >= room.maxPlayers ||
-        !gradeFits(room, viewer?.grade ?? null) ||
-        room.isTest !== caller.isTest // no mixed rooms: test actors and normal users never share one
-      ) {
-        throw roomNotFound()
-      }
-      await this.repo.addPlayer(code, caller.userId, false, caller.isTest, this.clock.now())
+      if (!gradeFits(room, viewer?.grade ?? null)) throw roomGradeRefused() // AC-GM-R.6, ruling on DOC DEFECT 48: 403 "Tindakan tidak sah."
+      // 48 section 3.6, humans first: a pupil takes the seat of a robot, so a robot never blocks a join.
+      const seatToFree = robots.at(-1)
+      if (seatToFree) await this.repo.removeSeat(seatToFree.id)
+      await this.repo.addPlayer(code, caller.userId, caller.isTest, this.clock.now())
       return { code }
     })
   }
@@ -298,16 +431,11 @@ export class RoomsService {
     return this.prisma.transaction(async (tx) => {
       await this.repo.lock(probe.room.code)
       let { room, players } = await this.mustPlayer(caller, game, rawCode)
-      if (
-        room.status === 'waiting' &&
-        room.hostId === caller.userId &&
-        players.length < GAMES_ROOM_LIMITS[game].minPlayers
-      ) {
-        await this.addBot(room, players)
-        players = await this.repo.players(room.code)
+      if (room.status === 'waiting' && room.hostId === caller.userId) {
+        players = await this.robotsAfterWait(room, players)
       }
       if (room.status === 'playing') {
-        const after = await this.runClocks(tx, room, players)
+        const after = await this.advance(tx, room, players, caller.userId)
         room = after.room
         players = after.players
       }
@@ -323,12 +451,17 @@ export class RoomsService {
     return this.prisma.transaction(async (tx) => {
       const probe = await this.mustPlayer(caller, game, rawCode)
       await this.repo.lock(probe.room.code)
-      const { room, players } = await this.mustPlayer(caller, game, rawCode)
+      const { room, players: seated } = await this.mustPlayer(caller, game, rawCode)
       if (room.hostId !== caller.userId) throw startHostOnly()
       if (room.status !== 'waiting') throw startAlreadyStarted()
-      if (players.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
-      const pool = await this.drawPool(room, game)
+      const waited = await this.robotsAfterWait(room, seated)
+      if (waited.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
+      // AC-GM-02.3: with 0 quiz tiles Papan Bijak asks no question, so it draws no pool.
+      const quizTiles = (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES
+      const pool = game === 'papan-bijak' && quizTiles === 0 ? [] : await this.drawPool(room, game)
       const now = this.clock.now()
+      // DM-90: every human seat is present at the start, with no timeouts.
+      const players = waited.map((p) => (p.isBot ? p : { ...p, lastPolledAt: now, consecutiveTimeouts: 0 }))
       const out = startGame({
         room: engineRoom(room),
         players: enginePlayers(players),
@@ -336,12 +469,15 @@ export class RoomsService {
         seed: seedOf(room, this.secrets),
         secretInt: (max) => this.secrets.int(max),
         pool,
-        quizTiles: (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES,
+        quizTiles,
         p: await this.botAccuracy(),
         nowMs: now.getTime(),
       })
-      await this.repo.updateRoom(room.code, { status: 'playing', startedAt: now }, now)
-      const started: RoomRow = { ...room, status: 'playing', startedAt: now }
+      // DM-67: every `waiting` to `playing` is a new play of the room, with its own attempt id.
+      const sessionId = randomUUID()
+      await this.repo.updateRoom(room.code, { status: 'playing', sessionId, startedAt: now }, now)
+      await this.repo.startPresence(room.code, now)
+      const started: RoomRow = { ...room, status: 'playing', sessionId, startedAt: now }
       const done = await this.applyOut(tx, started, players, out)
       return this.viewOf(caller, done.room, done.players)
     })
@@ -362,6 +498,7 @@ export class RoomsService {
     }
     const v = r.data
     if (v.type === 'roll') return { type: 'roll' }
+    if (v.type === 'leave') return { type: 'leave' }
     return {
       type: 'answer',
       questionId: v.questionId,
@@ -380,19 +517,22 @@ export class RoomsService {
     const game = parseGame(gameParam)
     const action = this.parseAction(body)
     await this.mustPlayer(caller, game, rawCode)
+    if (action.type === 'leave') return this.leave(caller, game, rawCode)
     return this.prisma.transaction(async (tx) => {
       const probe = await this.mustPlayer(caller, game, rawCode)
       await this.repo.lock(probe.room.code)
       const before = await this.mustPlayer(caller, game, rawCode)
       const clocked =
         before.room.status === 'playing'
-          ? await this.runClocks(tx, before.room, before.players)
+          ? await this.advance(tx, before.room, before.players, caller.userId)
           : before
       // The clock ended the game just now: the answer arrived too late, so answer with the finished room.
       if (before.room.status === 'playing' && clocked.room.status === 'finished')
         return this.viewOf(caller, clocked.room, clocked.players)
       const { room, players } = clocked
+      const movedByClock = room !== before.room
       if (room.status !== 'playing' || !room.state) throw actionNotStarted()
+      // Seat-keyed: the room waits for one seat (its turn, or the one acting human of an own-part game); nobody else may act.
       if (room.state.humanId !== caller.userId) throw actionNotYourTurn()
       try {
         const out = applyAction({
@@ -404,11 +544,141 @@ export class RoomsService {
           nowMs: this.clock.now().getTime(),
         })
         const done = await this.applyOut(tx, room, players, out)
+        // DM-90: an action is presence too (its count was reset by the engine).
+        const mine = done.players.find((p) => p.seat === caller.userId)
+        if (mine) await this.repo.touchSeat(mine.id, this.clock.now())
         return this.viewOf(caller, done.room, done.players)
       } catch (e) {
+        // The clock moved the room during this request, so the action was for a turn that has passed: a refusal would roll
+        // the timeouts back. They commit and the pupil gets the room as it now stands.
+        if (movedByClock && e instanceof EngineRefusal) return this.viewOf(caller, room, players)
         throw mapRefusal(e)
       }
     })
+  }
+
+  // --- leave (Keluar) ---------------------------------------------------------------------------------------------
+
+  /**
+   * 48 GAME-R "Absent, leave": `Keluar` in `waiting` frees the seat and the host leaving closes the room; in `playing` it
+   * forfeits the seat (0 XP, no reward, no standing). A finished or closed room answers unchanged. The leaver is no longer a
+   * player afterwards, so the answer is the room as the others now see it.
+   */
+  private async leave(caller: Caller, game: GamesRoomGame, rawCode: string): Promise<GamesRoomView> {
+    return this.prisma.transaction(async (tx) => {
+      const probe = await this.mustPlayer(caller, game, rawCode)
+      await this.repo.lock(probe.room.code)
+      let { room, players } = await this.mustPlayer(caller, game, rawCode)
+      if (room.status === 'playing') {
+        const after = await this.advance(tx, room, players, caller.userId)
+        room = after.room
+        players = after.players
+      }
+      if (room.status === 'waiting') return this.leaveWaiting(caller, room, players)
+      const seat = players.find((p) => p.userId === caller.userId)
+      if (room.status === 'playing' && room.state && seat) {
+        const rest = await this.dropSeat(tx, room, players, seat)
+        return this.viewOf(caller, rest.room, rest.players)
+      }
+      return this.viewOf(caller, room, players)
+    })
+  }
+
+  private async leaveWaiting(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
+    if (room.hostId === caller.userId) {
+      await this.repo.updateRoom(room.code, { status: 'closed' }, this.clock.now())
+      return this.viewOf(caller, { ...room, status: 'closed' }, players)
+    }
+    const seat = players.find((p) => p.userId === caller.userId)
+    if (seat) await this.repo.removeSeat(seat.id)
+    return this.viewOf(caller, room, players.filter((p) => p !== seat))
+  }
+
+  /**
+   * Ruling 50 and R1 Q1-Q3 (lead answers on #983): a human leaves a game in play (Keluar, or 3 timeouts in a row). A leaver always
+   * gets jumlah + 1, menang 0, XP 0 and no reward, in every room game that writes standings (2 or more humans started). While
+   * 2 or more humans remain a robot takes the seat and the game goes on (the seat keeps its place and points). With exactly 1
+   * human left that human wins by default if present (polled within `games_absent_seconds`); with no human left, or one who is
+   * not present, the game ends and nothing is settled. This is not tied to the host role.
+   */
+  private async dropSeat(
+    tx: TxClient,
+    room: RoomRow,
+    players: PlayerRow[],
+    seat: PlayerRow,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    const now = this.clock.now()
+    // Rulings 50.3 and 50.4: the leaver's jumlah + 1 is not written now. The leaver is recorded in the state and `settle`
+    // writes jumlah + 1 (menang 0) once, when the game finishes settled; a game that ends unsettled writes nothing for anyone.
+    const base = room.state as RoomState
+    const counts = !room.isTest && !seat.isTest && seat.userId !== null && startedHumans(base, enginePlayers(players)) >= 2
+    const st: RoomState = counts ? { ...base, leavers: [...(base.leavers ?? []), seat.userId as string] } : base
+    const left = players.filter((p) => !p.isBot && p !== seat)
+    // `game_rooms.host_id` is not moved when the host leaves: host-only actions (start, close) exist in the waiting room only,
+    // so in a playing room it is display only.
+    if (left.length >= 2 && (await this.settings.get('games_room_bots_enabled')) !== 1) {
+      // Ruling 50.1: robots off, so the seat is skipped and never a robot; the humans left play on.
+      await this.repo.removeSeat(seat.id)
+      const rest = players.filter((p) => p !== seat)
+      const out = skipSeat({
+        room: engineRoom(room),
+        players: enginePlayers(rest),
+        state: st,
+        leaver: seat.seat,
+        leaverIndex: players.indexOf(seat),
+        oldCount: players.length,
+        p: await this.botAccuracy(),
+        nowMs: now.getTime(),
+      })
+      return this.applyOut(tx, room, rest, out)
+    }
+    if (left.length >= 2) {
+      await this.repo.seatToRobot(seat.id)
+      const after = await this.repo.players(room.code)
+      const remap: Record<string, string> = {}
+      for (const old of players) {
+        const next = after.find((p) => p.id === old.id)
+        if (next && next.seat !== old.seat) remap[old.seat] = next.seat
+      }
+      const out = handOverSeat({
+        room: engineRoom(room),
+        players: enginePlayers(after),
+        state: st,
+        remap,
+        leaver: seat.seat,
+        p: await this.botAccuracy(),
+        nowMs: now.getTime(),
+      })
+      return this.applyOut(tx, room, after, out)
+    }
+    const last = left[0]
+    // The leaver gives the seat up when a human stays to win by default; with nobody left the seat stays as the record of the
+    // ended game (the leaver can still read the finished room).
+    if (last) await this.repo.removeSeat(seat.id)
+    const rest = last ? players.filter((p) => p !== seat) : players
+    const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
+    // `last_polled_at` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
+    const present = last !== undefined && seatPresent(last.lastPolledAt?.getTime(), now.getTime(), absentMs + SEEN_GAP_MS)
+    if (last && present) {
+      const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
+      // FR-GM-02.5, AC-GM-02.4: the default winner of Papan Bijak is scored 10 x correct + 50 (the others 10 x correct).
+      const seats = enginePlayers(rest)
+      return this.applyOut(tx, room, rest, {
+        state,
+        players: room.game === 'papan-bijak' ? pbSettleDefault(seats, last.seat) : seats,
+        finished: true,
+      })
+    }
+    // Nobody present is left: the game ends with no winner, no standing and no reward (`settledAt` is set so nothing settles later).
+    const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
+    const result = {
+      winnerId: null,
+      mvpId: null,
+      scores: rest.map((p) => ({ userId: p.seat, points: p.points, correct: p.correct })),
+      forfeitedBy: seat.userId,
+    }
+    await this.repo.updateRoom(room.code, { state, status: 'finished', finishedAt: now, result, settledAt: now }, now)
+    return { room: { ...room, state, status: 'finished', finishedAt: now, result, settledAt: now }, players: rest }
   }
 
   // --- engine plumbing -------------------------------------------------------------------------------------------
@@ -418,11 +688,59 @@ export class RoomsService {
     return Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0
   }
 
+  /**
+   * The one locked advance of a playing room, shared by the poll, the 5 s sweep and the action (the caller holds the room row
+   * lock): resolves the server clocks (idempotent: same time, same result; an absent seat's turn closes early, ruling 49.2),
+   * marks the caller present (`last_polled_at`; a poll never resets the timeout count) and removes the seats with 3 consecutive
+   * timeouts, polled or not (ruling 49.1). The clocks run first, on the presence the seat had before this call, so a seat
+   * that comes back after a long absence is timed out for the turns whose clock ran out. The turn open now is never early-closed
+   * for the calling seat: its own request is presence. Calling it again moves nothing.
+   */
+  private async advance(
+    tx: TxClient,
+    room: RoomRow,
+    players: PlayerRow[],
+    seen?: string,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    if (room.status !== 'playing' || !room.state) return { room, players }
+    const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
+    let cur = { room, players }
+    for (let i = 0; i < 8; i++) {
+      cur = await this.runClocks(tx, cur.room, cur.players, absentMs, seen)
+      if (i === 0 && seen !== undefined && cur.room.status === 'playing') cur = await this.notePoll(cur, seen)
+      if (cur.room.status !== 'playing' || !cur.room.state) break
+      // Ruling 49, every room game: 3 timeouts in a row remove the seat. With other humans the game goes on (or the last
+      // present one wins); a lone human who is absent ends the game with nothing settled (ruling 50.3). In the own-part
+      // games (GAME-03/04/05/07) only the one acting human is awaited, so only that seat can miss turns; absence of the
+      // simulated seats comes with each part's simultaneous rounds.
+      const absent = cur.players.find((p) => !p.isBot && p.consecutiveTimeouts >= ABSENT_TIMEOUTS)
+      if (!absent) break
+      cur = await this.dropSeat(tx, cur.room, cur.players, absent)
+    }
+    return cur
+  }
+
+  /** The caller polled: `last_polled_at` is written at most every SEEN_GAP_MS per seat. The room object stays the same. */
+  private async notePoll(
+    cur: { room: RoomRow; players: PlayerRow[] },
+    seen: string,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    const row = cur.players.find((p) => p.seat === seen && !p.isBot)
+    const now = this.clock.now()
+    if (!row || !shouldWritePoll(row.lastPolledAt?.getTime(), now.getTime(), SEEN_GAP_MS)) return cur
+    await this.repo.touchSeat(row.id, now)
+    // The room has a poller: the 5 s sweep leaves it alone for the shortest clock.
+    await this.repo.updateRoom(cur.room.code, {}, now)
+    return { room: cur.room, players: cur.players.map((p) => (p === row ? { ...p, lastPolledAt: now } : p)) }
+  }
+
   /** Resolves the server clocks of a playing room (idempotent) and writes the outcome back. */
   private async runClocks(
     tx: TxClient,
     room: RoomRow,
     players: PlayerRow[],
+    absentMs: number,
+    callerSeat?: string,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     if (room.status !== 'playing' || !room.state) return { room, players }
     const res = resolveClocks({
@@ -432,12 +750,15 @@ export class RoomsService {
       startedAtMs: (room.startedAt ?? this.clock.now()).getTime(),
       nowMs: this.clock.now().getTime(),
       p: await this.botAccuracy(),
+      absentMs,
+      ...(callerSeat === undefined ? {} : { callerSeat }),
     })
     if (!res.changed) return { room, players }
     return this.applyOut(tx, room, players, {
       state: res.state,
       players: res.players,
       finished: res.finished,
+      answered: res.answered,
     })
   }
 
@@ -452,18 +773,37 @@ export class RoomsService {
     out: EngineOut,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     const now = this.clock.now()
+    // FR-GM-00.5, 48 section 3.5: in the same transaction as the state change; Mod Pelajar writes no row.
+    if (!room.isTest) {
+      for (const a of out.answered ?? []) {
+        await this.ports.answers.record(
+          gameAnswerEntry({
+            userId: a.userId,
+            attemptId: room.sessionId,
+            questionId: a.questionId,
+            gameKey: room.game,
+            position: a.position,
+            isCorrect: a.correct,
+            answeredAt: new Date(a.atMs),
+          }),
+        )
+      }
+    }
     for (const ep of out.players) {
-      const row = players.find((p) => p.userId === ep.userId)
+      const row = players.find((p) => p.seat === ep.userId)
       if (row)
         await this.repo.updatePlayer(row.id, {
           team: ep.team,
           points: ep.points,
           correct: ep.correct,
+          ...(ep.consecutiveTimeouts === undefined ? {} : { consecutiveTimeouts: ep.consecutiveTimeouts }),
         })
     }
     const nextPlayers = players.map((p) => {
-      const ep = out.players.find((x) => x.userId === p.userId)
-      return ep ? { ...p, team: ep.team, points: ep.points, correct: ep.correct } : p
+      const ep = out.players.find((x) => x.userId === p.seat)
+      return ep
+        ? { ...p, team: ep.team, points: ep.points, correct: ep.correct, consecutiveTimeouts: ep.consecutiveTimeouts ?? p.consecutiveTimeouts }
+        : p
     })
     if (!out.finished) {
       await this.repo.updateRoom(room.code, { state: out.state }, now)
@@ -494,7 +834,11 @@ export class RoomsService {
     }
   }
 
-  /** AC10: standings for human, non-test players and one reward report for the acting human. */
+  /**
+   * AC10, 48 GAME-R: standings for every human of a game that 2 or more humans started (none otherwise), and one reward report
+   * per human who stayed: one `onGameResult` each (the port keeps one reward event per session and pupil), each from the one
+   * formula, the pace guard per player. The Mod Pelajar actor never earns.
+   */
   private async settle(
     tx: TxClient,
     room: RoomRow,
@@ -504,47 +848,76 @@ export class RoomsService {
     const game = room.game as GamesRoomGame
     const s = computeSettlement({ code: room.code, game, state: out.state, players: out.players })
     const now = this.clock.now()
-    const byId = new Map(players.map((p) => [p.userId, p]))
+    const byId = new Map(players.map((p) => [p.seat, p]))
     for (const d of s.standings) {
       if (byId.get(d.userId)?.isTest || (d.wins === 0 && d.jumlah === 0)) continue
       await this.repo.bumpStanding(game, d.userId, d, now)
     }
-    const r = s.report
-    if (!r || byId.get(r.userId)?.isTest) return // the Mod Pelajar actor never earns: no reward call at all
-    let coins = r.coins
-    if (coins === undefined) {
-      const rates = await this.ports.rewards.tierRates(r.userId, { tx })
-      coins = r.correct * rates.correct + (r.won ? rates.win : 0)
+    // Ruling 50.4: every leaver of the game gets jumlah + 1 and menang 0, once (the caller's `settledAt` guard), only now that it is settled.
+    for (const userId of out.state.leavers ?? []) {
+      await this.repo.bumpStanding(game, userId, { wins: 0, jumlah: 1, betul: 0, skor: 0 }, now)
     }
-    await this.ports.rewards.onGameResult(
-      r.userId,
-      {
-        game: r.game,
-        event: r.event,
-        coins,
-        xp: 0,
-        correct: r.correct,
-        total: r.total,
-        detail: r.detail,
-        key: room.code,
-      },
-      { tx, isTest: false },
-    )
+    for (const r of s.reports) {
+      if (byId.get(r.userId)?.isTest) continue // the Mod Pelajar actor never earns: no reward call at all
+      if (this.paceTripped(room, out.state, r.userId, await this.settings.get('games_min_ms_per_answer'))) continue // 48 section 3.4 rule 5: stored and scored, credits nothing
+      const reward = await rewardNow(this.settings, tx, { correct: r.correct, outcome: r.outcome, robotsOnly: r.robotsOnly, fastGap: false })
+      await this.ports.rewards.onGameResult(
+        r.userId,
+        {
+          game: r.game,
+          event: r.event,
+          coins: reward.coins,
+          xp: reward.xp,
+          correct: r.correct,
+          total: r.total,
+          detail: r.detail,
+          key: room.code,
+          session: { id: room.sessionId, gameKey: room.game },
+        },
+        { tx, isTest: false },
+      )
+    }
   }
 
-  /** One fictitious student of a fitting grade not yet in the room (BR-M16-19); none when the pool is empty. */
-  async addBot(room: RoomRow, players: PlayerRow[]): Promise<void> {
-    const exclude = players.map((p) => p.userId)
-    const stream = `m16:room:${room.code}:${seedOf(room, this.secrets)}:bot:${String(players.length)}`
-    const pick =
-      (await this.ports.botPool.pick({
-        hostId: room.hostId,
-        fits: (g) => gradeFits(room, g),
-        exclude,
-        stream,
-      })) ??
-      (await this.ports.botPool.pick({ hostId: room.hostId, fits: () => true, exclude, stream }))
-    if (pick) await this.repo.addPlayer(room.code, pick.id, true, room.isTest, this.clock.now())
+  /** Rule 5 of 48 section 3.4, per player: a gap between this human's answers (the first: from the start) is under the minimum. */
+  private paceTripped(room: RoomRow, st: RoomState, userId: string, minMs: number): boolean {
+    const times = (st.seats?.[userId]?.answerMs ?? []).map((ms) => new Date(ms))
+    return hasFastGap(room.startedAt ?? room.createdAt, times, minMs)
+  }
+
+  /** The reward block of the finished room for the caller; nothing for a seat that did not play or left, or for Mod Pelajar. */
+  private async rewardOf(caller: Caller, room: RoomRow, st: RoomState, players: PlayerRow[]): Promise<GamesReward | undefined> {
+    if (room.isTest || (isRecord(room.result) && room.result.forfeitedBy !== undefined)) return undefined
+    if (!playedHumans(room.game as GamesRoomGame, st, enginePlayers(players)).some((p) => p.userId === caller.userId)) return undefined
+    const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
+    if (first) return rewardBlock(first)
+    return this.paceTripped(room, st, caller.userId, await this.settings.get('games_min_ms_per_answer')) ? PACE_GUARD_REWARD : undefined
+  }
+
+  /** 48 GAME-R: the robots of a room that has waited `battle_bot_fallback_seconds` below its minimum; else the seats as they are. */
+  private async robotsAfterWait(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
+    const waited = this.clock.now().getTime() - room.createdAt.getTime()
+    const seconds = await this.settings.get('battle_bot_fallback_seconds')
+    return waited >= seconds * 1000 ? this.addRobots(room, players) : players
+  }
+
+  /** Ruling 53: seconds until robots may join a waiting room (counted from creation); null when none will (robots off, never, or the minimum is met). */
+  private async robotInSeconds(room: RoomRow, seated: number): Promise<number | null> {
+    if (seated >= GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers) return null
+    const s = await this.settings.getMany(['games_room_bots_enabled', 'battle_bot_fallback_seconds'])
+    if (s.games_room_bots_enabled !== 1 || s.battle_bot_fallback_seconds === 0) return null
+    const waited = this.clock.now().getTime() - room.createdAt.getTime()
+    return Math.max(0, Math.ceil((s.battle_bot_fallback_seconds * 1000 - waited) / 1000))
+  }
+
+  /** One robot per seat missing to the minimum, when robots are on (`games_room_bots_enabled`; a fallback of 0 is "never a robot", 48 section 2). */
+  async addRobots(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
+    const missing = GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers - players.length
+    if (missing <= 0) return players
+    const s = await this.settings.getMany(['games_room_bots_enabled', 'battle_bot_fallback_seconds'])
+    if (s.games_room_bots_enabled !== 1 || s.battle_bot_fallback_seconds === 0) return players
+    for (let i = 0; i < missing; i++) await this.repo.addRobot(room.code, room.isTest, this.clock.now())
+    return this.repo.players(room.code)
   }
 
   /** Draws the question pool through BE-09 for the room subject and level, widening like the mock. */
@@ -566,11 +939,7 @@ export class RoomsService {
             {},
           ]
     for (const filter of tries) {
-      const served = await this.questions.sample(
-        filter,
-        game === 'teka-silang-kata' ? n * 4 : n,
-        rng,
-      )
+      const served = await this.questions.draw(filter, game === 'teka-silang-kata' ? n * 4 : n, rng, room.hostId)
       const pool = served
         .map((s) => ({
           id: s.question.id,
@@ -581,7 +950,7 @@ export class RoomsService {
         }))
         .filter(fits)
         .slice(0, n)
-      if (pool.length >= Math.min(n, 3)) return pool
+      if (pool.length >= n) return pool
     }
     throw startNotEnoughQuestions()
   }
@@ -590,17 +959,22 @@ export class RoomsService {
 
   private async viewOf(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
-    const ids = [room.hostId, ...players.map((p) => p.userId)]
-    const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
-    if (st?.winnerId) ids.push(st.winnerId)
+    const ids = [room.hostId, ...players.flatMap((p) => (p.userId === null ? [] : [p.userId]))]
+    const st = room.status === 'waiting' || room.status === 'closed' ? null : room.state // a waiting (or closed) room only stores its secret seed
     const names = await this.users.getMany(ids)
-    // Children's names rule: players, host, winner and scores show a name the caller may see, else first name + initial.
+    // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
     const seen = await this.privacy.resolver(caller)
     const nameOf = (id: string): string => {
       const u = names.get(id)
       return u ? seen.name(u) : ''
     }
+    // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
+    // Ruling 62: a single robot is "Robot PrestasiPlus"; the robots are numbered only when the room has 2 or more.
+    // Numbering follows the current robot count, so a name can change from "Robot PrestasiPlus" to "... 1" when a second robot joins; seat ids stay stable.
+    const manyRobots = players.filter((p) => p.robot !== null).length >= 2
+    const seatName = (p: PlayerRow): string =>
+      p.robot !== null ? (manyRobots ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : GAMES_ROBOT_NAME) : nameOf(p.seat)
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,
@@ -608,9 +982,9 @@ export class RoomsService {
       status: room.status as GamesRoomView['status'],
       host: { id: room.hostId, name: nameOf(room.hostId) },
       players: players.map((p) => ({
-        id: p.userId,
-        name: nameOf(p.userId),
-        grade: gradeLabel((names.get(p.userId) as GameUser | undefined)?.grade ?? null),
+        id: p.seat,
+        name: seatName(p),
+        grade: p.robot === null ? gradeLabel((names.get(p.seat) as GameUser | undefined)?.grade ?? null) : '',
         ...(p.team === null ? {} : { team: p.team }),
         points: p.points,
         isBot: p.isBot,
@@ -629,20 +1003,31 @@ export class RoomsService {
         : null,
     }
     if (st) view.round = st.round
+    // The six current games move the turn on at once, so this is not yet set in practice; it becomes live with the simultaneous-round parts.
+    if (st && youAnswered(st, caller.userId)) view.youAnswered = true
+    if (room.status === 'waiting') {
+      const robotIn = await this.robotInSeconds(room, players.length)
+      if (robotIn !== null) view.robotInSeconds = robotIn
+    }
+    const endsAt = st ? roundEndsAtMs(game, room.status, st, room.startedAt ? room.startedAt.getTime() : null) : null
+    if (endsAt !== null) view.roundEndsAt = toMytTimestamp(new Date(endsAt))
     const q = questionView(game, room.status, st)
     if (q) view.question = q
     if (room.status === 'finished' && st) {
+      const winnerSeat = players.find((p) => p.seat === st.winnerId)
       view.result = {
         winnerId: st.winnerId,
-        winnerName: st.winnerId === null ? null : nameOf(st.winnerId),
+        winnerName: winnerSeat ? seatName(winnerSeat) : null,
         mvpId: st.mvpId,
         scores: players.map((p) => ({
-          userId: p.userId,
-          name: nameOf(p.userId),
+          userId: p.seat,
+          name: seatName(p),
           points: p.points,
           correct: p.correct,
         })),
       }
+      const reward = await this.rewardOf(caller, room, st, players)
+      if (reward) view.result.reward = reward
     }
     return view
   }
@@ -670,11 +1055,13 @@ function engineRoom(room: RoomRow): EngineRoom {
 
 function enginePlayers(players: PlayerRow[]): EnginePlayer[] {
   return players.map((p) => ({
-    userId: p.userId,
+    userId: p.seat,
     team: p.team,
     points: p.points,
     correct: p.correct,
     isBot: p.isBot,
+    lastPolledMs: p.lastPolledAt === null ? null : p.lastPolledAt.getTime(),
+    consecutiveTimeouts: p.consecutiveTimeouts,
   }))
 }
 

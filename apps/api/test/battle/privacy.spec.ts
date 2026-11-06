@@ -16,10 +16,10 @@ const History = z.object({ data: z.array(z.object({ uuid: z.string(), playerA: z
 
 /** Fictitious names; the score of each pupil is unique so a row can be told apart without the id. */
 const PEOPLE = {
-  aina: { email: S.D1(1), name: 'Aina Zulkifli', masked: 'Aina Z.', skor: 90 },
-  bilal: { email: S.D1(2), name: 'Bilal Hashim', masked: 'Bilal H.', skor: 70 },
-  dewi: { email: S.D1(3), name: 'Dewi Anggraini', masked: 'Dewi A.', skor: 30 },
-  cheng: { email: S.D2(1), name: 'Cheng Wei Lim', masked: 'Cheng L.', skor: 10 },
+  aina: { email: S.D1(1), name: 'Aina Zulkifli', masked: 'Aina', skor: 90 },
+  bilal: { email: S.D1(2), name: 'Bilal Hashim', masked: 'Bilal', skor: 70 },
+  dewi: { email: S.D1(3), name: 'Dewi Anggraini', masked: 'Dewi', skor: 30 },
+  cheng: { email: S.D2(1), name: 'Cheng Wei Lim', masked: 'Cheng', skor: 10 },
 } as const
 type Key = keyof typeof PEOPLE
 
@@ -61,7 +61,7 @@ describe('children names in battle surfaces (issue #76)', () => {
   })
 
   const bySkor = <T extends { skor: number }>(rows: T[], k: Key): T | undefined => rows.find((r) => r.skor === PEOPLE[k].skor)
-  /** Expect row `r` to show `k` in full (name and id) or masked (initial form, null id). */
+  /** Expect row `r` to show `k` in full (name and id) or masked (first given name, null id). */
   const shows = (r: { userId: string | null; name: string } | undefined, k: Key, full: boolean) => {
     expect(r, k).toBeDefined()
     expect(r!.name, k).toBe(full ? PEOPLE[k].name : PEOPLE[k].masked)
@@ -78,12 +78,11 @@ describe('children names in battle surfaces (issue #76)', () => {
     return School.parse(res.body).data
   }
 
-  it('displayName: first name + initial of the last word; one word stays; empty stays empty', () => {
-    expect(displayName('Aina Zulkifli')).toBe('Aina Z.')
-    expect(displayName('  Cheng   Wei Lim ')).toBe('Cheng L.')
+  it('displayName: first given name only (ruling 7 on #497); one word stays; empty stays empty', () => {
+    expect(displayName('Aina Zulkifli')).toBe('Aina')
+    expect(displayName('  Cheng   Wei Lim ')).toBe('Cheng')
     expect(displayName('Aina')).toBe('Aina')
-    expect(displayName('aina zulkifli')).toBe('aina Z.')
-    expect(displayName('Aina Élis')).toBe('Aina É.')
+    expect(displayName('aina zulkifli')).toBe('aina')
     expect(displayName('')).toBe('')
     expect(displayName('   ')).toBe('')
   })
@@ -148,12 +147,12 @@ describe('children names in battle surfaces (issue #76)', () => {
       const r2 = p.recent.find((r) => r.uuid === battle2)!
       expect([r2.playerA.id, r2.playerA.name, r2.playerB.id, r2.playerB.name]).toEqual([null, PEOPLE.bilal.masked, null, PEOPLE.dewi.masked])
     })
-    it('student: own row full; own match full on both sides; a match of others masked', async () => {
+    it('student: own row full; own match: the own name full, the other pupil masked (FR-GM-00.8); a match of others masked', async () => {
       const p = await page(who.aina, d1)
       shows(bySkor(p.fighters, 'aina'), 'aina', true)
       shows(bySkor(p.fighters, 'bilal'), 'bilal', false)
       const r1 = p.recent.find((r) => r.uuid === battle1)!
-      expect([r1.playerA.id, r1.playerA.name, r1.playerB.id, r1.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, id.cheng, PEOPLE.cheng.name])
+      expect([r1.playerA.id, r1.playerA.name, r1.playerB.id, r1.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, null, PEOPLE.cheng.masked])
       const r2 = p.recent.find((r) => r.uuid === battle2)!
       expect([r2.playerA.id, r2.playerB.id]).toEqual([null, null])
     })
@@ -165,10 +164,10 @@ describe('children names in battle surfaces (issue #76)', () => {
     })
   })
 
-  it('GET /battle/history: the caller own battles keep full names and ids on both sides', async () => {
+  it('GET /battle/history: the caller keeps the own full name and id; the other pupil is a first given name with no id (FR-GM-00.8)', async () => {
     const res = await getAs(who.aina, '/battle/history')
     const rows = History.parse(res.body).data
     expect(rows.map((r) => r.uuid)).toEqual([battle1])
-    expect([rows[0]!.playerA.id, rows[0]!.playerA.name, rows[0]!.playerB.id, rows[0]!.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, id.cheng, PEOPLE.cheng.name])
+    expect([rows[0]!.playerA.id, rows[0]!.playerA.name, rows[0]!.playerB.id, rows[0]!.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, null, PEOPLE.cheng.masked])
   })
 })

@@ -133,6 +133,42 @@ describe('waiting room (FR-M16-68)', () => {
     expect(get('room-wait-host').text()).toBe('Menunggu hos memulakan permainan')
   })
 
+  it('the host sees "Robot akan menyertai dalam {s} saat." from robotInSeconds; a guest does not (ruling 53)', async () => {
+    fetchRoom.mockResolvedValue(room({ robotInSeconds: 18 }))
+    await mountRoom()
+    expect(get('room-robot-countdown').text()).toBe('Robot akan menyertai dalam 18 saat.')
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(room({ host: { id: 2, name: 'Pelajar Dua' }, robotInSeconds: 18 }))
+    await mountRoom()
+    expect(wrapper!.find('[data-testid="room-robot-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(room())
+    await mountRoom()
+    expect(wrapper!.find('[data-testid="room-robot-countdown"]').exists()).toBe(false)
+  })
+
+  it('"Keluar" sends the leave action and returns to the lobby', async () => {
+    fetchRoom.mockResolvedValue(room())
+    roomAction.mockResolvedValueOnce(room({ status: 'closed' }))
+    const { router } = await mountRoom()
+    expect(get('room-leave').text()).toBe('Keluar')
+    await get('room-leave').trigger('click')
+    await flushPromises()
+    expect(roomAction).toHaveBeenCalledWith('perang-fakta', 'ABC123', { type: 'leave' })
+    expect(router.currentRoute.value.fullPath).toBe('/perang-fakta')
+  })
+
+  it('a refused "Keluar" shows the red box and stays in the room', async () => {
+    fetchRoom.mockResolvedValue(room())
+    roomAction.mockRejectedValueOnce(
+      new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' }),
+    )
+    await mountRoom()
+    await get('room-leave').trigger('click')
+    await flushPromises()
+    expect(get('room-action-errors').text()).toContain('Bilik tidak dijumpai.')
+  })
+
   it('"Mula" starts the room and shows the question', async () => {
     fetchRoom.mockResolvedValue(room())
     startRoom.mockResolvedValueOnce(playing())
@@ -185,6 +221,53 @@ describe('play and result (FR-M16-69, 70)', () => {
     fetchRoom.mockResolvedValue(playing())
     await mountRoom()
     expect(get('room-countdown').text()).toBe('10s')
+  })
+
+  it('Papan Bijak: the roll countdown shows only on the caller\'s roll (FR-GM-02.2)', async () => {
+    const board = Array.from({ length: 50 }, () => 'plain')
+    const pb = (humanId: number, awaiting: 'roll' | 'answer') =>
+      room({
+        game: 'papan-bijak',
+        status: 'playing',
+        state: { awaiting, round: 1, total: 50, humanId, board, positions: { '1': 1, '2': 1 }, log: [], roundSecondsLeft: 24 },
+      })
+    fetchRoom.mockResolvedValue(pb(1, 'roll'))
+    await mountRoom('papan-bijak')
+    expect(get('room-roll-countdown').text()).toBe('24s')
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(pb(2, 'roll'))
+    await mountRoom('papan-bijak')
+    expect(wrapper!.find('[data-testid="room-roll-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    // No server clock on the caller's roll: no countdown. A clock at 0 shows "0s".
+    const st = pb(1, 'roll').state!
+    const noClock = { ...st }
+    delete noClock.roundSecondsLeft
+    fetchRoom.mockResolvedValue({ ...pb(1, 'roll'), state: noClock })
+    await mountRoom('papan-bijak')
+    expect(wrapper!.find('[data-testid="room-roll-countdown"]').exists()).toBe(false)
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue({ ...pb(1, 'roll'), state: { ...st, roundSecondsLeft: 0 } })
+    await mountRoom('papan-bijak')
+    expect(get('room-roll-countdown').text()).toBe('0s')
+  })
+
+  it('a finished room shows the caller\'s reward line (48 section 3.4)', async () => {
+    const result = {
+      winnerId: 1,
+      winnerName: 'Admin Demo',
+      mvpId: null,
+      scores: [{ userId: 1, name: 'Admin Demo', points: 90, correct: 4 }],
+    }
+    fetchRoom.mockResolvedValue(
+      room({ status: 'finished', result: { ...result, reward: { xp: 30, syiling: 8, capped: false, reason: null } } }),
+    )
+    await mountRoom()
+    expect(get('room-reward').text()).toBe('Anda dapat +30 mata dan +8 syiling.')
+    wrapper!.unmount()
+    fetchRoom.mockResolvedValue(room({ status: 'finished', result }))
+    await mountRoom()
+    expect(wrapper!.find('[data-testid="room-reward"]').exists()).toBe(false)
   })
 
   it('Papan Bijak: the roll button posts {type: roll}; the board has 50 tiles', async () => {
