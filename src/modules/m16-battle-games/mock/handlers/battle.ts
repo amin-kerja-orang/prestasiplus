@@ -80,6 +80,22 @@ export const battleRoutes: RouteDef[] = [
     { params: { queueId: int() } },
   ),
 
+  // API-GAME-14
+  route(
+    'POST',
+    '/api/battle/queue/:queueId/cancel',
+    [requireAuth()],
+    (req) => {
+      try {
+        battlesRepo.cancelQueue(viewerOf(req).id, req.params.queueId as number)
+        return ok({ cancelled: true })
+      } catch (e) {
+        return refusal(e)
+      }
+    },
+    { params: { queueId: int() } },
+  ),
+
   // #7
   route('GET', '/api/battle/search-opponent', [requireAuth()], (req) =>
     raw(200, {

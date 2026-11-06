@@ -165,6 +165,25 @@ describe('KuizPage (random)', () => {
     expect(document.body.textContent).toContain('← Kertas penuh')
   })
 
+  it('FR-PA-26: Markah is over served, Ketepatan over answered (a skipped question is not answered)', async () => {
+    server.startKuiz.mockResolvedValue(session)
+    server.checkKuiz.mockResolvedValue({ correct: true, correctOptionId: 'C', explanation: null })
+    server.finishKuiz.mockResolvedValue({
+      score: 1,
+      total: 2,
+      answered: 1,
+      gamification: { coinsEarned: 1, streakCount: 1, pointsEarned: 10, totalBalance: 1 },
+    })
+    await mountPage(KuizPage, '/simulasi/kuiz')
+    for (let i = 0; i < 2; i++) {
+      await pick('C')
+      await click('[data-testid=kuiz-semak]')
+      await click('[data-testid=kuiz-next]')
+    }
+    expect(text('[data-testid=kuiz-score]')).toContain('1/2')
+    expect(text('[data-testid=kuiz-accuracy]')).toContain('100%')
+  })
+
   it('"Cuba Lagi" starts a fresh quiz with the chosen count and subject', async () => {
     server.startKuiz.mockResolvedValue(session)
     server.checkKuiz.mockResolvedValue({ correct: true, correctOptionId: 'C', explanation: null })
@@ -400,6 +419,24 @@ describe('PaperQuizPage', () => {
     const text = box.textContent
     expect(text.indexOf('Teks pertama.')).toBeGreaterThanOrEqual(0)
     expect(text.indexOf('Teks pertama.')).toBeLessThan(text.indexOf('Teks kedua.'))
+  })
+
+  it('FR-X6-6: a page with two groups opens only the first sheet at 375; the second waits for its chip', async () => {
+    const stim = (body: string) => ({ kind: 'passage', label: 'Petikan', body, imageToken: null, alt: null })
+    server.getKuizPaperPage.mockResolvedValue({
+      ...page1,
+      items: [mcq('g1', { groupId: 'G1' }), mcq('q9'), mcq('g2', { groupId: 'G2' })],
+      groups: [{ id: 'G1', stimuli: [stim('Teks kumpulan satu.')] }, { id: 'G2', stimuli: [stim('Teks kumpulan dua.')] }],
+    })
+    await mountPage(PaperQuizPage, '/simulasi/p1/kuiz')
+    const chips = document.querySelectorAll<HTMLElement>('[data-testid="stimulus-chip"]')
+    expect(chips.length).toBe(2)
+    const open = (): string => [...document.querySelectorAll('[data-testid="group-stimuli"]')].map((b) => b.textContent).join('|')
+    expect(open()).toContain('Teks kumpulan satu.')
+    expect(open()).not.toContain('Teks kumpulan dua.')
+    chips[1]!.click()
+    await flushPromises()
+    expect(open()).toContain('Teks kumpulan dua.')
   })
 
   it('S8-T02: a group whose picture has no source keeps its questions visible and answerable', async () => {

@@ -91,6 +91,13 @@ describe('log hygiene (AC8)', () => {
     const low = everything.toLowerCase()
     for (const secret of secrets) expect(low.includes(secret), 'a personal or free-text value of the fixture is in the output').toBe(false)
     // Hex digests (input hash, keyed reject hashes) can hold a long run of decimal digits by chance: not a leak.
-    expect(patternKinds(everything.replace(/\b[0-9a-f]{16,}\b/gi, '#'), { allowedEmailDomains: [] })).toEqual([])
+    // The same holds for the name of this run's throw-away test database (`t_` + 12 random hex, test/support/db.ts),
+    // which the CLI prints in its "--apply target" line: about 1 run in 500 it holds a phone-shaped digit run
+    // (e.g. `t_0312345678ab`), which made this test flaky. It is the harness's name, not fixture data, so it is masked
+    // by its exact value; everything else is scanned as before.
+    const [db] = await h.q<{ name: string }>('select current_database() as name')
+    expect(db?.name).toMatch(/^t_[0-9a-f]{12}$/)
+    const scanned = everything.split(db!.name).join('#db').replace(/\b[0-9a-f]{16,}\b/gi, '#')
+    expect(patternKinds(scanned, { allowedEmailDomains: [] })).toEqual([])
   }, 120_000)
 })

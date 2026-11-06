@@ -20,6 +20,8 @@ export interface SubjectRef {
 }
 
 export interface NewPaperSection {
+  /** 1-based. Omitted: the list order. A scaled set keeps the position of the Kontrak section it comes from (S3-T02). */
+  position?: number
   label: string
   instruction: string | null
   ruleType: 'all' | 'choose'
@@ -43,6 +45,8 @@ export interface NewPaper {
   blueprintId: bigint
   createdById: bigint
   isTest: boolean
+  /** S3-T02 `Dilihat murid`; null (not restricted) only for a copy of a paper older than PO decision item 6, and for a paper a seed writes. */
+  levelScope?: string | null
   sections: NewPaperSection[]
 }
 
@@ -156,13 +160,14 @@ export class BuilderRepository {
         instructions: input.instructions,
         referenceSheets: input.referenceSheets,
         blueprintId: input.blueprintId,
+        levelScope: input.levelScope ?? null,
         status: 'draft',
         version: 1,
         isTest: input.isTest,
         createdById: input.createdById,
         sections: {
           create: input.sections.map((s, i) => ({
-            position: i + 1,
+            position: s.position ?? i + 1,
             label: s.label,
             instruction: s.instruction,
             ruleType: s.ruleType,

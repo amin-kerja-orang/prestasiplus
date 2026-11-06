@@ -226,6 +226,7 @@ export class ShopAdminService {
     const activeStatus: RewardRedemptionListResponse['meta']['activeStatus'] = status === 'all' ? 'all' : known ? (status as RewardRedemptionStatus) : null
     const start = (page - 1) * ADMIN_PAGE_SIZE
     const { rows, total } = known ? await this.repo.queue(status, start, ADMIN_PAGE_SIZE) : { rows: [], total: 0 }
+    const doubles = await this.repo.doubleSubmits(rows.map((r) => r.id))
     return {
       data: rows.map((r) => ({
         id: idToString(r.id),
@@ -237,6 +238,7 @@ export class ShopAdminService {
         tokenCost: r.tokenCost,
         status: r.status as RewardRedemptionStatus,
         createdAt: toMytTimestamp(r.createdAt),
+        doubleSubmit: doubles.has(r.id),
       })),
       meta: { ...listMeta(page, ADMIN_PAGE_SIZE, total), activeStatus },
     }

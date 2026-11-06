@@ -2,7 +2,7 @@
 /**
  * "Analisis Korelasi: Penggunaan → Pencapaian" (FN-M12-7.3.1 / 7.3.2; FR-M12-67 / 68): the three constant rows with the bar
  * (warning below 60, success otherwise; DV-M12-02) and the "Kesimpulan ALESA:" box. The
- * difference is 100+ minus 1-20, one decimal, signed.
+ * difference is 100+ minus 1-20, whole number (XS-5), signed.
  */
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
@@ -12,7 +12,7 @@ import { DsDataTable, DsPanel } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { Chain } from '../../../api/types'
-import { pct, plain } from '../common/kirkpatrick-format'
+import { plain, accuracyPct } from '../common/kirkpatrick-format'
 
 // The ALESA conclusion box is hidden unless VITE_ALESA_AI=on (D73).
 const alesaOn = isAlesaAiOn()
@@ -31,9 +31,10 @@ const high = computed(
     props.correlation.bands.find((b) => b.label === '100+ soalan') ??
     props.correlation.bands[props.correlation.bands.length - 1],
 )
-const diff = computed(() =>
-  formatNumber((high.value?.acc ?? 0) - (low.value?.acc ?? 0), { decimals: 1, signed: true }),
-)
+const diff = computed(() => {
+  const d = (high.value?.acc ?? 0) - (low.value?.acc ?? 0)
+  return formatNumber(Math.sign(d) * Math.round(Math.abs(d)), { decimals: 0, signed: true })
+})
 
 interface Row extends Record<string, unknown> {
   label: string
@@ -45,7 +46,7 @@ const rows = computed<Row[]>(() =>
   props.correlation.bands.map((b) => ({
     label: b.label,
     students: plain(b.n),
-    accuracy: pct(b.acc),
+    accuracy: accuracyPct(b.acc),
     acc: b.acc,
   })),
 )
@@ -106,9 +107,9 @@ const pageSize = ref(20)
       >
         <template #description>
           <strong>Kesimpulan ALESA:</strong> Pelajar yang menjawab 100+ soalan mencapai ketepatan
-          {{ pct(high?.acc ?? 0) }}, berbanding {{ pct(low?.acc ?? 0) }} bagi pelajar dengan kurang
-          20 soalan (perbezaan {{ diff }}%). Korelasi Pearson antara penggunaan dan ketepatan: r =
-          {{ correlation.r }} ({{ strength }}).
+          {{ accuracyPct(high?.acc ?? 0) }}, berbanding {{ accuracyPct(low?.acc ?? 0) }} bagi
+          pelajar dengan kurang 20 soalan (perbezaan {{ diff }}%). Korelasi Pearson antara
+          penggunaan dan ketepatan: r = {{ correlation.r }} ({{ strength }}).
         </template>
       </UAlert>
     </div>
