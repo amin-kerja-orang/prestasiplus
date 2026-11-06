@@ -192,9 +192,13 @@ export const PracticeReadRecentQuestionSchema = z
     id: IdSchema,
     subjectName: z.string(),
     difficulty: z.number().int().min(1).max(5),
-    text: z.string().max(103).meta({ description: 'Cut at 100 characters plus "..." (BR-29).' }),
+    text: z.string().max(141).meta({ description: 'Cut at 140 characters plus "…" (FR-MUR-2-8).' }),
     createdAt: TimestampSchema,
     levelCode: z.string(),
+    figureThumbUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8).' }),
   })
   .meta({ id: 'PracticeReadRecentQuestion' })
 

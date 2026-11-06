@@ -479,7 +479,11 @@ export const QuestionCreateRequestSchema = baseInput
   .meta({ id: 'QuestionCreateRequest' })
 
 /** PUT body: the four required fields must be sent; other fields are a patch (`''`/null clears). `questionType` is ignored. */
-export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateRequest' })
+export const QuestionUpdateRequestSchema = baseInput
+  // `parts` parse leniently here: the service holds new and changed parts to the strict write rules and lets a part echoed
+  // unchanged from the stored version keep the read rules (#692), which a strict DTO would make unreachable over HTTP.
+  .extend({ parts: z.array(QuestionPartSchema).min(1).optional() })
+  .meta({ id: 'QuestionUpdateRequest' })
 
 /** D54a: an action is the target lifecycle code, or `delete`. The mock verbs approve/reject/pending_review are gone. */
 export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'archived', 'delete'] as const
@@ -677,7 +681,11 @@ export const QuestionStructuredDetailSchema = z
 
 export const GURU_STRUCTURED_PAGE_SIZE = 20
 
-const GuruStructuredStatus = z.enum(['approved', 'review'])
+const GuruStructuredStatus = z.enum(['approved', 'review', 'rejected']).meta({
+  description: '`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned ("Ditolak"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value.',
+})
+/** The `status` filter of the list: `rejected` is a row state, not a filter value (returned rows are listed under `review`). */
+const GuruStructuredStatusFilter = z.enum(['approved', 'review'])
 const GuruStructuredSource = z.enum(['question', 'submission']).meta({
   description: '`question`: an approved question (numeric `id`). `submission`: the caller\'s own structured submission (an intake item; `id` is `g{itemId}`, never a question id).',
 })
@@ -702,7 +710,7 @@ export const GuruStructuredListQuerySchema = z
   .object({
     subjectId: IdSchema.optional(),
     educationLevelId: IdSchema.optional(),
-    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved questions, then the caller\'s own `review` submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller\'s own submissions only. Never another teacher\'s.' }),
+    status: GuruStructuredStatusFilter.optional().meta({ description: 'Omitted: approved questions, then the caller\'s own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller\'s own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher\'s.' }),
     page: z.coerce.number().int().min(1).default(1),
   })
   .meta({ id: 'GuruStructuredListQuery' })

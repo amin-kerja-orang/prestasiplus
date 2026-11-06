@@ -44,6 +44,7 @@ export function errorCodeOrNull(code: string | null): IntakeFileErrorCode | null
 export interface BatchRow {
   id: bigint
   status: string
+  statusReason?: string | null
   paperType: string
   subject: string
   kertas: number | null
@@ -77,6 +78,7 @@ export function toBatchSummary(row: BatchRow, counts: BatchItemCounts = NO_ITEMS
     id: idToString(row.id),
     status: row.status as IntakeBatchStatus,
     statusLabel: INTAKE_BATCH_STATUS_LABELS[row.status as IntakeBatchStatus],
+    statusReason: row.statusReason ?? null,
     paperType: row.paperType as IntakeBatchSummary['paperType'],
     subject: row.subject,
     kertas: row.kertas === null ? null : kertasOf(row.kertas),

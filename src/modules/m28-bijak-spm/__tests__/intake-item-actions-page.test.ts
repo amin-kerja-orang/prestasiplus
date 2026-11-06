@@ -75,9 +75,9 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
   })
 
   it('shows the wire status label as the badge for an http batch, else Draf (R1E2E-C1)', async () => {
-    server.getIntakeBatch.mockResolvedValue({ ...batchOf(2), batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    server.getIntakeBatch.mockResolvedValue({ ...batchOf(2), batchStatus: 'ready_for_review', statusLabel: 'Selesai' })
     const http = await mountPage()
-    expect(http.get('[data-testid=review-status]').text()).toContain('Sedia untuk semakan')
+    expect(http.get('[data-testid=review-status]').text()).toContain('Selesai')
     // the batch stays editable: the item actions are still offered
     expect(http.find('[data-testid=item-accept]').exists()).toBe(true)
     server.getIntakeBatch.mockResolvedValue(batchOf(2))
