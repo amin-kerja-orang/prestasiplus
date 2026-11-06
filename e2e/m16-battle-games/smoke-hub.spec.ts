@@ -24,7 +24,7 @@ const MODULE = { tag: [moduleTag(16)] }
 
 test.use({ mockInit: { latency: 0 } })
 
-/** The 18 cards in live order (discovery A.3): title, badge, button text, route. */
+/** The 15 cards (FR-GM-00.1, ruling 14 on #497) in live order (discovery A.3): title, badge, button text, route. */
 const CARDS: [string, string | null, string, string][] = [
   ['Papan Bijak', null, 'Main Sekarang', '/papan-bijak'],
   ['Battle Arena', '🔥 HOT', 'Battle!', '/battle'],
@@ -35,14 +35,11 @@ const CARDS: [string, string | null, string, string][] = [
   ['Teka Silang Kata', '👥 MULTIPLAYER', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', '✅❌ BARU!', 'Mula', '/permainan/betul-salah'],
   ['Roda Nasib', '📅 HARIAN', 'Spin Sekarang!', '/permainan/roda-nasib'],
-  ['Pertandingan Mingguan', '📅 MINGGUAN', 'Lihat Ranking', '/permainan/pertandingan'],
   ['Peta Pengembaraan', null, 'Jelajah', '/peta-belajar'],
-  ['Uji Minda', '👨‍👩‍👧 IBU BAPA', 'Mula', '/permainan/uji-minda'],
   ['Cabaran Kilat', '⚡ BARU!', 'Mula!', '/permainan/cabaran-kilat'],
   ['Jutawan Ilmu', '💰 BARU!', 'Main!', '/permainan/jutawan'],
   ['Susun Jawapan', '🧩 BARU!', 'Susun!', '/permainan/susun-jawapan'],
   ['Tembak Jawapan', '🎯 BARU!', 'Tembak!', '/permainan/tembak-jawapan'],
-  ['Sambung Kata', '🔗 BARU!', 'Mula!', '/permainan/sambung-kata'],
   ['Kad Memori', '🧠 HOT!', 'Main!', '/permainan/kad-memori'],
 ]
 
@@ -62,7 +59,7 @@ const grid = (page: Page) => page.getByTestId('hub-grid')
 const card = (page: Page, id: string) => page.getByTestId(`hub-card-${id}`)
 
 test.describe('M16 S6 hub', MODULE, () => {
-  test('E2E-M16-43 S6 header, empty rooms, 18 cards in order, card and button navigate, 1/2/3 columns @m16', async ({
+  test('E2E-M16-43 S6 header, empty rooms, 15 cards in order, card and button navigate, 1/2/3 columns @m16', async ({
     page,
     gotoApp,
     loginAs,
@@ -80,11 +77,11 @@ test.describe('M16 S6 hub', MODULE, () => {
       'Cipta bilik permainan dan jemput rakan-rakan!',
     )
 
-    // 18 cards, in live order, with badge, button text and target.
-    await expect(grid(page).locator('h3')).toHaveCount(18)
+    // 15 cards, in live order, with badge, button text and target.
+    await expect(grid(page).locator('h3')).toHaveCount(15)
     expect(await grid(page).locator('h3').allTextContents()).toEqual(CARDS.map((c) => c[0]))
     const buttons = grid(page).getByTestId('hub-card-button')
-    await expect(buttons).toHaveCount(18)
+    await expect(buttons).toHaveCount(15)
     expect((await buttons.allTextContents()).map((t) => t.trim())).toEqual(CARDS.map((c) => c[2]))
     expect(await buttons.evaluateAll((els) => els.map((a) => a.getAttribute('href')))).toEqual(
       CARDS.map((c) => c[3]),
@@ -172,7 +169,7 @@ test.describe('M16 S6 hub', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/permainan')
-    await expect(grid(page).locator('h3')).toHaveCount(18)
+    await expect(grid(page).locator('h3')).toHaveCount(15)
     await expectNoHorizontalScroll(page)
     const small = await shellMain(page).evaluate((main) => {
       const bad: string[] = []

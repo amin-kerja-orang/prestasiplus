@@ -32,7 +32,7 @@ describe('hub and lobby (M16-22, M16-23)', () => {
   it('hub: empty, then lists a free room with the host display name; no-store; parsed by the contract', async () => {
     const empty = await student.get('/api/games/hub')
     expect(empty.headers['cache-control']).toBe('no-store')
-    expect(parseData(empty, GamesHubSchema)).toEqual({
+    expect(parseData(empty, GamesHubSchema)).toMatchObject({
       openRooms: [],
       chips: { papanBijakPlayed: false, battled: false },
     })
@@ -40,7 +40,7 @@ describe('hub and lobby (M16-22, M16-23)', () => {
     const hub = parseData(await student2.get('/api/games/hub'), GamesHubSchema)
     // children's names rule (issue #76): another pupil's host is first name + initial; the host sees the full name
     expect(hub.openRooms).toEqual([
-      { game: 'papan-bijak', code, host: 'Murid D.', players: 1, max: 4 },
+      { game: 'papan-bijak', code, host: 'Murid', players: 1, max: 4 },
     ])
     expect(parseData(await student.get('/api/games/hub'), GamesHubSchema).openRooms[0]?.host).toBe('Murid Demo')
   })

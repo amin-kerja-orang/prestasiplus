@@ -9,6 +9,8 @@
 /// Room game (Papan Bijak, Perang Fakta, Benteng Ilmu, Perlumbaan Matematik, Kuiz Relay, Teka Silang Kata). PK = the 6-char code.
 model GameRoom {
   code         String    @id
+  /// DM-67: the `attempt_id` of room answer rows; a new value each time the room starts.
+  sessionId    String    @unique(map: "uq_game_rooms_session_id") @default(dbgenerated("gen_random_uuid()")) @map("session_id") @db.Uuid
   game         String
   /// MATEMATIK, BAHASA_MELAYU, BAHASA_INGGERIS, SAINS, SEJARAH (check).
   subject      String
@@ -47,13 +49,18 @@ model GameRoom {
 model GameRoomPlayer {
   id           BigInt   @id @default(autoincrement())
   roomCode     String   @map("room_code")
-  userId       BigInt   @map("user_id")
+  /// Null for a robot seat (DM-67, ruling 6 on #497); a user may hold one seat per room.
+  userId       BigInt?  @map("user_id")
   team         Int?     @db.SmallInt
   points       Int      @default(0)
   correct      Int      @default(0) @db.SmallInt
   isBot        Boolean  @default(false) @map("is_bot")
   isTest       Boolean  @default(false) @map("is_test")
   joinedAt     DateTime @default(now()) @map("joined_at") @db.Timestamptz(6)
+  /// DM-90: when the seat last polled or acted in a playing room (null before the first); presence reads it.
+  lastPolledAt DateTime? @map("last_polled_at") @db.Timestamptz(6)
+  /// DM-90: timeouts of the seat's own turns since its last action; 3 remove the seat (a poll does not reset it).
+  consecutiveTimeouts Int @default(0) @map("consecutive_timeouts")
   legacySource String?  @map("legacy_source")
   legacyId     String?  @map("legacy_id")
 
@@ -125,6 +132,7 @@ model GameSession {
 
   @@unique([legacySource, legacyId], map: "uq_game_sessions_legacy")
   @@index([userId, game], map: "ix_game_sessions_user_id_game")
+  /// DM-89: partial index ix_game_sessions_jutawan_due (created_at) for the Jutawan sweep, written in migration 0235 only (Prisma cannot express partial indexes).
   @@map("game_sessions")
 }
 

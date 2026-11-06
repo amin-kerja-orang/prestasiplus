@@ -165,8 +165,10 @@ async function seedRoomsAndSessions(ctx: SeedContext): Promise<void> {
     const guestId = await userId(prisma, GAMES_SEED_STUDENTS[(i + 1) % hosts.length] as string)
     if (hostId === null || (await prisma.gameRoom.findUnique({ where: { code } }))) continue
     const max = game === 'papan-bijak' ? 4 : game === 'perang-fakta' ? 6 : 2
+    // A fixed uuid (not the column default gen_random_uuid()), so two seeded databases hold identical rows (BE-26 AC1).
+    const sessionId = `00000000-0000-4000-8046-${String(i + 1).padStart(12, '0')}`
     await prisma.gameRoom.create({
-      data: { code, game, subject: 'MATEMATIK', gradeLevel: 'TINGKATAN_4', matchMode: 'same_grade', maxPlayers: max, hostId, status: 'closed', createdAt: when, updatedAt: when },
+      data: { code, sessionId, game, subject: 'MATEMATIK', gradeLevel: 'TINGKATAN_4', matchMode: 'same_grade', maxPlayers: max, hostId, status: 'closed', createdAt: when, updatedAt: when },
     })
     await prisma.gameRoomPlayer.create({ data: { roomCode: code, userId: hostId, points: 0, correct: 0, isBot: false, joinedAt: when } })
     if (guestId !== null && guestId !== hostId) {
