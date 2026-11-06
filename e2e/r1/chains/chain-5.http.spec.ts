@@ -19,15 +19,11 @@
  * Display rule (decision 11): accuracy is one decimal on the wire, null at 0 answers; on screen the whole number rounded
  * half up, or "—". Never Math.trunc.
  *
- * Product gaps found while writing the spec are marked `FINDING-n` and asserted with `expect.soft`: the test is red with
- * the message, and every other step still runs. Remove the `.soft` once the owning card fixes the screen.
- *   FINDING-1 teacher table has no "Jurang +40" (HeadcountTable.vue / HeadcountTablePage.vue; S10-T02).
- *   FINDING-2 pupil detail has no "Belum capai sasaran" (StudentSection.vue; S10-T09).
- *   FINDING-3 staff Prestasi of a pupil has no Headcount pill: `student-performance.service.ts` `headcountCards` reads entry
- *             rows only, and an Auto pupil has none (S10-T01 / S10-T02).
- *   FINDING-6 staff pupil page `/headcount/student/:id` is empty for the same reason: `headcount.service.ts` `student()` (S10-T09).
+ * Product gaps found while writing the spec were FINDING-1, -2, -3 and -6. They are fixed by #1065 (teacher "Jurang +40",
+ * pupil "Belum capai sasaran") and #1066 (the staff Headcount reads of an Auto pupil), so they are now hard assertions.
  *   FINDING-5 (not asserted here) a pupil created by the school admin has `grade = null` (`managed-users.service.ts:196`), so
- *             XS-1 leaves it out while `/api/performance/school` still counts its answers (dashboard 80 vs teacher 90 answers).
+ *             XS-1 leaves it out. `/api/performance/school` counted its answers too (dashboard 80 vs teacher 90 answers) until
+ *             #1069 (S6-T03 school() totals -> XS-1), which `expectXsEqual` needs on the base.
  */
 import type { Browser, BrowserContext, Page } from '@playwright/test'
 
@@ -313,19 +309,9 @@ async function expectPupilSection(
     targets: number[]
     who: string
   },
-  finding?: string,
 ): Promise<void> {
   const section = page.getByTestId(`section-${cfg}`)
-  if (finding) {
-    // A known product gap: the section is missing for this role. Report it and skip the figures that cannot be read.
-    await expect(page.getByTestId('headcount-student-page')).toBeVisible({ timeout: 20_000 })
-    await expect
-      .soft(section, `${finding} ${want.who}: detail section`)
-      .toBeVisible({ timeout: 10_000 })
-    if (!(await section.isVisible())) return
-  } else {
-    await expect(section, `${want.who}: detail section`).toBeVisible({ timeout: 20_000 })
-  }
+  await expect(section, `${want.who}: detail section`).toBeVisible({ timeout: 20_000 })
   await expect(section.getByTestId('status-pill'), `${want.who}: status`).toContainText(want.status)
   await expect(section.getByTestId('chip-tov'), `${want.who}: TOV`).toContainText('TOV: 40.0%')
   await expect(section.getByTestId('chip-etr'), `${want.who}: ETR/RS`).toContainText('ETR: 80.0%')
@@ -576,14 +562,11 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         await expect(teacherPage.getByTestId('chip-on'), 'teacher chip On Track').toContainText(
           'On Track: 0',
         )
-        // FINDING-1: the AC lists "Jurang +40" on the teacher table; the table and its header carry no Jurang (it is only
-        // on Tetapan and in the pupil's detail).
-        expect
-          .soft(
-            squash(await teacherPage.getByTestId('headcount-table-page').innerText()),
-            'FINDING-1 teacher table shows "Jurang +40"',
-          )
-          .toMatch(/Jurang:?\s*\+40/)
+        // Former FINDING-1 (fixed by #1065): the teacher table shows "Jurang +40".
+        await expect(
+          teacherPage.getByTestId('chip-jurang'),
+          'teacher table shows "Jurang +40"',
+        ).toContainText('Jurang: +40')
         await expectNoHScroll(teacherPage)
       })
 
@@ -643,13 +626,11 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         })
         await expect(pupil.page.getByTestId('entry-pill')).toHaveText('Active')
         await expect(pupil.page.getByTestId('chip-jurang')).toContainText('Jurang: +40')
-        // FINDING-2: "Belum capai sasaran" (AR 60 < RS 80, AC-MUR-3-2) is not on the pupil's detail.
-        expect
-          .soft(
-            squash(await pupil.page.getByTestId('headcount-student-page').innerText()),
-            'FINDING-2 pupil detail says "Belum capai sasaran"',
-          )
-          .toContain('Belum capai sasaran')
+        // Former FINDING-2 (fixed by #1065): "Belum capai sasaran" (AR 60 < RS 80, AC-MUR-3-2) on the pupil's detail.
+        await expect(
+          pupil.page.getByTestId('chip-goal'),
+          'pupil detail says "Belum capai sasaran"',
+        ).toHaveText('Belum capai sasaran')
         await expectNoHScroll(pupil.page)
       })
 
@@ -707,21 +688,15 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         ).toHaveCount(0)
 
         await adminSekolah.page.goto(`/headcount/student/${pupilId}`)
-        // FINDING-6: `GET /api/headcounts/students/:id` lists only configs where the pupil has a stored entry row; an Auto
-        // pupil of a config set by "Simpan Sasaran" has none, so the staff pupil page is empty (the pupil's own page is not).
-        await expectPupilSection(
-          adminSekolah.page,
-          cfg,
-          {
-            who: 'school admin',
-            status: 'Below',
-            keyakinan: 'Sederhana',
-            ar: 60,
-            tones: ['on', 'below', 'below'],
-            targets: [53, 66, 80],
-          },
-          'FINDING-6',
-        )
+        // Former FINDING-6 (fixed by #1066): the staff pupil page lists the Auto pupil's class config without an entry row.
+        await expectPupilSection(adminSekolah.page, cfg, {
+          who: 'school admin',
+          status: 'Below',
+          keyakinan: 'Sederhana',
+          ar: 60,
+          tones: ['on', 'below', 'below'],
+          targets: [53, 66, 80],
+        })
         await expectNoHScroll(adminSekolah.page)
 
         // The Prestasi Headcount pill: the pupil's own Prestasi 360.
@@ -733,16 +708,13 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
         ).toContainText('OTR1: 60%')
         await expectNoHScroll(pupil.page)
 
-        // FINDING-3: the staff view of the same pupil's Prestasi (`/prestasi/:userId`) has no Headcount block
-        // (`GET /api/performance/students/:id` answers `headcount: []` to the school admin).
+        // Former FINDING-3 (fixed by #1066): the staff view of the pupil's Prestasi shows the Headcount pill.
         await adminSekolah.page.goto(`/prestasi/${pupilId}`)
         await expect(adminSekolah.page.getByTestId('hero')).toBeVisible({ timeout: 20_000 })
-        await expect
-          .soft(
-            adminSekolah.page.getByTestId(`headcount-${cfg}`).getByTestId('status-pill'),
-            'FINDING-3 school admin Prestasi of the pupil shows the Headcount pill Below',
-          )
-          .toHaveText('Below', { timeout: 5_000 })
+        await expect(
+          adminSekolah.page.getByTestId(`headcount-${cfg}`).getByTestId('status-pill'),
+          'school admin Prestasi of the pupil shows the Headcount pill Below',
+        ).toHaveText('Below', { timeout: 20_000 })
       })
 
       let entries1 = 0
@@ -937,19 +909,14 @@ test.describe('AC-CHAIN-5 Headcount from key-in to every view', () => {
           ['school admin', adminSekolah.page],
         ] as const) {
           await p.goto(`/headcount/student/${pupilId}`)
-          await expectPupilSection(
-            p,
-            cfg,
-            {
-              who,
-              status: 'On Track',
-              keyakinan: 'Tinggi',
-              ar: 80,
-              tones: ['on', 'on', 'on'],
-              targets: [53, 66, 80],
-            },
-            who === 'school admin' ? 'FINDING-6' : undefined,
-          )
+          await expectPupilSection(p, cfg, {
+            who,
+            status: 'On Track',
+            keyakinan: 'Tinggi',
+            ar: 80,
+            tones: ['on', 'on', 'on'],
+            targets: [53, 66, 80],
+          })
           await expectNoHScroll(p)
         }
         await pupil.page.goto('/headcount')
