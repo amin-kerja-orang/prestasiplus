@@ -1,0 +1,68 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { GamificationService } from '../../src/modules/gamification'
+import { loginAs } from '../auth/helpers'
+import { ADMIN, STUDENT_EMPTY, START, TEACHER, bootGamificationApp, ledgerOf, signInMod, userIdOf, type GamificationTestApp } from './helpers'
+
+/**
+ * S7-T04 part 16b (FR-GM-25.2, "daily login"): the FIRST student password login of the Malaysia day evaluates the badges
+ * (savepoint, never fails the login). A second login the same day, a teacher, an admin and Mod Pelajar evaluate nothing.
+ */
+describe('achievements: the daily-login trigger (S7-T04 part 16b)', () => {
+  let t: GamificationTestApp
+
+  beforeAll(async () => {
+    t = await bootGamificationApp({ loginHook: true })
+  }, 120_000)
+  afterAll(async () => {
+    await t.close()
+  })
+  beforeEach(() => {
+    t.clock.set(START) // 2026-10-19 09:00 MYT
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const badgeRows = async (id: string) => (await ledgerOf(t, id)).filter((r) => r.source === 'achievement')
+  const unlocks = (id: string) => t.db.query<{ name: string }>(`select a.name from user_achievements ua join achievements a on a.id = ua.achievement_id where ua.user_id = $1`, [id])
+
+  it('a first login that moves the streak to 3 unlocks "Streak 3 Hari" once and credits once; a second login the same day does not evaluate and pays nothing', async () => {
+    const id = await userIdOf(t.db, STUDENT_EMPTY)
+    await t.db.query(`delete from streaks where user_id = $1`, [id])
+    await t.db.query(`insert into streaks (user_id, current, best, last_activity_date, total_days) values ($1, 2, 2, '2026-10-18', 2)`, [id])
+    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    await loginAs(t as never, STUDENT_EMPTY)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(spy.mock.calls[0]![1]).toMatchObject({ isTest: false })
+    expect((await unlocks(id)).map((r) => r.name)).toContain('Streak 3 Hari')
+    const rows = (await badgeRows(id)).filter((r) => r.description === 'Pencapaian: Streak 3 Hari')
+    expect(rows).toHaveLength(1)
+    const total = (await badgeRows(id)).length
+    t.clock.set('2026-10-19T23:00:00+08:00')
+    await loginAs(t as never, STUDENT_EMPTY)
+    expect(spy).toHaveBeenCalledTimes(1)
+    expect(await badgeRows(id)).toHaveLength(total)
+  })
+
+  it('a teacher login evaluates nothing', async () => {
+    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    await loginAs(t as never, TEACHER)
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('an admin login, and entering Mod Pelajar afterwards, evaluate nothing', async () => {
+    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievementsSafely')
+    await signInMod(t, ADMIN)
+    expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('an evaluation error does not fail the login or the daily credit', async () => {
+    const id = await userIdOf(t.db, STUDENT_EMPTY)
+    t.clock.set('2026-10-22T09:00:00+08:00')
+    const spy = vi.spyOn(GamificationService.prototype, 'evaluateAchievements').mockRejectedValue(new Error('boom'))
+    await loginAs(t as never, STUDENT_EMPTY) // asserts the login succeeds
+    expect(spy).toHaveBeenCalled()
+    expect((await ledgerOf(t, id)).filter((r) => r.source_id === 'daily_login:2026-10-22')).toHaveLength(1)
+  })
+})

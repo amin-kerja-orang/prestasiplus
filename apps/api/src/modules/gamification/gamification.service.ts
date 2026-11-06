@@ -545,7 +545,7 @@ export class GamificationService {
    * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
    * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
    * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
-   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`). Idempotent: the day mark
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the badges once (savepoint, never fails the login). Idempotent: the day mark
    * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
    * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
@@ -557,12 +557,19 @@ export class GamificationService {
       // day), so the streak day and the daily mark day always agree, also when the call straddles midnight.
       const streak = await this.streaks.touch(userId, { tx })
       const mark = await this.streaks.markDailyLogin(userId, { tx })
-      if (!mark.firstToday || !(await this.coinsEnabled(userId, { tx }))) return { firstToday: mark.firstToday, credited: 0, streak: streak.current }
-      await this.wallet.credit(
-        { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
-        { tx },
-      )
-      return { firstToday: true, credited: DAILY_LOGIN_REWARD, streak: streak.current }
+      // Only the FIRST login of the Malaysia day can have moved the streak or the lifetime total (FR-GM-25.2, "daily login"): a second
+      // login the same day evaluates nothing. A bonus, so it runs in a savepoint and never fails the login.
+      if (!mark.firstToday) return { firstToday: false, credited: 0, streak: streak.current }
+      let credited = 0
+      if (await this.coinsEnabled(userId, { tx })) {
+        await this.wallet.credit(
+          { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
+          { tx },
+        )
+        credited = DAILY_LOGIN_REWARD
+      }
+      await this.evaluateAchievementsSafely(userId, { tx, isTest: false })
+      return { firstToday: true, credited, streak: streak.current }
     })
   }
 
