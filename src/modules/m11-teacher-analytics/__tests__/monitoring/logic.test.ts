@@ -38,11 +38,11 @@ describe('monitoring paths (BR-M11-27, prefix as a prop)', () => {
     expect(p.exportHref('csv', { period: '7d', state: '', tahap: '' })).toBe(
       '/guru/monitoring/export/csv?period=7d',
     )
-    expect(p.exportHref('csv', { period: '', state: 'Selangor', tahap: 'Kritikal' })).toBe(
-      '/guru/monitoring/export/csv?state=Selangor&tahap=Kritikal',
+    expect(p.exportHref('csv', { period: '', state: 'Selangor', tahap: 'Rendah' })).toBe(
+      '/guru/monitoring/export/csv?state=Selangor&tahap=Rendah',
     )
-    expect(p.exportHref('pdf', { period: '', state: '', tahap: 'Tiada Langsung' })).toBe(
-      '/guru/monitoring/export/pdf?tahap=Tiada%20Langsung',
+    expect(p.exportHref('pdf', { period: '', state: '', tahap: 'Tiada' })).toBe(
+      '/guru/monitoring/export/pdf?tahap=Tiada',
     )
   })
 })

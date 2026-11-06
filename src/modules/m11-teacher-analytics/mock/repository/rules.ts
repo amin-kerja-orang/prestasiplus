@@ -12,18 +12,18 @@ const MYT_OFFSET_MS = 8 * 3_600_000
 
 /** 1 decimal (BR-M11-11). */
 export const round1 = (n: number): number => Math.round(n * 10) / 10
+export const round2 = (n: number): number => Math.round(n * 100) / 100
 export const round3 = (n: number): number => Math.round(n * 1000) / 1000
 /** `part ÷ whole × 100`; 0 when `whole` is 0. */
 export const percent = (part: number, whole: number): number =>
   whole <= 0 ? 0 : (part / whole) * 100
 
-/** BR-M11-12: Cemerlang p > 60; Sederhana 20 ≤ p ≤ 60; Rendah 5 ≤ p < 20; Kritikal 0 < p < 5; Tiada p = 0. */
+/** R1-AS-10 / R1-GUR-10: Cemerlang p > 60; Sederhana 20 ≤ p ≤ 60; Rendah 0 < p < 20; Tiada p = 0. */
 export function tahapOf(p: number): TahapKey {
   if (p > 60) return 'Cemerlang'
   if (p >= 20) return 'Sederhana'
-  if (p >= 5) return 'Rendah'
-  if (p > 0) return 'Kritikal'
-  return 'Tiada Langsung'
+  if (p > 0) return 'Rendah'
+  return 'Tiada'
 }
 
 /** BR-M11-06. */

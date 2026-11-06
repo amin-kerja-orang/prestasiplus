@@ -288,7 +288,7 @@ const actionCardFields: CardField[] = [
           class="min-w-0"
           data-testid="quality-levels"
         >
-          <div class="flex flex-col gap-4 p-4 pt-0 sm:p-5 sm:pt-0">
+          <div class="flex flex-col gap-4 p-4 pt-0 sm:p-6 sm:pt-0">
             <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
               <div class="flex items-baseline justify-between gap-3 text-body">
                 <span class="text-highlighted">{{ l.name }}</span>

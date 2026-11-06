@@ -48,17 +48,27 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
     }
   }
 
-  /** BR-M10-35: eligible question ids of the mission for the student (empty = no pool). */
+  /**
+   * BR-M10-35 + FR-GUR-44a-10 (S6-T16): eligible question ids of the mission for the student (empty = no pool). The pool is the bank questions of
+   * the mission Subjek and the Tingkatan of the pupil's class (from the enrolment, not the mission: an all-classes mission has no level) PLUS all
+   * the personal questions (API-GUR-24) of the teacher who set the mission with the same Subjek and Tingkatan, at equal weight (one seeded
+   * hash-ordered draw over the union, no quota, no reserved slot). A pupil with no class of that teacher gets the unfiltered bank and no
+   * personal question. The Bab narrows the bank part only; a pool without a bank question is served from the personal ones alone. Deterministic per (mission, student).
+   */
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
     // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject.
     if (mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') return []
-    const subjectId = mission.subjectId
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
+    const levels = await this.repo.pupilLevelIds(mission, userId)
+    // Tingkatan of the pupil's class on EVERY pass (FR-GUR-44a-10, lead ruling): a T1-T3 class is never topped up with T4/T5 bank questions.
+    const level = levels.length === 0 ? {} : { educationLevelIds: levels }
+    const pool = levels.length === 0 ? {} : { ...level, ownerPrivateUserId: mission.teacherId }
     if (mission.chapterId !== null) {
-      const inChapter = await this.pool.draw({ subjectId, chapterId: mission.chapterId }, mission.questionCount, rng)
-      if (inChapter.length > 0) return inChapter
+      // The fallback to the SPM pool depends on the BANK part of the Bab being empty (the existing rule), never on the union with the personal questions.
+      const bankInChapter = await this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId, ...level }, 1, prngStream(`m10:mission-bank:${mission.id}:${userId}`))
+      if (bankInChapter.length > 0) return this.pool.draw({ subjectId: mission.subjectId, chapterId: mission.chapterId, ...pool }, mission.questionCount, rng)
     }
-    return this.pool.draw({ subjectId, spmPool: true }, mission.questionCount, rng)
+    return this.pool.draw({ subjectId: mission.subjectId, spmPool: true, ...pool }, mission.questionCount, rng)
   }
 
   private async remedial(input: { userId: string; id: string }): Promise<AssignmentResolution> {

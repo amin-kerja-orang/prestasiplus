@@ -191,8 +191,8 @@ export async function addAnswers(
   let i = 0
   for (const r of rows) {
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, question_version_no, subject_id, education_level_id, chapter_id, is_correct, answered_at, is_test)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      `insert into practice_answers (user_id, question_id, question_version_no, subject_id, education_level_id, chapter_id, is_correct, answered_at, is_test, mode)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'latih_tubi')`,
       [studentId, r.questionId, r.questionId ? 1 : null, r.subjectId ?? w.tag.subjectId, w.tag.levelId, r.chapterId ?? null, r.correct, new Date(from.getTime() + i * 60_000), r.isTest ?? false],
     )
     i++

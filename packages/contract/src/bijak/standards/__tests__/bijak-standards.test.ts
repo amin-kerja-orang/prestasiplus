@@ -15,6 +15,7 @@ import {
 import {
   BijakBlueprintInvalidErrorSchema,
   BijakDraftGenerateRequestSchema,
+  BijakDraftGenerateResultSchema,
   BijakDskpUnitSchema,
   BijakDskpUnitsQuerySchema,
   BijakEvidenceInputSchema,
@@ -28,7 +29,9 @@ import {
 import { BIJAK_STANDARDS_COMPONENT_SCHEMAS, BIJAK_STANDARDS_TAG } from '../paths'
 import {
   ALLOWED_MODES_UNIQUE_MESSAGE,
+  BIJAK_BLUEPRINT_PROBLEM_CODES,
   BIJAK_STANDARDS_MESSAGES,
+  BijakBlueprintProblemSchema,
   BijakDifficultyProfileSchema,
   BijakQuotaLineSchema,
   BijakQuotaLineViewSchema,
@@ -201,6 +204,41 @@ describe('blueprint admin bodies (extended)', () => {
     expect(
       BijakBlueprintAdminCreateSchema.safeParse({ subject: 'MAT', kertas: 2, ...versionInput() }).success,
     ).toBe(true)
+  })
+
+  it('S3-T01 DM-57: marksPerQuestion on the section and questionCount on the blueprint are optional and nullable', () => {
+    const section = (over: Record<string, unknown>) => versionInput({ sections: [{ label: 'Part 3', markBudget: 20, questionCount: 3, rule: { type: 'choose', n: 1 }, ...over }] })
+    const accepts = (input: unknown) => BijakBlueprintAdminVersionInputSchema.safeParse(input).success
+    expect(accepts(section({}))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: null }))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: [20, 20, 20] }))).toBe(true)
+    expect(accepts(section({ marksPerQuestion: [] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: [0, 20] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: [1.5] }))).toBe(false)
+    expect(accepts(section({ marksPerQuestion: 20 }))).toBe(false)
+    expect(accepts(versionInput({ questionCount: null }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 40 }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 200 }))).toBe(true)
+    expect(accepts(versionInput({ questionCount: 0 }))).toBe(false)
+    expect(accepts(versionInput({ questionCount: 201 }))).toBe(false)
+    expect(BijakBlueprintAdminCreateSchema.safeParse({ subject: 'MAT', kertas: 2, ...versionInput({ questionCount: 40 }) }).success).toBe(true)
+
+    const view = viewFixture()
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, questionCount: 40 }).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse({ ...view, questionCount: null }).success).toBe(true)
+    expect(BijakBlueprintViewSchema.safeParse(view).success).toBe(true)
+    const row = view.sections[0]!
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: [20, 20, 20] }).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: null }).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse(row).success).toBe(true)
+    expect(BijakBlueprintViewSectionSchema.safeParse({ ...row, marksPerQuestion: 'x' }).success).toBe(false)
+  })
+
+  it('S3-T01: the problem list carries COMPULSORY_CHOOSE and MARKS_PER_QUESTION', () => {
+    for (const code of ['COMPULSORY_CHOOSE', 'MARKS_PER_QUESTION']) {
+      expect(BIJAK_BLUEPRINT_PROBLEM_CODES).toContain(code)
+      expect(BijakBlueprintProblemSchema.safeParse({ code, sectionPosition: 1 }).success).toBe(true)
+    }
   })
 
   it('narrows the client source to Draf or Spec: Disahkan is refused', () => {
@@ -495,6 +533,45 @@ describe('pool preview and draft generation', () => {
   it('parses the draft generate request and rejects unknown keys', () => {
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2 }).success).toBe(true)
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, publish: true }).success).toBe(false)
+  })
+
+  it('API-BIJAK-11: title, years, negeri, count and levelScope are optional; the bad values carry the PRD30 messages', () => {
+    const full = { subject: 'SEJ', kertas: 1, title: '  Set Mac  ', years: [2025, 2024], negeri: ['Johor', 'MRSM'], count: 10, levelScope: 't5' }
+    expect(BijakDraftGenerateRequestSchema.parse(full)).toEqual({ ...full, title: 'Set Mac' })
+    const message = (body: object): string | undefined => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body }).error?.issues[0]?.message
+    expect(message({ kertas: 5 })).toBe('Kertas tidak sah.')
+    expect(message({ kertas: 0 })).toBe('Kertas tidak sah.')
+    expect(message({ count: 0 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 1.5 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 101 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, count: 100 }).success).toBe(true)
+    expect(message({ subject: '   ' })).toBe('Sila pilih subjek.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 'T4' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+  })
+
+  it('S3-T02 generate request validation: kertas 5, count 0 and 101, years out of range, and the strict { id } result', () => {
+    const parse = (body: object) => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body })
+    expect(parse({ kertas: 5 }).error?.issues[0]?.message).toBe('Kertas tidak sah.')
+    expect(parse({ count: 0 }).success).toBe(false)
+    expect(parse({ count: 101 }).success).toBe(false)
+    expect(parse({ count: 1 }).success).toBe(true)
+    expect(parse({ count: 100 }).success).toBe(true)
+    expect(parse({ years: [1899] }).success).toBe(false)
+    expect(parse({ years: [2101] }).success).toBe(false)
+    expect(parse({ years: [2025.5] }).success).toBe(false)
+    expect(parse({ years: [1900, 2100] }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', extra: 1 }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+  })
+
+  it('the pool preview takes the additive group, total, filter and scope fields', () => {
+    const shape = BijakPoolPreviewSchema.shape
+    for (const key of ['groupTotal', 'contractTotal', 'filters', 'levelScope'] as const) expect(shape[key].safeParse(undefined).success, key).toBe(true)
+    expect(shape.filters.safeParse({ years: [2025], negeri: ['Johor'] }).success).toBe(true)
   })
 })
 

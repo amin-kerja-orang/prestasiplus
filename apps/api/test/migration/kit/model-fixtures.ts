@@ -184,9 +184,9 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     expires_at: '2027-01-01T00:00:00Z',
   }),
   parent_links: async (query) => ({ parent_id: await parentUser(query), student_id: await parentUser(query) }),
-  // practice_answers (BE-12): the user must exist; a row links to a question or a subject (ck_practice_answers_link).
+  // practice_answers (BE-12): the user must exist; a row links to a question or a subject (ck_practice_answers_link); mode is NOT NULL since 0188 (ck_practice_answers_mode).
   // Linked by subject, not question: the FK to questions (BE-09) is deferred, so a fixed question id breaks once it lands.
-  practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: null, subject_id: await parentSubject(query) }),
+  practice_answers: async (query) => ({ user_id: await parentUser(query), question_id: null, subject_id: await parentSubject(query), mode: 'latih_tubi' }),
   // practice_sessions (BE-12): the user must exist; mode is one of the ten practice modes.
   practice_sessions: async (query) => ({ user_id: await parentUser(query), mode: 'random' }),
   // question_reports (BE-10): reasons and source have checks; question_id has no foreign key (BE-09 owns questions).

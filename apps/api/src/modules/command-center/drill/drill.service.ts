@@ -16,7 +16,7 @@ import { notFound } from '../http/errors'
 import { dateRangeOf } from '../http/request'
 import type { Viewer } from '../http/viewer'
 import { type ClassRow, CommandCenterRepository, type Ref, type SessionRow } from '../shared/command-center.repository'
-import { percent } from '../shared/math'
+import { accuracyPct, percent } from '../shared/math'
 import { HEADCOUNT_PORT, type HeadcountReadPort, MOOD_PORT, type MoodReadPort } from '../shared/ports'
 import { type CcScope, ScopeService } from '../shared/scope.service'
 import { addDays, dateKey, DAY_MS, startOfDateKey, startOfIsoWeek, toMytTimestamp } from '../shared/windows'
@@ -62,11 +62,11 @@ function listOf(sessions: SessionRow[]): CommandCenterSessionList {
       topic: topicOf(s),
       total: s.questionCount,
       correct: s.correctCount,
-      accuracy: percent(s.correctCount, s.questionCount, 2),
+      accuracy: accuracyPct(s.correctCount, s.questionCount),
       minutes: Math.floor(s.timeSpentSec / 60),
     }
   })
-  return { totalAnswers: answers, totalSessions: rows.length, accuracy: percent(correct, answers, 1), timeSpentMinutes: Math.floor(seconds / 60), sessions: rows }
+  return { totalAnswers: answers, totalSessions: rows.length, accuracy: accuracyPct(correct, answers), timeSpentMinutes: Math.floor(seconds / 60), sessions: rows }
 }
 
 /**
@@ -101,14 +101,14 @@ export class DrillService {
     const classesOf = new Map<string, ClassRow[]>()
     for (const c of classes) classesOf.set(c.ownerId as string, [...(classesOf.get(c.ownerId as string) ?? []), c])
 
-    // Cards: "Jumlah Pelajar" is every student of the school; a teacher sees only the active members of the own classes there.
+    // Cards: "Jumlah Pelajar" is XS-1 (the active pupils of the school, Tingkatan 1-5); a teacher sees only the XS-1 members of the own classes there.
     let students: { id: string; isActive: boolean }[]
     if (scope.role === 'teacher') {
       const own = classes.filter((c) => scope.ownedClassIds.includes(c.id)).map((c) => c.id)
       const members = await this.repo.classMembers(own)
       students = await this.reads.studentsByIds(uniq(members.map((m) => m.studentId)))
     } else {
-      students = await this.repo.studentsOfSchool(schoolId, { includeInactive: true })
+      students = await this.repo.studentsOfSchool(schoolId)
     }
     const pupils = students.filter((u) => u.isActive).map((u) => u.id)
     const tally = await this.repo.answerTallyByUser({ to: now, studentIds: pupils })
@@ -132,7 +132,7 @@ export class DrillService {
     }
     const allMembers = uniq(shown.flatMap((r) => membersOf(r.id)))
     const recent = new Set(
-      (await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: allMembers, includeInactive: true })).map((t) => t.userId),
+      (await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: allMembers })).map((t) => t.userId),
     )
     const subjects = await this.reads.teacherSubjects(shown.map((r) => r.id))
     const teacherRows = shown.map((r) => {
@@ -149,7 +149,7 @@ export class DrillService {
     })
     return {
       school,
-      cards: { students: students.length, active: tally.length, answers, accuracy: percent(correct, answers, 1) },
+      cards: { students: students.length, active: tally.length, answers, accuracy: accuracyPct(correct, answers) },
       teachers: teacherRows,
     }
   }
@@ -163,8 +163,8 @@ export class DrillService {
     const classes = (await this.repo.classesOfOwner(teacherId, { activeClassroomsOnly: true })).filter((c) => c.effectiveSchoolId === schoolId)
     const members = await this.repo.classMembers(classes.map((c) => c.id))
     const all = uniq(members.map((m) => m.studentId))
-    const tally = new Map((await this.repo.answerTallyByUser({ to: now, studentIds: all, includeInactive: true })).map((t) => [t.userId, t]))
-    const recent = new Set((await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: all, includeInactive: true })).map((t) => t.userId))
+    const tally = new Map((await this.repo.answerTallyByUser({ to: now, studentIds: all })).map((t) => [t.userId, t]))
+    const recent = new Set((await this.repo.answerTallyByUser({ from: addDays(now, -30), to: now, studentIds: all })).map((t) => t.userId))
     return {
       school,
       teacher: { id: teacher.id, name: teacher.name },
@@ -176,7 +176,7 @@ export class DrillService {
           answers += tally.get(id)?.answers ?? 0
           correct += tally.get(id)?.correct ?? 0
         }
-        return { id: c.id, name: c.name, level: levelLabel(c.educationGrade), students: ids.length, active30d: ids.filter((id) => recent.has(id)).length, answers, accuracy: percent(correct, answers, 1) }
+        return { id: c.id, name: c.name, level: levelLabel(c.educationGrade), students: ids.length, active30d: ids.filter((id) => recent.has(id)).length, answers, accuracy: accuracyPct(correct, answers) }
       }),
     }
   }
@@ -191,7 +191,7 @@ export class DrillService {
     const ids = uniq((await this.repo.classMembers([cls.id])).map((m) => m.studentId))
     const [names, tallies, moods, school] = await Promise.all([
       this.repo.userNames(ids),
-      this.repo.answerTallyByUser({ to: now, studentIds: ids, includeInactive: true }),
+      this.repo.answerTallyByUser({ to: now, studentIds: ids }),
       this.mood.latest(ids),
       cls.effectiveSchoolId ? this.repo.schoolRef(cls.effectiveSchoolId) : Promise.resolve(null),
     ])
@@ -203,7 +203,7 @@ export class DrillService {
           userId,
           name: names.get(userId) ?? '',
           answers: t?.answers ?? 0,
-          accuracy: t ? percent(t.correct, t.answers, 1) : 0,
+          accuracy: t ? accuracyPct(t.correct, t.answers) : null,
           lastActiveAt: t ? toMytTimestamp(t.lastAt) : null,
           status: t !== undefined && t.lastAt >= weekAgo && t.lastAt <= now ? ('aktif' as const) : ('tidak_aktif' as const),
           mood: moods.get(userId) ?? null,
@@ -267,7 +267,7 @@ export class DrillService {
       bySubject.set(code, row)
     }
     const subjects = [...bySubject.values()]
-      .map((r) => ({ ...r, pct: percent(r.correct, r.total, 1) }))
+      .map((r) => ({ ...r, pct: accuracyPct(r.correct, r.total) }))
       .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label))
 
     // "Aktiviti Mingguan (8 Minggu)": the 8 Monday-based weeks ending with the current one, oldest first.
@@ -281,10 +281,12 @@ export class DrillService {
       weeks.push({ start: key, end: dateKey(addDays(start, 6)), label: `${key.slice(8, 10)}/${key.slice(5, 7)}`, count })
     }
 
-    const accuracy = percent(tally.correct, tally.answers, 1)
+    const accuracy = accuracyPct(tally.correct, tally.answers)
     const consistency = percent(new Set(recentDays.map((d) => d.day)).size, 56, 0)
     const texts: string[] = []
-    if (accuracy >= 90) texts.push(`Ketepatan cemerlang (${accuracy}%).`)
+    // Text shows (and the threshold compares) the whole number, half up (40 FR-X4-5).
+    const shown = accuracy === null ? null : Math.floor(accuracy + 0.5)
+    if (shown !== null && shown >= 90) texts.push(`Ketepatan cemerlang (${shown}%).`)
     if (consistency < 30) texts.push(`Konsistensi rendah (${consistency}%) - perlu usaha lebih.`)
 
     // Headcount rows of configs the viewer may open (the port answers none until BE-19 binds it).
@@ -382,7 +384,7 @@ export class DrillService {
       total,
       correctCount: row.correctCount,
       wrongCount: total - row.correctCount,
-      accuracy: percent(row.correctCount, total, 2),
+      accuracy: accuracyPct(row.correctCount, total),
       timeSpent: { m: Math.floor(row.timeSpentSec / 60), s: row.timeSpentSec % 60 },
       difficulty: row.difficulty,
       answers: detail,

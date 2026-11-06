@@ -53,6 +53,8 @@ function planner(opts: { drawn?: string[]; bank: PracticeQuestion[]; page?: stri
     chapter: () => Promise.resolve({ id: 9n, subjectId: 1n, educationLevelId: 1n }),
   }
   const repo = {
+    // S4-T06: the planner reads the offered levels through the repository (`offeredLevels(db)`).
+    offeredLevels: () => Promise.resolve([{ id: '1', code: 'T4', order: 10, gradeKey: 'TINGKATAN_4' }]),
     countSessions: () => Promise.resolve(0),
     chapterProgress: () => Promise.resolve(new Map((opts.answered ?? []).map((id, i) => [id, { lastAt: new Date(2026, 0, i + 1) }]))),
   }
@@ -74,7 +76,7 @@ describe('planner: group-ready', () => {
     expect(seen.liveActivities).toEqual(['latih_tubi_spm'])
   })
 
-  it('random (Databank) and past year pass the databank surface; revision-like paths pass none', async () => {
+  it('past year passes the databank surface; revision-like paths pass none', async () => {
     const bank = [question('s1'), question('s2')]
     const a = planner({ drawn: ['s1', 's2'], bank })
     await a.p.plan('u', req({ mode: 'past_year', subjectCode: 'ZZ', count: 10 }), now, false)

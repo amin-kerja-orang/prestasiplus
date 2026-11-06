@@ -63,7 +63,8 @@ describe('HeadcountRepository', () => {
     await w.db.query(`insert into headcount_entry_marks (entry_id, checkpoint, target, actual) values ($1, 3, 80, null), ($1, 5, 99, 99)`, [entry])
     const config = await repo.configById(cfg)
     const [e] = await repo.entriesOf([config as NonNullable<typeof config>])
-    expect(e?.marks).toEqual({ tov: 50.5, targets: [60, null, 80], actuals: [65, null, null], etr: null, rs: null })
+    // The stored `target` column is never read: the targets are computed (no ETR here, so none).
+    expect(e?.marks).toEqual({ tov: 50.5, targets: [null, null, null], actuals: [65, null, null], etr: null, rs: null })
   })
 
   it('an unknown or malformed id is absent, never an error', async () => {

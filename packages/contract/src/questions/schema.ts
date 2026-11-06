@@ -4,11 +4,13 @@ import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
   QUESTION_STATUS_MESSAGE,
+  QUESTION_COGNITIVE_LEVELS,
   QuestionCognitiveLevelSchema,
   QuestionCurriculumTagSchema,
   QuestionEssayTopicSchema,
   QuestionKbatLevelSchema,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   QuestionPublicPartSchema,
   QuestionStatusSchema,
   QuestionStimulusGroupSchema,
@@ -88,8 +90,25 @@ export const QUESTION_MESSAGES = {
   guruScript: 'Jenis tulisan tidak sah.',
 } as const
 
-export const QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
-export const QuestionTypeSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** FR-ADM-QE3.2 / DM-69 / OPT-JENIS-SOALAN: the 11 question types, in this order (40:732). */
+export const QUESTION_TYPES = [
+  'mcq',
+  'mcq_multi',
+  'true_false',
+  'match',
+  'short_answer',
+  'fill_blank',
+  'structured',
+  'working',
+  'essay',
+  'drawing',
+  'table_fill',
+] as const
+/** The flat create/edit routes still take only these 5 (the flat projection cannot build the others); widened with the routes in S1-T09a parts 3 to 5. */
+export const FLAT_QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
+export const QuestionTypeSchema = z.enum(FLAT_QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
+/** All 11 question types (FR-ADM-QE3.2). */
+export const QuestionTypeFullSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionTypeFull' })
 export const QuestionComplianceStatusSchema = z
   .enum(['verified', 'pending_mapping', 'quarantined', 'rejected', 'draft'])
   .meta({ id: 'QuestionComplianceStatus' })
@@ -111,6 +130,10 @@ export function mutationEnvelopeOf<T extends z.ZodType>(data: T) {
 
 /* ------------------------------------------------------------------------------- list, summary */
 
+/** DM-05 (S1-T07): the stored stimulus flag of a question version. */
+export const STIMULUS_FLAGS = ['stimulus_missing', 'figure_only', 'stem_duplicated'] as const
+export const StimulusFlagSchema = z.enum(STIMULUS_FLAGS).meta({ id: 'StimulusFlag' })
+export type StimulusFlag = z.infer<typeof StimulusFlagSchema>
 export const QuestionRowSchema = z
   .object({
     id: IdSchema,
@@ -128,12 +151,19 @@ export const QuestionRowSchema = z
     sourceType: QuestionSourceTypeSchema.nullable(),
     sourceFile: z.string().nullable(),
     /** REQ-C-010: V2 Studio columns "Kertas" and "No.": the kertas ('1' to '3', the trailing digit of the paper code) and the printed number label. */
-    kertas: z.enum(['1', '2', '3']).nullable(),
+    kertas: z.enum(['1', '2', '3', '4']).nullable(),
     numberLabel: z.string().nullable(),
     /** R1-H-A7: present only on an `essay_choice` (esei pilihan) question: its 2 to 6 topics. `questionType` stays `essay`. */
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
+    /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
+    flags: z.array(StimulusFlagSchema).optional(),
   })
   .meta({ id: 'QuestionRow' })
+
+/** API-Q-01 `tingkatan`: the secondary levels the lists offer (30 03-02; Darjah never). */
+export const QUESTION_TINGKATAN = ['T1', 'T2', 'T3', 'T4', 'T5'] as const
+/** API-Q-01 `source`: OPT-SUMBER-SOALAN (30 03-07) as query values; D15 of the S1-T07 gap check. */
+export const QUESTION_SOURCE_FILTERS = ['manual', 'pdf', 'csv', 'guru'] as const
 
 /** Exam type of the source paper ("Jenis", V2 aria "jenis peperiksaan"): the `source_papers.exam_type` set. */
 export const QUESTION_JENIS = ['sebenar', 'percubaan', 'modul', 'topikal', 'latihan'] as const
@@ -170,9 +200,28 @@ export const questionFilterShape = {
     )
     .optional(),
   /** V2 "Kertas" (Kertas 1-3). */
-  kertas: z.enum(['1', '2', '3'], QUESTION_MESSAGES.filterInvalid).optional(),
+  kertas: z.enum(['1', '2', '3', '4'], QUESTION_MESSAGES.filterInvalid).optional(),
   /** V2 "Jenis" ("jenis peperiksaan"). */
   jenis: z.enum(QUESTION_JENIS, QUESTION_MESSAGES.filterInvalid).optional(),
+  // --- S1-T07 (API-Q-01, 30 FR-ADM-Q03.8): all validated, 422 "Nilai penapis tidak sah." ---
+  /** The level code `T1` to `T5` (`education_levels.code`). */
+  tingkatan: z.enum(QUESTION_TINGKATAN, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** `none` = no Bab (C-05 work-list "Soalan tanpa Bab"), else a chapter id. */
+  chapter: z.string({ error: QUESTION_MESSAGES.filterInvalid }).regex(/^(none|[1-9]\d{0,18})$/, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** One curriculum unit node id (the "Tajuk DSKP" filter). */
+  unit: IdSchema.optional(),
+  source: z.enum(QUESTION_SOURCE_FILTERS, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** Text in the stem, or a question id when it is all digits (AC-QA-47). */
+  q: z
+    .string()
+    .max(100, 'Carian tidak boleh melebihi 100 aksara.')
+    // Text needs 3 characters (the trigram index); a question id is all digits and may be any length. The generic filter text, no new BM.
+    .refine((v) => /^\d+$/.test(v.trim()) || v.trim().length >= 3, QUESTION_MESSAGES.filterInvalid)
+    .optional(),
+  /** An OPEN flag (not dismissed) on the LIVE approved version (D12), the one the work-list and the pupil draws read. */
+  flag: z.enum(STIMULUS_FLAGS, QUESTION_MESSAGES.filterInvalid).optional(),
+  /** DM-58 (AC-QA-32): `true` = a question with a rejection reason (the chip "Ditolak"), `false` = none. */
+  rejected: z.enum(['true', 'false'], QUESTION_MESSAGES.filterInvalid).optional(),
 } as const
 
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
@@ -198,7 +247,7 @@ export const QuestionSummarySchema = z
   .meta({ id: 'QuestionSummary' })
 
 /** Kertas of a question for the paper builder (stored as the trailing digit of `paper_code`, e.g. `MATH/2`). */
-export const QuestionKertasSchema = z.enum(['1', '2', '3'], 'Kertas tidak sah.').meta({ id: 'QuestionKertas' })
+export const QuestionKertasSchema = z.enum(['1', '2', '3', '4'], 'Kertas tidak sah.').meta({ id: 'QuestionKertas' })
 
 /** Id of an already uploaded `question_image` file (`POST /files?purpose=question_image`); never a client URL. */
 const ImageFileId = IdSchema.nullable()
@@ -278,6 +327,8 @@ export const QuestionSchema = z
     catalogueVersion: z.string().nullable().optional(),
     stimulusGroup: QuestionStimulusGroupSchema.nullable().optional(),
     numberLabel: z.string().nullable().optional(),
+    /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
+    flags: z.array(StimulusFlagSchema).optional(),
     /** DM-56 Rujukan buku teks (null = none). */
     textbookRef: QuestionTextbookRefSchema.nullable().optional(),
     /** DM-58: why an admin sent the question back from Semakan to Draf; with the status `draft` it is the chip "Ditolak". Null otherwise. */
@@ -398,7 +449,7 @@ const baseInput = z.object({
   optionImageFileIds: z.array(ImageFileId).max(4).optional(),
   /** Kertas for the paper builder; null clears it; omitted keeps it. Error key `kertas`. */
   kertas: QuestionKertasSchema.nullable().optional(),
-  parts: z.array(QuestionPartSchema).min(1).optional(),
+  parts: z.array(QuestionWritePartSchema).min(1).optional(),
   tag: QuestionCurriculumTagSchema.optional(),
   /** V2 `Nombor soalan` (Studio Langkah 1); null clears it, omitted keeps it. */
   numberLabel: z.string().trim().max(32).nullable().optional(),
@@ -626,7 +677,14 @@ export const QuestionStructuredDetailSchema = z
 
 export const GURU_STRUCTURED_PAGE_SIZE = 20
 
-const GuruStructuredStatus = z.enum(['approved', 'review'])
+const GuruStructuredStatus = z.enum(['approved', 'review', 'rejected']).meta({
+  description: '`approved`: an approved question, or an own submission whose question is published. `review`: an own submission waiting for the admin (including one the admin accepted but has not published). `rejected`: an own submission the admin returned ("Ditolak"; the reason is `form.rejectionReason` of the detail). A row and its detail always carry the same value.',
+})
+/** The `status` filter of the list: `rejected` is a row state, not a filter value (returned rows are listed under `review`). */
+const GuruStructuredStatusFilter = z.enum(['approved', 'review'])
+const GuruStructuredSource = z.enum(['question', 'submission']).meta({
+  description: '`question`: an approved question (numeric `id`). `submission`: the caller\'s own structured submission (an intake item; `id` is `g{itemId}`, never a question id).',
+})
 
 export const GuruStructuredRowSchema = z
   .object({
@@ -639,6 +697,8 @@ export const GuruStructuredRowSchema = z
     subCount: z.number().int().min(0),
     marks: z.number().int().min(0).meta({ description: 'Sum of the part marks.' }),
     status: GuruStructuredStatus,
+    source: GuruStructuredSource,
+    editable: z.boolean().meta({ description: 'True for an own `submission` the admin has not accepted yet (edit and delete allowed); always false for a `question`.' }),
   })
   .meta({ id: 'GuruStructuredRow' })
 
@@ -646,7 +706,7 @@ export const GuruStructuredListQuerySchema = z
   .object({
     subjectId: IdSchema.optional(),
     educationLevelId: IdSchema.optional(),
-    status: GuruStructuredStatus.optional().meta({ description: 'Omitted: approved. `review` (the teacher\'s own submissions) is an empty page until the submission part exists.' }),
+    status: GuruStructuredStatusFilter.optional().meta({ description: 'Omitted: approved questions, then the caller\'s own unapproved submissions (own submissions first, newest first). `approved`: approved only. `review`: the caller\'s own submissions that are not approved, which includes the returned ones (row `status` `rejected`). Never another teacher\'s.' }),
     page: z.coerce.number().int().min(1).default(1),
   })
   .meta({ id: 'GuruStructuredListQuery' })
@@ -662,6 +722,20 @@ export const GuruStructuredSubSchema = z
   })
   .meta({ id: 'GuruStructuredSub' })
 
+export const GuruStructuredFormSchema = z
+  .object({
+    subjectId: IdSchema,
+    educationLevelId: IdSchema,
+    chapterId: IdSchema.nullable(),
+    spIds: z.array(IdSchema),
+    tp: z.number().int().min(1).max(6).nullable(),
+    cognitiveLevel: QuestionCognitiveLevelSchema.nullable(),
+    difficultyLevel: Difficulty,
+    stimulusImageId: z.string().nullable().meta({ description: 'Token of the uploaded `question_image` file.' }),
+    rejectionReason: z.string().nullable().meta({ description: 'The admin\'s reason once the item was returned, else null.' }),
+  })
+  .meta({ id: 'GuruStructuredForm' })
+
 export const GuruStructuredDetailSchema = z
   .object({
     id: IdSchema,
@@ -670,21 +744,251 @@ export const GuruStructuredDetailSchema = z
     kbat: z.string(),
     status: GuruStructuredStatus,
     stimulus: z.string().meta({ description: 'The stimulus text, once, above all the sub-questions.' }),
-    stimulusImage: z.string().nullable().meta({ description: 'Always null this round: the file read rule has no teacher branch for a question picture.' }),
+    stimulusImage: z.string().nullable().meta({ description: 'Null for an approved question (the file read rule has no teacher branch for a question picture). For an own submission: `/api/files/{token}` of the uploaded image, or null.' }),
     totalMarks: z.number().int().min(0),
     subCount: z.number().int().min(0),
     subQuestions: z.array(GuruStructuredSubSchema),
     createdAt: TimestampSchema,
+    source: GuruStructuredSource,
+    editable: z.boolean(),
+    form: GuruStructuredFormSchema.nullable().meta({ description: 'The stored form fields for the edit screen; null for a `question`.' }),
   })
   .meta({ id: 'GuruStructuredDetail' })
 
 /* ---------------------------------------------------------------------------------- Guru routes */
 
-/** Owner-only contribution views; the owning teacher sees their own key by design. */
+/**
+ * S6-T06 (API-GUR-18, R1 decision D113, L-6): a teacher's single-MCQ submission is an intake item of an `intake_batches` row with
+ * `source = 'guru'`, not a question row. These are the BM texts of the form 44-F1 (docs/prd/r1/20-guru-admin-sekolah.md) and of the shared
+ * conditional DSKP rule (D112), so the screen and the server show the same strings. Messages of the CSV import are in question-workflow.
+ */
+export const GURU_QUESTION_MESSAGES = {
+  level: 'Sila pilih tingkatan.',
+  subject: 'Sila pilih subjek.',
+  chapter: 'Sila pilih bab.',
+  chapterInvalid: 'Bab tidak sah.',
+  chapterMismatch: 'Bab tidak sepadan dengan subjek dan tingkatan.',
+  sp: 'Sila pilih Standard Pembelajaran (SP).',
+  spInvalid: 'SP tidak sah.',
+  spMax: 'Satu soalan boleh mempunyai 1 hingga 3 SP sahaja.',
+  tp: 'Sila pilih TP.',
+  tpRange: 'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
+  cognitive: 'Sila pilih aras pemikiran.',
+  difficulty: 'Sila pilih kesukaran.',
+  type: 'Jenis soalan tidak sah.',
+  text: 'Sila isi soalan.',
+  textLong: 'Soalan tidak boleh melebihi 2000 aksara.',
+  options: 'Sila isi semua pilihan jawapan.',
+  option: (letter: string): string => `Sila isi pilihan ${letter}.`,
+  optionLong: (letter: string): string => `Pilihan ${letter} tidak boleh melebihi 500 aksara.`,
+  correct: 'Sila tanda satu jawapan yang betul.',
+  explanationLong: 'Penerangan tidak boleh melebihi 2000 aksara.',
+  /** Success text of the create (the screen shows it as the toast). */
+  submitted: 'Soalan dihantar untuk semakan.',
+  /** 409 of an edit or delete of an item that is no longer open to the teacher. */
+  locked: 'Soalan ini sudah diterima atau diluluskan dan tidak boleh diubah.',
+} as const
+
+/** The teacher-facing state of a submission item (OPT-KIRIMAN-STATUS): review, approved, draft (returned). */
+export const GURU_SUBMISSION_STATUSES = ['pending', 'approved', 'rejected'] as const
+export const GuruSubmissionStatusSchema = z.enum(GURU_SUBMISSION_STATUSES).meta({ id: 'GuruSubmissionStatus' })
+export type GuruSubmissionStatus = z.infer<typeof GuruSubmissionStatusSchema>
+export const GURU_SUBMISSION_STATUS_LABELS: Readonly<Record<GuruSubmissionStatus, string>> = {
+  pending: 'Menunggu Semakan',
+  approved: 'Diluluskan',
+  rejected: 'Ditolak',
+}
+
+/** The inputs of the shared conditional DSKP rule (D112) of a teacher submission. */
+export interface GuruDskpInput {
+  chapterId?: string | null | undefined
+  spIds?: readonly string[] | null | undefined
+  tp?: number | null | undefined
+  cognitiveLevel?: string | null | undefined
+}
+
+/** What the Subjek + Tingkatan has: active chapters (Bab required) and DSKP nodes (SP, TP and Aras required). */
+export interface GuruDskpFacts {
+  hasChapters: boolean
+  hasDskpNodes: boolean
+}
+
+/**
+ * The conditional DSKP rule of 44-F1 / FR-GUR-44-9 as one pure function (API-GUR-18 now, API-GUR-24 later): Bab is required only where the
+ * Subjek + Tingkatan has active chapters; SP (at least one), TP (1 to 6) and Aras only where it has DSKP nodes. Returns the `fields` map of the
+ * 422 (empty when the input passes). A value that is sent but out of range is refused whether or not it is required.
+ */
+export function guruDskpFields(input: GuruDskpInput, facts: GuruDskpFacts): Record<string, string> {
+  const fields: Record<string, string> = {}
+  const M = GURU_QUESTION_MESSAGES
+  if (facts.hasChapters && (input.chapterId === undefined || input.chapterId === null || input.chapterId === '')) fields.chapterId = M.chapter
+  const sp = input.spIds ?? []
+  if (facts.hasDskpNodes && sp.length === 0) fields.spIds = M.sp
+  if (input.tp === undefined || input.tp === null) {
+    if (facts.hasDskpNodes) fields.tp = M.tp
+  } else if (!Number.isInteger(input.tp) || input.tp < 1 || input.tp > 6) fields.tp = M.tpRange
+  if (facts.hasDskpNodes && (input.cognitiveLevel === undefined || input.cognitiveLevel === null || input.cognitiveLevel === '')) fields.cognitiveLevel = M.cognitive
+  return fields
+}
+
+/** MCQ key: index 0..3, a digit string, or a letter A to D. */
+const keyIndex = (v: unknown): number | undefined => {
+  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= 3 ? v : undefined
+  if (typeof v !== 'string') return undefined
+  const t = v.trim().toUpperCase()
+  if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
+  return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
+}
+
+/** The index 0..3 of a submitted MCQ key (a number, a digit string or a letter A to D), or undefined. */
+export const guruKeyIndex = keyIndex
+
+const GURU_OPTION_MAX = 500
+const GuruId = (message: string) => z.string({ error: message }).trim().min(1, message).max(64, message)
+const guruLetter = (i: number): string => String.fromCharCode(65 + i)
+const guruOptionText = (v: unknown): string => {
+  if (typeof v === 'string') return v.trim()
+  if (typeof v === 'object' && v !== null) {
+    const o = v as { text?: unknown; optionText?: unknown }
+    return (typeof o.optionText === 'string' ? o.optionText : typeof o.text === 'string' ? o.text : '').trim()
+  }
+  return ''
+}
+
+/** The four option texts in A to D order; items that all carry a unique numeric `id` 0..3 (the edit form) are placed by it. */
+export function guruOptionTexts(options: readonly unknown[]): string[] {
+  const ids = options.map((e) => (typeof e === 'object' && e !== null ? (e as { id?: unknown }).id : undefined))
+  const placed = options.length === 4 && ids.every((i) => typeof i === 'number' && Number.isInteger(i) && i >= 0 && i <= 3) && new Set(ids).size === 4
+  const ordered = placed ? [...options].sort((a, b) => Number((a as { id: number }).id) - Number((b as { id: number }).id)) : options
+  return ordered.map(guruOptionText)
+}
+
+/**
+ * Body of POST /guru/questions and of PUT /guru/questions/:id (the same form edits, 44-F1). MCQ only: `questionType` is `mcq` (any other value
+ * is 422); exactly four options A to D (strings, `{ text }` or `{ optionText }` items) and one correct answer (`correctAnswer` or its alias
+ * `correctOptionId`: index 0..3 or a letter A to D). `difficultyLevel` is the typed 1 to 5 Kesukaran (required; the words easy/medium/hard are
+ * no longer accepted) and is separate from `tp`. `spIds` holds 1 to 3 SP ids. The conditional DSKP rule (Bab, SP, TP, Aras required only where
+ * the Subjek + Tingkatan has chapters or DSKP nodes) is a service rule, `guruDskpFields`.
+ * 422 `fields` keys: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficultyLevel, questionType, questionText, options,
+ * correctAnswer, explanation.
+ */
+const guruBody = () =>
+  z
+  .object({
+    subjectId: GuruId(GURU_QUESTION_MESSAGES.subject),
+    educationLevelId: GuruId(GURU_QUESTION_MESSAGES.level),
+    chapterId: z.string({ error: GURU_QUESTION_MESSAGES.chapterInvalid }).max(64, GURU_QUESTION_MESSAGES.chapterInvalid).nullable().optional(),
+    spIds: z
+      .array(z.string({ error: GURU_QUESTION_MESSAGES.spInvalid }).min(1, GURU_QUESTION_MESSAGES.spInvalid).max(64, GURU_QUESTION_MESSAGES.spInvalid), { error: GURU_QUESTION_MESSAGES.spInvalid })
+      .max(3, GURU_QUESTION_MESSAGES.spMax)
+      .nullable()
+      .optional(),
+    tp: z.number({ error: GURU_QUESTION_MESSAGES.tpRange }).int(GURU_QUESTION_MESSAGES.tpRange).min(1, GURU_QUESTION_MESSAGES.tpRange).max(6, GURU_QUESTION_MESSAGES.tpRange).nullable().optional(),
+    cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+    // A strict JSON integer 1..5 (no coercion: `true` or `[3]` must not pass).
+    difficultyLevel: z
+      .number({ error: GURU_QUESTION_MESSAGES.difficulty })
+      .int(GURU_QUESTION_MESSAGES.difficulty)
+      .min(1, GURU_QUESTION_MESSAGES.difficulty)
+      .max(5, GURU_QUESTION_MESSAGES.difficulty),
+    questionType: z.literal('mcq', { error: GURU_QUESTION_MESSAGES.type }).default('mcq'),
+    questionText: z.string({ error: GURU_QUESTION_MESSAGES.text }).trim().min(1, GURU_QUESTION_MESSAGES.text).max(2000, GURU_QUESTION_MESSAGES.textLong),
+    options: z.array(z.unknown(), { error: GURU_QUESTION_MESSAGES.options }).meta({ type: 'array', minItems: 4, maxItems: 4, items: { type: 'string' } }),
+    correctAnswer: z.union([z.number(), z.string()]).optional(),
+    correctOptionId: z.union([z.number(), z.string()]).optional(),
+    explanation: z.string({ error: GURU_QUESTION_MESSAGES.explanationLong }).max(2000, GURU_QUESTION_MESSAGES.explanationLong).nullable().optional(),
+  })
+  .superRefine((v, ctx) => {
+    const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
+    if (v.options.length !== 4) bad('options', GURU_QUESTION_MESSAGES.options)
+    else {
+      const texts = guruOptionTexts(v.options)
+      const empty = texts.findIndex((t) => t === '')
+      const long = texts.findIndex((t) => charLen(t) > GURU_OPTION_MAX)
+      if (empty >= 0) bad('options', GURU_QUESTION_MESSAGES.option(guruLetter(empty)))
+      else if (long >= 0) bad('options', GURU_QUESTION_MESSAGES.optionLong(guruLetter(long)))
+    }
+    if (keyIndex(v.correctAnswer ?? v.correctOptionId) === undefined) bad('correctAnswer', GURU_QUESTION_MESSAGES.correct)
+  })
+export const QuestionGuruCreateRequestSchema = guruBody().meta({ id: 'QuestionGuruCreateRequest' })
+export type QuestionGuruCreateRequest = z.output<typeof QuestionGuruCreateRequestSchema>
+
+/** PUT /guru/questions/:id: the same form and rules as the create (the edit form sends every field); only a pending or returned own item. */
+export const QuestionGuruUpdateRequestSchema = guruBody().meta({ id: 'QuestionGuruUpdateRequest' })
+
+/* ------------------------------------------------------------------ structured submission (API-GUR-17, structured variant, ADD-13) */
+
+/**
+ * BM texts of the structured submission form (R1-GUR-44b field table); the DSKP texts are `GURU_QUESTION_MESSAGES`.
+ * `partTextLong` and `schemeLong` are instances of the GLB-1 pattern ERR-REQ-12 ("{Medan} tidak boleh melebihi {n} aksara.", 20-guru-admin-sekolah.md:44,
+ * 40-cross-cutting.md:422) with the 44b labels "Teks sub-soalan" / "Skema Jawapan" (20:1605, 1607). `partsMax` follows ERR-REQ-15
+ * ("{Medan} mesti antara {a} dan {b}.", 20:45); the 44b table has no text for the upper bound (DOC DEFECT, see PR).
+ */
+export const GURU_STRUCTURED_MESSAGES = {
+  stimulusLong: 'Rangsangan tidak boleh melebihi 4000 aksara.',
+  imageType: 'Fail mesti berupa imej (jpg, png atau webp).',
+  imageSize: 'Saiz imej tidak boleh melebihi 2 MB.',
+  partText: 'Sila isi teks sub-soalan.',
+  partTextLong: 'Teks sub-soalan tidak boleh melebihi 2000 aksara.',
+  marks: 'Markah mesti antara 1 dan 20.',
+  scheme: 'Sila isi skema jawapan.',
+  schemeLong: 'Skema jawapan tidak boleh melebihi 2000 aksara.',
+  partsMin: 'Sekurang-kurangnya satu sub-soalan diperlukan.',
+  partsMax: 'Bilangan sub-soalan mesti antara 1 dan 10.',
+  /** Success text of the create. */
+  submitted: 'Soalan berstruktur dihantar untuk semakan.',
+} as const
+
+export const GURU_STRUCTURED_MAX_PARTS = 10
+export const GURU_STRUCTURED_MAX_MARKS = 20
+
+const GuruStructuredPart = z.strictObject({
+  text: z.string({ error: GURU_STRUCTURED_MESSAGES.partText }).trim().min(1, GURU_STRUCTURED_MESSAGES.partText).max(2000, GURU_STRUCTURED_MESSAGES.partTextLong),
+  marks: z
+    .number({ error: GURU_STRUCTURED_MESSAGES.marks })
+    .int(GURU_STRUCTURED_MESSAGES.marks)
+    .min(1, GURU_STRUCTURED_MESSAGES.marks)
+    .max(GURU_STRUCTURED_MAX_MARKS, GURU_STRUCTURED_MESSAGES.marks),
+  scheme: z.string({ error: GURU_STRUCTURED_MESSAGES.scheme }).trim().min(1, GURU_STRUCTURED_MESSAGES.scheme).max(2000, GURU_STRUCTURED_MESSAGES.schemeLong),
+  cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+})
+
+/**
+ * Body of `POST /guru/intake/structured` and `PUT /guru/intake/structured/{id}` (API-GUR-17, structured variant; the same form edits).
+ * One stimulus (optional text, optional `stimulusImageId` = token of an upload through `POST /files?purpose=question_image`) and 1..10 parts.
+ * Total marks are computed, never sent. The conditional DSKP rule is a service rule (`guruDskpFields`).
+ * 422 `fields` keys: subjectId, educationLevelId, chapterId, spIds, tp, cognitiveLevel, difficultyLevel, stimulus, stimulusImageId, parts,
+ * parts.{i}.text, parts.{i}.marks, parts.{i}.scheme, parts.{i}.cognitiveLevel.
+ */
+const guruStructuredBody = () =>
+  z.strictObject({
+    subjectId: GuruId(GURU_QUESTION_MESSAGES.subject),
+    educationLevelId: GuruId(GURU_QUESTION_MESSAGES.level),
+    chapterId: z.string({ error: GURU_QUESTION_MESSAGES.chapterInvalid }).max(64, GURU_QUESTION_MESSAGES.chapterInvalid).nullable().optional(),
+    spIds: z
+      .array(z.string({ error: GURU_QUESTION_MESSAGES.spInvalid }).min(1, GURU_QUESTION_MESSAGES.spInvalid).max(64, GURU_QUESTION_MESSAGES.spInvalid), { error: GURU_QUESTION_MESSAGES.spInvalid })
+      .max(3, GURU_QUESTION_MESSAGES.spMax)
+      .nullable()
+      .optional(),
+    tp: z.number({ error: GURU_QUESTION_MESSAGES.tpRange }).int(GURU_QUESTION_MESSAGES.tpRange).min(1, GURU_QUESTION_MESSAGES.tpRange).max(6, GURU_QUESTION_MESSAGES.tpRange).nullable().optional(),
+    cognitiveLevel: z.enum(QUESTION_COGNITIVE_LEVELS, { error: GURU_QUESTION_MESSAGES.cognitive }).nullable().optional(),
+    difficultyLevel: z.number({ error: GURU_QUESTION_MESSAGES.difficulty }).int(GURU_QUESTION_MESSAGES.difficulty).min(1, GURU_QUESTION_MESSAGES.difficulty).max(5, GURU_QUESTION_MESSAGES.difficulty),
+    stimulus: z.string({ error: GURU_STRUCTURED_MESSAGES.stimulusLong }).max(4000, GURU_STRUCTURED_MESSAGES.stimulusLong).nullable().optional(),
+    stimulusImageId: z.string({ error: GURU_STRUCTURED_MESSAGES.imageType }).min(1, GURU_STRUCTURED_MESSAGES.imageType).max(64, GURU_STRUCTURED_MESSAGES.imageType).nullable().optional(),
+    parts: z
+      .array(GuruStructuredPart, { error: GURU_STRUCTURED_MESSAGES.partsMin })
+      .min(1, GURU_STRUCTURED_MESSAGES.partsMin)
+      .max(GURU_STRUCTURED_MAX_PARTS, GURU_STRUCTURED_MESSAGES.partsMax),
+  })
+export const GuruStructuredCreateRequestSchema = guruStructuredBody().meta({ id: 'GuruStructuredCreateRequest' })
+export type GuruStructuredCreateRequest = z.output<typeof GuruStructuredCreateRequestSchema>
+export const GuruStructuredUpdateRequestSchema = guruStructuredBody().meta({ id: 'GuruStructuredUpdateRequest' })
+
+/** Owner-only views of a teacher's submissions: `id` is the intake item id (API-GUR-18). */
 export const QuestionGuruSummarySchema = z
   .object({
     id: IdSchema,
-    questionType: QuestionTypeSchema,
+    questionType: z.literal('mcq'),
     questionText: z.string(),
     subjectId: IdSchema.nullable(),
     subjectName: z.string(),
@@ -693,122 +997,26 @@ export const QuestionGuruSummarySchema = z
     difficultyLevel: Difficulty,
     difficultyLabel: z.string(),
     dskpTagged: z.boolean(),
-    status: QuestionStatusSchema,
-    /** BM label of the status (Draf, Semakan, Lulus, Diterbitkan, Diarkib). */
+    status: GuruSubmissionStatusSchema,
+    /** BM label of the status: Menunggu Semakan, Diluluskan, Ditolak. */
     statusLabel: z.string(),
-    isActive: z.boolean(),
-    options: z.array(z.string()).nullable(),
-    correctAnswer: z.number().int().min(0).max(3).nullable(),
+    /** The admin's reason ("Sebab: {reason}") while `status` is `rejected`, else null. */
+    rejectionReason: z.string().nullable(),
+    /** True while the teacher may edit or delete the item (not yet accepted by the admin); the screen shows Edit and Padam from it. */
+    editable: z.boolean(),
+    options: z.array(z.string()),
+    correctAnswer: z.number().int().min(0).max(3),
     explanation: z.string().nullable(),
-    source: z.string().nullable(),
     createdAt: TimestampSchema,
   })
   .meta({ id: 'QuestionGuruSummary' })
 
 export const QuestionGuruDetailSchema = QuestionGuruSummarySchema.extend({
-  questionImage: z.string().nullable(),
-  optionImages: z.array(z.string().nullable()),
-  tfAnswer: z.boolean().nullable(),
-  correctAnswerText: z.string().nullable(),
-  altAnswers: z.array(z.string()),
-  modelAnswer: z.string().nullable(),
-  language: Language,
-  scriptType: ScriptType,
-  textDirection: z.enum(['ltr', 'rtl']),
-  curriculumChapterId: IdSchema.nullable(),
-  curriculumTopicId: IdSchema.nullable(),
-  dskpSpId: IdSchema.nullable(),
-  usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0), accuracy: z.number().int().min(0).max(100) }),
+  chapterId: IdSchema.nullable(),
+  spIds: z.array(IdSchema),
+  tp: z.number().int().min(1).max(6).nullable(),
+  cognitiveLevel: QuestionCognitiveLevelSchema.nullable(),
 }).meta({ id: 'QuestionGuruDetail' })
-
-const GuruDifficulty = z.union([z.enum(['easy', 'medium', 'hard'], QUESTION_MESSAGES.difficulty), z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty)], { error: QUESTION_MESSAGES.difficulty })
-const GuruText = z.string({ error: QUESTION_MESSAGES.guruText }).trim().min(1, QUESTION_MESSAGES.guruText).max(2000, QUESTION_MESSAGES.guruTextLong)
-
-/** MCQ key as the mock reads it: index 0..3, a digit string, or a letter A to D. */
-const keyIndex = (v: unknown): number | undefined => {
-  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= 3 ? v : undefined
-  if (typeof v !== 'string') return undefined
-  const t = v.trim().toUpperCase()
-  if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
-  return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
-}
-const tfValid = (v: unknown) => v === true || v === false || v === 'true' || v === 'false' || v === '1' || v === '0' || v === 1 || v === 0
-
-const GuruOptionItem = { oneOf: [{ type: 'string' }, { type: 'object', properties: { text: { type: 'string' } } }, { type: 'object', properties: { optionText: { type: 'string' } } }] }
-
-/**
- * POST /guru/questions: saved as `review`, owner = caller. Difficulty may be easy/medium/hard (2/3/4).
- * Rules per type are the mock's `parseCreate`; the issue key is the `fields` key: `options` (empty item,
- * or item over 500), `correctAnswer` (MCQ key; for short_answer/fill_blank the answer text, empty or over
- * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>`. Chapter,
- * topic and SP ownership checks need the curriculum and are service rules (same keys and copy).
- */
-export const QuestionGuruCreateRequestSchema = z
-  .object({
-    educationLevelId: idWith(QUESTION_MESSAGES.level),
-    subjectId: idWith(QUESTION_MESSAGES.subject),
-    questionType: QuestionTypeSchema,
-    difficultyLevel: GuruDifficulty,
-    questionText: GuruText,
-    options: optionList({ long: QUESTION_MESSAGES.guruOptionLong, item: GuruOptionItem }).optional(),
-    correctAnswer: z.union([z.number(), z.string()]).optional(),
-    tfAnswer: z.union([z.boolean(), z.string(), z.number()]).nullable().optional(),
-    correctAnswerText: z.string().optional(),
-    altAnswers: z.union([z.string(), z.array(z.string())]).optional(),
-    modelAnswer: z.string().optional(),
-    explanation: z.string().optional(),
-    questionImageUrl: z.string().optional(),
-    questionImageFileId: ImageFileId.optional(),
-    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
-    curriculumChapterId: idOrBlank(QUESTION_MESSAGES.guruChapter),
-    curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
-    dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
-    scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
-    parts: z.array(QuestionPartSchema).min(1).optional(),
-    tag: QuestionCurriculumTagSchema.optional(),
-  })
-  .superRefine((v, ctx) => {
-    const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
-    if (v.questionType === 'mcq') {
-      if (v.options === undefined) bad('options', QUESTION_MESSAGES.options)
-      if (keyIndex(v.correctAnswer) === undefined) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
-    } else if (v.questionType === 'true_false') {
-      if (!tfValid(v.tfAnswer)) bad('tfAnswer', QUESTION_MESSAGES.guruTf)
-    } else if (v.questionType === 'short_answer' || v.questionType === 'fill_blank') {
-      const answer = (typeof v.correctAnswerText === 'string' ? v.correctAnswerText : typeof v.correctAnswer === 'string' ? v.correctAnswer : '').trim()
-      if (answer === '') bad('correctAnswer', QUESTION_MESSAGES.answerText)
-      else if (charLen(answer) > OPTION_MAX) bad('correctAnswer', QUESTION_MESSAGES.guruAnswerLong)
-    }
-  })
-  .meta({ id: 'QuestionGuruCreateRequest' })
-
-/**
- * PUT /guru/questions/:id (own only). MCQ options are `{ id: 0..3, optionText }` with four unique ids.
- * When `options` or `correctOptionId` is sent, both are required (`options`, `correctOptionId` keys);
- * that they apply only to an MCQ is a service rule (the saved type is not in the body).
- */
-export const QuestionGuruUpdateRequestSchema = z
-  .object({
-    questionText: GuruText,
-    difficultyLevel: GuruDifficulty.optional(),
-    options: optionList({
-      long: QUESTION_MESSAGES.guruOptionLong,
-      indexed: true,
-      item: { type: 'object', required: ['id', 'optionText'], properties: { id: { type: 'integer', minimum: 0, maximum: 3 }, optionText: { type: 'string', minLength: 1, maxLength: 500 } } },
-    }).optional(),
-    correctOptionId: z.union([z.number(), z.string()]).optional(),
-    explanation: z.string().nullable().optional(),
-    questionImageFileId: ImageFileId.optional(),
-    optionImageFileIds: z.array(ImageFileId).max(4).optional(),
-    removeQuestionImage: z.boolean().optional(),
-    removeOptionImage: z.array(z.boolean()).max(4).optional(),
-  })
-  .superRefine((v, ctx) => {
-    if (v.options === undefined && v.correctOptionId === undefined) return
-    if (v.options === undefined) ctx.addIssue({ code: 'custom', path: ['options'], message: QUESTION_MESSAGES.options })
-    if (keyIndex(v.correctOptionId) === undefined) ctx.addIssue({ code: 'custom', path: ['correctOptionId'], message: QUESTION_MESSAGES.correctAnswer })
-  })
-  .meta({ id: 'QuestionGuruUpdateRequest' })
 
 export const QuestionGuruQuerySchema = z.object({ page: z.coerce.number().int().min(1).default(1) }).meta({ id: 'QuestionGuruQuery' })
 export const QuestionGuruRemoveResultSchema = z.object({ removed: z.literal(1) }).meta({ id: 'QuestionGuruRemoveResult' })
@@ -833,3 +1041,39 @@ export const QuestionPublicSchema = z
     parts: z.array(QuestionPublicPartSchema).optional(),
   })
   .meta({ id: 'QuestionPublic' })
+
+/**
+ * S1-T09a (D4): `question_versions.type` stores `short` and `table` where the API says `short_answer` and `table_fill`; the others
+ * are identical. DB-side widening (mcq_multi, true_false, fill_blank) is migration 0134, not this change.
+ */
+export type QuestionTypeCode = (typeof QUESTION_TYPES)[number]
+export const QUESTION_TYPE_DB_VALUES: Record<QuestionTypeCode, string> = {
+  mcq: 'mcq',
+  mcq_multi: 'mcq_multi',
+  true_false: 'true_false',
+  match: 'match',
+  short_answer: 'short',
+  fill_blank: 'fill_blank',
+  structured: 'structured',
+  working: 'working',
+  essay: 'essay',
+  drawing: 'drawing',
+  table_fill: 'table',
+}
+export const questionTypeToDb = (t: QuestionTypeCode): string => QUESTION_TYPE_DB_VALUES[t]
+export const questionTypeFromDb = (v: string): QuestionTypeCode | null =>
+  QUESTION_TYPES.find((t) => QUESTION_TYPE_DB_VALUES[t] === v) ?? null
+/** 40:757 OPT-JENIS-SOALAN default leaf modes (`structured`: any mode per part). `mcq_multi` / `true_false` use leaf mode `mcq`. */
+export const QUESTION_TYPE_LEAF_MODES: Record<QuestionTypeCode, readonly string[]> = {
+  mcq: ['mcq'],
+  mcq_multi: ['mcq'],
+  true_false: ['mcq'],
+  match: ['match_letter'],
+  short_answer: ['short_text', 'numeric'],
+  fill_blank: ['short_text'],
+  structured: ['mcq', 'match_letter', 'short_text', 'numeric', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice'],
+  working: ['working'],
+  essay: ['essay', 'essay_choice'],
+  drawing: ['drawing'],
+  table_fill: ['table_fill'],
+}

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config'
 
 import { CLOCK, type Clock } from '../../db/clock'
 import type { Prng } from '../../db/prng'
-import { QuestionsRepository, type QuestionFilter, type QuestionRecord } from '../questions'
+import { OverviewCache, QuestionsRepository, servabilityFilterOf, type QuestionFilter, type QuestionRecord } from '../questions'
 import { POOL_CACHE_SECONDS } from './config'
 import { difficultyOf, mcqItemOf } from './rules'
 
@@ -17,6 +17,22 @@ export interface PoolCell {
 
 /** The SQL scope of the SPM pool of a subject: live-published, active, SPM-servable (offered level, no tag), one multiple-choice leaf outside any group (the same shape `inPool` / `mcqItemOf` accept, so counts and draws agree). */
 const poolFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', spmPool: true, ungrouped: true, singleMcqLeaf: true })
+
+/**
+ * S3-T07 (D91, AC-MUR-13-13): the SQL scope of the Databank COUNT. It is the serving definition of the Databank draw
+ * (`filterOf('databank')`, which follows `GROUP_SURFACES`), so a count equals what a Databank draw can serve: a stimulus group
+ * is counted once (and only while complete). A multi-leaf question is one unit in any scope that serves it; the Databank shape serves
+ * single-part questions only, so there it counts 0. NOT `poolFilter`: that one stays the single-leaf scope of the
+ * SPM Mock paper 1 draw (`mock.service.ts`, `mcqItemOf`).
+ */
+export const databankFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('databank', { subjectId }), status: 'approved', active: true })
+
+/**
+ * The same for the Latih Tubi SPM hub total: the serving definition of the Latih Tubi draw (`filterOf('latih_tubi_spm')`, which
+ * follows `GROUP_SURFACES`: singles only while the surface is not a group surface, whole groups once it is).
+ */
+export const latihTubiFilter = (subjectId: string): QuestionFilter => ({ ...servabilityFilterOf('latih_tubi_spm', { subjectId }), status: 'approved', active: true })
+
 
 /** First window of a draw is `n * DRAW_OVER`; it widens x4 (same seed, so the same prefix) while records are refused. */
 const DRAW_OVER = 2
@@ -34,13 +50,26 @@ const inPool = (r: QuestionRecord): boolean => r.isActive && r.version.status ==
 @Injectable()
 export class SpmPoolService {
   private readonly inflight = new Map<string, Promise<PoolCell[]>>()
-  private readonly cache = new Map<string, { until: number; cells: PoolCell[] }>()
+  private readonly cache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
+  private readonly databankInflight = new Map<string, Promise<number>>()
+  private readonly unitCellsInflight = new Map<string, Promise<PoolCell[]>>()
+  private readonly unitCellsCache = new Map<string, { until: number; cells: PoolCell[]; generation: number }>()
+  private readonly databankCache = new Map<string, { until: number; n: number; generation: number }>()
 
   constructor(
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(ConfigService) private readonly config: ConfigService,
     @Inject(CLOCK) private readonly clock: Clock,
+    /**
+     * N4 / ruling 8: the question events (approve, Terbit, Tarik balik, create, remove, activate) already call `OverviewCache.invalidate()`
+     * in `QuestionsService`; its `generation` moves with each, so a cached count is dropped on the next load ("+1 on next load").
+     */
+    @Inject(OverviewCache) private readonly events: OverviewCache,
   ) {}
+
+  private generation(): number {
+    return this.events.generation
+  }
 
   private ttlMs(): number {
     const n = Number.parseInt(String(this.config.get<string>('SPM_POOL_CACHE_SECONDS') ?? ''), 10)
@@ -52,29 +81,84 @@ export class SpmPoolService {
     const ttl = this.ttlMs()
     const now = this.clock.now().getTime()
     const hit = this.cache.get(subjectId)
-    if (!options.fresh && ttl > 0 && hit && hit.until > now) return hit.cells
-    // Single-flight: concurrent reads of one subject share one statement.
-    const running = this.inflight.get(subjectId)
+    const generation = this.generation()
+    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
+    // Single-flight: concurrent reads of one subject share one statement, but never across a question event (the key holds the generation).
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.inflight.get(flight)
     if (running) return running
     const load = (async () => {
       const rows = await this.questions.groupCountsByLevelTp({ ...poolFilter(subjectId), status: 'approved', active: true })
-      const merged = new Map<string, PoolCell>()
-      for (const r of rows) {
-        const difficulty = difficultyOf(r.tp)
-        const key = `${r.levelId ?? ''}:${String(difficulty)}`
-        const cell = merged.get(key)
-        if (cell) cell.n += r.n
-        else merged.set(key, { levelId: r.levelId, difficulty, n: r.n })
-      }
-      const cells = [...merged.values()]
-      if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, cells })
+      const cells = mergeCells(rows)
+      if (ttl > 0) this.cache.set(subjectId, { until: now + ttl, cells, generation })
       return cells
     })()
-    this.inflight.set(subjectId, load)
+    this.inflight.set(flight, load)
     try {
       return await load
     } finally {
-      this.inflight.delete(subjectId)
+      this.inflight.delete(flight)
+    }
+  }
+
+  /**
+   * The Databank count of a subject: units the Databank draw can serve (see `databankFilter`). Cached like `cells` (same TTL, single
+   * flight, dropped when a question event moves `generation`).
+   */
+  databankCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+    return this.databankUnits(subjectId, options)
+  }
+
+  /** The Latih Tubi SPM total of a subject: the sum of `latihTubiCells`, ONE statement and ONE cache, so total and breakdowns are equal by construction. */
+  async latihTubiCount(subjectId: string, options: { fresh?: boolean } = {}): Promise<number> {
+    return countOf(await this.latihTubiCells(subjectId, options))
+  }
+
+  /**
+   * The Latih Tubi cells of a subject by (level, difficulty) in UNITS (see `latihTubiFilter`): they sum to `latihTubiCount` (which is their sum), because a
+   * group sits in one bucket (the level and TP of its first member, `unitCountsByLevelTp`). Cached like `databankCount`.
+   */
+  async latihTubiCells(subjectId: string, options: { fresh?: boolean } = {}): Promise<PoolCell[]> {
+    const ttl = this.ttlMs()
+    const now = this.clock.now().getTime()
+    const generation = this.generation()
+    const hit = this.unitCellsCache.get(subjectId)
+    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.cells
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.unitCellsInflight.get(flight)
+    if (running) return running
+    const load = (async () => {
+      const cells = mergeCells(await this.questions.unitCountsByLevelTp(latihTubiFilter(subjectId)))
+      if (ttl > 0) this.unitCellsCache.set(subjectId, { until: now + ttl, cells, generation })
+      return cells
+    })()
+    this.unitCellsInflight.set(flight, load)
+    try {
+      return await load
+    } finally {
+      this.unitCellsInflight.delete(flight)
+    }
+  }
+
+  private async databankUnits(subjectId: string, options: { fresh?: boolean }): Promise<number> {
+    const ttl = this.ttlMs()
+    const now = this.clock.now().getTime()
+    const generation = this.generation()
+    const hit = this.databankCache.get(subjectId)
+    if (!options.fresh && ttl > 0 && hit && hit.until > now && hit.generation === generation) return hit.n
+    const flight = `${subjectId}:${String(generation)}`
+    const running = this.databankInflight.get(flight)
+    if (running) return running
+    const load = (async () => {
+      const n = await this.questions.unitCount(databankFilter(subjectId))
+      if (ttl > 0) this.databankCache.set(subjectId, { until: now + ttl, n, generation })
+      return n
+    })()
+    this.databankInflight.set(flight, load)
+    try {
+      return await load
+    } finally {
+      this.databankInflight.delete(flight)
     }
   }
 
@@ -107,6 +191,19 @@ export class SpmPoolService {
     }
     return picked
   }
+}
+
+/** Merges (level, TP) rows into cells by (level, mock difficulty 1 to 5). */
+function mergeCells(rows: readonly { levelId: string | null; tp: number | null; n: number }[]): PoolCell[] {
+  const merged = new Map<string, PoolCell>()
+  for (const r of rows) {
+    const difficulty = difficultyOf(r.tp)
+    const key = `${r.levelId ?? ''}:${String(difficulty)}`
+    const cell = merged.get(key)
+    if (cell) cell.n += r.n
+    else merged.set(key, { levelId: r.levelId, difficulty, n: r.n })
+  }
+  return [...merged.values()]
 }
 
 export function countOf(cells: readonly PoolCell[], filter: { levelId?: string; difficulty?: number } = {}): number {

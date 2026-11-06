@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** S2 `/prestasi/tingkatan` "Pilih Tingkatan" (M08-T5; FR-M08-22): two link cards, only T4 and T5 exist. */
+/** S2 `/prestasi/tingkatan` "Pilih Tingkatan" (M08-T5; FR-M08-22): one link card per Tingkatan (T1 to T5) that has classes (R1-AS-4). */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
