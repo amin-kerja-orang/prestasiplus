@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, Headers, HttpCode, Param, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { ApiError } from '../../common/errors/api-error'
@@ -10,10 +10,11 @@ import { isOverloadError } from '../auth/auth.errors'
 import { isTestActor } from '../wallet'
 import { MOD_PELAJAR_REFUSAL } from './gamification.constants'
 import { GAMIFICATION_LIMITS, IDEMPOTENCY_HEADER, IDEMPOTENCY_KEY_PATTERN } from './gamification.constants'
+import { ChallengeClaimsService } from './challenge-claims.service'
 import { GamificationService, type Viewer } from './gamification.service'
 import type { RankingViewer } from './name-privacy'
-import { bodyOf, intOf, queryText, validationFailure } from './validation'
-import { GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
+import { bodyOf, idParam, intOf, queryText, validationFailure } from './validation'
+import { ClientUuidSchema, GAMIFICATION_MESSAGES as MSG } from '@pp/contract'
 
 type Req = Request & RequestWithAuth
 
@@ -53,7 +54,10 @@ async function guard<T>(fn: () => Promise<T>): Promise<T> {
 @UseInterceptors(NoStoreInterceptor)
 @RateLimit(GAMIFICATION_LIMITS.read)
 export class GamificationController {
-  constructor(private readonly gamification: GamificationService) {}
+  constructor(
+    private readonly gamification: GamificationService,
+    private readonly claims: ChallengeClaimsService,
+  ) {}
 
   @Get('dashboard')
   async dashboard(@Req() req: Req) {
@@ -63,6 +67,18 @@ export class GamificationController {
   @Get('challenges')
   async challenges(@Req() req: Req) {
     return guard(() => this.gamification.challengesToday(viewerOf(req).userId))
+  }
+
+  /** API-GAME-11: claim the reward of a finished challenge once per Malaysia day. The body is optional; success is 200. */
+  @Post('challenges/:id/claim')
+  @HttpCode(200)
+  async claim(@Req() req: Req, @Param('id') rawId: string, @Body() body: unknown) {
+    const viewer = viewerOf(req)
+    // Mod Pelajar first (ruling 20 step 1), before the id or the body is looked at.
+    if (viewer.isTest) throw ApiError.of('FORBIDDEN', { message: MOD_PELAJAR_REFUSAL })
+    const raw = bodyOf(body).clientUuid
+    if (raw !== undefined && raw !== null && (typeof raw !== 'string' || !ClientUuidSchema.safeParse(raw).success)) throw validationFailure({ clientUuid: MSG.invalid })
+    return ok(await guard(() => this.claims.claim(viewer, idParam(rawId), typeof raw === 'string' ? raw : null)))
   }
 
   /** The period and every other query are ignored (FR-M14-08, FR-M14-42). Names only within the viewer's scope (#76). */

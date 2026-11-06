@@ -11,7 +11,7 @@
  *   `str_page`; links keep the filters and drop the other list's page, DV-M04-16); a section is
  *   omitted when its count is 0. Both empty: "Semua soalan sudah lengkap dengan gambar rajah!".
  * - Upload and dismiss call the API and reload with the API `status` as the flash.
- * - S6-T18: a teacher / school_admin has no school filter and no Dismiss; the chip "Menunggu Semakan"
+ * - S6-T18: a teacher / school_admin has no school filter and no Dismiss; a teacher can upload (to review), school_admin cannot; the chip "Menunggu Semakan"
  *   shows for items with `pendingReview`.
  */
 import { computed, ref, watch } from 'vue'
@@ -44,6 +44,8 @@ const flash = useFlash()
 const session = useSessionStore()
 /** Only the admin sees the school filter, upload and Dismiss (S6-T18). */
 const isAdmin = computed(() => session.role === 'admin')
+/** Admin uploads directly, a teacher uploads to review; school_admin has no upload (S6-T18). */
+const canUpload = computed(() => session.role === 'admin' || session.role === 'teacher')
 
 const applied = computed(() => ({
   subject_id: queryText(route.query.subject_id),
@@ -265,7 +267,7 @@ const filterCount = computed(
           kind="mcq"
           :item="item"
           :can-dismiss="isAdmin"
-          :can-upload="isAdmin"
+          :can-upload="canUpload"
           @done="onDone"
           @failed="onFailed"
         />
@@ -296,7 +298,7 @@ const filterCount = computed(
           kind="structured"
           :item="item"
           :can-dismiss="isAdmin"
-          :can-upload="isAdmin"
+          :can-upload="canUpload"
           @done="onDone"
           @failed="onFailed"
         />

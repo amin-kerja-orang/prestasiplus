@@ -440,13 +440,57 @@ describe('S11 diagram audit for teacher and school_admin (S6-T18)', () => {
     expect((await call('POST', `${url}/mcq/563393/image`, PELAJAR, png())).status).toBe(403)
   })
 
-  it.each([GURU, ADMIN_SEKOLAH])(
-    'user %i: image upload is 403 and the flag is kept',
-    async (as) => {
-      expect((await call('POST', `${url}/mcq/563393/image`, as, png())).status).toBe(403)
-      expect(questions.get(563_393)?.needsDiagram).toBe(true)
-    },
-  )
+  it('school_admin image upload is 403 and the flag is kept', async () => {
+    expect((await call('POST', `${url}/mcq/563393/image`, ADMIN_SEKOLAH, png())).status).toBe(403)
+    expect(questions.get(563_393)?.needsDiagram).toBe(true)
+  })
+
+  it('teacher upload goes to review: 200, question kept and listed pending, a second upload is 409', async () => {
+    dirty = true
+    const r = await call<DiagramMutation>('POST', `${url}/mcq/563393/image`, GURU, png())
+    expect(r.status).toBe(200)
+    expect(r.body.data).toEqual({ id: 563_393, needsDiagram: true })
+    expect(r.body.status).toBe('Gambar dihantar untuk semakan.')
+    expect(questions.get(563_393)?.needsDiagram).toBe(true)
+    const list = await call<DiagramAudit>('GET', url, GURU)
+    expect(list.body.data.mcq.items.find((i) => i.id === 563_393)?.pendingReview).toBe(true)
+    expect(
+      list.body.data.mcq.items.filter((i) => i.id !== 563_393).every((i) => !i.pendingReview),
+    ).toBe(true)
+    const again = await call('POST', `${url}/mcq/563393/image`, GURU, png())
+    expect(again.status).toBe(409)
+    expect(JSON.stringify(again.body)).toContain('Gambar untuk soalan ini sedang menunggu semakan.')
+  })
+
+  it('teacher upload validates type and size (422)', async () => {
+    const gif = await call(
+      'POST',
+      `${url}/mcq/563394/image`,
+      GURU,
+      form({}, { image: pngFile('a.gif', 'image/gif') }),
+    )
+    expect(fieldsOf(gif)).toEqual({ image: DIAGRAM_FILE_TYPE })
+    const big = await call(
+      'POST',
+      `${url}/mcq/563394/image`,
+      GURU,
+      form({}, { image: pngFile('big.png', 'image/png', 3 * 1024 * 1024) }),
+    )
+    expect(fieldsOf(big)).toEqual({ image: DIAGRAM_FILE_SIZE })
+    const list = await call<DiagramAudit>('GET', url, GURU)
+    expect(list.body.data.mcq.items.some((i) => i.pendingReview)).toBe(false)
+  })
+
+  it('a reset clears the pending uploads', async () => {
+    dirty = true
+    expect((await call('POST', `${url}/mcq/563393/image`, GURU, png())).status).toBe(200)
+    const before = await call<DiagramAudit>('GET', url, GURU)
+    expect(before.body.data.mcq.items.find((i) => i.id === 563_393)?.pendingReview).toBe(true)
+    await runtime.reset()
+    const after = await call<DiagramAudit>('GET', url, GURU)
+    expect(after.body.data.mcq.items.some((i) => i.pendingReview)).toBe(false)
+    expect((await call('POST', `${url}/mcq/563393/image`, GURU, png())).status).toBe(200)
+  })
 
   it('the admin upload is validated: 3 MB and gif are refused', async () => {
     const big = await call(

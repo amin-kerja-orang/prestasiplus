@@ -74,7 +74,7 @@ export interface KontrakApi {
   verification(subject: string, kertas: number): Promise<BijakVerificationState>
   verify(subject: string, kertas: number, note: string): Promise<BijakBlueprintView>
   pool(subject: string, kertas: number): Promise<BijakPoolPreview>
-  generateDraft(subject: string, kertas: number): Promise<{ paperId: string }>
+  generateDraft(subject: string, kertas: number): Promise<{ id: string }>
   /** DSKP units of a subject for the unit picker (`GET /admin/bijak/dskp/units`). */
   listUnits(subject: string): Promise<BijakDskpUnit[]>
   /** Subjects the admin can add a contract for (`GET /admin/bijak/subjects`). */
