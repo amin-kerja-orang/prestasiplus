@@ -9,6 +9,8 @@ import { CurriculumLearnerService } from './learner.service'
 import { AuditModule } from '../../common/audit'
 import { ThrottleModule } from '../../common/throttle'
 import { CurriculumPorts } from './providers'
+import { CurriculumSpMapAdapter } from './sp-map.adapter'
+import { SP_MAP_PORT } from '../reports/performance/ports/sp-map.port'
 
 /**
  * Curriculum (M03, BE-08): levels, subjects, chapters, topics, subtopics, the DSKP node tree and the
@@ -32,7 +34,9 @@ import { CurriculumPorts } from './providers'
     CurriculumBulkChapterService,
     CurriculumLearnerService,
     CurriculumPorts,
+    // #924: the real SP map of Analitik Adaptif; PerformanceModule imports this module and injects SP_MAP_PORT.
+    { provide: SP_MAP_PORT, useClass: CurriculumSpMapAdapter },
   ],
-  exports: [CurriculumRepository, CurriculumPorts],
+  exports: [CurriculumRepository, CurriculumPorts, SP_MAP_PORT],
 })
 export class CurriculumModule {}
