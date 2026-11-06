@@ -259,7 +259,6 @@ export class PracticeService {
               completedAt: completed.completedAt,
               pointsEarned: completed.pointsEarned,
               sessionCoins: completed.coinsEarned,
-              ...(s.mode === 'mission' && s.coinsPerCorrect !== null ? { coinsPerCorrect: s.coinsPerCorrect } : {}),
               isTest: test,
             },
             tx,

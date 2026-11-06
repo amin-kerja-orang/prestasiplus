@@ -150,7 +150,7 @@ export type AssignmentResolution =
       status: 'ok'
       subjectId: string | null
       questionIds: string[]
-      /** mission: coins per correct answer (else `MISSION_COINS_PER_CORRECT`). */
+      /** Legacy per-mission rate: no longer read for the credit (S5-T03; the one rate is `coinsPerCorrect()`, DM-48). */
       coinsPerCorrect?: number | null
       /** question_set: time limit in seconds. */
       timeLimitSec?: number | null
@@ -233,8 +233,6 @@ export interface PracticeSessionCompleted {
   pointsEarned: number
   /** BR-09: the session's own coins (mock `sessionCoins`). */
   sessionCoins: number
-  /** mission only. */
-  coinsPerCorrect?: number
   /** True under Mod Pelajar: every ledger row must be stamped `is_test`. */
   isTest: boolean
 }

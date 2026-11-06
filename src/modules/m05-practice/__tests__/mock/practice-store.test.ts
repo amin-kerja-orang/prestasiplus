@@ -651,12 +651,9 @@ describe('write path (BR-31)', () => {
   }
 
   const MODES: readonly [string, number, Record<string, unknown>][] = [
-    ['random', 3, { mode: 'random', subjectCode: 'MATH', levelId: 10, count: 5 }],
     ['chapter', 4, { mode: 'chapter', chapterId: 1, count: 5 }],
     ['revision', 4, { mode: 'revision', subjectCode: 'MATH', count: 20 }],
-    ['past_year', 3, { mode: 'past_year', subjectCode: 'SEJ', count: 5 }],
     ['latih_tubi', 3, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 }],
-    ['ramalan', 4, { mode: 'ramalan', subjectCode: 'AKAUN', year: 2026, setNo: 1 }],
   ]
 
   for (const [mode, user, body] of MODES) {
@@ -789,7 +786,7 @@ describe('write path (BR-31)', () => {
     expect(users.trial(3, toEpochMs('2026-09-26T09:00:00+08:00')).used).toBe(trialBefore)
   })
 
-  it('mission: coinsPerCorrect 3 is passed; a completed mission answers 409; an open one resumes', async () => {
+  it('mission: no per-mission rate is passed (S5-T03); a completed mission answers 409; an open one resumes', async () => {
     await spyM14()
     const ids = questions
       .practiceQuery({ subjectId: 3, educationLevelIds: [1], limit: 4, seed: 'm' })
@@ -834,13 +831,14 @@ describe('write path (BR-31)', () => {
       timeSpent: 60,
     })
     expect(done.status).toBe(200)
-    expect(calls[0]).toMatchObject({ mode: 'mission', correct: 4, coinsPerCorrect: 3 })
+    expect(calls[0]).toMatchObject({ mode: 'mission', correct: 4 })
+    expect(calls[0]?.coinsPerCorrect).toBeUndefined()
     expect(
       (done.body as { data: { results: { gamification: { coinsEarned: number } } } }).data.results
         .gamification.coinsEarned,
     ).toBe(99)
-    // BR-09: 3 × 4 correct stored on the session (Delivery Lead MJ-1).
-    expect(practice.session(id1)?.coinsEarned).toBe(12)
+    // DM-48 (S5-T03): the one rate (1 until S7-T05) × 4 correct stored on the session.
+    expect(practice.session(id1)?.coinsEarned).toBe(4)
     const again = await request(runtime, 'POST', '/api/practice/sessions', token, {
       mode: 'mission',
       missionId: 9001,
@@ -861,8 +859,8 @@ describe('write path (BR-31)', () => {
   it('a throwing M14 call rolls the whole completion back', async () => {
     const token = setUser(3).token
     const start = await request(runtime, 'POST', '/api/practice/sessions', token, {
-      mode: 'random',
-      subjectCode: 'MATH',
+      mode: 'latih_tubi',
+      subjectCode: 'PERNIAGA',
       count: 5,
     })
     const data = (start.body as { data: { sessionId: string; questions: { id: number }[] } }).data
@@ -915,8 +913,8 @@ describe('write path (BR-31)', () => {
     const token = setUser(3).token
     const logBefore = practiceAnswers.count('Q-ANS-ALL')
     const start = await request(runtime, 'POST', '/api/practice/sessions', token, {
-      mode: 'random',
-      subjectCode: 'BM',
+      mode: 'latih_tubi',
+      subjectCode: 'PERNIAGA',
       count: 5,
     })
     const data = (start.body as { data: { sessionId: string; questions: { id: number }[] } }).data
@@ -968,8 +966,8 @@ describe('write path (BR-31)', () => {
     const token3 = setUser(3).token
     expect(users.trial(3, at())).toMatchObject({ used: 0, remaining: 50, active: true })
     const s = await request(runtime, 'POST', '/api/practice/sessions', token3, {
-      mode: 'random',
-      subjectCode: 'MATH',
+      mode: 'latih_tubi',
+      subjectCode: 'PERNIAGA',
       count: 5,
     })
     const data = (s.body as { data: { sessionId: string; questions: { id: number }[] } }).data
@@ -999,8 +997,8 @@ describe('write path (BR-31)', () => {
     const token4 = setUser(4).token
     const used4 = users.trial(4, at()).used
     const s4 = await request(runtime, 'POST', '/api/practice/sessions', token4, {
-      mode: 'random',
-      subjectCode: 'MATH',
+      mode: 'latih_tubi',
+      subjectCode: 'PERNIAGA',
       count: 5,
     })
     const d4 = (s4.body as { data: { sessionId: string; questions: { id: number }[] } }).data
@@ -1011,8 +1009,8 @@ describe('write path (BR-31)', () => {
     expect(users.trial(4, at()).used).toBe(used4)
     // The admin has used 50 of 50: 402 TRIAL_EXHAUSTED.
     const admin = await request(runtime, 'POST', '/api/practice/sessions', setUser(1).token, {
-      mode: 'random',
-      subjectCode: 'MATH',
+      mode: 'latih_tubi',
+      subjectCode: 'PERNIAGA',
       count: 5,
     })
     expect(admin.status).toBe(402)
@@ -1025,8 +1023,8 @@ describe('write path (BR-31)', () => {
   it('start validation: unknown subject 404, bad count 422, a previously locked chapter now starts 201 (D98), empty revision 422', async () => {
     const token = setUser(4).token
     const post = (b: unknown) => request(runtime, 'POST', '/api/practice/sessions', token, b)
-    expect((await post({ mode: 'random', subjectCode: 'XXX', count: 5 })).status).toBe(404)
-    expect((await post({ mode: 'random', subjectCode: 'MATH', count: 7 })).status).toBe(422)
+    expect((await post({ mode: 'latih_tubi', subjectCode: 'XXX', count: 5 })).status).toBe(404)
+    expect((await post({ mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 7 })).status).toBe(422)
     const later = await post({ mode: 'chapter', chapterId: 143, count: 5 })
     expect(later.status).toBe(201)
     const none = await request(runtime, 'POST', '/api/practice/sessions', setUser(3).token, {
@@ -1108,7 +1106,7 @@ describe('write path (BR-31)', () => {
 
   it('BR-30: the stored timeSpent is capped at 3 × 60 s per question', async () => {
     const token = setUser(4).token
-    const { id, qids } = await startIds(token, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const { id, qids } = await startIds(token, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 })
     await request(runtime, 'POST', `/api/practice/sessions/${id}/check-answer`, token, {
       questionId: qids[0],
       selectedOptionId: 0,
@@ -1118,7 +1116,7 @@ describe('write path (BR-31)', () => {
       timeSpent: 99_999,
     })
     expect(practice.session(id)?.timeSpent).toBe(5 * 180)
-    const { id: id2 } = await startIds(token, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const { id: id2 } = await startIds(token, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 })
     await request(runtime, 'POST', `/api/practice/sessions/${id2}/submit`, token, {
       answers: [],
       timeSpent: -5,
@@ -1128,7 +1126,7 @@ describe('write path (BR-31)', () => {
 
   it('#5: 422 for a question outside the session, an option out of range or a missing field', async () => {
     const token = setUser(3).token
-    const { id, qids } = await startIds(token, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const { id, qids } = await startIds(token, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 5 })
     const check = (body: unknown) =>
       request(runtime, 'POST', `/api/practice/sessions/${id}/check-answer`, token, body)
     const outside = await check({ questionId: 600_001, selectedOptionId: 0 })
@@ -1233,8 +1231,8 @@ describe('write path (BR-31)', () => {
     expect(
       await status({ ...lt, subjectCode: 'PERNIAGA', count: 1, targetQuestionId: 600_001 }),
     ).toBe(422)
-    // A subject with a target (SEJ 40, BR-M06-04) accepts only that count.
-    expect(await status({ ...lt, subjectCode: 'SEJ', count: 10 })).toBe(422)
+    // A subject with a target (SEJ 40, BR-M06-04) accepts only that count or 5/10/15/20.
+    expect(await status({ ...lt, subjectCode: 'SEJ', count: 7 })).toBe(422)
   })
 })
 

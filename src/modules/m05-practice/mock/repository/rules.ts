@@ -21,6 +21,16 @@ export const ALL_MODES: readonly PracticeMode[] = [...PRACTICE_MODES, ...SPM_MOD
 export const isMode = (v: unknown): v is PracticeMode =>
   typeof v === 'string' && (ALL_MODES as readonly string[]).includes(v)
 
+/** Legacy stored modes (mirror of `LEGACY_PRACTICE_MODES` of the contract). Only `random` is refused at start for now: `past_year` / `ramalan` stay startable until the Databank / Tracking A cards move their pages. */
+export const LEGACY_PRACTICE_MODES: readonly PracticeMode[] = ['random', 'past_year', 'ramalan']
+const REFUSED_AT_START: readonly PracticeMode[] = ['random']
+
+/** S5-T03: a start request is refused for the legacy values (`random`, `past_year`, `ramalan`): 422 "Mod tidak sah.". */
+export const isStartMode = (v: unknown): v is PracticeMode =>
+  isMode(v) && !(REFUSED_AT_START as readonly string[]).includes(v) && v !== 'pksk'
+export const INVALID_MODE_MESSAGE = 'Mod tidak sah.'
+
+
 /** §5: question counts of random and chapter sessions (§6.10). */
 export const COUNT_OPTIONS = [5, 10, 15, 20] as const
 /** BR-14 / §6.10: revision length. */
@@ -71,7 +81,7 @@ export const SPM_LEVEL_IDS = [10, 11] as const
 export const MAX_SECONDS_PER_QUESTION = 180
 /** BR-09. */
 export const POINTS_PER_CORRECT = 10
-export { MISSION_COINS_PER_CORRECT, sessionCoins } from '../datasets/pins'
+export { coinsPerCorrect, sessionCoins } from '../datasets/pins'
 
 /** §8.3 PROPOSED mock messages of the session calls (and the observed S7 fallback). */
 export const MESSAGES = {

@@ -27,6 +27,18 @@ export const DEFAULT_SUBJECT_COLOR = '#6366F1'
 export const TREND_WINDOW_DAYS = 30
 /** Accuracy change (points) that counts as a trend. */
 export const TREND_DELTA = 5
+/** Analitik Adaptif class view (R1-GUR-5): last 7 days against the 7 before; strict change in points. Prestasi keeps the 30-day rule above. */
+export const ANALYTICS_TREND_DAYS = 7
+export const ANALYTICS_TREND_DELTA = 3
+/** Analitik Adaptif risk bands on the whole-number accuracy (OPT-RISIKO): below 40 Kritikal, below 55 Tinggi, below 70 Sederhana, else Rendah. */
+export const RISK_CRITICAL_BELOW = 40
+export const RISK_HIGH_BELOW = 55
+export const RISK_MEDIUM_BELOW = 70
+/** Analitik Adaptif SP bands of the pupil (FR-MUR-5-3) on the whole-number accuracy: 75 and above Mahir, 50 to 74 Sederhana, below 50 Lemah. */
+export const SP_MAHIR_FROM = 75
+export const SP_SEDERHANA_FROM = 50
+/** The weakest SPs of the "Topik Perlu Perhatian Utama" block. */
+export const TOP_WEAK_SP_LIMIT = 4
 /** Projection range: grade(accuracy - band) to grade(accuracy + band). */
 export const PROJECTION_BAND = 10
 export const HEATMAP_DAYS = 90
