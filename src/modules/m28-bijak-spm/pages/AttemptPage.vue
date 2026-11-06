@@ -303,7 +303,12 @@ async function load(): Promise<void> {
     autosave = createAutosave({
       attemptId: attemptId.value,
       storage: browserStorage(),
-      api: { save: (p) => server.saveAnswers(user.value, attemptId.value, p) },
+      api: {
+        save: (p) => server.saveAnswers(user.value, attemptId.value, p),
+        saveKeepalive: server.saveAnswersKeepalive
+          ? (p) => server.saveAnswersKeepalive!(user.value, attemptId.value, p)
+          : undefined,
+      },
       onStatus: (s) => (saveStatus.value = s),
       onClosed: () => void goResult(),
     })
@@ -359,6 +364,7 @@ onMounted(() => {
   })
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('pagehide', flushOnLeave)
   window.addEventListener('online', onOnline)
   window.addEventListener('offline', onOffline)
   if (navigator.onLine === false) offline.value = true
@@ -369,6 +375,7 @@ onBeforeUnmount(() => {
   scrollNode?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
+  window.removeEventListener('pagehide', flushOnLeave)
   window.removeEventListener('online', onOnline)
   window.removeEventListener('offline', onOffline)
   clearTimeout(reconnectedTimer)
@@ -377,8 +384,16 @@ onBeforeUnmount(() => {
   if (!sessionExpired.value) void autosave?.flush()
   autosave?.dispose()
 })
+/** FR-MUR-13-10: leaving a field sends what it holds now. Moving focus with nothing unsent sends nothing. */
+function onFieldBlur(): void {
+  if (autosave?.pendingCount()) void autosave.flushAuto()
+}
 function onVisibility(): void {
-  if (document.visibilityState === 'hidden') void autosave?.flush()
+  if (document.visibilityState === 'hidden') flushOnLeave()
+}
+/** Lead ruling Q4: a hiding or unloading tab sends only the dirty changes with a keepalive `fetch` PUT; without one (mock, over 64 KB) the normal flush runs. */
+function flushOnLeave(): void {
+  if (!autosave?.flushHidden()) void autosave?.flush()
 }
 function onOnline(): void {
   if (submitPending.value) void retrySubmit()
@@ -464,6 +479,8 @@ async function goTo(i: number): Promise<void> {
   if (i < 0 || i >= questions.value.length) return
   index.value = i
   autosave?.setPosition(i)
+  // FR-MUR-13-10: the answers of the question just left go now, not after the debounce.
+  void autosave?.flushAuto()
   writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
@@ -693,7 +710,7 @@ const feedback = computed(() => {
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <div v-else class="flex flex-col gap-4 pt-2">
+      <div v-else class="flex flex-col gap-4 pt-2" @focusout="onFieldBlur">
         <div v-if="section" class="flex flex-col gap-1" data-testid="section-header">
           <p class="text-overline text-muted">
             {{ section.label }} · [{{ section.effectiveMarks }} markah]
