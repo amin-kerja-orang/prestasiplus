@@ -52,6 +52,11 @@ const human = (c: Ctx): EnginePlayer =>
   c.players.find((x) => x.userId === c.s.humanId) as EnginePlayer
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
 const nextQ = (c: Ctx): string => {
+  // Ruling 56, FR-GM-02.4: when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
+  if (c.s.qIds.length > 0 && c.s.cursor > 0 && c.s.cursor % c.s.qIds.length === 0) {
+    const pass = c.s.cursor / c.s.qIds.length
+    c.s.qIds = shuffle([...c.s.qIds], c.streams(`m16:room:${c.room.code}:${c.s.seed}:pool${String(pass)}`))
+  }
   const id = c.s.qIds[c.s.cursor % c.s.qIds.length] as string
   c.s.cursor += 1
   return id
@@ -474,9 +479,20 @@ function pbMove(c: Ctx, pl: EnginePlayer, dice: number): 'quiz' | 'moved' {
   return 'moved'
 }
 
+/** 48 GAME-02 FR-GM-02.5: points = 10 x correct, plus 50 for the winner. */
+export const pbPoints = (correct: number, won: boolean): number => correct * 10 + (won ? 50 : 0)
+
+/**
+ * AC-GM-02.4, FR-GM-02.5: the points of a Papan Bijak game that ends without the engine settling it (the last human wins by
+ * default, 3.6). Same formula as `pbSettle`; the winner gets +50, everyone else 10 x correct. Returns new seats.
+ */
+export function pbSettleDefault(players: EnginePlayer[], winnerId: string | null): EnginePlayer[] {
+  return players.map((pl) => ({ ...pl, points: pbPoints(pl.correct, pl.userId === winnerId) }))
+}
+
 function pbSettle(c: Ctx): EngineOut {
   for (const pl of c.players) {
-    pl.points = pl.correct * 10 + (pl.userId === c.s.winnerId ? 50 : 0)
+    pl.points = pbPoints(pl.correct, pl.userId === c.s.winnerId)
   }
   return finish(c)
 }

@@ -55,6 +55,7 @@ import {
   computeSettlement,
   EngineRefusal,
   handOverSeat,
+  pbSettleDefault,
   skipSeat,
   shouldWritePoll,
   ABSENT_TIMEOUTS,
@@ -252,12 +253,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   private async enabledGames(caller: Caller): Promise<string[]> {
     const levelId = await this.subjects.levelIdOfGrade((await this.users.get(caller.userId))?.grade ?? DEFAULT_GRADE)
     const filter = levelId === null ? {} : { educationLevelId: levelId }
-    const [settings, pool, fourOptionPool] = await Promise.all([
+    const [settings, pool, fourOptionPool, quizTiles] = await Promise.all([
       this.settings.getMany(HUB_GAMES.map(([game]) => `game_enabled_${game}` as const)),
       this.questions.eligibleCount(filter),
       this.questions.eligibleCount({ ...filter, exactOptions: 4 }),
+      this.repo.quizTiles(),
     ])
-    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= draw).map(([game]) => game)
+    // AC-GM-02.3: with 0 quiz tiles Papan Bijak needs no questions, so its draw is 0.
+    const drawOf = (game: string, draw: number): number => (game === 'papan-bijak' && (quizTiles ?? DEFAULT_QUIZ_TILES) === 0 ? 0 : draw)
+    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= drawOf(game, draw)).map(([game]) => game)
   }
 
   async lobby(caller: Caller, gameParam: string): Promise<GamesLobby> {
@@ -452,7 +456,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       if (room.status !== 'waiting') throw startAlreadyStarted()
       const waited = await this.robotsAfterWait(room, seated)
       if (waited.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
-      const pool = await this.drawPool(room, game)
+      // AC-GM-02.3: with 0 quiz tiles Papan Bijak asks no question, so it draws no pool.
+      const quizTiles = (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES
+      const pool = game === 'papan-bijak' && quizTiles === 0 ? [] : await this.drawPool(room, game)
       const now = this.clock.now()
       // DM-90: every human seat is present at the start, with no timeouts.
       const players = waited.map((p) => (p.isBot ? p : { ...p, lastPolledAt: now, consecutiveTimeouts: 0 }))
@@ -463,7 +469,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         seed: seedOf(room, this.secrets),
         secretInt: (max) => this.secrets.int(max),
         pool,
-        quizTiles: (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES,
+        quizTiles,
         p: await this.botAccuracy(),
         nowMs: now.getTime(),
       })
@@ -655,7 +661,13 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     const present = last !== undefined && seatPresent(last.lastPolledAt?.getTime(), now.getTime(), absentMs + SEEN_GAP_MS)
     if (last && present) {
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
-      return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
+      // FR-GM-02.5, AC-GM-02.4: the default winner of Papan Bijak is scored 10 x correct + 50 (the others 10 x correct).
+      const seats = enginePlayers(rest)
+      return this.applyOut(tx, room, rest, {
+        state,
+        players: room.game === 'papan-bijak' ? pbSettleDefault(seats, last.seat) : seats,
+        finished: true,
+      })
     }
     // Nobody present is left: the game ends with no winner, no standing and no reward (`settledAt` is set so nothing settles later).
     const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
@@ -958,8 +970,10 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       return u ? seen.name(u) : ''
     }
     // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
+    // Ruling 62: a single robot is "Robot PrestasiPlus"; the robots are numbered only when the room has 2 or more.
+    const manyRobots = players.filter((p) => p.robot !== null).length >= 2
     const seatName = (p: PlayerRow): string =>
-      p.robot !== null ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : nameOf(p.seat)
+      p.robot !== null ? (manyRobots ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : GAMES_ROBOT_NAME) : nameOf(p.seat)
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,

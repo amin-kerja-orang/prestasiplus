@@ -339,11 +339,11 @@ export class RoomsRepository {
     return (s?.jumlah ?? 0) > 0 && !s?.isTest
   }
 
-  /** Papan Bijak top 10 (jumlah > 0): wins desc, skor desc, creation order. Test actors never appear. */
+  /** Papan Bijak top 10 (jumlah > 0): wins desc, skor desc, jumlah asc, user id asc (48 GAME-R). Test actors never appear. */
   async papanBijakTop(limit: number): Promise<StandingRow[]> {
     const rows = await this.db.gameStanding.findMany({
       where: { game: 'papan-bijak', jumlah: { gt: 0 }, isTest: false },
-      orderBy: [{ wins: 'desc' }, { skor: 'desc' }, { id: 'asc' }],
+      orderBy: [{ wins: 'desc' }, { skor: 'desc' }, { jumlah: 'asc' }, { userId: 'asc' }],
       take: limit,
     })
     return rows.map((r) => ({
