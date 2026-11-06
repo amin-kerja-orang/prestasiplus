@@ -32,14 +32,21 @@ export const PracticeModeSchema = z.enum(PRACTICE_MODES).meta({ id: 'PracticeMod
 export type PracticeMode = z.infer<typeof PracticeModeSchema>
 
 /**
- * Modes `POST /practice/sessions` accepts: `pksk` sessions are created by M07, not here (422). `databank` and `tracking_a`
- * are stored modes already but the start planner has no case for them yet (S5-T03 adds them), so they are not startable.
+ * Legacy stored modes (S5-T03, N-5, D-T10-2): old rows keep them and they stay in `PRACTICE_MODES` (read / check list), but
+ * R1 code never writes them and `POST /practice/sessions` refuses them (422 ERR-PRAC-07 "Mod tidak sah.").
  */
-type NotStartable = 'pksk' | 'databank' | 'tracking_a'
-export const PRACTICE_START_MODES = PRACTICE_MODES.filter((m) => m !== 'pksk' && m !== 'databank' && m !== 'tracking_a') as unknown as readonly [
-  Exclude<PracticeMode, NotStartable>,
-  ...Exclude<PracticeMode, NotStartable>[],
-]
+export const LEGACY_PRACTICE_MODES = ['random', 'past_year', 'ramalan'] as const
+
+/**
+ * Modes `POST /practice/sessions` accepts: `PRACTICE_MODES` without `pksk` (created by M07, not here) and without `random`.
+ * `past_year` and `ramalan` are legacy too but STAY startable for now: the live m06-spm Databank / Tracking A pages still start
+ * them. They leave this list when the Databank / Tracking A cards (S3-T07 and others) switch those pages to `databank` /
+ * `tracking_a` (the card's grep condition). `databank` and `tracking_a` have no planner case yet, so they are not startable.
+ */
+type NotStartable = 'pksk' | 'random' | 'databank' | 'tracking_a'
+export const PRACTICE_START_MODES = PRACTICE_MODES.filter(
+  (m) => m !== 'pksk' && m !== 'random' && m !== 'databank' && m !== 'tracking_a',
+) as unknown as readonly [Exclude<PracticeMode, NotStartable>, ...Exclude<PracticeMode, NotStartable>[]]
 export const PracticeStartModeSchema = z.enum(PRACTICE_START_MODES).meta({ id: 'PracticeStartMode' })
 
 export const PracticeSessionIdSchema = z.uuid().meta({

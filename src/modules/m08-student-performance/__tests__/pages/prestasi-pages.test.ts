@@ -2,7 +2,7 @@
 import { DOMWrapper, flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createMemoryHistory, createRouter } from 'vue-router'
+import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import USelect from '@nuxt/ui/components/Select.vue'
 
@@ -12,6 +12,7 @@ import { useSessionStore } from '@/stores/session'
 import { setRouteOutcome } from '@/app/router/outcome'
 
 import type {
+  ClassesAggregate,
   ClassItemAnalysis,
   LevelDetail,
   SchoolItemAnalysis,
@@ -30,6 +31,7 @@ const api = vi.hoisted(() => ({
   fetchLevels: vi.fn(),
   fetchLevelDetail: vi.fn(),
   fetchOwnClasses: vi.fn(),
+  fetchOwnClassesAggregate: vi.fn(),
   fetchSchoolItemAnalysis: vi.fn(),
   fetchItemAnalysisClasses: vi.fn(),
   fetchClassItemAnalysis: vi.fn(),
@@ -123,9 +125,11 @@ const S1: SchoolPerformance = {
 }
 
 let wrapper: VueWrapper | null = null
+/** The router of the last `render` (query-string assertions). */
+let router: Router
 
 async function render(component: object, path: string, route = path.replace(/\?.*/, '')) {
-  const router = createRouter({
+  router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: '/:pathMatch(.*)*', component: { template: '<div />' } }],
   })
@@ -176,6 +180,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   setRouteOutcome(null)
   for (const fn of Object.values(api)) fn.mockReset()
+  api.fetchLevels.mockResolvedValue([])
 })
 afterEach(() => {
   wrapper?.unmount()
@@ -203,7 +208,7 @@ describe('S1 PrestasiSekolahPage', () => {
     expect(labels[0]!.classes()).not.toContain('truncate')
   })
 
-  it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy to 1 decimal', async () => {
+  it('shows the stat cards, with only "Soalan Dijawab" grouped and the accuracy as a whole number (decision 11)', async () => {
     api.fetchSchoolPerformance.mockResolvedValue(S1)
     const w = await render(PrestasiSekolahPage, '/prestasi/sekolah')
     expect(t(w, 'header-summary').text()).toBe(
@@ -216,7 +221,7 @@ describe('S1 PrestasiSekolahPage', () => {
       ['subjek', '27'],
       ['sesi', '32122'],
       ['soalan', '478,499'],
-      ['ketepatan', '79.8%'],
+      ['ketepatan', '80%'],
     ]
     for (const [id, value] of expected) {
       expect(t(w, `stat-${id}`).find('.tabular').text()).toBe(value)
@@ -335,10 +340,9 @@ describe('S3 TingkatanPage', () => {
         userId: 3201,
         name: 'Murid Simulasi 01',
         className: '4 Simulasi',
-        checkpoint: 3,
-        ar: 56,
-        target: 82,
-        gap: -26,
+        answered: 12,
+        accuracy: 40,
+        lastAnsweredAt: '2026-09-24T10:00:00.000+08:00',
       },
     ],
   }
@@ -348,15 +352,15 @@ describe('S3 TingkatanPage', () => {
     const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
     expect(api.fetchLevelDetail.mock.calls[0]?.[0]).toBe('t4')
     expect(t(w, 'level-summary').text()).toBe('Dashboard Prestasi Tingkatan · 13 kelas · 5 subjek')
-    expect(t(w, 'stat-ketepatan').text()).toContain('63.9%')
+    expect(t(w, 'stat-ketepatan').text()).toContain('64%')
     expect(t(w, 'headcount-pct').text()).toBe('0% On Track')
     expect(tr(w, 'class-row-5').text()).toContain('Lihat →')
     expect(tr(w, 'class-row-806').text()).not.toContain('Lihat')
     expect(tr(w, 'class-row-806').text()).toContain('—')
     expect(t(w, 'top-82').text()).toContain('4 sesi · 60 soalan')
     expect(t(w, 'top-82').text()).toContain('64%')
-    expect(t(w, 'at-risk').text()).toContain('4 Simulasi · OTR3: 56.00% (sasaran 82.00%)')
-    expect(t(w, 'at-risk').text()).toContain('-26')
+    expect(t(w, 'at-risk').text()).toContain('4 Simulasi · 12 soalan')
+    expect(t(w, 'at-risk').text()).toContain('40%')
   })
 
   it('B7: an empty list hides its panel; both empty hide the row; both filled keep two columns', async () => {
@@ -390,6 +394,28 @@ describe('S3 TingkatanPage', () => {
     expect(w.find('.lg\\:grid-cols-2').exists()).toBe(true)
   })
 
+  it('the level pills are built from the levels that have classes (T1-T5), the active one marked; the School page buttons link to Tingkatan and Kelas for staff', async () => {
+    api.fetchLevels.mockResolvedValue([
+      { code: 't1', name: 'Tingkatan 1', classes: 2, students: 20 },
+      { code: 't4', name: 'Tingkatan 4', classes: 13, students: 149 },
+    ])
+    api.fetchLevelDetail.mockResolvedValue(T4)
+    for (const role of ['teacher', 'school_admin'] as const) {
+      signInAs(role)
+      const w = await render(TingkatanPage, '/prestasi/tingkatan/t4', '/prestasi/tingkatan/:code')
+      const pills = w.findAll('[data-testid^=pill-]')
+      expect(pills.map((p) => p.text())).toEqual(['T1', 'T4'])
+      expect(pills.map((p) => p.attributes('href'))).toEqual(['/prestasi/tingkatan/t1', '/prestasi/tingkatan/t4'])
+      w.unmount()
+      api.fetchSchoolPerformance.mockResolvedValue(S1)
+      const s = await render(PrestasiSekolahPage, '/prestasi/sekolah')
+      const hrefs = s.findAll('a').map((a) => a.attributes('href'))
+      expect(hrefs).toContain('/prestasi/tingkatan')
+      expect(hrefs).toContain('/prestasi/kelas')
+      s.unmount()
+    }
+  })
+
   it('an unknown level code is the 404 page', async () => {
     api.fetchLevelDetail.mockRejectedValue(
       new ApiError({ status: 404, code: 'NOT_FOUND', message: 'x' }),
@@ -400,10 +426,17 @@ describe('S3 TingkatanPage', () => {
 })
 
 describe('S4 PrestasiKelasPilihPage', () => {
+  const aggregate = (over: Partial<ClassesAggregate> = {}): ClassesAggregate => ({
+    classes: [],
+    topStudents: [],
+    subjects: [],
+    ...over,
+  })
+
   it('shows the observed empty state with the "Cipta Kelas" link to a teacher and the admin', async () => {
     for (const role of ['teacher', 'admin'] as const) {
       signInAs(role)
-      api.fetchOwnClasses.mockResolvedValue([])
+      api.fetchOwnClassesAggregate.mockResolvedValue(aggregate())
       const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
       expect(t(w, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
       expect(t(w, 'kelas-empty').text()).toContain('Cipta kelas terlebih dahulu')
@@ -415,7 +448,7 @@ describe('S4 PrestasiKelasPilihPage', () => {
   it('http mode: the admin gets no "Cipta Kelas" (the route is teacher-only there, DV-M10-37); the teacher keeps it', async () => {
     vi.stubEnv('VITE_API_MODE', 'http')
     try {
-      api.fetchOwnClasses.mockResolvedValue([])
+      api.fetchOwnClassesAggregate.mockResolvedValue(aggregate())
       signInAs('admin')
       const a = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
       expect(t(a, 'kelas-empty').text()).toContain('Anda belum mempunyai kelas aktif.')
@@ -430,22 +463,48 @@ describe('S4 PrestasiKelasPilihPage', () => {
     }
   })
 
+  const CLASS = {
+    id: 9,
+    name: '5 A',
+    subjectName: 'Kimia',
+    color: '#10B981',
+    students: 8,
+    year: 2026,
+    joinCode: 'ABC123',
+    isActive: true,
+  }
+
   it('lists active classes as cards linking to the class dashboard', async () => {
-    api.fetchOwnClasses.mockResolvedValue([
-      {
-        id: 9,
-        name: '5 A',
-        subjectName: 'Kimia',
-        color: '#10B981',
-        students: 8,
-        year: 2026,
-        joinCode: 'ABC123',
-        isActive: true,
-      },
-    ])
+    api.fetchOwnClassesAggregate.mockResolvedValue(aggregate({ classes: [CLASS] }))
     const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
     expect(t(w, 'class-card-9').attributes('href')).toBe('/prestasi/kelas/9')
     expect(w.find('[data-testid=kelas-empty]').exists()).toBe(false)
+  })
+
+  it('Pelajar Terbaik and Prestasi Mengikut Subjek: whole-number rows and the exact empty copy (FR-GUR-4-7, AC-GUR-4-7)', async () => {
+    api.fetchOwnClassesAggregate.mockResolvedValue(
+      aggregate({
+        classes: [CLASS],
+        topStudents: [
+          { userId: 1, name: 'Aina Contoh', answered: 20, accuracy: 85.4 },
+          { userId: 2, name: 'Bakar Contoh', answered: 9, accuracy: 66.6 },
+        ],
+        subjects: [{ subjectId: 4, name: 'Kimia', answered: 29, accuracy: 70.5 }],
+      }),
+    )
+    const w = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+    const rows = w.findAll('[data-testid=top-row]').map((r) => r.text())
+    expect(rows).toHaveLength(2)
+    expect(rows[0]).toContain('Aina Contoh')
+    expect(rows[0]).toContain('85% · 20 soalan')
+    expect(rows[1]).toContain('67% · 9 soalan')
+    expect(t(w, 'subject-row').text()).toContain('Kimia 71% · 29 soalan')
+    w.unmount()
+
+    api.fetchOwnClassesAggregate.mockResolvedValue(aggregate({ classes: [CLASS] }))
+    const e = await render(PrestasiKelasPilihPage, '/prestasi/kelas')
+    expect(t(e, 'top-empty').text()).toBe('Tiada pelajar dengan sekurang-kurangnya 5 soalan.')
+    expect(t(e, 'subject-empty').text()).toBe('Belum ada data latihan.')
   })
 })
 
@@ -461,6 +520,8 @@ describe('S9 AnalisaItemSekolahPage', () => {
     },
     variant: 'byId',
     tingkatan: null,
+    tingkatanOptions: ['T4', 'T5'],
+    questionsTested: 1096,
     students: 59,
     answers: 10194,
     correct: 7309,
@@ -517,7 +578,7 @@ describe('S9 AnalisaItemSekolahPage', () => {
     )
     expect(t(w, 'school-name').text()).toBe('SMK Demo Tinggi')
     expect(t(w, 'school-answers').text()).toBe('10,194')
-    expect(t(w, 'stat-ketepatan').text()).toContain('71.7%')
+    expect(t(w, 'stat-ketepatan').text()).toContain('72%')
     expect(t(w, 'diff-sukar').text()).toContain('2')
     expect(w.findAll('[data-testid^=question-][data-testid$="1"]').length).toBeGreaterThan(0)
     // Pills are alphabetical (live), not in order of first appearance (Sains comes first in the data).
@@ -533,6 +594,53 @@ describe('S9 AnalisaItemSekolahPage', () => {
     await t(w, 'question-toggle-1').trigger('click')
     expect(t(w, 'question-detail-1').text()).toContain('Jawapan Salah Paling Popular (1x dipilih)')
     expect(t(w, 'question-detail-1').text()).toContain('Murid Simulasi 01')
+  })
+
+  it('the Tingkatan chips come from tingkatanOptions (AC-AS-6-6) and Soalan Diuji from questionsTested', async () => {
+    api.fetchSchoolItemAnalysis.mockResolvedValue({ ...BASE, tingkatanOptions: ['T1', 'T4', 'T5'] })
+    const w = await render(
+      AnalisaItemSekolahPage,
+      '/analisa-item/sekolah/8880?tingkatan=T1',
+      '/analisa-item/sekolah/:id',
+    )
+    expect(w.findAll('[data-testid=tingkatan-chips] a').map((a) => a.text())).toEqual([
+      'Semua',
+      'Tingkatan 1',
+      'Tingkatan 4',
+      'Tingkatan 5',
+    ])
+    expect(api.fetchSchoolItemAnalysis.mock.calls[0]?.[0]).toMatchObject({ tingkatan: 'T1' })
+    expect(t(w, 'school-tested').text()).toBe('1,096')
+  })
+
+  it('whole-number percentages, search from 2 characters and the sort select in the query string', async () => {
+    api.fetchSchoolItemAnalysis.mockResolvedValue(BASE)
+    const w = await render(
+      AnalisaItemSekolahPage,
+      '/analisa-item/sekolah/8880',
+      '/analisa-item/sekolah/:id',
+    )
+    expect(t(w, 'question-1').text()).toContain('100% salah')
+    expect(t(w, 'question-1').text()).toContain('3% pelajar terlibat')
+    expect(t(w, 'subject-table').text()).toContain('71%')
+    // default order = stored rank (hardest first)
+    const order = () =>
+      w.findAll('[data-testid^=question-toggle-]').map((b) => b.attributes('data-testid'))
+    expect(order()).toEqual(['question-toggle-1', 'question-toggle-2'])
+    // one character: the exact hint, nothing filtered
+    await t(w, 'question-search').setValue('B')
+    expect(t(w, 'question-search-hint').text()).toBe('Taip sekurang-kurangnya 2 aksara.')
+    expect(order()).toHaveLength(2)
+    await t(w, 'question-search').setValue('Soalan B')
+    expect(w.find('[data-testid=question-search-hint]').exists()).toBe(false)
+    expect(order()).toEqual(['question-toggle-2'])
+    await flushPromises()
+    expect(router.currentRoute.value.query.q).toBe('Soalan B')
+    await t(w, 'question-search').setValue('')
+    w.getComponent(USelect).vm.$emit('update:modelValue', 'difficulty_asc')
+    await flushPromises()
+    expect(order()).toEqual(['question-toggle-2', 'question-toggle-1'])
+    expect(router.currentRoute.value.query.susun).toBe('difficulty_asc')
   })
 
   it('shows "—", never 0, for the headline figures that have no observed header', async () => {
@@ -704,6 +812,54 @@ describe('S11 AnalisaItemKelasPage', () => {
     expect(w.findAll('[data-testid^=difficulty-row-]')[0]?.attributes('data-testid')).toBe(
       'difficulty-row-1',
     )
+  })
+
+  it('one search character shows "Taip sekurang-kurangnya 2 aksara." and filters nothing; whole-number % and the 40/70 colours', async () => {
+    api.fetchClassItemAnalysis.mockResolvedValue({
+      ...CLASS,
+      analysis: {
+        ...CLASS.analysis,
+        difficulty: [diff(1, 0.25, 75.4, 'Alpha'), diff(2, 0.88, 39.6, 'Beta'), diff(3, 0.4, 70.4, 'Gamma')],
+      },
+    })
+    const w = await render(
+      AnalisaItemKelasPage,
+      '/analisa-item/kelas/2001',
+      '/analisa-item/kelas/:id',
+    )
+    await t(w, 'difficulty-search').setValue('a')
+    expect(t(w, 'difficulty-search-hint').text()).toBe('Taip sekurang-kurangnya 2 aksara.')
+    expect(w.findAll('[data-testid^=difficulty-row-]')).toHaveLength(3)
+    await t(w, 'difficulty-search').setValue('')
+    expect(w.find('[data-testid=difficulty-search-hint]').exists()).toBe(false)
+    const cells = w.get('[data-testid=difficulty-table]').text()
+    expect(cells).toContain('75%')
+    expect(cells).toContain('40%')
+    expect(cells).toContain('70%')
+    expect(cells).not.toContain('75.4')
+    const tone = (text: string) =>
+      w.findAll('span.text-label').find((e) => e.text() === text)?.classes()
+    expect(tone('75%')).toContain('text-success')
+    expect(tone('40%')).toContain('text-warning')
+    expect(tone('70%')).toContain('text-warning')
+  })
+
+  it('search, sort and the tab are kept in the query string', async () => {
+    api.fetchClassItemAnalysis.mockResolvedValue(CLASS)
+    const w = await render(
+      AnalisaItemKelasPage,
+      '/analisa-item/kelas/2001?q=alp&susun=accuracy_desc&tab=diskriminasi',
+      '/analisa-item/kelas/:id',
+    )
+    // the tab and the discrimination view come from the query
+    expect(w.find('[data-testid=discrimination-tab]').exists()).toBe(true)
+    await t(w, 'tab-difficulty').trigger('click')
+    await flushPromises()
+    expect((t(w, 'difficulty-search').element as HTMLInputElement).value).toBe('alp')
+    expect(w.findAll('[data-testid^=difficulty-row-]')).toHaveLength(1)
+    await t(w, 'difficulty-search').setValue('beta')
+    await flushPromises()
+    expect(w.findAll('[data-testid^=difficulty-row-]')).toHaveLength(1)
   })
 
   it('shows "Data Tidak Mencukupi" on the discrimination tab and the Tukar Kelas chips', async () => {

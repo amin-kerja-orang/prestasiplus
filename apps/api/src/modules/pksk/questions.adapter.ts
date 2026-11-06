@@ -24,6 +24,10 @@ export class PkskQuestionsAdapter implements PkskQuestionsPort {
     return this.questions.countApproved(level)
   }
 
+  countApprovedAllLevels(): Promise<Record<string, number>> {
+    return this.questions.countApprovedAllLevels()
+  }
+
   approvedPool(level: 'T1' | 'T4', domainCodes: readonly string[]): Promise<PkskServed[]> {
     return this.questions.approvedPool(level, domainCodes)
   }

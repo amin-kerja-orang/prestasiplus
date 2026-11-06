@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { startOfDay } from '../../src/modules/command-center/shared/windows'
 import { boardWindows, guruWindows, periodWindow, startOfIsoWeek, weekdayLabelBm } from '../../src/modules/command-center/shared/windows'
-import { percent, round, round1, weekChange, formatCount } from '../../src/modules/command-center/shared/math'
+import { accuracyPct, percent, round, round1, weekChange, formatCount } from '../../src/modules/command-center/shared/math'
 import { CommandCenterRepository } from '../../src/modules/command-center/shared/command-center.repository'
 import { ScopeService } from '../../src/modules/command-center/shared/scope.service'
 import type { Viewer } from '../../src/modules/command-center/http/viewer'
@@ -46,7 +46,11 @@ describe('windows and math (pure)', () => {
     expect(round(2.5)).toBe(3)
     expect(round1(66.65)).toBe(66.7)
     expect(percent(1, 0)).toBe(0)
-    expect(percent(2, 3, 1)).toBe(66.7)
+    expect(percent(2, 3, 2)).toBe(66.67)
+    expect(accuracyPct(2, 3)).toBe(66.7)
+    expect(accuracyPct(133, 200)).toBe(66.5)
+    expect(accuracyPct(0, 0)).toBeNull()
+    expect(accuracyPct(0, 5)).toBe(0)
     expect(weekChange(5, 0)).toBe(0)
     expect(weekChange(15, 10)).toBe(50)
     expect(formatCount(1234567)).toBe('1,234,567')
@@ -142,7 +146,7 @@ describe('repository and scope on a seeded world (is_test never counted)', () =>
     expect(await repo.userBrief('x')).toBeNull()
     expect((await repo.schoolRef(w.school1))?.name).toBeTruthy()
     expect(await repo.schoolRef('999999')).toBeNull()
-    const expected = Number((await t.db.query<{ c: string }>(`select count(*)::int c from users u where u.school_id = $1::bigint and u.is_active and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [w.school1]))[0]?.c)
+    const expected = Number((await t.db.query<{ c: string }>(`select count(*)::int c from users u where u.school_id = $1::bigint and u.is_active and not u.is_suspended and u.grade between 7 and 11 and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'student')`, [w.school1]))[0]?.c)
     expect(await repo.studentCount({ schoolId: w.school1 })).toBe(expected)
     expect((await repo.studentsOfSchool(w.school1)).length).toBe(expected)
     expect((await repo.teachersOfSchool(w.school1)).map((x) => x.id)).toContain(w.teacherId)

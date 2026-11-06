@@ -71,7 +71,7 @@ describe('grades and GPS (BR-M08-01…03)', () => {
   })
 
   it('percent to grade uses the BR-M08-02 table', () => {
-    expect([100, 90, 89.99, 80, 70, 65, 60, 55, 50, 45, 40, 39.99].map(gradeOfPercent)).toEqual([
+    expect([100, 90, 89.4, 80, 70, 65, 60, 55, 50, 45, 40, 39.4].map(gradeOfPercent)).toEqual([
       'A+',
       'A+',
       'A',
@@ -114,15 +114,19 @@ describe('accuracy (BR-M08-05, DV-07)', () => {
 })
 
 describe('difficulty and discrimination (BR-M08-18, 19)', () => {
-  it('Indeks = 1 − p with the cut-offs 0.30 / 0.70', () => {
+  it('Indeks = 1 − p is display only; Tahap is on the whole-number % betul', () => {
     expect(difficultyIndex(6, 8)).toBe(0.25)
     expect(difficultyIndex(2, 8)).toBe(0.75)
     expect(difficultyIndex(1, 8)).toBe(0.88)
-    expect(difficultyLevel(0.25)).toBe('Mudah')
-    expect(difficultyLevel(0.3)).toBe('Mudah')
-    expect(difficultyLevel(0.5)).toBe('Sederhana')
-    expect(difficultyLevel(0.7)).toBe('Sederhana')
-    expect(difficultyLevel(0.75)).toBe('Sukar')
+    // Tahap on the whole-number % betul: > 70 Mudah, 40–70 Sederhana, < 40 Sukar (S10-T03 change 2).
+    expect(difficultyLevel(75)).toBe('Mudah')
+    expect(difficultyLevel(70.4)).toBe('Sederhana')
+    expect(difficultyLevel(70.5)).toBe('Mudah')
+    expect(difficultyLevel(70)).toBe('Sederhana')
+    expect(difficultyLevel(40)).toBe('Sederhana')
+    expect(difficultyLevel(39.5)).toBe('Sederhana')
+    expect(difficultyLevel(39.4)).toBe('Sukar')
+    expect(difficultyLevel(12.5)).toBe('Sukar')
   })
 
   it('discrimination status bands', () => {
@@ -174,11 +178,11 @@ describe('headcount pair rules (BR-M08-07, 08)', () => {
     expect(pairStatus(entry([60], [null]))).toBe('none')
   })
 
-  it('±2 % band (DV-29): Above > OTR; On Track OTR − 2 … OTR; Below < OTR − 2', () => {
-    expect(bandStatus(82, 80)).toBe('above')
+  it('bands (HC-4): Above AR − OTR > 2; On Track 0…2; Below < 0', () => {
+    expect(bandStatus(83, 80)).toBe('above')
+    expect(bandStatus(82, 80)).toBe('on')
     expect(bandStatus(80, 80)).toBe('on')
-    expect(bandStatus(78, 80)).toBe('on')
-    expect(bandStatus(77.9, 80)).toBe('below')
+    expect(bandStatus(79.9, 80)).toBe('below')
     expect(bandStatus(null, 80)).toBe('na')
     expect(bandStatus(70, null)).toBe('na')
   })

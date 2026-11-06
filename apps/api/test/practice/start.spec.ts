@@ -54,29 +54,28 @@ const post = (c: Client, body: unknown) => c.post('/api/practice/sessions', body
 describe('AC3 start: every module error with its exact status, code and BM message', () => {
   it('422 NOT_ENOUGH_QUESTIONS "Soalan tidak mencukupi." when the bank cannot fill the count', async () => {
     // SS has no level link: nothing to draw from (BR-11).
-    const none = await post(pelajar, { mode: 'random', subjectCode: 'SS', count: 5 })
+    const none = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SS', count: 5 })
     expect(none.status).toBe(422)
     expect(none.body.error).toMatchObject({ code: 'NOT_ENOUGH_QUESTIONS', message: 'Soalan tidak mencukupi.' })
     // 30 MATH D1 questions: 20 fits, then only 4 are left eligible and a count of 5 does not.
     t.bank.reset()
     const few = Array.from({ length: 4 }, () => t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1 }))
     expect(few).toHaveLength(4)
-    const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const res = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     expect(res.status).toBe(422)
     expect(res.body.error).toMatchObject({ code: 'NOT_ENOUGH_QUESTIONS', message: 'Soalan tidak mencukupi.' })
   })
 
   it('count options 5, 10, 15 and 20 are served; anything else is 422 fields.count "Nilai tidak sah."', async () => {
-    for (const count of [5, 10, 15, 20]) {
-      const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count })
-      expect(s.questions).toHaveLength(count)
-    }
+    // The chapter fixture has 6 questions: only 5 can be filled; 10, 15 and 20 are valid counts that serve what exists.
+    expect((await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })).questions).toHaveLength(5)
+    for (const count of [10, 15, 20]) expect((await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count })).questions.length).toBeGreaterThan(0)
     for (const count of [7, 0, 25, 1]) {
-      const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count })
+      const res = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count })
       expect(res.status).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Nilai tidak sah.', fields: { count: 'Nilai tidak sah.' } })
     }
-    const missing = await post(pelajar, { mode: 'random', subjectCode: 'MATH' })
+    const missing = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1 })
     expect(missing.body.error.fields.count).toBe('Nilai tidak sah.')
   })
 
@@ -87,47 +86,47 @@ describe('AC3 start: every module error with its exact status, code and BM messa
     expect(mode.body.error.fields.mode).toBe('Nilai tidak sah.')
     // pksk sessions are created by M07, never by this route.
     expect((await post(pelajar, { mode: 'pksk' })).status).toBe(422)
-    // A level that is not offered (Tingkatan 4 and 5 only) for random.
-    const level = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.t3 })
+    // A level that is not offered (a primary level; T1..T5 are offered since S4-T06) for latih_tubi.
+    const level = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.primary })
     expect(level.body.error.fields.levelId).toBe('Nilai tidak sah.')
-    const difficulty = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, difficulty: 9 })
+    const difficulty = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 9 })
     expect(difficulty.status).toBe(422)
     expect(difficulty.body.error.fields.difficulty).toBe('Nilai tidak sah.')
-    const noSubject = await post(pelajar, { mode: 'random', subjectCode: 'TIADA', count: 5 })
+    const noSubject = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'TIADA', count: 5 })
     expectError(noSubject, 'NOT_FOUND', 'Rekod tidak dijumpai.')
-    expectError(await post(pelajar, { mode: 'random', count: 5 }), 'NOT_FOUND', 'Rekod tidak dijumpai.')
-    expect((await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, levelId: w.level.d1, difficulty: 3 })).status).toBe(201)
+    expectError(await post(pelajar, { mode: 'latih_tubi', count: 5 }), 'NOT_FOUND', 'Rekod tidak dijumpai.')
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.d1, difficulty: 3 })).status).toBe(201)
   })
 
   it('the body is strict (BE-33 AC1c, #100): an unknown field is 422 naming it, and no session is written', async () => {
     const before = await countRows(t.db, 'practice_sessions')
     for (const extra of [{ ownerId: ids.maju }, { userId: ids.maju }, { isTest: true, score: 100 }]) {
-      const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, ...extra })
+      const res = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, ...extra })
       expect(res.status, JSON.stringify(res.body)).toBe(422)
       expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Nilai tidak sah.' })
       for (const key of Object.keys(extra)) expect(res.body.error.fields[key]).toBe('Nilai tidak sah.')
     }
     // A prototype key is refused and named like any other (sent as raw JSON so it is an own key).
-    const proto = await pelajar.post('/api/practice/sessions', '{"mode":"random","subjectCode":"MATH","count":5,"__proto__":{"x":1}}').set('Content-Type', 'application/json')
+    const proto = await pelajar.post('/api/practice/sessions', '{"mode":"latih_tubi","subjectCode":"SEJ","count":40,"__proto__":{"x":1}}').set('Content-Type', 'application/json')
     expect(proto.status, JSON.stringify(proto.body)).toBe(422)
     expect(Object.keys(proto.body.error.fields)).toContain('__proto__')
     // An unknown key next to a bad known field reports both.
-    const both = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, difficulty: 9, ownerId: '1' })
+    const both = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, difficulty: 9, ownerId: '1' })
     expect(both.body.error.fields).toMatchObject({ difficulty: 'Nilai tidak sah.', ownerId: 'Nilai tidak sah.' })
     expect(await countRows(t.db, 'practice_sessions')).toBe(before)
     // The same body without the extra field still starts.
-    expect((await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })).status).toBe(201)
+    expect((await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })).status).toBe(201)
   })
 
   it('402 TRIAL_EXHAUSTED when no subscription and no trial left; a subscribed user is never limited (AC2)', async () => {
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.pelajar])
-    const res = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5 })
+    const res = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
     expect(res.status).toBe(402)
     expect(res.body.error).toMatchObject({ code: 'TRIAL_EXHAUSTED', message: 'Baki percubaan percuma anda telah habis.' })
     expect(await countRows(t.db, 'practice_sessions')).toBe(0)
     await t.db.query('update users set trial_questions_used = 50 where id = $1', [ids.maju])
     await makeSubscribed(t.db, ids.maju)
-    expect((await post(maju, { mode: 'random', subjectCode: 'MATH', count: 5 })).status).toBe(201)
+    expect((await post(maju, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })).status).toBe(201)
     await t.db.query('delete from comp_students')
   })
 })
@@ -135,7 +134,7 @@ describe('AC3 start: every module error with its exact status, code and BM messa
 describe('AC4 selection and what is served', () => {
   it('the response parses as StartSessionResponse and carries no key, answer or explanation (recursive scan)', async () => {
     for (const body of [
-      { mode: 'random', subjectCode: 'MATH', count: 10 },
+      { mode: 'chapter', chapterId: w.chapter.c1, count: 10 },
       { mode: 'chapter', chapterId: w.chapter.c1, count: 5 },
       { mode: 'past_year', subjectCode: 'SEJ', count: 5 },
     ]) {
@@ -168,7 +167,7 @@ describe('AC4 selection and what is served', () => {
     for (const id of dead) t.bank.deactivate(id)
     const seen = new Set<string>()
     for (let i = 0; i < 12; i++) {
-      for (const q of (await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 20 })).questions) seen.add(q.id)
+      for (const q of (await startSession(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 20 })).questions) seen.add(q.id)
       t.clock.advance(1000)
     }
     for (const id of dead) expect(seen.has(id)).toBe(false)
@@ -178,24 +177,24 @@ describe('AC4 selection and what is served', () => {
   })
 
   it('the draw is seeded: the same user, clock and history give the same questions', async () => {
-    const a = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const a = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     await resetPractice(t.db)
-    const b = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const b = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     expect(b.questions.map((q) => q.id)).toEqual(a.questions.map((q) => q.id))
     t.clock.advance(5000)
-    const c = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 10 })
+    const c = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     expect(c.questions.map((q) => q.id)).not.toEqual(a.questions.map((q) => q.id))
   })
 })
 
 describe('AC11 the served list is stored in order with the version served', () => {
-  it('10 questions read back as the same 10 ids in the same order, positions unique, delete cascades', async () => {
-    const s = await startSession(pelajar, { mode: 'random', subjectCode: 'MATH', count: 10 })
+  it('12 questions read back as the same 10 ids in the same order, positions unique, delete cascades', async () => {
+    const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     const rows = await t.db.query<{ position: number; question_id: string; question_version_no: number }>(
       'select position, question_id::text, question_version_no from practice_session_questions where session_id = $1 order by position',
       [s.sessionId],
     )
-    expect(rows.map((r) => r.position)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(rows.map((r) => r.position)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
     expect(rows.map((r) => r.question_id)).toEqual(s.questions.map((q) => q.id))
     expect(rows.every((r) => r.question_version_no === 1)).toBe(true)
     await expect(
@@ -222,12 +221,12 @@ describe('clientUuid replay (AC5)', () => {
   const clientUuid = '5f0c1a52-8b7e-4f4e-9d2a-3d3b1c9f7a10'
 
   it('the same clientUuid returns the same session with the same body (201) and creates nothing new', async () => {
-    const first = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid })
+    const first = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid })
     expect(first.status).toBe(201)
     const sessionsBefore = await countRows(t.db, 'practice_sessions')
     const questionsBefore = await countRows(t.db, 'practice_session_questions')
     t.clock.advance(60_000)
-    const second = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid })
+    const second = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid })
     expect(second.status).toBe(201)
     expect(second.body).toEqual(first.body)
     expect(await countRows(t.db, 'practice_sessions')).toBe(sessionsBefore)
@@ -245,7 +244,7 @@ describe('clientUuid replay (AC5)', () => {
   })
 
   it('parallel starts with one clientUuid give one session', async () => {
-    const results = await Promise.all(Array.from({ length: 5 }, () => post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid })))
+    const results = await Promise.all(Array.from({ length: 5 }, () => post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid })))
     expect(results.map((r) => r.status)).toEqual([201, 201, 201, 201, 201])
     expect(new Set(results.map((r) => r.body.data.sessionId)).size).toBe(1)
     expect(await countRows(t.db, 'practice_sessions')).toBe(1)
@@ -253,8 +252,8 @@ describe('clientUuid replay (AC5)', () => {
   })
 
   it('the key is per user: another user with the same clientUuid gets their own session', async () => {
-    const a = await post(pelajar, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid })
-    const b = await post(maju, { mode: 'random', subjectCode: 'MATH', count: 5, clientUuid })
+    const a = await post(pelajar, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid })
+    const b = await post(maju, { mode: 'chapter', chapterId: w.chapter.c1, count: 5, clientUuid })
     expect(a.body.data.sessionId).not.toBe(b.body.data.sessionId)
   })
 })
@@ -344,6 +343,18 @@ describe('revision mode: BR-14 queue, length 20', () => {
 })
 
 describe('SPM modes: past_year, latih_tubi, ramalan', () => {
+  it('S5-T03 (N-5): random is refused with 422 ERR-PRAC-07 "Mod tidak sah." and no session is written', async () => {
+    const before = await countRows(t.db, 'practice_sessions')
+    for (const body of [
+      { mode: 'random', subjectCode: 'MATH', count: 5 },
+    ]) {
+      const res = await post(pelajar, body)
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error).toMatchObject({ code: 'VALIDATION_ERROR', message: 'Mod tidak sah.', fields: { mode: 'Mod tidak sah.' } })
+    }
+    expect(await countRows(t.db, 'practice_sessions')).toBe(before)
+  })
+
   it('past_year counts 5, 10 and 20; others are 422 fields.count; only SPM pool questions are served', async () => {
     const extra = Array.from({ length: 10 }, () => t.bank.add({ subjectId: w.subject.sej, levelId: w.level.t4, spmPool: true }))
     expect(extra).toHaveLength(10)
@@ -358,11 +369,11 @@ describe('SPM modes: past_year, latih_tubi, ramalan', () => {
     expect((await post(pelajar, { mode: 'past_year', subjectCode: 'BM', count: 5 })).body.error.code).toBe('NOT_ENOUGH_QUESTIONS')
   })
 
-  it('latih_tubi: the subject target is the only count (SEJ 40, ADDMATH 20); a pool smaller than the count serves what exists', async () => {
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 10 })).body.error.fields.count).toBe('Nilai tidak sah.')
+  it('latih_tubi: the subject target (SEJ 40, ADDMATH 20) or the config counts 5/10/15/20 are the only counts; a pool smaller than the count serves what exists', async () => {
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 7 })).body.error.fields.count).toBe('Nilai tidak sah.')
     const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40 })
     expect(s.questions).toHaveLength(12)
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'ADDMATH', count: 10 })).body.error.fields.count).toBe('Nilai tidak sah.')
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'ADDMATH', count: 7 })).body.error.fields.count).toBe('Nilai tidak sah.')
     // A subject without a target accepts the free counts.
     const perniaga = (await t.db.query<{ id: string }>(`select id::text from subjects where code = 'PERNIAGA'`))[0]?.id as string
     for (let i = 0; i < 6; i++) t.bank.add({ subjectId: perniaga, levelId: w.level.t4, spmPool: true })
@@ -370,9 +381,23 @@ describe('SPM modes: past_year, latih_tubi, ramalan', () => {
     expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'PERNIAGA', count: 3 })).body.error.fields.count).toBe('Nilai tidak sah.')
   })
 
-  it('latih_tubi levelId must be an SPM level and difficulty 2 to 5', async () => {
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t3 })).body.error.fields.levelId).toBe('Nilai tidak sah.')
-    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 1 })).body.error.fields.difficulty).toBe('Nilai tidak sah.')
+  it('latih_tubi accepts the config page counts 5, 10, 15 and 20 next to the subject target (OPT-BILANGAN-LT), and difficulty 1', async () => {
+    for (const count of [5, 10, 15, 20]) {
+      const res = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count })
+      expect(res.status, `count ${String(count)}: ${JSON.stringify(res.body)}`).toBe(201)
+    }
+    const one = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 15, difficulty: 1 })
+    expect(one.body.error?.fields?.difficulty).toBeUndefined()
+    expect(one.body.error?.fields?.count).toBeUndefined()
+  })
+
+  it('latih_tubi levelId must be an offered (non-primary) SPM level and difficulty 1 to 5 (S5-T03: 1 is accepted)', async () => {
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.primary })).body.error.fields.levelId).toBe('Nilai tidak sah.')
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 0 })).body.error.fields.difficulty).toBe('Nilai tidak sah.')
+    expect((await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 6 })).body.error.fields.difficulty).toBe('Nilai tidak sah.')
+    // difficulty 1 (chip "Sgt Mudah") passes the planner: with no difficulty-1 question in the SEJ fixture it is the empty-draw 422, not a field error.
+    const one = await post(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, difficulty: 1 })
+    expect(one.body.error?.fields?.difficulty).toBeUndefined()
     const s = await startSession(pelajar, { mode: 'latih_tubi', subjectCode: 'SEJ', count: 40, levelId: w.level.t4, difficulty: 2 })
     for (const q of s.questions) expect(t.bank.get(q.id).difficulty).toBe(2)
   })
@@ -426,8 +451,9 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     const again = await startSession(pelajar, { mode: 'mission', missionId: '9001' })
     expect(again.sessionId).toBe(first.sessionId)
     expect(await countRows(t.db, 'practice_sessions')).toBe(1)
-    const stored = await t.db.query<{ coins_per_correct: number; mission_id: string }>('select coins_per_correct, mission_id::text from practice_sessions where id = $1', [first.sessionId])
-    expect(stored[0]).toEqual({ coins_per_correct: 5, mission_id: '9001' })
+    const stored = await t.db.query<{ coins_per_correct: number | null; mission_id: string }>('select coins_per_correct, mission_id::text from practice_sessions where id = $1', [first.sessionId])
+    // S5-T03: the per-mission rate is no longer stored (one rate for every mode, DM-48).
+    expect(stored[0]).toEqual({ coins_per_correct: null, mission_id: '9001' })
     // Parallel starts of one mission never create two sessions.
     await t.db.query('delete from practice_sessions')
     const racing = await Promise.all([1, 2, 3, 4].map(() => post(pelajar, { mode: 'mission', missionId: '9001' })))
@@ -441,11 +467,11 @@ describe('assigned work: mission, remedial, question_set (BE-18 port)', () => {
     expect(done.body.error).toMatchObject({ code: 'ALREADY_COMPLETED', message: 'Misi ini sudah diselesaikan.' })
   })
 
-  it('mission: the default coin rate is 3 when the mission names none', async () => {
+  it('mission: no coin rate is stored (S5-T03, the rate is read when the credit is written)', async () => {
     t.assignments.set('mission', '9002', { status: 'ok', subjectId: w.subject.math, questionIds: bank.random.slice(0, 2) })
     const s = await startSession(pelajar, { mode: 'mission', missionId: '9002' })
     const stored = await t.db.query<{ coins_per_correct: number }>('select coins_per_correct from practice_sessions where id = $1', [s.sessionId])
-    expect(stored[0]?.coins_per_correct).toBe(3)
+    expect(stored[0]?.coins_per_correct).toBeNull()
   })
 
   it('remedial: another student is 404, a completed test is 409 "Ujian ini sudah selesai.", a ready one starts', async () => {

@@ -21,11 +21,8 @@ import {
   COUNT_OPTIONS,
   LATIH_TUBI_COUNTS,
   LATIH_TUBI_TARGETS,
-  MISSION_COINS_PER_CORRECT,
-  OFFERED_LEVEL_CODES,
   PAST_YEAR_COUNTS,
   REVISION_LENGTH,
-  SPM_LEVEL_CODES,
 } from './rules'
 
 /** What a start resolves to, before the session row exists. */
@@ -71,6 +68,58 @@ const blank = (mode: PracticeMode): StartPlan => ({
   resume: null,
 })
 
+/** A group (topic, else chapter) needs this many answers before it counts as a weak topic (R7). */
+export const REMEDIAL_MIN_TOPIC_ATTEMPTS = 2
+/** How many candidate ids the top-up reads before the servable filter. */
+const TOPUP_CANDIDATES = 400
+
+export interface RemedialDrill {
+  /** The questions to serve, in order: the servable wrong questions first, then the top-up. At most `REVISION_LENGTH`. */
+  served: PracticeQuestion[]
+  /** Servable questions whose latest answer is wrong (the whole queue, not capped). */
+  totalWrong: number
+}
+
+/**
+ * S5-T07 (R1-MUR-12, FR-MUR-12-7): the ONE selection rule of the auto revision drill. The start planner serves it and the
+ * remedial suggestions list a subject only when it yields at least one question (FD-MUR-36), so a card and its drill agree.
+ * Rule: the pupil's servable wrong questions first (BR-14 order of the revision queue), then, while fewer than 20, a top-up
+ * from the subject's weakest topics (never-correct questions first, then the oldest last answer), no duplicates.
+ */
+@Injectable()
+export class RemedialSelector {
+  constructor(
+    @Inject(PracticeRepository) private readonly repo: PracticeRepository,
+    @Inject(PracticePorts) private readonly ports: PracticePorts,
+  ) {}
+
+  async select(userId: string, subjectId: string): Promise<RemedialDrill> {
+    const queue = await this.repo.queue(userId, { subjectId })
+    // XL-19: only questions eligible for practice are served and counted.
+    const wrongLive = await this.ports.questions.live(queue.map((q) => q.questionId))
+    const wrong = queue.map((q) => wrongLive.get(q.questionId)).filter((q): q is PracticeQuestion => q !== undefined)
+    const served = wrong.slice(0, REVISION_LENGTH)
+    if (served.length < REVISION_LENGTH) {
+      const taken = new Set(wrong.map((q) => q.id))
+      const candidates = (await this.repo.weakTopicQuestionIds(userId, subjectId, REMEDIAL_MIN_TOPIC_ATTEMPTS, TOPUP_CANDIDATES)).filter(
+        (id) => !taken.has(id),
+      )
+      if (candidates.length > 0) {
+        const live = await this.ports.questions.live(candidates)
+        for (const id of candidates) {
+          if (served.length >= REVISION_LENGTH) break
+          const q = live.get(id)
+          if (q && !taken.has(id)) {
+            taken.add(id)
+            served.push(q)
+          }
+        }
+      }
+    }
+    return { served, totalWrong: wrong.length }
+  }
+}
+
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
 const cmpId = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
 
@@ -99,6 +148,9 @@ export class PracticeStartPlanner {
     @Inject(SubscriptionService) private readonly subscriptions: SubscriptionService,
   ) {}
 
+  /** The shared revision drill rule (S5-T07); stateless, built from the same repository and ports (also provided by `PracticeModule` for the suggestions). */
+  private readonly drills = new RemedialSelector(this.repo, this.ports)
+
   async plan(userId: string, req: StartSessionRequest, now: Date, isTest: boolean): Promise<StartPlan> {
     // BR-07: a user without a subscription and no trial left cannot start (402).
     const trial = await this.subscriptions.trial(userId, now)
@@ -106,8 +158,6 @@ export class PracticeStartPlanner {
 
     const plan = blank(req.mode)
     switch (req.mode) {
-      case 'random':
-        return this.random(plan, userId, req, now)
       case 'chapter':
         return this.chapter(plan, userId, req, isTest)
       case 'revision':
@@ -142,8 +192,9 @@ export class PracticeStartPlanner {
     return s
   }
 
-  private async levelCodes(): Promise<Map<string, string>> {
-    return new Map((await this.curriculum.levels()).map((l) => [idToString(l.id), l.code]))
+  /** S4-T06: the ids of the offered levels (active, non-primary), read once per request from `offeredLevels`. */
+  private async offeredLevelIds(): Promise<Set<string>> {
+    return new Set((await this.repo.offeredLevels()).map((l) => l.id))
   }
 
   /** The questions among `ids` that are eligible now, at their live version, in the order of `ids`. */
@@ -183,27 +234,6 @@ export class PracticeStartPlanner {
   }
 
   // --- modes ------------------------------------------------------------------------------------
-
-  private async random(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
-    const subject = await this.subjectOf(req.subjectCode)
-    const codes = await this.levelCodes()
-    const offered = subject.educationLevelIds.map(idToString).filter((id) => OFFERED_LEVEL_CODES.includes(codes.get(id) ?? ''))
-    const levelId = req.levelId ?? null
-    if (levelId !== null && !offered.includes(levelId)) throw invalidField('levelId')
-    const difficulty = req.difficulty ?? null
-    const count = countIn(req.count, COUNT_OPTIONS)
-    const levels = levelId !== null ? [levelId] : offered
-    if (levels.length === 0) throw notEnoughQuestions()
-    const subjectId = idToString(subject.id)
-    const ids = await this.ports.questions.sample(
-      { subjectId, educationLevelIds: levels, activity: 'databank', ...(difficulty !== null ? { difficulty } : {}) },
-      count,
-      await this.rng(userId, now),
-    )
-    const served = await this.serve(ids, 'databank')
-    if (served.length < count) throw notEnoughQuestions()
-    return Object.assign(plan, { subjectId, levelId, difficulty, served })
-  }
 
   private async chapter(plan: StartPlan, userId: string, req: StartSessionRequest, isTest: boolean): Promise<StartPlan> {
     const chapterId = idFromString(validId(req.chapterId))
@@ -246,14 +276,10 @@ export class PracticeStartPlanner {
     const subject = await this.subjectOf(req.subjectCode)
     if (req.count !== undefined && req.count !== REVISION_LENGTH) throw invalidField('count')
     const subjectId = idToString(subject.id)
-    const queue = await this.repo.queue(userId, { subjectId })
-    // XL-19: only questions eligible for practice are served and counted.
-    const live = await this.ports.questions.live(queue.map((q) => q.questionId))
-    const eligible = queue.filter((q) => live.has(q.questionId))
-    if (eligible.length === 0) throw noWrongQuestions()
-    const picked = eligible.slice(0, REVISION_LENGTH)
-    const served = picked.map((q) => live.get(q.questionId)).filter((q): q is PracticeQuestion => q !== undefined)
-    return Object.assign(plan, { subjectId, served, revisionMeta: { selected: picked.length, totalWrong: eligible.length } })
+    // S5-T07: wrong servable questions first, topped up from the weakest topics (the selector shared with the remedial suggestions).
+    const drill = await this.drills.select(userId, subjectId)
+    if (drill.served.length === 0) throw noWrongQuestions()
+    return Object.assign(plan, { subjectId, served: drill.served, revisionMeta: { selected: drill.served.length, totalWrong: drill.totalWrong } })
   }
 
   private async pastYear(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
@@ -268,11 +294,11 @@ export class PracticeStartPlanner {
 
   private async latihTubi(plan: StartPlan, userId: string, req: StartSessionRequest, now: Date): Promise<StartPlan> {
     const subject = await this.subjectOf(req.subjectCode)
-    const codes = await this.levelCodes()
+    const offeredIds = await this.offeredLevelIds()
     const levelId = req.levelId ?? null
-    if (levelId !== null && !SPM_LEVEL_CODES.includes(codes.get(levelId) ?? '')) throw invalidField('levelId')
+    if (levelId !== null && !offeredIds.has(levelId)) throw invalidField('levelId')
     const difficulty = req.difficulty ?? null
-    if (difficulty !== null && (difficulty < 2 || difficulty > 5)) throw invalidField('difficulty')
+    if (difficulty !== null && (difficulty < 1 || difficulty > 5)) throw invalidField('difficulty')
     const subjectId = idToString(subject.id)
 
     if (req.targetQuestionId !== undefined && req.targetQuestionId !== null) {
@@ -280,14 +306,15 @@ export class PracticeStartPlanner {
       if (req.count !== 1) throw invalidField('count')
       if (!isIdString(req.targetQuestionId)) throw invalidField('targetQuestionId')
       const q = (await this.ports.questions.live([req.targetQuestionId])).get(req.targetQuestionId)
-      if (!q || !OFFERED_LEVEL_CODES.includes(codes.get(q.educationLevelId ?? '') ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
+      if (!q || !offeredIds.has(q.educationLevelId ?? '') || q.subjectId !== subjectId) throw invalidField('targetQuestionId')
       // REQ-B-010: the same SPM rule as a draw (SPM_SERVABLE_SQL), not the level code alone.
       if (!(await this.ports.questions.spmServable([q.id])).has(q.id)) throw invalidField('targetQuestionId')
       return Object.assign(plan, { subjectId, targetQuestionId: q.id, served: [q] })
     }
 
     const target = LATIH_TUBI_TARGETS[subject.code]
-    const count = target !== undefined ? countIn(req.count, [target]) : countIn(req.count, LATIH_TUBI_COUNTS)
+    // OPT-BILANGAN-LT (R1-MUR-16): the config page's 5/10/15/20 are always accepted, next to the subject target / free counts.
+    const count = countIn(req.count, target !== undefined ? [target, ...COUNT_OPTIONS] : [...LATIH_TUBI_COUNTS, ...COUNT_OPTIONS])
     const ids = await this.ports.questions.sample(
       {
         subjectId,
@@ -331,7 +358,7 @@ export class PracticeStartPlanner {
       subjectId: res.subjectId,
       missionId: req.missionId,
       served,
-      coinsPerCorrect: res.coinsPerCorrect || MISSION_COINS_PER_CORRECT,
+      coinsPerCorrect: null,
     })
   }
 
@@ -358,7 +385,7 @@ export class PracticeStartPlanner {
     const open = sessions.find((s) => s.status === 'in_progress')
     if (open) return { ...plan, questionSetId: req.questionSetId as string, resume: open }
     if (res.questionIds.length === 0) throw notEnoughQuestions()
-    const served = await this.serve(res.questionIds)
+    const served = await this.serve(res.questionIds, 'bab')
     if (served.length === 0) throw notEnoughQuestions()
     return Object.assign(plan, {
       subjectId: res.subjectId ?? served[0]?.subjectId ?? null,

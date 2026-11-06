@@ -6,9 +6,14 @@ import {
   QUESTION_IMPORT_MIME_TYPES,
   QUESTION_IMPORT_PAGE_SIZE,
   QUESTION_IMPORT_MAX_BYTES,
+  QUESTION_IMPORT_GURU_MAX_BYTES,
+  QUESTION_IMPORT_GURU_MESSAGES as GURU_MSG,
+  QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QuestionImportListQuerySchema,
   type QuestionImportFailure,
+  type StimulusCreateRequest,
+  questionImportRowPrefix,
   type QuestionImportGuruResult,
   type QuestionImportRun,
   type QuestionWorkflowStatus,
@@ -21,22 +26,33 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { CurriculumRepository } from '../../../curriculum'
-import { QuestionsRepository } from '../../index'
+import { QuestionsRepository, StimuliService } from '../../index'
 import type { WorkflowActor } from '../actor'
 import { type ImportedQuestionInput, QuestionWorkflowPorts } from '../ports'
 import type { CreateGateInput } from '../lifecycle'
 import { QuestionWorkflowService } from '../question-workflow.service'
+import { GuruSubmissionsService } from '../../../intake/files/guru-submissions.service'
+import {
+  guruLevelOf,
+  guruPairKey,
+  guruSubjectOf,
+  planGuruRows,
+  readGuruCsv,
+  type GuruChapterRef,
+  type GuruCsvLookups,
+  type GuruCsvRow,
+  type GuruSpRef,
+} from './guru-csv'
 import {
   buildCsv,
   type CodeLookups,
   type CsvRecord,
   type CurriculumFacts,
+  type PlannedGroup,
   factsKey,
-  GURU_IMPORT_CAPS,
   type ImportDefaults,
   type ImportLookups,
   isLegacyHeader,
-  NO_IMPORT_DEFAULTS,
   numberKey,
   parseCsv,
   planImport,
@@ -96,12 +112,19 @@ export class QuestionImportsService {
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(QuestionWorkflowService) private readonly workflow: QuestionWorkflowService,
+    @Inject(GuruSubmissionsService) private readonly guruSubmissions: GuruSubmissionsService,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
   ) {}
 
   /** The template file text (mock `IMPORT_TEMPLATE_CSV`; no cell starts with a formula character). */
   template(): string {
     return QUESTION_IMPORT_TEMPLATE_CSV
+  }
+
+  /** The teacher's template file text (44-F3): the BM header and the example row. */
+  guruTemplate(): string {
+    return QUESTION_IMPORT_GURU_TEMPLATE_CSV
   }
 
   // --- history ---------------------------------------------------------------------------------
@@ -158,17 +181,56 @@ export class QuestionImportsService {
 
   // --- Guru import -----------------------------------------------------------------------------
 
-  async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined): Promise<{ data: QuestionImportGuruResult }> {
-    const fields: Record<string, string> = {}
-    const text = readFile(file, fields)
-    if (Object.keys(fields).length > 0) throw ApiError.of('VALIDATION_ERROR', { fields })
+  /**
+   * API-GUR-19 (S6-T06): the teacher's CSV (2 MB, 500 data rows) in any of the three header formats (BM, D115 code, legacy: `guru-csv.ts` maps them
+   * onto one row model). Each valid row becomes an item of ONE `source = 'guru'` intake batch ("Menunggu Semakan", L-6); the bank is never
+   * written from this route. A bad row is listed in `errors` with its PRD reason and never blocks the valid ones.
+   */
+  async importGuru(actor: WorkflowActor, file: UploadedCsv | undefined, body: unknown): Promise<{ data: QuestionImportGuruResult }> {
+    const read = readGuruCsv(readGuruText(file, body))
+    if (read.missingColumns.length > 0) throw guruRefusal(GURU_MSG.missingColumns(read.missingColumns))
+    if (read.tooMany) throw guruRefusal(GURU_MSG.tooManyRows)
+    if (read.rows.length === 0) throw guruRefusal(GURU_MSG.noData)
 
-    const records = parseCsv(text as string)
-    const lookups = await this.withCodes(await this.lookups(), records, NO_IMPORT_DEFAULTS)
-    const plan = planImport(records, lookups, NO_IMPORT_DEFAULTS, GURU_IMPORT_CAPS)
-    refuseUnusable(plan)
-    const run = await this.execute(actor, file as UploadedCsv, plan, NO_IMPORT_DEFAULTS, 'review', null)
-    return { data: { imported: run.importedCount, failed: asFailures(run.failures), ...(plan.warnings.length === 0 ? {} : { warnings: plan.warnings }) } }
+    const plan = planGuruRows(read.rows, await this.guruLookups(read.rows, read.idMode), read.idMode)
+    if (plan.valid.length > 0) {
+      await this.guruSubmissions.createBatch(
+        { userId: actor.userId, roleCode: actor.role, requestId: actor.requestId, ip: actor.ip, isTest: actor.isTest },
+        plan.valid,
+      )
+    }
+    return { data: { imported: plan.valid.length, errors: plan.errors } }
+  }
+
+  /** Subjects and Tingkatan 1 to 5, plus the Bab and SP lists of the Subjek + Tingkatan pairs the file uses (only where a row names a Bab or SP). */
+  private async guruLookups(rows: readonly GuruCsvRow[], idMode: boolean): Promise<GuruCsvLookups> {
+    const [subjectRows, levelRows] = await Promise.all([this.curriculum.subjects({ active: true }), this.curriculum.levels({ active: true })])
+    const subjects = subjectRows.map((s) => ({ id: s.id.toString(), code: s.code, name: s.name }))
+    const levels = new Map<number, { id: string; code: string }>()
+    for (const l of levelRows) {
+      const m = /^T([1-5])$/.exec(l.code)
+      if (m && l.stage !== 'primary') levels.set(Number(m[1]), { id: l.id.toString(), code: l.code })
+    }
+    const wanted = new Map<string, { subjectId: string; levelId: string; bab: boolean; sps: Set<string> }>()
+    for (const r of rows) {
+      const subject = guruSubjectOf(subjects, r.get('subjek'), idMode)
+      const level = guruLevelOf(levels, r.get('tingkatan'), idMode)
+      if (!subject || !level) continue
+      const key = guruPairKey(subject.id, level.id)
+      const w = wanted.get(key) ?? { subjectId: subject.id, levelId: level.id, bab: false, sps: new Set<string>() }
+      if (r.get('bab').trim() !== '') w.bab = true
+      if (r.get('sp').trim() !== '') w.sps.add(r.get('sp').trim())
+      wanted.set(key, w)
+    }
+    const refs = new Map<string, { chapters: readonly GuruChapterRef[]; sps: readonly GuruSpRef[] }>()
+    for (const [key, w] of wanted) {
+      const subjectId = BigInt(w.subjectId)
+      const educationLevelId = BigInt(w.levelId)
+      const chapters = w.bab ? (await this.curriculum.chapters(subjectId, educationLevelId, { active: true })).map((c) => ({ id: c.id.toString(), number: c.chapterNumber, name: c.name })) : []
+      const sps = w.sps.size === 0 ? [] : (await this.curriculum.nodesByCodes([...w.sps], { subjectId, educationLevelId })).filter((n) => n.kind === 'sp').map((n) => ({ id: n.id.toString(), code: n.code }))
+      refs.set(key, { chapters, sps })
+    }
+    return { subjects, levels, refs }
   }
 
   // --- shared ----------------------------------------------------------------------------------
@@ -209,7 +271,26 @@ export class QuestionImportsService {
     }
     const facts = new Map<string, CurriculumFacts>()
     for (const [key, { subjectId, levelId }] of pairs) facts.set(key, await this.factsOf(BigInt(subjectId), BigInt(levelId), withTopics))
-    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts } }
+    const groups = new Map<string, { stimuli: ReadonlyMap<string, string> } | null>()
+    const gi = names.get('group_id')
+    for (const rec of gi === undefined ? [] : data) {
+      const id = rec.cells[gi as number] ?? ''
+      if (id !== '' && !groups.has(id)) groups.set(id, await this.usableGroup(id))
+    }
+    return { ...lookups, codes: { subjectsByCode, levelsByCode, facts, groups } }
+  }
+
+  /** A group a `group_id` row may join: it exists, is not a draft copy and no member is shown to pupils; else null. */
+  private async usableGroup(id: string): Promise<{ stimuli: ReadonlyMap<string, string> } | null> {
+    if (!/^[1-9]\d{0,17}$/.test(id)) return null
+    try {
+      const g = await this.stimuli.getGroup(id)
+      if (g.draftOfGroupId != null || g.members.some((m) => m.servable)) return null
+      return { stimuli: new Map(g.stimuli.flatMap((x) => (x.label === null ? [] : [[x.label, x.id] as const]))) }
+    } catch (err) {
+      if (err instanceof ApiError) return null
+      throw err
+    }
   }
 
   private async factsOf(subjectId: bigint, levelId: bigint, withTopics: boolean): Promise<CurriculumFacts> {
@@ -244,13 +325,46 @@ export class QuestionImportsService {
     return { subjectId: subjectId.toString(), levelId: levelId.toString(), hasDskpNodes: nodes.length > 0, spmBound, units, sps, chapters: chapterMap }
   }
 
+  /**
+   * One valid group, inside the caller's transaction: its stimuli (S1-T01 `StimuliService.createStimulus`), then its members through the bank port
+   * (the same create as every other row), then the group (`createGroup`, which takes its Subjek, Tingkatan and Kertas from the members) or, for a
+   * `group_id` row, `addMember` on the existing group. Any `ApiError` is the caller's cue to skip the whole group.
+   */
+  private async createGroup(actor: WorkflowActor, group: PlannedGroup, status: 'draft' | 'review'): Promise<void> {
+    const bank = this.ports.questionBank
+    const stimulusIds: string[] = []
+    for (const s of group.stimuli) {
+      const made = await this.stimuli.createStimulus({
+        kind: s.kind as StimulusCreateRequest['kind'],
+        label: s.label,
+        ...(s.caption === null ? {} : { caption: s.caption }),
+        ...(s.bodyMs === null ? {} : { body: { ms: s.bodyMs, ...(s.bodyEn === null ? {} : { en: s.bodyEn }) } }),
+        ...(s.alt === null ? {} : { alt: s.alt }),
+        ...(s.sourceCitation === null ? {} : { sourceCitation: s.sourceCitation }),
+        ...(s.tableData === null ? {} : { tableData: s.tableData }),
+      })
+      stimulusIds.push(made.result.id)
+    }
+    const questionIds: string[] = []
+    for (const m of group.members) {
+      const partId = m.partStimulusIndex === undefined ? undefined : stimulusIds[m.partStimulusIndex]
+      const input: ImportedQuestionInput = { ...m.input, ...(partId === undefined ? {} : { partStimulusId: partId }), createdById: actor.userId, status }
+      this.workflow.assertCreateAllowed(gateInputOf(input, GATE_STATUS), actor)
+      const id = await bank.create(input)
+      await this.workflow.recordCreation(id, status, actor, 1)
+      questionIds.push(id)
+    }
+    if (group.existingGroupId !== null) for (const id of questionIds) await this.stimuli.addMember(group.existingGroupId, id)
+    else await this.stimuli.createGroup({ stimulusIds, questionIds })
+  }
+
   /** Creates the valid rows and stores the run in ONE transaction: nothing partial is kept on an error. */
   private execute(
     actor: WorkflowActor,
     file: UploadedCsv,
     plan: ReturnType<typeof planImport>,
     defaults: ImportDefaults,
-    status: 'draft' | 'review',
+    status: 'draft',
     templateVersion: string | null,
   ): Promise<QuestionImport> {
     const bank = this.ports.questionBank
@@ -261,13 +375,38 @@ export class QuestionImportsService {
         const id = await bank.create(input)
         await this.workflow.recordCreation(id, status, actor, 1)
       }
+      // A group is created whole or skipped whole (45 section 3.2): a savepoint per group keeps what the rest of the import made.
+      const failures = [...plan.failures]
+      let imported = plan.rows.length
+      let failed = plan.failedQuestions
+      for (const group of plan.groups) {
+        await this.prisma.client.$executeRaw`SAVEPOINT import_group`
+        try {
+          await this.createGroup(actor, group, status)
+          await this.prisma.client.$executeRaw`RELEASE SAVEPOINT import_group`
+          imported += group.members.length
+        } catch (err) {
+          if (!(err instanceof ApiError)) throw err
+          await this.prisma.client.$executeRaw`ROLLBACK TO SAVEPOINT import_group`
+          const text = Object.values(err.fields ?? {})[0] ?? err.message
+          failures.push({
+            row: group.line,
+            message: questionImportRowPrefix(group.line) + text,
+            ...((group.key || group.members[0]?.questionKey) ? { questionKey: group.key || (group.members[0]?.questionKey as string) } : {}),
+            field: 'group_key',
+            code: 'GROUP_REJECTED',
+          })
+          failed += group.members.length
+        }
+      }
+      failures.sort((a, b) => a.row - b.row)
       return this.prisma.client.questionImport.create({
         data: {
           fileName: file.originalname.slice(0, FILE_NAME_MAX),
           templateVersion,
-          importedCount: plan.rows.length,
-          failedCount: plan.failedQuestions,
-          failures: plan.failures,
+          importedCount: imported,
+          failedCount: failed,
+          failures,
           defaultSubjectId: defaults.subjectId === null ? null : BigInt(defaults.subjectId),
           defaultEducationLevelId: defaults.educationLevelId === null ? null : BigInt(defaults.educationLevelId),
           defaultDifficulty: defaults.difficultyLevel,
@@ -278,6 +417,24 @@ export class QuestionImportsService {
       })
     }, IMPORT_TX)
   }
+}
+
+const guruRefusal = (message: string): ApiError => ApiError.of('VALIDATION_ERROR', { fields: { csvFile: message } })
+
+/** Text of the teacher's file: the `csvFile` part (.csv only, 2 MB) or the JSON field `csv`; the 422 message is on `fields.csvFile`. */
+function readGuruText(file: UploadedCsv | undefined, body: unknown): string {
+  if (file) {
+    const name = file.originalname
+    const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1).toLowerCase() : ''
+    if (ext !== 'csv' || !(file.mimetype === '' || MIMES.includes(file.mimetype))) throw guruRefusal(GURU_MSG.fileType)
+    if (file.size > QUESTION_IMPORT_GURU_MAX_BYTES) throw guruRefusal(GURU_MSG.fileSize)
+    if (file.size === 0) throw guruRefusal(GURU_MSG.fileRequired)
+    return file.buffer.toString('utf8')
+  }
+  const csv = typeof body === 'object' && body !== null ? (body as { csv?: unknown }).csv : undefined
+  if (typeof csv !== 'string' || csv.trim() === '') throw guruRefusal(GURU_MSG.fileRequired)
+  if (Buffer.byteLength(csv, 'utf8') > QUESTION_IMPORT_GURU_MAX_BYTES) throw guruRefusal(GURU_MSG.fileSize)
+  return csv
 }
 
 /** Text of the `csvFile` part, or the 422 message in `fields`. */
