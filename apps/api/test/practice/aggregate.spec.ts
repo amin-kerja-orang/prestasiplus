@@ -108,6 +108,18 @@ describe('PracticeAggregateService', () => {
     expect(read).toMatchObject({ attemptId: be16.attemptId, startType: 'pilihan', durationSec: 4530 })
   })
 
+  it.each(['subjektif', 'structured'] as const)('DM-83 (migration 0166): a %s attempt keeps its kind as start_type', async (kind) => {
+    const s = await user()
+    const row: BijakAttemptAggregateInput = { ...input({ userId: s }), paperKind: kind }
+    await svc.recordGraded(row)
+    const [stored] = await aggs(`attempt_id = '${row.attemptId}'`)
+    expect(stored).toMatchObject({ start_type: kind })
+  })
+
+  it('DM-83 (migration 0166): the database refuses any other start_type', async () => {
+    await expect(db.query(`update practice_attempt_aggregates set start_type = 'dokumen' where true`)).rejects.toThrow(/ck_practice_attempt_aggregates_start_type/)
+  })
+
   it('replay and 5 parallel calls leave one unchanged row', async () => {
     const a = input({ userId: u1 })
     await svc.recordGraded(a)
