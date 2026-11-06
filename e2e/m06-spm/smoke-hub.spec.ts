@@ -102,7 +102,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expect(page.getByRole('heading', { name: 'Prestasi SPM Anda' })).toBeVisible()
     const values = page.locator('[data-testid^=spm-mine-]')
-    await expect(statValues(values)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statValues(values)).toHaveText(['4', '31%', '26', '84'])
     await expect(statLabels(values)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
@@ -112,7 +112,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M06-02 student without activity shows 0 / 0.0% / 0 / 0', async ({
+  test('E2E-M06-02 student without activity shows 0 / — / 0 / 0', async ({
     page,
     loginAs,
     gotoApp,
@@ -121,7 +121,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expect(statValues(page.locator('[data-testid^=spm-mine-]'))).toHaveText([
       '0',
-      '0.0%',
+      '—',
       '0',
       '0',
     ])

@@ -3,7 +3,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { ApiError } from '@/api'
 
 import type { LatihTubiConfig } from '../api'
-import { HISTORY_FILTERS, parseHistoryType, scoreColor } from '../lib/history'
+import {
+  HISTORY_FILTERS,
+  MODE_BADGES,
+  formatAccuracy,
+  formatHistoryDate,
+  formatHistoryDuration,
+  historyHref,
+  pagerText,
+  parseHistoryMod,
+  parseHistoryPage,
+  scoreColor,
+} from '../lib/history'
 import { diffCount, parseLatihTubiQuery, quizHref, targetName } from '../lib/latih-tubi'
 
 const start = vi.hoisted(() => vi.fn())
@@ -77,15 +88,51 @@ describe('latih tubi helpers (S4)', () => {
 })
 
 describe('history helpers (S10)', () => {
-  it('accepts only the three types (an unknown one means no filter)', () => {
-    expect(parseHistoryType('past_year')).toBe('past_year')
-    expect(parseHistoryType('zzz')).toBeNull()
-    expect(parseHistoryType(undefined)).toBeNull()
-    expect(HISTORY_FILTERS.map((f) => f.label)).toEqual([
-      'Semua',
+  it('reads the chip from mod, then the old type key; legacy values map to their chips', () => {
+    expect(parseHistoryMod({})).toBeNull()
+    expect(parseHistoryMod({ mod: 'all' })).toBeNull()
+    expect(parseHistoryMod({ mod: 'databank' })).toBe('databank')
+    expect(parseHistoryMod({ type: 'past_year' })).toBe('databank')
+    expect(parseHistoryMod({ type: 'ramalan' })).toBe('tracking_a')
+    expect(parseHistoryMod({ mod: 'latih_tubi', type: 'ramalan' })).toBe('latih_tubi')
+    expect(parseHistoryMod({ mod: ['tracking_a'] })).toBe('tracking_a')
+    expect(parseHistoryMod({ mod: 'zzz' })).toBeUndefined()
+    expect(HISTORY_FILTERS.map((f) => f.label)).toEqual(['Semua', 'Tahun Lepas', 'Latih Tubi', 'Tracking A'])
+  })
+
+  it('parses halaman and builds hrefs', () => {
+    expect(parseHistoryPage(undefined)).toBe(1)
+    expect(parseHistoryPage('3')).toBe(3)
+    expect(parseHistoryPage('0')).toBe(1)
+    expect(parseHistoryPage('-2')).toBe(1)
+    expect(parseHistoryPage('x')).toBe(1)
+    expect(historyHref(null)).toBe('/spm/history')
+    expect(historyHref('databank')).toBe('/spm/history?mod=databank')
+    expect(historyHref(null, 2)).toBe('/spm/history?halaman=2')
+    expect(historyHref('tracking_a', 3)).toBe('/spm/history?mod=tracking_a&halaman=3')
+    expect(historyHref('tracking_a', 1)).toBe('/spm/history?mod=tracking_a')
+  })
+
+  it('formats accuracy, duration, date and pager text', () => {
+    expect(formatAccuracy(null)).toBe('—')
+    expect(formatAccuracy(0)).toBe('0%')
+    expect(formatAccuracy(31)).toBe('31%')
+    expect(formatHistoryDuration(2252)).toBe('37m 32s')
+    expect(formatHistoryDuration(36)).toBe('0m 36s')
+    expect(formatHistoryDate('2026-10-23T20:06:00+08:00')).toBe('23 Okt 2026, 08:06 PM')
+    expect(formatHistoryDate('2026-08-02T00:05:00+08:00')).toBe('2 Ogs 2026, 12:05 AM')
+    expect(pagerText(2, 5)).toBe('Halaman 2 daripada 5')
+  })
+
+  it('labels every row mode', () => {
+    expect(Object.values(MODE_BADGES).map((b) => b.label)).toEqual([
       'Tahun Lepas',
       'Latih Tubi',
       'Tracking A',
+      'Bijak SPM',
+      'Subjektif',
+      'Soalan Berstruktur',
+      'Simulasi - Kuiz',
     ])
   })
 

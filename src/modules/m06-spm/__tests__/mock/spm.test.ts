@@ -83,7 +83,7 @@ describe('guards', () => {
 })
 
 describe('#1 overview (S1)', () => {
-  it('admin: constants, derived stats and the 4 sessions 21.8% / 26 / 84', async () => {
+  it('admin: constants, derived stats and the 4 sessions 31% (pooled 26/84) / 26 / 84', async () => {
     const o = await get<SpmOverview>(ADMIN, '/api/spm/overview')
     expect(o.stats).toEqual({
       totalQuestions: 20_529,
@@ -98,21 +98,21 @@ describe('#1 overview (S1)', () => {
       kertasSubjektif: 0,
     })
     expect('yearsAvailable' in o.stats).toBe(false)
-    expect(o.me).toEqual({ sessions: 4, avgAccuracy: 21.8, coins: 26, answered: 84 })
+    expect(o.me).toEqual({ sessions: 4, avgAccuracy: 31, coins: 26, answered: 84 })
     // Never a chip above the total (E2E-M06-03).
     expect(o.modules.databank).toBeLessThanOrEqual(o.stats.totalQuestions)
   })
 
-  it('student: 4 / 65.4% / 70 / 94; pelajar2 has no activity', async () => {
+  it('student: 4 / 74% (pooled) / 70 / 94; pelajar2 has no activity', async () => {
     expect((await get<SpmOverview>(PELAJAR, '/api/spm/overview')).me).toEqual({
       sessions: 4,
-      avgAccuracy: 65.4,
+      avgAccuracy: 74,
       coins: 70,
       answered: 94,
     })
     expect((await get<SpmOverview>(PELAJAR2, '/api/spm/overview')).me).toEqual({
       sessions: 0,
-      avgAccuracy: 0,
+      avgAccuracy: null,
       coins: 0,
       answered: 0,
     })
