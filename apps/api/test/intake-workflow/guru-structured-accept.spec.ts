@@ -14,7 +14,7 @@ let admin: LoggedIn
 let teacher: LoggedIn
 
 beforeAll(async () => {
-  t = await bootWorkflowApp()
+  t = await bootWorkflowApp({}, { withQuestionWorkflow: true })
   admin = await loginAs(t, 'admin@demo.test')
   teacher = await loginAs(t, 'guru@demo.test')
 }, 120_000)
