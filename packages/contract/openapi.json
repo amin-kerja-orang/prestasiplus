@@ -29596,6 +29596,11 @@
             "maxItems": 3,
             "description": "The first 3 Perutusan posts visible to the caller (content owner BE-24)."
           },
+          "pendingTeachers": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Teachers waiting for the school admin to approve them (\"Guru Menunggu\"); equals the length of GET /admin-sekolah/guru/pending."
+          },
           "cards": {
             "type": "object",
             "properties": {
@@ -29801,6 +29806,7 @@
           "school",
           "roleLabel",
           "perutusan",
+          "pendingTeachers",
           "cards",
           "performance"
         ]
@@ -30811,13 +30817,14 @@
         "properties": {
           "key": {
             "type": "string",
-            "pattern": "^classroom:.+$",
-            "description": "classroom:{id}."
+            "pattern": "^(classroom|school_class):.+$",
+            "description": "{kind}:{id}."
           },
           "kind": {
             "type": "string",
             "enum": [
-              "classroom"
+              "classroom",
+              "school_class"
             ]
           },
           "id": {
@@ -30869,9 +30876,12 @@
             "type": "boolean"
           },
           "link": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "minLength": 1,
-            "description": "Page link \"/prestasi/kelas/{id}\", built by the server from the id."
+            "description": "Page link \"/prestasi/kelas/{id}\" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard)."
           }
         },
         "required": [
