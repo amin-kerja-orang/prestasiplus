@@ -13,8 +13,8 @@ export interface UploadClient {
   userId: string
   csrf: string
   get(url: string): request.Test
-  /** Multipart POST with a `csvFile` part (and text fields); `csrf: false` leaves the header out. */
-  upload(url: string, file: { name: string; body: Buffer | string; type?: string } | null, fields?: Record<string, string>, csrf?: boolean): request.Test
+  /** Multipart POST with a `csvFile` part, an optional `zipFile` part (and text fields); `csrf: false` leaves the header out. */
+  upload(url: string, file: { name: string; body: Buffer | string; type?: string } | null, fields?: Record<string, string>, csrf?: boolean, zip?: { name: string; body: Buffer; type?: string }): request.Test
 }
 
 export async function uploadClient(t: WorkflowTestApp, account: AccountKey): Promise<UploadClient> {
@@ -26,11 +26,12 @@ export async function uploadClient(t: WorkflowTestApp, account: AccountKey): Pro
     userId: session.user.id,
     csrf: session.csrf,
     get: (url) => agent.get(url),
-    upload(url, file, fields = {}, csrf = true) {
+    upload(url, file, fields = {}, csrf = true, zip) {
       let r = agent.post(url)
       if (csrf) r = r.set('X-CSRF-Token', session.csrf)
       for (const [k, v] of Object.entries(fields)) r = r.field(k, v)
       if (file) r = r.attach('csvFile', Buffer.isBuffer(file.body) ? file.body : Buffer.from(file.body), { filename: file.name, contentType: file.type ?? 'text/csv' })
+      if (zip) r = r.attach('zipFile', zip.body, { filename: zip.name, contentType: zip.type ?? 'application/zip' })
       return r
     },
   }

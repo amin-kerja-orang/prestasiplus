@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { QuestionsService } from '../../src/modules/questions'
+import { stubPlacedQuestions } from '../support/db'
 import { PaperServabilityService, PAPER_ACTIVITIES } from '../../src/modules/questions/serving/paper-servability.service'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
@@ -49,6 +50,7 @@ describe('AC-04.3 paper-level "where can pupils open it"', () => {
 
   beforeAll(async () => {
     t = await bootQuestionsApp()
+    await stubPlacedQuestions(t.db) // DM-11: a placement of an id the bank does not hold needs a question row
     svc = t.app.get(QuestionsService)
     paperSvc = t.app.get(PaperServabilityService)
     tag = await tagOf(t.db, 'SEED-MCQ-MATH-T4')

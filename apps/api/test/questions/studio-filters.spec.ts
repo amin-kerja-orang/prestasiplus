@@ -116,7 +116,7 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
   })
 
   it('a malformed value is 422 with the BM filter message, keyed by the filter name', async () => {
-    for (const [query, field] of [['tahun=24', 'tahun'], ['tahun=abcd', 'tahun'], ['kertas=4', 'kertas'], ['kertas=0', 'kertas'], ['jenis=ujian', 'jenis']] as const) {
+    for (const [query, field] of [['tahun=24', 'tahun'], ['tahun=abcd', 'tahun'], ['kertas=5', 'kertas'], ['kertas=0', 'kertas'], ['jenis=ujian', 'jenis']] as const) {
       const error = expectError(await admin.get(`/api/questions?${query}`), 'VALIDATION_ERROR')
       expect(error.fields?.[field], query).toBe('Nilai penapis tidak sah.')
     }

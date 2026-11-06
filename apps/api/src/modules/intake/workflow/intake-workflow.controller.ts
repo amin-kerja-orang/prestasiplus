@@ -12,6 +12,7 @@ import {
   IntakeStimulusUpdateRequestSchema,
   type IntakeBulkRequest,
   type IntakeDuplicateRequest,
+  type IntakeExtractRequest,
   type IntakeItemCreateRequest,
   type IntakeItemListQuery,
   type IntakeItemPatch,
@@ -66,10 +67,10 @@ export class IntakeWorkflowController {
   async extract(
     @Req() req: Req,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(IntakeExtractRequestSchema)) _body: unknown,
+    @Body(new ZodValidationPipe(IntakeExtractRequestSchema)) body: IntakeExtractRequest,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { run, status } = await this.extraction.request(authOf(req), id, infoOf(req))
+    const { run, status } = await this.extraction.request(authOf(req), id, infoOf(req), body)
     res.status(status)
     return ok(run)
   }

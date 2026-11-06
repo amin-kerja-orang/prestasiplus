@@ -80,6 +80,8 @@ export interface StandardSection {
   kbatMarks: number | null
   /** false = the section KBAT value is "Belum disemak". Absent = reviewed. */
   kbatReviewed?: boolean
+  /** DM-57: marks of each OFFERED question, in order; its length is `questionCount` and its sum `offeredMarks`. null = no list. */
+  marksPerQuestion?: readonly number[] | null
 }
 
 export interface StandardBlueprint {
@@ -94,6 +96,8 @@ export interface StandardBlueprint {
   kbatMarks?: number | null
   levelShare?: { t4: number; t5: number } | null
   subPartRamp?: boolean
+  /** DM-57 "Bilangan soalan dalam kertas"; null = not stated. No rule ties it to the section counts. */
+  questionCount?: number | null
 }
 
 /** Answer-mode vocabulary (the leaf modes of M04). */
@@ -145,7 +149,8 @@ function sortKeys(value: unknown): unknown {
  * Canonical STRUCTURAL content of a blueprint (3.5): the string a service hashes (sha-256) to
  * decide whether an edit is cosmetic. Cosmetic content (notes, instructions, reference sheets,
  * section label and instruction) and the `reviewed` flags are left out. Keys are sorted, so the
- * string depends on content only.
+ * string depends on content only. The DM-57 keys are emitted only when set (`sortKeys` drops
+ * undefined), so the hash of a blueprint without them does not change.
  */
 export function canonicalStructure(bp: StandardBlueprint): string {
   const stripReviewed = (q: Quota | null) =>
@@ -159,6 +164,7 @@ export function canonicalStructure(bp: StandardBlueprint): string {
     kbatMarks: bp.kbatMarks ?? null,
     levelShare: bp.levelShare ?? null,
     subPartRamp: bp.subPartRamp ?? false,
+    questionCount: bp.questionCount ?? undefined,
     sections: [...bp.sections]
       .sort((a, b) => a.position - b.position)
       .map((s) => ({
@@ -172,6 +178,7 @@ export function canonicalStructure(bp: StandardBlueprint): string {
         profile: s.profile ?? null,
         quota: stripReviewed(s.quota),
         kbatMarks: s.kbatMarks ?? null,
+        marksPerQuestion: s.marksPerQuestion ?? undefined,
       })),
   }
   return JSON.stringify(sortKeys(body))

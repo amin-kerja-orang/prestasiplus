@@ -8,11 +8,7 @@ import { defineNamedQueries } from '@/mock/dataset'
 import { defineRepository } from '@/mock/repository'
 import { users } from '@/modules/m01-authentication/mock'
 
-import {
-  REFERRAL_REWARD_REFEREE,
-  REFERRAL_REWARD_REFERRER,
-  TOGGLE_SETTING_KEYS,
-} from '../data/catalogue'
+import { REFERRAL_SETTINGS, TOGGLE_SETTING_KEYS } from '../data/catalogue'
 import {
   drawTicketsTable,
   drawsTable,
@@ -91,39 +87,52 @@ export const referralsRepo = defineRepository({
         return {
           referrals: rows.length,
           rewarded,
-          syilingEarned: rewarded * REFERRAL_REWARD_REFERRER,
+          syilingEarned: rewarded * REFERRAL_SETTINGS.referrerSyiling,
         }
       },
       /**
-       * M01 register (XR-M14-02, BR-M14-19, provisional): a known code of another existing user,
-       * and a referee not referred before → new user +25, referrer +50, a rewarded Referral row.
-       * Otherwise nothing.
+       * M01 register (XR-M14-02, 48 GAME-24): a known code of another existing pupil, given to a new
+       * pupil not referred before → a Referral row; the settings amounts are credited (0 writes no
+       * ledger row). Beyond `maxRewarded` rewarded friends the row is stored with `rewarded = false`
+       * and pays nothing. Otherwise nothing.
        */
       onRegistered(newUserId: number, code: string | null | undefined): Referral | null {
         const normalised = (code ?? '').trim().toUpperCase()
         if (normalised === '') return null
         const owner = referralCodesTable.query({ where: { code: normalised } }).rows[0]
-        if (!owner || owner.userId === newUserId || !users.get(owner.userId)) return null
+        if (!owner || owner.userId === newUserId) return null
+        if (users.get(owner.userId)?.role !== 'student' || users.get(newUserId)?.role !== 'student') {
+          return null
+        }
         if (referralsTable.count({ refereeId: newUserId }) > 0) return null
         const at = nowMs()
         return tx(() => {
-          creditSyilingOp(
-            newUserId,
-            REFERRAL_REWARD_REFEREE,
-            { type: 'bonus', source: 'referral', description: `Bonus rujukan: kod ${normalised}` },
-            at,
-          )
-          creditSyilingOp(
-            owner.userId,
-            REFERRAL_REWARD_REFERRER,
-            { type: 'bonus', source: 'referral', description: 'Rujukan kawan berjaya' },
-            at,
-          )
+          const rewarded =
+            referralsTable.count({ referrerId: owner.userId, rewarded: true }) <
+            REFERRAL_SETTINGS.maxRewarded
+          if (rewarded) {
+            if (REFERRAL_SETTINGS.refereeSyiling > 0) {
+              creditSyilingOp(
+                newUserId,
+                REFERRAL_SETTINGS.refereeSyiling,
+                { type: 'bonus', source: 'referral', description: `Bonus rujukan: kod ${normalised}` },
+                at,
+              )
+            }
+            if (REFERRAL_SETTINGS.referrerSyiling > 0) {
+              creditSyilingOp(
+                owner.userId,
+                REFERRAL_SETTINGS.referrerSyiling,
+                { type: 'bonus', source: 'referral', description: 'Rujukan kawan berjaya' },
+                at,
+              )
+            }
+          }
           return referralsTable.insert({
             referrerId: owner.userId,
             refereeId: newUserId,
             codeUsed: normalised,
-            rewarded: true,
+            rewarded,
             createdAt: isoAt(at),
           })
         })
