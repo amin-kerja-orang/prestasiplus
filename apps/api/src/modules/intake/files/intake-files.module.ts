@@ -12,6 +12,8 @@ import { IntakeFilesController, IntakeUploadGuard } from './intake-files.control
 import { IntakeFilesConfig } from './intake-files.config'
 import { GuruSubmissionsService } from './guru-submissions.service'
 import { IntakeFilesService } from './intake-files.service'
+import { SourcePapersController } from './source-papers.controller'
+import { SourcePapersService } from './source-papers.service'
 import { IntakeExtractionInput } from './intake-extraction-input'
 import { IntakeFiguresService } from './intake-figures.service'
 import { IntakeProcessingService } from './intake-processing.service'
@@ -26,11 +28,12 @@ import { IntakeUploadService } from './intake-upload.service'
  */
 @Module({
   imports: [AiExtractionModule, AuditModule, FilesModule, JobsModule, OcrModule, ThrottleModule],
-  controllers: [IntakeFilesController],
+  controllers: [IntakeFilesController, SourcePapersController],
   providers: [
     FilesConfig, // pure settings reader (INTAKE_MAX_FILE_MB); FilesModule does not export its instance
     IntakeFilesConfig,
     IntakeFilesService,
+    SourcePapersService, // S2-T09
     GuruSubmissionsService,
     IntakeUploadService,
     IntakeUploadGuard,
