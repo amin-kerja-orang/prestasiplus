@@ -21020,6 +21020,21 @@
           }
         ]
       },
+      "BattleQueueCancelled": {
+        "type": "object",
+        "properties": {
+          "cancelled": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "cancelled"
+        ],
+        "additionalProperties": false
+      },
       "BattleAcceptChallengerResponse": {
         "type": "object",
         "properties": {
@@ -21426,6 +21441,9 @@
               "$ref": "#/components/schemas/BattleLobbyPkskDomain"
             }
           },
+          "pkskAccess": {
+            "$ref": "#/components/schemas/PkskAccess"
+          },
           "spmSubjects": {
             "type": "array",
             "items": {
@@ -21438,9 +21456,25 @@
           "gradeLabel",
           "spmUnlocked",
           "subjects",
-          "pkskDomains"
+          "pkskDomains",
+          "pkskAccess"
         ],
         "additionalProperties": false
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
       },
       "BattleArenaOption": {
         "type": "object",
@@ -67116,21 +67150,6 @@
           "updatedAt"
         ]
       },
-      "PkskAccess": {
-        "type": "object",
-        "properties": {
-          "T1": {
-            "type": "boolean"
-          },
-          "T4": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "T1",
-          "T4"
-        ]
-      },
       "PkskDashboardDomain": {
         "type": "object",
         "properties": {
@@ -105832,6 +105851,110 @@
         }
       }
     },
+    "/battle/queue/{queueId}/cancel": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Cancel a queue entry (API-GAME-14)",
+        "description": "The \"Batal\" of the queue overlay. Owner only, and the entry is never matched afterwards. Cancelling again answers the same. Another pupil's entry, an unknown id and an entry that already has its battle answer 404.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleQueueCancelled"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Giliran tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/battle/accept-challenger/{queueId}": {
       "post": {
         "tags": [
@@ -106421,11 +106544,18 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "`{error:\"Anda belum mempunyai akses PKSK PRO\"}` (a PKSK battle and the receiver has no grant for its level), or CSRF_INVALID (ErrorBody).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleRawError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 }
               }
             }
@@ -106675,7 +106805,7 @@
         "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
         "responses": {
           "200": {
-            "description": "Lobby data.",
+            "description": "Lobby data. `pkskAccess` is the PKSK grant of the caller per level.",
             "content": {
               "application/json": {
                 "schema": {
