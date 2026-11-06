@@ -146,7 +146,7 @@ describe('teacher image: an intake item, not a change of the question', () => {
     )
     expect(rows).toHaveLength(1)
     const row = rows[0]!
-    expect(row).toMatchObject({ source: 'guru', status: 'ready_for_review', kind: 'diagram', review_state: 'needs_review', source_type: 'manual', question_id: groupQuestions[0], purpose: 'question_image', file_owner: row.owner })
+    expect(row).toMatchObject({ source: 'guru', status: 'ready_for_review', kind: 'diagram', review_state: 'needs_review', source_type: 'manual', question_id: null, purpose: 'question_image', file_owner: row.owner })
     expect(row.ref).toMatch(/^group:\d+$/)
     expect(row.target).toMatchObject({ questionId: groupQuestions[0], groupId: row.ref.slice('group:'.length), stimulusId: diagramStimulus })
     expect(await q('select * from questions where id = $1::bigint', [groupQuestions[0]])).toEqual(before)

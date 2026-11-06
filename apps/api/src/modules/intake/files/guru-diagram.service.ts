@@ -35,7 +35,7 @@ export interface DiagramSubmission {
 /**
  * S6-T18 part 2 (API-Q-21): a teacher's image for a question that needs a diagram. The question is NOT changed: the image is
  * stored as the caller's own `question_image`, and ONE `source = 'guru'` batch with ONE diagram stimulus (`ref = group:<groupId>`) and ONE item
- * (`payload.target`, `question_id` preset) waits for the admin (`IntakeReviewService.accept` sets the asset on the group stimulus).
+ * (`payload.target`; `question_id` stays null until accepted, by ck_intake_items_accepted_question) waits for the admin (`IntakeReviewService.accept` sets the asset on the group stimulus).
  * One open image per stimulus group (409). No existing `uploadImage` call, no new table.
  */
 @Injectable()
@@ -110,7 +110,6 @@ export class GuruDiagramService {
             numberLabel: `#${input.questionId}`.slice(0, 32),
             itemType: 'short',
             stimulusId: batchStimulus.id,
-            questionId: question.id,
             payload: diagramPayloadOf(target, input.subjectName) as Prisma.InputJsonValue,
             pageNo: 1,
             reviewState: 'needs_review',
@@ -142,13 +141,13 @@ export class GuruDiagramService {
     const questions = await this.prisma.client.question.findMany({ where: { id: { in: keys.map(idFromString) } }, select: { id: true, groupId: true } })
     const asked = questions.map((q) => ({ id: idToString(q.id), groupId: q.groupId === null ? null : idToString(q.groupId) }))
     const groupIds = asked.flatMap((q) => (q.groupId === null ? [] : [q.groupId]))
-    // The question by its indexed `question_id`, the group by the batch stimulus ref `group:<id>` (one per batch, unique with the batch).
+    // The question by `payload.target.questionId` (`question_id` stays null: ck_intake_items_accepted_question allows it only on an accepted item), the group by the batch stimulus ref `group:<id>` (one per batch, unique with the batch).
     const refs = groupIds.map(diagramStimulusRef)
     const open = await this.prisma.client.$queryRaw<{ question_id: string; group_id: string }[]>`
       SELECT i.payload -> 'target' ->> 'questionId' AS question_id, i.payload -> 'target' ->> 'groupId' AS group_id
       FROM intake_items i JOIN intake_stimuli s ON s.id = i.stimulus_id
       WHERE i.review_state = ANY(${[...DIAGRAM_OPEN_STATES]}::text[]) AND i.payload -> 'target' IS NOT NULL
-        AND (i.question_id = ANY(${keys.map(idFromString)}::bigint[]) OR s.ref = ANY(${refs}::text[]))`
+        AND (i.payload -> 'target' ->> 'questionId' = ANY(${keys}::text[]) OR s.ref = ANY(${refs}::text[]))`
     return pendingQuestionIds(asked, open.map((o) => ({ questionId: o.question_id, groupId: o.group_id })))
   }
 
