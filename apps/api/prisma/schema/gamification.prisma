@@ -33,6 +33,7 @@ model Challenge {
   legacyId      String?  @map("legacy_id")
 
   completions ChallengeCompletion[]
+  claims      ChallengeClaim[]
 
   @@unique([legacySource, legacyId], map: "uq_challenges_legacy")
   @@index([isActive, sortOrder, id], map: "ix_challenges_is_active_sort_order")
@@ -61,6 +62,27 @@ model ChallengeCompletion {
   @@index([userId, completionDate], map: "ix_challenge_completions_user_id_completion_date")
   @@index([challengeId], map: "ix_challenge_completions_challenge_id")
   @@map("challenge_completions")
+}
+
+/// DM-63 (S7-T04, ruling 20 on #500): one claim of a daily challenge reward per user, challenge and Malaysia day.
+/// The reward columns hold the amounts actually credited (0 syiling when coins are disabled). Append-only; no `is_test` (Mod Pelajar is refused).
+model ChallengeClaim {
+  id            BigInt   @id @default(autoincrement())
+  userId        BigInt   @map("user_id")
+  challengeId   BigInt   @map("challenge_id")
+  /// Malaysia calendar day (G-04).
+  mytDate       DateTime @map("myt_date") @db.Date
+  rewardSyiling Int      @map("reward_syiling")
+  rewardXp      Int      @map("reward_xp")
+  /// DM-63/DM-79: partial unique (user_id, client_uuid) where not null, written in migration 0226 only (Prisma cannot express partial indexes).
+  clientUuid    String?  @map("client_uuid") @db.Uuid
+  claimedAt     DateTime @default(now()) @map("claimed_at") @db.Timestamptz(6)
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade, map: "fk_challenge_claims_challenge_id")
+
+  @@unique([userId, challengeId, mytDate], map: "uq_challenge_claims_user_challenge_date")
+  @@index([challengeId], map: "ix_challenge_claims_challenge_id")
+  @@map("challenge_claims")
 }
 
 /// Achievement catalogue. The structured criterion drives auto-unlock; a migrated legacy row keeps only
