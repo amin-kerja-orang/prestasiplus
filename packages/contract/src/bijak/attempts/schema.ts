@@ -1,7 +1,7 @@
 import { z } from '../../zod'
 import { IdSchema } from '../../common/ids'
 import { TimestampInputSchema, TimestampSchema } from '../../common/time'
-import { BijakPaperKindSchema } from '../papers/schema'
+import { BijakAttemptKindSchema } from '../papers/schema'
 
 /**
  * Bijak SPM (M28) attempts: the write side of BE-16 (start, resume, autosave, server timer,
@@ -239,7 +239,7 @@ export const BijakAttemptMetaSchema = z
   .strictObject({
     id: IdSchema,
     paperId: IdSchema,
-    paperKind: BijakPaperKindSchema,
+    paperKind: BijakAttemptKindSchema,
     title: z.string().min(1),
     subject: z.string().min(1).meta({ example: 'MAT' }),
     kertas: Kertas,
@@ -251,7 +251,7 @@ export const BijakAttemptMetaSchema = z
       description:
         'startedAt + durationMin, computed from the server clock at start (AC-05.1); null in latihan. The client clock never moves it.',
     }),
-    durationMin: z.number().int().min(1),
+    durationMin: z.number().int().min(0).meta({ description: '0 = untimed (a Kertas Subjektif sitting of a paper with no Tempoh; PO decision 2026-11-05, item 17).' }),
     answers: z
       .record(z.string(), BijakAttemptStoredAnswerSchema)
       .meta({ description: 'The caller own saved answers per part id.' }),
@@ -585,7 +585,10 @@ export const BijakAttemptPartResultSchema = z
     }),
     suggestion: BijakAttemptSuggestionSchema.optional(),
     answer: BijakAttemptPartAnswerSchema,
-    scheme: BijakAttemptSchemeSchema,
+    scheme: BijakAttemptSchemeSchema.optional().meta({
+      description:
+        'The revealed scheme. Absent on a Kertas Subjektif attempt (`paperKind = subjektif`) unless the result is read with `?scheme=1` ("Tunjuk Skema Pemarkahan", AC-MUR-13-21); `points` and `suggestion` are then empty / absent too.',
+    }),
   })
   .meta({ id: 'BijakAttemptPartResult' })
 export type BijakAttemptPartResult = z.infer<typeof BijakAttemptPartResultSchema>
@@ -764,7 +767,7 @@ export const BijakAttemptHistoryRowSchema = z
     subject: z.string().min(1),
     subjectName: z.string().min(1),
     kertas: Kertas,
-    kind: BijakPaperKindSchema,
+    kind: BijakAttemptKindSchema,
     mode: BijakAttemptModeSchema,
     status: BijakAttemptStatusSchema,
     startedAt: TimestampSchema,

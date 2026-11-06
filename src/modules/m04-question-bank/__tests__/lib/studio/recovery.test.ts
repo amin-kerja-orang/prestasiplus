@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { blankDraft } from '../../../lib/studio/draft'
+import { blankDraft, toRequestBody } from '../../../lib/studio/draft'
 import { clearSnapshot, loadSnapshot, parseSnapshot, recoveryKey, sameDraft, saveSnapshot, type KeyValueStore } from '../../../lib/studio/recovery'
 
 function memory(): KeyValueStore & { data: Map<string, string> } {
@@ -39,6 +39,15 @@ describe('Studio draft recovery (V2 flow 1 step 2)', () => {
     expect(back!.leaves[0]!.uid).not.toBe(d.leaves[0]!.uid)
     back!.stem = 'lain'
     expect(sameDraft(back!, d)).toBe(false)
+  })
+
+  it.each(['3', '4'] as const)('keeps kertas %s through save body and recovery (S1-T03)', (k) => {
+    const store = memory()
+    const d = filled()
+    d.kertas = k
+    expect(toRequestBody(d)).toMatchObject({ kertas: k })
+    saveSnapshot(store, recoveryKey('1'), d)
+    expect(loadSnapshot(store, recoveryKey('1'))?.kertas).toBe(k)
   })
 
   it('keeps the inherited question TP through recovery (REQ-B-045)', () => {

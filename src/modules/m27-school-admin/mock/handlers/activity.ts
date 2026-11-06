@@ -17,7 +17,7 @@ import type {
   ActivityTeacherRow,
   SchoolActivityReport,
 } from '../../api/school-admin'
-import { requireSchoolAdminWithSchool, schoolOf } from '../read-models/school-scope'
+import { reportSchoolOf, requireSchoolAdminOrAdminReport } from '../read-models/school-scope'
 
 const pupilRow = (r: StatsPupilRow): ActivityPupilRow => ({
   userId: r.userId,
@@ -76,10 +76,10 @@ export function buildSchoolActivityReport(
 }
 
 export const activityRoutes: RouteDef[] = [
-  route('GET', '/api/admin-sekolah/laporan-aktiviti', [requireSchoolAdminWithSchool], (req, ctx) =>
+  route('GET', '/api/admin-sekolah/laporan-aktiviti', [requireSchoolAdminOrAdminReport], (req, ctx) =>
     ok(
       buildSchoolActivityReport(
-        schoolOf(req).schoolId,
+        reportSchoolOf(req).schoolId,
         queryString(req.query, 'range'),
         ctx.clock.now(),
       ),

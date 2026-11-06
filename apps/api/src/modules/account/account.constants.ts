@@ -18,6 +18,7 @@ export const ACCOUNT_AUDIT = {
   PASSWORD_CHANGE_LOCKED: 'account.password.change_locked',
   PROFILE_UPDATED: 'account.profile.updated',
   PICTURE_UPDATED: 'account.picture.updated',
+  TEACHER_PROFILE_UPDATED: 'account.teacher_profile.updated',
 } as const
 
 /** REG-CLOSE: the 403 code and BM message of a closed self-registration (`REGISTRATION_OPEN=false`). */
@@ -28,13 +29,6 @@ export const ACCOUNT_REGISTRATION_CLOSED_MESSAGE = 'Pendaftaran akaun baharu dit
  * equals the current one. Local to the API: the contract is LEAD-owned (AGENT-SYNC rule 3), SRS SEC-M01-21(c).
  */
 export const PASSWORD_MUST_DIFFER_MESSAGE = 'The password field and current password must be different.'
-
-/**
- * `PUT /me` school change (SW2-12): the student's username already exists in the chosen school (usernames are unique
- * per school). Replaces the generic English "The username has already been taken." on `schoolId`.
- */
-export const ACCOUNT_SCHOOL_USERNAME_TAKEN_MESSAGE =
-  'Nama pengguna anda sudah digunakan di sekolah ini. Sila hubungi pentadbir sekolah.'
 
 /** A reset token is 32 random bytes (256 bits, contract minimum 128), base64url. */
 export const RESET_TOKEN_BYTES = 32
@@ -79,9 +73,6 @@ export const PASSWORD_CHANGE_WINDOW_MS = ACCOUNT_THROTTLE.windowSeconds * 1000
 /** On top of the per-minute limit: 20 failed password changes per user per 15 minutes (security review L2). */
 export const PASSWORD_CHANGE_CEILING = 20
 export const PASSWORD_CHANGE_CEILING_WINDOW_MS = 15 * 60_000
-
-/** The only roles that may set their own school on `PUT /me`; every other role (and any new one) ignores it. */
-export const SELF_SCHOOL_ROLES: readonly string[] = ['student', 'parent']
 
 /** Interactive transaction room of the writes that hash nothing but touch several tables. */
 export const ACCOUNT_TX = { maxWait: 10_000, timeout: 15_000 } as const

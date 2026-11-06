@@ -58,7 +58,7 @@ export interface ReviewSeed {
   /** Group id when the unit is a group, else the question id. */
   key: string
   subject: SubjectCode
-  kertas: 1 | 2
+  kertas: 1 | 2 | 3 | 4
   source: string
   uploader: string
   confidence: Confidence

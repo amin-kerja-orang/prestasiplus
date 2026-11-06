@@ -119,7 +119,8 @@ const FORMAT_GROUPS: { title: string; rows: { columns: string[]; note?: string }
     rows: [
       { columns: ['option_d', 'option_e', 'option_f', 'option_g', 'option_h'] },
       { columns: ['difficulty'], note: 'Kesukaran (1-5)' },
-      { columns: ['explanation', 'kbat', 'topik_kod', 'kertas', 'number_label', 'bahasa', 'jenis_tulisan'] },
+      { columns: ['kertas'], note: 'Kertas (1, 2, 3 atau 4)' },
+      { columns: ['explanation', 'kbat', 'topik_kod', 'number_label', 'bahasa', 'jenis_tulisan'] },
     ],
   },
 ]
