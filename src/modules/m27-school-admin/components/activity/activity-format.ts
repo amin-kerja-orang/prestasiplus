@@ -3,7 +3,7 @@
  * separator, percentages one decimal (accuracy) or an integer (overview cards), times are MYT.
  */
 
-import { formatCount, formatNumber } from '@/lib/number'
+import { formatCount, formatPercent } from '@/lib/number'
 import { diffForHumans } from '@/lib/time'
 
 export const ACTIVITY_PATH = '/admin-sekolah/laporan-aktiviti'
@@ -31,8 +31,9 @@ export const count = (n: number): string => formatCount(n)
 export const wholePercent = (part: number, total: number): string =>
   `${formatCount(total > 0 ? Math.round((part / total) * 100) : 0)}%`
 
-/** One decimal ("68.2%"). */
-export const accuracy = (n: number): string => `${formatNumber(n, { decimals: 1 })}%`
+/** Whole number, half up ("68%" for 67.5, 40 FR-X4-5) or the dash (never 0%). */
+export const accuracy = (n: number | null): string =>
+  n === null ? NO_DATA : formatPercent(n, { decimals: 0 })
 
 /** Seconds as "{h}j {m}m" (M17 FN-M17-8.5.1). */
 export function duration(seconds: number): string {

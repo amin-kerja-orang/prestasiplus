@@ -17,6 +17,7 @@ import { showPrimaryLevels } from '../../mock/repository/visible-levels'
 import {
   DIAGRAM_DISMISSED_TEXT,
   DIAGRAM_FILE_REQUIRED,
+  DIAGRAM_FILE_SIZE,
   DIAGRAM_FILE_TYPE,
   DIAGRAM_UPLOADED_TEXT,
 } from '../../mock/handlers/diagram-audit'
@@ -77,9 +78,6 @@ describe('admin guards (SEC-M04-01, SEC-M04-07, SEC-M04-09)', () => {
   const endpoints: ['GET' | 'POST' | 'PATCH', string][] = [
     ['GET', '/api/structured-questions'],
     ['GET', '/api/structured-questions/3698'],
-    ['GET', '/api/diagram-audit'],
-    ['POST', '/api/diagram-audit/mcq/563393/image'],
-    ['POST', '/api/diagram-audit/mcq/563393/dismiss'],
     ['GET', '/api/master-notes'],
     ['POST', '/api/master-notes/1/approve'],
   ]
@@ -257,6 +255,61 @@ describe('the question papers store of M10 (R1-ADM-Q-12 reads intake items, not 
   })
 })
 
+describe('S11 diagram audit for teacher and school_admin (S6-T18)', () => {
+  const url = '/api/diagram-audit'
+  const png = () => form({}, { image: pngFile('rajah.png') })
+
+  it('copy: type and size messages', () => {
+    expect(DIAGRAM_FILE_TYPE).toBe('Fail mesti berupa imej (jpg, png atau webp).')
+    expect(DIAGRAM_FILE_SIZE).toBe('Saiz imej tidak boleh melebihi 2 MB.')
+  })
+
+  it.each([GURU, ADMIN_SEKOLAH])(
+    'user %i: GET list is 200; badge count equals the MCQ stat',
+    async (as) => {
+      const r = await call<DiagramAudit>('GET', url, as)
+      expect(r.status).toBe(200)
+      expect(r.body.meta.unfilteredMcq).toBe(r.body.meta.stats.mcq)
+      expect(r.body.meta.unfilteredMcq).toBe(6144)
+    },
+  )
+
+  it.each([GURU, ADMIN_SEKOLAH])('user %i: dismiss is 403', async (as) => {
+    expect((await call('POST', `${url}/mcq/563393/dismiss`, as)).status).toBe(403)
+    expect(questions.get(563_393)?.needsDiagram).toBe(true)
+  })
+
+  it('student is still refused on list and upload', async () => {
+    expect((await call('GET', url, PELAJAR)).status).toBe(403)
+    expect((await call('POST', `${url}/mcq/563393/image`, PELAJAR, png())).status).toBe(403)
+  })
+
+  it.each([GURU, ADMIN_SEKOLAH])(
+    'user %i: image upload is 403 and the flag is kept',
+    async (as) => {
+      expect((await call('POST', `${url}/mcq/563393/image`, as, png())).status).toBe(403)
+      expect(questions.get(563_393)?.needsDiagram).toBe(true)
+    },
+  )
+
+  it('the admin upload is validated: 3 MB and gif are refused', async () => {
+    const big = await call(
+      'POST',
+      `${url}/mcq/563393/image`,
+      ADMIN,
+      form({}, { image: pngFile('big.png', 'image/png', 3 * 1024 * 1024) }),
+    )
+    expect(fieldsOf(big)).toEqual({ image: DIAGRAM_FILE_SIZE })
+    const gif = await call(
+      'POST',
+      `${url}/mcq/563393/image`,
+      ADMIN,
+      form({}, { image: pngFile('a.gif', 'image/gif') }),
+    )
+    expect(fieldsOf(gif)).toEqual({ image: DIAGRAM_FILE_TYPE })
+  })
+})
+
 describe('#23 S11 diagram audit (BR-M04-19, E2E-M04-50)', () => {
   const audit = (query = '') => call<DiagramAudit>('GET', `/api/diagram-audit${query}`, ADMIN)
 
@@ -420,7 +473,7 @@ describe('#23 S11 diagram audit (BR-M04-19, E2E-M04-50)', () => {
       ADMIN,
       form({}, { image: pngFile('a.pdf', 'application/pdf') }),
     )
-    expect(fieldsOf(pdf)).toEqual({ image: DIAGRAM_FILE_REQUIRED })
+    expect(fieldsOf(pdf)).toEqual({ image: DIAGRAM_FILE_TYPE })
     const svg = await call(
       'POST',
       url,
@@ -443,7 +496,7 @@ describe('#23 S11 diagram audit (BR-M04-19, E2E-M04-50)', () => {
       ADMIN,
       form({}, { image: pngFile('big.png', 'image/png', 2 * 1024 * 1024 + 1) }),
     )
-    expect(fieldsOf(big)).toEqual({ image: DIAGRAM_FILE_TYPE })
+    expect(fieldsOf(big)).toEqual({ image: DIAGRAM_FILE_SIZE })
     expect(questions.get(563_393)?.needsDiagram).toBe(true)
     // 2 MB exactly is fine.
     dirty = true

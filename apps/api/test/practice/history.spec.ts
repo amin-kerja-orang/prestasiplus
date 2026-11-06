@@ -167,18 +167,18 @@ describe('GET /practice/sessions: the caller\'s own completed sessions', () => {
   it('a session played through the API is listed with its figures', async () => {
     const bank = fillBank(t.bank, w)
     expect(bank.random.length).toBeGreaterThan(0)
-    const { started } = await play(pelajar, t.bank, { mode: 'random', subjectCode: 'MATH', count: 10 }, 7, 95)
-    const res = await pelajar.get('/api/practice/sessions?modes=random')
+    const { started } = await play(pelajar, t.bank, { mode: 'chapter', chapterId: w.chapter.c1, count: 5 }, 4, 95)
+    const res = await pelajar.get('/api/practice/sessions?modes=chapter')
     expect(res.body.data).toEqual([
       {
         id: started.sessionId,
-        mode: 'random',
+        mode: 'chapter',
         subjectId: w.subject.math,
         subjectCode: 'MATH',
-        questionCount: 10,
-        correctCount: 7,
-        percent: 70,
-        coinsEarned: 7,
+        questionCount: 5,
+        correctCount: 4,
+        percent: 80,
+        coinsEarned: 4,
         timeSpent: 95,
         completedAt: '2026-10-19T09:00:00.000+08:00',
       },
@@ -192,7 +192,7 @@ describe('AC8 / AC-18.3 repository reads leave out Mod Pelajar rows by default',
     await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 5, correct: 5, coins: 5, completedAt: '2026-10-14T10:00:00+08:00' })
     await insert({ user: ids.pelajar, mode: 'random', subject: w.subject.math, count: 5, correct: 4, coins: 4, completedAt: '2026-10-15T10:00:00+08:00', isTest: true })
     await t.db.query(
-      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, is_test) values ($1, 11, $2, true, now(), false), ($1, 12, $2, true, now(), true)`,
+      `insert into practice_answers (user_id, question_id, subject_id, is_correct, answered_at, is_test, mode) values ($1, 11, $2, true, now(), false, 'latih_tubi'), ($1, 12, $2, true, now(), true, 'latih_tubi')`,
       [ids.pelajar, w.subject.math],
     )
     expect(await repo.history(ids.pelajar, { modes: ['random'] })).toHaveLength(1)
