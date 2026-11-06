@@ -5,7 +5,8 @@ import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { BijakAttemptHistoryReads, type ClosedAttemptRow } from '../../../bijak/attempts'
 import { CurriculumRepository } from '../../../curriculum'
-import { SPM_SESSION_MODES, type SpmHistoryPageQuery, type SpmHistoryRowData, type SpmHistorySource } from '../../../spm'
+import { SPM_SESSION_MODES } from '../../../spm/config'
+import type { SpmHistoryPageQuery, SpmHistoryRowData, SpmHistorySource } from '../../../spm/ports'
 import { KUIZ_ORIGIN } from '../../practice.repository'
 
 /** `exam_attempts.paper_kind` to the OPT-MODE-SESI row mode (ruling 6): a `pilihan` or `jana` paper is a Bijak SPM sitting. */

@@ -3,7 +3,8 @@ import { Inject, Injectable } from '@nestjs/common'
 import { idFromString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
 import { BijakAttemptHistoryReads } from '../../../bijak/attempts'
-import { SPM_ANSWER_MODES, SPM_SESSION_MODES, type SpmAnswerStats, type SpmAnswerStatsSource } from '../../../spm'
+import { SPM_ANSWER_MODES, SPM_SESSION_MODES } from '../../../spm/config'
+import type { SpmAnswerStats, SpmAnswerStatsSource } from '../../../spm/ports'
 
 /**
  * `SpmAnswerStatsSource` over the single answer store (S3-T07 part F, rulings Q1 to Q4; S5 owns `practice_answers`).

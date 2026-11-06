@@ -15,6 +15,7 @@ import { SpmMocksController } from './mocks.controller'
 import { SpmPoolService } from './pool.service'
 import { SPM_COIN_SOURCES } from './config'
 import { SpmPorts } from './ports'
+import { SpmPortsModule } from './spm-ports.module'
 import { SpmController } from './spm.controller'
 import { SpmRepository } from './spm.repository'
 import { SpmTrackingService } from './tracking.service'
@@ -28,7 +29,7 @@ import { WalkthroughService } from './walkthrough.service'
  * `SpmPorts` (BE-13 plugs the structured-attempt adapter in from its own `onModuleInit`).
  */
 @Module({
-  imports: [ThrottleModule, CurriculumModule, QuestionsModule, PracticeModule, WalletModule],
+  imports: [ThrottleModule, CurriculumModule, QuestionsModule, PracticeModule, WalletModule, SpmPortsModule],
   controllers: [SpmController, SpmMocksController, WalkthroughController, DutaController],
   providers: [
     SpmRepository,
@@ -41,9 +42,8 @@ import { WalkthroughService } from './walkthrough.service'
     WalkthroughService,
     WalkthroughUploadInterceptor,
     DutaService,
-    SpmPorts,
   ],
-  exports: [SpmTrackingService, SpmPorts],
+  exports: [SpmTrackingService, SpmPortsModule],
 })
 export class SpmModule implements OnModuleInit {
   constructor(

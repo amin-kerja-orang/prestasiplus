@@ -1,4 +1,5 @@
 export { SpmModule } from './spm.module'
+export { SpmPortsModule } from './spm-ports.module'
 export { SpmPorts, NoStructuredAttempts, NoPapers, NoAnswerStats, NoCoins, NoHistory } from './ports'
 export type {
   SpmAnswerStats,
