@@ -88,6 +88,21 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S7-T02 | AC-AS-45-2 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31); sekolah-bersaing.test.ts::AC-AS-45-2: an empty board shows both exact lines and no table; rules.test.ts::AC-AS-45-2: no session anywhere is an empty board |
 | S7-T02 | AC-AS-45-3 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-3: 40 schools give exactly 30 rows; rules.test.ts::AC-AS-45-3: cuts 40 schools to the top 30 |
 | S7-T02 | AC-AS-45-6 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name; sekolah-bersaing.test.ts::AC-AS-45-6: the colour follows the rounded value; rules.test.ts::AC-AS-45-6: breaks ties by pupils, then sessions, then name |
+| S6-T02 | AC-AS-11-1 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts; KirkpatrickOverviewPage.test.ts |
+| S6-T02 | AC-AS-11-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | pupil-export.spec.ts; KirkpatrickPelajarPage.test.ts |
+| S6-T02 | AC-AS-11-4 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts |
+| S6-T02 | AC-AS-11-5 | CI | Pass | 2026-11-05 | team-dd/S-1 | interventions.spec.ts; handlers.test.ts |
+| S6-T02 | AC-AS-11-8 | CI | Pass | 2026-11-05 | team-dd/S-1 | interventions.spec.ts; handlers.test.ts |
+| S6-T02 | AC-GUR-11-1 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts |
+| S6-T02 | AC-GUR-11-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | KirkpatrickOverviewPage.test.ts; data.test.ts |
+| S6-T02 | AC-GUR-11-3 | CI | Pass | 2026-11-05 | team-dd/S-1 | kirkpatrick/review.spec.ts |
+| S6-T02 | AC-GUR-11-9 | CI | Pass | 2026-11-05 | team-dd/S-1 | kirkpatrick/review.spec.ts; KirkpatrickInterventionsPage.test.ts |
+| S6-T04 | AC-AS-49-1 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
+| S6-T04 | AC-AS-49-2 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
+| S6-T04 | AC-AS-49-3 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-access.spec.ts |
+| S6-T04 | AC-AS-49-4 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts; amaran-csv.spec.ts |
+| S6-T04 | AC-AS-49-6 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-access.spec.ts |
+| S6-T04 | AC-AS-49-7 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
 
 ## Sprint 2
 
@@ -105,6 +120,18 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
 | S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
+| S6-T06 | AC-GUR-44-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru.spec.ts; CiptaPage.test.ts; SumbangSoalanPage.test.ts |
+| S6-T06 | AC-GUR-44-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | missions/papers.spec.ts; papers-guru-intake.spec.ts; HantarKertasCard.test.ts |
+| S6-T06 | AC-GUR-44-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | HantarKertasCard.test.ts; missions/papers.spec.ts |
+| S6-T06 | AC-GUR-44-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/imports.spec.ts; guru-csv.spec.ts |
+| S6-T06 | AC-GUR-44-5 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru.spec.ts |
+| S6-T06 | AC-GUR-44-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | DetailEditPages.test.ts; guru-csv.spec.ts |
+| S6-T06 | AC-GUR-44-7 | CI | Pass | 2026-11-06 | team-dd/S-3 | smoke-sumbang-soalan-responsive.spec.ts |
+| S6-T06 | AC-GUR-44-10 | CI | Pass | 2026-11-06 | team-dd/S-3 | QuestionForm.test.ts; dskp-rule.test.ts; guru.spec.ts |
+| S6-T06 | AC-GUR-44-11 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-csv-old-gate.spec.ts |
+| S6-T06 | AC-GUR-44-12 | CI | Pass | 2026-11-06 | team-dd/S-3 | QuestionForm.test.ts; dskp-rule.test.ts |
+| S6-T06 | AC-GUR-44-13 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-csv.spec.ts; SumbangSoalanPage.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts |
+| S6-T06 | AC-GUR-44-14 | CI | Pass | 2026-11-06 | team-dd/S-3 | HantarKertasCard.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts; missions/papers.spec.ts; papers-guru-intake.spec.ts |
 
 ## Sprint 3
 
