@@ -123,7 +123,7 @@ const row = (over: object = {}) => ({
 const batch7 = {
   id: '7',
   status: 'ready_for_review',
-  statusLabel: 'Sedia untuk semakan',
+  statusLabel: 'Selesai',
   paperType: 'trial',
   subject: 'MAT',
   kertas: 2,
