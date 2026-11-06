@@ -10842,6 +10842,18 @@
               "$ref": "#/components/schemas/BijakPaperCoverSection"
             },
             "minItems": 1
+          },
+          "unavailable": {
+            "type": "boolean",
+            "description": "PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees \"Mula\" disabled with the message \"Kertas belum tersedia\" before any click. A sitting already open can still be resumed."
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "QUESTION_WITHDRAWN",
+              "NO_QUESTIONS"
+            ],
+            "description": "Present only when `unavailable` is true."
           }
         },
         "required": [
@@ -10860,7 +10872,8 @@
           "instructions",
           "reference",
           "examinerGrid",
-          "sections"
+          "sections",
+          "unavailable"
         ],
         "additionalProperties": false
       },
@@ -24930,13 +24943,12 @@
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 255
+            "maxLength": 100
           },
           "type": {
             "type": "string",
             "enum": [
               "friendly",
-              "tournament",
               "league"
             ]
           },
@@ -24949,17 +24961,7 @@
               "national"
             ]
           },
-          "subject_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "minLength": 1,
-            "maxLength": 64,
-            "description": "Existing subject; unknown 422 \"Mata pelajaran tidak sah.\" (subject_id).",
-            "example": "1042"
-          },
-          "game_mode": {
+          "mode": {
             "type": "string",
             "enum": [
               "mixed",
@@ -24967,26 +24969,7 @@
               "multiplayer"
             ]
           },
-          "class_levels": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "D1",
-                "D2",
-                "D3",
-                "D4",
-                "D5",
-                "D6",
-                "T1",
-                "T2",
-                "T3",
-                "T4",
-                "T5"
-              ]
-            }
-          },
-          "scoring_method": {
+          "scoring": {
             "type": "string",
             "enum": [
               "total_score",
@@ -24994,55 +24977,69 @@
               "wins"
             ]
           },
-          "start_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "end_date": {
-            "type": "string",
-            "format": "date"
-          },
-          "max_schools": {
-            "type": [
-              "integer",
-              "null"
-            ],
+          "schoolLimit": {
+            "type": "integer",
             "minimum": 2,
             "maximum": 500
+          },
+          "subjectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Existing subject; unknown 422 \"Mata pelajaran tidak sah.\" (subjectId).",
+            "example": "1042"
+          },
+          "levelIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "Tingkatan 1..5 = T1..T5; at least one."
+          },
+          "start": {
+            "type": "string",
+            "format": "date"
+          },
+          "end": {
+            "type": "string",
+            "format": "date"
           }
         },
         "required": [
           "name",
           "type",
           "scope",
-          "game_mode",
-          "scoring_method",
-          "start_date",
-          "end_date"
+          "mode",
+          "scoring",
+          "schoolLimit",
+          "levelIds",
+          "start",
+          "end"
         ]
       },
-      "GamesLeagueIdResult": {
+      "GamesLeagueEnrolRequest": {
         "type": "object",
         "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
+          "schoolIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 500
           }
         },
         "required": [
-          "id"
+          "schoolIds"
         ],
         "additionalProperties": false
-      },
-      "GamesLeagueJoinRequest": {
-        "type": "object",
-        "properties": {
-          "invite_code": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "invite_code"
-        ]
       },
       "GamesLeagueStandingRow": {
         "type": "object",
@@ -25133,19 +25130,6 @@
             "items": {
               "$ref": "#/components/schemas/GamesLeagueClassLevel"
             }
-          },
-          "inviteCode": {
-            "type": "string",
-            "pattern": "^[A-Z0-9]{8}$",
-            "description": "Visible to non-members, as live."
-          },
-          "shareUrl": {
-            "type": "string",
-            "description": "WhatsApp share link (https://wa.me/?text=...)."
-          },
-          "canJoin": {
-            "type": "boolean",
-            "description": "Not ended, the caller school is not in, and not full."
           },
           "schools": {
             "type": "array",
@@ -25252,9 +25236,6 @@
           "scoringLabel",
           "creatorName",
           "classLevels",
-          "inviteCode",
-          "shareUrl",
-          "canJoin",
           "schools",
           "standings"
         ],
@@ -52831,16 +52812,20 @@
           "critical",
           "high",
           "medium",
-          "low"
-        ]
+          "low",
+          "none"
+        ],
+        "description": "'none' = Belum Bermula (no answers); only the class analytics rows carry it."
       },
       "PerformanceTrend": {
         "type": "string",
         "enum": [
           "up",
           "down",
-          "stable"
-        ]
+          "stable",
+          "new"
+        ],
+        "description": "'new' = answers only in the last 7 days; only the class analytics rows carry it."
       },
       "PerformanceUserRef": {
         "type": "object",
@@ -54269,7 +54254,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -54278,7 +54266,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -54392,13 +54383,20 @@
                               "lemah",
                               "belum"
                             ]
+                          },
+                          "strand": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
                           "spId",
                           "code",
                           "title",
-                          "status"
+                          "status",
+                          "strand"
                         ]
                       }
                     }
@@ -54539,7 +54537,10 @@
                 "type": "integer"
               },
               "accuracy": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "atRisk": {
                 "type": "integer"
@@ -54567,7 +54568,10 @@
                   "type": "string"
                 },
                 "accuracy": {
-                  "type": "number"
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "answered": {
                   "type": "integer"
@@ -54576,7 +54580,10 @@
                   "$ref": "#/components/schemas/PerformanceTrend"
                 },
                 "projection": {
-                  "type": "object",
+                  "type": [
+                    "object",
+                    "null"
+                  ],
                   "properties": {
                     "low": {
                       "$ref": "#/components/schemas/PerformanceGrade"
@@ -54592,6 +54599,12 @@
                 },
                 "riskLevel": {
                   "$ref": "#/components/schemas/PerformanceRiskLevel"
+                },
+                "classes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": [
@@ -54601,7 +54614,8 @@
                 "answered",
                 "trend",
                 "projection",
-                "riskLevel"
+                "riskLevel",
+                "classes"
               ]
             }
           }
@@ -55569,6 +55583,110 @@
           "createdAt"
         ]
       },
+      "PerformanceTimelineEntry": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "session"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "subjectName": {
+                "type": "string"
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "subjectName",
+              "correct",
+              "answered",
+              "accuracy"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "badge"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "name": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "name",
+              "icon"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "post"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "at": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "post": {
+                "$ref": "#/components/schemas/PerformanceTimelinePost"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "at",
+              "post"
+            ]
+          }
+        ]
+      },
       "PerformanceTimeline": {
         "type": "object",
         "properties": {
@@ -55580,11 +55698,32 @@
             "items": {
               "$ref": "#/components/schemas/PerformanceTimelinePost"
             }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelineEntry"
+            }
           }
         },
         "required": [
           "profileUrl",
-          "posts"
+          "posts",
+          "entries"
+        ]
+      },
+      "PerformanceTimelineDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
         ]
       },
       "PerformanceTimelineCreateRequest": {
@@ -65296,7 +65435,6 @@
       "PracticeStartMode": {
         "type": "string",
         "enum": [
-          "random",
           "chapter",
           "revision",
           "past_year",
@@ -108060,7 +108198,7 @@
           "games"
         ],
         "summary": "Create a league (M16-47)",
-        "description": "Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.",
+        "description": "Admin Pusat only (API-ADM-25). The league is upcoming with an 8-character invite code (A-Z0-9) kept internally; no school joins on create (enrol with `/leagues/{id}/schools`). Body `{ name, type (friendly|league), scope, mode, scoring, schoolLimit 2..500, subjectId?, levelIds 1..5, start, end }`. Success is 201 with the league detail.",
         "parameters": [
           {
             "schema": {
@@ -108086,14 +108224,14 @@
         },
         "responses": {
           "201": {
-            "description": "League created.",
+            "description": "League created: the league detail (as GET /leagues/{id}).",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                      "$ref": "#/components/schemas/GamesLeagueDetail"
                     }
                   },
                   "required": [
@@ -108114,7 +108252,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108124,7 +108262,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR, top-level message = the first field message: \"Sila lengkapkan semua medan wajib.\" (name, type, scope, game_mode, scoring_method, start_date, end_date), \"Tarikh tamat mesti selepas tarikh mula.\" (end_date), \"Had sekolah mesti antara 2 dan 500.\" (max_schools), \"Mata pelajaran tidak sah.\" (subject_id), \"Tingkatan tidak sah.\" (class_levels).",
+            "description": "VALIDATION_ERROR, `fields` keyed by the body names, top-level message = the first failing field in form order (name, type, scope, mode, scoring, schoolLimit, subjectId, levelIds, start, end): \"Sila lengkapkan semua medan wajib.\" (missing), \"Format tidak sah.\" (type, scope, mode, scoring), \"Had sekolah mesti antara 2 dan 500.\" (schoolLimit), \"Mata pelajaran tidak sah.\" (subjectId), \"Tingkatan tidak sah.\" (levelIds), \"Tarikh tamat mesti selepas tarikh mula.\" (end).",
             "content": {
               "application/json": {
                 "schema": {
@@ -108160,9 +108298,83 @@
         "tags": [
           "games"
         ],
-        "summary": "Join a league by invite code (M16-48)",
-        "description": "The caller school joins. Static path: wins over `/leagues/{id}`.",
+        "summary": "Join a league by invite code (M16-48): closed in R1",
+        "description": "Unused in R1 (API-GAME-05): answers 403 FORBIDDEN for every role (AC-GM-15.2). Admin Pusat enrols schools with `/leagues/{id}/schools`. Static path: wins over `/leagues/{id}`.",
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (every role), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/{id}/schools": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Enrol schools in a league (API-ADM-25)",
+        "description": "Admin Pusat only (FR-GM-15.1). Enrols the given schools, all or nothing, once per school, before the league ends and while schools < max_schools. Returns the league detail.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "League id. Digits only; a non-numeric segment does not match the route."
+            },
+            "required": true,
+            "description": "League id. Digits only; a non-numeric segment does not match the route.",
+            "name": "id",
+            "in": "path"
+          },
           {
             "schema": {
               "type": "string",
@@ -108180,21 +108392,21 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GamesLeagueJoinRequest"
+                "$ref": "#/components/schemas/GamesLeagueEnrolRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Joined.",
+            "description": "Enrolled; the league detail.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "data": {
-                      "$ref": "#/components/schemas/GamesLeagueIdResult"
+                      "$ref": "#/components/schemas/GamesLeagueDetail"
                     }
                   },
                   "required": [
@@ -108215,7 +108427,17 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Liga tidak dijumpai.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -108225,7 +108447,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields.invite_code: \"Kod jemputan tidak sah.\", \"Liga ini sudah tamat.\", \"Anda perlu mempunyai sekolah untuk menyertai liga ini.\", \"Sekolah anda sudah menyertai liga ini.\", \"Liga ini sudah penuh.\".",
+            "description": "VALIDATION_ERROR with fields.schoolIds (the first failing school in the given order): \"Liga ini sudah tamat.\", \"Sekolah ini sudah menyertai liga ini.\", \"Liga ini sudah penuh.\", or \"Sila pilih sekolah.\" (empty or missing list), \"Format sekolah tidak sah.\" (non-numeric or unknown school id). A school already enrolled or repeated in the body is \"Sekolah ini sudah menyertai liga ini.\"; nothing is written on any failure.",
             "content": {
               "application/json": {
                 "schema": {
@@ -108262,7 +108484,7 @@
           "games"
         ],
         "summary": "League detail (M16-49)",
-        "description": "The invite code and share link are visible to non-members, as live.",
+        "description": "The league with its member schools and stored standings.",
         "parameters": [
           {
             "schema": {
@@ -108278,7 +108500,7 @@
         ],
         "responses": {
           "200": {
-            "description": "League detail with the invite code; Cache-Control: no-store.",
+            "description": "League detail; Cache-Control: no-store.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
@@ -122448,10 +122670,11 @@
         "tags": [
           "performance"
         ],
-        "summary": "Own timeline (S16)",
+        "summary": "Own timeline feed (S16, API-RPT-14)",
+        "description": "Own data only. `entries` = finished practice sessions, badges earned and own manual posts, newest first, at most 100 (latest 100 of each source merged); `posts` = own posts (compatibility).",
         "responses": {
           "200": {
-            "description": "Own timeline (S16)",
+            "description": "Own timeline.",
             "content": {
               "application/json": {
                 "schema": {
@@ -122550,6 +122773,87 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus \"(and N more error(s))\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/timeline/{id}": {
+      "delete": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Delete an own timeline post (API-RPT-15)",
+        "description": "Answers 200 with { data: { deleted: 1 } }. Its photos are removed with it. Another pupil's post is the same 404 as an unknown id.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimelineDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\": unknown post id, or a post of another user",
             "content": {
               "application/json": {
                 "schema": {
