@@ -47,7 +47,7 @@ export class PapersController {
 
   @Get('subjects')
   @RateLimit(BIJAK_PAPERS_LIMITS.read)
-  async subjects() {
-    return { data: await this.papers.subjects() }
+  async subjects(@Req() req: Req) {
+    return { data: await this.papers.subjects(ScopeContext.fromRequest(req).userId) }
   }
 }
