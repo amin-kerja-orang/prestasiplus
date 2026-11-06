@@ -13,7 +13,7 @@ import {
   sideSkor,
   winnerOf,
 } from '../../mock/repository/common'
-import { parseLeagueBody, shareUrl } from '../../mock/repository/leagues'
+import { parseLeagueBody } from '../../mock/repository/leagues'
 import { rankBoard } from '../../mock/repository/sekolah-bersaing'
 import { parseTournamentBody } from '../../mock/repository/tournaments'
 import { OBSERVED_BATTLES } from '../../mock/data/battles-observed'
@@ -61,14 +61,6 @@ describe('arena points (BR-M16-07)', () => {
       'Tingkatan 5',
     ])
     expect(gradeLabel(null)).toBe('')
-  })
-})
-
-describe('league share link (FN-M16-9.3.2)', () => {
-  it('uses + for spaces and %21 for "!" as live', () => {
-    expect(shareUrl('Liga Matematik Sprint Test', 'TEST2026')).toBe(
-      'https://wa.me/?text=Jom+sertai+Liga+Pertandingan+%22Liga+Matematik+Sprint+Test%22+di+PrestasiPlus%21+Kod+Jemputan%3A+TEST2026+%E2%80%94+prestasiplus.my%2Fliga+%F0%9F%8F%86',
-    )
   })
 })
 
@@ -175,30 +167,35 @@ describe('tournament body (V-M16-07…12)', () => {
   })
 })
 
-describe('league body (V-M16-14/15)', () => {
+describe('league body (API-ADM-25, 60 section 2.17.9)', () => {
   const valid = {
     name: 'Liga Baru',
     type: 'friendly',
     scope: 'school',
-    game_mode: 'mixed',
-    scoring_method: 'wins',
-    start_date: '2026-10-01',
-    end_date: '2026-10-01',
-    class_levels: ['T5', 'D1', 'T5'],
-    max_schools: '',
+    mode: 'mixed',
+    scoring: 'wins',
+    schoolLimit: 10,
+    start: '2026-10-01',
+    end: '2026-10-01',
+    levelIds: [5, 1, 5],
   }
 
-  it('parses the form: levels in D1…T5 order, an empty limit is no limit, equal dates are fine', () => {
+  it('parses the form: levelIds 1..5 map to T1..T5 in order, equal dates are fine', () => {
     expect(parseLeagueBody(valid)).toMatchObject({
-      classLevels: ['D1', 'T5'],
-      maxSchools: null,
+      classLevels: ['T1', 'T5'],
+      maxSchools: 10,
       subjectId: null,
     })
   })
 
-  it('refuses an end date before the start and an unknown level', () => {
-    expect(() => parseLeagueBody({ ...valid, end_date: '2026-09-30' })).toThrow()
-    expect(() => parseLeagueBody({ ...valid, class_levels: ['X9'] })).toThrow()
-    expect(() => parseLeagueBody({ ...valid, scoring_method: 'x' })).toThrow()
+  it('refuses an end date before the start, a bad level, a bad enum, a missing or out-of-range limit', () => {
+    expect(() => parseLeagueBody({ ...valid, end: '2026-09-30' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, levelIds: [6] })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, levelIds: [] })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, scoring: 'x' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, type: 'tournament' })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: null })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: 1 })).toThrow()
+    expect(() => parseLeagueBody({ ...valid, schoolLimit: undefined })).toThrow()
   })
 })
