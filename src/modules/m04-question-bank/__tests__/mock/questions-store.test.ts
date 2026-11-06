@@ -89,6 +89,7 @@ describe('plugin and boot', () => {
     expect(plugin.id).toBe('M04')
     expect(plugin.dependsOn).toEqual(['core', 'M01', 'M02', 'M03'])
     expect(Object.keys(plugin.repositories).sort()).toEqual([
+      'diagramReviews',
       'importRuns',
       'masterNotes',
       'qualityAudit',

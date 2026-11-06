@@ -15,6 +15,8 @@ import {
   type QuestionImportFailure,
 } from '@pp/contract'
 
+import { inflateRawSync } from 'node:zlib'
+
 import type { ImportedQuestionInput } from '../ports'
 
 /**
@@ -125,6 +127,8 @@ export interface CodeLookups {
   facts: ReadonlyMap<string, CurriculumFacts>
   /** `group_id` cells: a group a row may join (exists, no member shown to pupils, not a draft copy) with its stimuli by label, else null. */
   groups?: ReadonlyMap<string, { stimuli: ReadonlyMap<string, string> } | null>
+  /** Files of the ZIP by base name: `ok` is an image of an allowed type and size, `bad` is anything else. A name not here is not in the ZIP. */
+  images?: ReadonlyMap<string, 'ok' | 'bad'>
 }
 
 /** The ids that exist in the curriculum tables (and, for the new header, the code maps). */
@@ -153,6 +157,8 @@ export interface PlannedStimulus {
   alt: string | null
   sourceCitation: string | null
   tableData: { head: string[]; rows: string[][] } | null
+  /** Base name of the ZIP file that is the stimulus image, or null. */
+  imageName: string | null
 }
 
 /** A valid group: its stimuli and members (in `group_order`), or the id of an existing group the members join. */
@@ -294,7 +300,7 @@ export function planImport(
       continue
     }
     const kertasCell = get('kertas').trim()
-    if (kertasCell !== '' && kertasCell !== '1' && kertasCell !== '2' && kertasCell !== '3') {
+    if (kertasCell !== '' && !KERTAS_VALUES.has(kertasCell)) {
       fail(MSG.kertas)
       continue
     }
@@ -312,7 +318,7 @@ export function planImport(
         sourceType: 'excel',
         sourceSet: null,
         marks,
-        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' }),
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' | '4' }),
       },
     })
   }
@@ -328,8 +334,8 @@ const COGNITIVE: ReadonlySet<string> = new Set(QUESTION_COGNITIVE_LEVELS)
 const KBAT: ReadonlySet<string> = new Set([...QUESTION_KBAT_LEVELS, 'bukan'])
 const OPTION_LETTERS = 'ABCDEFGH'
 const KEY_MAX = 40
-/** Part 1 keeps the contract's Kertas 1..3 (S1-T03 widens it to 1..4). */
-const KERTAS_VALUES: ReadonlySet<string> = new Set(['1', '2', '3'])
+/** Kertas 1..4 (DM-08, S1-T03). */
+const KERTAS_VALUES: ReadonlySet<string> = new Set(['1', '2', '3', '4'])
 
 /** `bab_kod` / `topik_kod` cells compare as text, a number without leading zeros ("03" is "3"). */
 export const numberKey = (value: string): string => (/^\d{1,9}$/.test(value) ? String(Number(value)) : value)
@@ -538,7 +544,7 @@ function planCodeRows(
         sourceType: 'excel',
         sourceSet: null,
         marks: marks as number,
-        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' }),
+        ...(kertasCell === '' ? {} : { kertas: kertasCell as '1' | '2' | '3' | '4' }),
         ...(unitId === null ? {} : { unitId }),
         ...(spIds.length === 0 ? {} : { spIds }),
         ...(tp === null ? {} : { tp }),
@@ -683,7 +689,8 @@ function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes:
     if (r.stimuli.some((x) => x.present)) at(r, 'stimulus_label', 'GROUP_STIMULUS_FIRST_ROW_ONLY', CODE_MSG.stimulusFirstRowOnly(r.rec.line), true)
     if (key !== '' && (r.subject !== head.subject || r.kertas !== head.kertas)) at(r, 'group_key', 'GROUP_MIXED', CODE_MSG.groupMixed(r.rec.line, key), true)
   }
-  // group_order: 1..n, unique; an empty cell takes the row's place in the group.
+  // group_order: 1..n, unique; an empty cell takes the row's place in the group. A row with `group_id` and no `group_key` is a one-row block
+  // (n = 1): its order is empty or 1, so such rows join the existing group in FILE order and `group_order` cannot reorder them.
   const order = block.map((r, n) => (r.order === '' ? n + 1 : toInt(r.order)))
   const seen = new Set<number>()
   block.forEach((r, n) => {
@@ -712,8 +719,21 @@ function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes:
         table = parseTable(s.text)
         if (table === null) at(head, f('text'), 'STIMULUS_TABLE_INVALID', CODE_MSG.stimulusTable)
       }
-      // Images come only from the ZIP of part 3: a URL, a file name, or an image kind with no image cannot be satisfied yet.
-      if (s.image !== '' || IMAGE_KINDS.has(s.kind)) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
+      // The image is an https URL (fetched before the import, key `url:<cell>`) or a file of the uploaded ZIP named by its base name. A name not fetched or not in the ZIP, or an image
+      // kind with no image, has no text of its own: the Q-11 "cannot be downloaded" text; a file that is not an image or too big has the 11-02 text.
+      let imageName: string | null = null
+      if (s.image === '') {
+        if (IMAGE_KINDS.has(s.kind)) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
+      } else if (SCHEME.test(s.image) && !isHttpsUrl(s.image)) {
+        // Any scheme other than https (http, ftp, file, data, javascript...) is a row error; a value without a scheme is a ZIP name.
+        at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
+      } else {
+        const name = imageKeyOf(s.image)
+        const status = codes.images?.get(name)
+        if (status === undefined) at(head, f('image'), 'STIMULUS_IMAGE_UNAVAILABLE', CODE_MSG.stimulusImage)
+        else if (status === 'bad') at(head, f('image'), 'STIMULUS_IMAGE_INVALID', CODE_MSG.stimulusImageType)
+        else imageName = name
+      }
       if (IMAGE_KINDS.has(s.kind) && s.alt === '') at(head, f('alt'), 'STIMULUS_ALT_REQUIRED', CODE_MSG.stimulusAlt)
       if (head.errors.length === before) {
         labels.set(s.label, stimuli.length)
@@ -726,6 +746,7 @@ function evaluateBlock(block: RowResult[], key: string, plan: ImportPlan, codes:
           alt: s.alt === '' ? null : s.alt,
           sourceCitation: s.source === '' ? null : s.source,
           tableData: table,
+          imageName,
         })
       }
     }
@@ -776,3 +797,113 @@ export function csvCell(value: string): string {
 export function buildCsv(rows: readonly (readonly string[])[]): string {
   return rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n'
 }
+
+// --- the image ZIP (S1-T05 part 3) --------------------------------------------------------------
+
+/** The ZIP as a whole is refused (not a ZIP, damaged, or over a bomb limit). */
+export class ZipRefusedError extends Error {}
+
+export interface ZipLimits {
+  maxEntries: number
+  maxTotalBytes: number
+  maxEntryBytes: number
+}
+
+const EOCD_SIGNATURE = 0x06054b50
+const CENTRAL_SIGNATURE = 0x02014b50
+const LOCAL_SIGNATURE = 0x04034b50
+
+/** An entry name that could leave the folder it is read into (zip slip): `..` segment, absolute path, drive letter or NUL. */
+export function isUnsafeZipName(name: string): boolean {
+  const n = name.replaceAll('\\', '/')
+  return n.startsWith('/') || /^[A-Za-z]:/.test(n) || n.includes('\0') || n.split('/').includes('..')
+}
+
+/**
+ * Reads the files of a ZIP held in memory with `node:zlib` only (nothing touches the disk). Returns base name to bytes, or to null for an
+ * entry that is present but unusable (encrypted, an unsupported method, over `maxEntryBytes`, damaged). An entry with an unsafe name is dropped
+ * (the base name alone is the key, so a `../x.png` can never be found as anything else). Folders are skipped.
+ *
+ * Bomb limits: the entry count and the declared uncompressed total are checked from the central directory before any entry is inflated; an
+ * entry is then inflated with an output ceiling and the running total of what was REALLY produced is capped too, so lying headers do not help.
+ * Throws `ZipRefusedError` for a non-ZIP or a breached limit.
+ */
+export function readZipFiles(b: Buffer, limits: ZipLimits): Map<string, Buffer | null> {
+  let eocd = -1
+  for (let i = b.length - 22; i >= Math.max(0, b.length - 22 - 0xffff); i--) {
+    if (b.readUInt32LE(i) === EOCD_SIGNATURE) {
+      eocd = i
+      break
+    }
+  }
+  if (eocd < 0) throw new ZipRefusedError('not a zip')
+  const count = b.readUInt16LE(eocd + 10)
+  const cdSize = b.readUInt32LE(eocd + 12)
+  const cdOffset = b.readUInt32LE(eocd + 16)
+  if (count === 0xffff || cdSize === 0xffffffff || cdOffset === 0xffffffff) throw new ZipRefusedError('zip64')
+  if (count > limits.maxEntries) throw new ZipRefusedError('too many entries')
+  if (cdOffset + cdSize > eocd) throw new ZipRefusedError('bad directory')
+
+  interface Entry { name: string; method: number; flags: number; comp: number; size: number; local: number }
+  const entries: Entry[] = []
+  let off = cdOffset
+  let declared = 0
+  for (let n = 0; n < count; n++) {
+    if (off + 46 > b.length || b.readUInt32LE(off) !== CENTRAL_SIGNATURE) throw new ZipRefusedError('bad directory')
+    const flags = b.readUInt16LE(off + 8)
+    const nameLen = b.readUInt16LE(off + 28)
+    const extraLen = b.readUInt16LE(off + 30)
+    const commentLen = b.readUInt16LE(off + 32)
+    if (off + 46 + nameLen > b.length) throw new ZipRefusedError('bad directory')
+    const comp = b.readUInt32LE(off + 20)
+    const size = b.readUInt32LE(off + 24)
+    if (comp === 0xffffffff || size === 0xffffffff) throw new ZipRefusedError('zip64')
+    const name = b.toString((flags & 0x800) !== 0 ? 'utf8' : 'latin1', off + 46, off + 46 + nameLen)
+    entries.push({ name, method: b.readUInt16LE(off + 10), flags, comp, size, local: b.readUInt32LE(off + 42) })
+    if (!name.endsWith('/')) declared += size
+    if (declared > limits.maxTotalBytes) throw new ZipRefusedError('too large when unpacked')
+    off += 46 + nameLen + extraLen + commentLen
+  }
+
+  const out = new Map<string, Buffer | null>()
+  let produced = 0
+  for (const e of entries) {
+    if (e.name.endsWith('/') || isUnsafeZipName(e.name)) continue
+    // The key is the LOWER-CASE base name (X.PNG and x.png are one name). A base name used by two entries is ambiguous: it is unusable (null),
+    // so a row naming it gets an error instead of a possibly wrong image.
+    const base = (e.name.replaceAll('\\', '/').split('/').pop() ?? '').toLowerCase()
+    if (base === '') continue
+    if (out.has(base)) {
+      out.set(base, null)
+      continue
+    }
+    let data: Buffer | null = null
+    const bad = (e.flags & 1) !== 0 || (e.method !== 0 && e.method !== 8) || e.size > limits.maxEntryBytes || e.local + 30 > b.length || b.readUInt32LE(e.local) !== LOCAL_SIGNATURE
+    if (!bad) {
+      const start = e.local + 30 + b.readUInt16LE(e.local + 26) + b.readUInt16LE(e.local + 28)
+      if (start + e.comp <= b.length) {
+        const raw = b.subarray(start, start + e.comp)
+        try {
+          data = e.method === 0 ? (raw.length <= limits.maxEntryBytes ? Buffer.from(raw) : null) : inflateRawSync(raw, { maxOutputLength: limits.maxEntryBytes })
+        } catch {
+          data = null // damaged, or it inflates past the ceiling although the header said less
+        }
+      }
+    }
+    if (data !== null) {
+      produced += data.length
+      if (produced > limits.maxTotalBytes) throw new ZipRefusedError('too large when unpacked')
+    }
+    out.set(base, data)
+  }
+  return out
+}
+
+/** A `stimulus_image` value that starts with `https://` is a URL (Q75, PO #11); anything else without a scheme is a ZIP name. */
+export const isHttpsUrl = (cell: string): boolean => /^https:\/\//i.test(cell)
+const SCHEME = /^[a-z][a-z0-9+.-]+:/i
+/** The key of a `stimulus_image` cell in `CodeLookups.images`: `url:` plus the cell for an https URL, else the lower-case base name. */
+export const imageKeyOf = (cell: string): string => (isHttpsUrl(cell) ? `url:${cell}` : imageBaseName(cell))
+
+/** The file name a `stimulus_image` cell names: its last path segment, lower-case (names match without regard to case). */
+export const imageBaseName = (cell: string): string => (cell.replaceAll('\\', '/').split('/').pop()?.trim() ?? '').toLowerCase()

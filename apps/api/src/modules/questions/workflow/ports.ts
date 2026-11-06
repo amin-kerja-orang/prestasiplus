@@ -136,7 +136,7 @@ export interface ImportedQuestionInput {
   /** `marks` column of the row (mock `pointsValue`, default 1); optional so older callers compile. */
   marks?: number
   /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
-  kertas?: '1' | '2' | '3'
+  kertas?: '1' | '2' | '3' | '4'
   /** S1-T05 (codes mapped to ids by the importer): the DSKP unit node, 1 to 3 SP nodes and the TP 1 to 6 of the question; they make the row publishable (QE6.3). */
   unitId?: string
   spIds?: string[]

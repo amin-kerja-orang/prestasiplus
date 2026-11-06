@@ -8,7 +8,7 @@ import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimu
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
-import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
+import { QUESTION_SERVED, QUESTION_SERVED_BY_PAPER, VERSION_SERVED, VERSION_SERVED_BY_PAPER } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -105,14 +105,14 @@ export interface QuestionFacts {
   served: boolean
   subjectId: string | null
   levelId: string | null
-  /** '1' | '2' | '3' from the paper code of the latest version, or null (compatible with any kertas). */
-  kertas: '1' | '2' | '3' | null
+  /** '1' | '2' | '3' | '4' from the paper code of the latest version, or null (compatible with any kertas). */
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** Subject, Tingkatan and kertas of one member (latest version). */
 export interface MemberTrait {
   subjectId: string | null
   levelId: string | null
-  kertas: '1' | '2' | '3' | null
+  kertas: '1' | '2' | '3' | '4' | null
 }
 /** The short form of a group member (R1-T49). */
 export interface MemberBrief {
@@ -189,6 +189,11 @@ export class StimuliRepository {
   async updateStimulus(id: string, data: StimulusData): Promise<void> {
     // A migrated `content_hash` describes the old text: an edit makes it stale, so it is cleared (the API never writes one) (T32-L2).
     await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
+  }
+
+  /** Sets only the file of a stimulus (the content hash goes stale like any edit). */
+  async setAssetFile(id: string, fileId: bigint): Promise<void> {
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { assetFileId: fileId, contentHash: null } })
   }
 
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
@@ -573,6 +578,28 @@ export class StimuliRepository {
         JOIN question_versions v ON v.id = p.question_version_id
         JOIN questions q ON q.id = v.question_id
        WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED}
+      LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Is the stimulus pinned by a paper that is still held (`paperHeld`)? Same three ways as `stimulusServed`, paper reason only. */
+  async stimulusHeldByPaper(stimulusId: string): Promise<boolean> {
+    const key = bi(stimulusId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM stimulus_group_stimuli gs
+        JOIN questions q ON q.group_id = gs.group_id
+       WHERE gs.stimulus_id = ${key} AND ${QUESTION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_version_stimuli vs
+        JOIN question_versions v ON v.id = vs.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE vs.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_parts p
+        JOIN question_versions v ON v.id = p.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
       LIMIT 1`
     return rows.length > 0
   }

@@ -8,7 +8,7 @@
 
 // --- shared ----------------------------------------------------------------------------------
 
-export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Kritikal' | 'Tiada Langsung'
+export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Tiada' | 'Kritikal' | 'Tiada Langsung'
 
 /** BR-M11-10 periods; '' = all time. Any other value is treated as '' (INFERRED). */
 export type MonitoringPeriod = '' | '7d' | '30d' | '3m'
