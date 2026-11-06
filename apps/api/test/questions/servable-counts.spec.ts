@@ -81,8 +81,10 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
       cards[code] = { practiceCard, databank: databank ?? null, latihTubiCard: lt ?? null, details, poolCount, drawn: drawnIds.length, distinctDrawn: new Set(drawnIds).size, loginSqlForSubject: servableInDb }
       // card = details = drawable (one definition behind every SPM surface).
       expect(databank, `${code} databank`).toBe(poolCount)
-      expect(lt, `${code} latihTubi card`).toBe(poolCount)
-      expect(details, `${code} details`).toBe(poolCount)
+      // S3-T07 (#967, D91) with S5-T03 part B: Latih Tubi serves whole groups, so its card and details count each complete group once (units), on top of the ungrouped pool.
+      const latihUnits = await pool.latihTubiCount(id, { fresh: true })
+      expect(lt, `${code} latihTubi card`).toBe(latihUnits)
+      expect(details, `${code} details`).toBe(latihUnits)
       expect(drawnIds.length, `${code} drawable`).toBe(poolCount)
       expect(new Set(drawnIds).size).toBe(drawnIds.length)
       // Everything drawn is servable: live, active, approved, an offered level.
@@ -112,13 +114,15 @@ describe('counts on the full demo seed: login = cards = details = drawable', () 
     expect(loginCount, 'login count = drawable count over all subjects').toBe(drawableAll)
     expect(loginCount, 'login "N+ Soalan" (D91: every servable question of any activity)').toBe(493)
     // Known counts on the demo seed: card = details = drawable per subject (hub BM 50, MATH 54, SCI 50; the practice card of BM is 53).
+    // Latih Tubi units (card = details): BM 51 = 50 ungrouped + 1 complete group (SEED-GRP-PASAR-1..3 count once, D91).
     const known = { BM: 50, MATH: 54, SCI: 50 } as const
+    const knownUnits = { BM: 51, MATH: 54, SCI: 50 } as const
     for (const code of SUBJECTS) {
       const n = known[code]
       expect(cards[code], `${code} card = details = drawable = ${String(n)}`).toMatchObject({
         databank: n,
-        latihTubiCard: n,
-        details: n,
+        latihTubiCard: knownUnits[code],
+        details: knownUnits[code],
         poolCount: n,
         drawn: n,
         distinctDrawn: n,
