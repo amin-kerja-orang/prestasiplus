@@ -1,7 +1,6 @@
 import {
   GamesHubSchema,
   GamesLeagueDetailSchema,
-  GamesLeagueIdResultSchema,
   GamesLobbySchema,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -165,17 +164,14 @@ describe("children's names rule in the games rankings (issue #76)", () => {
 
   describe('league creator', () => {
     it('a pupil who creates a league is shown by first name + initial to those who may not see the name', async () => {
-      const created = await as(VIEWERS[0] as (typeof VIEWERS)[number]).post('/api/leagues', {
-        name: 'Liga Nama',
-        type: 'league',
-        scope: 'national',
-        game_mode: 'mixed',
-        scoring_method: 'total_score',
-        start_date: '2026-11-01',
-        end_date: '2026-11-30',
-      })
-      expect(created.status, JSON.stringify(created.body)).toBe(201)
-      const leagueId = parseData(created, GamesLeagueIdResultSchema).id
+      // Only Admin Pusat creates a league via the API; the creator rule is proved on a row created by pupil A.
+      const [row] = await t.db.query<{ id: string }>(
+        `insert into leagues (name, type, scope, game_mode, scoring_method, start_date, end_date, invite_code, creator_id, status, is_test, created_at)
+         values ('Liga Nama', 'league', 'national', 'mixed', 'total_score', '2026-11-01', '2026-11-30', 'NAMA0001', $1::bigint, 'upcoming', false, now())
+         returning id::text as id`,
+        [id.A],
+      )
+      const leagueId = row!.id
       for (const v of VIEWERS) {
         const detail = parseData(await as(v).get(`/api/leagues/${leagueId}`), GamesLeagueDetailSchema)
         expect(detail.creatorName, v.who).toBe(expectedName(v, 'A'))

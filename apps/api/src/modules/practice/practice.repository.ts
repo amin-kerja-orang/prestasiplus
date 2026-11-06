@@ -6,6 +6,7 @@ import type { PracticeSession as SessionRow } from '../../db/generated/client'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { AnswerLogPort, writableModeOf } from './answer-log.port'
+import { coinsPerCorrect } from './coins'
 import { alreadySubmitted, notFound } from './errors'
 import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
 
@@ -508,7 +509,7 @@ export class PracticeRepository {
       await this.db.practiceCheck.deleteMany({ where: { sessionId: locked.id } })
 
       // (3) the session.
-      const coins = sessionCoins(locked.mode, correct, locked.coinsPerCorrect)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.update({
         where: { id: locked.id },
@@ -556,7 +557,7 @@ export class PracticeRepository {
       const correct = input.answers.filter((a) => a.isCorrect).length
       const cap = MAX_SECONDS_PER_QUESTION * total
       const spent = Math.max(0, Math.min(cap, Math.round((input.completedAt.getTime() - input.startedAt.getTime()) / 1000)))
-      const coins = sessionCoins('pksk', correct)
+      const coins = sessionCoins(correct, await coinsPerCorrect(this.db))
       const points = POINTS_PER_CORRECT * correct
       const row = await this.db.practiceSession.create({
         data: {
