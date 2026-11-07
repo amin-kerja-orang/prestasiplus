@@ -40,13 +40,14 @@ import { fetchGuruStructuredQuestions } from '../api/structured-guru'
 import StructuredGuruList, { type GuruTableRow } from '../components/StructuredGuruList.vue'
 import {
   AUDIT_ROUTES,
+  GURU_STRUCTURED_CREATE_PATH,
   GURU_STRUCTURED_LIST_PATH,
   GURU_STRUCTURED_ROUTES,
   STRUCTURED_CREATE_PATH,
   STRUCTURED_LIST_PATH,
 } from '../lib/audit-routes'
 import { fetchLevelOptions, fetchSubjectOptions } from '../lib/lookup-options'
-import { GURU_STATUS_LABEL, KBAT_FILTER_OPTIONS } from '../lib/structured-options'
+import { GURU_CREATE_LABEL, GURU_STATUS_LABEL, KBAT_FILTER_OPTIONS } from '../lib/structured-options'
 import { pageOf, queryText } from '../lib/route-query'
 import { LOAD_ERROR } from '../lib/ui-errors'
 
@@ -56,7 +57,7 @@ const listPath = guru ? GURU_STRUCTURED_LIST_PATH : STRUCTURED_LIST_PATH
 
 const route = useRoute()
 const router = useRouter()
-// DV: the M10 teacher form is not routed yet, so "Tambah Soalan" is hidden until it is.
+// DV: the M10 teacher form may not be routed yet, so its buttons are hidden until it is.
 const { routeExists } = useRouteExists()
 
 /** The applied filters, read from the URL (the source of truth, as the live GET form). */
@@ -228,6 +229,7 @@ const guruRows = computed<GuruTableRow[]>(() =>
     marks: `${String(r.marks)}m`,
     status: GURU_STATUS_LABEL[r.status] ?? r.status,
     statusKey: r.status,
+    editable: r.editable,
   })),
 )
 
@@ -294,6 +296,17 @@ async function resetFilter(): Promise<void> {
 <template>
   <!-- Teacher mount (R1-GUR-44b): the PRD columns, BM pager and Status filter; no admin parts. -->
   <DsPage v-if="guru" :subtitle="guruSubtitle" data-testid="structured-page">
+    <template #actions>
+      <!-- The submit form is registered by M10; the button shows only once its route exists. -->
+      <UButton
+        v-if="routeExists(GURU_STRUCTURED_CREATE_PATH)"
+        :to="GURU_STRUCTURED_CREATE_PATH"
+        size="xl"
+        data-testid="structured-create"
+      >
+        {{ GURU_CREATE_LABEL }}
+      </UButton>
+    </template>
     <StructuredGuruList
       v-model:subject="subjectId"
       v-model:level="levelId"

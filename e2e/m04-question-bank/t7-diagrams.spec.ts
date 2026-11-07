@@ -32,6 +32,7 @@ const ADMIN = 'admin@demo.test'
  */
 const STRUCT = STRUCTURED_NEEDS_DIAGRAM
 const en = (n: number): string => n.toLocaleString('en-US')
+const GURU = 'guru@demo.test'
 const PATH = '/admin/soalan-gambar'
 /** 1x1 transparent PNG. */
 const PNG = Buffer.from(
@@ -94,22 +95,55 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
     await openFilters(page)
     await expect(page.getByTestId('diagrams-subject').locator('option')).toHaveCount(32)
-    await expect(page.getByTestId('diagrams-school').locator('option').first()).toHaveText('Semua Sekolah')
+    await expect(page.getByTestId('diagrams-school').locator('option').first()).toHaveText(
+      'Semua Sekolah',
+    )
     await expect(applyButton(page)).toBeVisible()
     if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
 
-    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(`MCQ (${String(mcqTotal)})`)
+    await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(
+      `MCQ (${String(mcqTotal)})`,
+    )
     await expect(mcqCards(page)).toHaveCount(20)
-    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(`Struktur (${en(STRUCT)})`)
+    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(
+      `Struktur (${en(STRUCT)})`,
+    )
     await expect(strCards(page)).toHaveCount(20)
     const card = mcqCards(page).first()
-    await expect(card.getByTestId('diagram-file')).toHaveAttribute('accept', 'image/*')
+    await expect(card.getByTestId('diagram-file')).toHaveAttribute(
+      'accept',
+      'image/jpeg,image/png,image/webp',
+    )
     await expect(card.getByTestId('diagram-dismiss')).toHaveText('Dismiss')
     await expectTouchTarget(card.getByTestId('diagram-upload'))
     await expectTouchTarget(card.getByTestId('diagram-dismiss'), 44)
 
     await expect(page.getByTestId('diagrams-mcq-pager')).toBeVisible()
     await expect(page.getByTestId('diagrams-structured-pager')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('a teacher sees the audit with upload but without Dismiss or the school filter', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU)
+    await openAudit(page, gotoApp)
+    await expect(page.getByTestId('diagrams-stat-mcq')).toBeVisible()
+    await expect(page.getByTestId('diagrams-stat-structured')).toBeVisible()
+    await expect(page.getByTestId('diagrams-stat-total')).toBeVisible()
+    await expect(page.getByTestId('diagram-dismiss')).toHaveCount(0)
+    await expect(page.getByTestId('diagrams-school')).toHaveCount(0)
+    await expect(page.getByTestId('diagram-upload').first()).toBeVisible()
+    await expect(page.getByTestId('diagram-file').first()).toBeAttached()
+    await expectTouchTarget(page.getByTestId('diagram-upload').first())
+    await openFilters(page)
+    await expectTouchTarget(applyButton(page), 44)
+    if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
     await expectNoHorizontalScroll(page)
   })
 
@@ -130,7 +164,9 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       (await stat(page, 'diagrams-stat-mcq')) + (await stat(page, 'diagrams-stat-structured')),
     )
     // The pills are global (as live).
-    await expect(page.getByTestId('diagrams-pill').first()).toHaveText(`Biologi: ${en(NEEDS_DIAGRAM[11] ?? 0)}`)
+    await expect(page.getByTestId('diagrams-pill').first()).toHaveText(
+      `Biologi: ${en(NEEDS_DIAGRAM[11] ?? 0)}`,
+    )
 
     // DV-M04-16: the MCQ pager keeps subject_id, uses mcq_page and never carries str_page.
     await page.getByTestId('diagrams-mcq-pager').getByRole('button', { name: 'Seterusnya' }).click()
@@ -151,7 +187,9 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await applyButton(page).click()
     await expect(page).toHaveURL(/school_id=\d+/)
     await expect(page.getByTestId('diagrams-mcq')).toHaveCount(0)
-    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(`Struktur (${en(STRUCT)})`)
+    await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(
+      `Struktur (${en(STRUCT)})`,
+    )
     await expect(page.getByTestId('diagrams-empty')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
@@ -181,7 +219,9 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       await expect(page.getByText('Soalan telah dikeluarkan daripada senarai audit.')).toBeVisible()
       await expect.poll(() => stat(page, 'diagrams-stat-mcq')).toBe(mcqBefore - 1)
       expect(await stat(page, 'diagrams-stat-total')).toBe(totalBefore - 1)
-      await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(`MCQ (${String(mcqBefore - 1)})`)
+      await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText(
+        `MCQ (${String(mcqBefore - 1)})`,
+      )
       await expect(page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)).toHaveCount(0)
       await expectNoHorizontalScroll(page)
     },
@@ -224,4 +264,29 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       await expectNoHorizontalScroll(page)
     },
   )
+
+  test('a teacher upload goes to review: toast, chip, the card stays and the stat is unchanged', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU)
+    await openAudit(page, gotoApp)
+    const mcqBefore = await stat(page, 'diagrams-stat-mcq')
+    const card = mcqCards(page).first()
+    const id = await card.getAttribute('data-question-id')
+    await card.getByTestId('diagram-file').setInputFiles({
+      name: 'rajah.png',
+      mimeType: 'image/png',
+      buffer: PNG,
+    })
+    await card.getByTestId('diagram-upload').click()
+    await expect(page.getByText('Gambar dihantar untuk semakan.')).toBeVisible()
+    const same = page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)
+    await expect(same).toHaveCount(1)
+    await expect(same.getByTestId('diagram-pending')).toHaveText('Menunggu Semakan')
+    await expect(same.getByTestId('diagram-upload')).toHaveCount(0)
+    expect(await stat(page, 'diagrams-stat-mcq')).toBe(mcqBefore)
+    await expectNoHorizontalScroll(page)
+  })
 })

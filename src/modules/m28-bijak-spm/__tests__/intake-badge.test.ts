@@ -8,13 +8,20 @@ describe('intakeBadge (R1E2E-C1)', () => {
       submitted: 'pending-approval',
       processing: 'in-progress',
       ready_for_review: 'awaiting-review',
+      selesai_dengan_ralat: 'awaiting-review',
       failed: 'rejected',
       cancelled: 'inactive',
     })
     expect(intakeBadge({ status: 'draf', batchStatus: 'failed', statusLabel: 'Gagal' })).toEqual({ status: 'rejected', label: 'Gagal' })
-    expect(intakeBadge({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })).toEqual({
+    expect(intakeBadge({ status: 'draf', batchStatus: 'ready_for_review', statusLabel: 'Selesai' })).toEqual({
       status: 'awaiting-review',
-      label: 'Sedia untuk semakan',
+      label: 'Selesai',
+    })
+  })
+  it('shows the partly failed batch as Selesai dengan ralat', () => {
+    expect(intakeBadge({ status: 'draf', batchStatus: 'selesai_dengan_ralat', statusLabel: 'Selesai dengan ralat' })).toEqual({
+      status: 'awaiting-review',
+      label: 'Selesai dengan ralat',
     })
   })
   it('falls back to Draf / Semakan without a wire status (mock)', () => {

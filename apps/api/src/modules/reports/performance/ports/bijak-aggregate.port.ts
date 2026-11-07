@@ -5,6 +5,12 @@
  * port has no parameter to ask for them.
  */
 export type BijakSittingStatus = 'submitted' | 'auto_submitted' // abandoned / in_progress never returned
+/**
+ * Every `exam_attempts.paper_kind` the table allows (`ck_exam_attempts_paper_kind`): `pilihan` and `jana` today, plus
+ * `subjektif` (Kertas Subjektif, S3-T06) and `structured` (Soalan Berstruktur, S5-T11) once migration 0165 lands.
+ * D113: every kind feeds the reports; none is a different "start type" branch anywhere in `reports/performance`.
+ */
+export type BijakPaperKind = 'pilihan' | 'jana' | 'subjektif' | 'structured'
 export type BijakMode = 'exam' | 'latihan'
 export type OptionLetter = 'A' | 'B' | 'C' | 'D'
 
@@ -17,9 +23,10 @@ export interface BijakSittingFact {
   subjectCode: string
   subjectName: string
   /** "Start type" of AC-33.1. */
-  paperKind: 'pilihan' | 'jana'
+  paperKind: BijakPaperKind
   mode: BijakMode
   status: BijakSittingStatus
+  /** Marks so far. A result with no score yet is returned as 0 with `provisional` true (see the adapter): it never reaches accuracy. */
   score: number
   maxScore: number
   /** Questions the pupil answered (a non-blank response). NOT the paper's question count and not `maxScore` (marks). */

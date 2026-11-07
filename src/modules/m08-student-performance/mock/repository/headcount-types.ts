@@ -18,6 +18,9 @@ export interface HeadcountConfigRow {
   /** 2–5. */
   activeOtrs: number
   mode: HeadcountMode
+  /** Subject-card targets (API-RPT-16): the TOV / ETR of a pupil entry without its own. Absent = none. */
+  defaultTov?: number | null
+  defaultEtr?: number | null
   status: 'active'
   createdAt: string
   updatedAt: string

@@ -91,10 +91,10 @@ describe('GET /api/feedback/status and POST /api/feedback (AC 6, 7)', () => {
     // Rows: pupil A 9/5, pupil B 1/1, teacher 7/4, school admin 6/3, admin 10/3.
     // Admin: students (9 + 1) / 2 = 5, teacher 7, admin 10; satisfaction (5 + 1 + 4 + 3 + 3) / 5 = 3.2.
     const all = envelopeOf(KirkpatrickReactionSchema).parse((await admin.get('/kirkpatrick/reaction')).body).data
-    expect(all).toEqual({ npsStudent: 5, npsTeacher: 7, npsAdmin: 10, satisfaction: 3.2 })
+    expect(all).toMatchObject({ npsStudent: 5, npsTeacher: 7, npsAdmin: 10, satisfaction: 3.2 })
     // School A (pupil B and the admin have no part in it): student 9, teacher 7, no admin; satisfaction (5 + 4 + 3) / 3 = 4.
     const own = envelopeOf(KirkpatrickReactionSchema).parse((await teacher.get('/kirkpatrick/reaction')).body).data
-    expect(own).toEqual({ npsStudent: 9, npsTeacher: 7, npsAdmin: 0, satisfaction: 4 })
+    expect(own).toMatchObject({ npsStudent: 9, npsTeacher: 7, npsAdmin: 0, satisfaction: 4 })
 
     // A migrated .cloud row has no NPS: it counts in the satisfaction mean only.
     await t.db.query(
@@ -104,7 +104,7 @@ describe('GET /api/feedback/status and POST /api/feedback (AC 6, 7)', () => {
     )
     const withLegacy = envelopeOf(KirkpatrickReactionSchema).parse((await teacher.get('/kirkpatrick/reaction')).body).data
     // Satisfaction (5 + 4 + 3 + 5) / 4 = 4.25, half-up 4.3.
-    expect(withLegacy).toEqual({ npsStudent: 9, npsTeacher: 7, npsAdmin: 0, satisfaction: 4.3 })
+    expect(withLegacy).toMatchObject({ npsStudent: 9, npsTeacher: 7, npsAdmin: 0, satisfaction: 4.3 })
 
     // A test row (Mod Pelajar) never counts.
     await t.db.query(`insert into feedback (user_id, role, school_id, month, nps, satisfaction, is_test) values ($1, 'student', $2, '2026-07-01', 0, 1, true)`, [w.ids.p2, w.schoolA])

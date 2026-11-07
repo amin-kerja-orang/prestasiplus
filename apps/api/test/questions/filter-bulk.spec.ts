@@ -173,7 +173,7 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     expectError(await post(admin, { action: 'approved', filter: { tahun: b.year, bogus: '1' }, expectedCount: 1 }), 'VALIDATION_ERROR') // strict filter
     expectError(await post(admin, { action: 'approved', filter: { tahun: b.year }, expectedCount: 1, ids: ['1'] }), 'VALIDATION_ERROR') // strict body
     expectError(await post(admin, { action: 'approved', filter: { tahun: '24' }, expectedCount: 1 }), 'VALIDATION_ERROR')
-    expectError(await post(admin, { action: 'approved', filter: { kertas: '4' }, expectedCount: 1 }), 'VALIDATION_ERROR')
+    expectError(await post(admin, { action: 'approved', filter: { kertas: '5' }, expectedCount: 1 }), 'VALIDATION_ERROR')
     expectError(await post(admin, { action: 'approved', filter: { tahun: b.year }, expectedCount: -1 }), 'VALIDATION_ERROR')
     expectError(await post(admin, { action: 'approved', filter: { search: 'x'.repeat(101) }, expectedCount: 1 }), 'VALIDATION_ERROR')
     expect(await statusOf(b.review[0]!)).toBe('review')

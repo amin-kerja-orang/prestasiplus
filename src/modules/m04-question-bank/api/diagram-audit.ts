@@ -1,9 +1,11 @@
 /**
  * M04 diagram-audit endpoints (SRS §7 #23–#25; build-plan M04-T2): S11 "Soalan Perlu Gambar Rajah",
- * upload and dismiss. Every call needs an admin session. UI tasks read this file and do not change it
+ * upload and dismiss. The list needs an admin, teacher or
+ * school_admin session; dismiss is admin only; upload is admin (direct) or teacher (to review) (S6-T18). UI tasks read this file and do not change it
  * (build-plan §S.3 rule 5).
  *
- * A diagram image must be JPG, PNG, WebP or GIF and at most 2 MB; SVG is refused (SEC-M04-02).
+ * A diagram image must be JPG, PNG or WebP and at most 2 MB; GIF and SVG are refused (SEC-M04-02).
+ * `pendingReview` marks an item whose upload awaits review (reviewed teacher upload, part 2).
  */
 
 import { api } from '@/api'
@@ -22,6 +24,8 @@ export interface DiagramMcqItem {
   createdBy: { id: number; name: string | null }
   sourceFile: string | null
   sourcePage: number | null
+  /** An open upload awaits review for this question or its stimulus group (S6-T18). */
+  pendingReview: boolean
 }
 
 /** A flagged structured question. `stimulusExcerpt` is cut at 400 characters (FR-M04-98). */
@@ -32,6 +36,7 @@ export interface DiagramStructuredItem {
   createdBy: { id: number; name: string | null }
   sourceFile: string | null
   sourcePage: number | null
+  pendingReview: boolean
 }
 
 export interface DiagramPageMeta {
@@ -72,7 +77,8 @@ export type DiagramKind = 'mcq' | 'structured'
 
 /** #24 / #25 result plus the flash text. */
 export interface DiagramMutation {
-  data: { id: number; needsDiagram: false }
+  /** `false` after an admin upload or dismiss; `true` after a teacher upload (kept for review). */
+  data: { id: number; needsDiagram: boolean }
   status: string
 }
 

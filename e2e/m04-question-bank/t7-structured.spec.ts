@@ -92,7 +92,10 @@ test.describe('M04 S8 structured list', { tag: [TAG.smoke, moduleTag(4)] }, () =
       await expect(rows(page).nth(2).locator('td').first()).toHaveText('4456')
       await expect(rows(page).first().getByTestId('structured-kbat-pill')).toHaveText('L3')
     }
-    await expect(rows(page).first().getByTestId('structured-view')).toHaveAttribute('aria-label', 'Lihat')
+    await expect(rows(page).first().getByTestId('structured-view')).toHaveAttribute(
+      'aria-label',
+      'Lihat',
+    )
     await expect(pager(page)).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
@@ -239,68 +242,97 @@ test.describe('M04 S9 structured detail', { tag: [TAG.smoke, moduleTag(4)] }, ()
 
 // S6-T17 (R1-GUR-44b): the teacher mount of the same pages at /guru/soalan-berstruktur (the m10 route
 // records pass portal 'guru'). Runs at 375 / 768 / 1280 with the other tests of this file.
-test.describe('R1-GUR-44b teacher structured list and detail', { tag: [TAG.smoke, moduleTag(4)] }, () => {
-  test.use({ mockInit: { latency: 0 } })
-  const GURU_ACCOUNT = 'guru@demo.test'
-  const GURU_LIST = '/guru/soalan-berstruktur'
+test.describe(
+  'R1-GUR-44b teacher structured list and detail',
+  { tag: [TAG.smoke, moduleTag(4)] },
+  () => {
+    test.use({ mockInit: { latency: 0 } })
+    const GURU_ACCOUNT = 'guru@demo.test'
+    const GURU_LIST = '/guru/soalan-berstruktur'
 
-  test('the list shows 20 rows, the PRD copy and the BM pager without horizontal scroll', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(GURU_ACCOUNT)
-    await openList(page, gotoApp, GURU_LIST)
-    await expect(page.getByTestId('structured-page').getByRole('heading', { level: 1 })).toHaveText(
-      'Soalan Berstruktur',
-    )
-    await expect(page.getByTestId('structured-page')).toContainText(
-      'Cipta & urus soalan berstruktur mengikut piawaian SPM KPM',
-    )
-    await expect(page.getByTestId('structured-page')).toContainText('soalan dalam bank')
-    await expect(rows(page)).toHaveCount(20)
-    await expect(page.getByTestId('structured-add')).toHaveCount(0)
-    await expect(page.getByTestId('structured-stat-total')).toHaveCount(0)
-    await expect(page.getByTestId('structured-counter')).toHaveText(
-      /^Menunjukkan 1 hingga 20 daripada [\d,]+ keputusan$/,
-    )
-    await expect(page.getByTestId('structured-pager')).toContainText('Seterusnya')
-    await expect(page.getByTestId('structured-status').locator('option')).toHaveText([
-      'Semua',
-      'Diluluskan',
-      'Menunggu Semakan',
-    ])
-    const submit = page.getByTestId('structured-filter').locator('button[type=submit]')
-    await expect(submit).toHaveText('Tapis')
-    await expect.poll(async () => (await submit.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44)
-    await expectTouchTarget(submit)
-    await expectTouchTarget(rows(page).first().getByTestId('structured-view'))
-    await expectTouchTarget(page.getByTestId('structured-pager').getByRole('button', { name: 'Seterusnya' }))
-    await expectNoHorizontalScroll(page)
-  })
+    test('the list shows 20 rows, the PRD copy and the BM pager without horizontal scroll', async ({
+      page,
+      loginAs,
+      gotoApp,
+    }) => {
+      await loginAs(GURU_ACCOUNT)
+      await openList(page, gotoApp, GURU_LIST)
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Soalan Berstruktur')
+      await expect(
+        page.getByText(
+          /^Cipta & urus soalan berstruktur mengikut piawaian SPM KPM — [\d,]+ soalan dalam bank$/,
+        ),
+      ).toBeVisible()
+      await expect(rows(page)).toHaveCount(20)
+      await expect(page.getByTestId('structured-add')).toHaveCount(0)
+      await expect(page.getByTestId('structured-stat-total')).toHaveCount(0)
+      await expect(page.getByTestId('structured-counter')).toHaveText(
+        /^Menunjukkan 1 hingga 20 daripada [\d,]+ keputusan$/,
+      )
+      await expect(page.getByTestId('structured-pager')).toContainText('Seterusnya')
+      // The filter is behind a sheet on a phone (DsFilterBar).
+      await openFilters(page)
+      await expect(page.getByTestId('structured-status').locator('option')).toHaveText([
+        'Semua',
+        'Diluluskan',
+        'Menunggu Semakan',
+      ])
+      const submit = applyButton(page)
+      // "Tapis" in the bar; the phone sheet keeps the DsFilterBar "Guna".
+      await expect(submit).toHaveText(viewportWidth(page) < 768 ? 'Guna' : 'Tapis')
+      await expect
+        .poll(async () => (await submit.boundingBox())?.height ?? 0)
+        .toBeGreaterThanOrEqual(44)
+      await expectTouchTarget(submit)
+      if (viewportWidth(page) < 768) await page.keyboard.press('Escape')
+      // The icon row action is 36 px on a desktop table, as in the admin list above.
+      if (viewportWidth(page) < 1024)
+        await expectTouchTarget(rows(page).first().getByTestId('structured-view'))
+      await expectTouchTarget(
+        page.getByTestId('structured-pager').getByRole('button', { name: 'Seterusnya' }),
+      )
+      await expectNoHorizontalScroll(page)
+    })
 
-  test('the Menunggu Semakan filter is empty and the eye opens the detail with the stimulus once', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
-    await loginAs(GURU_ACCOUNT)
-    await gotoApp(`${GURU_LIST}?status=review`)
-    await expect(page.getByTestId('structured-empty')).toHaveText('Tiada soalan berstruktur dijumpai.')
-    await expectNoHorizontalScroll(page)
+    test('the Menunggu Semakan filter lists the seeded own submissions; the eye of an approved question opens its detail with the stimulus once', async ({
+      page,
+      loginAs,
+      gotoApp,
+    }) => {
+      await loginAs(GURU_ACCOUNT)
+      await gotoApp(`${GURU_LIST}?status=review`)
+      // The canonical Guru has two seeded own submissions (g2 newest, then g1), both waiting.
+      await expect(rows(page)).toHaveCount(2)
+      await expect(rows(page).first().getByTestId('structured-view')).toHaveAttribute(
+        'href',
+        `${GURU_LIST}/g2`,
+      )
+      await expect(rows(page).nth(1).getByTestId('structured-view')).toHaveAttribute(
+        'href',
+        `${GURU_LIST}/g1`,
+      )
+      // The status is a chip in the table and a card field below 768 px.
+      if (viewportWidth(page) >= 768)
+        await expect(rows(page).first().getByTestId('structured-status-chip')).toHaveText(
+          'Menunggu Semakan',
+        )
+      else await expect(rows(page).first()).toContainText('Menunggu Semakan')
+      await expectNoHorizontalScroll(page)
 
-    await openList(page, gotoApp, GURU_LIST)
-    await rows(page).first().getByTestId('structured-view').click()
-    await expect(page).toHaveURL(/\/guru\/soalan-berstruktur\/\d+$/)
-    await expect(page.getByTestId('structured-detail')).toBeVisible()
-    await expect(page.getByTestId('structured-stimulus')).toHaveCount(1)
-    await expect(page.getByTestId('structured-status')).toHaveText('Diluluskan')
-    await expect(page.getByTestId('structured-subs-heading')).toContainText('Sub-Soalan (')
-    await expect(page.getByTestId('structured-sub').first()).toContainText('Skema Jawapan')
-    await expect(page.getByTestId('structured-id')).toHaveCount(0)
-    await expectTouchTarget(page.getByTestId('structured-back'))
-    await expectNoHorizontalScroll(page)
-    await page.getByTestId('structured-back').click()
-    await expect(page).toHaveURL(/\/guru\/soalan-berstruktur$/)
-  })
-})
+      // An approved question row (the first row that is not a g-submission).
+      await gotoApp(`${GURU_LIST}?status=approved`)
+      await rows(page).first().getByTestId('structured-view').click()
+      await expect(page).toHaveURL(/\/guru\/soalan-berstruktur\/\d+$/)
+      await expect(page.getByTestId('structured-detail')).toBeVisible()
+      await expect(page.getByTestId('structured-stimulus')).toHaveCount(1)
+      await expect(page.getByTestId('structured-status')).toHaveText('Diluluskan')
+      await expect(page.getByTestId('structured-subs-heading')).toContainText('Sub-Soalan (')
+      await expect(page.getByTestId('structured-sub').first()).toContainText('Skema Jawapan')
+      await expect(page.getByTestId('structured-id')).toHaveCount(0)
+      await expectTouchTarget(page.getByTestId('structured-back'))
+      await expectNoHorizontalScroll(page)
+      await page.getByTestId('structured-back').click()
+      await expect(page).toHaveURL(/\/guru\/soalan-berstruktur$/)
+    })
+  },
+)

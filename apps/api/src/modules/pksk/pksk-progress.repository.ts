@@ -24,7 +24,7 @@ export interface NewAttempt {
   isTest: boolean
 }
 
-/** Exam attempts, mastery and practice loads (BR-M07-09 to -12, -26). The only code that touches those three tables. */
+/** Exam attempts, exam loads, mastery and practice loads (BR-M07-09 to -12, -26). The only code that touches those tables. */
 @Injectable()
 export class PkskProgressRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -78,22 +78,43 @@ export class PkskProgressRepository {
     })
   }
 
-  /** BR-M07-26 (1): records when a practice set was served (upsert). */
-  async markLoaded(userId: string, level: PkskLevel, domainId: string, at: Date): Promise<void> {
+  /** BR-M07-26 (1): records when a practice set was served and which question ids it held (upsert). */
+  async markLoaded(userId: string, level: PkskLevel, domainId: string, at: Date, servedIds: readonly string[]): Promise<void> {
     const key = { userId: idFromString(userId), level, domainId: idFromString(domainId) }
     await this.prisma.client.pkskPracticeLoad.upsert({
       where: { userId_level_domainId: key },
-      create: { ...key, loadedAt: at },
-      update: { loadedAt: at },
+      create: { ...key, loadedAt: at, servedIds: [...servedIds] },
+      update: { loadedAt: at, servedIds: [...servedIds] },
     })
   }
 
-  /** The load time of the open practice page, removed by the submission; null when none. */
-  async takeLoaded(userId: string, level: PkskLevel, domainId: string): Promise<Date | null> {
+  /** The open practice set (load time and served ids), removed by the take so it can be submitted once; null when none. */
+  async takeLoaded(userId: string, level: PkskLevel, domainId: string): Promise<{ at: Date; servedIds: string[] } | null> {
     const key = { userId: idFromString(userId), level, domainId: idFromString(domainId) }
     const row = await this.prisma.client.pkskPracticeLoad.findUnique({ where: { userId_level_domainId: key } })
     if (!row) return null
-    await this.prisma.client.pkskPracticeLoad.deleteMany({ where: { id: row.id } })
-    return row.loadedAt
+    const removed = await this.prisma.client.pkskPracticeLoad.deleteMany({ where: { id: row.id } })
+    if (removed.count === 0) return null // a concurrent submit took it first
+    return { at: row.loadedAt, servedIds: row.servedIds }
+  }
+
+  /** Records the question ids a PKSK exam served (upsert, one open set per user and level). */
+  async markExamLoaded(userId: string, level: PkskLevel, at: Date, servedIds: readonly string[]): Promise<void> {
+    const key = { userId: idFromString(userId), level }
+    await this.prisma.client.pkskExamLoad.upsert({
+      where: { userId_level: key },
+      create: { ...key, loadedAt: at, servedIds: [...servedIds] },
+      update: { loadedAt: at, servedIds: [...servedIds] },
+    })
+  }
+
+  /** The open exam set (served ids), removed by the take so it can be submitted once; null when none. */
+  async takeExamLoaded(userId: string, level: PkskLevel): Promise<{ servedIds: string[] } | null> {
+    const key = { userId: idFromString(userId), level }
+    const row = await this.prisma.client.pkskExamLoad.findUnique({ where: { userId_level: key } })
+    if (!row) return null
+    const removed = await this.prisma.client.pkskExamLoad.deleteMany({ where: { id: row.id } })
+    if (removed.count === 0) return null // a concurrent submit took it first
+    return { servedIds: row.servedIds }
   }
 }

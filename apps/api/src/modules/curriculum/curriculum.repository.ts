@@ -12,7 +12,7 @@ import type {
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { offeredLevels, type OfferedLevel } from '../practice/rules'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
 import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
 
 /** A learner Topik: a tree chapter with its subject and level rows. */
@@ -412,10 +412,10 @@ export class CurriculumRepository {
     const rows = await this.db.$queryRaw<{ chapter_id: bigint; question_count: number; servable_count: number }[]>`
       SELECT v.chapter_id,
              count(*)::int AS question_count,
-             (count(*) FILTER (WHERE ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
+             (count(*) FILTER (WHERE ${BANK_VISIBLE_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved'
+       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(r.chapter_id, { questionCount: r.question_count, servableCount: r.servable_count })
     return out

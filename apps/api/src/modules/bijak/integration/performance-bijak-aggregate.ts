@@ -14,6 +14,7 @@ import type {
   BijakItemFact,
   BijakItemQuery,
   BijakMode,
+  BijakPaperKind,
   BijakSittingFact,
   BijakSittingQuery,
   BijakTotals,
@@ -59,10 +60,11 @@ interface SittingRow {
   school_id: string | null
   subject: string
   subject_name: string
-  paper_kind: 'pilihan' | 'jana'
+  paper_kind: BijakPaperKind
   mode: BijakMode
   status: 'submitted' | 'auto_submitted'
-  score: number
+  /** null: no score yet (an unmarked Subjektif or ungraded Berstruktur result); read as 0 and provisional. */
+  score: number | null
   max_score: number
   answered_count: number
   provisional: boolean
@@ -118,6 +120,8 @@ const cleanIds = (list: readonly string[] | undefined): string[] | undefined =>
  * and is not `is_test` (Mod Pelajar); abandoned and in-progress rows never match. The school is the pupil's
  * CURRENT `users.school_id` (the attempt has none), so a pupil's history follows them.
  *
+ * - Every `paper_kind` is read (pilihan, jana, subjektif, structured; D113). A result with no score (null) or
+ *   `provisional` is a sitting (`sittings`, `seconds`, `answered`) but never part of the accuracy base (`graded*`).
  * - `sittings`: one statement per id chunk, joined with `attempt_results` and `users`.
  * - `totals`: the GROUP BY runs in SQL (numeric sums cast to float8 once); chunks of a long id list hold
  *   disjoint pupils, so merging rows of the same key is a plain sum (pupils too).
@@ -159,10 +163,11 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
           paperKind: r.paper_kind,
           mode: r.mode,
           status: r.status,
-          score: r.score,
+          // A null score is not 0 marks: it is skipped for accuracy (provisional) but the sitting still counts.
+          score: r.score ?? 0,
           maxScore: r.max_score,
           answeredCount: r.answered_count,
-          provisional: r.provisional,
+          provisional: r.provisional || r.score === null,
           pendingReview: r.pending_review,
           durationSeconds: r.duration_seconds,
           startedAt: r.started_at,
@@ -187,8 +192,8 @@ export class PrismaBijakAggregate implements BijakAggregatePort {
                COALESCE(SUM(r.max_score), 0)::float8 AS max,
                COALESCE(SUM(${ANSWERED}), 0)::float8 AS answered,
                COALESCE(SUM(${DURATION}), 0)::float8 AS seconds,
-               COALESCE(SUM(r.score) FILTER (WHERE NOT r.provisional), 0)::float8 AS graded_score,
-               COALESCE(SUM(r.max_score) FILTER (WHERE NOT r.provisional), 0)::float8 AS graded_max,
+               COALESCE(SUM(r.score) FILTER (WHERE NOT r.provisional AND r.score IS NOT NULL), 0)::float8 AS graded_score,
+               COALESCE(SUM(r.max_score) FILTER (WHERE NOT r.provisional AND r.score IS NOT NULL), 0)::float8 AS graded_max,
                COUNT(DISTINCT a.user_id)::int AS pupils,
                MAX(a.submitted_at) AS last_submitted_at
         ${FROM}

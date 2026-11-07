@@ -34,9 +34,9 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-/** Starts a MATH D1 `random` session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
+/** Starts a MATH chapter session, answers every question wrongly (so only the `sessions` metric moves) and submits. */
 async function play(who: Client): Promise<string> {
-  const start = await who.post('/api/practice/sessions', { mode: 'random', subjectCode: 'MATH', levelId: w.level.d1, count: 5 })
+  const start = await who.post('/api/practice/sessions', { mode: 'chapter', chapterId: w.chapter.c1, count: 5 })
   expect(start.status, JSON.stringify(start.body)).toBe(201)
   const data = start.body.data as StartSessionResponse
   for (const q of data.questions) {
@@ -58,14 +58,14 @@ async function expectSubmitCommitted(sessionId: string): Promise<void> {
 }
 
 describe('a challenge settlement failure cannot fail the practice submit (BR-M14-13, savepoint challenges_settle)', () => {
-  it('1. settleChallenges writes (a completion and a ledger row) and then throws: the submit is 200, the session and the credit stay, the partial challenge rows are gone', async () => {
+  it('1. settleChallenges writes a completion and then throws: the submit is 200, the session and the credit stay, the partial challenge rows are gone', async () => {
     const gamification = t.app.get(GamificationService)
     const mula = (await t.db.query<{ id: string }>(`select id::text from challenges where title = 'Mula Hari Ini'`))[0]!.id
     const completionsBefore = await completionCount(maju.userId)
     const ledgerBefore = await challengeLedger(maju.userId)
     vi.spyOn(gamification, 'settleChallenges').mockImplementation(async (userId, opts) => {
-      const r = await gamification.claimChallenge(userId, mula, opts) // a partial write inside the submit transaction
-      expect(r.claimed).toBe(true)
+      const r = await gamification.completeChallenge(userId, mula, opts) // a partial write inside the submit transaction
+      expect(r.completed).toBe(true)
       throw new Error('settle boom')
     })
     const sessionId = await play(maju)
@@ -80,9 +80,9 @@ describe('a challenge settlement failure cannot fail the practice submit (BR-M14
     const completionsBefore = await completionCount(student.userId)
     const ledgerBefore = await challengeLedger(student.userId)
     vi.spyOn(gamification, 'settleChallenges').mockImplementation(async (userId, opts) => {
-      await gamification.claimChallenge(userId, mula, opts)
+      await gamification.completeChallenge(userId, mula, opts)
       await opts.tx!.$queryRaw`SELECT 1/0` // division_by_zero: the transaction is now in the aborted state
-      return { claimedIds: [], syiling: 0, xp: 0 }
+      return { completedIds: [] }
     })
     const sessionId = await play(student)
     await expectSubmitCommitted(sessionId)
@@ -90,10 +90,11 @@ describe('a challenge settlement failure cannot fail the practice submit (BR-M14
     expect(await challengeLedger(student.userId)).toBe(ledgerBefore)
   })
 
-  it('3. the next session settles normally: the skipped challenge is claimed then', async () => {
+  it('3. the next session settles normally: the skipped challenge is completed then (still no credit: ruling 12 on #500)', async () => {
     vi.restoreAllMocks()
+    const ledgerBefore = await challengeLedger(maju.userId)
     await play(maju)
     expect(await completionCount(maju.userId)).toBeGreaterThanOrEqual(1)
-    expect(await challengeLedger(maju.userId)).toBeGreaterThanOrEqual(1)
+    expect(await challengeLedger(maju.userId)).toBe(ledgerBefore) // completing pays nothing; the reward is claimed with API-GAME-11
   })
 })
