@@ -32581,13 +32581,7 @@
           "members": {
             "type": "integer",
             "minimum": 0,
-            "description": "Active enrolments; may include pupils of another school."
-          },
-          "joinCode": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "description": "XS-1 pupils with an active enrolment in the class (R1-AS-53 FR-AS-53-2). The join code is not part of the row (FR-AS-53-5)."
           },
           "isActive": {
             "type": "boolean"
@@ -32610,7 +32604,6 @@
           "levelLabel",
           "teacherName",
           "members",
-          "joinCode",
           "isActive",
           "link"
         ]
@@ -32731,6 +32724,14 @@
             "type": "string",
             "description": "Name or e-mail contains, case-insensitive."
           },
+          "level": {
+            "type": "string",
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all."
+          },
+          "classroomId": {
+            "type": "string",
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody."
+          },
           "page": {
             "type": "string",
             "description": "25 rows per page."
@@ -32747,6 +32748,14 @@
           "search": {
             "type": "string",
             "description": "Name or e-mail contains, case-insensitive."
+          },
+          "level": {
+            "type": "string",
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all."
+          },
+          "classroomId": {
+            "type": "string",
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school."
           }
         }
       },
@@ -32795,6 +32804,14 @@
                 "minimum": 0
               },
               "inactive": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "xs": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "notCounted": {
                 "type": "integer",
                 "minimum": 0
               }
@@ -120363,6 +120380,26 @@
           {
             "schema": {
               "type": "string",
+              "description": "Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "25 rows per page."
             },
             "required": false,
@@ -120557,6 +120594,26 @@
             "required": false,
             "description": "Name or e-mail contains, case-insensitive.",
             "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school.",
+            "name": "classroomId",
             "in": "query"
           }
         ],
@@ -121074,6 +121131,26 @@
           {
             "schema": {
               "type": "string",
+              "description": "Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5 (R1-AS-51, FR-AS-51-1); anything else = all.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school; a class of another school lists nobody.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
               "description": "25 rows per page."
             },
             "required": false,
@@ -121317,6 +121394,26 @@
             "required": false,
             "description": "Name or e-mail contains, case-insensitive.",
             "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): Tingkatan T1..T5; anything else = all.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school."
+            },
+            "required": false,
+            "description": "Pupils only (ignored by /guru): pupils actively enrolled in this class of the school.",
+            "name": "classroomId",
             "in": "query"
           }
         ],

@@ -38,6 +38,8 @@ import {
   SchoolAdminResetPasswordRequestSchema,
   SchoolAdminResetResultSchema,
   SchoolAdminUserDetailSchema,
+  SchoolAdminUserExportQuerySchema,
+  SchoolAdminUserListQuerySchema,
   SchoolAdminUserListMetaSchema,
   SchoolAdminUserUpdateRequestSchema,
   SchoolAdminUserWriteResultSchema,
@@ -158,7 +160,6 @@ const classRow = {
   levelLabel: 'Tingkatan 4',
   teacherName: 'Cikgu Demo',
   members: 30,
-  joinCode: 'ABC123',
   isActive: true,
   link: '/prestasi/kelas/7',
 }
@@ -312,9 +313,22 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminClassRowSchema, { ...classRow, link: '' })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'kelas:7', kind: 'kelas' }] })).toBe(false)
   })
+
+  it('the class row has no joinCode (FR-AS-53-5)', () => {
+    expect(Object.keys(SchoolAdminClassRowSchema.shape)).not.toContain('joinCode')
+    const parsed = SchoolAdminClassRowSchema.parse({ ...classRow, joinCode: 'ABC123' })
+    expect('joinCode' in parsed).toBe(false)
+  })
 })
 
 describe('school-admin contract: teachers and pupils', () => {
+  it('meta.counts carries the optional XS figures and the list query the level and class filters (FR-AS-51-1/2)', () => {
+    const counts = { total: 3, active: 2, inactive: 1, xs: 2, notCounted: 1 }
+    expect(ok(SchoolAdminPupilListResponseSchema, { data: [pupilListRow], meta: { ...meta, counts } })).toBe(true)
+    expect(SchoolAdminUserListQuerySchema.parse({ level: 'T4', classroomId: '7' })).toEqual({ level: 'T4', classroomId: '7' })
+    expect(SchoolAdminUserExportQuerySchema.parse({ level: 'T4', classroomId: '7' })).toEqual({ level: 'T4', classroomId: '7' })
+  })
+
   it('parses user list responses and requires meta.counts', () => {
     expect(ok(SchoolAdminPupilListResponseSchema, { data: [pupilListRow], meta })).toBe(true)
     expect(ok(SchoolAdminTeacherListResponseSchema, { data: [teacherListRow], meta })).toBe(true)
