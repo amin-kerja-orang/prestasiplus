@@ -129,7 +129,7 @@ describe('stored result equals the mock engine output', () => {
     const { result, attempt } = (await me.get(`/api/bijak/attempts/${id}/result`)).body.data
     const b = result.sections[1]
     expect(b).toMatchObject({ chooseN: 1, counted: ['sn2-osmosis'], awarded: 2, marks: 4 })
-    expect(result).toMatchObject({ score: 2, coins: 4, points: 20 })
+    expect(result).toMatchObject({ score: 2, coins: 2, points: 20 })
     expect(attempt.picks).toEqual({ 'sn-k2-2025-a-s2': ['sn2-fotosintesis'] })
   })
 })

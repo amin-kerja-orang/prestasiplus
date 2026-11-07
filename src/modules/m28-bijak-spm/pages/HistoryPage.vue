@@ -31,7 +31,8 @@ const average = computed(() =>
       )
     : 0,
 )
-const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2, 0))
+// The Syiling the server credited (the rate is the admin setting, and Semak-revealed parts pay nothing): never derived from the score here.
+const coins = computed(() => done.value.reduce((n, r) => n + (r.coins ?? 0), 0))
 </script>
 
 <template>

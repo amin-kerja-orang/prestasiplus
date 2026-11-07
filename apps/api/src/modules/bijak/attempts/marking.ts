@@ -125,6 +125,32 @@ export function lockedParts(mode: string, checkCounts: ReadonlyMap<string, numbe
 
 /* ------------------------------------------------------------------------------ grading */
 
+/** XP per mark (V2 `PracticeRecorder`); the one source (the wallet binding imports it). The Syiling rate is not a constant: the service resolves `coinsPerCorrect()` and passes it in. */
+export const XP_PER_MARK = 10
+
+/**
+ * Marks to pay for a closed attempt (0 is valid: streak only), or null when the mode is not rewarded. 46 D-PA-13: the marks a Mod Latihan sitting may be paid for = the awarded marks of the COUNTED questions' parts that "Semak" never
+ * revealed (DM-68 `revealed`). Part marks are whole or half marks; a choose-N section pays only its counted questions.
+ */
+export function rewardMarks(mode: string, result: BijakAttemptResult, revealed: ReadonlySet<string>): number | null {
+  if (mode === 'exam') return result.score
+  if (mode !== 'latihan') return null
+  // 0 marks still reaches the reward port: a completed sitting of any mode is a streak event (PRD 48:755); the port credits nothing for 0.
+  return unrevealedScore(result, revealed)
+}
+
+/** The result with the PAID figures (FR-PA-16): in Mod Latihan `coins`/`points` are the unrevealed marks x rate / x XP_PER_MARK, the amount the ledger credits; other modes keep score x rate / x XP_PER_MARK. */
+export function withPaidFigures(mode: string, result: BijakAttemptResult, revealed: ReadonlySet<string>, coinRate: number): BijakAttemptResult {
+  if (mode !== 'latihan') return result
+  const marks = unrevealedScore(result, revealed)
+  return { ...result, coins: marks * coinRate, points: marks * XP_PER_MARK }
+}
+
+/** Awarded marks of the counted questions' parts that are not in `revealed`. */
+export function unrevealedScore(result: BijakAttemptResult, revealed: ReadonlySet<string>): number {
+  return result.questions.filter((q) => q.counted).flatMap((q) => q.parts).filter((p) => !revealed.has(p.partId)).reduce((n, p) => n + p.awarded, 0)
+}
+
 export function gradeQuestion(
   composition: readonly SectionSnapshot[],
   bundles: Bundles,
@@ -162,20 +188,21 @@ export function gradeQuestion(
   }
 }
 
-export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: Bundles, answers: AnswerMap): BijakAttemptResult {
+export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: Bundles, answers: AnswerMap, coinRate: number): BijakAttemptResult {
   let n = 0
   const questions: QuestionResult[] = []
   for (const s of composition) for (const qid of s.questionIds) questions.push(gradeQuestion(composition, bundles, answers, qid, ++n, true))
   seedSuggestions(questions, bundles, answers)
-  return assembleResult(composition, questions)
+  return assembleResult(composition, questions, coinRate)
 }
 
 /**
  * Sections, choose-N ranking and totals from graded questions. Used by the first grading and again when
  * a self-mark changes a part (R1-B12), so a raised mark can change WHICH questions count (V2 recomputeScore
- * -> ExamBestNScorer). Sets `counted` on the questions it is given.
+ * -> ExamBestNScorer). Sets `counted` on the questions it is given. `coinRate` is Syiling per mark (S5-T15 `coinsPerCorrect()`,
+ * resolved by the caller; this function stays pure).
  */
-export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[]): BijakAttemptResult {
+export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[], coinRate: number): BijakAttemptResult {
   const byId = new Map(questions.map((q) => [q.questionId, q]))
   const sections: SectionResult[] = []
   for (const s of composition) {
@@ -216,8 +243,8 @@ export function assembleResult(composition: readonly SectionSnapshot[], question
     pendingReview: pending,
     sections,
     questions,
-    coins: score * 2,
-    points: score * 10,
+    coins: score * coinRate,
+    points: score * XP_PER_MARK,
   }
 }
 
