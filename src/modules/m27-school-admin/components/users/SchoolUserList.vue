@@ -29,6 +29,7 @@ import {
   DsFilterBar,
   DsFormField,
   DsIdentity,
+  DsLink,
   DsLoadError,
   DsNativeSelect,
   DsPage,
@@ -479,10 +480,10 @@ function openRow(row: Item): void {
       class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       data-testid="user-actions-row"
     >
-      <p class="text-body text-muted" data-testid="user-found">
+      <DsText variant="body" tone="muted" data-testid="user-found">
         <template v-if="data">{{ formatCount(data.meta.totalItems) }} pengguna dijumpai</template>
-      </p>
-      <div class="flex flex-col gap-2 sm:flex-row">
+      </DsText>
+      <DsCluster stack-below="sm" gap="sm">
         <UButton
           type="button"
           color="neutral"
@@ -505,7 +506,7 @@ function openRow(row: Item): void {
           data-testid="user-add"
           >{{ isPupil ? 'Tambah Pelajar' : 'Cipta Pengguna' }}</UButton
         >
-      </div>
+      </DsCluster>
     </div>
 
     <PendingTeacherCallout v-if="!isPupil" />
@@ -606,13 +607,13 @@ function openRow(row: Item): void {
             :data-user-id="row.original.id"
           >
             <template #name>
-              <RouterLink
+              <DsLink
                 v-if="row.original.canEdit"
                 :to="row.original.editTo"
-                class="flex min-h-11 min-w-0 items-center"
+                :clamp="1"
                 :title="row.original.name"
                 data-testid="user-name"
-                ><span class="truncate">{{ row.original.name }}</span></RouterLink
+                >{{ row.original.name }}</DsLink
               >
               <span v-else :title="row.original.name" data-testid="user-name">{{
                 row.original.name

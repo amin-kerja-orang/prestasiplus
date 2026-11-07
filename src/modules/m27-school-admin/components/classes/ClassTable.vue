@@ -10,7 +10,18 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, DsText, type CardField } from '@/ds'
+import {
+  DsCluster,
+  DsDataTable,
+  DsDefinitionList,
+  DsEmptyState,
+  DsLink,
+  DsPanel,
+  DsStatusBadge,
+  DsText,
+  type CardField,
+  type DefinitionItem,
+} from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
@@ -71,6 +82,9 @@ const cardFields: CardField[] = [
   { key: 'members', label: 'Murid' },
 ]
 
+const cardItems = (row: Item): DefinitionItem[] =>
+  cardFields.map((f) => ({ key: f.key, label: f.label, value: String(row[f.key]) }))
+
 function open(row: Item): void {
   if (row.link !== null) void router.push(row.link)
 }
@@ -102,14 +116,10 @@ function open(row: Item): void {
       <span data-testid="kl-no">{{ row.original.no }}</span>
     </template>
     <template #name-cell="{ row }">
-      <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="kl-row">
-        <RouterLink
-          v-if="row.original.link !== null"
-          :to="row.original.link"
-          class="inline-flex min-h-11 items-center text-label text-highlighted"
-          data-testid="kl-name"
-          >{{ row.original.name }}</RouterLink
-        >
+      <DsCluster gap="sm" data-testid="kl-row">
+        <DsLink v-if="row.original.link !== null" :to="row.original.link" data-testid="kl-name">{{
+          row.original.name
+        }}</DsLink>
         <DsText v-else as="span" variant="label" data-testid="kl-name">{{ row.original.name }}</DsText>
         <DsStatusBadge
           v-if="!row.original.isActive"
@@ -117,7 +127,7 @@ function open(row: Item): void {
           label="Tidak Aktif"
           data-testid="kl-inactive"
         />
-      </div>
+      </DsCluster>
     </template>
     <template #subject-cell="{ row }">
       <span data-testid="kl-subject">{{ row.original.subject }}</span>
@@ -129,40 +139,19 @@ function open(row: Item): void {
       <span data-testid="kl-teacher">{{ row.original.teacher }}</span>
     </template>
     <template #members-cell="{ row }">
-      <RouterLink
-        :to="row.original.membersLink"
-        class="inline-flex min-h-11 items-center text-label text-highlighted"
-        data-testid="kl-members"
-        @click.stop
-        >{{ row.original.members }}</RouterLink
-      >
+      <DsLink :to="row.original.membersLink" data-testid="kl-members" @click.stop>{{
+        row.original.members
+      }}</DsLink>
     </template>
     <!-- Below `md`: the default card, with "Murid" as the same link. -->
     <template #card="{ row }">
-      <UButton
-        type="button"
-        color="neutral"
-        variant="link"
-        class="h-auto min-h-11 justify-start p-0 text-start text-label whitespace-normal"
-        :label="row.name"
-        @click="open(row)"
-      />
-      <dl class="grid grid-cols-2 gap-x-3 gap-y-1">
-        <div v-for="f in cardFields" :key="f.key" class="min-w-0">
-          <dt class="text-caption text-muted">{{ f.label }}</dt>
-          <dd class="tabular text-body break-words whitespace-normal">
-            <RouterLink
-              v-if="f.key === 'members'"
-              :to="row.membersLink"
-              class="inline-flex min-h-11 items-center text-label text-highlighted"
-              data-testid="kl-members"
-              @click.stop
-              >{{ row.members }}</RouterLink
-            >
-            <template v-else>{{ row[f.key] }}</template>
-          </dd>
-        </div>
-      </dl>
+      <DsLink v-if="row.link !== null" :to="row.link">{{ row.name }}</DsLink>
+      <DsText v-else as="span" variant="label">{{ row.name }}</DsText>
+      <DsDefinitionList :items="cardItems(row)">
+        <template #value-members="{ item }">
+          <DsLink :to="row.membersLink" data-testid="kl-members" @click.stop>{{ item.value }}</DsLink>
+        </template>
+      </DsDefinitionList>
     </template>
   </DsDataTable>
 </template>
