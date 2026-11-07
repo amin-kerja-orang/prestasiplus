@@ -309,6 +309,30 @@ describe('imports: the new header with codes (S1-T05, Q-11)', () => {
     }
   })
 
+  it('[CI] bahasa: ms and bm store as Bahasa Melayu (no language), en stays en, ms+en is kept as ms+en (S1-T09b)', () => {
+    const lang = (bahasa: string) => {
+      const p = planImport([`${CODE_HEAD},bahasa`, `${row({})},${bahasa}`].join('\n'), withCodes)
+      expect(p.failures, bahasa).toEqual([])
+      return p.rows[0]?.input.language
+    }
+    expect(lang('')).toBeUndefined()
+    expect(lang('ms')).toBeUndefined()
+    expect(lang('bm')).toBeUndefined()
+    expect(lang('en')).toBe('en')
+    expect(lang('ms+en')).toBe('ms+en')
+    expect(lang('MS+EN')).toBe('ms+en')
+  })
+
+  it('[CI] bahasa ms+en with Jawi or Arab script is refused (bilingual is Rumi only in R1), with Rumi or mixed it is kept', () => {
+    const plan = (jenis: string) => planImport([`${CODE_HEAD},bahasa,jenis_tulisan`, `${row({})},ms+en,${jenis}`].join('\n'), withCodes)
+    for (const jenis of ['jawi', 'arab']) {
+      const p = plan(jenis)
+      expect(p.rows, jenis).toHaveLength(0)
+      expect(p.failures, jenis).toEqual([{ row: 2, message: 'Baris 2: Bahasa tidak sah.', questionKey: 'K1', field: 'bahasa', code: 'BAHASA_INVALID' }])
+    }
+    for (const jenis of ['', 'rumi', 'mixed']) expect(plan(jenis).rows[0]?.input.language, jenis).toBe('ms+en')
+  })
+
   it('[CI] the "Soalan" texts of Q-11 are exact', () => {
     expect(CM.keyRequired).toBe('Kunci soalan diperlukan.')
     expect(CM.keyNotConsecutive).toBe('Baris soalan tidak berturutan.')

@@ -385,8 +385,9 @@ export class GuruSubmissionsService {
     try {
       image = await this.checkImage(userId, body.stimulusImageId)
     } catch (e) {
-      if (!(e instanceof ApiError)) throw e
-      Object.assign(extra, e.fields ?? {})
+      // Only a field error (422 with `fields`) joins the form errors; any other failure is rethrown, never swallowed.
+      if (!(e instanceof ApiError) || e.fields === undefined) throw e
+      Object.assign(extra, e.fields)
     }
     const { subject, level, chapterKey, spKeys, spCodes } = await this.resolveTags(body, extra)
     const stimulus = body.stimulus?.trim() ?? ''

@@ -267,11 +267,16 @@ export const SUBJEKTIF_PAPERS: SubjektifPaperDef[] = [
   },
 ]
 
+/**
+ * S3-T01 (D76): the one registry both mocks read. A head whose `source` is Disahkan serves pupils (`servesStudents`): the Kontrak admin
+ * mock seeds it with a verification record, and the pupil mock (`GET /bijak/contracts`) lists exactly these rows. MAT/1 and SN/1 are the
+ * pairs the Jana Kertas flow runs on; every other head is Spec.
+ */
 export const BLUEPRINTS: Blueprint[] = [
   {
     subject: 'MAT',
     kertas: 1,
-    source: 'Spec',
+    source: 'Disahkan',
     code: '1449/1',
     durationMin: 75,
     instructions: matK1Instructions,
@@ -324,7 +329,7 @@ export const BLUEPRINTS: Blueprint[] = [
     // A contract with an empty pool: Jana Kertas rejects it with a shortage list.
     subject: 'SN',
     kertas: 1,
-    source: 'Spec',
+    source: 'Disahkan',
     code: '4541/1',
     durationMin: 60,
     instructions: ['Kertas ini mengandungi 40 soalan objektif.'],

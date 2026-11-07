@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { PkskAccessSchema } from '../pksk/student'
 
 /**
  * BE-44 (M16 part 1): wire schemas of the battle arena, standings and tournaments.
@@ -47,6 +48,7 @@ export const BATTLE_MESSAGES = {
   pkskLevelInvalid: 'Tahap PKSK tidak sah.',
   poolTooSmall: 'Soalan tidak mencukupi.',
   spmOnly: 'Khas untuk pelajar Tingkatan 4 & 5 sahaja.',
+  pkskNoAccess: 'Anda belum mempunyai akses PKSK PRO',
   noOpponent: 'Tiada lawan dijumpai.',
   queueNotFound: 'Giliran tidak dijumpai.',
   joinFailed: 'Ralat menghantar permohonan.',
@@ -179,6 +181,9 @@ export const BattleChallengerSchema = z
  * the queue is `expired` after 120 s or after more than 10 s without a poll; another user's queue is
  * `not_found` (never an HTTP error).
  */
+/** `data` of API-GAME-14, the "Batal" of the queue overlay. */
+export const BattleQueueCancelledSchema = z.strictObject({ cancelled: z.literal(true) }).meta({ id: 'BattleQueueCancelled' })
+
 export const BattlePollMatchResponseSchema = z
   .discriminatedUnion('status', [
     z.strictObject({ status: z.literal('waiting') }),
@@ -280,6 +285,8 @@ export const BattleLobbySchema = z
     spmUnlocked: z.boolean(),
     subjects: z.array(BattleLobbySubjectSchema),
     pkskDomains: z.array(BattleLobbyPkskDomainSchema),
+    /** The caller's PKSK grant per level (R1-MUR-19): the PKSK tab shows the no-access state where it is false. */
+    pkskAccess: PkskAccessSchema,
     spmSubjects: z.array(BattleLobbySpmSubjectSchema).optional(),
   })
   .refine((l) => l.spmUnlocked === (l.spmSubjects !== undefined), {
@@ -400,7 +407,7 @@ const nn = z.number().int().min(0)
 export const BattleStudentStandingSchema = z
   .strictObject({
     rank: z.number().int().min(1),
-    userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }),
+    userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil." }),
     name: z.string(),
     school: z.string(),
     menang: nn,
@@ -452,10 +459,10 @@ export const BattleSchoolStandingsResultSchema = z
 export const BattleListRowSchema = z
   .strictObject({
     uuid: IdSchema,
-    playerA: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), homeHere: z.boolean() }),
+    playerA: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil." }), name: z.string(), homeHere: z.boolean() }),
     scoreA: nn,
     scoreB: nn,
-    playerB: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string() }),
+    playerB: z.strictObject({ id: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil." }), name: z.string() }),
     winner: BattleWinnerSchema,
     createdAt: TimestampSchema,
   })
@@ -472,7 +479,7 @@ export const BattleSchoolDetailSchema = z
     allTime: z.strictObject({ battles: nn, menang: nn, ketepatan: z.number().int().min(0).max(100), pelajar: nn }),
     week: BattleStandingBoxSchema.nullable(),
     month: BattleStandingBoxSchema.nullable(),
-    fighters: z.array(z.strictObject({ userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil." }), name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
+    fighters: z.array(z.strictObject({ userId: IdSchema.nullable().meta({ description: "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil." }), name: z.string(), skor: nn })).max(BATTLE_RULES.fightersShown),
     recent: z.array(BattleListRowSchema).max(BATTLE_RULES.recentShown),
   })
   .meta({ id: 'BattleSchoolDetail' })

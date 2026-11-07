@@ -13,11 +13,12 @@ import { RouterLink } from 'vue-router'
 
 import { useApi, useRouteExists } from '@/composables'
 import { DsGrid, DsGridItem, DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
-import { formatCount, formatNumber } from '@/lib/number'
+import { formatCount } from '@/lib/number'
 
 import { fetchSpmOverview } from '../api'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import { LOAD_ERROR } from '../lib/copy'
+import { formatAccuracy } from '../lib/history'
 
 const { routeExists } = useRouteExists()
 const { data, error, reload } = useApi((signal) => fetchSpmOverview({ signal }))
@@ -163,7 +164,7 @@ const mine = computed<Tile[]>(() => {
     },
     {
       id: 'accuracy',
-      value: `${formatNumber(m.avgAccuracy, { decimals: 1 })}%`,
+      value: formatAccuracy(m.avgAccuracy),
       label: 'Purata Ketepatan',
       icon: 'i-ph-crosshair-duotone',
       accent: 'win',
