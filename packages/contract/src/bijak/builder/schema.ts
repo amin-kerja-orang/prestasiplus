@@ -124,6 +124,14 @@ export const BIJAK_BUILDER_MESSAGES = {
   itemsUndecided: '{n} item belum diputuskan.',
   /** S3-T06, API-BIJAK-14: the paper has no source batch yet. [DOC DEFECT: no BM text in the PRD; default] */
   sourceBatchMissing: 'Muat naik PDF sumber dahulu.',
+  /** S3-T06, API-BIJAK-14 upload: the paper already has a source batch. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchExists: 'Kertas ini sudah mempunyai PDF sumber.',
+  /** S3-T06, API-BIJAK-14 apply: the source batch is still being processed or was cancelled. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceBatchNotReady: 'Kelompok sumber masih diproses atau telah dibatalkan.',
+  /** S3-T06, API-BIJAK-14 apply: `{id}` = an accepted item whose question no longer exists or has no version. [DOC DEFECT: no BM text in the PRD; default] */
+  sourceItemQuestionMissing: 'Item {id} tiada soalan yang sah; tidak boleh dimasukkan ke kertas.',
+  /** S3-T06, API-BIJAK-14 upload: the copyright declaration is not ticked. [DOC DEFECT: no BM text in the PRD; default] */
+  declarationRequired: 'Sila akui perakuan hak cipta.',
   /** S3-T06, flashes of PRD30 field 18-11. */
   /** S3-T06 form 18-04..18-06 empty options. [DOC DEFECT: no BM text in the PRD; default] */
   subjektifPickKertas: 'Pilih kertas',
@@ -1128,6 +1136,16 @@ export const BijakBuilderPaperListQuerySchema = z
     negeri: z.string().trim().max(60).optional().meta({ description: 'S3-T06 filter `Negeri` (compared by slug with `exam_board`).' }),
   })
   .meta({ id: 'BijakBuilderPaperListQuery' })
+
+/** S3-T06 API-BIJAK-14: multipart body of `POST /admin/papers/{id}/source`. `paper` is required, `scheme` and `declaration` are optional at the schema level; the 422 rules (PDF, 30 MB, declaration "true") are enforced by the route. */
+export const BijakBuilderPaperSourceUploadSchema = z
+  .strictObject({
+    paper: z.string().meta({ type: 'string', format: 'binary', description: 'Source paper, a PDF (`%PDF-` magic bytes and a `.pdf` name), at most 30 MB.' }),
+    scheme: z.string().meta({ type: 'string', format: 'binary', description: 'Marking scheme, a PDF, at most 30 MB.' }).optional(),
+    declaration: z.literal('true').optional().meta({ description: 'Copyright declaration (field 18-09). The text value `true` is required; anything else is 422 on `fields.declaration`.' }),
+  })
+  .meta({ id: 'BijakBuilderPaperSourceUpload' })
+export type BijakBuilderPaperSourceUpload = z.infer<typeof BijakBuilderPaperSourceUploadSchema>
 
 /** S3-T06 API-BIJAK-14: `POST /admin/papers/{id}/source` with a JSON body `{ apply: true }` appends the accepted items of the paper's source batch. */
 export const BijakBuilderPaperSourceApplySchema = z.strictObject({ apply: z.literal(true) }).meta({ id: 'BijakBuilderPaperSourceApply' })

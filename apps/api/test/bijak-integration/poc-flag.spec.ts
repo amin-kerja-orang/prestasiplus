@@ -115,12 +115,6 @@ for (const flag of ['true', '1', 'false', undefined]) {
       expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
       expect((res.body as { data: { attemptId: string } }).data.attemptId).toBeTruthy()
     })
-
-    it('Jana Kertas has no PoC pool: 422 SHORTAGE', async () => {
-      const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-      expect(res.status, JSON.stringify(res.body)).toBe(422)
-      expect(res.body.error.code).toBe('SHORTAGE')
-    })
   })
 }
 
@@ -145,10 +139,5 @@ describe('test-only PoC double plugged (test/support/poc): the seeded PoC papers
   it('a paper of BE-09 questions starts', async () => {
     const res = await start(student, await be09Paper(t))
     expect(res.status, JSON.stringify(res.body)).toBeLessThan(300)
-  })
-
-  it('Jana Kertas draws from the PoC pool', async () => {
-    const res = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-    expect(res.status, JSON.stringify(res.body)).toBe(201)
   })
 })

@@ -53,3 +53,6 @@ export const DESCRIBE_CHUNK = 1000
 
 /** A placed question whose servability report could not be read (the bank failed closed): hard NOT_SERVABLE, never silently allowed [PROPOSED copy]. */
 export const unreadableLine = (questionId: string): string => `Soalan ${questionId} tidak dapat disemak untuk murid; cuba lagi.`
+
+/** S3-T06 (API-BIJAK-14, field 18-09): each source PDF (`paper`, `scheme`) is at most 30 MB. */
+export const PAPER_SOURCE_MAX_BYTES = 30 * 1024 * 1024

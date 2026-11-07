@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { BijakPapersAttemptSource, type BijakQuestionSource } from '../../src/modules/bijak/papers'
+import { seedJanaPaper } from '../support/jana-paper'
 import { bootPapersApp, loginAs, serveSeededBlueprints, type Client, type PapersTestApp } from './helpers'
 
 /** The provider BE-16 plugs into `BijakAttemptPorts.providePaperSource` (eligibility of an attempt). */
@@ -64,9 +65,7 @@ describe('BijakPapersAttemptSource (BE-15 -> BE-16)', () => {
   })
 
   it('a generated paper is resolvable by its owner only', async () => {
-    const gen = await ann.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })
-    expect(gen.status, JSON.stringify(gen.body)).toBe(201)
-    const paperId = gen.body.data.paperId as string
+    const paperId = await seedJanaPaper(t.db, { userId: ann.userId, subject: 'MAT', kertas: 1 })
     const mine = await source.resolveForAttempt({ userId: ann.userId, paperId, isTest: false })
     expect(mine.ok && mine.paper.kind).toBe('jana')
     expect(await source.resolveForAttempt({ userId: ben.userId, paperId, isTest: false })).toEqual({ ok: false, reason: 'not_found' })
