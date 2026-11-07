@@ -186,14 +186,14 @@ describe('start, actions, clocks and settlement (M16-26..28)', () => {
       ) // host check precedes the status check
     })
 
-    it('409 "Soalan tidak mencukupi." when the bank has fewer questions than the game needs', async () => {
+    it('422 "Soalan tidak mencukupi." (AC-GM-00.6) when the bank has fewer questions than the game needs', async () => {
       const code = await createRoom(student, 'perang-fakta')
       await student.get(P('perang-fakta', code))
       await t.db.query('update questions set is_active = false')
       try {
         expectError(
           await student.post(P('perang-fakta', code, '/start')),
-          'CONFLICT',
+          'VALIDATION_ERROR',
           M.startNotEnoughQuestions,
         )
         expect(await roomOf(t.db, code)).toMatchObject({

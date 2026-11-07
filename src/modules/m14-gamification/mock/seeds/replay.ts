@@ -100,6 +100,7 @@ function replayUser(userId: number): ReplayResult {
           completions.filter((c) => c.date === date).map((c) => c.challengeId),
         ),
         unlocked: new Set(unlocks.map((u) => u.achievementId)),
+        payCompletions: true,
       },
     )
     const at = toIsoMyt(session.completedAt)

@@ -30,7 +30,6 @@ export const actionNotYourTurn = (): ApiError => ApiError.of('FORBIDDEN', { mess
 // 409
 export const startAlreadyStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.startAlreadyStarted })
 export const startNotEnoughPlayers = (): ApiError => ApiError.of('CONFLICT', { message: M.startNotEnoughPlayers })
-export const startNotEnoughQuestions = (): ApiError => ApiError.of('CONFLICT', { message: M.startNotEnoughQuestions })
 export const actionNotStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.actionNotStarted })
 export const actionNotYourRoll = (): ApiError => ApiError.of('CONFLICT', { message: M.actionNotYourRoll })
 export const actionNoQuestion = (): ApiError => ApiError.of('CONFLICT', { message: M.actionNoQuestion })
@@ -41,6 +40,10 @@ export const jutawanNoLifeline = (): ApiError => ApiError.of('CONFLICT', { messa
 export const soloAlreadyChecked = (): ApiError => ApiError.of('CONFLICT', { message: M.soloAlreadyChecked })
 export const soloCardMatched = (): ApiError => ApiError.of('CONFLICT', { message: M.soloCardMatched })
 export const soloCardOpen = (): ApiError => ApiError.of('CONFLICT', { message: M.soloCardOpen })
+
+// 422
+/** ERR-GAME-01, AC-GM-00.6: the pool is smaller than the draw of a game start. */
+export const startNotEnoughQuestions = (): ApiError => ApiError.of('VALIDATION_ERROR', { message: M.startNotEnoughQuestions })
 
 // 422 (field-level)
 export const levelInvalid = (field = 'darjah'): ApiError => fieldError(field, M.level)

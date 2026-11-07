@@ -15,3 +15,4 @@ export {
   type PaperResolution,
 } from './ports'
 export { BijakAttemptProgress, type BijakProgressSource, type BijakServedSource, type PaperProgress } from './progress-source'
+export { BijakAttemptHistoryReads, CLOSED_ATTEMPT_STATUSES, type ClosedAttemptFilter, type ClosedAttemptRow } from './history-reads'

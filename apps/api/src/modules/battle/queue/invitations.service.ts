@@ -1,5 +1,5 @@
 /**
- * Search and 1:1 invitations (M16-07 to M16-11; BR-M16-06, BR-M16-11). D54(d): the search shows display name and school only.
+ * Search and 1:1 invitations (M16-07 to M16-11; BR-M16-06, BR-M16-11). 48 section 3.10: the search shows the display name only; the `school` fields stay in the contract, always empty.
  * An invitation is visible to its receiver (list, accept, decline); every other caller gets "Cabaran tidak dijumpai.".
  * Invitations written under Mod Pelajar (`is_test`) are only seen by Mod Pelajar sessions.
  */
@@ -47,7 +47,7 @@ export class InvitationsService {
       users: rows.map((u) => ({
         id: u.id,
         name: canSeeName(viewer, u.id, u.schoolId, own) ? u.name : displayName(u.name) || 'Pelajar',
-        school: u.schoolName ?? '',
+        school: '',
         avatar: u.avatar,
       })),
     }
@@ -108,7 +108,7 @@ export class InvitationsService {
     return {
       invitations: rows.map((r) => {
         const s = senders.get(idToString(r.senderId))
-        return { uuid: r.id, sender_name: s?.name ?? 'Pelajar', sender_school: s?.schoolName ?? '' }
+        return { uuid: r.id, sender_name: displayName(s?.name ?? '') || 'Pelajar', sender_school: '' }
       }),
     }
   }

@@ -157,7 +157,7 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     expect(await poll(student)).toEqual(before)
   })
 
-  it('a caller without a grade gets DARJAH_4; overlapping third polls create exactly one room', async () => {
+  it('a caller without a grade gets TINGKATAN_4 (FR-MUR-21-3); overlapping third polls create exactly one room', async () => {
     await teacher.post(QM, FORM)
     await poll(teacher)
     await poll(teacher)
@@ -170,7 +170,7 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     )
     expect(codes.size).toBe(1)
     const code = [...codes][0] as string
-    expect(await roomOf(t.db, code)).toMatchObject({ grade_level: 'DARJAH_4', max_players: 4 })
+    expect(await roomOf(t.db, code)).toMatchObject({ grade_level: 'TINGKATAN_4', max_players: 4 })
     expect(
       await t.db.query(`select count(*)::int as n from game_rooms where host_id = $1`, [
         teacher.userId,
