@@ -326,7 +326,7 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
     expect(other.status).toBe(422)
   })
 
-  it('joins a waiting room: the host polls a bot in, a fitting grade joins, others get "Bilik tidak dijumpai."', async () => {
+  it('joins a waiting room: the host polls a bot in, a fitting grade joins, a wrong Tingkatan gets 403, unknown codes "Bilik tidak dijumpai."', async () => {
     const code = await createRoom('papan-bijak')
     const first = await get<Data<Room>>(roomPath('papan-bijak', code), T4_STUDENT)
     expect(first.status).toBe(200)
@@ -357,8 +357,9 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
     const refused = await post<Any>('/api/games/benteng-ilmu/rooms/join', belowT4Student(), {
       room_code: strict.body.data.code,
     })
-    expect(refused.status).toBe(404)
-    expect(refused.body.error).toEqual({ code: 'NOT_FOUND', message: 'Bilik tidak dijumpai.' })
+    // AC-GM-R.6 (ruling on DOC DEFECT 48): the Tingkatan refusal is 403 "Tindakan tidak sah."
+    expect(refused.status).toBe(403)
+    expect(refused.body.error).toEqual({ code: 'FORBIDDEN', message: 'Tindakan tidak sah.' })
     expect(
       (await post<Any>('/api/games/papan-bijak/rooms/join', D5_STUDENT, { room_code: 'ZZZZZZ' }))
         .status,

@@ -24,7 +24,9 @@ import { fetchRoom, joinRoom, roomAction, startRoom, type RoomGame, type RoomVie
 import {
   LOAD_ERROR,
   ROOM_GAME_META,
+  ROOM_LEAVE,
   ROOM_NOT_FOUND,
+  robotCountdown,
   ROOM_THEME,
   lobbyPath,
 } from '../components/lobby/lobby-config'
@@ -179,6 +181,26 @@ async function act(call: () => Promise<RoomView>, quiet = false): Promise<void> 
   }
 }
 
+/** `Keluar` (48 GAME-R): leave the room (a waiting host closes it, a playing seat is forfeited) and go back to the lobby. */
+async function leave(): Promise<void> {
+  if (acting.value) return
+  acting.value = true
+  actionErrors.value = []
+  poller.abortInFlight()
+  poller.stop()
+  version += 1
+  try {
+    await roomAction(props.game, code.value, { type: 'leave' })
+    void router.push(lobbyPath(props.game))
+  } catch (err) {
+    actionErrors.value = errorLines(err)
+    if (room.value && isOpenRoom(room.value)) poller.start()
+  } finally {
+    acting.value = false
+    version += 1
+  }
+}
+
 const start = (): Promise<void> => act(() => startRoom(props.game, code.value))
 const roll = (): Promise<void> => act(() => roomAction(props.game, code.value, { type: 'roll' }))
 
@@ -321,6 +343,14 @@ const meters = computed(() => {
               Menunggu pemain... {{ room.players.length }}/{{ room.settings.maxPlayers }} (minimum
               {{ room.settings.minPlayers }})
             </p>
+            <DsText
+              v-if="isHost && room.robotInSeconds !== undefined"
+              variant="label"
+              tone="muted"
+              data-testid="room-robot-countdown"
+            >
+              {{ robotCountdown(room.robotInSeconds) }}
+            </DsText>
             <UButton
               v-if="isHost"
               size="xl"
@@ -335,6 +365,18 @@ const meters = computed(() => {
             <p v-else class="text-label text-muted" data-testid="room-wait-host">
               Menunggu hos memulakan permainan
             </p>
+            <UButton
+              size="xl"
+              color="neutral"
+              variant="outline"
+              :disabled="acting"
+              block
+              class="min-h-12 sm:w-fit"
+              data-testid="room-leave"
+              @click="leave"
+            >
+              {{ ROOM_LEAVE }}
+            </UButton>
           </div>
 
           <!-- playing -->
@@ -407,6 +449,18 @@ const meters = computed(() => {
             <p v-else class="text-label text-muted" data-testid="room-watching">
               Menunggu pemain lain
             </p>
+            <UButton
+              size="xl"
+              color="neutral"
+              variant="outline"
+              :disabled="acting"
+              block
+              class="min-h-12 sm:w-fit"
+              data-testid="room-leave"
+              @click="leave"
+            >
+              {{ ROOM_LEAVE }}
+            </UButton>
           </div>
 
           <!-- finished -->
