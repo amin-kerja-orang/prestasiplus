@@ -232,4 +232,37 @@ describe('filter-based bulk action (Luluskan Hasil Tapisan, Arkib Semua)', () =>
     expect((await admin.noCsrf.post('/api/questions/bulk-action/filter', body)).status).toBe(403)
     expect(await statusOf(b.review[0]!)).toBe('review')
   })
+
+  describe('FR-QA-47: bulk archive names the Terbit papers', () => {
+    async function paperWith(title: string, status: string, questionId: string): Promise<void> {
+      const p = (await t.db.query<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status) values ('pilihan', $1, $2, 1, 60, $3) returning id::text id`, [title, refs.mathId, status]))[0]!.id
+      const s = (await t.db.query<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 0) returning id::text id`, [p]))[0]!.id
+      await t.db.query(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [s, questionId])
+    }
+    type Out = { data: { matched: number; affectedPapers?: { id: string; title: string }[] } }
+
+    it('the dry run and the real run list a published paper and not a draft one; no key without one', async () => {
+      const made = await batch({ draft: 2 })
+      await paperWith('Kertas Terbit FR-QA-47', 'published', made.draft[0]!)
+      await paperWith('Kertas Draf FR-QA-47', 'draft', made.draft[1]!)
+      const dry = await post(admin, { action: 'archived', filter: { tahun: made.year }, dryRun: true })
+      expect(dry.status, JSON.stringify(dry.body)).toBe(200)
+      expect((dry.body as Out).data.affectedPapers?.map((p) => p.title)).toEqual(['Kertas Terbit FR-QA-47'])
+      const real = await post(admin, { action: 'archived', filter: { tahun: made.year }, expectedCount: (dry.body as Out).data.matched })
+      expect(real.status, JSON.stringify(real.body)).toBe(200)
+      expect((real.body as Out).data.affectedPapers?.map((p) => p.title)).toEqual(['Kertas Terbit FR-QA-47'])
+
+      const none = await batch({ draft: 1 })
+      const clean = await post(admin, { action: 'archived', filter: { tahun: none.year }, dryRun: true })
+      expect((clean.body as Out).data).not.toHaveProperty('affectedPapers')
+    })
+
+    it('the selected-rows bulk archive lists it too', async () => {
+      const made = await batch({ draft: 1 })
+      await paperWith('Kertas Terbit Pilihan FR-QA-47', 'published', made.draft[0]!)
+      const res = await admin.post('/api/questions/bulk-action', { action: 'archived', ids: [made.draft[0]] })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect((res.body as Out).data.affectedPapers?.map((p) => p.title)).toEqual(['Kertas Terbit Pilihan FR-QA-47'])
+    })
+  })
 })

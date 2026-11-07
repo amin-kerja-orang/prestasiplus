@@ -19,6 +19,8 @@ model Stimulus {
   bodyMs         String?  @map("body_ms")
   bodyEn         String?  @map("body_en")
   caption        String?
+  /// English twin of the caption (DM-50, S1-T09b); null = no English text.
+  captionEn      String?  @map("caption_en")
   altText        String?  @map("alt_text")
   sourceCitation String?  @map("source_citation")
   /// Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Nullable text, no check constraint.

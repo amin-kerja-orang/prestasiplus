@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { COPYRIGHT_OPTIONS } from '../admin/intake/types'
 import IntakeUploadPage from '../admin/intake/pages/IntakeUploadPage.vue'
 import { checkFile, PDF_ONLY_MESSAGE } from '../admin/intake/lib/ocr'
 import adminIntakeRoutes from '../routes/admin-intake'
@@ -53,6 +54,25 @@ describe('intake upload accept', () => {
     const { accept, html } = await renderUpload()
     expect(accept).toBe('application/pdf,image/png,image/jpeg')
     expect(html).not.toContain('Hanya PDF')
+  })
+
+  it('the sample path asks for the source declaration too', async () => {
+    vi.stubEnv('VITE_API_MODE', 'mock')
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: { template: '<i/>' } }, ...adminIntakeRoutes],
+    })
+    await router.push('/')
+    const push = vi.spyOn(router, 'push')
+    const w = mount(IntakeUploadPage, { attachTo: document.body, global: { plugins: [router] } })
+    await flushPromises()
+    await w.get('[data-testid=intake-source] input, input[data-testid=intake-source]').setValue('Sekolah')
+    await w.get('[data-testid=intake-copyright]').setValue(COPYRIGHT_OPTIONS[0].value)
+    await w.get('[data-testid=intake-sample]').trigger('click')
+    await flushPromises()
+    expect(w.text()).toContain('Pengisytiharan sumber diperlukan.')
+    expect(push).not.toHaveBeenCalled()
+    w.unmount()
   })
 
   it('refuses a non-PDF client-side in http mode with the backend message', () => {

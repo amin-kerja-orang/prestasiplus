@@ -15,6 +15,7 @@ import ProductDetailPage from '../../pages/ProductDetailPage.vue'
 import WhatsappHandoffPage from '../../pages/WhatsappHandoffPage.vue'
 import marketplaceRoutes from '../../routes/marketplace'
 import productRoutes from '../../routes/product'
+import { SORT_OPTIONS } from '../../components/product/copy'
 import { CARD_1, CARD_5, CATEGORIES, DETAIL_1, SHOP_1, listOf } from '../fixtures'
 
 const api = vi.hoisted(() => ({
@@ -73,8 +74,11 @@ describe('routes', () => {
     expect(byPath['/marketplace']).toMatchObject({
       layout: 'user',
       access: 'auth',
-      title: 'Marketplace - PRESTASIPLUS',
-      header: { title: 'Marketplace', subtitle: 'Peralatan sekolah untuk pelajar 🛒' },
+      title: 'Marketplace — PRESTASIPLUS',
+      header: {
+        title: 'Marketplace',
+        subtitle: 'Produk pembelajaran daripada penjual yang diluluskan',
+      },
     })
     expect(byPath['/marketplace/penjual/:id']).toMatchObject({
       layout: 'user',
@@ -117,6 +121,42 @@ describe('S6 MarketplacePage', () => {
     expect(
       w.get('[data-testid="marketplace-chip-peralatan-sekolah"]').attributes('data-active'),
     ).toBe('true')
+  })
+
+  it('AC-MUR-32-4 / FR-MUR-32-4: the Ringgit price note shows above the filters', async () => {
+    const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
+    expect(w.get('[data-testid="marketplace-price-note"]').text()).toBe(
+      'Harga di Marketplace dalam Ringgit (RM) — bukan syiling atau token.',
+    )
+  })
+
+  it('AC-MUR-32-1: every product card says to contact the seller through WhatsApp, and there is no order or "Pesanan saya"', async () => {
+    const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
+    const cards = w.findAll('[data-testid="product-card"]')
+    expect(cards).toHaveLength(2)
+    for (const c of cards) {
+      expect(c.get('[data-testid="product-card-contact"]').text()).toBe(
+        'Hubungi penjual melalui WhatsApp',
+      )
+    }
+    expect(w.text()).not.toContain('Pesanan saya')
+    expect(w.text()).not.toContain('Hantar Pesanan')
+  })
+
+  it('FR-MUR-32-2: the sort select offers Terbaru and the two price orders, without Popular', async () => {
+    const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
+    const options = SORT_OPTIONS.map((o) => o.label)
+    expect(options).toEqual(['Terbaru', 'Harga: Rendah ke Tinggi', 'Harga: Tinggi ke Rendah'])
+    expect(w.text()).not.toContain('Popular')
+  })
+
+  it('AC-MUR-32-2: with no filter and no products it shows "Tiada produk tersedia" and the approved-seller hint', async () => {
+    api.searchMarketplaceProducts.mockResolvedValue(listOf([], 1))
+    const w = await mountAt(MarketplacePage, '/marketplace', '/marketplace')
+    const empty = w.get('[data-testid="marketplace-empty"]')
+    expect(empty.text()).toContain('Tiada produk tersedia')
+    expect(empty.text()).toContain('Belum ada penjual diluluskan yang menyenaraikan produk aktif.')
+    expect(empty.text()).not.toContain('Tiada Produk Dijumpai')
   })
 
   it('shows "Tiada Produk Dijumpai" and no pager when nothing matches', async () => {
@@ -252,7 +292,7 @@ describe('S8 PenjualShopPage', () => {
     expect(w.get('[data-testid="shop-name"]').text()).toBe('JomBelajar Official')
     expect(w.findAll('[data-testid="product-card"]')).toHaveLength(2)
     expect(w.find('[data-testid="product-card-shipping"]').exists()).toBe(false)
-    expect(w.get('[data-testid="marketplace-back"]').text()).toBe('Kembali ke Marketplace')
+    expect(w.get('[data-testid="marketplace-back"]').text()).toBe('Kembali')
   })
 
   it('an unknown shop (404) and a non-numeric id both render the in-place 404 outcome', async () => {
