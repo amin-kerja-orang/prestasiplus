@@ -115,7 +115,12 @@ export const QuestionComplianceStatusSchema = z
 export const QuestionSourceTypeSchema = z
   .enum(['textbook', 'dskp', 'trial', 'marking_scheme', 'ai_generated'])
   .meta({ id: 'QuestionSourceType' })
-const Language = z.enum(['bm', 'en'], QUESTION_MESSAGES.language)
+/** Wire tokens of `language` on output (60 API-Q-03): `ms` Bahasa Melayu, `en` English, `ms+en` bilingual (stored `ms_en`, Rumi only). */
+export const QUESTION_LANGUAGES = ['ms', 'en', 'ms+en'] as const
+/** Input also accepts `bm`, the old token of `ms`; it is never written back on output. */
+export const QUESTION_LANGUAGES_IN = [...QUESTION_LANGUAGES, 'bm'] as const
+const Language = z.enum(QUESTION_LANGUAGES, QUESTION_MESSAGES.language)
+const LanguageIn = z.enum(QUESTION_LANGUAGES_IN, QUESTION_MESSAGES.language)
 const ScriptType = z.enum(['rumi', 'arab', 'jawi', 'mixed'])
 const Difficulty = z.number().int().min(1).max(5)
 
@@ -280,6 +285,8 @@ export const QuestionSchema = z
     difficultyLevel: Difficulty,
     questionType: QuestionTypeSchema,
     questionText: z.string(),
+    /** English stem (DM-50 `stem_en`); null when none. */
+    questionTextEn: z.string().nullable().optional(),
     /** Public file token of the stem image (an image stimulus of the version; download at `/api/files/<token>`), or null. */
     questionImage: z.string().nullable(),
     options: z.array(z.string()).nullable(),
@@ -439,7 +446,12 @@ const baseInput = z.object({
   altAnswers: z.array(z.string()).optional(),
   modelAnswer: z.string().nullable().optional(),
   explanation: z.string().nullable().optional(),
-  language: Language.optional(),
+  language: LanguageIn.optional().meta({
+    description:
+      'Bahasa soalan: `ms`, `en` or `ms+en` (`bm` is accepted as `ms`). `ms+en` is Rumi only: a Jawi or Arab question cannot be bilingual (known R1 limit, 422 on `language`). A draft saves with an empty English text; the English-required rule applies at send and Terbitkan only.',
+  }),
+  /** English stem (DM-50 `stem_en`); null or blank clears it; omitted keeps it. */
+  questionTextEn: z.string().nullable().optional(),
   pointsValue: z.coerce.number({ error: QUESTION_MESSAGES.points }).int(QUESTION_MESSAGES.points).min(1, QUESTION_MESSAGES.points).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),
@@ -541,6 +553,9 @@ export const QuestionBulkSkippedSchema = z
   })
   .meta({ id: 'QuestionBulkSkipped' })
 export type QuestionBulkSkipped = z.infer<typeof QuestionBulkSkippedSchema>
+/** FR-QA-47: a Terbit paper that places a question of a bulk archive; it refuses new sittings until the question is replaced. */
+export const QuestionAffectedPaperSchema = z.object({ id: IdSchema, title: z.string() }).meta({ id: 'QuestionAffectedPaper' })
+
 export const QuestionBulkResultSchema = z
   .object({
     affected: z.number().int().min(0),
@@ -552,6 +567,7 @@ export const QuestionBulkResultSchema = z
       .array(QuestionBulkSkippedSchema)
       .optional()
       .meta({ description: 'Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row.' }),
+    affectedPapers: z.array(QuestionAffectedPaperSchema).optional().meta({ description: 'Bulk archive only: the Terbit papers that place an archived row. Present only when there is at least one.' }),
   })
   .meta({ id: 'QuestionBulkResult' })
 
@@ -591,6 +607,7 @@ export const QuestionFilterBulkResultSchema = z
     remaining: z.number().int().min(0).meta({ description: 'eligible - processed: rows a further run would still try.' }),
     capped: z.boolean().meta({ description: 'true when `remaining` > 0 because of the cap.' }),
     dryRun: z.boolean(),
+    affectedPapers: z.array(QuestionAffectedPaperSchema).optional().meta({ description: 'Action `archived` only: the Terbit papers that place an eligible row (dry run) or an archived row (real run). Present only when there is at least one.' }),
   })
   .meta({ id: 'QuestionFilterBulkResult' })
 

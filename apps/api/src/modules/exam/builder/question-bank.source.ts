@@ -21,7 +21,7 @@ import { idFromString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
 import { BANK_ONLY, QuestionsRepository } from '../../questions'
-import { ACTIVE_SUBJECT_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
+import { ACTIVE_SUBJECT_SQL, ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../questions/learner-visibility'
 import { CANDIDATE_SLACK, MAX_EDITOR_CANDIDATES } from './builder.constants'
 import { BuilderRepository } from './builder.repository'
 import {
@@ -219,6 +219,29 @@ export class QuestionBankBuilderSource implements BuilderQuestionSource {
         JOIN source_papers sp ON sp.id = v.source_paper_id
        WHERE q.id = ANY(${keys}::bigint[])`
     return new Map(rows.map((r) => [r.id.toString(), { year: r.year, negeri: r.negeri }]))
+  }
+
+  /**
+   * S3-T06: the questions that are `bersekema` at the version shown (pinned, else live, else latest): that version exists and every leaf has an `answer_keys`
+   * row (`ALL_LEAVES_KEYED_SQL`, the SQL twin of the servability `no_key` / `no_scheme` reasons). One bounded query, a draft question included. Keys: `${id}:${versionNo ?? 0}`.
+   */
+  async schemeOf(refs: readonly BuilderQuestionRef[]): Promise<ReadonlySet<string>> {
+    const ids: bigint[] = []
+    const versions: number[] = []
+    for (const ref of refs) {
+      const k = toBigint(ref.id)
+      if (k === null) continue
+      ids.push(k)
+      versions.push(ref.versionNo ?? 0)
+    }
+    if (ids.length === 0) return new Set()
+    const rows = await this.db.$queryRaw<{ id: bigint; ver: number }[]>`
+      SELECT r.id, r.ver
+        FROM unnest(${ids}::bigint[], ${versions}::int[]) AS r(id, ver)
+        JOIN questions q ON q.id = r.id
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = CASE WHEN r.ver > 0 THEN r.ver ELSE COALESCE(q.live_version_no, q.latest_version_no) END
+       WHERE ${ALL_LEAVES_KEYED_SQL}`
+    return new Set(rows.map((r) => `${r.id.toString()}:${String(r.ver)}`))
   }
 
   async groups(groupIds: readonly string[]): Promise<ReadonlyMap<string, BuilderGroupInfo>> {

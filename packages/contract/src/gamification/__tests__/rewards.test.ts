@@ -287,7 +287,7 @@ describe('errors', () => {
     }
   })
 
-  it('carries VALIDATION_ERROR fields with the Laravel-style messages', () => {
+  it('carries VALIDATION_ERROR fields with the BM messages (ERR-RWD-08)', () => {
     const body = {
       error: {
         code: 'VALIDATION_ERROR',
@@ -297,7 +297,7 @@ describe('errors', () => {
     }
     expect(ErrorBodySchema.safeParse(body).success).toBe(true)
     expect(REWARD_MESSAGES.redemptionNotFound).toBe('Tebusan tidak dijumpai.')
-    expect(REWARD_MESSAGES.notFound).toBe('Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+    expect(REWARD_MESSAGES.notFound).toBe('Rekod tidak dijumpai.')
   })
 })
 

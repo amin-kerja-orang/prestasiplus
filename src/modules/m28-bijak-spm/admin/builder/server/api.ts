@@ -9,9 +9,11 @@ import type {
   BijakBuilderPoolUnit,
   BijakBuilderPublishResult,
   BijakBuilderReview,
+  BijakBuilderSourceFilters,
   BijakBuilderStudentView,
   BijakDskpUnit,
   BijakGenerateShortage,
+  BijakLevelScope,
   BijakPoolPreview,
 } from '@pp/contract'
 
@@ -28,13 +30,16 @@ export type BuilderErrorKind =
 
 export class BuilderError extends Error {
   readonly shortages: BijakGenerateShortage[]
+  /** Field to BM message of a 422 `fields` (e.g. `title`, S3-T06 `examBoard`, `year`); empty when the refusal has no field. */
+  readonly fields: Record<string, string>
   constructor(
     readonly kind: BuilderErrorKind,
     message: string,
-    extra: { shortages?: BijakGenerateShortage[] } = {},
+    extra: { shortages?: BijakGenerateShortage[]; fields?: Record<string, string> } = {},
   ) {
     super(message)
     this.shortages = extra.shortages ?? []
+    this.fields = extra.fields ?? {}
   }
 }
 
@@ -42,6 +47,22 @@ export interface BuilderSubject {
   code: string
   name: string
   kertas: number[]
+  /** The default of `Dilihat murid` per kertas, from the contract. Absent: Tingkatan 4 dan 5. */
+  levelScopes?: Record<number, BijakLevelScope>
+}
+
+/** Tahun and Negeri of Jana set (multi-select, 13-08, 13-09), and the size asked. */
+export interface JanaFilters {
+  years?: number[]
+  negeri?: string[]
+  /** `Bilangan soalan`; omitted = the contract total. */
+  count?: number
+}
+
+/** `POST /admin/papers/generate` (API-BIJAK-11). */
+export interface GenerateOptions extends JanaFilters {
+  title?: string
+  levelScope?: BijakLevelScope
 }
 
 export interface PlacementResult {
@@ -54,6 +75,10 @@ export interface SectionPoolQuery {
   q?: string
   level?: 't4' | 't5' | 't1_t3'
   unit?: string
+  /** `Tahun` (14-01, one year). */
+  tahun?: number
+  /** `Negeri` (14-02, multi-select). */
+  negeri?: string[]
   page?: number
   pageSize?: number
 }
@@ -62,25 +87,69 @@ export interface SectionPool {
   units: BijakBuilderPoolUnit[]
   total: number
   totalPages: number
+  /** The values `Tahun` and `Negeri` offer; a filter with none is hidden (its column holds no data). */
+  filters?: BijakBuilderSourceFilters
 }
 
 export interface HeaderPatch {
   title?: string
   year?: number
   durationMin?: number
+  /** `Kod kertas (kulit)`; blank = the subject code. */
+  code?: string
   instructions?: string[]
+  /** S3-T06 (Kertas Subjektif `Sunting`): `Negeri`, `Tempoh (minit)` (null = untimed) and `Jumlah Markah`. */
+  examBoard?: string
+  durationMinutes?: number | null
+  totalMarks?: number
+}
+
+/** S3-T06 list query of the Kertas Subjektif lane (`GET /admin/papers?surface=subjektif`). */
+export interface SubjektifQuery {
+  subject?: string
+  kertas?: number
+  status?: 'draf' | 'terbit'
+  year?: number
+  negeri?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface SubjektifCounts {
+  total: number
+  published: number
+  withScheme: number
+}
+
+export interface SubjektifPage {
+  rows: AdminPaperSummary[]
+  /** Rows matching the filters (all pages). */
+  total: number
+  /** The three tiles; null when the server sent no `meta.counts` (the tiles then show "—"). */
+  counts: SubjektifCounts | null
+}
+
+/** S3-T06 create form 18-02..18-08. `durationMinutes` null or absent = untimed. */
+export interface SubjektifCreate {
+  title: string
+  subject: string
+  kertas: number
+  examBoard: string
+  year: number
+  durationMinutes?: number | null
+  totalMarks: number
 }
 
 /**
- * "Sunting bahagian" patch (`PUT /admin/papers/:id`, `sections[]`, R1-T34 `BijakBuilderSectionPatch`
- * @ r1/t34-builder-review 4d771b47). The answering rule and the count come from the blueprint and are
- * not editable here.
+ * "Sunting bahagian" patch (`PUT /admin/papers/:id`, `sections[]`, `BijakBuilderSectionPatch`). `rule` is the
+ * `Jawab Semua` / `Pilih N` control (FR-ADM-Q14.2); it never changes the mark budget.
  */
 export interface SectionPatch {
   label?: string
   /** `null` or empty clears it (the rule line is derived again). */
   instruction?: string | null
   compulsory?: boolean
+  rule?: { type: 'all' } | { type: 'choose'; n: number }
 }
 
 /** A reference-sheet panel (`BijakPaperReferencePanel`): title, text / formula lines and an optional stored image. */
@@ -108,10 +177,12 @@ export interface BuilderApi {
   /** Subjects and the kertas that have a blueprint (Mula kosong / Jana set choices). */
   builderSubjects(): Promise<BuilderSubject[]>
   /** "Mula kosong": an empty draft with the blueprint's sections. Returns the paper id. */
-  create(input: { subject: string; kertas: number; title?: string }): Promise<string>
+  create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string>
   /** "Jana set": a draft generated from the blueprint. Rejects with `BuilderError('shortage')`. */
-  generate(subject: string, kertas: number): Promise<string>
-  poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview>
+  generate(subject: string, kertas: number, options?: GenerateOptions): Promise<string>
+  poolPreview(subject: string, kertas: number, filters?: JanaFilters): Promise<BijakPoolPreview>
+  /** `Padam` of a Draf set (a Terbit one is refused). */
+  deleteSet(id: string): Promise<void>
   getEditor(id: string): Promise<PaperEditorData>
   updateHeader(id: string, patch: HeaderPatch): Promise<PaperEditorData>
   /** D90: placing a member of a stimulus group places the whole group. */
@@ -134,6 +205,19 @@ export interface BuilderApi {
   /** Salin set: a new draft copy. Returns the new paper id. */
   copy(id: string): Promise<string>
   units(subject: string): Promise<BijakDskpUnit[]>
+  /** S3-T06: the Kertas Subjektif list with the tile counts. */
+  listSubjektif(query?: SubjektifQuery): Promise<SubjektifPage>
+  /** S3-T06: `Baharu`; a Draf paper with `surface: 'subjektif'`. A 422 arrives as `BuilderError('invalid')` with `fields`. */
+  createSubjektif(input: SubjektifCreate): Promise<{ id: string }>
+  /** S3-T06: `Padam`. */
+  deletePaper(id: string): Promise<void>
+  /**
+   * S3-T06, field 18-09 (API-BIJAK-14): `Muat naik PDF sumber`, multipart `paper` and optional `scheme`.
+   * Answers the intake batch created for this paper.
+   */
+  uploadSource(id: string, files: { paper: File; scheme?: File | null }): Promise<{ batchId: string }>
+  /** S3-T06, API-BIJAK-14: `{ apply: true }` appends the accepted items of the paper's source batch. */
+  applySource(id: string): Promise<{ placements: number }>
 }
 
 export const BUILDER_ROUTES = {
@@ -142,6 +226,11 @@ export const BUILDER_ROUTES = {
 } as const
 
 export const BUILDER_PATH = '/admin/studio/sets'
+
+/** S3-T06 Kertas Subjektif admin paths. The pupil route is `/kertas-subjektif/:id`. */
+export const SUBJEKTIF_PATH = '/admin/kertas-subjektif'
+export const subjektifPath = (paperId: string): string => `${SUBJEKTIF_PATH}/${encodeURIComponent(paperId)}`
+export const subjektifPupilPath = (paperId: string): string => `/kertas-subjektif/${encodeURIComponent(paperId)}`
 export const builderPath = (paperId: string): string => `${BUILDER_PATH}/${encodeURIComponent(paperId)}/builder`
 
 /** The BM text of any thrown value (the server's own line when it sent one). */

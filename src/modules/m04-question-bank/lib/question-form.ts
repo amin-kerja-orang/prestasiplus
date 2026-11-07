@@ -5,7 +5,7 @@
 
 import { isApiError } from '@/api'
 
-import type { QuestionDetail, QuestionInputBody, QuestionType } from '../api/questions'
+import type { QuestionDetail, QuestionInputBody, QuestionLanguage, QuestionType } from '../api/questions'
 import { type CognitiveValue, isCognitive } from './studio/dskp-tags'
 import { GENERIC_ERROR } from './ui-errors'
 
@@ -45,7 +45,7 @@ export interface QuestionFormValues {
   altAnswers: string
   modelAnswer: string
   explanation: string
-  language: 'bm' | 'en'
+  language: QuestionLanguage
   pointsValue: string
   /** '' = none, else '1' | '2' | '3' | '4' (Kertas, v2). */
   kertas: '' | '1' | '2' | '3' | '4'
@@ -87,7 +87,7 @@ export function emptyValues(): QuestionFormValues {
     altAnswers: '',
     modelAnswer: '',
     explanation: '',
-    language: 'bm',
+    language: 'ms',
     pointsValue: '1',
     kertas: '',
     cognitiveLevel: '',

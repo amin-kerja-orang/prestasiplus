@@ -505,7 +505,7 @@ describe('performance contract (BE-19)', () => {
       questionText: 'Soalan contoh',
       questionType: 'mcq',
       options: ['A', 'B', 'C', 'D'],
-      language: 'bm',
+      language: 'ms',
       textDirection: 'ltr',
       scriptType: 'rumi',
       pointsValue: 1,

@@ -177,8 +177,9 @@ export class IntakeFilesService {
       }),
     ])
     // One aggregate for the whole page (no query per row).
-    const counts = await this.itemCountsOf(rows.map((r) => r.id))
-    return { data: rows.map((r) => toBatchSummary(r as BatchRow, counts.get(r.id))), meta: listMeta(query.page, query.pageSize, total) }
+    const ids = rows.map((r) => r.id)
+    const [counts, targets] = await Promise.all([this.itemCountsOf(ids), this.targetPaperIdsOf(ids)])
+    return { data: rows.map((r) => toBatchSummary(r as BatchRow, counts.get(r.id), targets.get(r.id) ?? null)), meta: listMeta(query.page, query.pageSize, total) }
   }
 
   async getBatch(auth: AuthContext, idText: string): Promise<IntakeBatchDetail> {
@@ -194,9 +195,13 @@ export class IntakeFilesService {
       include: { owner: { select: { id: true, name: true } }, files: { orderBy: { id: 'asc' } } },
     })
     if (!row) throw ApiError.of('NOT_FOUND')
-    const progress = await this.progressOf(row.files.map((f) => f.id))
+    const [progress, counts, targets] = await Promise.all([
+      this.progressOf(row.files.map((f) => f.id)),
+      this.itemCountsOf([row.id]),
+      this.targetPaperIdsOf([row.id]),
+    ])
     return {
-      ...toBatchSummary(row as BatchRow, (await this.itemCountsOf([row.id])).get(row.id)),
+      ...toBatchSummary(row as BatchRow, counts.get(row.id), targets.get(row.id) ?? null),
       files: row.files.map((f) => toFileSummary(f, progress.get(f.id) ?? { total: f.pageCount ?? 0, done: 0, failed: 0 })),
     }
   }
@@ -215,6 +220,22 @@ export class IntakeFilesService {
        WHERE batch_id = ANY(${batchIds}::bigint[])
        GROUP BY batch_id`
     for (const r of rows) out.set(r.batch_id, { itemCount: r.n, reviewedCount: r.reviewed })
+    return out
+  }
+
+  /**
+   * DM-45: per batch, the paper made from it (`papers.source_batch_id`), in one statement for all the given batches. When a batch has
+   * several papers (different paper codes) the lowest id wins. A batch without a paper is absent (the caller falls back to null).
+   */
+  private async targetPaperIdsOf(batchIds: bigint[]): Promise<Map<bigint, bigint>> {
+    const out = new Map<bigint, bigint>()
+    if (batchIds.length === 0) return out
+    const rows = await this.prisma.client.paper.findMany({
+      where: { sourceBatchId: { in: batchIds } },
+      select: { id: true, sourceBatchId: true },
+      orderBy: { id: 'desc' },
+    })
+    for (const r of rows) if (r.sourceBatchId !== null) out.set(r.sourceBatchId, r.id)
     return out
   }
 

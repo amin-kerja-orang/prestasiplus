@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * S6 `/marketplace` (FR-M20-49..54; URS FT-M20-4.1): the search card, the category chips and the
- * product grid of #14, or the "Tiada Produk Dijumpai" card (no match, or a page beyond the last).
+ * S6 `/marketplace` (FR-M20-49..54; URS FT-M20-4.1; R1-MUR-32): the Ringgit price note, the search card, the category
+ * chips and the product grid of #14, or the empty card: "Tiada produk tersedia" when no filter is active,
+ * "Tiada Produk Dijumpai" when a filter matches nothing (or a page beyond the last).
  * The four filter values live in the URL (`q`, `category`, `condition`, `sort`, `page`), so every
  * state is a bookmarkable GET link as on live. The pager appears only when there is more than one
  * page and the page has rows.
@@ -10,7 +11,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError, DsText } from '@/ds'
 
 import { fetchMarketplaceCategories, searchMarketplaceProducts, type BuyerSort } from '../api'
 import CategoryChips from '../components/product/CategoryChips.vue'
@@ -44,6 +45,11 @@ const products = useApi(
       signal,
     }),
   [query, page],
+)
+
+/** A text search, a category or a condition is applied (the sort alone is not a filter). */
+const filtered = computed(
+  () => query.value.q.trim() !== '' || query.value.category !== '' || query.value.condition !== '',
 )
 
 const failed = computed(() => categories.error.value !== null || products.error.value !== null)
@@ -81,6 +87,9 @@ const pagerQuery = computed(() => ({
   <DsPage data-testid="marketplace-page">
     <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="retry" />
     <template v-else>
+      <DsText variant="caption" data-testid="marketplace-price-note">
+        {{ MARKETPLACE_COPY.priceNote }}
+      </DsText>
       <ProductFilters
         v-if="categories.data.value"
         :categories="categories.data.value"
@@ -104,8 +113,8 @@ const pagerQuery = computed(() => ({
       </div>
       <div v-else-if="rows.length === 0" data-testid="marketplace-empty">
         <DsEmptyState
-          :title="MARKETPLACE_COPY.emptyTitle"
-          :description="MARKETPLACE_COPY.emptyHint"
+          :title="filtered ? MARKETPLACE_COPY.noMatchTitle : MARKETPLACE_COPY.emptyTitle"
+          :description="filtered ? MARKETPLACE_COPY.noMatchHint : MARKETPLACE_COPY.emptyHint"
           icon="storefront"
         />
       </div>

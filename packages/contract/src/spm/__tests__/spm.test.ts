@@ -29,6 +29,8 @@ import {
   SpmMockListItemSchema,
   SpmMockResultSchema,
   SpmMockSubmitRequestSchema,
+  SpmHistoryQuerySchema,
+  SpmHistoryResponseSchema,
   SpmOverviewSchema,
   SpmSubjektifOverviewSchema,
   SpmTrackingAHubSchema,
@@ -57,7 +59,7 @@ const diff = { '1': 0, '2': 12, '3': 30, '4': 8, '5': 0 }
 const overview = {
   stats: { totalQuestions: 20529, subjectCount: 19, trackingAQuestions: 747 },
   modules: { databank: 14673, latihTubi: 14673, trackingA: 747, subjektifSets: 210, kertasSubjektif: 3 },
-  me: { sessions: 4, avgAccuracy: 62.5, coins: 40, answered: 120 },
+  me: { sessions: 4, avgAccuracy: 63, coins: 40, answered: 120 },
 }
 
 const card = {
@@ -230,6 +232,17 @@ describe('M06 read models', () => {
     expect(ok(SpmOverviewSchema, overview)).toBe(true)
     expect(ok(SpmOverviewSchema, { ...overview, me: { ...overview.me, answered: -1 } })).toBe(false)
     expect(ok(SpmOverviewSchema, { ...overview, modules: { databank: 1 } })).toBe(false)
+  })
+
+  it('hub accuracy is a whole number, or null with no answers (S3-T07 part F)', () => {
+    const me = (avgAccuracy: unknown) => ({ ...overview, me: { ...overview.me, avgAccuracy } })
+    expect(ok(SpmOverviewSchema, me(null))).toBe(true)
+    expect(ok(SpmOverviewSchema, me(0))).toBe(true)
+    expect(ok(SpmOverviewSchema, me(100))).toBe(true)
+    expect(ok(SpmOverviewSchema, me(62.5))).toBe(false)
+    expect(ok(SpmOverviewSchema, me(101))).toBe(false)
+    expect(ok(SpmOverviewSchema, me(-1))).toBe(false)
+    expect(ok(SpmOverviewSchema, { ...overview, me: { sessions: 0, coins: 0, answered: 0 } })).toBe(false)
   })
 
   it('parses databank rows and Latih Tubi cards', () => {
@@ -407,6 +420,7 @@ describe('M06 OpenAPI document', () => {
 
   const ROUTES: [string, string][] = [
     ['get', '/spm/overview'],
+    ['get', '/spm/history'],
     ['get', '/spm/databank'],
     ['get', '/spm/latih-tubi'],
     ['get', '/spm/latih-tubi/{code}'],
@@ -422,14 +436,14 @@ describe('M06 OpenAPI document', () => {
     ['get', '/duta/recommendations'],
   ]
 
-  it('registers exactly the 14 M06 operations (counted by the spm tag)', () => {
+  it('registers exactly the 15 M06 operations (counted by the spm tag)', () => {
     const tagged = Object.entries(doc.paths).flatMap(([path, ops]) =>
       Object.entries(ops)
         .filter(([, op]) => op.tags?.includes('spm'))
         .map(([method]) => `${method} ${path}`),
     )
     expect(tagged.sort()).toEqual(ROUTES.map(([m, p]) => `${m} ${p}`).sort())
-    expect(tagged).toHaveLength(14)
+    expect(tagged).toHaveLength(15)
     for (const [method, path] of ROUTES) expect(doc.paths[path], `${method} ${path}`).toHaveProperty(method)
   })
 
@@ -543,5 +557,64 @@ describe('API-BIJAK-13 Tracking A admin (S3-T05)', () => {
     expect(doc.paths['/admin/spm/tracking-a']?.get).toBeUndefined()
     expect(doc.paths['/admin/spm/tracking-a/{id}']?.get?.responses).toHaveProperty('404')
     expect(doc.paths['/admin/spm/tracking-a/{id}']?.put?.responses).toHaveProperty('422')
+  })
+})
+
+describe('GET /spm/history (S3-T07 part F)', () => {
+  const row = {
+    id: '4b1f6c1e-2c4e-4d7e-9a3b-0f5e1c2d3a4b',
+    mode: 'simulasi',
+    subject: { code: 'MATH', name: 'Matematik' },
+    correct: 18,
+    total: 25,
+    percent: 72,
+    coins: 36,
+    durationSeconds: 2252,
+    completedAt: AT,
+  }
+  const stats = { sessions: 3, avgAccuracy: null, coins: 0, answered: 0 }
+  const page = { data: [row], meta: { page: 1, pageSize: 15, pageCount: 1, total: 1, mod: 'all', stats } }
+
+  it('parses a page and rejects a row outside the contract', () => {
+    expect(ok(SpmHistoryResponseSchema, page)).toBe(true)
+    expect(ok(SpmHistoryResponseSchema, { ...page, data: [] })).toBe(true)
+    for (const bad of [{ mode: 'past_year' }, { mode: 'ramalan' }, { percent: 72.5 }, { percent: 101 }, { coins: -1 }, { completedAt: '2026-10-16T01:30:00Z' }, { id: '12' }, { extra: 1 }]) {
+      expect(ok(SpmHistoryResponseSchema, { ...page, data: [{ ...row, ...bad }] }), JSON.stringify(bad)).toBe(false)
+    }
+  })
+
+  it('accepts every row mode of OPT-MODE-SESI that the list can carry', () => {
+    for (const mode of ['databank', 'latih_tubi', 'tracking_a', 'simulasi', 'subjektif', 'structured', 'kuiz']) {
+      expect(ok(SpmHistoryResponseSchema, { ...page, data: [{ ...row, mode }] }), mode).toBe(true)
+    }
+  })
+
+  it('the pager meta is 15 per page, at least one page, and carries the all-mode stats', () => {
+    expect(ok(SpmHistoryResponseSchema, { ...page, meta: { ...page.meta, pageSize: 20 } })).toBe(false)
+    expect(ok(SpmHistoryResponseSchema, { ...page, meta: { ...page.meta, pageCount: 0 } })).toBe(false)
+    expect(ok(SpmHistoryResponseSchema, { ...page, meta: { ...page.meta, mod: 'structured' } })).toBe(false)
+    expect(ok(SpmHistoryResponseSchema, { ...page, meta: { ...page.meta, stats: { ...stats, avgAccuracy: 55.5 } } })).toBe(false)
+    expect(ok(SpmHistoryResponseSchema, { ...page, meta: { page: 1, pageSize: 15, pageCount: 1, total: 1, mod: 'all' } })).toBe(false)
+  })
+
+  it('the query takes mod, its alias type and a 1-based halaman', () => {
+    const parse = (q: unknown) => SpmHistoryQuerySchema.safeParse(q)
+    expect(parse({}).success).toBe(true)
+    for (const m of ['all', 'databank', 'latih_tubi', 'tracking_a', 'past_year', 'ramalan']) {
+      expect(parse({ mod: m }).success, m).toBe(true)
+      expect(parse({ type: m }).success, `type=${m}`).toBe(true)
+    }
+    expect(parse({ mod: 'kuiz' }).success).toBe(false)
+    expect(parse({ halaman: '3' })).toMatchObject({ success: true, data: { halaman: 3 } })
+    expect(parse({ halaman: '0' }).success).toBe(false)
+    expect(parse({ halaman: '1.5' }).success).toBe(false)
+    expect(parse({ halaman: 'x' }).success).toBe(false)
+  })
+
+  it('is documented as a list route with the pupil, validation and auth errors', () => {
+    const doc = buildOpenApiDocument() as unknown as { paths: Record<string, Record<string, { responses: Record<string, unknown>; parameters?: { name: string; in: string }[] }>> }
+    const op = doc.paths['/spm/history']?.get
+    expect(op?.parameters?.map((p) => p.name).sort()).toEqual(['halaman', 'mod', 'type'])
+    expect(Object.keys(op?.responses ?? {}).sort()).toEqual(['200', '401', '403', '422'])
   })
 })
