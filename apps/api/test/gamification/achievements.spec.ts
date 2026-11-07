@@ -203,7 +203,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     expect(await ledgerOf(t, u)).toEqual([])
   })
 
-  it('S15 shows the unlock: "1/25", the card unlocked with its time, progress capped at the target', async () => {
+  it('S15 shows the unlock: "1/26", the card unlocked with its time, progress capped at the target', async () => {
     const who = await signIn(t, STUDENT_EMPTY)
     const u = await userIdOf(t.db, STUDENT_EMPTY)
     t.facts.counts = { all: 1, practice: 1 }
