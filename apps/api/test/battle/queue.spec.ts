@@ -188,7 +188,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(parse(BattleSuccessSchema, await b.post(`/battle/join-queue/${qid}`))).toEqual({ success: true })
       expect(parse(BattlePollChallengerResponseSchema, await b.get(`/battle/poll-challenger/${qid}`))).toEqual({ status: 'waiting' })
       const incoming = parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))
-      expect(incoming).toEqual({ status: 'incoming_challenge', challenger: { name: 'Murid Demo Kosong', grade_label: 'Tingkatan 4', school: 'SMK Demo Satu' } })
+      expect(incoming).toEqual({ status: 'incoming_challenge', challenger: { name: 'Murid', grade_label: 'Tingkatan 4', school: '' } })
 
       expect(parse(BattleSuccessSchema, await a.post(`/battle/reject-challenger/${qid}`))).toEqual({ success: true })
       expect(parse(BattlePollChallengerResponseSchema, await b.get(`/battle/poll-challenger/${qid}`))).toEqual({ status: 'rejected' })

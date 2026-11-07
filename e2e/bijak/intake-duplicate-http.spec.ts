@@ -111,6 +111,8 @@ test('a linked duplicate keeps Terima disabled and Terima semua does not count i
   await expect(page.getByTestId('item-accept')).toBeDisabled()
   // Terima semua counts only the item that can be accepted (item 1).
   await page.getByTestId('accept-all').click()
-  await expect(page.getByText('Terima 1 item yang belum disemak?')).toBeVisible()
+  // DsConfirmHost passes the message as the dialog description and also renders it in the body (`data-ds=confirm-message`):
+  // scope to the body copy, as the other confirm specs do, so the locator is not a strict-mode violation.
+  await expect(page.locator('[data-ds=confirm-message]').filter({ hasText: 'Terima 1 item yang belum disemak?' })).toBeVisible()
   await page.getByRole('button', { name: 'Batal' }).click()
 })

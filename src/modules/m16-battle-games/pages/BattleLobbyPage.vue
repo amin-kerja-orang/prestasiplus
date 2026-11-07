@@ -405,7 +405,7 @@ onBeforeUnmount(() => {
             {{
               sel.openToAll
                 ? 'Menunggu pelajar dari mana-mana gred'
-                : 'Menunggu pelajar sama darjah & subjek'
+                : 'Menunggu pelajar sama tingkatan & subjek'
             }}
           </p>
           <p class="tabular text-title text-primary-t" data-testid="battle-timer">
@@ -437,9 +437,6 @@ onBeforeUnmount(() => {
           <div class="flex flex-wrap justify-center gap-2">
             <UBadge color="neutral" variant="soft" size="lg">{{
               search.challenger.value.grade_label
-            }}</UBadge>
-            <UBadge color="neutral" variant="soft" size="lg">{{
-              search.challenger.value.school
             }}</UBadge>
           </div>
           <p class="flex items-start justify-center gap-2 text-caption text-muted">

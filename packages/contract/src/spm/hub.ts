@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { SPM_DIFFICULTY_KEYS, SPM_MESSAGES, SpmSetStatusSchema, SpmSubjectGroupSchema, SpmTargetTypeSchema } from './shared'
+import { SpmMyStatsSchema } from './history'
 import { count } from './util'
 
 /**
@@ -20,9 +21,11 @@ const subjectCode = z.string().min(1).meta({ description: 'Curriculum subject co
 /**
  * `GET /spm/overview` data. `totalQuestions` and the two pool chips are display constants in the
  * mock (DV-M06-01); the real backend computes them (open question 1). `yearsAvailable` is omitted
- * while there is no year source (the hub hides the tile; never a constant 0). `me` covers the caller's practice history over the modes `past_year`,
- * `latih_tubi` and `ramalan` (same figures as the stats of `GET /practice/sessions`; the field is
- * `avgAccuracy` here, `avgAccuracyPct` there).
+while there is no year source (the hub hides the tile; never a constant 0). `me` is the "Prestasi SPM Anda" panel
+ * (S3-T07 part F): `answered` and `avgAccuracy` come from `practice_answers` over the SPM modes (`databank`, `tracking_a`,
+ * `structured`, `subjektif`, `simulasi`, `kuiz`, `latih_tubi`, with the legacy `past_year` and `ramalan` counted as `databank`
+ * and `tracking_a`); `sessions` counts completed practice sessions plus closed Bijak sittings; `coins` is read from the
+ * M14 wallet ledger. `avgAccuracy` is a whole number (half up), or null ("—") with 0 answers.
  */
 export const SpmOverviewSchema = z
   .strictObject({
@@ -39,12 +42,7 @@ export const SpmOverviewSchema = z
       subjektifSets: count.meta({ description: 'Visible structured sets across the Subjektif subjects.' }),
       kertasSubjektif: count.meta({ description: 'Published papers with surface subjektif (level_scope is not applied); the Kertas Subjektif chip.' }),
     }),
-    me: z.strictObject({
-      sessions: count,
-      avgAccuracy: z.number().min(0).max(100),
-      coins: count,
-      answered: count,
-    }),
+    me: SpmMyStatsSchema,
   })
   .meta({ id: 'SpmOverview' })
 export type SpmOverview = z.infer<typeof SpmOverviewSchema>
