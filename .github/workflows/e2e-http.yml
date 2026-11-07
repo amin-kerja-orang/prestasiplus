@@ -32,7 +32,7 @@ permissions:
 
 concurrency:
   group: e2e-http-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # AZ-24: secrets cannot be read in a job-level `if:`, so a tiny job reports whether the secret exists

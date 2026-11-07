@@ -2,7 +2,9 @@
 name: api
 
 on:
+  # Push CI only on the long-lived branches; PR branches are covered by pull_request (no push + pull_request double run).
   push:
+    branches: [feature/v3-bijak-r1, feature/v2-backend, be/integration-frontend]
     paths:
       - 'apps/api/**'
       - 'packages/**'
