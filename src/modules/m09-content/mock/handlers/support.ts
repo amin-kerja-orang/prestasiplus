@@ -18,10 +18,10 @@ import {
 import { bannersRepo, supportRepo } from '../repository'
 import { requireViewer } from './common'
 
-/** API-ADM-10 (S7-T09, page in M22): `phone` and `hours` have no store yet. */
+/** API-ADM-10 (S7-T09, page in M22): the phone is `whatsapp` (PO decision 18). */
 function settings(): { email: string; phone: string; whatsapp: string; hours: string } {
-  const { email, whatsappNumber } = supportRepo.contact()
-  return { email, phone: '', whatsapp: whatsappNumber, hours: '' }
+  const { email, whatsappNumber, hours } = supportRepo.contact()
+  return { email, phone: '', whatsapp: whatsappNumber, hours }
 }
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -35,14 +35,19 @@ function saveSettings(req: MockRequest): MockResponse {
     v === undefined ? undefined : typeof v === 'string' ? v.trim() : ''
   const email = text(body.email)
   const whatsapp = text(body.whatsapp)
+  const hours = text(body.hours)
   const fields: Record<string, string> = {}
   if (email && (email.length > 120 || !EMAIL.test(email))) fields.email = 'E-mel tidak sah.'
   if (whatsapp && !PHONE.test(whatsapp)) fields.whatsapp = 'No. telefon tidak sah.'
+  if (hours && hours.length > 120) {
+    fields.hours = 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.'
+  }
   if (Object.keys(fields).length > 0) return validationError(fields)
   const current = supportRepo.contact()
   supportRepo.saveContact({
     email: email ?? current.email,
     whatsappNumber: whatsapp ?? current.whatsappNumber,
+    hours: hours ?? current.hours,
   })
   return ok(settings())
 }

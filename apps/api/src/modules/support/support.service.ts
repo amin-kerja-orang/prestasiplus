@@ -212,17 +212,17 @@ export class SupportService {
     return { count: await this.guard(() => this.repo.openCount()) }
   }
 
-  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, all four are '' when no row exists (DM-33, S5-T05). */
+  /** GET /config/support (public): `{email, phone, whatsapp, hours}`; `whatsapp` is the row's `whatsapp_number`, `hours` is the row's `hours` or '' (DM-86, S7-T09), all four are '' when no row exists (DM-33, S5-T05). */
   async supportConfig(): Promise<SupportConfigResponse> {
     const config = await this.guard(() => this.repo.config())
-    // Four-key wire shape (#458 decision 2): phone and hours are not stored until S7-T09.
-    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
+    // Four-key wire shape (#458 decision 2): phone is not stored.
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: config?.hours ?? '' }
   }
 
-  /** GET /admin/settings/support: '' when nothing is saved. `phone` and `hours` have no store yet. */
+  /** GET /admin/settings/support: '' when nothing is saved. The phone is `whatsapp` (PO decision 18). */
   async settings(): Promise<SupportSettings> {
     const config = await this.guard(() => this.repo.config())
-    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: config?.hours ?? '' }
   }
 
   /** PUT /admin/settings/support: an omitted field keeps its value. The row and its audit row commit together; no change writes nothing. */
@@ -231,9 +231,14 @@ export class SupportService {
       const current = await this.repo.config()
       const email = input.email ?? current?.email ?? ''
       const whatsapp = input.whatsapp ?? current?.whatsappNumber ?? ''
-      const changed = [...(email !== (current?.email ?? '') ? ['email'] : []), ...(whatsapp !== (current?.whatsappNumber ?? '') ? ['whatsapp'] : [])]
+      const hours = input.hours ?? current?.hours ?? ''
+      const changed = [
+        ...(email !== (current?.email ?? '') ? ['email'] : []),
+        ...(whatsapp !== (current?.whatsappNumber ?? '') ? ['whatsapp'] : []),
+        ...(hours !== (current?.hours ?? '') ? ['hours'] : []),
+      ]
       if (changed.length > 0) {
-        await this.repo.saveConfig({ email, whatsappNumber: whatsapp, now: this.clock.now() })
+        await this.repo.saveConfig({ email, whatsappNumber: whatsapp, hours, now: this.clock.now() })
         await this.audit.record({
           tx,
           action: SUPPORT_AUDIT.CONFIG_UPDATED,
@@ -250,7 +255,7 @@ export class SupportService {
           details: { changed },
         })
       }
-      return { email, phone: '', whatsapp, hours: '' }
+      return { email, phone: '', whatsapp, hours }
     })
   }
 

@@ -71,7 +71,7 @@ export const ScreenshotUploadResultSchema = z
 /**
  * `data` of `GET /config/support` (#43, public): the contact shown in the help box. A value is the empty
  * string when it is not set; when no config row exists all four are empty (S5-T05, DM-33). `whatsapp` is the
- * stored `whatsapp_number`; `phone` and `hours` are always the empty string until S7-T09 stores them.
+ * stored `whatsapp_number`; `hours` is the stored `hours` (DM-86, S7-T09); `phone` is always the empty string.
  * `whatsappNumber` is the previous key for `whatsapp`; it stays as an optional property so no required
  * property is removed from the response (the server may omit it).
  */
@@ -80,7 +80,10 @@ export const ContentSupportConfigSchema = z
     email: z.string(),
     phone: z.string(),
     whatsapp: z.string(),
-    hours: z.string(),
+    hours: z
+      .string()
+      .max(120, 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.')
+      .meta({ description: "Service hours; '' when not set." }),
     /** @deprecated Use `whatsapp`. Optional; the server may omit it. */
     whatsappNumber: z.string().optional().meta({ deprecated: true }),
   })
