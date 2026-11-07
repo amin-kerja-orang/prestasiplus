@@ -22,8 +22,6 @@ export const MAX_ANSWER_CHARS = 5000
 export const PREVIEW_LENGTH = 200
 /** Shown when the creator of a set is not a teacher (observed live label). */
 export const DEFAULT_AUTHOR = 'Guru Pakar'
-/** `markStructured` placeholder (LS-7): full marks when the trimmed answer has at least this many characters. */
-export const MARK_MIN_CHARS = 20
 
 /** Valid `kbatLevel` filter values (BR-23). */
 export const KBAT_LEVELS: readonly number[] = [1, 2, 3, 4, 5, 6]
@@ -55,17 +53,5 @@ export const isSpmGrade = (v: unknown): v is string =>
 
 /** Canonical decimal id key only: "01" is not subject 1. Returns the key or null. */
 export const canonicalId = (key: string): string | null => (/^(0|[1-9]\d{0,18})$/.test(key) ? key : null)
-
-/** §6.13 `markStructured` (LS-7 placeholder): full marks when the answer has at least 20 characters. */
-export function markStructured(
-  subs: readonly { id: string; marks: number }[],
-  answers: ReadonlyMap<string, string>,
-): { subQuestionId: string; awarded: number; max: number }[] {
-  return subs.map((s) => ({
-    subQuestionId: s.id,
-    awarded: (answers.get(s.id) ?? '').trim().length >= MARK_MIN_CHARS ? s.marks : 0,
-    max: s.marks,
-  }))
-}
 
 export const MESSAGES = PRACTICE_READS_MESSAGES

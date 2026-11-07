@@ -249,7 +249,15 @@ export class HeadcountService {
   async student(ctx: Ctx, userId: string): Promise<HeadcountStudent> {
     const pupil = (await this.directory.users([userId])).get(userId)
     if (!pupil || !pupil.isStudent) throw ApiError.of('NOT_FOUND')
-    const own = await this.repo.configsByIds(await this.repo.configIdsOfStudent(userId))
+    // The pupil's configs: those holding an entry row AND those of the pupil's own classes. A class pupil needs no entry row to be on
+    // a config (the teacher's table lists the whole roster; an Auto pupil's AR comes from the answer store), so neither path may
+    // depend on one (AC-CHAIN-5: an Auto pupil with no entry row had no section). Membership is today's, so only the class configs of
+    // the current MYT year are derived from it; entry-holding configs of any year stay.
+    const classIds = (await this.ports.classes.classIdsOfStudent(userId)) ?? []
+    const byEntry = await this.repo.configsByIds(await this.repo.configIdsOfStudent(userId))
+    const year = this.currentYear()
+    const byClass = classIds.length === 0 ? [] : (await this.repo.configsOfClassrooms(classIds)).filter((c) => c.academicYear === year)
+    const own = [...new Map([...byEntry, ...byClass].map((c) => [c.id, c])).values()]
     let visible: HeadcountConfigRecord[]
     if (ctx.role === 'admin') {
       visible = own
@@ -267,31 +275,16 @@ export class HeadcountService {
     } else {
       throw ApiError.of('NOT_FOUND')
     }
-    const entries = (await this.repo.entriesOfStudent(userId, visible)).filter((e) => !e.dropped)
-    const byConfig = new Map(visible.map((c) => [c.id, c]))
-    const used = entries.flatMap((e) => {
-      const c = byConfig.get(e.configId)
-      return c ? [c] : []
-    })
-    const infos = await this.describe(used)
-    // Auto configs: the pupil's own live AR (the same query as every other reader).
-    const auto = await autoArOf(this.ports, used, () => [userId])
+    // The pupil's line comes from the one roster and mark assembler (entry or class defaults, live Auto AR), so it equals the row of
+    // the teacher's table; a dropped pupil has no section.
+    const { infos, rosters } = await this.assemble(visible)
     const school = pupil.schoolId === null ? null : ((await this.directory.school(pupil.schoolId))?.name ?? null)
-    const sections = entries
-      .sort((a, b) => compareIds(a.configId, b.configId))
-      .map((e) =>
-        sectionOf(
-          infos.get(e.configId) as ConfigInfo,
-          {
-            studentId: userId,
-            name: pupil.name,
-            marks: auto.has(e.configId) ? withAutoAr(e.marks, auto.get(e.configId)?.get(userId) ?? null) : e.marks,
-            rsRecordedAt: e.rsRecordedAt,
-            dropped: false,
-          },
-          school,
-        ),
-      )
+    const sections = [...visible]
+      .sort((a, b) => compareIds(a.id, b.id))
+      .flatMap((c) => {
+        const line = (rosters.get(c.id) ?? []).find((l) => l.studentId === userId)
+        return line === undefined || line.dropped ? [] : [sectionOf(infos.get(c.id) as ConfigInfo, { ...line, name: pupil.name }, school)]
+      })
     return { student: { id: pupil.id, name: pupil.name, school }, sections }
   }
 

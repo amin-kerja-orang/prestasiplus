@@ -189,8 +189,8 @@ services:
     environment:
       NGINX_ENVSUBST_FILTER: '^PP_'
       PP_DOMAIN: ${PP_DOMAIN:?set PP_DOMAIN in prod.env}
-      PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-22}
-      PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-256}
+      PP_UPLOAD_FILES_MB: ${PP_UPLOAD_FILES_MB:-32}
+      PP_UPLOAD_BIG_MB: ${PP_UPLOAD_BIG_MB:-336}
       PP_CSP_IMG_HOSTS: ${PP_CSP_IMG_HOSTS:-}
       PP_EDGE_AUTH_RATE: ${PP_EDGE_AUTH_RATE:-300r/m}   # F2 default 22 Oct: a school NAT signs a whole class in at once
       PP_EDGE_AUTH_BURST: ${PP_EDGE_AUTH_BURST:-120}
@@ -267,7 +267,7 @@ services:
     image: ${PP_CLAMAV_IMAGE:-clamav/clamav:1.4}
     environment:
       CLAMD_CONF_ConcurrentDatabaseReload: 'no'   # a reload does not double the memory
-      CLAMD_CONF_MaxFileSize: 32M                 # above the biggest upload (INTAKE_MAX_FILE_MB=20)
+      CLAMD_CONF_MaxFileSize: 32M                 # above the biggest single file (INTAKE_MAX_FILE_MB=30)
       CLAMD_CONF_StreamMaxLength: 32M
     expose:
       - '3310'
