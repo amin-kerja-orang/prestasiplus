@@ -19,14 +19,25 @@ import {
 import type { DsStatus } from '@/ds'
 
 import type { GuruStructuredDetail } from '../api/structured-guru'
-import { GURU_STATUS_LABEL } from '../lib/structured-options'
+import {
+  GURU_STATUS_LABEL,
+  guruRejectionLine,
+} from '../lib/structured-options'
 
 const props = defineProps<{ detail: GuruStructuredDetail }>()
 
 const STATUS: Record<GuruStructuredDetail['status'], DsStatus> = {
   approved: 'approved',
   review: 'awaiting-review',
+  rejected: 'rejected',
 }
+/** An own submission the admin returned (`status` rejected): the reason shows under the "Ditolak" chip. */
+const rejectionReason = computed(() => {
+  const reason = props.detail.form?.rejectionReason?.trim()
+  return props.detail.status === 'rejected' && reason ? reason : null
+})
+const statusKey = computed<DsStatus>(() => STATUS[props.detail.status] ?? 'awaiting-review')
+const statusLabel = computed(() => GURU_STATUS_LABEL[props.detail.status] ?? props.detail.status)
 /** Only an http(s), root-relative or blob URL is rendered as the stimulus figure. */
 const figure = computed(() => {
   const url = props.detail.stimulusImage
@@ -52,21 +63,32 @@ const figure = computed(() => {
             :label="detail.level?.name"
             data-testid="structured-pill-level"
           />
-          <DsBadge tone="info" :label="detail.kbat" data-testid="structured-pill-kbat" />
+          <DsBadge
+            v-if="detail.kbat"
+            tone="info"
+            :label="detail.kbat"
+            data-testid="structured-pill-kbat"
+          />
           <DsBadge
             tone="success"
             :label="`${detail.totalMarks} markah`"
             data-testid="structured-pill-marks"
           />
         </DsCluster>
-        <DsStatusBadge
-          :status="STATUS[detail.status]"
-          :label="GURU_STATUS_LABEL[detail.status] ?? detail.status"
-          data-testid="structured-status"
-        />
+        <DsStatusBadge :status="statusKey" :label="statusLabel" data-testid="structured-status" />
       </DsCluster>
 
-      <DsPanel padding="sm">
+      <DsText
+        v-if="rejectionReason"
+        variant="body"
+        tone="default"
+        wrap="anywhere"
+        data-testid="structured-rejection"
+      >
+        {{ guruRejectionLine(rejectionReason) }}
+      </DsText>
+
+      <DsPanel v-if="detail.stimulus || figure" padding="sm">
         <DsStack gap="xs">
           <DsHeading :level="2" variant="overline" tone="muted">Rangsangan</DsHeading>
           <DsText

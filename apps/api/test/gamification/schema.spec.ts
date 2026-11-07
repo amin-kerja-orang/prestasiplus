@@ -112,8 +112,8 @@ describe('gamification schema (migration 0019_gamification_shop)', () => {
     expect(await rejects(`insert into rewards (category, vendor, title, denomination_rm, token_cost, delivery_method) values ('telco', 'V', 'T', 1, 1, 'post')`)).toMatch(/ck_rewards_delivery_method/)
 
     const u = await user()
-    expect(await rejects(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status) values ($1, 'T', 'V', 1, 1, 'shipped')`, [u])).toMatch(/ck_reward_redemptions_status/)
-    expect(await rejects(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status, cancelled_by) values ($1, 'T', 'V', 1, 1, 'cancelled', 'user')`, [u])).toMatch(/ck_reward_redemptions_cancelled_by/)
+    expect(await rejects(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status) values ($1, 'T', 'V', 1, 1, 1, 0, 'shipped')`, [u])).toMatch(/ck_reward_redemptions_status/)
+    expect(await rejects(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, cancelled_by) values ($1, 'T', 'V', 1, 1, 1, 0, 'cancelled', 'user')`, [u])).toMatch(/ck_reward_redemptions_cancelled_by/)
 
     expect(await rejects(`insert into gamification_settings (key, value, label) values ('unknown_key', 1, 'x')`)).toMatch(/ck_gamification_settings_key/)
   })
@@ -207,7 +207,7 @@ describe('gamification schema (migration 0019_gamification_shop)', () => {
   it('snapshots a redemption and keeps it when the reward is deleted (reward_id set null); counts a monthly cap by user and reward', async () => {
     const [u, r] = [await user(), await reward()]
     await db.query(
-      `insert into reward_redemptions (user_id, reward_id, reward_title, reward_vendor, denomination_rm, token_cost, status, voucher_code) values ($1, $2, 'T', 'V', 10, 10, 'pending_admin', null), ($1, $2, 'T', 'V', 10, 10, 'cancelled', null)`,
+      `insert into reward_redemptions (user_id, reward_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, voucher_code) values ($1, $2, 'T', 'V', 10, 10, 10, 0, 'pending_admin', null), ($1, $2, 'T', 'V', 10, 10, 10, 0, 'cancelled', null)`,
       [u, r],
     )
     const month = await db.query<{ n: string }>(
@@ -242,7 +242,7 @@ describe('gamification schema (migration 0019_gamification_shop)', () => {
     const c = await challenge()
     await db.query(`insert into challenge_completions (user_id, challenge_id, completion_date) values ($1, $2, '2026-10-01')`, [u, c])
     await db.query(`insert into draw_tickets (draw_id, user_id) values ($1, $2)`, [await draw(), u])
-    await db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, status) values ($1, 'T', 'V', 1, 1, 'pending_admin')`, [u])
+    await db.query(`insert into reward_redemptions (user_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status) values ($1, 'T', 'V', 1, 1, 1, 0, 'pending_admin')`, [u])
     await db.query(`delete from users where id = $1`, [u])
     for (const t of ['challenge_completions', 'draw_tickets', 'reward_redemptions']) expect(await db.query(`select 1 from ${t} where user_id = $1`, [u]), t).toHaveLength(0)
   })

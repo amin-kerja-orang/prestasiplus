@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   fetchGuruClasses: vi.fn(),
   fetchGuruStudents: vi.fn(),
   addStudentToClass: vi.fn(),
+  createGuruStudent: vi.fn(),
   removeStudentFromClass: vi.fn(),
 }))
 vi.mock('../../api/guru', () => api)
@@ -26,6 +27,10 @@ const student = (id: number, name: string, classNames: string[] = []): GuruStude
   name,
   levelName: 'Tingkatan 5',
   classNames,
+  username: null,
+  tugasan: 0,
+  skorPurata: null,
+  lastActiveAt: null,
 })
 
 let state: {
@@ -36,7 +41,7 @@ let state: {
 
 let wrapper: VueWrapper | undefined
 
-async function mountPage() {
+async function mountPage(path = '/guru/pelajar') {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -46,9 +51,12 @@ async function mountPage() {
       { path: '/guru/profil/edit', component: { template: '<div />' } },
     ],
   })
-  await router.push('/guru/pelajar')
+  await router.push(path)
   await router.isReady()
-  wrapper = mount(PelajarSayaPage, { global: { plugins: [router] } })
+  wrapper = mount(PelajarSayaPage, {
+    props: { create: path === '/guru/pelajar/cipta' },
+    global: { plugins: [router] },
+  })
   await flushPromises()
   return wrapper
 }
@@ -132,8 +140,13 @@ describe('S6 PelajarSayaPage', () => {
     await flushPromises()
     const rows = w.findAll('[data-testid="student-row"]')
     expect(rows).toHaveLength(2)
-    // no class chosen: add is disabled
-    expect(rows[1]?.get('[data-testid="student-add"]').attributes('disabled')).toBeDefined()
+    // AC-GUR-41-7: the button is enabled; with no class chosen it explains and adds nobody
+    expect(rows[1]?.get('[data-testid="student-add"]').attributes('disabled')).toBeUndefined()
+    await rows[1]?.get('[data-testid="student-add"]').trigger('click')
+    await flushPromises()
+    expect(api.addStudentToClass).not.toHaveBeenCalled()
+    expect(useFlashStore().current).toMatchObject({ type: 'error', message: 'Sila pilih kelas dahulu.' })
+    expect(w.get('[data-testid="pelajar-target-error"]').text()).toBe('Sila pilih kelas dahulu.')
 
     await w.get('[data-testid="pelajar-target"]').setValue('2002')
     // student 3001 is not in 2002; student 2 is not either
@@ -290,9 +303,151 @@ describe('S6 PelajarSayaPage', () => {
     await vi.advanceTimersByTimeAsync(350)
     await flushPromises()
     expect(api.fetchGuruStudents).toHaveBeenCalledWith(
-      { tab: 'school', search: 'Dua' },
+      { tab: 'school', search: 'Dua', page: 1 },
       expect.anything(),
     )
     vi.useRealTimers()
+  })
+
+  describe('R1-GUR-41 columns (AC-GUR-41-6)', () => {
+    it('shows username beneath the name, Tahap, Tugasan, Skor Purata and Terakhir Aktif (dd/mm/yyyy MYT)', async () => {
+      state.mine = [
+        {
+          ...student(3001, 'Murid Demo 01', ['2001']),
+          username: 'murid.demo01',
+          tugasan: 3,
+          skorPurata: 70,
+          lastActiveAt: '2026-11-04T23:30:00.000+08:00',
+        },
+        student(3002, 'Murid Demo 02', ['2001']),
+      ]
+      const w = await mountPage()
+      const [first, second] = w.findAll('[data-testid="student-row"]')
+      expect(first?.text()).toContain('murid.demo01')
+      expect(first?.get('[data-testid="student-tahap"]').text()).toBe('Tahap: Tingkatan 5')
+      expect(first?.get('[data-testid="student-tugasan"]').text()).toBe('Tugasan: 3')
+      expect(first?.get('[data-testid="student-skor"]').text()).toBe('Skor Purata: 70%')
+      expect(first?.get('[data-testid="student-active"]').text()).toBe('Terakhir Aktif: 04/11/2026')
+      expect(second?.get('[data-testid="student-skor"]').text()).toBe('Skor Purata: \u2014')
+      expect(second?.get('[data-testid="student-active"]').text()).toBe('Terakhir Aktif: \u2014')
+    })
+
+    it('pages 25 per page: the pager shows when the API reports more than one page and asks the next page', async () => {
+      api.fetchGuruStudents.mockImplementation((p: { tab?: string; page?: number }) =>
+        Promise.resolve({
+          data: state.mine,
+          meta: { count: 30, schoolSet: true, page: p.page ?? 1, pageSize: 25, totalPages: 2 },
+        }),
+      )
+      const w = await mountPage()
+      expect(w.find('[data-testid="pelajar-mine-pager"]').exists()).toBe(true)
+      await w.get('[data-testid="pelajar-mine-pager"] button[value="2"]').trigger('click')
+      await flushPromises()
+      expect(api.fetchGuruStudents).toHaveBeenLastCalledWith({ tab: 'mine', page: 2 }, expect.anything())
+    })
+  })
+
+  describe('R1-GUR-41 Cipta Pelajar (AC-GUR-41-2, FR-GUR-8-7)', () => {
+    const fill = async (w: VueWrapper, name: string, ic = '') => {
+      await w.get('[data-testid="pelajar-new-name"]').setValue(name)
+      await w.get('[data-testid="pelajar-new-class"]').setValue('2001')
+      await w.get('[data-testid="pelajar-new-ic"]').setValue(ic)
+      await w.get('[data-testid="pelajar-create-form"]').trigger('submit')
+      await flushPromises()
+    }
+
+    it('the card is closed on /guru/pelajar and open on /guru/pelajar/cipta (no redirect)', async () => {
+      const closed = await mountPage()
+      expect(closed.find('[data-testid="pelajar-create-card"]').exists()).toBe(false)
+      closed.unmount()
+      const open = await mountPage('/guru/pelajar/cipta')
+      expect(open.get('[data-testid="pelajar-create-card"]').text()).toContain(
+        'Tambah pelajar baharu terus ke dalam salah satu kelas anda.',
+      )
+    })
+
+    it('creates the pupil, shows the server message until dismissed and reloads the list', async () => {
+      api.createGuruStudent.mockResolvedValue({
+        id: '9',
+        name: 'Murid Contoh',
+        username: 'murid.contoh01',
+        message: 'Pelajar dicipta. Login: murid.contoh01 / contoh-kata',
+      })
+      const w = await mountPage('/guru/pelajar/cipta')
+      const before = api.fetchGuruStudents.mock.calls.length
+      await fill(w, '  Murid Contoh ', '123456121234')
+      expect(api.createGuruStudent).toHaveBeenCalledWith({
+        name: 'Murid Contoh',
+        classroomId: '2001',
+        ic: '123456121234',
+      })
+      expect(w.get('[data-testid="pelajar-created"]').text()).toContain(
+        'Pelajar dicipta. Login: murid.contoh01 / contoh-kata',
+      )
+      expect(api.fetchGuruStudents.mock.calls.length).toBeGreaterThan(before)
+      await w.get('[data-testid="pelajar-created"] button').trigger('click')
+      expect(w.find('[data-testid="pelajar-created"]').exists()).toBe(false)
+    })
+
+    it('client checks use the contract messages and send nothing', async () => {
+      const w = await mountPage('/guru/pelajar/cipta')
+      await w.get('[data-testid="pelajar-create-form"]').trigger('submit')
+      await flushPromises()
+      expect(w.text()).toContain('Sila isi nama.')
+      expect(w.text()).toContain('Sila pilih kelas.')
+      for (const ic of ['12345678901', '123456-12-1234']) {
+        await fill(w, 'Murid Contoh', ic)
+        expect(w.text()).toContain('No. IC mesti 12 digit tanpa sempang.')
+      }
+      await fill(w, 'a'.repeat(256))
+      expect(w.text()).toContain('Nama tidak boleh melebihi 255 aksara.')
+      expect(api.createGuruStudent).not.toHaveBeenCalled()
+    })
+
+    it('shows a duplicate IC from the server under the IC field', async () => {
+      api.createGuruStudent.mockRejectedValue(
+        new ApiError({
+          status: 409,
+          code: 'CONFLICT',
+          message: 'No. IC sudah didaftarkan.',
+          fields: { ic: 'No. IC sudah didaftarkan.' },
+        }),
+      )
+      const w = await mountPage('/guru/pelajar/cipta')
+      await fill(w, 'Murid Contoh', '123456121234')
+      expect(w.text()).toContain('No. IC sudah didaftarkan.')
+      expect(w.find('[data-testid="pelajar-created"]').exists()).toBe(false)
+    })
+
+    it('a teacher without an active class sees "Anda belum ada kelas aktif. Cipta kelas dahulu."', async () => {
+      api.fetchGuruClasses.mockImplementation(() => Promise.resolve({ data: [], meta: {} }))
+      const w = await mountPage('/guru/pelajar/cipta')
+      expect(w.get('[data-testid="pelajar-create-no-class"]').text()).toBe(
+        'Anda belum ada kelas aktif. Cipta kelas dahulu.',
+      )
+      expect(w.find('[data-testid="pelajar-create-form"]').exists()).toBe(false)
+    })
+
+    it('preselects the class when the teacher has exactly one', async () => {
+      api.fetchGuruClasses.mockImplementation(() =>
+        Promise.resolve({ data: [klass(2001, '2001')], meta: {} }),
+      )
+      const w = await mountPage('/guru/pelajar/cipta')
+      expect(
+        (w.get('[data-testid="pelajar-new-class"]').element as HTMLSelectElement).value,
+      ).toBe('2001')
+    })
+  })
+
+  it('keeps the contract copy in step with the app copy', async () => {
+    const { GURU_STUDENT_MESSAGES } = await import('@pp/contract')
+    expect(PELAJAR_COPY.errName).toBe(GURU_STUDENT_MESSAGES.name)
+    expect(PELAJAR_COPY.errNameMax).toBe(GURU_STUDENT_MESSAGES.nameMax)
+    expect(PELAJAR_COPY.errClass).toBe(GURU_STUDENT_MESSAGES.classroom)
+    expect(PELAJAR_COPY.errIc).toBe(GURU_STUDENT_MESSAGES.ic)
+    expect(PELAJAR_COPY.noActiveClass).toBe(GURU_STUDENT_MESSAGES.noActiveClass)
+    expect(PELAJAR_COPY.chooseClassFirst).toBe(GURU_STUDENT_MESSAGES.chooseClassFirst)
+    expect(PELAJAR_COPY.added).toBe(GURU_STUDENT_MESSAGES.added)
+    expect(PELAJAR_COPY.removed).toBe(GURU_STUDENT_MESSAGES.removed)
   })
 })

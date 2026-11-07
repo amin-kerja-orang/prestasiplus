@@ -8,7 +8,7 @@
 import { notFound, ok, requireAuth, route, type MockRequest, type RouteDef } from '@/mock/define'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { structured } from '@/modules/m04-question-bank/mock'
-import { SPM_MODES, practice } from '@/modules/m05-practice/mock'
+import { practice } from '@/modules/m05-practice/mock'
 
 import type {
   DatabankSubject,
@@ -35,6 +35,7 @@ import {
 import { HUB_POOL_CHIP, HUB_TOTAL_QUESTIONS } from '../constants/display'
 import { isStartable } from '../repository/rules'
 import { spmRepo, type SetView } from '../repository/spm'
+import { spmMyStats } from './history'
 
 const auth = requireAuth()
 
@@ -68,14 +69,12 @@ const visibleSets = (subjectId: number): number =>
 /** #1 S1. */
 function overview(req: MockRequest): SpmOverview {
   const levels = [10, 11].flatMap((l) => curriculum.subjects({ active: true, educationLevelId: l }))
-  const stats = practice.historyPage(userIdOf(req), { modes: SPM_MODES }).stats
   const trackingA = sumReady(allSets())
   return {
     stats: {
       totalQuestions: HUB_TOTAL_QUESTIONS.value,
       subjectCount: new Set(levels.map((s) => s.id)).size,
-      // The dataset has no `year` field on questions, so no year is available (as live: 0).
-      yearsAvailable: 0,
+      // The dataset has no `year` field on questions, so there is no year source: the field is omitted.
       trackingAQuestions: trackingA,
     },
     modules: {
@@ -83,13 +82,10 @@ function overview(req: MockRequest): SpmOverview {
       latihTubi: HUB_POOL_CHIP.value,
       trackingA,
       subjektifSets: SUBJEKTIF_SUBJECT_IDS.reduce((a, id) => a + visibleSets(id), 0),
+      // The mock has no papers store: no Kertas Subjektif paper is published.
+      kertasSubjektif: 0,
     },
-    me: {
-      sessions: stats.sessions,
-      avgAccuracy: stats.avgAccuracyPct,
-      coins: stats.coins,
-      answered: stats.answered,
-    },
+    me: spmMyStats(userIdOf(req)),
   }
 }
 
@@ -192,7 +188,7 @@ function readiness(): Readiness {
       readiness: sets.length === 0 ? 0 : Math.round(((bersih + bankBesar) / sets.length) * 100),
       lockedSets: locked
         .slice(0, 6)
-        .map((s) => ({ setNo: s.setNo, readyCount: s.readyCount, target: s.size })),
+        .map((s) => ({ year: s.year, setNo: s.setNo, readyCount: s.readyCount, target: s.size })),
       hasBankBesar: bankBesar > 0,
     }
   })

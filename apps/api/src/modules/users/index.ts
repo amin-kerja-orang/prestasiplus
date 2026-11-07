@@ -1,4 +1,5 @@
 export { UsersModule } from './users.module'
+export { UsersService } from './users.service'
 export { generatePassword } from './credentials'
 export { MANAGED_EXPORT_MAX, UsersRepository, uniqueField } from './users.repository'
 export type {

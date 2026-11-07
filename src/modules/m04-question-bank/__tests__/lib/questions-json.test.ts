@@ -25,7 +25,7 @@ const base = {
   questionText: 'Teks soalan yang cukup panjang',
   dskpSpId: '',
   explanation: '',
-  language: 'bm' as const,
+  language: 'ms' as const,
   pointsValue: '1',
 }
 const bodyOf = (fn: { mock: { calls: unknown[][] } }): Record<string, unknown> =>
@@ -60,7 +60,7 @@ describe('http mode sends JSON per the contract', () => {
       questionText: 'Teks soalan yang cukup panjang',
       questionType: 'mcq',
       dskpSpId: null,
-      language: 'bm',
+      language: 'ms',
       pointsValue: 1,
       explanation: null,
       options: ['a', 'b', 'c', 'd'],
@@ -218,7 +218,7 @@ describe('kertas', () => {
     expect(buildBody(v, '', 'create').kertas).toBe('1')
     expect(buildBody(emptyValues(), '', 'create')).not.toHaveProperty('kertas')
     expect(buildBody(emptyValues(), '', 'edit').kertas).toBe('')
-    const q = { questionType: 'mcq', kertas: '2', options: null, optionImages: [], altAnswers: [], difficultyLevel: 1, pointsValue: 1, language: 'bm', tfAnswer: null, correctAnswer: null, subjectId: 1, educationLevelId: 1, questionText: 'x' }
+    const q = { questionType: 'mcq', kertas: '2', options: null, optionImages: [], altAnswers: [], difficultyLevel: 1, pointsValue: 1, language: 'ms', tfAnswer: null, correctAnswer: null, subjectId: 1, educationLevelId: 1, questionText: 'x' }
     expect(valuesFromQuestion(q as unknown as QuestionDetail).kertas).toBe('2')
     expect(valuesFromQuestion({ ...q, kertas: null } as unknown as QuestionDetail).kertas).toBe('')
   })

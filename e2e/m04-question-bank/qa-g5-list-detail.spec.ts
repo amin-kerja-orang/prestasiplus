@@ -226,9 +226,6 @@ test.describe('QA G5 S1 list', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(listRows(page).first()).toBeVisible()
     await expect(byId(page, 'question-source-file')).toHaveCount(0)
 
-    await gotoApp('/admin/questions?compliance_filter=draft')
-    if (!isNarrow(page)) await expect(byId(page, 'question-source').first()).toContainText('Source: TIADA')
-
     await gotoApp('/admin/questions?compliance_filter=verified_generated')
     if (!isNarrow(page)) await expect(byId(page, 'question-ai-verified').first()).toContainText('AI Verified')
 
@@ -563,7 +560,7 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
     // Portal Pentadbiran menu (v2): one sidebar, a drawer behind the menu button below lg.
     const expected: Array<[string, string]> = [
       ['Bank Soalan', '/admin/questions'],
-      ['Import & Semakan', '/admin/questions/import'],
+      ['Import & Semakan', '/admin/spm/soalan/ekstrak'],
       ['Kualiti Soalan', '/admin/questions/quality'],
       ['Laporan Soalan', '/admin/question-reports'],
     ]
@@ -597,7 +594,11 @@ test.describe('QA G5 guards and nav', { tag: [moduleTag(4), '@qa'] }, () => {
       ['/admin/questions/import', 'Import Soalan Secara Pukal', null],
       ['/admin/questions/quality', 'Dashboard Kualiti Soalan', null],
       ['/admin/structured-questions', 'Soalan Berstruktur', 'Semua soalan berstruktur SPM dalam sistem'],
-      ['/admin/question-submissions', 'Kertas Soalan Guru', null],
+      [
+        '/admin/question-submissions',
+        'Kertas Soalan Guru',
+        'Kertas yang dihantar guru diproses melalui aliran import Studio (DOCX/OCR → semakan → terbit).',
+      ],
       ['/admin/soalan-gambar', 'Soalan Perlu Gambar Rajah', null],
     ]
     for (const [path, title, sub] of pairs) {

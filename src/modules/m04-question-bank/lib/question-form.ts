@@ -5,7 +5,7 @@
 
 import { isApiError } from '@/api'
 
-import type { QuestionDetail, QuestionInputBody, QuestionType } from '../api/questions'
+import type { QuestionDetail, QuestionInputBody, QuestionLanguage, QuestionType } from '../api/questions'
 import { type CognitiveValue, isCognitive } from './studio/dskp-tags'
 import { GENERIC_ERROR } from './ui-errors'
 
@@ -22,6 +22,7 @@ export const KERTAS_OPTIONS = [
   { value: '1', label: 'Kertas 1' },
   { value: '2', label: 'Kertas 2' },
   { value: '3', label: 'Kertas 3' },
+  { value: '4', label: 'Kertas 4' },
 ] as const
 
 export const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const
@@ -44,10 +45,10 @@ export interface QuestionFormValues {
   altAnswers: string
   modelAnswer: string
   explanation: string
-  language: 'bm' | 'en'
+  language: QuestionLanguage
   pointsValue: string
-  /** '' = none, else '1' | '2' | '3' (Kertas, v2). */
-  kertas: '' | '1' | '2' | '3'
+  /** '' = none, else '1' | '2' | '3' | '4' (Kertas, v2). */
+  kertas: '' | '1' | '2' | '3' | '4'
   /** "Aras pemikiran" of the question's single part: '' = none, else one of the six levels (T33). */
   cognitiveLevel: '' | CognitiveValue
   /** Bab: '' = none, else the chapter id. */
@@ -86,7 +87,7 @@ export function emptyValues(): QuestionFormValues {
     altAnswers: '',
     modelAnswer: '',
     explanation: '',
-    language: 'bm',
+    language: 'ms',
     pointsValue: '1',
     kertas: '',
     cognitiveLevel: '',

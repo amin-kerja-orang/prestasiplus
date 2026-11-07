@@ -20,7 +20,7 @@ const body = (over: Record<string, unknown> = {}) => ({
   durationMin: 90,
   instructions: ['Jawab semua.'],
   reference: [{ title: 'Rumus', items: ['a = b'] }],
-  sections: [section(), section({ label: 'Bahagian B', markBudget: 6, questionCount: 8, rule: { type: 'choose', n: 3 }, compulsory: true, instruction: 'Pilih tiga.', pool: 'b' })],
+  sections: [section({ compulsory: true }), section({ label: 'Bahagian B', markBudget: 6, questionCount: 8, rule: { type: 'choose', n: 3 }, instruction: 'Pilih tiga.', pool: 'b' })],
   ...over,
 })
 const create = (over: Record<string, unknown> = {}) => ({ subject: 'SEJ', kertas: 1, ...body(), ...over })
@@ -109,7 +109,8 @@ describe('create', () => {
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const view = BijakBlueprintViewSchema.parse(res.body.data)
     expect(view).toMatchObject({ subject: 'SEJ', kertas: 1, source: 'Spec', code: 'SEJ/1', durationMin: 90, totalMarks: 16 })
-    expect(view.sections[1]).toMatchObject({ compulsory: true, instruction: 'Pilih tiga.', rule: { type: 'choose', n: 3 } })
+    expect(view.sections[0]).toMatchObject({ compulsory: true, rule: { type: 'all' } })
+    expect(view.sections[1]).toMatchObject({ compulsory: false, instruction: 'Pilih tiga.', rule: { type: 'choose', n: 3 } })
     expect(view.sections[0]?.instruction).toBe('Jawab semua soalan.')
     const [row] = await bpRows('SEJ/1')
     expect(row).toMatchObject({ version: 1, status: 'active', source: 'spec', total_marks: 16 })
@@ -161,9 +162,9 @@ describe('choose rule bounds', () => {
 
   it.each([40000, 6])('create and versions reject n = %i above the question count with sections.0.rule.n', async (n) => {
     const c = expectError(await admin.post('/api/admin/blueprints', create({ subject: 'SEJ', kertas: 20, code: 'N/20', sections: choose(n) })), 'VALIDATION_ERROR')
-    expect(c.fields).toEqual({ 'sections.0.rule.n': 'Medan ini tidak sah.' })
+    expect(c.fields).toEqual({ 'sections.0.rule.n': MSG.chooseNRange })
     const v = expectError(await admin.post('/api/admin/blueprints/MAT/1/versions', body({ code: 'N/20V', sections: [section(), ...choose(n)] })), 'VALIDATION_ERROR')
-    expect(v.fields).toEqual({ 'sections.1.rule.n': 'Medan ini tidak sah.' })
+    expect(v.fields).toEqual({ 'sections.1.rule.n': MSG.chooseNRange })
     expect(await bpRows('N/20')).toHaveLength(0)
     expect(await bpRows('N/20V')).toHaveLength(0)
   })

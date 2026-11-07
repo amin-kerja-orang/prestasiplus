@@ -95,9 +95,8 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     ])
     expect(await optionLabels(page, 'marketplace-sort')).toEqual([
       'Terbaru',
-      'Harga ↑',
-      'Harga ↓',
-      'Popular',
+      'Harga: Rendah ke Tinggi',
+      'Harga: Tinggi ke Rendah',
     ])
     await expect(page.getByTestId('marketplace-sort')).toHaveText('Terbaru')
     if (!filtersInline(page)) {
@@ -207,12 +206,10 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     await loginAs(PELAJAR)
     await gotoApp('/marketplace')
     await expect(cards(page)).toHaveCount(10)
-    await searchWith(page, [['marketplace-sort', 'Harga ↑']])
+    await searchWith(page, [['marketplace-sort', 'Harga: Rendah ke Tinggi']])
     await expect.poll(() => cardIds(page)).toEqual([9, 3, 8, 5, 6, 7, 4, 10, 2, 1])
-    await searchWith(page, [['marketplace-sort', 'Harga ↓']])
+    await searchWith(page, [['marketplace-sort', 'Harga: Tinggi ke Rendah']])
     await expect.poll(() => cardIds(page)).toEqual([1, 2, 10, 4, 7, 6, 5, 8, 3, 9])
-    await searchWith(page, [['marketplace-sort', 'Popular']])
-    await expect.poll(() => cardIds(page)).toEqual([1, 8, 2, 3, 10, 5, 9, 4, 7, 6])
 
     await page.getByTestId('marketplace-chip-buku-rujukan').click()
     await expect(page).toHaveURL(/\/marketplace\?category=buku-rujukan$/)
@@ -242,19 +239,19 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
     await searchWith(page, [
       ['marketplace-category', 'Peralatan Sekolah'],
       ['marketplace-condition', 'Baru'],
-      ['marketplace-sort', 'Popular'],
+      ['marketplace-sort', 'Harga: Rendah ke Tinggi'],
     ])
     await expect.poll(() => cardIds(page)).toEqual([1])
     await expect(page).toHaveURL(/q=beg/)
     await expect(page).toHaveURL(/category=peralatan-sekolah/)
     await expect(page).toHaveURL(/condition=new/)
-    await expect(page).toHaveURL(/sort=popular/)
+    await expect(page).toHaveURL(/sort=price_low/)
     // The four values stay selected after the search (FR-M20-49), in the sheet below `md`.
     await expect(page.getByTestId('marketplace-q')).toHaveValue('beg')
     await openFilters(page)
     await expect(page.getByTestId('marketplace-category')).toHaveText('Peralatan Sekolah')
     await expect(page.getByTestId('marketplace-condition')).toHaveText('Baru')
-    await expect(page.getByTestId('marketplace-sort')).toHaveText('Popular')
+    await expect(page.getByTestId('marketplace-sort')).toHaveText('Harga: Rendah ke Tinggi')
     if (!filtersInline(page)) await page.keyboard.press('Escape')
     await expectNoHorizontalScroll(page)
   })
@@ -276,8 +273,16 @@ test.describe('M20 S6 Marketplace', MODULE, () => {
       // The 🛒 of live became a glyph with the restyle (B06, 79b5fa2dc; `DsEmptyState icon`).
       await expect(empty.locator('[data-ds="empty-state"] svg.iconify')).toBeVisible()
       await expect(empty).not.toContainText('🛒')
-      await expect(empty).toContainText('Tiada Produk Dijumpai')
-      await expect(empty).toContainText('Cuba tukar kata kunci atau kategori')
+      // R1-MUR-32 (AC-MUR-32-2): no filter -> "Tiada produk tersedia"; a filter that matches nothing keeps the V3 text.
+      if (url === '/marketplace?page=2') {
+        await expect(empty).toContainText('Tiada produk tersedia')
+        await expect(empty).toContainText(
+          'Belum ada penjual diluluskan yang menyenaraikan produk aktif.',
+        )
+      } else {
+        await expect(empty).toContainText('Tiada Produk Dijumpai')
+        await expect(empty).toContainText('Cuba tukar kata kunci atau kategori')
+      }
       await expect(cards(page)).toHaveCount(0)
     }
     await expectNoHorizontalScroll(page)
@@ -345,7 +350,7 @@ test.describe('M20 S8 Kedai Penjual', MODULE, () => {
     await gotoApp('/marketplace/penjual/1')
     await expectTabTitle(page, 'JomBelajar Official - Marketplace | PRESTASIPLUS')
     await expectShellTitle(page, 'Kedai Penjual')
-    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali ke Marketplace')
+    await expect(page.getByTestId('marketplace-back')).toHaveText('Kembali')
     await expect(page.getByTestId('marketplace-back')).toHaveAttribute('href', '/marketplace')
     await expect(page.getByTestId('shop-initial')).toHaveText('J')
     await expect(page.getByTestId('shop-name')).toHaveText('JomBelajar Official')

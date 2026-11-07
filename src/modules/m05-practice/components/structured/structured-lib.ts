@@ -10,12 +10,12 @@ import type { StructuredScope, StructuredTrack } from '../../api/types'
 /** S10 "Aras KBAT" options (FR-M05-91). */
 export const KBAT_OPTIONS: readonly { value: string; label: string }[] = [
   { value: '', label: 'Semua' },
-  { value: '1', label: '1. Mengingat' },
-  { value: '2', label: '2. Memahami' },
-  { value: '3', label: '3. Mengaplikasi' },
-  { value: '4', label: '4. Menganalisis' },
-  { value: '5', label: '5. Menilai' },
-  { value: '6', label: '6. Mencipta' },
+  { value: '1', label: 'LOTS 1' },
+  { value: '2', label: 'LOTS 2' },
+  { value: '3', label: 'MOTS 3' },
+  { value: '4', label: 'HOTS 4' },
+  { value: '5', label: 'HOTS 5' },
+  { value: '6', label: 'HOTS 6' },
 ]
 
 export interface KbatBadge {

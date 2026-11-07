@@ -15,6 +15,7 @@ import { defineRepository } from '@/mock/repository'
 import { DEFAULT_METRIC_BY_TYPE, RARITY_COLORS, RARITY_LABELS } from '../data/catalogue'
 import {
   achievementsTable,
+  challengeClaimsTable,
   challengesTable,
   completionsTable,
   dailyLoginMarksTable,
@@ -482,6 +483,12 @@ export interface ChallengeInput {
   sortOrder: number
 }
 
+function claimedOn(userId: number, date: string): Set<number> {
+  return new Set(
+    challengeClaimsTable.query({ where: { userId, date } }).rows.map((r) => r.challengeId),
+  )
+}
+
 export interface ChallengeToday {
   id: number
   icon: string
@@ -494,6 +501,7 @@ export interface ChallengeToday {
   progress: number
   pct: number
   completed: boolean
+  claimed: boolean
 }
 
 export const challengesRepo = defineRepository({
@@ -508,7 +516,12 @@ export const challengesRepo = defineRepository({
        * #7 body (BR-M14-12): the active challenges in order with today's progress (M05 reads +
        * the M14 streak); a completed challenge shows its full bar.
        */
-      today(userId: number): { items: ChallengeToday[]; completed: number; active: number } {
+      today(userId: number): {
+        items: ChallengeToday[]
+        completed: number
+        active: number
+        claimed: number
+      } {
         const now = nowMs()
         const date = localDate(now)
         const active = activeChallenges()
@@ -520,6 +533,7 @@ export const challengesRepo = defineRepository({
           st.lastActivityDate === date ? st.current : 0,
         )
         const done = completionsOn(userId, date)
+        const claimedToday = claimedOn(userId, date)
         const items = active.map((c) => {
           const completed = done.has(c.id)
           const progress = completed ? c.targetValue : challengeProgress(c, metrics)
@@ -535,9 +549,99 @@ export const challengesRepo = defineRepository({
             progress,
             pct: c.targetValue > 0 ? Math.round((progress / c.targetValue) * 100) : 0,
             completed,
+            claimed: claimedToday.has(c.id),
           }
         })
-        return { items, completed: items.filter((i) => i.completed).length, active: active.length }
+        return {
+          items,
+          completed: items.filter((i) => i.completed).length,
+          active: active.length,
+          claimed: items.filter((i) => i.claimed).length,
+        }
+      },
+      /**
+       * API-GAME-11 (ruling 20 on #500), in this order: no such or inactive challenge 404; a claim of
+       * the day exists (same clientUuid: the stored result, nothing written; else CHALLENGE_CLAIMED);
+       * the clientUuid sits on another claim of the user CONFLICT; progress below the target
+       * CHALLENGE_NOT_DONE; else the claim row and the credit (0 syiling when coins are off).
+       */
+      claim(
+        userId: number,
+        challengeId: number,
+        clientUuid: string | null,
+      ): { claimed: true; rewardSyiling: number; rewardXp: number; notices?: string[] } {
+        const at = nowMs()
+        const date = localDate(at)
+        const c = challengesTable.get(challengeId)
+        if (!c || !c.isActive) throw new M14Error('NOT_FOUND', 'Cabaran tidak dijumpai.')
+        const stored = (r: { rewardSyiling: number; rewardXp: number }) => ({
+          claimed: true as const,
+          rewardSyiling: r.rewardSyiling,
+          rewardXp: r.rewardXp,
+        })
+        const existing = challengeClaimsTable.query({ where: { userId, challengeId, date } })
+          .rows[0]
+        if (existing) {
+          if (clientUuid !== null && existing.clientUuid === clientUuid) return stored(existing)
+          throw new M14Error('CHALLENGE_CLAIMED', 'Ganjaran sudah dituntut.')
+        }
+        if (
+          clientUuid !== null &&
+          challengeClaimsTable
+            .query({ where: { userId } })
+            .rows.some((r) => r.clientUuid === clientUuid)
+        ) {
+          throw new M14Error(
+            'CONFLICT',
+            'This movement key was already used for a different movement.',
+          )
+        }
+        const st = streakState(userId)
+        const metrics = dayMetrics(
+          dayFacts(userId, date),
+          st.lastActivityDate === date ? st.current : 0,
+        )
+        if (
+          !completionsOn(userId, date).has(c.id) &&
+          challengeProgress(c, metrics) < c.targetValue
+        ) {
+          throw new M14Error('CHALLENGE_NOT_DONE', 'Cabaran belum selesai.')
+        }
+        const rewardSyiling = c.rewardSyiling > 0 && coinsEnabled(userId) ? c.rewardSyiling : 0
+        return tx(() => {
+          challengeClaimsTable.insert({
+            userId,
+            challengeId,
+            date,
+            rewardSyiling,
+            rewardXp: c.rewardXp,
+            clientUuid,
+          })
+          // The claim pays, as the API does: syiling only when coins are on (stored 0 otherwise), XP always.
+          const notices: string[] = []
+          if (rewardSyiling > 0) {
+            const before = walletState(userId).tierKey
+            const { wallet } = creditSyilingOp(
+              userId,
+              rewardSyiling,
+              {
+                source: 'daily_challenge',
+                description: `Cabaran selesai: ${c.title}`,
+                refId: `challenge:${String(challengeId)}:${date}`,
+              },
+              at,
+            )
+            if (wallet.tierKey !== before) {
+              const label = tierByKey(wallet.tierKey)?.labelMs
+              if (label) notices.push(`Tahniah! Anda naik ke tier ${label}.`)
+            }
+          }
+          if (c.rewardXp > 0) addXpOp(userId, c.rewardXp, at)
+          return {
+            ...stored({ rewardSyiling, rewardXp: c.rewardXp }),
+            ...(notices.length > 0 ? { notices } : {}),
+          }
+        })
       },
       /** #23: every challenge by (`sortOrder`, `id`). */
       list(): DailyChallenge[] {
