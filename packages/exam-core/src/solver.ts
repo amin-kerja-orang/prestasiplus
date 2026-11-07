@@ -234,7 +234,6 @@ class Search {
   private readonly nk: Int32Array[] | null = null
   private readonly nkD: number = 0
   private readonly nkMask: number = 0
-  private readonly singleCredit: boolean
   /** Extra line touches still available from multi-unit questions (each adds credit-lines - 1). */
   private multiLeft = 0
   /** Cheapest / dearest question marks per slot group over the placeable single types. */
@@ -290,7 +289,6 @@ class Search {
     this.reach = this.buildReach()
     this.lineReach = this.buildLineReach()
     this.maxCredit = new Array<number>(this.L).fill(1)
-    this.singleCredit = P.types.every((t) => t.credit.length === 2)
     for (let g = 0; g < this.G; g++) {
       let lo = Number.POSITIVE_INFINITY
       let hi = 0

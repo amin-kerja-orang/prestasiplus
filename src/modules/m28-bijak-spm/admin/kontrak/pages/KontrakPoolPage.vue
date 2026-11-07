@@ -9,9 +9,10 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useFlash } from '@/composables/useFlash'
-import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatRow, type StatItem } from '@/ds'
+import { DsEmptyState, DsFormField, DsLoadError, DsPage, DsPanel, DsStatRow, type StatItem } from '@/ds'
 
 import { ADMIN_ROUTES } from '../../papers/ui'
+import { setTitleError } from '../../builder/domain/set-title'
 import PoolFillTable from '../components/PoolFillTable.vue'
 import SourceBadge from '../components/SourceBadge.vue'
 import {
@@ -115,18 +116,32 @@ const sections = computed(() => {
 const generating = ref(false)
 const draftError = ref<{ title: string; lines: string[]; retry: boolean } | null>(null)
 const canGenerate = computed(() => verdict.value === 'boleh')
+/**
+ * `Tajuk set` (PRD30 13-04: required, at most 120 after trim, placeholder "cth: Latih Tubi Sejarah Mac", no default):
+ * the API (#775) refuses a draft without one. The rule, or the API's 422 `fields.title`; cleared on the next edit.
+ */
+const title = ref('')
+const titleServerError = ref<string | undefined>()
+const titleRule = computed(() => setTitleError(title.value))
+/** The rule error shows only once the field was touched (blur, input or a submit attempt), not on first render. */
+const titleTouched = ref(false)
+const titleError = computed(() => (titleTouched.value ? titleRule.value : undefined) ?? titleServerError.value)
 const reasonText = 'Tidak boleh dijana - lihat baris kurang di atas.'
 
 async function generate(): Promise<void> {
-  if (!canGenerate.value || generating.value) return
+  titleTouched.value = true
+  if (!canGenerate.value || generating.value || titleRule.value) return
   generating.value = true
   draftError.value = null
+  titleServerError.value = undefined
   try {
-    const { paperId } = await api.generateDraft(subject.value, kertas.value)
+    const { id } = await api.generateDraft(subject.value, kertas.value, title.value)
     flash.show({ type: 'success', message: 'Draf kertas dijana. Kertas belum diterbitkan.' })
-    await router.push({ name: ADMIN_ROUTES.paperEdit, params: { id: paperId } })
+    await router.push({ name: ADMIN_ROUTES.paperEdit, params: { id } })
   } catch (e) {
-    if (e instanceof KontrakError && e.kind === 'shortage') {
+    if (e instanceof KontrakError && e.fields.title) {
+      titleServerError.value = e.fields.title
+    } else if (e instanceof KontrakError && e.kind === 'shortage') {
       draftError.value = { title: 'Draf kertas tidak dapat dijana.', lines: e.shortages.map(shortageLine), retry: false }
       await load()
     } else {
@@ -152,6 +167,18 @@ async function generate(): Promise<void> {
   >
     <template v-if="view" #meta><SourceBadge :source="view.source" /></template>
     <template #actions>
+      <DsFormField v-slot="f" native for="draft-title" label="Tajuk set" required :error="titleError">
+        <UInput
+          :id="f.id"
+          v-model="title"
+          placeholder="cth: Latih Tubi Sejarah Mac"
+          :aria-describedby="f.describedby"
+          :aria-invalid="f.invalid ? 'true' : undefined"
+          data-testid="draft-title"
+          @update:model-value="((titleServerError = undefined), (titleTouched = true))"
+          @blur="titleTouched = true"
+        />
+      </DsFormField>
       <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
         <UButton color="neutral" variant="soft" class="min-h-11" icon="i-ph-arrow-clockwise" label="Muat Semula" :loading="status === 'loading'" data-testid="pool-reload" @click="load" />
         <UButton
@@ -170,6 +197,7 @@ async function generate(): Promise<void> {
           :label="generating ? 'Menjana...' : 'Jana Draf Kertas'"
           :loading="generating"
           :aria-disabled="canGenerate ? undefined : 'true'"
+          :disabled="!!titleRule"
           aria-describedby="draft-reason"
           data-testid="generate-draft"
           @click="generate"

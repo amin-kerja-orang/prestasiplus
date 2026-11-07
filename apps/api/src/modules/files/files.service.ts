@@ -46,6 +46,8 @@ export const UPLOAD_ROLES: Readonly<Record<FilePurpose, readonly RoleCode[] | 'a
   cms_screenshot: ['admin'],
   // BE-19: written only by POST /timeline, never through POST /files (403 for every role).
   timeline_photo: [],
+  // S7-T08: admin product images.
+  marketplace_image: ['admin'],
 }
 
 export function isFilePurpose(value: unknown): value is FilePurpose {
@@ -157,6 +159,8 @@ const READ_RULES: Readonly<Record<string, ReadRule>> = {
   },
   // Interim (F2): public, reachable only through the opaque token, until BE-24 gates it on publish state.
   cms_image: () => true,
+  // S7-T08: product images are shown to every signed-in pupil; an anonymous caller is refused before the rule runs (canRead).
+  marketplace_image: () => true,
   // BE-24: section audio of Audio KBAT sets. Admin only, fail closed: students never read it through /files, they
   // reach it only through the stream route of an approved set (`FilesService.readManaged`, which does its own check).
   audio_kbat: (c) => isRole(c, 'admin'),

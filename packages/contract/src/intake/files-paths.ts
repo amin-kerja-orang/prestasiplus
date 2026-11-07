@@ -6,6 +6,7 @@ import { IdSchema } from '../common/ids'
 import {
   INTAKE_BATCH_STATUS_LABELS,
   INTAKE_FILE_MESSAGES,
+  INTAKE_RETRYABLE_PAGE_CODES,
   IntakeBatchCreateSchema,
   IntakeBatchDetailEnvelopeSchema,
   IntakeBatchDetailSchema,
@@ -27,6 +28,8 @@ import {
   IntakePageListSchema,
   IntakePageOcrStatusSchema,
   IntakePaperTypeSchema,
+  IntakeRetryResultEnvelopeSchema,
+  IntakeRetryResultSchema,
   IntakeTextBlockSchema,
   IntakeTextSourceSchema,
   IntakeUploadMultipartSchema,
@@ -53,6 +56,7 @@ export const INTAKE_FILES_COMPONENT_SCHEMAS = {
   IntakeBatchSummary: IntakeBatchSummarySchema,
   IntakeBatchDetail: IntakeBatchDetailSchema,
   IntakeUploadResult: IntakeUploadResultSchema,
+  IntakeRetryResult: IntakeRetryResultSchema,
   IntakeBbox: IntakeBboxSchema,
   IntakeTextBlock: IntakeTextBlockSchema,
   IntakeFigureRef: IntakeFigureRefSchema,
@@ -156,7 +160,7 @@ export function registerIntakeFilesPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Upload one or more PDF files to a submission',
     description:
-      `Card BE-37. ${ROLES} multipart/form-data, parts named \`files\` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, \`fields.files\`, one BM message). Refusals: "${INTAKE_FILE_MESSAGES.type}", "${INTAKE_FILE_MESSAGES.size(20)}" (INTAKE_MAX_FILE_MB), "${INTAKE_FILE_MESSAGES.pages(200)}" (OCR_MAX_PAGES), "${INTAKE_FILE_MESSAGES.encrypted}", "${INTAKE_FILE_MESSAGES.corrupt}", "${INTAKE_FILE_MESSAGES.tooComplex}", "${INTAKE_FILE_MESSAGES.duplicate}" (same hash as a file in another batch that is not failed or cancelled), "${INTAKE_FILE_MESSAGES.tooManyFiles(10)}" [PROPOSED copy]. ` +
+      `Card BE-37. ${ROLES} multipart/form-data, parts named \`files\` (PDF only). The type is decided from the content (magic bytes), never the name. All-or-nothing: if any file is refused nothing is stored (422, \`fields.files\`, one BM message). Refusals: "${INTAKE_FILE_MESSAGES.type}", "${INTAKE_FILE_MESSAGES.size(30)}" (INTAKE_MAX_FILE_MB), "${INTAKE_FILE_MESSAGES.pages(200)}" (OCR_MAX_PAGES), "${INTAKE_FILE_MESSAGES.encrypted}", "${INTAKE_FILE_MESSAGES.corrupt}", "${INTAKE_FILE_MESSAGES.tooComplex}", "${INTAKE_FILE_MESSAGES.duplicate}" (same hash as a file in another batch that is not failed or cancelled), "${INTAKE_FILE_MESSAGES.tooManyFiles(10)}" [PROPOSED copy]. ` +
       `A batch that no longer accepts files (cancelled, failed, or already processed) is 409 CONFLICT "${INTAKE_FILE_MESSAGES.batchClosed}". Over the daily page quota (INTAKE_DAILY_PAGE_QUOTA; Admin Pusat exempt) is 429 RATE_LIMITED "${INTAKE_FILE_MESSAGES.quota}". On success processing is queued and the batch becomes \`processing\`; the response lists the stored files.`,
     request: {
       headers: csrf,
@@ -187,6 +191,42 @@ export function registerIntakeFilesPaths(registry: OpenAPIRegistry): void {
       403: forbidden,
       404: notFound('batch'),
       409: err('CONFLICT: the batch has already finished (ready_for_review or failed).'),
+    },
+  })
+
+  const retryErrors = {
+    401: unauthorized,
+    403: forbidden,
+    409: err(
+      `CONFLICT, told apart by \`message\`: ERR-INT-11 "${INTAKE_FILE_MESSAGES.retryExhausted}" (a file to re-run already used its 3 retries; nothing is re-run), or the generic conflict (the file or batch is still being processed, is cancelled, or has no failed page a retry can fix: ${INTAKE_RETRYABLE_PAGE_CODES.join(', ')}).`,
+    ),
+  } as const
+
+  registerIntakeRoute(registry, {
+    method: 'post',
+    path: '/intake/files/{id}/retry',
+    tags,
+    summary: 'Retry the failed pages of one file',
+    description: `S1-T04 (API-Q-26, ERR-INT-05/11). ${ROLES} Re-runs the pages of the file that failed with ${INTAKE_RETRYABLE_PAGE_CODES.join(', ')} and adds 1 to \`intake_files.retry_count\` (3 retries per file; the same counter as the batch retry and \`extract\` with \`pages[]\`). The batch goes back to \`processing\`. The request body is empty. 404 for an unknown id or another teacher's batch.`,
+    request: { headers: csrf, params: idParams },
+    responses: {
+      202: json(IntakeRetryResultEnvelopeSchema, 'The retry was started.'),
+      ...retryErrors,
+      404: notFound('file'),
+    },
+  })
+
+  registerIntakeRoute(registry, {
+    method: 'post',
+    path: '/intake/batches/{id}/retry',
+    tags,
+    summary: 'Retry the failed pages of every file of a submission',
+    description: `S1-T04 (API-Q-26, ERR-INT-05/11). ${ROLES} Re-runs the failed pages of every file that has some and adds 1 to the \`retry_count\` of each of those files. The response carries the highest \`attempt\` and the lowest \`retriesLeft\` among them. If any file to re-run already used its 3 retries the whole call is refused (409 ERR-INT-11) and nothing is re-run. The request body is empty.`,
+    request: { headers: csrf, params: idParams },
+    responses: {
+      202: json(IntakeRetryResultEnvelopeSchema, 'The retry was started.'),
+      ...retryErrors,
+      404: notFound('batch'),
     },
   })
 

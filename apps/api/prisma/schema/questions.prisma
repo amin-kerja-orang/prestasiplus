@@ -19,6 +19,8 @@ model Stimulus {
   bodyMs         String?  @map("body_ms")
   bodyEn         String?  @map("body_en")
   caption        String?
+  /// English twin of the caption (DM-50, S1-T09b); null = no English text.
+  captionEn      String?  @map("caption_en")
   altText        String?  @map("alt_text")
   sourceCitation String?  @map("source_citation")
   /// Presentation hint (DM-70): `kotak` on a passage, `mono` for the code block. Nullable text, no check constraint.
@@ -156,7 +158,7 @@ model QuestionVersion {
   archiveReason String?   @map("archive_reason")
   publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
 
-  /// mcq, match, short, structured, working, essay, drawing, table (check constraint).
+  /// mcq, match, short, structured, working, essay, drawing, table, mcq_multi, true_false, fill_blank (check constraint, migration 0134, DM-69).
   type          String
   stemMs        String? @map("stem_ms")
   stemEn        String? @map("stem_en")
@@ -198,6 +200,8 @@ model QuestionVersion {
   ownerUserId       BigInt? @map("owner_user_id")
   /// DM-42: http(s) link shown to the pupil as "Rujukan", at most 2048 characters (check constraint).
   referenceUrl      String? @map("reference_url")
+  /// DM-54: scheme v2 question-level rules (deductions, zeroIf); NULL = none. Migration 0133.
+  schemeRules       Json?   @map("scheme_rules")
 
   // Provenance (all optional).
   year          Int?    @db.SmallInt
@@ -308,6 +312,8 @@ model QuestionPart {
   /// graph, diagram, sketch (check constraint).
   drawingKind       String?  @map("drawing_kind")
   tableGrid         Json?    @map("table_grid") @db.JsonB
+  /// DM-55: per-part answer-mode settings (maxWords, wordRange, answerTemplate, multi, example, ...); NULL = defaults. Migration 0133.
+  modeConfig        Json?    @map("mode_config")
   stimulusId        BigInt?  @map("stimulus_id")
   choiceGroup       String?  @map("choice_group")
   /// after_submit, never (check constraint).

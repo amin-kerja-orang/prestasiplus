@@ -1,19 +1,20 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
+import { PRACTICE_READS_STRUCTURED_SEARCH_MAX } from '@pp/contract'
 import type { PracticeReadStructuredAttemptResult, PracticeReadStructuredDetail, PracticeReadStructuredListResponseSchema } from '@pp/contract'
 import type { z } from 'zod'
 
 import { ApiError, DEFAULT_ERROR_MESSAGES } from '../../../../common/errors/api-error'
 import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
-import { CLOCK, type Clock } from '../../../../db/clock'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
+import { PracticePorts, type PracticeStructuredAudit } from '../../ports'
 import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
 import { StructuredAttemptsRepository } from './attempts.repository'
-import { StructuredListingRepository } from './listing.repository'
-import { flatten, type SubQuestion } from './flatten'
+import { StructuredListingRepository, type DegradedSet } from './listing.repository'
+import { flatten } from './flatten'
 import {
   BAHASA_SUBJECT_CODES,
   DEFAULT_AUTHOR,
@@ -24,7 +25,6 @@ import {
   STRUCTURED_LEVEL_CODES,
   STRUCTURED_PAGE_SIZE,
   SUBJEKTIF_SUBJECT_CODES,
-  markStructured,
 } from './rules'
 
 type Scope = 'spm' | null
@@ -33,6 +33,8 @@ type Track = 'bahasa' | null
 export interface StructuredCaller {
   userId: string
   isTest: boolean
+  /** Who to attribute the submit audit line to (the session context and request coordinates); absent: a system line. */
+  audit?: PracticeStructuredAudit
 }
 
 /** The raw query values of the list and detail routes (a repeated key arrives as an array: the first wins). */
@@ -72,10 +74,25 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'obj
 
 const preview = (text: string): string => (text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH)}...` : text)
 
-const totalMarks = (subs: readonly SubQuestion[]): number => subs.reduce((n, s) => n + s.marks, 0)
+const totalMarks = (subs: readonly { marks: number }[]): number => subs.reduce((n, s) => n + s.marks, 0)
 
 /** KBAT 1 to 6 (BR-23): the cognitive level of the live version, 1 when the set has none. */
-const kbatOf = (r: QuestionRecord): number => Math.min(6, Math.max(1, r.version.cognitiveLevel ?? 1))
+const kbatOf = (cognitiveLevel: number | null): number => Math.min(6, Math.max(1, cognitiveLevel ?? 1))
+
+/** What a list card is built from: a hydrated set, or the rows of one the bank cannot hydrate. */
+interface CardSource {
+  id: string
+  createdById: string | null
+  stemMs: string | null
+  firstPrompt: string
+  subjectId: string | null
+  cognitive: number
+  educationLevelId: string | null
+  subs: { top: boolean; marks: number }[]
+}
+
+/** The attempt title is the start of the stem (or of the first part). */
+const TITLE_MAX_CHARS = 100
 
 const invalid = (fields: Record<string, string>): ApiError => {
   const [message] = Object.values(fields)
@@ -88,12 +105,14 @@ const invalid = (fields: Record<string, string>): ApiError => {
  * Tingkatan 4 or 5 (BR-M04-03). Model answers and keys never leave in a read; they come back in the
  * attempt result.
  *
- * Marking is the mock placeholder (LS-7): see `markStructured`. `@pp/exam-core` is not used: the wire
- * carries free text per sub-question (no option, number or mapping kind), and the subjective modes it
- * marks need a human or AI mark, so it does not map onto the mock's rule.
+ * The attempt is a Bijak attempt (S5-T11): `PracticePorts.structuredAttempts` creates, grades with the one
+ * grader and closes it; this service keeps the body checks and the wire shape. Nothing is written to
+ * `structured_attempts` any more (the table and its readers stay).
  */
 @Injectable()
 export class StructuredService {
+  private readonly logger = new Logger(StructuredService.name)
+
   constructor(
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
@@ -101,7 +120,7 @@ export class StructuredService {
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(StructuredAttemptsRepository) private readonly attempts: StructuredAttemptsRepository,
     @Inject(StructuredListingRepository) private readonly listing: StructuredListingRepository,
-    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(PracticePorts) private readonly ports: PracticePorts,
   ) {}
 
   // --- lookups -------------------------------------------------------------------------------------
@@ -136,7 +155,7 @@ export class StructuredService {
   }
 
   /** Author name and school: a teacher creator shows both, any other creator "Guru Pakar" (no school). */
-  private async authors(records: readonly QuestionRecord[]): Promise<Map<string, { author: string; school: string | null }>> {
+  private async authors(records: readonly { createdById: string | null }[]): Promise<Map<string, { author: string; school: string | null }>> {
     const out = new Map<string, { author: string; school: string | null }>()
     for (const creatorId of new Set(records.map((r) => r.createdById).filter((v): v is string => v !== null))) {
       const user = await this.users.get(creatorId)
@@ -147,15 +166,42 @@ export class StructuredService {
     return out
   }
 
+  /**
+   * Hydrates the page. All at once first (lenient: a leaf without a key row still parses); when that throws (a present but invalid
+   * stored key), per set, and the sets that still throw come back as `broken` with their row facts. Logged once, ids only.
+   */
+  private async hydrate(ids: readonly string[], markable: boolean): Promise<[Map<string, QuestionRecord>, Map<string, DegradedSet>]> {
+    const opts = { lenientKeys: true }
+    const ok = new Map<string, QuestionRecord>()
+    try {
+      for (const r of await this.questions.getMany(ids, 'live', 'exclude', opts)) ok.set(r.id, r)
+      return [ok, new Map()]
+    } catch {
+      const bad: string[] = []
+      for (const id of ids) {
+        try {
+          for (const r of await this.questions.getMany([id], 'live', 'exclude', opts)) ok.set(r.id, r)
+        } catch {
+          bad.push(id)
+        }
+      }
+      if (bad.length > 0) this.logger.warn(`structured list: sets with an unreadable stored key (markable=${String(markable)}): ${bad.join(',')}`)
+      return [ok, new Map((await this.listing.degraded(bad)).map((d) => [d.id, d]))]
+    }
+  }
+
   // --- #15 list ------------------------------------------------------------------------------------
 
-  async list(query: RawQuery): Promise<z.output<typeof PracticeReadStructuredListResponseSchema>> {
+  async list(caller: StructuredCaller, query: RawQuery): Promise<z.output<typeof PracticeReadStructuredListResponseSchema>> {
     const { scope, track } = variant(query)
     const [levels, subjects] = await Promise.all([this.levels(), this.subjects()])
     const options = this.subjectOptions(scope, track, subjects)
     const page = pageOf(query)
     const subject = filterOf(query, 'subjectId')
     const kbat = filterOf(query, 'kbatLevel')
+    const text = first(query, 'q')?.trim() ?? ''
+    if (text.length > PRACTICE_READS_STRUCTURED_SEARCH_MAX) throw invalid({ q: MESSAGES.searchTooLong(PRACTICE_READS_STRUCTURED_SEARCH_MAX) })
+    const markable = ['1', 'true'].includes(first(query, 'markable')?.trim().toLowerCase() ?? '')
 
     const empty =
       subject.kind === 'nothing' ||
@@ -164,8 +210,11 @@ export class StructuredService {
       (scope !== null && subject.kind === 'value' && !options.some((o) => o.id === subject.value)) ||
       (scope === null && subject.kind === 'value' && !subjects.has(subject.value))
 
-    let slice: QuestionRecord[] = []
+    let ids: string[] = []
+    let hydrated = new Map<string, QuestionRecord>()
+    let broken = new Map<string, DegradedSet>()
     let total = 0
+    let pendingSchemeCount = 0
     if (!empty) {
       // One id query (filters, order, LIMIT/OFFSET) and one count; only the page slice is hydrated.
       const res = await this.listing.page({
@@ -174,36 +223,54 @@ export class StructuredService {
         kbat: kbat.kind === 'value' ? Number(kbat.value) : null,
         // Tracking A Bahasa: BM sets before BI sets. The Subjektif variant merges the subjects newest first.
         subjectOrder: track === 'bahasa' && subject.kind !== 'value',
+        q: text === '' ? null : text,
+        markable,
         limit: STRUCTURED_PAGE_SIZE,
         offset: (page - 1) * STRUCTURED_PAGE_SIZE,
       })
       total = res.total
-      slice = await this.questions.getMany(res.ids, 'live')
+      pendingSchemeCount = res.pendingScheme
+      ids = res.ids
+      ;[hydrated, broken] = await this.hydrate(res.ids, markable)
+      // A set that cannot be hydrated (present but invalid key) is not markable: dropped under `markable`, else listed from its rows.
+      // `pendingSchemeCount` is SQL (a leaf without a key row) and so does not count these: it may undercount broken keys.
+      if (markable) ids = ids.filter((id) => !broken.has(id))
     }
-    const authors = await this.authors(slice)
-    const data = slice.map((r) => {
-      const subs = flatten(r.id, r.version.parts)
+    const sources: CardSource[] = ids.flatMap((id) => {
+      const r = hydrated.get(id)
+      if (r) {
+        const subs = flatten(r.id, r.version.parts)
+        return [{ id: r.id, createdById: r.createdById, stemMs: r.version.stemMs, firstPrompt: r.version.parts[0]?.prompt.ms ?? '', subjectId: r.version.subjectId, cognitive: kbatOf(r.version.cognitiveLevel), educationLevelId: r.version.educationLevelId, subs }]
+      }
+      const d = broken.get(id)
+      return d ? [{ id: d.id, createdById: d.createdById, stemMs: d.stemMs, firstPrompt: d.firstPrompt, subjectId: d.subjectId, cognitive: kbatOf(d.cognitiveLevel), educationLevelId: d.educationLevelId, subs: d.subs }] : []
+    })
+    const authors = await this.authors(sources)
+    const best = await this.attempts.bestFor(caller.userId, sources.map((r) => r.id))
+    const data = sources.map((r) => {
+      const subs = r.subs
       const who = (r.createdById !== null ? authors.get(r.createdById) : undefined) ?? { author: DEFAULT_AUTHOR, school: null }
-      const sid = r.version.subjectId
+      const sid = r.subjectId
       return {
         id: r.id,
         subjectId: sid ?? '',
         subjectName: (sid !== null ? subjects.get(sid)?.name : undefined) ?? '',
-        kbatLevel: kbatOf(r),
+        kbatLevel: r.cognitive,
         // v2 has no estimated-minutes column: one mark is one minute (same as BE-09's structured detail).
         estimatedMinutes: totalMarks(subs),
         isTrial: false,
-        preview: preview(r.version.stemMs ?? r.version.parts[0]?.prompt.ms ?? ''),
+        preview: preview(r.stemMs ?? r.firstPrompt),
         topic: null,
         author: who.author,
         school: who.school,
         subQuestionCount: subs.length,
-        levelName: levels.get(r.version.educationLevelId ?? '') ?? '',
+        levelName: levels.get(r.educationLevelId ?? '') ?? '',
         parts: subs.filter((s) => s.top).length,
         marks: totalMarks(subs),
+        bestScore: best.get(r.id) ?? null,
       }
     })
-    return { data, meta: { ...listMeta(page, STRUCTURED_PAGE_SIZE, total), scope, track, subjectOptions: options } }
+    return { data, meta: { ...listMeta(page, STRUCTURED_PAGE_SIZE, total), scope, track, subjectOptions: options, pendingSchemeCount } }
   }
 
   // --- #16 detail ----------------------------------------------------------------------------------
@@ -260,26 +327,35 @@ export class StructuredService {
       answers.set(a.subQuestionId, a.text)
     }
 
-    const marks = markStructured(subs, answers)
-    const totalAwarded = marks.reduce((n, m) => n + m.awarded, 0)
-    const totalMax = marks.reduce((n, m) => n + m.max, 0)
-    const submittedAt = this.clock.now()
+    const subjects = await this.subjects()
+    const subject = subjects.get(q.version.subjectId ?? '')
+    const firstText = q.version.stemMs ?? q.version.parts[0]?.prompt.ms ?? ''
     const stored = [...answers].map(([subQuestionId, text]) => ({ subQuestionId, text }))
-    const attemptId = await this.attempts.add({
+    const pathOf = new Map(subs.map((s) => [s.id, s.label]))
+    const graded = await this.ports.structuredAttempts.submit({
       userId: caller.userId,
+      isTest: caller.isTest,
+      ...(caller.audit ? { audit: caller.audit } : {}),
       questionId: q.id,
-      questionVersionNo: q.version.versionNo,
+      versionNo: q.version.versionNo,
+      title: firstText.trim().slice(0, TITLE_MAX_CHARS) || null,
+      subject: subject?.code ?? null,
+      subjectName: subject?.name ?? null,
       scope,
       track,
-      answers: stored,
-      marks,
-      totalAwarded,
-      totalMax,
-      submittedAt,
-      isTest: caller.isTest,
+      answers: stored.map((a) => ({ path: pathOf.get(a.subQuestionId) as string, text: a.text })),
     })
+    const byPath = new Map(graded.parts.map((p) => [p.path, p]))
+    // One entry per sub-question of the set, branches included (max 0). A part the grader leaves to the pupil (`pending`) counts 0 until she marks it.
+    const marks = subs.map((s) => {
+      const part = byPath.get(s.label)
+      return { subQuestionId: s.id, awarded: part?.awarded ?? 0, max: part?.max ?? s.marks }
+    })
+    const totalAwarded = marks.reduce((n, m) => n + m.awarded, 0)
+    const totalMax = marks.reduce((n, m) => n + m.max, 0)
     return {
-      id: attemptId,
+      id: graded.attemptId,
+      attemptId: graded.attemptId,
       userId: caller.userId,
       structuredQuestionId: q.id,
       scope,
@@ -288,7 +364,7 @@ export class StructuredService {
       marks,
       totalAwarded,
       totalMax,
-      submittedAt: toMytTimestamp(submittedAt),
+      submittedAt: toMytTimestamp(graded.submittedAt),
       modelAnswers: subs.map((s) => ({ subQuestionId: s.id, text: s.modelAnswer })),
     }
   }

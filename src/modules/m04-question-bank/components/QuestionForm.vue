@@ -631,8 +631,9 @@ const correctItems = (i: number, letter: string) => [
                 :aria-describedby="describedby"
                 data-testid="q-language"
               >
-                <option value="bm">Bahasa Melayu</option>
+                <option value="ms">Bahasa Melayu</option>
                 <option value="en">English</option>
+                <option value="ms+en">BM + English (dwibahasa)</option>
               </DsNativeSelect>
             </DsFormField>
             <DsFormField

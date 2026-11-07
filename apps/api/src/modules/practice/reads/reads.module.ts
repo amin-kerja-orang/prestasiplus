@@ -7,6 +7,7 @@ import { AnswerFactsAdapter, QuestionContentAdapter } from './answer-facts.adapt
 import { PracticeAnalyticsReadsModule } from './analytics/analytics.module'
 import { PracticeOverviewReadsModule } from './overview/overview.module'
 import { PerformancePracticeReadAdapter } from './performance-practice-read.adapter'
+import { PracticeSpmReadsModule } from './spm'
 import { PracticeTargetsStructuredModule } from './writes/writes.module'
 
 /**
@@ -20,7 +21,7 @@ import { PracticeTargetsStructuredModule } from './writes/writes.module'
  * shared cross-mode answer reader) and `QuestionContentAdapter` (S10-T03: the question text of the pupil's Analisa Item, read through the S1 questions read contract).
  */
 @Module({
-  imports: [PracticeOverviewReadsModule, PracticeAnalyticsReadsModule, PracticeTargetsStructuredModule, PerformanceModule, QuestionsModule],
+  imports: [PracticeOverviewReadsModule, PracticeAnalyticsReadsModule, PracticeTargetsStructuredModule, PracticeSpmReadsModule, PerformanceModule, QuestionsModule],
   providers: [PerformancePracticeReadAdapter, AnswerFactsAdapter, QuestionContentAdapter],
 })
 export class PracticeReadsModule implements OnModuleInit {

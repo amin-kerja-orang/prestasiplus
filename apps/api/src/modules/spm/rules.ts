@@ -119,3 +119,12 @@ export function structuredItemOf(stemMs: string | null, parts: readonly Question
     modelAnswer: leaves.map(modelTextOf).filter((t) => t !== '').join('\n'),
   }
 }
+
+/**
+ * XS-5 (D46:862): correct / answered x 100, a whole number rounded half up (D46:560); null with 0 answers (shown "—").
+ * Integer arithmetic only, so 0.5 never falls on the wrong side of a float.
+ */
+export function wholePercent(correct: number, answered: number): number | null {
+  if (answered <= 0) return null
+  return Math.floor((correct * 200 + answered) / (2 * answered))
+}
