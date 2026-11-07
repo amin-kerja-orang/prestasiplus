@@ -1,7 +1,6 @@
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable } from '@nestjs/common'
 import {
   SUPPORT_ADMIN_MESSAGES,
-  SUPPORT_NEW_TICKET_NOTIFICATION,
   SUPPORT_QUEUE_PER_PAGE,
   SUPPORT_ROLE_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
@@ -23,8 +22,7 @@ import type { TxClient } from '../../db/client'
 import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
 import { hasNul } from '../content/audio/null-char'
-import { NotificationsService } from '../notifications'
-import { NOTIFY_BATCH, SUPPORT_AUDIT, WRITE_TX } from './support.constants'
+import { SUPPORT_AUDIT, WRITE_TX } from './support.constants'
 import { isTicketStatus, SupportRepository, type TicketDetailRow, type TicketRow } from './support.repository'
 
 /** Who is acting: the signed-in user and the request facts the audit row needs. */
@@ -82,26 +80,20 @@ interface SupportConfigResponse {
 
 @Injectable()
 export class SupportService {
-  private readonly logger = new Logger(SupportService.name)
-
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(SupportRepository) private readonly repo: SupportRepository,
     @Inject(AuditService) private readonly audit: AuditService,
-    @Inject(NotificationsService) private readonly notifications: NotificationsService,
   ) {}
 
   /** GET /tiket: the caller's own tickets. An unknown `status` is ignored (all tickets). */
   async listOwn(actor: Actor, status: string | undefined): Promise<SupportTicketListResponse> {
-    const { rows, total } = await this.guard(() => this.repo.listOfUser(actor.userId, isTicketStatus(status) ? status : null))
-    return { data: rows.map(toView), meta: { total } }
+    const { rows, total, counts } = await this.guard(() => this.repo.listOfUser(actor.userId, isTicketStatus(status) ? status : null))
+    return { data: rows.map(toView), meta: { total, counts } }
   }
 
-  /**
-   * POST /tiket. The owner is the session user. The ticket and its audit row commit together; the
-   * admin notices go out AFTER the commit and a failure there never fails the request.
-   */
+  /** POST /tiket. The owner is the session user. The ticket and its audit row commit together. No notice is written (FR-X2-5, ruling on #508). */
   async create(actor: Actor, input: SupportTicketCreateRequest): Promise<SupportTicket> {
     const now = this.clock.now()
     const row = await this.write(async (tx) => {
@@ -123,7 +115,6 @@ export class SupportService {
       })
       return created
     })
-    await this.notifyAdmins()
     return toView(row)
   }
 
@@ -255,23 +246,6 @@ export class SupportService {
   }
 
   // --- helpers ------------------------------------------------------------------------------------
-
-  /** One notice per active admin (type `new_ticket`, push flag set). Never throws: a failure is logged and skipped. */
-  private async notifyAdmins(): Promise<void> {
-    let ids: string[]
-    try {
-      ids = await this.repo.activeAdminIds()
-    } catch {
-      this.logger.warn('Could not list the admins to notify of a new ticket')
-      return
-    }
-    for (let i = 0; i < ids.length; i += NOTIFY_BATCH) {
-      const batch = ids.slice(i, i + NOTIFY_BATCH)
-      const results = await Promise.allSettled(batch.map((id) => this.notifications.push(id, { ...SUPPORT_NEW_TICKET_NOTIFICATION }, { push: true })))
-      const failed = results.filter((r) => r.status === 'rejected').length
-      if (failed > 0) this.logger.warn(`${String(failed)} new-ticket notice(s) failed`)
-    }
-  }
 
   private async write<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     try {

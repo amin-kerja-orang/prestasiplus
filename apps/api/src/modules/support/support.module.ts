@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
-import { NotificationsModule } from '../notifications'
-import { UsersModule } from '../users'
 import { SupportConfigController, SupportController } from './support.controller'
 import { SupportRepository } from './support.repository'
 import { SupportService } from './support.service'
@@ -13,7 +11,7 @@ import { SupportService } from './support.service'
  * only doorway to `support_tickets` and `support_config` (ADR-0014).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, NotificationsModule, UsersModule],
+  imports: [AuditModule, ThrottleModule],
   controllers: [SupportController, SupportConfigController],
   providers: [SupportRepository, SupportService],
   exports: [SupportRepository],
