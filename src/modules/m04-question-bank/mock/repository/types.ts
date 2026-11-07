@@ -22,7 +22,7 @@ export type QualityBucket = 'unscored' | 'cemerlang' | 'baik' | 'le50'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
 export type PkskTargetLevel = 'T1' | 'T4'
-export type Language = 'bm' | 'en'
+export type Language = 'ms' | 'en' | 'ms+en'
 
 export interface PkskOption {
   text: string

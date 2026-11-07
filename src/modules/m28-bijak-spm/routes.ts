@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import adminBuilder from './routes/admin-builder'
 import adminIntake from './routes/admin-intake'
 import adminKandungan from './routes/admin-kandungan'
+import adminKertasSubjektif from './routes/admin-kertas-subjektif'
 import adminKontrak from './routes/admin-kontrak'
 import adminPapers from './routes/admin-papers'
 
@@ -26,6 +27,7 @@ const routes: RouteRecordRaw[] = [
   ...adminBuilder,
   ...adminKontrak,
   ...adminKandungan,
+  ...adminKertasSubjektif,
   {
     path: '/spm/bijak',
     name: 'm28.bijak',
@@ -92,6 +94,33 @@ const routes: RouteRecordRaw[] = [
       ...base,
       title: 'Kuiz Kertas - PRESTASIPLUS',
       header: { title: 'Simulasi — Kuiz' },
+    },
+  },
+  // Kertas Subjektif (S3-T06, 46 section 4.7): list, sitting, Semakan. The list and the sitting share one page.
+  {
+    path: '/kertas-subjektif',
+    name: 'm28.kertas-subjektif',
+    component: () => import('./pages/SubjektifAttemptPage.vue'),
+    meta: {
+      ...base,
+      title: 'Kertas Subjektif - PRESTASIPLUS',
+      header: { title: 'Kertas Subjektif' },
+    },
+  },
+  {
+    path: '/kertas-subjektif/:paperId',
+    name: 'm28.kertas-subjektif.paper',
+    component: () => import('./pages/SubjektifAttemptPage.vue'),
+    meta: { ...base, title: 'Kertas Subjektif - PRESTASIPLUS', header: { title: 'Kertas Subjektif' } },
+  },
+  {
+    path: '/kertas-subjektif/:paperId/semakan/:attemptId',
+    name: 'm28.kertas-subjektif.semakan',
+    component: () => import('./pages/SubjektifSemakanPage.vue'),
+    meta: {
+      ...base,
+      title: 'Semakan Kertas Subjektif - PRESTASIPLUS',
+      header: { title: 'Semakan Kertas Subjektif' },
     },
   },
   ...adminIntake,

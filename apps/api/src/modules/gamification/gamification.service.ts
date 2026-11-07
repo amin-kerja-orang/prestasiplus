@@ -24,7 +24,8 @@ import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { toMytTimestamp } from '../../common/time/myt'
 import { ClassesRepository } from '../classes/classes.repository'
-import { GameSettingsService, type GameResultOutcome, type GameResultSession } from '../games'
+import { GameSettingsService } from '../games/core/game-settings.service'
+import type { GameResultOutcome, GameResultSession } from '../games'
 import { RewardSettingsService } from '../shop'
 import { MAX_AMOUNT_PER_CALL, StreakService, WalletService, walletLockOrder } from '../wallet'
 import { lifetimeTierOf, titleOf } from '../wallet/rules'
@@ -37,8 +38,6 @@ import {
   RARITY_LABELS,
   DAILY_LOGIN_DESCRIPTION,
   DAILY_LOGIN_REWARD,
-  REFERRAL_REWARD_REFEREE,
-  REFERRAL_REWARD_REFERRER,
 } from './gamification.constants'
 import { GamificationRepository, type AchievementRecord, type ChallengeRecord, type Db, type GameRewardEventRecord } from './gamification.repository'
 import { RANKING_REDACTED_ID, canSeeRankedName, shortName, type NameScope, type RankingViewer } from './name-privacy'
@@ -163,8 +162,8 @@ export class GamificationService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
     @Inject(StreakService) private readonly streaks: StreakService,
-    @Inject(GameSettingsService) private readonly gameSettings: GameSettingsService,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
+    @Inject(GameSettingsService) private readonly gameSettings: GameSettingsService,
   ) {}
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {
@@ -232,9 +231,10 @@ export class GamificationService {
   async challengesToday(userId: string): Promise<GamificationChallengesResponse> {
     const db = this.repo.handle()
     const day = mytDay(this.clock.now())
-    const [active, done, streak, facts] = await Promise.all([
+    const [active, done, claimedSet, streak, facts] = await Promise.all([
       this.repo.challenges(db, true),
       this.repo.completedOn(db, userId, day),
+      this.repo.claimedOn(db, userId, day),
       this.repo.streakOf(db, userId),
       this.ports.practiceFacts.dayFacts(userId, day),
     ])
@@ -254,9 +254,10 @@ export class GamificationService {
         progress,
         pct: c.targetValue > 0 ? Math.round((progress / c.targetValue) * 100) : 0,
         completed,
+        claimed: claimedSet.has(c.id),
       }
     })
-    return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length } }
+    return { data, meta: { completed: data.filter((i) => i.completed).length, active: active.length, claimed: data.filter((i) => i.claimed).length } }
   }
 
   /**
@@ -376,25 +377,34 @@ export class GamificationService {
     }
   }
 
-  /** `GET /gamification/referral` (S16): the first read creates the caller's code (BR-M14-18). */
+  /** `GET /gamification/referral` (S16): the first read creates the caller's code (BR-M14-18). Rewards and cap come from the settings (48 GAME-24). */
   async referral(userId: string): Promise<GamificationReferral> {
     const code = await this.referralCodeOf(userId)
-    const stats = await this.repo.referralStats(this.repo.handle(), userId)
+    const db = this.repo.handle()
+    const stats = await this.repo.referralStats(db, userId)
+    const settings = await this.gameSettings.getMany(['referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded'])
+    const rewardReferee = settings.referral_referee_syiling
     const registerUrl = `${publicBaseUrl(this.config)}/register?ref=${code}`
-    const text = `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(REFERRAL_REWARD_REFEREE)} syiling PERCUMA! ${registerUrl}`
+    // With a friend reward above 0 the text is the live one. At 0 (the default) the clause "untuk dapat {n} syiling PERCUMA" is dropped:
+    // [PROPOSED] 0-variant "Jom belajar matematik di PRESTASIPLUS! Guna kod {kod}! {pautan}" (no doc gives it).
+    const text =
+      rewardReferee > 0
+        ? `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code} untuk dapat ${String(rewardReferee)} syiling PERCUMA! ${registerUrl}`
+        : `Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}! ${registerUrl}`
     return {
       code,
-      rewardReferrer: REFERRAL_REWARD_REFERRER,
-      rewardReferee: REFERRAL_REWARD_REFEREE,
+      rewardReferrer: settings.referral_referrer_syiling,
+      rewardReferee,
+      maxRewarded: settings.referral_max_rewarded,
       registerUrl,
       // As on live: only spaces are encoded; `:/?=&!` stay raw.
       whatsappUrl: `https://wa.me/?text=${shareEncode(text)}`,
       telegramUrl: `https://t.me/share/url?url=${encodeURIComponent(registerUrl)}&text=${shareEncode(`Jom belajar matematik di PRESTASIPLUS! Guna kod ${code}`)}`,
-      stats: { referrals: stats.referrals, rewarded: stats.rewarded, syilingEarned: stats.rewarded * REFERRAL_REWARD_REFERRER },
+      stats: { referrals: stats.referrals, rewarded: stats.rewarded, syilingEarned: await this.repo.referralSyilingEarned(db, userId) },
     }
   }
 
-  /** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id; a clash takes the next salt. */
+  /** BR-M14-18 / 48 GAME-24: 8 characters of [A-Z0-9] for a new code (stored 7-character codes stay), deterministic from the user id; a clash takes the next salt. */
   private async referralCodeOf(userId: string): Promise<string> {
     const db = this.repo.handle()
     const existing = await this.repo.referralCodeOf(db, userId)
@@ -489,38 +499,35 @@ export class GamificationService {
   }
 
   /**
-   * Claims one daily challenge for the Malaysia day of `opts.at` (AC2). Idempotent: the completion row is
-   * `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day), and the reward is credited ONLY by
-   * the call that inserted the row (ledger key `daily_challenge` / `challenge:<id>:<yyyy-mm-dd>`). A second call
-   * the same day adds nothing. The caller decides that the target is met (see `settleChallenges`).
+   * Records that one daily challenge is complete for the Malaysia day of `opts.at` (AC2). Idempotent: the completion
+   * row is `INSERT ... ON CONFLICT DO NOTHING` on the unique (user, challenge, day). Ruling 12 on #500: completing
+   * credits NOTHING (no syiling, no XP, no ledger row); the pupil claims the reward with API-GAME-11
+   * (`ChallengeClaimsService`). Returns whether THIS call wrote the row. The caller decides that the target is met.
    */
-  async claimChallenge(userId: string, challengeId: string, opts: EntryOptions): Promise<{ claimed: boolean; syiling: number; xp: number }> {
+  async completeChallenge(userId: string, challengeId: string, opts: EntryOptions): Promise<{ completed: boolean }> {
     return this.run(opts.tx, async (db) => {
       const challenge = await this.repo.challenge(db, idFromString(challengeId))
       if (!challenge) throw ApiError.of('NOT_FOUND', { message: MSG.challengeNotFound })
-      if (!challenge.isActive) return { claimed: false, syiling: 0, xp: 0 }
+      if (!challenge.isActive) return { completed: false }
       const at = opts.at ?? this.clock.now()
       const day = mytDay(at)
-      if (!(await this.repo.insertCompletion(db, { userId, challengeId, day, at, isTest: opts.isTest }))) return { claimed: false, syiling: 0, xp: 0 }
-      let syiling = 0
-      if (challenge.rewardSyiling > 0 && (await this.coinsEnabled(userId, { tx: db as TxClient }))) {
-        await this.wallet.credit(
-          { userId, amount: challenge.rewardSyiling, source: 'daily_challenge', sourceId: `challenge:${challengeId}:${day}`, description: `Cabaran selesai: ${challenge.title}`, isTest: opts.isTest },
-          { tx: db as TxClient },
-        )
-        syiling = challenge.rewardSyiling
-      }
-      if (challenge.rewardXp > 0) await this.wallet.addXp({ userId, amount: challenge.rewardXp, isTest: opts.isTest }, { tx: db as TxClient })
-      return { claimed: true, syiling, xp: challenge.rewardXp }
+      return { completed: await this.repo.insertCompletion(db, { userId, challengeId, day, at, isTest: opts.isTest }) }
     })
+  }
+
+  /** The progress (0..target) of `c` on the Malaysia day `day`, from the same facts as `challengesToday` (BR-M14-12). */
+  async challengeProgressOn(db: Db, userId: string, day: string, c: ChallengeRecord): Promise<number> {
+    const [streak, facts] = await Promise.all([this.repo.streakOf(db, userId), this.ports.practiceFacts.dayFacts(userId, day)])
+    return progressOf(c, dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0))
   }
 
   /**
    * Called after a practice session completes (BE-12/BE-18, inside their transaction, after the streak step):
-   * every active challenge whose progress of the day reached its target and is not completed yet is claimed, in
-   * (`sortOrder`, `id`) order (BR-M14-12/13). Returns the ids claimed by THIS call.
+   * every active challenge whose progress of the day reached its target and is not completed yet gets its completion
+   * row, in (`sortOrder`, `id`) order (BR-M14-12/13). No reward is paid here (ruling 12 on #500): the pupil claims it.
+   * Returns the ids completed by THIS call.
    */
-  async settleChallenges(userId: string, opts: EntryOptions): Promise<{ claimedIds: string[]; syiling: number; xp: number }> {
+  async settleChallenges(userId: string, opts: EntryOptions): Promise<{ completedIds: string[] }> {
     return this.run(opts.tx, async (db) => {
       const at = opts.at ?? this.clock.now()
       const day = mytDay(at)
@@ -531,14 +538,11 @@ export class GamificationService {
         this.ports.practiceFacts.dayFacts(userId, day),
       ])
       const metrics = dayMetrics(facts, streak.lastActivityDate === day ? streak.current : 0)
-      const out = { claimedIds: [] as string[], syiling: 0, xp: 0 }
+      const out = { completedIds: [] as string[] }
       for (const c of active) {
         if (done.has(c.id) || progressOf(c, metrics) < c.targetValue) continue
-        const r = await this.claimChallenge(userId, c.id, { ...opts, tx: db as TxClient, at })
-        if (!r.claimed) continue
-        out.claimedIds.push(c.id)
-        out.syiling += r.syiling
-        out.xp += r.xp
+        const r = await this.completeChallenge(userId, c.id, { ...opts, tx: db as TxClient, at })
+        if (r.completed) out.completedIds.push(c.id)
       }
       return out
     })
@@ -783,9 +787,12 @@ export class GamificationService {
   }
 
   /**
-   * XR-M14-02 / BR-M14-19 (called by registration): a known code of ANOTHER existing user, and a referee not
-   * referred before, pays the new user 25 and the referrer 50 (`bonus` / `referral`, key `referral:<referee id>`)
-   * and stores a rewarded referral. Otherwise nothing. The two wallets are written in ascending user id order.
+   * XR-M14-02 / GAME-24 (called by registration): a known code of ANOTHER existing pupil, given to a NEW pupil not
+   * referred before, stores a referral. The amounts are the settings `referral_referrer_syiling` and
+   * `referral_referee_syiling` (`bonus` / `referral`, key `referral:<referee id>`; an amount of 0 writes no ledger row).
+   * Beyond `referral_max_rewarded` rewarded friends the referral is stored with `rewarded = false` and pays nothing. The
+   * referrer's user row is locked before the count, so two sign-ups cannot both take the last place. Otherwise nothing.
+   * The two wallets are written in ascending user id order.
    */
   async applyReferral(newUserId: string, code: string | null | undefined, opts: EntryOptions): Promise<{ applied: boolean }> {
     const normalised = (code ?? '').trim().toUpperCase()
@@ -794,14 +801,22 @@ export class GamificationService {
       const tx = db as TxClient
       const referrerId = await this.repo.referralOwner(tx, normalised)
       if (!referrerId || referrerId === newUserId || !(await this.repo.userBasics(tx, referrerId))) return { applied: false }
+      // A new pupil, referred by a pupil (R6): a teacher, parent or admin on either side earns nothing.
+      if (!(await this.repo.isStudent(tx, newUserId)) || !(await this.repo.isStudent(tx, referrerId))) return { applied: false }
+      const settings = await this.gameSettings.getMany(['referral_referrer_syiling', 'referral_referee_syiling', 'referral_max_rewarded'], tx)
+      await this.repo.lockReferrer(tx, referrerId)
+      const rewarded = (await this.repo.rewardedReferralCount(tx, referrerId)) < settings.referral_max_rewarded
       const at = opts.at ?? this.clock.now()
-      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, at }))) return { applied: false }
+      if (!(await this.repo.insertReferral(tx, { referrerId, refereeId: newUserId, code: normalised, rewarded, at }))) return { applied: false }
+      if (!rewarded) return { applied: true }
       for (const id of walletLockOrder([newUserId, referrerId])) {
         const isReferee = id === newUserId
+        const amount = isReferee ? settings.referral_referee_syiling : settings.referral_referrer_syiling
+        if (amount <= 0) continue // `credit` refuses 0
         await this.wallet.credit(
           {
             userId: id,
-            amount: isReferee ? REFERRAL_REWARD_REFEREE : REFERRAL_REWARD_REFERRER,
+            amount,
             type: 'bonus',
             source: 'referral',
             sourceId: `referral:${newUserId}`,
@@ -816,13 +831,13 @@ export class GamificationService {
   }
 }
 
-/** BR-M14-18: 7 characters of [A-Z0-9], deterministic from the user id and a salt. */
+/** 48 GAME-24: 8 characters of [A-Z0-9], deterministic from the user id and a salt. */
 export function referralCodeFor(userId: string, salt = 0): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
   const id = Number(BigInt.asIntN(32, idFromString(userId)))
   let h = (Math.imul(id ^ 0x5bd1e995, 0x27d4eb2d) + Math.imul(salt + 1, 0x165667b1)) >>> 0
   let out = ''
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 8; i++) {
     h = Math.imul(h ^ (h >>> 15), 0x2c1b3c6d) >>> 0
     h = (h ^ (h >>> 12)) >>> 0
     out += alphabet[h % alphabet.length]

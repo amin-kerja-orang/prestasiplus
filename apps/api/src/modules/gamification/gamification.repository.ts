@@ -9,6 +9,15 @@ import type { GameRewardCapReason } from '../games'
 /** A transaction handle or the plain client. */
 export type Db = TxClient | PrismaClient
 
+/** A stored challenge claim (DM-63). */
+export interface ClaimRecord {
+  id: string
+  challengeId: string
+  rewardSyiling: number
+  rewardXp: number
+  clientUuid: string | null
+}
+
 /** The first result of a reward event (DM-87). */
 export interface GameRewardEventRecord {
   xp: number
@@ -422,6 +431,38 @@ export class GamificationRepository {
     return rows.length === 1
   }
 
+  /** Challenge ids the user claimed on the Malaysia day `day` (DM-63, API-GAME-11). */
+  async claimedOn(db: Db, userId: string, day: string): Promise<Set<string>> {
+    const rows = await db.challengeClaim.findMany({ where: { userId: idFromString(userId), mytDate: dayDate(day) }, select: { challengeId: true } })
+    return new Set(rows.map((r) => idToString(r.challengeId)))
+  }
+
+  /** The claim of (user, challenge, Malaysia day), or null. */
+  async claimOf(db: Db, userId: string, challengeId: string, day: string): Promise<ClaimRecord | null> {
+    const r = await db.challengeClaim.findUnique({
+      where: { userId_challengeId_mytDate: { userId: idFromString(userId), challengeId: idFromString(challengeId), mytDate: dayDate(day) } },
+    })
+    return r ? { id: idToString(r.id), challengeId: idToString(r.challengeId), rewardSyiling: r.rewardSyiling, rewardXp: r.rewardXp, clientUuid: r.clientUuid } : null
+  }
+
+  /** Whether `clientUuid` already sits on a claim of this user (DM-79: unique per user). */
+  async claimUuidUsed(db: Db, userId: string, clientUuid: string): Promise<boolean> {
+    return (await db.challengeClaim.count({ where: { userId: idFromString(userId), clientUuid } })) > 0
+  }
+
+  /**
+   * Inserts the claim. `ON CONFLICT DO NOTHING` (no unique violation, so the transaction stays usable): a second press
+   * at the same time waits for the first to commit and then writes nothing. Returns true when THIS call wrote the row.
+   */
+  async insertClaim(db: Db, row: { userId: string; challengeId: string; day: string; rewardSyiling: number; rewardXp: number; clientUuid: string | null; at: Date }): Promise<boolean> {
+    const rows = await db.$queryRaw<{ id: bigint }[]>`
+      INSERT INTO challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, client_uuid, claimed_at)
+      VALUES (${idFromString(row.userId)}, ${idFromString(row.challengeId)}, ${row.day}::date, ${row.rewardSyiling}, ${row.rewardXp}, ${row.clientUuid}::uuid, ${row.at}::timestamptz)
+      ON CONFLICT DO NOTHING
+      RETURNING id`
+    return rows.length === 1
+  }
+
   // --- game reward events (DM-87) ------------------------------------------------------------------
 
   /** Serialises the reward events of one pupil until the transaction ends, so that parallel games cannot pass a daily cap together. */
@@ -526,11 +567,26 @@ export class GamificationRepository {
     return db.referral.count({ where: { referrerId: idFromString(userId), rewarded: true } })
   }
 
+  /** Serialises the referrals of one referrer (the cap count and the insert). `NO KEY UPDATE` does not block rows that only reference the user. */
+  async lockReferrer(db: Db, referrerId: string): Promise<void> {
+    await db.$queryRaw`SELECT id FROM users WHERE id = ${idFromString(referrerId)} FOR NO KEY UPDATE`
+  }
+
+  /** What the referrer was paid for referrals: the ledger rows keyed by the user's referees (a referee's own bonus is not counted). */
+  async referralSyilingEarned(db: Db, userId: string): Promise<number> {
+    const rows = await db.$queryRaw<{ total: bigint | null }[]>`
+      SELECT COALESCE(SUM(l.amount), 0)::bigint AS total
+      FROM coin_ledger l
+      JOIN referrals r ON r.referrer_id = l.user_id AND l.source_id = 'referral:' || r.referee_id::text
+      WHERE l.user_id = ${idFromString(userId)} AND l.source = 'referral' AND l.type = 'bonus' AND l.is_test = false`
+    return Number(rows[0]?.total ?? 0)
+  }
+
   /** True when this call stored the referral (a person is referred once: unique referee). */
-  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; at: Date }): Promise<boolean> {
+  async insertReferral(db: Db, row: { referrerId: string; refereeId: string; code: string; rewarded: boolean; at: Date }): Promise<boolean> {
     const rows = await db.$queryRaw<{ id: bigint }[]>`
       INSERT INTO referrals (referrer_id, referee_id, code_used, rewarded, created_at, updated_at)
-      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, true, ${row.at}::timestamptz, ${row.at}::timestamptz)
+      VALUES (${idFromString(row.referrerId)}, ${idFromString(row.refereeId)}, ${row.code}, ${row.rewarded}, ${row.at}::timestamptz, ${row.at}::timestamptz)
       ON CONFLICT (referee_id) DO NOTHING
       RETURNING id`
     return rows.length === 1
@@ -749,14 +805,6 @@ export class GamificationRepository {
     if (r.count === 0) return null
     const row = await db.syilingReward.findUnique({ where: { id } })
     return row ? { id: idToString(row.id), name: row.name, type: row.type, priceSyiling: row.priceSyiling, costValueSen: row.costValueSen } : null
-  }
-
-  /** Claims whose `claimed_at` falls in `[from, to)`: count, distinct students and the summed cost snapshot (G-18). */
-  async claimTiles(db: Db, from: Date, to: Date): Promise<{ claims: number; students: number; costSen: number }> {
-    const rows = await db.$queryRaw<{ claims: bigint; students: bigint; cost: bigint | null }[]>`
-      SELECT count(*)::bigint AS claims, count(DISTINCT user_id)::bigint AS students, COALESCE(SUM(cost_value_sen), 0)::bigint AS cost
-        FROM reward_claims WHERE claimed_at >= ${from}::timestamptz AND claimed_at < ${to}::timestamptz`
-    return { claims: num(rows[0]?.claims), students: num(rows[0]?.students), costSen: num(rows[0]?.cost) }
   }
 
   async draws(db: Db): Promise<DrawRecord[]> {

@@ -48,7 +48,7 @@ describe('paper builder candidates of API-created questions carry the kertas', (
     return Question.parse(res.body).data.id
   }
   const candidates = async (): Promise<string[]> => {
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const id = Created.parse(created.body).data.id
     return Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data.questions.map((q) => q.id)

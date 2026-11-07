@@ -13,19 +13,18 @@ import type { ChapterCount } from './heatmap.rules'
 
 export interface HeatmapAnswerCounts {
   /**
-   * The caller's own answers that have a chapter, grouped by `chapter_id`, chapters with at least
-   * `minAttempts` answers, ascending chapter id. `isTest` selects the rows of the caller's mode: real mode
-   * reads `is_test = false` only; Mod Pelajar reads its own `is_test = true` rows only (card open question 3).
+   * The caller's own answers that have a chapter, grouped by `chapter_id` (every practice mode, no minimum),
+   * ascending chapter id. `isTest` selects the rows of the caller's mode: real mode reads `is_test = false`
+   * only; Mod Pelajar reads its own `is_test = true` rows only (card open question 3).
    */
-  chapterAnswerCounts(userId: string, minAttempts: number, isTest: boolean): Promise<ChapterCount[]>
+  chapterAnswerCounts(userId: string, isTest: boolean): Promise<ChapterCount[]>
 }
 
 /** Default: BE-12 `PracticeRepository.answers`, grouped in memory. */
 export class PracticeLogAnswerCounts implements HeatmapAnswerCounts {
   constructor(private readonly practice: PracticeRepository) {}
 
-  async chapterAnswerCounts(userId: string, minAttempts: number, isTest: boolean): Promise<ChapterCount[]> {
-    const min = Math.max(1, Math.trunc(minAttempts))
+  async chapterAnswerCounts(userId: string, isTest: boolean): Promise<ChapterCount[]> {
     const rows = await this.practice.answers(userId, { includeTest: isTest })
     const byChapter = new Map<string, ChapterCount>()
     for (const a of rows) {
@@ -38,13 +37,11 @@ export class PracticeLogAnswerCounts implements HeatmapAnswerCounts {
       row.attempts += 1
       if (a.isCorrect) row.correct += 1
     }
-    return [...byChapter.values()]
-      .filter((r) => r.attempts >= min)
-      .sort((a, b) => {
-        const x = BigInt(a.chapterId)
-        const y = BigInt(b.chapterId)
-        return x < y ? -1 : x > y ? 1 : 0
-      })
+    return [...byChapter.values()].sort((a, b) => {
+      const x = BigInt(a.chapterId)
+      const y = BigInt(b.chapterId)
+      return x < y ? -1 : x > y ? 1 : 0
+    })
   }
 }
 

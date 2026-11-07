@@ -152,7 +152,7 @@ export function world(): World {
     student: new StudentPerformanceService(ports, directory, clock, facts),
     school: new SchoolPerformanceService(ports, directory, clock, xs, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),
-    items: new ItemAnalysisService(ports, directory, clock, facts),
+    items: new ItemAnalysisService(ports, directory, clock, xs, facts),
     mine: new ItemAnalysisMeService(ports, directory),
   }
 }

@@ -2,10 +2,12 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApiError } from '@/api'
+
 import GamificationChallengesPage from '../../pages/GamificationChallengesPage.vue'
 import { challenge } from './fixtures'
 
-const api = vi.hoisted(() => ({ fetchGamificationChallenges: vi.fn() }))
+const api = vi.hoisted(() => ({ fetchGamificationChallenges: vi.fn(), claimChallenge: vi.fn() }))
 vi.mock('../../api', () => api)
 
 let w: VueWrapper | undefined
@@ -41,7 +43,7 @@ describe('S13 challenges (AC-M14-09)', () => {
     })
     await mountPage()
     expect(t('s13-hero').get('h1').text()).toBe('Cabaran Harian')
-    expect(t('s13-hero').text()).toContain('Selesaikan cabaran untuk dapatkan syiling & XP bonus!')
+    expect(t('s13-hero').text()).toContain('Selesaikan cabaran hari ini dan tuntut ganjaran syiling')
     expect(t('s13-counter-value').text()).toBe('0/10')
     expect(t('s13-counter').text()).toContain('Selesai')
     const cards = w!.findAll('[data-testid="s13-card"]')
@@ -80,5 +82,134 @@ describe('S13 challenges (AC-M14-09)', () => {
     api.fetchGamificationChallenges.mockRejectedValue(new Error('boom'))
     await mountPage()
     expect(w!.text()).toContain('Ralat berlaku. Sila cuba lagi.')
+  })
+})
+
+describe('S13 Tuntut (FR-MUR-30-3/4/6, AC-MUR-30-1/2/5; API-GAME-11)', () => {
+  const list = (over: Record<string, unknown> = {}) => ({
+    data: [
+      challenge(1, { title: 'Selesai', completed: true, progress: 3, pct: 100 }),
+      challenge(2, { title: 'Dituntut', completed: true, progress: 3, pct: 100, claimed: true }),
+      challenge(3, { title: 'Belum', progress: 1, pct: 33 }),
+    ],
+    meta: { completed: 2, active: 3, claimed: 1 },
+    ...over,
+  })
+  const cardOf = (i: number) => w!.findAll('[data-testid="s13-card"]')[i]!
+  const press = async (i = 0) => {
+    await cardOf(i).get('[data-testid="s13-claim"]').trigger('click')
+    await flushPromises()
+  }
+  const apiError = (status: number, code: string, message: string) =>
+    new ApiError({ status, code, message })
+
+  beforeEach(() => {
+    api.fetchGamificationChallenges.mockResolvedValue(list())
+  })
+
+  it('shows Tuntut only on a done, unclaimed card; Dituntut on a claimed one; nothing on an open one', async () => {
+    await mountPage()
+    expect(cardOf(0).get('[data-testid="s13-claim"]').text()).toBe('Tuntut')
+    expect(cardOf(0).find('[data-testid="s13-claimed"]').exists()).toBe(false)
+    expect(cardOf(1).find('[data-testid="s13-claim"]').exists()).toBe(false)
+    expect(cardOf(1).get('[data-testid="s13-claimed"]').text()).toBe('Dituntut')
+    expect(cardOf(2).find('[data-testid="s13-claim"]').exists()).toBe(false)
+    expect(cardOf(2).find('[data-testid="s13-claimed"]').exists()).toBe(false)
+  })
+
+  it('the summary counts the claimed rewards: "{n} / {total} ganjaran dituntut"', async () => {
+    await mountPage()
+    expect(t('s13-claimed-count').text()).toBe('1 / 3 ganjaran dituntut')
+  })
+
+  it('a press sends one uuid, shows the amounts, marks the card claimed and raises the counter', async () => {
+    api.claimChallenge.mockResolvedValue({ claimed: true, rewardSyiling: 15, rewardXp: 10 })
+    await mountPage()
+    await press()
+    expect(api.claimChallenge).toHaveBeenCalledTimes(1)
+    const [id, uuid] = api.claimChallenge.mock.calls[0]!
+    expect(id).toBe(1)
+    expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
+    expect(t('s13-success').text()).toBe('Ganjaran dituntut: +15 syiling, +10 mata.')
+    expect(cardOf(0).find('[data-testid="s13-claim"]').exists()).toBe(false)
+    expect(cardOf(0).get('[data-testid="s13-claimed"]').text()).toBe('Dituntut')
+    expect(t('s13-claimed-count').text()).toBe('2 / 3 ganjaran dituntut')
+  })
+
+  it('shows the notices of the answer, such as a tier-up', async () => {
+    api.claimChallenge.mockResolvedValue({
+      claimed: true,
+      rewardSyiling: 15,
+      rewardXp: 10,
+      notices: ['Tahniah! Anda naik ke tier Perak.'],
+    })
+    await mountPage()
+    await press()
+    expect(w!.findAll('[data-testid="s13-notice"]').map((n) => n.text())).toEqual([
+      'Tahniah! Anda naik ke tier Perak.',
+    ])
+  })
+
+  it('the button is disabled while the request is in flight, so a double press sends one request', async () => {
+    let finish!: (v: unknown) => void
+    api.claimChallenge.mockReturnValue(new Promise((r) => (finish = r)))
+    await mountPage()
+    const btn = cardOf(0).get('[data-testid="s13-claim"]')
+    await btn.trigger('click')
+    await btn.trigger('click')
+    expect(btn.attributes('disabled')).toBeDefined()
+    expect(api.claimChallenge).toHaveBeenCalledTimes(1)
+    finish({ claimed: true, rewardSyiling: 15, rewardXp: 10 })
+    await flushPromises()
+    expect(api.claimChallenge).toHaveBeenCalledTimes(1)
+  })
+
+  it('a retry of the same press (the answer never arrived) reuses the uuid; a later press after an answer gets a new one', async () => {
+    api.claimChallenge
+      .mockRejectedValueOnce(apiError(0, 'NETWORK_ERROR', 'Tiada sambungan.'))
+      .mockResolvedValueOnce({ claimed: true, rewardSyiling: 15, rewardXp: 10 })
+    await mountPage()
+    await press()
+    expect(t('s13-failure').text()).toBe('Ralat berlaku. Sila cuba lagi.')
+    expect(cardOf(0).get('[data-testid="s13-claim"]').attributes('disabled')).toBeUndefined()
+    await press()
+    expect(api.claimChallenge).toHaveBeenCalledTimes(2)
+    expect(api.claimChallenge.mock.calls[1]![1]).toBe(api.claimChallenge.mock.calls[0]![1])
+    expect(w!.find('[data-testid="s13-failure"]').exists()).toBe(false)
+  })
+
+  it('a definitive refusal drops the uuid: the next press sends a new one', async () => {
+    api.claimChallenge
+      .mockRejectedValueOnce(apiError(409, 'CHALLENGE_NOT_DONE', 'Cabaran belum selesai.'))
+      .mockResolvedValueOnce({ claimed: true, rewardSyiling: 15, rewardXp: 10 })
+    await mountPage()
+    await press()
+    await press()
+    expect(api.claimChallenge.mock.calls[1]![1]).not.toBe(api.claimChallenge.mock.calls[0]![1])
+  })
+
+  it('409 CHALLENGE_CLAIMED marks the card claimed without an error', async () => {
+    api.claimChallenge.mockRejectedValue(
+      apiError(409, 'CHALLENGE_CLAIMED', 'Ganjaran sudah dituntut.'),
+    )
+    await mountPage()
+    await press()
+    expect(cardOf(0).get('[data-testid="s13-claimed"]').text()).toBe('Dituntut')
+    expect(w!.find('[data-testid="s13-failure"]').exists()).toBe(false)
+    expect(t('s13-claimed-count').text()).toBe('2 / 3 ganjaran dituntut')
+  })
+
+  it.each([
+    [409, 'CHALLENGE_NOT_DONE', 'Cabaran belum selesai.'],
+    [409, 'CONFLICT', 'Kunci ini telah digunakan.'],
+    [403, 'FORBIDDEN', 'Mod Pelajar tidak mendapat ganjaran sebenar.'],
+    [404, 'NOT_FOUND', 'Cabaran tidak dijumpai.'],
+  ])('%i %s shows the server message and keeps Tuntut', async (status, code, message) => {
+    api.claimChallenge.mockRejectedValue(apiError(status, code, message))
+    await mountPage()
+    await press()
+    expect(t('s13-failure').text()).toBe(message)
+    expect(cardOf(0).find('[data-testid="s13-claim"]').exists()).toBe(true)
+    expect(t('s13-claimed-count').text()).toBe('1 / 3 ganjaran dituntut')
   })
 })
