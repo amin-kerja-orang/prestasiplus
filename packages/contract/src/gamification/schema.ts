@@ -286,7 +286,7 @@ export const GamificationChallengeClaimResultSchema = z
     notices: z
       .array(z.string())
       .optional()
-      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." Absent when there is nothing to tell, and always absent on a replay.' }),
+      .meta({ description: 'Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example "Tahniah! Anda naik ke tier {label}." or "Lencana baru: {name}!" (one per badge the claim unlocked). Absent when there is nothing to tell, and always absent on a replay.' }),
   })
   .meta({ id: 'GamificationChallengeClaimResult' })
 export type GamificationChallengeClaimResult = z.infer<typeof GamificationChallengeClaimResultSchema>

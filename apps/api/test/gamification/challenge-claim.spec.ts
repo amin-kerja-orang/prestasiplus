@@ -87,6 +87,10 @@ describe('POST /api/gamification/challenges/{id}/claim', () => {
 
   it('step 6: a finished challenge is credited once: claim row, ledger row (source challenge), XP, the stored amounts returned', async () => {
     const before = await walletOf(t, studentId)
+    const badgeSyiling = async () => (await ledgerOf(t, studentId)).filter((x) => x.source === 'achievement').reduce((n, x) => n + x.amount, 0)
+    const badgeXp = async () => Number((await t.db.query<{ n: string }>(`select coalesce(sum(a.reward_xp), 0)::text as n from user_achievements ua join achievements a on a.id = ua.achievement_id where ua.user_id = $1`, [studentId]))[0]!.n)
+    const badgesBefore = await badgeSyiling()
+    const badgeXpBefore = await badgeXp()
     const res = await claim(student, 'Mula Hari Ini')
     expect(res.status, JSON.stringify(res.body)).toBe(200)
     const r = reward['Mula Hari Ini']!
@@ -97,8 +101,9 @@ describe('POST /api/gamification/challenges/{id}/claim', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ type: 'earn', source_id: `challenge:${id['Mula Hari Ini']}:${day}`, amount: r.syiling, is_test: false })
     const after = await walletOf(t, studentId)
-    expect(after!.current_syiling).toBe((before?.current_syiling ?? 0) + r.syiling)
-    expect(after!.xp).toBe((before?.xp ?? 0) + r.xp)
+    // A badge the claim just unlocked (a syiling-total one) is paid on its own ledger row, on top of the challenge reward.
+    expect(after!.current_syiling).toBe((before?.current_syiling ?? 0) + r.syiling + ((await badgeSyiling()) - badgesBefore))
+    expect(after!.xp).toBe((before?.xp ?? 0) + r.xp + ((await badgeXp()) - badgeXpBefore))
   })
 
   it('step 3: a second claim the same day without a key is 409 CHALLENGE_CLAIMED and moves nothing', async () => {

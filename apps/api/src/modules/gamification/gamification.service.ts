@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type {
   GamificationAchievements,
@@ -52,6 +52,14 @@ export interface Viewer {
 }
 
 /** Options of the entry points other modules call inside their own transaction. */
+/** What one pass of `evaluateAchievements` unlocked. `code` is the achievement id (decimal string; the table has no other code). */
+export interface AchievementEvaluation {
+  unlockedIds: string[]
+  unlocked: { code: string; name: string }[]
+  syiling: number
+  xp: number
+}
+
 export interface EntryOptions {
   /** The caller's transaction; omitted = the ambient one, else a new one. */
   tx?: TxClient
@@ -153,6 +161,8 @@ const progressOf = (c: ChallengeRecord, metrics: Record<string, number>): number
  */
 @Injectable()
 export class GamificationService {
+  private readonly logger = new Logger(GamificationService.name)
+
   constructor(
     private readonly repo: GamificationRepository,
     @Inject(WalletService) private readonly wallet: WalletService,
@@ -606,9 +616,9 @@ export class GamificationService {
    * for the achievements after it in the same pass (the mock engine's live counters). Only a `student` account is evaluated.
    * Returns the ids unlocked by THIS call.
    */
-  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<{ unlockedIds: string[]; syiling: number; xp: number }> {
+  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
     return this.run(opts.tx, async (db) => {
-      const out = { unlockedIds: [] as string[], syiling: 0, xp: 0 }
+      const out: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
       // BR-M14-16 is the pupil's: a teacher or an admin (also in Mod Pelajar, where the ACTOR keeps their own role) unlocks and earns nothing.
       if (!(await this.repo.isStudent(db, userId))) return out
       const [catalogue, unlocks] = await Promise.all([this.repo.achievements(db), this.repo.unlocksOf(db, userId)])
@@ -649,6 +659,9 @@ export class GamificationService {
           // BR-M14-16 "when recorded": the practice submit does not store per-answer times yet, so this stays 0 (as the mock engine).
           case 'fast_answers':
             return 0
+          // FR-GM-25.4: won real Battles only (no robot, no test, no forfeit win).
+          case 'battle_wins':
+            return count('battle_wins', () => this.repo.wonRealBattles(db, userId))
           case 'referrals':
             return count('referrals', () => this.repo.rewardedReferralCount(db, userId))
           case 'unlocked':
@@ -674,11 +687,42 @@ export class GamificationService {
         unlocks.set(a.id, at)
         memo.delete('lifetime_syiling')
         out.unlockedIds.push(a.id)
+        out.unlocked.push({ code: a.id, name: a.name })
         out.syiling += r.syiling
         out.xp += r.xp
       }
       return out
     })
+  }
+
+  /**
+   * `evaluateAchievements` for a trigger that must never fail its caller (box opening, challenge claim, referral): the
+   * evaluation runs in a SAVEPOINT when the caller's transaction is given (rolled back to it on an error, the error NAME
+   * logged, no user data), or in its own transaction otherwise (a failure rolls that one back). On any error the answer is
+   * "nothing unlocked".
+   */
+  async evaluateAchievementsSafely(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
+    const none: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
+    const { tx } = opts
+    if (!tx) {
+      try {
+        return await this.evaluateAchievements(userId, opts)
+      } catch (err) {
+        this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+        return none
+      }
+    }
+    await tx.$executeRaw`SAVEPOINT achievements_safe`
+    try {
+      const out = await this.evaluateAchievements(userId, opts)
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return out
+    } catch (err) {
+      this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_safe`
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return none
+    }
   }
 
   /**
@@ -820,6 +864,8 @@ export class GamificationService {
           { tx },
         )
       }
+      // FR-GM-25.2 "Sahabat Belajar": the referrer's count just changed. A bonus, so it never fails the sign-up (savepoint).
+      await this.evaluateAchievementsSafely(referrerId, { tx, isTest: opts.isTest, at })
       return { applied: true }
     })
   }

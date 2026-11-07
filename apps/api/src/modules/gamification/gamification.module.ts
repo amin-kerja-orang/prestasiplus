@@ -8,7 +8,7 @@ import { ClassesModule } from '../classes'
 import { GamesCoreModule, GamesPorts } from '../games'
 import { PerformanceModule } from '../reports/performance/performance.module'
 import { PerformancePorts } from '../reports/performance/ports'
-import { ShopModule } from '../shop'
+import { ShopModule, ShopPorts } from '../shop'
 import { WalletModule } from '../wallet'
 import { GamificationAdminController, RewardControlController } from './admin.controller'
 import { ChallengeClaimsService } from './challenge-claims.service'
@@ -46,6 +46,8 @@ import { GamificationPorts } from './ports'
 })
 export class GamificationModule implements OnModuleInit {
   constructor(
+    @Inject(ShopPorts) private readonly shopPorts: ShopPorts,
+    @Inject(GamificationService) private readonly gamification: GamificationService,
     @Inject(PerformancePorts) private readonly performance: PerformancePorts,
     @Inject(PerformanceGamificationAdapter) private readonly gamificationRead: PerformanceGamificationAdapter,
     @Inject(GamesPorts) private readonly gamesPorts: GamesPorts,
@@ -65,5 +67,7 @@ export class GamificationModule implements OnModuleInit {
     this.accountPorts.provideRegistrationHook(this.registrationHook)
     // XR-M14-02(a): a student's password login moves the streak and pays the first daily +2 (M01 FR-M01-69).
     this.authPorts.provideLoginHook(this.loginHook)
+    // FR-GM-25.2: the shop cannot import this module (cycle), so a committed Kotak Misteri opening evaluates the badges through this hook.
+    this.shopPorts.provideBoxOpenedHook(async (userId) => (await this.gamification.evaluateAchievementsSafely(userId, { isTest: false })).unlocked)
   }
 }

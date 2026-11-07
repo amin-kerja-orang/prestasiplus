@@ -43,7 +43,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 <!-- poc-counts:begin -->
 | Table | Rows |
 |---|---:|
-| achievements | 25 |
+| achievements | 26 |
 | answer_keys | 1275 |
 | articles | 3 |
 | attempt_answers | 122 |
@@ -144,7 +144,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 100 of 204. Total rows: 22033.
+Tables with rows: 100 of 204. Total rows: 22034.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

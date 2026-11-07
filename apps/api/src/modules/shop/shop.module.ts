@@ -8,6 +8,7 @@ import { ShopAdminController } from './admin.controller'
 import { ShopAdminService } from './admin.service'
 import { RewardSettingsService } from './reward-settings.service'
 import { ShopController } from './shop.controller'
+import { ShopPorts } from './shop.ports'
 import { ShopRepository } from './shop.repository'
 import { ShopService } from './shop.service'
 
@@ -19,7 +20,7 @@ import { ShopService } from './shop.service'
 @Module({
   imports: [AuditModule, ThrottleModule, WalletModule],
   controllers: [ShopController, ShopAdminController],
-  providers: [ShopRepository, ShopService, ShopAdminService, RewardSettingsService, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
-  exports: [RewardSettingsService, ShopRepository],
+  providers: [ShopRepository, ShopService, ShopAdminService, RewardSettingsService, ShopPorts, { provide: BOX_RANDOM, useValue: CsprngBoxRandom }],
+  exports: [RewardSettingsService, ShopRepository, ShopPorts],
 })
 export class ShopModule {}
