@@ -47,27 +47,22 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  verify:
+  # LEAD exception (22 Oct, revised 6 Nov): the single `verify` job ran lint, typecheck, the whole be:test suite and the
+  # build in one 45 min job, and now hits that limit even on small PRs (#745, #775). Measured on base push run
+  # 42222362605 (e822afb, 6 Nov): steps before be:test took 2 min 31 s, then be:test ran 42 min 45 s and was cut
+  # off by the 45 min limit unfinished (897 spec files, maxWorkers 4). Layout now:
+  #   verify-static  guards, contract, lint, typecheck, build (no database)
+  #   verify-shard   be:test split in 4 matrix shards (vitest --shard=i/4), each with its own throw-away Postgres
+  #   verify         aggregate; keeps the required-check name `verify` and fails unless every job above succeeded
+  # Sharding is safe: global-setup migrates one template database per run in the Postgres it is given, and every spec
+  # file clones its own database from it, so shards share nothing. Vitest assigns each spec file to exactly one shard.
+  # 4 shards: about 900 spec files (questions 116, migration 91, reports 50, practice 33 ...), maxWorkers is 4 and the
+  # job reached 45 min, so each shard carries a quarter of the load plus its own setup (install, prisma generate,
+  # migrations) and 30 min leaves headroom. Test scope unchanged: no spec removed, skipped or weakened.
+  verify-static:
     runs-on: ubuntu-latest
-    # LEAD exception (22 Oct): be:test needs more than 20 min on a hosted runner. Raised, test scope unchanged.
-    timeout-minutes: 45
-    # Throw-away Postgres for the integration tests (BE-02). Throw-away credentials, CI-only.
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: prestasiplus_test
-          POSTGRES_USER: pp
-          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pp -d prestasiplus_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+    timeout-minutes: 20
     env:
-      TEST_DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
       DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
     steps:
       - uses: actions/checkout@v4.2.2
@@ -94,8 +89,57 @@ jobs:
       - run: npm run be:lint
       - run: npm run be:lint:migration
       - run: npm run be:typecheck
-      - run: npm run be:test
       - run: npm run be:build
+
+  verify-shard:
+    name: verify (shard ${{ matrix.shard }}/${{ strategy.job-total }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    # Throw-away Postgres for the integration tests (BE-02), one per shard. Throw-away credentials, CI-only.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prestasiplus_test
+          POSTGRES_USER: pp
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pp -d prestasiplus_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
+      DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run be:test -- --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+
+  # Required check name `verify`: passes only when the static job and every test shard succeeded.
+  verify:
+    needs: [verify-static, verify-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: All verify jobs succeeded
+        env:
+          STATIC: ${{ needs.verify-static.result }}
+          SHARDS: ${{ needs.verify-shard.result }}
+        run: |
+          echo "verify-static: $STATIC"; echo "verify-shard: $SHARDS"
+          test "$STATIC" = "success" && test "$SHARDS" = "success"
 
   # BE-31: breaking-change gate for packages/contract/openapi.json (oasdiff, pinned image).
   # Expected on a backend sync PR into be/integration-frontend: the PR brings the newer backend contract, so the

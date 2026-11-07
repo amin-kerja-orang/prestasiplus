@@ -1,5 +1,12 @@
 /** M06 API types (SRS M06 v1.4 §6, §7). JSON camelCase; dates ISO 8601 +08:00. */
 
+import type { SpmHistoryResponse, SpmMyStats } from '@pp/contract'
+
+export type { SpmHistoryMod, SpmHistoryResponse, SpmHistoryRow, SpmHistoryRowMode, SpmMyStats } from '@pp/contract'
+
+/** `GET /api/spm/history` body: `{ data: rows, meta: { page, pageSize, pageCount, total, mod, stats } }`. */
+export type SpmHistoryPage = SpmHistoryResponse
+
 export type TargetType = 'spm' | 'custom' | 'latihan'
 export type SetStatus = 'bersih' | 'bank_besar' | 'belum_cukup'
 export type MockStatus = 'in_progress' | 'submitted'
@@ -28,7 +35,8 @@ export interface SpmOverview {
     subjektifSets: number
     kertasSubjektif: number
   }
-  me: { sessions: number; avgAccuracy: number; coins: number; answered: number }
+  /** `avgAccuracy` is a whole number, or null ("—") with 0 answers. */
+  me: SpmMyStats
 }
 
 /** `GET /api/education-levels` item, the fields S4 reads (M03 owns the full shape). */
