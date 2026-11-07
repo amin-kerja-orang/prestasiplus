@@ -4,8 +4,9 @@ import { API_ONLY, dataOf, errorOf, expectError } from '../helpers'
 
 /**
  * Heatmap Topik Lemah (BE-48, M25 route #1) API-only scenarios. The conformance database has no answer
- * log, so a signed-in student or admin gets the empty state; the figures, order and test-mode rules are
- * proved in `apps/api/test/heatmap`. Every response is checked against the contract by the runner.
+ * log, so a signed-in student or admin gets the empty state (`subjects: []`, API-DSKP-08); the tiles, bands, grey
+ * `belum-cuba` tiles, order and test-mode rules are proved in `apps/api/test/heatmap`. Every response is checked
+ * against the contract by the runner.
  */
 const PATH = '/buku-nota/heatmap'
 
@@ -42,6 +43,7 @@ export const heatmapScenarios: Scenario[] = [
         for (const url of [PATH, `${PATH}?userId=1`]) {
           const res = await client.request('GET', url)
           ctx.check(res.status === 200, `${role} ${url}: expected 200, got ${String(res.status)}`)
+          ctx.check(Array.isArray(dataOf(res).subjects), `${role} ${url}: expected data.subjects to be an array`)
           ctx.check(JSON.stringify(dataOf(res)) === JSON.stringify({ subjects: [] }), `${role} ${url}: expected the empty state`)
           ctx.check(res.headers['cache-control']?.includes('no-store') === true, `${role}: the heatmap is cacheable`)
         }

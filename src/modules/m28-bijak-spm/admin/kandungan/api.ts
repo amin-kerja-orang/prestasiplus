@@ -53,7 +53,7 @@ export const KANDUNGAN_ROUTES = {
   latihTubi: 'm28.admin.kandungan.latih-tubi',
   /** Registered by S3-T05 with its screen; the hub card stays hidden until then (FR-ADM-Q01.4). */
   trackingA: 'm28.admin.kandungan.tracking-a',
-  /** Registered by S3-T06 with its screen; the hub card stays hidden until then (FR-ADM-Q01.4). */
+  /** S3-T06: Kertas Subjektif list (`/admin/kertas-subjektif`). */
   kertasSubjektif: 'm28.admin.kandungan.kertas-subjektif',
 } as const
 

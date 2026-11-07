@@ -2914,6 +2914,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/settings|m22.admin-settings",
+      "path": "/admin/settings",
+      "name": "m22.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m22-support-tickets/pages/AdminSettingsPage.vue",
+      "file": "src/modules/m22-support-tickets/routes/tiket.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
       "key": "/buku-nota/heatmap|m25.heatmap",
       "path": "/buku-nota/heatmap",
       "name": "m25.heatmap",
@@ -3176,6 +3186,38 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/kertas-subjektif|",
+      "path": "/admin/spm/kertas-subjektif",
+      "name": null,
+      "status": "redirect-to:/admin/kertas-subjektif",
+      "sector": "S3",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "redirects_to": "/admin/kertas-subjektif",
+      "note": "V2 path alias; docs/prd/r1/30-admin-pusat.md 3.2",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/kertas-subjektif|",
+      "path": "/admin/kertas-subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifPaperListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/kertas-subjektif/:id|",
+      "path": "/admin/kertas-subjektif/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifPaperDetailPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/spm/subjektif|",
       "path": "/admin/spm/subjektif",
       "name": null,
@@ -3289,6 +3331,56 @@
       "component": "src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
       "note": "V3 duplicates register M-05 (D113): becomes \"Semak Kertas\" (review and publish); PaperEditorPage is retired after its functions move to the Set Builder",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products|",
+      "path": "/admin/marketplace/products",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminProdukPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/create|",
+      "path": "/admin/marketplace/products/create",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/:id/edit|",
+      "path": "/admin/marketplace/products/:id/edit",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers|",
+      "path": "/admin/marketplace/sellers",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminPenjualPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers/:id|",
+      "path": "/admin/marketplace/sellers/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/PenjualDetailPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     }
   ],
@@ -9434,14 +9526,13 @@
       "source": "pentadbiran",
       "id": "PG-14",
       "label": "Produk",
-      "route": "/admin/p/pg-14",
+      "route": "/admin/marketplace/products",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "penglibatan",
       "approved_by_card": null
     },
@@ -9450,14 +9541,13 @@
       "source": "pentadbiran",
       "id": "PG-15",
       "label": "Penjual",
-      "route": "/admin/p/pg-15",
+      "route": "/admin/marketplace/sellers",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "penglibatan",
       "approved_by_card": null
     },
@@ -12347,6 +12437,36 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/missions",
+      "method": "GET",
+      "path": "/api/guru/missions",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/guru/missions",
+      "method": "POST",
+      "path": "/api/guru/missions",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/guru/missions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/missions/:id",
+      "api_id": "API-GUR-11",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/missions/missions.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/remedial-tests/mine",
       "method": "GET",
       "path": "/api/remedial-tests/mine",
@@ -14628,6 +14748,26 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/intake/files/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/files/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/intake/batches/:p/retry",
+      "method": "POST",
+      "path": "/api/intake/batches/:id/retry",
+      "api_id": "API-Q-26",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/intake/files/intake-files.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/intake/files/:p/pages",
       "method": "GET",
       "path": "/api/intake/files/:id/pages",
@@ -14885,6 +15025,136 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/products",
+      "method": "GET",
+      "path": "/api/admin/marketplace/products",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/products",
+      "method": "POST",
+      "path": "/api/admin/marketplace/products",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/products/:p",
+      "method": "GET",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/marketplace/products/:p",
+      "method": "PUT",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/admin/marketplace/products/:p",
+      "method": "DELETE",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/admin/marketplace/products/:p/images/:p",
+      "method": "DELETE",
+      "path": "/api/admin/marketplace/products/:id/images/:imageId",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/seller-options",
+      "method": "GET",
+      "path": "/api/admin/marketplace/seller-options",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/sellers",
+      "method": "GET",
+      "path": "/api/admin/marketplace/sellers",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/sellers/:p",
+      "method": "GET",
+      "path": "/api/admin/marketplace/sellers/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/approve",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/approve",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/verify",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/verify",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/suspend",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/suspend",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/ban",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/ban",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
       "approved_by_card": null
     },
     {
@@ -17858,6 +18128,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/admin/settings/support",
+      "method": "GET",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
+      "key": "PUT /api/admin/settings/support",
+      "method": "PUT",
+      "path": "/api/admin/settings/support",
+      "api_id": "API-ADM-10",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/support/support.controller.ts",
+      "approved_by_card": "S7-T09"
+    },
+    {
       "key": "GET /api/admin/tiket/:p",
       "method": "GET",
       "path": "/api/admin/tiket/:id",
@@ -18055,6 +18345,136 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/wallet/wallet.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/products",
+      "method": "GET",
+      "path": "/api/admin/marketplace/products",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/products",
+      "method": "POST",
+      "path": "/api/admin/marketplace/products",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/products/:p",
+      "method": "GET",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/marketplace/products/:p",
+      "method": "PUT",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/admin/marketplace/products/:p",
+      "method": "DELETE",
+      "path": "/api/admin/marketplace/products/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "DELETE /api/admin/marketplace/products/:p/images/:p",
+      "method": "DELETE",
+      "path": "/api/admin/marketplace/products/:id/images/:imageId",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/seller-options",
+      "method": "GET",
+      "path": "/api/admin/marketplace/seller-options",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/sellers",
+      "method": "GET",
+      "path": "/api/admin/marketplace/sellers",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/marketplace/sellers/:p",
+      "method": "GET",
+      "path": "/api/admin/marketplace/sellers/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/approve",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/approve",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/verify",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/verify",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/suspend",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/suspend",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/marketplace/sellers/:p/ban",
+      "method": "POST",
+      "path": "/api/admin/marketplace/sellers/:id/ban",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
       "approved_by_card": null
     }
   ],
