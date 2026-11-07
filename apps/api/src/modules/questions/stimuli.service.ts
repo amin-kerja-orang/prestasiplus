@@ -25,6 +25,7 @@ import { stimulusTableParts } from './stimulus-table'
 import { type GroupRow, type GroupScope, type ListFilter, type MemberBrief, type MemberTrait, type StimulusData, type StimulusRow, StimuliRepository, plainExcerpt } from './stimuli.repository'
 import { QuestionsService } from './questions.service'
 import type { BulkFailure, BulkSkipped } from './errors'
+import { enText } from './projection'
 import { STIMULUS_KINDS } from './types'
 import type { QuestionBulkAction } from './types'
 import type { QuestionActor, QuestionCreateInput, QuestionView } from './types'
@@ -53,8 +54,8 @@ export interface BulkOutcome {
 }
 
 /** Kertas of a trait ('1'..'3' text) as the smallint of the group row. */
-const kertasNumber = (k: '1' | '2' | '3' | null): number | null => (k === null ? null : Number(k))
-const kertasText = (n: number | null): '1' | '2' | '3' | null => (n === 1 ? '1' : n === 2 ? '2' : n === 3 ? '3' : null)
+const kertasNumber = (k: '1' | '2' | '3' | '4' | null): number | null => (k === null ? null : Number(k))
+const kertasText = (n: number | null): '1' | '2' | '3' | '4' | null => (n === 1 ? '1' : n === 2 ? '2' : n === 3 ? '3' : n === 4 ? '4' : null)
 
 /** One summary of what a write changed: ids and counts only (the audit row never carries content). */
 export interface StimulusWrite<T> {
@@ -94,6 +95,7 @@ export class StimuliService {
       kind: input.kind,
       label: input.label ?? null,
       caption: input.caption ?? null,
+      captionEn: enText(input.captionEn) ?? null,
       bodyMs: input.body?.ms ?? null,
       bodyEn: input.body?.en ?? null,
       altText: input.alt ?? null,
@@ -104,6 +106,27 @@ export class StimuliService {
     }
     const id = await this.repo.createStimulus(data)
     return { result: await this.getStimulus(id), audit: { kind: input.kind } }
+  }
+
+  /**
+   * Gives an image stimulus its first file (S6-T18 part 2, a teacher's diagram accepted by the admin). Same guards as `updateStimulus`:
+   * the row is locked and a stimulus shown to pupils is refused (409, D113). Returns false when the stimulus is gone or already has a file
+   * (never overwritten). Joins the caller's transaction.
+   */
+  async attachFirstAsset(id: string, fileId: bigint): Promise<boolean> {
+    if (!(await this.repo.lockStimulus(id))) return false
+    const current = await this.repo.getStimulus(id)
+    // Only an image kind ever gets a file, served or not (an admin may have changed the kind since the image was sent): the caller answers 409.
+    if (current === null || current.assetFileId !== null || !(IMAGE_STIMULUS_KINDS as readonly string[]).includes(current.kind)) return false
+    // Lead ruling on #494 (option b): a served stimulus may still receive its FIRST file. The approve gate (`media_ok`, questions.repository.ts)
+    // refuses to approve a question whose image stimulus has no file, so attaching the first file fills a gap; it does not replace an image a
+    // pupil has seen. A pupil-side FR-X1-4f guard does not exist yet and is out of scope here. A paper that is still held and pins the stimulus
+    // keeps the 409 (that paper's pinned content must not change).
+    if ((await this.repo.stimulusServed(id)) && (await this.repo.stimulusHeldByPaper(id))) {
+      throw ApiError.of('CONFLICT', { message: STIMULUS_MESSAGES.stimulusServed })
+    }
+    await this.repo.setAssetFile(id, fileId)
+    return true
   }
 
   async updateStimulus(id: string, input: StimulusUpdateRequest): Promise<StimulusWrite<Stimulus>> {
@@ -130,6 +153,7 @@ export class StimuliService {
         kind: current.kind,
         label: input.label === undefined ? current.label : input.label,
         caption: input.caption === undefined ? current.caption : input.caption,
+        captionEn: input.captionEn === undefined ? current.captionEn : (enText(input.captionEn) ?? null),
         bodyMs: body.ms,
         bodyEn: body.en,
         altText: input.alt === undefined ? current.altText : input.alt,
@@ -329,7 +353,7 @@ export class StimuliService {
   }
 
   /** PUT scope: allowed while the group has no member or every member already matches the new value, else 422 `memberScope`. */
-  private async changeScope(id: string, input: { subjectId?: string | undefined; educationLevelId?: string | undefined; kertas?: '1' | '2' | '3' | null | undefined }): Promise<void> {
+  private async changeScope(id: string, input: { subjectId?: string | undefined; educationLevelId?: string | undefined; kertas?: '1' | '2' | '3' | '4' | null | undefined }): Promise<void> {
     const current = await this.repo.groupScope(id)
     if (current === null) throw notFound(STIMULUS_MESSAGES.groupNotFound)
     const next: GroupScope = {
@@ -692,6 +716,7 @@ export class StimuliService {
       kind: row.kind,
       label: row.label ?? '',
       caption: row.caption,
+      captionEn: row.captionEn,
       // A table read from the body is shown as the grid only (never the grid and its source text).
       body: row.bodyIsTable || (row.bodyMs === null && row.bodyEn === null) ? null : { ms: row.bodyMs ?? row.bodyEn ?? '', ...(row.bodyMs !== null && row.bodyEn !== null ? { en: row.bodyEn } : {}) },
       alt: row.altText,
@@ -717,6 +742,7 @@ export class StimuliService {
             imageId: v.imageId,
             alt: v.alt,
             ...(v.caption === null ? {} : { caption: v.caption }),
+            ...(v.captionEn === null ? {} : { captionEn: v.captionEn }),
             ...(v.sourceCitation === null ? {} : { sourceCitation: v.sourceCitation }),
             ...(v.tableData === null ? {} : { tableData: v.tableData }),
           }

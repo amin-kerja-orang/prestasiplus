@@ -395,7 +395,7 @@ describe('#9 S7 pupil (FR-M17-53…55)', () => {
 
   it('"ALESA AI Insight" applies the BR-M17-27 rules to the cards', () => {
     const expected: string[] = []
-    if (s7.cards.accuracy >= 90)
+    if ((s7.cards.accuracy ?? 0) >= 90)
       expected.push(`Ketepatan cemerlang (${String(s7.cards.accuracy)}%).`)
     if (s7.cards.consistency < 30) {
       expected.push(`Konsistensi rendah (${String(s7.cards.consistency)}%) - perlu usaha lebih.`)

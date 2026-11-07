@@ -50,7 +50,7 @@ export function fetchPkskDomainSections(
   return api.get<PkskDomainSection[]>(`${level(l)}/domains`, withSignal(options))
 }
 
-/** #5 `GET /api/pksk/levels/:level/domains/:code` (provisional practice page, L-2). */
+/** #5 `GET /api/pksk/levels/:level/domains/:code`. */
 export function fetchPkskPractice(
   l: PkskLevel,
   code: string,
@@ -70,7 +70,7 @@ export function fetchPkskExamAttempts(
   return api.get<PkskExamAttempt[]>(`${level(l)}/exam-attempts`, withSignal(options))
 }
 
-/** #21 `POST /api/pksk/levels/:level/domains/:code/practice-sessions` (provisional, L-2). */
+/** #21 `POST /api/pksk/levels/:level/domains/:code/practice-sessions`. */
 export function submitPkskPractice(
   l: PkskLevel,
   code: string,
@@ -82,12 +82,12 @@ export function submitPkskPractice(
   )
 }
 
-/** #22 `GET /api/pksk/levels/:level/exam` (provisional, L-3). */
+/** #22 `GET /api/pksk/levels/:level/exam`. */
 export function fetchPkskExam(l: PkskLevel, options: Signal = {}): Promise<PkskExam> {
   return api.get<PkskExam>(`${level(l)}/exam`, withSignal(options))
 }
 
-/** #23 `POST /api/pksk/levels/:level/exam-attempts` (provisional, L-3). */
+/** #23 `POST /api/pksk/levels/:level/exam-attempts`. */
 export function submitPkskExam(l: PkskLevel, answers: PkskAnswer[]): Promise<PkskExamAttempt> {
   return api.post<PkskExamAttempt>(`${level(l)}/exam-attempts`, { body: { answers } })
 }

@@ -168,18 +168,18 @@ describe('S8 ALESA card, student A (AC-M12-30.2)', () => {
   it('composes the paragraph with the accuracy and strongest-subject sentences', async () => {
     const w = await open()
     expect(t(w, 'pel-paragraph').text()).toBe(
-      'Penggunaan Prestasi Plus oleh Pelajar Demo 004664 masih pada tahap minimum dengan hanya 4 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Ketepatan jawapan pada 73.1% menunjukkan pemahaman yang baik. Subjek terkuat: Sejarah (78.9%).',
+      'Penggunaan Prestasi Plus oleh Pelajar Demo 004664 masih pada tahap minimum dengan hanya 4 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Ketepatan jawapan pada 73% menunjukkan pemahaman yang baik. Subjek terkuat: Sejarah (79%).',
     )
   })
 
   it('shows the four tiles and the Terkuat / Perlu perhatian line', async () => {
     const w = await open()
     expect(t(w, 'pel-tile-answers').text()).toBe('219Soalan')
-    expect(t(w, 'pel-tile-accuracy').text()).toBe('73.1%Ketepatan')
+    expect(t(w, 'pel-tile-accuracy').text()).toBe('73%Ketepatan')
     expect(t(w, 'pel-tile-konsistensi').text()).toBe('22.5Konsistensi')
     expect(t(w, 'pel-tile-streak').text()).toBe('1dStreak')
     expect(flat(t(w, 'pel-strength'))).toBe(
-      'Terkuat: Sejarah (78.9%) · Perlu perhatian: Matematik (16.7%)',
+      'Terkuat: Sejarah (79%) · Perlu perhatian: Matematik (17%)',
     )
     expect(t(w, 'pel-strength').findAll('strong')).toHaveLength(2)
   })
@@ -197,13 +197,13 @@ describe('S8 student B (AC-M12-30.3)', () => {
     api.fetchKirkpatrickStudent.mockResolvedValue(studentB())
     const w = await open(4644)
     expect(t(w, 'pel-paragraph').text()).toBe(
-      'Penggunaan Prestasi Plus oleh Pelajar Demo 004644 masih pada tahap minimum dengan hanya 3 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Subjek terkuat: Bahasa Melayu (60.0%).',
+      'Penggunaan Prestasi Plus oleh Pelajar Demo 004644 masih pada tahap minimum dengan hanya 3 hari aktif. Disarankan untuk meningkatkan kekerapan latihan bagi melihat peningkatan prestasi. Subjek terkuat: Bahasa Melayu (60%).',
     )
     expect(t(w, 'pel-tile-answers').text()).toBe('70Soalan')
-    expect(t(w, 'pel-tile-accuracy').text()).toBe('38.6%Ketepatan')
+    expect(t(w, 'pel-tile-accuracy').text()).toBe('39%Ketepatan')
     expect(t(w, 'pel-tile-konsistensi').text()).toBe('21.1Konsistensi')
     expect(flat(t(w, 'pel-strength'))).toBe(
-      'Terkuat: Bahasa Melayu (60.0%) · Perlu perhatian: Sejarah (0.0%)',
+      'Terkuat: Bahasa Melayu (60%) · Perlu perhatian: Sejarah (0%)',
     )
   })
 })
@@ -230,9 +230,9 @@ describe('S8 Head Count and platform cards (AC-M12-31.1, 31.2, 31.4)', () => {
     const w = await open()
     expect(t(w, 'pel-platform').get('h2').text()).toBe('Tahap 2 — Prestasi Platform')
     expect(all(w, 'pel-plat-value').map((v) => v.text())).toEqual([
-      '78.9% (190)',
-      '39.1% (23)',
-      '16.7% (6)',
+      '79% (190)',
+      '39% (23)',
+      '17% (6)',
     ])
   })
 
@@ -247,13 +247,15 @@ describe('S8 Head Count and platform cards (AC-M12-31.1, 31.2, 31.4)', () => {
     api.fetchKirkpatrickStudent.mockResolvedValue(studentB())
     const b = await open(4644)
     expect(all(b, 'pel-plat-value').map((v) => v.text())).toEqual([
-      '60.0% (5)',
-      '55.0% (20)',
-      '40.0% (15)',
-      '0.0% (5)',
+      '60% (5)',
+      '55% (20)',
+      '40% (15)',
+      '0% (5)',
     ])
     expect(
-      all(b, 'pel-plat-bar').map((e) => ['bg-success', 'bg-warning', 'bg-error'].find((c) => e.html().includes(c))),
+      all(b, 'pel-plat-bar').map((e) =>
+        ['bg-success', 'bg-warning', 'bg-error'].find((c) => e.html().includes(c)),
+      ),
     ).toEqual(['bg-warning', 'bg-warning', 'bg-error', 'bg-error'])
   })
 
@@ -302,6 +304,18 @@ describe('S8 access (AC-M12-03.4, 30.5)', () => {
     expect(useRouteOutcome().value).toBe(403)
     expect(has(w, 'pel-name')).toBe(false)
   })
+
+  it.each([4664, 99999999])(
+    'renders the 404 page in place for a pupil outside the scope, id %i (D-T02-2)',
+    async (id) => {
+      api.fetchKirkpatrickStudent.mockRejectedValue(
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'no' }),
+      )
+      const w = await open(id)
+      expect(useRouteOutcome().value).toBe(404)
+      expect(has(w, 'pel-name')).toBe(false)
+    },
+  )
 
   it('shows the error line on another failure', async () => {
     api.fetchKirkpatrickStudent.mockRejectedValue(new Error('boom'))

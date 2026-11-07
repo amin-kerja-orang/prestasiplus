@@ -1,7 +1,7 @@
 import { Prisma } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { missingLeafSql } from './effective-leaf'
-import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
+import { BANK_VISIBLE_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import type { AdminListFilter, QuestionStatus } from './types'
 
 /** `bigint` of a decimal id, or null when the text is not a canonical id (such an id never exists). */
@@ -22,7 +22,7 @@ const NOT_PKSK = NOT_PKSK_SQL
  * admin list, the filter-based bulk actions and the bulk Bab mapping (S4-T03), so a filter means the same everywhere.
  */
 export function adminFilterConds(f: AdminListFilter): Prisma.Sql[] {
-  const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+  const conds: Prisma.Sql[] = [NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
   const id = (text: string | undefined, column: Prisma.Sql): void => {
     if (text === undefined) return
     const key = bi(text)
@@ -65,11 +65,41 @@ export function adminFilterConds(f: AdminListFilter): Prisma.Sql[] {
   if (f.tahun !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.year = ${Number(f.tahun)})`)
   if (f.negeri !== undefined && f.negeri.trim() !== '') conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND lower(btrim(sp.exam_board)) = lower(btrim(${f.negeri})))`)
   if (f.jenis !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM source_papers sp WHERE sp.id = v.source_paper_id AND sp.exam_type = ${f.jenis})`)
-  if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-3])[[:space:]]*$') = ${f.kertas}`)
+  if (f.kertas !== undefined) conds.push(Prisma.sql`substring(v.paper_code from '/([1-4])[[:space:]]*$') = ${f.kertas}`)
   if (f.search !== undefined && f.search.trim() !== '') {
     const like = likePattern(f.search.trim())
     conds.push(Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`)
   }
+  // S1-T07 (API-Q-01, FR-ADM-Q03.8). `q` = a question id when all digits (AC-QA-47), else the stem text; ANDed with `search` when both come.
+  if (f.q !== undefined && f.q.trim() !== '') {
+    const text = f.q.trim()
+    const like = likePattern(text)
+    const key = /^\d{1,18}$/.test(text) ? BigInt(text) : null
+    // One table: the id is read from the version row (`v.question_id`), so the id path keeps the plan of the text path (min 3 characters, in the schema).
+    conds.push(
+      key === null
+        ? Prisma.sql`(v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`
+        : Prisma.sql`(v.question_id = ${key} OR v.stem_ms ILIKE ${like} ESCAPE '\\' OR v.stem_en ILIKE ${like} ESCAPE '\\')`,
+    )
+  }
+  if (f.tingkatan !== undefined) conds.push(Prisma.sql`EXISTS (SELECT 1 FROM education_levels tl WHERE tl.id = v.education_level_id AND tl.code = ${f.tingkatan})`)
+  if (f.chapter !== undefined) conds.push(f.chapter === 'none' ? Prisma.sql`v.chapter_id IS NULL` : Prisma.sql`v.chapter_id = ${BigInt(f.chapter)}`)
+  id(f.unit, Prisma.sql`v.unit_node_id`)
+  if (f.source !== undefined) {
+    // OPT-SUMBER-SOALAN: Manual, Import (PDF/DOCX), Kiriman Guru, CSV. `csv` is the stored `excel`; `guru` = created by a teacher.
+    conds.push(
+      f.source === 'guru'
+        ? Prisma.sql`EXISTS (SELECT 1 FROM user_roles gr WHERE gr.user_id = q.created_by_id AND gr.role = 'teacher')`
+        : Prisma.sql`q.source_type = ${f.source === 'csv' ? 'excel' : f.source}`,
+    )
+  }
+  // D12: the OPEN flag (not dismissed) of the LIVE approved version, as the work-list and the pupil draws read it, not of the version the list shows.
+  if (f.flag !== undefined) {
+    conds.push(
+      Prisma.sql`EXISTS (SELECT 1 FROM question_versions lv WHERE lv.question_id = q.id AND lv.version_no = q.live_version_no AND lv.status = 'approved' AND lv.stimulus_flag = ${f.flag} AND lv.flag_dismissed_at IS NULL)`,
+    )
+  }
+  if (f.rejected !== undefined) conds.push(f.rejected === 'true' ? Prisma.sql`v.rejection_reason IS NOT NULL` : Prisma.sql`v.rejection_reason IS NULL`)
   return conds
 }
 

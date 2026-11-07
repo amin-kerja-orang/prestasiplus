@@ -1,15 +1,24 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { GURU_STRUCTURED_ROUTES, structuredPages } from '@/modules/m04-question-bank'
+
 /**
  * M10 route fragment: S21–S24 Sumbang Soalan (`/guru/soalan…`), M10-T6. User shell; Guru and Admin.
  * Tab titles and header texts: URS §1 / FN-M10-1.1.3 (DV-M10-01: S23 / S24 keep "Selamat datang
  * kembali"). Not own / unknown ids are the standard 404 (BR-M10-01), raised by the page.
+ *
+ * S6-T17 (R1-GUR-44b): the list and detail of /guru/soalan-berstruktur mount the two M04 structured pages for the
+ * teacher (`portal: 'guru'`, API-GUR-26); the pages and route names come from the M04 public entry. The detail id
+ * is a question id (digits) or the id of the teacher's own submission (`g{n}`, S6-T17). The submit form is
+ * `/cipta` and its edit form `/:id/edit` (own submissions only).
  */
 export const SOALAN_ROUTES = {
   list: 'm10.soalan',
   create: 'm10.soalan.cipta',
   detail: 'm10.soalan.detail',
   edit: 'm10.soalan.edit',
+  berstrukturCreate: 'm10.soalan.berstruktur.cipta',
+  berstrukturEdit: 'm10.soalan.berstruktur.edit',
 } as const
 
 const base = {
@@ -18,6 +27,11 @@ const base = {
   roles: ['teacher', 'admin'] as const,
   module: 'M10' as const,
   v2: true as const,
+}
+
+/** An approved question id is numeric; an own submission id is `g{n}` and stays a string (API-GUR-26). */
+export function structuredRouteId(raw: string): number | string {
+  return /^[0-9]+$/.test(raw) ? Number(raw) : raw
 }
 
 const routes: RouteRecordRaw[] = [
@@ -64,6 +78,49 @@ const routes: RouteRecordRaw[] = [
       ...base,
       title: 'Edit Soalan — Sumbang Soalan',
       header: { title: 'Edit Soalan', subtitle: 'Selamat datang kembali' },
+    },
+  },
+  {
+    path: '/guru/soalan-berstruktur',
+    name: GURU_STRUCTURED_ROUTES.list,
+    component: structuredPages.list,
+    props: { portal: 'guru' },
+    meta: {
+      ...base,
+      title: 'Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Soalan Berstruktur' },
+    },
+  },
+  {
+    path: '/guru/soalan-berstruktur/cipta',
+    name: SOALAN_ROUTES.berstrukturCreate,
+    component: () => import('../pages/SoalanBerstrukturCiptaPage.vue'),
+    meta: {
+      ...base,
+      title: 'Cipta Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Cipta Soalan Berstruktur' },
+    },
+  },
+  {
+    path: '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
+    name: GURU_STRUCTURED_ROUTES.detail,
+    component: structuredPages.detail,
+    props: (route) => ({ id: structuredRouteId(String(route.params.id)), portal: 'guru' }),
+    meta: {
+      ...base,
+      title: 'Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Soalan Berstruktur' },
+    },
+  },
+  {
+    path: '/guru/soalan-berstruktur/:id(g[0-9]+)/edit',
+    name: SOALAN_ROUTES.berstrukturEdit,
+    component: () => import('../pages/SoalanBerstrukturEditPage.vue'),
+    props: (route) => ({ id: String(route.params.id) }),
+    meta: {
+      ...base,
+      title: 'Edit Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Edit Soalan Berstruktur' },
     },
   },
 ]

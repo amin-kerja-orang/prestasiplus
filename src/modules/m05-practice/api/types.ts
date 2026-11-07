@@ -14,6 +14,7 @@ export type PracticeMode =
   | 'chapter'
   | 'revision'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
   | 'mission'
@@ -126,10 +127,12 @@ export interface DashboardRecentQuestion {
   id: EntityId
   subjectName: string
   difficulty: number
-  /** Cut at 100 characters + "..." (BR-29). */
+  /** Cut at 140 characters + "…" (FR-MUR-2-8). */
   text: string
   createdAt: string
   levelCode: string
+  /** Served URL of the question's first figure, shown as a small thumbnail; null when it has none (FR-MUR-2-8). */
+  figureThumbUrl: string | null
 }
 
 export interface DashboardSubjectStat {
@@ -152,6 +155,10 @@ export interface Dashboard {
   streak: { count: number; practisedToday: boolean }
   wallet: { coins: number; points: number; level: number; levelProgressPct: number }
   week: { sessions: number; accuracyPct: number }
+  /** Pupil's pooled accuracy (all modes), at most one decimal; `null` = 0 answers. */
+  accuracyPct: number | null
+  /** The active package (complimentary or school subscription); `null` = none (then the trial card may show). */
+  package: { name: string; validUntil: string } | null
   banners: DashboardBanner[]
   quests: DashboardQuest[]
   questsCompleted: number
@@ -183,6 +190,8 @@ export interface ChapterSubject {
   color: string
   chapterCount: number
   questionCount: number
+  /** Levels with chapters and their own counts (FR-MUR-9-5); ids are numbers in the mock, strings on the real API. */
+  levels: { id: EntityId; code: string; name: string; chapterCount: number; questionCount: number }[]
 }
 
 export interface ChapterCard {
@@ -231,6 +240,39 @@ export interface RevisionOverview {
 export interface RevisionSubject {
   subject: { id: number; code: string; name: string; color: string }
   count: number
+}
+
+// ---------------------------------------------------------------------------------------------
+// API-PRAC-08 Remedial suggestions (S5-T07; contract `PracticeReadRemedialSuggestions`)
+// ---------------------------------------------------------------------------------------------
+
+/** A completed revision drill ("Remedial Set {setNo}"); all percentages are whole numbers. */
+export interface RemedialCompletedSet {
+  subjectCode: string
+  subjectName: string
+  setNo: number
+  questionCount: number
+  /** Pooled subject accuracy before the drill ("Sebelum"); `null` when there was no earlier answer. */
+  before: number | null
+  /** The drill accuracy ("Selepas"); `null` when the drill had no questions. */
+  after: number | null
+  /** `after - before`; `null` unless both sides exist. */
+  delta: number | null
+  at: string
+}
+
+/** A subject below the target ("Perlu Pemulihan"). */
+export interface RemedialNeededSubject {
+  subjectCode: string
+  subjectName: string
+  answered: number
+  accuracy: number
+  target: 60
+}
+
+export interface RemedialSuggestions {
+  completed: RemedialCompletedSet[]
+  needed: RemedialNeededSubject[]
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -387,6 +429,8 @@ export interface QuizQuestion {
   wrongTimes: number
   hasDskp: boolean
   contributor: { name: string; profileUrl: string | null } | null
+  /** "Rujukan" link of a personal question in a mission (FR-GUR-44a-9). */
+  referenceUrl?: string | null
   options: { id: number; label: string; text: string }[]
 }
 
@@ -472,6 +516,8 @@ export interface StructuredCard {
   parts: number
   /** "{marks} markah" (SPM variant cards). */
   marks: number
+  /** The pupil's highest attempt total on this set; `null` without an attempt. */
+  bestScore: { awarded: number; max: number } | null
 }
 
 export interface StructuredListMeta {
@@ -481,6 +527,8 @@ export interface StructuredListMeta {
   track: StructuredTrack | null
   /** The "Subjek" options (without "Semua Subjek"): plain = 31 by name; Subjektif / Bahasa = FR-M05-134 order. */
   subjectOptions: { id: number; name: string }[]
+  /** Sets of the current filter with no usable scheme (the "menunggu skema pemarkahan" notice). */
+  pendingSchemeCount: number
 }
 
 /** #16 the answer page (Q3). */
@@ -506,6 +554,8 @@ export interface StructuredAttemptRequest {
 /** #17 DATA-M05-06 StructuredAttempt + the model answers. */
 export interface StructuredAttemptResult {
   id: string
+  /** S5-T11: the Bijak attempt id (self-mark and result routes); equal to `id`. */
+  attemptId: string
   userId: number
   structuredQuestionId: number
   scope: StructuredScope | null
@@ -594,4 +644,18 @@ export interface RemedialPreview {
     /** Index into `options` of the correct one; `null` when the question has none. */
     correctOptionId: number | null
   }[]
+}
+
+/** S5-T04 (API-MUR-11, DM-84): the four stored values of the pupil's daily mood check-in. */
+export type MoodValue = 'gembira' | 'okay' | 'sedih' | 'tertekan'
+
+/** `GET /api/me/mood/today`: today's stored choice, or `null` when the pupil has not checked in today. */
+export interface MoodToday {
+  mood: MoodValue | null
+}
+
+/** `POST /api/me/mood`: the stored choice and the Malaysia day (`YYYY-MM-DD`). */
+export interface MoodCheckin {
+  mood: MoodValue
+  checkedOn: string
 }

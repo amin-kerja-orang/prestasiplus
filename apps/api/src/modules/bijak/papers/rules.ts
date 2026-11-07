@@ -1,7 +1,6 @@
 /** Pure rules of the papers module (no database, no Nest): mapping, defaults and the generation seed. */
 import type { BijakBlueprintSource } from '@pp/contract'
 
-import { fnv1a32 } from '../../../db/prng'
 import type { Blueprint, BlueprintSection, SectionRule } from './exam-core.adapter'
 
 /** Database source code -> wire provenance tag (data model: verified, spec, draft). */
@@ -96,15 +95,31 @@ export function toComposerBlueprint(subject: string, kertas: number, row: Bluepr
 }
 
 /**
- * Seed of one generation: a function of the injected clock, the user, the blueprint and how many
- * papers the user generated before. The same inputs give the same paper (AC 4); the counter makes
- * the next call differ even when the clock does not move.
+ * The printed code of a paper. A Kertas Subjektif paper (DM-23) has no code field on its form (Q-18): when none is stored it is
+ * `K{kertas}` (for example `K2`), the same fallback as an imported paper (45 section 3.5). Other papers keep `paper_code` or ''.
  */
-export function generationSeed(at: Date, userId: string, blueprintCode: string, previousCount: number): number {
-  return fnv1a32(`${at.toISOString()}|${userId}|${blueprintCode}|${String(previousCount)}`)
+export function paperCodeOf(paper: { paperCode: string | null; surface: string; kertas: number }): string {
+  if (paper.paperCode) return paper.paperCode
+  return paper.surface === 'subjektif' ? `K${paper.kertas}` : ''
 }
 
 /** Calendar year in Malaysia time (UTC+8, no daylight saving). */
 export function mytYear(at: Date): number {
   return new Date(at.getTime() + 8 * 60 * 60 * 1000).getUTCFullYear()
+}
+
+/** `users.grade` (1..11: 1 to 6 Darjah, 7 to 11 Tingkatan 1 to 5) of the two forms a Bijak SPM paper can be scoped to. */
+const GRADE_T4 = 10
+const GRADE_T5 = 11
+
+/**
+ * Whether a pupil of this form may see a paper with this `papers.level_scope` (S3-T07, AC-PA-36 clause (b), PO 2026-11-05).
+ * NULL scope means every form. `t4` is for Tingkatan 4, `t5` for Tingkatan 5, `t4_t5` for both. A T1 to T3 pupil, a
+ * primary pupil and a pupil with no resolvable form (`grade` null or outside 1..11) see only the NULL-scoped papers.
+ */
+export function levelScopeAllows(levelScope: string | null, grade: number | null): boolean {
+  if (levelScope === null) return true
+  if (grade === GRADE_T4) return levelScope === 't4' || levelScope === 't4_t5'
+  if (grade === GRADE_T5) return levelScope === 't5' || levelScope === 't4_t5'
+  return false
 }

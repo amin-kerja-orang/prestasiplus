@@ -11,6 +11,7 @@ import { SpmRepository, type TrackingSetRow } from './spm.repository'
 /** A Tracking A set with its derived figures (computed on read, never stored; G-15). */
 export interface SetView {
   subjectId: string
+  year: number
   setNo: number
   status: SpmSetStatus
   readyCount: number
@@ -61,6 +62,7 @@ export class SpmTrackingService implements PracticeRamalanSource {
       const dskpTotal = f.bankSource ?? f.readyCount
       return {
         subjectId: row.subjectId,
+        year: row.year,
         setNo: row.setNo,
         status: f.status,
         readyCount: f.readyCount,

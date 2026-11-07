@@ -6,6 +6,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
+import { useSessionStore } from '@/stores/session'
 
 import type { DiagramAudit } from '../../api/diagram-audit'
 import DiagramAuditPage from '../../pages/DiagramAuditPage.vue'
@@ -56,6 +57,7 @@ function audit(mcqTotal = 6144, strTotal = 522): DiagramAudit {
                 createdBy: person,
                 sourceFile: 'T5-BT-BIO---BIOLOGI.pdf',
                 sourcePage: 1,
+                pendingReview: false,
               },
             ]
           : [],
@@ -71,6 +73,7 @@ function audit(mcqTotal = 6144, strTotal = 522): DiagramAudit {
                 createdBy: person,
                 sourceFile: null,
                 sourcePage: null,
+                pendingReview: false,
               },
             ]
           : [],
@@ -91,6 +94,21 @@ function audit(mcqTotal = 6144, strTotal = 522): DiagramAudit {
 let wrapper: VueWrapper | null = null
 let router: Router
 
+function signIn(as: 'admin' | 'teacher' | 'school_admin'): void {
+  useSessionStore().setSession({
+    token: 't',
+    remember: false,
+    expiresAt: '2099-01-01T00:00:00+08:00',
+    user: { id: 1, role: as, landingPath: '/' } as never,
+  })
+}
+
+function pick(card: { get: (s: string) => { element: Element } }, file: File): void {
+  const input = card.get('[data-testid=diagram-file]').element as HTMLInputElement
+  Object.defineProperty(input, 'files', { value: [file], configurable: true })
+  input.dispatchEvent(new Event('change', { bubbles: true }))
+}
+
 async function render(url = '/admin/soalan-gambar'): Promise<VueWrapper> {
   router = createRouter({
     history: createMemoryHistory(),
@@ -104,6 +122,7 @@ async function render(url = '/admin/soalan-gambar'): Promise<VueWrapper> {
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  signIn('admin')
   for (const fn of Object.values(api)) fn.mockReset()
   api.fetchDiagramAudit.mockResolvedValue(audit())
 })
@@ -157,7 +176,7 @@ describe('DiagramAuditPage (M04 S11)', () => {
     expect(mcq.text()).toContain('oleh Admin Demo')
     expect(mcq.text()).toContain('T5-BT-BIO---BIOLOGI.pdf ms.1')
     const file = mcq.get('[data-testid=diagram-file]')
-    expect(file.attributes('accept')).toBe('image/*')
+    expect(file.attributes('accept')).toBe('image/jpeg,image/png,image/webp')
     expect(file.attributes('required')).toBeDefined()
     expect(mcq.get('[data-testid=diagram-dismiss]').text()).toBe('Dismiss')
     const str = w.get('[data-testid=diagrams-structured] [data-testid=diagram-card]')
@@ -274,14 +293,14 @@ describe('DiagramAuditPage (M04 S11)', () => {
         status: 422,
         code: 'VALIDATION_ERROR',
         message: 'Data tidak sah.',
-        fields: { image: 'Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.' },
+        fields: { image: 'Fail mesti berupa imej (jpg, png atau webp).' },
       }),
     )
     const w = await render()
     const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
     const input = card.get('[data-testid=diagram-file]').element as HTMLInputElement
     Object.defineProperty(input, 'files', {
-      value: [new File(['x'], 'rajah.svg', { type: 'image/svg+xml' })],
+      value: [new File(['x'], 'rajah.png', { type: 'image/png' })],
       configurable: true,
     })
     input.dispatchEvent(new Event('change', { bubbles: true }))
@@ -289,7 +308,7 @@ describe('DiagramAuditPage (M04 S11)', () => {
     await card.get('form').trigger('submit')
     await flushPromises()
     expect(card.get('[data-testid=diagram-file-error]').text()).toBe(
-      'Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.',
+      'Fail mesti berupa imej (jpg, png atau webp).',
     )
     expect(useFlashStore().current).toBeNull()
   })
@@ -303,5 +322,173 @@ describe('DiagramAuditPage (M04 S11)', () => {
     await w.get('[data-testid=diagrams-retry]').trigger('click')
     await flushPromises()
     expect(w.find('[data-testid=diagrams-mcq]').exists()).toBe(true)
+  })
+
+  it('admin sees Dismiss and the "Semua Sekolah" filter', async () => {
+    const w = await render()
+    expect(w.find('[data-testid=diagram-dismiss]').exists()).toBe(true)
+    expect(w.find('[data-testid=diagrams-school]').exists()).toBe(true)
+  })
+
+  it.each(['teacher', 'school_admin'] as const)(
+    '%s sees no Dismiss and no school filter, and sends no school_id',
+    async (as) => {
+      signIn(as)
+      const w = await render('/admin/soalan-gambar?school_id=380')
+      expect(w.find('[data-testid=diagram-dismiss]').exists()).toBe(false)
+      expect(w.find('[data-testid=diagrams-school]').exists()).toBe(false)
+      expect(w.text()).not.toContain('Semua Sekolah')
+      expect(w.get('[data-testid=diagrams-stat-mcq]').text()).toContain('6,144')
+      expect(w.get('[data-testid=diagrams-filter] button[type=submit]').text()).toBe('Tapis')
+      expect(api.fetchDiagramAudit).toHaveBeenLastCalledWith(
+        expect.objectContaining({ schoolId: null }),
+      )
+    },
+  )
+
+  it('rejects a 3 MB png without calling the API', async () => {
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    const big = new File([new Uint8Array(3 * 1024 * 1024)], 'besar.png', { type: 'image/png' })
+    pick(card, big)
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(card.get('[data-testid=diagram-file-error]').text()).toBe(
+      'Saiz imej tidak boleh melebihi 2 MB.',
+    )
+    expect(api.uploadDiagramImage).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['rajah.gif', 'image/gif'],
+    ['nota.txt', 'text/plain'],
+  ])('rejects %s as not an allowed image', async (name, type) => {
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    pick(card, new File(['x'], name, { type }))
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(card.get('[data-testid=diagram-file-error]').text()).toBe(
+      'Fail mesti berupa imej (jpg, png atau webp).',
+    )
+    expect(api.uploadDiagramImage).not.toHaveBeenCalled()
+  })
+
+  it('accepts a file with no type by its extension', async () => {
+    api.uploadDiagramImage.mockResolvedValue({
+      data: { id: 563393, needsDiagram: false },
+      status: 'Gambar rajah berjaya dimuat naik.',
+    })
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    pick(card, new File(['x'], 'rajah.JPG', { type: '' }))
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.uploadDiagramImage).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the chip for an item the data marks pendingReview', async () => {
+    const data = audit()
+    data.data.mcq.items[0]!.pendingReview = true
+    api.fetchDiagramAudit.mockResolvedValue(data)
+    signIn('teacher')
+    const w = await render()
+    expect(w.get('[data-testid=diagram-pending]').text()).toBe('Menunggu Semakan')
+  })
+
+  it('a teacher sees the upload control, school_admin sees neither upload nor Dismiss', async () => {
+    signIn('teacher')
+    let w = await render()
+    expect(w.find('[data-testid=diagram-upload]').exists()).toBe(true)
+    expect(w.find('[data-testid=diagram-file]').exists()).toBe(true)
+    expect(w.find('[data-testid=diagram-dismiss]').exists()).toBe(false)
+    w.unmount()
+    signIn('school_admin')
+    w = await render()
+    expect(w.find('[data-testid=diagram-upload]').exists()).toBe(false)
+    expect(w.find('[data-testid=diagram-file]').exists()).toBe(false)
+    expect(w.find('[data-testid=diagram-dismiss]').exists()).toBe(false)
+  })
+
+  it('hides the upload control while the item is pending review', async () => {
+    const data = audit()
+    data.data.mcq.items[0]!.pendingReview = true
+    api.fetchDiagramAudit.mockResolvedValue(data)
+    signIn('teacher')
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    expect(card.find('[data-testid=diagram-upload]').exists()).toBe(false)
+    expect(card.get('[data-testid=diagram-pending]').text()).toBe('Menunggu Semakan')
+    const other = w.get('[data-testid=diagrams-structured] [data-testid=diagram-card]')
+    expect(other.find('[data-testid=diagram-upload]').exists()).toBe(true)
+  })
+
+  it('a teacher upload toasts the review text, shows the chip, keeps the card and the MCQ stat', async () => {
+    const after = audit()
+    after.data.mcq.items[0]!.pendingReview = true
+    api.fetchDiagramAudit.mockResolvedValueOnce(audit()).mockResolvedValue(after)
+    api.uploadDiagramImage.mockResolvedValue({
+      data: { id: 563393, needsDiagram: true },
+      status: 'Gambar dihantar untuk semakan.',
+    })
+    signIn('teacher')
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    const file = new File(['x'], 'rajah.png', { type: 'image/png' })
+    pick(card, file)
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(api.uploadDiagramImage).toHaveBeenCalledWith('mcq', 563393, file)
+    expect(useFlashStore().current).toEqual({
+      type: 'success',
+      message: 'Gambar dihantar untuk semakan.',
+    })
+    const kept = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    expect(kept.attributes('data-question-id')).toBe('563393')
+    expect(kept.get('[data-testid=diagram-pending]').text()).toBe('Menunggu Semakan')
+    expect(w.get('[data-testid=diagrams-stat-mcq]').text()).toContain('6,144')
+  })
+
+  it.each([
+    'Gambar untuk soalan ini sedang menunggu semakan.',
+    'Soalan ini tiada kumpulan rangsangan untuk dilekatkan gambar.',
+  ])('a 409 shows the server text as the error toast: %s', async (message) => {
+    api.uploadDiagramImage.mockRejectedValue(
+      new ApiError({ status: 409, code: 'CONFLICT', message }),
+    )
+    signIn('teacher')
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    pick(card, new File(['x'], 'rajah.png', { type: 'image/png' }))
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(useFlashStore().current).toMatchObject({ type: 'error' })
+    expect(JSON.stringify(useFlashStore().current)).toContain(message)
+  })
+
+  it('a teacher file of the wrong type or over 2 MB sends nothing', async () => {
+    signIn('teacher')
+    const w = await render()
+    const card = w.get('[data-testid=diagrams-mcq] [data-testid=diagram-card]')
+    pick(card, new File(['x'], 'rajah.gif', { type: 'image/gif' }))
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(card.get('[data-testid=diagram-file-error]').text()).toBe(
+      'Fail mesti berupa imej (jpg, png atau webp).',
+    )
+    pick(card, new File([new Uint8Array(3 * 1024 * 1024)], 'besar.png', { type: 'image/png' }))
+    await flushPromises()
+    await card.get('form').trigger('submit')
+    await flushPromises()
+    expect(card.get('[data-testid=diagram-file-error]').text()).toBe(
+      'Saiz imej tidak boleh melebihi 2 MB.',
+    )
+    expect(api.uploadDiagramImage).not.toHaveBeenCalled()
   })
 })

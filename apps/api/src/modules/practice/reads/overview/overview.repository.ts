@@ -8,7 +8,7 @@ import { GROUP_SURFACES } from '../../../questions/serving'
 import { groupCompleteSql } from '../../../questions'
 import { PRACTICE_GROUP_SURFACES } from '../../ports'
 import { type OfferedLevel, offeredLevels } from '../../rules'
-import { LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../../../questions/learner-visibility'
 
 export interface AnswerFigures {
   answered: number
@@ -105,7 +105,7 @@ export class OverviewRepository {
         FROM revision_queue r
         JOIN questions q ON q.id = r.question_id
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved'`
+       WHERE r.user_id = ${idFromString(userId)}::bigint AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL}`
     return Number(rows[0]?.n ?? 0)
   }
 
@@ -128,7 +128,7 @@ export class OverviewRepository {
       SELECT v.subject_id, v.education_level_id AS level_id, v.difficulty_tp AS tp, (v.type = 'mcq') AS mcq, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND ${this.groupCond('latih_tubi_spm')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
+       WHERE q.is_active AND v.status = 'approved' AND ${this.groupCond('latih_tubi_spm')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${BANK_VISIBLE_SQL}
        GROUP BY 1, 2, 3, 4`
     return rows.map((r) => ({
       subjectId: r.subject_id === null ? null : idToString(r.subject_id),
@@ -140,18 +140,14 @@ export class OverviewRepository {
   }
 
   /**
-   * BR-29: ids of the newest active, published objective questions (live version published, `is_active`, type mcq), newest first.
-   * `QuestionsRepository.listIds` also computes the total and the per-status counts (two more full scans of
-   * the bank), which the dashboard does not need; this reads the primary key backwards and stops at `limit`.
+   * FR-MUR-2-8: the ids of the newest questions of a servable scope, newest first (`q.id DESC`, the primary key read backwards, stopped at `limit`).
+   * `scope` is `QuestionsRepository.scopeSql(filter, true)`: the ONE servable definition of the reads (live version approved, active, not PKSK, learner level,
+   * source not taken down, not flagged, every leaf keyed, the form filter). `below` pages backwards (ids under it). The caller checks the MCQ shape on each page only (`eligibleAmong`),
+   * so the shape check never scans the bank. `QuestionsRepository.listIds` also computes totals and per-status counts, which the dashboard does not need.
    */
-  async newestPublishedMcqIds(limit: number): Promise<string[]> {
-    const rows = await this.db.$queryRaw<{ id: bigint }[]>`
-      SELECT q.id
-        FROM questions q
-        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
-       ORDER BY q.id DESC
-       LIMIT ${limit}`
+  async newestIdsOf(scope: { from: Prisma.Sql; where: Prisma.Sql }, limit: number, below?: string): Promise<string[]> {
+    const page = below === undefined ? Prisma.empty : Prisma.sql`AND q.id < ${idFromString(below)}::bigint`
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${scope.from} WHERE ${scope.where} ${page} ORDER BY q.id DESC LIMIT ${limit}`
     return rows.map((r) => idToString(r.id))
   }
 
@@ -167,7 +163,7 @@ export class OverviewRepository {
       SELECT v.chapter_id, count(*)::int AS n
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${this.groupCond('bab')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL}
+       WHERE v.chapter_id = ANY(${big(chapterIds)}::bigint[]) AND q.is_active AND v.status = 'approved' AND v.type = 'mcq' AND ${this.groupCond('bab')} AND ${NOT_PKSK_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${BANK_VISIBLE_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(idToString(r.chapter_id), r.n)
     return out

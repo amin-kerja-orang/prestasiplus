@@ -11,10 +11,13 @@ const server = vi.hoisted(() => ({
   saveExtracted: vi.fn(),
   decideIntakeItem: vi.fn(),
   acceptUnreviewed: vi.fn(),
+  resolveIntakeDuplicate: vi.fn(),
   submitForReview: vi.fn(),
   subjects: () => [],
 }))
 vi.mock('../server/client', () => ({ bijakAdminServer: () => server }))
+const confirm = vi.hoisted(() => vi.fn())
+vi.mock('@/ds', async (original) => ({ ...(await original<typeof import('@/ds')>()), useConfirm: () => confirm }))
 vi.mock('@/composables/usePageMeta', () => ({ usePageMeta: () => ({ setHeader: vi.fn(), setTitle: vi.fn() }) }))
 
 const batchOf = (n: number): IntakeBatch =>
@@ -55,6 +58,7 @@ afterEach(() => {
 })
 
 beforeEach(() => {
+  confirm.mockReset().mockResolvedValue(true)
   for (const f of Object.values(server)) if (typeof f === 'function' && 'mockReset' in f) (f as ReturnType<typeof vi.fn>).mockReset()
   server.getIntakeBatch.mockResolvedValue(batchOf(2))
   server.saveExtracted.mockResolvedValue(batchOf(2))
@@ -71,9 +75,9 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
   })
 
   it('shows the wire status label as the badge for an http batch, else Draf (R1E2E-C1)', async () => {
-    server.getIntakeBatch.mockResolvedValue({ ...batchOf(2), batchStatus: 'ready_for_review', statusLabel: 'Sedia untuk semakan' })
+    server.getIntakeBatch.mockResolvedValue({ ...batchOf(2), batchStatus: 'ready_for_review', statusLabel: 'Selesai' })
     const http = await mountPage()
-    expect(http.get('[data-testid=review-status]').text()).toContain('Sedia untuk semakan')
+    expect(http.get('[data-testid=review-status]').text()).toContain('Selesai')
     // the batch stays editable: the item actions are still offered
     expect(http.find('[data-testid=item-accept]').exists()).toBe(true)
     server.getIntakeBatch.mockResolvedValue(batchOf(2))
@@ -109,12 +113,189 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     expect(server.decideIntakeItem).toHaveBeenCalledTimes(1)
   })
 
+  describe('duplicates and provenance (FR-QA-36, field 09-03)', () => {
+    const withDuplicates = (entries: unknown[]) => {
+      const b = batchOf(1)
+      return { ...b, duplicates: { [b.questions[0]!.id]: entries } }
+    }
+    const open = { id: 'd1', kind: 'near', status: 'open', matchedQuestionId: '77', matchedItemId: null }
+
+    it('shows the finding, blocks Terima while open, and offers both resolutions', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([open]))
+      const w = await mountPage()
+      const row = w.get('[data-testid=item-duplicate-d1]')
+      expect(row.text()).toContain('Hampir sama')
+      expect(row.text()).toContain('Terbuka')
+      expect(row.text()).toContain('Soalan #77')
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeDefined()
+    })
+
+    it.each([
+      ['item-duplicate-link', 'pautkan'],
+      ['item-duplicate-dismiss', 'ketepikan'],
+    ])('%s sends %s and reads the batch back', async (id, action) => {
+      const b = withDuplicates([open])
+      server.getIntakeBatch.mockResolvedValue(b)
+      server.resolveIntakeDuplicate.mockResolvedValue(withDuplicates([{ ...open, status: action === 'pautkan' ? 'linked' : 'dismissed' }]))
+      const w = await mountPage()
+      await w.get(`[data-testid=${id}]`).trigger('click')
+      await flushPromises()
+      expect(server.resolveIntakeDuplicate).toHaveBeenCalledWith(b.id, b.questions[0]!.id, open, action)
+      expect(w.get('[data-testid=item-duplicate-d1]').text()).toContain(action === 'pautkan' ? 'Dipautkan' : 'Diketepikan')
+      // A linked item stays a duplicate on the server (accept is refused): only Diketepikan releases Terima.
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBe(action === 'pautkan' ? '' : undefined)
+    })
+
+    it('a variant informs but does not block Terima', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'variant' }]))
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-duplicate-d1]').text()).toContain('Varian')
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeUndefined()
+    })
+
+    it('a finding the caller may not read cannot be linked', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, matchedQuestionId: null }]))
+      const w = await mountPage()
+      expect(w.find('[data-testid=item-duplicate-link]').exists()).toBe(false)
+      expect(w.find('[data-testid=item-duplicate-dismiss]').exists()).toBe(true)
+    })
+
+    it('shows the provenance of the batch read-only, as the year only, and hides it without a year', async () => {
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-provenance]').text()).toBe('Cadangan Provenans: Tahun 2025')
+      server.getIntakeBatch.mockResolvedValue({ ...batchOf(1), year: 0 })
+      const none = await mountPage()
+      expect(none.find('[data-testid=item-provenance]').exists()).toBe(false)
+    })
+
+    it('the key A does not send a blocked item', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'exact' }]))
+      await mountPage()
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+      await flushPromises()
+      expect(server.decideIntakeItem).not.toHaveBeenCalled()
+    })
+
+    it('a linked item disables Terima and the key A', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, status: 'linked' }]))
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeDefined()
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+      await flushPromises()
+      expect(server.decideIntakeItem).not.toHaveBeenCalled()
+    })
+
+    it('a linked variant does not block Terima', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'variant', status: 'linked' }]))
+      const w = await mountPage()
+      expect(w.get('[data-testid=item-accept]').attributes('disabled')).toBeUndefined()
+    })
+
+    it('Terima semua leaves a linked item out of n and out of the ids it sends', async () => {
+      const b = batchOf(3)
+      server.getIntakeBatch.mockResolvedValue({ ...b, duplicates: { [b.questions[0]!.id]: [{ ...open, status: 'linked' }] } })
+      server.acceptUnreviewed.mockResolvedValue({ done: 2, skipped: [], batch: batchOf(1) })
+      const w = await mountPage()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(confirm.mock.calls[0]?.[0].message).toBe('Terima 2 item yang belum disemak?')
+      expect(server.acceptUnreviewed).toHaveBeenCalledWith('ek-1', [b.questions[1]!.id, b.questions[2]!.id])
+    })
+
+    it('Terima semua reports n = diterima + gagal when the server refuses an item (WRONG_STATE)', async () => {
+      const b = batchOf(3)
+      server.getIntakeBatch.mockResolvedValue(b)
+      server.acceptUnreviewed.mockResolvedValue({
+        done: 2,
+        skipped: [{ id: b.questions[2]!.id, reason: 'WRONG_STATE' }],
+        batch: batchOf(1),
+      })
+      const w = await mountPage()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(confirm.mock.calls[0]?.[0].message).toBe('Terima 3 item yang belum disemak?')
+      expect(w.get('[data-testid=decision-note]').text()).toBe('2 diterima, 1 gagal')
+    })
+
+    it('Terima semua holds the deciding guard while the confirm is open and releases it on cancel', async () => {
+      let answer: (v: boolean) => void = () => undefined
+      confirm.mockReset().mockImplementation(() => new Promise<boolean>((r) => (answer = r)))
+      const w = await mountPage()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }))
+      await flushPromises()
+      expect(confirm).toHaveBeenCalledTimes(1)
+      expect(server.decideIntakeItem).not.toHaveBeenCalled()
+      answer(false)
+      await flushPromises()
+      expect(server.acceptUnreviewed).not.toHaveBeenCalled()
+      confirm.mockReset().mockResolvedValue(false)
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(confirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('Terima semua refreshes the batch after a failure partway through', async () => {
+      const b = batchOf(3)
+      server.getIntakeBatch.mockResolvedValue(b)
+      server.acceptUnreviewed.mockRejectedValue(new Error('Rangkaian terputus'))
+      const w = await mountPage()
+      server.getIntakeBatch.mockResolvedValue(batchOf(1))
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(w.get('[data-testid=decision-errors]').text()).toContain('Rangkaian terputus')
+      expect(server.getIntakeBatch).toHaveBeenCalledTimes(2)
+      expect(w.get('[data-testid=item-counter]').text()).toBe('Item 1 / 1')
+    })
+
+    it('Pautkan is not offered on a variant', async () => {
+      server.getIntakeBatch.mockResolvedValue(withDuplicates([{ ...open, kind: 'variant' }]))
+      const w = await mountPage()
+      expect(w.find('[data-testid=item-duplicate-link]').exists()).toBe(false)
+      expect(w.find('[data-testid=item-duplicate-dismiss]').exists()).toBe(true)
+    })
+
+    it('Terima semua counts and sends only the items no open duplicate blocks', async () => {
+      const b = batchOf(3)
+      server.getIntakeBatch.mockResolvedValue({ ...b, duplicates: { [b.questions[0]!.id]: [open] } })
+      server.acceptUnreviewed.mockResolvedValue({ done: 2, skipped: [], batch: batchOf(1) })
+      const w = await mountPage()
+      await w.get('[data-testid=accept-all]').trigger('click')
+      await flushPromises()
+      expect(confirm.mock.calls[0]?.[0].message).toBe('Terima 2 item yang belum disemak?')
+      expect(server.acceptUnreviewed).toHaveBeenCalledWith('ek-1', [b.questions[1]!.id, b.questions[2]!.id])
+    })
+  })
+
+  it('Terima semua asks first; a refusal sends nothing', async () => {
+    confirm.mockResolvedValue(false)
+    const w = await mountPage()
+    await w.get('[data-testid=accept-all]').trigger('click')
+    await flushPromises()
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({ confirmLabel: 'Ya, Terima Semua', cancelLabel: 'Batal' })
+    expect(confirm.mock.calls[0]?.[0].message).toMatch(/^Terima \d+ item yang belum disemak\?$/)
+    expect(server.acceptUnreviewed).not.toHaveBeenCalled()
+  })
+
+  it('Sebelum and Seterusnya move along the batch, stopping at each end', async () => {
+    server.getIntakeBatch.mockResolvedValue(batchOf(2))
+    const w = await mountPage()
+    expect(w.get('[data-testid=item-counter]').text()).toContain('Item 1 / 2')
+    expect(w.get('[data-testid=item-prev]').attributes('disabled')).toBeDefined()
+    await w.get('[data-testid=item-next]').trigger('click')
+    await flushPromises()
+    expect(w.get('[data-testid=item-counter]').text()).toContain('Item 2 / 2')
+    expect(w.get('[data-testid=item-next]').attributes('disabled')).toBeDefined()
+  })
+
   it('Terima semua reports how many were skipped', async () => {
     server.acceptUnreviewed.mockResolvedValue({ done: 1, skipped: [{ id: 'q', reason: 'BELOW_THRESHOLD' }], batch: batchOf(1) })
     const w = await mountPage()
     await w.get('[data-testid=accept-all]').trigger('click')
     await flushPromises()
-    expect(w.get('[data-testid=decision-note]').text()).toContain('1 soalan diterima sebagai draf. 1 dilangkau')
+    expect(w.get('[data-testid=decision-note]').text()).toBe('1 diterima, 1 gagal')
   })
 
   it('does not decide when the save before it failed', async () => {
@@ -140,6 +321,18 @@ describe('IntakeReviewPage V2 item actions (I6, I7)', () => {
     await flushPromises()
     expect(server.decideIntakeItem).toHaveBeenCalledWith('ek-1', 'srv-9', { action: 'terbit' })
     expect(w.get('[data-testid=decision-note]').text()).toContain('Soalan #srv-9 dicipta sebagai draf.')
+  })
+
+  it('Terima semua keeps an item whose id the save adopted (resolved ids on both sides)', async () => {
+    const b = batchOf(2)
+    const local = b.questions[0]!.id
+    server.getIntakeBatch.mockResolvedValue(b)
+    server.saveExtracted.mockResolvedValue({ idMap: { items: { [local]: 'srv-9' }, stimuli: {} } })
+    server.acceptUnreviewed.mockResolvedValue({ done: 2, skipped: [], batch: batchOf(1) })
+    const w = await mountPage()
+    await w.get('[data-testid=accept-all]').trigger('click')
+    await flushPromises()
+    expect(server.acceptUnreviewed).toHaveBeenCalledWith('ek-1', ['srv-9', b.questions[1]!.id])
   })
 
   it('shows an unexpected server error instead of failing silently', async () => {

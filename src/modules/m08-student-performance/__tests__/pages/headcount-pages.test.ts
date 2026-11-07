@@ -236,6 +236,8 @@ describe('S13 HeadcountDashboardPage', () => {
     className: '5 A',
     subjectName: 'Kimia',
     year: 2026,
+    mode: 'auto' as const,
+    teacherName: 'Guru Demo',
     onTrack: on,
     offTrack: off,
     noData: no,
@@ -399,6 +401,12 @@ describe('S15 HeadcountStudentPage', () => {
     levelName: 'Tingkatan 4',
     className: '4 Simulasi',
     year: 2026,
+    mode: 'manual',
+    statusReason: null,
+    entryStatus: 'active',
+    jurang: null,
+    unjuran: null,
+    keyakinan: null,
     status: 'below',
     tov: 67,
     etr: 56,
@@ -502,6 +510,7 @@ describe('S22 HeadcountSummaryPage', () => {
     expect(num(w, 'card-etr')).toBe('71.9')
     expect(num(w, 'card-otrs')).toBe('3')
     expect(t(w, 'otr-3').text()).toContain('Above: 5')
+    expect(w.text()).toContain('On Track (0 hingga +2)')
     expect(t(w, 'otr-3').text()).toContain('On Track: 2')
     expect(t(w, 'otr-3').text()).toContain('Below: 8')
     expect(t(w, 'otr-1').text()).toContain('N/A: 15')
@@ -542,6 +551,14 @@ describe('S23 HeadcountTablePage', () => {
     arGrade: ar === null ? null : ('B' as const),
     tone,
   })
+  const EXTRA = {
+    rs: null,
+    rsRecordedAt: null,
+    status: 'none' as const,
+    statusReason: null,
+    entryStatus: 'draft' as const,
+    projection: null,
+  }
   const DETAIL: HeadcountDetail = {
     config: {
       id: 501,
@@ -552,8 +569,11 @@ describe('S23 HeadcountTablePage', () => {
       teacherName: 'Guru Demo',
       status: 'active',
       activeOtrs: 2,
+      mode: 'manual',
+      defaultTov: null,
+      defaultEtr: null,
     },
-    chips: { onTrack: 1, below: 1, empty: 1, total: 3 },
+    chips: { onTrack: 1, below: 1, empty: 1, total: 3, onTrackPct: 50 },
     rows: [
       {
         userId: 1,
@@ -564,6 +584,7 @@ describe('S23 HeadcountTablePage', () => {
         etr: 75,
         etrGrade: 'A-',
         dropped: false,
+        ...EXTRA,
       },
       {
         userId: 2,
@@ -574,6 +595,7 @@ describe('S23 HeadcountTablePage', () => {
         etr: null,
         etrGrade: null,
         dropped: false,
+        ...EXTRA,
       },
       {
         userId: 3,
@@ -584,6 +606,7 @@ describe('S23 HeadcountTablePage', () => {
         etr: null,
         etrGrade: null,
         dropped: true,
+        ...EXTRA,
       },
     ],
     averages: { tov: 57.5, otrs: [61, 65.5], ars: [57.5, null], etr: 75 },
@@ -602,6 +625,7 @@ describe('S23 HeadcountTablePage', () => {
     expect(t(w, 'chip-below').text()).toBe('Below: 1 (33%)')
     expect(t(w, 'chip-empty').text()).toBe('Belum Diisi: 1')
     expect(t(w, 'chip-total').text()).toBe('Jumlah: 3')
+    expect(t(w, 'chip-jurang').text()).toBe('Jurang: —')
     expect(t(w, 'ar-1-1').classes()).toContain('text-success')
     expect(t(w, 'ar-1-1').attributes('data-tone')).toBe('above')
     expect(t(w, 'ar-2-1').classes()).toContain('text-error')
@@ -612,6 +636,24 @@ describe('S23 HeadcountTablePage', () => {
     expect(t(w, 'sort-ranking').attributes('aria-current')).toBe('true')
     expect(t(w, 'action-edit').attributes('href')).toBe('/headcount/501/edit')
   })
+
+  it.each([
+    [40, 80, 'Jurang: +40'],
+    [80, 75, 'Jurang: -5'],
+    [80, 80, 'Jurang: 0'],
+    [null, 80, 'Jurang: —'],
+    [40, null, 'Jurang: —'],
+  ])(
+    'Jurang chip from the subject-card targets TOV %s, RS %s reads "%s"',
+    async (tov, etr, text) => {
+      api.fetchHeadcountDetail.mockResolvedValue({
+        ...DETAIL,
+        config: { ...DETAIL.config, defaultTov: tov, defaultEtr: etr },
+      })
+      const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
+      expect(t(w, 'chip-jurang').text()).toBe(text)
+    },
+  )
 
   it('an unknown sort value is the ranking order; ?sort=name asks for A-Z', async () => {
     api.fetchHeadcountDetail.mockResolvedValue(DETAIL)
@@ -695,6 +737,33 @@ describe('S23 HeadcountTablePage', () => {
     const links = w.findAll('[data-testid=key-in-menu] a')
     expect(links.map((a) => a.text())).toEqual(['OTR1', 'OTR2'])
     expect(links[1]?.attributes('href')).toBe('/headcount/501/results/2')
+  })
+
+  it('an Auto config has no "Key-in AR" control (AC-GUR-3-5)', async () => {
+    api.fetchHeadcountDetail.mockResolvedValue({
+      ...DETAIL,
+      config: { ...DETAIL.config, mode: 'auto' },
+    })
+    const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
+    expect(w.find('[data-testid=action-key-in]').exists()).toBe(false)
+    expect(w.find('[data-testid=action-edit]').exists()).toBe(true)
+  })
+
+  it('targets are whole numbers; an Auto AR is whole and a Manual AR keeps one decimal', async () => {
+    const withAr = (mode: 'auto' | 'manual'): HeadcountDetail => ({
+      ...DETAIL,
+      config: { ...DETAIL.config, mode },
+      rows: [{ ...(DETAIL.rows[0] as HeadcountDetail['rows'][number]), cells: [cell(62.4, 65.5, 'above'), cell(66, null, 'na')] }],
+    })
+    api.fetchHeadcountDetail.mockResolvedValue(withAr('manual'))
+    const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
+    expect(t(w, 'ar-1-1').text()).toBe('65.5')
+    expect(tr(w, 'ar-1-1').text()).toContain('62')
+    expect(tr(w, 'ar-1-1').text()).not.toContain('62.4')
+    wrapper?.unmount()
+    api.fetchHeadcountDetail.mockResolvedValue(withAr('auto'))
+    const w2 = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
+    expect(t(w2, 'ar-1-1').text()).toBe('66')
   })
 
   it('an unknown config is the 404 page, a forbidden one the 403 page', async () => {

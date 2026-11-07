@@ -10,14 +10,13 @@ import {
   BijakGenerateErrorCodeSchema,
   BijakGenerateLimitErrorSchema,
   BijakGenerateNoBlueprintErrorSchema,
-  BijakGenerateRequestSchema,
-  BijakGenerateResultSchema,
   BijakGenerateShortageErrorSchema,
   BijakGenerateShortageSchema,
   BijakShortageKindSchema,
   BijakPaperCoverSchema,
   BijakPaperCoverSectionSchema,
   BijakPaperReferencePanelSchema,
+  BijakPaperListQuerySchema,
   BijakPaperSummarySchema,
   BijakSubjectSchema,
 } from './schema'
@@ -36,8 +35,6 @@ export const BIJAK_PAPERS_COMPONENT_SCHEMAS = {
   BijakPaperCover: BijakPaperCoverSchema,
   BijakBlueprintSection: BijakBlueprintSectionSchema,
   BijakBlueprintContract: BijakBlueprintContractSchema,
-  BijakGenerateRequest: BijakGenerateRequestSchema,
-  BijakGenerateResult: BijakGenerateResultSchema,
   BijakGenerateShortage: BijakGenerateShortageSchema,
   BijakGenerateErrorCode: BijakGenerateErrorCodeSchema,
   BijakGenerateNoBlueprintError: BijakGenerateNoBlueprintErrorSchema,
@@ -52,12 +49,6 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
-const csrf = z.object({
-  'X-CSRF-Token': z
-    .string()
-    .min(1)
-    .meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
-})
 const IdParams = z.object({
   id: IdSchema.meta({
     description: 'Paper id (a curated paper or one of the caller generated papers).',
@@ -68,17 +59,13 @@ const UNAUTHORIZED = err('UNAUTHORIZED (no valid session).')
 const FORBIDDEN_ROLE = err(
   'FORBIDDEN (the active role may not use Bijak SPM). Allowed: student, and admin or school_admin inside Mod Pelajar (working assumption of BE-15, see open question 1).',
 )
-const FORBIDDEN_ROLE_OR_CSRF = err(
-  'FORBIDDEN (the active role may not use Bijak SPM) or CSRF_INVALID (missing or wrong X-CSRF-Token).',
-)
-
 const ROLE_NOTE =
   'Student role (admin and school_admin only inside Mod Pelajar, where the session acts as a student). No answer key, mark scheme, accepted equivalent, explanation or question id is ever returned (US-15).'
 
 /**
- * Registers the five Bijak SPM read-side routes of BE-15. The mock `BijakServer` has no HTTP
- * routes; these paths are new and map one to one to `listPapers`, `getCover`, `listContracts`,
- * `subjects` and `generatePaper`. Every response body is `{ data }` or `{ error }`.
+ * Registers the four Bijak SPM read-side routes of BE-15 (`listPapers`, `getCover`,
+ * `listContracts`, `subjects`). The pupil `POST /bijak/papers/generate` is removed (S3-T07, FR-MUR-13-20):
+ * it answers the framework 404; only the admin `POST /admin/papers/generate` generates. Every response body is `{ data }` or `{ error }`.
  */
 export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
   registry.registerPath({
@@ -86,7 +73,8 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/papers',
     tags: ['bijak-papers'],
     summary: 'Kertas Pilihan: published curated papers with the caller progress',
-    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. The mock has no server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    description: `Mock method listPapers(userId). Only published curated papers (kind pilihan); never generated papers. \`surface\` (DM-23, S3-T06) defaults to \`simulasi\` (Kertas Pilihan, unchanged); \`surface=subjektif\` lists the published Kertas Subjektif papers (rows carry \`surface\`, \`examBoard\`, the typed Jumlah Markah as \`marks\`, and the code \`K{kertas}\` when none is stored). An unknown surface is 422. The mock has no other server filters (the UI filters by subject and kertas). Per paper: status belum, sedang (attemptId set) or selesai (lastScore of the latest submitted attempt). ${ROLE_NOTE}`,
+    request: { query: BijakPaperListQuerySchema },
     responses: {
       200: json(
         envelopeOf(z.array(BijakPaperSummarySchema)),
@@ -119,7 +107,7 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
     path: '/bijak/contracts',
     tags: ['bijak-papers'],
     summary: 'Kontrak Blueprint list for Jana Kertas',
-    description: `Mock method listContracts(). Every blueprint including those with source Draf (those cannot generate). Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate (and unavailableReason NO_BLUEPRINT when false). A student, and Admin Sekolah in Mod Pelajar, sees the serving (Disahkan) version, or the head when none serves, and canGenerate is true only with a serving version. Admin Pusat in Mod Pelajar sees the head and canGenerate is true when its source is Spec or Disahkan. When false the UI shows "Belum ada kontrak untuk subjek dan kertas ini" (AC-03.6). ${ROLE_NOTE}`,
+    description: `Mock method listContracts(), S3-T01 (D76, PRD45 section 5.2): only the serving (Disahkan) version of each subject and kertas; a Spec or Draf contract is never listed, and a Spec head being edited over a Disahkan version shows that Disahkan version. Sections carry label and take only; the internal pool tag is not exposed. BJS-01: each row carries canGenerate, true for every listed row. A subject and kertas with no row: the UI shows "Belum ada kontrak untuk subjek dan kertas ini" (AC-03.6). ${ROLE_NOTE}`,
     responses: {
       200: json(envelopeOf(z.array(BijakBlueprintContractSchema)), 'Blueprint contracts.'),
       401: UNAUTHORIZED,
@@ -137,44 +125,6 @@ export function registerBijakPapersPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(z.array(BijakSubjectSchema)), 'Subjects.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ROLE,
-    },
-  })
-
-  registry.registerPath({
-    method: 'post',
-    path: '/bijak/papers/generate',
-    tags: ['bijak-papers'],
-    summary: 'Jana Kertas: generate a private paper from a Kontrak Blueprint',
-    description: `Mock method generatePaper(userId, subject, kertas). Composes from the blueprint: stimulus groups are taken whole, no question repeats inside one paper, questions the caller has not been served are preferred. Every call creates a new paper id; the paper is private to the caller. 422 NO_BLUEPRINT when a student (or Admin Sekolah in Mod Pelajar) has no serving Disahkan blueprint for the pair, or Admin Pusat in Mod Pelajar has no Spec or Disahkan head (no paper is created). 422 SHORTAGE with error.details.shortages when the pool cannot fill a section exactly: a shortage list instead of a short paper; each line keeps { section, need, have } and may add the typed fields kind, basis, unit, slot, tp, blocking, otherSection (BM text is built from kind by the client, never carried). 503 GENERATE_LIMIT [PROPOSED] "Kertas tidak dapat disusun sekarang. Cuba lagi." when the solver budget is reached (details.limitSections lists the sections being solved). 500 SERVER_ERROR when the independent re-check finds a violation (logged, never served; the architecture text calls it INTERNAL, the generic code is SERVER_ERROR). ${ROLE_NOTE}`,
-    request: {
-      headers: [csrf],
-      body: {
-        required: true,
-        content: { 'application/json': { schema: BijakGenerateRequestSchema } },
-      },
-    },
-    responses: {
-      201: json(envelopeOf(BijakGenerateResultSchema), 'The generated paper id.'),
-      401: UNAUTHORIZED,
-      403: FORBIDDEN_ROLE_OR_CSRF,
-      500: err('SERVER_ERROR: the independent re-check found a violation (logged, never served).'),
-      503: json(
-        BijakGenerateLimitErrorSchema,
-        'GENERATE_LIMIT "Kertas tidak dapat disusun sekarang. Cuba lagi." [PROPOSED]: solver budget reached; no paper is created.',
-      ),
-      422: {
-        description:
-          'NO_BLUEPRINT "Belum ada kontrak untuk subjek dan kertas ini"; SHORTAGE "Kertas tidak dapat dijana kerana soalan tidak mencukupi." with error.details.shortages [{ section, need, have }]; or VALIDATION_ERROR with fields (subject, kertas) for an invalid body.',
-        content: {
-          'application/json': {
-            schema: z.union([
-              BijakGenerateNoBlueprintErrorSchema,
-              BijakGenerateShortageErrorSchema,
-              ErrorBodySchema,
-            ]),
-          },
-        },
-      },
     },
   })
 }

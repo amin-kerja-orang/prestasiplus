@@ -4,6 +4,10 @@ import { BULK_ACTION_TO_WIRE, STATUS_FILTER_TO_WIRE } from '../../api/questions'
 import { parseMarkdown } from '../../lib/markdown'
 import {
   complianceColor,
+  isConsecutiveRun,
+  regroupHeader,
+  regroupReference,
+  regroupSource,
   bulkOptionsFor,
   notUpdatedLines,
   cut,
@@ -16,6 +20,7 @@ import {
   statusLabel,
   tileName,
   upperWords,
+  LANGUAGE_LABELS,
 } from '../../lib/question-list'
 
 describe("status lookups accept the v2 wire lifecycle and never throw", () => {
@@ -157,5 +162,39 @@ describe('notUpdatedLines', () => {
     expect(lines).toHaveLength(3)
     expect(lines[1]).toContain('#8')
     expect(lines[2]).toContain('#9')
+  })
+})
+
+describe('language labels use the wire tokens ms, en and ms+en', () => {
+  it('keeps the BM copy and has no bm key', () => {
+    expect(LANGUAGE_LABELS).toEqual({ ms: 'Bahasa Melayu', en: 'English', 'ms+en': 'BM + English (dwibahasa)' })
+    expect(LANGUAGE_LABELS.bm).toBeUndefined()
+  })
+})
+
+describe('regroup work-list helpers (R1-ADM-QE-08)', () => {
+  const at = (paperId: string | null, numberLabel: string | null) => ({
+    paper: paperId === null ? null : { id: paperId, paperCode: null, year: null, examType: null },
+    numberLabel,
+  })
+
+  it('isConsecutiveRun: one paper and whole numbers without a gap, in any order', () => {
+    expect(isConsecutiveRun([at('5', '15'), at('5', '13'), at('5', '14')])).toBe(true)
+    expect(isConsecutiveRun([at('5', '13'), at('5', '15')])).toBe(false)
+    expect(isConsecutiveRun([at('5', '13'), at('6', '14')])).toBe(false)
+    expect(isConsecutiveRun([at('5', '13'), at('5', 'A')])).toBe(false)
+    expect(isConsecutiveRun([at(null, '1')])).toBe(false)
+    expect(isConsecutiveRun([])).toBe(false)
+  })
+
+  it('regroupSource, regroupReference and regroupHeader read the API-Q-13 row', () => {
+    const paper = { id: '5', paperCode: '1449/1', year: 2023, examType: 'SPM' }
+    expect(regroupSource({ paper, numberLabel: '14' })).toBe('1449/1 SPM (2023) · No. 14')
+    expect(regroupSource({ paper: { ...paper, paperCode: null, examType: null, year: null }, numberLabel: null })).toBe('—')
+    expect(regroupSource({ paper: null, numberLabel: '2' })).toBe('— · No. 2')
+    expect(regroupReference({ reference: 'numbered' })).toBe('bernombor')
+    expect(regroupReference({ reference: 'unnumbered' })).toBe('tanpa nombor')
+    expect(regroupReference({ reference: null })).toBe('—')
+    expect(regroupHeader(2, 5)).toBe('2 perlu tindakan · 5 selesai')
   })
 })

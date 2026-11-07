@@ -1,6 +1,6 @@
 export { BijakPapersModule } from './papers.module'
 export { PapersRepository } from './papers.repository'
-export { PapersService, type PaperActor, type SittablePaper } from './papers.service'
+export { PapersService, type SittablePaper } from './papers.service'
 export {
   BijakPapersPorts,
   type BijakPool,

@@ -12,6 +12,13 @@ on:
 permissions:
   contents: read
 
+# Same rule as api.yml / frontend.yml / r1-docs.yml (#732): a newer push to a PR cancels the older PR
+# run; push runs (branches, base) are never cancelled. The push and pull_request runs of one commit
+# have different refs (refs/heads/... vs refs/pull/N/merge), so they never cancel each other.
+concurrency:
+  group: no-dumps-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   no-dumps:
     runs-on: ubuntu-latest

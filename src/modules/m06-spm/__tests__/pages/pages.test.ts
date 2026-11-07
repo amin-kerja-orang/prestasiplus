@@ -18,12 +18,11 @@ const api = vi.hoisted(() => ({
   fetchDatabank: vi.fn(),
   fetchLatihTubiList: vi.fn(),
   fetchLatihTubiConfig: vi.fn(),
+  fetchSpmHistory: vi.fn(),
 }))
 vi.mock('../../api', () => api)
 
-const m05 = vi.hoisted(() => ({ fetchSessions: vi.fn() }))
 vi.mock('@/modules/m05-practice', () => ({
-  fetchSessions: m05.fetchSessions,
   QuizRunner: {},
   subjectGlyph: () => 'i-ph-books-duotone',
   subjectAccent: () => 'action',
@@ -38,8 +37,9 @@ vi.mock('@/app/router/outcome', async (orig) => ({
 let wrapper: VueWrapper | null = null
 let router: Router
 
+const Stub = defineComponent({ setup: () => () => h('div') })
+
 async function render(component: unknown, url: string): Promise<VueWrapper> {
-  const Stub = defineComponent({ setup: () => () => h('div') })
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -58,7 +58,7 @@ async function render(component: unknown, url: string): Promise<VueWrapper> {
 const t = (w: VueWrapper, id: string) => w.get(`[data-testid="${id}"]`)
 
 beforeEach(() => {
-  for (const f of [...Object.values(api), ...Object.values(m05)]) f.mockReset()
+  for (const f of Object.values(api)) f.mockReset()
   outcome.setRouteOutcome.mockReset()
 })
 
@@ -73,15 +73,14 @@ describe('S1 SpmHubPage', () => {
       stats: {
         totalQuestions: 20529,
         subjectCount: 25,
-        yearsAvailable: 0,
         trackingAQuestions: 1769,
       },
-      modules: { databank: 14673, latihTubi: 14673, trackingA: 1769, subjektifSets: 4059 },
-      me: { sessions: 4, avgAccuracy: 21.8, coins: 26, answered: 84 },
+      modules: { databank: 14673, latihTubi: 14673, trackingA: 1769, subjektifSets: 4059, kertasSubjektif: 3 },
+      me: { sessions: 4, avgAccuracy: 31, coins: 26, answered: 84 },
     })
   })
 
-  it('renders the pill, title, lead and the four stat cards with separators', async () => {
+  it('renders the pill, title, lead and the three stat cards (Tahun Tersedia hidden) with separators', async () => {
     const w = await render(SpmHubPage, '/spm')
     expect(t(w, 'spm-pill').text()).toBe('MOD SPM')
     expect(t(w, 'spm-title').text()).toBe('Persediaan SPM')
@@ -90,17 +89,17 @@ describe('S1 SpmHubPage', () => {
     const expected = [
       ['20,529', 'Jumlah Soalan'],
       ['25', 'Subjek SPM'],
-      ['0', 'Tahun Tersedia'],
       ['1,769', 'Soalan Tracking A'],
     ]
-    expect(stats).toHaveLength(4)
+    expect(stats).toHaveLength(3)
+    expect(w.text()).not.toContain('Tahun Tersedia')
     stats.forEach((s, i) => {
       expect(s.text()).toContain(expected[i]![0])
       expect(s.text()).toContain(expected[i]![1])
     })
   })
 
-  it('renders four whole-card links with chips and "Mula"', async () => {
+  it('renders five whole-card links with chips and "Mula"', async () => {
     const w = await render(SpmHubPage, '/spm')
     const cards = w.findAll('[data-testid^=spm-module-]')
     expect(cards.map((c) => c.attributes('href'))).toEqual([
@@ -108,12 +107,14 @@ describe('S1 SpmHubPage', () => {
       '/spm/latih-tubi',
       '/spm/ramalan',
       '/spm/subjektif',
+      '/kertas-subjektif',
     ])
     expect(cards.map((c) => c.get('[data-testid=module-chip]').text())).toEqual([
       '14,673 soalan',
       '14,673 soalan',
       '1,769 soalan',
       '4,059 set subjektif',
+      '3 kertas',
     ])
     for (const c of cards) {
       expect(c.text()).toContain('Mula')
@@ -121,27 +122,158 @@ describe('S1 SpmHubPage', () => {
     }
   })
 
-  it('shows "Prestasi SPM Anda" with one decimal and the history link', async () => {
+  it('shows Tahun Tersedia only when the overview carries a year count', async () => {
+    const o = await api.fetchSpmOverview()
+    api.fetchSpmOverview.mockResolvedValueOnce({ ...o, stats: { ...o.stats, yearsAvailable: 6 } })
+    const w = await render(SpmHubPage, '/spm')
+    const stats = w.findAll('[data-testid^=spm-stat-]')
+    expect(stats).toHaveLength(4)
+    expect(t(w, 'spm-stat-years').text()).toContain('6')
+    expect(t(w, 'spm-stat-years').text()).toContain('Tahun Tersedia')
+  })
+
+  it('card lines come from the PRD (46 s4.1)', async () => {
+    const w = await render(SpmHubPage, '/spm')
+    const text = w.get('[data-testid=spm-modules]').text()
+    expect(text).toContain('Latihan soalan berstruktur & esei, semak sendiri dengan skema.')
+    expect(text).toContain(
+      'Kertas 2, 3 & 4 percubaan negeri — baca, jawab, buka skema untuk semak sendiri.',
+    )
+    expect(text).not.toContain('Tiada soalan')
+  })
+
+  it('Kertas Subjektif is a link only when /kertas-subjektif is a built route', async () => {
+    const w = await render(SpmHubPage, '/spm')
+    expect(t(w, 'spm-module-kertas-subjektif').attributes('href')).toBe('/kertas-subjektif')
+    wrapper?.unmount()
+
+    // The route is not built: the catch-all 404 does not count.
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/spm', component: SpmHubPage },
+        { path: '/:rest(.*)*', name: 'core.not-found', component: Stub },
+      ],
+    })
+    await router.push('/spm')
+    wrapper = mount(SpmHubPage as never, { global: { plugins: [router] } })
+    await flushPromises()
+    const card = t(wrapper, 'spm-module-kertas-subjektif')
+    expect(card.attributes('href')).toBeUndefined()
+    expect(card.text()).toContain('Kertas 2, 3 & 4 percubaan negeri')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('3 kertas')
+    expect(card.text()).not.toContain('Mula')
+  })
+
+  it('Kertas Subjektif with 0 papers shows "0 kertas" and the exact PRD empty text, with no link', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 5 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 5, subjektifSets: 4, kertasSubjektif: 0 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-kertas-subjektif')
+    expect(card.get('[data-testid=module-empty]').text()).toBe(
+      'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
+    )
+    expect(card.get('[data-testid=module-chip]').text()).toBe('0 kertas')
+    expect(card.text()).not.toContain('Kertas 2, 3 & 4 percubaan negeri')
+    expect(card.text()).not.toContain('Mula')
+    expect(card.element.tagName).toBe('DIV')
+    expect(card.attributes('href')).toBeUndefined()
+    expect(card.find('a').exists()).toBe(false)
+  })
+
+  it('Kertas Subjektif with n > 0 papers shows "{n} kertas" and links to /kertas-subjektif', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 5 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 5, subjektifSets: 4, kertasSubjektif: 7 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-kertas-subjektif')
+    expect(card.attributes('href')).toBe('/kertas-subjektif')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('7 kertas')
+    expect(card.find('[data-testid=module-empty]').exists()).toBe(false)
+  })
+
+  it('Tracking A with 0 sets stays a link with its count (PRD 46 s4.1 gives no card empty text for it)', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 10, subjectCount: 25, trackingAQuestions: 0 },
+      modules: { databank: 10, latihTubi: 10, trackingA: 0, subjektifSets: 4, kertasSubjektif: 1 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const card = t(w, 'spm-module-tracking-a')
+    expect(card.attributes('href')).toBe('/spm/ramalan')
+    expect(card.get('[data-testid=module-chip]').text()).toBe('0 soalan')
+  })
+
+  it('the third stat tile spans both columns at phone width while Tahun Tersedia is hidden', async () => {
+    const w = await render(SpmHubPage, '/spm')
+    expect(t(w, 'spm-stat-tracking').classes()).toContain('col-span-2')
+    expect(t(w, 'spm-stat-total').classes()).not.toContain('col-span-2')
+  })
+
+  it('a card with zero content shows its data-empty text and is not a link', async () => {
+    api.fetchSpmOverview.mockResolvedValueOnce({
+      stats: { totalQuestions: 0, subjectCount: 25, trackingAQuestions: 1769 },
+      modules: { databank: 0, latihTubi: 0, trackingA: 1769, subjektifSets: 0, kertasSubjektif: 0 },
+      me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
+    })
+    const w = await render(SpmHubPage, '/spm')
+    const cards = w.findAll('[data-testid^=spm-module-]')
+    expect(cards).toHaveLength(5)
+    const byId = (id: string) => t(w, `spm-module-${id}`)
+    expect(byId('databank').text()).toContain('Tiada soalan tersedia lagi.')
+    expect(byId('subjektif').text()).toContain('Tiada soalan berstruktur ditemui')
+    expect(byId('kertas-subjektif').text()).toContain(
+      'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.',
+    )
+    for (const id of ['databank', 'subjektif', 'kertas-subjektif']) {
+      expect(byId(id).attributes('href')).toBeUndefined()
+      expect(byId(id).text()).not.toContain('Mula')
+    }
+    expect(byId('latih-tubi').attributes('href')).toBe('/spm/latih-tubi')
+    expect(byId('tracking-a').attributes('href')).toBe('/spm/ramalan')
+    expect(byId('databank').get('[data-testid=module-chip]').text()).toBe('0 soalan')
+    expect(byId('subjektif').get('[data-testid=module-chip]').text()).toBe('0 set subjektif')
+    expect(byId('kertas-subjektif').get('[data-testid=module-chip]').text()).toBe('0 kertas')
+  })
+
+  it('shows "—" for the accuracy when there are no answers (null)', async () => {
+    api.fetchSpmOverview.mockResolvedValue({
+      stats: { totalQuestions: 1, subjectCount: 1, trackingAQuestions: 0 },
+      modules: { databank: 0, latihTubi: 0, trackingA: 0, subjektifSets: 0, kertasSubjektif: 0 },
+      me: { sessions: 0, avgAccuracy: null, coins: 0, answered: 0 },
+    })
     const w = await render(SpmHubPage, '/spm')
     const mine = w.findAll('[data-testid^=spm-mine-]')
-    ;['4', '21.8%', '26', '84'].forEach((v, i) => expect(mine[i]!.text()).toContain(v))
+    expect(mine[1]!.text()).toContain('—')
+    expect(mine[1]!.text()).not.toContain('%')
+    expect(mine[1]!.text()).not.toContain('NaN')
+  })
+
+  it('shows "Prestasi SPM Anda" with a whole-number accuracy and the history link', async () => {
+    const w = await render(SpmHubPage, '/spm')
+    const mine = w.findAll('[data-testid^=spm-mine-]')
+    ;['4', '31%', '26', '84'].forEach((v, i) => expect(mine[i]!.text()).toContain(v))
     expect(w.text()).toContain('Syiling Diperoleh')
     expect(t(w, 'spm-history-link').attributes('href')).toBe('/spm/history')
   })
 
-  it('shows 0.0% for a student with no activity and an error box with a retry', async () => {
+  it('shows 0% for a student with no activity and an error box with a retry', async () => {
     api.fetchSpmOverview.mockResolvedValueOnce({
       stats: {
         totalQuestions: 20529,
         subjectCount: 25,
-        yearsAvailable: 0,
         trackingAQuestions: 1769,
       },
-      modules: { databank: 14673, latihTubi: 14673, trackingA: 1769, subjektifSets: 4059 },
+      modules: { databank: 14673, latihTubi: 14673, trackingA: 1769, subjektifSets: 4059, kertasSubjektif: 3 },
       me: { sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 },
     })
     const w = await render(SpmHubPage, '/spm')
-    expect(t(w, 'spm-mine-accuracy').text()).toContain('0.0%')
+    expect(t(w, 'spm-mine-accuracy').text()).toContain('0%')
     wrapper?.unmount()
 
     api.fetchSpmOverview.mockRejectedValueOnce(new Error('x'))
@@ -386,93 +518,119 @@ describe('S4 LatihTubiConfigPage', () => {
 describe('S10 HistoryPage', () => {
   const row = (over: Record<string, unknown>) => ({
     id: 'a',
-    mode: 'past_year',
-    subjectId: 3,
-    subjectCode: 'MATH',
-    questionCount: 5,
-    correctCount: 1,
+    mode: 'databank',
+    subject: { code: 'MATH', name: 'Matematik' },
+    correct: 1,
+    total: 5,
     percent: 20,
-    coinsEarned: 1,
-    timeSpent: 36,
-    completedAt: '2026-05-19T03:26:00+08:00',
+    coins: 1,
+    durationSeconds: 36,
+    completedAt: '2026-10-23T20:06:00+08:00',
     ...over,
   })
-  const META = {
-    activeType: null,
-    stats: { sessions: 4, avgAccuracyPct: 21.8, coins: 26, answered: 84 },
-  }
+  const meta = (over: Record<string, unknown> = {}) => ({
+    page: 1,
+    pageSize: 15,
+    pageCount: 1,
+    total: 2,
+    mod: 'all',
+    stats: { sessions: 4, avgAccuracy: 31, coins: 26, answered: 84 },
+    ...over,
+  })
 
   it('renders stats, filters and rows with exact texts', async () => {
-    m05.fetchSessions.mockResolvedValue({
+    api.fetchSpmHistory.mockResolvedValue({
       data: [
         row({}),
         row({
           id: 'b',
-          mode: 'latih_tubi',
-          questionCount: 34,
-          correctCount: 11,
+          mode: 'simulasi',
+          correct: 11,
+          total: 34,
           percent: 32,
-          coinsEarned: 11,
-          timeSpent: 105,
+          coins: 11,
+          durationSeconds: 2252,
         }),
       ],
-      meta: META,
+      meta: meta(),
     })
     const w = await render(HistoryPage, '/spm/history')
     expect(t(w, 'spm-heading').text()).toBe('Sejarah Kuiz SPM')
     const hs = w.findAll('[data-testid^=history-stat-]')
-    ;['4', '21.8%', '26', '84'].forEach((v, i) => expect(hs[i]!.text()).toContain(v))
+    ;['4', '31%', '26', '84'].forEach((v, i) => expect(hs[i]!.text()).toContain(v))
     expect(w.text()).toContain('Jumlah Syiling')
-    expect(m05.fetchSessions).toHaveBeenCalledWith(
-      { modes: ['past_year', 'latih_tubi', 'ramalan'], type: null },
-      expect.anything(),
-    )
+    expect(api.fetchSpmHistory).toHaveBeenCalledWith({ mod: null, halaman: 1 }, expect.anything())
+    expect(w.findAll('[data-testid^=history-filter-]').map((f) => f.text())).toEqual([
+      'Semua',
+      'Tahun Lepas',
+      'Latih Tubi',
+      'Tracking A',
+    ])
     const rows = w.findAll('[data-testid=history-row]')
     expect(rows).toHaveLength(2)
     const first = rows[0]!
     expect(first.get('[data-testid=row-score]').text()).toBe('20%')
     expect(first.get('[data-testid=row-badge]').text()).toBe('Tahun Lepas')
+    expect(first.get('[data-testid=row-subject]').text()).toBe('Matematik')
     expect(first.get('[data-testid=row-correct]').text()).toBe('1/5 betul')
     expect(first.get('[data-testid=row-meta]').text().replace(/\s+/g, ' ')).toBe(
-      '19 May 2026, 03:26 AM · 0m 36s',
+      '23 Okt 2026, 08:06 PM · 0m 36s',
     )
     expect(first.get('[data-testid=row-coins]').text()).toBe('+1 🪙')
+    expect(rows[1]!.get('[data-testid=row-badge]').text()).toBe('Bijak SPM')
+    expect(rows[1]!.get('[data-testid=row-meta]').text()).toContain('37m 32s')
     expect(t(w, 'history-filter-all').attributes('data-active')).toBe('true')
+    expect(t(w, 'history-page-text').text()).toBe('Halaman 1 daripada 1')
+    expect(t(w, 'history-prev').attributes('aria-disabled')).toBe('true')
+    expect(t(w, 'history-next').attributes('aria-disabled')).toBe('true')
   })
 
-  it('marks the active filter and passes the type', async () => {
-    m05.fetchSessions.mockResolvedValue({
+  it('shows "—" for the accuracy tile when there are no answers', async () => {
+    api.fetchSpmHistory.mockResolvedValue({
+      data: [],
+      meta: meta({ total: 0, stats: { sessions: 0, avgAccuracy: null, coins: 0, answered: 0 } }),
+    })
+    const w = await render(HistoryPage, '/spm/history')
+    expect(t(w, 'history-stat-accuracy').text()).toContain('—')
+    expect(t(w, 'history-stat-accuracy').text()).not.toContain('NaN')
+  })
+
+  it('marks the active chip and sends mod and halaman', async () => {
+    api.fetchSpmHistory.mockResolvedValue({
       data: [row({})],
-      meta: { ...META, activeType: 'past_year' },
+      meta: meta({ page: 2, pageCount: 3, total: 31, mod: 'databank' }),
     })
-    const w = await render(HistoryPage, '/spm/history?type=past_year')
-    expect(m05.fetchSessions.mock.calls[0]?.[0]).toEqual({
-      modes: ['past_year', 'latih_tubi', 'ramalan'],
-      type: 'past_year',
-    })
-    expect(t(w, 'history-filter-past_year').attributes('data-active')).toBe('true')
+    const w = await render(HistoryPage, '/spm/history?mod=databank&halaman=2')
+    expect(api.fetchSpmHistory.mock.calls[0]?.[0]).toEqual({ mod: 'databank', halaman: 2 })
+    expect(t(w, 'history-filter-databank').attributes('data-active')).toBe('true')
     expect(t(w, 'history-filter-all').attributes('data-active')).toBe('false')
-    expect(t(w, 'history-filter-latih_tubi').attributes('href')).toBe(
-      '/spm/history?type=latih_tubi',
-    )
+    expect(t(w, 'history-filter-latih_tubi').attributes('href')).toBe('/spm/history?mod=latih_tubi')
+    expect(t(w, 'history-page-text').text()).toBe('Halaman 2 daripada 3')
+    expect(t(w, 'history-prev').attributes('href')).toBe('/spm/history?mod=databank')
+    expect(t(w, 'history-next').attributes('href')).toBe('/spm/history?mod=databank&halaman=3')
   })
 
-  it('treats an unknown type as all rows with no filter active', async () => {
-    m05.fetchSessions.mockResolvedValue({ data: [row({})], meta: META })
-    const w = await render(HistoryPage, '/spm/history?type=zzz')
-    expect(m05.fetchSessions.mock.calls[0]?.[0].type).toBeNull()
-    for (const id of ['all', 'past_year', 'latih_tubi', 'ramalan']) {
+  it('still reads the old type key and the legacy values', async () => {
+    api.fetchSpmHistory.mockResolvedValue({ data: [row({})], meta: meta() })
+    const w = await render(HistoryPage, '/spm/history?type=ramalan')
+    expect(api.fetchSpmHistory.mock.calls[0]?.[0]).toEqual({ mod: 'tracking_a', halaman: 1 })
+    expect(t(w, 'history-filter-tracking_a').attributes('data-active')).toBe('true')
+  })
+
+  it('treats an unknown mod as no filter with no pill active', async () => {
+    api.fetchSpmHistory.mockResolvedValue({ data: [row({})], meta: meta() })
+    const w = await render(HistoryPage, '/spm/history?mod=zzz')
+    expect(api.fetchSpmHistory.mock.calls[0]?.[0]).toEqual({ mod: null, halaman: 1 })
+    for (const id of ['all', 'databank', 'latih_tubi', 'tracking_a']) {
       expect(t(w, `history-filter-${id}`).attributes('data-active')).toBe('false')
     }
   })
 
   it('shows the empty block with "Mula Kuiz SPM"', async () => {
-    m05.fetchSessions.mockResolvedValue({ data: [], meta: META })
-    const w = await render(HistoryPage, '/spm/history?type=ramalan')
-    expect(t(w, 'history-empty').text()).toContain('Belum Ada Sejarah')
-    expect(t(w, 'history-empty').text()).toContain(
-      'Mulakan kuiz SPM untuk melihat sejarah prestasi anda di sini.',
-    )
-    expect(t(w, 'history-empty-cta').attributes('href')).toBe('/spm')
+    api.fetchSpmHistory.mockResolvedValue({ data: [], meta: meta({ total: 0 }) })
+    const w = await render(HistoryPage, '/spm/history?mod=tracking_a')
+    expect(t(w, 'history-empty').text()).toContain('Belum ada percubaan SPM')
+    expect(t(w, 'history-empty').text()).toContain('Mula kuiz SPM untuk membina sejarah percubaan anda!')
+    expect(t(w, 'history-empty-cta').attributes('href')).toBe('/spm/tahun-lepas')
   })
 })

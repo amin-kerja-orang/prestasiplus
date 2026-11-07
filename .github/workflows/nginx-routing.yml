@@ -1,0 +1,48 @@
+# Edge nginx (deploy/vps/nginx) behaviour test in CI (S0-T01). Until now deploy/vps/nginx/test-routing.sh and
+# check.sh were run by hand only (e.g. #858). This job installs the runner's nginx and runs both against the real
+# templates with stub upstreams on 127.0.0.1: no secrets, no Docker, no network to any server (the scripts make
+# a throw-away self-signed certificate and only talk to localhost; apt only reaches the Ubuntu package mirror).
+# Runs only when the edge config, the frontend container nginx config or this file change.
+name: nginx-routing
+
+on:
+  push:
+    paths:
+      - deploy/vps/nginx/**
+      - docker/frontend/nginx.conf
+      - .github/workflows/nginx-routing.yml
+  pull_request:
+    paths:
+      - deploy/vps/nginx/**
+      - docker/frontend/nginx.conf
+      - .github/workflows/nginx-routing.yml
+
+permissions:
+  contents: read
+
+# Same rule as the other workflows (#732): a newer push to a PR cancels the older PR run; push runs never cancel.
+concurrency:
+  group: nginx-routing-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  nginx-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Install nginx (Ubuntu package; the service is stopped, the scripts run their own instance on high ports)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq nginx
+          sudo systemctl stop nginx || true
+          nginx -v
+      # The scripts need nginx, openssl, perl, python3 and curl; all but nginx are on the hosted runner.
+      # sudo: nginx needs to read its default paths before the -p/-c override; the scripts handle running as root.
+      - name: Config syntax (check.sh, every CSP mode)
+        run: |
+          for mode in report-only enforce off; do sudo bash deploy/vps/nginx/check.sh "$mode"; done
+      - name: Routing behaviour (test-routing.sh)
+        run: sudo bash deploy/vps/nginx/test-routing.sh
