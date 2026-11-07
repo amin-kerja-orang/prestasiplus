@@ -151,9 +151,10 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
     })
 
     it('Betul/Salah oracle holds for a question that is not one of this spec\'s (AZ-25 regression: base seed T4 MCQs)', async () => {
-      // With every inserted MATH question inactive, the T4 draw can serve only the base seed's T4 MCQs: the item the old
-      // oracle looked up in `math` (about 5% of runs) is now the only kind there is.
+      // With every inserted MATH question inactive, the T4 draw serves questions outside `math`: the item the old oracle
+      // looked up in `math` (about 5% of runs) is the only kind there is. AC-GM-00.6: a start needs the full draw of 40.
       const ids = math.map((m) => m.id)
+      const others = (await insertMcqQuestions(t.db, { subject: 'BM', level: 'T4', count: 40, prefix: 'AZ' })).map((o) => o.id)
       await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [ids])
       try {
         const { rows, res } = await open(student, 'betul-salah')
@@ -163,15 +164,21 @@ describe('solo games (D58a: keyless payload, server-checked answers, server-comp
         for (const [i, r] of rows.entries()) await expectStatementOracle(payload.statements[i]?.statement, r)
       } finally {
         await t.db.query(`update questions set is_active = true where id = any($1::bigint[])`, [ids])
+        await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [others])
       }
     })
 
     it('the darjah query selects the level of the questions', async () => {
-      const { sessionId, res } = await open(student, 'cabaran-kilat', '?darjah=7')
-      const payload = parseData(res, GamesCabaranKilatPayloadSchema)
-      expect(payload.questions.length).toBeGreaterThan(0)
-      expect((await sessionRow(sessionId))?.darjah).toBe(7)
-      for (const q of payload.questions) expect(math.some((m) => m.id === q.id)).toBe(false) // T4 questions are not served at T1
+      const t1 = (await insertMcqQuestions(t.db, { subject: 'BM', level: 'T1', count: 30, prefix: 'D7' })).map((o) => o.id) // AC-GM-00.6: the full draw
+      try {
+        const { sessionId, res } = await open(student, 'cabaran-kilat', '?darjah=7')
+        const payload = parseData(res, GamesCabaranKilatPayloadSchema)
+        expect(payload.questions.length).toBe(30)
+        expect((await sessionRow(sessionId))?.darjah).toBe(7)
+        for (const q of payload.questions) expect(math.some((m) => m.id === q.id)).toBe(false) // T4 questions are not served at T1
+      } finally {
+        await t.db.query(`update questions set is_active = false where id = any($1::bigint[])`, [t1])
+      }
     })
 
     it('Cabaran Kilat / Tembak Jawapan: 30 keyless questions with four options', async () => {

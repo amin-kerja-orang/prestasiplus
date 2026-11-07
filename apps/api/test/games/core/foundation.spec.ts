@@ -75,7 +75,6 @@ describe('games foundation', () => {
       coinsCredited: 0,
       xpAdded: 0,
     })
-    expect(await ports.weeklyPractice.week('1', new Date(), new Date())).toEqual({ me: null, rows: [] })
     expect(await ports.platformAccuracy.accuracy()).toBe(0)
     expect(await ports.battle.hasBattled('1')).toBe(false)
     ports.provideBattle({ hasBattled: async () => true })

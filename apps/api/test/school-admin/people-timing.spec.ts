@@ -27,6 +27,7 @@ function build(emailTaken: boolean, current = 'old@x.test') {
     { hash } as never,
     {} as never,
     { consume } as unknown as RateLimiter,
+    {} as never,
   )
   const ctx = { actor: { schoolId: '1', userId: '9' }, caller: {} } as unknown as PeopleCtx
   return { svc, ctx, order, hash, taken, consume }

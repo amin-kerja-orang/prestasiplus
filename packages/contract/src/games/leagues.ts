@@ -9,7 +9,7 @@ import { GAMES_MESSAGES, gamesCount } from './common'
  * League standings are stored job output in the mock and are never recomputed (BE-45 Open question 7); league `status`
  * is stored; "ended" is judged by date on enrolment (statuses move to date-derived in S7-T06 part 3). Sekolah Bersaing is computed on request (DM-31).
  * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
- * names rule, issue #76: first name + initial unless the viewer may see it).
+ * names rule, issue #76: first given name unless the viewer may see it).
  */
 
 export const GAMES_LEAGUE_TYPES = ['friendly', 'tournament', 'league'] as const
