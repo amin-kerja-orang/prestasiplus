@@ -34,6 +34,8 @@ const props = defineProps<{
   flagged: boolean
   /** Latihan after "Semak": the marked question (inputs lock, results show). */
   check?: QuestionResult
+  /** Latihan with re-checks (FR-MUR-13-6): "Semak" no longer locks the whole question; only these leaf parts are locked. */
+  lockedPartIds?: readonly string[]
   disabled?: boolean
   choose?: { chosen: boolean; dimmed: boolean; blocked: boolean; hint?: string }
 }>()
@@ -46,7 +48,7 @@ const emit = defineEmits<{
 const heading = ref<HTMLElement | null>(null)
 defineExpose({ focus: () => heading.value?.focus() })
 
-const locked = computed(() => !!props.check || props.disabled)
+const locked = computed(() => (!!props.check && !props.lockedPartIds) || props.disabled)
 const chosenOption = computed(() => props.answers[props.question.id]?.choice)
 const correctOption = computed(() => props.check?.parts[0]?.scheme.correctOption)
 const partResults = computed(() => props.check?.parts ?? [])
@@ -192,6 +194,7 @@ function pick(id: string): void {
         :answers="answers"
         :attempt-id="attemptId"
         :disabled="locked"
+        :locked-part-ids="lockedPartIds"
         :option-bank="question.optionBank"
         :stimuli="stimulusLookup"
         @answer="(id, a) => emit('answer', id, a)"

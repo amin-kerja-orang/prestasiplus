@@ -57,3 +57,26 @@ describe('batch list: itemCount and reviewedCount', () => {
     expect(await rowOf(b)).toMatchObject({ itemCount: 1, reviewedCount: 1 })
   })
 })
+
+describe('batch read: targetPaperId (DM-45)', () => {
+  it('is null until a paper has source_batch_id of the batch, then carries that paper id (list and detail)', async () => {
+    const a = (await createBatch(teacher)).id
+    const b = (await createBatch(teacher)).id
+    expect(await rowOf(a)).toMatchObject({ targetPaperId: null })
+    const detail0 = IntakeBatchDetailEnvelopeSchema.parse((await teacher.agent.get(`/api/intake/batches/${a}`)).body).data
+    expect(detail0.targetPaperId).toBeNull()
+
+    const subjectId = (await t.db.query<{ id: string }>(`insert into subjects (code, name, name_en, color, is_active, sort_order) values ('T0163', 'T', 'T', '#112233', true, 0) returning id::text id`))[0]!.id
+    const paperId = (
+      await t.db.query<{ id: string }>(
+        `insert into papers (kind, title, subject_id, kertas, printed_duration_min, paper_code, source_batch_id) values ('pilihan', 'p', $1, 1, 60, 'K1', $2) returning id::text id`,
+        [subjectId, a],
+      )
+    )[0]!.id
+
+    expect(await rowOf(a)).toMatchObject({ targetPaperId: paperId })
+    expect(await rowOf(b)).toMatchObject({ targetPaperId: null })
+    const detail = IntakeBatchDetailEnvelopeSchema.parse((await teacher.agent.get(`/api/intake/batches/${a}`)).body).data
+    expect(detail.targetPaperId).toBe(paperId)
+  })
+})

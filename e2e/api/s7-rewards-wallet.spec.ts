@@ -73,28 +73,33 @@ test.describe('S7 rewards and wallet @api', () => {
         data: { category: 'telco', vendor: 'Vendor Ujian', title: `Hadiah Ujian ${randomUUID()}`, denominationRm: 1, tokenCost: 1, isActive: true },
       }),
     )
-    const before = await wallet()
-    const body = { rewardId: reward.id, clientUuid: randomUUID() }
-    const first = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: body })
-    expect(first.status(), 'first redeem').toBe(201)
-    const second = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: body })
-    expect(second.status(), 'repeat redeem').toBe(201)
-    expect(await dataOf<{ id: string }>(second)).toEqual(await dataOf<{ id: string }>(first))
-    expect((await wallet()).tokenBalance).toBe(before.tokenBalance - 1)
+    // The reward keeps its redemption row, so it cannot be deleted; switch it off so the shop does not list it.
+    try {
+      const before = await wallet()
+      const body = { rewardId: reward.id, clientUuid: randomUUID() }
+      const first = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: body })
+      expect(first.status(), 'first redeem').toBe(201)
+      const second = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: body })
+      expect(second.status(), 'repeat redeem').toBe(201)
+      expect(await dataOf<{ id: string }>(second)).toEqual(await dataOf<{ id: string }>(first))
+      expect((await wallet()).tokenBalance).toBe(before.tokenBalance - 1)
 
-    const draw = await dataOf<{ id: string }>(
-      await admin.request.post('/api/admin/reward-control/draws', { headers: admin.headers, data: { title: `Cabutan Ujian ${randomUUID()}`, ticketCostSyiling: 5, maxTicketsPerStudent: 3, openNow: true } }),
-    )
-    const ticket = { clientUuid: randomUUID() }
-    const a = await pupil.request.post(`/api/cabutan/${draw.id}/tickets`, { headers: pupil.headers, data: ticket })
-    expect(a.status(), 'first ticket').toBe(201)
-    const b = await pupil.request.post(`/api/cabutan/${draw.id}/tickets`, { headers: pupil.headers, data: ticket })
-    expect(b.status(), 'repeat ticket').toBe(201)
-    expect(await dataOf<object>(b)).toEqual(await dataOf<object>(a))
-    expect((await wallet()).currentSyiling).toBe(before.currentSyiling - 5)
+      const draw = await dataOf<{ id: string }>(
+        await admin.request.post('/api/admin/reward-control/draws', { headers: admin.headers, data: { title: `Cabutan Ujian ${randomUUID()}`, ticketCostSyiling: 5, maxTicketsPerStudent: 3, openNow: true } }),
+      )
+      const ticket = { clientUuid: randomUUID() }
+      const a = await pupil.request.post(`/api/cabutan/${draw.id}/tickets`, { headers: pupil.headers, data: ticket })
+      expect(a.status(), 'first ticket').toBe(201)
+      const b = await pupil.request.post(`/api/cabutan/${draw.id}/tickets`, { headers: pupil.headers, data: ticket })
+      expect(b.status(), 'repeat ticket').toBe(201)
+      expect(await dataOf<object>(b)).toEqual(await dataOf<object>(a))
+      expect((await wallet()).currentSyiling).toBe(before.currentSyiling - 5)
 
-    const bad = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: { rewardId: reward.id, clientUuid: 'bukan-uuid' } })
-    expect(bad.status()).toBe(422)
+      const bad = await pupil.request.post('/api/hadiah/redemptions', { headers: pupil.headers, data: { rewardId: reward.id, clientUuid: 'bukan-uuid' } })
+      expect(bad.status()).toBe(422)
+    } finally {
+      await admin.request.post('/api/admin/hadiah/bulk', { headers: admin.headers, data: { action: 'deactivate', ids: [reward.id] } })
+    }
     await adminContext.close()
   })
 })

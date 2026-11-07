@@ -81,6 +81,8 @@ export interface ChallengeProgress {
   progress: number
   pct: number
   completed: boolean
+  /** True when the reward was claimed this Malaysia day (API-GAME-11). */
+  claimed?: boolean
 }
 
 /** #3 `mastery[]` (FN-M14-2.1.8). `accuracy` has up to 2 decimals; `multiplier` > 1 shows " · {m}x bonus". */
@@ -148,6 +150,16 @@ export interface ConvertResult {
 export interface ChallengesMeta {
   completed: number
   active: number
+  /** Rewards claimed this Malaysia day (API-GAME-11). */
+  claimed?: number
+}
+
+/** API-GAME-11 `data`. */
+export interface ChallengeClaimResult {
+  claimed: true
+  rewardSyiling: number
+  rewardXp: number
+  notices?: string[]
 }
 
 /** #8 `data.podium[]` (ranks 1–3). */
@@ -233,6 +245,8 @@ export interface Referral {
   code: string
   rewardReferrer: number
   rewardReferee: number
+  /** `referral_max_rewarded`: rewarded friends per referrer. */
+  maxRewarded: number
   registerUrl: string
   whatsappUrl: string
   telegramUrl: string

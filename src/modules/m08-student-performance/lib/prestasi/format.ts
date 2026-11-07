@@ -97,5 +97,30 @@ export function bandOf(gps: number): GpsBand {
 /** Bar width: part ÷ max, 0 when there is nothing (no NaN). */
 export const ratioPct = (part: number, max: number): number => (max > 0 ? (part / max) * 100 : 0)
 
+/** The level codes of Tingkatan 1 to 5, lower case (route `/prestasi/tingkatan/t1..t5`). */
+export const LEVEL_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
+export type LevelCode = (typeof LEVEL_CODES)[number]
+export const isLevelCode = (code: string): code is LevelCode => (LEVEL_CODES as readonly string[]).includes(code)
+
 /** "Tingkatan 4" from `t4` (S2, S3). */
-export const levelNumber = (code: string): number => (code === 't4' ? 4 : 5)
+export const levelNumber = (code: string): number => (isLevelCode(code) ? Number(code.slice(1)) : 0)
+
+/** Accuracy tone of the WHOLE number that is shown (decision 11: the band follows the displayed value, 49.6 shows 50% and is "mid"). */
+export const accuracyToneWhole = (n: number): AccuracyTone => accuracyTone(Math.round(n))
+
+/** "20/09/2026" from an ISO timestamp or date ("2026-09-20T10:00:00+08:00"); "—" for no value (Terakhir Aktif, R1-GUR-4). */
+export const ddmmyyyy = (iso: string | null | undefined): string => {
+  const m = iso ? /^(\d{4})-(\d{2})-(\d{2})/.exec(iso) : null
+  return m ? `${m[3] as string}/${m[2] as string}/${m[1] as string}` : DASH
+}
+
+const WEEK_MS = 7 * 86_400_000
+/**
+ * Murid Berisiko sub-line: "{n} soalan", plus "Tiada aktiviti 7 hari" whenever the pupil answered nothing in the last 7 days.
+ * A pupil who is both below 50 % and inactive gets both reasons (the accuracy is the red figure at the end of the row).
+ */
+export function riskText(r: { answered: number; lastAnsweredAt: string | null }, nowMs: number): string {
+  if (r.answered === 0) return 'Belum mula berlatih'
+  const inactive = r.lastAnsweredAt === null || Date.parse(r.lastAnsweredAt) < nowMs - WEEK_MS
+  return [`${plain(r.answered)} soalan`, ...(inactive ? ['Tiada aktiviti 7 hari'] : [])].join(' · ')
+}

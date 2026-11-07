@@ -27,6 +27,18 @@ export const DEFAULT_SUBJECT_COLOR = '#6366F1'
 export const TREND_WINDOW_DAYS = 30
 /** Accuracy change (points) that counts as a trend. */
 export const TREND_DELTA = 5
+/** Analitik Adaptif class view (R1-GUR-5): last 7 days against the 7 before; strict change in points. Prestasi keeps the 30-day rule above. */
+export const ANALYTICS_TREND_DAYS = 7
+export const ANALYTICS_TREND_DELTA = 3
+/** Analitik Adaptif risk bands on the whole-number accuracy (OPT-RISIKO): below 40 Kritikal, below 55 Tinggi, below 70 Sederhana, else Rendah. */
+export const RISK_CRITICAL_BELOW = 40
+export const RISK_HIGH_BELOW = 55
+export const RISK_MEDIUM_BELOW = 70
+/** Analitik Adaptif SP bands of the pupil (FR-MUR-5-3) on the whole-number accuracy: 75 and above Mahir, 50 to 74 Sederhana, below 50 Lemah. */
+export const SP_MAHIR_FROM = 75
+export const SP_SEDERHANA_FROM = 50
+/** The weakest SPs of the "Topik Perlu Perhatian Utama" block. */
+export const TOP_WEAK_SP_LIMIT = 4
 /** Projection range: grade(accuracy - band) to grade(accuracy + band). */
 export const PROJECTION_BAND = 10
 export const HEATMAP_DAYS = 90
@@ -34,7 +46,8 @@ export const ACTIVE_DAYS = 7
 /** Class attention list: members below this accuracy. */
 export const ATTENTION_BELOW = 50
 
-export const TOP_STUDENT_MIN_SITTINGS = 3
+/** Murid Terbaik / Pelajar Terbaik: fewest answers a pupil needs to be listed (R1-AS-4, R1-GUR-4). */
+export const TOP_STUDENT_MIN_ANSWERS = 5
 export const TOP_STUDENT_LIMIT = 10
 export const SCHOOL_QUESTION_CAP = 50
 /** R1 decision D113 (FR-GUR-6-9): fewest pupils with an answer to a question for its discrimination index. */
@@ -42,12 +55,25 @@ export const DISCRIMINATION_MIN_MEMBERS = 10
 /** Share of members in the upper and the lower group. */
 export const DISCRIMINATION_GROUP_SHARE = 0.27
 
-/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. `LEVEL_CODES` below stays T4/T5 for the level cards. */
-export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
+/** Tingkatan 1 to 5, lower case (the route `/prestasi/tingkatan/t1..t5` and the reader's `levelCode`). */
+export const LEVEL_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 
-export const LEVEL_CODES = ['t4', 't5'] as const
+/** Tingkatan chips of the item analysis (R1-AS-6, D101): T1 to T5. */
+export const ITEM_TINGKATAN_CODES = ['t1', 't2', 't3', 't4', 't5'] as const
 export type LevelCode = (typeof LEVEL_CODES)[number]
-export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = { t4: 'Tingkatan 4', t5: 'Tingkatan 5' }
+export const LEVEL_NAMES: Readonly<Record<LevelCode, string>> = {
+  t1: 'Tingkatan 1',
+  t2: 'Tingkatan 2',
+  t3: 'Tingkatan 3',
+  t4: 'Tingkatan 4',
+  t5: 'Tingkatan 5',
+}
+
+/** Murid Berisiko (R1-AS-4): whole-number accuracy below this, or no answer in the last ACTIVE_DAYS days. */
+export const AT_RISK_BELOW = 50
+export const AT_RISK_LIMIT = 10
+/** Class trend (R1-GUR-4, "Trend Aktiviti Kelas (30 Hari)"): the last 30 Malaysian days including today, zero-filled. */
+export const CLASS_TREND_DAYS = 30
 
 /** A pupil is ranked once this many non-test practice answers exist (LEAD, BE-19). */
 export const RANKING_MIN_ANSWERS = 3

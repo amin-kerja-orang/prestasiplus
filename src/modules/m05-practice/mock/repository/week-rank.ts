@@ -3,7 +3,7 @@
  * of M16 S20 "Pertandingan Mingguan", computed from the practice sessions.
  *
  * - Users with ≥ 1 completed **practice-mode** session in the week (BR-35: `random`, `chapter`,
- *   `revision`, `mission`, `remedial`, `question_set`, `pksk`; the SPM modes `past_year`, `latih_tubi`
+ *   `revision`, `mission`, `remedial`, `question_set`, `pksk`; the SPM modes `past_year`, `databank`, `latih_tubi`
  *   and `ramalan` do not count, so a pupil who practises only in SPM modes is not listed);
  * - `sesi` = the user's sessions, `betul` = Σ `correctCount`, `tepat` = the mean of `correctCount ÷
  *   questionCount × 100` over the sessions with a question (1 decimal; INFERRED by M16: Σ betul ÷ Σ

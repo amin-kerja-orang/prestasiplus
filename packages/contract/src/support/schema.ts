@@ -41,7 +41,7 @@ export const SUPPORT_ADMIN_MESSAGES = {
   replyRequired: 'Sila tulis balasan.',
   replyTooLong: 'Balasan tidak boleh melebihi 5000 aksara.',
   statusInvalid: 'Data yang dihantar tidak sah. Sila semak dan cuba lagi.',
-  ticketNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+  ticketNotFound: 'Rekod tidak dijumpai.',
 } as const
 
 /** Flashes after an admin save, approved by the product owner (PO batch 2 on #503). */
@@ -49,6 +49,14 @@ export const SUPPORT_ADMIN_FLASH = {
   replySaved: 'Balasan disimpan.',
   statusSaved: 'Status dikemas kini.',
 } as const
+
+/** Role words of the admin queue row (AC-CHAIN-7, AC-MUR-A4-5); another role has no label and shows as a dash. */
+export const SUPPORT_ROLE_LABELS: Readonly<Record<string, string>> = {
+  student: 'Murid',
+  teacher: 'Guru',
+  school_admin: 'Admin Sekolah',
+  admin: 'Admin Pusat',
+}
 
 /** Page flash after a create (FR-M22-06). Client-side text: the create response carries no `status` key. */
 export const SUPPORT_TICKET_CREATED_FLASH = 'Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.'
@@ -123,15 +131,15 @@ export const SupportQueueRowSchema = z
     subject: z.string(),
     status: SupportTicketStatusSchema,
     replied: z.boolean().meta({ description: 'adminReply is non-empty.' }),
-    roleLabel: z.string().nullable().optional().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles. Sent once DM-32 lands.' }),
-    school: z.string().nullable().optional().meta({ description: 'School from `school_id`. Sent once DM-32 lands.' }),
+    roleLabel: z.string().nullable().meta({ description: 'Role label from `created_role`; null on an old row of a user with several roles.' }),
+    school: z.string().nullable().meta({ description: 'School from `school_id`.' }),
   })
   .meta({ id: 'SupportQueueRow' })
 
 export const SupportQueueQuerySchema = z
   .object({
     status: z.string().optional().meta({ description: 'Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.' }),
-    role: z.string().optional().meta({ description: 'Exact role of `created_role`; an unknown value is ignored. Applies once DM-32 lands.' }),
+    role: z.string().optional().meta({ description: 'Exact role of `created_role`; an unknown value is ignored.' }),
     page: z.string().optional().meta({ description: 'Page number from 1, 25 rows per page; an odd value is page 1; a page past the end returns no rows.' }),
   })
   .meta({ id: 'SupportQueueQuery' })
@@ -188,6 +196,40 @@ export const SupportTicketStatusRequestSchema = z
   .object({ status: z.enum(SUPPORT_TICKET_STATUSES, { error: SUPPORT_ADMIN_MESSAGES.statusInvalid }) })
   .meta({ id: 'SupportTicketStatusRequest' })
 export type SupportTicketStatusRequest = z.infer<typeof SupportTicketStatusRequestSchema>
+
+/** Support contact limits and messages (30 N07-01, N07-02, FR-ADM-N07.3). */
+export const SUPPORT_CONTACT_MAX = 120
+export const SUPPORT_PHONE_PATTERN = /^\+?[0-9]{9,13}$/
+const SUPPORT_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+export const SUPPORT_SETTINGS_MESSAGES = {
+  emailInvalid: 'E-mel tidak sah.',
+  phoneInvalid: 'No. telefon tidak sah.',
+} as const
+/** Flash after a save (N07-04). */
+export const SUPPORT_SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
+
+/** `data` of `GET` and `PUT /admin/settings/support` (API-ADM-10); '' = not set. `phone` and `hours` stay '' until they have a store (open on #458, #507). */
+export const SupportSettingsSchema = z
+  .strictObject({ email: z.string(), phone: z.string(), whatsapp: z.string(), hours: z.string() })
+  .meta({ id: 'SupportSettings' })
+export type SupportSettings = z.infer<typeof SupportSettingsSchema>
+
+/** A contact field: trimmed, and null or blank clears it. */
+const contactField = (pattern: RegExp, message: string) =>
+  z
+    .union([z.string(), z.null()], { error: message })
+    .transform((v) => (v ?? '').trim())
+    .refine((v) => v === '' || (v.length <= SUPPORT_CONTACT_MAX && pattern.test(v)), { error: message })
+    .optional()
+
+/** Body of `PUT /admin/settings/support`: an omitted field keeps its value. */
+export const SupportSettingsUpdateRequestSchema = z
+  .object({
+    email: contactField(SUPPORT_EMAIL_PATTERN, SUPPORT_SETTINGS_MESSAGES.emailInvalid),
+    whatsapp: contactField(SUPPORT_PHONE_PATTERN, SUPPORT_SETTINGS_MESSAGES.phoneInvalid),
+  })
+  .meta({ id: 'SupportSettingsUpdateRequest' })
+export type SupportSettingsUpdateRequest = z.infer<typeof SupportSettingsUpdateRequestSchema>
 
 /** `data` of `GET /admin/tiket/open-count`: tickets with status `dibuka`. */
 export const SupportOpenCountSchema = z

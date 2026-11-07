@@ -1,20 +1,20 @@
 <script setup lang="ts">
 /**
- * S4 level pills (FR-M27-74; restyle spec AS-49): "Semua Tingkatan", "Tingkatan 4", "Tingkatan 5" as a
- * segmented row of links to `?tingkatan=`; the active one is the solid kobalt button.
+ * S4 level pills (FR-M27-74; restyle spec AS-49): "Semua Tingkatan" then "Tingkatan n" for each Tingkatan that has
+ * pupils (`levels`, FR-AS-49) as a segmented row of links to `?tingkatan=`; the active one is the solid kobalt button.
  */
 import { computed } from 'vue'
 
 import { DsPillNav, type PillItem } from '@/ds'
 
 import type { LevelFilter } from '../../api/amaran'
-import { AMARAN_PATH, LEVEL_PILLS } from './amaran-format'
+import { AMARAN_PATH, levelPills } from './amaran-format'
 
 /** `basePath`: the route the pills link to (M17 central views); default the school-admin report. */
-const props = defineProps<{ active: LevelFilter | null; basePath?: string }>()
+const props = defineProps<{ active: LevelFilter | null; levels: readonly number[]; basePath?: string }>()
 
 const items = computed<PillItem<string>[]>(() =>
-  LEVEL_PILLS.map((p) => ({
+  levelPills(props.levels).map((p) => ({
     key: p.level ?? 'all',
     label: p.label,
     to: p.level
