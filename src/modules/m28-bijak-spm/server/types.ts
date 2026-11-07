@@ -4,7 +4,6 @@
  * Type-only imports: this file must never pull the seed registry into the http bundle.
  */
 import type {
-  BijakGenerateShortage,
   BijakKuizCheckRequest,
   BijakKuizCheckResult,
   BijakKuizPaperPage,
@@ -24,10 +23,15 @@ import type {
   ResultView,
   SavePayload,
   Subject,
-  SubjectCode,
   SubmitPayload,
 } from '../domain/types'
 import type { PastSittings, SelfMarkOutcome } from '../domain/semakan'
+
+/** The two paper lists of `GET /api/bijak/papers?surface` (default `simulasi`). */
+export type PaperSurface = 'simulasi' | 'subjektif'
+
+/** A row of the list; the Kertas Subjektif rows also carry `surface` and `examBoard` (slug of OPT-NEGERI-KERTAS). */
+export type ListedPaper = PaperSummary & { surface?: PaperSurface; examBoard?: string }
 
 export interface SaveResult {
   savedAt: number
@@ -43,30 +47,6 @@ export interface SubmitResult {
   closed?: boolean
   regraded?: boolean
 }
-
-/** One Kontrak row for Jana Kertas: which (subject, kertas) can be generated. */
-export interface ContractRow {
-  subject: SubjectCode
-  subjectName: string
-  kertas: number
-  source: string
-  code: string
-  durationMin: number
-  sections: { label: string; take: number }[]
-  /** BJS-01: whether the caller can generate from this row now (false: show the AC-03.6 reason). */
-  canGenerate: boolean
-  unavailableReason?: 'NO_BLUEPRINT'
-}
-
-/**
- * What `generatePaper` resolves to (BJS-01): the mock `GenerateOutcome` plus the typed shortage
- * lines and the 503 GENERATE_LIMIT outcome. A transport failure rejects instead.
- */
-export type BijakGenerateOutcome =
-  | { ok: true; paperId: string }
-  | { ok: false; reason: 'no_blueprint' }
-  | { ok: false; reason: 'shortage'; shortages: BijakGenerateShortage[] }
-  | { ok: false; reason: 'limit'; limitSections: { section?: string }[] }
 
 /**
  * Simulasi Kuiz (R1-B16): the random quiz (a stored practice session) and the per-paper quiz
@@ -86,10 +66,8 @@ export interface BijakApi extends BijakKuizApi {
   subjects(): readonly Subject[]
   /** Sync: the server clock (HTTP: local clock plus the offset of the last attempt view). */
   serverNow(): number
-  listPapers(userId: number): Promise<PaperSummary[]>
+  listPapers(userId: number, surface?: PaperSurface): Promise<ListedPaper[]>
   getCover(userId: number, paperId: string): Promise<PaperCover>
-  listContracts(): Promise<ContractRow[]>
-  generatePaper(userId: number, subject: SubjectCode, kertas: number): Promise<BijakGenerateOutcome>
   findInProgress(userId: number, paperId: string): Promise<InProgressInfo | null>
   startAttempt(
     userId: number,
@@ -107,13 +85,15 @@ export interface BijakApi extends BijakKuizApi {
     questionId: string,
     payload?: SavePayload,
   ): Promise<QuestionResult>
-  getResult(userId: number, attemptId: string): Promise<ResultView>
+  /** `withScheme` is `?scheme=1`: a Kertas Subjektif result carries no scheme without it (AC-MUR-13-21). */
+  getResult(userId: number, attemptId: string, withScheme?: boolean): Promise<ResultView>
   history(userId: number): Promise<HistoryRow[]>
   /** R1-B12: the pupil's own mark (and band) for one part of a closed attempt. */
   selfMark(
     userId: number,
     attemptId: string,
     body: { partId: string; mark: number; band?: string },
+    withScheme?: boolean,
   ): Promise<SelfMarkOutcome>
   /** R1-B15 "Cuba Lagi": a fresh attempt on the paper of a closed attempt. */
   retryAttempt(userId: number, attemptId: string): Promise<{ attemptId: string }>

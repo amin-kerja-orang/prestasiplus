@@ -1,12 +1,72 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Put, Query, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  type CallHandler,
+  Controller,
+  Delete,
+  type ExecutionContext,
+  Get,
+  HttpCode,
+  Inject,
+  Injectable,
+  type NestInterceptor,
+  Param,
+  PayloadTooLargeException,
+  Post,
+  Put,
+  Query,
+  Req,
+  Res,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
+import { FileFieldsInterceptor } from '@nestjs/platform-express'
+import { BIJAK_BUILDER_MESSAGES } from '@pp/contract'
+import type { Request, Response } from 'express'
+import type { Observable } from 'rxjs'
 
+import { ApiError } from '../../../common/errors/api-error'
 import { Roles } from '../../../common/guards'
 import { NoStoreInterceptor } from '../../../common/http'
 import { ok } from '../../../common/http/respond'
+import { requestIdOf } from '../../../common/request/request-id'
+import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
 import { Actor, type AuditActor } from './actor'
-import { BIJAK_BUILDER_LIMITS } from './builder.constants'
+import { BIJAK_BUILDER_LIMITS, PAPER_SOURCE_MAX_BYTES } from './builder.constants'
 import { BuilderService } from './builder.service'
+import { PaperSourceService, type SourceParts } from './paper-source.service'
+
+/**
+ * S3-T06 (API-BIJAK-14): reads the multipart body of the source upload (`paper` required, `scheme` optional, 30 MB each, one text field `declaration`).
+ * A JSON body (`{ apply: true }`) passes through untouched. Multer errors become the contract's 422 texts.
+ */
+@Injectable()
+export class PaperSourceUploadInterceptor implements NestInterceptor {
+  private readonly inner: NestInterceptor = new (FileFieldsInterceptor(
+    [
+      { name: 'paper', maxCount: 1 },
+      { name: 'scheme', maxCount: 1 },
+    ],
+    // Multer reports an oversized part without its field name, so it only guards memory (twice the limit); the 30 MB rule is checked per field in `PaperSourceService`, which names `paper` or `scheme`.
+    { limits: { fileSize: PAPER_SOURCE_MAX_BYTES * 2, files: 2, fields: 2, fieldSize: 64, parts: 4 } },
+  ))({})
+
+  async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
+    try {
+      return await this.inner.intercept(ctx, next)
+    } catch (err) {
+      if (err instanceof PayloadTooLargeException) {
+        throw ApiError.of('VALIDATION_ERROR', { message: BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge, fields: { paper: BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge } })
+      }
+      if (err instanceof BadRequestException) {
+        throw ApiError.of('VALIDATION_ERROR', { message: BIJAK_BUILDER_MESSAGES.sourcePdfInvalid, fields: { paper: BIJAK_BUILDER_MESSAGES.sourcePdfInvalid } })
+      }
+      throw err
+    }
+  }
+}
 
 /**
  * Paper builder (BE-39), Admin Pusat only. Bodies and the list query are read raw and parsed in the
@@ -17,7 +77,10 @@ import { BuilderService } from './builder.service'
 @Roles('admin')
 @UseGuards(RateLimitGuard)
 export class BuilderController {
-  constructor(@Inject(BuilderService) private readonly builder: BuilderService) {}
+  constructor(
+    @Inject(BuilderService) private readonly builder: BuilderService,
+    @Inject(PaperSourceService) private readonly source: PaperSourceService,
+  ) {}
 
   @Get()
   @RateLimit(BIJAK_BUILDER_LIMITS.read)
@@ -76,6 +139,35 @@ export class BuilderController {
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
   async publish(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
     return ok(await this.builder.publish(actor, id, body))
+  }
+
+  /**
+   * API-BIJAK-14 (S3-T06). Multipart (`paper`, optional `scheme`, `declaration`) creates the intake batch of THIS Kertas Subjektif: 202 `{batchId}`.
+   * JSON `{ apply: true }` appends the accepted items of that batch as placements of the paper: 201 `{placements}`.
+   */
+  @Post(':id/source')
+  @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  @UseInterceptors(PaperSourceUploadInterceptor)
+  async paperSource(
+    @Req() req: Request & RequestWithAuth,
+    @Actor() actor: AuditActor,
+    @Param('id') id: string,
+    @Body() body: unknown,
+    @UploadedFiles() files: { paper?: SourceParts['paper'][]; scheme?: SourceParts['scheme'][] } | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (req.is('multipart/form-data')) {
+      const auth = req[AUTH_CONTEXT_KEY]
+      if (!auth) throw ApiError.of('UNAUTHORIZED')
+      const parts: SourceParts = { ...(files?.paper?.[0] ? { paper: files.paper[0] } : {}), ...(files?.scheme?.[0] ? { scheme: files.scheme[0] } : {}) }
+      const declaration = (body as { declaration?: unknown } | undefined)?.declaration
+      const who = { ip: req.ip ?? req.socket.remoteAddress ?? null, requestId: requestIdOf(req) ?? null }
+      const out = await this.source.upload(auth, actor, id, parts, typeof declaration === 'string' ? declaration : undefined, who)
+      res.status(202)
+      return ok(out)
+    }
+    res.status(201)
+    return ok(await this.source.apply(actor, id, body))
   }
 
   @Get(':id/review')

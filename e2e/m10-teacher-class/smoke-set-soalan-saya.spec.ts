@@ -49,7 +49,7 @@ test.describe('M10 S34 Set Soalan Guru (student)', MODULE, () => {
     )
     const empty = page.getByTestId('sets-empty')
     await expect(empty).toContainText('Tiada Set Soalan')
-    await expect(empty).toContainText('Guru anda belum sediakan set soalan untuk anda.')
+    await expect(empty).toContainText('Guru anda belum menyediakan sebarang set soalan buat masa ini.')
     await expectNoHorizontalScroll(page)
   })
 
@@ -103,7 +103,7 @@ test.describe('M10 S34 Set Soalan Guru (student)', MODULE, () => {
       await expect(page.getByText('Latih Tubi Kimia Sep 2026 - Set 1')).toHaveCount(0)
       await expect(page.getByTestId('set-teacher')).toHaveText('Guru Demo')
       await expect(page.getByTestId('set-count')).toHaveText('10 soalan')
-      await expect(page.getByTestId('set-attempts')).toHaveText('1 percubaan berbaki')
+      await expect(page.getByTestId('set-attempts')).toHaveCount(0)
       await expectNoHorizontalScroll(page)
 
       const start = page.getByTestId('set-start')

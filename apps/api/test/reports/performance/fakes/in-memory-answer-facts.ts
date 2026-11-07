@@ -7,6 +7,8 @@ import type {
   QuestionContentPort,
   SessionCountRow,
   SessionDurationRow,
+  SessionFactRow,
+  SessionFactsQuery,
   SpInfo,
   WeeklyFactRow,
 } from '../../../../src/modules/reports/performance/ports'
@@ -207,6 +209,31 @@ export class InMemoryAnswerFacts implements AnswerFactsPort {
     ]
   }
 
+  async sessionFacts(q: SessionFactsQuery): Promise<SessionFactRow[]> {
+    if (q.modes.length === 0 || q.userIds.length === 0 || q.limit <= 0) return []
+    const by = new Map<string, { userId: string; sessionKey: string; mode: string; answered: number; correct: number; finishedAt: Date; subjects: Map<string, number> }>()
+    for (const a of this.pick({ userIds: q.userIds, modes: q.modes, to: q.to })) {
+      const sessionKey = a.sessionId ? `s:${a.sessionId}` : `n:${a.mode}:${mytDayOf(a.answeredAt)}`
+      const key = `${a.userId}|${sessionKey}`
+      const t = by.get(key) ?? { userId: a.userId, sessionKey, mode: a.mode, answered: 0, correct: 0, finishedAt: a.answeredAt, subjects: new Map<string, number>() }
+      t.answered += 1
+      if (a.isCorrect) t.correct += 1
+      if (a.answeredAt > t.finishedAt) t.finishedAt = a.answeredAt
+      if (a.mode > t.mode) t.mode = a.mode
+      const sid = a.subjectId ?? '0'
+      t.subjects.set(sid, (t.subjects.get(sid) ?? 0) + 1)
+      by.set(key, t)
+    }
+    return [...by.values()]
+      .map((t): SessionFactRow => {
+        // Most answers wins; a tie goes to the lowest id (what `mode() WITHIN GROUP` gives).
+        const [subjectId] = [...t.subjects].sort((x, y) => y[1] - x[1] || cmp(x[0], y[0]))[0] ?? ['0']
+        return { userId: t.userId, sessionKey: t.sessionKey, subjectId: subjectId as string, mode: t.mode, answered: t.answered, correct: t.correct, finishedAt: t.finishedAt }
+      })
+      .sort((x, y) => y.finishedAt.getTime() - x.finishedAt.getTime() || (x.sessionKey < y.sessionKey ? 1 : x.sessionKey > y.sessionKey ? -1 : 0))
+      .slice(0, Math.floor(q.limit))
+  }
+
   async spInfo(q: { topicIds: readonly string[]; chapterIds: readonly string[] }): Promise<SpInfo[]> {
     const out: SpInfo[] = []
     for (const id of q.topicIds) {
@@ -233,7 +260,7 @@ export class InMemoryQuestionContent implements QuestionContentPort {
         questionText: `Soalan ${c.questionId}`,
         questionType: 'mcq',
         options: ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
-        language: 'bm',
+        language: 'ms',
         textDirection: 'ltr',
         scriptType: 'rumi',
         pointsValue: 1,

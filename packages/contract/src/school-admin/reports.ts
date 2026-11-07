@@ -48,6 +48,10 @@ export const SchoolAdminDashboardSchema = z
       )
       .max(3)
       .meta({ description: 'The first 3 Perutusan posts visible to the caller (content owner BE-24).' }),
+    pendingTeachers: count.meta({
+      description:
+        'Teachers waiting for the school admin to approve them ("Guru Menunggu"); equals the length of GET /admin-sekolah/guru/pending.',
+    }),
     cards: z.object({
       pupils: count.meta({ description: 'Pupils of the school, active or not.' }),
       teachers: count.meta({ description: 'Teachers of the school, active or not.' }),
@@ -383,17 +387,23 @@ export type SchoolAdminClassListQuery = z.infer<typeof SchoolAdminClassListQuery
 
 export const SchoolAdminClassRowSchema = z
   .object({
-    key: z.string().regex(/^classroom:.+$/).meta({ description: 'classroom:{id}.' }),
-    kind: z.literal('classroom'),
+    key: z.string().regex(/^(classroom|school_class):.+$/).meta({ description: '{kind}:{id}.' }),
+    kind: z.enum(['classroom', 'school_class']),
     id: IdSchema,
     name: z.string(),
     subject: z.object({ id: IdSchema, name: z.string() }).nullable(),
     levelLabel: z.string().meta({ description: '"Tingkatan n" or "Darjah n".' }),
     teacherName: z.string().nullable(),
-    members: count.meta({ description: 'Active enrolments; may include pupils of another school.' }),
-    joinCode: z.string().nullable(),
+    members: count.meta({ description: 'XS-1 pupils with an active enrolment in the class (R1-AS-53 FR-AS-53-2). The join code is not part of the row (FR-AS-53-5).' }),
     isActive: z.boolean(),
-    link: z.string().min(1).meta({ description: 'Page link "/prestasi/kelas/{id}", built by the server from the id.' }),
+    link: z
+      .string()
+      .min(1)
+      .nullable()
+      .meta({
+        description:
+          'Page link "/prestasi/kelas/{id}" for a classroom row, built by the server from the id; null for a school_class row (it has no class dashboard).',
+      }),
   })
   .meta({ id: 'SchoolAdminClassRow' })
 export type SchoolAdminClassRow = z.infer<typeof SchoolAdminClassRowSchema>

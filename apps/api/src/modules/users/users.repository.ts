@@ -136,8 +136,16 @@ export interface PendingTeacherRow {
   createdAt: Date
 }
 
+/** Pupil-only filters of the school admin's list and export (R1-AS-51 FR-AS-51-1, FR-AS-51-5): Tingkatan as `users.grade`, and a class. */
+export interface ManagedPupilFilter {
+  /** `users.grade` (7..11 = Tingkatan 1..5). */
+  grade?: number
+  /** Decimal id of a class: the pupils with an ACTIVE, non-test enrolment in it. */
+  classroomId?: string
+}
+
 /** Filter of the school admin's teacher and pupil lists (BE-21): `isActive` is the EFFECTIVE state (a suspended account is inactive). */
-export interface ManagedListFilter {
+export interface ManagedListFilter extends ManagedPupilFilter {
   isActive?: boolean
   search?: string
   page: number
@@ -517,6 +525,23 @@ export class UsersRepository {
     return [{ schoolId }, { roles: { some: { role } } }, { roles: { none: { role: { notIn: visible } } } }]
   }
 
+  /**
+   * The Tingkatan and class filters of the pupil list and export. The class filter is the set of pupils actively enrolled
+   * (status `active`, not a test row) in the class: one parameterised read of the class roster, then an id list. The school
+   * scope of `managedBase` still applies, so a class of another school lists nobody.
+   */
+  private async pupilFilterWhere(filter: ManagedPupilFilter): Promise<Prisma.UserWhereInput[]> {
+    const out: Prisma.UserWhereInput[] = []
+    if (filter.grade !== undefined) out.push({ grade: filter.grade })
+    if (filter.classroomId !== undefined) {
+      if (!isIdString(filter.classroomId)) return [{ id: { in: [] } }]
+      const rows = await this.prisma.client.$queryRaw<{ student_id: bigint }[]>`
+        SELECT student_id FROM enrolments WHERE classroom_id = ${idFromString(filter.classroomId)}::bigint AND status = 'active' AND is_test = false`
+      out.push({ id: { in: rows.map((r) => r.student_id) } })
+    }
+    return out
+  }
+
   /** Effective active = active and not suspended; a suspended account is shown as inactive (BE-21 OQ-8). */
   private static readonly EFFECTIVE_ACTIVE: Prisma.UserWhereInput = { isActive: true, isSuspended: false }
   private static readonly EFFECTIVE_INACTIVE: Prisma.UserWhereInput = { OR: [{ isActive: false }, { isSuspended: true }] }
@@ -530,6 +555,7 @@ export class UsersRepository {
     if (!isIdString(schoolId)) return { rows: [], total: 0, page: 1 }
     const base = this.managedBase(idFromString(schoolId), role)
     if (filter.search) base.push(textSearch(filter.search))
+    base.push(...(await this.pupilFilterWhere(filter)))
     const groups: Prisma.UserWhereInput[] = []
     if (filter.isActive !== false) groups.push({ AND: [...base, UsersRepository.EFFECTIVE_ACTIVE] })
     if (filter.isActive !== true) groups.push({ AND: [...base, UsersRepository.EFFECTIVE_INACTIVE] })
@@ -574,10 +600,11 @@ export class UsersRepository {
   }
 
   /** Every account for the CSV export (same filters as the list, no paging), id ascending, at most `MANAGED_EXPORT_MAX`. */
-  async exportBySchoolRole(schoolId: string, role: ManagedRole, filter: { isActive?: boolean; search?: string }): Promise<UserRecord[]> {
+  async exportBySchoolRole(schoolId: string, role: ManagedRole, filter: { isActive?: boolean; search?: string } & ManagedPupilFilter): Promise<UserRecord[]> {
     if (!isIdString(schoolId)) return []
     const and = this.managedBase(idFromString(schoolId), role)
     if (filter.search) and.push(textSearch(filter.search))
+    and.push(...(await this.pupilFilterWhere(filter)))
     if (filter.isActive === true) and.push(UsersRepository.EFFECTIVE_ACTIVE)
     if (filter.isActive === false) and.push(UsersRepository.EFFECTIVE_INACTIVE)
     const rows = await this.prisma.client.user.findMany({ where: { AND: and }, include: INCLUDE, orderBy: [{ id: 'asc' }], take: MANAGED_EXPORT_MAX })
@@ -666,6 +693,15 @@ export class UsersRepository {
       SELECT id FROM users WHERE school_id = ${idFromString(schoolId)} AND lower(username) = lower(${username})
          AND (${except}::bigint IS NULL OR id <> ${except}::bigint) LIMIT 1`
     return rows.length > 0
+  }
+
+  /** Which of the lower-case `usernames` already exist in the school (one query; the generator of S6-T10). */
+  async takenUsernames(schoolId: string, usernames: readonly string[]): Promise<Set<string>> {
+    if (!isIdString(schoolId) || usernames.length === 0) return new Set()
+    const lower = usernames.map((u) => u.toLowerCase())
+    const rows = await this.prisma.client.$queryRaw<{ u: string }[]>`
+      SELECT lower(username) AS u FROM users WHERE school_id = ${idFromString(schoolId)} AND lower(username) = ANY(${lower}::text[])`
+    return new Set(rows.map((r) => r.u))
   }
 
   /** Lower-case e-mails among `emails` that already exist (one query for a whole import). */

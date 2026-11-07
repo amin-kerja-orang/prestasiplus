@@ -12,6 +12,7 @@ import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { ArenaQuestionView } from '../battle.deps'
 import { BattleEngine, botAnswers, gradeLabel, isUuid } from '../engine'
+import { displayName } from '../privacy'
 
 /** Subjects whose SPM pool the lobby counts at the same time. */
 const LOBBY_PARALLEL = 4
@@ -43,9 +44,9 @@ export class ArenaService {
   ) {}
 
   /** M16-15. */
-  async lobby(userId: string) {
+  async lobby(who: { userId: string; role: string }) {
     const deps = this.engine.deps
-    const grade = await deps.gradeOf(userId)
+    const grade = await deps.gradeOf(who.userId)
     const unlocked = grade !== null && grade >= BATTLE_RULES.spmMinGrade
     const subjects = (await deps.subjects()).sort((a, b) => (BigInt(a.id) < BigInt(b.id) ? -1 : 1))
     const out = {
@@ -53,7 +54,8 @@ export class ArenaService {
       gradeLabel: gradeLabel(grade),
       spmUnlocked: unlocked,
       subjects: subjects.map((s) => ({ id: s.id, name: s.name, icon: s.icon, colour: s.colour, core: s.core })),
-      pkskDomains: deps.pkskDomains().map((d) => ({ id: d.id, name: d.name, icon: '', colour: '' })),
+      pkskDomains: (await deps.pkskDomains()).map((d) => ({ id: d.id, name: d.name, icon: d.icon, colour: d.colour })),
+      pkskAccess: await deps.pkskAccess(who),
     }
     if (!unlocked) return out
     // Bounded parallelism: a few subjects at a time (the counts are cached by the deps).
@@ -94,11 +96,11 @@ export class ArenaService {
       if (!question) throw notFound(BATTLE_MESSAGES.questionNotFound)
     }
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
-    const schools = await this.engine.deps.schoolsByIds([a, b].flatMap((p) => (p.schoolId === null ? [] : [idToString(p.schoolId)])))
-    const player = (p: typeof a) => ({
-      name: (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? 'Pelajar',
-      school: p.schoolId === null ? '' : (schools.get(idToString(p.schoolId))?.name ?? ''),
-    })
+    // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
+    const player = (p: typeof a) => {
+      const name = (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? ''
+      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '' }
+    }
     return {
       uuid,
       status: battle.status,

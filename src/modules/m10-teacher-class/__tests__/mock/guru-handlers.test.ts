@@ -14,7 +14,7 @@ import type { MockRuntime } from '@/mock/index'
 import { users } from '@/modules/m01-authentication/mock'
 import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
-import { IMPORT_TEMPLATE_CSV, questions } from '@/modules/m04-question-bank/mock'
+import { questions, submissions } from '@/modules/m04-question-bank/mock'
 import { practice } from '@/modules/m05-practice/mock'
 import { teacherWallet } from '@/modules/m14-gamification/mock'
 
@@ -22,7 +22,8 @@ import { classrooms, dskp, remedialTests, teacherProfiles } from '../../mock'
 import { M10_DISPLAY_CONSTANTS } from '../../mock/constants/display'
 import { crc32 } from '../../mock/handlers/docx'
 import { m10Hooks } from '../../mock/hooks'
-import { planImport, TEMPLATE_CSV } from '../../mock/handlers/csv'
+import { planImport, TEMPLATE_CSV, TEMPLATE_HEADER } from '../../mock/handlers/csv'
+import { QuestionGuruDetailSchema, QuestionGuruSummarySchema } from '@pp/contract'
 import { bootM10 } from './helpers'
 
 const ADMIN = 1
@@ -378,7 +379,7 @@ describe('#15–#17 students (S6; BR-M10-04, BR-M10-30)', () => {
   it('#15 mine: the 8 distinct pupils of the own active classes, by name, with class chips', async () => {
     const a = await call<StudentList>('GET', '/api/guru/students')
     expect(a.status).toBe(200)
-    expect(a.body.meta).toEqual({ count: 8, schoolSet: true })
+    expect(a.body.meta).toEqual({ count: 8, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
     expect(a.body.data.map((s) => s.id)).toEqual([3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008])
     expect(a.body.data[0]).toMatchObject({ name: 'Murid Demo 01', levelName: 'Tingkatan 5' })
     expect(a.body.data[0]?.classNames.sort()).toHaveLength(2)
@@ -478,6 +479,128 @@ describe('#15–#17 students (S6; BR-M10-04, BR-M10-30)', () => {
     expect((await call('PUT', path, { body: { classroomId: newClassId } })).status).toBe(200)
     expect(classrooms.memberIds('classroom', newClassId)).toEqual([PELAJAR])
     await call('DELETE', `${path}?classroomId=${String(newClassId)}`)
+  })
+
+  describe('S6-T10: Cipta Pelajar, paging and the R1-GUR-41 columns', () => {
+    type Row = {
+      id: number
+      name: string
+      username: string | null
+      tugasan: number
+      skorPurata: number | null
+      lastActiveAt: string | null
+      classNames: string[]
+    }
+    type Page = { data: Row[]; meta: { count: number; schoolSet: boolean; page: number; pageSize: number; totalPages: number } }
+    type Created = Data<{ id: number; name: string; username: string; message: string }>
+    const createdIds: number[] = []
+    const post = (body: unknown, as?: number) =>
+      call<Created>('POST', '/api/guru/students', as === undefined ? { body } : { body, as })
+
+    it('POST creates a pupil in an own class: generated username, the success message, enrolled and listed', async () => {
+      const a = await post({ name: 'Ahmad Zaki bin Ali', classroomId: newClassId })
+      expect(a.status).toBe(201)
+      createdIds.push(a.body.data.id)
+      expect(a.body.data.username).toBe('ahmad.zaki.bin.ali01')
+      expect(a.body.data.message).toMatch(/^Pelajar dicipta\. Login: ahmad\.zaki\.bin\.ali01 \/ \S+$/)
+      expect(a.body.data.name).toBe('Ahmad Zaki bin Ali')
+      expect(classrooms.memberIds('classroom', newClassId)).toContain(a.body.data.id)
+      const user = users.get(a.body.data.id)
+      expect(user).toMatchObject({ role: 'student', schoolId: 900001, isActive: true })
+      const mine = await call<Page>('GET', '/api/guru/students?search=Ahmad%20Zaki')
+      expect(mine.body.data.find((r) => r.id === a.body.data.id)).toMatchObject({
+        username: 'ahmad.zaki.bin.ali01',
+        tugasan: 0,
+        skorPurata: null,
+        lastActiveAt: null,
+      })
+    })
+
+    it('POST gives the next suffix to a second pupil of the same name; a string class id works too', async () => {
+      const b = await post({ name: 'Ahmad Zaki bin Ali', classroomId: String(newClassId), ic: '120304011234' })
+      expect(b.status).toBe(201)
+      createdIds.push(b.body.data.id)
+      expect(b.body.data.username).toBe('ahmad.zaki.bin.ali02')
+    })
+
+    it('POST 409 on a duplicate IC names fields.ic', async () => {
+      const dup = await post({ name: 'Orang Lain', classroomId: newClassId, ic: '120304011234' })
+      expect(dup.status).toBe(409)
+      expect(fieldsOf(dup)).toEqual({ ic: 'No. IC sudah didaftarkan.' })
+    })
+
+    it('POST 422 gives the BE message per field', async () => {
+      const msg = async (body: unknown, as?: number) => {
+        const r = await post(body, as)
+        expect(r.status, JSON.stringify(body)).toBe(422)
+        return fieldsOf(r)
+      }
+      expect(await msg({ name: '  ', classroomId: newClassId })).toEqual({ name: 'Sila isi nama.' })
+      expect(await msg({ classroomId: newClassId })).toEqual({ name: 'Sila isi nama.' })
+      expect(await msg({ name: 'x'.repeat(256), classroomId: newClassId })).toEqual({
+        name: 'Nama tidak boleh melebihi 255 aksara.',
+      })
+      expect(await msg({ name: 'Murid Baru' })).toEqual({ classroomId: 'Sila pilih kelas.' })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId, ic: '12-03-04' })).toEqual({
+        ic: 'No. IC mesti 12 digit tanpa sempang.',
+      })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId, ic: '12030401123a' })).toEqual({
+        ic: 'No. IC mesti 12 digit tanpa sempang.',
+      })
+      // a class of teacher 1699 (not the teacher's own): "Sila pilih kelas."; a teacher without any active class: noActiveClass
+      expect(await msg({ name: 'Murid Baru', classroomId: 69 })).toEqual({ classroomId: 'Sila pilih kelas.' })
+      expect(await msg({ name: 'Murid Baru', classroomId: newClassId }, ADMIN)).toEqual({
+        classroomId: 'Anda belum ada kelas aktif. Cipta kelas dahulu.',
+      })
+    })
+
+    it('POST 401 to a guest and 403 to a pupil', async () => {
+      expect((await post({ name: 'Murid Baru', classroomId: newClassId }, PELAJAR)).status).toBe(403)
+      expect(
+        (await call('POST', '/api/guru/students', { as: null, body: { name: 'M', classroomId: newClassId } })).status,
+      ).toBe(401)
+    })
+
+    it('GET pages 25 per page with page, pageSize and totalPages; a page past the end is the last page', async () => {
+      // teacher 1699 teaches 76 pupils (the F-30 anchor): pages of 25, 25, 25 and 1
+      const T = { as: 1699 }
+      const first = await call<Page>('GET', '/api/guru/students', T)
+      expect(first.body.meta).toMatchObject({ count: 76, page: 1, pageSize: 25, totalPages: 4 })
+      expect(first.body.data).toHaveLength(25)
+      const last = await call<Page>('GET', '/api/guru/students?page=4', T)
+      expect(last.body.data).toHaveLength(1)
+      const second = await call<Page>('GET', '/api/guru/students?page=2', T)
+      expect(second.body.meta.page).toBe(2)
+      expect(second.body.data.length).toBeGreaterThan(0)
+      expect(second.body.data[0]?.id).not.toBe(first.body.data[0]?.id)
+      const names = [...first.body.data, ...second.body.data].map((r) => r.name)
+      expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y)))
+      const past = await call<Page>('GET', '/api/guru/students?page=999', T)
+      expect(past.body.meta.page).toBe(4)
+      const bad = await call<Page>('GET', '/api/guru/students?page=0', T)
+      expect(bad.body.meta.page).toBe(1)
+    })
+
+    it('GET fills username on every row and derives skorPurata and lastActiveAt from the sessions', async () => {
+      const id = createdIds[0] as number
+      practice.addSession(id, { mode: 'latih_tubi', correct: 6, total: 10, timeSpentSec: 60, at: '2026-09-20T10:00:00+08:00' })
+      practice.addSession(id, { mode: 'random', correct: 8, total: 10, timeSpentSec: 60, at: '2026-09-21T10:00:00+08:00' })
+      const a = await call<Page>('GET', '/api/guru/students?search=Ahmad%20Zaki')
+      const row = a.body.data.find((r) => r.id === id)
+      expect(row?.skorPurata).toBe(70) // mean(60, 80), not a pooled figure
+      expect(row?.lastActiveAt).toMatch(/^2026-09-21T10:00:00/)
+      expect(row?.tugasan).toBe(0) // free practice is not an assignment
+      const all = await call<Page>('GET', '/api/guru/students')
+      for (const r of all.body.data) expect(r.username).toMatch(/^[a-z0-9.]+\d\d$/)
+    })
+
+    it('tidies the pupils created above', () => {
+      for (const id of createdIds) {
+        for (const c of classrooms.forTeacher(GURU)) classrooms.unenrol(c.kind, c.classId, id)
+        users.update(id, { isActive: false }, Date.now())
+      }
+      expect(createdIds.length).toBe(2)
+    })
   })
 })
 
@@ -672,29 +795,31 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
   it('#52 pages the own questions, ids ascending, 20 per page', async () => {
     const own = await call<{
       data: {
-        id: number
-        statusLabel: string
+        id: string
+        status: string
+        rejectionReason: string | null
         subjectName: string
         levelName: string
-        difficultyLabel: string
+        difficultyLevel: number
       }[]
       meta: { totalItems: number; pageSize: number }
     }>('GET', '/api/guru/questions')
     expect(own.status).toBe(200)
-    expect(own.body.data.map((q) => q.id)).toEqual([anchorId])
+    expect(own.body.data.map((q) => Number(q.id))).toEqual([anchorId])
     expect(own.body.data[0]).toMatchObject({
-      statusLabel: 'Diluluskan',
+      status: 'approved',
+      rejectionReason: null,
       subjectName: 'Bahasa Melayu',
-      difficultyLabel: 'Mudah',
+      difficultyLevel: 2,
     })
     expect(own.body.meta).toMatchObject({ totalItems: 1, pageSize: 20 })
     const admin = await call<{
-      data: { id: number }[]
+      data: { id: string }[]
       meta: { totalItems: number; totalPages: number; page: number }
     }>('GET', '/api/guru/questions?page=2', { as: ADMIN })
     expect(admin.body.data).toHaveLength(20)
     expect(admin.body.meta).toMatchObject({ totalItems: 9531, totalPages: 477, page: 2 })
-    const ids = admin.body.data.map((q) => q.id)
+    const ids = admin.body.data.map((q) => Number(q.id))
     expect(ids).toEqual([...ids].sort((x, y) => x - y))
   })
 })
@@ -702,43 +827,52 @@ describe('#51–#52 contributions (S21; BR-M10-21, BR-M10-23)', () => {
 // ---------------------------------------------------------------------------------------------
 describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-M10-07)', () => {
   type Q = {
-    id: number
+    id: string
     status: string
-    statusLabel: string
-    isActive: boolean
+    rejectionReason: string | null
+    editable: boolean
     difficultyLevel: number
     options: string[] | null
     correctAnswer: number | null
     questionType: string
     explanation: string | null
     createdAt: string
-    questionImage: string | null
-    tfAnswer: boolean | null
-    correctAnswerText: string | null
-    curriculumChapterId: number | null
-    dskpSpId: number | null
-    usage: { attempts: number; correct: number; accuracy: number }
+    chapterId: string | null
+    spIds: string[]
+    tp: number | null
+    cognitiveLevel: string | null
   }
+  // Kimia Tingkatan 5 has chapters and DSKP nodes (SP 9001), so the DSKP fields are required (D112).
+  let chapterOf: { id: number } | undefined
   const mcq = {
     educationLevelId: 11,
     subjectId: 10,
     questionType: 'mcq',
-    difficultyLevel: 'medium',
+    difficultyLevel: 3,
+    chapterId: undefined as number | undefined,
+    spIds: [9001],
+    tp: 3,
+    cognitiveLevel: 'mengaplikasi',
     questionText: 'Apakah hasil elektrolisis larutan natrium klorida pekat di anod?',
     options: ['Klorin', 'Hidrogen', 'Oksigen', 'Natrium'],
     correctAnswer: 0,
     explanation: 'Ion klorida dinyahcas.',
   }
   const count = () => teacherWallet.summary(GURU).questionsCount
+  beforeAll(() => {
+    chapterOf = curriculum.chapters(10, 11).find((c) => c.isActive)
+    mcq.chapterId = chapterOf?.id
+  })
 
   it('#53 refuses a bad body with a field for each problem', async () => {
     const empty = await call('POST', '/api/guru/questions', { body: {} })
     expect(empty.status).toBe(422)
     expect(Object.keys(fieldsOf(empty)).sort()).toEqual([
+      'correctAnswer',
       'difficultyLevel',
       'educationLevelId',
+      'options',
       'questionText',
-      'questionType',
       'subjectId',
     ])
     const cases: [Record<string, unknown>, string][] = [
@@ -748,40 +882,57 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
       [{ correctAnswer: 4 }, 'correctAnswer'],
       [{ correctAnswer: undefined }, 'correctAnswer'],
       [{ difficultyLevel: 'extreme' }, 'difficultyLevel'],
+      [{ difficultyLevel: 'easy' }, 'difficultyLevel'],
+      [{ difficultyLevel: 'hard' }, 'difficultyLevel'],
       [{ difficultyLevel: 6 }, 'difficultyLevel'],
+      [{ difficultyLevel: 0 }, 'difficultyLevel'],
+      [{ difficultyLevel: undefined }, 'difficultyLevel'],
       [{ questionText: 'X'.repeat(2001) }, 'questionText'],
       [{ questionType: 'poem' }, 'questionType'],
+      [{ questionType: 'true_false' }, 'questionType'],
+      [{ questionType: 'essay' }, 'questionType'],
       [{ scriptType: 'klingon' }, 'scriptType'],
-      [{ dskpSpId: 987654 }, 'dskpSpId'],
-      [{ curriculumChapterId: 987654 }, 'curriculumChapterId'],
-      [{ curriculumChapterId: curriculum.chapters(1, 11)[0]?.id }, 'curriculumChapterId'],
-      [{ curriculumTopicId: 1 }, 'curriculumTopicId'],
+      [{ spIds: [987654] }, 'spIds'],
+      [{ spIds: [] }, 'spIds'],
+      [{ spIds: undefined }, 'spIds'],
+      [{ chapterId: 987654 }, 'chapterId'],
+      [{ chapterId: undefined }, 'chapterId'],
+      [{ chapterId: curriculum.chapters(1, 11)[0]?.id }, 'chapterId'],
+      [{ tp: undefined }, 'tp'],
+      [{ tp: 7 }, 'tp'],
+      [{ tp: 0 }, 'tp'],
+      [{ cognitiveLevel: undefined }, 'cognitiveLevel'],
+      [{ cognitiveLevel: 'mengarang' }, 'cognitiveLevel'],
     ]
     for (const [patch, field] of cases) {
       const a = await call('POST', '/api/guru/questions', { body: { ...mcq, ...patch } })
       expect(a.status, JSON.stringify(patch)).toBe(422)
       expect(Object.keys(fieldsOf(a)), JSON.stringify(patch)).toContain(field)
     }
-    const types: [Record<string, unknown>, string][] = [
-      [{ questionType: 'true_false' }, 'tfAnswer'],
-      [{ questionType: 'short_answer', correctAnswer: '' }, 'correctAnswer'],
-      [{ questionType: 'fill_blank', correctAnswer: undefined }, 'correctAnswer'],
-    ]
-    for (const [patch, field] of types) {
-      const a = await call('POST', '/api/guru/questions', { body: { ...mcq, ...patch } })
-      expect(a.status, JSON.stringify(patch)).toBe(422)
-      expect(Object.keys(fieldsOf(a))).toContain(field)
-    }
-    const png = new File(['x'], 'rajah.gif', { type: 'image/gif' })
-    const form = new FormData()
-    for (const [k, v] of Object.entries(mcq)) {
-      if (Array.isArray(v)) v.forEach((o) => form.append(`${k}[]`, String(o)))
-      else form.append(k, String(v))
-    }
-    form.append('questionImage', png)
-    const bad = await call('POST', '/api/guru/questions', { body: form })
-    expect(bad.status).toBe(422)
-    expect(Object.keys(fieldsOf(bad))).toContain('questionImage')
+    // The PRD texts of the DSKP rule.
+    const missing = await call('POST', '/api/guru/questions', {
+      body: {
+        ...mcq,
+        chapterId: undefined,
+        spIds: undefined,
+        tp: undefined,
+        cognitiveLevel: undefined,
+      },
+    })
+    expect(fieldsOf(missing)).toMatchObject({
+      chapterId: 'Sila pilih bab.',
+      spIds: 'Sila pilih Standard Pembelajaran (SP).',
+      tp: 'Sila pilih TP.',
+      cognitiveLevel: 'Sila pilih aras pemikiran.',
+    })
+    expect(
+      fieldsOf(await call('POST', '/api/guru/questions', { body: { ...mcq, tp: 7 } })).tp,
+    ).toBe('Tahap Penguasaan (TP) mesti antara 1 dan 6.')
+    expect(
+      fieldsOf(
+        await call('POST', '/api/guru/questions', { body: { ...mcq, difficultyLevel: undefined } }),
+      ).difficultyLevel,
+    ).toBe('Sila pilih kesukaran.')
   })
 
   it('#53 creates a pending, active question and runs the M14 hook', async () => {
@@ -789,102 +940,102 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     const a = await call<Data<Q>>('POST', '/api/guru/questions', { body: mcq })
     expect(a.status).toBe(201)
     const q = a.body.data
-    firstQuestionId = q.id
+    firstQuestionId = Number(q.id)
     expect(q).toMatchObject({
-      status: 'pending_review',
+      status: 'pending',
+      rejectionReason: null,
+      editable: true,
       statusLabel: 'Menunggu Semakan',
-      isActive: true,
+      difficultyLabel: 'Sederhana',
       difficultyLevel: 3,
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
+      tp: 3,
+      cognitiveLevel: 'mengaplikasi',
       questionType: 'mcq',
       options: mcq.options,
       correctAnswer: 0,
       explanation: 'Ion klorida dinyahcas.',
-      questionImage: null,
     })
-    expect(q.id).toBeGreaterThanOrEqual(9_000_001)
-    const stored = questions.get(q.id)
+    expect(Number(q.id)).toBeGreaterThanOrEqual(9_000_001)
+    const stored = questions.get(Number(q.id))
     expect(stored).toMatchObject({ createdBy: GURU, status: 'pending_review', isActive: true })
     expect(count()).toBe(before + 1)
     // not practice-eligible until approved
-    expect(questions.getEligible(q.id)).toBeNull()
+    expect(questions.getEligible(Number(q.id))).toBeNull()
     const s = await call<{ stats: Record<string, number> }>('GET', '/api/guru/contributions')
     expect(s.body.stats).toEqual({ total: 2, approved: 1, pending: 1, used: 0 })
-    const list = await call<{ data: { id: number }[] }>('GET', '/api/guru/questions')
-    expect(list.body.data.map((x) => x.id)).toEqual([anchorId, q.id])
+    const list = await call<{ data: { id: string }[] }>('GET', '/api/guru/questions')
+    expect(list.body.data.map((x) => Number(x.id))).toEqual([anchorId, Number(q.id)])
     const dash = await call<Data<{ stats: Record<string, number> }>>('GET', '/api/guru/dashboard')
     expect(dash.body.data.stats).toMatchObject({ questions: 2, questionsApproved: 1 })
   })
 
-  it('#53 maps easy / hard, accepts the other types, a chapter, a DSKP SP and an image (multipart)', async () => {
+  it('#53 takes an int difficulty 1-5 and a key by letter or digit; DSKP fields are optional where none exist; form-encoded body', async () => {
     const before = count()
-    const easy = await call<Data<Q>>('POST', '/api/guru/questions', {
-      body: { ...mcq, difficultyLevel: 'easy', correctAnswer: 'B' },
+    const two = await call<Data<Q>>('POST', '/api/guru/questions', {
+      body: { ...mcq, difficultyLevel: 2, correctAnswer: 'B' },
     })
-    expect(easy.body.data).toMatchObject({ difficultyLevel: 2, correctAnswer: 1 })
-    const hard = await call<Data<Q>>('POST', '/api/guru/questions', {
-      body: { ...mcq, difficultyLevel: 'hard', correctAnswer: '3' },
+    expect(two.body.data).toMatchObject({ difficultyLevel: 2, correctAnswer: 1 })
+    const five = await call<Data<Q>>('POST', '/api/guru/questions', {
+      body: { ...mcq, difficultyLevel: '5', correctAnswer: '3' },
     })
-    expect(hard.body.data).toMatchObject({ difficultyLevel: 4, correctAnswer: 3 })
-    const tf = await call<Data<Q>>('POST', '/api/guru/questions', {
-      body: { ...mcq, questionType: 'true_false', tfAnswer: false, options: undefined },
-    })
-    expect(tf.status).toBe(201)
-    expect(tf.body.data).toMatchObject({
-      questionType: 'true_false',
-      tfAnswer: false,
-      options: null,
-    })
-    const short = await call<Data<Q>>('POST', '/api/guru/questions', {
+    expect(five.body.data).toMatchObject({ difficultyLevel: 5, correctAnswer: 3 })
+
+    // A Subjek + Tingkatan with no chapters and no DSKP nodes: Bab, SP, TP and Aras are not required.
+    const bare = curriculum
+      .subjectLevelPairs()
+      .find(
+        ([sId, lId]) =>
+          curriculum.chapters(sId, lId).filter((c) => c.isActive).length === 0 &&
+          dskp.bidang({ subjectId: sId, educationLevelId: lId }).length === 0,
+      )
+    expect(bare).toBeTruthy()
+    const free = await call<Data<Q>>('POST', '/api/guru/questions', {
       body: {
         ...mcq,
-        questionType: 'short_answer',
-        correctAnswer: 'Klorin',
-        altAnswers: 'klor, chlorine',
+        subjectId: bare?.[0],
+        educationLevelId: bare?.[1],
+        chapterId: undefined,
+        spIds: undefined,
+        tp: undefined,
+        cognitiveLevel: undefined,
       },
     })
-    expect(short.body.data).toMatchObject({
-      questionType: 'short_answer',
-      correctAnswerText: 'Klorin',
+    expect(free.status, JSON.stringify(free.body)).toBe(201)
+    expect(free.body.data).toMatchObject({
+      chapterId: null,
+      spIds: [],
+      tp: null,
+      cognitiveLevel: null,
     })
-    const essay = await call<Data<Q>>('POST', '/api/guru/questions', {
-      body: { ...mcq, questionType: 'essay', correctAnswer: undefined },
-    })
-    expect(essay.status).toBe(201)
 
-    const chapter = curriculum.chapters(10, 11).find((c) => c.isActive)
-    // SP 9001 "Sel Elektrolisis": Kimia T5, designed (SRS §6.9)
-    const sp = dskp.getSp(9001)
-    expect(chapter && sp).toBeTruthy()
     const form = new FormData()
-    for (const [k, v] of Object.entries({
-      ...mcq,
-      curriculumChapterId: chapter?.id,
-      dskpSpId: sp?.id,
-      scriptType: 'rumi',
-    })) {
+    for (const [k, v] of Object.entries({ ...mcq, scriptType: 'rumi' })) {
       if (Array.isArray(v)) v.forEach((o) => form.append(`${k}[]`, String(o)))
       else form.append(k, String(v))
     }
-    form.append('questionImage', new File(['png'], 'rajah elektrolisis.png', { type: 'image/png' }))
-    const withImage = await call<Data<Q>>('POST', '/api/guru/questions', { body: form })
-    expect(withImage.status, JSON.stringify(withImage.body)).toBe(201)
-    expect(withImage.body.data).toMatchObject({
-      curriculumChapterId: chapter?.id,
-      dskpSpId: sp?.id,
-      questionImage: 'blob:mock/question/rajah%20elektrolisis.png',
+    const encoded = await call<Data<Q>>('POST', '/api/guru/questions', { body: form })
+    expect(encoded.status, JSON.stringify(encoded.body)).toBe(201)
+    expect(encoded.body.data).toMatchObject({
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
       options: mcq.options,
       correctAnswer: 0,
+      editable: true,
+      statusLabel: 'Menunggu Semakan',
     })
-    expect(count()).toBe(before + 6)
+    expect(count()).toBe(before + 4)
   })
 
-  it('#54 gives the detail with usage to the owner and 404 to anyone else', async () => {
+  it('#54 gives the detail (no usage, no source) to the owner and 404 to anyone else', async () => {
     const a = await call<Data<Q>>('GET', `/api/guru/questions/${String(firstQuestionId)}`)
     expect(a.status).toBe(200)
     expect(a.body.data).toMatchObject({
-      id: firstQuestionId,
-      usage: { attempts: 0, correct: 0, accuracy: 0 },
-      curriculumChapterId: null,
+      id: String(firstQuestionId),
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      difficultyLevel: 3,
+      correctAnswer: 0,
     })
     const anchor = await call<Data<Q>>('GET', `/api/guru/questions/${String(anchorId)}`)
     expect(anchor.status).toBe(200)
@@ -900,52 +1051,78 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
     }
   })
 
-  it('#55 edits an own question; an empty difficulty keeps the saved one; refusals', async () => {
+  it('#55 takes the SAME body as the create (full form); only while pending; refusals', async () => {
     const url = `/api/guru/questions/${String(firstQuestionId)}`
     const edit = {
+      ...mcq,
       questionText: 'Apakah hasil di anod semasa elektrolisis NaCl pekat?',
-      difficultyLevel: '',
-      options: [
-        { id: 0, optionText: 'Gas klorin' },
-        { id: 1, optionText: 'Gas hidrogen' },
-        { id: 2, optionText: 'Gas oksigen' },
-        { id: 3, optionText: 'Logam natrium' },
-      ],
-      correctOptionId: 2,
+      difficultyLevel: 2,
+      options: ['Gas klorin', 'Gas hidrogen', 'Gas oksigen', 'Logam natrium'],
+      correctAnswer: 2,
       explanation: '',
+      tp: 4,
     }
     const a = await call<Data<Q>>('PUT', url, { body: edit })
-    expect(a.status).toBe(200)
+    expect(a.status, JSON.stringify(a.body)).toBe(200)
     expect(a.body.data).toMatchObject({
-      difficultyLevel: 3,
+      difficultyLevel: 2,
       options: ['Gas klorin', 'Gas hidrogen', 'Gas oksigen', 'Logam natrium'],
       correctAnswer: 2,
       explanation: null,
-      status: 'pending_review',
-      isActive: true,
+      status: 'pending',
+      tp: 4,
+      chapterId: chapterOf ? String(chapterOf.id) : null,
+      spIds: ['9001'],
     })
-    const hard = await call<Data<Q>>('PUT', url, {
-      body: { questionText: edit.questionText, difficultyLevel: 'hard' },
-    })
-    expect(hard.body.data).toMatchObject({ difficultyLevel: 4, correctAnswer: 2 })
     expect(questions.get(firstQuestionId)?.questionText).toBe(edit.questionText)
+    // `correctOptionId` is an alias of `correctAnswer`.
+    const alias = await call<Data<Q>>('PUT', url, {
+      body: { ...edit, correctAnswer: undefined, correctOptionId: 1 },
+    })
+    expect(alias.body.data).toMatchObject({ correctAnswer: 1 })
 
-    expect((await call('PUT', url, { body: { questionText: ' ' } })).status).toBe(422)
-    expect((await call('PUT', url, { body: { ...edit, difficultyLevel: 'x' } })).status).toBe(422)
-    const reordered = { ...edit, options: edit.options.slice(0, 3), correctOptionId: 1 }
-    expect(fieldsOf(await call('PUT', url, { body: reordered })).options).toBeDefined()
+    // The old partial bodies are refused: the whole form must be sent.
+    expect((await call('PUT', url, { body: { questionText: edit.questionText } })).status).toBe(422)
+    expect((await call('PUT', url, { body: { ...edit, questionText: ' ' } })).status).toBe(422)
+    expect((await call('PUT', url, { body: { ...edit, difficultyLevel: 'hard' } })).status).toBe(
+      422,
+    )
     expect(
-      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, correctOptionId: 9 } }))),
-    ).toEqual(['correctOptionId'])
-    const dupIds = { ...edit, options: edit.options.map((o) => ({ ...o, id: 0 })) }
-    expect((await call('PUT', url, { body: dupIds })).status).toBe(422)
+      fieldsOf(await call('PUT', url, { body: { ...edit, options: edit.options.slice(0, 3) } }))
+        .options,
+    ).toBeDefined()
+    expect(
+      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, correctAnswer: 9 } }))),
+    ).toEqual(['correctAnswer'])
+    expect(
+      Object.keys(fieldsOf(await call('PUT', url, { body: { ...edit, chapterId: undefined } }))),
+    ).toEqual(['chapterId'])
+
+    // An approved item is read-only: Edit and Padam answer 409 (FR-GUR-44-10).
+    const locked = `/api/guru/questions/${String(anchorId)}`
+    const refused = await call<ErrorBody>('PUT', locked, { body: edit })
+    expect(refused.status).toBe(409)
+    expect(refused.body.error.message).toBe(
+      'Soalan ini sudah diterima atau diluluskan dan tidak boleh diubah.',
+    )
+    expect((await call('DELETE', locked)).status).toBe(409)
 
     expect((await call('PUT', url, { as: ADMIN, body: edit })).status).toBe(404)
     expect((await call('PUT', '/api/guru/questions/987654321', { body: edit })).status).toBe(404)
-    expect(
-      (await call('PUT', `/api/guru/questions/${String(anchorId)}`, { as: ADMIN, body: edit }))
-        .status,
-    ).toBe(404)
+    expect((await call('PUT', locked, { as: ADMIN, body: edit })).status).toBe(404)
+  })
+
+  it('contract shape: the list rows and the detail parse with QuestionGuruSummary / QuestionGuruDetail (strict)', async () => {
+    const list = await call<{ data: unknown[] }>('GET', '/api/guru/questions')
+    expect(list.body.data.length).toBeGreaterThan(0)
+    for (const row of list.body.data) {
+      const parsed = QuestionGuruSummarySchema.safeParse(row)
+      expect(parsed.error?.issues).toBeUndefined()
+    }
+    const one = await call<Data<unknown>>('GET', `/api/guru/questions/${String(firstQuestionId)}`)
+    expect(QuestionGuruDetailSchema.safeParse(one.body.data).error?.issues).toBeUndefined()
+    const anchor = await call<Data<unknown>>('GET', `/api/guru/questions/${String(anchorId)}`)
+    expect(QuestionGuruDetailSchema.safeParse(anchor.body.data).error?.issues).toBeUndefined()
   })
 
   it('#56 deletes an own question, never another one, and keeps the M14 count', async () => {
@@ -965,133 +1142,141 @@ describe('#53–#56 contributed questions (S22–S24; BR-M10-21, BR-M10-22, SEC-
 })
 
 // ---------------------------------------------------------------------------------------------
-describe('#57–#58 CSV template and import (S21; BR-M10-24, DV-M10-08)', () => {
-  const header =
-    'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation,kertas'
+describe('#57–#58 CSV template and import (S21; API-GUR-19, 44-F3)', () => {
+  const header = TEMPLATE_HEADER.join(',')
+  const row = (cells: string): string => cells
 
   /** A multipart post of `text` as `name`. */
   const upload = (text: string, name = 'soalan.csv') => {
     const form = new FormData()
     form.append('csvFile', new File([text], name, { type: 'text/csv' }))
-    return call<Data<{ imported: number; failed: { row: number; message: string }[] }>>(
+    return call<Data<{ imported: number; errors: { row: number; message: string }[] }>>(
       'POST',
       '/api/guru/questions/import',
       { body: form },
     )
   }
+  const reason = (cells: string): string | undefined =>
+    planImport(`${header}\n${cells}`).failures[0]?.message
 
-  it('#57 serves the M04 import template as a CSV file', async () => {
+  it('#57 serves templat-soalan.csv with the PRD header and example row', async () => {
     const a = await call('GET', '/api/guru/questions/template')
     expect(a.status).toBe(200)
     expect(a.res.headers['content-type']).toContain('text/csv')
-    expect(a.res.headers['content-disposition']).toContain('template-import-soalan.csv')
+    expect(a.res.headers['content-disposition']).toContain('templat-soalan.csv')
     const text = await (a.body as Blob).text()
-    expect(text).toBe(IMPORT_TEMPLATE_CSV)
-    expect(TEMPLATE_CSV).toBe(IMPORT_TEMPLATE_CSV)
-    expect(text.split('\r\n')[0]).toBe(header)
-    // one store, one format: the same file as M04 #11
-    const m04 = await call('GET', '/api/question-imports/template', { as: ADMIN })
-    expect(m04.status).toBe(200)
-    expect(await (m04.body as Blob).text()).toBe(text)
+    expect(text).toBe(TEMPLATE_CSV)
+    expect(text.split('\n')[0]).toBe(
+      'subjek,tingkatan,bab,sp,tp,aras,kesukaran,soalan,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawapan,penerangan',
+    )
+    expect(text.split('\n')[1]).toBe(
+      'Matematik,4,Bab 1,1.1.1,3,mengaplikasi,3,Contoh soalan?,A,B,C,D,A,Contoh penerangan',
+    )
   })
 
-  it('#58 plan: M04 rules without defaults, plus the M10 caps', () => {
-    // The shared parser and the template are M04's (thin check that the wrapper keeps them).
-    const planned = planImport(TEMPLATE_CSV)
-    expect(planned.rows).toHaveLength(2)
-    expect(planned.failures).toEqual([])
-    expect(planned.dataRows).toBe(2)
-    // No defaults: the S21 form has none, so a missing subject / level / difficulty fails the row.
-    const row = (cells: string) => planImport(header + '\n' + cells).failures[0]?.message
-    expect(row('"Soalan",A,B,C,D,A,,4,1,1,')).toBe('Subjek tidak sah.')
-    expect(row('"Soalan",A,B,C,D,A,1,,1,1,')).toBe('Tahap pendidikan tidak sah.')
-    expect(row('"Soalan",A,B,C,D,A,1,4,,1,')).toBe('Tahap kesukaran mesti 1 hingga 5.')
-    // M10 caps (SRS §5): question 2000, option 500; failures stay in line order.
-    const long = 'x'.repeat(2001)
-    expect(row('"' + long + '",A,B,C,D,A,1,4,1,1,')).toBe(
-      'Soalan tidak boleh melebihi 2000 aksara.',
+  it('#58 plan: the row reasons of 44-F3 (one reason per bad row, line order)', () => {
+    expect(reason(row('Tidak Wujud,4,,,,,,Soalan?,A,B,C,D,A,'))).toBe('Subjek tidak dikenali.')
+    expect(reason(row('Kimia,9,,,,,,Soalan?,A,B,C,D,A,'))).toBe('Tingkatan mesti antara 1 dan 5.')
+    expect(reason(row('Kimia,5,,,7,,,Soalan?,A,B,C,D,A,'))).toBe(
+      'Tahap Penguasaan (TP) mesti antara 1 dan 6.',
     )
-    expect(row('"Soalan",' + 'o'.repeat(501) + ',B,C,D,A,1,4,1,1,')).toBe(
-      'Pilihan jawapan tidak boleh melebihi 500 aksara.',
+    expect(reason(row('Kimia,5,,,3,x,,Soalan?,A,B,C,D,A,'))).toBe('Aras pemikiran tidak sah.')
+    expect(reason(row('Kimia,5,,,3,menilai,9,Soalan?,A,B,C,D,A,'))).toBe(
+      'Kesukaran mesti antara 1 dan 5.',
     )
-    const mixed = planImport(
-      [
-        header,
-        '"' + long + '",A,B,C,D,A,1,4,1,1,',
-        ',A,B,C,D,A,1,4,1,1,',
-        '"ok",A,B,C,D,A,1,4,1,1,',
-      ].join('\n'),
+    expect(reason(row('Kimia,5,,,3,menilai,2,Soalan?,A,B,C,D,E,'))).toBe(
+      'Jawapan mesti A, B, C atau D.',
     )
-    expect(mixed.rows).toHaveLength(1)
-    expect(mixed.failures.map((f) => f.row)).toEqual([2, 3])
-    const edge = planImport(header + '\n"' + 'x'.repeat(2000) + '",A,B,C,D,A,1,4,1,1,')
-    expect(edge.rows).toHaveLength(1)
+    expect(reason(row('Kimia,5,Bab 999,,,,,Soalan?,A,B,C,D,A,'))).toBe(
+      'Bab tidak dijumpai: Bab 999',
+    )
+    expect(reason(row('Kimia,5,,9.9.9,,,,Soalan?,A,B,C,D,A,'))).toBe('SP tidak dijumpai: 9.9.9')
+    expect(reason(row('Kimia,5,,,,,,,A,B,C,D,A,'))).toBe('Soalan diperlukan.')
+    expect(reason(row('Kimia,5,,,,,,Soalan?,A,B,,D,A,'))).toBe('Pilihan C diperlukan.')
   })
 
-  it('#58 keeps the valid rows, reports the bad ones by line and runs the hook per row', async () => {
+  it('#58 plan: empty Bab, SP, TP and Aras are accepted; Kesukaran defaults to min(5, TP)', () => {
+    const plan = planImport(
+      `${header}\nKimia,5,,,6,,,Soalan?,A,B,C,D,b,Sebab\nKimia,5,,,,,,Soalan 2?,A,B,C,D,A,`,
+    )
+    expect(plan.failures).toEqual([])
+    expect(plan.rows.map((r) => r.difficultyLevel)).toEqual([5, 3])
+    expect(plan.rows[0]).toMatchObject({
+      correctAnswer: 1,
+      explanation: 'Sebab',
+      questionType: 'mcq',
+    })
+  })
+
+  it('#58 plan: Bab is matched by number or by name, SP by code', () => {
+    const chapter = curriculum.chapters(10, 11).find((c) => c.isActive && c.chapterNumber !== null)
+    const sp = dskp.getSp(9001)
+    expect(chapter && sp).toBeTruthy()
+    const byNumber = planImport(
+      `${header}\nKimia,5,Bab ${String(chapter?.chapterNumber)},${sp?.code ?? ''},,,,Soalan?,A,B,C,D,A,`,
+    )
+    expect(byNumber.failures).toEqual([])
+    expect(byNumber.rows[0]).toMatchObject({ curriculumChapterId: chapter?.id, dskpSpId: 9001 })
+    const byName = planImport(
+      `${header}\nKimia,5,"${(chapter?.name ?? '').toUpperCase()}",,,,,Soalan?,A,B,C,D,A,`,
+    )
+    expect(byName.rows[0]).toMatchObject({ curriculumChapterId: chapter?.id })
+  })
+
+  it('AC-GUR-44-13, #58: a 3-row file with one wrong jawapan gives errors[1] and imports the other two', async () => {
     const before = teacherWallet.summary(GURU).questionsCount
-    const total = (
-      await call<Data<{ stats: Record<string, number> }>>('GET', '/api/guru/dashboard')
-    ).body.data.stats.questions as number
     const csv = [
       header,
-      '"Apakah ibu negara Malaysia?",Kuala Lumpur,Putrajaya,Johor Bahru,Ipoh,A,1,10,1,1,"Kuala Lumpur."',
-      '"2 + 3 = ?",4,5,6,7,B,3,10,2,1,',
-      ',A,B,C,D,A,1,10,1,1,',
-      '"Soalan jawapan salah",A,B,C,D,E,1,10,1,1,',
-      '"Soalan subjek salah",A,B,C,D,A,9999,10,1,1,',
-      '"Soalan tahap salah",A,B,C,D,A,1,9999,1,1,',
-      '"Soalan kesukaran salah",A,B,C,D,A,1,10,9,1,',
-      '"Soalan markah salah",A,B,C,D,A,1,10,1,0,',
-      '"Pilihan kosong",A,B,,,C,1,10,1,1,',
-      '"Soalan berbaris',
-      'baru",A,B,,,B,1,10,3,2,penjelasan',
+      'Bahasa Melayu,5,,,,,2,Soalan satu?,A,B,C,D,A,Kerana A.',
+      'Bahasa Melayu,5,,,,,3,Soalan dua?,A,B,C,D,E,',
+      'Bahasa Melayu,5,,,,,4,"Soalan tiga',
+      'berbaris?",A,B,C,D,C,penjelasan',
       '',
     ].join('\n')
     const a = await upload(csv)
     expect(a.status, JSON.stringify(a.body)).toBe(200)
-    expect(a.body.data.imported).toBe(3)
-    expect(a.body.data.failed.map((f) => f.row)).toEqual([4, 5, 6, 7, 8, 9, 10])
-    expect(a.body.data.failed[0]?.message).toBe('Baris tidak lengkap.')
-    expect(a.body.data.failed[1]?.message).toBe('Jawapan betul mesti A, B, C atau D.')
-    expect(teacherWallet.summary(GURU).questionsCount).toBe(before + 3)
-    const dash = await call<Data<{ stats: Record<string, number> }>>('GET', '/api/guru/dashboard')
-    expect(dash.body.data.stats.questions).toBe(total + 3)
-    const mine = await call<{
-      data: {
-        questionText: string
-        status: string
-        isActive: boolean
-        explanation: string | null
-        difficultyLevel: number
-        subjectId: number
-      }[]
-      meta: { totalItems: number }
-    }>('GET', '/api/guru/questions')
-    const added = mine.body.data.filter((q) => q.status === 'pending_review').slice(-3)
-    expect(added.map((q) => q.questionText)).toEqual([
-      'Apakah ibu negara Malaysia?',
-      '2 + 3 = ?',
-      'Soalan berbaris\nbaru',
-    ])
-    expect(added.every((q) => q.isActive)).toBe(true)
-    expect(added[2]).toMatchObject({ explanation: 'penjelasan', difficultyLevel: 3, subjectId: 1 })
+    expect(a.body.data.imported).toBe(2)
+    expect(a.body.data.errors).toEqual([{ row: 3, message: 'Jawapan mesti A, B, C atau D.' }])
+    expect('failed' in a.body.data).toBe(false)
+    expect(teacherWallet.summary(GURU).questionsCount).toBe(before + 2)
+    const mine = await call<{ data: { questionText: string; status: string }[] }>(
+      'GET',
+      '/api/guru/questions',
+    )
+    const added = mine.body.data.filter((q) => q.status === 'pending').slice(-2)
+    expect(added.map((q) => q.questionText)).toEqual(['Soalan satu?', 'Soalan tiga\nberbaris?'])
   })
 
-  it('#58 refuses a missing or wrong file, a missing column or an empty file with 422', async () => {
+  it('AC-GUR-44-13: 501 data rows are refused with "Fail melebihi 500 baris." and nothing is created', async () => {
+    const before = teacherWallet.summary(GURU).questionsCount
+    const rows = Array.from({ length: 501 }, () => 'Bahasa Melayu,5,,,,,2,S?,A,B,C,D,A,')
+    const a = await upload([header, ...rows].join('\n'))
+    expect(a.status).toBe(422)
+    expect(fieldsOf(a).csvFile).toBe('Fail melebihi 500 baris.')
+    expect(teacherWallet.summary(GURU).questionsCount).toBe(before)
+    const ok = await upload([header, ...rows.slice(0, 500)].join('\n'))
+    expect(ok.status).toBe(200)
+    expect(ok.body.data.imported).toBe(500)
+  })
+
+  it('#58 refuses a missing or wrong file, a missing column, an empty file or one over 2 MB with 422', async () => {
     const none = await call('POST', '/api/guru/questions/import', { body: new FormData() })
     expect(none.status).toBe(422)
-    expect(Object.keys(fieldsOf(none))).toEqual(['csvFile'])
-    expect((await upload('a,b', 'soalan.xlsx')).status).toBe(422)
-    expect((await upload('question_text,option_a\n"x",y')).status).toBe(422)
+    expect(fieldsOf(none).csvFile).toBe('Sila pilih fail.')
+    const xlsx = await upload('a,b', 'soalan.xlsx')
+    expect(fieldsOf(xlsx).csvFile).toBe('Jenis fail tidak disokong. Format dibenarkan: CSV.')
+    expect((await upload('a,b', 'soalan.txt')).status).toBe(422)
+    const cols = await upload('subjek,soalan\nKimia,x')
+    expect(fieldsOf(cols).csvFile).toMatch(
+      /^Lajur wajib tiada: .*\. Gunakan templat yang disediakan\.$/,
+    )
     const noData = await upload(`${header}\n`)
     expect(noData.status).toBe(422)
     expect(Object.keys(fieldsOf(noData))).toEqual(['csvFile'])
-    expect((await upload('', 'kosong.txt')).status).toBe(422)
-    const big = await upload(`${header}\n${'x'.repeat(5 * 1024 * 1024 + 1)}`)
-    expect(big.status).toBe(422)
+    const big = await upload(`${header}\n${'x'.repeat(2 * 1024 * 1024 + 1)}`)
+    expect(fieldsOf(big).csvFile).toBe('Fail melebihi saiz maksimum 2 MB.')
     const text = await call('POST', '/api/guru/questions/import', {
-      body: { csvFile: `${header}\n"Soalan teks",A,B,C,D,A,1,4,1,1,` },
+      body: { csvFile: `${header}\nBahasa Melayu,5,,,,,2,Soalan teks?,A,B,C,D,A,` },
     })
     expect(text.status).toBe(200)
     expect((text.body as Data<{ imported: number }>).data.imported).toBe(1)
@@ -1190,7 +1375,7 @@ describe('#73–#75 student classes and sets (S33, S34; BR-M10-02, BR-M10-18)', 
     for (const q of data.questions) {
       await send('POST', `/api/practice/sessions/${data.sessionId}/check-answer`, {
         questionId: q.id,
-        selectedOptionId: questions.get(q.id)?.correctAnswer ?? 0,
+        selectedOptionId: questions.get(Number(q.id))?.correctAnswer ?? 0,
       })
     }
     const submit = await send('POST', `/api/practice/sessions/${data.sessionId}/submit`, {
@@ -1214,6 +1399,14 @@ describe('#73–#75 student classes and sets (S33, S34; BR-M10-02, BR-M10-18)', 
       { as: 3002 },
     )
     expect(other.body.data.find((s) => s.id === 7402)?.attemptsLeft).toBe(1)
+    // R1-GUR-41 "Tugasan": the completed set 7402 counts once for pupil 3001 of the teacher's class, not for 3002
+    const roster = await call<{ data: { id: number; tugasan: number; skorPurata: number | null }[] }>(
+      'GET',
+      '/api/guru/students',
+    )
+    expect(roster.body.data.find((s) => s.id === 3001)?.tugasan).toBe(1)
+    expect(roster.body.data.find((s) => s.id === 3002)?.tugasan).toBe(0)
+    expect(roster.body.data.find((s) => s.id === 3001)?.skorPurata).not.toBeNull()
   })
 })
 
@@ -1238,7 +1431,8 @@ describe('M08 teacher cards (F-30 invariants) through the handlers', () => {
         '/api/guru/students',
         { as: id },
       )
-      expect(mine.body.data).toHaveLength(pupils)
+      // the roster pages 25 per page (R1-GUR-41); `count` is every match
+      expect(mine.body.data).toHaveLength(Math.min(pupils, 25))
       expect(mine.body.meta.count).toBe(pupils)
     }
   })
@@ -1275,7 +1469,7 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
     for (const f of files) form.append('files[]', f)
     return call<Data<Record<string, unknown>>>('POST', '/api/guru/question-papers', { body: form })
   }
-  const valid = { jenisSoalan: 'Trial Paper', subject: 'SEJARAH SPM' }
+  const valid = { paperType: 'trial', subject: 'SEJARAH SPM', answerSchemeConfirmed: 'true' }
 
   it('guards: 401 to a guest, 403 to a pupil', async () => {
     for (const [method, url] of [
@@ -1297,18 +1491,26 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   it('#60 refuses a bad paper with a field for each problem', async () => {
     const empty = await call('POST', '/api/guru/question-papers', { body: new FormData() })
     expect(empty.status).toBe(422)
-    expect(Object.keys(fieldsOf(empty)).sort()).toEqual(['files', 'jenisSoalan', 'subject'])
+    expect(Object.keys(fieldsOf(empty)).sort()).toEqual([
+      'answerSchemeConfirmed',
+      'files',
+      'paperType',
+      'subject',
+    ])
     const cases: [Record<string, string>, File[], string][] = [
-      [{ ...valid, jenisSoalan: 'Lain' }, [pdf()], 'jenisSoalan'],
+      [{ ...valid, paperType: 'Trial Paper' }, [pdf()], 'paperType'],
       [{ ...valid, subject: 'x'.repeat(101) }, [pdf()], 'subject'],
-      [{ ...valid, tingkatan: '6' }, [pdf()], 'tingkatan'],
-      [{ ...valid, tahun: '1999' }, [pdf()], 'tahun'],
-      [{ ...valid, tahun: '2100' }, [pdf()], 'tahun'],
-      [{ ...valid, disediakanOleh: 'x'.repeat(151) }, [pdf()], 'disediakanOleh'],
-      [{ ...valid, catatan: 'x'.repeat(1001) }, [pdf()], 'catatan'],
+      [{ ...valid, levelId: '6' }, [pdf()], 'levelId'],
+      [{ ...valid, year: '1999' }, [pdf()], 'year'],
+      [{ ...valid, year: '2100' }, [pdf()], 'year'],
+      [{ ...valid, preparedBy: 'x'.repeat(151) }, [pdf()], 'preparedBy'],
+      [{ ...valid, note: 'x'.repeat(1001) }, [pdf()], 'note'],
+      [{ ...valid, answerSchemeConfirmed: 'false' }, [pdf()], 'answerSchemeConfirmed'],
       [valid, [], 'files'],
       [valid, Array.from({ length: 6 }, () => pdf()), 'files'],
       [valid, [pdf('gambar.png')], 'files'],
+      [valid, [pdf('lama.doc')], 'files'],
+      [valid, [pdf('lama.xls')], 'files'],
       [valid, [pdf('besar.pdf', 20 * 1024 * 1024 + 1)], 'files'],
     ]
     for (const [fields, files, field] of cases) {
@@ -1316,21 +1518,49 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       expect(a.status, field).toBe(422)
       expect(Object.keys(fieldsOf(a)), field).toContain(field)
     }
+    expect(fieldsOf(await paper(valid, [])).files).toBe('Sila pilih fail.')
+    expect(
+      fieldsOf(
+        await paper(
+          valid,
+          Array.from({ length: 6 }, () => pdf()),
+        ),
+      ).files,
+    ).toBe('Maksimum 5 fail, saiz maksimum 20MB setiap fail')
+    expect(fieldsOf(await paper(valid, [pdf('a.doc')])).files).toBe(
+      'Jenis fail tidak disokong. Format dibenarkan: PDF, DOCX, XLSX.',
+    )
+    expect(fieldsOf(await paper(valid, [pdf('b.pdf', 20 * 1024 * 1024 + 1)])).files).toBe(
+      'Fail melebihi saiz maksimum 20 MB.',
+    )
+    expect(
+      fieldsOf(await paper({ ...valid, answerSchemeConfirmed: '' })).answerSchemeConfirmed,
+    ).toBe('Sila sahkan skema jawapan disertakan.')
   })
 
-  it('#60 stores an M04 submission as pending with the level code and the files', async () => {
+  it('AC-GUR-44-14: a scanned PDF is refused with the file-field text and nothing is stored', async () => {
+    const before = submissions.list().length
+    const a = await paper(valid, [pdf('imbasan-scan.pdf')])
+    expect(a.status).toBe(422)
+    expect(fieldsOf(a).files).toBe('PDF imbasan imej tidak diterima — teks mesti boleh disalin.')
+    expect(submissions.list().length).toBe(before)
+  })
+
+  it('#60 stores an M04 submission as pending and answers 201 {data:{batchId}}', async () => {
     const a = await paper(
       {
         ...valid,
-        tingkatan: '4',
-        tahun: '2024',
-        disediakanOleh: 'Guru Demo',
-        catatan: 'Dengan skema',
+        levelId: '4',
+        year: '2024',
+        preparedBy: 'Guru Demo',
+        note: 'Dengan skema',
       },
       [pdf('kertas.pdf', 1000), pdf('skema.docx', 500), pdf('data.xlsx', 5)],
     )
     expect(a.status).toBe(201)
-    expect(a.body.data).toMatchObject({
+    expect(Object.keys(a.body.data)).toEqual(['batchId'])
+    const row = submissions.get(a.body.data.batchId as number)
+    expect(row).toMatchObject({
       teacherId: GURU,
       subjectText: 'SEJARAH SPM',
       levelCode: 'T4',
@@ -1340,26 +1570,16 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
       note: 'Dengan skema',
       status: 'pending',
     })
-    expect((a.body.data.files as { name: string }[]).map((f) => f.name)).toEqual([
-      'kertas.pdf',
-      'skema.docx',
-      'data.xlsx',
-    ])
-    const m04 = await call<{ data: { id: number; status: string }[] }>(
-      'GET',
-      '/api/question-submissions',
-      { as: ADMIN },
-    )
-    expect(m04.body.data.map((s) => s.id)).toContain(a.body.data.id as number)
+    expect(row?.files.map((f) => f.name)).toEqual(['kertas.pdf', 'skema.docx', 'data.xlsx'])
   })
 
-  it('#60 an empty level, year and note are optional (the year falls back to the clock)', async () => {
-    const a = await paper({ ...valid, tingkatan: '', tahun: '' })
+  it('#60 an empty level, year and note are optional; "Kiriman guru" is the default credit', async () => {
+    const a = await paper({ ...valid, levelId: '', year: '' })
     expect(a.status).toBe(201)
-    expect(a.body.data).toMatchObject({
+    expect(submissions.get(a.body.data.batchId as number)).toMatchObject({
       levelCode: null,
       year: new Date(runtime.clock.now()).getUTCFullYear(),
-      authorCredit: '',
+      authorCredit: 'Kiriman guru',
       note: null,
     })
   })
@@ -1419,61 +1639,37 @@ describe('#59, #60, #63 gallery, question papers, Audio KBAT templates (S21, S22
   })
 })
 
-describe('#53 / #55 multipart images', () => {
-  const base = {
-    educationLevelId: '11',
-    subjectId: '10',
-    questionType: 'mcq',
-    difficultyLevel: 'easy',
-    questionText: 'Apakah unsur dengan simbol Na?',
-    correctAnswer: '1',
-  }
-  const png = (name: string) => new File(['p'], name, { type: 'image/png' })
-
-  it('#53 stores option images by index and refuses a bad one', async () => {
-    const form = new FormData()
-    for (const [k, v] of Object.entries(base)) form.append(k, v)
-    for (const o of ['Kalium', 'Natrium', 'Litium', 'Kalsium']) form.append('options[]', o)
-    form.append('optionImages[1]', png('b.png'))
-    form.append('optionImages[3]', png('d.png'))
-    const a = await call<Data<{ optionImages: (string | null)[] }>>('POST', '/api/guru/questions', {
-      body: form,
-    })
-    expect(a.status, JSON.stringify(a.body)).toBe(201)
-    expect(a.body.data.optionImages).toEqual([
-      null,
-      'blob:mock/option/b.png',
-      null,
-      'blob:mock/option/d.png',
-    ])
-    const bad = new FormData()
-    for (const [k, v] of Object.entries(base)) bad.append(k, v)
-    for (const o of ['A', 'B', 'C', 'D']) bad.append('options[]', o)
-    bad.append('optionImages[2]', new File(['x'], 'c.gif', { type: 'image/gif' }))
-    const b = await call('POST', '/api/guru/questions', { body: bad })
-    expect(b.status).toBe(422)
-    expect(Object.keys(fieldsOf(b))).toContain('optionImages.2')
-  })
-
-  it('#55 accepts one multipart PUT with an image', async () => {
+describe('#53 / #55 form-encoded bodies (no image fields in the teacher flow)', () => {
+  it('#55 accepts a form-encoded full body', async () => {
+    const chapter = curriculum.chapters(10, 11).find((c) => c.isActive)
     const made = await call<Data<{ id: number }>>('POST', '/api/guru/questions', {
       body: {
-        ...base,
+        questionText: 'Apakah unsur dengan simbol Na?',
         educationLevelId: 11,
         subjectId: 10,
         correctAnswer: 0,
         options: ['A', 'B', 'C', 'D'],
+        difficultyLevel: 2,
+        chapterId: chapter?.id,
+        spIds: [9001],
+        tp: 3,
+        cognitiveLevel: 'memahami',
       },
     })
     const form = new FormData()
-    form.append('questionText', 'Soalan yang disunting dengan rajah.')
-    form.append('difficultyLevel', 'hard')
-    for (let i = 0; i < 4; i++) {
-      form.append(`options[${String(i)}][id]`, String(i))
-      form.append(`options[${String(i)}][optionText]`, `Pilihan ${String(i)}`)
-    }
-    form.append('correctOptionId', '2')
-    form.append('questionImage', png('rajah.png'))
+    for (const [k, v] of Object.entries({
+      questionText: 'Soalan yang disunting.',
+      educationLevelId: '11',
+      subjectId: '10',
+      difficultyLevel: '4',
+      chapterId: String(chapter?.id),
+      tp: '3',
+      cognitiveLevel: 'memahami',
+      correctAnswer: '2',
+    }))
+      form.append(k, v)
+    form.append('spIds[]', '9001')
+    for (const o of ['P0', 'P1', 'P2', 'P3']) form.append('options[]', o)
     const a = await call<Data<Record<string, unknown>>>(
       'PUT',
       `/api/guru/questions/${String(made.body.data.id)}`,
@@ -1481,11 +1677,10 @@ describe('#53 / #55 multipart images', () => {
     )
     expect(a.status, JSON.stringify(a.body)).toBe(200)
     expect(a.body.data).toMatchObject({
-      questionText: 'Soalan yang disunting dengan rajah.',
+      questionText: 'Soalan yang disunting.',
       difficultyLevel: 4,
-      options: ['Pilihan 0', 'Pilihan 1', 'Pilihan 2', 'Pilihan 3'],
+      options: ['P0', 'P1', 'P2', 'P3'],
       correctAnswer: 2,
-      questionImage: 'blob:mock/question/rajah.png',
     })
   })
 })

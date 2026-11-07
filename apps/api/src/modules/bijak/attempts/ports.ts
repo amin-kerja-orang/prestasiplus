@@ -12,6 +12,7 @@
  * - `BijakAttemptAggregatePort`  BE-12 / US-33 (teacher and school analytics over the practice store). Default: no-op.
  */
 import { Injectable } from '@nestjs/common'
+import type { BijakAttemptKind } from '@pp/contract'
 
 import type { McqOption, QuestionDef, SchemeDef, SectionSnapshot, StimulusDef } from './exam-core.adapter'
 
@@ -22,6 +23,8 @@ export interface AttemptPaper {
   /** Decimal-string id of `papers.id` (the wire id of the paper). */
   id: string
   kind: 'pilihan' | 'jana'
+  /** DM-23. Absent = `simulasi`. A `subjektif` paper starts a Kertas Subjektif attempt: `paper_kind = 'subjektif'`, latihan, untimed. */
+  surface?: 'simulasi' | 'subjektif'
   title: string
   /** Subject code, for example `MAT`. */
   subject: string
@@ -40,6 +43,7 @@ export type PaperResolution =
   | { ok: false; reason: 'not_found' }
   /** The caller may not sit this paper (for example a subscription gate): 403. */
   | { ok: false; reason: 'not_eligible' }
+  | { ok: false; reason: 'out_of_scope' }
 
 export interface BijakPaperSource {
   /**
@@ -110,6 +114,30 @@ export interface BijakRewardPort {
    * never above the attempt's maximum, nothing back for a lower total. Called after the commit of a self-mark of a closed EXAM attempt. Failures are logged and swallowed.
    */
   awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void>
+
+  /**
+   * S5-T11 (46 sections 3.4 item 9 and 3.6, A9): a Soalan Berstruktur attempt (`paper_kind = 'structured'`, a latihan). Called after the commit of
+   * the submit (`touchStreak` true) and after the commit of every self-mark that changed a part (`touchStreak` false). The binding pays
+   * `coinsPerCorrect()` x the GAIN of `score` over the highest total already paid to this pupil for this QUESTION (earlier structured attempts and
+   * this one), and 10 XP per mark gained; a total at or below the highest paid pays nothing and takes nothing back. Mod Pelajar pays nothing.
+   * Failures are logged and swallowed.
+   */
+  awardStructured(input: BijakStructuredRewardInput): Promise<void>
+}
+
+export interface BijakStructuredRewardInput {
+  attemptId: string
+  userId: string
+  questionId: string
+  /** True under Mod Pelajar: no reward at all. */
+  isTest: boolean
+  /** The attempt's total marks now (with every self-mark applied); the paid level never goes above `max`. */
+  score: number
+  max: number
+  /** True at submit: the streak counts the day the attempt closed. */
+  touchStreak: boolean
+  submittedAt?: Date | null
+  description: typeof BIJAK_REWARD_DESCRIPTION
 }
 
 export interface BijakSelfMarkRewardInput {
@@ -133,7 +161,7 @@ export interface BijakAttemptAggregateInput {
   userId: string
   isTest: boolean
   /** Optional context BE-12 uses for `start_type` and `duration_sec` (AC-33.4). */
-  paperKind?: 'pilihan' | 'jana'
+  paperKind?: BijakAttemptKind
   startedAt?: Date
   submittedAt?: Date | null
   /** Decimal-string paper id; null for a migrated attempt. */
@@ -177,6 +205,7 @@ export class NoQuestions implements BijakQuestionSource {
 export class NoReward implements BijakRewardPort {
   async award(): Promise<void> {}
   async awardSelfMark(): Promise<void> {}
+  async awardStructured(): Promise<void> {}
 }
 
 export class NoAggregate implements BijakAttemptAggregatePort {

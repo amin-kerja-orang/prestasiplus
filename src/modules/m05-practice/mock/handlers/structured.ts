@@ -4,7 +4,7 @@
  *
  * | # | Route | Notes |
  * |---|---|---|
- * | 15 | `GET /api/practice/structured` | `subjectId`, `kbatLevel`, `page`, `scope=spm`, `track=bahasa`; 20 per page |
+ * | 15 | `GET /api/practice/structured` | `subjectId`, `kbatLevel`, `q`, `page`, `scope=spm`, `track=bahasa`; 12 per page |
  * | 16 | `GET /api/practice/structured/:id` | `scope`, `track` only decide `backUrl` (FR-M05-137); 404 |
  * | 17 | `POST /api/practice/structured/:id/attempts` | `{answers, scope?, track?}`; `markStructured` placeholder; 201 / 404 / 422 |
  *
@@ -56,6 +56,8 @@ type Track = 'bahasa' | null
 
 /** INFERRED: the card preview is the first 200 characters of the stimulus plus "...". */
 export const PREVIEW_LENGTH = 200
+/** Longest accepted search text. */
+const SEARCH_MAX = 100
 /** Shown for sets whose creator is not a teacher (the observed live label, M04 anchor 4454). */
 export const DEFAULT_AUTHOR = 'Guru Pakar'
 
@@ -235,6 +237,29 @@ function subjectOptions(scope: Scope, track: Track): { id: number; name: string 
   })
 }
 
+/** The search (max 100 characters) matches the stem or stimulus text, case-insensitively (as the BE). */
+function matchesTerm(q: StructuredQuestion, term: string): boolean {
+  return q.stimulus.toLowerCase().includes(term)
+}
+
+/** A usable scheme: every leaf part (one with no child part) has a model answer (FR-MUR-17-1). */
+function hasUsableScheme(q: StructuredQuestion): boolean {
+  const parents = new Set(q.subQuestions.map((s) => s.parentSubId))
+  return q.subQuestions
+    .filter((s) => !parents.has(s.id))
+    .every((s) => s.modelAnswer.trim() !== '')
+}
+
+/** The caller's highest attempt total on a set, or null without an attempt. */
+function bestScoreOf(userId: number, id: number): { awarded: number; max: number } | null {
+  let best: { awarded: number; max: number } | null = null
+  for (const a of practiceRepo.structuredAttempts(userId)) {
+    if (a.structuredQuestionId !== id) continue
+    if (!best || a.totalAwarded > best.awarded) best = { awarded: a.totalAwarded, max: a.totalMax }
+  }
+  return best
+}
+
 function listStructured(req: MockRequest) {
   const { scope, track } = variant(req.query)
   const options = subjectOptions(scope, track)
@@ -243,8 +268,13 @@ function listStructured(req: MockRequest) {
   const subject = filterOf(req.query, 'subjectId')
   const kbat = filterOf(req.query, 'kbatLevel')
 
+  const term = (queryString(req.query, 'q') ?? '').trim().slice(0, SEARCH_MAX).toLowerCase()
+  const markable = ['1', 'true'].includes(
+    (queryString(req.query, 'markable') ?? '').trim().toLowerCase(),
+  )
   let rows: StructuredQuestion[] = []
   let total = 0
+  let pending = 0
   const empty =
     subject.kind === 'nothing' ||
     kbat.kind === 'nothing' ||
@@ -253,37 +283,43 @@ function listStructured(req: MockRequest) {
     (scope === null && subject.kind === 'value' && !curriculum.subject(subject.value))
   if (!empty) {
     const kbatLevel = kbat.kind === 'value' ? kbat.value : undefined
-    if (subject.kind === 'value') {
-      const r = {
-        rows: slice(subject.value, kbatLevel, offset, offset + page.pageSize),
-        total: count(subject.value, kbatLevel),
+    /** Rows `[from, from + limit)` of the list before the text search. */
+    const read = (from: number, limit: number) => {
+      if (subject.kind === 'value') {
+        return {
+          rows: slice(subject.value, kbatLevel, from, from + limit),
+          total: count(subject.value, kbatLevel),
+        }
       }
-      rows = r.rows
-      total = r.total
-    } else if (scope === null) {
-      const r = structured.visible({
-        ...(kbatLevel !== undefined ? { kbatLevel } : {}),
-        page: page.page,
-        pageSize: page.pageSize,
-      })
-      rows = r.rows
-      total = r.total
-    } else {
+      if (scope === null) {
+        // `visible` pages by whole pages: `from` is always a multiple of `limit` here.
+        return structured.visible({
+          ...(kbatLevel !== undefined ? { kbatLevel } : {}),
+          page: Math.floor(from / limit) + 1,
+          pageSize: limit,
+        })
+      }
       const q: ListQuery = { subjectIds: options.map((o) => o.id), kbatLevel }
-      const r =
-        track === 'bahasa'
-          ? concatenated(q, offset, page.pageSize)
-          : merged(q, offset, page.pageSize)
-      rows = r.rows
-      total = r.total
+      return track === 'bahasa' ? concatenated(q, from, limit) : merged(q, from, limit)
     }
+    // The whole filtered list is read once: the text search, the `markable` rule and the pending
+    // count (sets of this filter with no usable scheme, ignoring `markable`) all need it.
+    const all = read(0, Math.max(read(0, 1).total, 1)).rows.filter(
+      (row) => term === '' || matchesTerm(row, term),
+    )
+    pending = all.filter((row) => !hasUsableScheme(row)).length
+    const shown = markable ? all.filter(hasUsableScheme) : all
+    total = shown.length
+    rows = shown.slice(offset, offset + page.pageSize)
   }
-  const items = rows.map(card)
+  const me = userIdOf(req)
+  const items = rows.map((q) => ({ ...card(q), bestScore: bestScoreOf(me, q.id) }))
   return list(items, {
     ...pageMeta(total, page, items.length),
     scope,
     track,
     subjectOptions: options,
+    pendingSchemeCount: pending,
   })
 }
 
@@ -389,6 +425,8 @@ export const structuredRoutes: RouteDef[] = [
       const stored = practiceRepo.addStructuredAttempt(row)
       return created({
         ...stored,
+        // S5-T11: the contract also returns the (Bijak) attempt id, equal to `id`.
+        attemptId: String(stored.id),
         modelAnswers: q.subQuestions.map((s) => ({ subQuestionId: s.id, text: s.modelAnswer })),
       })
     },

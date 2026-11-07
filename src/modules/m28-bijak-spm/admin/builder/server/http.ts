@@ -3,15 +3,18 @@
  * plumbing (CSRF on mutations, one refresh on `CSRF_INVALID`). The 422 bodies are read into
  * `BuilderError` (shortages, the server's BM line) before the generic mapping.
  */
+import { bijakDefaultLevelScope } from '@pp/contract'
 import type {
   BijakBlueprintView,
   BijakBuilderEditor,
   BijakBuilderPaperSummary,
   BijakBuilderPlacementResult,
   BijakBuilderPoolUnit,
+  BijakBuilderSourceFilters,
   BijakBuilderStudentView,
   BijakDskpUnit,
   BijakGenerateShortage,
+  BijakLevelScope,
   BijakPoolPreview,
 } from '@pp/contract'
 
@@ -24,7 +27,9 @@ import {
   BuilderError,
   type BuilderApi,
   type BuilderSubject,
+  type GenerateOptions,
   type HeaderPatch,
+  type JanaFilters,
   type PlacementResult,
   type RawReview,
   type PublishOptions,
@@ -33,6 +38,9 @@ import {
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
+  type SubjektifCreate,
+  type SubjektifPage,
+  type SubjektifQuery,
 } from './api'
 
 const PAGE_SIZE = 100
@@ -41,7 +49,7 @@ const enc = encodeURIComponent
 const GENERIC = 'Sesuatu tidak kena. Sila cuba lagi.'
 
 interface ErrBody {
-  error?: { code?: string; message?: string; details?: { shortages?: BijakGenerateShortage[] } }
+  error?: { code?: string; message?: string; fields?: Record<string, string>; details?: { shortages?: BijakGenerateShortage[] } }
 }
 
 /** Maps a failed request to a `BuilderError`; `missing` = what a 404 means on this route. */
@@ -56,7 +64,10 @@ export function builderErrorFrom(e: unknown, missing: 'not_found' | 'no_blueprin
   if (e.status === 404)
     return new BuilderError(missing, msg || (missing === 'no_blueprint' ? 'Tiada blueprint untuk subjek dan kertas ini' : 'Kertas tidak ditemui'))
   if (e.status === 403) return new BuilderError('forbidden', msg || 'Akses ditolak')
-  if (e.status === 400 || e.status === 422) return new BuilderError('invalid', msg || GENERIC)
+  if (e.status === 400 || e.status === 422) {
+    const fields = e.fields ?? body.error?.fields
+    return new BuilderError('invalid', msg || GENERIC, fields ? { fields } : {})
+  }
   return new BuilderError('other', msg || GENERIC)
 }
 
@@ -68,7 +79,7 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
   private async call<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | FormData,
     missing: 'not_found' | 'no_blueprint' = 'not_found',
   ): Promise<T> {
     try {
@@ -106,27 +117,44 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     const out = new Map<string, BuilderSubject>()
     for (const b of rows) {
       if (b.source === 'Draf') continue
-      const s = out.get(b.subject) ?? { code: b.subject, name: b.subjectName, kertas: [] }
+      const s = out.get(b.subject) ?? { code: b.subject, name: b.subjectName, kertas: [], levelScopes: {} }
       if (!s.kertas.includes(b.kertas)) s.kertas.push(b.kertas)
+      s.levelScopes![b.kertas] = bijakDefaultLevelScope(b.levelShare)
       out.set(b.subject, s)
     }
     return [...out.values()].map((s) => ({ ...s, kertas: s.kertas.sort((a, b) => a - b) }))
   }
 
-  async create(input: { subject: string; kertas: number; title?: string }): Promise<string> {
+  async create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string> {
     const body: Record<string, unknown> = { subject: input.subject, kertas: input.kertas }
-    if (input.title?.trim()) body.title = input.title.trim()
+    // Sent as typed: a blank title is the server's 422 `fields.title`, never silently dropped.
+    body.title = input.title ?? ''
+    if (input.levelScope) body.levelScope = input.levelScope
     const out = await this.call<{ id: string }>('POST', '/api/admin/papers', body)
     return out.id
   }
 
-  async generate(subject: string, kertas: number): Promise<string> {
-    const out = await this.call<{ paperId: string }>('POST', '/api/admin/papers/generate', { subject, kertas })
-    return out.paperId
+  async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
+    const body: Record<string, unknown> = { subject, kertas }
+    body.title = options.title ?? '' // as typed, see create
+    if (options.years?.length) body.years = options.years
+    if (options.negeri?.length) body.negeri = options.negeri
+    if (options.count !== undefined) body.count = options.count
+    if (options.levelScope) body.levelScope = options.levelScope
+    const out = await this.call<{ id: string }>('POST', '/api/admin/papers/generate', body)
+    return out.id
   }
 
-  poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview> {
-    return this.call('GET', `/api/admin/papers/pool-preview?subject=${enc(subject)}&kertas=${kertas}`, undefined, 'no_blueprint')
+  poolPreview(subject: string, kertas: number, filters: JanaFilters = {}): Promise<BijakPoolPreview> {
+    const qs = new URLSearchParams({ subject, kertas: String(kertas) })
+    for (const y of filters.years ?? []) qs.append('years', String(y))
+    for (const n of filters.negeri ?? []) qs.append('negeri', n)
+    if (filters.count !== undefined) qs.set('count', String(filters.count))
+    return this.call('GET', `/api/admin/papers/pool-preview?${qs.toString()}`, undefined, 'no_blueprint')
+  }
+
+  async deleteSet(id: string): Promise<void> {
+    await this.call('DELETE', `/api/admin/papers/${enc(id)}`)
   }
 
   async getEditor(id: string): Promise<PaperEditorData> {
@@ -163,15 +191,18 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
     if (query.q?.trim()) qs.set('q', query.q.trim())
     if (query.level) qs.set('level', query.level)
     if (query.unit) qs.set('unit', query.unit)
+    if (query.tahun !== undefined) qs.set('tahun', String(query.tahun))
+    for (const n of query.negeri ?? []) qs.append('negeri', n)
     qs.set('page', String(query.page ?? 1))
     qs.set('pageSize', String(query.pageSize ?? 20))
     try {
       const res = await this.client.request<{
         data: BijakBuilderPoolUnit[]
         meta?: { totalItems?: number; totalPages?: number }
+        filters?: BijakBuilderSourceFilters
       }>('GET', `/api/admin/papers/${enc(id)}/sections/${enc(sectionId)}/pool?${qs.toString()}`, { raw: true })
       const units = res?.data ?? []
-      return { units, total: res?.meta?.totalItems ?? units.length, totalPages: res?.meta?.totalPages ?? 1 }
+      return { units, total: res?.meta?.totalItems ?? units.length, totalPages: res?.meta?.totalPages ?? 1, ...(res?.filters ? { filters: res.filters } : {}) }
     } catch (e) {
       throw builderErrorFrom(e)
     }
@@ -223,6 +254,61 @@ export class HttpBuilderServer extends HttpBijakServer implements BuilderApi {
 
   units(subject: string): Promise<BijakDskpUnit[]> {
     return this.call('GET', `/api/admin/bijak/dskp/units?subject=${enc(subject)}`)
+  }
+
+  async listSubjektif(query: SubjektifQuery = {}): Promise<SubjektifPage> {
+    const qs = new URLSearchParams({ surface: 'subjektif' })
+    if (query.subject) qs.set('subject', query.subject)
+    if (query.kertas) qs.set('kertas', String(query.kertas))
+    if (query.status) qs.set('status', query.status)
+    if (query.year) qs.set('year', String(query.year))
+    if (query.negeri) qs.set('negeri', query.negeri)
+    qs.set('page', String(query.page ?? 1))
+    qs.set('pageSize', String(query.pageSize ?? 25))
+    try {
+      const res = await this.client.request<{
+        data: BijakBuilderPaperSummary[]
+        meta?: { totalItems?: number; counts?: SubjektifPage['counts'] }
+      }>('GET', `/api/admin/papers?${qs.toString()}`, { raw: true })
+      const rows = (res?.data ?? []).map(summaryFromWire)
+      return {
+        rows,
+        total: res?.meta?.totalItems ?? rows.length,
+        counts: res?.meta?.counts ?? null,
+      }
+    } catch (e) {
+      throw builderErrorFrom(e)
+    }
+  }
+
+  async createSubjektif(input: SubjektifCreate): Promise<{ id: string }> {
+    const body: Record<string, unknown> = {
+      surface: 'subjektif',
+      title: input.title.trim(),
+      subject: input.subject,
+      kertas: input.kertas,
+      examBoard: input.examBoard,
+      year: input.year,
+      totalMarks: input.totalMarks,
+    }
+    if (input.durationMinutes !== undefined) body.durationMinutes = input.durationMinutes
+    const out = await this.call<{ id: string }>('POST', '/api/admin/papers', body)
+    return { id: out.id }
+  }
+
+  async deletePaper(id: string): Promise<void> {
+    await this.call('DELETE', `/api/admin/papers/${enc(id)}`)
+  }
+
+  async uploadSource(id: string, files: { paper: File; scheme?: File | null }): Promise<{ batchId: string }> {
+    const form = new FormData()
+    form.append('paper', files.paper, files.paper.name)
+    if (files.scheme) form.append('scheme', files.scheme, files.scheme.name)
+    return this.call<{ batchId: string }>('POST', `/api/admin/papers/${enc(id)}/source`, form)
+  }
+
+  applySource(id: string): Promise<{ placements: number }> {
+    return this.call('POST', `/api/admin/papers/${enc(id)}/source`, { apply: true })
   }
 }
 

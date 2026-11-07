@@ -17,7 +17,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import {
+  DsCallout,
   DsDataTable,
+  DsDialog,
   DsEmptyState,
   DsFilterBar,
   DsFormField,
@@ -26,7 +28,9 @@ import {
   DsPage,
   DsPanel,
   DsRowActions,
+  DsStack,
   DsStatusBadge,
+  DsText,
   useConfirm,
   type CardField,
   type RowAction,
@@ -47,13 +51,20 @@ import {
   type QuestionRow,
 } from '../api'
 import BulkFilterResult from '../components/BulkFilterResult.vue'
+import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
+import RegroupPage from './RegroupPage.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
+import { IMPORT_PATH } from '../lib/import-quality'
 import {
+  BULK_FILTER_ARCHIVE_FILTERED_CONFIRM,
+  BULK_FILTER_ARCHIVE_HINT,
+  BULK_FILTER_ARCHIVE_WORD,
   BULK_FILTER_CONFIRM,
   BULK_FILTER_LABELS,
   BULK_FILTER_NEEDED,
   BULK_FILTER_NONE_ELIGIBLE,
   BULK_FILTER_TITLES,
+  bulkArchivePaperLines,
   bulkFilterCountLine,
 } from '../lib/bulk-filter'
 import {
@@ -79,6 +90,7 @@ import {
   statusLabel,
   statusOptionsFor,
   type FilterKey,
+  REGROUP_TAB,
 } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
 import { listLoadMessage, useDebouncedFilter } from '../lib/list-load'
@@ -90,6 +102,7 @@ const flash = useFlash()
 const confirm = useConfirm()
 /** The columns fit the width from `xl`; below that the table scrolls inside its own container. */
 const xl = useMedia('(min-width: 1280px)')
+const sm = useMedia('(width >= 40rem)')
 
 const PAGE_SIZES = [20, 50, 100]
 const DEFAULT_PAGE_SIZE = 20
@@ -98,6 +111,8 @@ const DEFAULT_PAGE_SIZE = 20
 const applied = computed(() => {
   const out = {} as Record<FilterKey, string>
   for (const key of FILTER_KEYS) out[key] = queryText(route.query[key]).trim()
+  // An old link with a value no longer offered (OPT-COMPLIANCE) is no filter: a bulk action must not inherit what the screen does not show.
+  if (!COMPLIANCE_OPTIONS.some((o) => o.value === out.compliance_filter)) out.compliance_filter = ''
   return out
 })
 const page = computed(() => pageOf(route.query.page))
@@ -125,9 +140,12 @@ watch(
   },
 )
 
+/** The tab `Perlu dikumpulkan semula` shares this route: its page takes over, and nothing of the list is read. */
+const regroup = computed(() => route.query.tab === REGROUP_TAB)
+
 const list = useApi(
   (signal) =>
-    fetchQuestions({
+    regroup.value ? Promise.resolve(null) : fetchQuestions({
       subjectId: applied.value.subject_id || null,
       educationLevelId: applied.value.education_level_id || null,
       difficultyLevel: applied.value.difficulty_level || null,
@@ -144,9 +162,10 @@ const list = useApi(
     ...FILTER_KEYS.map((k) => () => route.query[k]),
     () => route.query.page,
     () => route.query.per_page,
+    regroup,
   ],
 )
-const summary = useApi((signal) => fetchQuestionSummary({ signal }))
+const summary = useApi((signal) => (regroup.value ? Promise.resolve(null) : fetchQuestionSummary({ signal })), [regroup])
 const subjects = useApi((signal) => fetchSubjects({ signal }))
 const levels = useApi((signal) => fetchEducationLevels({ signal }))
 
@@ -363,7 +382,8 @@ async function submitBulk(): Promise<void> {
         message: notUpdatedLines(result.data.affected, result.notUpdated, option.verb),
       })
     } else {
-      flash.show({ type: 'success', message: result.status })
+      const papers = bulkArchivePaperLines(result.data.affectedPapers)
+      flash.show({ type: 'success', message: papers.length > 0 ? [result.status, ...papers] : result.status })
     }
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
@@ -376,8 +396,24 @@ async function submitBulk(): Promise<void> {
 // count, then the real call with `expectedCount`. Only non-blank filter keys are sent.
 const filterBusy = ref(false)
 const filterErrors = ref<string[]>([])
-const filterOutcome = ref<{ action: QuestionFilterAction; result: QuestionFilterBulkResult } | null>(null)
+const filterOutcome = ref<{ action: QuestionFilterAction; result: QuestionFilterBulkResult; filtered: boolean } | null>(null)
 const bulkFilterBody = computed(() => buildBulkFilter(applied.value))
+
+// "Arkib Semua" (FR-ADM-Q20.3, D113): the confirm also needs the typed word, so it is this page's own dialog.
+const archiveAsk = ref<{ message: string; answer: (ok: boolean) => void } | null>(null)
+const archiveTyped = ref('')
+const archiveWordOk = computed(() => archiveTyped.value.trim() === BULK_FILTER_ARCHIVE_WORD)
+const archiveLines = computed(() => (archiveAsk.value?.message ?? '').split(/\n+/))
+function askArchive(message: string): Promise<boolean> {
+  archiveTyped.value = ''
+  return new Promise((resolve) => {
+    archiveAsk.value = { message, answer: resolve }
+  })
+}
+function answerArchive(ok: boolean): void {
+  archiveAsk.value?.answer(ok)
+  archiveAsk.value = null
+}
 const hasFilter = computed(() => Object.keys(bulkFilterBody.value).length > 0)
 
 /** 422 `fields.filter` / `fields.expectedCount` first (the server message), else the usual lines. */
@@ -410,9 +446,14 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
   if (filterBusy.value) return
   filterErrors.value = []
   filterOutcome.value = null
-  // "Arkib Semua" is the whole bank (empty filter); "Luluskan Hasil Tapisan" needs a filter.
-  const filter = action === 'archived' ? {} : bulkFilterBody.value
-  if (action === 'approved' && Object.keys(filter).length === 0) {
+  // A filter still inside the 300 ms debounce must count: "Arkib Semua" without one is the whole bank.
+  debounced.cancel()
+  const query = draftQuery()
+  if (JSON.stringify(query) !== JSON.stringify(pagerQuery.value)) await router.push({ path: QUESTIONS_LIST_PATH, query })
+  // "Arkib Semua" takes the filter on screen, or the whole bank without one (PRD30 20-10); "Luluskan Hasil Tapisan" needs a filter.
+  const filter = bulkFilterBody.value
+  const filtered = Object.keys(filter).length > 0
+  if (action === 'approved' && !filtered) {
     filterErrors.value = [BULK_FILTER_NEEDED]
     return
   }
@@ -423,16 +464,22 @@ async function runFilterBulk(action: QuestionFilterAction): Promise<void> {
       filterErrors.value = [BULK_FILTER_NONE_ELIGIBLE[action]]
       return
     }
-    const confirmed = await confirm({
-      title: BULK_FILTER_LABELS[action],
-      message: `${BULK_FILTER_CONFIRM[action]}\n\n${bulkFilterCountLine(action, dry)}`,
-      confirmLabel: BULK_FILTER_LABELS[action],
-      tone: action === 'archived' ? 'error' : 'primary',
-    })
+    const countLine = bulkFilterCountLine(action, dry)
+    const confirmed =
+      action === 'archived'
+        ? await askArchive(
+            [filtered ? BULK_FILTER_ARCHIVE_FILTERED_CONFIRM : BULK_FILTER_CONFIRM.archived, countLine, ...bulkArchivePaperLines(dry.affectedPapers)].join('\n'),
+          )
+        : await confirm({
+            title: BULK_FILTER_LABELS.approved,
+            message: `${BULK_FILTER_CONFIRM.approved}\n\n${countLine}`,
+            confirmLabel: BULK_FILTER_LABELS.approved,
+            tone: 'primary',
+          })
     if (!confirmed) return
     const done = await bulkQuestionsByFilter(action, filter, { expectedCount: dry.matched })
     selected.value = []
-    filterOutcome.value = { action, result: done.data }
+    filterOutcome.value = { action, result: done.data, filtered }
     await reloadAfterMutation()
   } catch (err) {
     filterErrors.value = filterErrorLines(err)
@@ -524,7 +571,8 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsPage subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
+  <RegroupPage v-if="regroup" />
+  <DsPage v-else subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
     <template #actions>
       <div class="flex flex-wrap items-center gap-2" data-testid="questions-header-actions">
         <UButton
@@ -567,6 +615,13 @@ const cardFields: CardField[] = [
           </UButton>
         </UDropdownMenu>
         <UButton
+          :to="IMPORT_PATH"
+          :label="sm ? 'Import CSV' : 'Import'"
+          color="neutral"
+          variant="soft"
+          data-testid="questions-import"
+        />
+        <UButton
         :to="QUESTIONS_CREATE_PATH"
         icon="i-ph-plus"
         class="min-h-11 shrink-0"
@@ -578,6 +633,16 @@ const cardFields: CardField[] = [
       </div>
     </template>
 
+    <QuestionAreaTabs />
+
+    <DsCallout
+      description="Ini bank soalan lama (model flat). Soalan baharu dicipta dan diterbitkan di bank kanonikal."
+      data-testid="questions-legacy-banner"
+    >
+      <template #actions>
+        <UButton to="/admin/studio" variant="link" data-testid="questions-studio-link">Bank Soalan (Studio)</UButton>
+      </template>
+    </DsCallout>
 
     <QuestionSummaryCard :summary="summary.data.value" :active-subject-id="activeSubjectId" />
 
@@ -665,7 +730,32 @@ const cardFields: CardField[] = [
       v-if="filterOutcome"
       :action="filterOutcome.action"
       :result="filterOutcome.result"
+      :filtered="filterOutcome.filtered"
     />
+
+    <DsDialog
+      :open="archiveAsk !== null"
+      :title="BULK_FILTER_LABELS.archived"
+      tone="error"
+      @update:open="(open) => !open && answerArchive(false)"
+    >
+      <DsStack gap="sm" data-testid="questions-archive-dialog">
+        <DsText v-for="(line, i) in archiveLines" :key="i" variant="body" as="p" wrap="anywhere">{{ line }}</DsText>
+        <DsFormField v-slot="{ id }" native for="q-archive-word" :label="BULK_FILTER_ARCHIVE_HINT">
+          <UInput :id="id" v-model="archiveTyped" autocomplete="off" data-testid="questions-archive-word" />
+        </DsFormField>
+      </DsStack>
+      <template #footer>
+        <UButton label="Batal" color="neutral" variant="soft" data-testid="questions-archive-cancel" @click="answerArchive(false)" />
+        <UButton
+          :label="BULK_FILTER_LABELS.archived"
+          color="error"
+          :disabled="!archiveWordOk"
+          data-testid="questions-archive-confirm"
+          @click="answerArchive(true)"
+        />
+      </template>
+    </DsDialog>
 
     <!-- Load failure: alert in place of the table + retry (INFERRED copy, SRS §8.2). -->
     <DsLoadError

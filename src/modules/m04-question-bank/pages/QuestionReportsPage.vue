@@ -16,6 +16,7 @@ import { useApi, useFlash } from '@/composables'
 import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsPillNav, type PillItem } from '@/ds'
 
 import { fetchQuestionReports, type ReportFilter } from '../api/reports'
+import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
 import ReportCard from '../components/report/ReportCard.vue'
 import { REPORT_FILTERS } from '../lib/report-reasons'
 import { REPORTS_PATH } from '../lib/report-routes'
@@ -79,6 +80,8 @@ const SKELETON_CARDS = 3
         >Soalan yang dilaporkan oleh pelajar dari kuiz, latihan &amp; Papan Bijak</span
       >
     </template>
+
+    <QuestionAreaTabs />
 
     <DsPillNav
       :items="TABS"

@@ -388,7 +388,7 @@ describe('other §6.10 queries and §6.11.5 / §6.11.7 seeds', () => {
     expect(achievements.forUser(1)).toMatchObject({ unlocked: 0, total: 25 })
     expect(referrals.count('Q-REFERRALS', 1)).toBe(0)
     expect(referrals.codeOf(1)).toBe('4JURJTT')
-    expect(referrals.codeOf(2)).toMatch(/^[A-Z0-9]{7}$/)
+    expect(referrals.codeOf(2)).toMatch(/^[A-Z0-9]{8}$/)
     expect(referrals.stats(1)).toEqual({ referrals: 0, rewarded: 0, syilingEarned: 0 })
     expect(settings.get('flat_quiz_reward')).toBe(1)
     expect(settings.get('games_award_syiling')).toBe(0)
@@ -566,19 +566,25 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
   })
   afterEach(() => setPracticeReadsForTests(null))
 
-  it('random (practice mode): session credit, challenges in order, achievement, XP, wallet created', () => {
+  // S7-T04 part 13: completing a challenge writes the completion only; the claim pays (API-GAME-11), so the
+  // completion rows (+10, +12 syiling; +5, +8 XP) left the expectations below.
+  it('random (practice mode): session credit, challenge completions (unpaid), achievement, XP, wallet created', () => {
     const r = gamification.onSessionCompleted(session(3))
-    expect(r).toEqual({ coinsEarned: 6, pointsEarned: 60, streakCount: 1, totalBalance: 33 })
+    expect(r).toEqual({ coinsEarned: 6, pointsEarned: 60, streakCount: 1, totalBalance: 11 })
     expect(rowsOf(3).reverse()).toEqual([
       ['Latih Tubi: 6 betul — 60%', 6],
-      ['Cabaran selesai: Mula Hari Ini', 10],
-      ['Cabaran selesai: Jawab 5 Betul', 12],
       ['Pencapaian: Langkah Pertama', 5],
     ])
+    expect(
+      challenges
+        .today(3)
+        .items.filter((c) => c.completed)
+        .map((c) => c.title),
+    ).toEqual(['Mula Hari Ini', 'Jawab 5 Betul'])
     expect(wallet.summary(3)).toMatchObject({
-      currentSyiling: 33,
-      totalSyilingEarned: 33,
-      xp: 60 + 5 + 8 + 3,
+      currentSyiling: 11,
+      totalSyilingEarned: 11,
+      xp: 60 + 3,
       level: 1,
       hasWallet: true,
     })
@@ -616,11 +622,15 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     gamification.onSessionCompleted(
       session(3, { correct: 5, timeSpent: 120, completedAt: '2026-09-26T09:20:00+08:00' }),
     )
+    // Kilat Matematik completes once (no repeat) but pays nothing until it is claimed (S7-T04 part 13).
     expect(rowsOf(3).slice(0, 2)).toEqual([
-      ['Cabaran selesai: Kilat Matematik', 30],
       ['Latih Tubi: 5 betul — 50%', 5],
+      ['Pencapaian: Langkah Pertama', 5],
     ])
-    expect(wallet.summary(3).currentSyiling).toBe(33 + 5 + 30)
+    expect(challenges.today(3).items.find((c) => c.title === 'Kilat Matematik')?.completed).toBe(
+      true,
+    )
+    expect(wallet.summary(3).currentSyiling).toBe(11 + 5)
   })
 
   it('past_year: SPM row, then "Streak activity (spm)" +7 once a day; 0 correct → no session row', () => {
@@ -628,20 +638,29 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     expect(rowsOf(3).reverse()).toEqual([
       ['SPM Tahun Lepas: 4 betul — 40%', 4],
       ['Streak activity (spm)', 7],
-      ['Cabaran selesai: Mula Hari Ini', 10],
     ])
     gamification.onSessionCompleted(
       session(3, { mode: 'past_year', correct: 0, completedAt: '2026-09-26T09:30:00+08:00' }),
     )
-    expect(coinLedger.forUser(3)).toHaveLength(3)
+    expect(coinLedger.forUser(3)).toHaveLength(2)
     expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
     // No achievement for SPM modes.
     expect(achievements.forUser(3).unlocked).toBe(0)
   })
 
+  it('databank (S3-T07): credits quiz_spm with the "SPM Tahun Lepas" wording, like past_year', () => {
+    gamification.onSessionCompleted(session(3, { mode: 'databank', correct: 4 }))
+    expect(rowsOf(3).reverse()).toEqual([
+      ['SPM Tahun Lepas: 4 betul — 40%', 4],
+      ['Streak activity (spm)', 7],
+    ]) // the completed challenge is paid on the claim (Tuntut), not on completion
+    expect(coinLedger.forUser(3).every((r) => r.source !== 'quiz_practice')).toBe(true)
+    expect(achievements.forUser(3).unlocked).toBe(0)
+  })
+
   it('latih_tubi / ramalan: quiz_spm wording; the XP bar text (E2E-M14-44)', () => {
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
-    expect(wallet.summary(3)).toMatchObject({ xp: 73, xpNeeded: 100, level: 1 })
+    expect(wallet.summary(3)).toMatchObject({ xp: 60, xpNeeded: 100, level: 1 }) // the 13 XP of the completed challenge is paid on the claim
     gamification.onSessionCompleted(
       session(3, {
         mode: 'latih_tubi',
@@ -679,8 +698,6 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     gamification.onSessionCompleted(session(3, { mode: 'chapter', correct: 3 }))
     expect(rowsOf(3).reverse()).toEqual([
       ['Latih Tubi: 3 betul — 30%', 3],
-      ['Cabaran selesai: Penjelajah Topik', 25],
-      ['Cabaran selesai: Mula Hari Ini', 10],
       ['Pencapaian: Langkah Pertama', 5],
     ])
     gamification.onSessionCompleted(
@@ -747,8 +764,34 @@ describe('gamification.onSessionCompleted (BR-M14-03/04/05/08/12/13/14/16/24)', 
     const r = gamification.onSessionCompleted(session(5901, { correct: 8 }))
     expect(r.coinsEarned).toBe(0)
     expect(coinLedger.forUser(5901)).toHaveLength(0)
-    expect(wallet.summary(5901)).toMatchObject({ currentSyiling: 0, xp: 80 + 15 + 5 + 8 + 3 }) // Si Tepat, Mula, Jawab 5, Langkah Pertama
+    expect(wallet.summary(5901)).toMatchObject({ currentSyiling: 0, xp: 80 + 3 }) // Langkah Pertama; the XP of Si Tepat, Mula, Jawab 5 is paid on the claim
     expect(streak.get(5901).current).toBe(1)
+  })
+
+  it('claim (API-GAME-11): coins off pays XP only and stores 0 syiling; coins on pays both and reports a tier-up notice', () => {
+    gamification.onSessionCompleted(session(5901, { correct: 8 }))
+    const off = challenges.claim(5901, 6, null)
+    expect(off).toMatchObject({ claimed: true, rewardSyiling: 0 })
+    expect(off.rewardXp).toBeGreaterThan(0)
+    expect(coinLedger.forUser(5901)).toHaveLength(0)
+    expect(wallet.summary(5901)).toMatchObject({ currentSyiling: 0, xp: 80 + 3 + off.rewardXp })
+
+    wallet.setFields(3, { syiling: 480, lifetime: 480, tierKey: 'bronze' })
+    gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 4 }))
+    const done = challenges.today(3).items.find((c) => c.completed)!
+    const xpBefore = wallet.summary(3).xp
+    const on = challenges.claim(3, done.id, null)
+    expect(on).toMatchObject({
+      claimed: true,
+      rewardSyiling: done.rewardSyiling,
+      rewardXp: done.rewardXp,
+      notices: ['Tahniah! Anda naik ke tier Perak.'],
+    })
+    expect(wallet.summary(3)).toMatchObject({ tier: { key: 'silver' }, xp: xpBefore + done.rewardXp })
+    expect(coinLedger.forUser(3)[0]).toMatchObject({
+      description: `Cabaran selesai: ${done.title}`,
+      amount: done.rewardSyiling,
+    })
   })
 
   it('admin latih_tubi 11/34: student rows and the teacher mirror (BR-M14-24)', () => {
@@ -920,18 +963,46 @@ describe('games, tokens, draws, referrals, teacher events (BR-M14-19/21/22/23/26
     )
   })
 
-  it('referrals.onRegistered: +25 / +50 once; unknown or own code → nothing', () => {
-    expect(referrals.onRegistered(3, '4JURJTT')).toMatchObject({
-      referrerId: 1,
+  it('referrals.onRegistered: the settings amounts (100 / 0) once; unknown, own, admin or teacher → nothing', () => {
+    const code = referrals.codeOf(2)
+    const before = wallet.summary(2).currentSyiling
+    expect(referrals.onRegistered(3, code)).toMatchObject({
+      referrerId: 2,
       refereeId: 3,
       rewarded: true,
     })
-    expect(wallet.summary(3).currentSyiling).toBe(25)
-    expect(wallet.summary(1).currentSyiling).toBe(306)
-    expect(referrals.stats(1)).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 50 })
-    expect(referrals.onRegistered(3, '4JURJTT')).toBeNull()
-    expect(referrals.onRegistered(11, 'ZZZZZZZ')).toBeNull()
-    expect(referrals.onRegistered(1, '4JURJTT')).toBeNull()
+    expect(wallet.summary(3).currentSyiling).toBe(0) // referral_referee_syiling = 0: no ledger row
+    expect(coinLedger.forUser(3)).toHaveLength(0)
+    expect(wallet.summary(2).currentSyiling).toBe(before + 100)
+    expect(referrals.stats(2)).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 100 })
+    expect(referrals.onRegistered(3, code)).toBeNull()
+    expect(referrals.onRegistered(11, 'ZZZZZZZZ')).toBeNull()
+    expect(referrals.onRegistered(2, code)).toBeNull()
+    expect(referrals.onRegistered(11, '4JURJTT')).toBeNull() // the code of a non-pupil
+  })
+
+  it('referral share text: a friend reward above 0 keeps the live clause; at 0 it is dropped', async () => {
+    const { referralShareText } = await import('../../mock/handlers/student')
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 0)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234! https://x.test/register?ref=ABCD1234',
+    )
+    expect(referralShareText('ABCD1234', 'https://x.test/register?ref=ABCD1234', 25)).toBe(
+      'Jom belajar matematik di PRESTASIPLUS! Guna kod ABCD1234 untuk dapat 25 syiling PERCUMA! https://x.test/register?ref=ABCD1234',
+    )
+  })
+
+  it('referrals.onRegistered: beyond the cap the referral is stored without a reward', () => {
+    const code = referrals.codeOf(2)
+    const pupils = Array.from({ length: 58 }, (_, i) => i + 3).filter(
+      (id) => users.get(id)?.role === 'student',
+    )
+    expect(pupils.length).toBeGreaterThan(20)
+    const before = wallet.summary(2).currentSyiling
+    const rows = pupils.slice(0, 21).map((id) => referrals.onRegistered(id, code))
+    expect(rows.filter((r) => r?.rewarded).length).toBe(20)
+    expect(rows[20]).toMatchObject({ rewarded: false })
+    expect(wallet.summary(2).currentSyiling).toBe(before + 2000)
+    expect(referrals.stats(2)).toEqual({ referrals: 21, rewarded: 20, syilingEarned: 2000 })
   })
 
   it('teacherGamification.onQuestionContributed: +10 per question; a badge bonus once', () => {
@@ -1050,8 +1121,8 @@ describe('review follow-ups (idempotency, validation, shim, claims, complimentar
         completedAt: '2026-09-26T09:00:00+08:00',
       },
     )
-    expect(r).toEqual({ coinsEarned: 6, pointsEarned: 60, streakCount: 1, totalBalance: 33 })
-    expect(wallet.summary(3).xp).toBe(60 + 5 + 8 + 3)
+    expect(r).toEqual({ coinsEarned: 6, pointsEarned: 60, streakCount: 1, totalBalance: 11 })
+    expect(wallet.summary(3).xp).toBe(60 + 3)
     wallet.credit(11, { coins: 7, points: 4 }, { source: 'legacy', description: 'Pindahan' })
     expect(wallet.summary(11)).toMatchObject({ currentSyiling: 7, xp: 4 })
     expect(rowsOf(11)).toEqual([['Pindahan', 7]])
@@ -1082,7 +1153,7 @@ describe('review follow-ups (idempotency, validation, shim, claims, complimentar
     wallet.setFields(3, { syiling: 495, lifetime: 495, tierKey: 'bronze' })
     gamification.onSessionCompleted(session(3, { mode: 'past_year', correct: 6 }))
     expect(wallet.summary(3)).toMatchObject({
-      currentSyiling: 495 + 6 + 7 + 10 + 12,
+      currentSyiling: 495 + 6 + 7, // the +10 +12 challenge pay moved to the claim
       tier: { key: 'silver' },
     })
   })

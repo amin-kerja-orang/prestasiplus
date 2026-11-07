@@ -1,5 +1,11 @@
 import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { CONTENT_MESSAGES, SupportTicketCreateRequestSchema, SupportTicketReplyRequestSchema, SupportTicketStatusRequestSchema } from '@pp/contract'
+import {
+  CONTENT_MESSAGES,
+  SupportSettingsUpdateRequestSchema,
+  SupportTicketCreateRequestSchema,
+  SupportTicketReplyRequestSchema,
+  SupportTicketStatusRequestSchema,
+} from '@pp/contract'
 import type { Request } from 'express'
 
 import { ApiError } from '../../common/errors/api-error'
@@ -37,6 +43,8 @@ const one = (v: unknown): string | undefined => (typeof v === 'string' ? v : Arr
 
 /** The create body in STRICT mode (BE-33 AC1c, #98): an unknown key such as `status` or `userId` is a 422 naming it. */
 const StrictSupportTicketCreateRequestSchema = SupportTicketCreateRequestSchema.strict()
+/** `phone` and `hours` are refused by name until they have a store (open on #458, #507). */
+const StrictSupportSettingsUpdateRequestSchema = SupportSettingsUpdateRequestSchema.strict()
 const StrictSupportTicketStatusRequestSchema = SupportTicketStatusRequestSchema.strict()
 const StrictSupportTicketReplyRequestSchema = SupportTicketReplyRequestSchema.strict()
 
@@ -86,6 +94,25 @@ export class SupportController {
   @RateLimit(SUPPORT_LIMITS.read)
   async openCount() {
     return ok(await this.support.openCount())
+  }
+
+  @Get('admin/settings/support')
+  @Roles('admin')
+  @RateLimit(SUPPORT_LIMITS.read)
+  async settings() {
+    return ok(await this.support.settings())
+  }
+
+  @Put('admin/settings/support')
+  @Roles('admin')
+  @RateLimit(SUPPORT_LIMITS.settingsWrite)
+  async saveSettings(@Req() req: Req, @Body() raw: unknown) {
+    const body = objectOf(raw)
+    const parsed = StrictSupportSettingsUpdateRequestSchema.safeParse(body)
+    const fields: Record<string, string> = parsed.success ? {} : strictFieldsOf(parsed.error.issues)
+    for (const key of ['email', 'whatsapp'] as const) if (hasNul(body[key])) fields[key] = CONTENT_MESSAGES.fieldInvalid
+    if (!parsed.success || Object.keys(fields).length > 0) throw invalid(fields)
+    return ok(await this.support.saveSettings(actorOf(req), parsed.data))
   }
 
   /** After `open-count`, so that literal path is matched first. */

@@ -150,7 +150,7 @@ describe('reveal rules (US-15, AC3)', () => {
     expect(res.status).toBe(200)
     const r = BijakAttemptQuestionResultSchema.parse(res.body.data)
     expect(r.awarded).toBe(1)
-    expect(r.parts[0]!.scheme.correctOption).toBe(correctChoice(q))
+    expect(r.parts[0]!.scheme!.correctOption).toBe(correctChoice(q))
     const v1 = await view(me, id)
     expect(v1.checks.map((c) => c.questionId)).toEqual([q])
     // the other question stays closed
@@ -555,16 +555,16 @@ describe('latihan Semak (AC3, NFR-05)', () => {
     const right = correctChoice(q)
     const body = (choice: string, rev: number) => ({ changes: [change(q, { choice }, rev)] })
     for (let i = 1; i <= 3; i++) {
-      const r = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body(`${q}-wrong`, i))
+      const r = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body(`${q}-wrong-${i}`, i))
       expect(BijakAttemptQuestionResultSchema.parse(r.body.data).awarded).toBe(0)
     }
     await save(me, id, body(right, 9)) // locked: ignored by the autosave too
     const fourth = await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { ...body(right, 10), position: 7 })
     const r4 = BijakAttemptQuestionResultSchema.parse(fourth.body.data)
     expect(r4.awarded).toBe(0)
-    expect(r4.parts[0]!.scheme.correctOption).toBe(right)
+    expect(r4.parts[0]!.scheme!.correctOption).toBe(right)
     const v = await view(me, id)
-    expect(v.attempt.answers[q]!.answer.choice).toBe(`${q}-wrong`)
+    expect(v.attempt.answers[q]!.answer.choice).toBe(`${q}-wrong-3`)
     expect(v.attempt.checkCounts).toEqual({ [q]: 3 })
     expect(v.attempt.position).toBe(0)
   })
@@ -581,7 +581,9 @@ describe('latihan Semak (AC3, NFR-05)', () => {
   it('an empty body is "no payload"; a malformed one is 422', async () => {
     const id = await startAttempt(me, PAPER.matK1, 'latihan')
     const q = questionIdsOfView(await view(me, id))[0]!
-    expect((await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`)).status).toBe(200)
+    // blank part: refused 422 (lead ruling Q3), the same shape as a malformed body
+    expectError(await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`), 'VALIDATION_ERROR')
+    expect((await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: [change(q, { choice: correctChoice(q) }, 1)] })).status).toBe(200)
     expectError(await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: 'x' }), 'VALIDATION_ERROR')
   })
 })
@@ -687,8 +689,9 @@ describe('rate limits (D57a)', () => {
       expect(err.retryAfter).toBeGreaterThan(0)
       expect(res.headers['retry-after']).toBeDefined()
       const q = questionIdsOfView(await view(c, id))[0]!
-      expect((await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, {})).status).toBe(200)
-      expectError(await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, {}), 'RATE_LIMITED')
+      const body = { changes: [change(q, { choice: correctChoice(q) }, 1)] }
+      expect((await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body)).status).toBe(200)
+      expectError(await c.post(`/api/bijak/attempts/${id}/questions/${q}/check`, body), 'RATE_LIMITED')
     } finally {
       await lim.close()
     }
@@ -710,7 +713,7 @@ describe('hardening', () => {
   it('latihan: a locked question cannot be changed by a later submit either', async () => {
     const id = await startAttempt(me, PAPER.matK1, 'latihan')
     const q = questionIdsOfView(await view(me, id))[0]!
-    for (let i = 1; i <= 3; i++) await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: [change(q, { choice: 'wrong' }, i)] })
+    for (let i = 1; i <= 3; i++) await me.post(`/api/bijak/attempts/${id}/questions/${q}/check`, { changes: [change(q, { choice: i === 3 ? 'wrong' : `wrong-${i}` }, i)] })
     await submit(me, id, { idempotencyKey: 'k', changes: [change(q, { choice: correctChoice(q) }, 50)], answers: { [q]: { answer: { choice: correctChoice(q) }, rev: 60, savedAt: START } } })
     const r = await result(me, id)
     expect(r.attempt.answers[q]!.answer.choice).toBe('wrong')
