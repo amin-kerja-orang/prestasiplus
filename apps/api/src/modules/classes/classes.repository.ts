@@ -55,6 +55,30 @@ export interface NewClass {
   now: Date
 }
 
+export interface UpdateClass {
+  name: string
+  subjectId: string | null
+  educationLevelId: string
+  schoolId: string | null
+  academicYear: number
+  description: string | null
+  now: Date
+}
+
+/**
+ * True when a thrown database error may be a unique violation of the class name index (`uq_classrooms_teacher_year_name`, DM-73):
+ * the index name in the message or meta, or ANY unique violation (Prisma P2002, P2010 with pg 23505, or pg 23505) of `classrooms` /
+ * `classrooms_*`. The caller confirms with the pre-check query (`nameTaken`) before answering 409.
+ */
+export function isClassNameViolation(e: unknown): boolean {
+  if (typeof e !== 'object' || e === null) return false
+  const err = e as { code?: unknown; meta?: unknown; message?: unknown }
+  const text = `${typeof err.message === 'string' ? err.message : ''} ${JSON.stringify(err.meta ?? {}, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v))}`
+  if (text.includes('uq_classrooms_teacher_year_name')) return true
+  const unique = err.code === 'P2002' || err.code === '23505' || (err.code === 'P2010' && text.includes('23505'))
+  return unique && /\bclassrooms\b/.test(text) && !text.includes('uq_classrooms_join_code_upper') && !text.includes('uq_classrooms_legacy')
+}
+
 export interface EnrolInput {
   classroomId: string
   studentId: string
@@ -254,8 +278,8 @@ export class ClassesRepository {
   }
 
   /**
-   * Creates a teacher class with a fresh unique join code. The insert is `ON CONFLICT DO NOTHING`, so a code
-   * collision (or a race on the case-insensitive unique index) draws a new code instead of aborting a surrounding
+   * Creates a teacher class with a fresh unique join code. The insert is `ON CONFLICT (upper(join_code)) DO NOTHING`, so a code
+   * collision (a race on the case-insensitive unique index) draws a new code instead of aborting a surrounding
    * transaction.
    */
   async createClass(input: NewClass): Promise<ClassRecord> {
@@ -266,7 +290,7 @@ export class ClassesRepository {
         VALUES ('classroom', ${input.name}, ${idFromString(input.teacherId)}, ${input.schoolId === null ? null : idFromString(input.schoolId)},
                 ${input.subjectId === null ? null : idFromString(input.subjectId)}, ${idFromString(input.educationLevelId)}, ${input.academicYear},
                 ${input.description}, ${joinCode}, true, ${input.now}, ${input.now})
-        ON CONFLICT DO NOTHING
+        ON CONFLICT (upper(join_code)) DO NOTHING
         RETURNING id`
       const first = rows[0]
       if (first) {
@@ -275,6 +299,35 @@ export class ClassesRepository {
       }
     }
     throw new Error('classes: no free join code after several draws')
+  }
+
+  /**
+   * True when another class of the teacher has this name in the same Tahun Sesi (kind `classroom`; case-insensitive,
+   * edge spaces ignored, as the unique index `uq_classrooms_teacher_year_name`). `exceptId` leaves the class being edited out.
+   */
+  async nameTaken(teacherId: string, academicYear: number, name: string, exceptId?: string): Promise<boolean> {
+    const t = idOf(teacherId)
+    if (t === null) return false
+    const except = exceptId === undefined ? null : idOf(exceptId)
+    const rows = await this.db.$queryRaw<{ ok: number }[]>`
+      SELECT 1 AS ok FROM classrooms
+       WHERE kind = 'classroom' AND teacher_id = ${t} AND academic_year = ${academicYear}
+         AND lower(btrim(name)) = lower(btrim(${name})) AND (${except}::bigint IS NULL OR id <> ${except}::bigint)
+       LIMIT 1`
+    return rows.length > 0
+  }
+
+  /** Updates the editable fields of a class (S6-T14); the join code, owner and active flag are not touched. */
+  async updateClass(id: string, input: UpdateClass): Promise<ClassRecord> {
+    // Raw statement: a unique violation then reaches the caller as a database error that names the index (`isClassNameViolation`).
+    const key = idFromString(id)
+    await this.db.$executeRaw`
+      UPDATE classrooms
+         SET name = ${input.name}, subject_id = ${input.subjectId === null ? null : idFromString(input.subjectId)},
+             education_level_id = ${idFromString(input.educationLevelId)}, academic_year = ${input.academicYear},
+             school_id = ${input.schoolId === null ? null : idFromString(input.schoolId)}, description = ${input.description}, updated_at = ${input.now}
+       WHERE id = ${key}`
+    return toClass(await this.db.classroom.findUniqueOrThrow({ where: { id: key } }))
   }
 
   /**
@@ -594,7 +647,7 @@ export class ClassesRepository {
   /**
    * Tugasan, Skor Purata and Terakhir Aktif of the given pupils (one grouped query each; test rows never count).
    * - tugasan: distinct Set Soalan sets and Misi the pupil completed that are assigned to a class of THIS teacher the
-   *   pupil is an active member of (`question_sets.classroom_id` today; S6-T14 repoints it to the assignment table).
+   *   pupil is an active member of (`question_set_classrooms`, the assignment table of DM-46; S6-T14).
    * - skorPurata: round(mean of correct_count / question_count x 100) (`skorPurataOf`) over completed sessions of every mode.
    * - lastActiveAt: latest `practice_answers.answered_at`.
    */
@@ -611,7 +664,7 @@ export class ClassesRepository {
            AND EXISTS (
              SELECT 1 FROM enrolments e JOIN classrooms c ON c.id = e.classroom_id
               WHERE e.student_id = s.user_id AND e.status = 'active' AND e.is_test = false AND c.teacher_id = ${teacher}
-                AND ((s.mode = 'question_set' AND EXISTS (SELECT 1 FROM question_sets q WHERE q.id = s.question_set_id AND q.classroom_id = e.classroom_id))
+                AND ((s.mode = 'question_set' AND EXISTS (SELECT 1 FROM question_set_classrooms qc WHERE qc.question_set_id = s.question_set_id AND qc.classroom_id = e.classroom_id))
                   OR (s.mode = 'mission' AND EXISTS (SELECT 1 FROM missions m WHERE m.id = s.mission_id AND m.classroom_id = e.classroom_id))))
          GROUP BY s.user_id`,
       this.db.$queryRaw<{ user_id: bigint; ratio: number; n: number }[]>`
