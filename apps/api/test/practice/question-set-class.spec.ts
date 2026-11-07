@@ -4,7 +4,7 @@ import { STUDENT_1, STUDENT_2, bootMissionsApp, client, eligibleMcqIds, loadWorl
 
 /**
  * S5-T11 B1 (AC-MUR-26-6): the real assignment source, no fakes. A pupil of the class starts the set; a pupil of another
- * class gets 404. Visibility is the current single class (`question_sets.classroom_id`); S6-T14 makes it multi-class.
+ * class gets 404. Visibility is the assignment table `question_set_classrooms` (DM-46, S6-T14); `question_sets.classroom_id` is no longer read.
  */
 describe('S5-T11 question_set start: class visibility and no cap/timer (real source)', () => {
   let t: MissionsTestApp
@@ -21,10 +21,11 @@ describe('S5-T11 question_set start: class visibility and no cap/timer (real sou
     await makeClass(t, w, w.teacherA, [w.student2], 'Kelas Set B')
     // A legacy set that still stores a cap of 1 and a 10 minute limit (R7: ignored).
     const row = await t.db.query<{ id: string }>(
-      `insert into question_sets (teacher_id, classroom_id, title, time_limit_minutes, max_attempts, status) values ($1, $2, 'Set Kelas A', 10, 1, 'published') returning id::text id`,
-      [w.teacherA, classA],
+      `insert into question_sets (teacher_id, title, time_limit_minutes, max_attempts, status) values ($1, 'Set Kelas A', 10, 1, 'published') returning id::text id`,
+      [w.teacherA],
     )
     setId = (row[0] as { id: string }).id
+    await t.db.query(`insert into question_set_classrooms (question_set_id, classroom_id, assigned_by) values ($1, $2, $3)`, [setId, classA, w.teacherA])
     for (const [i, q] of ids.entries()) {
       await t.db.query(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1, $2, $3, 1)`, [setId, i, q])
     }

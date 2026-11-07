@@ -6,7 +6,7 @@ import { PrismaService } from '../../../db/prisma.service'
 export interface QuestionSetRecord {
   id: string
   teacherId: string
-  /** Null only for a migrated header (needs a rebuild, Q4 A): never listed to a student, never served. */
+  /** LEGACY (DM-46, migration 0201): no longer read to decide who sees the set; assignments are `question_set_classrooms`. */
   classroomId: string | null
   subjectId: string | null
   title: string
@@ -28,6 +28,9 @@ export interface DskpRow {
 
 const idOf = (id: string): bigint | null => (isIdString(id) ? idFromString(id) : null)
 
+/** The kinds a pupil can see and start: one list for the feed (`visibleIn`) and the start rule (`visibleTo`). */
+export const PUPIL_SET_KINDS: string[] = ['set', 'kertas']
+
 /**
  * The only doorway to `question_sets`, `question_set_items` and the teacher DSKP picking tables
  * (`dskp_bidang`, `dskp_sk`, `dskp_sp`; OWN-11, not the admin DSKP tree). Question and practice tables are
@@ -42,20 +45,48 @@ export class QuestionSetsRepository {
   }
 
   /**
-   * The sets a student of `classroomIds` may start at `at`: published, or scheduled and due (BR-M10-18);
-   * a draft never. Oldest created first. A set without a class (migrated header) never matches.
+   * The sets a student of `classroomIds` may start: published and assigned to at least one of those classes through
+   * `question_set_classrooms` (DM-46, S6-T14; `question_sets.classroom_id` is legacy and no longer read), of kind `set` or `kertas`
+   * (a shared teacher paper reaches the pupil through the same feed). A draft never; `scheduled` is never produced in R1. A set
+   * assigned to two of the pupil's classes is listed once. Oldest created first.
    */
-  async visibleIn(classroomIds: readonly string[], at: Date): Promise<QuestionSetRecord[]> {
+  async visibleIn(classroomIds: readonly string[]): Promise<QuestionSetRecord[]> {
     const keys = [...new Set(classroomIds)].flatMap((i) => (idOf(i) === null ? [] : [idFromString(i)]))
     if (keys.length === 0) return []
     const rows = await this.db.questionSet.findMany({
       where: {
-        classroomId: { in: keys },
-        OR: [{ status: 'published' }, { status: 'scheduled', scheduledAt: { lte: at } }],
+        kind: { in: PUPIL_SET_KINDS },
+        status: 'published',
+        classrooms: { some: { classroomId: { in: keys } } },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
     return rows.map(toRecord)
+  }
+
+  /**
+   * One set for one pupil, in ONE query and by the same rules as `visibleIn`: kind `set` or `kertas`, published, and the pupil holds an
+   * active enrolment (real or Mod Pelajar) in ANY class the set is assigned to. Null otherwise. (Like the feed, it does not look at
+   * `classrooms.is_active`: `forStudent` keeps an inactive class too, so list and start agree.)
+   */
+  async visibleTo(setId: string, userId: string): Promise<QuestionSetRecord | null> {
+    const key = idOf(setId)
+    const user = idOf(userId)
+    if (key === null || user === null) return null
+    const hit = await this.db.$queryRaw<{ id: bigint }[]>`
+      SELECT s.id FROM question_sets s
+       WHERE s.id = ${key} AND s.kind = ANY(${PUPIL_SET_KINDS}::text[]) AND s.status = 'published'
+         AND EXISTS (SELECT 1 FROM question_set_classrooms qc JOIN enrolments e ON e.classroom_id = qc.classroom_id
+                      WHERE qc.question_set_id = s.id AND e.student_id = ${user} AND e.status = 'active')`
+    return hit.length === 0 ? null : this.get(setId)
+  }
+
+  /** The class ids a set is assigned to (`question_set_classrooms`), ascending. */
+  async assignedClassroomIds(setId: string): Promise<string[]> {
+    const key = idOf(setId)
+    if (key === null) return []
+    const rows = await this.db.questionSetClassroom.findMany({ where: { questionSetId: key }, orderBy: { classroomId: 'asc' }, select: { classroomId: true } })
+    return rows.map((r) => idToString(r.classroomId))
   }
 
   /** One set by id (any status), or null. */

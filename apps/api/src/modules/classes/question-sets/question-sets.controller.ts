@@ -9,7 +9,6 @@ import type { Response } from 'express'
 import { Roles } from '../../../common/guards/decorators'
 import { listMeta, NoStoreInterceptor, ok, okList } from '../../../common/http'
 import { RateLimit, RateLimitGuard } from '../../../common/throttle'
-import { CLOCK, type Clock } from '../../../db/clock'
 import { Actor, type ClassActor } from '../actor'
 import { DskpService } from './dskp.service'
 import { tableDocx } from './docx'
@@ -40,13 +39,12 @@ function send(res: Response, file: { contentType: string; fileName: string }, by
 export class StudentQuestionSetsController {
   constructor(
     @Inject(QuestionSetsService) private readonly sets: QuestionSetsService,
-    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   @Get()
   @RateLimit(QUESTION_SET_LIMITS.read)
   async list(@Actor() actor: ClassActor) {
-    const items = await this.sets.listForStudent(actor, this.clock.now())
+    const items = await this.sets.listForStudent(actor)
     return QuestionSetStudentListSchema.parse(okList(items, listMeta(1, Math.max(1, items.length), items.length)))
   }
 }
