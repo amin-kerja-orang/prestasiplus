@@ -127682,6 +127682,237 @@
         }
       }
     },
+    "/set-soalan-saya": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Teacher question sets the caller may start (S34, BR-M10-18)",
+        "description": "Any signed-in user (no role check). Sets of the classes the caller is actively enrolled in: draft never, scheduled once due, published always; oldest created first. Single page. A migrated set keeps its header only (Q4): its empty state is an open question.",
+        "responses": {
+          "200": {
+            "description": "Sets with attemptsLeft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionSetStudentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-papers": {
+      "post": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Upload a question paper (S22, BR-M10-25, FR-M10-98)",
+        "description": "SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates an intake batch with source = guru for the admin to review (API-GUR-17). Answers 201 with only the batch id. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .docx .xlsx, each at most 20 MB; a scanned PDF is refused; any invalid file rejects the whole submission). The answer-scheme confirmation must be true.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionSetPaperUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The id of the guru intake batch created (message shown by the client: \"Kertas dihantar kepada admin.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSetPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionSetPaperFieldError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/audio-kbat/template": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Audio KBAT bulk-import template (CSV)",
+        "description": "Teacher or admin. A CSV with a UTF-8 BOM, the heading row tajuk, kod_subjek, kod_tingkatan, nama_fail_audio and one example row. The screen labels the link XLSX, the mock serves CSV.",
+        "responses": {
+          "200": {
+            "description": "The CSV file (Content-Type text/csv; charset=UTF-8).",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-audio-kbat.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/audio-kbat/template-word": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Audio KBAT bulk-import template (Word)",
+        "description": "Teacher or admin. A .docx with the title, an intro line and a table of the four columns with one example row.",
+        "responses": {
+          "200": {
+            "description": "The DOCX file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-audio-kbat.docx\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/guru/question-sets": {
       "get": {
         "tags": [
@@ -128447,237 +128678,6 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown set or not owned by the caller (never reveals another teacher's set).",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/set-soalan-saya": {
-      "get": {
-        "tags": [
-          "question-sets"
-        ],
-        "summary": "Teacher question sets the caller may start (S34, BR-M10-18)",
-        "description": "Any signed-in user (no role check). Sets of the classes the caller is actively enrolled in: draft never, scheduled once due, published always; oldest created first. Single page. A migrated set keeps its header only (Q4): its empty state is an open question.",
-        "responses": {
-          "200": {
-            "description": "Sets with attemptsLeft.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionSetStudentList"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/guru/question-papers": {
-      "post": {
-        "tags": [
-          "question-sets"
-        ],
-        "summary": "Upload a question paper (S22, BR-M10-25, FR-M10-98)",
-        "description": "SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates an intake batch with source = guru for the admin to review (API-GUR-17). Answers 201 with only the batch id. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .docx .xlsx, each at most 20 MB; a scanned PDF is refused; any invalid file rejects the whole submission). The answer-scheme confirmation must be true.",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Value of Session.csrf; required on mutating requests."
-            },
-            "required": true,
-            "description": "Value of Session.csrf; required on mutating requests.",
-            "name": "X-CSRF-Token",
-            "in": "header"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/QuestionSetPaperUpload"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The id of the guru intake batch created (message shown by the client: \"Kertas dihantar kepada admin.\").",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/QuestionSetPaper"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "VALIDATION_ERROR with fields.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuestionSetPaperFieldError"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
-            "headers": {
-              "Retry-After": {
-                "description": "Seconds until a retry is allowed.",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/guru/audio-kbat/template": {
-      "get": {
-        "tags": [
-          "question-sets"
-        ],
-        "summary": "Audio KBAT bulk-import template (CSV)",
-        "description": "Teacher or admin. A CSV with a UTF-8 BOM, the heading row tajuk, kod_subjek, kod_tingkatan, nama_fail_audio and one example row. The screen labels the link XLSX, the mock serves CSV.",
-        "responses": {
-          "200": {
-            "description": "The CSV file (Content-Type text/csv; charset=UTF-8).",
-            "headers": {
-              "Content-Disposition": {
-                "description": "attachment; filename=\"template-audio-kbat.csv\"",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "text/csv": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/guru/audio-kbat/template-word": {
-      "get": {
-        "tags": [
-          "question-sets"
-        ],
-        "summary": "Audio KBAT bulk-import template (Word)",
-        "description": "Teacher or admin. A .docx with the title, an intro line and a table of the four columns with one example row.",
-        "responses": {
-          "200": {
-            "description": "The DOCX file.",
-            "headers": {
-              "Content-Disposition": {
-                "description": "attachment; filename=\"template-audio-kbat.docx\"",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "content": {
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "UNAUTHORIZED (\"Sesi anda telah tamat. Sila log masuk semula.\"): no valid session.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
