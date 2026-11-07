@@ -149,9 +149,13 @@ export function parseRoom(res: Response) {
   return roomEnvelope.parse(res.body).data
 }
 
-/** Polls the host's view until the room has the minimum players (the simulation adds one bot per poll). */
-export async function fillAndStart(c: Client, game: string, code: string, polls = 3) {
-  for (let i = 0; i < polls; i++) await c.get(P(game, code))
+/** The room has waited `battle_bot_fallback_seconds`: the next host poll or start seats the robots (48 GAME-R). */
+export const ageRoom = (t: GamesTestApp, code: string): Promise<unknown> =>
+  t.db.query(`update game_rooms set created_at = created_at - interval '1 hour' where code = $1`, [code])
+
+/** Starts the room with robots in the missing seats. */
+export async function fillAndStart(t: GamesTestApp, c: Client, game: string, code: string) {
+  await ageRoom(t, code)
   return c.post(P(game, code, '/start'))
 }
 
@@ -168,27 +172,13 @@ export async function answerBody(
   return { type: 'answer', questionId: st.pendingQ, optionId, ...extra }
 }
 
-import type { BotCandidate, BotPickInput, BotPoolPort } from '../../../src/modules/games'
-
-/** Bot pool double: the first listed candidate that fits and is not in the room (deterministic, order = list). */
-export class ListBots implements BotPoolPort {
-  readonly picks: BotPickInput[] = []
-  constructor(readonly list: BotCandidate[]) {}
-  async pick(input: BotPickInput): Promise<BotCandidate | null> {
-    this.picks.push(input)
-    const taken = new Set(input.exclude)
-    return this.list.find((b) => !taken.has(b.id) && input.fits(b.grade)) ?? null
-  }
-}
-
 /** The generated DEMO001 students (`murid.demo001.NN@example.test`), by id. */
 export async function demo001Students(
   db: TestDatabase,
-): Promise<(BotCandidate & { email: string })[]> {
-  const rows = await db.query<{ id: string; name: string; grade: number | null; email: string }>(
+): Promise<{ id: string; name: string; grade: number | null; email: string }[]> {
+  return db.query<{ id: string; name: string; grade: number | null; email: string }>(
     `select id::text, name, grade, email from users where email like 'murid.demo001.%@example.test' order by id`,
   )
-  return rows
 }
 
 export const userId = async (db: TestDatabase, email: string): Promise<string> =>
