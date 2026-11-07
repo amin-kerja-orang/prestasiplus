@@ -5,6 +5,8 @@ name: r1-docs
 
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [feature/v3-bijak-r1]
 
