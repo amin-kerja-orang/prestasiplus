@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ACCOUNTS, bootGamesApp, insertMcqQuestions, loginAs, type Client, type GamesTestApp } from '../helpers'
-import { FORM, ListBots, P, createRoom, demo001Students, fillAndStart, roomOf, userId } from './support'
+import { FORM, P, createRoom, fillAndStart, roomOf, userId } from './support'
 
 /**
  * S7-T01 part 2, DM-67 (migration 0228): `game_rooms.session_id` is a new uuid each time a room starts, and a robot seat
@@ -27,8 +27,6 @@ describe('room session id and robot seats (DM-67)', () => {
     t = await bootGamesApp()
     student = await loginAs(t, ACCOUNTS.student)
     await insertMcqQuestions(t.db, { subject: 'MATH', level: 'T4', count: 20, prefix: 'RS' }) // AC-GM-00.6: a start needs the full draw
-    const kids = await demo001Students(t.db)
-    t.ports.provideBotPool(new ListBots(kids.map((k) => ({ id: k.id, name: k.name, grade: k.grade }))))
   })
   afterAll(async () => {
     await t.close()
@@ -45,7 +43,7 @@ describe('room session id and robot seats (DM-67)', () => {
   it('each start of a room writes a new uuid, and an action or a poll keeps it', async () => {
     const code = await createRoom(student, 'perang-fakta', { ...FORM, max_players: 2 })
     const waiting = await sessionOf(code)
-    expect((await fillAndStart(student, 'perang-fakta', code)).status).toBe(200)
+    expect((await fillAndStart(t, student, 'perang-fakta', code)).status).toBe(200)
     const first = await sessionOf(code)
     expect(first).toMatch(UUID)
     expect(first).not.toBe(waiting)
