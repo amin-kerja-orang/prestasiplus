@@ -1,7 +1,7 @@
 /**
  * The M14 session-completion engine (BR-M14-03/04/05/08/12/13/14/16/24), pure: given the user's
  * state and the facts M05 knows about the day and the user's history, it returns every effect of
- * one completion in the order BR-M14-03 fixes (session credit, streak activity, challenge rewards,
+ * one completion in the order BR-M14-03 fixes (session credit, streak activity, challenge completions (their rewards are paid by the claim, API-GAME-11),
  * achievement rewards), with running balances.
  *
  * The runtime `gamification.onSessionCompleted` feeds it from the stores and the M05 reads; the seed
@@ -126,6 +126,8 @@ export interface EngineContext {
   completedToday: ReadonlySet<number>
   /** Achievements already unlocked. */
   unlocked: ReadonlySet<number>
+  /** Seed replay only: pay a challenge at completion (observed anchors). The runtime pays on the claim. */
+  payCompletions?: boolean
 }
 
 export interface EngineRow {
@@ -352,6 +354,10 @@ export function settleSession(
     if (ctx.completedToday.has(ch.id)) continue
     if (challengeProgress(ch, metrics) < ch.targetValue) continue
     completions.push(ch.id)
+    // Completion writes the completion only; the reward is paid by the claim (API-GAME-11, ruling 12 on #500).
+    // Only the designed seed replay sets `payCompletions`: its ledger rows are observed live rows (they were
+    // credited at completion) and the anchored totals must not move.
+    if (!ctx.payCompletions) continue
     earn(
       'daily_challenge',
       ch.rewardSyiling,

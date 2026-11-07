@@ -62,7 +62,7 @@ import { isOverloadError } from '../../auth/auth.errors'
 import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
 import { BijakPapersPorts } from '../../bijak/papers/ports'
 import { bijakCodeOf, curriculumCodeOf } from '../../bijak/papers/subject-codes'
-import { mytYear, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
+import { mytYear, paperCodeOf, referencePanels, ruleOf, sectionInstruction } from '../../bijak/papers/rules'
 import { QuestionsService, ServabilityService, StimuliService } from '../../questions'
 import { blueprintView } from '../blueprints/blueprint-view'
 import { marksPerQuestionOfDoc, toStandard } from '../blueprints/blueprint-standard'
@@ -114,6 +114,8 @@ const DEFAULT_TITLE = (subjectName: string, kertas: number) => `${PUBLISHED_TITL
 
 /** R1-T48: a paper holds at most this many Bahagian (the PaperPatch limit). */
 const MAX_SECTIONS = 20
+const SUBJEKTIF_SECTION_LABEL = 'Bahagian A'
+const schemeKey = (id: string, versionNo?: number): string => `${id}:${String(versionNo ?? 0)}`
 
 /** The legacy question type behind each "Jenis jawapan" of "Tambah soalan" (only used for the flat fields; the parts carry the mode). */
 const QUESTION_TYPE_OF = { mcq: 'mcq', short_text: 'short_answer', numeric: 'short_answer', working: 'essay', essay: 'essay' } as const
@@ -329,7 +331,7 @@ export class BuilderService {
       subject: subject ? bijakCodeOf(subject.code) : '',
       kertas: paper.kertas,
       year: paper.year ?? mytYear(paper.createdAt),
-      code: paper.paperCode ?? '',
+      code: paperCodeOf(paper),
       durationMin: paper.printedDurationMin,
       instructions: paper.instructions,
       ...(reference.length ? { reference } : {}),
@@ -357,10 +359,13 @@ export class BuilderService {
       updatedAt: toMytTimestamp(paper.updatedAt),
       ...(paper.publishedAt ? { publishedAt: toMytTimestamp(paper.publishedAt) } : {}),
       levelScope: levelScopeOf(paper.levelScope),
+      ...(paper.surface === 'subjektif'
+        ? { surface: 'subjektif' as const, examBoard: paper.examBoard, durationMinutes: paper.durationMinutes, totalMarks: paper.totalMarks }
+        : { surface: 'simulasi' as const }),
     }
   }
 
-  private questionWire(info: BuilderQuestionInfo, pinned?: boolean, notServed?: string | null): BijakBuilderQuestion {
+  private questionWire(info: BuilderQuestionInfo, pinned?: boolean, notServed?: string | null, hasScheme?: boolean): BijakBuilderQuestion {
     return {
       id: info.id,
       ...(info.groupId ? { groupId: info.groupId } : {}),
@@ -373,6 +378,7 @@ export class BuilderService {
       kertas: info.kertas,
       subject: info.subject,
       ...(pinned === undefined ? {} : { pinned }),
+      ...(hasScheme === undefined ? {} : { hasScheme }),
       ...(notServed === undefined ? {} : { servable: notServed === null, ...(notServed === null ? {} : { notServedReason: notServed }) }),
     }
   }
@@ -424,14 +430,21 @@ export class BuilderService {
         ordered.push(info)
       }
     }
+    // S3-T06: the scheme flag of a placed question of a Kertas Subjektif, from the one scheme rule (`schemeOf`, as the list count and NO_SCHEME).
+    const schemed = paper.surface === 'subjektif' ? await this.schemeKeys(used) : null
+    const refOf = new Map(used.map((r) => [r.id, r]))
+    const hasScheme = (id: string): boolean | undefined => {
+      const r = refOf.get(id)
+      return schemed && r ? schemed.has(schemeKey(r.id, r.versionNo)) : undefined
+    }
     const groupIds = [...new Set(ordered.flatMap((q) => (q.groupId ? [q.groupId] : [])))]
     const groupMap = groupIds.length ? await this.questions.groups(groupIds) : new Map<string, BuilderGroupInfo>()
-    const bp = subject ? await this.repo.activeBlueprint(subject.id, paper.kertas) : null
+    const bp = subject && paper.surface !== 'subjektif' ? await this.repo.activeBlueprint(subject.id, paper.kertas) : null
     const blueprint: BijakBlueprintView | null = bp && subject ? blueprintView(bp, subject) : null
     return {
       paper: wire,
       blueprint,
-      questions: ordered.map((q) => (placed.has(q.id) ? this.questionWire(q, pinned, notServed(q.id)) : this.questionWire(q))),
+      questions: ordered.map((q) => (placed.has(q.id) ? this.questionWire(q, pinned, notServed(q.id), hasScheme(q.id)) : this.questionWire(q))),
       groups: groupIds.flatMap((id) => {
         const g = groupMap.get(id)
         return g ? [{ id: g.id, ...(g.stimulus ? { stimulus: g.stimulus } : {}), stimuli: stimuliOfGroup(g), questionIds: g.questionIds }] : []
@@ -481,17 +494,47 @@ export class BuilderService {
     const page = query.page ?? 1
     const pageSize = query.pageSize ?? BIJAK_BUILDER_PAGE_SIZE
     const statuses = query.status === undefined ? undefined : query.status === 'terbit' ? ['published'] : ['draft', 'ready', 'withdrawn']
+    const subjektif = query.surface === 'subjektif'
     // R12: Subjek and Cari. A subject code that matches no subject has no papers, so the answer is an empty page.
     const subject = query.subject ? await this.repo.subjectByCode(curriculumCodeOf(query.subject)) : undefined
-    const filter = { ...(subject ? { subjectId: subject.id } : {}), ...(query.search ? { search: query.search } : {}) }
-    const [total, rows] =
-      query.subject && !subject
-        ? [0, []]
-        : await Promise.all([this.repo.countPilihan(statuses, filter), this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize, filter)])
+    // S3-T06: `surface` defaults to simulasi, so the Set Builder list never shows a Kertas Subjektif row.
+    const filter = {
+      ...(subject ? { subjectId: subject.id } : {}),
+      ...(query.search ? { search: query.search } : {}),
+      surface: query.surface,
+      ...(query.kertas !== undefined ? { kertas: query.kertas } : {}),
+      ...(query.year !== undefined ? { year: query.year } : {}),
+      ...(query.negeri ? { examBoardSlug: bijakNegeriSlug(query.negeri) } : {}),
+    }
+    const noSubject = Boolean(query.subject) && !subject
+    const [total, rows] = noSubject
+      ? [0, []]
+      : await Promise.all([this.repo.countPilihan(statuses, filter), this.repo.listPilihan(statuses, (page - 1) * pageSize, pageSize, filter)])
     const subjects = await this.repo.subjectsByIds(rows.map((r) => r.subjectId))
     const evaluations = await this.evaluateMany(rows)
     // S3-T02 (Q-13 list): where the placed questions come from, read once for the page.
     const origins = await this.originsOf(rows.flatMap((r) => this.placedIdsOf(r)))
+    // S3-T06: `Kandungan` per row and `meta.counts` over the whole filtered set (the status tab is ignored): total and published are DB counts, `withScheme`
+    // is one placement query plus one question-source query (`schemeOf`, the one scheme rule), never servability per question.
+    let schemes: Map<string, { placed: number; withScheme: number }> | undefined
+    let counts: Record<string, number> | undefined
+    if (subjektif) {
+      const ids = noSubject ? [] : await this.repo.idsPilihan(undefined, filter)
+      const refs = await this.repo.placementRefs(ids)
+      const ok = await this.schemeKeys(refs.map((r) => ({ id: r.questionId, ...(r.versionNo === undefined ? {} : { versionNo: r.versionNo }) })))
+      schemes = new Map()
+      for (const r of refs) {
+        const e = schemes.get(r.paperId) ?? { placed: 0, withScheme: 0 }
+        e.placed += 1
+        if (ok.has(schemeKey(r.questionId, r.versionNo))) e.withScheme += 1
+        schemes.set(r.paperId, e)
+      }
+      counts = {
+        total: ids.length,
+        published: noSubject ? 0 : await this.repo.countPilihan(['published'], filter),
+        withScheme: [...schemes.values()].filter((e) => e.placed > 0 && e.withScheme === e.placed).length,
+      }
+    }
     const data = await Promise.all(
       rows.map(async (paper, i): Promise<BijakBuilderPaperSummary> => {
         const { check } = evaluations[i]!
@@ -503,23 +546,36 @@ export class BuilderService {
           subject: code,
           subjectName: subject?.name ?? code,
           kertas: paper.kertas,
-          code: paper.paperCode ?? '',
+          code: paperCodeOf(paper),
           status: statusOf(paper.status),
           questionCount: paper.sections.reduce((n, s) => n + s.placements.length, 0),
           marks: check.totalMarks,
-          budget: check.totalBudget,
+          budget: subjektif ? (paper.totalMarks ?? check.totalBudget) : check.totalBudget,
           ok: check.ok,
           updatedAt: toMytTimestamp(paper.updatedAt),
           levelScope: levelScopeOf(paper.levelScope),
           origins: this.originCounts(this.placedIdsOf(paper), origins),
+          surface: subjektif ? 'subjektif' : 'simulasi',
+          ...(subjektif
+            ? {
+                examBoard: paper.examBoard,
+                ...(paper.year === null ? {} : { year: paper.year }),
+                schemeCount: schemes!.get(idToString(paper.id))?.withScheme ?? 0,
+                totalMarks: paper.totalMarks,
+                durationMinutes: paper.durationMinutes,
+              }
+            : {}),
         }
       }),
     )
-    return { data, meta: listMeta(page, pageSize, total) }
+    return { data, meta: { ...listMeta(page, pageSize, total), ...(counts ? { counts } : {}) } }
   }
 
   async create(actor: AuditActor, rawBody: unknown): Promise<{ id: string }> {
+    // S3-T06: the Kertas Subjektif title rule (150) wins over the generic 200 one, so it is read before the body is parsed.
+    if (rawBody !== null && typeof rawBody === 'object' && (rawBody as { surface?: unknown }).surface === 'subjektif') this.subjektifTitleCheck(rawBody)
     const body = parseWith(BijakBuilderPaperCreateSchema, rawBody)
+    if (body.surface === 'subjektif') return this.createSubjektif(actor, body)
     const title = setTitleOf(body.title)
     // kertas is a smallint column: a larger number can have no blueprint (and must not reach the query).
     if (body.kertas > MAX_KERTAS) throw invalid(MESSAGES.noBlueprint)
@@ -562,6 +618,41 @@ export class BuilderService {
     return { id: idToString(id) }
   }
 
+  /**
+   * S3-T06 (PRD30 Q-18): a Kertas Subjektif is a `pilihan` paper with `surface = 'subjektif'` and NO Kontrak (`blueprint_id` null, no paper code: reads show
+   * `K{kertas}`). It gets ONE empty admin-added Bahagian ("Bahagian A", Jawab Semua, 0 questions, 0 marks: an admin-added Bahagian takes its count and marks
+   * from its placements) so Set Builder can place questions at once. `level_scope` stays null (not restricted): Q-18 has no `Dilihat murid` field.
+   */
+  private async createSubjektif(actor: AuditActor, body: z.output<typeof BijakBuilderPaperCreateSchema>): Promise<{ id: string }> {
+    const subject = await this.repo.subjectByCode(curriculumCodeOf(body.subject))
+    if (!subject) throw invalid(MESSAGES.subjectRequired)
+    const duration = body.durationMinutes ?? null
+    const id = await this.prisma.transaction(async () => {
+      const paperId = await this.repo.createPaper({
+        title: body.title!,
+        subjectId: subject.id,
+        kertas: body.kertas,
+        year: body.year!,
+        paperCode: null,
+        printedDurationMin: duration ?? 0,
+        instructions: [],
+        referenceSheets: [],
+        blueprintId: null,
+        surface: 'subjektif',
+        examBoard: bijakNegeriSlug(body.examBoard!),
+        durationMinutes: duration,
+        totalMarks: body.totalMarks!,
+        createdById: BigInt(actor.userId),
+        isTest: actor.isTest,
+        levelScope: null,
+        sections: [{ label: SUBJEKTIF_SECTION_LABEL, instruction: null, ruleType: 'all', ruleN: null, questionCount: 0, markBudget: 0, compulsory: false, adminCreated: true }],
+      })
+      await this.record(actor, AUDIT_ACTIONS.BIJAK_PAPER_CREATED, paperId, { from: null, to: 'draf', surface: 'subjektif', sections: 1 })
+      return paperId
+    })
+    return { id: idToString(id) }
+  }
+
   async get(rawId: string): Promise<BijakBuilderEditor> {
     const id = parseId(rawId)
     const paper = id === null ? null : await this.repo.findPilihan(id)
@@ -574,9 +665,19 @@ export class BuilderService {
     const paperId = await this.prisma.transaction(async () => {
       const paper = await this.lockedPaper(id)
       if (paper.status === 'published') throw invalid(MESSAGES.paperLocked)
+      const subjektif = paper.surface === 'subjektif'
+      if (subjektif) this.subjektifTitleCheck(rawBody)
       const body = parseWith(BijakBuilderPaperPatchSchema, rawBody)
+      // S3-T06: Negeri, Tempoh and Jumlah Markah belong to a Kertas Subjektif only; on a Simulasi paper they are refused, and a subjektif Tempoh is `durationMinutes`.
+      if (!subjektif) {
+        for (const key of ['examBoard', 'durationMinutes', 'totalMarks'] as const)
+          if (body[key] !== undefined) throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.subjektifOnly, fields: { [key]: MESSAGES.subjektifOnly } })
+      } else if (body.durationMin !== undefined) {
+        throw ApiError.of('VALIDATION_ERROR', { message: MESSAGES.durationRange, fields: { durationMin: MESSAGES.durationRange } })
+      }
       // PRD30 13-01: a paper is one set, so `PUT` edits the same `Tajuk set` and follows the create rule (required, at most 120).
-      const title = body.title === undefined ? undefined : setTitleOf(body.title)
+      // S3-T06: a Kertas Subjektif keeps its own title rule (required, at most 150), checked above by `subjektifTitleCheck`.
+      const title = body.title === undefined ? undefined : subjektif ? body.title.trim() : setTitleOf(body.title)
       const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
       const bijakSubject = subject ? bijakCodeOf(subject.code) : ''
 
@@ -668,7 +769,12 @@ export class BuilderService {
         ...(title !== undefined ? { title } : {}),
         ...(body.year !== undefined ? { year: body.year } : {}),
         ...(body.durationMin !== undefined ? { printedDurationMin: body.durationMin } : {}),
-        ...(body.code !== undefined ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
+        ...(body.examBoard !== undefined ? { examBoard: bijakNegeriSlug(body.examBoard) } : {}),
+        // `ck_papers_subjektif_duration`: printed_duration_min = duration_minutes, or 0 when untimed.
+        ...(body.durationMinutes !== undefined ? { durationMinutes: body.durationMinutes, printedDurationMin: body.durationMinutes ?? 0 } : {}),
+        ...(body.totalMarks !== undefined ? { totalMarks: body.totalMarks } : {}),
+        // A Kertas Subjektif has no printed code: `code` is ignored there so the `K{kertas}` read stays intact.
+        ...(body.code !== undefined && !subjektif ? { paperCode: body.code === '' ? bijakSubject : body.code } : {}),
         ...(body.instructions !== undefined ? { instructions: body.instructions } : {}),
         ...(reference !== undefined ? { referenceSheets: reference as unknown as Prisma.InputJsonValue } : {}),
         updatedAt: this.clock.now(),
@@ -689,6 +795,28 @@ export class BuilderService {
     const fresh = await this.repo.findPilihan(paperId)
     if (!fresh) throw notFound()
     return this.editorOf(fresh)
+  }
+
+  /** S3-T06: the refs of `schemeOf` that are `bersekema` (keys `schemeKey`); a source without the read has no scheme data, so none is. */
+  private async schemeKeys(refs: readonly BuilderQuestionRef[]): Promise<ReadonlySet<string>> {
+    const unique = [...new Map(refs.map((r) => [schemeKey(r.id, r.versionNo), r])).values()]
+    return unique.length > 0 && this.questions.schemeOf ? this.questions.schemeOf(unique) : new Set()
+  }
+
+  /** S3-T06: the placed questions of a Kertas Subjektif that are not `bersekema` (same rule as the list count), in paper order. */
+  private async unschemedOf(paper: PaperTree): Promise<string[]> {
+    if (paper.surface !== 'subjektif') return []
+    const refs = this.refsOf(paper)
+    const ok = await this.schemeKeys(refs)
+    return refs.filter((r) => !ok.has(schemeKey(r.id, r.versionNo))).map((r) => r.id)
+  }
+
+  /** S3-T06 field 18-02: a Kertas Subjektif title is required and at most 150 characters (the Simulasi rule is 200). */
+  private subjektifTitleCheck(rawBody: unknown): void {
+    const title = rawBody !== null && typeof rawBody === 'object' ? (rawBody as { title?: unknown }).title : undefined
+    if (typeof title !== 'string') return
+    const message = title.trim() === '' ? MESSAGES.subjektifTitleRequired : title.trim().length > 150 ? MESSAGES.subjektifTitleTooLong : null
+    if (message) throw ApiError.of('VALIDATION_ERROR', { message, fields: { title: message } })
   }
 
   async remove(actor: AuditActor, rawId: string): Promise<{ ok: true }> {
@@ -789,7 +917,7 @@ export class BuilderService {
       const { reports, unreadable } = await this.safeReports(placedNow)
       // ONE rule for the review and for publish: `collectBlockers` (hard = the paper's own checks incl. D93 groups, a question missing from the
       // pool, a question pupils cannot be served; overridable = the Kontrak line, which a paper that is already Terbit keeps (overridden), plus the structural blueprint lines).
-      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
+      const blockers = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
       const view = blockerView(blockers)
@@ -886,6 +1014,8 @@ export class BuilderService {
     // App-created papers always carry one; only the demo seeds write a null. It is the same class of blocker as a Kontrak that is not Disahkan:
     // refused at Terbit, listed in the review, lifted only by the audited override, and skipped once the paper is Terbit (`collectBlockers`).
     const noContract = { ...none, contract: [{ code: 'BLUEPRINT_NOT_VERIFIED' as const, message: MESSAGES.noBlueprint }] }
+    // S3-T06: a Kertas Subjektif has no Kontrak; its own rules are `subjektifBlockers`.
+    if (paper.surface === 'subjektif') return none
     if (paper.blueprintId === null) return noContract
     const subject = (await this.repo.subjectsByIds([paper.subjectId])).get(paper.subjectId.toString())
     const blueprint = await this.repo.blueprintById(paper.blueprintId)
@@ -987,7 +1117,9 @@ export class BuilderService {
     reports: ReadonlyMap<string, ServabilityReport>,
     unreadable: readonly string[],
     referenceImages: readonly BlockerDraft[],
+    unschemed: readonly string[],
   ) {
+    if (paper.surface === 'subjektif') return toBlockers(this.subjektifBlockers(paper, ev, reports, unreadable, referenceImages, unschemed), false)
     return toBlockers([
       ...ev.issues,
       ...this.ruleBlockers(paper, ev),
@@ -1005,6 +1137,36 @@ export class BuilderService {
    * ServabilityService `simulasi_paper` one; "not on a published paper" is the paper's own business, and a question that is not approved is
    * already counted by `checkPaper` ("n soalan belum Terbit"). Never overridable.
    */
+  /**
+   * S3-T06 (PRD30 Q-18, FR-ADM-Q18.3/.8): the Terbit refusals of a Kertas Subjektif, none overridable and none about a Kontrak: no placed question,
+   * `Jumlah Markah` against the placed marks, a placed question with no scheme, plus the question-level gates (unpublished or unservable question, groups, reference pictures).
+   */
+  private subjektifBlockers(
+    paper: PaperTree,
+    ev: Evaluation,
+    reports: ReadonlyMap<string, ServabilityReport>,
+    unreadable: readonly string[],
+    referenceImages: readonly BlockerDraft[],
+    unschemed: readonly string[],
+  ): BlockerDraft[] {
+    const placed = this.placedIdsOf(paper)
+    if (placed.length === 0) return [{ code: 'NO_QUESTIONS', message: MESSAGES.subjektifNoContent.replace('{title}', paper.title) }]
+    const total: BlockerDraft[] =
+      paper.totalMarks !== null && paper.totalMarks !== ev.check.totalMarks
+        ? [{ code: 'TOTAL_MARKS_MISMATCH', message: MESSAGES.totalMarksMismatch.replace('{a}', String(paper.totalMarks)).replace('{b}', String(ev.check.totalMarks)) }]
+        : []
+    const noScheme = unschemed.map((id): BlockerDraft => ({ code: 'NO_SCHEME', message: `Soalan ${id} ${MESSAGES.subjektifNoScheme}`, questionId: id }))
+    return [
+      ...ev.issues,
+      ...this.ruleBlockers(paper, ev),
+      ...total,
+      ...noScheme,
+      ...this.attemptBlockers(paper, ev, reports),
+      ...referenceImages,
+      ...unreadable.map((id): BlockerDraft => ({ code: 'NOT_SERVABLE', message: unreadableLine(id), questionId: id })),
+    ]
+  }
+
   private attemptBlockers(paper: PaperTree, ev: Evaluation, reports: ReadonlyMap<string, ServabilityReport>): BlockerDraft[] {
     const out: BlockerDraft[] = []
     const seen = new Set<string>()
@@ -1016,7 +1178,8 @@ export class BuilderService {
         const q = ev.info.get(id)
         if (!q || !isServableStatus(q.status)) continue
         const sim = reports.get(id)?.activities.find((a) => a.activity === 'simulasi_paper')
-        const reason = (sim?.reasons ?? []).find((r) => r.code !== 'not_on_published_paper')
+        // A Kertas Subjektif names a missing scheme with its own blocker (`subjektifBlockers`), so it is not repeated here.
+        const reason = (sim?.reasons ?? []).find((r) => r.code !== 'not_on_published_paper' && !(paper.surface === 'subjektif' && r.code === 'no_scheme'))
         if (reason) out.push({ code: 'NOT_SERVABLE', message: attemptRefusalLine(id, reason.message), questionId: id })
       }
     return out
@@ -1139,7 +1302,7 @@ export class BuilderService {
     // "not on a published paper", so that one reason is left out. A question the service does not know keeps the status-only reason.
     const placed = paper.sections.flatMap((s) => s.placements.map((pl) => idToString(pl.questionId)))
     const { reports, unreadable } = await this.safeReports(placed)
-    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper))
+    const blockerList = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
     const blockers = blockerList.map((b) => b.message)
     const rows = paper.sections.flatMap((s) =>
       s.placements.map((pl) => {

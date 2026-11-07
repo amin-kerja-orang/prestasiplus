@@ -24,6 +24,8 @@ import { gradeQuestion } from './grading'
 import {
   flatFromVersion,
   kertasOfPaperCode,
+  bilingualScriptConflict,
+  enText,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -92,6 +94,7 @@ export interface FilterBulkOutcome {
   remaining: number
   capped: boolean
   dryRun: boolean
+  affectedPapers?: { id: string; title: string }[]
 }
 
 const parse = (text: string): bigint | null => {
@@ -184,6 +187,8 @@ interface Normalized {
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
   stem: string
+  /** English stem: text sets it, null clears it, undefined keeps what is stored. */
+  stemEn?: string | null | undefined
   parts: QuestionPart[]
   language: VersionDraft['language']
   explanation: string | null
@@ -315,6 +320,7 @@ export class QuestionsService {
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
         stem: input.questionText,
+        stemEn: enText(input.questionTextEn),
         parts,
         language: languageToStore(input.language, undefined),
         explanation: input.explanation?.trim() || null,
@@ -574,14 +580,22 @@ export class QuestionsService {
     }
     const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
     if (dryRun || targets.ids.length === 0) {
-      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+      // FR-QA-47: the confirm names the Terbit papers before anything is archived.
+      const placing = input.action === 'archived' && targets.eligible > 0 ? await this.repo.publishedPapersPlacing({ filter: input.filter, fromStatuses: from }) : []
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
     }
     const done = await this.bulkAction(input.action, targets.ids, actor)
     const remaining = targets.eligible - targets.ids.length
     // A row another request approved between `filterTargets` and `bulkAction` is left as it is (R1E2E-10): it is not applied and not a refusal,
     // so it counts in `skipped` (and still in `processed`, which counts rows tried), never in `affected` or `failed`.
     const raced = done.skipped?.length ?? 0
-    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+    const placing = input.action === 'archived' ? await this.papersPlacing(done.ids) : []
+    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
+  }
+
+  /** FR-QA-47: the Terbit papers that place these questions. */
+  papersPlacing(ids: readonly string[]): Promise<{ id: string; title: string }[]> {
+    return this.repo.publishedPapersPlacing({ ids })
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -1170,7 +1184,7 @@ export class QuestionsService {
       status,
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
-      stemEn: v?.stemEn ?? null,
+      stemEn: n.stemEn === undefined ? (v?.stemEn ?? null) : n.stemEn,
       numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
@@ -1273,9 +1287,12 @@ export class QuestionsService {
 
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
+    // Known R1 limit: a Jawi or Arab question cannot be bilingual. Their stored script stays (the flat body has no script field); asking
+    // them to become `ms+en` is a 422 on `language`. A bilingual (`ms_en`) row follows the language sent, so it can go back to `ms` or `en`.
+    if (bilingualScriptConflict(input.language, v.language)) throw fail({ language: QUESTION_MESSAGES.language })
     const language = input.language === undefined
       ? v.language
-      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+      : v.language === 'ar' || v.language === 'jawi'
         ? v.language
         : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
@@ -1286,6 +1303,7 @@ export class QuestionsService {
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,
+      stemEn: enText(input.questionTextEn),
       parts,
       language,
       explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,

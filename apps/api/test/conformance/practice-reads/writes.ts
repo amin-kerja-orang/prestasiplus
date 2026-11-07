@@ -83,12 +83,14 @@ export const practiceReadsWritesScenarios: Scenario[] = [
       ctx.check(subs.length > 0 && !JSON.stringify(detail.body).includes('modelAnswer'), 'the detail must list sub-questions and no model answer')
       const leafSub = subs.find((s) => s.marks > 0)
       if (!leafSub) return
-      const done = await student.request('POST', `${STRUCTURED}/${id}/attempts`, { body: { answers: [{ subQuestionId: leafSub.id, text: 'Jawapan yang cukup panjang untuk markah penuh.' }] } })
+      const done = await student.request('POST', `${STRUCTURED}/${id}/attempts`, { body: { answers: [{ subQuestionId: leafSub.id, text: 'zzz' }] } })
       ctx.expectStatus(done, 201)
-      const out = dataOf(done) as { marks?: { subQuestionId: string; awarded: number; max: number }[]; totalAwarded?: number; totalMax?: number; modelAnswers?: unknown[] }
+      const out = dataOf(done) as { id?: string; attemptId?: string; marks?: { subQuestionId: string; awarded: number; max: number }[]; totalAwarded?: number; totalMax?: number; modelAnswers?: unknown[] }
       ctx.check((out.marks ?? []).length === subs.length, 'one mark entry per sub-question expected')
-      ctx.check(out.marks?.find((m) => m.subQuestionId === leafSub.id)?.awarded === leafSub.marks, 'a long answer must earn the full marks of its sub-question')
-      ctx.check(out.totalAwarded === leafSub.marks && out.totalMax === subs.reduce((n, s) => n + s.marks, 0), 'the totals differ')
+      // S5-T11: the one grader marks it (no length rule); the attempt is a Bijak attempt and its id is returned as `attemptId` (= `id`).
+      ctx.check(typeof out.attemptId === 'string' && out.attemptId === out.id, 'attemptId must be the attempt id (same as id)')
+      ctx.check(out.marks?.find((m) => m.subQuestionId === leafSub.id)?.awarded === 0, 'a wrong one-word answer must earn 0')
+      ctx.check(out.totalAwarded === 0 && out.totalMax === subs.reduce((n, s) => n + s.marks, 0), 'the totals differ')
       ctx.check((out.modelAnswers ?? []).length === subs.length, 'one model answer per sub-question expected')
       expectError(ctx, await student.request('GET', `${STRUCTURED}/999999999`), 404, 'NOT_FOUND')
       expectError(ctx, await student.request('POST', `${STRUCTURED}/999999999/attempts`, { body: { answers: [] } }), 404, 'NOT_FOUND')

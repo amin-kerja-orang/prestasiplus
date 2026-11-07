@@ -226,7 +226,7 @@ const FORBIDDEN_CSRF = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const VALIDATION_FIELDS =
   'VALIDATION_ERROR "Sila lengkapkan semua medan wajib." with fields (name -> "Medan ini diperlukan." when missing or blank, "Medan ini tidak sah." when the type, range, enum or pattern is wrong; the first problem of every failing field).'
 const VALIDATION_LARAVEL =
-  'VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus " (and N more error(s))" when several.'
+  'VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else "{n} medan perlu dibetulkan.".'
 
 /**
  * Registers the M14 student, M14 admin (economy and operations) and M15 routes of BE-23.
@@ -635,7 +635,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Redeem a catalogue reward with tokens',
     description:
-      'One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
+      'One transaction: snapshot redemption row (with the reward token cost and real cost at this moment), token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), session budget (only a reward with a real cost above 0; the real cost snapshots of every pupil\'s pending_admin and delivered redemptions created in the Malaysia calendar year of the session year, plus this reward, must not pass the budget; DM-48), token balance. Any refusal rolls back everything. A repeat with the same clientUuid from the same user returns the first redemption before any of these checks; no header and no time window (DM-78).',
     request: { headers: [csrf], body: body(RewardRedeemRequestSchema) },
     responses: {
       201: json(envelopeOf(RewardRedeemResultSchema), 'Redeemed.'),
@@ -643,9 +643,9 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_CSRF,
       404: err('NOT_FOUND "Hadiah tidak dijumpai." (missing or inactive reward).'),
       409: err(
-        'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
+        'OUT_OF_STOCK "Stok hadiah telah habis."; MONTHLY_CAP "Had tebusan bulanan dicapai."; REDEEM_BUDGET "Had tebusan sesi ini telah dicapai." (ERR-GAME-22); INSUFFICIENT_TOKENS "Token tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.rewardId "The reward id field is required." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      422: err('VALIDATION_ERROR fields.rewardId "Sila pilih hadiah." (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid "Format kunci permintaan tidak sah.".'),
     },
   })
 
@@ -698,7 +698,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       409: err(
         'DRAW_CLOSED "Cabutan ditutup." (missing, not open, or closed by date); TICKET_LIMIT "Had tiket dicapai."; INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi.".',
       ),
-      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      422: err('VALIDATION_ERROR fields.clientUuid "Format kunci permintaan tidak sah.".'),
     },
   })
 
@@ -753,9 +753,9 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardDeliverResultSchema), 'Delivered.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?" (unknown id).'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai." (unknown id).'),
       409: err('CONFLICT "Tebusan ini tidak lagi menunggu pemprosesan." (status is not pending_admin).'),
-      422: err('VALIDATION_ERROR fields.code "The code field is required." / "The code field must not be greater than 100 characters.".'),
+      422: err('VALIDATION_ERROR fields.code "Kod baucar diperlukan." / "Kod baucar tidak boleh melebihi 100 aksara.".'),
     },
   })
 
@@ -785,7 +785,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai."'),
     },
   })
 
@@ -814,7 +814,7 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(RewardItemSchema), 'The updated reward.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,
-      404: err('NOT_FOUND "Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?"'),
+      404: err('NOT_FOUND "Rekod tidak dijumpai."'),
       422: err(VALIDATION_LARAVEL),
     },
   })

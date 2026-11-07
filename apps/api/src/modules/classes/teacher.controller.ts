@@ -44,6 +44,12 @@ export class TeacherClassesController {
     return this.classes.students(actor, query)
   }
 
+  @Post('students')
+  @RateLimit(CLASS_LIMITS.write)
+  async createStudent(@Actor() actor: ClassActor, @Body() body: unknown) {
+    return ok(await this.classes.createStudent(actor, body))
+  }
+
   @Put('students/:id')
   @RateLimit(CLASS_LIMITS.write)
   async addStudent(@Actor() actor: ClassActor, @Param('id') id: string, @Body() body: unknown) {

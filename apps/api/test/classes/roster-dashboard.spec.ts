@@ -138,7 +138,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       await a.put(`/guru/students/${s1}`, { classroomId: k2.id })
       const res = await a.get('/guru/students')
       const body = StudentsBody.parse(res.body)
-      expect(body.meta).toEqual({ count: 2, schoolSet: true })
+      expect(body.meta).toEqual({ count: 2, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
       expect(body.data.map((s) => s.name)).toEqual(['Murid Demo', 'Murid Demo Kosong'])
       const first = body.data[0]
       expect(first?.id).toBe(s1)
@@ -185,7 +185,7 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       expect(ids).toContain(sMaju)
       expect(ids).not.toContain(sInactive)
       expect(ids).not.toContain(sOther)
-      expect(res.meta).toEqual({ count: res.data.length, schoolSet: true })
+      expect(res.meta).toEqual({ count: res.data.length, schoolSet: true, page: 1, pageSize: 25, totalPages: 1 })
       // DEMO002 is a primary school (SK) and its seeded pupil is Darjah 4: hidden (secondary-only, D72) until both are made secondary
       const hidden = StudentsBody.parse((await c.get('/guru/students?tab=school')).body)
       expect(hidden.data.map((s) => s.id)).not.toContain(sOther)
@@ -201,18 +201,23 @@ describe('teacher roster, dashboard and inline curriculum (AC 2, 3, 4, 7)', () =
       }
     })
 
-    it('tab=school is capped at 200 rows while meta.count counts every match', async () => {
+    it('tab=school pages 25 per page (R1-GUR-41, API-GUR-05) while meta.count counts every match', async () => {
       await t.db.query(
         `with u as (insert into users (name, email, school_id, grade, is_active) select 'Murid Penuh ' || lpad(g::text, 3, '0'), 'penuh.' || g || '@ujian.test', $1, 10, true from generate_series(1, 205) g returning id)
          insert into user_roles (user_id, role) select id, 'student' from u`,
         [school1],
       )
       const res = StudentsBody.parse((await a.get('/guru/students?tab=school')).body)
-      expect(res.data).toHaveLength(200)
+      expect(res.data).toHaveLength(25)
+      expect(res.meta.pageSize).toBe(25)
       expect(res.meta.count).toBeGreaterThanOrEqual(205)
       const filtered = StudentsBody.parse((await a.get('/guru/students?tab=school&search=Murid%20Penuh')).body)
       expect(filtered.meta.count).toBe(205)
-      expect(filtered.data).toHaveLength(200)
+      expect(filtered.data).toHaveLength(25)
+      const second = StudentsBody.parse((await a.get('/guru/students?tab=school&search=Murid%20Penuh&page=2')).body)
+      expect(second.meta.page).toBe(2)
+      expect(second.data).toHaveLength(25)
+      expect(second.data[0]?.id).not.toBe(filtered.data[0]?.id)
     })
 
     it('SW5-03: two own classes with the same name give two entries with distinct ids, in the order of classNames', async () => {

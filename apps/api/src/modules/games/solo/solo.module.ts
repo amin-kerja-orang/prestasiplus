@@ -11,19 +11,16 @@ import { SoloService } from './play/solo.service'
 import { SpinController } from './spin/spin.controller'
 import { SpinDraw } from './spin/spin-draw'
 import { SpinService } from './spin/spin.service'
-import { WeeklyController } from './weekly/weekly.controller'
-import { WeeklyService } from './weekly/weekly.service'
 
 /**
- * Solo area (agent C): single-player games (GET/check/reveal/submit), Roda Nasib (page + spin), Jutawan Ilmu,
- * the weekly competition and Uji Minda.
- * Registered BEFORE `RoomsModule` so `/games/solo/...`, `/games/roda-nasib`, `/games/jutawan`,
- * `/games/pertandingan` and `/games/uji-minda` win over `/games/:game/...`.
+ * Solo area (agent C): single-player games (GET/check/reveal/submit), Roda Nasib (page + spin), Jutawan Ilmu.
+ * Registered BEFORE `RoomsModule` so `/games/solo/...`, `/games/roda-nasib`, `/games/jutawan`
+ * win over `/games/:game/...`.
  */
 @Module({
   imports: [GamesCoreModule],
-  controllers: [SoloController, SpinController, JutawanController, WeeklyController],
-  providers: [SoloRepository, SoloItemBuilder, SoloService, SpinDraw, SpinService, JutawanRepository, JutawanService, WeeklyService],
+  controllers: [SoloController, SpinController, JutawanController],
+  providers: [SoloRepository, SoloItemBuilder, SoloService, SpinDraw, SpinService, JutawanRepository, JutawanService],
   exports: [SpinDraw],
 })
 export class SoloGamesModule {}

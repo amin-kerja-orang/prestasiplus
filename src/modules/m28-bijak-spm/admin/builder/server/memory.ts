@@ -4,21 +4,29 @@
  * stimulus groups on add/remove (D90), the review (blockers) and the student view. Nothing here
  * ships in the http build (see `./client`).
  */
+import { BIJAK_BUILDER_MESSAGES, BIJAK_SET_BUILDER_PROPOSED, bijakDefaultLevelScope, bijakNegeriOptions, bijakNegeriSlug } from '@pp/contract'
 import type {
   BijakBuilderPoolUnit,
+  BijakBuilderSourceFilters,
   BijakBuilderStudentView,
   BijakDskpUnit,
+  BijakLevelScope,
   BijakPoolPreview,
 } from '@pp/contract'
+import { scaleSectionCounts } from '@pp/exam-core'
 
 import type { AdminPaperSummary, BuilderQuestion, PaperEditorData } from '../../../domain/admin-types'
+import type { BijakServer } from '../../../server/store'
 import { addUnit, checkPaper, removeUnit, unitsOf } from '../../../domain/paper-builder'
+import { setTitleError } from '../domain/set-title'
 import { kontrakServer } from '../../kontrak/server/client'
 import {
   BuilderError,
   type BuilderApi,
   type BuilderSubject,
+  type GenerateOptions,
   type HeaderPatch,
+  type JanaFilters,
   type PlacementResult,
   type RawReview,
   type PublishOptions,
@@ -27,6 +35,9 @@ import {
   type SectionPatch,
   type SectionPool,
   type SectionPoolQuery,
+  type SubjektifCreate,
+  type SubjektifPage,
+  type SubjektifQuery,
 } from './api'
 
 const ALREADY = (id: string): string => `Soalan ${id} sudah ada dalam kertas ini`
@@ -57,6 +68,29 @@ const blueprintLines: OverridableLines = async (editor) => {
   return [`Kontrak Simulasi ${bp.code} (versi ${bp.version}) belum Disahkan (status: ${bp.source}); Terbit memerlukan kontrak Disahkan.`]
 }
 
+/**
+ * The mock's stand-in for `source_papers` (fictitious): a stable year and Negeri per question id, so the Tahun and Negeri filters and the origin chips can
+ * be exercised without a server. A group takes the value of its first member, so it matches as one unit.
+ */
+const MOCK_YEARS = [2025, 2024, 2023, 2022, 2021]
+const MOCK_NEGERI = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Perak', 'MRSM', 'SBP']
+const hashOf = (text: string): number => [...text].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7)
+const originOf = (id: string): { year: number; negeri: string } => ({
+  year: MOCK_YEARS[hashOf(id) % MOCK_YEARS.length]!,
+  negeri: MOCK_NEGERI[(hashOf(id) >>> 3) % MOCK_NEGERI.length]!,
+})
+const originMatches = (id: string, years: readonly number[], negeri: readonly string[]): boolean => {
+  const o = originOf(id)
+  return (!years.length || years.includes(o.year)) && (!negeri.length || negeri.some((n) => bijakNegeriSlug(n) === bijakNegeriSlug(o.negeri)))
+}
+const filtersOf = (ids: readonly string[]): BijakBuilderSourceFilters => ({
+  years: [...new Set(ids.map((id) => originOf(id).year))].sort((a, b) => b - a),
+  negeri: bijakNegeriOptions(ids.map((id) => originOf(id).negeri)),
+})
+
+/** Fields of the wire the mock paper does not keep on its own type. */
+type MockPaper = PaperEditorData['paper'] & { levelScope?: BijakLevelScope | null }
+
 /** Contract code of a hard blocker line (BM text of `checkPaper`); the mock only needs a stable code. */
 function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_MISMATCH' | 'NOT_PUBLISHED' | 'DUPLICATE_QUESTION' | 'GROUP_INCOMPLETE' {
   if (/Lebih \d+ soalan/.test(message)) return 'COUNT_TOO_MANY'
@@ -67,6 +101,130 @@ function hardCode(message: string): 'COUNT_TOO_FEW' | 'COUNT_TOO_MANY' | 'MARKS_
   return 'COUNT_TOO_FEW'
 }
 
+/* ------------------------------------------------------------------- S3-T06 Kertas Subjektif */
+
+interface SjQuestion {
+  id: string
+  preview: string
+  marks: number
+  hasScheme: boolean
+}
+interface SjPaper {
+  id: string
+  title: string
+  subject: string
+  subjectName: string
+  kertas: number
+  examBoard: string
+  year: number
+  durationMinutes: number | null
+  totalMarks: number
+  status: 'draf' | 'terbit'
+  questions: SjQuestion[]
+  updatedAt: number
+}
+
+const SJ_SUBJECTS: Record<string, string> = { BM: 'Bahasa Melayu', MAT: 'Matematik', SN: 'Sains' }
+const SJ_AT = 1_800_000_000_000
+const fill = (text: string, vars: Record<string, string | number>): string =>
+  text.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''))
+
+/** Seed: two published papers (one with a question that has no scheme) and one empty draft; fictional titles. */
+function sjSeed(): SjPaper[] {
+  const q = (n: number, marks: number, hasScheme = true): SjQuestion => ({ id: String(9000 + n), preview: `Soalan contoh ${n}`, marks, hasScheme })
+  return [
+    { id: 'sj-1', title: 'Bahasa Melayu Kertas 2 - Percubaan Contoh', subject: 'BM', subjectName: 'Bahasa Melayu', kertas: 2, examBoard: 'Selangor', year: 2025, durationMinutes: 150, totalMarks: 40, status: 'terbit', questions: [q(1, 20), q(2, 20)], updatedAt: SJ_AT },
+    { id: 'sj-2', title: 'Matematik Kertas 2 - Percubaan Contoh', subject: 'MAT', subjectName: 'Matematik', kertas: 2, examBoard: 'MRSM', year: 2024, durationMinutes: null, totalMarks: 30, status: 'terbit', questions: [q(3, 10), q(4, 20, false)], updatedAt: SJ_AT - 86_400_000 },
+    { id: 'sj-3', title: 'Sains Kertas 3 - Percubaan Contoh', subject: 'SN', subjectName: 'Sains', kertas: 3, examBoard: 'Johor', year: 2025, durationMinutes: 0, totalMarks: 50, status: 'draf', questions: [], updatedAt: SJ_AT - 172_800_000 },
+  ]
+}
+
+const sjRow = (p: SjPaper): AdminPaperSummary => ({
+  id: p.id,
+  title: p.title,
+  subject: p.subject,
+  subjectName: p.subjectName,
+  kertas: p.kertas,
+  code: `K${p.kertas}`,
+  status: p.status,
+  questionCount: p.questions.length,
+  marks: p.questions.reduce((n, x) => n + x.marks, 0),
+  budget: p.totalMarks,
+  ok: true,
+  updatedAt: p.updatedAt,
+  surface: 'subjektif',
+  examBoard: p.examBoard,
+  year: p.year,
+  schemeCount: p.questions.filter((x) => x.hasScheme).length,
+  totalMarks: p.totalMarks,
+  durationMinutes: p.durationMinutes,
+})
+
+function sjEditor(p: SjPaper): PaperEditorData {
+  const section = {
+    id: `${p.id}-s1`,
+    label: 'Bahagian A',
+    markBudget: p.totalMarks,
+    questionCount: p.questions.length,
+    rule: { type: 'all' as const },
+    questionIds: p.questions.map((x) => x.id),
+  }
+  return {
+    paper: {
+      id: p.id,
+      title: p.title,
+      subject: p.subject,
+      kertas: p.kertas as 1 | 2,
+      year: p.year,
+      code: `K${p.kertas}`,
+      durationMin: p.durationMinutes ?? 0,
+      instructions: [],
+      sections: [section],
+      status: p.status,
+      createdAt: p.updatedAt,
+      updatedAt: p.updatedAt,
+      surface: 'subjektif',
+      examBoard: p.examBoard,
+      durationMinutes: p.durationMinutes,
+      totalMarks: p.totalMarks,
+    },
+    blueprint: null,
+    questions: p.questions.map((x) => ({
+      id: x.id,
+      preview: x.preview,
+      marks: x.marks,
+      kind: 'berstruktur' as const,
+      topic: 'Contoh',
+      status: 'terbit' as const,
+      kertas: p.kertas,
+      subject: p.subject,
+      // `servable` is deliberately not the scheme flag (a Terbit paper reads servable for every pinned question).
+      servable: true,
+      hasScheme: x.hasScheme,
+    })),
+    groups: [],
+  }
+}
+
+/** Field checks of 18-02..18-08 (the 422 `fields` of the server). */
+function sjValidate(v: { title?: string; examBoard?: string; year?: number; durationMinutes?: number | null; totalMarks?: number }): Record<string, string> {
+  const f: Record<string, string> = {}
+  const m = BIJAK_BUILDER_MESSAGES
+  if (!v.title?.trim()) f.title = m.subjektifTitleRequired
+  else if (v.title.trim().length > 150) f.title = m.subjektifTitleTooLong
+  if (!v.examBoard?.trim()) f.examBoard = m.examBoardRequired
+  if (!v.year) f.year = m.yearRequired
+  if (v.durationMinutes != null && (!Number.isInteger(v.durationMinutes) || v.durationMinutes < 0 || v.durationMinutes > 300)) f.durationMinutes = m.durationRange
+  if (!v.totalMarks || !Number.isInteger(v.totalMarks) || v.totalMarks < 1 || v.totalMarks > 200) f.totalMarks = m.totalMarksRange
+  return f
+}
+
+/** `Tajuk set` (PRD30 13-01): the 422 `fields.title` the API answers, as the http client reads it. */
+function titleGuard(title: string | undefined): void {
+  const err = setTitleError(title)
+  if (err) throw new BuilderError('invalid', err, { fields: { title: err } })
+}
+
 export class MockBuilderServer implements BuilderApi {
   constructor(private readonly overridable: OverridableLines = blueprintLines) {}
   private admin: Promise<AdminMock> | null = null
@@ -75,50 +233,185 @@ export class MockBuilderServer implements BuilderApi {
     return this.admin
   }
 
+  /** The mock's editor with what the API adds on the wire: pinned and servable of a placed question (API-BIJAK-10 (g)). */
+  private withChips(ed: PaperEditorData): PaperEditorData {
+    const placed = new Set(ed.paper.sections.flatMap((s) => s.questionIds))
+    const locked = ed.paper.status === 'terbit'
+    return {
+      ...ed,
+      // The mock's paper is a live object, changed outside Vue: a copy per answer, so the page sees the change.
+      paper: JSON.parse(JSON.stringify(ed.paper)) as PaperEditorData['paper'],
+      questions: ed.questions.map((q) =>
+        placed.has(q.id)
+          ? { ...q, pinned: locked, servable: locked || q.status === 'terbit', ...(locked || q.status === 'terbit' ? {} : { notServedReason: 'Soalan ini belum diluluskan.' }) }
+          : q,
+      ),
+    }
+  }
+
   async listSets(): Promise<AdminPaperSummary[]> {
-    return (await this.a()).listAdminPapers()
+    const a = await this.a()
+    const rows = await a.listAdminPapers()
+    return Promise.all(
+      rows.map(async (row) => {
+        const paper = (await a.getPaperEditor(row.id)).paper as MockPaper
+        const counts = new Map<string, number>()
+        for (const id of paper.sections.flatMap((s) => s.questionIds)) counts.set(originOf(id).negeri, (counts.get(originOf(id).negeri) ?? 0) + 1)
+        return {
+          ...row,
+          levelScope: paper.levelScope ?? null,
+          origins: [...counts.entries()].map(([negeri, count]) => ({ negeri, count })).sort((x, y) => y.count - x.count || x.negeri.localeCompare(y.negeri, 'ms')),
+        }
+      }),
+    )
   }
 
   async builderSubjects(): Promise<BuilderSubject[]> {
     const rows = await (await this.a()).listBlueprints()
     const out = new Map<string, BuilderSubject>()
     for (const b of rows) {
-      const s = out.get(b.subject) ?? { code: b.subject, name: b.subjectName, kertas: [] }
+      const s = out.get(b.subject) ?? { code: b.subject, name: b.subjectName, kertas: [], levelScopes: {} }
       if (!s.kertas.includes(b.kertas)) s.kertas.push(b.kertas)
+      s.levelScopes![b.kertas] = bijakDefaultLevelScope((b as { levelShare?: { t4: number; t5: number } | null }).levelShare)
       out.set(b.subject, s)
     }
     return [...out.values()]
   }
 
-  async create(input: { subject: string; kertas: number; title?: string }): Promise<string> {
+  async create(input: { subject: string; kertas: number; title?: string; levelScope?: BijakLevelScope }): Promise<string> {
+    titleGuard(input.title)
     const a = await this.a()
-    return a.createPaper({
+    const id = await a.createPaper({
       subject: input.subject,
       kertas: input.kertas as 1 | 2,
-      ...(input.title ? { title: input.title } : {}),
+      title: input.title!.trim(),
     })
-  }
-
-  async generate(subject: string, kertas: number): Promise<string> {
-    const { id } = await kontrakServer().generateDraft(subject, kertas)
+    const ed = await a.getPaperEditor(id)
+    ;(ed.paper as MockPaper).levelScope = input.levelScope ?? 't4_t5'
+    await a.savePaper(id, {})
     return id
   }
 
-  poolPreview(subject: string, kertas: number): Promise<BijakPoolPreview> {
-    return kontrakServer().pool(subject, kertas)
+  /** The mock's Jana set (API-BIJAK-11): the sections of the contract at the size asked, filled from the bank, a group whole or not at all. */
+  async generate(subject: string, kertas: number, options: GenerateOptions = {}): Promise<string> {
+    titleGuard(options.title)
+    // As the API: the contract and the size are checked BEFORE a paper exists, so a refused draft leaves nothing in `listSets`.
+    const contract = await kontrakServer().pool(subject, kertas)
+    const total = contract.sections.reduce((n, s) => n + s.slots, 0)
+    const count = options.count ?? total
+    if (count > total) {
+      const message = BIJAK_SET_BUILDER_PROPOSED.countAboveContract(total)
+      throw new BuilderError('invalid', message, { fields: { count: message } })
+    }
+    const { id: paperId } = await kontrakServer().generateDraft(subject, kertas, options.title!)
+    const a = await this.a()
+    const ed = await a.getPaperEditor(paperId)
+    const shares = scaleSectionCounts(ed.paper.sections.map((s) => s.questionCount), count)
+    const used = new Set<string>()
+    const fill: { id: string; questionIds: string[] }[] = []
+    for (const [i, s] of ed.paper.sections.entries()) {
+      const want = shares[i]!
+      const picked: string[] = []
+      const { units } = await this.pool(paperId, s.id, { pageSize: 5000, ...(options.negeri?.length ? { negeri: options.negeri } : {}) })
+      for (const u of units) {
+        if (picked.length >= want) break
+        if (picked.length + u.questionIds.length > want || u.questionIds.some((q) => used.has(q))) continue
+        if (options.years?.length && !u.questionIds.some((q) => originMatches(q, options.years!, []))) continue
+        picked.push(...u.questionIds)
+      }
+      picked.forEach((q) => used.add(q))
+      fill.push({ id: s.id, questionIds: picked })
+    }
+    // A scaled set keeps the size it was drawn at, and leaves out a section with no share. Its budget is what the draw adds up to.
+    if (count < total) {
+      const paper = ed.paper
+      const marks = new Map((await Promise.all(paper.sections.map((s) => this.pool(paperId, s.id, { pageSize: 5000 })))).flatMap((p) => p.units.flatMap((u) => u.questions.map((q) => [q.id, q.marks] as const))))
+      paper.sections.forEach((s, i) => {
+        s.questionCount = shares[i]!
+        s.markBudget = fill[i]!.questionIds.reduce((n, q) => n + (marks.get(q) ?? 0), 0)
+      })
+      paper.sections = paper.sections.filter((s) => s.questionCount > 0)
+    }
+    const paper = ed.paper as MockPaper
+    paper.levelScope = options.levelScope ?? 't4_t5'
+    await a.savePaper(paperId, {
+      ...(options.title?.trim() ? { title: options.title.trim() } : {}),
+      sections: fill.filter((f) => ed.paper.sections.some((s) => s.id === f.id)),
+    })
+    return paperId
+  }
+
+  async poolPreview(subject: string, kertas: number, filters: JanaFilters = {}): Promise<BijakPoolPreview> {
+    const base = await kontrakServer().pool(subject, kertas)
+    const contractTotal = base.sections.reduce((n, s) => n + s.slots, 0)
+    const bank = await this.bankUnits(subject, kertas)
+    const units = bank.filter((u) => u.questionIds.some((q) => originMatches(q, filters.years ?? [], filters.negeri ?? [])))
+    const shrink = (filters.years?.length ? filters.years.length / MOCK_YEARS.length : 1) * (filters.negeri?.length ? filters.negeri.length / MOCK_NEGERI.length : 1)
+    const eligibleTotal = Math.floor(base.eligibleTotal * shrink)
+    const asked = filters.count ?? contractTotal
+    return {
+      ...base,
+      eligibleTotal,
+      verdict: base.verdict === 'boleh' && asked > eligibleTotal ? 'tidak_boleh' : base.verdict,
+      contractTotal,
+      // FR-ADM-Q13.3, as the API: the groups among the candidates that match the filters.
+      groupTotal: units.filter((u) => u.groupId).length,
+      filters: filtersOf(bank.flatMap((u) => u.questionIds)),
+      levelScope: 't4_t5',
+    }
+  }
+
+  /** The bank ids of a subject and kertas, for the filter values of the mock. */
+  /** The bank units of a subject and kertas: a read-only lookup, no paper is created. */
+  private async bankUnits(subject: string, kertas: number): Promise<ReturnType<BijakServer['bankUnits']>> {
+    const server = (await this.a()) as unknown as Pick<BijakServer, 'bankUnits'>
+    return server.bankUnits(subject, kertas)
+  }
+
+  async deleteSet(id: string): Promise<void> {
+    await (await this.a()).deletePaper(id)
+  }
+
+  private sj: SjPaper[] = sjSeed()
+  private sjSeq = 3
+  private sjFind(id: string): SjPaper | undefined {
+    return this.sj.find((p) => p.id === id)
   }
 
   async getEditor(id: string): Promise<PaperEditorData> {
-    return (await this.a()).getPaperEditor(id)
+    const sj = this.sjFind(id)
+    if (sj) return sjEditor(sj)
+    return this.withChips(await (await this.a()).getPaperEditor(id))
   }
 
   async updateHeader(id: string, patch: HeaderPatch): Promise<PaperEditorData> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      if (sj.status === 'terbit') throw new BuilderError('invalid', LOCKED)
+      const fields = sjValidate({
+        title: patch.title ?? sj.title,
+        examBoard: patch.examBoard ?? sj.examBoard,
+        year: patch.year ?? sj.year,
+        durationMinutes: patch.durationMinutes === undefined ? sj.durationMinutes : patch.durationMinutes,
+        totalMarks: patch.totalMarks ?? sj.totalMarks,
+      })
+      if (Object.keys(fields).length) throw new BuilderError('invalid', Object.values(fields)[0]!, { fields })
+      if (patch.title !== undefined) sj.title = patch.title.trim()
+      if (patch.examBoard !== undefined) sj.examBoard = patch.examBoard
+      if (patch.year !== undefined) sj.year = patch.year
+      if (patch.durationMinutes !== undefined) sj.durationMinutes = patch.durationMinutes
+      if (patch.totalMarks !== undefined) sj.totalMarks = patch.totalMarks
+      return sjEditor(sj)
+    }
     const a = await this.a()
-    const { instructions, ...rest } = patch
+    const { instructions, code, ...rest } = patch
     const ed = await a.getPaperEditor(id)
-    // The mock hands out its live paper object: instructions are set on it, then saved to persist.
+    // The server's order: the paper exists, it is not terbit, then the title (the same rule as create).
+    if (rest.title !== undefined && ed.paper.status !== 'terbit') titleGuard(rest.title)
+    // The mock hands out its live paper object: instructions and the code are set on it, then saved to persist.
     if (instructions && ed.paper.status !== 'terbit') ed.paper.instructions = [...instructions]
-    return a.savePaper(id, rest)
+    if (code !== undefined && ed.paper.status !== 'terbit') ed.paper.code = code || ed.paper.subject
+    return this.withChips(await a.savePaper(id, rest))
   }
 
   private async mutate(id: string, sectionId: string, fn: (ids: string[], ed: PaperEditorData) => string[]): Promise<PaperEditorData> {
@@ -127,7 +420,7 @@ export class MockBuilderServer implements BuilderApi {
     if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
     const sec = ed.paper.sections.find((s) => s.id === sectionId)
     if (!sec) throw new BuilderError('invalid', 'Bahagian tidak sah')
-    return a.savePaper(id, { sections: [{ id: sectionId, questionIds: fn([...sec.questionIds], ed) }] })
+    return this.withChips(await a.savePaper(id, { sections: [{ id: sectionId, questionIds: fn([...sec.questionIds], ed) }] }))
   }
 
   private helpers(ed: PaperEditorData) {
@@ -189,12 +482,15 @@ export class MockBuilderServer implements BuilderApi {
     const h = this.helpers(ed)
     const done = new Set<string>()
     const units: BijakBuilderPoolUnit[] = []
+    const all: string[] = []
     for (const q of ed.questions) {
       if (q.status !== 'terbit' || done.has(q.id)) continue
       const ids = q.groupId ? h.membersOf(q.groupId) : [q.id]
       ids.forEach((x) => done.add(x))
       const qs = ids.map((x) => h.q.get(x)).filter((x): x is BuilderQuestion => !!x)
+      all.push(...ids)
       if (term && !qs.some((x) => `${x.preview} ${x.topic} ${x.id}`.toLowerCase().includes(term))) continue
+      if (!ids.some((x) => originMatches(x, query.tahun === undefined ? [] : [query.tahun], query.negeri ?? []))) continue
       const stimulus = q.groupId ? h.g.get(q.groupId)?.stimulus : undefined
       units.push({
         ...(q.groupId ? { groupId: q.groupId } : {}),
@@ -213,6 +509,7 @@ export class MockBuilderServer implements BuilderApi {
       units: units.slice((page - 1) * pageSize, page * pageSize),
       total: units.length,
       totalPages: Math.max(1, Math.ceil(units.length / pageSize)),
+      filters: filtersOf(all),
     }
   }
 
@@ -301,8 +598,20 @@ export class MockBuilderServer implements BuilderApi {
   }
 
   async publish(id: string, options: PublishOptions = {}): Promise<PublishResult> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      const errors: string[] = []
+      if (sj.questions.length === 0) errors.push(fill(BIJAK_BUILDER_MESSAGES.subjektifNoContent, { title: sj.title }))
+      for (const x of sj.questions) if (!x.hasScheme) errors.push(`${x.preview}: ${BIJAK_BUILDER_MESSAGES.subjektifNoScheme}`)
+      const sum = sj.questions.reduce((n, x) => n + x.marks, 0)
+      if (sj.questions.length && sum !== sj.totalMarks)
+        errors.push(fill(BIJAK_BUILDER_MESSAGES.totalMarksMismatch, { a: sj.totalMarks, b: sum }))
+      if (errors.length) return { ok: false, errors, blockerDetails: [], canOverride: false }
+      sj.status = 'terbit'
+      return { ok: true, errors: [] }
+    }
     if (options.override && (options.reason ?? '').trim().length < 5)
-      throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
+      throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.overrideReasonRequired)
     const a = await this.a()
     const lines = await this.overridable(await a.getPaperEditor(id))
     if (lines.length && !options.override) {
@@ -332,9 +641,14 @@ export class MockBuilderServer implements BuilderApi {
       if (v) sec.instruction = v
       else delete sec.instruction
     }
+    const rule = patch.rule ?? sec.rule
+    if ((patch.compulsory ?? sec.compulsory) && rule.type === 'choose' && (patch.rule !== undefined || patch.compulsory !== undefined)) {
+      throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.compulsoryChoose)
+    }
     if (patch.compulsory !== undefined) sec.compulsory = patch.compulsory
+    if (patch.rule !== undefined) sec.rule = patch.rule
     // The mock hands out its live paper: saving persists it.
-    return a.savePaper(id, {})
+    return this.withChips(await a.savePaper(id, {}))
   }
 
   async updateReference(id: string, panels: ReferencePanel[]): Promise<PaperEditorData> {
@@ -343,7 +657,7 @@ export class MockBuilderServer implements BuilderApi {
     if (ed.paper.status === 'terbit') throw new BuilderError('invalid', LOCKED)
     if (panels.some((p) => !p.title.trim())) throw new BuilderError('invalid', 'Tajuk panel diperlukan')
     ;(ed.paper as unknown as { reference: ReferencePanel[] }).reference = panels.map((p) => ({ ...p, items: [...p.items] }))
-    return a.savePaper(id, {})
+    return this.withChips(await a.savePaper(id, {}))
   }
 
   async updateGroupLabel(id: string, groupId: string, label: string): Promise<PaperEditorData> {
@@ -357,10 +671,15 @@ export class MockBuilderServer implements BuilderApi {
     // A group with `stimuli: []` has nothing to title (REQ-A-008): refuse instead of crashing.
     if (!g.stimulus) throw new BuilderError('invalid', 'Kumpulan rangsangan ini tiada rangsangan untuk dinamakan')
     g.stimulus.label = label.trim()
-    return a.savePaper(id, {})
+    return this.withChips(await a.savePaper(id, {}))
   }
 
   async withdraw(id: string): Promise<void> {
+    const sj = this.sjFind(id)
+    if (sj) {
+      sj.status = 'draf'
+      return
+    }
     await (await this.a()).unpublishPaper(id)
   }
 
@@ -368,6 +687,7 @@ export class MockBuilderServer implements BuilderApi {
     const a = await this.a()
     const ed = await a.getPaperEditor(id)
     const newId = await a.createPaper({ subject: ed.paper.subject, kertas: ed.paper.kertas, title: `${ed.paper.title} (Salinan)` })
+    ;((await a.getPaperEditor(newId)).paper as MockPaper).levelScope = (ed.paper as MockPaper).levelScope ?? null
     await a.savePaper(newId, {
       year: ed.paper.year,
       durationMin: ed.paper.durationMin,
@@ -378,6 +698,71 @@ export class MockBuilderServer implements BuilderApi {
 
   async units(subject: string): Promise<BijakDskpUnit[]> {
     return kontrakServer().listUnits(subject)
+  }
+
+  async listSubjektif(query: SubjektifQuery = {}): Promise<SubjektifPage> {
+    await Promise.resolve()
+    const all = this.sj
+    const hit = all.filter(
+      (p) =>
+        (!query.subject || p.subject === query.subject) &&
+        (!query.kertas || p.kertas === query.kertas) &&
+        (!query.status || p.status === query.status) &&
+        (!query.year || p.year === query.year) &&
+        (!query.negeri || bijakNegeriSlug(p.examBoard) === bijakNegeriSlug(query.negeri)),
+    )
+    const size = query.pageSize ?? 25
+    const page = query.page ?? 1
+    const full = (p: SjPaper): boolean => p.questions.length > 0 && p.questions.every((x) => x.hasScheme)
+    return {
+      rows: hit.slice((page - 1) * size, page * size).map(sjRow),
+      total: hit.length,
+      counts: { total: all.length, published: all.filter((p) => p.status === 'terbit').length, withScheme: all.filter(full).length },
+    }
+  }
+
+  async createSubjektif(input: SubjektifCreate): Promise<{ id: string }> {
+    await Promise.resolve()
+    const fields = sjValidate(input)
+    if (!input.subject) fields.subject = BIJAK_BUILDER_MESSAGES.subjectRequired
+    if (![2, 3, 4].includes(input.kertas)) fields.kertas = BIJAK_BUILDER_MESSAGES.kertasInvalid
+    if (Object.keys(fields).length) throw new BuilderError('invalid', Object.values(fields)[0]!, { fields })
+    this.sjSeq += 1
+    const id = `sj-${this.sjSeq}`
+    this.sj.unshift({
+      id,
+      title: input.title.trim(),
+      subject: input.subject,
+      subjectName: SJ_SUBJECTS[input.subject] ?? input.subject,
+      kertas: input.kertas,
+      examBoard: input.examBoard,
+      year: input.year,
+      durationMinutes: input.durationMinutes ?? null,
+      totalMarks: input.totalMarks,
+      status: 'draf',
+      questions: [],
+      updatedAt: SJ_AT,
+    })
+    return { id }
+  }
+
+  async deletePaper(id: string): Promise<void> {
+    await Promise.resolve()
+    const i = this.sj.findIndex((p) => p.id === id)
+    if (i < 0) throw new BuilderError('not_found', 'Kertas tidak ditemui')
+    if (this.sj[i]!.status === 'terbit') throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.deleteTerbitSet)
+    this.sj.splice(i, 1)
+  }
+
+  /** The source route lands in a later part of S3-T06: the mock answers 404 like the server, so the page shows its error state. */
+  async uploadSource(): Promise<{ batchId: string }> {
+    await Promise.resolve()
+    throw new BuilderError('not_found', 'Kertas tidak ditemui')
+  }
+
+  async applySource(): Promise<{ placements: number }> {
+    await Promise.resolve()
+    throw new BuilderError('not_found', 'Kertas tidak ditemui')
   }
 }
 

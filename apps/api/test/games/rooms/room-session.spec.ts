@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ACCOUNTS, bootGamesApp, loginAs, type Client, type GamesTestApp } from '../helpers'
+import { ACCOUNTS, bootGamesApp, insertMcqQuestions, loginAs, type Client, type GamesTestApp } from '../helpers'
 import { FORM, ListBots, P, createRoom, demo001Students, fillAndStart, roomOf, userId } from './support'
 
 /**
@@ -26,6 +26,7 @@ describe('room session id and robot seats (DM-67)', () => {
   beforeAll(async () => {
     t = await bootGamesApp()
     student = await loginAs(t, ACCOUNTS.student)
+    await insertMcqQuestions(t.db, { subject: 'MATH', level: 'T4', count: 20, prefix: 'RS' }) // AC-GM-00.6: a start needs the full draw
     const kids = await demo001Students(t.db)
     t.ports.provideBotPool(new ListBots(kids.map((k) => ({ id: k.id, name: k.name, grade: k.grade }))))
   })
