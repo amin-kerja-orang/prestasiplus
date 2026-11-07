@@ -1,8 +1,8 @@
 /**
- * Paper builder rules (pure), a verbatim port of the prototype `domain/paper-builder.ts`: stimulus
+ * Paper builder rules (pure), a port of the prototype `domain/paper-builder.ts`: stimulus
  * groups move as one unit and stay contiguous; the live budget check compares each section with the
- * blueprint. The section marks come from the shared domain (`effectiveMarks`, via the adapter); this
- * file has no marks-budget or choose-N rule of its own. Lines are the BM texts of the contract.
+ * blueprint. The section marks come from the shared domain (`effectiveMarks`, via the adapter) over the
+ * choice units of FR-QA-41 (`unitMarksOf`). Lines are the BM texts of the contract.
  */
 import { BIJAK_BUILDER_CHECK_LINES as LINES, type BijakBuilderBlockerCode } from '@pp/contract'
 
@@ -34,6 +34,15 @@ export function unitsOf(ids: readonly string[], groupOf: GroupOf): Unit[] {
     else units.push(g ? { ids: [id], groupId: g } : { ids: [id] })
   }
   return units
+}
+
+/**
+ * FR-QA-41: the marks `effectiveMarks` ranks. Under `Pilih N` a group is ONE choice unit worth the sum of its members; under `Jawab Semua` every
+ * question counts (the sum is the same). A paper with no group gets the list of its questions, as the prototype did.
+ */
+export function unitMarksOf(rule: BuilderSectionSpec['rule'], ids: readonly string[], marksOf: (questionId: string) => number, groupOf: GroupOf): number[] {
+  if (rule.type !== 'choose') return ids.map(marksOf)
+  return unitsOf(ids, groupOf).map((u) => u.ids.reduce((n, id) => n + marksOf(id), 0))
 }
 
 /** Adds a question; when it belongs to a group, the whole group is added in published order. */
@@ -178,7 +187,7 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
   for (const s of sections) for (const id of s.questionIds) (seen.has(id) ? dup : seen).add(id)
   if (dup.size) addPaper('DUPLICATE_QUESTION', LINES.duplicateQuestion([...dup]))
 
-  // D93 (a D90 group-integrity rule, never overridable): a stimulus group with fewer than two members cannot be placed.
+  // D93 (a D90 group-integrity rule, never overridable): a stimulus group below `MIN_GROUP_MEMBERS` (D108-1: an empty one) cannot be placed.
   const tooSmall = new Set<string>()
   for (const s of sections)
     for (const id of s.questionIds) {
@@ -210,12 +219,12 @@ export function checkPaperDetailed(input: CheckInput): { check: PaperCheck; issu
       codes.push(code)
     }
     const notes: string[] = []
-    const marks = effectiveMarks(spec.rule, ids.map(marksOf))
+    const marks = effectiveMarks(spec.rule, unitMarksOf(spec.rule, ids, marksOf, groupOf))
     if (ids.length < spec.questionCount) addSec('COUNT_TOO_FEW', LINES.tooFew(spec.questionCount, ids.length))
     else if (ids.length > spec.questionCount) addSec('COUNT_TOO_MANY', LINES.tooMany(spec.questionCount, ids.length))
     if (marks !== spec.markBudget) addSec('MARKS_MISMATCH', LINES.marksMismatch(marks, spec.markBudget))
     if (spec.rule.type === 'choose') {
-      const marksList = ids.map(marksOf)
+      const marksList = unitMarksOf(spec.rule, ids, marksOf, groupOf)
       if (new Set(marksList).size > 1)
         notes.push('Soalan pilihan sepatutnya sama markah supaya pilihan adil')
     }

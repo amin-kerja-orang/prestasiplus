@@ -46,7 +46,7 @@ function detail(extra: Partial<QuestionDetail> = {}): QuestionDetail {
     modelAnswer: null,
     explanation: 'Satelit buatan dilancarkan untuk komunikasi.',
     aiExplanation: null,
-    language: 'bm',
+    language: 'ms',
     pointsValue: 1,
     status: 'approved',
     isActive: true,

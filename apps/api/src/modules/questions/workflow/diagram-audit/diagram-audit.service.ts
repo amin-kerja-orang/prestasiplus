@@ -13,10 +13,18 @@ import type { TxClient } from '../../../../db/client'
 import { PrismaService } from '../../../../db/prisma.service'
 import { FilesService } from '../../../files'
 import type { AuthContext } from '../../../../common/scope/auth-context'
-import type { DiagramCandidate } from '../ports'
+import type { DiagramCandidate, QuestionBrief } from '../ports'
 import { QuestionWorkflowPorts } from '../ports'
+import { GuruDiagramService } from '../../../intake/files/guru-diagram.service'
+import type { GuruActor } from '../../../intake/files/guru-submissions.service'
 
 export type DiagramKind = 'mcq' | 'structured'
+
+/** Who asks, for the visibility guard of the teacher path. */
+export interface DiagramViewer {
+  userId: string
+  isAdmin: boolean
+}
 
 export interface DiagramAuditFilters {
   subjectId?: string
@@ -46,6 +54,7 @@ export class DiagramAuditService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(QuestionWorkflowPorts) private readonly ports: QuestionWorkflowPorts,
     @Inject(FilesService) private readonly files: FilesService,
+    @Inject(GuruDiagramService) private readonly guruDiagram: GuruDiagramService,
   ) {}
 
   /** Flagged candidates of `kind` minus the resolved ones, id descending. */
@@ -68,7 +77,10 @@ export class DiagramAuditService {
 
     const mcqPage = filters.mcqPage ?? 1
     const strPage = filters.strPage ?? 1
-    const slice = <T,>(rows: T[], page: number): T[] => rows.slice((page - 1) * DIAGRAM_AUDIT_PAGE_SIZE, page * DIAGRAM_AUDIT_PAGE_SIZE)
+    // "Menunggu Semakan": an open teacher image for the question or its stimulus group (S6-T18 part 2).
+    const mcqSlice = mcqFiltered.slice((mcqPage - 1) * DIAGRAM_AUDIT_PAGE_SIZE, mcqPage * DIAGRAM_AUDIT_PAGE_SIZE)
+    const strSlice = strFiltered.slice((strPage - 1) * DIAGRAM_AUDIT_PAGE_SIZE, strPage * DIAGRAM_AUDIT_PAGE_SIZE)
+    const pending = await this.guruDiagram.pendingFor([...mcqSlice, ...strSlice].map((c) => c.id))
     const subj = (c: DiagramCandidate) => (c.subjectId !== null ? { id: c.subjectId, name: c.subjectName ?? '' } : null)
     const who = (c: DiagramCandidate) => ({ id: c.createdBy.id, name: c.createdBy.name })
 
@@ -87,24 +99,26 @@ export class DiagramAuditService {
     return {
       data: {
         mcq: {
-          items: slice(mcqFiltered, mcqPage).map((c) => ({
+          items: mcqSlice.map((c) => ({
             id: c.id,
             questionText: c.text,
             subject: subj(c),
             createdBy: who(c),
             sourceFile: c.sourceFile,
             sourcePage: c.sourcePage,
+            pendingReview: pending.has(c.id),
           })),
           meta: pageMeta(mcqFiltered.length, mcqPage),
         },
         structured: {
-          items: slice(strFiltered, strPage).map((c) => ({
+          items: strSlice.map((c) => ({
             id: c.id,
             stimulusExcerpt: excerpt(c.text),
             subject: subj(c),
             createdBy: who(c),
             sourceFile: c.sourceFile,
             sourcePage: c.sourcePage,
+            pendingReview: pending.has(c.id),
           })),
           meta: pageMeta(strFiltered.length, strPage),
         },
@@ -117,21 +131,36 @@ export class DiagramAuditService {
     }
   }
 
-  /** The candidate must exist in the bank's list for `kind` (resolved ones included: re-upload is allowed). */
-  async assertExists(kind: DiagramKind, id: string): Promise<void> {
-    await this.requireQuestion(kind, id)
+  /**
+   * The candidate must exist in the bank's list for `kind`; resolved ones count too, so Admin Pusat may re-upload (also after a dismissal).
+   * The stricter checks apply to the teacher path only (a non-admin `viewer`): 404 for a `kind` that is not the question's real type, a dismissed
+   * question, and a question they may not see (another author's, unless approved and active; S6-T16 `visibility` will apply through the shared
+   * scope when it lands).
+   */
+  async assertExists(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<QuestionBrief | undefined> {
+    return this.requireQuestion(kind, id, viewer)
   }
 
-  private async requireQuestion(kind: DiagramKind, id: string): Promise<void> {
+  /** Returns the question's brief on the teacher path (read once for the guard, reused by the submit); undefined for admin. */
+  private async requireQuestion(kind: DiagramKind, id: string, viewer?: DiagramViewer): Promise<QuestionBrief | undefined> {
     if (!isIdString(id)) throw ApiError.of('NOT_FOUND')
     const status = await this.ports.questionBank.getStatus(id)
     if (!status) throw ApiError.of('NOT_FOUND')
+    const restricted = viewer !== undefined && !viewer.isAdmin
+    let brief: QuestionBrief | undefined
+    if (restricted) {
+      if (status.createdById !== viewer.userId && !(status.status === 'approved' && status.isActive)) throw ApiError.of('NOT_FOUND')
+      brief = (await this.ports.questionBank.describe([id])).get(id)
+      if (!brief || brief.type !== kind) throw ApiError.of('NOT_FOUND')
+    }
     const flagged = await this.ports.questionBank.listDiagramCandidates(kind)
     const resolved = await this.prisma.client.diagramAuditResolution.findUnique({
       where: { kind_questionId: { kind, questionId: idFromString(id) } },
-      select: { id: true },
+      select: { resolution: true },
     })
+    if (restricted && resolved?.resolution === 'dismissed') throw ApiError.of('NOT_FOUND')
     if (!resolved && !flagged.some((c) => c.id === id)) throw ApiError.of('NOT_FOUND')
+    return brief
   }
 
   async uploadImage(
@@ -160,6 +189,23 @@ export class DiagramAuditService {
       await this.resolve(tx, kind, id, 'image', file.id, auth.userId)
     })
     return { data: { id, needsDiagram: false }, status: DIAGRAM_AUDIT_MESSAGES.uploaded }
+  }
+
+  /**
+   * Teacher image (S6-T18 part 2): the question is not changed and nothing is resolved; an intake item waits for the admin.
+   * 404 unknown question, 409 an image for the stimulus group is already waiting (or the question has no group), 422 not an image.
+   */
+  async submitForReview(
+    actor: GuruActor,
+    kind: DiagramKind,
+    id: string,
+    bytes: Buffer,
+    brief?: QuestionBrief,
+  ): Promise<{ data: { id: string; needsDiagram: true }; status: string }> {
+    // The controller has already run the guard (`assertExists`) and passes its brief; called without one the guard runs here.
+    const checked = brief ?? (await this.requireQuestion(kind, id, { userId: actor.userId, isAdmin: false }))
+    await this.guruDiagram.submit(actor, { kind, questionId: id, subjectName: checked?.subjectName ?? null, bytes })
+    return { data: { id, needsDiagram: true }, status: DIAGRAM_AUDIT_MESSAGES.submittedForReview }
   }
 
   async dismiss(userId: string, kind: DiagramKind, id: string): Promise<{ data: { id: string; needsDiagram: false }; status: string }> {

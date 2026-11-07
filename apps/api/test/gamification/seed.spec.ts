@@ -54,6 +54,8 @@ describe('gamification seed (BE-23 data layer)', () => {
     expect((await db.query<{ type: string; price_syiling: number; cost_value_sen: number }>(`select type, price_syiling, cost_value_sen from syiling_rewards where name = 'Baucar Buku RM10'`))[0]).toEqual({ type: 'voucher', price_syiling: 500, cost_value_sen: 1000 })
     const rw = await db.query<{ is_active: boolean; delivery_method: string; stock_quantity: number | null }>(`select is_active, delivery_method, stock_quantity from rewards`)
     expect(rw.every((r) => !r.is_active && r.delivery_method === 'manual')).toBe(true)
+    expect(HADIAH_ROWS.every((h) => !h.requiresParentConsent), 'no seeded gift needs consent (FR-GM-21.3)').toBe(true)
+    expect((await db.query<{ n: string }>(`select count(*)::text as n from rewards where requires_parent_consent`))[0]!.n).toBe('0')
     expect(rw.filter((r) => r.stock_quantity !== null).length).toBe(HADIAH_ROWS.filter((h) => h.stockQuantity !== null).length)
     const perCat = await db.query<{ category: string; n: string }>(`select category, count(*)::text as n from rewards group by category`)
     expect(Object.fromEntries(perCat.map((r) => [r.category, Number(r.n)]))).toEqual({ flagship: 4, ewallet: 8, telco: 11, gaming: 8, streaming: 6, food_beverage: 8, ecommerce: 5, education: 6, entertainment: 3 })

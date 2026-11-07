@@ -423,3 +423,56 @@ describe('GET /api/item-analysis/me (API-RPT-05, R1-MUR-6)', () => {
     expect(wrong.items.length).toBe(all.counts.pemulihan)
   })
 })
+
+describe('S16 the feed `entries` and DELETE /api/timeline/:id (R1-MUR-39)', () => {
+  const png = () => new File([new Uint8Array(64)], 'a.png', { type: 'image/png' })
+  const create = async (userId: number, title: string): Promise<TimelinePost> => {
+    const form = new FormData()
+    form.append('title', title)
+    form.append('category', 'cerita')
+    form.append('photos[]', png())
+    return (await send<{ data: TimelinePost }>(runtime, userId, 'POST', '/api/timeline', form)).body.data
+  }
+
+  it('lists own sessions, badges and posts newest first (at most 100), each with a +08:00 time', async () => {
+    // 3001 is a designed pupil with a session history (the seeded pupils 2 and 3 have none).
+    const mine = await create(3001, 'Dalam suapan')
+    const t = await dataAs<Timeline>(runtime, 3001, '/api/timeline')
+    const entries = t.entries ?? []
+    expect(entries.length).toBeGreaterThan(1)
+    expect(entries.length).toBeLessThanOrEqual(100)
+    const ms = entries.map((e) => Date.parse(e.at))
+    expect(ms).toEqual([...ms].sort((a, b) => b - a))
+    expect(entries.every((e) => e.at.endsWith('+08:00'))).toBe(true)
+    expect(entries.some((e) => e.kind === 'session')).toBe(true)
+    const row = entries.find((e) => e.kind === 'post' && e.id === mine.id)
+    expect(row).toBeDefined()
+    for (const e of entries) {
+      if (e.kind === 'session') {
+        expect(e.answered).toBeGreaterThan(0)
+        expect(e.accuracy).toBe(Math.round((e.correct / e.answered) * 100))
+      }
+      if (e.kind === 'post') expect(e.post.userId).toBe(3001)
+    }
+  })
+
+  it('deletes an own post ({ deleted: 1 }); another user gets 404 and the post stays; an unknown id is 404', async () => {
+    const mine = await create(PELAJAR2, 'Untuk dipadam')
+    const other = await send(runtime, PELAJAR, 'DELETE', `/api/timeline/${String(mine.id)}`)
+    expect(other.status).toBe(404)
+    expect((await dataAs<Timeline>(runtime, PELAJAR2, '/api/timeline')).posts.map((p) => p.id)).toContain(mine.id)
+    const gone = await send<{ data: { deleted: number } }>(runtime, PELAJAR2, 'DELETE', `/api/timeline/${String(mine.id)}`)
+    expect(gone.status).toBe(200)
+    expect(gone.body.data).toEqual({ deleted: 1 })
+    const t = await dataAs<Timeline>(runtime, PELAJAR2, '/api/timeline')
+    expect(t.posts.map((p) => p.id)).not.toContain(mine.id)
+    expect((t.entries ?? []).some((e) => e.kind === 'post' && e.id === mine.id)).toBe(false)
+    expect((await send(runtime, PELAJAR2, 'DELETE', '/api/timeline/999999')).status).toBe(404)
+    expect((await send(runtime, null, 'DELETE', `/api/timeline/${String(mine.id)}`)).status).toBe(401)
+  })
+
+  it('the public profile carries posts only and no feed', async () => {
+    const pub = await dataAs<Record<string, unknown>>(runtime, null, '/api/public/students/2')
+    expect(pub).not.toHaveProperty('entries')
+  })
+})

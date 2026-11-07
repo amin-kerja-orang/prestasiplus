@@ -399,9 +399,28 @@ export interface TimelinePost {
   createdAt: string
 }
 
+/**
+ * One row of the feed (R1-MUR-39, `GET /api/timeline` `entries`): a finished session, a badge earned or an own post.
+ * `at` is the event time (MYT, `+08:00`). A post's `id` is the post id (number in the mock, text on the API).
+ */
+export type TimelineEntry =
+  | {
+      kind: 'session'
+      id: string
+      at: string
+      subjectName: string
+      correct: number
+      answered: number
+      accuracy: number
+    }
+  | { kind: 'badge'; id: string; at: string; name: string; icon: string }
+  | { kind: 'post'; id: number | string; at: string; post: TimelinePost }
+
 export interface Timeline {
   profileUrl: string
   posts: TimelinePost[]
+  /** Newest first, at most 100. Absent on an older payload: the page then shows `posts`. */
+  entries?: TimelineEntry[]
 }
 
 /** #19 body fields (multipart `title`, `category`, `eventDate?`, `story?`, `photos[]`, `captions[i]?`). */

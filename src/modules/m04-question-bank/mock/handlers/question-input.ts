@@ -205,10 +205,12 @@ export function parseQuestionBody(
     values.explanation = explanation === '' ? null : explanation
   }
 
-  let language: Language | undefined = current ? undefined : 'bm'
+  let language: Language | undefined = current ? undefined : 'ms'
   const rawLanguage = textOf(b.language)
   if (rawLanguage !== undefined && rawLanguage !== '') {
-    if (rawLanguage === 'bm' || rawLanguage === 'en') language = rawLanguage
+    // `bm` is the old input token of `ms` (60 API-Q-03); it is stored as `ms`.
+    if (rawLanguage === 'bm' || rawLanguage === 'ms') language = 'ms'
+    else if (rawLanguage === 'en' || rawLanguage === 'ms+en') language = rawLanguage
     else fields.language = QUESTION_MESSAGES.language
   }
   if (language !== undefined) values.language = language

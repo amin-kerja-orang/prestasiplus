@@ -324,7 +324,7 @@ describe('#7 challenges', () => {
       dataOf<{ id: number; target: number; progress: number; pct: number; completed: boolean }[]>(
         res,
       )
-    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 14 })
+    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 14, claimed: 0 })
     expect(items).toHaveLength(14)
     const kombo = items.find((c) => c.id === 8)
     expect(kombo).toMatchObject({ target: 2, progress: 0, pct: 0, completed: false })
@@ -332,12 +332,46 @@ describe('#7 challenges', () => {
 
   it('designed completions at the clock: pelajar 7/14, pelajarmaju 4/14 (Q-DAILY-FINISHERS 0)', async () => {
     const a = await get('/api/gamification/challenges', pelajar)
-    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 14 })
+    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 14, claimed: 0 })
     const done = dataOf<{ id: number; completed: boolean; progress: number; target: number }[]>(a)
     expect(done.filter((c) => c.completed).map((c) => c.id)).toEqual([2, 4, 5, 6, 7, 8, 10])
     expect(done.filter((c) => c.completed).every((c) => c.progress === c.target)).toBe(true)
     const b = await get('/api/gamification/challenges', pelajarmaju)
-    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 14 })
+    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 14, claimed: 0 })
+  })
+})
+
+describe('API-GAME-11 claim a challenge (ruling 20 on #500, mock mirror)', () => {
+  const claim = (id: number | string, token?: string, body?: Record<string, unknown>) =>
+    send(runtime, 'POST', `/api/gamification/challenges/${String(id)}/claim`, { ...(token ? { token } : {}), ...(body ? { body } : {}) })
+
+  it('guest 401; unknown challenge 404; a bad clientUuid 422', async () => {
+    expect((await claim(2)).status).toBe(401)
+    expect((await claim(9999, pelajar)).status).toBe(404)
+    expect((await claim(2, pelajar, { clientUuid: 'x' })).status).toBe(422)
+  })
+
+  it('a completed challenge is claimed once: 200 with the stored amounts, the same key replays, otherwise 409 CHALLENGE_CLAIMED; GET shows claimed', async () => {
+    const key = crypto.randomUUID()
+    const first = await claim(2, pelajar, { clientUuid: key })
+    expect(first.status).toBe(200)
+    expect(dataOf(first)).toMatchObject({ claimed: true })
+    expect(dataOf(await claim(2, pelajar, { clientUuid: key }))).toEqual(dataOf(first))
+    const again = await claim(2, pelajar)
+    expect(again.status).toBe(409)
+    expect((again.body as { error: { code: string } }).error.code).toBe('CHALLENGE_CLAIMED')
+    const other = await claim(4, pelajar, { clientUuid: key })
+    expect(other.status).toBe(409)
+    expect((other.body as { error: { code: string } }).error.code).toBe('CONFLICT')
+    const list = await get('/api/gamification/challenges', pelajar)
+    expect((list.body as { meta: { claimed: number } }).meta.claimed).toBe(1)
+    expect(dataOf<{ id: number; claimed: boolean }[]>(list).find((c) => c.id === 2)?.claimed).toBe(true)
+  })
+
+  it('progress below the target is 409 CHALLENGE_NOT_DONE', async () => {
+    const res = await claim(8, admin)
+    expect(res.status).toBe(409)
+    expect((res.body as { error: { code: string } }).error.code).toBe('CHALLENGE_NOT_DONE')
   })
 })
 
@@ -462,7 +496,7 @@ describe('#10 share cards', () => {
 })
 
 describe('#11 referral', () => {
-  it('admin: the observed code 4JURJTT, 50 / 25, share links, statistics 0 / 0 / 0', async () => {
+  it('admin: the observed code 4JURJTT, 100 / 0, share links, statistics 0 / 0 / 0', async () => {
     const d = dataOf<{
       code: string
       whatsappUrl: string
@@ -471,27 +505,28 @@ describe('#11 referral', () => {
     }>(await get('/api/gamification/referral', admin))
     expect(d).toMatchObject({
       code: '4JURJTT',
-      rewardReferrer: 50,
-      rewardReferee: 25,
+      rewardReferrer: 100,
+      rewardReferee: 0,
+      maxRewarded: 20,
       registerUrl: 'https://prestasiplus.my/register?ref=4JURJTT',
       stats: { referrals: 0, rewarded: 0, syilingEarned: 0 },
     })
     expect(decodeURIComponent(d.whatsappUrl)).toBe(
-      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT untuk dapat 25 syiling PERCUMA! https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom belajar matematik di PRESTASIPLUS! Guna kod 4JURJTT! https://prestasiplus.my/register?ref=4JURJTT',
     )
     // Exactly the live hrefs (S16-referral.json): only spaces encoded, `:/?=&!` raw.
     expect(d.whatsappUrl).toBe(
-      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT%20untuk%20dapat%2025%20syiling%20PERCUMA!%20https://prestasiplus.my/register?ref=4JURJTT',
+      'https://wa.me/?text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT!%20https://prestasiplus.my/register?ref=4JURJTT',
     )
     expect(d.telegramUrl).toBe(
       'https://t.me/share/url?url=https://prestasiplus.my/register?ref=4JURJTT&text=Jom%20belajar%20matematik%20di%20PRESTASIPLUS!%20Guna%20kod%204JURJTT',
     )
   })
 
-  it('every other user gets a stable 7-character code', async () => {
+  it('every other user gets a stable 8-character code', async () => {
     const a = dataOf<{ code: string }>(await get('/api/gamification/referral', pelajar)).code
     const b = dataOf<{ code: string }>(await get('/api/gamification/referral', pelajar)).code
-    expect(a).toMatch(/^[A-Z0-9]{7}$/)
+    expect(a).toMatch(/^[A-Z0-9]{8}$/)
     expect(b).toBe(a)
     expect(a).not.toBe('4JURJTT')
   })

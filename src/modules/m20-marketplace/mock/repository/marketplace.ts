@@ -7,6 +7,9 @@
  * Buyer-slice methods (M20-T1) are complete; admin and seller methods (M20-T4, M20-T6) are not built.
  */
 
+import type { MarketplaceSellerAction } from '@pp/contract'
+import { MARKETPLACE_SELLER_TRANSITIONS, marketplaceSellerActions } from '@pp/contract'
+
 import { defineRepository } from '@/mock/repository'
 
 import type {
@@ -14,6 +17,8 @@ import type {
   ProductCard,
   ProductDetail,
   ProductReview,
+  ProductStatus,
+  SellerStatus,
   ShopView,
 } from '../../api/types'
 import { nowMs } from './clock'
@@ -145,6 +150,10 @@ const mpImagesRepo = defineRepository({
     total(): number {
       return store.count()
     },
+    /** True when a stored image already uses this `url` (a file can belong to one image only). */
+    urlTaken(url: string): boolean {
+      return store.query().rows.some((i) => i.url === url)
+    },
     insertMany(rows: readonly MpImage[]): void {
       transaction(() => {
         for (const r of rows) store.insert({ ...r })
@@ -173,7 +182,8 @@ const mpProductsRepo = defineRepository({
   owner: 'M20',
   name: 'mpProducts',
   store: productsTable,
-  methods: ({ store, transaction }) => ({
+  stores: { images: imagesTable, reviews: reviewsTable },
+  methods: ({ store, stores, transaction }) => ({
     get(idOrSlug: number | string): MpProduct | undefined {
       if (typeof idOrSlug === 'number') return store.get(idOrSlug)
       return store.query({ where: { slug: idOrSlug } }).rows[0]
@@ -317,6 +327,74 @@ const mpProductsRepo = defineRepository({
       )
     },
 
+
+    // --- admin (API-ADM-19, P2-12): every status is listed; stats are global ---------------------
+
+    /** P12-01: `q` substring of the name (case-insensitive), category id, status; newest first. */
+    adminList(filter: { q: string; categoryId: number | null; status: ProductStatus | null }): MpProduct[] {
+      const q = filter.q.trim().toLowerCase()
+      return store
+        .query()
+        .rows.filter(
+          (p) =>
+            (q === '' || p.name.toLowerCase().includes(q)) &&
+            (filter.categoryId === null || p.categoryId === filter.categoryId) &&
+            (filter.status === null || p.status === filter.status),
+        )
+        .sort((a, b) => (a.createdAt === b.createdAt ? b.id - a.id : a.createdAt < b.createdAt ? 1 : -1))
+    },
+
+    /** `Jumlah Produk` and `Aktif`, over all products (not the filtered list). */
+    adminStats(): { total: number; active: number } {
+      return { total: store.count(), active: store.count({ status: 'active' }) }
+    },
+
+    slugTaken(slug: string): boolean {
+      return store.query({ where: { slug } }).rows.length > 0
+    },
+
+    /** Create: the images take positions 1..n in array order. */
+    adminCreate(row: Omit<MpProduct, 'id' | 'views' | 'createdAt' | 'updatedAt'>, urls: readonly string[]): MpProduct {
+      return transaction(() => {
+        const at = toIso(nowMs())
+        const created = store.insert({ ...row, views: 0, createdAt: at, updatedAt: at })
+        urls.forEach((url, i) => stores.images.insert({ productId: created.id, position: i + 1, url }))
+        return created
+      })
+    },
+
+    /** Update: only the keys of `patch` change; new images are appended after the highest position. */
+    adminUpdate(id: number, patch: Partial<MpProduct>, urls: readonly string[]): MpProduct | undefined {
+      return transaction(() => {
+        if (!store.get(id)) return undefined
+        const updated = store.update(id, { ...patch, updatedAt: toIso(nowMs()) })
+        let next = Math.max(0, ...stores.images.query({ where: { productId: id } }).rows.map((i) => i.position)) + 1
+        for (const url of urls) stores.images.insert({ productId: id, position: next++, url })
+        return updated
+      })
+    },
+
+    /** Delete: the images and reviews go with the product (cascade). */
+    adminRemove(id: number): boolean {
+      return transaction(() => {
+        if (!store.get(id)) return false
+        for (const i of stores.images.query({ where: { productId: id } }).rows) stores.images.remove(i.id)
+        for (const r of stores.reviews.query({ where: { productId: id } }).rows) stores.reviews.remove(r.id)
+        store.remove(id)
+        return true
+      })
+    },
+
+    /** Deletes one image; the others keep their positions. `false` when it is not this product's. */
+    adminRemoveImage(productId: number, imageId: number): boolean {
+      return transaction(() => {
+        const image = stores.images.get(imageId)
+        if (!image || image.productId !== productId) return false
+        stores.images.remove(imageId)
+        return true
+      })
+    },
+
     /** Test hook: a raw patch (e.g. `{stockStatus: 'out_of_stock'}`). */
     patch(id: number, patch: Partial<MpProduct>): MpProduct | undefined {
       return transaction(() => {
@@ -396,7 +474,46 @@ const mpSellersRepo = defineRepository({
       })
     },
 
-    /** Test-only raw patch (e.g. `{status: 'banned'}`; the real ban is M20-T4's #10). */
+
+    // --- admin (API-ADM-19, P2-13) -----------------------------------------------------------------
+
+    /** Newest first; `status` null = all. */
+    adminList(status: SellerStatus | null): MpSeller[] {
+      return store
+        .query()
+        .rows.filter((s) => status === null || s.status === status)
+        .sort((a, b) => (a.createdAt === b.createdAt ? b.id - a.id : a.createdAt < b.createdAt ? 1 : -1))
+    },
+
+    /** `Jumlah Penjual`, `Aktif`, `Menunggu Pengesahan` (= pending), over all sellers. */
+    adminStats(): { total: number; active: number; pending: number } {
+      return {
+        total: store.count(),
+        active: store.count({ status: 'active' }),
+        pending: store.count({ status: 'pending' }),
+      }
+    },
+
+    /** P12-02: the active sellers by shop name (the caller adds the official option first). */
+    activeOptions(): MpSeller[] {
+      return store.query({ where: { status: 'active' } }).rows.sort((a, b) => a.shopName.localeCompare(b.shopName) || a.id - b.id)
+    },
+
+    /**
+     * Decision 6 on issue #506: `MARKETPLACE_SELLER_TRANSITIONS`; `verify` also needs "not yet verified".
+     * `'conflict'` when the action is not allowed from the current status; `undefined` for an unknown seller.
+     */
+    transition(id: number, action: MarketplaceSellerAction): MpSeller | 'conflict' | undefined {
+      return transaction(() => {
+        const s = store.get(id)
+        if (!s) return undefined
+        if (!marketplaceSellerActions(s.status, s.verifiedAt !== null).includes(action)) return 'conflict'
+        const rule = MARKETPLACE_SELLER_TRANSITIONS[action]
+        return store.update(id, action === 'verify' ? { verifiedAt: toIso(nowMs()) } : { status: rule.to })
+      })
+    },
+
+    /** Test-only raw patch (e.g. `{status: 'banned'}`). */
     patch(id: number, patch: Partial<MpSeller>): MpSeller | undefined {
       return transaction(() => (store.get(id) ? store.update(id, patch) : undefined))
     },

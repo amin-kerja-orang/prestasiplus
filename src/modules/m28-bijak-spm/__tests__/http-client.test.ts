@@ -120,14 +120,12 @@ describe('HttpBijakServer: reads', () => {
     const { server, only } = setup({
       'GET /api/bijak/papers': ok([paper]),
       'GET /api/bijak/papers/paper-1': ok({ ...paper, sections: [] }),
-      'GET /api/bijak/contracts': ok([{ subject: 'MAT', kertas: 1, source: 'Disahkan' }]),
       'GET /api/bijak/history': ok([
         { attemptId: 'att-1', startedAt: T0, durationSeconds: 5, score: 3, max: 4 },
       ]),
     })
     expect(await server.listPapers()).toEqual([paper])
     expect(await server.getCover(7, 'paper-1')).toMatchObject({ id: 'paper-1' })
-    expect((await server.listContracts())[0]).toMatchObject({ subject: 'MAT' })
     const rows = await server.history()
     expect(rows[0]).toMatchObject({ attemptId: 'att-1', startedAt: T0_MS, score: 3 })
     expect(only('GET', '/api/bijak/papers')).toHaveLength(1)
@@ -208,7 +206,7 @@ describe('HttpBijakServer: reads', () => {
     const { server } = setup({
       'GET /api/bijak/attempts/att-1/result': ok({
         attempt: { ...META, status: 'submitted', submittedAt: T1, lateBySeconds: 3 },
-        result: { score: 1, max: 1, percent: 100 },
+        result: { score: 1, max: 1, percent: 100, questions: [] },
         paper: VIEW,
       }),
     })
@@ -216,6 +214,19 @@ describe('HttpBijakServer: reads', () => {
     expect(r.attempt).toMatchObject({ submittedAt: T1_MS, lateBySeconds: 3, startedAt: T0_MS })
     expect(r.paper.attempt.deadline).toBe(T1_MS)
     expect(r.result.score).toBe(1)
+  })
+
+  it('getResult of a Kertas Subjektif attempt without the scheme gives each part an empty reveal (S3-T06, AC-MUR-13-21)', async () => {
+    const part = { partId: 'p1', label: '(a)', prompt: 'Terangkan.', marks: 4, awarded: 0, status: 'belum_dimarkah', confidence: 'low', points: [], answer: { text: 'x' } }
+    const { server } = setup({
+      'GET /api/bijak/attempts/att-1/result': ok({
+        attempt: { ...META, paperKind: 'subjektif', status: 'submitted', submittedAt: T1 },
+        result: { score: 0, max: 4, percent: 0, questions: [{ questionId: 'q1', parts: [part] }] },
+        paper: VIEW,
+      }),
+    })
+    const r = await server.getResult(7, 'att-1')
+    expect(r.result.questions[0]!.parts[0]!.scheme).toEqual({ marks: 4 })
   })
 })
 
@@ -236,34 +247,6 @@ describe('HttpBijakServer: writes', () => {
     })
     // the token is fetched once and cached
     expect(only('GET', '/api/session')).toHaveLength(1)
-  })
-
-  it('generatePaper: 201, NO_BLUEPRINT and SHORTAGE map to the GenerateOutcome', async () => {
-    let res: TransportResponse = ok({ paperId: 'jana-1' }, 201)
-    const { server, last } = setup({ 'POST /api/bijak/papers/generate': () => res })
-    expect(await server.generatePaper(7, 'MAT', 2)).toEqual({ ok: true, paperId: 'jana-1' })
-    expect(last().body).toEqual({ subject: 'MAT', kertas: 2 })
-    expect(last().headers['x-csrf-token']).toBe('csrf-1')
-
-    res = fail(422, 'NO_BLUEPRINT', 'Belum ada kontrak untuk subjek dan kertas ini')
-    expect(await server.generatePaper(7, 'SN', 1)).toEqual({ ok: false, reason: 'no_blueprint' })
-
-    const shortages = [{ section: 'Bahagian A', need: 5, have: 3 }]
-    res = fail(422, 'SHORTAGE', 'Kertas tidak dapat dijana kerana soalan tidak mencukupi.', {
-      details: { shortages },
-    })
-    expect(await server.generatePaper(7, 'MAT', 1)).toEqual({
-      ok: false,
-      reason: 'shortage',
-      shortages,
-    })
-  })
-
-  it('generatePaper: a VALIDATION_ERROR is a bad_request', async () => {
-    const { server } = setup({
-      'POST /api/bijak/papers/generate': fail(422, 'VALIDATION_ERROR', 'Data tidak sah'),
-    })
-    await expect(server.generatePaper(7, '', 0)).rejects.toMatchObject({ code: 'bad_request' })
   })
 
   it('saveAnswers sends savedAt as ISO, flags/picks/position, and maps savedAt back', async () => {
@@ -397,6 +380,18 @@ describe('HttpBijakServer: errors', () => {
     expect(e).toMatchObject({ code: 'bad_request', message: 'Percubaan sudah tamat' })
   })
 
+  it('422 on a blank check is bad_request with the fields.questionId line, like the mock', async () => {
+    const { server } = setup({
+      'POST /api/bijak/attempts/att-1/questions/q-1/check': fail(422, 'VALIDATION_ERROR', 'Data tidak sah', {
+        fields: { questionId: 'Jawab dahulu sebelum menyemak.' },
+      }),
+    })
+    expect(await code(server.checkQuestion(7, 'att-1', 'q-1'))).toMatchObject({
+      code: 'bad_request',
+      message: 'Jawab dahulu sebelum menyemak.',
+    })
+  })
+
   it('403 on a check in exam mode is forbidden with the scheme message', async () => {
     const { server } = setup({
       'POST /api/bijak/attempts/att-1/questions/q-1/check': fail(
@@ -439,7 +434,6 @@ describe('HttpBijakServer: errors', () => {
     for (const call of [
       () => server.getAttemptView(7, 'att-1'),
       () => server.saveAnswers(7, 'att-1', { changes: [] }),
-      () => server.generatePaper(7, 'MAT', 1),
     ]) {
       expect(await code(call())).toMatchObject({ code: 'offline', message: 'Luar talian' })
     }

@@ -12,7 +12,7 @@ import type {
 import { Prisma } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { offeredLevels, type OfferedLevel } from '../practice/rules'
-import { LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
+import { BANK_VISIBLE_SQL, LEARNER_LEVEL_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL } from '../questions/learner-visibility'
 import { byOrderThenId, chapterOrder, compareIds, topicOrder } from './rules'
 
 /** A learner Topik: a tree chapter with its subject and level rows. */
@@ -341,6 +341,29 @@ export class CurriculumRepository {
     return out
   }
 
+  /**
+   * S10-T05 (heatmap): the active in-tree chapters of the given subjects in the active Tingkatan 1 to 5 levels (codes
+   * `T1`..`T5`; never a Darjah), each with its Bab number and level. Unsorted; the caller orders them.
+   */
+  async chaptersOfSubjectsInForms(
+    subjectIds: readonly bigint[],
+  ): Promise<{ id: bigint; subjectId: bigint; name: string; chapterNumber: number | null; levelCode: string; levelOrder: number }[]> {
+    if (subjectIds.length === 0) return []
+    const levels = (await this.levels({ active: true })).filter((l) => /^T[1-5]$/.test(l.code))
+    if (levels.length === 0) return []
+    const byLevel = new Map(levels.map((l) => [l.id, l]))
+    const rows = await this.db.chapter.findMany({
+      where: { subjectId: { in: [...new Set(subjectIds)] }, educationLevelId: { in: levels.map((l) => l.id) }, inTree: true, isActive: true },
+    })
+    const out: { id: bigint; subjectId: bigint; name: string; chapterNumber: number | null; levelCode: string; levelOrder: number }[] = []
+    for (const c of rows) {
+      const level = c.educationLevelId === null ? undefined : byLevel.get(c.educationLevelId)
+      if (c.name == null || !level) continue
+      out.push({ id: c.id, subjectId: c.subjectId, name: c.name, chapterNumber: c.chapterNumber, levelCode: level.code, levelOrder: level.sortOrder })
+    }
+    return out
+  }
+
   /** Topics of a chapter, BR-08 natural order. */
   async topics(chapterId: bigint): Promise<Topic[]> {
     const rows = await this.db.topic.findMany({ where: { chapterId } })
@@ -412,10 +435,10 @@ export class CurriculumRepository {
     const rows = await this.db.$queryRaw<{ chapter_id: bigint; question_count: number; servable_count: number }[]>`
       SELECT v.chapter_id,
              count(*)::int AS question_count,
-             (count(*) FILTER (WHERE ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
+             (count(*) FILTER (WHERE ${BANK_VISIBLE_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_PKSK_SQL}))::int AS servable_count
         FROM questions q
         JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved'
+       WHERE v.chapter_id = ANY(${chapterIds as bigint[]}::bigint[]) AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL}
        GROUP BY v.chapter_id`
     for (const r of rows) out.set(r.chapter_id, { questionCount: r.question_count, servableCount: r.servable_count })
     return out

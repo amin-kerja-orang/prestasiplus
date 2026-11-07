@@ -22,6 +22,6 @@ import { UsersService } from './users.service'
   imports: [AuditModule, AuthModule, SchoolsModule, ThrottleModule, ParentLinksModule],
   controllers: [UsersController, LookupsController],
   providers: [UsersPorts, UsersRepository, ImportJobsRepository, UsersService, UserImportService, IcService],
-  exports: [UsersRepository, ImportJobsRepository, UsersPorts],
+  exports: [UsersService, UsersRepository, ImportJobsRepository, UsersPorts],
 })
 export class UsersModule {}

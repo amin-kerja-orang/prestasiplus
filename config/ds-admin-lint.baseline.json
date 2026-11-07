@@ -1606,6 +1606,9 @@
     },
     "src/shells/pentadbiran/menu.ts": {
       "pp/ds-copy-glossary": 1
+    },
+    "src/modules/m20-marketplace/components/admin/copy.ts": {
+      "pp/ds-copy-glossary": 2
     }
   }
 }

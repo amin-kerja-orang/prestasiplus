@@ -136,7 +136,7 @@ export interface ImportedQuestionInput {
   /** `marks` column of the row (mock `pointsValue`, default 1); optional so older callers compile. */
   marks?: number
   /** Optional `kertas` column (1 to 3); stored so the paper builder can find the question. */
-  kertas?: '1' | '2' | '3'
+  kertas?: '1' | '2' | '3' | '4'
   /** S1-T05 (codes mapped to ids by the importer): the DSKP unit node, 1 to 3 SP nodes and the TP 1 to 6 of the question; they make the row publishable (QE6.3). */
   unitId?: string
   spIds?: string[]
@@ -149,8 +149,8 @@ export interface ImportedQuestionInput {
   topicId?: string
   /** Printed question number (`Nombor soalan`). */
   numberLabel?: string
-  /** `en` when the row says `bahasa = en`; absent = Bahasa Melayu. */
-  language?: 'en'
+  /** `en` or `ms+en` when the row says so; absent = Bahasa Melayu (`ms` and the old `bm` both read as absent). */
+  language?: 'en' | 'ms+en'
   /** S1-T05 part 2: the stimulus (id) the one leaf is shown with (`part_stimulus`); the importer sets it after it creates the group's stimuli. */
   partStimulusId?: string
 }
