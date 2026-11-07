@@ -30,6 +30,7 @@ import {
   type AttemptPaper,
   type PaperResolution,
 } from '../../src/modules/bijak/attempts/ports'
+import { AnswerLogPort, type AnswerLogEntry } from '../../src/modules/practice'
 import { leavesOf, type PartAnswer } from '../../src/modules/bijak/attempts/exam-core.adapter'
 import { BANK, PAPERS, subjectName } from '../../../../src/modules/m28-bijak-spm/data/registry'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -137,6 +138,18 @@ export class SpyAggregate implements BijakAttemptAggregatePort {
   }
 }
 
+/**
+ * Stand-in for the one `AnswerLogPort` in the fixture-based specs: the PoC fixture ids here are slugs, not decimal bank ids, which
+ * the real port refuses. The real rows are proved on the real wiring in `test/bijak-integration/answer-rows.spec.ts`.
+ */
+export class FakeAnswerLog {
+  entries: AnswerLogEntry[] = []
+  async record(entry: AnswerLogEntry): Promise<{ id: string; created: boolean }> {
+    this.entries.push(entry)
+    return { id: String(this.entries.length), created: true }
+  }
+}
+
 export interface AttemptsTestApp {
   app: INestApplication
   db: TestDatabase
@@ -145,6 +158,7 @@ export interface AttemptsTestApp {
   questions: FakeQuestionSource
   reward: SpyReward
   aggregate: SpyAggregate
+  answerLog: FakeAnswerLog
   sweeper: AttemptSweeper
   http(): TestAgent
   agent(): TestAgent
@@ -179,9 +193,12 @@ export async function bootAttemptsApp(env: Record<string, string | undefined> = 
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
+  const answerLog = new FakeAnswerLog()
   const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, BijakAttemptsModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(AnswerLogPort)
+    .useValue(answerLog)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
@@ -205,6 +222,7 @@ export async function bootAttemptsApp(env: Record<string, string | undefined> = 
     questions,
     reward,
     aggregate,
+    answerLog,
     sweeper: app.get(AttemptSweeper),
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     agent: () => request.agent(app.getHttpServer()),
