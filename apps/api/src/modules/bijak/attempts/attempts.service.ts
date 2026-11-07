@@ -549,6 +549,8 @@ export class BijakAttemptsService {
       // 46 section 3.4: a part a person marks (scheme points or rubric, or any part left `belum_dimarkah`, K20); an
       // automatically marked part answers 409.
       if (!isSelfMarkable(scheme, found.p.status)) throw ApiError.of('CONFLICT', { message: MSG.selfMarkNotSubjective })
+      // This response carries the result with its schemes, so a later late sync must not rewrite the answers (`lateSync`).
+      if (!row.resultViewedAt) await this.repo.markResultViewed(row.id, this.now())
       const marks = found.p.marks
       let mark = clamp(body.mark, 0, marks)
       if (body.band !== undefined) {

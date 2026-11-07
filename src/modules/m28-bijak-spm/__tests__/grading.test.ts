@@ -93,6 +93,16 @@ describe('structured working: K1 / N1 / P1 per point', () => {
     expect(grade('mat2-diskaun-v1-b', { final: '70' }, { 'mat2-diskaun-v1-a': 12 }).awarded).toBe(0)
     expect(grade('mat2-diskaun-v1-b', { final: '68' }, { 'mat2-diskaun-v1-a': 12 }).awarded).toBe(1)
   })
+  it('FR-PA-21: a manual point waits for the pupil and its line names no teacher', () => {
+    const r = gradePart({
+      part: { id: 'p1', label: '(a)', prompt: '', marks: 2, kind: 'drawing' },
+      scheme: { kind: 'points', marks: 2, points: [{ id: 'p1-1', code: 'M', marks: 2, label: 'Lukisan', match: { type: 'manual' } }] } as never,
+      answer: { text: 'lukisan' },
+      ctx: { previousFinals: {} },
+    })
+    expect(r.status).toBe('belum_dimarkah')
+    expect(r.points[0]).toMatchObject({ hit: false, reason: 'Tanda sendiri mengikut skema.' })
+  })
   it('never invents a mark for an empty answer', () => {
     const r = grade('mat2-diskaun-v1-a', undefined)
     expect(r.awarded).toBe(0)
