@@ -42713,6 +42713,12 @@
               "null"
             ]
           },
+          "explanationEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "kertas": {
             "$ref": "#/components/schemas/QuestionKertas"
           },
@@ -43154,6 +43160,12 @@
             ]
           },
           "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "explanationEn": {
             "type": [
               "string",
               "null"
@@ -43731,6 +43743,12 @@
               "null"
             ]
           },
+          "explanationEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "language": {
             "type": "string",
             "enum": [
@@ -43745,6 +43763,15 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "scriptType": {
+            "type": "string",
+            "enum": [
+              "rumi",
+              "arab",
+              "jawi",
+              "mixed"
             ]
           },
           "pointsValue": {
@@ -49939,6 +49966,12 @@
               "null"
             ]
           },
+          "explanationEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "language": {
             "type": "string",
             "enum": [
@@ -49953,6 +49986,15 @@
             "type": [
               "string",
               "null"
+            ]
+          },
+          "scriptType": {
+            "type": "string",
+            "enum": [
+              "rumi",
+              "arab",
+              "jawi",
+              "mixed"
             ]
           },
           "pointsValue": {

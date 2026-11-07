@@ -16,6 +16,8 @@ import {
   totalMarks,
   withMode,
   type StudioDraft,
+  completenessRows,
+  issueField,
 } from '../../../lib/studio/draft'
 
 function filled(): StudioDraft {
@@ -55,14 +57,14 @@ describe('Studio draft', () => {
     expect(gaps).toContain('Bahagian (a) belum ada TP.')
     expect(gaps).toContain('Bahagian (a) belum ada aras pemikiran.')
     expect(gaps).toContain('Sila isi nombor soalan.')
-    expect(gaps).toContain('Soalan belum dipautkan kepada topik DSKP.')
+    expect(gaps).toContain('Sila pilih unit DSKP.')
     expect(draftGaps(filled())).toEqual([])
   })
 
   it('asks for a kertas on an SPM level (Tingkatan 4 or 5) and not on others', () => {
     const d = filled()
     d.kertas = ''
-    expect(draftGaps(d, 'Tingkatan 4').map((g) => g.message)).toEqual(['Soalan SPM belum ada kertas.'])
+    expect(draftGaps(d, 'Tingkatan 4').map((g) => g.message)).toEqual(['Sila pilih kertas untuk soalan SPM.'])
     expect(draftGaps(d, 'Tingkatan 2')).toEqual([])
   })
 
@@ -251,6 +253,111 @@ describe('Studio draft', () => {
       const body = editAsDraftBody(q)
       expect(Object.keys(body).sort()).toEqual(['difficultyLevel', 'educationLevelId', 'parts', 'questionText', 'subjectId'])
       expect(body.parts).toBe(q.parts)
+    })
+  })
+
+  describe('completenessRows (AC-ADM-QE4.1, AC-ADM-QE4.5)', () => {
+    const full = (): StudioDraft => {
+      const d = blankDraft()
+      d.subjectId = '3'
+      d.educationLevelId = '7'
+      d.numberLabel = '1'
+      d.kertas = '1'
+      d.stem = 'Soalan yang cukup panjang.'
+      const leaf = d.leaves[0]!
+      leaf.prompt = 'Pilih.'
+      leaf.options = leaf.options.map((o) => ({ ...o, text: 'x' }))
+      leaf.correct = 'A'
+      leaf.tp = 2
+      leaf.cognitive = 'memahami'
+      return d
+    }
+    const tagged = (): StudioDraft => ({ ...full(), unitId: '40', spIds: ['41'] })
+    const rows = (draft: StudioDraft, issues: { path: string; message: string }[] | null, hasDskp: boolean | null = true, stored: StudioDraft | null = null, chapters?: boolean) =>
+      completenessRows({ draft, gaps: draftGaps(draft, '', { hasChapters: chapters ?? null }), issues, stored, hasDskp }).map((r) => r.message)
+    const UNIT = { path: 'unitId', message: 'Sila pilih unit DSKP.' }
+    const SP = { path: 'spIds', message: 'Sila pilih sekurang-kurangnya satu SP DSKP.' }
+
+    it('a draft missing unit and SP lists the two, once each, with a count of 2', () => {
+      const d = full()
+      expect(rows(d, [UNIT, SP], true, d)).toEqual([UNIT.message, SP.message])
+      expect(rows(d, null)).toEqual([UNIT.message, SP.message])
+    })
+
+    it('a Subjek with no DSKP nodes never lists SP or TP, saved or not (AC-ADM-QE4.5)', () => {
+      const d = full()
+      d.leaves[0]!.tp = null
+      d.leaves[0]!.cognitive = null
+      expect(rows(d, null, false)).toEqual([])
+      expect(rows(d, [], false, d)).toEqual([])
+    })
+
+    it('while the nodes are not known, the gate decides once it has answered', () => {
+      expect(rows(full(), [], null, full())).toEqual([])
+      expect(rows(full(), null, null)).toEqual([UNIT.message, SP.message])
+    })
+
+    it('clearing the DSKP fields on a saved question lists them before the next save', () => {
+      const stored = tagged()
+      expect(rows(full(), [], true, stored)).toEqual([UNIT.message, SP.message])
+    })
+
+    it('an issue on a field that has a value but did not change stays: the gate may refuse it for another reason', () => {
+      const d = tagged()
+      const outside = { path: 'spIds', message: 'SP "99.9" tiada dalam senarai kurikulum.' }
+      expect(rows(d, [outside], true, d)).toEqual([outside.message])
+      const old = { path: 'parts.a.cognitiveLevel', message: 'Bahagian (a) belum ada aras pemikiran.' }
+      expect(rows(d, [old], true, d)).toEqual([old.message])
+    })
+
+    it('an issue the form has since fixed drops out, including a removed leaf and the Kertas', () => {
+      const stored = { ...tagged(), kertas: '' as const }
+      const d = tagged()
+      expect(rows(d, [{ path: 'kertas', message: 'Sila pilih kertas untuk soalan SPM.' }], true, stored)).toEqual([])
+      const chapter = { path: 'chapterId', message: 'Sila pilih Bab.' }
+      expect(rows({ ...d, chapterId: '12' }, [chapter], true, d)).toEqual([])
+      expect(rows(d, [chapter], true, d)).toEqual([chapter.message])
+      const renamed = tagged()
+      renamed.leaves[0]!.label = 'c'
+      expect(rows(renamed, [{ path: 'parts.a.cognitiveLevel', message: 'x' }], true, d)).toEqual([])
+    })
+
+    it('Bab is listed where the Subjek + Tingkatan has chapters, before any save (AC-ADM-QE4.4)', () => {
+      expect(rows(tagged(), null, true, null, true)).toEqual(['Sila pilih Bab.'])
+      expect(rows(tagged(), null, true, null, false)).toEqual([])
+    })
+
+    it('a leaf without its own TP inherits the highest of the leaves, as the gate does', () => {
+      const d = tagged()
+      d.leaves.push({ ...d.leaves[0]!, uid: 'x', label: 'b', tp: null })
+      expect(rows(d, null)).toEqual([])
+    })
+
+    it('a server-only gap stays, with its link; the question TP row yields to the leaf row', () => {
+      const d = tagged()
+      d.leaves[0]!.tp = null
+      const out = completenessRows({
+        draft: d,
+        gaps: draftGaps(d),
+        issues: [
+          { path: 'tp', message: 'Sila pilih tahap penguasaan (TP).' },
+          { path: 'parts.a.difficultyTp', message: 'Bahagian (a) belum ada TP.' },
+          { path: 'marks', message: 'Markah tidak sepadan.' },
+        ],
+        stored: d,
+        hasDskp: true,
+      })
+      expect(out.map((r) => r.message)).toEqual(['Bahagian (a) belum ada TP.', 'Markah tidak sepadan.'])
+      expect(out[0]?.field).toBe('studio-leaf-0')
+    })
+
+    it('a label with brackets or a dot keeps one row and the right leaf', () => {
+      const d = tagged()
+      d.leaves[0]!.label = '(a)'
+      d.leaves[0]!.tp = null
+      expect(draftGaps(d).find((g) => g.dskp === true)).toMatchObject({ message: 'Bahagian (a) belum ada TP.', field: 'studio-leaf-0' })
+      expect(issueField('parts.1.1.cognitiveLevel', [{ label: '1' }, { label: '1.1' }])).toBe('studio-leaf-1')
+      expect(issueField('parts.1.cognitiveLevel', [{ label: 'b' }, { label: '1' }])).toBe('studio-leaf-1')
     })
   })
 })
