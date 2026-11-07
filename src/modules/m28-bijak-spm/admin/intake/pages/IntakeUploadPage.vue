@@ -144,6 +144,8 @@ async function submit(): Promise<void> {
 
 async function useSample(): Promise<void> {
   if (busy.value || !form.source.trim() || !form.copyright) return
+  declarationError.value = form.declared ? '' : 'Pengisytiharan sumber diperlukan.'
+  if (!form.declared) return
   busy.value = true
   failure.value = ''
   try {

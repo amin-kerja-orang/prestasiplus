@@ -8,8 +8,8 @@ import { listMeta } from '../../../../common/http/respond'
 import { toMytTimestamp } from '../../../../common/time/myt'
 import { idToString } from '../../../../db/ids'
 import { CurriculumRepository } from '../../../curriculum'
-import { PracticePorts } from '../../ports'
-import { isStructuredVisible, QuestionsRepository, type QuestionRecord } from '../../../questions'
+import { PracticePorts, type PracticeStructuredAudit } from '../../ports'
+import { isStructuredVisible, QuestionsRepository, type QuestionPart, type QuestionRecord } from '../../../questions'
 import { SchoolsRepository } from '../../../schools'
 import { UsersRepository } from '../../../users'
 import { StructuredAttemptsRepository } from './attempts.repository'
@@ -33,6 +33,8 @@ type Track = 'bahasa' | null
 export interface StructuredCaller {
   userId: string
   isTest: boolean
+  /** Who to attribute the submit audit line to (the session context and request coordinates); absent: a system line. */
+  audit?: PracticeStructuredAudit
 }
 
 /** The raw query values of the list and detail routes (a repeated key arrives as an array: the first wins). */
@@ -97,6 +99,11 @@ const invalid = (fields: Record<string, string>): ApiError => {
   return ApiError.of('VALIDATION_ERROR', { message: message ?? DEFAULT_ERROR_MESSAGES.VALIDATION_ERROR, fields })
 }
 
+/** JS twin of `ALL_LEAVES_KEYED_SQL` (the list's `markable` rule): some leaf part has no answer key. */
+function hasUnkeyedLeaf(parts: readonly QuestionPart[]): boolean {
+  return parts.some((p) => ('mode' in p ? p.key == null : hasUnkeyedLeaf(p.children)))
+}
+
 /**
  * Structured questions for students (S10, Q3) and the attempt (#15 to #17). The sets are read from the
  * BE-09 bank through `QuestionsRepository` only: the LIVE version of a published, active set of
@@ -134,8 +141,20 @@ export class StructuredService {
   }
 
   private async getVisible(id: string, levels: Map<string, string>): Promise<QuestionRecord | null> {
-    const r = await this.questions.get(id, 'live')
-    return r && isStructuredVisible(r, levels) ? r : null
+    // Lenient read (as the list's hydrate): a leaf without a key row still parses. A set that is not markable (a leaf without a key, or a
+    // present but invalid stored key, which the repository reports as SERVER_ERROR) is not visible: 404, never 500. Same rule as the list.
+    let r: QuestionRecord | null
+    try {
+      r = (await this.questions.getMany([id], 'live', 'exclude', { lenientKeys: true }))[0] ?? null
+    } catch (e) {
+      if (e instanceof ApiError && e.code === 'SERVER_ERROR') {
+        this.logger.warn(`structured ${id}: unreadable stored key, treated as not visible`)
+        return null
+      }
+      throw e
+    }
+    if (!r || !isStructuredVisible(r, levels)) return null
+    return hasUnkeyedLeaf(r.version.parts) ? null : r
   }
 
   private subjectOptions(scope: Scope, track: Track, subjects: Map<string, { code: string; name: string; active: boolean }>): { id: string; name: string }[] {
@@ -333,6 +352,7 @@ export class StructuredService {
     const graded = await this.ports.structuredAttempts.submit({
       userId: caller.userId,
       isTest: caller.isTest,
+      ...(caller.audit ? { audit: caller.audit } : {}),
       questionId: q.id,
       versionNo: q.version.versionNo,
       title: firstText.trim().slice(0, TITLE_MAX_CHARS) || null,
