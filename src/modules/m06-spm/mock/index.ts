@@ -19,6 +19,7 @@
 import { defineMockModule } from '@/mock/define'
 
 import { dutaRoutes } from './handlers/duta'
+import { historyRoutes } from './handlers/history'
 import { mockRoutes, resetWalkthroughLatency, setWalkthroughLatency } from './handlers/mocks'
 import { spmReadRoutes } from './handlers/spm'
 import { spmRepo } from './repository/spm'
@@ -37,7 +38,7 @@ const plugin = defineMockModule({
   },
   // Sets and mocks read the compiled question dataset, so they are seeded at finalise.
   finalise: finaliseM06,
-  routes: [...spmReadRoutes, ...mockRoutes, ...dutaRoutes],
+  routes: [...spmReadRoutes, ...historyRoutes, ...mockRoutes, ...dutaRoutes],
   hooks: { setWalkthroughLatency },
   // `reset({ poolCells })`: optional pool cells to contribute (see `seedM06`).
   overrides: ['poolCells'],

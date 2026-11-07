@@ -123,7 +123,7 @@ export class ShopService {
         tokenCost: reward.tokenCost,
         tokenCostSnapshot: reward.tokenCost,
         costValueSenSnapshot: reward.costValueSen,
-        status: reward.requiresParentConsent ? 'pending_parent_consent' : 'pending_admin',
+        status: 'pending_admin',
         stockReserved: reserved,
         clientUuid,
         at,

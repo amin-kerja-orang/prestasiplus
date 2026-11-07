@@ -16,6 +16,7 @@ import {
   setStatus,
   structuredItemOf,
   weakTopicsOf,
+  wholePercent,
 } from '../../src/modules/spm/rules'
 
 describe('AC4 set status (BR-M06-08)', () => {
@@ -144,5 +145,25 @@ describe('question mapping (open question 6)', () => {
     expect(modelTextOf(leaf as never)).toBe('Kaedah')
     expect(modelTextOf({ ...(leaf as object), mode: 'short_text', key: { kind: 'accepted', values: ['x', 'y'] } } as never)).toBe('x, y')
     expect(modelTextOf(mcq as never)).toBe('C')
+  })
+})
+
+describe('wholePercent (XS-5: pooled, whole number, half up, null with 0 answers)', () => {
+  it('is null with 0 answers (shown "—"), never 0', () => {
+    expect(wholePercent(0, 0)).toBeNull()
+  })
+
+  it('rounds half up on the exact .5 and not on a float edge', () => {
+    expect(wholePercent(1, 8)).toBe(13) // 12.5
+    expect(wholePercent(3, 8)).toBe(38) // 37.5
+    expect(wholePercent(1, 200)).toBe(1) // 0.5
+    expect(wholePercent(1, 3)).toBe(33)
+    expect(wholePercent(2, 3)).toBe(67)
+    expect(wholePercent(10, 17)).toBe(59)
+  })
+
+  it('covers the ends', () => {
+    expect(wholePercent(0, 5)).toBe(0)
+    expect(wholePercent(5, 5)).toBe(100)
   })
 })

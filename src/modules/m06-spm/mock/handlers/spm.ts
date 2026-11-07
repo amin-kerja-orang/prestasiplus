@@ -8,7 +8,7 @@
 import { notFound, ok, requireAuth, route, type MockRequest, type RouteDef } from '@/mock/define'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { structured } from '@/modules/m04-question-bank/mock'
-import { SPM_MODES, practice } from '@/modules/m05-practice/mock'
+import { practice } from '@/modules/m05-practice/mock'
 
 import type {
   DatabankSubject,
@@ -35,6 +35,7 @@ import {
 import { HUB_POOL_CHIP, HUB_TOTAL_QUESTIONS } from '../constants/display'
 import { isStartable } from '../repository/rules'
 import { spmRepo, type SetView } from '../repository/spm'
+import { spmMyStats } from './history'
 
 const auth = requireAuth()
 
@@ -68,7 +69,6 @@ const visibleSets = (subjectId: number): number =>
 /** #1 S1. */
 function overview(req: MockRequest): SpmOverview {
   const levels = [10, 11].flatMap((l) => curriculum.subjects({ active: true, educationLevelId: l }))
-  const stats = practice.historyPage(userIdOf(req), { modes: SPM_MODES }).stats
   const trackingA = sumReady(allSets())
   return {
     stats: {
@@ -85,12 +85,7 @@ function overview(req: MockRequest): SpmOverview {
       // The mock has no papers store: no Kertas Subjektif paper is published.
       kertasSubjektif: 0,
     },
-    me: {
-      sessions: stats.sessions,
-      avgAccuracy: stats.avgAccuracyPct,
-      coins: stats.coins,
-      answered: stats.answered,
-    },
+    me: spmMyStats(userIdOf(req)),
   }
 }
 

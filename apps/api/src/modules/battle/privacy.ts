@@ -1,6 +1,6 @@
 /**
  * Children's names in battle surfaces (LEAD decision 2026-10-21, issue #76; privacy overrides fidelity).
- * A viewer sees a pupil's full name and id only inside their scope; everyone else gets first name + initial and no id.
+ * A viewer sees a pupil's full name and id only inside their scope; everyone else gets the first given name only and no id (48 section 3.10, ruling 7 on #497).
  *
  * Mirrors BE-19's `canSeeName` (reports/performance/domain/privacy.ts) with one difference: BE-19 only serves own-school
  * data, so its school_admin branch is unscoped. Battle standings are national, so the school_admin branch here checks
@@ -29,12 +29,7 @@ export function canSeeName(viewer: BattleViewer, pupilId: string, pupilSchoolId:
   return false
 }
 
-/** "Aina Zulkifli" becomes "Aina Z."; a one-word name stays; an empty name stays empty (callers keep their fallback). */
+/** "Aina Zulkifli" becomes "Aina"; an empty name stays empty (callers keep their fallback). */
 export function displayName(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/).filter((p) => p !== '')
-  const first = parts[0]
-  if (first === undefined) return ''
-  const last = parts.length > 1 ? parts[parts.length - 1] : undefined
-  const initial = last === undefined ? undefined : Array.from(last)[0]
-  return initial === undefined ? first : `${first} ${initial.toUpperCase()}.`
+  return fullName.split(/\s+/).filter((p) => p !== '')[0] ?? ''
 }

@@ -6,7 +6,7 @@
  *
  * A pupil's full name and real user id are shown only to: the pupil themself, an `admin` (everyone), a
  * `school_admin` (pupils of the own school) and a `teacher` (pupils of the own classes). Every other viewer gets
- * first name + initial ("Murid Contoh Alfa" -> "Murid C.") and `userId: null`.
+ * the first given name only ("Murid Contoh Alfa" -> "Murid", 48 section 3.10, ruling 7 on #497) and `userId: null`.
  */
 import type { RoleCode } from '@pp/contract'
 
@@ -48,14 +48,9 @@ export function canSeeName(viewer: NameViewer, pupil: Pick<NamedPupil, 'id' | 's
   }
 }
 
-/** First name + initial of the next word: "Murid Contoh Alfa" -> "Murid C."; a single word stays as it is. */
+/** The first given name only: "Murid Contoh Alfa" -> "Murid"; a blank name stays empty. */
 export function displayName(fullName: string): string {
-  const words = fullName.split(/\s+/).filter(Boolean)
-  const first = words[0]
-  if (first === undefined) return ''
-  const second = words[1]
-  if (second === undefined) return first
-  return `${first} ${(Array.from(second)[0] ?? '').toUpperCase()}.`
+  return fullName.split(/\s+/).filter(Boolean)[0] ?? ''
 }
 
 /** The name and id a ranking row may show: the full pair for an adult account or within scope, else `displayName` and a null id. */

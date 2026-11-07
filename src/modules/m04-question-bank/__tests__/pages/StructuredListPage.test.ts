@@ -107,7 +107,7 @@ describe('StructuredListPage (M04 S8)', () => {
     expect(add.attributes('href')).toBe('/guru/soalan-berstruktur/cipta')
     expect(w.get('[data-testid=structured-stat-total]').text()).toContain('4,064')
     expect(w.get('[data-testid=structured-stat-total]').text()).toContain('Jumlah Soalan')
-    expect(w.get('[data-testid=structured-stat-published]').text()).toContain('Published')
+    expect(w.get('[data-testid=structured-stat-published]').text()).toContain('Diluluskan')
     expect(w.get('[data-testid=structured-by-subject]').text()).toContain('Agihan Mengikut Subjek')
     const pills = w.findAll('[data-testid=structured-subject-pill]').map((p) => p.text())
     expect(pills).toEqual(['Bahasa Inggeris: 774', 'Biologi: 219'])
