@@ -95,6 +95,24 @@ export class PaperSourceService {
     return paper
   }
 
+  /** Pre-flight of the multipart branch (route guard, before the body is buffered): 404 / 422 / 409, same texts as `upload`. Reads no body. */
+  async assertUploadable(rawId: string): Promise<void> {
+    const paper = await this.subjektifDraft(rawId)
+    if (paper.sourceBatchId !== null) throw conflict(MESSAGES.sourceBatchExists)
+  }
+
+  /**
+   * Intake refuses a file on `fields.files` (encrypted, corrupt, too many pages, duplicate, ...). The source route has no such part: the message moves to
+   * `fields.paper`. The refusal cannot be tied to one file (intake stops at the first and does not say which), so it is always `paper`. Text unchanged.
+   */
+  private static asSourceRefusal(err: unknown): unknown {
+    if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields && 'files' in err.fields) {
+      const message = String(err.fields.files)
+      return unprocessable({ paper: message }, message)
+    }
+    return err
+  }
+
   private checkPdf(part: UploadedPart, field: 'paper' | 'scheme'): void {
     const name = (part.originalname ?? '').toLowerCase()
     const pdf = part.buffer.subarray(0, 5).toString('latin1') === '%PDF-'
@@ -133,7 +151,11 @@ export class PaperSourceService {
     )
     const files: UploadedPart[] = [parts.paper, ...(parts.scheme ? [parts.scheme] : [])]
     try {
-      await this.uploads.upload(auth, batch.id, files, who)
+      try {
+        await this.uploads.upload(auth, batch.id, files, who)
+      } catch (err) {
+        throw PaperSourceService.asSourceRefusal(err)
+      }
       await this.prisma.transaction(async () => {
         await this.repo.lockPaper(paper.id)
         const fresh = await this.repo.findPilihan(paper.id)
@@ -144,10 +166,15 @@ export class PaperSourceService {
         await this.record(actor, paper.id, { from: 'draf', to: 'draf', op: 'source_upload', batchId: batch.id })
       })
     } catch (err) {
-      await this.batches.cancelBatch(auth, batch.id, who).catch((e: unknown) => this.log.error(`source batch ${batch.id} of paper ${rawId} could not be cancelled: ${e instanceof Error ? e.message : String(e)}`))
+      await this.abandon(auth, batch.id, who)
       throw err
     }
     return { batchId: batch.id }
+  }
+
+  /** The upload path failed after the batch was created: intake cancels it and removes its files (its own store; never throws). */
+  private abandon(auth: AuthContext, batchId: string, who: CallerInfo): Promise<void> {
+    return this.uploads.discardBatch(auth, batchId, who)
   }
 
   /**
