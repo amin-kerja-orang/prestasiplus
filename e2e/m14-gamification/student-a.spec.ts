@@ -379,7 +379,7 @@ test.describe('S13 challenges', MODULE, () => {
     await gotoApp(S13)
     await expect(text(page, 's13-hero').locator('h1')).toHaveText('Cabaran Harian')
     await expect(text(page, 's13-hero')).toContainText(
-      'Selesaikan cabaran untuk dapatkan syiling & XP bonus!',
+      'Selesaikan cabaran hari ini dan tuntut ganjaran syiling',
     )
     await expect(text(page, 's13-counter-value')).toHaveText('0/10')
     await expect(text(page, 's13-counter')).toContainText('Selesai')

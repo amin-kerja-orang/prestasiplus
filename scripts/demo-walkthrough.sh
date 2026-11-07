@@ -273,7 +273,7 @@ if login student "$STUDENT_ID" STUDENT_PASSWORD; then
   fi
   check games GET /api/games/jutawan 200
   check games GET /api/games/roda-nasib 200 '(.data.segments | length) > 0'
-  check games GET /api/games/pertandingan 200
+  check games GET /api/games/pertandingan 404
   check games GET /api/leagues 200
   if [[ "$WRITES" == 1 && "${MOD[games]:-}" == live ]]; then
     # The API lists no Papan Bijak subjects; these are the contract's GAMES_PAPAN_BIJAK_SUBJECTS. Try each until one

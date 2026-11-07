@@ -569,7 +569,7 @@ export const challengesRepo = defineRepository({
         userId: number,
         challengeId: number,
         clientUuid: string | null,
-      ): { claimed: true; rewardSyiling: number; rewardXp: number } {
+      ): { claimed: true; rewardSyiling: number; rewardXp: number; notices?: string[] } {
         const at = nowMs()
         const date = localDate(at)
         const c = challengesTable.get(challengeId)
@@ -617,9 +617,30 @@ export const challengesRepo = defineRepository({
             rewardXp: c.rewardXp,
             clientUuid,
           })
-          // The mock engine still pays a challenge when it completes (its tests and the seed replay depend on it), so the
-          // claim only records itself here and moves no wallet; the real API pays on the claim (ruling 12 on #500).
-          return stored({ rewardSyiling, rewardXp: c.rewardXp })
+          // The claim pays, as the API does: syiling only when coins are on (stored 0 otherwise), XP always.
+          const notices: string[] = []
+          if (rewardSyiling > 0) {
+            const before = walletState(userId).tierKey
+            const { wallet } = creditSyilingOp(
+              userId,
+              rewardSyiling,
+              {
+                source: 'daily_challenge',
+                description: `Cabaran selesai: ${c.title}`,
+                refId: `challenge:${String(challengeId)}:${date}`,
+              },
+              at,
+            )
+            if (wallet.tierKey !== before) {
+              const label = tierByKey(wallet.tierKey)?.labelMs
+              if (label) notices.push(`Tahniah! Anda naik ke tier ${label}.`)
+            }
+          }
+          if (c.rewardXp > 0) addXpOp(userId, c.rewardXp, at)
+          return {
+            ...stored({ rewardSyiling, rewardXp: c.rewardXp }),
+            ...(notices.length > 0 ? { notices } : {}),
+          }
         })
       },
       /** #23: every challenge by (`sortOrder`, `id`). */
