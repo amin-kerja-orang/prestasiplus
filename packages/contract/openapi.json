@@ -7283,7 +7283,8 @@
             "type": "boolean"
           },
           "requiresParentConsent": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Ignored: no consent status exists (FR-GM-21.3); always stored false."
           }
         },
         "required": [
@@ -14208,39 +14209,218 @@
             "additionalProperties": false
           },
           "me": {
-            "type": "object",
-            "properties": {
-              "sessions": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "avgAccuracy": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 100
-              },
-              "coins": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "answered": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "sessions",
-              "avgAccuracy",
-              "coins",
-              "answered"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/SpmMyStats"
           }
         },
         "required": [
           "stats",
           "modules",
           "me"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMyStats": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Completed practice sessions plus closed Bijak sittings (abandoned and in-progress never count)."
+          },
+          "avgAccuracy": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Pooled correct / answered x 100 over the SPM-mode answers, a whole number rounded half up; null (shown \"—\") with 0 answers."
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Syiling earned from the SPM sources of the M14 wallet ledger."
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Answer rows of the SPM modes."
+          }
+        },
+        "required": [
+          "sessions",
+          "avgAccuracy",
+          "coins",
+          "answered"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryMod": {
+        "type": "string",
+        "enum": [
+          "all",
+          "databank",
+          "latih_tubi",
+          "tracking_a",
+          "past_year",
+          "ramalan"
+        ]
+      },
+      "SpmHistoryRowMode": {
+        "type": "string",
+        "enum": [
+          "databank",
+          "latih_tubi",
+          "tracking_a",
+          "simulasi",
+          "subjektif",
+          "structured",
+          "kuiz"
+        ]
+      },
+      "SpmHistoryRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Id of the practice session or of the Bijak attempt."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SpmHistoryRowMode"
+          },
+          "subject": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Curriculum subject code; \"UMUM\" for a session with no subject."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "code",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Correct answers of a session; whole marks (rounded) scored of a Bijak sitting."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions of a session; whole marks (rounded) available of a Bijak sitting."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole number, rounded half up; 0 when `total` is 0."
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The sitting's own coins (the display value stored with the session or result), not the wallet."
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Time spent; a Bijak sitting counts its elapsed time capped at the deadline."
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Completion (practice) or submit (Bijak) time; the sort key, newest first.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "subject",
+          "correct",
+          "total",
+          "percent",
+          "coins",
+          "durationSeconds",
+          "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The requested page (1-based)."
+          },
+          "pageSize": {
+            "type": "number",
+            "enum": [
+              15
+            ]
+          },
+          "pageCount": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "ceil(total / pageSize), at least 1 (the pager reads \"Halaman {page} daripada {pageCount}\")."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rows under the active chip."
+          },
+          "mod": {
+            "type": "string",
+            "enum": [
+              "all",
+              "databank",
+              "latih_tubi",
+              "tracking_a",
+              "past_year",
+              "ramalan"
+            ],
+            "description": "The chip applied (the alias already resolved; `all` when none was sent)."
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SpmMyStats"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "pageCount",
+          "total",
+          "mod",
+          "stats"
+        ],
+        "additionalProperties": false
+      },
+      "SpmHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmHistoryRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SpmHistoryMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
         ],
         "additionalProperties": false
       },
@@ -50018,6 +50198,13 @@
           },
           "dryRun": {
             "type": "boolean"
+          },
+          "affectedPapers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionAffectedPaper"
+            },
+            "description": "Action `archived` only: the Terbit papers that place an eligible row (dry run) or an archived row (real run). Present only when there is at least one."
           }
         },
         "required": [
@@ -50064,6 +50251,21 @@
           "code",
           "message",
           "fields"
+        ]
+      },
+      "QuestionAffectedPaper": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
         ]
       },
       "QuestionStructuredRow": {
@@ -87435,6 +87637,13 @@
               "$ref": "#/components/schemas/QuestionBulkSkipped"
             },
             "description": "Rows already in the target status (bulk Terbitkan only); not applied, not counted in affected. Present only when there is at least one such row."
+          },
+          "affectedPapers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionAffectedPaper"
+            },
+            "description": "Bulk archive only: the Terbit papers that place an archived row. Present only when there is at least one."
           }
         },
         "required": [
@@ -94247,7 +94456,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.rewardId \"Sila pilih hadiah.\" (missing, non-numeric or below 1; the top-level message is the same text); fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94524,7 +94733,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "description": "VALIDATION_ERROR fields.clientUuid \"Format kunci permintaan tidak sah.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94667,7 +94876,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94749,7 +94958,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -94908,7 +95117,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (unknown id).",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -94928,7 +95137,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR fields.code \"The code field is required.\" / \"The code field must not be greater than 100 characters.\".",
+            "description": "VALIDATION_ERROR fields.code \"Kod baucar diperlukan.\" / \"Kod baucar tidak boleh melebihi 100 aksara.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -95096,7 +95305,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -95189,7 +95398,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\"",
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -95199,7 +95408,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "description": "VALIDATION_ERROR with fields (name -> BM message, see REWARD_VALIDATION_MESSAGES); the top-level message is that message when one field fails, else \"{n} medan perlu dibetulkan.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -99065,7 +99274,7 @@
           "spm"
         ],
         "summary": "SPM hub (M06-01): totals, module chips and the caller practice stats",
-        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
+        "description": "`me` is the caller's \"Prestasi SPM Anda\" panel: answers from `practice_answers` over the SPM modes (databank, tracking_a, structured, subjektif, simulasi, kuiz, latih_tubi; legacy past_year and ramalan count as databank and tracking_a), sessions = completed practice sessions + closed Bijak sittings, coins from the M14 ledger, `avgAccuracy` a whole number or null with 0 answers. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
         "responses": {
           "200": {
             "description": "Hub figures.",
@@ -99087,6 +99296,106 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/history": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Sejarah Kuiz SPM (API-BIJAK-07): the caller's closed SPM sittings, newest first, 15 per page",
+        "description": "Merges completed practice sessions and closed Bijak sittings (`exam_attempts`: submitted or auto_submitted; the row mode follows `paper_kind`). Abandoned, in-progress and swept sessions are never listed. Query `mod` (alias `type`): all, databank, latih_tubi, tracking_a; the legacy past_year and ramalan are accepted as aliases of databank and tracking_a, and the chips Tahun Lepas and Tracking A list the legacy rows too. Only `all` lists Bijak, Subjektif, Berstruktur and Kuiz rows. `halaman` is 1-based. `meta.stats` covers all modes, never the chip or the page. Pupil only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "databank",
+                "latih_tubi",
+                "tracking_a",
+                "past_year",
+                "ramalan"
+              ],
+              "description": "Chip filter; default `all`. An unknown value is 422."
+            },
+            "required": false,
+            "description": "Chip filter; default `all`. An unknown value is 422.",
+            "name": "mod",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "databank",
+                "latih_tubi",
+                "tracking_a",
+                "past_year",
+                "ramalan"
+              ],
+              "description": "Alias of `mod` (old links). `mod` wins when both are sent."
+            },
+            "required": false,
+            "description": "Alias of `mod` (old links). `mod` wins when both are sent.",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page number; default 1. A page past the last one returns no rows."
+            },
+            "required": false,
+            "description": "1-based page number; default 1. A page past the last one returns no rows.",
+            "name": "halaman",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of rows with the pager meta and the all-mode stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpmHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not a pupil).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR (`mod`/`type` outside the list, or `halaman` not a positive integer).",
             "content": {
               "application/json": {
                 "schema": {

@@ -19,6 +19,7 @@ import { demoBatch } from '../admin/intake/lib/seed'
 import type {
   ExtractedPaper,
   IntakeBatch,
+  IntakeDuplicate,
   IntakeIssue,
   IntakeMeta,
   IntakeQuestion,
@@ -114,6 +115,12 @@ export interface ServerOptions {
 export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh dicuba buat masa ini.'
 /** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
 export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
+
+/**
+ * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The set is read from the
+ * registry (`BLUEPRINTS`), the same rows the Kontrak admin mock seeds as Disahkan, so one entity has one status in both mocks.
+ */
+export const servesPupils = (b: { source: string }): boolean => b.source === 'Disahkan'
 
 export class BijakServer implements BijakApi {
   private readonly storage: KeyValueStore
@@ -1181,6 +1188,14 @@ export class BijakServer implements BijakApi {
     return { ok: true, errors: [], batch: jsonClone(b) }
   }
 
+  /** The mock has no duplicate check, so the page never offers this; it only reads the batch back. */
+  async resolveIntakeDuplicate(
+    ...[id]: [id: string, questionId: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan']
+  ): Promise<IntakeBatch> {
+    await this.tick()
+    return this.intakeBatch(id)
+  }
+
   /**
    * V2 "Terima semua yang belum disemak" (parity I7). Like the server bulk accept, only a question
    * with no unconfirmed low-confidence field and a passing quality gate is accepted; the rest are
@@ -1188,11 +1203,13 @@ export class BijakServer implements BijakApi {
    */
   async acceptUnreviewed(
     id: string,
-  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    only?: readonly string[],
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[]; batch: IntakeBatch }> {
     const b0 = this.intakeBatch(id)
     let done = 0
-    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[] = []
     for (const q of jsonClone(b0.questions)) {
+      if (only && !only.includes(q.id)) continue
       if (q.lowFields.some((f) => !q.confirmed.includes(f))) {
         skipped.push({ id: q.id, reason: 'BELOW_THRESHOLD' })
         continue

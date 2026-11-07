@@ -19,6 +19,7 @@ import type {
   MockExamView,
   MockListItem,
   MockResult,
+  SpmHistoryPage,
   SpmOverview,
   SubjektifOverview,
   TrackingAHub,
@@ -35,6 +36,21 @@ const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 /** #1 S1. */
 export const fetchSpmOverview = (o: Signal = {}) =>
   api.get<SpmOverview>('/api/spm/overview', withSignal(o))
+
+/**
+ * `GET /api/spm/history?mod=&halaman=` (API-BIJAK-07, S10 "Sejarah Kuiz SPM"): one merged list of the caller's closed SPM
+ * sittings, 15 per page, with the all-mode stats in `meta`. `mod` is a chip (`databank`, `latih_tubi`, `tracking_a`);
+ * absent means "Semua".
+ */
+export const fetchSpmHistory = (
+  query: { mod?: 'databank' | 'latih_tubi' | 'tracking_a' | null; halaman?: number | null } = {},
+  o: Signal = {},
+) => {
+  const q: Record<string, string | number> = {}
+  if (query.mod) q.mod = query.mod
+  if (query.halaman && query.halaman > 1) q.halaman = query.halaman
+  return api.get<SpmHistoryPage>('/api/spm/history', { ...withSignal(o), query: q, raw: true })
+}
 
 /** #2 S2. */
 export const fetchDatabank = (o: Signal = {}) =>
