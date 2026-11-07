@@ -56,6 +56,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 | S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
+| S2-T03 | AC-ADM-Q03.1 | CI | Pass | 2026-11-05 | team-cc/S-2 | StudioListPage.test.ts |
 
 ## Sprint 1
 

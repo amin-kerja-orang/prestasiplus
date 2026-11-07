@@ -12,6 +12,7 @@ import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { ArenaQuestionView } from '../battle.deps'
 import { BattleEngine, botAnswers, gradeLabel, isUuid } from '../engine'
+import { displayName } from '../privacy'
 
 /** Subjects whose SPM pool the lobby counts at the same time. */
 const LOBBY_PARALLEL = 4
@@ -95,11 +96,11 @@ export class ArenaService {
       if (!question) throw notFound(BATTLE_MESSAGES.questionNotFound)
     }
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
-    const schools = await this.engine.deps.schoolsByIds([a, b].flatMap((p) => (p.schoolId === null ? [] : [idToString(p.schoolId)])))
-    const player = (p: typeof a) => ({
-      name: (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? 'Pelajar',
-      school: p.schoolId === null ? '' : (schools.get(idToString(p.schoolId))?.name ?? ''),
-    })
+    // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
+    const player = (p: typeof a) => {
+      const name = (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? ''
+      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '' }
+    }
     return {
       uuid,
       status: battle.status,

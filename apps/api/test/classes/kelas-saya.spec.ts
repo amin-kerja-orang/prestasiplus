@@ -106,7 +106,7 @@ describe('Kelas Saya: GET /api/kelas-saya; POST /api/kelas-saya/join is gone (AP
   })
 
   it('the teacher adds the pupil to the class (PUT /guru/students/:id), then the class is in the pupil\'s next Kelas Saya with no action by the pupil (AC-MUR-8-3)', async () => {
-    const k3 = await createClass(t, teacher, { name: 'Kelas Guru Tambah', schoolId: await schoolOfCode(t, 'DEMO001') })
+    const k3 = await createClass(t, teacher, { name: 'Kelas Guru Tambah Dua', schoolId: await schoolOfCode(t, 'DEMO001') })
     const before = JoinedList.parse((await s2.get('/kelas-saya')).body).data.map((x) => x.id)
     expect(before).not.toContain(k3.id)
 
@@ -115,7 +115,7 @@ describe('Kelas Saya: GET /api/kelas-saya; POST /api/kelas-saya/join is gone (AP
 
     const after = JoinedList.parse((await s2.get('/kelas-saya')).body)
     expect(after.data.map((x) => x.id)).toContain(k3.id)
-    expect(after.data.find((x) => x.id === k3.id)).toMatchObject({ name: 'Kelas Guru Tambah', teacherName: 'Guru Demo' })
+    expect(after.data.find((x) => x.id === k3.id)).toMatchObject({ name: 'Kelas Guru Tambah Dua', teacherName: 'Guru Demo' })
     // The pupil never called the removed join route: it is still the global 404.
     expect((await s2.post('/kelas-saya/join', { classCode: k3.joinCode })).status).toBe(404)
   })

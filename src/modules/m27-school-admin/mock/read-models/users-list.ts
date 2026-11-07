@@ -34,6 +34,10 @@ export interface UserListQuery {
   isActive?: string | undefined
   search?: string | undefined
   page?: string | undefined
+  /** Pupils only: `T1`..`T5` (grade 7..11); anything else is all (FR-AS-51-1). */
+  level?: string | undefined
+  /** Pupils only: the pupils actively enrolled in this class; a malformed id is ignored. */
+  classroomId?: string | undefined
 }
 
 export interface PageSlice<T> {
@@ -80,21 +84,41 @@ const activeFirstThenNewest = (a: UserRow, b: UserRow): number =>
 export function filteredUsers(
   schoolId: number,
   role: SchoolRole,
-  query: Pick<UserListQuery, 'isActive' | 'search'>,
+  query: Pick<UserListQuery, 'isActive' | 'search' | 'level' | 'classroomId'>,
 ): UserRow[] {
   const isActive = parseActive(query.isActive)
   const search = query.search?.trim()
-  return peopleOf(schoolId, role, {
+  const rows = peopleOf(schoolId, role, {
     ...(isActive === undefined ? {} : { isActive }),
     ...(search ? { search } : {}),
   }).sort(activeFirstThenNewest)
+  if (role !== 'student') return rows
+  const level = /^T([1-5])$/.exec(query.level?.trim() ?? '')
+  const classId = /^\d+$/.test(query.classroomId?.trim() ?? '') ? Number(query.classroomId) : null
+  return rows
+    .filter((u) => level === null || u.grade === Number(level[1]) + 6)
+    .filter(
+      (u) =>
+        classId === null ||
+        classrooms
+          .enrolmentsOf(u.id)
+          .some(
+            (e) =>
+              e.status === 'active' && e.classroomKind === 'classroom' && e.classroomId === classId,
+          ),
+    )
 }
 
 /** Cards of S6/S7: the school's totals, ignoring the filters (FR-M27-88, 99). */
 export function countsOf(schoolId: number, role: SchoolRole): SchoolUserListMeta['counts'] {
   const total = countOf(schoolId, role)
   const active = countOf(schoolId, role, true)
-  return { total, active, inactive: total - active }
+  // XS-1 (pupils: active, Tingkatan 1-5) / XS-3 (teachers, here every teacher of the school).
+  if (role === 'teacher') return { total, active, inactive: total - active, xs: total }
+  const xs = peopleOf(schoolId, role, { isActive: true }).filter(
+    (u) => u.grade !== null && u.grade >= 7 && u.grade <= 11,
+  ).length
+  return { total, active, inactive: total - active, xs, notCounted: Math.max(0, total - xs) }
 }
 
 const pupilRow = (u: UserRow): SchoolPupilRow => ({

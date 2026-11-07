@@ -1460,7 +1460,7 @@
       "name": "m08.headcount.results",
       "status": "canonical",
       "sector": "S10",
-      "component": "src/modules/m08-student-performance/pages/HeadcountShellPage.vue",
+      "component": "src/modules/m08-student-performance/pages/HeadcountResultsPage.vue",
       "file": "src/modules/m08-student-performance/routes/headcount.ts",
       "approved_by_card": null
     },
@@ -1470,7 +1470,7 @@
       "name": "m08.headcount.edit",
       "status": "canonical",
       "sector": "S10",
-      "component": "src/modules/m08-student-performance/pages/HeadcountShellPage.vue",
+      "component": "src/modules/m08-student-performance/pages/HeadcountEditPage.vue",
       "file": "src/modules/m08-student-performance/routes/headcount.ts",
       "approved_by_card": null
     },
@@ -1480,7 +1480,7 @@
       "name": "m08.headcount.unjuran",
       "status": "canonical",
       "sector": "S10",
-      "component": "src/modules/m08-student-performance/pages/HeadcountShellPage.vue",
+      "component": "src/modules/m08-student-performance/pages/HeadcountUnjuranPage.vue",
       "file": "src/modules/m08-student-performance/routes/headcount.ts",
       "approved_by_card": null
     },
@@ -1490,7 +1490,7 @@
       "name": "m08.headcount.settings",
       "status": "canonical",
       "sector": "S10",
-      "component": "src/modules/m08-student-performance/pages/HeadcountShellPage.vue",
+      "component": "src/modules/m08-student-performance/pages/HeadcountSettingsPage.vue",
       "file": "src/modules/m08-student-performance/routes/headcount.ts",
       "approved_by_card": null
     },
@@ -2000,26 +2000,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/guru/profil/edit|guru-profil-edit",
-      "path": "/guru/profil/edit",
-      "name": "guru-profil-edit",
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m10-teacher-class/pages/TeacherProfileEditPage.vue",
-      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/guru/profil/:id|guru-profil",
-      "path": "/guru/profil/:id",
-      "name": "guru-profil",
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m10-teacher-class/pages/TeacherProfilePage.vue",
-      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "/set-soalan-saya|",
       "path": "/set-soalan-saya",
       "name": null,
@@ -2028,6 +2008,36 @@
       "component": "src/modules/m10-teacher-class/pages/SetSoalanSayaPage.vue",
       "file": "src/modules/m10-teacher-class/routes/set-soalan-saya.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/guru/soalan-guru|",
+      "path": "/guru/soalan-guru",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/cipta|",
+      "path": "/guru/soalan-guru/cipta",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "/guru/soalan-guru/:id(\\d+)/sunting|",
+      "path": "/guru/soalan-guru/:id(\\d+)/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
+      "approved_by_card": "S6-T16"
     },
     {
       "key": "/guru/soalan|",
@@ -2070,52 +2080,12 @@
       "approved_by_card": null
     },
     {
-      "key": "/guru/soalan-guru|",
-      "path": "/guru/soalan-guru",
-      "name": null,
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanListPage.vue",
-      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "/guru/soalan-guru/cipta|",
-      "path": "/guru/soalan-guru/cipta",
-      "name": null,
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanCreatePage.vue",
-      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "/guru/soalan-guru/:id(\\d+)/sunting|",
-      "path": "/guru/soalan-guru/:id(\\d+)/sunting",
-      "name": null,
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m10-teacher-class/pages/SoalanRujukanEditPage.vue",
-      "file": "src/modules/m10-teacher-class/routes/soalan-rujukan.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
       "key": "/guru/soalan-berstruktur|",
       "path": "/guru/soalan-berstruktur",
       "name": null,
       "status": "canonical",
       "sector": "S6",
-      "component": "src/modules/m04-question-bank/pages/StructuredListPage.vue",
-      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
-      "approved_by_card": "S6-T17"
-    },
-    {
-      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
-      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
-      "name": null,
-      "status": "canonical",
-      "sector": "S6",
-      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "component": null,
       "file": "src/modules/m10-teacher-class/routes/soalan.ts",
       "approved_by_card": "S6-T17"
     },
@@ -2130,6 +2100,16 @@
       "approved_by_card": "S6-T17"
     },
     {
+      "key": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)|",
+      "path": "/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)",
+      "name": null,
+      "status": "canonical",
+      "sector": "S6",
+      "component": null,
+      "file": "src/modules/m10-teacher-class/routes/soalan.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit|",
       "path": "/guru/soalan-berstruktur/:id(g[0-9]+)/edit",
       "name": null,
@@ -2138,6 +2118,26 @@
       "component": "src/modules/m10-teacher-class/pages/SoalanBerstrukturEditPage.vue",
       "file": "src/modules/m10-teacher-class/routes/soalan.ts",
       "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "/guru/profil/edit|guru-profil-edit",
+      "path": "/guru/profil/edit",
+      "name": "guru-profil-edit",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfileEditPage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/guru/profil/:id|guru-profil",
+      "path": "/guru/profil/:id",
+      "name": "guru-profil",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m10-teacher-class/pages/TeacherProfilePage.vue",
+      "file": "src/modules/m10-teacher-class/routes/teacher-profile.ts",
+      "approved_by_card": null
     },
     {
       "key": "/guru/analisis-item|guru-analisis-item",
@@ -2578,36 +2578,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/permainan/pertandingan|m16.pertandingan",
-      "path": "/permainan/pertandingan",
-      "name": "m16.pertandingan",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/PertandinganPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/permainan/uji-minda|m16.uji-minda",
-      "path": "/permainan/uji-minda",
-      "name": "m16.uji-minda",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/UjiMindaPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/permainan/sambung-kata|m16.sambung-kata",
-      "path": "/permainan/sambung-kata",
-      "name": "m16.sambung-kata",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/SambungKataPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "/sekolah-bersaing|m16.sekolah-bersaing",
       "path": "/sekolah-bersaing",
       "name": "m16.sekolah-bersaing",
@@ -2872,6 +2842,56 @@
       "component": null,
       "file": "src/modules/m17-admin-dashboard/routes/laporan.ts",
       "redirects_to": "/sekolah-bersaing",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products|",
+      "path": "/admin/marketplace/products",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminProdukPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/create|",
+      "path": "/admin/marketplace/products/create",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/products/:id/edit|",
+      "path": "/admin/marketplace/products/:id/edit",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers|",
+      "path": "/admin/marketplace/sellers",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/AdminPenjualPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/marketplace/sellers/:id|",
+      "path": "/admin/marketplace/sellers/:id",
+      "name": null,
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m20-marketplace/pages/PenjualDetailPage.vue",
+      "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     },
     {
@@ -3197,16 +3217,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin/spm/latih-tubi|",
-      "path": "/admin/spm/latih-tubi",
-      "name": null,
-      "status": "canonical",
-      "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneLatihTubiPage.vue",
-      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
-      "approved_by_card": "S3-T03"
-    },
-    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -3215,6 +3225,26 @@
       "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSimulasiPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/subjektif|",
+      "path": "/admin/spm/subjektif",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSubjektifPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
+    },
+    {
+      "key": "/admin/spm/latih-tubi|",
+      "path": "/admin/spm/latih-tubi",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneLatihTubiPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T03"
     },
     {
       "key": "/admin/spm/kertas-subjektif|",
@@ -3247,16 +3277,6 @@
       "component": "src/modules/m28-bijak-spm/admin/papers/SubjektifPaperDetailPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-kertas-subjektif.ts",
       "approved_by_card": null
-    },
-    {
-      "key": "/admin/spm/subjektif|",
-      "path": "/admin/spm/subjektif",
-      "name": null,
-      "status": "canonical",
-      "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/LaneSubjektifPage.vue",
-      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
-      "approved_by_card": "S3-T03"
     },
     {
       "key": "/admin/spm/kontrak|",
@@ -3337,8 +3357,9 @@
       "name": null,
       "status": "redirect-to:/admin/studio/sets",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/PaperListPage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
       "note": "KS-09 Pembina Kertas list; docs/prd/r1/30-admin-pusat.md 3.3 (/admin/spm/kertas/:id stays as Semak Kertas Simulasi). Register M-05.",
       "approved_by_card": null
     },
@@ -3348,8 +3369,9 @@
       "name": null,
       "status": "redirect-to:/admin/studio/sets",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/PaperNewPage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
       "note": "V3 duplicates register M-05 (D113): redirects to the Set Builder create action",
       "approved_by_card": null
     },
@@ -3362,56 +3384,6 @@
       "component": "src/modules/m28-bijak-spm/admin/papers/PaperEditorPage.vue",
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
       "note": "V3 duplicates register M-05 (D113): becomes \"Semak Kertas\" (review and publish); PaperEditorPage is retired after its functions move to the Set Builder",
-      "approved_by_card": null
-    },
-    {
-      "key": "/admin/marketplace/products|",
-      "path": "/admin/marketplace/products",
-      "name": null,
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/AdminProdukPage.vue",
-      "file": "src/modules/m20-marketplace/routes/admin.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/admin/marketplace/products/create|",
-      "path": "/admin/marketplace/products/create",
-      "name": null,
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
-      "file": "src/modules/m20-marketplace/routes/admin.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/admin/marketplace/products/:id/edit|",
-      "path": "/admin/marketplace/products/:id/edit",
-      "name": null,
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/ProdukFormPage.vue",
-      "file": "src/modules/m20-marketplace/routes/admin.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/admin/marketplace/sellers|",
-      "path": "/admin/marketplace/sellers",
-      "name": null,
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/AdminPenjualPage.vue",
-      "file": "src/modules/m20-marketplace/routes/admin.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/admin/marketplace/sellers/:id|",
-      "path": "/admin/marketplace/sellers/:id",
-      "name": null,
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m20-marketplace/pages/PenjualDetailPage.vue",
-      "file": "src/modules/m20-marketplace/routes/admin.ts",
       "approved_by_card": null
     }
   ],
@@ -4071,7 +4043,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -4086,7 +4058,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -4236,7 +4208,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -5801,7 +5773,7 @@
         "teacher"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -5815,7 +5787,7 @@
         "teacher"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -5955,7 +5927,7 @@
         "teacher"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -6375,7 +6347,7 @@
         "school_admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/nav/user-nav.ts",
       "approved_by_card": null
     },
@@ -7414,7 +7386,7 @@
       "source": "user-nav",
       "id": "guru-monitoring",
       "label": "Monitoring",
-      "route": "/guru/monitoring",
+      "route": "/admin/monitoring",
       "roles": [
         "admin"
       ],
@@ -7599,7 +7571,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7614,7 +7586,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S6",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7944,7 +7916,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7959,7 +7931,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -8098,9 +8070,7 @@
       "label": "Gambar Rajah",
       "route": "/admin/soalan-gambar",
       "roles": [
-        "admin",
-        "teacher",
-        "school_admin"
+        "admin"
       ],
       "status": "canonical",
       "sector": "S2",
@@ -8247,7 +8217,7 @@
       "source": "pentadbiran",
       "id": "PM-03",
       "label": "Monitoring",
-      "route": "/guru/monitoring",
+      "route": "/admin/monitoring",
       "roles": [
         "admin"
       ],
@@ -8690,14 +8660,13 @@
       "source": "pentadbiran",
       "id": "BS-03",
       "label": "Sumber Kertas",
-      "route": "/admin/p/bs-03",
+      "route": "/admin/source-papers",
       "roles": [
         "admin"
       ],
       "status": "canonical",
       "sector": "S0",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "bank-soalan",
       "note": "KEEP (build P2) as Sumber Kertas (30 §3.3)",
       "approved_by_card": null
@@ -8952,14 +8921,13 @@
       "source": "pentadbiran",
       "id": "KS-07",
       "label": "Kertas Subjektif",
-      "route": "/admin/p/ks-07",
+      "route": "/admin/kertas-subjektif",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S3",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "kertas-spm",
       "note": "KEEP (build) as Kertas Subjektif (30 §3.3)",
       "approved_by_card": null
@@ -9175,14 +9143,13 @@
       "source": "pentadbiran",
       "id": "KK-08",
       "label": "Video",
-      "route": "/admin/p/kk-08",
+      "route": "/admin/videos",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S5",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "kurikulum-kandungan",
       "approved_by_card": null
     },
@@ -9562,7 +9529,7 @@
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "penglibatan",
       "approved_by_card": null
@@ -9577,7 +9544,7 @@
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu.ts",
       "group": "penglibatan",
       "approved_by_card": null
@@ -9792,14 +9759,13 @@
       "source": "pentadbiran",
       "id": "SY-01",
       "label": "Tetapan",
-      "route": "/admin/p/sy-01",
+      "route": "/admin/settings",
       "roles": [
         "admin"
       ],
       "status": "canonical",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/pentadbiran/menu.ts",
-      "built": false,
       "group": "sistem",
       "approved_by_card": null
     },
@@ -10105,6 +10071,15 @@
       "sector": "S6",
       "file": "apps/api/prisma/schema/classes.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "QuestionSetClassroom",
+      "table": "question_set_classrooms",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/prisma/schema/classes.prisma",
+      "approved_by_card": "S6-T14",
+      "dm": "DM-46"
     },
     {
       "name": "QuestionSetItem",
@@ -10567,9 +10542,9 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/prisma/schema/games.prisma",
+      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part.",
       "approved_by_card": "S7-T01",
-      "dm": "DM-64",
-      "note": "The 8 Roda Nasib wheel segments (48 GAME-14) as admin data, replacing SPIN_SEGMENTS in the GAME-14 part."
+      "dm": "DM-64"
     },
     {
       "name": "League",
@@ -10745,16 +10720,6 @@
       "approved_by_card": null
     },
     {
-      "name": "GameRewardEvent",
-      "table": "game_reward_events",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/prisma/schema/gamification.prisma",
-      "approved_by_card": "S7-T01",
-      "dm": "DM-87",
-      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult."
-    },
-    {
       "name": "MysteryBoxOpening",
       "table": "mystery_box_openings",
       "status": "canonical",
@@ -10779,6 +10744,16 @@
       "note": "Singleton Kawalan Reward settings (DM-48): the one source of the coin rate; read by the S5-T15 helper coinsPerCorrect().",
       "approved_by_card": "S7-T05",
       "dm": "DM-48"
+    },
+    {
+      "name": "GameRewardEvent",
+      "table": "game_reward_events",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/gamification.prisma",
+      "note": "One reward event per game session and pupil (PO decision 2026-11-05, item 20): the one source of the daily game caps and the replay check; written only by GamificationService.onGameResult.",
+      "approved_by_card": "S7-T01",
+      "dm": "DM-87"
     },
     {
       "name": "User",
@@ -11034,7 +11009,7 @@
       "name": "PkskExamLoad",
       "table": "pksk_exam_loads",
       "status": "canonical",
-      "sector": "S5",
+      "sector": "S0",
       "file": "apps/api/prisma/schema/pksk.prisma",
       "note": "S5-T13 rows, DM-91: served ids of the open exam set (anti-cheat), like PkskPracticeLoad",
       "approved_by_card": "S5-T13 (DM-91)"
@@ -11682,6 +11657,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/public/stats",
+      "method": "GET",
+      "path": "/api/public/stats",
+      "api_id": "API-AUTH-13",
+      "status": "canonical",
+      "sector": "S5",
+      "file": "apps/api/src/modules/account/account.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/me/mood",
       "method": "POST",
       "path": "/api/me/mood",
@@ -11700,16 +11685,6 @@
       "sector": "S5",
       "file": "apps/api/src/modules/account/mood.controller.ts",
       "approved_by_card": "S5-T04"
-    },
-    {
-      "key": "GET /api/public/stats",
-      "method": "GET",
-      "path": "/api/public/stats",
-      "api_id": "API-AUTH-13",
-      "status": "canonical",
-      "sector": "S5",
-      "file": "apps/api/src/modules/account/account.controller.ts",
-      "approved_by_card": null
     },
     {
       "key": "GET /api/account/teacher-profile",
@@ -11932,6 +11907,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/battle/queue/:p/cancel",
+      "method": "POST",
+      "path": "/api/battle/queue/:queueId/cancel",
+      "api_id": "API-GAME-14",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/battle/queue/queue-cancel.controller.ts",
+      "approved_by_card": "S7-T01"
+    },
+    {
       "key": "POST /api/battle/quick-match",
       "method": "POST",
       "path": "/api/battle/quick-match",
@@ -11960,16 +11945,6 @@
       "sector": "S7",
       "file": "apps/api/src/modules/battle/queue/queue.controller.ts",
       "approved_by_card": null
-    },
-    {
-      "key": "POST /api/battle/queue/:p/cancel",
-      "method": "POST",
-      "path": "/api/battle/queue/:queueId/cancel",
-      "api_id": "API-GAME-14",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/battle/queue/queue-cancel.controller.ts",
-      "approved_by_card": "S7-T01"
     },
     {
       "key": "POST /api/battle/accept-challenger/:p",
@@ -12602,6 +12577,146 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/guru/question-sets",
+      "method": "GET",
+      "path": "/api/guru/question-sets",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "GET /api/guru/question-sets/bank",
+      "method": "GET",
+      "path": "/api/guru/question-sets/bank",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "POST /api/guru/question-sets",
+      "method": "POST",
+      "path": "/api/guru/question-sets",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "GET /api/guru/question-sets/:p",
+      "method": "GET",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "PUT /api/guru/question-sets/:p",
+      "method": "PUT",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "DELETE /api/guru/question-sets/:p",
+      "method": "DELETE",
+      "path": "/api/guru/question-sets/:id",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "POST /api/guru/question-sets/:p/status",
+      "method": "POST",
+      "path": "/api/guru/question-sets/:id/status",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "POST /api/guru/question-sets/:p/copy",
+      "method": "POST",
+      "path": "/api/guru/question-sets/:id/copy",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "GET /api/guru/question-sets/:p/results",
+      "method": "GET",
+      "path": "/api/guru/question-sets/:id/results",
+      "api_id": "API-GUR-16",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-sets/guru-question-sets.controller.ts",
+      "approved_by_card": "S6-T14"
+    },
+    {
+      "key": "GET /api/guru/personal-questions",
+      "method": "GET",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "POST /api/guru/personal-questions",
+      "method": "POST",
+      "path": "/api/guru/personal-questions",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "GET /api/guru/personal-questions/:p",
+      "method": "GET",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "PUT /api/guru/personal-questions/:p",
+      "method": "PUT",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
+      "key": "DELETE /api/guru/personal-questions/:p",
+      "method": "DELETE",
+      "path": "/api/guru/personal-questions/:id",
+      "api_id": "API-GUR-24",
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
+      "approved_by_card": "S6-T16"
+    },
+    {
       "key": "GET /api/guru/classes",
       "method": "GET",
       "path": "/api/guru/classes",
@@ -12622,14 +12737,14 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/guru/classes/:p/qr-data",
-      "method": "GET",
-      "path": "/api/guru/classes/:id/qr-data",
-      "api_id": "API-GUR-04",
+      "key": "PUT /api/guru/classes/:p",
+      "method": "PUT",
+      "path": "/api/guru/classes/:id",
+      "api_id": "API-GUR-03",
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/classes/teacher.controller.ts",
-      "approved_by_card": null
+      "approved_by_card": "S6-T14"
     },
     {
       "key": "GET /api/guru/students",
@@ -13492,20 +13607,20 @@
       "approved_by_card": "S4-T02"
     },
     {
-      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
-      "method": "POST",
-      "path": "/api/admin/curriculum/questions/bulk-chapter",
-      "api_id": "API-DSKP-09",
+      "key": "GET /api/admin/curriculum/chapter-coverage",
+      "method": "GET",
+      "path": "/api/admin/curriculum/chapter-coverage",
+      "api_id": "API-DSKP-10",
       "status": "canonical",
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
       "approved_by_card": "S4-T03"
     },
     {
-      "key": "GET /api/admin/curriculum/chapter-coverage",
-      "method": "GET",
-      "path": "/api/admin/curriculum/chapter-coverage",
-      "api_id": "API-DSKP-10",
+      "key": "POST /api/admin/curriculum/questions/bulk-chapter",
+      "method": "POST",
+      "path": "/api/admin/curriculum/questions/bulk-chapter",
+      "api_id": "API-DSKP-09",
       "status": "canonical",
       "sector": "S4",
       "file": "apps/api/src/modules/curriculum/admin.controller.ts",
@@ -14124,7 +14239,7 @@
     {
       "key": "POST /api/leagues/:p/schools",
       "method": "POST",
-      "path": "/api/leagues/:p/schools",
+      "path": "/api/leagues/:id/schools",
       "api_id": "API-ADM-25",
       "status": "canonical",
       "sector": "S7",
@@ -14372,26 +14487,6 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/games/pertandingan",
-      "method": "GET",
-      "path": "/api/games/pertandingan",
-      "api_id": "API-GAME-02",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/games/solo/weekly/weekly.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/games/uji-minda",
-      "method": "GET",
-      "path": "/api/games/uji-minda",
-      "api_id": "API-GAME-02",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/games/solo/weekly/weekly.controller.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "GET /api/admin/gamification/overview",
       "method": "GET",
       "path": "/api/admin/gamification/overview",
@@ -14605,7 +14700,7 @@
       "key": "POST /api/gamification/challenges/:p/claim",
       "method": "POST",
       "path": "/api/gamification/challenges/:id/claim",
-      "api_id": null,
+      "api_id": "API-GAME-11",
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/gamification/gamification.controller.ts",
@@ -14983,56 +15078,6 @@
       "approved_by_card": null
     },
     {
-      "key": "GET /api/marketplace/categories",
-      "method": "GET",
-      "path": "/api/marketplace/categories",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/marketplace/products",
-      "method": "GET",
-      "path": "/api/marketplace/products",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/marketplace/products/:p",
-      "method": "GET",
-      "path": "/api/marketplace/products/:slug",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/marketplace/products/:p/whatsapp",
-      "method": "POST",
-      "path": "/api/marketplace/products/:slug/whatsapp",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/marketplace/sellers/:p",
-      "method": "GET",
-      "path": "/api/marketplace/sellers/:id",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "GET /api/admin/marketplace/products",
       "method": "GET",
       "path": "/api/admin/marketplace/products",
@@ -15160,6 +15205,56 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/marketplace/categories",
+      "method": "GET",
+      "path": "/api/marketplace/categories",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/marketplace/products",
+      "method": "GET",
+      "path": "/api/marketplace/products",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/marketplace/products/:p",
+      "method": "GET",
+      "path": "/api/marketplace/products/:slug",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/marketplace/products/:p/whatsapp",
+      "method": "POST",
+      "path": "/api/marketplace/products/:slug/whatsapp",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/marketplace/sellers/:p",
+      "method": "GET",
+      "path": "/api/marketplace/sellers/:id",
+      "api_id": "API-ADM-19",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/marketplace/marketplace.controller.ts",
       "approved_by_card": null
     },
     {
@@ -15863,6 +15958,36 @@
       "approved_by_card": "S6-T17"
     },
     {
+      "key": "POST /api/guru/intake/structured",
+      "method": "POST",
+      "path": "/api/guru/intake/structured",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "PUT /api/guru/intake/structured/:p",
+      "method": "PUT",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
+      "key": "DELETE /api/guru/intake/structured/:p",
+      "method": "DELETE",
+      "path": "/api/guru/intake/structured/:id",
+      "api_id": "API-GUR-17",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
+      "approved_by_card": "S6-T17"
+    },
+    {
       "key": "GET /api/guru/questions",
       "method": "GET",
       "path": "/api/guru/questions",
@@ -15911,56 +16036,6 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/guru.controller.ts",
       "approved_by_card": null
-    },
-    {
-      "key": "GET /api/guru/personal-questions",
-      "method": "GET",
-      "path": "/api/guru/personal-questions",
-      "api_id": "API-GUR-24",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "POST /api/guru/personal-questions",
-      "method": "POST",
-      "path": "/api/guru/personal-questions",
-      "api_id": "API-GUR-24",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "GET /api/guru/personal-questions/:p",
-      "method": "GET",
-      "path": "/api/guru/personal-questions/:id",
-      "api_id": "API-GUR-24",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "PUT /api/guru/personal-questions/:p",
-      "method": "PUT",
-      "path": "/api/guru/personal-questions/:id",
-      "api_id": "API-GUR-24",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
-      "approved_by_card": "S6-T16"
-    },
-    {
-      "key": "DELETE /api/guru/personal-questions/:p",
-      "method": "DELETE",
-      "path": "/api/guru/personal-questions/:id",
-      "api_id": "API-GUR-24",
-      "status": "canonical",
-      "sector": "S6",
-      "file": "apps/api/src/modules/classes/teacher-tools/personal-questions.controller.ts",
-      "approved_by_card": "S6-T16"
     },
     {
       "key": "GET /api/admin/questions/regroup-worklist",
@@ -16331,36 +16406,6 @@
       "sector": "S1",
       "file": "apps/api/src/modules/questions/http/structured.controller.ts",
       "approved_by_card": null
-    },
-    {
-      "key": "POST /api/guru/intake/structured",
-      "method": "POST",
-      "path": "/api/guru/intake/structured",
-      "api_id": "API-GUR-17",
-      "status": "canonical",
-      "sector": "S1",
-      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
-      "approved_by_card": "S6-T17"
-    },
-    {
-      "key": "PUT /api/guru/intake/structured/:p",
-      "method": "PUT",
-      "path": "/api/guru/intake/structured/:id",
-      "api_id": "API-GUR-17",
-      "status": "canonical",
-      "sector": "S1",
-      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
-      "approved_by_card": "S6-T17"
-    },
-    {
-      "key": "DELETE /api/guru/intake/structured/:p",
-      "method": "DELETE",
-      "path": "/api/guru/intake/structured/:id",
-      "api_id": "API-GUR-17",
-      "status": "canonical",
-      "sector": "S1",
-      "file": "apps/api/src/modules/questions/http/guru-structured.controller.ts",
-      "approved_by_card": "S6-T17"
     },
     {
       "key": "GET /api/questions/studio/dskp",
@@ -17813,6 +17858,16 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/spm/history",
+      "method": "GET",
+      "path": "/api/spm/history",
+      "api_id": "API-BIJAK-07",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/spm/databank",
       "method": "GET",
       "path": "/api/spm/databank",
@@ -18350,136 +18405,6 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/wallet/wallet.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/admin/marketplace/products",
-      "method": "GET",
-      "path": "/api/admin/marketplace/products",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/admin/marketplace/products",
-      "method": "POST",
-      "path": "/api/admin/marketplace/products",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/admin/marketplace/products/:p",
-      "method": "GET",
-      "path": "/api/admin/marketplace/products/:id",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "PUT /api/admin/marketplace/products/:p",
-      "method": "PUT",
-      "path": "/api/admin/marketplace/products/:id",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "DELETE /api/admin/marketplace/products/:p",
-      "method": "DELETE",
-      "path": "/api/admin/marketplace/products/:id",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "DELETE /api/admin/marketplace/products/:p/images/:p",
-      "method": "DELETE",
-      "path": "/api/admin/marketplace/products/:id/images/:imageId",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/admin/marketplace/seller-options",
-      "method": "GET",
-      "path": "/api/admin/marketplace/seller-options",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/admin/marketplace/sellers",
-      "method": "GET",
-      "path": "/api/admin/marketplace/sellers",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/admin/marketplace/sellers/:p",
-      "method": "GET",
-      "path": "/api/admin/marketplace/sellers/:id",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/admin/marketplace/sellers/:p/approve",
-      "method": "POST",
-      "path": "/api/admin/marketplace/sellers/:id/approve",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/admin/marketplace/sellers/:p/verify",
-      "method": "POST",
-      "path": "/api/admin/marketplace/sellers/:id/verify",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/admin/marketplace/sellers/:p/suspend",
-      "method": "POST",
-      "path": "/api/admin/marketplace/sellers/:id/suspend",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "POST /api/admin/marketplace/sellers/:p/ban",
-      "method": "POST",
-      "path": "/api/admin/marketplace/sellers/:id/ban",
-      "api_id": "API-ADM-19",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/marketplace/marketplace-admin.controller.ts",
       "approved_by_card": null
     }
   ],

@@ -21,11 +21,11 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
 
   const url = (id: string) => `/admin/teachers/${id}/classrooms`
   const one = async (sql: string, args: unknown[]): Promise<string> => ((await t.db.query<{ id: string }>(sql, args))[0] as { id: string }).id
-  const newClass = (name: string, teacher: string, school: string, level: string, code: string | null, over: { kind?: string; active?: boolean } = {}) =>
+  const newClass = (name: string, teacher: string, school: string, level: string, code: string | null, over: { kind?: string; active?: boolean; year?: number } = {}) =>
     one(
       `insert into classrooms (kind, name, teacher_id, school_id, education_level_id, academic_year, join_code, is_active)
-       values ($1, $2, $3, $4, $5, 2026, $6, $7) returning id::text`,
-      [over.kind ?? 'classroom', name, teacher, school, level, code, over.active ?? true],
+       values ($1, $2, $3, $4, $5, $8, $6, $7) returning id::text`,
+      [over.kind ?? 'classroom', name, teacher, school, level, code, over.active ?? true, over.year ?? 2026],
     )
 
   beforeAll(async () => {
@@ -49,7 +49,8 @@ describe('GET /admin/teachers/:id/classrooms (S7 "Kelas guru")', () => {
     // Inserted out of name order on purpose: the answer is A to Z, then id.
     ids.b = await newClass('4 Bestari', teacherId, s1, level, 'BEST01')
     ids.a = await newClass('4 Amanah', teacherId, s1, level, 'AMAN01')
-    ids.a2 = await newClass('4 Amanah', teacherId, s1, level, 'AMAN02')
+    // Same name in another Tahun Sesi: a teacher may not repeat a name within one year (DM-73).
+    ids.a2 = await newClass('4 Amanah', teacherId, s1, level, 'AMAN02', { year: 2027 })
     ids.inactive = await newClass('4 Cemerlang', teacherId, s1, level, 'CEME01', { active: false })
     ids.schoolClass = await newClass('Kelas Sekolah 4', teacherId, s1, level, null, { kind: 'school_class' })
     ids.other = await newClass('5 Dedikasi', otherSchoolTeacher, s2, level, 'DEDI01')

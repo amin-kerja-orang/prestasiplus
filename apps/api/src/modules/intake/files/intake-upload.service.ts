@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { INTAKE_FILE_MESSAGES, type IntakeUploadResult } from '@pp/contract'
 
 import { AUDIT_ACTIONS } from '../../../common/audit'
@@ -61,6 +61,7 @@ function invalid(message: string): ApiError {
 export class IntakeUploadService {
   /** Uploads being checked, stored and written at the same time in this process (the rest wait, F3). */
   private readonly slots: Semaphore
+  private readonly log = new Logger(IntakeUploadService.name)
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -76,6 +77,25 @@ export class IntakeUploadService {
     @Inject(CLOCK) private readonly clock: Clock,
   ) {
     this.slots = new Semaphore(config.uploadConcurrency)
+  }
+
+  /**
+   * Undo of a batch whose upload the caller could not use (S3-T06: the paper source upload lost a race or could not link the batch). Cancels it (when not
+   * already cancelled), deletes its file rows (pages cascade) and the stored objects. A batch that could not be cancelled is left whole. Never throws: a
+   * partial failure is logged. Intake has no retention job for the files of a cancelled batch, so this is the only clean-up.
+   */
+  async discardBatch(auth: AuthContext, idText: string, who: CallerInfo): Promise<void> {
+    const id = parseId(idText)
+    if (id === null) return
+    try {
+      const rows = await this.prisma.client.intakeFile.findMany({ where: { batchId: id }, select: { fileId: true } })
+      await this.batches.cancelBatch(auth, idText, who)
+      if (rows.length === 0) return
+      await this.prisma.client.intakeFile.deleteMany({ where: { batchId: id } })
+      await discardStored(this.prisma, this.storage, rows.map((r) => idToString(r.fileId)))
+    } catch (e) {
+      this.log.error(`intake batch ${idText} could not be discarded: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   /** Cheap pre-flight (route guard): 404 for an unknown or out-of-scope batch, 409 for one that no longer takes files. Reads no body. */

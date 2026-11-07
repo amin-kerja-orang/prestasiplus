@@ -8,6 +8,7 @@ import { api } from '@/api'
 
 import type {
   Achievements,
+  ChallengeClaimResult,
   ChallengeProgress,
   ChallengesMeta,
   ConvertResult,
@@ -75,6 +76,18 @@ export function fetchGamificationChallenges(
     '/api/gamification/challenges',
     withSignal(options),
   )
+}
+
+/**
+ * API-GAME-11 `POST /api/gamification/challenges/{id}/claim` (S13, S7-T04): pays a finished challenge once per
+ * Malaysia day. `clientUuid` makes a retry of the same press safe (`200` with the stored amounts). Refusals:
+ * `409 CHALLENGE_CLAIMED`, `409 CHALLENGE_NOT_DONE`, `409 CONFLICT` (key used for another claim), `403` (Mod
+ * Pelajar), `404`.
+ */
+export function claimChallenge(id: number, clientUuid: string): Promise<ChallengeClaimResult> {
+  return api.post<ChallengeClaimResult>(`/api/gamification/challenges/${String(id)}/claim`, {
+    body: { clientUuid },
+  })
 }
 
 /** #8 `GET /api/gamification/leaderboard` (S14): podium (ranks 1–3) and rows (4–50); any query is ignored. */

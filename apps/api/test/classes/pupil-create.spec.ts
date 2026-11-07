@@ -71,14 +71,12 @@ describe('POST /api/guru/students (Cipta Pelajar)', () => {
        values ($1::bigint, $2::bigint, 'Misi Ujian', 'latih_tubi', '2026-10-01', $3::bigint, 10) returning id::text`,
       [teacherA, k.id, subject.id],
     )
-    const ownSet = await one(
-      `insert into question_sets (teacher_id, classroom_id, title, status) values ($1::bigint, $2::bigint, 'Set Ujian', 'published') returning id::text`,
-      [teacherA, k.id],
-    )
-    const otherSet = await one(
-      `insert into question_sets (teacher_id, classroom_id, title, status) values ($1::bigint, $2::bigint, 'Set Guru Lain', 'published') returning id::text`,
-      [teacherB, kOther.id],
-    )
+    // S6-T14: a set is assigned through `question_set_classrooms` (DM-46) and carries no `classroom_id` of its own.
+    const ownSet = await one(`insert into question_sets (teacher_id, title, status) values ($1::bigint, 'Set Ujian', 'published') returning id::text`, [teacherA])
+    const otherSet = await one(`insert into question_sets (teacher_id, title, status) values ($1::bigint, 'Set Guru Lain', 'published') returning id::text`, [teacherB])
+    await t.db.query(`insert into question_set_classrooms (question_set_id, classroom_id, assigned_by) values ($1::bigint, $2::bigint, $3::bigint), ($4::bigint, $5::bigint, $6::bigint)`, [ownSet, k.id, teacherA, otherSet, kOther.id, teacherB])
+    // A set the pupil completed that is assigned to no class of this teacher is no Tugasan either.
+    const unassigned = await one(`insert into question_sets (teacher_id, title, status) values ($1::bigint, 'Set Tanpa Kelas', 'published') returning id::text`, [teacherA])
     const session = (mode: string, correct: number, over: { missionId?: string; setId?: string; isTest?: boolean } = {}) =>
       t.db.query(
         `insert into practice_sessions (user_id, mode, subject_id, question_count, status, correct_count, started_at, completed_at, is_test, mission_id, question_set_id)
@@ -91,7 +89,8 @@ describe('POST /api/guru/students (Cipta Pelajar)', () => {
     await session('mission', 7, { missionId: mission }) // 70%, counts as a Tugasan
     await session('question_set', 7, { setId: ownSet }) // 70%, counts as a Tugasan
     await session('question_set', 7, { setId: otherSet }) // 70%, set of ANOTHER teacher class: in the mean, not a Tugasan
-    // mean of 60, 80, 70, 70, 70 = 70
+    await session('question_set', 7, { setId: unassigned }) // 70%, assigned to no class: in the mean, not a Tugasan
+    // mean of 60, 80, 70, 70, 70, 70 = 70
 
     const answer = (at: string, isTest: boolean) =>
       t.db.query(`insert into practice_answers (user_id, subject_id, is_correct, answered_at, is_test, mode) values ($1::bigint, $2::bigint, true, $3::timestamptz, $4, 'latih_tubi')`, [
