@@ -172,6 +172,11 @@ export function generatedLedgerUser(key: number, facets: Pick<LedgerRow, LedgerF
 }
 
 const pick = <T>(list: readonly T[], h: number): T => list[h % list.length] as T
+/**
+ * The generated ledger samples only the 10 challenges present when its values were observed (ids 1 to 10);
+ * the rows added later (ids 11 to 14, S7-T04) must not change the generated ledger or the wallet totals.
+ */
+const LEDGER_CHALLENGES = SEED_CHALLENGES.filter((c) => c.id <= 10)
 const PB = 'Jawab betul dalam Papan Bijak 🎲'
 
 function deriveLedger(
@@ -207,7 +212,7 @@ function deriveLedger(
       }
     }
     case 'daily_challenge': {
-      const ch = pick(SEED_CHALLENGES, h)
+      const ch = pick(LEDGER_CHALLENGES, h)
       const old = OLD_CHALLENGE_REWARDS[ch.title]
       if (old !== undefined && generatedLedgerTime(key) < Date.parse('2026-03-01T00:00:00+08:00')) {
         return { ...bal(old), description: `Cabaran: ${ch.title}`, refId: null }

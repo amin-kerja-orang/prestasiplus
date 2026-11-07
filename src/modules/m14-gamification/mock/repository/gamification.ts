@@ -468,7 +468,7 @@ export const streakRepo = defineRepository({
 // --- challenges -------------------------------------------------------------------------------
 
 export const challengeQueries = defineNamedQueries(challengesTable, {
-  'Q-CHALLENGES-ACTIVE': { where: { isActive: true }, expected: 10, source: 'M14 §6.10' },
+  'Q-CHALLENGES-ACTIVE': { where: { isActive: true }, expected: 14, source: 'M14 §6.10' },
 })
 
 export interface ChallengeInput {
