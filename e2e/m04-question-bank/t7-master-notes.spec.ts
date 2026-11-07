@@ -12,8 +12,6 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
-  isMobileWidth,
   moduleTag,
   provisional,
   TAG,
@@ -36,7 +34,7 @@ async function openAll(page: Page, gotoApp: (path: string) => Promise<void>) {
 test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('renders in the user shell with the readable header card, the tabs and the empty flagged tab', async ({
+  test('renders in the portal with the readable header card, the tabs and the empty flagged tab', async ({
     page,
     loginAs,
     gotoApp,
@@ -44,16 +42,12 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(page.getByTestId('notes-empty')).toHaveText('Tiada nota dalam tab ini.')
-    await expect(page.locator('[data-layout="user"]')).toBeVisible()
-    await expect(page.locator('[data-layout="admin"]')).toHaveCount(0)
-    await expectTabTitle(page, 'Master Notes — Admin Review')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Master Notes — Admin Review')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveCount(0)
+    // An admin stays in the Portal Pentadbiran on this route.
+    await expect(page.locator('[data-layout="pentadbiran"]')).toBeAttached()
+    await expectTabTitle(page, 'Master Notes — Admin Review | PRESTASIPLUS')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveCount(0)
 
-    // DV-M04-14: the card h1 is white on the dark card.
-    const h1 = page.getByTestId('notes-header').getByRole('heading', { level: 1 })
-    await expect(h1).toHaveText('Master Notes — Admin Review')
-    expect(await h1.evaluate((el) => getComputedStyle(el).color)).toBe('rgb(255, 255, 255)')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Master Notes — Admin Review')
     await expect(page.getByTestId('notes-summary')).toHaveText(SUMMARY(0, 0))
 
     // Tabs: flagged is the default and the dark pill.
@@ -65,10 +59,6 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expect(page.getByTestId('notes-tab-flagged')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('notes-tab-all')).toHaveAttribute('data-active', 'false')
     await expectTouchTarget(page.getByTestId('notes-tab-all'))
-    // The "Gambar Rajah" badge follows the live M04 count (desktop sidebar only).
-    if (isDesktopShell(page)) {
-      await expect(page.locator('[data-nav-id="gambar-rajah"]')).toContainText('6,144')
-    }
     await expectNoHorizontalScroll(page)
   })
 
@@ -111,16 +101,11 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     await expectTouchTarget(first.getByTestId('note-approve'))
 
     const pager = page.getByTestId('notes-pager')
-    if (isMobileWidth(page)) {
-      await expect(pager.getByText('Next »')).toBeVisible()
-    } else {
-      await expect(pager).toContainText('Showing 1 to 15 of 525 results')
-      await expect(pager.getByRole('link', { name: 'Go to page 35' })).toBeVisible()
-    }
+    await expect(pager.getByRole('button', { name: 'Seterusnya' })).toBeVisible()
     await expectNoHorizontalScroll(page)
 
     // The pager keeps the tab.
-    await pager.getByRole('link', { name: /Next/ }).first().click()
+    await pager.getByRole('button', { name: 'Seterusnya' }).click()
     await expect(page).toHaveURL(/tab=all&page=2$/)
     await expect(rows(page)).toHaveCount(15)
     await expectNoHorizontalScroll(page)
@@ -138,7 +123,7 @@ test.describe('M04 S12 master notes', { tag: [TAG.smoke, moduleTag(4)] }, () => 
       await approve.click()
       await expect(approve).toHaveText('Done')
       await expect(approve).toBeDisabled()
-      await expect.poll(() => first.evaluate((el) => getComputedStyle(el).opacity)).toBe('0.5')
+      await expect(first).toHaveAttribute('data-dimmed', 'true')
       // The other buttons stay usable.
       await expect(first.getByTestId('note-regen')).toBeEnabled()
 
