@@ -32,7 +32,8 @@ export type ComplianceStatus = 'verified' | 'pending_mapping' | 'quarantined' | 
 export type SourceType = 'textbook' | 'dskp' | 'trial' | 'marking_scheme' | 'ai_generated'
 export type ScriptType = 'rumi' | 'arab' | 'jawi' | 'mixed'
 export type TextDirection = 'ltr' | 'rtl'
-export type QuestionLanguage = 'bm' | 'en'
+/** Wire tokens of `language` (60 API-Q-03); `bm` is an input alias of `ms` on the server and is never read back. */
+export type QuestionLanguage = 'ms' | 'en' | 'ms+en'
 export type BulkAction = 'approve' | 'reject' | 'archive' | 'delete' | 'pending_review' | 'publish'
 
 /**
@@ -150,6 +151,8 @@ export interface Question {
   difficultyLevel: number
   questionType: QuestionType
   questionText: string
+  /** English stem (DM-50); null or absent when none. */
+  questionTextEn?: string | null
   questionImage: string | null
   /** MCQ: 4 strings ("" allowed for C/D from an import); `null` for the other types and PKSK rows. */
   options: string[] | null
@@ -241,6 +244,8 @@ export interface QuestionInputBody {
   /** Create only (a saved question keeps its type). */
   questionType?: QuestionType
   questionText: string
+  /** English stem; null or blank clears it, absent keeps it. */
+  questionTextEn?: string | null
   dskpSpId?: number | string | null
   /** Bab (chapter) id; '' or null clears it on edit, absent keeps it. */
   curriculumChapterId?: number | string | null
@@ -381,6 +386,7 @@ export function toQuestionJson(
       input.curriculumChapterId === null || input.curriculumChapterId === '' ? null : String(input.curriculumChapterId)
   }
   if (input.language !== undefined) body.language = input.language
+  if (input.questionTextEn !== undefined) body.questionTextEn = input.questionTextEn
   if (input.pointsValue !== undefined && input.pointsValue !== null && input.pointsValue !== '') {
     body.pointsValue = Number(input.pointsValue)
   }
@@ -585,10 +591,10 @@ export async function bulkQuestionAction(
   action: BulkAction,
   ids: readonly number[],
 ): Promise<
-  QuestionMutation<{ affected: number }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
+  QuestionMutation<{ affected: number; affectedPapers?: { title: string }[] }> & { notUpdated?: number[]; failed?: BulkFailedRow[] }
 > {
   const http = isHttpMode()
-  const result = await api.post<QuestionMutation<{ affected: number }>>(
+  const result = await api.post<QuestionMutation<{ affected: number; affectedPapers?: { title: string }[] }>>(
     '/api/questions/bulk-action',
     {
       // http: the contract takes ids as strings (`QuestionBulkRequestSchema`); numbers answer 422 "Senarai soalan tidak sah."
@@ -644,6 +650,8 @@ export interface QuestionFilterBulkResult {
   remaining: number
   capped: boolean
   dryRun: boolean
+  /** FR-QA-47: `archived` only, the Terbit papers that place a row. */
+  affectedPapers?: { id: string; title: string }[]
 }
 
 /** The applied list filter (URL keys, trimmed), keyed as the list filter keys. */

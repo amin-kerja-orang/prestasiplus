@@ -2,7 +2,7 @@ import { ErrorBodySchema, SchoolAdminClassListResponseSchema } from '@pp/contrac
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { apiOf, bootSchoolAdminApp, login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, type Api, type SchoolAdminTestApp } from './helpers'
-import { addClassroom, addLevel, addPupil, addSchoolAdmin, addSubject, addTeacher, enrol } from './reports-fixtures'
+import { addClassroom, addLevel, addPupil, addSchoolAdmin, addSubject, addTeacher, enrol, suspend } from './reports-fixtures'
 
 /** DB spec: needs Docker/Testcontainers. */
 describe('GET /admin-sekolah/kelas', () => {
@@ -65,7 +65,7 @@ describe('GET /admin-sekolah/kelas', () => {
     expect((await admin.get('/admin-sekolah/kelas?search=tidak%20aktif')).body.data).toEqual([])
   })
 
-  it('a row has the subject, level label, teacher, member count, join code and link', async () => {
+  it('a row has the subject, level label, teacher, member count and link; no join code', async () => {
     const r = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=amanah')).body)
     expect(r.data).toEqual([
       {
@@ -77,16 +77,19 @@ describe('GET /admin-sekolah/kelas', () => {
         levelLabel: 'Tingkatan 4',
         teacherName: 'Guru Kelas Satu',
         members: 2,
-        joinCode: 'AMANAH1',
         isActive: true,
         link: `/prestasi/kelas/${amanah}`,
       },
     ])
   })
 
-  it('a class without a join code has joinCode null', async () => {
+  it('joinCode is absent from the payload, even for a class that has one (FR-AS-53-5)', async () => {
+    const res = await admin.get('/admin-sekolah/kelas?search=amanah')
+    expect(JSON.stringify(res.body)).not.toContain('joinCode')
+    expect(JSON.stringify(res.body)).not.toContain('AMANAH1')
     const bestari = SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?search=bestari')).body)
-    expect(bestari.data[0]).toMatchObject({ name: 'Kelas 1 Bestari', joinCode: null, subject: null, teacherName: null, levelLabel: 'Darjah 1' })
+    expect(bestari.data[0]).toMatchObject({ name: 'Kelas 1 Bestari', subject: null, teacherName: null, levelLabel: 'Darjah 1' })
+    expect(bestari.data[0]).not.toHaveProperty('joinCode')
   })
 
   it('level filter: a known slug narrows, an unknown slug means all levels', async () => {
@@ -102,6 +105,20 @@ describe('GET /admin-sekolah/kelas', () => {
     expect(p2.meta.page).toBe(2)
     expect(SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?page=99')).body).meta.page).toBe(2)
     expect(SchoolAdminClassListResponseSchema.parse((await admin.get('/admin-sekolah/kelas?page=abc')).body).meta.page).toBe(1)
+  })
+
+  it('"Murid" per class is XS-1: pending, suspended, grade-less and other-school pupils are not counted (FR-AS-53-2)', async () => {
+    const lain = (await adminB.get('/admin-sekolah/kelas')).body.data[0].id as string
+    const ok = await addPupil(t.db, s2, 'Murid Dikira Satu')
+    const pending = await addPupil(t.db, s2, 'Murid Menunggu', { active: false })
+    const suspended = await addPupil(t.db, s2, 'Murid Digantung')
+    const noGrade = await addPupil(t.db, s2, 'Murid Tanpa Gred')
+    await t.db.query(`update users set grade = null where id = $1::bigint`, [noGrade])
+    await suspend(t.db, suspended)
+    const foreign = await addPupil(t.db, s1, 'Murid Sekolah Lain')
+    for (const id of [ok, pending, suspended, noGrade, foreign]) await enrol(t.db, lain, id)
+    const r = SchoolAdminClassListResponseSchema.parse((await adminB.get('/admin-sekolah/kelas')).body)
+    expect(r.data.find((c) => c.id === lain)?.members).toBe(1)
   })
 
   it('a school-B admin sees only school B classes, whatever the query says', async () => {

@@ -143,7 +143,7 @@ describe('#9 import (BR-M04-10)', () => {
         needsDiagram: false,
         qualityScore: null,
         createdBy: ADMIN,
-        language: 'bm',
+        language: 'ms',
         subjectId: 3,
         educationLevelId: 11,
         // BR-M04-32: T5 of a pool subject is a pool row, but only once approved.

@@ -18,9 +18,10 @@ import {
 } from '../domain/constants'
 import { NO_SUBJECT_LABEL, SCHOOL_CLASS_LABEL } from '../domain/labels'
 import { canSeeName, isStaff, levelVisibleToNonStaff, meetsCohort, nameFor } from '../domain/privacy'
-import { GRADES, accuracyOf, compareIds, pct, round } from '../domain/rules'
+import { GRADES, compareIds, pct, round } from '../domain/rules'
 import { startOfDaysAgo } from '../domain/windows'
 import { toMytTimestamp } from '../../../../common/time/myt'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { latestAr } from '../headcount/headcount.rules'
 import { DIRECTORY_PORT, PerformancePorts, XS_COUNTS_PORT, type AnswerFactsQuery, type ClassInfo, type DirectoryPort, type XsCountsPort } from '../ports'
@@ -87,6 +88,9 @@ function sumOf(ids: readonly string[], byUser: ReadonlyMap<string, UserTotals>):
   }
   return s
 }
+
+/** XS-5 (decision 11) for every accuracy of this payload: pooled, one decimal, integer half up, never above 100. The contract's non-nullable fields show 0 without answers. */
+const accuracyOf = (correct: number, answered: number): number => xsAccuracy(correct, answered) ?? 0
 
 /** Zeroed when fewer than MIN_COHORT pupils stand behind it and the viewer is not staff. Pooled accuracy: correct / answered (XS-5). */
 function shown(ctx: Ctx, s: Sums): { sessions: number; accuracy: number } {
@@ -186,10 +190,13 @@ export class SchoolPerformanceService {
   }
 
   /** The shared answer reader (S10-T01): answers of every mode, sessions of the non-game modes; per pupil and per subject. */
-  private async loadFacts(query: AnswerFactsQuery): Promise<FactSet> {
+  private async loadFacts(query: AnswerFactsQuery, keep: ReadonlySet<string>): Promise<FactSet> {
     const reader = this.ports.answerFacts
     // (user x subject) grain: the figures here never need question, chapter or topic rows.
-    const [rows, sessionRows] = await Promise.all([reader.answerFacts({ ...query, grain: 'user-subject' }), reader.sessionCounts({ ...query, modes: SESSION_MODES })])
+    const [allRows, allSessionRows] = await Promise.all([reader.answerFacts({ ...query, grain: 'user-subject' }), reader.sessionCounts({ ...query, modes: SESSION_MODES })])
+    // XS-1 (S6-T03): only the answers and sessions of counted pupils (active, not suspended, Tingkatan 1-5) enter any figure, the same set as "Murid".
+    const rows = allRows.filter((r) => keep.has(r.userId))
+    const sessionRows = allSessionRows.filter((r) => keep.has(r.userId))
     const byUser = new Map<string, UserTotals>()
     const bySubject = new Map<string, SubjectTotals>()
     const subjectUsers = new Map<string, Set<string>>()
@@ -227,7 +234,10 @@ export class SchoolPerformanceService {
     const classes = all.filter((c) => c.isActive)
     const members = await distinctMembers(this.ports, classes)
     // One read per request: platform = no filter, school = the school id (never a pupil id list). Class figures filter this set in memory.
-    const wide = !withFacts || scope.kind === 'none' ? EMPTY_FACTS() : await this.loadFacts(scope.kind === 'school' ? { schoolIds: [scope.schoolId] } : {})
+    const wide =
+      !withFacts || scope.kind === 'none'
+        ? EMPTY_FACTS()
+        : await this.loadFacts(scope.kind === 'school' ? { schoolIds: [scope.schoolId] } : {}, await this.xsPupils(ctx, scope))
     return { scope, classes, members, wide, byUser: wide.byUser }
   }
 
@@ -242,7 +252,7 @@ export class SchoolPerformanceService {
     const teachers = xsTeacherIds.size
     const students = xsPupils.size
 
-    // Sessions, answered and pooled accuracy come from the shared answer reader (all modes; XS-4, XS-5, XS-8).
+    // Sessions, answered and pooled accuracy come from the shared answer reader (all modes; XS-4, XS-5, XS-8), over the XS-1 pupils only (`loadFacts`).
     let sessions = 0
     let answered = 0
     let correct = 0
@@ -486,6 +496,8 @@ export class SchoolPerformanceService {
       // Perbandingan Kelas: accuracy descending (R1-AS-4); the page shows 25 per page.
       .sort((a, b) => b.accuracy - a.accuracy || b.students - a.students || a.name.localeCompare(b.name) || compareIds(a.classId, b.classId))
 
+    // The pupil lists name XS-1 pupils only: an account outside the counted set has no figures here, so it must not appear as "no answer".
+    const xsStudents = students.filter((id) => xsPupils.has(id))
     let topStudents: PerformanceLevelDetail['topStudents'] = []
     let atRisk: PerformanceLevelDetail['atRisk'] = []
     if (isStaff(ctx.role)) {
@@ -494,7 +506,7 @@ export class SchoolPerformanceService {
       for (const c of [...lc].sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.id, b.id)))
         for (const id of fr.members.byClass.get(c.id) ?? []) if (!classOf.has(id)) classOf.set(id, c.name)
       // Murid Terbaik: at least TOP_STUDENT_MIN_ANSWERS answers, accuracy descending, ties by answers (then id).
-      const best = students
+      const best = xsStudents
         .flatMap((userId) => {
           const t = fr.byUser.get(userId)
           return t && t.answered >= TOP_STUDENT_MIN_ANSWERS ? [{ userId, t, raw: t.correct / t.answered }] : []
@@ -503,10 +515,10 @@ export class SchoolPerformanceService {
         .slice(0, TOP_STUDENT_LIMIT)
       // Murid Berisiko: whole-number accuracy below AT_RISK_BELOW, or no answer in the last ACTIVE_DAYS days; accuracy ascending, pupils with no answer last.
       const activeFrom = startOfDaysAgo(this.clock.now(), ACTIVE_DAYS - 1)
-      const risky = students
+      const risky = xsStudents
         .flatMap((userId) => {
           const t = fr.byUser.get(userId)
-          const accuracy = t && t.answered > 0 ? accuracyOf(t.correct, t.answered) : null
+          const accuracy = t ? xsAccuracy(t.correct, t.answered) : null
           const inactive = !t || t.last === null || t.last < activeFrom
           return (accuracy !== null && Math.round(accuracy) < AT_RISK_BELOW) || inactive ? [{ userId, t, accuracy }] : []
         })

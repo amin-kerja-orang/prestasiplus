@@ -20,6 +20,7 @@ import {
   statusLabel,
   tileName,
   upperWords,
+  LANGUAGE_LABELS,
 } from '../../lib/question-list'
 
 describe("status lookups accept the v2 wire lifecycle and never throw", () => {
@@ -161,6 +162,13 @@ describe('notUpdatedLines', () => {
     expect(lines).toHaveLength(3)
     expect(lines[1]).toContain('#8')
     expect(lines[2]).toContain('#9')
+  })
+})
+
+describe('language labels use the wire tokens ms, en and ms+en', () => {
+  it('keeps the BM copy and has no bm key', () => {
+    expect(LANGUAGE_LABELS).toEqual({ ms: 'Bahasa Melayu', en: 'English', 'ms+en': 'BM + English (dwibahasa)' })
+    expect(LANGUAGE_LABELS.bm).toBeUndefined()
   })
 })
 

@@ -33,6 +33,15 @@ import {
   SpmTrackingASubjectSchema,
 } from './hub'
 import {
+  SpmHistoryMetaSchema,
+  SpmHistoryModSchema,
+  SpmHistoryQuerySchema,
+  SpmHistoryResponseSchema,
+  SpmHistoryRowModeSchema,
+  SpmHistoryRowSchema,
+  SpmMyStatsSchema,
+} from './history'
+import {
   SpmMockAnswerInputSchema,
   SpmMockCreateRequestSchema,
   SpmMockCreatedSchema,
@@ -82,6 +91,12 @@ export const SPM_COMPONENT_SCHEMAS = {
   SpmWalkthroughSubject: SpmWalkthroughSubjectSchema,
   // hub
   SpmOverview: SpmOverviewSchema,
+  SpmMyStats: SpmMyStatsSchema,
+  SpmHistoryMod: SpmHistoryModSchema,
+  SpmHistoryRowMode: SpmHistoryRowModeSchema,
+  SpmHistoryRow: SpmHistoryRowSchema,
+  SpmHistoryMeta: SpmHistoryMetaSchema,
+  SpmHistoryResponse: SpmHistoryResponseSchema,
   SpmDatabankSubject: SpmDatabankSubjectSchema,
   SpmLatihTubiCard: SpmLatihTubiCardSchema,
   SpmLatihTubiList: SpmLatihTubiListSchema,
@@ -165,8 +180,24 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
     tags: ['spm'],
     summary: 'SPM hub (M06-01): totals, module chips and the caller practice stats',
     description:
-      '`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
+      '`me` is the caller\'s "Prestasi SPM Anda" panel: answers from `practice_answers` over the SPM modes (databank, tracking_a, structured, subjektif, simulasi, kuiz, latih_tubi; legacy past_year and ramalan count as databank and tracking_a), sessions = completed practice sessions + closed Bijak sittings, coins from the M14 ledger, `avgAccuracy` a whole number or null with 0 answers. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
     responses: { 200: json(envelopeOf(SpmOverviewSchema), 'Hub figures.'), 401: UNAUTHORIZED },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/spm/history',
+    tags: ['spm'],
+    summary: 'Sejarah Kuiz SPM (API-BIJAK-07): the caller\'s closed SPM sittings, newest first, 15 per page',
+    description:
+      'Merges completed practice sessions and closed Bijak sittings (`exam_attempts`: submitted or auto_submitted; the row mode follows `paper_kind`). Abandoned, in-progress and swept sessions are never listed. Query `mod` (alias `type`): all, databank, latih_tubi, tracking_a; the legacy past_year and ramalan are accepted as aliases of databank and tracking_a, and the chips Tahun Lepas and Tracking A list the legacy rows too. Only `all` lists Bijak, Subjektif, Berstruktur and Kuiz rows. `halaman` is 1-based. `meta.stats` covers all modes, never the chip or the page. Pupil only.',
+    request: { query: SpmHistoryQuerySchema },
+    responses: {
+      200: json(SpmHistoryResponseSchema, 'One page of rows with the pager meta and the all-mode stats.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN (the active role is not a pupil).'),
+      422: err('VALIDATION_ERROR (`mod`/`type` outside the list, or `halaman` not a positive integer).'),
+    },
   })
 
   registry.registerPath({

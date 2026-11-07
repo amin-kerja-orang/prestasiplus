@@ -210,6 +210,24 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T12 | AC-MUR-25-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | StudentPages.test.ts |
 | S5-T11 | AC-MUR-17-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | structured-answer.test.ts |
 | S5-T11 | AC-MUR-26-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | question-set-class.spec.ts |
+| S3-T06 | AC-MUR-13-20 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-papers/surface.spec.ts; subjektif-mock.test.ts; subjektif-pages.test.ts |
+| S3-T06 | AC-MUR-13-21 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-attempts/subjektif.spec.ts; subjektif-mock.test.ts; subjektif-pages.test.ts |
+| S3-T06 | AC-MUR-13-22 | CI | Pass | 2026-11-06 | team-dd/S-5 | semakan.test.ts; subjektif-mock.test.ts |
+| S3-T06 | AC-MUR-13-23 | CI | Pass | 2026-11-06 | team-dd/S-5 | subjektif-pages.test.ts |
+| S3-T06 | AC-PA-10 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-attempts/subjektif.spec.ts |
+| S6-T10 | AC-GUR-8-8 | CI | Pass | 2026-11-06 | team-dd/S-2 | classes.test.ts; pupil-create.unit.spec.ts |
+| S6-T10 | AC-GUR-41-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | inactive-pupils.spec.ts; PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-41-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts; pupil-create.unit.spec.ts; pupil-create.spec.ts |
+| S6-T10 | AC-GUR-41-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-41-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | pupil-create.unit.spec.ts; PelajarSayaPage.test.ts; pupil-create.spec.ts |
+| S6-T10 | AC-GUR-41-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-42-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S6-T10 | AC-GUR-42-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S6-T10 | AC-GUR-42-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts; report-all-modes.spec.ts |
+| S6-T10 | AC-GUR-42-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | report-all-modes.spec.ts; analytics/teacher.spec.ts |
+| S6-T10 | AC-GUR-42-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S3-T07 | AC-PA-32 | CI | Pass | 2026-11-06 | team-dd/S-3 | bijak-papers/generate.spec.ts; bijak-hub-no-jana.test.ts |
+| S3-T07 | AC-MUR-13-29 | CI | Pass | 2026-11-06 | team-dd/S-3 | m06-spm/__tests__/pages/pages.test.ts; spm/hub.spec.ts (six hub entries per FR-MUR-13-1: five cards + Bijak SPM banner, lead ruling) |
 
 ## Sprint 5
 
@@ -229,6 +247,13 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T18 | AC-GUR-44c-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | intake-workflow/diagram-upload.spec.ts |
 | S6-T18 | AC-GUR-44c-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
 | S6-T18 | AC-GUR-44c-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; intake-workflow/diagram-upload.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
+| S6-T17 | AC-GUR-44b-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; questions/guru-structured.spec.ts; StructuredGuruPages.test.ts |
+| S6-T17 | AC-GUR-44b-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; guru-structured-submit.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; structured-guru.test.ts; structured-submit-mock.test.ts; berstruktur/pages.test.ts |
+| S6-T17 | AC-GUR-44b-8 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts; structured-submit-mock.test.ts |
+| S6-T17 | AC-GUR-44b-9 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts |
 
 ## Sprint 6
 
@@ -244,6 +269,13 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T13 | AC-MUR-19-3 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, http.spec.ts, student-pages.test.ts |
 | S5-T13 | AC-MUR-19-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | student-s1-s4b.spec.ts |
 | S5-T13 | AC-MUR-19-5 | CI | Pass | 2026-11-06 | team-dd/S-2 | student.service.spec.ts; http.spec.ts; answer-store-practice-writes.spec.ts |
+| S7-T08 | AC-MUR-32-1 | CI | Pass | 2026-11-06 | team-dd/S-1 | m20-marketplace/__tests__/pages/pages.test.ts |
+| S7-T08 | AC-MUR-32-2 | CI | Pass | 2026-11-06 | team-dd/S-1 | m20-marketplace/__tests__/pages/pages.test.ts |
+| S7-T08 | AC-MUR-32-3 | CI | Pass | 2026-11-06 | team-dd/S-1 | marketplace/product.spec.ts; admin-sellers.spec.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.2 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.3 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.4 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; packages/contract/src/marketplace/__tests__/admin.test.ts |
+| S7-T08 | AC-ADM-P2-13.2 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-sellers.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts |
 
 ## Sprint 8
 

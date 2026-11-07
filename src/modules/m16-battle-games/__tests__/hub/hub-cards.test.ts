@@ -1,5 +1,5 @@
 /**
- * S6 card data (SRS M16 v1.6 FR-M16-52; URS FN-M16-4.1.3..4.1.11; discovery A.3): 18 cards in live order,
+ * S6 card data (SRS M16 v1.6 FR-M16-52; URS FN-M16-4.1.3..4.1.11; discovery A.3): 15 cards in live order (FR-GM-00.1, ruling 14 on #497),
  * exact route per card, badge pairs, chips and the D21 reach rule (every card route is one the M16 SRS §2
  * names).
  */
@@ -24,19 +24,16 @@ const EXPECTED: [string, string, string][] = [
   ['Teka Silang Kata', 'Main!', '/teka-silang-kata'],
   ['Betul atau Salah', 'Mula', '/permainan/betul-salah'],
   ['Roda Nasib', 'Spin Sekarang!', '/permainan/roda-nasib'],
-  ['Pertandingan Mingguan', 'Lihat Ranking', '/permainan/pertandingan'],
   ['Peta Pengembaraan', 'Jelajah', '/peta-belajar'],
-  ['Uji Minda', 'Mula', '/permainan/uji-minda'],
   ['Cabaran Kilat', 'Mula!', '/permainan/cabaran-kilat'],
   ['Jutawan Ilmu', 'Main!', '/permainan/jutawan'],
   ['Susun Jawapan', 'Susun!', '/permainan/susun-jawapan'],
   ['Tembak Jawapan', 'Tembak!', '/permainan/tembak-jawapan'],
-  ['Sambung Kata', 'Mula!', '/permainan/sambung-kata'],
   ['Kad Memori', 'Main!', '/permainan/kad-memori'],
 ]
 
 describe('S6 hub card data', () => {
-  it('has the 18 cards in live order with their button text and route', () => {
+  it('has the 15 cards in live order with their button text and route', () => {
     expect(HUB_CARDS.map((c) => [c.title, c.button, c.to])).toEqual(EXPECTED)
   })
 
@@ -52,14 +49,11 @@ describe('S6 hub card data', () => {
       '👥 MULTIPLAYER',
       '✅❌ BARU!',
       '📅 HARIAN',
-      '📅 MINGGUAN',
       null,
-      '👨‍👩‍👧 IBU BAPA',
       '⚡ BARU!',
       '💰 BARU!',
       '🧩 BARU!',
       '🎯 BARU!',
-      '🔗 BARU!',
       '🧠 HOT!',
     ])
   })
@@ -106,8 +100,8 @@ describe('S6 per-card colours (live screenshots, DV-M16-49)', () => {
     expect(HUB_THEME['tembak-jawapan']?.button).toContain('from-orange-500')
   })
 
-  it('does not fill the open-path icons (HandFist, MapPinned, Trophy)', () => {
-    for (const id of ['perang-fakta', 'peta-pengembaraan', 'pertandingan']) {
+  it('does not fill the open-path icons (HandFist, MapPinned)', () => {
+    for (const id of ['perang-fakta', 'peta-pengembaraan']) {
       expect(HUB_THEME[id]?.solid, id).toBeFalsy()
     }
   })

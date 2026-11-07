@@ -3,6 +3,7 @@
  *
  * Rows are the ACTIVE M10 classes of the school, both kinds (FR-AS-53-1: rows = the "Kelas Aktif" tile, which is the active
  * count of the same call S0 uses, BR-M27-37). Mock `school_class` rows carry no school today (DV-M27-20), so none appear.
+ * No join code (FR-AS-53-5).
  */
 
 import { curriculum } from '@/modules/m03-curriculum/mock'
@@ -26,6 +27,21 @@ const levelOrder = (c: ClassroomRow) => c.levelId
 const byName = (a: ClassroomRow, b: ClassroomRow): number =>
   a.name.localeCompare(b.name, 'ms-MY', { sensitivity: 'base' }) || a.classId - b.classId
 
+/** FR-AS-53-2: XS-1 pupils (active, Tingkatan 1-5) of the viewer's school with an active enrolment in the class. */
+function xsMembers(c: ClassroomRow): number {
+  return classrooms.memberIds(c.kind, c.classId).filter((id) => {
+    const u = users.get(id)
+    return (
+      u !== undefined &&
+      u.schoolId === c.schoolId &&
+      u.isActive &&
+      u.grade !== null &&
+      u.grade >= 7 &&
+      u.grade <= 11
+    )
+  }).length
+}
+
 function rowOf(c: ClassroomRow): SchoolClassRow {
   const subject = c.subjectId === null ? undefined : curriculum.subject(c.subjectId)
   return {
@@ -36,8 +52,7 @@ function rowOf(c: ClassroomRow): SchoolClassRow {
     subject: subject ? { id: subject.id, name: subject.name } : null,
     levelLabel: levelLabelOf(c.educationLevel),
     teacherName: c.teacherId === null ? null : (users.get(c.teacherId)?.name ?? null),
-    members: classrooms.memberCount(c.kind, c.classId),
-    joinCode: c.joinCode === '' ? null : c.joinCode,
+    members: xsMembers(c),
     isActive: c.isActive,
     link: c.kind === 'classroom' ? `/prestasi/kelas/${String(c.classId)}` : null,
   }
@@ -47,6 +62,7 @@ export function listSchoolClasses(
   viewer: SchoolViewer,
   query: { level?: string | undefined; search?: string | undefined; page?: string | undefined },
 ): SchoolClassList {
+  // FR-AS-53-1: the active classes only ("Kelas Aktif" = the rows listed), both kinds.
   const all = classrooms.list({ schoolId: viewer.schoolId, isActive: true })
 
   // Level options = the levels present, in level order (BR-M27-35).

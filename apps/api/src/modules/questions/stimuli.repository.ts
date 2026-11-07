@@ -16,6 +16,8 @@ export interface StimulusData {
   kind: StimulusKind
   label: string | null
   caption: string | null
+  /** English twin of the caption (DM-50). */
+  captionEn: string | null
   bodyMs: string | null
   bodyEn: string | null
   altText: string | null
@@ -869,6 +871,7 @@ export class StimuliRepository {
       kind: d.kind,
       label: d.label,
       caption: d.caption,
+      captionEn: d.captionEn,
       bodyMs: d.bodyMs,
       bodyEn: d.bodyEn,
       altText: d.altText,
@@ -880,7 +883,7 @@ export class StimuliRepository {
   }
 
   private rowOf(
-    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
+    r: { id: bigint; kind: string; label: string | null; caption: string | null; captionEn: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
     groupCount: number,
   ): StimulusRow {
     const parts = stimulusTableParts(r.kind, r.tableData, r.bodyMs)
@@ -889,6 +892,7 @@ export class StimuliRepository {
       kind: r.kind as StimulusKind,
       label: r.label,
       caption: r.caption,
+      captionEn: r.captionEn,
       bodyMs: r.bodyMs,
       bodyEn: r.bodyEn,
       altText: r.altText,

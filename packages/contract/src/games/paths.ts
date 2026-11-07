@@ -266,6 +266,8 @@ const NO_STORE_HEADERS = {
 const noStore = (schema: z.ZodType, description: string) => ({ ...json(schema, description), headers: NO_STORE_HEADERS })
 
 const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
+const PAGES_OFF = 'Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.'
+const PAGE_OFF_404 = 'NOT_FOUND (the route does not exist in R1, FR-GM-00.1).'
 
 const TAGS = ['games']
 
@@ -295,7 +297,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Lobby of a room game (M16-23)',
     description:
-      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
+      'papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first given name with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
     request: { params: GameParam },
     responses: { 200: json(envelopeOf(GamesLobbySchema), 'Lobby.'), 401: UNAUTHORIZED, 404: err(GAME_404) },
   })
@@ -367,7 +369,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Hanya hos boleh memulakan permainan." (caller is not the host)'),
       404: err('NOT_FOUND "Bilik tidak dijumpai." or "Permainan tidak dijumpai.".'),
-      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting), "Pemain belum mencukupi." (below the minimum players) or "Soalan tidak mencukupi." (question pool).'),
+      409: err('CONFLICT "Permainan sudah dimulakan." (not waiting) or "Pemain belum mencukupi." (below the minimum players).'),
+      422: err('VALIDATION_ERROR "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 
@@ -444,7 +447,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the keyless items of the game.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
-      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
+      422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11; or "Soalan tidak mencukupi." (ERR-GAME-01: the pool is smaller than the draw; nothing starts).'),
     },
   })
 
@@ -625,8 +628,9 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/games/pertandingan',
     tags: TAGS,
     summary: 'Weekly competition board (M16-40)',
-    description: '`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children\'s names rule, issue #76).',
-    responses: { 200: json(envelopeOf(GamesWeeklyCompetitionSchema), 'Weekly board.'), 401: UNAUTHORIZED },
+    deprecated: true,
+    description: PAGES_OFF,
+    responses: { 200: json(envelopeOf(GamesWeeklyCompetitionSchema), 'Not served in R1.'), 401: UNAUTHORIZED, 404: err(PAGE_OFF_404) },
   })
 
   registry.registerPath({
@@ -634,8 +638,9 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     path: '/games/uji-minda',
     tags: TAGS,
     summary: 'Uji Minda placeholder (M16-41)',
-    description: 'Constant `{ data: { challenge: null } }`.',
-    responses: { 200: json(envelopeOf(GamesUjiMindaSchema), 'No challenge.'), 401: UNAUTHORIZED },
+    deprecated: true,
+    description: PAGES_OFF,
+    responses: { 200: json(envelopeOf(GamesUjiMindaSchema), 'Not served in R1.'), 401: UNAUTHORIZED, 404: err(PAGE_OFF_404) },
   })
 
   // ---- leagues -----------------------------------------------------------------------------------------------------

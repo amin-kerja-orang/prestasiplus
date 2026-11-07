@@ -19,6 +19,7 @@ import { has, mountAt, pupil, teacher, text } from './helpers'
 const api = vi.hoisted(() => ({
   fetchSchoolPupils: vi.fn(),
   fetchSchoolTeachers: vi.fn(),
+  fetchSchoolClasses: vi.fn(),
   downloadPupilsCsv: vi.fn(),
   downloadTeachersCsv: vi.fn(),
   toggleSchoolTeacherActive: vi.fn(),
@@ -34,7 +35,11 @@ vi.mock('@/lib/save-blob', () => save)
 function list<T>(
   rows: T[],
   over: Record<string, unknown> = {},
-  counts = { total: rows.length, active: rows.length, inactive: 0 },
+  counts: { total: number; active: number; inactive: number; xs?: number; notCounted?: number } = {
+    total: rows.length,
+    active: rows.length,
+    inactive: 0,
+  },
 ) {
   return {
     data: rows,
@@ -48,6 +53,16 @@ function list<T>(
       counts,
       ...over,
     },
+  }
+}
+
+/** One page of `fetchSchoolClasses` (the "Kelas" select options). */
+function classPage(rows: { id: number; name: string; levelLabel: string }[]) {
+  return {
+    data: rows,
+    meta: { page: 1, pageSize: 25, totalItems: rows.length, totalPages: 1, from: 1, to: rows.length, displayed: rows.length },
+    tiles: { activeClasses: rows.length },
+    levels: [],
   }
 }
 
@@ -110,6 +125,7 @@ beforeEach(() => {
   vi.restoreAllMocks()
   for (const fn of Object.values(api)) fn.mockReset()
   save.saveBlob.mockReset()
+  api.fetchSchoolClasses.mockResolvedValue(classPage([]))
   setRouteOutcome(null)
   usePageMeta().reset()
 })
@@ -124,6 +140,16 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     const back = w.get('[data-testid="user-crumb-back"]')
     expect(back.text()).toBe('Dashboard Sekolah')
     expect(back.attributes('href')).toBe('/admin-sekolah')
+  })
+
+  it('the count is XS-1 and "{m} menunggu kelulusan atau tidak aktif" shows beside it only when m > 0 (FR-AS-51-2)', async () => {
+    const counts = { total: 20, active: 18, inactive: 2, xs: 17, notCounted: 3 }
+    const { wrapper: w } = await mountPupils(list([pupil()], {}, counts))
+    expect(text(w, 'user-count-card')).toContain('17')
+    expect(text(w, 'user-count-card')).not.toContain('20')
+    expect(text(w, 'user-not-counted')).toBe('3 menunggu kelulusan atau tidak aktif')
+    const none = await mountPupils(list([pupil()], {}, { total: 17, active: 17, inactive: 0, xs: 17, notCounted: 0 }))
+    expect(has(none.wrapper, 'user-not-counted')).toBe(false)
   })
 
   it('shows one count card "Pelajar" (unfiltered total) and "{n} pengguna dijumpai"', async () => {
@@ -335,7 +361,7 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     expect(w.find('[data-ds="data-table-pager"]').exists()).toBe(false)
   })
 
-  it('has the filter form: Status options, Cari with its placeholder, submit "Cari"; no role / school / class control', async () => {
+  it('has the filter form: Status options, Cari with its placeholder, submit "Cari"; Tingkatan and Kelas selects; no role / school control', async () => {
     const { wrapper: w } = await mountPupils()
     const select = w.get('[data-testid="user-status-filter"]')
     expect(select.findAll('option').map((o) => [o.attributes('value'), o.text()])).toEqual([
@@ -345,7 +371,103 @@ describe('S6 Senarai Pelajar (FR-M27-88 to 93)', () => {
     ])
     expect(w.get('[data-testid="user-search"]').attributes('placeholder')).toBe('Nama atau emel...')
     expect(w.get('[data-ds="filter-bar"] button[type="submit"]').text()).toBe('Cari')
-    expect(w.get('[data-testid="user-filter"]').findAll('select')).toHaveLength(1)
+    expect(w.get('[data-testid="user-filter"]').findAll('select')).toHaveLength(3)
+    expect(w.get('[data-testid="user-filter"]').text()).not.toContain('Peranan')
+  })
+
+  it('Tingkatan lists "Semua Tingkatan" and Tingkatan 1 to 5; Kelas starts with "Semua Kelas" (FR-AS-51-1)', async () => {
+    api.fetchSchoolClasses.mockResolvedValue(
+      classPage([
+        { id: 12, name: '5 Bestari', levelLabel: 'Tingkatan 5' },
+        { id: 11, name: '4 Cekap', levelLabel: 'Tingkatan 4' },
+        { id: 10, name: '4 Amanah', levelLabel: 'Tingkatan 4' },
+      ]),
+    )
+    const { wrapper: w } = await mountPupils()
+    expect(
+      w.get('[data-testid="user-level-filter"]').findAll('option').map((o) => [o.attributes('value'), o.text()]),
+    ).toEqual([
+      ['', 'Semua Tingkatan'],
+      ['T1', 'Tingkatan 1'],
+      ['T2', 'Tingkatan 2'],
+      ['T3', 'Tingkatan 3'],
+      ['T4', 'Tingkatan 4'],
+      ['T5', 'Tingkatan 5'],
+    ])
+    // Tingkatan then name.
+    expect(
+      w.get('[data-testid="user-class-filter"]').findAll('option').map((o) => [o.attributes('value'), o.text()]),
+    ).toEqual([
+      ['', 'Semua Kelas'],
+      ['10', '4 Amanah'],
+      ['11', '4 Cekap'],
+      ['12', '5 Bestari'],
+    ])
+    expect(w.get('[data-testid="user-filter"]').text()).toContain('Tingkatan')
+  })
+
+  it('choosing a Tingkatan limits the Kelas options to it and drops a class of another Tingkatan', async () => {
+    api.fetchSchoolClasses.mockImplementation((o: { level?: string | null }) =>
+      Promise.resolve(
+        classPage(
+        [
+          { id: 12, name: '5 Bestari', levelLabel: 'Tingkatan 5' },
+          { id: 10, name: '4 Amanah', levelLabel: 'Tingkatan 4' },
+        ].filter((c) => !o.level || o.level === `tingkatan-${c.levelLabel.slice(-1)}`),
+        ),
+      ),
+    )
+    const { wrapper: w } = await mountPupils(undefined, '/admin-sekolah/pelajar?classroomId=12')
+    expect((w.get('[data-testid="user-class-filter"]').element as HTMLSelectElement).value).toBe('12')
+    await w.get('[data-testid="user-level-filter"]').setValue('T4')
+    await flushPromises()
+    expect(api.fetchSchoolClasses).toHaveBeenLastCalledWith(expect.objectContaining({ level: 'tingkatan-4' }))
+    expect(w.get('[data-testid="user-class-filter"]').findAll('option').map((o) => o.text())).toEqual([
+      'Semua Kelas',
+      '4 Amanah',
+    ])
+    expect((w.get('[data-testid="user-class-filter"]').element as HTMLSelectElement).value).toBe('')
+  })
+
+  it('reads level and classroomId from the URL, sends them to the endpoint and writes them back on submit (AC-AS-53-2)', async () => {
+    api.fetchSchoolClasses.mockResolvedValue(classPage([{ id: 10, name: '4 Amanah', levelLabel: 'Tingkatan 4' }]))
+    const { wrapper: w, router } = await mountPupils(undefined, '/admin-sekolah/pelajar?classroomId=10&level=T4&page=2')
+    expect((w.get('[data-testid="user-level-filter"]').element as HTMLSelectElement).value).toBe('T4')
+    expect((w.get('[data-testid="user-class-filter"]').element as HTMLSelectElement).value).toBe('10')
+    expect(api.fetchSchoolPupils).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'T4', classroomId: '10', page: 2 }),
+    )
+    await w.get('[data-testid="user-filter"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ level: 'T4', classroomId: '10' })
+  })
+
+  it('the pre-filter link /admin-sekolah/pelajar?classroomId={id} filters the list by that class alone', async () => {
+    api.fetchSchoolClasses.mockResolvedValue(classPage([{ id: 10, name: '4 Amanah', levelLabel: 'Tingkatan 4' }]))
+    const { wrapper: w } = await mountPupils(undefined, '/admin-sekolah/pelajar?classroomId=10')
+    expect(api.fetchSchoolPupils).toHaveBeenCalledWith(expect.objectContaining({ level: null, classroomId: '10' }))
+    expect((w.get('[data-testid="user-class-filter"]').element as HTMLSelectElement).value).toBe('10')
+  })
+
+  it('an invalid level or class in the URL is ignored', async () => {
+    await mountPupils(undefined, '/admin-sekolah/pelajar?level=T9&classroomId=abc')
+    expect(api.fetchSchoolPupils).toHaveBeenCalledWith(expect.objectContaining({ level: null, classroomId: null }))
+  })
+
+  it('"Eksport CSV" sends the Tingkatan and Kelas as they stand (FR-AS-51-5)', async () => {
+    api.downloadPupilsCsv.mockResolvedValue({ blob: new Blob(['x']), filename: 'x.csv' })
+    api.fetchSchoolClasses.mockResolvedValue(classPage([{ id: 10, name: '4 Amanah', levelLabel: 'Tingkatan 4' }]))
+    const { wrapper: w } = await mountPupils(undefined, '/admin-sekolah/pelajar?classroomId=10&level=T4')
+    await w.get('[data-testid="user-export"]').trigger('click')
+    await flushPromises()
+    expect(api.downloadPupilsCsv).toHaveBeenCalledWith({ isActive: null, search: null, level: 'T4', classroomId: '10' })
+  })
+
+  it('the teacher list has no Tingkatan or Kelas select and does not load classes', async () => {
+    const { wrapper: w } = await mountTeachers()
+    expect(w.find('[data-testid="user-level-filter"]').exists()).toBe(false)
+    expect(w.find('[data-testid="user-class-filter"]').exists()).toBe(false)
+    expect(api.fetchSchoolClasses).not.toHaveBeenCalled()
   })
 
   it('initialises the controls from the URL and sends the applied filters to the endpoint', async () => {

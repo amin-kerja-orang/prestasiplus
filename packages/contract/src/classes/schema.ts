@@ -31,6 +31,17 @@ export const CLASS_MESSAGES = {
   chapterParent: 'Subjek atau tahap tidak sah.',
   topicName: 'Nama topik diperlukan.',
   topicParent: 'Bab tidak sah.',
+  /** S6-T14 (R1-GUR-8, API-GUR-02/03): the R1 class form. The older keys above stay for current clients. */
+  nameRequired: 'Sila isi nama kelas.',
+  nameTooLong: 'Nama kelas tidak boleh melebihi 100 aksara.',
+  educationLevelRequired: 'Sila pilih tingkatan.',
+  yearRange: 'Tahun sesi mesti antara 2020 dan 2100.',
+  nameTaken: 'Nama kelas sudah digunakan.',
+  created: 'Kelas dicipta.',
+  updated: 'Kelas dikemaskini.',
+  noSchool: 'Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir.',
+  noMembers: 'Belum ada pelajar dalam kelas ini.',
+  noStudentFound: 'Tiada pelajar dijumpai.',
 } as const
 
 /** R1-GUR-41 / R1-GUR-8 / API-GUR-05, API-GUR-06 BM copy (S6-T10). */
@@ -111,6 +122,7 @@ export const TeacherClassSchema = z
     levelId: IdSchema,
     levelLabel: z.string().min(1).meta({ description: '"Tahun n" or "Ting. n".' }),
     academicYear: z.number().int(),
+    year: z.number().int().optional().meta({ description: 'S6-T14: Tahun Sesi, the same value as academicYear (additive alias).' }),
     description: z.string().nullable(),
     joinCode: z.string().min(1),
     isActive: z.boolean(),
@@ -128,11 +140,32 @@ export const ClassCreateRequestSchema = z
     educationLevel: ClassEducationLevelSlugSchema,
     schoolId: z.string({ error: CLASS_MESSAGES.school }).nullish().meta({ description: 'Optional; when absent, null or empty the class takes the own school of the caller (none if the caller has none). Only that school is accepted; any other or unknown school gives fields.schoolId.' }),
     description: z.string({ error: CLASS_MESSAGES.invalid }).trim().max(2000, CLASS_MESSAGES.invalid).nullish(),
+    year: z.number({ error: CLASS_MESSAGES.yearRange }).int(CLASS_MESSAGES.yearRange).min(2020, CLASS_MESSAGES.yearRange).max(2100, CLASS_MESSAGES.yearRange).optional().meta({ description: 'S6-T14: Tahun Sesi; absent = current calendar year (MYT).' }),
   })
-  .meta({ id: 'ClassCreateRequest' })
+  .meta({ id: 'ClassCreateRequest', description: 'Legacy create body (name max 255, subjectId required). R1 clients and the R1 handlers use ClassUpsertRequest.' })
 export type ClassCreateRequest = z.infer<typeof ClassCreateRequestSchema>
 
-/** Bare body of `GET /guru/classes/:id/qr-data`. The `joinUrl` host comes from configuration. */
+/**
+ * R1 class form (S6-T14, R1-GUR-8): body of `POST /guru/classes` and `PUT /guru/classes/{id}`.
+ * Separate from ClassCreateRequest because name max 100 and an optional subject are validation
+ * changes. Uniqueness (409 "Nama kelas sudah digunakan.") is checked by the server per teacher and year.
+ */
+export const ClassUpsertRequestSchema = z
+  .object({
+    name: text(CLASS_MESSAGES.nameRequired, 100, CLASS_MESSAGES.nameTooLong),
+    educationLevel: z.enum(CLASS_EDUCATION_LEVELS, { error: CLASS_MESSAGES.educationLevelRequired }),
+    subjectId: z.string({ error: CLASS_MESSAGES.subject }).nullish().meta({ description: 'Optional ("Subjek (pilihan)"); null or empty = no subject.' }),
+    year: z.number({ error: CLASS_MESSAGES.yearRange }).int(CLASS_MESSAGES.yearRange).min(2020, CLASS_MESSAGES.yearRange).max(2100, CLASS_MESSAGES.yearRange).optional().meta({ description: 'Tahun Sesi; absent = current calendar year (MYT).' }),
+    schoolId: ClassCreateRequestSchema.shape.schoolId,
+    description: ClassCreateRequestSchema.shape.description,
+  })
+  .meta({ id: 'ClassUpsertRequest' })
+export type ClassUpsertRequest = z.infer<typeof ClassUpsertRequestSchema>
+/** `PUT /guru/classes/{id}`: the same body as create. */
+export const ClassUpdateRequestSchema = ClassUpsertRequestSchema
+export type ClassUpdateRequest = ClassUpsertRequest
+
+/** Bare body of `GET /guru/classes/:id/qr-data`. DEPRECATED in R1 (join code and QR dropped, answers 404). The `joinUrl` host comes from configuration. */
 export const ClassQrDataSchema = z
   .object({ name: z.string().min(1), school: z.string().nullable(), joinUrl: z.url() })
   .meta({ id: 'ClassQrData' })
@@ -160,17 +193,16 @@ export const TeacherStudentSchema = z
     classes: z
       .array(z.object({ id: IdSchema, name: z.string() }))
       .meta({ description: "The viewer's own active classes of this pupil, in the same order as classNames (which stays for compatibility)." }),
-    username: z.string().nullable().optional().meta({ description: 'Login name, shown beneath the name. Absent until the roster API fills it (S6-T10 pelajar).' }),
-    tugasan: z.number().int().min(0).optional().meta({ description: 'Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6).' }),
+    username: z.string().nullable().meta({ description: 'Login name, shown beneath the name.' }),
+    tugasan: z.number().int().min(0).meta({ description: 'Completed Set Soalan / Misi sessions assigned to the own class (FR-GUR-41-6).' }),
     skorPurata: z
       .number()
       .int()
       .min(0)
       .max(100)
       .nullable()
-      .optional()
       .meta({ description: 'Mean of per-session accuracy, whole number percent; null without completed sessions.' }),
-    lastActiveAt: TimestampSchema.nullable().optional().meta({ description: 'Latest answer time; null when none.' }),
+    lastActiveAt: TimestampSchema.nullable().meta({ description: 'Latest answer time; null when none.' }),
   })
   .meta({ id: 'TeacherStudent' })
 
@@ -179,9 +211,9 @@ export const TeacherStudentsMetaSchema = z
   .object({
     count: z.number().int().min(0).meta({ description: 'Matches before the 200-row cap of the school tab.' }),
     schoolSet: z.boolean().meta({ description: 'Whether the teacher profile has a school (BR-M10-30).' }),
-    page: z.number().int().min(1).optional().meta({ description: 'Current page (25 per page). Absent until the roster API pages (S6-T10 pelajar).' }),
-    pageSize: z.number().int().min(1).optional(),
-    totalPages: z.number().int().min(1).optional(),
+    page: z.number().int().min(1).meta({ description: 'Current page (25 per page).' }),
+    pageSize: z.number().int().min(1),
+    totalPages: z.number().int().min(1),
   })
   .meta({ id: 'TeacherStudentsMeta' })
 
