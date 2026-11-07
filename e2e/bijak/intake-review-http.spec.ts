@@ -2,7 +2,7 @@
  * Http twin of the intake review flow (AZ-20): Admin Pusat uploads a generated text-layer PDF, asks
  * the server to extract it (AI_PROVIDER=mock, job worker on), edits and confirms the extracted
  * questions, reviews them in the queue, accepts one (creates a Draf question) and finds it in the
- * Bijak bank. Runs against the real API (BE-37 files, BE-38 items, BE-09 questions).
+ * Studio list. Runs against the real API (BE-37 files, BE-38 items, BE-09 questions).
  *
  * WRITES REAL DATA (a batch, items and one Draf question per run). Every run and every viewport
  * project builds its own PDF (the backend refuses a file hash that another batch already imported)
@@ -128,23 +128,8 @@ async function realSpCode(page: Page, subjectName: string, unitKey: string): Pro
   return code ?? ''
 }
 
-/** Sets the bank filter: the inline form from 768 px, the filter sheet below it. */
-async function filterBank(page: Page, status: string, search: string): Promise<void> {
-  await page.getByTestId('bank-search').fill(search)
-  const open = page.locator('[data-ds=filter-open]')
-  if (await open.isVisible()) {
-    await open.click()
-    await page.getByTestId('bank-status').selectOption(status)
-    // "Guna" (apply): the sheet's first button is the subject select, so match the label.
-    await page.locator('[data-ds=filter-sheet] button').filter({ hasText: /^Guna/ }).first().click()
-  } else {
-    await page.getByTestId('bank-status').selectOption(status)
-    await page.getByTestId('bank-search').press('Enter')
-  }
-}
-
 test.describe('Intake review over HTTP @bijak @api', () => {
-  test('upload, extract, edit, review, accept and find the Draf question in the bank @bijak @api', async ({
+  test('upload, extract, edit, review, accept and find the Draf question in the Studio list @bijak @api', async ({
     page,
   }, testInfo) => {
     test.setTimeout(240_000)
@@ -243,16 +228,18 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.getByTestId('action-publish').click() // "Terima (Draf)"
       await page.waitForURL(/\/admin\/studio\?status=review$/)
 
-      /* ---- the Draf question is in the Bijak bank */
+      /* ---- the old bank list now lands on the Databank lane (S2-T03) */
       await page.goto('/admin/spm/soalan')
-      await expect(page.getByTestId('bank-page')).toBeVisible()
-      await filterBank(page, 'draf', token)
-      const row = page.getByTestId('bank-table').getByText(token).first()
+      await page.waitForURL(/\/admin\/spm\/databank$/)
+      await expect(page.getByTestId('lane-databank')).toBeVisible()
+      await expectNoHorizontalScrollHttp(page)
+
+      /* ---- the Draf question is in the canonical list, the Studio (FR-ADM-Q03.6) */
+      await page.goto(`/admin/studio?status=draft&search=${token}`)
+      await expect(page.getByTestId('studio-list-page')).toBeVisible()
+      const row = page.getByTestId('studio-table').getByText(token).first() // a row (a card below 768 px)
       await expect(row).toBeVisible({ timeout: 30_000 })
       await expectNoHorizontalScrollHttp(page)
-      await row.click() // a row (a card below 768 px) opens the preview drawer
-      await expect(page.getByTestId('bank-drawer')).toBeVisible()
-      await expect(page.getByTestId('bank-drawer')).toContainText('Draf')
 
       // The batch shows only the question that is still to decide.
       await page.goto(`/admin/spm/soalan/ekstrak/${batchId}`)
@@ -276,7 +263,7 @@ test.describe('Intake review over HTTP @bijak @api', () => {
     await login(page)
     for (const [route, testId] of [
       ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
-      ['/admin/spm/soalan', 'bank-page'],
+      ['/admin/spm/soalan', 'lane-databank'], // the list redirects to the Databank lane (S2-T03)
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const) {
       await page.goto(route)
