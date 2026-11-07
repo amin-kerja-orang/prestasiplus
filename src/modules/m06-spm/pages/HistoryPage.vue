@@ -1,36 +1,41 @@
 <script setup lang="ts">
 /**
- * S10 `/spm/history` "Sejarah Kuiz SPM" (M06-T2; FR-M06-62…66, BR-M06-20), restyled for v2. Rows are
- * the caller's completed SPM sessions from M05 #23 (`modes=past_year,databank,latih_tubi,ramalan&type=`); the
- * four stats are all-type (filter-independent). An unknown `type` shows every row with no filter
- * active. Rows are not links.
+ * `/spm/history` "Sejarah Kuiz SPM" (M06-T2; S3-T07 part F). Rows are the caller's closed SPM sittings from
+ * `GET /api/spm/history?mod=&halaman=` (API-BIJAK-07), 15 per page, newest first; the four stats are all-mode
+ * (chip- and page-independent). The chip is `?mod=` (the old `?type=` is still read); an unknown value sends no
+ * filter and leaves no pill active. Rows are not links.
  */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsBackLink, DsEmptyState, DsPage, DsPillNav, DsStatTile, type DsAccent, type PillItem, DsLoadError } from '@/ds'
-import { formatCount, formatNumber } from '@/lib/number'
-import { formatDateTimeEn12, formatMinSec } from '@/lib/time'
-import { fetchSessions } from '@/modules/m05-practice'
+import { DsBackLink, DsCluster, DsEmptyState, DsPage, DsPillNav, DsStatTile, DsText, type DsAccent, type PillItem, DsLoadError } from '@/ds'
+import { formatCount } from '@/lib/number'
 
+import { fetchSpmHistory } from '../api'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import {
   HISTORY_FILTERS,
-  SPM_MODES,
-  TYPE_BADGES,
-  isSpmMode,
-  parseHistoryType,
+  MODE_BADGES,
+  formatAccuracy,
+  formatHistoryDate,
+  formatHistoryDuration,
+  historyHref,
+  pagerText,
+  parseHistoryMod,
+  parseHistoryPage,
   scoreColor,
 } from '../lib/history'
 import { LOAD_ERROR } from '../lib/copy'
 
 const route = useRoute()
-const type = computed(() => parseHistoryType(route.query.type))
+/** `null` = Semua; `undefined` = an unknown value (no filter). */
+const mod = computed(() => parseHistoryMod(route.query))
+const page = computed(() => parseHistoryPage(route.query.halaman))
 
 const { data, error, reload } = useApi(
-  (signal) => fetchSessions({ modes: SPM_MODES, type: type.value }, { signal }),
-  type,
+  (signal) => fetchSpmHistory({ mod: mod.value ?? null, halaman: page.value }, { signal }),
+  [mod, page],
 )
 
 const stats = computed<{ id: string; value: string; label: string; icon: string; accent: DsAccent }[]>(
@@ -47,7 +52,7 @@ const stats = computed<{ id: string; value: string; label: string; icon: string;
       },
       {
         id: 'accuracy',
-        value: `${formatNumber(s.avgAccuracyPct, { decimals: 1 })}%`,
+        value: formatAccuracy(s.avgAccuracy),
         label: 'Purata Ketepatan',
         icon: 'i-ph-crosshair-duotone',
         accent: 'win',
@@ -70,19 +75,20 @@ const stats = computed<{ id: string; value: string; label: string; icon: string;
   },
 )
 
-const rows = computed(() => (data.value?.data ?? []).filter((r) => isSpmMode(r.mode)))
-
-const filterHref = (t: string | null) => (t === null ? '/spm/history' : `/spm/history?type=${t}`)
+const rows = computed(() => data.value?.data ?? [])
+const pageCount = computed(() => data.value?.meta.pageCount ?? 1)
+const currentPage = computed(() => data.value?.meta.page ?? page.value)
+const chip = computed(() => mod.value ?? null)
 
 const pills: PillItem<string>[] = HISTORY_FILTERS.map((f) => ({
-  key: f.type ?? 'all',
+  key: f.mod ?? 'all',
   label: f.label,
   icon: f.icon,
-  to: filterHref(f.type),
+  to: historyHref(f.mod),
 }))
-/** "Semua" is active only without a `type` parameter; an unknown value leaves no filter active. */
+/** "Semua" is active only without a chip value; an unknown value leaves no filter active. */
 const activeFilter = computed<string | null>(() =>
-  type.value !== null ? type.value : route.query.type === undefined ? 'all' : null,
+  mod.value === undefined ? null : (mod.value ?? 'all'),
 )
 </script>
 
@@ -131,24 +137,24 @@ const activeFilter = computed<string | null>(() =>
                 >{{ r.percent }}%</UBadge
               >
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <div v-if="isSpmMode(r.mode)">
+                <div>
                   <UBadge
-                    :color="TYPE_BADGES[r.mode].color"
+                    :color="MODE_BADGES[r.mode].color"
                     variant="soft"
                     data-testid="row-badge"
-                    >{{ TYPE_BADGES[r.mode].label }}</UBadge
+                    >{{ MODE_BADGES[r.mode].label }}</UBadge
                   >
                 </div>
+                <DsText variant="caption" data-testid="row-subject">{{ r.subject.name }}</DsText>
                 <p class="text-label text-highlighted" data-testid="row-correct">
-                  {{ `${r.correctCount}/${r.questionCount} betul` }}
+                  {{ `${r.correct}/${r.total} betul` }}
                 </p>
                 <p class="text-caption text-muted" data-testid="row-meta">
-                  {{ r.completedAt ? formatDateTimeEn12(r.completedAt) : '' }} ·
-                  {{ formatMinSec(r.timeSpent) }}
+                  {{ formatHistoryDate(r.completedAt) }} · {{ formatHistoryDuration(r.durationSeconds) }}
                 </p>
               </div>
               <div class="tabular shrink-0 text-label text-highlighted" data-testid="row-coins">
-                +{{ r.coinsEarned }} 🪙
+                +{{ r.coins }} 🪙
               </div>
             </div>
           </UCard>
@@ -156,13 +162,13 @@ const activeFilter = computed<string | null>(() =>
       </ul>
       <UCard v-else data-testid="history-empty">
         <DsEmptyState
-          title="Belum Ada Sejarah"
-          description="Mulakan kuiz SPM untuk melihat sejarah prestasi anda di sini."
+          title="Belum ada percubaan SPM"
+          description="Mula kuiz SPM untuk membina sejarah percubaan anda!"
           icon="i-ph-notepad"
         >
           <template #actions>
             <UButton
-              to="/spm"
+              to="/spm/tahun-lepas"
               size="lg"
               class="min-h-11"
               icon="i-ph-play-circle-bold"
@@ -172,6 +178,36 @@ const activeFilter = computed<string | null>(() =>
           </template>
         </DsEmptyState>
       </UCard>
+      <DsCluster
+        v-if="rows.length > 0 || currentPage > 1"
+        as="nav"
+        aria-label="Halaman"
+        gap="sm"
+        justify="center"
+        data-testid="history-pager"
+      >
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="xl"
+          label="Sebelum"
+          :disabled="currentPage <= 1"
+          :to="historyHref(chip, currentPage - 1)"
+          data-testid="history-prev"
+        />
+        <DsText variant="label" tone="highlighted" data-testid="history-page-text">
+          {{ pagerText(currentPage, pageCount) }}
+        </DsText>
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="xl"
+          label="Seterusnya"
+          :disabled="currentPage >= pageCount"
+          :to="historyHref(chip, currentPage + 1)"
+          data-testid="history-next"
+        />
+      </DsCluster>
     </template>
     <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else :count="3" />

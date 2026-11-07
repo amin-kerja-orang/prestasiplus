@@ -4,6 +4,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import type { TxClient } from '../../../db/client'
 import { PrismaService } from '../../../db/prisma.service'
 import { GamificationService } from '../../gamification'
+import { coinsPerCorrect } from '../../practice/coins'
 import {
   practiceRewardSource,
   type PracticeRewardPort,
@@ -15,7 +16,7 @@ import {
 } from '../../practice/ports'
 import { StreakService, WalletService } from '../../wallet'
 import { BijakAttemptsService } from '../attempts'
-import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput } from '../attempts/ports'
+import type { BijakRewardInput, BijakRewardPort, BijakSelfMarkRewardInput, BijakStructuredRewardInput } from '../attempts/ports'
 import { ACHIEVEMENT_PRACTICE_MODES } from './practice-facts'
 
 /**
@@ -128,6 +129,45 @@ export class WalletBijakReward implements BijakRewardPort {
       if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: false }, { tx })
     })
   }
+
+  /**
+   * S5-T11 (A9, 46 sections 3.4 item 9 and 3.6): the reward of a Soalan Berstruktur attempt, at submit and on every self-mark that changed a part.
+   * `reached` is the highest total (marks) already paid to this pupil for this QUESTION: the biggest `<attemptId>:score:<level>` ledger key
+   * (`quiz_spm`) over the pupil's earlier structured attempts of the question and this one (derived from the ledger, no new column, so a
+   * later change of the coin rate never shifts the level). Only `score - reached` marks are paid, at `coinsPerCorrect()` syiling and 10 XP per
+   * mark; a total at or below `reached` pays nothing and takes nothing back, and a replay of the same level is a no-op (the key). An advisory
+   * lock per pupil and question serialises two attempts racing for the same gain. Mod Pelajar: nothing. A gain too small for one syiling
+   * (rate 0, a half mark at rate 1) writes nothing, so `reached` does not move.
+   */
+  async awardStructured(input: BijakStructuredRewardInput): Promise<void> {
+    if (input.isTest) return
+    const level = Math.min(input.score, input.max)
+    await this.prisma.transaction(async (tx) => {
+      if (input.touchStreak) {
+        const closed = input.submittedAt instanceof Date && !Number.isNaN(input.submittedAt.getTime()) && input.submittedAt.getTime() <= this.clock.now().getTime() ? input.submittedAt : undefined
+        await this.streaks.touch(input.userId, { ...(closed ? { at: closed } : {}), tx })
+      }
+      if (!(level > 0)) return
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`bijak-structured:${input.userId}:${input.questionId}`}, 0))`
+      const found = await tx.$queryRaw<{ reached: number | null }[]>`
+        SELECT max(split_part(l.source_id, ':score:', 2)::numeric)::float8 AS reached
+          FROM coin_ledger l
+          JOIN exam_attempts a ON l.source_id LIKE a.id::text || ':score:%'
+         WHERE l.user_id = ${BigInt(input.userId)} AND l.source = ${BIJAK_REWARD_SOURCE}
+           AND a.user_id = ${BigInt(input.userId)} AND a.paper_kind = 'structured' AND NOT a.is_test
+           AND a.composition @> ${JSON.stringify([{ questionIds: [input.questionId] }])}::jsonb`
+      const gain = level - (found[0]?.reached ?? 0)
+      if (!(gain > 0)) return
+      const coins = wholeCount(gain * (await coinsPerCorrect(tx)))
+      if (!(coins >= 1)) return
+      const credited = await this.wallet.credit(
+        { userId: input.userId, amount: coins, isTest: false, source: BIJAK_REWARD_SOURCE, sourceId: `${input.attemptId}:score:${String(level)}`, description: input.description },
+        { tx },
+      )
+      const xp = wholeCount(gain * XP_PER_MARK)
+      if (!credited.replayed && xp > 0) await this.wallet.addXp({ userId: input.userId, amount: xp, isTest: false }, { tx })
+    })
+  }
 }
 
 /**
@@ -221,6 +261,6 @@ export class BijakStructuredAttempts implements PracticeStructuredAttemptPort {
   constructor(@Inject(BijakAttemptsService) private readonly attempts: BijakAttemptsService) {}
 
   submit(input: PracticeStructuredAttemptInput): Promise<PracticeStructuredAttemptOutput> {
-    return this.attempts.submitStructured({ userId: input.userId, isTest: input.isTest }, input)
+    return this.attempts.submitStructured({ userId: input.userId, isTest: input.isTest }, input, input.audit?.auth ?? null, input.audit ? { ip: input.audit.ip, requestId: input.audit.requestId } : null)
   }
 }

@@ -107,6 +107,9 @@ describe('question quality routes (BE-10 AC 7)', () => {
     expect(s.excellentCount).toBe(2)
     expect(s.buckets).toEqual({ baik: 1, lemahKritikal: 2, legacyGeneric: 1 })
     expect(s.activeActionCount).toBe(2)
+    // Q-21: the V2 defect (a review figure larger than the total) cannot happen: every figure counts rows of the one walk.
+    expect(s.activeActionCount).toBeLessThanOrEqual(s.total)
+    expect(s.buckets.baik + s.buckets.lemahKritikal + s.excellentCount).toBeLessThanOrEqual(s.total)
     expect(s.distribution).toEqual({ cemerlang: 33.3, baik: 16.7, lemah: 50, kritikal: 0 })
     expect(s.actionList.map((r) => [r.id, r.qualityScore])).toEqual([['106', 40], ['104', 50]])
     expect(s.actionList[1]).toMatchObject({ questionText: 'kecil', sourceSet: 'Set A', subject: { id: subjectIds[0] } })

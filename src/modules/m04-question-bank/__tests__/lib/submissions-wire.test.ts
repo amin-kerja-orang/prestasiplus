@@ -4,6 +4,7 @@ const h = vi.hoisted(() => ({ list: vi.fn(), get: vi.fn(), blob: vi.fn() }))
 vi.mock('@/api', () => ({ api: { list: h.list, get: h.get, blob: h.blob } }))
 
 import {
+  clearBatchFilesCache,
   downloadSubmissionFile,
   fetchBatchFiles,
   fetchSubmissionCounts,
@@ -15,6 +16,7 @@ beforeEach(() => {
   h.list.mockReset().mockResolvedValue({ data: [], meta: { totalItems: 0 } })
   h.get.mockReset()
   h.blob.mockReset()
+  clearBatchFilesCache()
 })
 
 describe('Kiriman Guru reads the intake items route (FR-ADM-Q12.1, FR-ADM-Q12.5)', () => {
@@ -61,6 +63,18 @@ describe('Kiriman Guru reads the intake items route (FR-ADM-Q12.1, FR-ADM-Q12.5)
     expect(h.get).toHaveBeenCalledTimes(2)
     expect(files.get('1')).toEqual([file])
     expect(files.has('2')).toBe(false)
+  })
+
+  it('reads a batch once: rows of one batch share a request and paging back does not refetch', async () => {
+    const file = { id: 'f1' }
+    h.get.mockResolvedValue({ files: [file] })
+    await fetchBatchFiles(['1', '1'])
+    expect(h.get).toHaveBeenCalledTimes(1)
+    await fetchBatchFiles(['2'])
+    const back = await fetchBatchFiles(['1', '2'])
+    expect(h.get).toHaveBeenCalledTimes(2)
+    expect(back.get('1')).toEqual([file])
+    expect(back.get('2')).toEqual([file])
   })
 
   it('downloads the original of a file', async () => {
