@@ -113,6 +113,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T01 | AC-GUR-43-8 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanMingguanGuruPage.test.ts |
 | S6-T01 | AC-GUR-43-10 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts |
 | S6-T01 | AC-GUR-43-11 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts; contract guru-weekly-report.test.ts |
+| S3-T01 | AC-ADM-Q16.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | blueprint-standards-api.spec.ts; kontrak-disahkan.test.ts |
+| S3-T01 | AC-ADM-R8 | CI | Pass | 2026-11-06 | team-cc/S-1 | kontrak.spec.ts |
 
 ## Sprint 2
 
@@ -170,6 +172,11 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T08 | AC-AS-10-4 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts |
 | S6-T08 | AC-AS-10-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts |
 | S6-T08 | AC-ADM-M03.1 | CI | Pass | 2026-11-06 | team-dd/S-2 | admin-nav.test.ts; admin-shell.test.ts |
+| S3-T02 | AC-QA-41 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
+| S3-T02 | AC-ADM-Q13.1 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder-landing.test.ts |
+| S3-T02 | AC-ADM-Q14.3 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
+| S3-T02 | AC-ADM-Q15.1 | CI | Pass | 2026-11-06 | team-cc/S-1 | builder-page.test.ts; semak-kertas.test.ts |
+| S3-T02 | AC-ADM-QE7.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
 
 ## Sprint 4
 
