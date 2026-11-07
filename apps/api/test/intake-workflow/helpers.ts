@@ -93,6 +93,7 @@ export async function bootWorkflowApp(env: Record<string, string | undefined> = 
     LOGIN_FAILURE_FLOOR_MS: '0',
     FILE_STORAGE_DIR: dir,
     UPLOAD_RATE_PER_MINUTE: '1000',
+    THROTTLE_DIAGRAM_GURU_PER_MINUTE: '1000',
     FILE_READS_PER_MINUTE: '10000',
     JOBS_WORKER_ENABLED: 'false',
     JOBS_BACKOFF_BASE_MS: '100',

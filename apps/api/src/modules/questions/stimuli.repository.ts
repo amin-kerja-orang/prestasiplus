@@ -8,7 +8,7 @@ import { stimulusTableOf, stimulusTableParts, type StimulusTable } from './stimu
 import { NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from './learner-visibility'
 import { refreshStimulusFlagsOf } from './effective-leaf'
 import { kertasOfPaperCode } from './projection'
-import { QUESTION_SERVED, VERSION_SERVED } from './served-rule'
+import { QUESTION_SERVED, QUESTION_SERVED_BY_PAPER, VERSION_SERVED, VERSION_SERVED_BY_PAPER } from './served-rule'
 import type { StimulusKind } from './types'
 
 /** The five columns a stimulus write may set. `null` clears. */
@@ -16,6 +16,8 @@ export interface StimulusData {
   kind: StimulusKind
   label: string | null
   caption: string | null
+  /** English twin of the caption (DM-50). */
+  captionEn: string | null
   bodyMs: string | null
   bodyEn: string | null
   altText: string | null
@@ -187,6 +189,11 @@ export class StimuliRepository {
   async updateStimulus(id: string, data: StimulusData): Promise<void> {
     // A migrated `content_hash` describes the old text: an edit makes it stale, so it is cleared (the API never writes one) (T32-L2).
     await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { ...this.columns(data), contentHash: null } })
+  }
+
+  /** Sets only the file of a stimulus (the content hash goes stale like any edit). */
+  async setAssetFile(id: string, fileId: bigint): Promise<void> {
+    await this.db.stimulus.update({ where: { id: BigInt(id) }, data: { assetFileId: fileId, contentHash: null } })
   }
 
   /** Locks the stimulus row so a delete and a link cannot cross. Returns false when it does not exist. */
@@ -575,6 +582,28 @@ export class StimuliRepository {
     return rows.length > 0
   }
 
+  /** Is the stimulus pinned by a paper that is still held (`paperHeld`)? Same three ways as `stimulusServed`, paper reason only. */
+  async stimulusHeldByPaper(stimulusId: string): Promise<boolean> {
+    const key = bi(stimulusId)
+    if (key === null) return false
+    const rows = await this.db.$queryRaw<{ one: number }[]>`
+      SELECT 1 AS one FROM stimulus_group_stimuli gs
+        JOIN questions q ON q.group_id = gs.group_id
+       WHERE gs.stimulus_id = ${key} AND ${QUESTION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_version_stimuli vs
+        JOIN question_versions v ON v.id = vs.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE vs.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
+      UNION ALL
+      SELECT 1 FROM question_parts p
+        JOIN question_versions v ON v.id = p.question_version_id
+        JOIN questions q ON q.id = v.question_id
+       WHERE p.stimulus_id = ${key} AND ${VERSION_SERVED_BY_PAPER}
+      LIMIT 1`
+    return rows.length > 0
+  }
+
   /** Subject and kertas of the latest versions of the members (one entry per distinct pair), leaving out `except`. */
   async memberTraits(groupId: string, except: string | null = null): Promise<MemberTrait[]> {
     const key = bi(groupId)
@@ -842,6 +871,7 @@ export class StimuliRepository {
       kind: d.kind,
       label: d.label,
       caption: d.caption,
+      captionEn: d.captionEn,
       bodyMs: d.bodyMs,
       bodyEn: d.bodyEn,
       altText: d.altText,
@@ -853,7 +883,7 @@ export class StimuliRepository {
   }
 
   private rowOf(
-    r: { id: bigint; kind: string; label: string | null; caption: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
+    r: { id: bigint; kind: string; label: string | null; caption: string | null; captionEn: string | null; bodyMs: string | null; bodyEn: string | null; altText: string | null; sourceCitation: string | null; style: string | null; tableData: unknown; assetFileId: bigint | null },
     groupCount: number,
   ): StimulusRow {
     const parts = stimulusTableParts(r.kind, r.tableData, r.bodyMs)
@@ -862,6 +892,7 @@ export class StimuliRepository {
       kind: r.kind as StimulusKind,
       label: r.label,
       caption: r.caption,
+      captionEn: r.captionEn,
       bodyMs: r.bodyMs,
       bodyEn: r.bodyEn,
       altText: r.altText,

@@ -99,7 +99,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expectNoHorizontalScroll(page)
   })
 
-  test('a teacher sees the audit without upload, Dismiss or the school filter', async ({
+  test('a teacher sees the audit with upload but without Dismiss or the school filter', async ({
     page,
     loginAs,
     gotoApp,
@@ -111,8 +111,9 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(page.getByTestId('diagrams-stat-total')).toBeVisible()
     await expect(page.getByTestId('diagram-dismiss')).toHaveCount(0)
     await expect(page.getByTestId('diagrams-school')).toHaveCount(0)
-    await expect(page.getByTestId('diagram-upload')).toHaveCount(0)
-    await expect(page.getByTestId('diagram-file')).toHaveCount(0)
+    await expect(page.getByTestId('diagram-upload').first()).toBeVisible()
+    await expect(page.getByTestId('diagram-file').first()).toBeAttached()
+    await expectTouchTarget(page.getByTestId('diagram-upload').first())
     await expectTouchTarget(page.getByTestId('diagrams-filter-submit'), 44)
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
@@ -242,4 +243,28 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       await expectNoHorizontalScroll(page)
     },
   )
+
+  test('a teacher upload goes to review: toast, chip, the card stays and the stat is unchanged', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(GURU)
+    await openAudit(page, gotoApp)
+    const card = mcqCards(page).first()
+    const id = await card.getAttribute('data-question-id')
+    await card.getByTestId('diagram-file').setInputFiles({
+      name: 'rajah.png',
+      mimeType: 'image/png',
+      buffer: PNG,
+    })
+    await card.getByTestId('diagram-upload').click()
+    await expect(page.getByText('Gambar dihantar untuk semakan.')).toBeVisible()
+    const same = page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)
+    await expect(same).toHaveCount(1)
+    await expect(same.getByTestId('diagram-pending')).toHaveText('Menunggu Semakan')
+    await expect(same.getByTestId('diagram-upload')).toHaveCount(0)
+    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
+    await expectNoHorizontalScroll(page)
+  })
 })

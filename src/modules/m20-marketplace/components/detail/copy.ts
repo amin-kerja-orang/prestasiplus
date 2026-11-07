@@ -10,7 +10,7 @@ export const DETAIL_COPY = {
   inStock: 'Ada Stok',
   /** PROPOSED COPY (OQ-M20-03). */
   outOfStock: 'Habis Stok',
-  whatsapp: 'Hubungi Penjual di WhatsApp',
+  whatsapp: 'Hubungi penjual melalui WhatsApp',
   seller: 'Penjual',
   /** PROPOSED display of a platform product (OQ-M20-10). */
   platformSeller: 'PRESTASIPLUS Official',

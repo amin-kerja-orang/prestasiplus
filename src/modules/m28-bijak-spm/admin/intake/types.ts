@@ -166,6 +166,15 @@ export type ManualMeta = Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'>
   forPaperId?: string
 }
 
+/** One finding of the duplicate check on an item (FR-QA-36). */
+export interface IntakeDuplicate {
+  id: string
+  kind: 'exact' | 'near' | 'variant'
+  status: 'open' | 'linked' | 'dismissed'
+  matchedQuestionId: string | null
+  matchedItemId: string | null
+}
+
 export interface IntakeBatch extends IntakeMeta {
   id: string
   /** Absent on batches saved before manual entry existed (= `pdf`). */
@@ -174,7 +183,7 @@ export interface IntakeBatch extends IntakeMeta {
   userId: number
   status: IntakeStatus
   /** Server processing status and BM label (http mode only); shown instead of Draf/Semakan. */
-  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
+  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'selesai_dengan_ralat' | 'failed' | 'cancelled'
   statusLabel?: string
   createdAt: number
   updatedAt: number
@@ -185,6 +194,8 @@ export interface IntakeBatch extends IntakeMeta {
   stimuli: IntakeStimulus[]
   unmatched: string[]
   pages: PageText[]
+  /** http mode: the duplicate findings by item id. */
+  duplicates?: Record<string, IntakeDuplicate[]>
   /** http mode: the extracted questions could not be read from the server (the page says so). */
   itemsUnavailable?: boolean
   /** http mode: the backend extraction run of this batch (the mock extracts in the browser). */
@@ -223,7 +234,7 @@ export interface IntakeSummary {
   /** Questions with no unconfirmed low-confidence field (V2 "Disemak"); absent when the source gives no item counts. */
   reviewedCount?: number
   /** Server processing status and its BM label (http mode only); the mock has just `status`. */
-  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'failed' | 'cancelled'
+  batchStatus?: 'submitted' | 'processing' | 'ready_for_review' | 'selesai_dengan_ralat' | 'failed' | 'cancelled'
   statusLabel?: string
   marks: number
   updatedAt: number

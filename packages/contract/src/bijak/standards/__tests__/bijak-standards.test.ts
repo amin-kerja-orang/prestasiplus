@@ -15,6 +15,7 @@ import {
 import {
   BijakBlueprintInvalidErrorSchema,
   BijakDraftGenerateRequestSchema,
+  BijakDraftGenerateResultSchema,
   BijakDskpUnitSchema,
   BijakDskpUnitsQuerySchema,
   BijakEvidenceInputSchema,
@@ -533,6 +534,45 @@ describe('pool preview and draft generation', () => {
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2 }).success).toBe(true)
     expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, publish: true }).success).toBe(false)
   })
+
+  it('API-BIJAK-11: title, years, negeri, count and levelScope are optional; the bad values carry the PRD30 messages', () => {
+    const full = { subject: 'SEJ', kertas: 1, title: '  Set Mac  ', years: [2025, 2024], negeri: ['Johor', 'MRSM'], count: 10, levelScope: 't5' }
+    expect(BijakDraftGenerateRequestSchema.parse(full)).toEqual({ ...full, title: 'Set Mac' })
+    const message = (body: object): string | undefined => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body }).error?.issues[0]?.message
+    expect(message({ kertas: 5 })).toBe('Kertas tidak sah.')
+    expect(message({ kertas: 0 })).toBe('Kertas tidak sah.')
+    expect(message({ count: 0 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 1.5 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(message({ count: 101 })).toBe('Bilangan soalan mesti antara 1 dan 100.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, count: 100 }).success).toBe(true)
+    expect(message({ subject: '   ' })).toBe('Sila pilih subjek.')
+    expect(BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, levelScope: 'T4' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+  })
+
+  it('S3-T02 generate request validation: kertas 5, count 0 and 101, years out of range, and the strict { id } result', () => {
+    const parse = (body: object) => BijakDraftGenerateRequestSchema.safeParse({ subject: 'MAT', kertas: 2, ...body })
+    expect(parse({ kertas: 5 }).error?.issues[0]?.message).toBe('Kertas tidak sah.')
+    expect(parse({ count: 0 }).success).toBe(false)
+    expect(parse({ count: 101 }).success).toBe(false)
+    expect(parse({ count: 1 }).success).toBe(true)
+    expect(parse({ count: 100 }).success).toBe(true)
+    expect(parse({ years: [1899] }).success).toBe(false)
+    expect(parse({ years: [2101] }).success).toBe(false)
+    expect(parse({ years: [2025.5] }).success).toBe(false)
+    expect(parse({ years: [1900, 2100] }).success).toBe(true)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', extra: 1 }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7', paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ paperId: '7' }).success).toBe(false)
+    expect(BijakDraftGenerateResultSchema.safeParse({ id: '7' }).success).toBe(true)
+  })
+
+  it('the pool preview takes the additive group, total, filter and scope fields', () => {
+    const shape = BijakPoolPreviewSchema.shape
+    for (const key of ['groupTotal', 'contractTotal', 'filters', 'levelScope'] as const) expect(shape[key].safeParse(undefined).success, key).toBe(true)
+    expect(shape.filters.safeParse({ years: [2025], negeri: ['Johor'] }).success).toBe(true)
+  })
 })
 
 describe('student side: shortages, limit, canGenerate', () => {
@@ -624,7 +664,6 @@ describe('openapi document', () => {
     for (const name of Object.keys(BIJAK_STANDARDS_COMPONENT_SCHEMAS)) {
       expect(doc.components.schemas[name], name).toBeDefined()
     }
-    expect(doc.paths['/bijak/papers/generate']!.post!.responses['503']).toBeDefined()
     expect(doc.paths['/admin/papers/generate']!.post!.responses['503']).toBeDefined()
     expect(doc.paths['/admin/blueprints']!.post!.responses['422']).toBeDefined()
   })

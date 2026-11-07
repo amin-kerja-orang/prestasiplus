@@ -18,7 +18,8 @@ import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { BijakIntegrationModule } from '../../src/modules/bijak/integration'
 import { PracticeReadsModule } from '../../src/modules/practice/reads'
-import { SchoolAdminModule } from '../../src/modules/school-admin'
+import { SchoolAdminModule, SCHOOL_PERFORMANCE_PORT } from '../../src/modules/school-admin'
+import { XsQueries } from '../../src/modules/school-admin/xs-queries'
 import { UsersModule } from '../../src/modules/users'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { START } from '../auth/helpers'
@@ -33,6 +34,7 @@ import { apiOf, login, schoolIdOf, SCHOOL_ADMIN, type Api } from './helpers'
 let db: TestDatabase
 let close: () => Promise<void>
 let admin: Api
+let appRef: { get<T>(token: unknown, opts: { strict: boolean }): T }
 let s1: string
 let s2: string
 let counter = 0
@@ -69,6 +71,7 @@ async function boot(): Promise<void> {
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  appRef = app
   const t = {
     app,
     db,
@@ -167,6 +170,41 @@ describe('GET /admin-sekolah/dashboard with the real BE-19 SchoolPerformanceServ
     // BE-19 has no per-level figures without BE-17 classes and no grade rows before the SPM slice: rows exist, counts stay 0.
     expect(d.performance.distribution.length).toBeGreaterThan(0)
     expect(d.performance.total).toBe(0)
+  })
+
+  it('a pupil created by the school admin with a Tingkatan 4 class has grade 10: XS-1 and XS-4 agree between the dashboard and /api/performance/school (S6-T03)', async () => {
+    const [lv] = await db.query<{ id: string }>(`select id::text from education_levels where grade = 10 order by sort_order, id limit 1`)
+    const [cls] = await db.query<{ id: string }>(
+      `insert into classrooms (kind, name, school_id, education_level_id, academic_year, is_active) values ('classroom', '4 Xs Sama', $1::bigint, $2::bigint, 2026, true) returning id::text`,
+      [s1, lv!.id],
+    )
+    const created = await admin.post('/admin-sekolah/pelajar', { name: 'Murid Xs Dicipta', email: 'perfxs@demo.test', classId: cls!.id })
+    expect(created.status, JSON.stringify(created.body)).toBe(201)
+    const id = created.body.data.id as string
+    expect((await db.query<{ grade: number | null }>(`select grade from users where id = $1::bigint`, [id]))[0]?.grade).toBe(10)
+    mathId ??= (await db.query<{ id: string }>(`select id::text from subjects where code = 'MATH'`))[0]!.id
+    const [sess] = await db.query<{ id: string }>(
+      `insert into practice_sessions (user_id, mode, subject_id, question_count, status, correct_count, started_at, completed_at, is_test)
+       values ($1::bigint, 'latih_tubi', $2::bigint, $3, 'completed', $4, now() - interval '1 hour', now(), false) returning id::text`,
+      [id, mathId, ANSWERS_PER_PUPIL, CORRECT_PER_PUPIL],
+    )
+    await db.query(
+      `insert into practice_answers (session_id, user_id, subject_id, selected_label, is_correct, answered_at, is_test, mode)
+       select $1::uuid, $2::bigint, $3::bigint, case when n <= $4 then 'B' else 'C' end, n <= $4, now() - interval '1 hour' + n * interval '1 minute', false, 'latih_tubi'
+         from generate_series(1, $5::int) n`,
+      [sess!.id, id, mathId, CORRECT_PER_PUPIL, ANSWERS_PER_PUPIL],
+    )
+    const d = await dashboard()
+    const xs = appRef.get<XsQueries>(XsQueries, { strict: false })
+    const summary = await xs.summary({ kind: 'school', schoolId: s1 })
+    const port = appRef.get<{ school: (ctx: unknown) => Promise<{ stats: { students: number; answered: number } }> }>(SCHOOL_PERFORMANCE_PORT, { strict: false })
+    const view = await port.school({ userId: '1', role: 'school_admin', scope: { level: 'school', schoolId: s1, label: 'SMK Demo Satu' }, isTest: false })
+    expect(d.cards.pupils).toBe(1)
+    expect(summary.pupils).toBe(1)
+    expect(view.stats.students).toBe(1)
+    expect(d.performance.practice.questions).toBe(ANSWERS_PER_PUPIL)
+    expect(summary.answers).toBe(ANSWERS_PER_PUPIL)
+    expect(view.stats.answered).toBe(ANSWERS_PER_PUPIL)
   })
 
   it('fewer than 5 pupils: the practice block is shown (staff screen, no minimum cohort: PO decision 2026-11-05, #503 batch 3)', async () => {

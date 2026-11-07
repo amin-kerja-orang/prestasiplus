@@ -78,6 +78,8 @@ describe('intake Kertas 1..4 (S1-T03)', () => {
     await w.find('[data-testid="intake-kertas"]').setValue(String(k))
     await w.find('[data-testid="intake-source"]').setValue('Sekolah')
     await w.find('[data-testid="intake-copyright"]').setValue('sendiri')
+    // The sample path asks for the source declaration as submit does (S2-T02).
+    await w.find('[data-testid="intake-declaration"]').trigger('click')
     await w.find('[data-testid="intake-sample"]').trigger('click')
     await vi.waitFor(() => expect(createIntakeBatch).toHaveBeenCalledTimes(1), { timeout: 5000 })
     expect(createIntakeBatch.mock.calls[0]![1]).toMatchObject({ kertas: k })
