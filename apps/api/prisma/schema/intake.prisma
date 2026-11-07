@@ -9,7 +9,7 @@ model IntakeBatch {
   id           BigInt    @id @default(autoincrement())
   /// Uploader. Set null when the user is deleted (the batch stays for the audit trail).
   ownerUserId  BigInt?   @map("owner_user_id")
-  /// submitted, processing, ready_for_review, failed, cancelled (check constraint).
+  /// submitted, processing, ready_for_review, selesai_dengan_ralat, failed, cancelled (check constraint; S1-T04 / DM-71).
   status       String    @default("submitted")
   /// admin, guru (check constraint; S1-T08 / DM-72). A guru batch is a teacher's Kiriman Guru upload.
   source       String    @default("admin")
@@ -42,6 +42,8 @@ model IntakeBatch {
   items   IntakeItem[]
   stimuli IntakeStimulus[]
   runs    IntakeExtractionRun[]
+  /// DM-45: draft papers imported from this batch (papers.source_batch_id).
+  papers  Paper[]
 
   @@index([ownerUserId, status], map: "ix_intake_batches_owner_user_id_status")
   @@index([status, createdAt], map: "ix_intake_batches_status_created_at")
@@ -63,6 +65,8 @@ model IntakeFile {
   status       String   @default("uploaded")
   /// ENCRYPTED, CORRUPT, TOO_MANY_PAGES, TOO_COMPLEX, OCR_TIMEOUT, OCR_FAILED, OCR_UNAVAILABLE, RENDER_FAILED, CANCELLED.
   errorCode    String?  @map("error_code")
+  /// Retries used (0..3; check constraint). The original run is not counted; shared by file retry, batch retry and extract pages[] (S1-T04 / DM-71).
+  retryCount   Int      @default(0) @map("retry_count") @db.SmallInt
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 

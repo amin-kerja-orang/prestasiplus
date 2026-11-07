@@ -22,6 +22,7 @@ export {
   describeQuestion,
   eligibilityOf,
   previewStandard,
+  scaleStandardBlueprint,
   shortageLine,
   SOLVER_VERSION,
   verifyComposition,

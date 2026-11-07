@@ -162,7 +162,7 @@ export class SpmHubService {
     const s = (await this.catalog.spmSubjects()).find((x) => x.code === code.toUpperCase())
     if (!s) throw notFound()
     const levelIds = await this.catalog.spmLevelIds()
-    const facts = await this.pool.cells(s.subjectId)
+    const facts = await this.pool.latihTubiCells(s.subjectId)
     const target = s.targetSize
     return {
       code: s.code,
@@ -220,7 +220,7 @@ export class SpmHubService {
           locked: locked.length,
           total: own.length,
           readiness: own.length === 0 ? 0 : Math.round(((bersih + bankBesar) / own.length) * 100),
-          lockedSets: locked.slice(0, 6).map((x) => ({ setNo: x.setNo, readyCount: x.readyCount, target: x.size })),
+          lockedSets: locked.slice(0, 6).map((x) => ({ year: x.year, setNo: x.setNo, readyCount: x.readyCount, target: x.size })),
           hasBankBesar: bankBesar > 0,
         },
       ]

@@ -625,6 +625,7 @@ describe('S23 HeadcountTablePage', () => {
     expect(t(w, 'chip-below').text()).toBe('Below: 1 (33%)')
     expect(t(w, 'chip-empty').text()).toBe('Belum Diisi: 1')
     expect(t(w, 'chip-total').text()).toBe('Jumlah: 3')
+    expect(t(w, 'chip-jurang').text()).toBe('Jurang: —')
     expect(t(w, 'ar-1-1').classes()).toContain('text-success')
     expect(t(w, 'ar-1-1').attributes('data-tone')).toBe('above')
     expect(t(w, 'ar-2-1').classes()).toContain('text-error')
@@ -635,6 +636,24 @@ describe('S23 HeadcountTablePage', () => {
     expect(t(w, 'sort-ranking').attributes('aria-current')).toBe('true')
     expect(t(w, 'action-edit').attributes('href')).toBe('/headcount/501/edit')
   })
+
+  it.each([
+    [40, 80, 'Jurang: +40'],
+    [80, 75, 'Jurang: -5'],
+    [80, 80, 'Jurang: 0'],
+    [null, 80, 'Jurang: —'],
+    [40, null, 'Jurang: —'],
+  ])(
+    'Jurang chip from the subject-card targets TOV %s, RS %s reads "%s"',
+    async (tov, etr, text) => {
+      api.fetchHeadcountDetail.mockResolvedValue({
+        ...DETAIL,
+        config: { ...DETAIL.config, defaultTov: tov, defaultEtr: etr },
+      })
+      const w = await render(HeadcountTablePage, '/headcount/501', '/headcount/:id')
+      expect(t(w, 'chip-jurang').text()).toBe(text)
+    },
+  )
 
   it('an unknown sort value is the ranking order; ?sort=name asks for A-Z', async () => {
     api.fetchHeadcountDetail.mockResolvedValue(DETAIL)

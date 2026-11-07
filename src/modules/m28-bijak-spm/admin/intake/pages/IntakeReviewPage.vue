@@ -8,7 +8,7 @@
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, watch, type FunctionalComponent } from 'vue'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBadge, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsText } from '@/ds'
+import { useConfirm, DsBadge, DsCluster, DsEmptyState, DsPage, DsPanel, DsSplitPane, DsStack, DsStateView, DsStatusBadge, DsSurface, DsText } from '@/ds'
 
 import { StimulusView } from '../../../../../components/question-display'
 import { formatDateTime } from '../../../lib/use-bijak'
@@ -28,7 +28,7 @@ import { blankQuestion, nextLabel } from '../domain/blank'
 import { intakeBadge } from '../lib/intake-badge'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
-import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
+import type { IntakeBatch, IntakeDuplicate, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 
 const props = defineProps<{ batchId: string }>()
 const pageMeta = usePageMeta()
@@ -382,15 +382,27 @@ const current = ref<string | null>(null)
 const deciding = ref(false)
 const decisionErrors = ref<string[]>([])
 const decisionNote = ref('')
+const confirm = useConfirm()
 const rejectingId = ref<string | null>(null)
 const rejectReason = ref('')
 const canDecide = computed(() => !readonly.value && !batch.value?.itemsUnavailable && !!server.decideIntakeItem)
 
-function afterDecision(next: IntakeBatch): void {
+function afterDecision(next: IntakeBatch, first?: string): void {
   loaded = false // this replacement is not an edit: the autosave watcher skips it
   batch.value = next
-  open.value = new Set(next.questions[0] ? [next.questions[0].id] : [])
-  current.value = next.questions[0]?.id ?? null
+  const at = next.questions.find((q) => q.id === first)?.id ?? next.questions[0]?.id
+  open.value = new Set(at ? [at] : [])
+  current.value = at ?? null
+}
+
+/** `Sebelum` and `Seterusnya` (09-06): moves the open item along the batch. */
+function step(id: string, by: -1 | 1): void {
+  const list = batch.value?.questions ?? []
+  const next = list[list.findIndex((q) => q.id === id) + by]
+  if (!next) return
+  open.value = new Set([next.id])
+  current.value = next.id
+  void nextTick(() => document.getElementById(`q-${next.id}`)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' }))
 }
 
 /** Saves pending edits first; a decision is taken only on saved content (never on a failed save). */
@@ -408,9 +420,38 @@ async function settle(): Promise<boolean> {
 }
 const failMessage = (e: unknown): string => (e instanceof Error && e.message ? e.message : 'Tindakan gagal. Cuba lagi.')
 
-async function accept(id: string): Promise<void> {
+const DUPLICATE_KIND: Record<IntakeDuplicate['kind'], string> = { exact: 'Sama', near: 'Hampir sama', variant: 'Varian' }
+const DUPLICATE_STATUS: Record<IntakeDuplicate['status'], string> = { open: 'Terbuka', linked: 'Dipautkan', dismissed: 'Diketepikan' }
+
+const duplicatesOf = (id: string): IntakeDuplicate[] => batch.value?.duplicates?.[resolveId(id)] ?? []
+/**
+ * An open or linked `Sama` or `Hampir sama` blocks Terima (FR-QA-36): the server keeps a linked item in state `duplicate`
+ * and refuses to accept it (409 itemIsDuplicate; the bulk accept skips it as WRONG_STATE). Only `Diketepikan` releases
+ * it. A `Varian` is only information.
+ */
+const blockedByDuplicate = (id: string): boolean =>
+  duplicatesOf(id).some((d) => (d.status === 'open' || d.status === 'linked') && d.kind !== 'variant')
+
+async function resolveDuplicate(id: string, entry: IntakeDuplicate, action: 'pautkan' | 'ketepikan'): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
+  deciding.value = true
+  decisionErrors.value = []
+  decisionNote.value = ''
+  try {
+    if (!(await settle())) return
+    afterDecision(await server.resolveIntakeDuplicate(b.id, resolveId(id), entry, action), id)
+  } catch (e) {
+    decisionErrors.value = [failMessage(e)]
+  } finally {
+    deciding.value = false
+  }
+}
+
+async function accept(id: string): Promise<void> {
+  const b = batch.value
+  // The button is disabled for a blocked item; the key A reaches here too, so the guard lives here (FR-QA-36).
+  if (!b || deciding.value || blockedByDuplicate(id)) return
   deciding.value = true
   decisionErrors.value = []
   decisionNote.value = ''
@@ -462,19 +503,36 @@ async function confirmReject(): Promise<void> {
 async function acceptAll(): Promise<void> {
   const b = batch.value
   if (!b || deciding.value) return
+  // Unreviewed = still open (the batch holds no accepted or rejected item), minus an item a duplicate (open or linked) blocks.
+  const pending = b.questions.filter((q) => !blockedByDuplicate(q.id)).map((q) => resolveId(q.id))
+  if (pending.length === 0) return
+  // Hold the guard while the dialog is open, so a second click or the key A cannot start another run.
   deciding.value = true
-  decisionErrors.value = []
-  decisionNote.value = ''
   try {
+    const ok = await confirm({
+      message: `Terima ${pending.length} item yang belum disemak?`,
+      confirmLabel: 'Ya, Terima Semua',
+      cancelLabel: 'Batal',
+    })
+    if (!ok) return
+    decisionErrors.value = []
+    decisionNote.value = ''
     if (!(await settle())) return
-    const r = await server.acceptUnreviewed(b.id)
-    decisionNote.value =
-      r.skipped.length > 0
-        ? `${r.done} soalan diterima sebagai draf. ${r.skipped.length} dilangkau: keyakinan rendah atau semakan kualiti belum lulus.`
-        : `${r.done} soalan diterima sebagai draf.`
-    afterDecision(r.batch)
+    // settle() may adopt server ids: compare resolved ids on both sides so an adopted item is kept.
+    const keep = new Set(pending.map(resolveId))
+    const ids = (batch.value?.questions ?? []).map((q) => resolveId(q.id)).filter((qid) => keep.has(qid))
+    const r = await server.acceptUnreviewed(b.id, ids)
+    decisionNote.value = `${r.done} diterima, ${r.skipped.length} gagal`
+    // Failed items open first (09-06).
+    afterDecision(r.batch, r.skipped[0]?.id)
   } catch (e) {
     decisionErrors.value = [failMessage(e)]
+    // A chunk may have been accepted before the failure: read the batch back so the screen is not stale.
+    try {
+      afterDecision(await server.getIntakeBatch(b.id), current.value ?? undefined)
+    } catch {
+      /* the error above stays; the next action reloads */
+    }
   } finally {
     deciding.value = false
   }
@@ -536,7 +594,7 @@ async function submit(): Promise<void> {
           : `${batch.fileName}${batch.year ? ` · ${batch.year}` : ''}`
         : undefined
     "
-    back-label="Kembali ke Senarai Ekstrak"
+    back-label="Kembali ke Import &amp; Semakan"
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-review-page"
   >
@@ -636,13 +694,13 @@ async function submit(): Promise<void> {
           >
             <template #actions>
               <UButton
-                to="/admin/spm/semakan"
+                :to="INTAKE_LIST_PATH"
                 color="success"
                 variant="outline"
                 icon="i-ph-seal-check"
                 data-testid="goto-queue"
               >
-                Buka Baris Gilir Semakan
+                Buka Import &amp; Semakan
               </UButton>
               <UButton
                 v-if="paperBack"
@@ -804,8 +862,7 @@ async function submit(): Promise<void> {
           color="success"
           variant="subtle"
           icon="i-ph-check-circle"
-          title="Semua soalan telah diputuskan"
-          description="Setiap soalan ekstrak ini sudah diterima atau ditolak. Lihat Baris Gilir Semakan."
+          title="Tiada item untuk disemak."
           data-testid="all-decided"
         />
 
@@ -1093,6 +1150,65 @@ async function submit(): Promise<void> {
                         <p class="text-caption text-muted" data-testid="item-counter">
                           Item {{ batch.questions.findIndex((x) => x.id === q.id) + 1 }} / {{ batch.questions.length }}
                         </p>
+                        <DsText v-if="batch.year" variant="caption" tone="muted" data-testid="item-provenance">
+                          Cadangan Provenans: Tahun {{ batch.year }}
+                        </DsText>
+                        <DsStack v-if="duplicatesOf(q.id).length > 0" as="ul" gap="xs" data-testid="item-duplicates">
+                          <DsSurface v-for="d in duplicatesOf(q.id)" :key="d.id" as="li" level="soft" padding="sm" shadow="none" :data-testid="`item-duplicate-${d.id}`">
+                            <DsCluster gap="xs">
+                            <DsBadge :label="DUPLICATE_KIND[d.kind]" tone="warning" />
+                            <DsBadge :label="DUPLICATE_STATUS[d.status]" tone="neutral" />
+                            <DsText variant="caption" tone="muted">
+                              {{ d.matchedQuestionId ? `Soalan #${d.matchedQuestionId}` : d.matchedItemId ? `Item #${d.matchedItemId}` : '' }}
+                            </DsText>
+                            <template v-if="d.status === 'open'">
+                              <UButton
+                                v-if="d.kind !== 'variant' && (d.matchedQuestionId || d.matchedItemId)"
+                                type="button"
+                                color="neutral"
+                                variant="soft"
+                                :disabled="deciding"
+                                data-testid="item-duplicate-link"
+                                @click="resolveDuplicate(q.id, d, 'pautkan')"
+                              >
+                                Pautkan
+                              </UButton>
+                              <UButton
+                                type="button"
+                                color="neutral"
+                                variant="soft"
+                                :disabled="deciding"
+                                data-testid="item-duplicate-dismiss"
+                                @click="resolveDuplicate(q.id, d, 'ketepikan')"
+                              >
+                                Diketepikan
+                              </UButton>
+                            </template>
+                            </DsCluster>
+                          </DsSurface>
+                        </DsStack>
+                        <DsCluster gap="xs" data-testid="item-nav">
+                          <UButton
+                            type="button"
+                            color="neutral"
+                            variant="soft"
+                            :disabled="batch.questions[0]?.id === q.id"
+                            data-testid="item-prev"
+                            @click="step(q.id, -1)"
+                          >
+                            Sebelum
+                          </UButton>
+                          <UButton
+                            type="button"
+                            color="neutral"
+                            variant="soft"
+                            :disabled="batch.questions[batch.questions.length - 1]?.id === q.id"
+                            data-testid="item-next"
+                            @click="step(q.id, 1)"
+                          >
+                            Seterusnya
+                          </UButton>
+                        </DsCluster>
                         <div
                           class="flex flex-wrap gap-2 max-sm:sticky max-sm:bottom-0 max-sm:z-10 max-sm:border-t max-sm:border-default max-sm:bg-default max-sm:py-2"
                           data-testid="item-buttons"
@@ -1102,6 +1218,7 @@ async function submit(): Promise<void> {
                             icon="i-ph-check"
                             class="min-h-11"
                             :loading="deciding"
+                            :disabled="blockedByDuplicate(q.id)"
                             data-testid="item-accept"
                             @click="accept(q.id)"
                           >

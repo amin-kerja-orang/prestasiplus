@@ -59,6 +59,7 @@ import type {
   ExtractedPaper,
   ManualMeta,
   PageText,
+  IntakeDuplicate,
   IntakeStatus,
   SaveExtractedPayload,
 } from '../admin/intake/types'
@@ -117,6 +118,7 @@ export type BijakAdminMethods = Omit<
   | 'sectionPool'
   | 'listBlueprints'
   | 'listIntakeBatches'
+  | 'cancelIntakeBatch'
   | 'getIntakeBatch'
   | 'createManualBatch'
   | 'saveExtracted'
@@ -124,6 +126,7 @@ export type BijakAdminMethods = Omit<
   | 'dskpUnits'
   | 'submitForReview'
   | 'decideIntakeItem'
+  | 'resolveIntakeDuplicate'
   | 'acceptUnreviewed'
   | 'listReviewQueue'
   | 'getReviewItem'
@@ -469,6 +472,11 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       .filter((b) => !needle || `${b.title} ${b.fileName}`.toLowerCase().includes(needle))
   }
 
+  /** `Batalkan` of a batch before it is ready (field 07-05). */
+  async cancelIntakeBatch(id: string): Promise<void> {
+    await this.exec('POST', `/api/intake/batches/${enc(id)}/cancel`)
+  }
+
   async getIntakeBatch(id: string): Promise<IntakeBatch> {
     const detail = await this.send<WireBatchDetail>('GET', `/api/intake/batches/${enc(id)}`)
     this.batchInfo.set(id, detail)
@@ -757,19 +765,34 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
     return { ok: res.ok, errors: res.errors, batch: await this.getIntakeBatch(id) }
   }
 
+  /** FR-QA-36: `Pautkan` links the item to what the check found; `Diketepikan` dismisses that one finding. */
+  async resolveIntakeDuplicate(
+    id: string,
+    questionId: string,
+    entry: IntakeDuplicate,
+    action: 'pautkan' | 'ketepikan',
+  ): Promise<IntakeBatch> {
+    const target = entry.matchedQuestionId ? { matchedQuestionId: entry.matchedQuestionId } : { matchedItemId: entry.matchedItemId }
+    await this.send('POST', `/api/intake/items/${enc(questionId)}/duplicate`, action === 'pautkan' ? { decision: 'duplicate', ...target } : { decision: 'not_duplicate', duplicateId: entry.id })
+    return this.getIntakeBatch(id)
+  }
+
   /**
    * "Terima semua yang belum disemak": `POST /api/intake/items/bulk` with `accept` over the items still open.
    * The server takes only the items at or above its confidence threshold and lists the rest.
    */
   async acceptUnreviewed(
     id: string,
-  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[]; batch: IntakeBatch }> {
+    only?: readonly string[],
+  ): Promise<{ done: number; skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[]; batch: IntakeBatch }> {
     const batch = await this.getIntakeBatch(id)
-    const ids = batch.questions.map((q) => q.id)
+    // `only` = the items the page counted as unreviewed (an item blocked by an open duplicate is left out).
+    const wanted = only && new Set(only)
+    const ids = batch.questions.map((q) => q.id).filter((qid) => !wanted || wanted.has(qid))
     if (ids.length === 0) return { done: 0, skipped: [], batch }
     // The bulk endpoint takes at most BULK_MAX_IDS ids per call: send the whole batch in chunks.
     let done = 0
-    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' }[] = []
+    const skipped: { id: string; reason: 'BELOW_THRESHOLD' | 'GATE_FAILED' | 'WRONG_STATE' }[] = []
     for (let at = 0; at < ids.length; at += BULK_MAX_IDS) {
       const res = await this.send<{ done: number; results: { id: string; outcome: string; reason: string | null }[] }>(
         'POST',
@@ -778,11 +801,12 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
       )
       done += res.done
       for (const r of res.results) {
-        if (r.outcome !== 'skipped') continue
-        // NOT_FOUND / WRONG_STATE: the item is gone or already decided; the refreshed batch shows that,
-        // so it is not reported as a confidence or gate skip.
+        if (r.outcome === 'done') continue
+        // NOT_FOUND / WRONG_STATE (gone, already decided, or a duplicate the server refuses) and any other refusal
+        // are failures too, so that the page reports n = diterima + gagal.
         if (r.reason === 'GATE_FAILED') skipped.push({ id: r.id, reason: 'GATE_FAILED' })
         else if (r.reason === 'BELOW_THRESHOLD') skipped.push({ id: r.id, reason: 'BELOW_THRESHOLD' })
+        else skipped.push({ id: r.id, reason: 'WRONG_STATE' })
       }
     }
     return { done, skipped, batch: await this.getIntakeBatch(id) }

@@ -64,6 +64,10 @@ export const dsIconBaseNames = [
   'hourglass',
   'clock',
   'upload-simple',
+  // S3-T06: Kertas Subjektif admin UButtons (resolved through resolveIcon).
+  'file-plus',
+  'arrow-left',
+  'hammer',
   'spinner-gap',
   'shield-check',
   'arrow-up',

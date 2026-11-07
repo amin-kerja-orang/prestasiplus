@@ -13,12 +13,15 @@ export const AUDIT_ROUTES = {
 
 export const STRUCTURED_LIST_PATH = '/admin/structured-questions'
 export const SUBMISSIONS_PATH = '/admin/question-submissions'
+/** `Semak` of a Kiriman Guru row: the M28 review screen of its batch (FR-ADM-Q12.5). */
+export const submissionReviewPath = (batchId: string): string =>
+  `/admin/spm/soalan/ekstrak/${batchId}`
 export const DIAGRAMS_PATH = '/admin/soalan-gambar'
 export const MASTER_NOTES_PATH = '/admin/master-notes'
 
 /** S8 "Tambah Soalan" and S9 "Edit Soalan" open the M10 teacher-portal forms (FN-M04-4.1.1, 4.2.6). */
 export const STRUCTURED_CREATE_PATH = '/guru/soalan-berstruktur/cipta'
-export const structuredEditPath = (id: number): string =>
+export const structuredEditPath = (id: number | string): string =>
   `/guru/soalan-berstruktur/${String(id)}/edit`
 
 /** The teacher mount of the same two pages (S6-T17, R1-GUR-44b); the M10 route fragment registers them. */
@@ -27,3 +30,5 @@ export const GURU_STRUCTURED_ROUTES = {
   detail: 'm10.soalan.berstruktur.detail',
 } as const
 export const GURU_STRUCTURED_LIST_PATH = '/guru/soalan-berstruktur'
+/** The teacher submit form (R1-GUR-44b route `/cipta`); the edit form is `structuredEditPath(id)`. Registered by M10. */
+export const GURU_STRUCTURED_CREATE_PATH = '/guru/soalan-berstruktur/cipta'

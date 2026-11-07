@@ -86,6 +86,8 @@ describe('PoC profile seed (BE-26)', () => {
         `insert into enrolments (classroom_id, student_id) select (select min(id) from classrooms), min(user_id) from user_roles where role = 'teacher'`,
       ],
       placement_question_published: [
+        // DM-11: a placement needs a question row; this one has no live version, which is what the rule reports.
+        `insert into questions (id, source_type, latest_version_no, is_active) overriding system value values (888888888, 'manual', 1, false)`,
         `insert into paper_placements (paper_section_id, question_id, position) select paper_section_id, 888888888, max(position) + 1 from paper_placements group by paper_section_id limit 1`,
       ],
       orphan_practice_session_questions: [

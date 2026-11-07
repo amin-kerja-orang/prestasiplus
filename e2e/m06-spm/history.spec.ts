@@ -44,7 +44,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Sejarah Kuiz SPM')
     const stats = page.locator('[data-testid^=history-stat-]')
-    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statValues(stats)).toHaveText(['4', '31%', '26', '84'])
     await expect(statLabels(stats)).toHaveText([
       'Sesi Kuiz',
       'Purata Ketepatan',
@@ -58,9 +58,9 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
       'Latih Tubi',
       'Tracking A',
     ])
-    await expect(tid(page, 'history-filter-past_year')).toHaveAttribute(
+    await expect(tid(page, 'history-filter-databank')).toHaveAttribute(
       'href',
-      '/spm/history?type=past_year',
+      '/spm/history?mod=databank',
     )
     await expect(tid(page, 'history-filter-all')).toHaveAttribute('href', '/spm/history')
 
@@ -84,40 +84,51 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
       await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/bg-error/)
       await expect(rows.nth(i).getByTestId('row-score')).toHaveClass(/text-error/)
     }
-    await expect(rows.nth(1).getByTestId('row-meta')).toHaveText('19 May 2026, 03:26 AM · 0m 36s')
-    await expect(rows.nth(2).getByTestId('row-meta')).toHaveText('11 May 2026, 02:27 PM · 1m 45s')
-    await expect(rows.nth(3).getByTestId('row-meta')).toHaveText('11 May 2026, 02:22 PM · 2m 11s')
+    await expect(rows.nth(1).getByTestId('row-meta')).toHaveText('19 Mei 2026, 03:26 AM · 0m 36s')
+    await expect(rows.nth(2).getByTestId('row-meta')).toHaveText('11 Mei 2026, 02:27 PM · 1m 45s')
+    await expect(rows.nth(3).getByTestId('row-meta')).toHaveText('11 Mei 2026, 02:22 PM · 2m 11s')
+    // One page of rows: the pager reads page 1 of 1 with both buttons disabled.
+    await expect(tid(page, 'history-page-text')).toHaveText('Halaman 1 daripada 1')
+    await expect(tid(page, 'history-prev')).toHaveAttribute('aria-disabled', 'true')
+    await expect(tid(page, 'history-next')).toHaveAttribute('aria-disabled', 'true')
     // Rows are not links.
     expect(await rows.first().evaluate((el) => el.closest('a'))).toBeNull()
     await expectNoHorizontalScroll(page)
 
-    await tid(page, 'history-filter-past_year').click()
-    await expect(page).toHaveURL(/\/spm\/history\?type=past_year$/)
+    await tid(page, 'history-filter-databank').click()
+    await expect(page).toHaveURL(/\/spm\/history\?mod=databank$/)
     await expect(rows).toHaveCount(2)
-    await expect(tid(page, 'history-filter-past_year')).toHaveAttribute('data-active', 'true')
+    await expect(tid(page, 'history-filter-databank')).toHaveAttribute('data-active', 'true')
     await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'false')
     // The stats do not follow the filter.
-    await expect(statValues(stats)).toHaveText(['4', '21.8%', '26', '84'])
+    await expect(statValues(stats)).toHaveText(['4', '31%', '26', '84'])
 
     await tid(page, 'history-filter-latih_tubi').click()
     await expect(tid(page, 'history-filter-latih_tubi')).toHaveAttribute('data-active', 'true')
     await expect(rows).toHaveCount(2)
 
-    await tid(page, 'history-filter-ramalan').click()
-    await expect(tid(page, 'history-filter-ramalan')).toHaveAttribute('data-active', 'true')
+    await tid(page, 'history-filter-tracking_a').click()
+    await expect(tid(page, 'history-filter-tracking_a')).toHaveAttribute('data-active', 'true')
     await expect(rows).toHaveCount(0)
-    await expect(tid(page, 'history-empty')).toContainText('Belum Ada Sejarah')
+    await expect(tid(page, 'history-empty')).toContainText('Belum ada percubaan SPM')
     await expect(tid(page, 'history-empty')).toContainText(
-      'Mulakan kuiz SPM untuk melihat sejarah prestasi anda di sini.',
+      'Mula kuiz SPM untuk membina sejarah percubaan anda!',
     )
     await expect(tid(page, 'history-empty-cta')).toHaveText('Mula Kuiz SPM')
-    await expect(tid(page, 'history-empty-cta')).toHaveAttribute('href', '/spm')
+    await expect(tid(page, 'history-empty-cta')).toHaveAttribute('href', '/spm/tahun-lepas')
+    await expectNoHorizontalScroll(page)
+
+    // A page past the last one lists no rows, keeps the pager and links back.
+    await gotoApp('/spm/history?halaman=2')
+    await expect(rows).toHaveCount(0)
+    await expect(tid(page, 'history-page-text')).toHaveText('Halaman 2 daripada 1')
+    await expect(tid(page, 'history-prev')).toHaveAttribute('href', '/spm/history')
     await expectNoHorizontalScroll(page)
 
     // An unknown type lists everything with no filter active.
     await gotoApp('/spm/history?type=zzz')
     await expect(rows).toHaveCount(4)
-    for (const id of ['all', 'past_year', 'latih_tubi', 'ramalan']) {
+    for (const id of ['all', 'databank', 'latih_tubi', 'tracking_a']) {
       await expect(tid(page, `history-filter-${id}`)).toHaveAttribute('data-active', 'false')
     }
   })
@@ -140,7 +151,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await expect(rows.nth(0).getByTestId('row-badge')).toHaveClass(/bg-secondary/)
     await expect(statValues(page.locator('[data-testid^=history-stat-]'))).toHaveText([
       '4',
-      '65.4%',
+      '74%',
       '70',
       '94',
     ])

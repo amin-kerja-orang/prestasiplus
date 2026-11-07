@@ -27,6 +27,7 @@ import { CLOCK, type Clock } from '../../../db/clock'
 import { isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
+import { AnswerLogPort, type WritableAnswerMode } from '../../practice'
 import {
   AUTO_SUBMIT_TOLERANCE_SECONDS,
   BIJAK_ATTEMPTS_MESSAGES as MSG,
@@ -48,17 +49,23 @@ import {
   AttemptsRepository,
   type PhotoRow,
 } from './attempts.repository'
-import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { isBlank, type LeafKind, type PartAnswer, type PartDef, type SectionSnapshot } from './exam-core.adapter'
 import {
+  type AnswerMap,
   type Bundles,
   buildLeafIndex,
   buildServedPaper,
+  bundleOf,
   checkResult,
   gradeAttempt,
   type LeafIndex,
   lockedParts,
   questionIdsOf,
+  revealedOnly,
+  sameAnswersAsCheck,
+  semakParts,
 } from './marking'
+import { bijakCodeOf } from '../papers/subject-codes'
 import { assertAttemptPayload } from './payload-limits'
 import { BIJAK_REWARD_DESCRIPTION, BijakAttemptPorts } from './ports'
 import { applySelfMarks, automaticScore, clamp, decorateResult, isSelfMarkable, type SelfMarks } from './self-mark'
@@ -92,11 +99,58 @@ export interface CallerInfo {
   requestId: string | null
 }
 
+/** S5-T11: one submit of a Soalan Berstruktur set. A leaf is addressed by its label path (`(a).(i)`), as the practice sub-question id minus its `<questionId>-`. */
+export interface StructuredAttemptInput {
+  questionId: string
+  /** The version the pupil was served; the attempt is pinned to it. */
+  versionNo: number
+  /** Null or blank: the attempt is titled `STRUCTURED_TITLE`. */
+  title: string | null
+  /** Curriculum code (MATH, SCI ...); stored as the Bijak code (`bijakCodeOf`, MAT, SN ...). Null: the question's own subject tag. */
+  subject: string | null
+  subjectName: string | null
+  /** `bahasa`: a Tracking A Bahasa set, whose answer rows carry `mode = tracking_a` (R1-MUR-17, D-PA-12); otherwise `structured`. */
+  track?: 'bahasa' | null
+  answers: readonly { path: string; text: string }[]
+}
+
+export interface StructuredAttemptOutput {
+  attemptId: string
+  submittedAt: Date
+  /** One entry per answerable leaf; `pending` = not marked by the grader (`belum_dimarkah`), awarded 0 until the pupil self-marks. */
+  parts: { path: string; awarded: number; max: number; pending: boolean }[]
+}
+
+/** `exam_attempts.paper_code` of a structured attempt (the contract wants 1+ characters; there is no printed paper code). */
+const STRUCTURED_CODE = 'Berstruktur'
+/** Title of a structured attempt whose set has no text to take it from. */
+const STRUCTURED_TITLE = 'Soalan Berstruktur'
+
+/** The label path of each answerable leaf of the mapped parts (the labels as the bank wrote them, joined with `.`). */
+function leafPaths(parts: readonly PartDef[], labels: readonly string[] = []): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const p of parts) {
+    const here = [...labels, p.label]
+    if (p.children?.length) for (const [id, path] of leafPaths(p.children, here)) out.set(id, path)
+    else out.set(p.id, here.join('.'))
+  }
+  return out
+}
+
+/** The one text box of a sub-question as the answer the grader reads for that leaf kind (numeric reads `final`, a letter match reads `choice`). */
+function structuredAnswerOf(kind: string, text: string): PartAnswer {
+  if (kind === 'numeric') return { final: text }
+  if (kind === 'match_letter') return { choice: text.trim() }
+  return { text }
+}
+
 const ts = (d: Date) => toMytTimestamp(d)
 /** BM message of a start that has no servable question (422 VALIDATION_ERROR, declared in the start contract). */
 export const NO_ELIGIBLE_QUESTIONS = 'Tiada soalan layak untuk kertas ini.'
 const noEligibleQuestions = () => ApiError.of('VALIDATION_ERROR', { message: NO_ELIGIBLE_QUESTIONS })
 
+/** 422 fields.questionId of a "Semak" on a question whose auto-markable parts are all blank. */
+const CHECK_BLANK = 'Jawab dahulu sebelum menyemak.'
 const notFoundAttempt = () => ApiError.of('NOT_FOUND', { message: MSG.attemptNotFound })
 const forbiddenOwner = () => ApiError.of('FORBIDDEN', { message: MSG.forbidden })
 const attemptClosed = () => ApiError.of('CONFLICT', { message: MSG.attemptClosed })
@@ -115,6 +169,7 @@ export class BijakAttemptsService {
     @Inject(BijakAttemptPorts) private readonly ports: BijakAttemptPorts,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(FilesService) private readonly files: FilesService,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   /* ------------------------------------------------------------------------------ helpers */
@@ -284,14 +339,144 @@ export class BijakAttemptsService {
     return { attemptId: out.attempt.id, created: out.created }
   }
 
+  /**
+   * S5-T11 (API-PRAC-10): a Soalan Berstruktur attempt, single shot. In ONE transaction: the composition is frozen as one section holding the
+   * question (pinned to the served version), an `exam_attempts` row is made (`paper_kind 'structured'`, no paper, `latihan`, untimed), the
+   * answers are stored, the ONE grader (`gradeAttempt`) marks them, the result is saved and the attempt is closed as `submitted`. A part the grader
+   * cannot mark stays `belum_dimarkah` (provisional) for the pupil's own mark (API-BIJAK-05, unchanged). In the same transaction one `practice_answers` row per leaf is
+   * written through `AnswerLogPort` (mode `structured`, `tracking_a` for the Bahasa track; the self-mark updates the same row). After the commit `emit` writes the audit line,
+   * pays the reward (A9) and feeds the aggregate, as every other submit.
+   */
+  async submitStructured(who: { userId: string; isTest: boolean }, input: StructuredAttemptInput, auth: AuthContext | null = null, caller: CallerInfo | null = null): Promise<StructuredAttemptOutput> {
+    const composition: SectionSnapshot[] = [
+      { id: 's1', label: 'Soalan Berstruktur', rule: { type: 'all' }, questionIds: [input.questionId], versions: { [input.questionId]: input.versionNo } },
+    ]
+    // A set the bridge refuses, or whose stored key the bank cannot read (a leaf without a scheme), is a handled 422, never a 500 (nothing is created).
+    const bundles = await this.loadBundles(composition, noEligibleQuestions).catch((err: unknown) => {
+      if (err instanceof ApiError) throw err
+      this.logger.error(`Question ${input.questionId} could not be loaded for a structured attempt: ${err instanceof Error ? err.message : String(err)}`)
+      throw noEligibleQuestions()
+    })
+    const bundle = bundleOf(bundles, input.questionId)
+    const paths = leafPaths(bundle.question.parts ?? [])
+    const index = buildLeafIndex(composition, bundles)
+    const byPath = new Map([...paths].map(([id, path]) => [path, id]))
+    // Stored Bijak data holds the Bijak code (MAT / SN / SEJ), as `exam_attempts.subject` of a paper attempt does; an unknown code passes through (open dictionary).
+    const subject = bijakCodeOf(input.subject?.trim() || bundle.question.curriculum.subject)
+    const now = this.now()
+    const answers = new Map<string, AnswerRow>()
+    for (const a of input.answers) {
+      const partId = byPath.get(a.path)
+      const leaf = partId === undefined ? undefined : index.parts.get(partId)
+      if (partId === undefined || !leaf || !a.text.trim()) continue
+      answers.set(partId, { partId, answer: structuredAnswerOf(leaf.kind, a.text), rev: 1, savedAt: now })
+    }
+    const result = gradeAttempt(composition, bundles, this.answerMap(answers))
+    const attempt = await this.prisma.transaction(async () => {
+      const row = await this.repo.create({
+        userId: who.userId,
+        paperId: null,
+        paperKind: 'structured',
+        title: input.title?.trim() || STRUCTURED_TITLE,
+        subject,
+        subjectName: input.subjectName?.trim() || subject,
+        kertas: 1,
+        // The result view needs a printed code; a structured set has none.
+        code: STRUCTURED_CODE,
+        mode: 'latihan',
+        startedAt: now,
+        deadlineAt: null,
+        durationMin: 0,
+        composition,
+        isTest: who.isTest,
+      })
+      await this.repo.upsertAnswers(row.id, [...answers.values()])
+      const closed = await this.repo.close(row.id, { status: 'submitted', submittedAt: now, lateBySeconds: null, idempotencyKey: null })
+      if (!closed) throw new Error('A new structured attempt could not be closed')
+      await this.repo.saveResult(row.id, result)
+      await this.writeStructuredRows(who, row.id, input.questionId, input.versionNo, input.track === 'bahasa' ? 'tracking_a' : 'structured', result.questions[0]?.parts ?? [], paths, now, new Set(answers.keys()))
+      return { ...row, status: 'submitted' as const, submittedAt: now, lateBySeconds: null }
+    }, TX)
+    await this.emit([{ attempt, status: 'submitted', result, swept: false, regraded: false }], auth, caller)
+    const graded = result.questions[0]?.parts ?? []
+    return {
+      attemptId: attempt.id,
+      submittedAt: now,
+      parts: graded.flatMap((p) => {
+        const path = paths.get(p.partId)
+        return path === undefined ? [] : [{ path, awarded: p.awarded, max: p.marks, pending: p.status === 'belum_dimarkah' }]
+      }),
+    }
+  }
+
+  /**
+   * One `practice_answers` row per graded leaf of a structured attempt, through the single writer (`AnswerLogPort.record`, joining the caller's
+   * transaction). A part waiting for the pupil's mark (`belum_dimarkah`) has `marksAwarded` null; `isCorrect` is awarded = max. The key is
+   * (attempt, user, question, part path), so the self-mark's second call updates the SAME row. A leaf with no marks has no row (the port refuses 0).
+   */
+  private async writeStructuredRows(
+    who: { userId: string; isTest: boolean },
+    attemptId: string,
+    questionId: string,
+    versionNo: number,
+    mode: WritableAnswerMode,
+    parts: readonly { partId: string; awarded: number; marks: number; status: string }[],
+    paths: ReadonlyMap<string, string>,
+    answeredAt: Date,
+    /** Submit: only the leaves the pupil answered (46 section 4.6); a blank leaf gets its row when she marks it. Absent: every given part. */
+    answered?: ReadonlySet<string>,
+  ): Promise<void> {
+    for (const p of parts) {
+      const partRef = paths.get(p.partId)
+      if (partRef === undefined || !(p.marks > 0) || (answered && !answered.has(p.partId))) continue
+      const marksAwarded = p.status === 'belum_dimarkah' ? null : p.awarded
+      await this.answerLog.record({
+        userId: who.userId,
+        attemptId,
+        questionId,
+        partRef,
+        mode,
+        isCorrect: marksAwarded !== null && marksAwarded === p.marks,
+        marksAwarded,
+        marksMax: p.marks,
+        answeredAt,
+        isTest: who.isTest,
+        questionVersionNo: versionNo,
+      })
+    }
+  }
+
+  /** The mode the rows of a structured attempt were written under (`tracking_a` for a Bahasa set); `structured` when there is none yet. */
+  private async structuredModeOf(attemptId: string, userId: string): Promise<WritableAnswerMode> {
+    const rows = await this.prisma.client.$queryRaw<{ mode: string }[]>`
+      SELECT mode FROM practice_answers WHERE attempt_id = ${attemptId}::uuid AND user_id = ${BigInt(userId)}::bigint LIMIT 1`
+    return rows[0]?.mode === 'tracking_a' ? 'tracking_a' : 'structured'
+  }
+
   /* ---------------------------------------------------------------------------------- views */
+
+  /**
+   * The stored "Semak" of each checked question while its answers are still the ones it was made on. An edited answer was not checked yet: it shows
+   * no verdict until its own "Semak" (a reload must not mark it for free). Only the parts "Semak" reveals, also for a row stored before that rule.
+   */
+  private async shownChecks(row: AttemptRow, order: readonly string[], bundles: Bundles, answers: AnswerMap): Promise<BijakAttemptQuestionResult[]> {
+    if (!order.length) return []
+    const stored = await this.repo.checkResults(row.id)
+    const index = buildLeafIndex(row.composition, bundles)
+    return order.flatMap((qid) => {
+      const result = stored.get(qid) as BijakAttemptQuestionResult | null | undefined
+      if (!result) return []
+      const shown = revealedOnly(result, new Set(semakParts(index, qid)))
+      return sameAnswersAsCheck(shown, answers) ? [shown] : []
+    })
+  }
 
   private async buildView(row: AttemptRow, withChecks: boolean, preloaded?: Bundles): Promise<BijakAttemptPaperView> {
     const [answers, checks, bundles] = await Promise.all([this.repo.answers(row.id), this.repo.checkCounts(row.id), preloaded ?? this.loadBundles(row.composition)])
     const served = buildServedPaper(row.composition, bundles)
     const showChecks = withChecks && row.status === 'in_progress' && row.mode === 'latihan'
     const map = this.answerMap(answers)
-    const results: BijakAttemptQuestionResult[] = showChecks ? checks.order.map((qid) => checkResult(row.composition, bundles, map, qid)) : []
+    const results = showChecks ? await this.shownChecks(row, checks.order, bundles, map) : []
     return {
       serverNow: ts(this.now()),
       attempt: this.toMeta(row, answers, checks),
@@ -379,6 +564,23 @@ export class BijakAttemptsService {
       const result = this.present(row, { result: stored.result, selfMarks }, this.answerMap(answers), bundles)
       if (!unchanged) {
         await this.repo.saveSelfMarks(id, selfMarks, result)
+        if (row.paperKind === 'structured') {
+          const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)
+          const qid = found.q.questionId
+          const path = leafPaths(bundleOf(bundles, qid).question.parts ?? []).get(body.partId)
+          if (part && path !== undefined) {
+            await this.writeStructuredRows(
+              { userId: row.userId, isTest: row.isTest },
+              id,
+              qid,
+              row.composition.find((s) => s.versions?.[qid] !== undefined)?.versions?.[qid] ?? 1,
+              await this.structuredModeOf(id, row.userId),
+              [part],
+              new Map([[body.partId, path]]),
+              this.now(),
+            )
+          }
+        }
         events.push({ attempt: row, status: row.status as FinishedStatus, result, swept: false, regraded: true, selfMark: { base: automaticScore(stored.result, row.composition) } })
       }
       const part = result.questions.flatMap((q) => q.parts).find((p) => p.partId === body.partId)!
@@ -486,12 +688,25 @@ export class BijakAttemptsService {
       const leaf = index.parts.get(c.partId)
       if (!leaf || locked.has(c.partId)) continue
       // REQ-B-014: the topic of an essay_choice part is one of that part's topics, whatever the revision (nothing is stored on a refusal).
-      if (leaf.topicIds && c.answer.choice !== undefined && !leaf.topicIds.includes(c.answer.choice)) {
-        throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.choice`]: MSG.essayTopicUnknown } })
+      if (leaf.topicIds) {
+        for (const key of ['choice', 'topicId'] as const) {
+          const topic = c.answer[key]
+          if (topic !== undefined && !leaf.topicIds.includes(topic)) {
+            throw ApiError.of('VALIDATION_ERROR', { fields: { [`answers.${c.partId}.${key}`]: MSG.essayTopicUnknown } })
+          }
+        }
       }
       const cur = answers.get(c.partId)
       if (cur && cur.rev >= c.rev) continue
-      let answer = c.answer
+      // DM-68: `revealed` belongs to the server ("Semak" sets it, nothing clears it). `topicId` wins and is copied to `choice`, which every reader of an open essay_choice answer still uses.
+      let answer: PartAnswer = {
+        ...c.answer,
+        ...(leaf.topicIds && c.answer.topicId !== undefined ? { choice: c.answer.topicId } : {}),
+      }
+      delete answer.revealed
+      // A leaf with no topic choice has nowhere to keep a topic: a client `topicId` is dropped (not stored, not an error).
+      if (!leaf.topicIds) delete answer.topicId
+      if (cur?.answer.revealed) answer.revealed = true
       if (answer.photos) {
         if (!photos) {
           photos = new Map()
@@ -716,19 +931,31 @@ export class BijakAttemptsService {
       if (row.status !== 'in_progress') throw attemptClosed()
       if (!row.composition.some((s) => s.questionIds.includes(questionId))) throw ApiError.of('NOT_FOUND', { message: MSG.questionNotFound })
       const load = this.lazyBundles(row)
+      const index = await this.leafIndexOf(row, load)
+      // 46 section 3.5: essay, working, drawing and table_fill have no "Semak"; their scheme comes after "Hantar".
+      const parts = semakParts(index, questionId)
+      if (parts.length === 0) throw ApiError.of('FORBIDDEN', { message: MSG.schemeAfterSubmit })
       const answers = await this.repo.answers(id)
       const checks = await this.repo.checkCounts(id)
       const used = checks.counts.get(questionId) ?? 0
       // After the cap the answer is shown and no further payload can change it (nor the count).
       if (used < MAX_CHECKS_PER_QUESTION && payload) {
-        const index = await this.leafIndexOf(row, load)
         await this.merge(row, answers, payload.changes, index, lockedParts(row.mode, checks.counts, index))
         await this.applyMeta(row, payload)
       }
-      const result = checkResult(row.composition, await load(), this.answerMap(answers), questionId)
-      if (used < MAX_CHECKS_PER_QUESTION) await this.repo.saveCheck(id, questionId, used + 1, result)
-      else await this.repo.saveCheck(id, questionId, used, result)
-      return result
+      const map = this.answerMap(answers)
+      // Lead ruling Q3: a blank part never consumes a check nor reveals the key (the UI disables "Semak" too).
+      if (parts.every((pid) => isBlank(map.get(pid), index.parts.get(pid)?.kind as LeafKind | 'mcq' | undefined))) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { questionId: CHECK_BLANK } })
+      }
+      const result = checkResult(row.composition, await load(), map, questionId, new Set(parts))
+      // FR-MUR-13-6: only an answer-changing check counts towards the cap.
+      const last = used > 0 ? ((await this.repo.checkResults(id)).get(questionId) as BijakAttemptQuestionResult | null | undefined) : null
+      const changed = !last || !sameAnswersAsCheck(revealedOnly(last, new Set(parts)), map)
+      const checksUsed = used < MAX_CHECKS_PER_QUESTION && changed ? used + 1 : used
+      await this.repo.saveCheck(id, questionId, checksUsed, result)
+      await this.repo.markRevealed(id, parts, this.now())
+      return { ...result, checksUsed }
     }, TX)
   }
 
@@ -787,6 +1014,28 @@ export class BijakAttemptsService {
     }
   }
 
+  /** A9: the reward of a structured attempt (submit or self-mark gain), after the commit; a failing port never fails the request. */
+  private async payStructured(e: ClosedEvent, touchStreak: boolean): Promise<void> {
+    const a = e.attempt
+    const questionId = e.result.questions[0]?.questionId
+    if (questionId === undefined) return
+    try {
+      await this.ports.reward.awardStructured({
+        attemptId: a.id,
+        userId: a.userId,
+        questionId,
+        isTest: a.isTest,
+        score: e.result.score,
+        max: e.result.max,
+        touchStreak,
+        submittedAt: a.submittedAt,
+        description: BIJAK_REWARD_DESCRIPTION,
+      })
+    } catch (err) {
+      this.logger.error(`Structured reward port failed for attempt ${a.id}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   /** Runs after the commit; a failing port never fails the request (the attempt is already closed). */
   private async emit(events: readonly ClosedEvent[], auth: AuthContext | null = null, who: CallerInfo | null = null): Promise<void> {
     for (const e of events) {
@@ -800,7 +1049,8 @@ export class BijakAttemptsService {
         })
         // Fail closed: a latihan shows the scheme through "Semak", so only a timed exam may earn the reward. A Kertas Subjektif
         // sitting has no "Semak" (its scheme comes after Hantar), so it is paid at Hantar like an exam (46 section 3.6, B6).
-        if (a.mode === 'exam' || a.paperKind === 'subjektif') {
+        if (a.paperKind === 'structured') await this.payStructured(e, true)
+        else if (a.mode === 'exam' || a.paperKind === 'subjektif') {
           try {
             await this.ports.reward.award({
               attemptId: a.id,
@@ -820,7 +1070,8 @@ export class BijakAttemptsService {
         }
       }
       // D94: a self-mark that raises a part pays the gain (exam attempts only, none in Mod Pelajar); no other regrade pays.
-      if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
+      if (e.regraded && e.selfMark && a.paperKind === 'structured') await this.payStructured(e, false)
+      else if (e.regraded && e.selfMark && (a.mode === 'exam' || a.paperKind === 'subjektif')) {
         try {
           await this.ports.reward.awardSelfMark({
             attemptId: a.id,
