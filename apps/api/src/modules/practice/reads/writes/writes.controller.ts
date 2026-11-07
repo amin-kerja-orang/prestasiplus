@@ -2,7 +2,9 @@ import { Body, Controller, Get, HttpCode, Inject, Param, Put, Post, Query, Req, 
 import type { Request } from 'express'
 
 import { ok } from '../../../../common/http/respond'
+import { requestIdOf } from '../../../../common/request/request-id'
 import { type RequestWithAuth, ScopeContext } from '../../../../common/scope'
+import { AUTH_CONTEXT_KEY } from '../../../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { READS_WRITE_LIMITS, MESSAGES } from './rules'
 import { StructuredService } from './structured.service'
@@ -59,6 +61,8 @@ export class StructuredController {
   @HttpCode(201)
   @RateLimit(READS_WRITE_LIMITS.attempts)
   async attempt(@Param('id') id: string, @Body() body: unknown, @Req() req: Req) {
-    return ok(await this.structured.attempt(callerOf(req), id, body))
+    // The audit line of the submit is the pupil's: the session context and the request coordinates travel with the caller.
+    const audit = { auth: req[AUTH_CONTEXT_KEY] ?? null, ip: req.ip ?? req.socket.remoteAddress ?? null, requestId: requestIdOf(req) ?? null }
+    return ok(await this.structured.attempt({ ...callerOf(req), audit }, id, body))
   }
 }

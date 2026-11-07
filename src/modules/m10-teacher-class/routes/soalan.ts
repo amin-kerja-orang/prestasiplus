@@ -8,13 +8,17 @@ import { GURU_STRUCTURED_ROUTES, structuredPages } from '@/modules/m04-question-
  * kembali"). Not own / unknown ids are the standard 404 (BR-M10-01), raised by the page.
  *
  * S6-T17 (R1-GUR-44b): the list and detail of /guru/soalan-berstruktur mount the two M04 structured pages for the
- * teacher (`portal: 'guru'`, API-GUR-26); the pages and route names come from the M04 public entry.
+ * teacher (`portal: 'guru'`, API-GUR-26); the pages and route names come from the M04 public entry. The detail id
+ * is a question id (digits) or the id of the teacher's own submission (`g{n}`, S6-T17). The submit form is
+ * `/cipta` and its edit form `/:id/edit` (own submissions only).
  */
 export const SOALAN_ROUTES = {
   list: 'm10.soalan',
   create: 'm10.soalan.cipta',
   detail: 'm10.soalan.detail',
   edit: 'm10.soalan.edit',
+  berstrukturCreate: 'm10.soalan.berstruktur.cipta',
+  berstrukturEdit: 'm10.soalan.berstruktur.edit',
 } as const
 
 const base = {
@@ -88,6 +92,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/guru/soalan-berstruktur/cipta',
+    name: SOALAN_ROUTES.berstrukturCreate,
+    component: () => import('../pages/SoalanBerstrukturCiptaPage.vue'),
+    meta: {
+      ...base,
+      title: 'Cipta Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Cipta Soalan Berstruktur' },
+    },
+  },
+  {
     path: '/guru/soalan-berstruktur/:id([0-9]+|g[0-9]+)',
     name: GURU_STRUCTURED_ROUTES.detail,
     component: structuredPages.detail,
@@ -96,6 +110,17 @@ const routes: RouteRecordRaw[] = [
       ...base,
       title: 'Soalan Berstruktur - PRESTASIPLUS',
       header: { title: 'Soalan Berstruktur' },
+    },
+  },
+  {
+    path: '/guru/soalan-berstruktur/:id(g[0-9]+)/edit',
+    name: SOALAN_ROUTES.berstrukturEdit,
+    component: () => import('../pages/SoalanBerstrukturEditPage.vue'),
+    props: (route) => ({ id: String(route.params.id) }),
+    meta: {
+      ...base,
+      title: 'Edit Soalan Berstruktur - PRESTASIPLUS',
+      header: { title: 'Edit Soalan Berstruktur' },
     },
   },
 ]

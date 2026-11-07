@@ -25,7 +25,8 @@ import type { DropAction, HeadcountSort } from '../api/headcount-types'
 import HeadcountConfirmModals from '../components/headcount/HeadcountConfirmModals.vue'
 import HeadcountTable from '../components/headcount/HeadcountTable.vue'
 import { useHeadcountReadOnly } from '../lib/headcount-access'
-import { percentOf } from '../lib/headcount/format'
+import { DASH, percentOf, selisihText } from '../lib/headcount/format'
+import { jurangOf } from '../lib/headcount/otr'
 import { LOAD_ERROR, isLoadError, notFoundOutcome, useRouteData } from '../lib/prestasi/load'
 import { routeId } from '../lib/route-id'
 
@@ -66,6 +67,14 @@ const subtitle = computed(() => {
   return c
     ? `${c.className} · ${c.levelName} · ${String(c.year)} · Guru: ${c.teacherName}`
     : ''
+})
+
+/** "Jurang: +40": the subject-card targets (default ETR - default TOV, HC-1); "—" when either is empty. */
+const jurangText = computed(() => {
+  const c = data.value?.config
+  const j = c ? jurangOf(c.defaultTov, c.defaultEtr) : null
+  if (j === null) return DASH
+  return j === 0 ? '0' : selisihText(j)
 })
 
 const chips = computed(() => {
@@ -177,6 +186,14 @@ const exportHref = computed(
           icon="i-ph-users"
           :label="chips.total"
           data-testid="chip-total"
+        />
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          size="lg"
+          icon="i-ph-arrows-out-line-vertical"
+          :label="`Jurang: ${jurangText}`"
+          data-testid="chip-jurang"
         />
       </div>
 

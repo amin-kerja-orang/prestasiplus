@@ -13,6 +13,7 @@ import { extraRoutes } from './extras'
 import { lookupRoutes } from './lookups'
 import { personalQuestionRoutes } from './personal-questions'
 import { questionRoutes } from './questions'
+import { structuredSubmitRoutes } from './structured-submit'
 import { studentRoutes } from './students'
 import { studentSideRoutes } from './student-side'
 import { teacherProfileRoutes } from './teacher-profile'
@@ -24,6 +25,7 @@ export const m10Routes: RouteDef[] = [
   ...studentRoutes,
   ...lookupRoutes,
   ...questionRoutes,
+  ...structuredSubmitRoutes,
   ...personalQuestionRoutes,
   ...extraRoutes,
   ...studentSideRoutes,

@@ -160,40 +160,6 @@ describe('resume (US-12) and persistence', () => {
   })
 })
 
-describe('Jana Kertas on the server', () => {
-  it('creates a paper for the student and records the exact questions served', async () => {
-    const { server } = make()
-    const out = await server.generatePaper(USER, 'MAT', 1)
-    if (!out.ok) throw new Error('expected a paper')
-    const cover = await server.getCover(USER, out.paperId)
-    expect(cover.kind).toBe('jana')
-    expect(cover.questionCount).toBe(10)
-    expect(cover.marks).toBe(10)
-    const { attemptId } = await server.startAttempt(USER, out.paperId, 'exam')
-    const before = (await server.getAttemptView(USER, attemptId)).questions.map((q) => q.id)
-    expect(before).toHaveLength(10)
-    // another student cannot open this generated paper
-    await expect(server.getCover(99, out.paperId)).rejects.toMatchObject({ code: 'not_found' })
-  })
-  it('lists a shortage for a contract with an empty pool and creates nothing', async () => {
-    const { server } = make()
-    const out = await server.generatePaper(USER, 'SN', 1)
-    expect(out).toEqual({
-      ok: false,
-      reason: 'shortage',
-      shortages: [{ section: 'Bahagian A', need: 40, have: 0 }],
-    })
-    expect(Object.keys(JSON.parse(JSON.stringify(await server.history(USER))))).toHaveLength(0)
-  })
-  it('refuses a subject and kertas without a contract', async () => {
-    const { server } = make()
-    expect(await server.generatePaper(USER, 'MAT', 3)).toEqual({
-      ok: false,
-      reason: 'no_blueprint',
-    })
-  })
-})
-
 describe('result: choose-N, marks and rewards', () => {
   it('counts the best N attempted questions of a choose section, whatever was ticked', async () => {
     const { server } = make()

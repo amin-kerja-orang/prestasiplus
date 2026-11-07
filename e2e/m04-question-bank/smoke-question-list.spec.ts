@@ -173,11 +173,13 @@ test.describe('M04 S1 question list', { tag: [TAG.smoke, moduleTag(4)] }, () => 
     } else {
       await page.getByTestId('questions-archive-all').click()
     }
-    // The DS confirm dialog: the V2 text, then the dry-run count line.
-    const message = (await page.locator('[data-ds="confirm-message"]').textContent()) ?? ''
-    expect(message).toContain('ARKIB SEMUA soalan?')
-    expect(message).toMatch(/\d+ daripada \d+ soalan sepadan akan diarkibkan\./)
-    await page.locator('[data-ds="confirm-ok"]').click()
+    // The typed dialog (FR-ADM-Q20.3): the V2 text, the dry-run count line, then the word.
+    const dialog = page.getByTestId('questions-archive-dialog')
+    await expect(dialog).toContainText('ARKIB SEMUA soalan?')
+    await expect(dialog).toContainText(/\d+ daripada \d+ soalan sepadan akan diarkibkan\./)
+    await expect(page.getByTestId('questions-archive-confirm')).toBeDisabled()
+    await page.getByTestId('questions-archive-word').fill('ARKIB')
+    await page.getByTestId('questions-archive-confirm').click()
     await expect(page.getByTestId('bulk-filter-success')).toContainText('Berjaya arkib 500 soalan.')
     await expect(page.getByTestId('bulk-filter-note').filter({ hasText: 'Baki' })).toHaveCount(1)
     await expectNoHorizontalScroll(page)
