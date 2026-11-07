@@ -52,6 +52,6 @@ describe('rate limits of the solo area (D57)', () => {
     expectLimited(await c.post('/api/games/jutawan/start', {}))
     expect((await c.get('/api/games/roda-nasib')).status).toBe(200)
     expect((await c.get('/api/games/jutawan')).status).toBe(200)
-    expectLimited(await c.get('/api/games/pertandingan'))
+    expectLimited(await c.get('/api/games/hub'))
   })
 })

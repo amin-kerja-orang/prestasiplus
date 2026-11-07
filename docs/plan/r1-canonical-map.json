@@ -2566,36 +2566,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/permainan/pertandingan|m16.pertandingan",
-      "path": "/permainan/pertandingan",
-      "name": "m16.pertandingan",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/PertandinganPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/permainan/uji-minda|m16.uji-minda",
-      "path": "/permainan/uji-minda",
-      "name": "m16.uji-minda",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/UjiMindaPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "/permainan/sambung-kata|m16.sambung-kata",
-      "path": "/permainan/sambung-kata",
-      "name": "m16.sambung-kata",
-      "status": "canonical",
-      "sector": "S7",
-      "component": "src/modules/m16-battle-games/pages/SambungKataPage.vue",
-      "file": "src/modules/m16-battle-games/routes/permainan-extra.ts",
-      "approved_by_card": null
-    },
-    {
       "key": "/sekolah-bersaing|m16.sekolah-bersaing",
       "path": "/sekolah-bersaing",
       "name": "m16.sekolah-bersaing",
@@ -14357,26 +14327,6 @@
       "status": "canonical",
       "sector": "S7",
       "file": "apps/api/src/modules/games/solo/spin/spin.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/games/pertandingan",
-      "method": "GET",
-      "path": "/api/games/pertandingan",
-      "api_id": "API-GAME-02",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/games/solo/weekly/weekly.controller.ts",
-      "approved_by_card": null
-    },
-    {
-      "key": "GET /api/games/uji-minda",
-      "method": "GET",
-      "path": "/api/games/uji-minda",
-      "api_id": "API-GAME-02",
-      "status": "canonical",
-      "sector": "S7",
-      "file": "apps/api/src/modules/games/solo/weekly/weekly.controller.ts",
       "approved_by_card": null
     },
     {

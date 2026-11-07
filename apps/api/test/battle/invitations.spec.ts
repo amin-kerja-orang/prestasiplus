@@ -45,8 +45,9 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       expect(users.map((u) => u.id)).not.toContain(a.id)
       for (const u of users) {
         expect(Object.keys(u).sort()).toEqual(['avatar', 'id', 'name', 'school'])
-        // Children's names rule (issue #76): a student sees first name + initial of other pupils; the id stays (invite handle).
-        expect(u.name).toMatch(/^Murid \S\.$/)
+        // Children's names rule (issue #76): a student sees the first given name of other pupils (ruling 7 on #497); no school; the id stays (invite handle).
+        expect(u.name).toBe('Murid')
+        expect(u.school).toBe('')
         expect(u.avatar).toBeNull()
       }
       const roles = await rows<{ role: string }>(`select distinct role from user_roles where user_id = any($1::bigint[])`, [users.map((u) => u.id)])
@@ -152,14 +153,14 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       return list.invitations[0]?.uuid as string
     }
 
-    it('lists the receiver\'s pending invitations newest first with sender name and school only', async () => {
+    it('lists the receiver\'s pending invitations newest first with the sender first given name only (FR-GM-00.8)', async () => {
       await rows(`delete from battle_invitations`)
       const first = await newInvite(a, b)
       t.clock.advance(60_000)
       const second = await newInvite(c, b)
       const list = parse(BattleInvitationsResponseSchema, await b.get('/battle/invitations'))
       expect(list.invitations.map((i) => i.uuid)).toEqual([second, first])
-      expect(list.invitations[0]).toEqual({ uuid: second, sender_name: 'Murid Demo Maju', sender_school: 'SMK Demo Satu' })
+      expect(list.invitations[0]).toEqual({ uuid: second, sender_name: 'Murid', sender_school: '' })
       // the sender and a bystander see nothing
       expect((await a.get('/battle/invitations')).body).toEqual({ invitations: [] })
       uuid = first

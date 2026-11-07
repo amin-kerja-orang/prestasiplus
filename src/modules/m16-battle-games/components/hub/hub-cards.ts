@@ -1,6 +1,7 @@
 /**
- * S6 `/permainan` card data (SRS M16 v1.6 FR-M16-52; URS FN-M16-4.1.3 to 4.1.11; discovery A.3): 18 cards in
- * live order (17 games + the Peta Pengembaraan link card). Copy is exact (DV-M16-21, DV-M16-22, DV-M16-23
+ * S6 `/permainan` card data (SRS M16 v1.6 FR-M16-52; URS FN-M16-4.1.3 to 4.1.11; discovery A.3): 15 cards in
+ * live order (14 games + the Peta Pengembaraan link card). Pertandingan, Uji Minda and Sambung Kata have no card
+ * and no route in R1 (FR-GM-00.1, FR-MUR-21-1). Copy is exact (DV-M16-21, DV-M16-22, DV-M16-23
  * keep the live wording). Badge colours are the observed pairs mapped to the palette classes (the live hex
  * values are the Tailwind v3 palette the theme overrides).
  */
@@ -135,18 +136,6 @@ export const HUB_CARDS: readonly HubCard[] = [
     to: '/permainan/roda-nasib',
   },
   {
-    id: 'pertandingan',
-    badge: '📅 MINGGUAN',
-    badgeClass: 'bg-amber-100 text-amber-700',
-    emoji: '🏆',
-    title: 'Pertandingan Mingguan',
-    text: 'Lumba dengan semua pelajar setiap minggu! Top 3 dapat Syiling bonus dan badge istimewa.',
-    chips: [{ text: '📊 Ranking Live' }, { text: '🥇 Hadiah Top 3' }],
-    icon: 'fa-trophy',
-    button: 'Lihat Ranking',
-    to: '/permainan/pertandingan',
-  },
-  {
     id: 'peta-pengembaraan',
     emoji: '🗺️',
     title: 'Peta Pengembaraan',
@@ -155,18 +144,6 @@ export const HUB_CARDS: readonly HubCard[] = [
     icon: 'fa-map-marked-alt',
     button: 'Jelajah',
     to: '/peta-belajar',
-  },
-  {
-    id: 'uji-minda',
-    badge: '👨‍👩‍👧 IBU BAPA',
-    badgeClass: 'bg-pink-100 text-pink-700',
-    emoji: '🧠',
-    title: 'Uji Minda',
-    text: 'Cabaran khas dari ibu/bapa kamu! Jawab soalan, kumpul mata, dan tebus hadiah istimewa.',
-    chips: [{ text: '🎁 Hadiah Custom' }, { text: '⏳ Menunggu Ibu Bapa' }],
-    icon: 'fa-brain',
-    button: 'Mula',
-    to: '/permainan/uji-minda',
   },
   {
     id: 'cabaran-kilat',
@@ -215,18 +192,6 @@ export const HUB_CARDS: readonly HubCard[] = [
     icon: 'fa-crosshairs',
     button: 'Tembak!',
     to: '/permainan/tembak-jawapan',
-  },
-  {
-    id: 'sambung-kata',
-    badge: '🔗 BARU!',
-    badgeClass: 'bg-emerald-100 text-emerald-800',
-    emoji: '🔗',
-    title: 'Sambung Kata',
-    text: 'Taip perkataan bermula huruf terakhir! Bina rantaian paling panjang sebelum masa habis.',
-    chips: [{ text: '⌨️ Taip Laju' }, { text: '🔗 Chain' }],
-    icon: 'fa-link',
-    button: 'Mula!',
-    to: '/permainan/sambung-kata',
   },
   {
     id: 'kad-memori',
@@ -308,17 +273,9 @@ export const HUB_THEME: Readonly<
     banner: 'from-amber-500 to-yellow-300',
     button: 'bg-linear-to-r from-amber-600 to-amber-700 hover:brightness-95',
   },
-  pertandingan: {
-    banner: 'from-emerald-500 to-emerald-300',
-    button: 'bg-linear-to-r from-emerald-500 to-emerald-600 hover:brightness-95',
-  },
   'peta-pengembaraan': {
     banner: 'from-violet-500 to-violet-300',
     button: 'bg-linear-to-r from-violet-600 to-violet-700 hover:brightness-95',
-  },
-  'uji-minda': {
-    banner: 'from-pink-500 to-pink-300',
-    button: 'bg-linear-to-r from-pink-500 to-pink-600 hover:brightness-95',
   },
   'cabaran-kilat': {
     banner: 'from-slate-900 to-indigo-950',
@@ -338,10 +295,6 @@ export const HUB_THEME: Readonly<
   'tembak-jawapan': {
     banner: 'from-orange-950 to-orange-700',
     button: 'bg-linear-to-r from-orange-500 to-orange-600 hover:brightness-95',
-  },
-  'sambung-kata': {
-    banner: 'from-emerald-950 to-emerald-700',
-    button: 'bg-linear-to-r from-emerald-500 to-emerald-600 hover:brightness-95',
   },
   'kad-memori': {
     banner: 'from-purple-900 to-violet-500',

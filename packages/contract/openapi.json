@@ -22436,7 +22436,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+            "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
             "example": "1042"
           },
           "name": {
@@ -22651,7 +22651,7 @@
                 ],
                 "minLength": 1,
                 "maxLength": 64,
-                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                 "example": "1042"
               },
               "name": {
@@ -22686,7 +22686,7 @@
                 ],
                 "minLength": 1,
                 "maxLength": 64,
-                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                 "example": "1042"
               },
               "name": {
@@ -22856,7 +22856,7 @@
                   ],
                   "minLength": 1,
                   "maxLength": 64,
-                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first name + initial) unless the viewer may see this pupil.",
+                  "description": "Children's names rule (LEAD 2026-10-21, issue #76): null (and a first given name) unless the viewer may see this pupil.",
                   "example": "1042"
                 },
                 "name": {
@@ -23543,11 +23543,19 @@
               "battled"
             ],
             "additionalProperties": false
+          },
+          "enabledGames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Game keys (48 section 3.5, plus `roda-nasib`) switched on in `game_enabled_*` whose pool for the caller's Tingkatan holds the draw size (FR-GM-00.1; Battle 5). A hub card of a game not listed is absent."
           }
         },
         "required": [
           "openRooms",
-          "chips"
+          "chips",
+          "enabledGames"
         ],
         "additionalProperties": false
       },
@@ -23565,7 +23573,7 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
@@ -23628,12 +23636,12 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Full name, or first name + initial (children's names rule)."
+            "description": "Full name, or first given name (children's names rule)."
           },
           "value": {
             "type": "integer",
@@ -23841,7 +23849,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
           },
           "grade": {
             "type": "string",
@@ -25478,12 +25486,12 @@
             ],
             "minLength": 1,
             "maxLength": 64,
-            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first name + initial and null.",
+            "description": "The pupil's id, or null when the viewer may not see the name. Full name + id are shown only to the pupil themself, an admin, a school admin (pupils of the own school) and a teacher (pupils of the own classes); everyone else gets first given name and null.",
             "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first name + initial outside the viewer's scope (children's names rule)."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule)."
           },
           "sesi": {
             "type": "integer",
@@ -110319,7 +110327,7 @@
           "games"
         ],
         "summary": "Lobby of a room game (M16-23)",
-        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
+        "description": "papan-bijak: top10 of standings with jumlah > 0 (wins desc, skor desc, creation order). Other games: leaders, top 10 with wins > 0. Names are display names only (D54(d)); another pupil is shown as first given name with a null userId unless the viewer may see the name (children's names rule, issue #76).",
         "parameters": [
           {
             "schema": {
@@ -110842,7 +110850,17 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting), \"Pemain belum mencukupi.\" (below the minimum players) or \"Soalan tidak mencukupi.\" (question pool).",
+            "description": "CONFLICT \"Permainan sudah dimulakan.\" (not waiting) or \"Pemain belum mencukupi.\" (below the minimum players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {
@@ -111298,7 +111316,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11.",
+            "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11; or \"Soalan tidak mencukupi.\" (ERR-GAME-01: the pool is smaller than the draw; nothing starts).",
             "content": {
               "application/json": {
                 "schema": {
@@ -112396,10 +112414,11 @@
           "games"
         ],
         "summary": "Weekly competition board (M16-40)",
-        "description": "`?week=` is ignored (as live). Top 20 by the practice weekly ranking; names are display names only (D54(d)); another pupil is shown as first name + initial with a null userId unless the viewer may see the name (children's names rule, issue #76).",
+        "deprecated": true,
+        "description": "Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.",
         "responses": {
           "200": {
-            "description": "Weekly board.",
+            "description": "Not served in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112425,6 +112444,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "NOT_FOUND (the route does not exist in R1, FR-GM-00.1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -112435,10 +112464,11 @@
           "games"
         ],
         "summary": "Uji Minda placeholder (M16-41)",
-        "description": "Constant `{ data: { challenge: null } }`.",
+        "deprecated": true,
+        "description": "Off in R1 (FR-GM-00.1): the route is deleted and always answers 404. The path stays listed, deprecated, because removing it is not an additive contract change.",
         "responses": {
           "200": {
-            "description": "No challenge.",
+            "description": "Not served in R1.",
             "content": {
               "application/json": {
                 "schema": {
@@ -112457,6 +112487,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (the route does not exist in R1, FR-GM-00.1).",
             "content": {
               "application/json": {
                 "schema": {

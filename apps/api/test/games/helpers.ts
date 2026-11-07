@@ -29,7 +29,6 @@ import {
   type BotPoolPort,
   type GameRewardsPort,
   type PlatformAccuracySource,
-  type WeeklyPracticeSource,
 } from '../../src/modules/games'
 import { DEMO_PASSWORD, dropDatabase } from '../curriculum/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
@@ -58,7 +57,6 @@ export interface BootGamesOptions {
   /** Port doubles, plugged before `app.init()` (each at most once). */
   ports?: {
     rewards?: GameRewardsPort
-    weeklyPractice?: WeeklyPracticeSource
     platformAccuracy?: PlatformAccuracySource
     battle?: BattleReadPort
     botPool?: BotPoolPort
@@ -134,7 +132,6 @@ export async function bootGamesApp(opts: BootGamesOptions = {}): Promise<GamesTe
   const ports = app.get(GamesPorts, { strict: false })
   const p = opts.ports ?? {}
   if (p.rewards) ports.provideRewards(p.rewards)
-  if (p.weeklyPractice) ports.provideWeeklyPractice(p.weeklyPractice)
   if (p.platformAccuracy) ports.providePlatformAccuracy(p.platformAccuracy)
   if (p.battle) ports.provideBattle(p.battle)
   if (p.botPool) ports.provideBotPool(p.botPool)

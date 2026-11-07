@@ -7,7 +7,6 @@
  *                      (copies BE-23 semantics, credits through `WalletService`) but `canEarnSyiling` is FALSE until
  *                      BE-23 merges, because the `games_award_syiling` setting (seed 0) lives in BE-23. On the
  *                      BE-23 merge the lead rebinds this port to `GamificationService` (provideRewards).
- * - `weeklyPractice`   BE-13 (weekly practice ranking). Default: empty board.
  * - `platformAccuracy` BE-13 (platform answer accuracy, the bots' `p`). Default: the mock's fallback (0).
  * - `battle`           BE-44 (`BattleReadService.hasBattled`). Default: false.
  * - `botPool`          bot picker. Default: students of the host's school (school-scoped; a platform-wide pick needs a BE-05 read).
@@ -71,28 +70,6 @@ export interface GameRewardsPort {
   onGameResult(userId: string, input: GameResultInput, options: { tx?: TxClient; isTest: boolean }): Promise<GameResultOutcome>
 }
 
-/* ---------------------------------------------------------------------------- weekly practice board */
-
-export interface WeeklyPracticeRow {
-  rank: number
-  userId: string
-  name: string
-  sesi: number
-  betul: number
-  tepat: number
-}
-
-export interface WeeklyPracticeSource {
-  /** The weekly practice ranking of `[weekStart, weekEnd]` (is_test rows excluded by the source). `me` null when unranked. */
-  week(userId: string, weekStart: Date, weekEnd: Date): Promise<{ me: { rank: number; betul: number } | null; rows: WeeklyPracticeRow[] }>
-}
-
-export class NoWeeklyPractice implements WeeklyPracticeSource {
-  async week(): Promise<{ me: null; rows: [] }> {
-    return { me: null, rows: [] }
-  }
-}
-
 /* ------------------------------------------------------------------------------ platform accuracy */
 
 export interface PlatformAccuracySource {
@@ -149,7 +126,6 @@ export interface BotPoolPort {
 @Injectable()
 export class GamesPorts {
   private rewardsPort: GameRewardsPort
-  private weeklySource: WeeklyPracticeSource = new NoWeeklyPractice()
   private accuracySource: PlatformAccuracySource = new FallbackPlatformAccuracy()
   private battlePort: BattleReadPort = new NoBattle()
   private botPoolPort: BotPoolPort
@@ -162,9 +138,6 @@ export class GamesPorts {
 
   get rewards(): GameRewardsPort {
     return this.rewardsPort
-  }
-  get weeklyPractice(): WeeklyPracticeSource {
-    return this.weeklySource
   }
   get platformAccuracy(): PlatformAccuracySource {
     return this.accuracySource
@@ -185,11 +158,6 @@ export class GamesPorts {
   provideRewards(port: GameRewardsPort): void {
     this.once('rewards port')
     this.rewardsPort = port
-  }
-  /** BE-13. */
-  provideWeeklyPractice(source: WeeklyPracticeSource): void {
-    this.once('weekly practice source')
-    this.weeklySource = source
   }
   /** BE-13. */
   providePlatformAccuracy(source: PlatformAccuracySource): void {

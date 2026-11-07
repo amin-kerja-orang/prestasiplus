@@ -206,7 +206,6 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
           <div class="flex flex-col items-center gap-1 text-center">
             <UBadge v-if="side === you" color="primary" variant="soft" size="sm">Anda</UBadge>
             <p class="max-w-full truncate text-label text-highlighted">{{ view.players[side].name }}</p>
-            <p class="max-w-full truncate text-caption text-muted">{{ view.players[side].school }}</p>
             <p class="mt-2 text-overline text-muted">Skor</p>
             <p
               class="tabular text-title text-primary-t"
