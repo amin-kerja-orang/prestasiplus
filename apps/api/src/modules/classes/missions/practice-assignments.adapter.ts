@@ -56,7 +56,8 @@ export class PracticeAssignmentsAdapter implements PracticeAssignmentSource {
    * personal question. The Bab narrows the bank part only; a pool without a bank question is served from the personal ones alone. Deterministic per (mission, student).
    */
   private async missionQuestionIds(mission: MissionRecord, userId: string): Promise<string[]> {
-    if (mission.missionType !== 'latih_tubi') return []
+    // `harian` (S6-T07) is served like `latih_tubi`: by the mission's subject.
+    if (mission.missionType !== 'latih_tubi' && mission.missionType !== 'harian') return []
     const rng = prngStream(`m10:mission:${mission.id}:${userId}`)
     const levels = await this.repo.pupilLevelIds(mission, userId)
     // Tingkatan of the pupil's class on EVERY pass (FR-GUR-44a-10, lead ruling): a T1-T3 class is never topped up with T4/T5 bank questions.

@@ -83,7 +83,7 @@ describe('guards', () => {
 })
 
 describe('#1 overview (S1)', () => {
-  it('admin: constants, derived stats and the 4 sessions 21.8% / 26 / 84', async () => {
+  it('admin: constants, derived stats and the 4 sessions 31% (pooled 26/84) / 26 / 84', async () => {
     const o = await get<SpmOverview>(ADMIN, '/api/spm/overview')
     expect(o.stats).toEqual({
       totalQuestions: 20_529,
@@ -98,21 +98,21 @@ describe('#1 overview (S1)', () => {
       kertasSubjektif: 0,
     })
     expect('yearsAvailable' in o.stats).toBe(false)
-    expect(o.me).toEqual({ sessions: 4, avgAccuracy: 21.8, coins: 26, answered: 84 })
+    expect(o.me).toEqual({ sessions: 4, avgAccuracy: 31, coins: 26, answered: 84 })
     // Never a chip above the total (E2E-M06-03).
     expect(o.modules.databank).toBeLessThanOrEqual(o.stats.totalQuestions)
   })
 
-  it('student: 4 / 65.4% / 70 / 94; pelajar2 has no activity', async () => {
+  it('student: 4 / 74% (pooled) / 70 / 94; pelajar2 has no activity', async () => {
     expect((await get<SpmOverview>(PELAJAR, '/api/spm/overview')).me).toEqual({
       sessions: 4,
-      avgAccuracy: 65.4,
+      avgAccuracy: 74,
       coins: 70,
       answered: 94,
     })
     expect((await get<SpmOverview>(PELAJAR2, '/api/spm/overview')).me).toEqual({
       sessions: 0,
-      avgAccuracy: 0,
+      avgAccuracy: null,
       coins: 0,
       answered: 0,
     })
@@ -225,7 +225,7 @@ describe('#5 / #6 Tracking A (S5, S6)', () => {
     ])
     const tile = (c: string) => r?.tiles.find((t) => t.code === c)
     expect(tile('BM')).toMatchObject({ bersih: 0, bankBesar: 0, locked: 1, total: 1, readiness: 0 })
-    expect(tile('BM')?.lockedSets).toEqual([{ setNo: 1, readyCount: 9, target: 34 }])
+    expect(tile('BM')?.lockedSets).toEqual([{ year: 2026, setNo: 1, readyCount: 9, target: 34 }])
     expect(tile('BI')).toMatchObject({ total: 0, readiness: 0, lockedSets: [] })
     expect(tile('GEO')).toMatchObject({
       bersih: 0,
@@ -405,4 +405,17 @@ describe('contributeCells through the poolCells override (seed phase only)', () 
     expect(questions.count('Q-SPM-POOL', 3, 11, 4)).toBe(3)
     await runtime.reset()
   }, 300_000)
+})
+
+describe('mock history order', () => {
+  it('sorts completedAt descending, then id descending', async () => {
+    const { newestFirst } = await import('../../mock/handlers/history')
+    const rows = [
+      { id: 'a', completedAt: '2026-05-11T14:22:00+08:00' },
+      { id: 'c', completedAt: '2026-05-19T03:26:00+08:00' },
+      { id: 'b', completedAt: '2026-05-19T03:26:00+08:00' },
+    ]
+    expect([...rows].sort(newestFirst).map((r) => r.id)).toEqual(['c', 'b', 'a'])
+    expect([...rows].reverse().sort(newestFirst).map((r) => r.id)).toEqual(['c', 'b', 'a'])
+  })
 })

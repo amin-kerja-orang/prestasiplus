@@ -81,6 +81,8 @@ export const EnvSchema = z.object({
   THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE: z.coerce.number().int().min(1).default(5),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
+  // S6-T10 (FR-GUR-41-3, FR-GUR-8-7): default password of a pupil a teacher creates. No default value; NOT required at boot (Cipta Pelajar answers 500 while it is unset); never logged or documented.
+  PUPIL_DEFAULT_PASSWORD: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(8).optional()),
   /** BE-24: extra origins (comma separated, e.g. https://app.example) whose /api/files/<token> URLs an article or banner image may use, besides the API's own origin. */
   PUBLIC_ORIGINS: z.string().optional(),
   /** Reverse-proxy hops to trust for the client address (0 = none). */
@@ -179,6 +181,8 @@ export const EnvSchema = z.object({
   OCR_LANG_DIR: z.string().trim().optional(),
   OCR_WORKERS: z.coerce.number().int().min(1).max(16).optional(),
   OCR_PAGE_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
+  /** Wall-clock limit of one intake batch in processing (S1-T04, code OCR_BATCH_TIMEOUT). Default 900000 (15 min). */
+  OCR_BATCH_TIMEOUT_MS: z.coerce.number().int().min(60_000).max(7_200_000).optional(),
   OCR_INSPECT_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
   OCR_MAX_PAGES: z.coerce.number().int().min(1).max(2000).optional(),
   OCR_MIN_TEXT_CHARS: z.coerce.number().int().min(0).max(10_000).optional(),

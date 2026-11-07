@@ -13,6 +13,9 @@ export const AUDIT_ROUTES = {
 
 export const STRUCTURED_LIST_PATH = '/admin/structured-questions'
 export const SUBMISSIONS_PATH = '/admin/question-submissions'
+/** `Semak` of a Kiriman Guru row: the M28 review screen of its batch (FR-ADM-Q12.5). */
+export const submissionReviewPath = (batchId: string): string =>
+  `/admin/spm/soalan/ekstrak/${batchId}`
 export const DIAGRAMS_PATH = '/admin/soalan-gambar'
 export const MASTER_NOTES_PATH = '/admin/master-notes'
 

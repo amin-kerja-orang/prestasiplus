@@ -318,7 +318,7 @@ describe('S12 MockResultPage', () => {
     expect(t(w, 'result-score').text()).toBe('1 / 2 markah')
     expect(t(w, 'result-hero').attributes('data-hero')).toBe('mid')
     expect(t(w, 'weak-count').text()).toBe('1 soalan tersilap')
-    expect(t(w, 'result-tip').get('a').attributes('href')).toBe('/pusat-nota-ringkas')
+    expect(t(w, 'result-tip').find('a').exists()).toBe(false)
     expect(t(w, 'review-item-1').attributes('data-correct')).toBe('true')
     expect(t(w, 'review-item-1').get('[data-testid=review-header]').text()).toBe(
       '✓ Soalan 1 · 1/1 markah',
@@ -333,7 +333,7 @@ describe('S12 MockResultPage', () => {
       expect.anything(),
     )
     const hrefs = w.findAll('[data-testid=result-actions] a').map((a) => a.attributes('href'))
-    expect(hrefs).toEqual(['/spm-mock', '/pusat-nota-ringkas'])
+    expect(hrefs).toEqual(['/spm-mock'])
   })
 
   it('hides weak topics when nothing is wrong', async () => {
