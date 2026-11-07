@@ -47,7 +47,8 @@ export const HADIAH_CATEGORY_LABELS: Readonly<
 
 /** DATA-M15-01 (#2 body, and the body of #3 / #4). */
 export interface HadiahReward {
-  id: number
+  /** Opaque id text (API-ADM-15 `Id`). */
+  id: string
   category: HadiahCategory
   vendor: string
   title: string
@@ -99,7 +100,7 @@ export interface HadiahInput {
 
 /** #1 row. */
 export interface HadiahListItem {
-  id: number
+  id: string
   category: HadiahCategory
   /** The long table label of BR-M15-01. */
   categoryLabel: string
@@ -134,7 +135,7 @@ export type BulkAction =
 /** #5 request. Values are the raw page strings (BR-M15-12); see SRS BR-M15-11. */
 export interface HadiahBulkRequest {
   action: BulkAction
-  ids: number[]
+  ids: string[]
   stockValue?: string
   maxPerMonthValue?: string
   /** The raw trimmed prompt text (as live); the mock parses it with `parseInt` semantics. */
@@ -144,14 +145,15 @@ export interface HadiahBulkRequest {
 /** #5 data. `affected` = rewards changed (removed for `delete`); `keptIds` only for `delete`. */
 export interface HadiahBulkResult {
   affected: number
-  keptIds?: number[]
+  keptIds?: string[]
 }
 
 /** #6 row. */
 export interface RedemptionListItem {
-  id: number
-  user: { id: number; name: string; email: string }
-  rewardId: number
+  id: string
+  user: { id: string; name: string; email: string }
+  /** `''` when the reward row no longer exists. */
+  rewardId: string
   rewardTitle: string
   rewardVendor: string
   denominationRm: number
@@ -173,17 +175,22 @@ export interface RedemptionListQuery {
 
 /** #7 data. */
 export interface DeliverResult {
-  id: number
+  id: string
   status: 'delivered'
   deliveredAt: string
   expiresAt: string
 }
 
-/** #8 / #16 data. */
+/** #8 data. */
 export interface CancelResult {
-  id: number
+  id: string
   status: 'cancelled'
   refundedTokens: number
+}
+
+/** #16 data (parent reject; not in the B1 contract, UD-3): the mock keeps the numeric row id. */
+export interface ParentRejectResult extends Omit<CancelResult, 'id'> {
+  id: number
 }
 
 /** #9 data (hook `m15Redeem`; S5 builds no shop, user decision OQ-M15-01). */

@@ -4,10 +4,18 @@
  * types live in `api/types.ts`.
  */
 
-import type { CancelledBy, HadiahReward, MysteryBoxView, RedemptionStatus } from '../../api/types'
+import type {
+  CancelledBy,
+  HadiahReward as HadiahRewardBody,
+  MysteryBoxView,
+  RedemptionStatus,
+} from '../../api/types'
 
-export type { CancelledBy, HadiahReward, RedemptionStatus }
+export type { CancelledBy, RedemptionStatus }
 export type { DeliveryMethod, HadiahCategory } from '../../api/types'
+
+/** DATA-M15-01 as stored: the numeric row id (the wire body carries it as text, `HadiahReward`). */
+export type HadiahReward = Omit<HadiahRewardBody, 'id'> & { id: number }
 
 /** The writable fields of a reward after defaults (BR-M15-13): what the repository stores. */
 export type HadiahFields = Omit<HadiahReward, 'id' | 'createdAt' | 'updatedAt'>

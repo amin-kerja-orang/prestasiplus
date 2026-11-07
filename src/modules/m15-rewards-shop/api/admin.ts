@@ -37,11 +37,11 @@ export function fetchHadiahList(
 
 /** #2 `GET /api/admin/hadiah/:id` (404 `NOT_FOUND`). */
 export function fetchHadiah(
-  id: number,
+  id: string,
   options: { signal?: AbortSignal } = {},
 ): Promise<HadiahReward> {
   return api.get<HadiahReward>(
-    `${REWARDS}/${String(id)}`,
+    `${REWARDS}/${id}`,
     options.signal ? { signal: options.signal } : {},
   )
 }
@@ -52,8 +52,8 @@ export function createHadiah(input: HadiahInput): Promise<HadiahReward> {
 }
 
 /** #4 `PUT /api/admin/hadiah/:id` (404; 422 with `fields`). */
-export function updateHadiah(id: number, input: HadiahInput): Promise<HadiahReward> {
-  return api.put<HadiahReward>(`${REWARDS}/${String(id)}`, { body: input })
+export function updateHadiah(id: string, input: HadiahInput): Promise<HadiahReward> {
+  return api.put<HadiahReward>(`${REWARDS}/${id}`, { body: input })
 }
 
 /** #5 `POST /api/admin/hadiah/bulk` (422 for an unknown action, empty `ids` or a value out of range). */
@@ -72,13 +72,13 @@ export function fetchRedemptions(
 }
 
 /** #7 `POST /api/admin/hadiah/redemptions/:id/deliver` (404; 409 not `pending_admin`; 422 blank/long code). */
-export function deliverRedemption(id: number, code: string): Promise<DeliverResult> {
-  return api.post<DeliverResult>(`${REWARDS}/redemptions/${String(id)}/deliver`, {
+export function deliverRedemption(id: string, code: string): Promise<DeliverResult> {
+  return api.post<DeliverResult>(`${REWARDS}/redemptions/${id}/deliver`, {
     body: { code },
   })
 }
 
 /** #8 `POST /api/admin/hadiah/redemptions/:id/cancel` (404; 409 not `pending_admin`). */
-export function cancelRedemption(id: number): Promise<CancelResult> {
-  return api.post<CancelResult>(`${REWARDS}/redemptions/${String(id)}/cancel`)
+export function cancelRedemption(id: string): Promise<CancelResult> {
+  return api.post<CancelResult>(`${REWARDS}/redemptions/${id}/cancel`)
 }
