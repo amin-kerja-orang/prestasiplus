@@ -219,11 +219,12 @@ test.describe('M06 SPM hub @api', () => {
 
   test('S10 /spm/history renders the SPM sessions (list or empty state) @api', async ({ page }) => {
     const wait = page.waitForResponse(
-      (r) => new URL(r.url()).pathname === '/api/practice/sessions' && r.request().method() === 'GET',
+      (r) => new URL(r.url()).pathname === '/api/spm/history' && r.request().method() === 'GET',
       { timeout: 30_000 },
     )
     await page.goto('/spm/history')
-    expect((await wait).status(), 'GET /api/practice/sessions').toBe(200)
+    // API-BIJAK-07: the Sejarah page reads GET /api/spm/history (S3-T07 part F), no longer GET /api/practice/sessions.
+    expect((await wait).status(), 'GET /api/spm/history').toBe(200)
     await expect(page.getByTestId('spm-history-page')).toBeVisible({ timeout: 20_000 })
     await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
     await expect(page.getByTestId('history-rows').or(page.getByTestId('history-empty'))).toBeVisible()
