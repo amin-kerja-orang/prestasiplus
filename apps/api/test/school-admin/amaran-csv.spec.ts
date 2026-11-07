@@ -88,7 +88,11 @@ describe('BE-21 Amaran CSV: GET /amaran/export/school/:id', () => {
     expect(text.replace(/\r\n/g, '')).not.toMatch(/[\r\n]/)
     const rows = parseCsv(text.slice(1))
     expect(rows[0]?.join(',')).toBe(HEADER)
+    expect(HEADER).toBe('Bil,Pelajar,Sekolah,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan')
     for (const r of rows.slice(1)) expect(r).toHaveLength(9)
+    // "Sekolah" is the school name on every row; a pupil with no practice data reads "Belum Bermula" with a dash score.
+    expect(new Set(rows.slice(1).map((r) => r[2])).size).toBe(1)
+    for (const r of rows.slice(1)) if (r[5] === 'Belum Bermula') expect(r[4]).toBe('—')
     expect(rows.slice(1).map((r) => r[0])).toEqual(rows.slice(1).map((_, i) => String(i + 1)))
   })
 

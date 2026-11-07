@@ -41,7 +41,7 @@ function helpers(get: () => { t: BuilderTestApp; admin: Client }) {
   return {
     q,
     async create(subject: string, kertas: number) {
-      const res = await get().admin.post('/api/admin/papers', { subject, kertas })
+      const res = await get().admin.post('/api/admin/papers', { title: 'Set Ujian', subject, kertas })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       return Created.parse(res.body).data.id
     },

@@ -15,6 +15,7 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
+import { PracticeSpmReadsModule } from '../../src/modules/practice/reads/spm'
 import { SpmModule, SpmPorts, type SpmStructuredAttemptSource, type SpmStructuredStats } from '../../src/modules/spm'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 import { dropDatabase, loginAs as loginWith, type Client } from '../curriculum/helpers'
@@ -87,7 +88,7 @@ export async function bootSpmApp(opts: BootOptions = {}): Promise<SpmTestApp> {
     ...opts.env,
   })
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, SpmModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, SpmModule, PracticeSpmReadsModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()

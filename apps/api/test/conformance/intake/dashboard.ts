@@ -20,7 +20,7 @@ export const intakeDashboardScenarios: Scenario[] = [
       ctx.check(dash.month === '2026-10', 'the dashboard must answer the asked month')
       ctx.check(dash.from === '2026-10-01T00:00:00.000+08:00', 'the month must start at 00:00 +08:00')
       const byStatus = (dash.submissions as { byStatus?: unknown[] } | undefined)?.byStatus
-      ctx.check(Array.isArray(byStatus) && byStatus.length === 5, 'every submission status must be listed')
+      ctx.check(Array.isArray(byStatus) && byStatus.length === 6, 'every submission status must be listed')
 
       const c = await admin.request('GET', '/intake/dashboard/cost?month=2026-09&provider=mock')
       ctx.expectStatus(c, 200)
