@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   type CallHandler,
+  type CanActivate,
   Controller,
   Delete,
   type ExecutionContext,
@@ -38,6 +39,51 @@ import { BIJAK_BUILDER_LIMITS, PAPER_SOURCE_MAX_BYTES } from './builder.constant
 import { BuilderService } from './builder.service'
 import { PaperSourceService, type SourceParts } from './paper-source.service'
 
+/** A part that went over the 30 MB limit; carries the form field so the 422 lands on `paper` or `scheme`. */
+class SourcePartTooLarge extends Error {
+  constructor(readonly field: 'paper' | 'scheme') {
+    super('source part too large')
+  }
+}
+
+/**
+ * Memory storage for multer that knows the field of an oversized part. Multer's own LIMIT_FILE_SIZE is turned by Nest into a
+ * `PayloadTooLargeException` without the field name, so the 30 MB rule is enforced here, while the part streams, and names its field.
+ */
+const sourcePartStorage = {
+  _handleFile(_req: unknown, file: { fieldname: string; stream: NodeJS.ReadableStream }, cb: (err: Error | null, info?: { buffer: Buffer; size: number }) => void): void {
+    const chunks: Buffer[] = []
+    let size = 0
+    let done = false
+    const finish = (err: Error | null, info?: { buffer: Buffer; size: number }) => {
+      if (done) return
+      done = true
+      chunks.length = 0
+      cb(err, info)
+    }
+    file.stream.on('data', (chunk: Buffer) => {
+      if (done) return
+      size += chunk.length
+      if (size > PAPER_SOURCE_MAX_BYTES) {
+        finish(new SourcePartTooLarge(file.fieldname === 'scheme' ? 'scheme' : 'paper'))
+        return
+      }
+      chunks.push(chunk)
+    })
+    file.stream.on('error', (e: Error) => finish(e))
+    file.stream.on('end', () => {
+      if (done) return
+      const buffer = Buffer.concat(chunks)
+      done = true
+      cb(null, { buffer, size: buffer.length })
+    })
+  },
+  _removeFile(_req: unknown, file: { buffer?: Buffer }, cb: (err: Error | null) => void): void {
+    delete file.buffer
+    cb(null)
+  },
+}
+
 /**
  * S3-T06 (API-BIJAK-14): reads the multipart body of the source upload (`paper` required, `scheme` optional, 30 MB each, one text field `declaration`).
  * A JSON body (`{ apply: true }`) passes through untouched. Multer errors become the contract's 422 texts.
@@ -49,22 +95,34 @@ export class PaperSourceUploadInterceptor implements NestInterceptor {
       { name: 'paper', maxCount: 1 },
       { name: 'scheme', maxCount: 1 },
     ],
-    // Multer reports an oversized part without its field name, so it only guards memory (twice the limit); the 30 MB rule is checked per field in `PaperSourceService`, which names `paper` or `scheme`.
-    { limits: { fileSize: PAPER_SOURCE_MAX_BYTES * 2, files: 2, fields: 2, fieldSize: 64, parts: 4 } },
+    // The 30 MB rule fires while the part streams (`sourcePartStorage`, with the field name). Multer's own cap sits one byte above the limit as a backstop.
+    { storage: sourcePartStorage, limits: { fileSize: PAPER_SOURCE_MAX_BYTES + 1, files: 2, fields: 2, fieldSize: 64, parts: 4 } },
   ))({})
 
   async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
     try {
       return await this.inner.intercept(ctx, next)
     } catch (err) {
-      if (err instanceof PayloadTooLargeException) {
-        throw ApiError.of('VALIDATION_ERROR', { message: BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge, fields: { paper: BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge } })
-      }
+      const tooLarge = BIJAK_BUILDER_MESSAGES.sourcePdfTooLarge
+      if (err instanceof SourcePartTooLarge) throw ApiError.of('VALIDATION_ERROR', { message: tooLarge, fields: { [err.field]: tooLarge } })
+      if (err instanceof PayloadTooLargeException) throw ApiError.of('VALIDATION_ERROR', { message: tooLarge, fields: { paper: tooLarge } })
       if (err instanceof BadRequestException) {
         throw ApiError.of('VALIDATION_ERROR', { message: BIJAK_BUILDER_MESSAGES.sourcePdfInvalid, fields: { paper: BIJAK_BUILDER_MESSAGES.sourcePdfInvalid } })
       }
       throw err
     }
+  }
+}
+
+/** Runs BEFORE the multipart body is read (as `IntakeUploadGuard` does): an unknown, non-Subjektif, Terbit or already sourced paper costs no buffer. JSON apply passes. */
+@Injectable()
+export class PaperSourceGate implements CanActivate {
+  constructor(@Inject(PaperSourceService) private readonly source: PaperSourceService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const req = ctx.switchToHttp().getRequest<Request>()
+    if (req.is('multipart/form-data')) await this.source.assertUploadable(String(req.params.id))
+    return true
   }
 }
 
@@ -147,6 +205,7 @@ export class BuilderController {
    */
   @Post(':id/source')
   @RateLimit(BIJAK_BUILDER_LIMITS.write)
+  @UseGuards(PaperSourceGate)
   @UseInterceptors(PaperSourceUploadInterceptor)
   async paperSource(
     @Req() req: Request & RequestWithAuth,

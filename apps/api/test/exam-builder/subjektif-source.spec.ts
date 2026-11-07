@@ -1,7 +1,10 @@
-import { BIJAK_BUILDER_MESSAGES as M, BijakBuilderEditorSchema, QUESTION_MESSAGES } from '@pp/contract'
+import { BIJAK_BUILDER_MESSAGES as M, BijakBuilderEditorSchema, INTAKE_FILE_MESSAGES, QUESTION_MESSAGES } from '@pp/contract'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+
+import { BuilderRepository } from '../../src/modules/exam/builder/builder.repository'
+import { IntakeUploadService } from '../../src/modules/intake/files/intake-upload.service'
 
 import { textPdf } from '../intake-files/pdf-fixtures'
 import { bootFullApp, DEMO_PASSWORD, type FullApp, type FullClient, loginFull } from '../r1/full-app'
@@ -23,6 +26,7 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
   let level: string
   let tag: { unitId: string; spIds: string[]; tp: number }
 
+  const app = () => t.app
   const q = (sql: string, params: unknown[] = []) => t.db.query<Record<string, unknown>>(sql, params)
   const one = async (sql: string) => String((await q(sql))[0]!.id)
   // The intake refuses a file whose hash was already imported, so every upload gets its own bytes.
@@ -151,6 +155,74 @@ describe('S3-T06 Kertas Subjektif source PDF (API-BIJAK-14)', () => {
       const res = await upload(pub, { declaration: 'true' })
       expect(res.status, JSON.stringify(res.body)).toBe(409)
       expect(JSON.stringify(res.body)).toContain(M.paperPublishedWithdrawFirst)
+    })
+  })
+
+  describe('follow-up of the G4 review (M1-M4)', () => {
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+    const big = () => Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.alloc(31 * 1024 * 1024)])
+
+    it('M1: a 31 MB paper is refused while streaming, 422 on fields.paper with the too-large text; nothing is created', async () => {
+      const id = await paperOf()
+      const before = (await q(`select count(*)::int n from intake_batches`))[0]!.n
+      const res = await upload(id, { declaration: 'true', paper: big() })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields).toEqual({ paper: M.sourcePdfTooLarge })
+      expect(res.body.error.message).toBe(M.sourcePdfTooLarge)
+      expect((await q(`select count(*)::int n from intake_batches`))[0]!.n).toBe(before)
+    })
+
+    it('M2: an unknown, Simulasi, Terbit or already sourced paper is refused before the body is read (no intake call)', async () => {
+      const uploadSpy = vi.spyOn(app().get(IntakeUploadService), 'upload')
+      const sim = (await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'Set simulasi pra' })).body.data.id as string
+      const pub = await paperOf({ title: 'Terbit pra' })
+      await q(`update papers set status = 'published', published_at = now() where id = $1`, [pub])
+      const sourced = await paperOf({ title: 'Sudah bersumber' })
+      expect((await upload(sourced, { declaration: 'true' })).status).toBe(202)
+      uploadSpy.mockClear()
+      const cases: [string, string, number, string][] = [
+        ['unknown', '999999999', 404, M.paperNotFound],
+        ['simulasi', sim, 422, M.subjektifOnly],
+        ['terbit', pub, 409, M.paperPublishedWithdrawFirst],
+        ['sourced', sourced, 409, M.sourceBatchExists],
+      ]
+      for (const [name, id, status, message] of cases) {
+        // an invalid body (no PDF at all) would be 422 if the body were read first
+        const res = await upload(id, { declaration: 'true', paper: Buffer.from('bukan pdf') })
+        expect(res.status, `${name}: ${JSON.stringify(res.body)}`).toBe(status)
+        expect(JSON.stringify(res.body), name).toContain(message)
+      }
+      expect(uploadSpy).not.toHaveBeenCalled()
+    })
+
+    it('M3: an upload that fails after the files were stored leaves no stored object, no file row and a cancelled batch', async () => {
+      const id = await paperOf()
+      const objects = async () => (await q(`select count(*)::int n from files where purpose = 'intake_original'`))[0]!.n
+      const before = await objects()
+      const batches = (await q(`select count(*)::int n from intake_batches`))[0]!.n as number
+      vi.spyOn(app().get(BuilderRepository), 'updatePaper').mockRejectedValueOnce(new Error('link failed'))
+      const res = await upload(id, { declaration: 'true', scheme: pdf() })
+      expect(res.status).toBe(500)
+      expect(await objects()).toBe(before)
+      expect((await q(`select count(*)::int n from intake_batches`))[0]!.n).toBe(batches + 1)
+      const row = (await q(`select b.status, (select count(*)::int from intake_files f where f.batch_id = b.id) files from intake_batches b order by b.id desc limit 1`))[0]!
+      expect(row).toMatchObject({ status: 'cancelled', files: 0 })
+      expect(await q(`select source_batch_id from papers where id = $1`, [id])).toEqual([{ source_batch_id: null }])
+      // the paper can be uploaded again
+      expect((await upload(id, { declaration: 'true' })).status).toBe(202)
+    })
+
+    it('M4: an intake refusal (duplicate content) reaches the client on fields.paper with the intake text', async () => {
+      const same = pdf()
+      const a = await paperOf({ title: 'Asal' })
+      expect((await upload(a, { declaration: 'true', paper: same })).status).toBe(202)
+      const b = await paperOf({ title: 'Salinan' })
+      const res = await upload(b, { declaration: 'true', paper: same })
+      expect(res.status, JSON.stringify(res.body)).toBe(422)
+      expect(res.body.error.fields).toEqual({ paper: INTAKE_FILE_MESSAGES.duplicate })
+      expect(await q(`select source_batch_id from papers where id = $1`, [b])).toEqual([{ source_batch_id: null }])
     })
   })
 
