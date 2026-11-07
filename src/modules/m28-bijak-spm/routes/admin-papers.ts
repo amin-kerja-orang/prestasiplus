@@ -40,6 +40,11 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    // PRD30 Q-24: the pupil preview of a bank question is the Studio preview.
+    path: '/admin/spm/soalan/:qid/pratonton',
+    redirect: (to) => `/admin/studio/questions/${String(to.params.qid)}/sunting?pratonton=1`,
+  },
+  {
     path: '/admin/spm/soalan/:qid/sunting',
     name: ADMIN_ROUTES.bankEdit,
     component: () => import('../admin/papers/BankEditPage.vue'),
