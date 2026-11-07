@@ -68,6 +68,7 @@ function flatBase(q: QuestionView) {
     difficultyLevel: f.difficultyLevel,
     questionType: f.questionType,
     questionText: f.questionText,
+    questionTextEn: f.questionTextEn,
     // The stem image is the version's first image stimulus (file id); option images are ids on the options.
     questionImage: imageOf(q, q.version.stemImageId),
     options: f.options,
@@ -134,6 +135,7 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
       imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
+      ...(s.captionEn ? { captionEn: s.captionEn } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
       ...(table(s).table ? { tableData: QuestionStimulusTableSchema.parse(table(s).table) } : {}),
     })),
@@ -358,6 +360,8 @@ export function guruStructuredRowView(q: QuestionView, number: number): z.output
     subCount: countLeaves(parts),
     marks: marksOf(parts),
     status: 'approved',
+    source: 'question',
+    editable: false,
   })
 }
 
@@ -393,5 +397,8 @@ export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<type
       depth: x.depth,
     })),
     createdAt: toMytTimestamp(d.createdAt),
+    source: 'question',
+    editable: false,
+    form: null,
   })
 }

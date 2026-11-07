@@ -430,6 +430,32 @@ describe('performance contract (BE-19)', () => {
         rows: [],
       }).success,
     ).toBe(true)
+    // S10-T04 part 2: Belum Bermula row (none, null accuracy and projection), BARU trend, "Kelas" names, null pooled average
+    const analyticsRow = {
+      userId: '1',
+      name: 'Murid Contoh',
+      accuracy: 74,
+      answered: 50,
+      trend: 'stable',
+      projection: { low: 'B', high: 'A' },
+      riskLevel: 'low',
+      classes: ['4 Amanah'],
+    }
+    const analytics = (rows: object[], accuracy: number | null) => ({
+      options: { classes: [], subjects: [], selected: { classroomId: null, subjectId: null, riskLevel: '' } },
+      summary: { students: rows.length, accuracy, atRisk: 0, good: 0 },
+      rows,
+    })
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([analyticsRow], 74)).success).toBe(true)
+    expect(
+      PerformanceClassAnalyticsSchema.safeParse(
+        analytics([{ ...analyticsRow, accuracy: null, answered: 0, projection: null, riskLevel: 'none', trend: 'new', classes: [] }], null),
+      ).success,
+    ).toBe(true)
+    // `classes` is required on a row, and an unknown risk or trend is refused
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, classes: undefined }], 74)).success).toBe(false)
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, riskLevel: 'belum_bermula' }], 74)).success).toBe(false)
+    expect(PerformanceClassAnalyticsSchema.safeParse(analytics([{ ...analyticsRow, trend: 'baru' }], 74)).success).toBe(false)
     expect(PerformanceLevelDetailSchema.safeParse({ code: 't6' }).success).toBe(false)
     const school = {
       school: {
@@ -479,7 +505,7 @@ describe('performance contract (BE-19)', () => {
       questionText: 'Soalan contoh',
       questionType: 'mcq',
       options: ['A', 'B', 'C', 'D'],
-      language: 'bm',
+      language: 'ms',
       textDirection: 'ltr',
       scriptType: 'rumi',
       pointsValue: 1,

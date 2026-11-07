@@ -50,7 +50,7 @@ async function seed(n: number): Promise<{ word: string; ids: number[] }> {
         'options[3]': '4',
         correctAnswer: 1,
         explanation: 'Penjelasan ringkas untuk ujian.',
-        language: 'bm',
+        language: 'ms',
         pointsValue: 1,
       }),
     )

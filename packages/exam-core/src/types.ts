@@ -316,6 +316,16 @@ export interface PhotoMeta {
 /** What the student typed for one leaf part. LaTeX is canonical; the plain forms are derived. */
 export interface PartAnswer {
   choice?: string
+  /** DM-68: the option ids picked in an mcq_multi part. */
+  choices?: string[]
+  /** DM-68: the text per gap of a cloze part, by gap id. */
+  gaps?: Record<string, string>
+  /** DM-68: the text per cell of a table_fill part, by cell id. */
+  cells?: Record<string, string>
+  /** DM-68: the topic picked in an essay_choice part. An open answer may hold it in `choice` instead. */
+  topicId?: string
+  /** DM-68: this part was opened by "Semak" in Mod Latihan. Set by the server only. */
+  revealed?: boolean
   steps?: string[]
   final?: string
   unit?: string
@@ -377,6 +387,8 @@ export interface Attempt {
   checked: string[]
   /** Latihan: how many times each question was checked (capped, NFR-05). */
   checkCounts?: Record<string, number>
+  /** Mock only (the API keeps the stored check result): the answers of the "Semak" parts when each question was last checked. */
+  checkAnswers?: Record<string, Record<string, PartAnswer>>
   submittedAt?: number
   lateBySeconds?: number
   idempotencyKey?: string
@@ -443,6 +455,8 @@ export interface QuestionResult {
   counted: boolean
   attempted: boolean
   parts: PartResult[]
+  /** FR-MUR-13-6: only on a "Semak" response, the answer-changing checks used on this question so far. */
+  checksUsed?: number
 }
 
 export interface SectionResult {
@@ -572,6 +586,8 @@ export interface PaperCover extends PaperSummary {
   }[]
   /** PO decision 12 (API-BIJAK-02): a new sitting would be refused. */
   unavailable?: boolean
+  /** S3-T07: false when the paper is outside the pupil's form and the pupil has no open sitting on it, so the Kuiz action is hidden. Absent means available. */
+  kuizAvailable?: boolean
 }
 
 export interface Shortage {

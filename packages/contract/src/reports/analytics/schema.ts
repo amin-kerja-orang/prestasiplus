@@ -36,10 +36,10 @@ export const ANALYTICS_MESSAGES = {
 
 // --- Enums -----------------------------------------------------------------------------------
 
-export const ANALYTICS_TAHAP = ['Cemerlang', 'Sederhana', 'Rendah', 'Kritikal', 'Tiada Langsung'] as const
+export const ANALYTICS_TAHAP = ['Cemerlang', 'Sederhana', 'Rendah', 'Tiada', 'Kritikal', 'Tiada Langsung'] as const
 export const AnalyticsTahapSchema = z.enum(ANALYTICS_TAHAP).meta({
   id: 'AnalyticsTahap',
-  description: 'Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0.',
+  description: 'Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced.',
 })
 export const AnalyticsLevelSchema = z.enum(['T4', 'T5']).meta({ id: 'AnalyticsLevel' })
 export const AnalyticsStudentStatusSchema = z.enum(['aktif', 'login', 'never']).meta({ id: 'AnalyticsStudentStatus' })

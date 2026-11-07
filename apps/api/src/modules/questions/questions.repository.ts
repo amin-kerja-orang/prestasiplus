@@ -5,7 +5,7 @@ import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { ALL_LEAVES_KEYED_SQL, LEARNER_LEVEL_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, mediaResolvedSql, VERSION_STIMULI_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { adminFilterConds, bi, likePattern } from './admin-filter'
 import { kbatOf, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
@@ -34,6 +34,25 @@ import type {
 import { STIMULUS_KINDS, type TextbookRef } from './types'
 
 /** Columns of `question_versions` a writer may set (ids are bigint, the service already parsed them). */
+/**
+ * DM-42 invariant: a personal (teacher_private) question is never a stimulus-group member and never links a stimulus (the group and
+ * stimulus reads, usage counts and served locks therefore never meet one). A DB CHECK cannot span `questions.group_id` and
+ * `question_versions.visibility`, so the repository write path refuses it: every create, new version and rewrite goes through here.
+ */
+export function assertPersonalHasNoGroupOrStimulus(opts: { visibility: string | undefined; groupId?: bigint | null; draft: Pick<VersionDraft, 'stimulusIds' | 'parts'> }): void {
+  if (opts.visibility !== 'teacher_private') return
+  const partStimulus = (parts: readonly PartDraft[]): boolean => parts.some((p) => (p as { stimulusId?: unknown }).stimulusId != null || partStimulus((p as { children?: PartDraft[] }).children ?? []))
+  if ((opts.groupId ?? null) !== null || opts.draft.stimulusIds.length > 0 || partStimulus(opts.draft.parts)) {
+    throw new Error('A personal question cannot be a group member or link a stimulus (DM-42)')
+  }
+}
+
+/** Options of the by-id reads. `bankOnly`: a `teacher_private` question is NOT FOUND (every admin, structured, builder and workflow path). */
+export interface ReadOpts {
+  bankOnly?: boolean
+}
+export const BANK_ONLY: ReadOpts = { bankOnly: true }
+
 export interface VersionDraft {
   status: QuestionStatus
   type: StoreQuestionType
@@ -74,6 +93,12 @@ export interface VersionDraft {
   lastEditor?: 'person' | 'ai'
   /** R1-H-A18: question total declared at intake accept (null = none). A person's edit stores null. */
   declaredMarks?: number | null
+  /** DM-42: `undefined` leaves the stored value untouched on a rewrite and stores `bank` on a new version. */
+  visibility?: 'bank' | 'teacher_private'
+  /** DM-42: the owner of a private version (set if and only if `visibility = teacher_private`); `undefined` leaves it untouched on a rewrite. */
+  ownerUserId?: bigint | null
+  /** DM-42: http(s) reference link; `undefined` leaves it untouched on a rewrite, `null` clears it. */
+  referenceUrl?: string | null
   spNodeIds: bigint[]
   stimulusIds: bigint[]
   parts: PartDraft[]
@@ -161,31 +186,19 @@ const NOT_PKSK = NOT_PKSK_SQL
 const IS_PKSK = Prisma.sql`EXISTS (SELECT 1 FROM question_tags pt WHERE pt.question_id = q.id AND pt.kind = 'pksk_domain')`
 
 /**
- * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
- * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
- */
-const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql): Prisma.Sql => Prisma.sql`(
-  NOT EXISTS (
-    SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
-     WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
-        OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
-  )
-  AND NOT (coalesce(${importIssues}, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb)
-)`
-
-/** Every stimulus a version shows (own links, part links, its group's); aliases `v`, `q`. Selects `sid`. */
-const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM question_version_stimuli vs WHERE vs.question_version_id = v.id
-               UNION SELECT p.stimulus_id FROM question_parts p WHERE p.question_version_id = v.id AND p.stimulus_id IS NOT NULL
-               UNION SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = q.group_id`
-
-/**
  * R1-GUR-44b (FR-X1-4f): what the teacher structured list may show. It starts from what a pupil is served (`isStructuredVisible`: active, approved,
  * structured, level T4 or T5) and is stricter than it: a source that is taken down and a question whose figure or table is missing
  * (`mediaResolvedSql`, the approve-gate rule) are left out too. Aliases `q`, `v`; `v` is the LIVE version (`SERVED_FROM_SQL`), so a newer
  * draft does not hide a question pupils still get.
  */
 const SERVED_FROM_SQL = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no`
+/**
+ * The teacher list's "is a structured item" test: the version type is `structured`, OR the question came from a teacher's structured
+ * submission (the guru intake item linked to it by Terima carries `payload.guru.questionType = 'structured'`). A one-part submission is an
+ * `essay` in the bank (`versionTypeOf`), so only its origin marker tells it apart from any other essay. Same marker as `GURU_STRUCTURED_ITEM`.
+ */
+const GURU_STRUCTURED_ORIGIN_SQL = Prisma.sql`EXISTS (SELECT 1 FROM intake_items gi WHERE gi.question_id = q.id AND gi.payload->'guru'->>'v' = '1' AND gi.payload->'guru'->>'questionType' = 'structured')`
+const GURU_STRUCTURED_TYPE_SQL = Prisma.sql`(v.type = 'structured' OR ${GURU_STRUCTURED_ORIGIN_SQL})`
 const GURU_STRUCTURED_SERVED_SQL: Prisma.Sql[] = [
   Prisma.sql`q.is_active`,
   Prisma.sql`v.status = 'approved'`,
@@ -231,7 +244,8 @@ function shapeArraySql(candidates: Prisma.Sql, shape: QuestionFilter['mcqShape']
 }
 
 /** The base of `GET /questions/summary` and the Admin Pusat dashboard counts: latest version, no PKSK, no Darjah (aliases `q`, `v`). */
-const SUMMARY_BASE = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL}`
+// S6-T16 (FR-GUR-44a-4): a private question is never in a bank count.
+const SUMMARY_BASE = Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL}`
 
 const NO_STATUS_COUNTS = (): Record<QuestionStatus, number> => ({ draft: 0, review: 0, approved: 0, archived: 0 })
 
@@ -272,6 +286,7 @@ interface StimulusRow {
   bodyMs: string | null
   bodyEn: string | null
   caption: string | null
+  captionEn: string | null
   altText: string | null
   sourceCitation: string | null
   tableData: unknown
@@ -295,6 +310,7 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
     alt: row.altText,
     caption: row.caption,
+    captionEn: row.captionEn,
     sourceCitation: row.sourceCitation,
     tableData: row.tableData ?? null,
   }
@@ -321,16 +337,17 @@ export class QuestionsRepository {
 
   // --- reads for other modules ----------------------------------------------------------------------
 
-  async get(id: string, view: ViewMode = 'live'): Promise<QuestionRecord | null> {
-    const [row] = await this.getMany([id], view)
+  async get(id: string, view: ViewMode = 'live', opts: ReadOpts = {}): Promise<QuestionRecord | null> {
+    const [row] = await this.getMany([id], view, 'exclude', opts)
     return row ?? null
   }
 
   /** `scope`: M04 reads never return a PKSK question (default `exclude`); the PKSK service reads them with `only`. */
-  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude', opts: { lenientKeys?: boolean } = {}): Promise<QuestionRecord[]> {
+  async getMany(ids: readonly string[], view: ViewMode = 'live', scope: 'exclude' | 'only' = 'exclude', opts: ReadOpts & { lenientKeys?: boolean } = {}): Promise<QuestionRecord[]> {
     const wanted = [...new Set(ids)].map(bi).filter((v): v is bigint => v !== null)
     if (wanted.length === 0) return []
-    const records = await this.hydrate(wanted, view, scope, opts.lenientKeys === true)
+    // DM-42: a by-id read keeps a private question (the mission path needs it) unless the caller is a bank path (`bankOnly`): then it is not found.
+    const records = (await this.hydrate(wanted, view, scope, opts.lenientKeys === true)).filter((r) => opts.bankOnly !== true || isBankVersion(r.version))
     const byId = new Map(records.map((r) => [r.id, r]))
     return [...new Set(ids)].flatMap((id) => {
       const r = byId.get(id)
@@ -381,6 +398,49 @@ export class QuestionsRepository {
     return out
   }
 
+  /**
+   * S3-T07 (D91, AC-MUR-13-13): the number of UNITS the filter serves. A stimulus group counts once however many members it has, a
+   * question outside any group counts once (a multi-leaf question is one unit in any scope that serves it; a scope with `mcqShape` serves single-part questions only, so there it counts 0). The group rule itself is in the
+   * filter (`wholeGroups` = `groupCompleteSql`: an incomplete group matches no row, so it counts 0, the same as the draw).
+   */
+  async unitCount(filter: QuestionFilter = {}): Promise<number> {
+    const { from, where } = this.scope(filter)
+    const rows = await this.db.$queryRaw<{ n: number }[]>`
+      SELECT count(DISTINCT CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)::int AS n ${from} WHERE ${where}`
+    return rows[0]?.n ?? 0
+  }
+
+  /**
+   * S3-T07: `unitCount` split by (level, TP) in ONE statement, every unit in exactly ONE bucket, so the buckets sum to `unitCount`.
+   * A question outside any group is its own unit and sits at its own level and TP. A group sits at ONE bucket:
+   *  - level: the group's own level (`stimulus_groups.education_level_id`) when it is set AND is a level this scope can show (an offered
+   *    level, active and not primary, and inside the filter's level restriction); else the level of its FIRST member in scope. Nothing in the
+   *    database ties a group's level to its members' LIVE versions, so a stale or unoffered value must not move the unit to a level the hub never lists;
+   *  - TP: always the TP of its FIRST member in scope (a group has no difficulty of its own).
+   * "First" = lowest `group_position` among the members IN SCOPE (positions are unique per group and never NULL for a grouped question: `ck_questions_group_position`, `uq_questions_group_id_group_position`; the id order is a harmless final tie-break): deterministic, and the group's true first member only when every member is in scope.
+   */
+  async unitCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
+    const { from, where } = this.scope(filter)
+    // The group's own level is usable only when this scope can show it: an offered level (the `SPM_SERVABLE_SQL` rule) inside the filter's level restriction.
+    const own: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = sg.education_level_id AND gl.stage <> 'primary' AND gl.is_active)`]
+    if (filter.educationLevelId !== undefined) {
+      const key = bi(filter.educationLevelId)
+      own.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id = ${key}`)
+    }
+    if (filter.educationLevelIds !== undefined) {
+      const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
+      own.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id IN (${Prisma.join(keys)})`)
+    }
+    const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+      SELECT u.level_id, u.tp, count(*)::int AS n FROM (
+        SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
+               CASE WHEN ${Prisma.join(own, ' AND ')} THEN sg.education_level_id ELSE v.education_level_id END AS level_id, v.difficulty_tp AS tp
+          ${from} LEFT JOIN stimulus_groups sg ON sg.id = q.group_id WHERE ${where}
+         ORDER BY CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END, q.group_position ASC NULLS LAST, q.id ASC
+      ) u GROUP BY 1, 2`
+    return rows.map((r) => ({ levelId: r.level_id === null ? null : idToString(r.level_id), tp: r.tp, n: r.n }))
+  }
+
   /** Eligible-style counts grouped by (level, TP) in ONE statement: the SPM pool splits. `filter` is used as given. */
   async groupCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
     const { from, where } = this.scope(filter)
@@ -414,7 +474,7 @@ export class QuestionsRepository {
       SELECT q.id, v.stem_ms, v.stem_en, v.explanation_ms, v.explanation_en, q.source_type, v.subject_id, v.education_level_id, v.set_label,
              EXISTS (SELECT 1 FROM question_version_sp_nodes s WHERE s.question_version_id = v.id) AS has_sp
         FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
+       WHERE ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} ${key === null ? Prisma.empty : Prisma.sql`AND q.id > ${key}`}
        ORDER BY q.id ASC LIMIT ${size}`
     return rows.map((r) => ({
       id: idToString(r.id),
@@ -449,6 +509,27 @@ export class QuestionsRepository {
     return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
   }
 
+  /** FR-QA-47: the Terbit papers that place one of these questions (a bulk archive warns about them). Read-only; oldest paper first. */
+  async publishedPapersPlacing(where: { ids: readonly string[] } | { filter: Omit<AdminListFilter, 'page' | 'pageSize'>; fromStatuses: readonly QuestionStatus[] }): Promise<{ id: string; title: string }[]> {
+    let questions: Prisma.Sql
+    if ('ids' in where) {
+      const keys = where.ids.map(bi).filter((k): k is bigint => k !== null)
+      if (keys.length === 0) return []
+      questions = Prisma.join(keys)
+    } else {
+      const conds = [...this.adminConds({ ...where.filter, page: 1, pageSize: 1 }), Prisma.sql`v.status IN (${Prisma.join(where.fromStatuses.map((x) => Prisma.sql`${x}`))})`]
+      questions = Prisma.sql`SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${Prisma.join(conds, ' AND ')}`
+    }
+    const rows = await this.db.$queryRaw<{ id: bigint; title: string }[]>`
+      SELECT DISTINCT p.id, p.title
+        FROM papers p
+        JOIN paper_sections s ON s.paper_id = p.id
+        JOIN paper_placements pl ON pl.paper_section_id = s.id
+       WHERE p.kind = 'pilihan' AND p.status = 'published' AND pl.question_id IN (${questions})
+       ORDER BY p.id ASC`
+    return rows.map((p) => ({ id: idToString(p.id), title: p.title }))
+  }
+
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
     const conds = this.adminConds({ ...filter, page: 1, pageSize: limit })
     const below = idBelow === undefined ? undefined : bi(idBelow)
@@ -464,7 +545,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ ok: boolean }[]>`
       SELECT true AS ok FROM questions q
       JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK}`
+      WHERE q.id = ${key} AND q.is_active AND v.status = 'approved' AND ${NOT_PKSK} AND ${BANK_VISIBLE_SQL}`
     return rows.length > 0
   }
 
@@ -664,7 +745,8 @@ export class QuestionsRepository {
 
   /** Structured questions (type `structured`) over the latest version, id ascending. */
   async structuredIds(filter: StructuredListFilter): Promise<{ ids: string[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL]
+    // The admin list keeps the strict type; only the teacher (`served`) list widens it to the guru origin marker.
+    const conds: Prisma.Sql[] = [filter.served === true ? GURU_STRUCTURED_TYPE_SQL : Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL]
     if (filter.served === true) conds.push(...GURU_STRUCTURED_SERVED_SQL)
     for (const [text, column] of [
       [filter.subjectId, Prisma.sql`v.subject_id`],
@@ -687,9 +769,10 @@ export class QuestionsRepository {
     }
     const from = filter.served === true ? SERVED_FROM_SQL : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const where = Prisma.join(conds, ' AND ')
-    const offset = (filter.page - 1) * filter.pageSize
+    const offset = filter.offset ?? (filter.page - 1) * filter.pageSize
+    const limit = filter.limit ?? filter.pageSize
     const [rows, totals] = await Promise.all([
-      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${filter.pageSize} OFFSET ${offset}`,
+      this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${where} ORDER BY ${filter.newestFirst === true ? Prisma.sql`q.created_at DESC, q.id DESC` : Prisma.sql`q.id ASC`} LIMIT ${limit} OFFSET ${offset}`,
       this.db.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n ${from} WHERE ${where}`,
     ])
     return { ids: rows.map((r) => idToString(r.id)), total: totals[0]?.n ?? 0 }
@@ -699,9 +782,21 @@ export class QuestionsRepository {
   async isStructuredServed(id: string): Promise<boolean> {
     const key = bi(id)
     if (key === null) return false
-    const conds = [Prisma.sql`q.id = ${key}`, Prisma.sql`v.type = 'structured'`, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const conds = [Prisma.sql`q.id = ${key}`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
     const rows = await this.db.$queryRaw<{ ok: number }[]>`SELECT 1 AS ok ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
     return rows.length > 0
+  }
+
+  /** Of these question ids, those the teacher list serves (the same `served` rule as `structuredIds` and `isStructuredServed`). */
+  async structuredServedAmong(ids: readonly string[]): Promise<Set<string>> {
+    const keys = ids.flatMap((id) => {
+      const key = bi(id)
+      return key === null ? [] : [key]
+    })
+    if (keys.length === 0) return new Set()
+    const conds = [Prisma.sql`q.id IN (${Prisma.join(keys)})`, GURU_STRUCTURED_TYPE_SQL, NOT_PKSK, NOT_PRIMARY_LEVEL_SQL, BANK_VISIBLE_SQL, ...GURU_STRUCTURED_SERVED_SQL]
+    const rows = await this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${SERVED_FROM_SQL} WHERE ${Prisma.join(conds, ' AND ')}`
+    return new Set(rows.map((r) => idToString(r.id)))
   }
 
   /** Whole-store figures of the structured list `meta.stats`: per subject id (decimal) and live count. */
@@ -709,7 +804,7 @@ export class QuestionsRepository {
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; total: number; published: number }[]>`
       SELECT v.subject_id, count(*)::int AS total, count(q.live_version_no)::int AS published
       FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no
-      WHERE v.type = 'structured' AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} GROUP BY 1`
+      WHERE v.type = 'structured' AND ${NOT_PKSK} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} GROUP BY 1`
     const bySubject = new Map<string, number>()
     let total = 0
     let published = 0
@@ -1043,6 +1138,7 @@ export class QuestionsRepository {
   }
 
   async create(input: NewQuestion): Promise<string> {
+    assertPersonalHasNoGroupOrStimulus({ visibility: (input.version as { visibility?: string }).visibility, groupId: input.groupId, draft: input.version })
     const q = await this.db.question.create({
       data: {
         sourceType: input.sourceType,
@@ -1094,8 +1190,13 @@ export class QuestionsRepository {
         aiRunId: true,
         aiModel: true,
         intakeItemId: true,
+        // DM-42: a new version never changes who may see the question: visibility, owner and link are carried forward.
+        visibility: true,
+        ownerUserId: true,
+        referenceUrl: true,
       },
     })
+    assertPersonalHasNoGroupOrStimulus({ visibility: prev?.visibility, draft })
     await this.insertVersion(id, versionNo, draft, now, null, undefined, prev ?? undefined)
     await this.db.question.update({ where: { id }, data: { latestVersionNo: versionNo, updatedAt: now } })
     await this.refreshStimulusFlag(id, versionNo, now)
@@ -1167,8 +1268,9 @@ export class QuestionsRepository {
   async rewriteVersion(questionId: string, versionNo: number, draft: VersionDraft, now: Date): Promise<void> {
     const id = bi(questionId)
     if (id === null) return
-    const existing = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: id, versionNo } }, select: { id: true } })
+    const existing = await this.db.questionVersion.findUnique({ where: { questionId_versionNo: { questionId: id, versionNo } }, select: { id: true, visibility: true } })
     if (!existing) return
+    assertPersonalHasNoGroupOrStimulus({ visibility: existing.visibility, draft })
     await this.db.questionPart.deleteMany({ where: { questionVersionId: existing.id } })
     await this.db.questionVersionSpNode.deleteMany({ where: { questionVersionId: existing.id } })
     await this.db.questionVersionStimulus.deleteMany({ where: { questionVersionId: existing.id } })
@@ -1398,6 +1500,9 @@ export class QuestionsRepository {
       ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
       declaredMarks: c.declaredMarks ?? null,
+      ...(c.visibility === undefined ? {} : { visibility: c.visibility }),
+      ...(c.ownerUserId === undefined ? {} : { ownerUserId: c.ownerUserId }),
+      ...(c.referenceUrl === undefined ? {} : { referenceUrl: c.referenceUrl }),
     }
   }
 
@@ -1447,6 +1552,9 @@ export class QuestionsRepository {
       aiRunId: bigint | null
       aiModel: string | null
       intakeItemId: bigint | null
+      visibility?: string
+      ownerUserId?: bigint | null
+      referenceUrl?: string | null
     },
   ): Promise<void> {
     const { parts, spNodeIds, stimulusIds, ...columns } = draft
@@ -1458,6 +1566,9 @@ export class QuestionsRepository {
         createdAt: now,
         updatedAt: now,
         ...this.versionColumns(columns),
+        // DM-42: carried from the previous version (a new bank version stays bank, a private one stays private).
+        ...(inherited?.visibility === undefined ? {} : { visibility: inherited.visibility, ownerUserId: inherited.ownerUserId ?? null }),
+        ...(inherited?.referenceUrl === undefined ? {} : { referenceUrl: inherited.referenceUrl }),
         ...(inherited === undefined
           ? {}
           : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
@@ -1505,6 +1616,7 @@ export class QuestionsRepository {
           wordMin: d.wordMin,
           wordMax: d.wordMax,
           topics: d.topics ?? Prisma.DbNull,
+          modeConfig: d.modeConfig ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
@@ -1551,8 +1663,11 @@ export class QuestionsRepository {
       : Prisma.sql`FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no`
     const conds: Prisma.Sql[] = [NOT_PKSK]
     if (filter.status) conds.push(Prisma.sql`v.status = ${filter.status}`)
-    conds.push(NOT_PRIMARY_LEVEL_SQL)
-    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, NOT_FLAGGED_SQL, ALL_LEAVES_KEYED_SQL)
+    // DM-42: bank rows only, unconditionally; the mission draw alone adds the owner's own private rows (`ownerPrivateUserId`).
+    const ownerKey = filter.ownerPrivateUserId === undefined ? null : bi(filter.ownerPrivateUserId)
+    const ownPrivate = ownerKey === null ? null : Prisma.sql`(v.visibility = 'teacher_private' AND v.owner_user_id = ${ownerKey})`
+    conds.push(NOT_PRIMARY_LEVEL_SQL, ownPrivate === null ? BANK_VISIBLE_SQL : Prisma.sql`(${BANK_VISIBLE_SQL} OR ${ownPrivate})`)
+    if (learnerVisible) conds.push(LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, NOT_FLAGGED_SQL, ALL_LEAVES_KEYED_SQL, MEDIA_RESOLVED_SQL)
     if (filter.active !== undefined) conds.push(filter.active ? Prisma.sql`q.is_active` : Prisma.sql`NOT q.is_active`)
     const eq = (text: string | undefined, column: Prisma.Sql): void => {
       if (text === undefined) return
@@ -1562,7 +1677,12 @@ export class QuestionsRepository {
     eq(filter.subjectId, Prisma.sql`v.subject_id`)
     eq(filter.educationLevelId, Prisma.sql`v.education_level_id`)
     eq(filter.unitId, Prisma.sql`v.unit_node_id`)
-    eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    if (ownPrivate === null) eq(filter.chapterId, Prisma.sql`v.chapter_id`)
+    else if (filter.chapterId !== undefined) {
+      // The Bab narrows the bank part only; the owner's personal questions of the Subjek + Tingkatan stay in the pool.
+      const key = bi(filter.chapterId)
+      conds.push(key === null ? ownPrivate : Prisma.sql`(v.chapter_id = ${key} OR ${ownPrivate})`)
+    }
     if (filter.educationLevelIds !== undefined) {
       const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
       conds.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`v.education_level_id IN (${Prisma.join(keys)})`)
@@ -1588,7 +1708,13 @@ export class QuestionsRepository {
     if (filter.spmPool !== undefined) {
       // R1-B06: the shared SPM-servable definition (offered level, linked active subject), no longer the `pool` tag.
       // The complement keeps the flag out too: a flagged question is not "non-SPM", it is not served at all (S1-T07).
-      conds.push(filter.spmPool ? SPM_SERVABLE_SQL : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL})`)
+      conds.push(
+        filter.spmPool
+          ? ownPrivate === null
+            ? SPM_SERVABLE_SQL
+            : Prisma.sql`(${SPM_SERVABLE_SQL} OR ${ownPrivate})`
+          : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL})`,
+      )
     }
     if (filter.spId !== undefined) {
       const key = bi(filter.spId)
@@ -1730,6 +1856,9 @@ export class QuestionsRepository {
       difficultyLevel: v.difficultyLevel,
       textbookRef: textbookRefOf(v.textbookRef),
       rejectionReason: v.rejectionReason,
+      visibility: v.visibility === 'teacher_private' ? 'teacher_private' : 'bank',
+      ownerUserId: v.ownerUserId === null ? null : idToString(v.ownerUserId),
+      referenceUrl: v.referenceUrl,
       sourcePage: v.sourcePage,
       setLabel: v.setLabel,
       sourceFile: null,

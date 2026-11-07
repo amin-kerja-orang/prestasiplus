@@ -1,5 +1,7 @@
 import {
   QUESTION_IMPORT_CODE_ROW_MESSAGES as CM,
+  QUESTION_IMPORT_MESSAGE_MAX,
+  cappedText,
   QUESTION_IMPORT_HEADER,
   QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_ROW_MESSAGES as MSG,
@@ -307,6 +309,30 @@ describe('imports: the new header with codes (S1-T05, Q-11)', () => {
     }
   })
 
+  it('[CI] bahasa: ms and bm store as Bahasa Melayu (no language), en stays en, ms+en is kept as ms+en (S1-T09b)', () => {
+    const lang = (bahasa: string) => {
+      const p = planImport([`${CODE_HEAD},bahasa`, `${row({})},${bahasa}`].join('\n'), withCodes)
+      expect(p.failures, bahasa).toEqual([])
+      return p.rows[0]?.input.language
+    }
+    expect(lang('')).toBeUndefined()
+    expect(lang('ms')).toBeUndefined()
+    expect(lang('bm')).toBeUndefined()
+    expect(lang('en')).toBe('en')
+    expect(lang('ms+en')).toBe('ms+en')
+    expect(lang('MS+EN')).toBe('ms+en')
+  })
+
+  it('[CI] bahasa ms+en with Jawi or Arab script is refused (bilingual is Rumi only in R1), with Rumi or mixed it is kept', () => {
+    const plan = (jenis: string) => planImport([`${CODE_HEAD},bahasa,jenis_tulisan`, `${row({})},ms+en,${jenis}`].join('\n'), withCodes)
+    for (const jenis of ['jawi', 'arab']) {
+      const p = plan(jenis)
+      expect(p.rows, jenis).toHaveLength(0)
+      expect(p.failures, jenis).toEqual([{ row: 2, message: 'Baris 2: Bahasa tidak sah.', questionKey: 'K1', field: 'bahasa', code: 'BAHASA_INVALID' }])
+    }
+    for (const jenis of ['', 'rumi', 'mixed']) expect(plan(jenis).rows[0]?.input.language, jenis).toBe('ms+en')
+  })
+
   it('[CI] the "Soalan" texts of Q-11 are exact', () => {
     expect(CM.keyRequired).toBe('Kunci soalan diperlukan.')
     expect(CM.keyNotConsecutive).toBe('Baris soalan tidak berturutan.')
@@ -395,7 +421,7 @@ describe('imports: groups and stimuli (S1-T05 part 2, Q-11 and FR-ADM-QE6.4)', (
     expect(p.rows).toHaveLength(0)
     expect(p.groups).toHaveLength(1)
     expect(p.groups[0]?.members.map((m) => m.questionKey)).toEqual(['B', 'C', 'A'])
-    expect(p.groups[0]?.stimuli).toEqual([{ kind: 'passage', label: 'Rajah 1', caption: null, bodyMs: 'Petikan ringkas tentang pasar.', bodyEn: null, alt: null, sourceCitation: null, tableData: null }])
+    expect(p.groups[0]?.stimuli).toEqual([{ kind: 'passage', label: 'Rajah 1', caption: null, bodyMs: 'Petikan ringkas tentang pasar.', bodyEn: null, alt: null, sourceCitation: null, tableData: null, imageName: null }])
     expect(p.groups[0]).toMatchObject({ key: 'G1', existingGroupId: null })
   })
 
@@ -507,5 +533,20 @@ describe('imports: groups and stimuli (S1-T05 part 2, Q-11 and FR-ADM-QE6.4)', (
     const q = gplan([grow({ question_key: 'A', group_key: key, ...FIRST }), grow({ question_key: 'B', group_key: 'H', ...FIRST }), grow({ question_key: 'C', group_key: key })])
     expect(q.failures[0]?.message).toBe(`Baris 4: Kumpulan ${'g'.repeat(40)} sudah diimport dalam kelompok ini.`)
     expect(JSON.stringify(p.failures) + JSON.stringify(q.failures)).not.toContain('g'.repeat(41))
+  })
+})
+
+describe('imports: #719 review minors', () => {
+  it('[CI] a service message is capped at QUESTION_IMPORT_MESSAGE_MAX code points', () => {
+    expect(cappedText('x'.repeat(500), QUESTION_IMPORT_MESSAGE_MAX)).toHaveLength(200)
+    expect(cappedText('Subjek dan Tingkatan ahli mesti sama dengan kumpulan.', QUESTION_IMPORT_MESSAGE_MAX)).toBe('Subjek dan Tingkatan ahli mesti sama dengan kumpulan.')
+  })
+
+  it('[CI] group_order of a group_id row without group_key: a one-row block, so only empty or 1 is valid', () => {
+    const groups = new Map([['7', { stimuli: new Map<string, string>() }]])
+    const join = (order: string) => gplan([grow({ question_key: 'A', group_key: '', group_id: '7', group_order: order })], { codes: { ...codes, groups } })
+    expect(join('').failures).toEqual([])
+    expect(join('1').failures).toEqual([])
+    expect(join('2').failures.map((f) => [f.code, f.message])).toEqual([['GROUP_ORDER_INVALID', 'Baris 2: Susunan kumpulan tidak sah.']])
   })
 })

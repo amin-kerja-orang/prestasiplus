@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { POC_BANK, pocQuestionId } from '../../prisma/seed/poc/export'
 import type { PocPart } from '../../prisma/seed/poc/export/types'
 import { infoOf } from '../../src/modules/bijak/question-bridge/be09-mapping'
+import { seedJanaPaper } from '../support/jana-paper'
 import { loginAs, bootPapersApp, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 
 const kindOf = new Map(POC_BANK.schemes.map((s) => [s.id, s.scheme.kind]))
@@ -57,10 +58,8 @@ describe('examinerGrid on the cover (AC-20.3)', () => {
     expect(expected).toBe(true)
   })
 
-  it('a Jana Kertas cover carries it too, from the questions it was composed of', async () => {
-    const gen = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
-    expect(gen.status, JSON.stringify(gen.body)).toBe(201)
-    const id = (gen.body as { data: { paperId: string } }).data.paperId
+  it('a Jana Kertas cover carries it too, from the questions placed on it', async () => {
+    const id = await seedJanaPaper(t.db, { userId: student.userId, subject: 'MAT', kertas: 2 })
     const placed = await t.db.query<{ question_id: string }>(`select pl.question_id::text from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1`, [id])
     const expected = POC_BANK.questions.some((q) => placed.some((p) => p.question_id === pocQuestionId(q.id).toString()) && isManual(q.id))
     const c = await cover(id)
