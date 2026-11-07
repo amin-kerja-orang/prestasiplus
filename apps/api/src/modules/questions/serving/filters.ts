@@ -51,6 +51,16 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
 }
 
 /**
+ * D-10: what a Tracking A set can hold, the ONE definition of its candidates, its `filled` and "tersedia", on the admin lane and editor and on the
+ * pupil's counts. It is the pupil start rule for a set: a live, active, text-only, ungrouped MCQ the practice bridge accepts (`servableMcq`, whose
+ * SQL shape is `PRACTICE_SHAPE`).
+ * Figure and stimulus questions (own stimulus, standalone figure, group member) are excluded: today's pupil start (`be09-practice-question-source.ts`,
+ * `start.planner.ts`) serves text-only questions, so a set counted complete with them would serve fewer than its size.
+ */
+// TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions (back to `wholeGroups: true` and `allowStimulus: true`).
+export const trackingAFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE })
+
+/**
  * The ONE scope of the Databank lane (R1-B11): the questions the lane lists AND the questions the hub card counts, so the card's
  * `attention` can never differ from the lane's rows. A row is a question whose LATEST version is an MCQ of a subject on the
  * Databank list (a Tahun Lepas position), not PKSK, not Darjah; any status (a draft is a row, with the reason `not_approved`).

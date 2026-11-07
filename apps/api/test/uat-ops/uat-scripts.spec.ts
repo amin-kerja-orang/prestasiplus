@@ -22,6 +22,7 @@ const ALLOW_LIST: Record<string, string> = {
   'group-integrity.sql': 'read-only SQL run with psql (U-OP-18), not tsx',
   'paper-group-integrity.sql': 'read-only SQL run with psql (DM-26, S3-T02), not tsx',
   'tag-integrity.sql': 'read-only SQL run with psql, no U-OP number',
+  'tracking-sibling-duplicates.sql': 'read-only SQL run with psql before migration 0162 (DM-24, S3-T05), no U-OP number',
 }
 
 describe('uat:* npm scripts', () => {

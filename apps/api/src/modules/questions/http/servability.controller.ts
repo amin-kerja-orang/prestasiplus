@@ -94,7 +94,8 @@ export class ServabilityController {
   @Get('lanes/tracking-a')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async trackingA(@Query() query: unknown) {
-    return this.lane('tracking-a', this.reads.trackingLane(this.laneQuery(query)))
+    const [lane, setSubjects] = await Promise.all([this.lane('tracking-a', this.reads.trackingLane(this.laneQuery(query))), this.reads.trackingSubjects()])
+    return { ...lane, setSubjects }
   }
 
   @Get('lanes/subjektif')
