@@ -79,7 +79,7 @@ export const chooseCounterLine = (chosen: number, n: number): string =>
 
 /** Shown beside the disabled checkbox once the cap is reached. */
 export const chooseFullHint = (n: number): string =>
-  `Anda sudah memilih ${n} soalan. Nyahpilih soalan lain untuk menukar pilihan.`
+  `Anda hanya boleh memilih ${n} soalan dalam bahagian ini.`
 
 /** Shown when more questions are answered than the section allows. */
 export const chooseOverflowHint = (answered: number, n: number): string =>
