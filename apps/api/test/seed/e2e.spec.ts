@@ -191,20 +191,12 @@ describe('e2e seed with the guard on', () => {
     expect(await db.query(`select 1 from papers where title = $1`, [E2E_K2_PAPER_TITLE])).toHaveLength(1)
   })
 
-  it('the pupil can Jana Kertas against it: 201, or a 422 SHORTAGE that the question bank explains (never NO_BLUEPRINT)', async () => {
-    // Blueprint 3472/2 asks for structured Matematik Tambahan questions of 5 to 10 marks per unit (Bahagian A, B, C). The only pool seed
-    // (`questions-pool`) holds single-part MCQs of 1 mark, so no honest pool exists for it and the seed adds none: today this answers
-    // 422 SHORTAGE with have 0. The test stays correct if a structured pool is ever seeded.
+  it('the pupil sees the blueprint as a contract but has no generate route: POST /api/bijak/papers/generate is 404 (S3-T07)', async () => {
     const pupil = await loginAs(t, E2E_PUPIL_EMAIL)
     const contracts = (await pupil.get('/api/bijak/contracts')).body.data as { code: string; subject: string; kertas: number; canGenerate: boolean }[]
     const mine = contracts.find((c) => c.code === CODE)
     expect(mine?.canGenerate).toBe(true)
-    const res = await pupil.post('/api/bijak/papers/generate', { subject: mine?.subject, kertas: mine?.kertas })
-    if (res.status === 201) {
-      expect(res.body.data.paperId).toBeTruthy()
-    } else {
-      expectError(res, 'SHORTAGE', 422)
-    }
+    expectError(await pupil.post('/api/bijak/papers/generate', { subject: mine?.subject, kertas: mine?.kertas }), 'NOT_FOUND', 404)
   })
 
   it('E2E_DEMO_SECONDARY=1 only: the demo schools become SMK and their Darjah pupils move up to Tingkatan, idempotent', async () => {

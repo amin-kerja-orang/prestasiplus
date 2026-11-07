@@ -34,13 +34,14 @@ import { Prisma } from '../../../db/generated/client'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import { FilesService } from '../../files'
-import { QuestionsRepository, QuestionsService } from '../../questions'
+import { QuestionsRepository, QuestionsService, StimuliService } from '../../questions'
 import { isAdmin, parseId, visibleBatches } from '../files/intake-access'
 import { CurriculumFactsService } from './curriculum-facts'
 import { runToWire, type CallerInfo } from './extraction.service'
 import { batchLevelIssues, draftIssues, questionMarks, stimulusIssues } from './gate'
 import { attachToStimulus, groupsOf } from './grouping'
 import { stimulusTableOf } from '../../questions/stimulus-table'
+import { diagramTargetOf, type DiagramTarget } from '../files/guru-diagram'
 import { guruStimulusImageOf } from '../files/guru-submissions'
 import { ITEM_INCLUDE, PayloadSchema, bandOf, payloadOf, questionOf, stateDuplicates, stimulusOf, type ItemRow, type StoredPayload } from './item-model'
 import { ItemViews } from './item-views'
@@ -98,6 +99,7 @@ export class IntakeReviewService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(QuestionsService) private readonly questions: QuestionsService,
     @Inject(QuestionsRepository) private readonly questionsRepo: QuestionsRepository,
+    @Inject(StimuliService) private readonly stimuli: StimuliService,
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(CurriculumFactsService) private readonly curriculum: CurriculumFactsService,
     @Inject(ItemViews) private readonly views: ItemViews,
@@ -376,7 +378,7 @@ export class IntakeReviewService {
           numberLabel: next.label,
           itemType: next.type,
           pageNo: next.page,
-          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}) } as unknown as Prisma.InputJsonValue,
+          payload: { ...parsed, ...(stored.origin ? { origin: stored.origin } : {}), ...(stored.guru ? { guru: stored.guru } : {}), ...(stored.target ? { target: stored.target } : {}) } as unknown as Prisma.InputJsonValue,
           confirmedFields: confirmed,
           needsManual,
           humanEdited: edited,
@@ -432,7 +434,19 @@ export class IntakeReviewService {
       if (!OPEN.includes(row.reviewState as IntakeItemState)) throw conflict(INTAKE_MESSAGES.itemLocked)
       await this.decide(tx, auth, row, 'rejected', body.reason, who)
     }, TX)
+    await this.discardDiagramSource(first)
     return this.views.detail(auth, await this.loadVisible(auth, idText))
+  }
+
+  /** After a diagram item is rejected its uploaded image is not used again: remove the batch owner's file (never throws). */
+  private async discardDiagramSource(row: ItemRow): Promise<void> {
+    const target = diagramTargetOf(row.payload)
+    if (target === null || row.batch.ownerUserId === null) return
+    const file = await this.prisma.client.file.findFirst({
+      where: { id: idFromString(target.imageFileId), purpose: 'question_image', ownerUserId: row.batch.ownerUserId },
+      select: { publicId: true },
+    })
+    if (file) await this.files.discard(file.publicId, 'question_image')
   }
 
   /** Final decision (reject): state, reason, who and when, the history row and the audit row in one transaction. */
@@ -544,9 +558,14 @@ export class IntakeReviewService {
 
   /** The accept itself, inside the caller's transaction on a locked row. Throws 409 for a wrong state, 422 for a failed gate. */
   private async acceptRow(tx: TxClient, auth: AuthContext, row: ItemRow, who: CallerInfo): Promise<void> {
+    // S6-T18 part 2: a teacher's diagram image sets the asset of an EXISTING group stimulus; no question is made. Admin only, decided
+    // first, so a teacher cannot accept (or probe the state of) their own diagram item.
+    const diagram = diagramTargetOf(row.payload)
+    if (diagram !== null && !isAdmin(auth)) throw ApiError.of('FORBIDDEN')
     if (row.reviewState === 'accepted') throw conflict(INTAKE_MESSAGES.itemAlreadyAccepted)
     if (row.reviewState === 'rejected') throw conflict(INTAKE_MESSAGES.itemLocked)
     if (row.reviewState === 'duplicate') throw conflict(INTAKE_MESSAGES.itemIsDuplicate)
+    if (diagram !== null) return this.acceptDiagram(tx, auth, row, diagram, who)
 
     // Items of one stimulus group are accepted one at a time: the first creates the bank stimulus and group, the rest join it.
     if (row.stimulusId !== null) await tx.$queryRaw`SELECT id FROM intake_batches WHERE id = ${row.batchId} FOR UPDATE`
@@ -559,6 +578,7 @@ export class IntakeReviewService {
     // Unreachable in practice: `ids` is null only when the subject or level is unknown, which draftIssues already reports.
     if (resolved.ids === null) throw gateError([{ itemId: q.id, where: `Soalan ${q.label}`, message: `Soalan ${q.label}: ${INTAKE_GATE_MESSAGES.subjectLevelMissing}` }])
 
+    // The copy belongs to the batch owner (the teacher who sent the image); the admin only decides.
     const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
     const actor = { userId: ownerId, role: auth.active.role === 'admin' ? ('admin' as const) : ('teacher' as const) }
     const made: MadeBankGroup = {}
@@ -620,6 +640,60 @@ export class IntakeReviewService {
       },
     })
     await this.record(INTAKE_AUDIT.itemAccepted, auth, row, who, { from: row.reviewState, to: 'accepted', questionId: created.id }, tx)
+  }
+
+  /**
+   * Accept of a diagram item (S6-T18 part 2, ruling on #494): the teacher's image is copied to a `question_image` owned by the batch owner and becomes
+   * `asset_file_id` of the EXISTING stimulus of the group (no new stimulus, no new group, no question version). The question is then
+   * resolved in the diagram audit (`image`), so it no longer shows as needing a diagram. Inside the caller's transaction; a failure removes the copy.
+   */
+  private async acceptDiagram(tx: TxClient, auth: AuthContext, row: ItemRow, target: DiagramTarget, who: CallerInfo): Promise<void> {
+    const ownerId = row.batch.ownerUserId === null ? auth.userId : idToString(row.batch.ownerUserId)
+    // The group and its stimulus still exist, and the question still belongs to the group.
+    const link = await tx.stimulusGroupStimulus.findFirst({ where: { groupId: idFromString(target.groupId), stimulusId: idFromString(target.stimulusId) }, select: { id: true } })
+    const question = await tx.question.findFirst({ where: { id: idFromString(target.questionId), groupId: idFromString(target.groupId) }, select: { id: true } })
+    if (!link || !question) throw conflict(WORKFLOW_MESSAGES.diagramTargetGone)
+    // Only the batch owner's own `question_image` (a guru batch always has an owner; a null owner would match an unowned file).
+    const source = row.batch.ownerUserId === null
+      ? null
+      : await tx.file.findFirst({ where: { id: idFromString(target.imageFileId), purpose: 'question_image', ownerUserId: row.batch.ownerUserId }, select: { id: true } })
+    const bytes = source ? await this.files.readStored(idToString(source.id)) : null
+    if (!bytes) throw invalid('stimulus', INTAKE_GATE_MESSAGES.figureNotResolved)
+
+    let token: string | undefined
+    try {
+      const copy = await this.files.storeManaged({ ownerUserId: ownerId, purpose: 'question_image', bytes: bytes.bytes, isTest: auth.mode !== null })
+      token = copy.publicId
+      const copyId = idFromString(copy.id)
+      // Under the stimulus lock (D113): refused with 409 while pupils are served the stimulus, and never over an existing file. The siblings of
+      // the group need no change: once the stimulus has a file they drop out of the diagram candidate predicate by themselves.
+      if (!(await this.stimuli.attachFirstAsset(target.stimulusId, copyId))) throw conflict(WORKFLOW_MESSAGES.diagramTargetGone)
+      const resolved = { resolution: 'image', fileId: copyId, resolvedById: idFromString(auth.userId) }
+      await tx.diagramAuditResolution.upsert({
+        where: { kind_questionId: { kind: target.kind, questionId: idFromString(target.questionId) } },
+        create: { kind: target.kind, questionId: idFromString(target.questionId), ...resolved },
+        update: resolved,
+      })
+      await tx.intakeItem.update({
+        where: { id: row.id },
+        data: { reviewState: 'accepted', decidedById: idFromString(auth.userId), decidedAt: new Date() },
+      })
+      await tx.intakeItemEvent.create({
+        data: {
+          itemId: row.id,
+          event: 'accepted',
+          fromState: row.reviewState,
+          toState: 'accepted',
+          afterValue: { questionId: target.questionId, groupId: target.groupId, stimulusId: target.stimulusId, assetFileId: copy.id },
+          actorUserId: idFromString(auth.userId),
+          actorRole: auth.active.role,
+        },
+      })
+      await this.record(INTAKE_AUDIT.itemAccepted, auth, row, who, { from: row.reviewState, to: 'accepted', diagram: true, questionId: target.questionId, stimulusId: target.stimulusId }, tx)
+    } catch (err) {
+      if (token !== undefined) await this.files.discard(token, 'question_image')
+      throw err
+    }
   }
 
   /**
@@ -746,6 +820,7 @@ export class IntakeReviewService {
           await this.decide(tx, auth, fresh, 'rejected', body.reason as string, who)
         }
       }, TX)
+      if (body.action === 'reject') await this.discardDiagramSource(row)
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'VALIDATION_ERROR') return skip('GATE_FAILED', ((err.details as { issues?: IntakeIssue[] } | undefined)?.issues ?? []).slice(0, 50))

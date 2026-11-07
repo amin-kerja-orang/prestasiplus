@@ -134,7 +134,7 @@ const statItems = computed<StatItem[]>(() => [
   },
   {
     key: 'published',
-    label: 'Published',
+    label: 'Diluluskan',
     value: formatNumber(stats.value?.published ?? 0),
     icon: 'check-circle',
     accent: 'friend',

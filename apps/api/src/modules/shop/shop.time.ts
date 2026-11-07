@@ -11,6 +11,11 @@ export function mytMonthRange(at: Date): { from: Date; to: Date } {
   }
 }
 
+/** [start, end) of the Malaysia calendar year `year`: the window of the session budget and the Kawalan Reward tiles (`created_at`, #501). */
+export function mytYearRange(year: number): { from: Date; to: Date } {
+  return { from: new Date(`${String(year).padStart(4, '0')}-01-01T00:00:00+08:00`), to: new Date(`${String(year + 1).padStart(4, '0')}-01-01T00:00:00+08:00`) }
+}
+
 /** True while an open draw still sells tickets: no closing date, or the closing date (Malaysia day) is today or later. */
 export function drawStillOpen(closesAt: Date | null, now: Date): boolean {
   return closesAt === null || mytDay(closesAt) >= mytDay(now)

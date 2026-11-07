@@ -286,6 +286,7 @@ interface StimulusRow {
   bodyMs: string | null
   bodyEn: string | null
   caption: string | null
+  captionEn: string | null
   altText: string | null
   sourceCitation: string | null
   tableData: unknown
@@ -309,6 +310,7 @@ function stimulusRecordOf(row: StimulusRow): StimulusRecord | null {
     assetFileId: row.assetFileId === null ? null : idToString(row.assetFileId),
     alt: row.altText,
     caption: row.caption,
+    captionEn: row.captionEn,
     sourceCitation: row.sourceCitation,
     tableData: row.tableData ?? null,
   }
@@ -408,6 +410,37 @@ export class QuestionsRepository {
     return rows[0]?.n ?? 0
   }
 
+  /**
+   * S3-T07: `unitCount` split by (level, TP) in ONE statement, every unit in exactly ONE bucket, so the buckets sum to `unitCount`.
+   * A question outside any group is its own unit and sits at its own level and TP. A group sits at ONE bucket:
+   *  - level: the group's own level (`stimulus_groups.education_level_id`) when it is set AND is a level this scope can show (an offered
+   *    level, active and not primary, and inside the filter's level restriction); else the level of its FIRST member in scope. Nothing in the
+   *    database ties a group's level to its members' LIVE versions, so a stale or unoffered value must not move the unit to a level the hub never lists;
+   *  - TP: always the TP of its FIRST member in scope (a group has no difficulty of its own).
+   * "First" = lowest `group_position` among the members IN SCOPE (positions are unique per group and never NULL for a grouped question: `ck_questions_group_position`, `uq_questions_group_id_group_position`; the id order is a harmless final tie-break): deterministic, and the group's true first member only when every member is in scope.
+   */
+  async unitCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
+    const { from, where } = this.scope(filter)
+    // The group's own level is usable only when this scope can show it: an offered level (the `SPM_SERVABLE_SQL` rule) inside the filter's level restriction.
+    const own: Prisma.Sql[] = [Prisma.sql`EXISTS (SELECT 1 FROM education_levels gl WHERE gl.id = sg.education_level_id AND gl.stage <> 'primary' AND gl.is_active)`]
+    if (filter.educationLevelId !== undefined) {
+      const key = bi(filter.educationLevelId)
+      own.push(key === null ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id = ${key}`)
+    }
+    if (filter.educationLevelIds !== undefined) {
+      const keys = filter.educationLevelIds.map(bi).filter((k): k is bigint => k !== null)
+      own.push(keys.length === 0 ? Prisma.sql`FALSE` : Prisma.sql`sg.education_level_id IN (${Prisma.join(keys)})`)
+    }
+    const rows = await this.db.$queryRaw<{ level_id: bigint | null; tp: number | null; n: number }[]>`
+      SELECT u.level_id, u.tp, count(*)::int AS n FROM (
+        SELECT DISTINCT ON (CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END)
+               CASE WHEN ${Prisma.join(own, ' AND ')} THEN sg.education_level_id ELSE v.education_level_id END AS level_id, v.difficulty_tp AS tp
+          ${from} LEFT JOIN stimulus_groups sg ON sg.id = q.group_id WHERE ${where}
+         ORDER BY CASE WHEN q.group_id IS NULL THEN 'q' || q.id::text ELSE 'g' || q.group_id::text END, q.group_position ASC NULLS LAST, q.id ASC
+      ) u GROUP BY 1, 2`
+    return rows.map((r) => ({ levelId: r.level_id === null ? null : idToString(r.level_id), tp: r.tp, n: r.n }))
+  }
+
   /** Eligible-style counts grouped by (level, TP) in ONE statement: the SPM pool splits. `filter` is used as given. */
   async groupCountsByLevelTp(filter: QuestionFilter = {}): Promise<{ levelId: string | null; tp: number | null; n: number }[]> {
     const { from, where } = this.scope(filter)
@@ -474,6 +507,27 @@ export class QuestionsRepository {
       this.db.$queryRaw<{ id: bigint }[]>`SELECT q.id ${from} WHERE ${elig} ORDER BY q.id ASC LIMIT ${Math.max(0, cap)}`,
     ])
     return { matched: counts[0]?.matched ?? 0, eligible: counts[0]?.eligible ?? 0, ids: rows.map((r) => idToString(r.id)) }
+  }
+
+  /** FR-QA-47: the Terbit papers that place one of these questions (a bulk archive warns about them). Read-only; oldest paper first. */
+  async publishedPapersPlacing(where: { ids: readonly string[] } | { filter: Omit<AdminListFilter, 'page' | 'pageSize'>; fromStatuses: readonly QuestionStatus[] }): Promise<{ id: string; title: string }[]> {
+    let questions: Prisma.Sql
+    if ('ids' in where) {
+      const keys = where.ids.map(bi).filter((k): k is bigint => k !== null)
+      if (keys.length === 0) return []
+      questions = Prisma.join(keys)
+    } else {
+      const conds = [...this.adminConds({ ...where.filter, page: 1, pageSize: 1 }), Prisma.sql`v.status IN (${Prisma.join(where.fromStatuses.map((x) => Prisma.sql`${x}`))})`]
+      questions = Prisma.sql`SELECT q.id FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.latest_version_no WHERE ${Prisma.join(conds, ' AND ')}`
+    }
+    const rows = await this.db.$queryRaw<{ id: bigint; title: string }[]>`
+      SELECT DISTINCT p.id, p.title
+        FROM papers p
+        JOIN paper_sections s ON s.paper_id = p.id
+        JOIN paper_placements pl ON pl.paper_section_id = s.id
+       WHERE p.kind = 'pilihan' AND p.status = 'published' AND pl.question_id IN (${questions})
+       ORDER BY p.id ASC`
+    return rows.map((p) => ({ id: idToString(p.id), title: p.title }))
   }
 
   async listIdsKeyset(filter: Omit<AdminListFilter, 'page' | 'pageSize'>, idBelow: string | undefined, limit: number): Promise<string[]> {
@@ -1562,6 +1616,7 @@ export class QuestionsRepository {
           wordMin: d.wordMin,
           wordMax: d.wordMax,
           topics: d.topics ?? Prisma.DbNull,
+          modeConfig: d.modeConfig ?? Prisma.DbNull,
           stimulusId: d.stimulusId,
           reveal: d.reveal,
           unitNodeId: d.unitNodeId,
