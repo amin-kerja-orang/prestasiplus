@@ -154,7 +154,7 @@ export interface TournamentRow {
   seq: number
 }
 
-export type LeagueStatus = 'upcoming' | 'ongoing' | 'ended'
+export type LeagueStatus = 'upcoming' | 'active' | 'ended'
 export type LeagueType = 'friendly' | 'tournament' | 'league'
 export type LeagueScope = 'school' | 'district' | 'state' | 'national'
 export type LeagueScoring = 'total_score' | 'avg_accuracy' | 'wins'

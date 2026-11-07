@@ -25467,7 +25467,7 @@
         "type": "string",
         "enum": [
           "upcoming",
-          "ongoing",
+          "active",
           "ended"
         ]
       },
@@ -25847,7 +25847,7 @@
                 }
               }
             },
-            "description": "Class level to rows, only for the levels that have rows (stored job output, never recomputed)."
+            "description": "Class level to rows, only for the levels that have rows (stored output of the hourly job)."
           }
         },
         "required": [
@@ -25865,6 +25865,149 @@
           "classLevels",
           "schools",
           "standings"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueStandings": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLeagueRankedRow"
+            },
+            "description": "Score desc, participants desc, school name asc. Under avg_accuracy a school with fewer than 30 answers is absent."
+          },
+          "recomputedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Time of the last hourly recompute; null before the first run."
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "True when the derived status is ended, or the final recompute has run (frozen_at)."
+          }
+        },
+        "required": [
+          "rows",
+          "recomputedAt",
+          "frozen"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueRankedRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "description": "The scoring method value, one decimal."
+          },
+          "participants": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct pupils of the school with points."
+          },
+          "avgAccuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Correct / answered, percent, one decimal."
+          }
+        },
+        "required": [
+          "rank",
+          "schoolName",
+          "score",
+          "participants",
+          "avgAccuracy"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueMe": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "rank": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0
+              },
+              "participants": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "rank",
+              "score",
+              "participants"
+            ],
+            "additionalProperties": false,
+            "description": "null when the school is not enrolled, is not ranked (avg_accuracy under 30 answers), or has no standing yet."
+          },
+          "mine": {
+            "type": "object",
+            "properties": {
+              "points": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          "contributors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamesLeagueContributor"
+            },
+            "maxItems": 10,
+            "description": "Top 10 pupils of the school by points desc, then name asc."
+          }
+        },
+        "required": [
+          "school",
+          "mine",
+          "contributors"
+        ],
+        "additionalProperties": false
+      },
+      "GamesLeagueContributor": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name (children's names rule)."
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name",
+          "points"
         ],
         "additionalProperties": false
       },
@@ -112537,6 +112680,192 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Liga tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/{id}/standings": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "League standings of one Tingkatan (API-GAME-13)",
+        "description": "Stored output of the hourly job, role M (pupil) only. `level` is 1..5 (T1..T5); default the lowest level of the league. Primary schools are left out. Under avg_accuracy a school with fewer than 30 answers is absent. `frozen` is true when the derived status is ended or the final recompute has run.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "League id. Digits only; a non-numeric segment does not match the route."
+            },
+            "required": true,
+            "description": "League id. Digits only; a non-numeric segment does not match the route.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Tingkatan 1..5 (T1..T5). Default: the lowest level of the league. Otherwise 422 \"Tingkatan tidak sah.\" (level)."
+            },
+            "required": false,
+            "description": "Tingkatan 1..5 (T1..T5). Default: the lowest level of the league. Otherwise 422 \"Tingkatan tidak sah.\" (level).",
+            "name": "level",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rows in rank order; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueStandings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (role is not student).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Liga tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Tingkatan tidak sah.\" with fields.level (not 1..5, or not a level of the league).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leagues/{id}/me": {
+      "get": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Own school position, own points and top contributors (API-GAME-13)",
+        "description": "Role M (pupil) only. `school` is the position of the pupil's school at the pupil's own Tingkatan, or null (not enrolled, not ranked, no standing yet). `contributors` are the top 10 pupils of the school.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "League id. Digits only; a non-numeric segment does not match the route."
+            },
+            "required": true,
+            "description": "League id. Digits only; a non-numeric segment does not match the route.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Own position; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesLeagueMe"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (role is not student).",
             "content": {
               "application/json": {
                 "schema": {

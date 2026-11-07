@@ -17,7 +17,14 @@ export type { JutawanQuestionView, SoloPayload, SubmitResult } from './game-resu
 export { gradeFits, kadarOf, parseRoomBody, roomQueries, roomsRepo, standingQueries } from './rooms'
 export type { RoomCreateInput, RoomPlayerView, RoomView } from './rooms'
 export { leagueQueries, leaguesRepo, parseLeagueBody } from './leagues'
-export type { LeagueCard, LeagueDetail, LeagueInput, LeagueStandingView } from './leagues'
+export type {
+  LeagueCard,
+  LeagueDetail,
+  LeagueInput,
+  LeagueMeView,
+  LeagueStandingsView,
+  LeagueStandingView,
+} from './leagues'
 export { sekolahBersaingRepo } from './sekolah-bersaing'
 export type { SekolahBersaingView } from './sekolah-bersaing'
 export {
