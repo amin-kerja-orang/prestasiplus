@@ -11,7 +11,7 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import { StructuredListingRepository } from '../../src/modules/practice/reads/writes/listing.repository'
 import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool'
 import { QuestionSetsService } from '../../src/modules/classes/question-sets/question-sets.service'
-import { BANK_VISIBLE_SQL, isBankVersion, SPM_SERVABLE_SQL } from '../../src/modules/questions/learner-visibility'
+import { BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from '../../src/modules/questions/learner-visibility'
 import { assertPersonalHasNoGroupOrStimulus, BANK_ONLY, QuestionsRepository } from '../../src/modules/questions/questions.repository'
 import { QuestionBankAdapter } from '../../src/modules/questions/workflow/bank-adapter'
 import { QuestionsService } from '../../src/modules/questions/questions.service'
@@ -119,7 +119,7 @@ describe('DM-42: private questions are absent from the counts and reports of oth
     const overview = new OverviewRepository(o.prisma)
     await run(
       () => overview.bankMatrix(),
-      () => overview.newestPublishedMcqIds(5),
+      () => overview.newestIdsOf(new QuestionsRepository(o.prisma).scopeSql({ status: 'approved' } as never, true), 5),
       () => overview.chapterQuestionCounts(['1', '2']),
     )
     expect(o.sqls).toHaveLength(3)
@@ -129,6 +129,10 @@ describe('DM-42: private questions are absent from the counts and reports of oth
     await run(() => new StructuredListingRepository(l.prisma).page({ levelIds: ['1'], subjectIds: null, subjectOrder: false, kbat: null, q: null, markable: false, limit: 10, offset: 0 } as never))
     expect(l.sqls).toHaveLength(2)
     for (const s of l.sqls) expect(s).toContain(BANK)
+    // S5-T11: the page and the total carry the same learner-visibility pair as every other learner path.
+    for (const s of l.sqls) expect(s).toContain(NOT_FLAGGED_SQL.sql)
+    for (const s of l.sqls) expect(s).toContain(MEDIA_RESOLVED_SQL.sql)
+    for (const frag of [NOT_PKSK_SQL, LEARNER_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL]) for (const s of l.sqls) expect(s).toContain(frag.sql)
 
     const a = capture()
     await run(() => new PracticeAnalyticsRepository(a.prisma).eligibleQueueBySubject('3'))

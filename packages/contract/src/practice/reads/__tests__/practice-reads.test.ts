@@ -69,7 +69,7 @@ const dashboard = {
   subjects: [subject],
   stats: { totalQuestions: 140, activeSubjects: 1, activeLevels: 4, approvedQuestions: 120 },
   levelPills: [{ code: 'D1', name: 'Darjah 1', stage: 'primary', count: 30 }],
-  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1' }],
+  recentQuestions: [{ id: '501', subjectName: 'Matematik', difficulty: 2, text: 'Berapakah 2 + 3?', createdAt: NOW, levelCode: 'D1', figureThumbUrl: null }],
   difficultyChart: [1, 2, 3, 4, 5].map((level) => ({ level, count: level })),
   subjectStats: [{ id: '3', name: 'Matematik', icon: null, color: '#2563eb', bankCount: 140, avgDifficulty: 2.41, usedCount: 0 }],
 }
@@ -88,7 +88,8 @@ const historyItem = {
 }
 
 const structuredAttempt = {
-  id: '9001',
+  id: '5f1c0a52-7a55-4e55-9b2b-3f1d3c0b9a11',
+  attemptId: '5f1c0a52-7a55-4e55-9b2b-3f1d3c0b9a11',
   userId: '77',
   structuredQuestionId: '4001',
   scope: null,
@@ -114,6 +115,18 @@ describe('dashboard', () => {
       }).success,
     ).toBe(false)
     expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, greetingPeriod: 'Subuh' }).success).toBe(false)
+  })
+  it('"Soalan Terkini" (FR-MUR-2-8): text up to 140 characters + "…", a nullable figure URL, no answer key', () => {
+    const withRow = (row: Record<string, unknown>) =>
+      PracticeReadDashboardSchema.safeParse({ ...dashboard, recentQuestions: [{ ...dashboard.recentQuestions[0], ...row }] }).success
+    expect(withRow({ text: `${'x'.repeat(140)}…` })).toBe(true)
+    expect(withRow({ text: 'x'.repeat(142) })).toBe(false)
+    expect(withRow({ figureThumbUrl: '/api/files/AbCdEfGhIjKlMnOpQrStUv' })).toBe(true)
+    expect(withRow({ figureThumbUrl: null })).toBe(true)
+    expect(withRow({ figureThumbUrl: undefined })).toBe(false) // required, nullable
+    expect(withRow({ figureThumbUrl: 7 })).toBe(false)
+    expect(withRow({ correctAnswer: 'A' })).toBe(false) // strict: no answer key on the wire
+    expect(withRow({ options: [] })).toBe(false)
   })
   it('accuracyPct: null with no answers, one decimal at most, 0..100', () => {
     for (const ok of [null, 0, 75, 66.7, 100]) expect(PracticeReadDashboardSchema.safeParse({ ...dashboard, accuracyPct: ok }).success).toBe(true)
@@ -317,6 +330,10 @@ describe('structured questions', () => {
     const without: Record<string, unknown> = { ...structuredAttempt }
     delete without.modelAnswers
     expect(PracticeReadStructuredAttemptResultSchema.safeParse(without).success).toBe(false)
+    // S5-T11: the Bijak attempt id is part of the result.
+    const noAttemptId: Record<string, unknown> = { ...structuredAttempt }
+    delete noAttemptId.attemptId
+    expect(PracticeReadStructuredAttemptResultSchema.safeParse(noAttemptId).success).toBe(false)
   })
 })
 

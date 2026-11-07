@@ -3,10 +3,12 @@ import { Inject, Module, type OnModuleInit } from '@nestjs/common'
 import { AuditModule } from '../../../common/audit'
 import { ThrottleModule } from '../../../common/throttle'
 import { BijakPapersModule } from '../../bijak/papers'
+import { IntakeFilesModule } from '../../intake/files'
 import { QuestionsModule } from '../../questions'
 import { BuilderController } from './builder.controller'
 import { BuilderRepository } from './builder.repository'
 import { BuilderService } from './builder.service'
+import { PaperSourceService } from './paper-source.service'
 import { SectionPoolsController } from './section-pool.controller'
 import { SectionPoolService } from './section-pool.service'
 import { BijakBuilderPorts } from './ports'
@@ -18,9 +20,9 @@ import { QuestionBankBuilderSource } from './question-bank.source'
  * `ports.ts`). Tests swap the source by overriding the `QuestionBankBuilderSource` provider.
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule],
+  imports: [AuditModule, ThrottleModule, QuestionsModule, BijakPapersModule, IntakeFilesModule],
   controllers: [BuilderController, SectionPoolsController],
-  providers: [BijakBuilderPorts, BuilderRepository, BuilderService, SectionPoolService, QuestionBankBuilderSource],
+  providers: [BijakBuilderPorts, BuilderRepository, BuilderService, PaperSourceService, SectionPoolService, QuestionBankBuilderSource],
   exports: [BijakBuilderPorts, BuilderRepository, BuilderService],
 })
 export class ExamBuilderModule implements OnModuleInit {

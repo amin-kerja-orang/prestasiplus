@@ -88,6 +88,31 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S7-T02 | AC-AS-45-2 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31); sekolah-bersaing.test.ts::AC-AS-45-2: an empty board shows both exact lines and no table; rules.test.ts::AC-AS-45-2: no session anywhere is an empty board |
 | S7-T02 | AC-AS-45-3 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-3: 40 schools give exactly 30 rows; rules.test.ts::AC-AS-45-3: cuts 40 schools to the top 30 |
 | S7-T02 | AC-AS-45-6 | CI | Pass | 2026-11-05 | team-cc/S-3 | leagues.spec.ts::AC-AS-45-6: equal accuracy: more pupils first, then more sessions, then school name; sekolah-bersaing.test.ts::AC-AS-45-6: the colour follows the rounded value; rules.test.ts::AC-AS-45-6: breaks ties by pupils, then sessions, then name |
+| S6-T02 | AC-AS-11-1 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts; KirkpatrickOverviewPage.test.ts |
+| S6-T02 | AC-AS-11-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | pupil-export.spec.ts; KirkpatrickPelajarPage.test.ts |
+| S6-T02 | AC-AS-11-4 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts |
+| S6-T02 | AC-AS-11-5 | CI | Pass | 2026-11-05 | team-dd/S-1 | interventions.spec.ts; handlers.test.ts |
+| S6-T02 | AC-AS-11-8 | CI | Pass | 2026-11-05 | team-dd/S-1 | interventions.spec.ts; handlers.test.ts |
+| S6-T02 | AC-GUR-11-1 | CI | Pass | 2026-11-05 | team-dd/S-1 | routes.test.ts |
+| S6-T02 | AC-GUR-11-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | KirkpatrickOverviewPage.test.ts; data.test.ts |
+| S6-T02 | AC-GUR-11-3 | CI | Pass | 2026-11-05 | team-dd/S-1 | kirkpatrick/review.spec.ts |
+| S6-T02 | AC-GUR-11-9 | CI | Pass | 2026-11-05 | team-dd/S-1 | kirkpatrick/review.spec.ts; KirkpatrickInterventionsPage.test.ts |
+| S6-T04 | AC-AS-49-1 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
+| S6-T04 | AC-AS-49-2 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
+| S6-T04 | AC-AS-49-3 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-access.spec.ts |
+| S6-T04 | AC-AS-49-4 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts; amaran-csv.spec.ts |
+| S6-T04 | AC-AS-49-6 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-access.spec.ts |
+| S6-T04 | AC-AS-49-7 | CI | Pass | 2026-11-06 | team-dd/S-4 | amaran-risk.spec.ts |
+| S6-T01 | AC-GUR-43-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | m11 routes.test.ts; LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-4 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-5 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; http/guru-weekly-report.spec.ts |
+| S6-T01 | AC-GUR-43-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-8 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanMingguanGuruPage.test.ts |
+| S6-T01 | AC-GUR-43-10 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts |
+| S6-T01 | AC-GUR-43-11 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts; contract guru-weekly-report.test.ts |
 
 ## Sprint 2
 
@@ -105,6 +130,18 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
 | S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
 | S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
+| S6-T06 | AC-GUR-44-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru.spec.ts; CiptaPage.test.ts; SumbangSoalanPage.test.ts |
+| S6-T06 | AC-GUR-44-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | missions/papers.spec.ts; papers-guru-intake.spec.ts; HantarKertasCard.test.ts |
+| S6-T06 | AC-GUR-44-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | HantarKertasCard.test.ts; missions/papers.spec.ts |
+| S6-T06 | AC-GUR-44-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/imports.spec.ts; guru-csv.spec.ts |
+| S6-T06 | AC-GUR-44-5 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru.spec.ts |
+| S6-T06 | AC-GUR-44-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | DetailEditPages.test.ts; guru-csv.spec.ts |
+| S6-T06 | AC-GUR-44-7 | CI | Pass | 2026-11-06 | team-dd/S-3 | smoke-sumbang-soalan-responsive.spec.ts |
+| S6-T06 | AC-GUR-44-10 | CI | Pass | 2026-11-06 | team-dd/S-3 | QuestionForm.test.ts; dskp-rule.test.ts; guru.spec.ts |
+| S6-T06 | AC-GUR-44-11 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-csv-old-gate.spec.ts |
+| S6-T06 | AC-GUR-44-12 | CI | Pass | 2026-11-06 | team-dd/S-3 | QuestionForm.test.ts; dskp-rule.test.ts |
+| S6-T06 | AC-GUR-44-13 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-csv.spec.ts; SumbangSoalanPage.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts |
+| S6-T06 | AC-GUR-44-14 | CI | Pass | 2026-11-06 | team-dd/S-3 | HantarKertasCard.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts; missions/papers.spec.ts; papers-guru-intake.spec.ts |
 
 ## Sprint 3
 
@@ -122,6 +159,17 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T07 | AC-MUR-12-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | qa-g5-guards-responsive.spec.ts |
 | S5-T07 | AC-MUR-12-5 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
 | S5-T07 | AC-MUR-12-6 | CI | Pass | 2026-11-05 | team-dd/S-2 | remedial.spec.ts |
+| S2-T09 | AC-ADM-Q19.1 | CI | Pass | 2026-11-06 | team-dd/S-5 | source-papers.spec.ts |
+| S6-T08 | AC-GUR-10-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts; monitoring/route-ids.test.ts |
+| S6-T08 | AC-GUR-10-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | analytics/monitoring.spec.ts |
+| S6-T08 | AC-GUR-10-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | analytics/monitoring.spec.ts; teacher-report-scope.spec.ts; monitoring/route-ids.test.ts |
+| S6-T08 | AC-GUR-10-4 | CI | Pass | 2026-11-06 | team-dd/S-2 | analytics/monitoring.spec.ts |
+| S6-T08 | AC-GUR-10-5 | CI | Pass | 2026-11-06 | team-dd/S-2 | analytics/monitoring.spec.ts; teacher-report-scope.spec.ts |
+| S6-T08 | AC-GUR-10-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts |
+| S6-T08 | AC-GUR-10-8 | CI | Pass | 2026-11-06 | team-dd/S-2 | analytics/rules.spec.ts; monitoring/logic.test.ts; monitoring/pages.test.ts |
+| S6-T08 | AC-AS-10-4 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts |
+| S6-T08 | AC-AS-10-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | monitoring/pages.test.ts |
+| S6-T08 | AC-ADM-M03.1 | CI | Pass | 2026-11-06 | team-dd/S-2 | admin-nav.test.ts; admin-shell.test.ts |
 
 ## Sprint 4
 
@@ -154,11 +202,58 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T08 | AC-GUR-7-1 | CI | Pass | 2026-11-06 | team-bb/S-4 | VideoPages.test.ts::choosing a category: the pills show 2 and 1, clicking the first lists exactly its 2 videos; videos.spec.ts::AC-GUR-7-1 / AC-AS-7-1 exactly 2 listed, pill counts 2 and 1 |
 | S5-T08 | AC-GUR-7-2 | CI | Pass | 2026-11-06 | team-bb/S-4 | videos.spec.ts::AC-GUR-7-2 a teacher saves a video with title, category and valid URL and it is listed under that category; VideoPages.test.ts::teacher adds a video (category sent) |
 | S5-T08 | AC-MUR-8-3 | CI | Pass | 2026-11-06 | team-bb/S-4 | kelas-saya.spec.ts::the teacher adds the pupil (PUT /guru/students/:id), then the class is in the pupil's next Kelas Saya, join route 404; KelasSayaPelajarPage.test.ts::no join field or "Sertai" with or without a class |
+| S5-T12 | AC-MUR-20-1 | CI | Pass | 2026-11-05 | team-bb/S-4 | ArtikelPages.test.ts |
+| S5-T12 | AC-MUR-20-2 | CI | Pass | 2026-11-05 | team-bb/S-4 | articles.spec.ts |
+| S5-T12 | AC-MUR-20-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | ArtikelPages.test.ts |
+| S5-T12 | AC-MUR-20-4 | CI | Pass | 2026-11-05 | team-bb/S-4 | articles.spec.ts |
+| S5-T12 | AC-MUR-24-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | StudentPages.test.ts |
+| S5-T12 | AC-MUR-25-3 | CI | Pass | 2026-11-05 | team-bb/S-4 | StudentPages.test.ts |
+| S5-T11 | AC-MUR-17-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | structured-answer.test.ts |
+| S5-T11 | AC-MUR-26-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | question-set-class.spec.ts |
+| S3-T06 | AC-MUR-13-20 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-papers/surface.spec.ts; subjektif-mock.test.ts; subjektif-pages.test.ts |
+| S3-T06 | AC-MUR-13-21 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-attempts/subjektif.spec.ts; subjektif-mock.test.ts; subjektif-pages.test.ts |
+| S3-T06 | AC-MUR-13-22 | CI | Pass | 2026-11-06 | team-dd/S-5 | semakan.test.ts; subjektif-mock.test.ts |
+| S3-T06 | AC-MUR-13-23 | CI | Pass | 2026-11-06 | team-dd/S-5 | subjektif-pages.test.ts |
+| S3-T06 | AC-PA-10 | CI | Pass | 2026-11-06 | team-dd/S-5 | bijak-attempts/subjektif.spec.ts |
+| S6-T10 | AC-GUR-8-8 | CI | Pass | 2026-11-06 | team-dd/S-2 | classes.test.ts; pupil-create.unit.spec.ts |
+| S6-T10 | AC-GUR-41-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | inactive-pupils.spec.ts; PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-41-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts; pupil-create.unit.spec.ts; pupil-create.spec.ts |
+| S6-T10 | AC-GUR-41-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-41-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | pupil-create.unit.spec.ts; PelajarSayaPage.test.ts; pupil-create.spec.ts |
+| S6-T10 | AC-GUR-41-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | PelajarSayaPage.test.ts |
+| S6-T10 | AC-GUR-42-1 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S6-T10 | AC-GUR-42-2 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S6-T10 | AC-GUR-42-3 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts; report-all-modes.spec.ts |
+| S6-T10 | AC-GUR-42-6 | CI | Pass | 2026-11-06 | team-dd/S-2 | report-all-modes.spec.ts; analytics/teacher.spec.ts |
+| S6-T10 | AC-GUR-42-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
+| S3-T07 | AC-PA-32 | CI | Pass | 2026-11-06 | team-dd/S-3 | bijak-papers/generate.spec.ts; bijak-hub-no-jana.test.ts |
+| S3-T07 | AC-MUR-13-29 | CI | Pass | 2026-11-06 | team-dd/S-3 | m06-spm/__tests__/pages/pages.test.ts; spm/hub.spec.ts (six hub entries per FR-MUR-13-1: five cards + Bijak SPM banner, lead ruling) |
 
 ## Sprint 5
 
 | card | AC / AC-CHAIN ID | env | result | date | team/session | evidence ref |
 |---|---|---|---|---|---|---|
+| S6-T16 | AC-GUR-44a-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | classes/personal-questions.spec.ts; teacher-tools schema.test.ts; soalan-rujukan form.test.ts; soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | classes/personal-questions.spec.ts; soalan-rujukan form.test.ts; soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | classes/personal-questions.spec.ts; teacher-tools schema.test.ts; soalan-rujukan form.test.ts; soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/private-exclusion.spec.ts |
+| S6-T16 | AC-GUR-44a-5 | CI | Pass | 2026-11-06 | team-dd/S-3 | soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-7 | CI | Pass | 2026-11-06 | team-dd/S-3 | classes/personal-questions.spec.ts; teacher-tools schema.test.ts; soalan-rujukan form.test.ts; soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-8 | CI | Pass | 2026-11-06 | team-dd/S-3 | teacher-tools schema.test.ts; soalan-rujukan form.test.ts; soalan-rujukan pages.test.ts |
+| S6-T16 | AC-GUR-44a-9 | CI | Pass | 2026-11-06 | team-dd/S-3 | classes/personal-questions.spec.ts; soalan-rujukan pages.test.ts; personal-questions-handlers.test.ts |
+| S6-T16 | AC-GUR-44a-10 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/personal-questions-draw.spec.ts |
+| S6-T18 | AC-GUR-44c-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; diagrams-route.test.ts; mock/workflow-admin.test.ts; prototype-scope.test.ts |
+| S6-T18 | AC-GUR-44c-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; mock/workflow-admin.test.ts |
+| S6-T18 | AC-GUR-44c-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | intake-workflow/diagram-upload.spec.ts |
+| S6-T18 | AC-GUR-44c-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
+| S6-T18 | AC-GUR-44c-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions-workflow/diagram-audit.spec.ts; intake-workflow/diagram-upload.spec.ts; DiagramAuditPage.test.ts; mock/workflow-admin.test.ts |
+| S6-T17 | AC-GUR-44b-1 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-2 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-3 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; questions/guru-structured.spec.ts; StructuredGuruPages.test.ts |
+| S6-T17 | AC-GUR-44b-4 | CI | Pass | 2026-11-06 | team-dd/S-3 | questions/guru-structured.spec.ts; guru-structured-submit.spec.ts; StructuredGuruPages.test.ts; structured-guru.test.ts |
+| S6-T17 | AC-GUR-44b-6 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-structured-submit.spec.ts; structured-guru.test.ts; structured-submit-mock.test.ts; berstruktur/pages.test.ts |
+| S6-T17 | AC-GUR-44b-8 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts; structured-submit-mock.test.ts |
+| S6-T17 | AC-GUR-44b-9 | CI | Pass | 2026-11-06 | team-dd/S-3 | structured-form.test.ts; StructuredSubmitForm.test.ts |
 
 ## Sprint 6
 
@@ -173,6 +268,14 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S5-T13 | AC-MUR-19-2 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, student-pages.test.ts, student-s1-s4b.spec.ts |
 | S5-T13 | AC-MUR-19-3 | CI | Pass | 2026-11-05 | team-dd/S-2 | student.service.spec.ts, http.spec.ts, student-pages.test.ts |
 | S5-T13 | AC-MUR-19-4 | CI | Pass | 2026-11-05 | team-dd/S-2 | student-s1-s4b.spec.ts |
+| S5-T13 | AC-MUR-19-5 | CI | Pass | 2026-11-06 | team-dd/S-2 | student.service.spec.ts; http.spec.ts; answer-store-practice-writes.spec.ts |
+| S7-T08 | AC-MUR-32-1 | CI | Pass | 2026-11-06 | team-dd/S-1 | m20-marketplace/__tests__/pages/pages.test.ts |
+| S7-T08 | AC-MUR-32-2 | CI | Pass | 2026-11-06 | team-dd/S-1 | m20-marketplace/__tests__/pages/pages.test.ts |
+| S7-T08 | AC-MUR-32-3 | CI | Pass | 2026-11-06 | team-dd/S-1 | marketplace/product.spec.ts; admin-sellers.spec.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.2 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.3 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; m20-marketplace/__tests__/mock/admin.test.ts |
+| S7-T08 | AC-ADM-P2-12.4 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-products.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts; packages/contract/src/marketplace/__tests__/admin.test.ts |
+| S7-T08 | AC-ADM-P2-13.2 | CI | Pass | 2026-11-06 | team-dd/S-1 | admin-sellers.spec.ts; m20-marketplace/__tests__/pages/admin-pages.test.ts |
 
 ## Sprint 8
 

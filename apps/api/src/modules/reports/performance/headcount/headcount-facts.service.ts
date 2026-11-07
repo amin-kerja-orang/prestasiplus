@@ -30,13 +30,15 @@ export class HeadcountFactsService implements HeadcountFacts {
     return this.views(configs, await this.repo.entriesOf(configs))
   }
 
-  async entriesOfStudent(studentId: string, scope: HeadcountScope, own = false): Promise<HeadcountEntryView[]> {
-    // `own` (the pupil's own block): the configs holding an entry row AND those of the pupil's own classes (a config needs no entry
-    // row to be the pupil's, as in `GET /headcounts/me`: the pupil then reads the class defaults and the live Auto AR).
-    // Staff: the entry-holding configs of their scope, as before.
-    const classIds = own ? ((await this.ports.classes.classIdsOfStudent(studentId)) ?? []) : []
+  async entriesOfStudent(studentId: string, scope: HeadcountScope, classYear: number): Promise<HeadcountEntryView[]> {
+    // The configs holding an entry row (any year) AND those of the pupil's own classes for `classYear` (the current MYT year): a
+    // config needs no entry row to be the pupil's, as in `GET /headcounts/me` and in the teacher's class table (roster = class
+    // members). The pupil then reads the class defaults and the live Auto AR. This holds for staff too (AC-CHAIN-5: an Auto pupil
+    // with no entry row had no card). Membership is today's, so a class config of another year is not derived from it (a pupil who
+    // joined this year gets no previous-year card); staff stay limited to the configs of their scope below.
+    const classIds = (await this.ports.classes.classIdsOfStudent(studentId)) ?? []
     const byEntry = await this.repo.configsByIds(await this.repo.configIdsOfStudent(studentId))
-    const byClass = classIds.length === 0 ? [] : await this.repo.configsOfClassrooms(classIds)
+    const byClass = classIds.length === 0 ? [] : (await this.repo.configsOfClassrooms(classIds)).filter((c) => c.academicYear === classYear)
     const mine = [...new Map([...byEntry, ...byClass].map((c) => [c.id, c])).values()]
     let visible: HeadcountConfigRecord[]
     if (scope.kind === 'platform') visible = mine

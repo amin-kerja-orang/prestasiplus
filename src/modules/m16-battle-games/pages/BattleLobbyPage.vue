@@ -26,7 +26,13 @@ import {
 } from '../api'
 import ChallengeFriendModal from '../components/battle/ChallengeFriendModal.vue'
 import InvitationsModal from '../components/battle/InvitationsModal.vue'
-import { canStart, matchParams, type BattleSelection } from '../components/battle/battle-lib'
+import {
+  canStart,
+  matchParams,
+  pkskBlocked,
+  pkskNoGrant,
+  type BattleSelection,
+} from '../components/battle/battle-lib'
 import { useBattleSearch } from '../composables/useBattleSearch'
 
 const router = useRouter()
@@ -57,7 +63,11 @@ const search = useBattleSearch({
 
 const coreSubjects = computed(() => lobby.value?.subjects.filter((s) => s.core) ?? [])
 const moreSubjects = computed(() => lobby.value?.subjects.filter((s) => !s.core) ?? [])
-const ready = computed(() => canStart(sel))
+const noPkskGrant = computed(() => (lobby.value ? pkskNoGrant(lobby.value) : false))
+const pkskLocked = computed(() =>
+  lobby.value ? sel.questionType === 'pksk' && pkskBlocked(lobby.value, sel.pkskLevel) : false,
+)
+const ready = computed(() => canStart(sel) && !pkskLocked.value)
 const busy = computed(() => search.loading.value || search.phase.value !== 'idle')
 const params = computed(() => (ready.value ? matchParams(sel) : null))
 const searching = computed(() => search.phase.value === 'searching')
@@ -306,7 +316,16 @@ onBeforeUnmount(() => {
           class="mt-4 flex flex-col gap-4"
           data-testid="battle-panel-pksk"
         >
-          <div>
+          <UAlert
+            v-if="pkskLocked"
+            color="neutral"
+            variant="subtle"
+            icon="i-ph-lock-key-duotone"
+            title="Anda belum mempunyai akses PKSK PRO"
+            description="Akses PKSK diberikan oleh pentadbir sekolah anda. Hubungi guru atau pentadbir sekolah untuk mengaktifkan pakej."
+            data-testid="battle-pksk-no-access"
+          />
+          <div v-if="!noPkskGrant">
             <p class="mb-2 text-overline text-muted">Pilih Domain PKSK</p>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <UButton
@@ -325,7 +344,7 @@ onBeforeUnmount(() => {
               </UButton>
             </div>
           </div>
-          <div>
+          <div v-if="!noPkskGrant">
             <p class="mb-2 text-overline text-muted">Pilih Tahap</p>
             <div class="grid grid-cols-2 gap-2">
               <UButton

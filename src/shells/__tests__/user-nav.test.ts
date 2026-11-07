@@ -82,6 +82,7 @@ const REPLACED_LIVE_HREFS: Record<string, string> = {
 /** Rebuild hrefs that differ from live on purpose. */
 const CHANGED_HREFS = new Set([
   '/admin/hadiah/tebusan', // M15 DV-M15-04 ("Admin Tebusan", live /admin/hadiah)
+  '/admin/monitoring', // S6-T08 (R1-ADM-M-03: the admin Monitoring item opens /admin/monitoring)
 ])
 /** Student-only entries: seen in the murid screenshots, not in the admin-identity capture. */
 const STUDENT_ONLY_IDS = new Set(
@@ -462,6 +463,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       '/guru/laporan',
       '/guru/laporan-mingguan-kelas',
       '/guru/soalan',
+      '/guru/soalan-guru',
       '/guru/soalan-berstruktur',
       '/guru/monitoring',
       '/guru/kirkpatrick',
@@ -581,7 +583,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
       't-pelajar-saya', 't-prestasi', 't-laporan', 't-monitoring', 't-kirk-ringkasan',
       't-kirk-reaksi', 't-kirk-pembelajaran', 't-kirk-tingkah-laku', 't-kirk-hasil',
       't-kirk-rantaian', 't-kirk-intervensi', 't-analitik-adaptif', 't-analisa-item',
-      't-laporan-mingguan', 't-sumbang-soalan', 't-soalan-berstruktur', 't-perutusan', 't-video', 't-profil-saya',
+      't-laporan-mingguan', 't-sumbang-soalan', 't-soalan-rujukan', 't-soalan-berstruktur', 't-perutusan', 't-video', 't-profil-saya',
       'tetapan-peribadi',
       't-panduan', 't-analisis-item', 'tiket-bantuan',
     ],

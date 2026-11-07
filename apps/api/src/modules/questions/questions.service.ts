@@ -1,9 +1,12 @@
+import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { z } from 'zod'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
 
@@ -21,6 +24,8 @@ import { gradeQuestion } from './grading'
 import {
   flatFromVersion,
   kertasOfPaperCode,
+  bilingualScriptConflict,
+  enText,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -89,6 +94,7 @@ export interface FilterBulkOutcome {
   remaining: number
   capped: boolean
   dryRun: boolean
+  affectedPapers?: { id: string; title: string }[]
 }
 
 const parse = (text: string): bigint | null => {
@@ -181,6 +187,8 @@ interface Normalized {
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
   stem: string
+  /** English stem: text sets it, null clears it, undefined keeps what is stored. */
+  stemEn?: string | null | undefined
   parts: QuestionPart[]
   language: VersionDraft['language']
   explanation: string | null
@@ -312,6 +320,7 @@ export class QuestionsService {
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
         stem: input.questionText,
+        stemEn: enText(input.questionTextEn),
         parts,
         language: languageToStore(input.language, undefined),
         explanation: input.explanation?.trim() || null,
@@ -571,14 +580,22 @@ export class QuestionsService {
     }
     const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
     if (dryRun || targets.ids.length === 0) {
-      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+      // FR-QA-47: the confirm names the Terbit papers before anything is archived.
+      const placing = input.action === 'archived' && targets.eligible > 0 ? await this.repo.publishedPapersPlacing({ filter: input.filter, fromStatuses: from }) : []
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
     }
     const done = await this.bulkAction(input.action, targets.ids, actor)
     const remaining = targets.eligible - targets.ids.length
     // A row another request approved between `filterTargets` and `bulkAction` is left as it is (R1E2E-10): it is not applied and not a refusal,
     // so it counts in `skipped` (and still in `processed`, which counts rows tried), never in `affected` or `failed`.
     const raced = done.skipped?.length ?? 0
-    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+    const placing = input.action === 'archived' ? await this.papersPlacing(done.ids) : []
+    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
+  }
+
+  /** FR-QA-47: the Terbit papers that place these questions. */
+  papersPlacing(ids: readonly string[]): Promise<{ id: string; title: string }[]> {
+    return this.repo.publishedPapersPlacing({ ids })
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -850,20 +867,39 @@ export class QuestionsService {
 
   // --- internals ----------------------------------------------------------------------------------
 
+  /** Parses each top-level part with the strict write schema, or the lenient read schema when `unchanged(part, index)`. */
+  private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
+    | { success: true; data: QuestionPart[] }
+    | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
+    // The count rule is the one the schema always had (`array().min(1).max(20)`), so its message stays unchanged.
+    const sized = z.array(z.unknown()).min(1).max(20).safeParse(parts)
+    if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
+    const data: QuestionPart[] = []
+    for (const [i, p] of parts.entries()) {
+      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
+      data.push(r.data as QuestionPart)
+    }
+    return { success: true, data }
+  }
+
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
+    // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
+    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
+    const res = this.parseParts(parts, unchanged)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
       return res.data
     }
     const issue = res.error.issues[0]
-    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
     throw fail({ [key]: deepest.message })
   }
@@ -1148,7 +1184,7 @@ export class QuestionsService {
       status,
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
-      stemEn: v?.stemEn ?? null,
+      stemEn: n.stemEn === undefined ? (v?.stemEn ?? null) : n.stemEn,
       numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
@@ -1214,7 +1250,7 @@ export class QuestionsService {
 
     let parts: QuestionPart[]
     if (input.parts) {
-      parts = this.checkedParts(input.parts, true)
+      parts = this.checkedParts(input.parts, true, v.parts)
     } else if (flatShaped) {
       // Remove wins; else a sent id (or null = no image) replaces the stored one; an omitted position keeps it.
       const optionImageIds = flat.optionImageIds.map((id, i) =>
@@ -1235,7 +1271,7 @@ export class QuestionsService {
         cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
-      parts = this.checkedParts(partsFromFlat(src), false)
+      parts = this.checkedParts(partsFromFlat(src), false, v.parts)
     } else {
       // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
       // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
@@ -1251,9 +1287,12 @@ export class QuestionsService {
 
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
+    // Known R1 limit: a Jawi or Arab question cannot be bilingual. Their stored script stays (the flat body has no script field); asking
+    // them to become `ms+en` is a 422 on `language`. A bilingual (`ms_en`) row follows the language sent, so it can go back to `ms` or `en`.
+    if (bilingualScriptConflict(input.language, v.language)) throw fail({ language: QUESTION_MESSAGES.language })
     const language = input.language === undefined
       ? v.language
-      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+      : v.language === 'ar' || v.language === 'jawi'
         ? v.language
         : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
@@ -1264,6 +1303,7 @@ export class QuestionsService {
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,
+      stemEn: enText(input.questionTextEn),
       parts,
       language,
       explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,

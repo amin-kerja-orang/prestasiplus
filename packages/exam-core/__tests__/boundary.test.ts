@@ -48,6 +48,8 @@ describe('@pp/exam-core public API (BE-14 AC 3 and 4)', () => {
         'offeredMarks',
         'perQuestionMarks',
         'quotaUnitKeys',
+        'scaleSectionCounts',
+        'scaleStandardBlueprint',
         'shortageLine',
         'unitKeyOf',
         'unitLabel',

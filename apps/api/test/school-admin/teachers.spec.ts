@@ -117,7 +117,7 @@ describe('BE-21 teachers: /admin-sekolah/guru', () => {
     expect(body.credential.password.length).toBeGreaterThanOrEqual(12)
 
     const row = await userRow(t.db, body.data.id)
-    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: false, created_by_id: await userIdOf(t.db, SCHOOL_ADMIN), roles: ['teacher'] })
+    expect(row).toMatchObject({ school_id: s1, is_active: true, must_reset_password: false, created_by_id: await userIdOf(t.db, SCHOOL_ADMIN), roles: ['teacher'], grade: null })
     expect(row?.password_hash).toMatch(/^\$argon2id\$/)
     expect(row?.password_hash).not.toContain(body.credential.password)
 

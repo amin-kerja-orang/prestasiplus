@@ -192,9 +192,13 @@ export const PracticeReadRecentQuestionSchema = z
     id: IdSchema,
     subjectName: z.string(),
     difficulty: z.number().int().min(1).max(5),
-    text: z.string().max(103).meta({ description: 'Cut at 100 characters plus "..." (BR-29).' }),
+    text: z.string().max(141).meta({ description: 'Cut at 140 characters plus "…" (FR-MUR-2-8).' }),
     createdAt: TimestampSchema,
     levelCode: z.string(),
+    figureThumbUrl: z
+      .string()
+      .nullable()
+      .meta({ description: 'Served file URL (`/api/files/<token>`) of the first figure of the question, shown as a small thumbnail; null when the question has no figure (FR-MUR-2-8).' }),
   })
   .meta({ id: 'PracticeReadRecentQuestion' })
 
@@ -663,10 +667,15 @@ export const PracticeReadStructuredAttemptRequestSchema = z
   .meta({ id: 'PracticeReadStructuredAttemptRequest' })
 export type PracticeReadStructuredAttemptRequest = z.infer<typeof PracticeReadStructuredAttemptRequestSchema>
 
-/** The stored attempt (DATA-M05-06) plus the model answers, revealed after submitting. */
+/**
+ * The submitted attempt plus the model answers, revealed after submitting. S5-T11: the attempt is a Bijak attempt (`exam_attempts`, graded
+ * by the one grader), so `id` and `attemptId` are that attempt's id; the Bijak self-mark and result routes take it. A part the grader cannot
+ * mark counts 0 in `marks` until the pupil marks it herself.
+ */
 export const PracticeReadStructuredAttemptResultSchema = z
   .strictObject({
     id: IdSchema,
+    attemptId: IdSchema.meta({ description: 'The Bijak attempt (`exam_attempts.id`): the id of the self-mark and result routes. Same value as `id`.' }),
     userId: IdSchema,
     structuredQuestionId: IdSchema,
     scope: PracticeReadStructuredScopeSchema.nullable(),
