@@ -15,13 +15,10 @@ export const HUB_ART: Readonly<Record<string, Art3DName>> = {
   'teka-silang-kata': 'books',
   'betul-salah': 'cap',
   'roda-nasib': 'coin',
-  pertandingan: 'trophy',
   'peta-pengembaraan': 'rocket',
-  'uji-minda': 'books',
   'cabaran-kilat': 'bolt',
   jutawan: 'coin',
   'susun-jawapan': 'books',
   'tembak-jawapan': 'fire',
-  'sambung-kata': 'party',
   'kad-memori': 'cap',
 }

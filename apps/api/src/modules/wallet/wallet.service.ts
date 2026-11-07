@@ -402,6 +402,16 @@ export class WalletService {
     return out
   }
 
+  /**
+   * Syiling earned by `userId` from the ledger `sources` (for example the SPM source `quiz_spm`): the sum of the positive
+   * amounts, 0 without rows. Rows written under Mod Pelajar count only with `includeTest`. Read-only (S3-T07, the Prestasi SPM tiles).
+   */
+  async earnedFromSources(userId: string, sources: readonly string[], options: { includeTest?: boolean; tx?: TxClient } = {}): Promise<number> {
+    assertUser(userId)
+    if (sources.length === 0) return 0
+    return this.repo.earnedFromSources(this.repo.handle(options.tx), userId, sources, options.includeTest === true)
+  }
+
   // --- internals -----------------------------------------------------------------------------------
 
   private run<T>(tx: TxClient | undefined, fn: (db: Db) => Promise<T>): Promise<T> {

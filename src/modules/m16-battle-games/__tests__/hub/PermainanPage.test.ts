@@ -56,20 +56,20 @@ describe('S6 hub page', () => {
     )
   })
 
-  it('renders the 18 cards in order with one button link each', async () => {
+  it('renders the 15 cards in order (FR-GM-00.1, ruling 14 on #497) with one button link each', async () => {
     fetchGamesHub.mockResolvedValueOnce(hub())
     await mountPage()
     const titles = wrapper!.findAll('h3').map((h) => h.text())
-    expect(titles).toHaveLength(18)
+    expect(titles).toHaveLength(15)
     expect(titles[0]).toBe('Papan Bijak')
-    expect(titles[10]).toBe('Peta Pengembaraan')
-    expect(titles[17]).toBe('Kad Memori')
-    expect(wrapper!.findAll('[data-testid="hub-card-button"]')).toHaveLength(18)
+    expect(titles[9]).toBe('Peta Pengembaraan')
+    expect(titles[14]).toBe('Kad Memori')
+    expect(wrapper!.findAll('[data-testid="hub-card-button"]')).toHaveLength(15)
     const hrefs = wrapper!
       .findAll('a[data-testid="hub-card-button"]')
       .map((a) => a.attributes('href'))
     expect(hrefs[1]).toBe('/battle')
-    expect(hrefs[10]).toBe('/peta-belajar')
+    expect(hrefs[9]).toBe('/peta-belajar')
   })
 
   it('shows the empty strip as live and no room chip', async () => {

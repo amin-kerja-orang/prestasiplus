@@ -1,10 +1,14 @@
-import { Controller, Get, Inject, Param, Req, UseInterceptors } from '@nestjs/common'
+import { Controller, Get, Inject, Param, Query, Req, UseInterceptors } from '@nestjs/common'
+import { SpmHistoryQuerySchema } from '@pp/contract'
 import type { Request } from 'express'
 
+import { Roles } from '../../common/guards/decorators'
 import { NoStoreInterceptor } from '../../common/http/no-store.interceptor'
 import { ok } from '../../common/http/respond'
 import { type RequestWithAuth, ScopeContext } from '../../common/scope'
+import { fieldError } from './errors'
 import { type SpmCaller, SpmHubService } from './hub.service'
+import { SpmHistoryService } from './history.service'
 
 type Req = Request & RequestWithAuth
 
@@ -20,11 +24,30 @@ function callerOf(req: Req): SpmCaller {
 @Controller('spm')
 @UseInterceptors(NoStoreInterceptor)
 export class SpmController {
-  constructor(@Inject(SpmHubService) private readonly hub: SpmHubService) {}
+  constructor(
+    @Inject(SpmHubService) private readonly hub: SpmHubService,
+    @Inject(SpmHistoryService) private readonly history: SpmHistoryService,
+  ) {}
 
   @Get('overview')
   async overview(@Req() req: Req) {
     return ok(await this.hub.overview(callerOf(req)))
+  }
+
+  /**
+   * Sejarah Kuiz SPM (S3-T07 part F, API-BIJAK-07). Pupil only (the ACTIVE role `student`): the list is the caller's own work.
+   * `mod` (alias `type`) and `halaman` are validated here; an unknown chip or a page that is not a positive integer is 422.
+   */
+  @Get('history')
+  @Roles('student')
+  async historyList(@Req() req: Req, @Query() query: Record<string, unknown>) {
+    const parsed = SpmHistoryQuerySchema.safeParse(query)
+    if (!parsed.success) {
+      const fields: Record<string, string> = {}
+      for (const issue of parsed.error.issues) fields[String(issue.path[0] ?? 'query')] ??= 'Nilai tidak sah.'
+      throw fieldError(fields)
+    }
+    return await this.history.history(callerOf(req), parsed.data)
   }
 
   @Get('databank')
