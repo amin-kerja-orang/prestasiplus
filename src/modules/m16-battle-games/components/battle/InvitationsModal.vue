@@ -67,7 +67,6 @@ async function decline(inv: BattleInvitation): Promise<void> {
         >
           <span class="min-w-0 flex-1">
             <span class="block text-label text-highlighted">{{ inv.sender_name }}</span>
-            <span class="block text-caption text-muted">{{ inv.sender_school }}</span>
           </span>
           <UButton
             color="success"

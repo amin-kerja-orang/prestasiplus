@@ -50,6 +50,9 @@ export const GamesHubSchema = z
       papanBijakPlayed: z.boolean().meta({ description: 'The caller has a Papan Bijak standing with jumlah > 0.' }),
       battled: z.boolean().meta({ description: 'The caller has a finished or forfeited battle (BE-44 read).' }),
     }),
+    enabledGames: z.array(z.string()).meta({
+      description: 'Game keys (48 section 3.5, plus `roda-nasib`) switched on in `game_enabled_*` whose pool for the caller\'s Tingkatan holds the draw size (FR-GM-00.1; Battle 5). A hub card of a game not listed is absent.',
+    }),
   })
   .meta({ id: 'GamesHub' })
 export type GamesHub = z.infer<typeof GamesHubSchema>
@@ -85,7 +88,7 @@ export const GamesLobbyLeaderSchema = z
   .strictObject({
     rank: z.number().int().min(1),
     userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
-    name: z.string().meta({ description: 'Full name, or first name + initial (children\'s names rule).' }),
+    name: z.string().meta({ description: 'Full name, or first given name (children\'s names rule).' }),
     value: gamesCount,
   })
   .meta({ id: 'GamesLobbyLeader' })
@@ -186,7 +189,7 @@ export type GamesRoomJoinRequest = z.infer<typeof GamesRoomJoinRequestSchema>
 export const GamesRoomPlayerSchema = z
   .strictObject({
     id: IdSchema,
-    name: z.string().meta({ description: 'Display name only (D54(d)); first name + initial outside the viewer\'s scope (children\'s names rule). The id stays: it keys `state.positions` / `meter`.' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule). The id stays: it keys `state.positions` / `meter`.' }),
     grade: z.string().meta({ description: '"Darjah n", "Tingkatan n" or "" without a grade.' }),
     team: z.number().int().optional().meta({ description: 'Kuiz Relay team number, once teams are set.' }),
     points: z.number().int(),

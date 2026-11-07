@@ -266,6 +266,18 @@ export class WalletRepository {
     return r._sum.amount ?? 0
   }
 
+  /**
+   * S3-T07 read: the sum of the user's positive ledger amounts whose `source` is in `sources` (Syiling earned from those causes).
+   * Rows written under Mod Pelajar (`is_test`) count only with `includeTest`. Read-only.
+   */
+  async earnedFromSources(db: Db, userId: string, sources: readonly string[], includeTest: boolean): Promise<number> {
+    const r = await db.coinLedger.aggregate({
+      _sum: { amount: true },
+      where: { userId: idFromString(userId), amount: { gt: 0 }, source: { in: [...sources] }, ...(includeTest ? {} : { isTest: false }) },
+    })
+    return r._sum.amount ?? 0
+  }
+
   // --- token movements ---------------------------------------------------------------------------
 
   async appendTokenMovement(

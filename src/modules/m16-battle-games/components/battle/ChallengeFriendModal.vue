@@ -124,7 +124,6 @@ async function pick(user: OpponentSearchUser): Promise<void> {
           <UAvatar :text="u.name.charAt(0).toUpperCase()" size="md" />
           <span class="min-w-0 flex-1">
             <span class="block truncate text-label text-highlighted">{{ u.name }}</span>
-            <span class="block truncate text-caption text-muted">{{ u.school }}</span>
           </span>
           <UIcon name="i-ph-paper-plane-tilt-duotone" class="size-5 shrink-0" aria-hidden="true" />
         </UButton>

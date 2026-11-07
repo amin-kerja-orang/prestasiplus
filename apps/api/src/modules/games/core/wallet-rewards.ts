@@ -1,8 +1,42 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
+import { coinsPerCorrect } from '../../practice/coins'
 import { WalletService } from '../../wallet'
+import type { GameSettingsService } from './game-settings.service'
 import type { GameResultInput, GameResultOutcome, GameRewardsPort } from './ports'
+
+/** What decides a reward (48 section 3.4). `forfeit` is a pupil who left early; a solo game is always `play`. */
+export interface GameRewardFacts {
+  correct: number
+  outcome: 'win' | 'draw' | 'play' | 'forfeit'
+  /** Every other participant was a robot (rule 3). */
+  robotsOnly: boolean
+  /** A gap between answers under the minimum: stored and scored, credits nothing (rule 5). */
+  fastGap: boolean
+}
+
+const REWARD_SETTINGS = ['xp_per_correct', 'game_win_xp', 'game_draw_xp', 'game_play_xp', 'game_win_bonus_syiling'] as const
+type RewardSettings = Record<(typeof REWARD_SETTINGS)[number], number>
+
+/**
+ * FR-GM-00.3, 48 section 3.4 rules 1, 2, 3 and 5: the one reward formula of every game. `coins` is what the result asks for:
+ * `GamificationService.onGameResult` applies `games_award_syiling`, the daily caps and the replay (DM-87).
+ */
+export function gameReward(facts: GameRewardFacts, s: RewardSettings, coinRate: number): { xp: number; coins: number } {
+  if (facts.fastGap || facts.outcome === 'forfeit') return { xp: 0, coins: 0 }
+  const won = facts.outcome === 'win' && !facts.robotsOnly
+  const outcomeXp = won ? s.game_win_xp : facts.outcome === 'draw' && !facts.robotsOnly ? s.game_draw_xp : s.game_play_xp
+  return {
+    xp: s.xp_per_correct * facts.correct + outcomeXp,
+    coins: coinRate * facts.correct + (won ? s.game_win_bonus_syiling : 0),
+  }
+}
+
+/** `gameReward` over the settings as they are now, so a saved change applies to later games only (FR-GM-00.10). */
+export async function rewardNow(settings: GameSettingsService, tx: TxClient, facts: GameRewardFacts): Promise<{ xp: number; coins: number }> {
+  return gameReward(facts, await settings.getMany(REWARD_SETTINGS, tx), await coinsPerCorrect(tx))
+}
 
 /** Static BM ledger wording of a game result (copy of the M14 mock `gameRow`; no personal data). */
 export function gameRow(

@@ -25,7 +25,7 @@ import { GameQuestions, type ServedQuestion } from '../../core/game-questions.se
 import { GameSubjects } from '../../core/subjects'
 import { GameUsers } from '../../core/game-users'
 import { GamesPorts } from '../../core/ports'
-import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound } from '../../errors'
+import { fieldError, gameNotFound, levelInvalid, rawMessage, soloAlreadyChecked, soloCardMatched, soloCardOpen, soloItemNotFound, soloSessionNotFound, startNotEnoughQuestions } from '../../errors'
 import { SoloItemBuilder } from './solo-items'
 import { type ItemRecord, SoloRepository } from './solo.repository'
 import {
@@ -105,8 +105,9 @@ export class SoloService {
     // Question sampling and puzzle scrambling use a named stream; every secret-bearing value (statement truth, card layout and
     // ids) is drawn from node:crypto inside the builder, because a 32-bit seeded stream could be recovered by a client.
     const stem = `games:solo:${caller.userId}:${game}:${randomBytes(12).toString('hex')}`
-    const built = await this.builder.build(game, levelIds, prngStream(stem))
+    const built = await this.builder.build(game, levelIds, prngStream(stem), caller.userId)
     const itemCount = game === 'kad-memori' ? built.rows.length / 2 : built.rows.length
+    if (itemCount < SOLO_INFO[game].items) throw startNotEnoughQuestions() // ERR-GAME-01, AC-GM-00.6: nothing starts
     const sessionId = await this.prisma.transaction(async () => {
       await this.repo.supersede(caller.userId, game, this.clock.now())
       const id = await this.repo.createSession({ userId: caller.userId, game, darjah, itemCount, maxScore: built.maxScore, isTest: caller.isTest, createdAt: this.clock.now() })
