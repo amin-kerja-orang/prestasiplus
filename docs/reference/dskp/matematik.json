@@ -2,13 +2,22 @@
   "subject": "Matematik",
   "subjectCode": null,
   "levels": [
+    "T1",
+    "T2",
+    "T3",
     "T4",
     "T5"
   ],
   "language": "ms",
   "source": "DSKP KSSM MATHS.pdf",
-  "edition": "Kurikulum Standard Sekolah Menengah, Matematik Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)",
-  "structureNote": "Hierarchy: Bidang Pembelajaran -> Tajuk (unit) -> Standard Kandungan (SK) -> Standard Pembelajaran (SP). Standard Prestasi (tahap penguasaan 1-6) is given per Tajuk (unit). SP \"Catatan\" (notes) not captured. Mathematical symbols/formulae are images or special fonts in the PDF and are dropped from the text (e.g. \"kesan perubahan nilai dan ke atas graf\" lost the symbols a, b, c).",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T4": "Kurikulum Standard Sekolah Menengah, Matematik Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)",
+    "T5": "Kurikulum Standard Sekolah Menengah, Matematik Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)"
+  },
+  "structureNote": "Hierarchy: Bidang Pembelajaran -> Tajuk (unit) -> Standard Kandungan (SK) -> Standard Pembelajaran (SP). Standard Prestasi (tahap penguasaan 1-6) is given per Tajuk (unit). SP \"Catatan\" (notes) not captured. Mathematical symbols/formulae are images or special fonts in the PDF and are dropped from the text (e.g. \"kesan perubahan nilai dan ke atas graf\" lost the symbols a, b, c). T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
   "generalPerformanceLevels": {
     "source": "Jadual 4: Penyataan Tahap Penguasaan Umum KSSM Matematik (printed p.24-25)",
     "levels": [
@@ -51,6 +60,363 @@
     "audit 2026-10-16: T5 SP 6.2.1 - restored plain words/symbols dropped from the text layer (\"dan bagi 0 ≤ x ≤ 360 dan\"); the three function equations are images and are still missing"
   ],
   "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Nombor Nisbah",
+      "titlePrinted": "NOMBOR NISBAH",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Faktor dan Gandaan",
+      "titlePrinted": "FAKTOR DAN GANDAAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Kuasa Dua, Punca Kuasa Dua, Kuasa Tiga dan Punca Kuasa Tiga",
+      "titlePrinted": "KUASA DUA, PUNCA KUASA DUA, KUASA TIGA DAN PUNCA KUASA TIGA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Nisbah, Kadar dan Kadaran",
+      "titlePrinted": "NISBAH, KADAR DAN KADARAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Ungkapan Algebra",
+      "titlePrinted": "UNGKAPAN ALGEBRA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Persamaan Linear",
+      "titlePrinted": "PERSAMAAN LINEAR",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Ketaksamaan Linear",
+      "titlePrinted": "KETAKSAMAAN LINEAR",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Garis dan Sudut",
+      "titlePrinted": "GARIS DAN SUDUT",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Poligon Asas",
+      "titlePrinted": "POLIGON ASAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Perimeter dan Luas",
+      "titlePrinted": "PERIMETER DAN LUAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Pengenalan Set",
+      "titlePrinted": "PENGENALAN SET",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "Pengendalian Data",
+      "titlePrinted": "PENGENDALIAN DATA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "Teorem Pythagoras",
+      "titlePrinted": "TEOREM PYTHAGORAS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Pola dan Jujukan",
+      "titlePrinted": "POLA DAN JUJUKAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Pemfaktoran dan Pecahan Algebra",
+      "titlePrinted": "PEMFAKTORAN DAN PECAHAN ALGEBRA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Rumus Algebra",
+      "titlePrinted": "RUMUS ALGEBRA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Poligon",
+      "titlePrinted": "POLIGON",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Bulatan",
+      "titlePrinted": "BULATAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Bentuk Geometri Tiga Dimensi",
+      "titlePrinted": "BENTUK GEOMETRI TIGA DIMENSI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Koordinat",
+      "titlePrinted": "KOORDINAT",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Graf Fungsi",
+      "titlePrinted": "GRAF FUNGSI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Laju dan Pecutan",
+      "titlePrinted": "LAJU DAN PECUTAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Kecerunan Garis Lurus",
+      "titlePrinted": "KECERUNAN GARIS LURUS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Transformasi Isometri",
+      "titlePrinted": "TRANSFORMASI ISOMETRI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Sukatan Kecenderungan Memusat",
+      "titlePrinted": "SUKATAN KECENDERUNGAN MEMUSAT",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Kebarangkalian Mudah",
+      "titlePrinted": "KEBARANGKALIAN MUDAH",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Indeks",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Bentuk Piawai",
+      "titlePrinted": "BENTUK PIAWAI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Matematik Pengguna: Simpanan dan Pelaburan, Kredit dan Hutang",
+      "titlePrinted": "MATEMATIK PENGGUNA: SIMPANAN DAN PELABURAN, KREDIT DAN HUTANG",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Lukisan Berskala",
+      "titlePrinted": "LUKISAN BERSKALA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "Nisbah Trigonometri",
+      "titlePrinted": "NISBAH TRIGONOMETRI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "Sudut dan Tangen bagi Bulatan",
+      "titlePrinted": "SUDUT DAN TANGEN BAGI BULATAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "Pelan dan Dongakan",
+      "titlePrinted": "PELAN DAN DONGAKAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "Lokus dalam Dua Dimensi",
+      "titlePrinted": "LOKUS DALAM DUA DIMENSI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "Garis Lurus",
+      "titlePrinted": "GARIS LURUS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "Indeks",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "CHAPTER Angles and Tangents of Circles",
+      "titlePrinted": "CHAPTER ANGLES AND TANGENTS OF CIRCLES",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "by an Arc",
+      "titlePrinted": "BY AN ARC",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "6.3 Tangents to Circles",
+      "titlePrinted": "6.3 TANGENTS TO CIRCLES",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "6.4 Angles and Tangents of Circles",
+      "titlePrinted": "6.4 ANGLES AND TANGENTS OF CIRCLES",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "CHAPTER Plans and Elevations",
+      "titlePrinted": "CHAPTER PLANS AND ELEVATIONS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "16.0",
+      "title": "7 7.1 Orthogonal Projections",
+      "titlePrinted": "7 7.1 ORTHOGONAL PROJECTIONS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "17.0",
+      "title": "7.2 Plans and Elevations",
+      "titlePrinted": "7.2 PLANS AND ELEVATIONS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "18.0",
+      "title": "CHAPTER Loci in Two Dimensions",
+      "titlePrinted": "CHAPTER LOCI IN TWO DIMENSIONS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "19.0",
+      "title": "8 8.1 Loci",
+      "titlePrinted": "8 8.1 LOCI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "20.0",
+      "title": "8.2 Loci in Two Dimensions",
+      "titlePrinted": "8.2 LOCI IN TWO DIMENSIONS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "21.0",
+      "title": "CHAPTER Straight Lines",
+      "titlePrinted": "CHAPTER STRAIGHT LINES",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "22.0",
+      "title": "9 9.1 Straight Lines",
+      "titlePrinted": "9 9.1 STRAIGHT LINES",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "23.0",
+      "title": "Answers",
+      "titlePrinted": "ANSWERS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "24.0",
+      "title": "Glossary",
+      "titlePrinted": "GLOSSARY",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "25.0",
+      "title": "AC",
+      "titlePrinted": "AC",
+      "standards": []
+    },
     {
       "level": "T4",
       "code": "1.0",

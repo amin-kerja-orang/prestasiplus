@@ -1,0 +1,132 @@
+{
+  "subject": "Bahasa Arab",
+  "subjectCode": null,
+  "levels": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Kemahiran Mendengar (الاستماع)",
+      "titlePrinted": "KEMAHIRAN MENDENGAR (الاستماع)",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Kemahiran Bertutur (التحدث)",
+      "titlePrinted": "KEMAHIRAN BERTUTUR (التحدث)",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Kemahiran Membaca (القراءة)",
+      "titlePrinted": "KEMAHIRAN MEMBACA (القراءة)",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Kemahiran Menulis (الكتابة والإنشاء)",
+      "titlePrinted": "KEMAHIRAN MENULIS (الكتابة والإنشاء)",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Tatabahasa Arab (النحو والصرف)",
+      "titlePrinted": "TATABAHASA ARAB (النحو والصرف)",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "24.0",
+      "title": "•اسم+اسم+اسم تنظيف ال-1",
+      "titlePrinted": "•اسم+اسم+اسم تنظيف ال-1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Kemahiran Mendengar (الاستماع)",
+      "titlePrinted": "KEMAHIRAN MENDENGAR (الاستماع)",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Kemahiran Bertutur (التحدث)",
+      "titlePrinted": "KEMAHIRAN BERTUTUR (التحدث)",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Kemahiran Membaca (القراءة)",
+      "titlePrinted": "KEMAHIRAN MEMBACA (القراءة)",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Kemahiran Menulis (الكتابة والإنشاء)",
+      "titlePrinted": "KEMAHIRAN MENULIS (الكتابة والإنشاء)",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Tatabahasa Arab (النحو والصرف)",
+      "titlePrinted": "TATABAHASA ARAB (النحو والصرف)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "Kemahiran Mendengar (الاستماع)",
+      "titlePrinted": "KEMAHIRAN MENDENGAR (الاستماع)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "Kemahiran Bertutur (التحدث)",
+      "titlePrinted": "KEMAHIRAN BERTUTUR (التحدث)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "Kemahiran Membaca (القراءة)",
+      "titlePrinted": "KEMAHIRAN MEMBACA (القراءة)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "Kemahiran Menulis (الكتابة والإنشاء)",
+      "titlePrinted": "KEMAHIRAN MENULIS (الكتابة والإنشاء)",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "Tatabahasa Arab (النحو والصرف)",
+      "titlePrinted": "TATABAHASA ARAB (النحو والصرف)",
+      "standards": []
+    }
+  ]
+}

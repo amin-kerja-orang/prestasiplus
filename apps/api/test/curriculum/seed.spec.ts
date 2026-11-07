@@ -102,11 +102,17 @@ describe('curriculum seed (AC2, AC5, AC6, AC10)', () => {
     expect(await count(db, `select count(*) n from curriculum_nodes c join curriculum_nodes p on p.id = c.parent_id where c.kind = 'unit' and p.kind <> 'grouping'`)).toBe(0)
   })
 
-  it('AC6: Tingkatan 1 to 3 Matematik content is not invented (nodes exist for Tingkatan 4 and 5 only)', async () => {
+  it('AC6: Tingkatan 1 to 3 content is not invented (Bab-level units from the V3 chapter data only, S4-T09; no SK, SP or TP)', async () => {
     const levels = await db.query<{ code: string }>(
       `select distinct l.code from curriculum_nodes n join education_levels l on l.id = n.education_level_id order by 1`,
     )
-    expect(levels.map((r) => r.code)).toEqual(['T4', 'T5'])
+    expect(levels.map((r) => r.code)).toEqual(['T1', 'T2', 'T3', 'T4', 'T5'])
+    expect(
+      await count(
+        db,
+        `select count(*) n from curriculum_nodes n join education_levels l on l.id = n.education_level_id where l.code in ('T1','T2','T3') and n.kind <> 'unit'`,
+      ),
+    ).toBe(0)
   })
 
   it('AC10: TP descriptors come from the extracts, tp is 1 to 6, node rows have a scope and the general levels have none', async () => {
