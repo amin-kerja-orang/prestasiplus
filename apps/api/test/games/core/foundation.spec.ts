@@ -75,7 +75,7 @@ describe('games foundation', () => {
       coinsCredited: 0,
       xpAdded: 0,
     })
-    expect(await ports.platformAccuracy.accuracy()).toBe(0)
+    expect(await ports.platformAccuracy.accuracy()).toBe(0.6) // battle_bot_accuracy_pct, 48 section 2
     expect(await ports.battle.hasBattled('1')).toBe(false)
     ports.provideBattle({ hasBattled: async () => true })
     expect(() => ports.provideBattle({ hasBattled: async () => false })).toThrow('already set')
@@ -178,17 +178,9 @@ describe('games foundation', () => {
     expect(await gq.eligibleCount({ subjectId: (sci as { id: string }).id, educationLevelId: (t4 as { id: string }).id })).toBeGreaterThanOrEqual(6)
   })
 
-  it('the default bot pool picks a fitting classmate of the host, deterministically', async () => {
+  it('a game user carries only what the games read', async () => {
     const [host] = await t.db.query<{ id: string }>(`select id::text from users where email = $1`, [ACCOUNTS.student])
     const hostId = (host as { id: string }).id
-    const input = { hostId, fits: (g: number | null) => g !== null && g >= 7, exclude: [hostId], stream: 'games:bot:TESTRM:1' }
-    const a = await t.ports.botPool.pick(input)
-    const b = await t.ports.botPool.pick(input)
-    expect(a).not.toBeNull()
-    expect(a).toEqual(b)
-    expect(a?.id).not.toBe(hostId)
-    expect(a?.grade).toBeGreaterThanOrEqual(7)
-    expect(await t.ports.botPool.pick({ ...input, fits: () => false })).toBeNull()
     const users = t.app.get(GameUsers, { strict: false })
     const profile = await users.get(hostId)
     expect(Object.keys(profile ?? {}).sort()).toEqual(['grade', 'id', 'isPupil', 'name', 'schoolId'])

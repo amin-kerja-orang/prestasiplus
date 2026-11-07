@@ -387,7 +387,9 @@ function pbRun(c: Ctx): EngineOut {
   for (let i = 0; i < 600; i++) {
     if (c.s.winnerId !== null) return pbSettle(c)
     const pl = c.players[c.s.turn % c.players.length] as EnginePlayer
-    if (pl.userId === c.s.humanId) {
+    if (!pl.isBot) {
+      // R2: every human seat is awaited on its own turn; `humanId` is the seat the room waits for.
+      c.s.humanId = pl.userId
       c.s.awaiting = 'roll'
       c.s.pendingQ = null
       return out(c)
@@ -551,7 +553,8 @@ function relayRun(c: Ctx): EngineOut {
     if (c.s.round > c.s.total) return relayEnd(c)
     const pl = c.players[(c.s.round - 1) % c.players.length] as EnginePlayer
     const qId = c.s.qIds[(c.s.round - 1) % c.s.qIds.length] as number
-    if (pl.userId === c.s.humanId) {
+    if (!pl.isBot) {
+      c.s.humanId = pl.userId
       c.s.pendingQ = qId
       c.s.awaiting = 'answer'
       return out(c)

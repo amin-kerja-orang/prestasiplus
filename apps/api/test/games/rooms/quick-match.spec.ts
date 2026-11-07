@@ -8,7 +8,7 @@ import {
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { ACCOUNTS, bootGamesApp, loginAs, type Client, type GamesTestApp } from '../helpers'
-import { P, demo001Students, ListBots, parseRoom, roomOf } from './support'
+import { P, parseRoom, roomOf } from './support'
 
 const M = GAMES_MESSAGES
 const QM = '/api/papan-bijak/quick-match'
@@ -25,10 +25,6 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     student = await loginAs(t, ACCOUNTS.student)
     student2 = await loginAs(t, ACCOUNTS.student2)
     teacher = await loginAs(t, ACCOUNTS.teacher)
-    const kids = await demo001Students(t.db)
-    t.ports.provideBotPool(
-      new ListBots(kids.map((k) => ({ id: k.id, name: k.name, grade: k.grade }))),
-    )
   })
   afterAll(async () => {
     await t.close()
@@ -109,7 +105,7 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     )
     expect(players).toHaveLength(2)
     expect(players[0]).toEqual({ user_id: student.userId, is_bot: false })
-    expect(players[1]?.is_bot).toBe(true)
+    expect(players[1]).toEqual({ user_id: null, is_bot: true }) // FR-GM-00.4: a robot seat, no user
     // the caller can open the room
     const view = parseRoom(await student.get(P('papan-bijak', code)))
     expect(view.players).toHaveLength(2) // already at the minimum: the host poll adds no bot
@@ -133,6 +129,8 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     // a new search starts afresh
     await student2.post(QM, FORM)
     expect(await poll(student2)).toEqual({ status: 'searching' })
+    // Ruling 16: a pupil still searching is paired with the next compatible pupil, so end this search here.
+    await student2.post(`${QM}/cancel`)
   })
 
   it('cancel always answers cancelled, turns searching into cancelled and leaves matched / absent searches alone', async () => {
@@ -192,5 +190,73 @@ describe('Papan Bijak quick match (M16-29..31): raw bodies', () => {
     // never offered on the hub
     const hub = await student.get('/api/games/hub')
     expect(JSON.stringify(hub.body)).not.toContain(m.room_code)
+  })
+
+  it('R1 Q3 (lead answers on #983): a search lives for battle_queue_seconds from created_at; an expired search is never paired', async () => {
+    await t.db.query('delete from pb_searches')
+    await t.db.query(`update gamification_settings set value = 30 where key = 'battle_queue_seconds'`)
+    try {
+      const rooms = async () => (await t.db.query<{ n: number }>(`select count(*)::int as n from game_rooms where game = 'papan-bijak'`))[0]?.n
+      const before = await rooms()
+      await student.post(QM, FORM)
+      t.clock.advance(31_000) // past the 30 s of the setting, well under the old 120 s constant
+      await student2.post(QM, FORM)
+      expect(await poll(student2)).toEqual({ status: 'searching' }) // the expired search of `student` is not a partner
+      expect(await rooms()).toBe(before)
+      expect(await poll(student)).toEqual({ status: 'expired' })
+      expect((await searches()).find((x) => x.user_id === student.userId)).toMatchObject({ status: 'expired', room_code: null })
+      // 29 s is still alive: a fresh pair meets
+      await t.db.query('delete from pb_searches')
+      await student.post(QM, FORM)
+      t.clock.advance(29_000)
+      await student2.post(QM, FORM)
+      expect((await poll(student2)).status).toBe('matched')
+    } finally {
+      await t.db.query(`update gamification_settings set value = 120 where key = 'battle_queue_seconds'`)
+      await t.db.query('delete from pb_searches')
+    }
+  })
+
+  describe('battle_queue_seconds drives the queue time', () => {
+    const FORM2 = { subject: 'BAHASA_INGGERIS', match_mode: 'same_level' }
+    let studentMaju: Client
+    let original: unknown
+    const setQueue = (v: unknown) =>
+      t.db.query(`update gamification_settings set value = $1 where key = 'battle_queue_seconds'`, [v])
+
+    beforeAll(async () => {
+      studentMaju = await loginAs(t, ACCOUNTS.studentMaju)
+      original = (await t.db.query(`select value from gamification_settings where key = 'battle_queue_seconds'`))[0]?.value
+    })
+    afterAll(async () => {
+      if (original !== undefined) await setQueue(original)
+    })
+
+    it('with 30 s, a search older than 30 s expires and is not paired; a younger one is paired', async () => {
+      await setQueue(30)
+      await student2.post(QM, FORM2)
+      t.clock.advance(20_000)
+      await studentMaju.post(QM, FORM2)
+      t.clock.advance(15_000) // student2 is 35 s old, studentMaju 15 s
+      expect(await poll(studentMaju)).toEqual({ status: 'searching' }) // the 35 s search is not a candidate
+      expect(await poll(student2)).toEqual({ status: 'expired' })
+      await studentMaju.post(`${QM}/cancel`)
+
+      await student2.post(QM, FORM2)
+      t.clock.advance(29_000)
+      await studentMaju.post(QM, FORM2)
+      const m = (await poll(studentMaju)) as { status: string; room_code: string }
+      expect(m.status).toBe('matched') // student2 is 29 s old: still inside the queue time
+      expect(await poll(student2)).toEqual({ status: 'matched', room_code: m.room_code })
+    })
+
+    it('a 120 s setting keeps the default behaviour: 119 s searching, 120 s expired', async () => {
+      await setQueue(120)
+      await student2.post(QM, { subject: 'SAINS', match_mode: 'same_level' })
+      t.clock.advance(119_000)
+      expect(await poll(student2)).toEqual({ status: 'searching' })
+      t.clock.advance(1000)
+      expect(await poll(student2)).toEqual({ status: 'expired' })
+    })
   })
 })

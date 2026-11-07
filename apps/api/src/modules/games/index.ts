@@ -1,11 +1,8 @@
 export { GamesModule } from './games.module'
 export { GamesCoreModule } from './core/core.module'
-export { GamesPorts, NoBattle, FallbackPlatformAccuracy } from './core/ports'
+export { GamesPorts, NoBattle, RobotAccuracySetting, gameAnswerEntry } from './core/ports'
 export type {
   BattleReadPort,
-  BotCandidate,
-  BotPickInput,
-  BotPoolPort,
   GameResultInput,
   GameResultOutcome,
   GameResultSession,
@@ -13,9 +10,10 @@ export type {
   GameRewardsPort,
   PlatformAccuracySource,
 } from './core/ports'
-export { WalletGameRewards, gameReward, gameRow, rewardNow } from './core/wallet-rewards'
+export { PACE_GUARD_REWARD, WalletGameRewards, gameReward, gameRow, rewardBlock, rewardNow } from './core/wallet-rewards'
 export type { GameRewardFacts } from './core/wallet-rewards'
 export { GameReadService } from './core/game-read.service'
+export { hasFastGap } from './solo/play/solo.rules'
 export { GAME_SETTINGS, GameSettingsService, isGameSettingKey, isGameSettingValueInRange } from './core/game-settings.service'
 export type { GameSettingKey } from './core/game-settings.service'
 export { GameQuestions, toServed } from './core/game-questions.service'

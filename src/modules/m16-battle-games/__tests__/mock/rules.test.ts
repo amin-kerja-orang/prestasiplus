@@ -11,12 +11,22 @@ import {
   gradeLabel,
   seedCorrect,
   sideSkor,
+  liveWinnerOf,
   winnerOf,
 } from '../../mock/repository/common'
 import { parseLeagueBody } from '../../mock/repository/leagues'
 import { rankBoard } from '../../mock/repository/sekolah-bersaing'
 import { parseTournamentBody } from '../../mock/repository/tournaments'
 import { OBSERVED_BATTLES } from '../../mock/data/battles-observed'
+
+describe('live winner (48 GAME-01: equal totals incl. 0-0 are a draw)', () => {
+  it('higher wins; equal totals, 0-0 included, are seri', () => {
+    expect(liveWinnerOf(9445, 9763)).toBe('B')
+    expect(liveWinnerOf(883, 0)).toBe('A')
+    expect(liveWinnerOf(8830, 8830)).toBeNull()
+    expect(liveWinnerOf(0, 0)).toBeNull()
+  })
+})
 
 describe('winner (BR-M16-07, DV-M16-35)', () => {
   it('higher score wins; equal non-zero is seri; 0-0 is player B', () => {
