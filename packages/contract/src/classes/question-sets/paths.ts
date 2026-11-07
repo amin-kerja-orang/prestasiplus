@@ -110,7 +110,6 @@ const download = (contentType: string, fileName: string, description: string) =>
 
 /** Registers the BE-18 question set, paper, template and DSKP endpoints. */
 export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
-  registerGuruQuestionSetsPaths(registry)
   registry.registerPath({
     method: 'get',
     path: '/set-soalan-saya',
@@ -214,6 +213,9 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
       403: teacherOnly,
     },
   })
+  // Registered last on purpose: the smoke scenarios pick the first param-free GET of a tag, which must stay /set-soalan-saya
+  // until the teacher routes are served by a controller.
+  registerGuruQuestionSetsPaths(registry)
 }
 
 const setId = z.object({ id: IdSchema })
