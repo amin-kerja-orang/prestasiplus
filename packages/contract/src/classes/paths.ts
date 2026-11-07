@@ -15,6 +15,9 @@ import {
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
   ClassStudentRemovedSchema,
+  ClassUpsertRequestSchema,
+  GuruStudentCreateRequestSchema,
+  GuruStudentCreatedSchema,
   ClassroomKindSchema,
   TeacherChapterCreateRequestSchema,
   TeacherChapterOptionSchema,
@@ -40,6 +43,7 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   ClassEnrolmentSource: ClassEnrolmentSourceSchema,
   TeacherClass: TeacherClassSchema,
   ClassCreateRequest: ClassCreateRequestSchema,
+  ClassUpsertRequest: ClassUpsertRequestSchema,
   ClassQrData: ClassQrDataSchema,
   TeacherStudentsQuery: TeacherStudentsQuerySchema,
   TeacherStudent: TeacherStudentSchema,
@@ -48,6 +52,8 @@ export const CLASSES_COMPONENT_SCHEMAS = {
   ClassStudentRemoveQuery: ClassStudentRemoveQuerySchema,
   ClassEnrolment: ClassEnrolmentSchema,
   ClassStudentRemoved: ClassStudentRemovedSchema,
+  GuruStudentCreateRequest: GuruStudentCreateRequestSchema,
+  GuruStudentCreated: GuruStudentCreatedSchema,
   TeacherDashboard: TeacherDashboardSchema,
   TeacherChaptersQuery: TeacherChaptersQuerySchema,
   TeacherTopicsQuery: TeacherTopicsQuerySchema,
@@ -100,12 +106,30 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
     summary: 'Create a class with a server-generated unique join code',
     description:
       'Owner is the caller, isActive true, academic year from the clock. The join code is never accepted from the client.',
-    request: { headers: [csrf], body: body(ClassCreateRequestSchema) },
+    request: { headers: [csrf], body: body(ClassUpsertRequestSchema) },
     responses: {
-      201: json(envelopeOf(TeacherClassSchema), 'The created class.'),
+      201: json(envelopeOf(TeacherClassSchema), 'The created class (toast "Kelas dicipta.").'),
       401: unauthorized,
       403: teacherOnly,
-      422: err('VALIDATION_ERROR with fields: name, subjectId, educationLevel, schoolId, description.'),
+      409: err('CONFLICT "Nama kelas sudah digunakan." (per teacher and Tahun Sesi, case-insensitive, trimmed).'),
+      422: err('VALIDATION_ERROR with fields: name, educationLevel, subjectId, year, schoolId, description. A teacher with no school: "Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir."'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/guru/classes/{id}',
+    ...teacher,
+    summary: 'Edit an own class (API-GUR-03)',
+    description: 'Same body as create. Another teacher\'s or an unknown class answers 404. Toast "Kelas dikemaskini.".',
+    request: { headers: [csrf], params: idParam, body: body(ClassUpsertRequestSchema) },
+    responses: {
+      200: json(envelopeOf(TeacherClassSchema), 'The updated class.'),
+      401: unauthorized,
+      403: teacherOnly,
+      404: err('NOT_FOUND: unknown class or not owned by the caller.'),
+      409: err('CONFLICT "Nama kelas sudah digunakan."'),
+      422: err('VALIDATION_ERROR with fields: name, educationLevel, subjectId, year, schoolId, description.'),
     },
   })
 
@@ -113,7 +137,9 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/guru/classes/{id}/qr-data',
     ...teacher,
-    summary: 'Join-QR payload of an own class (bare body)',
+    summary: 'DEPRECATED: join-QR payload of an own class (bare body)',
+    deprecated: true,
+    description: 'Removed in R1: answers 404 for every role (join code and QR dropped, API-GUR-04). Path kept until the handler is removed.',
     request: { params: idParam },
     responses: {
       200: json(ClassQrDataSchema, 'Bare `{ name, school, joinUrl }`.'),
@@ -138,6 +164,25 @@ export function registerClassesPaths(registry: OpenAPIRegistry): void {
       ),
       401: unauthorized,
       403: teacherOnly,
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/guru/students',
+    ...teacher,
+    summary: 'Cipta Pelajar: create a pupil in an own class (API-GUR-06)',
+    description:
+      'Creates the pupil in the school of the class with a generated unique username and the configured default password, and enrols the pupil (source "teacher"). The message carries the password once.',
+    request: { headers: [csrf], body: body(GuruStudentCreateRequestSchema) },
+    responses: {
+      201: json(envelopeOf(GuruStudentCreatedSchema), '`{ data: { id, name, username, message } }`.'),
+      401: unauthorized,
+      403: err('FORBIDDEN role / CSRF_INVALID.'),
+      409: err('CONFLICT fields.ic "No. IC sudah didaftarkan."'),
+      422: err(
+        'VALIDATION_ERROR fields.name "Sila isi nama." / "Nama tidak boleh melebihi 255 aksara."; fields.classroomId "Sila pilih kelas." or "Anda belum ada kelas aktif. Cipta kelas dahulu." (not an own active class); fields.ic "No. IC mesti 12 digit tanpa sempang."; a teacher without a school "Akaun anda belum dipautkan ke sekolah. Sila hubungi pentadbir."',
+      ),
     },
   })
 

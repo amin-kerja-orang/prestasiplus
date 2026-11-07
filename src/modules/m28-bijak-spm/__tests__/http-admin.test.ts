@@ -200,6 +200,31 @@ describe('HttpBijakAdminServer', () => {
     expect(all).toMatchObject({ done: 1, skipped: [{ id: 'i2', reason: 'BELOW_THRESHOLD' }] })
     const bulk = requests.find((r) => r.url === '/api/intake/items/bulk')
     expect(bulk?.body).toEqual({ action: 'accept', ids: ['i1', 'i2'] })
+    await server.acceptUnreviewed('b1', ['i2'])
+    expect(requests.filter((r) => r.url === '/api/intake/items/bulk').at(-1)?.body).toEqual({ action: 'accept', ids: ['i2'] })
+  })
+
+  it('counts a WRONG_STATE or NOT_FOUND bulk result as a failure, so n = done + skipped', async () => {
+    const { server } = setup({
+      'POST /api/intake/items/bulk': ok({
+        action: 'accept',
+        threshold: 'high',
+        results: [
+          { id: 'i1', outcome: 'done', reason: null, item: null },
+          { id: 'i2', outcome: 'skipped', reason: 'WRONG_STATE', item: null },
+          { id: 'i3', outcome: 'skipped', reason: 'NOT_FOUND', item: null },
+        ],
+        done: 1,
+        skipped: 2,
+      }),
+    })
+    vi.spyOn(server, 'getIntakeBatch').mockResolvedValue({ id: 'b1', questions: [{ id: 'i1' }, { id: 'i2' }, { id: 'i3' }], stimuli: [] } as never)
+    const r = await server.acceptUnreviewed('b1', ['i1', 'i2', 'i3'])
+    expect(r.done + r.skipped.length).toBe(3)
+    expect(r.skipped).toEqual([
+      { id: 'i2', reason: 'WRONG_STATE' },
+      { id: 'i3', reason: 'WRONG_STATE' },
+    ])
   })
 
   it('mappers', () => {

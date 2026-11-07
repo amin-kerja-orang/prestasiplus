@@ -5,8 +5,9 @@ import { BijakUnitRefViewSchema } from '../standards/schema'
 /**
  * Bijak SPM (M28) papers, blueprints ("Kontrak") and "Jana Kertas" generation: the read side of
  * BE-15. The mock `BijakServer` (`src/modules/m28-bijak-spm/server/store.ts`, types in
- * `domain/types.ts`) has no HTTP routes; the five routes of this contract are derived from its
- * methods `listPapers`, `getCover`, `listContracts`, `subjects` and `generatePaper`.
+ * `domain/types.ts`) has no HTTP routes; the four routes of this contract are derived from its
+ * methods `listPapers`, `getCover`, `listContracts` and `subjects`. The pupil generate route is removed
+ * (S3-T07); the shortage and error shapes below stay for the admin generate route.
  *
  * Differences from the mock, all forced by the wire conventions:
  * - ids (paper, attempt) are opaque `Id` strings (UD-1); the mock already uses strings;
@@ -191,6 +192,10 @@ export const BijakPaperCoverSchema = z
         'AC-20.3: true when any placed question has a part that is not marked automatically (mark-scheme points or rubric); the cover then shows the "Untuk Kegunaan Pemeriksa" grid. False for an all-objective paper.',
     }),
     sections: z.array(BijakPaperCoverSectionSchema).min(1),
+    kuizAvailable: z.boolean().optional().meta({
+      description:
+        'S3-T07: false when the paper is outside the caller\'s form (`level_scope`) and the caller has no open sitting on it, so the paper Kuiz answers 404 and the cover omits its action. Absent means available.',
+    }),
     unavailable: z.boolean().meta({
       description:
         'PO decision 12, FR-QA-47: true when a new sitting would be refused. The pupil sees "Mula" disabled with the message "Kertas belum tersedia" before any click. A sitting already open can still be resumed.',
@@ -243,25 +248,6 @@ export const BijakBlueprintContractSchema = z
   })
   .meta({ id: 'BijakBlueprintContract' })
 export type BijakBlueprintContract = z.infer<typeof BijakBlueprintContractSchema>
-
-/** `POST /bijak/papers/generate` request. */
-export const BijakGenerateRequestSchema = z
-  .object({
-    subject: z
-      .string()
-      .min(1)
-      .max(32)
-      .meta({ description: 'Subject code of a blueprint.', example: 'MAT' }),
-    kertas: z.number().int().min(1).meta({ example: 2 }),
-  })
-  .meta({ id: 'BijakGenerateRequest' })
-export type BijakGenerateRequest = z.infer<typeof BijakGenerateRequestSchema>
-
-/** `201` result: the new private paper (`kind: jana`); open it with `GET /bijak/papers/{id}`. */
-export const BijakGenerateResultSchema = z
-  .strictObject({ paperId: IdSchema })
-  .meta({ id: 'BijakGenerateResult' })
-export type BijakGenerateResult = z.infer<typeof BijakGenerateResultSchema>
 
 export const BIJAK_SHORTAGE_KINDS = [
   'count',

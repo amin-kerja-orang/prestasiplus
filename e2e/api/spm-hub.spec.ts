@@ -80,7 +80,7 @@ test.describe('M06 SPM hub @api', () => {
     await expectNoHScroll(page)
   })
 
-  test('S2 Tahun Lepas lists GET /api/spm/databank and Q1 starts a past_year session @api', async ({
+  test('S2 Tahun Lepas lists GET /api/spm/databank and Q1 starts a databank session @api', async ({
     page,
   }) => {
     const rows = await openWith<{ code: string; databankCount: number }[]>(
@@ -102,8 +102,8 @@ test.describe('M06 SPM hub @api', () => {
     const started = sessionStart(page)
     await page.getByTestId(`databank-set-${withPool!.code}-10`).click()
     const res = await started
-    expect(res.status(), 'POST /api/practice/sessions (past_year)').toBeLessThan(300)
-    expect(res.request().postDataJSON()).toMatchObject({ mode: 'past_year', subjectCode: withPool!.code, count: 10 })
+    expect(res.status(), 'POST /api/practice/sessions (databank)').toBeLessThan(300)
+    expect(res.request().postDataJSON()).toMatchObject({ mode: 'databank', subjectCode: withPool!.code, count: 10 })
     await expectNoHScroll(page)
   })
 
@@ -219,11 +219,12 @@ test.describe('M06 SPM hub @api', () => {
 
   test('S10 /spm/history renders the SPM sessions (list or empty state) @api', async ({ page }) => {
     const wait = page.waitForResponse(
-      (r) => new URL(r.url()).pathname === '/api/practice/sessions' && r.request().method() === 'GET',
+      // S3-T07 part F (#1059): the page reads `GET /api/spm/history` (API-BIJAK-07), no longer /api/practice/sessions.
+      (r) => new URL(r.url()).pathname === '/api/spm/history' && r.request().method() === 'GET',
       { timeout: 30_000 },
     )
     await page.goto('/spm/history')
-    expect((await wait).status(), 'GET /api/practice/sessions').toBe(200)
+    expect((await wait).status(), 'GET /api/spm/history').toBe(200)
     await expect(page.getByTestId('spm-history-page')).toBeVisible({ timeout: 20_000 })
     await expect(page.locator('[data-ds=load-error]')).toHaveCount(0)
     await expect(page.getByTestId('history-rows').or(page.getByTestId('history-empty'))).toBeVisible()

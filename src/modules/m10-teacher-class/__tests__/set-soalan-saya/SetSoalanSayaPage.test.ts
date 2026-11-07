@@ -4,12 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import SetSoalanSayaPage from '../../pages/SetSoalanSayaPage.vue'
-import {
-  attemptsLabel,
-  questionCountLabel,
-  quizPath,
-  timeLimitLabel,
-} from '../../components/set-soalan-saya/format'
+import { questionCountLabel, quizPath } from '../../components/set-soalan-saya/format'
 import setRoutes from '../../routes/set-soalan-saya'
 import kelasRoutes from '../../routes/kelas-saya'
 
@@ -56,7 +51,10 @@ describe('S34 Set Soalan Guru (student)', () => {
     const w = await mountPage()
     const empty = w.get('[data-testid="sets-empty"]')
     expect(empty.text()).toContain('Tiada Set Soalan')
-    expect(empty.text()).toContain('Guru anda belum sediakan set soalan untuk anda.')
+    expect(empty.text()).toContain('Guru anda belum menyediakan sebarang set soalan buat masa ini.')
+    expect(empty.text()).toContain(
+      'Set soalan akan muncul di sini sebaik sahaja guru anda menerbitkannya.',
+    )
   })
 
   it('shows loading, then an error with retry (@provisional not on live)', async () => {
@@ -83,18 +81,17 @@ describe('S34 Set Soalan Guru (student)', () => {
     expect(rows[0]!.get('[data-testid="set-start"]').attributes('href')).toBe(
       '/set-soalan-saya/7402/jawab',
     )
-    expect(rows[1]!.get('[data-testid="set-time"]').text()).toBe('30 minit')
-    expect(rows[1]!.get('[data-testid="set-attempts"]').text()).toBe('Percubaan tanpa had')
+    // R1: no timer and no attempt cap, so neither line is rendered whatever the API sends.
+    for (const row of rows) {
+      expect(row.find('[data-testid="set-time"]').exists()).toBe(false)
+      expect(row.find('[data-testid="set-attempts"]').exists()).toBe(false)
+    }
   })
 })
 
 describe('format helpers and routes', () => {
   it('formats labels', () => {
     expect(questionCountLabel(1)).toBe('1 soalan')
-    expect(timeLimitLabel(null)).toBeNull()
-    expect(timeLimitLabel(45)).toBe('45 minit')
-    expect(attemptsLabel(null)).toBe('Percubaan tanpa had')
-    expect(attemptsLabel(2)).toBe('2 percubaan berbaki')
     expect(quizPath(5)).toBe('/set-soalan-saya/5/jawab')
   })
 

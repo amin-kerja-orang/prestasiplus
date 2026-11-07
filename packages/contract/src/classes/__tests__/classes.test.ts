@@ -6,6 +6,8 @@ import { CLASSES_COMPONENT_SCHEMAS } from '../paths'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
+  ClassUpdateRequestSchema,
+  ClassUpsertRequestSchema,
   ClassQrDataSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
@@ -18,6 +20,9 @@ import {
   TeacherDashboardSchema,
   TeacherGallerySchema,
   TeacherStudentSchema,
+  GuruStudentCreateRequestSchema,
+  GURU_STUDENT_MESSAGES,
+  guruStudentCreatedMessage,
   TeacherTopicCreateRequestSchema,
 } from '../schema'
 
@@ -71,9 +76,28 @@ describe('ClassCreateRequest', () => {
   })
 })
 
+describe('guru student create (API-GUR-06)', () => {
+  const ok = { name: '  Murid Contoh ', classroomId: '501' }
+  it('trims the name and treats ic as optional', () => {
+    expect(GuruStudentCreateRequestSchema.parse(ok)).toEqual({ name: 'Murid Contoh', classroomId: '501', ic: undefined })
+    expect(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic: '' }).success).toBe(true)
+    expect(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic: '123456789012' }).success).toBe(true)
+  })
+  it('gives the exact BM messages', () => {
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({}))).toEqual({ name: GURU_STUDENT_MESSAGES.name, classroomId: GURU_STUDENT_MESSAGES.classroom })
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({ ...ok, name: 'a'.repeat(256) }))).toEqual({ name: GURU_STUDENT_MESSAGES.nameMax })
+  })
+  it.each(['12345678901', '123456-78-9012', '1234567890123', 'abcdefghijkl'])('rejects ic %s', (ic) => {
+    expect(fieldsOf(GuruStudentCreateRequestSchema.safeParse({ ...ok, ic }))).toEqual({ ic: GURU_STUDENT_MESSAGES.ic })
+  })
+  it('builds the created message', () => {
+    expect(guruStudentCreatedMessage('murid.contoh01', 'pw')).toBe('Pelajar dicipta. Login: murid.contoh01 / pw')
+  })
+})
+
 describe('roster', () => {
   it('parses a student row and the add/remove inputs', () => {
-    const row = { id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'], classes: [{ id: '501', name: 'Kelas Contoh 4A' }] }
+    const row = { id: '9', name: 'Murid Ujian', levelName: null, classNames: ['Kelas Contoh 4A'], classes: [{ id: '501', name: 'Kelas Contoh 4A' }], username: 'murid.ujian01', tugasan: 2, skorPurata: 70, lastActiveAt: '2026-11-01T10:00:00+08:00' }
     expect(TeacherStudentSchema.safeParse(row).success).toBe(true)
     // SW5-03: two classes may share a name; the ids tell them apart
     const twins = { ...row, classNames: ['Kelas Kembar', 'Kelas Kembar'], classes: [{ id: '501', name: 'Kelas Kembar' }, { id: '502', name: 'Kelas Kembar' }] }
@@ -155,6 +179,7 @@ describe('OpenAPI document', () => {
       ['/guru/classes', 'post'],
       ['/guru/classes/{id}/qr-data', 'get'],
       ['/guru/students', 'get'],
+      ['/guru/students', 'post'],
       ['/guru/students/{id}', 'put'],
       ['/guru/students/{id}', 'delete'],
       ['/guru/dashboard', 'get'],
@@ -197,5 +222,30 @@ describe('contract is no stricter than the mock', () => {
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 0 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherChapterCreateRequestSchema.safeParse({ ...ch, name: 'Bab', chapterNumber: 1.5 }))).toEqual({ chapterNumber: CLASS_MESSAGES.chapterNumber })
     expect(fieldsOf(TeacherTopicCreateRequestSchema.safeParse({ name: 'x'.repeat(256), chapterId: '1' }))).toEqual({ name: CLASS_MESSAGES.topicName })
+  })
+})
+
+describe('ClassUpsertRequest (S6-T14)', () => {
+  const base = { name: ' 5 Bestari ', educationLevel: 'tingkatan-5' }
+  it('trims, makes subject and year optional, accepts a legacy body', () => {
+    expect(ClassUpsertRequestSchema.parse(base).name).toBe('5 Bestari')
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, subjectId: null, year: 2026 }).success).toBe(true)
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, subjectId: '12', schoolId: null }).success).toBe(true)
+    expect(ClassUpdateRequestSchema).toBe(ClassUpsertRequestSchema)
+    expect(ClassCreateRequestSchema.safeParse({ ...base, subjectId: '12', year: 2026 }).success).toBe(true)
+  })
+  it('enforces name 1..100, year 2020..2100 and the level', () => {
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, name: '  ' }))).toEqual({ name: 'Sila isi nama kelas.' })
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, name: 'a'.repeat(101) }))).toEqual({ name: 'Nama kelas tidak boleh melebihi 100 aksara.' })
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, name: 'a'.repeat(100) }).success).toBe(true)
+    for (const year of [2019, 2101, 2026.5]) {
+      expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ ...base, year }))).toEqual({ year: 'Tahun sesi mesti antara 2020 dan 2100.' })
+    }
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, year: 2020 }).success).toBe(true)
+    expect(ClassUpsertRequestSchema.safeParse({ ...base, year: 2100 }).success).toBe(true)
+    expect(fieldsOf(ClassUpsertRequestSchema.safeParse({ name: 'X' }))).toEqual({ educationLevel: 'Sila pilih tingkatan.' })
+  })
+  it('TeacherClass accepts the optional year and keeps joinCode', () => {
+    expect(TeacherClassSchema.safeParse({ ...klass, year: 2026 }).success).toBe(true)
   })
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * S6 `/permainan` "Zona Permainan" (SRS M16 v1.6 FR-M16-51..53; URS FT-M16-4.1; M16-T4a). The hero, the
- * open-rooms strip and the 18 cards of discovery A.3 from `GET /api/games/hub` (#22). Every card and
+ * open-rooms strip and the 15 cards (FR-GM-00.1) from `GET /api/games/hub` (#22). Every card and
  * button links to its real route (D21 reach rule).
  */
 import { computed } from 'vue'

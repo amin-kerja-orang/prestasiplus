@@ -20,10 +20,10 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
-import { PracticeRepository } from '../practice'
 import { QuestionsRepository } from '../questions'
 import { SpmCatalogService, type SpmSubject, type SubjectMeta } from './catalog.service'
 import { BAHASA_CODES, READINESS_ORDER, SUBJEKTIF_CODES, SUBJEKTIF_TERAS_CODES, TRACKING_YEAR } from './config'
+import { SpmHistoryService } from './history.service'
 import { SpmPorts } from './ports'
 import { countOf, SpmPoolService, type PoolCell } from './pool.service'
 import { isStartable } from './rules'
@@ -57,8 +57,6 @@ export async function mapBounded<T, R>(items: readonly T[], limit: number, fn: (
   return out
 }
 
-const SPM_MODES = ['past_year', 'latih_tubi', 'ramalan'] as const
-
 const notFound = (): ApiError => ApiError.of('NOT_FOUND')
 
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0)
@@ -74,8 +72,8 @@ const metaOf = (s: SubjectMeta) => ({ name: s.name, nameEn: s.nameEn, icon: s.ic
 
 /**
  * Read models of the hub (M06-01 to M06-07). Everything is computed on read from the owners' stores through
- * their services: curriculum (BE-08), questions (BE-09, SPM pool and structured counts), practice (BE-12, history
- * stats) and the structured-attempt port (BE-13). The module owns only the subject configuration and the sets.
+ * their services: curriculum (BE-08), questions (BE-09, SPM pool and structured counts), the answer-store, attempts and wallet
+ * ports behind `SpmHistoryService` ("Prestasi SPM Anda", S3-T07) and the structured-attempt port (BE-13). The module owns only the subject configuration and the sets.
  */
 @Injectable()
 export class SpmHubService {
@@ -84,7 +82,7 @@ export class SpmHubService {
     @Inject(SpmPoolService) private readonly pool: SpmPoolService,
     @Inject(SpmTrackingService) private readonly tracking: SpmTrackingService,
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
-    @Inject(PracticeRepository) private readonly practice: PracticeRepository,
+    @Inject(SpmHistoryService) private readonly history: SpmHistoryService,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
     @Inject(SpmPorts) private readonly ports: SpmPorts,
   ) {}
@@ -94,9 +92,15 @@ export class SpmHubService {
     return this.questions.count({ subjectId, status: 'approved', active: true, type: 'structured' })
   }
 
-  /** Pool sizes of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
+  /** Latih Tubi totals (units the Latih Tubi draw serves, a group once) of the configured subjects: one grouped count each, at most POOL_LOAD_CONCURRENCY at a time. */
   private async poolSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
-    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.count(s.subjectId))
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.latihTubiCount(s.subjectId))
+    return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
+  }
+
+  /** Databank sizes (units the Databank draw can serve, a group once) of the listed subjects. */
+  private async databankSizes(subjects: readonly SpmSubject[]): Promise<Map<string, number>> {
+    const sizes = await mapBounded(subjects, POOL_LOAD_CONCURRENCY, (s) => this.pool.databankCount(s.subjectId))
     return new Map(subjects.map((s, i) => [s.subjectId, sizes[i] as number]))
   }
 
@@ -114,18 +118,19 @@ export class SpmHubService {
       this.catalog.spmLevelIds(),
       this.tracking.allSets(),
     ])
-    const sizes = await this.poolSizes(subjects)
+    const [sizes, databankSizes] = await Promise.all([this.poolSizes(subjects), this.databankSizes(subjects.filter((s) => s.databankOrder !== null))])
     const total = sum([...sizes.values()])
-    const databank = sum(subjects.filter((s) => s.databankOrder !== null).map((s) => sizes.get(s.subjectId) ?? 0))
+    const databank = sum([...databankSizes.values()])
     const levelSubjects = await Promise.all(levelIds.map((id) => this.curriculum.subjects({ active: true, educationLevelId: idFromString(id) })))
     const subjectCount = new Set(levelSubjects.flat().map((s) => s.id)).size
     const trackingA = sum([...allSets.values()].map(sumReady))
     const subjektifSets = sum(await Promise.all(SUBJEKTIF_CODES.map((c) => (byCode.get(c) ? this.visibleSets((byCode.get(c) as SubjectMeta).subjectId) : Promise.resolve(0)))))
-    const stats = await this.practice.historyStats(caller.userId, { modes: [...SPM_MODES], includeTest: caller.isTest })
+    const kertasSubjektif = await this.ports.papers.countPublishedSubjektif()
+    const me = await this.history.stats(caller)
     return {
-      stats: { totalQuestions: total, subjectCount, yearsAvailable: 0, trackingAQuestions: trackingA },
-      modules: { databank, latihTubi: total, trackingA, subjektifSets },
-      me: { sessions: stats.sessions, avgAccuracy: stats.avgAccuracyPct, coins: stats.coins, answered: stats.answered },
+      stats: { totalQuestions: total, subjectCount, trackingAQuestions: trackingA },
+      modules: { databank, latihTubi: total, trackingA, subjektifSets, kertasSubjektif },
+      me,
     }
   }
 
@@ -135,7 +140,7 @@ export class SpmHubService {
     const listed = (await this.catalog.spmSubjects())
       .filter((s) => s.databankOrder !== null)
       .sort((a, b) => (a.databankOrder as number) - (b.databankOrder as number))
-    const sizes = await this.poolSizes(listed)
+    const sizes = await this.databankSizes(listed)
     return listed.map((s) => ({ code: s.code, ...metaOf(s), databankCount: sizes.get(s.subjectId) ?? 0 }))
   }
 
@@ -155,14 +160,14 @@ export class SpmHubService {
     const s = (await this.catalog.spmSubjects()).find((x) => x.code === code.toUpperCase())
     if (!s) throw notFound()
     const levelIds = await this.catalog.spmLevelIds()
-    const facts = await this.pool.cells(s.subjectId)
+    const facts = await this.pool.latihTubiCells(s.subjectId)
     const target = s.targetSize
     return {
       code: s.code,
       name: s.name,
       icon: s.icon,
       color: s.color,
-      total: countOf(facts),
+      total: await this.pool.latihTubiCount(s.subjectId),
       targetType: s.targetType,
       targetSize: target,
       levelCounts: Object.fromEntries(levelIds.map((id) => [id, countOf(facts, { levelId: id })])),
@@ -213,7 +218,7 @@ export class SpmHubService {
           locked: locked.length,
           total: own.length,
           readiness: own.length === 0 ? 0 : Math.round(((bersih + bankBesar) / own.length) * 100),
-          lockedSets: locked.slice(0, 6).map((x) => ({ setNo: x.setNo, readyCount: x.readyCount, target: x.size })),
+          lockedSets: locked.slice(0, 6).map((x) => ({ year: x.year, setNo: x.setNo, readyCount: x.readyCount, target: x.size })),
           hasBankBesar: bankBesar > 0,
         },
       ]

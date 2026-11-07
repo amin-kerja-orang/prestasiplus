@@ -12,6 +12,13 @@ import type {
 import type { ContractForm } from './form'
 import { incompleteMessage, issueFromProblem, type Issue } from './validate'
 
+/** [PROPOSED] Copy with no PRD source: the Syarat Disahkan check could not be loaded (S3-T01). */
+export const PROPOSED_COPY = {
+  checkUnknownTitle: 'Belum lengkap untuk Disahkan (tidak diketahui)',
+  checkUnknownDescription: 'Syarat Disahkan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.',
+  checkUnknownChip: 'Semakan Disahkan tidak dapat dimuat',
+} as const
+
 export interface GateRow {
   key: string
   ok: boolean
@@ -85,6 +92,11 @@ export function gateRows(check: BijakVerificationCheck, form: ContractForm): Gat
       lines.map((l) => `${evidenceFieldLabel(l, form)}: ${PADANAN[l.status].word}`),
     ),
   ]
+}
+
+/** FR-ADM-Q16.4, 16-20: the failing rows; their number is the n of "Belum lengkap untuk Disahkan ({n})". */
+export function failingGates(check: BijakVerificationCheck, form: ContractForm): GateRow[] {
+  return gateRows(check, form).filter((g) => !g.ok)
 }
 
 export const PADANAN: Record<

@@ -7,11 +7,13 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { BATTLE_MESSAGES, BATTLE_RULES } from '@pp/contract'
 
+import { ApiError } from '../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { BattleStudent } from '../battle.deps'
 import { type BattleParams, BattleEngine, gradeLabel, parseBattleParams, ParamRefusal, type QueueMode } from '../engine'
+import { displayName } from '../privacy'
 import { rawForbidden, rawInvalid, rawNotFound } from '../raw-response'
 
 type Challenger = { name: string; grade_label: string; school: string }
@@ -83,11 +85,12 @@ export class QueueService {
   }
 
   /** M16-02 / M16-03. Refusals answer an EMPTY body (BR-M16-03). */
-  async start(userId: string, isTest: boolean, mode: QueueMode, body: unknown): Promise<{ queue_id: string }> {
+  async start(who: { userId: string; role: string }, isTest: boolean, mode: QueueMode, body: unknown): Promise<{ queue_id: string }> {
+    const { userId } = who
     const grade = await this.engine.deps.gradeOf(userId)
     let params: BattleParams
     try {
-      params = await parseBattleParams(body, grade, this.engine.deps)
+      params = await parseBattleParams(body, grade, this.engine.deps, who)
     } catch (e) {
       if (e instanceof ParamRefusal) throw e.forbidden ? rawForbidden() : rawInvalid()
       throw e
@@ -116,7 +119,8 @@ export class QueueService {
   private async challengerOf(userId: bigint): Promise<Challenger> {
     const p = await this.engine.player(idToString(userId))
     if (!p) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
-    return { name: p.name, grade_label: gradeLabel(p.grade), school: p.schoolName ?? '' }
+    // FR-GM-00.8: first given name, no school (`school` stays in the contract, always empty).
+    return { name: displayName(p.name) || 'Pelajar', grade_label: gradeLabel(p.grade), school: '' }
   }
 
   /** M16-04. */
@@ -126,7 +130,8 @@ export class QueueService {
     const prefetched = await this.prefetchOpponent(key, userId, isTest)
     return this.prisma.transaction(async () => {
       const q = await this.lock(key)
-      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest) return { status: 'not_found' as const }
+      // 48 GAME-01: "Batal" removes the entry at once, so the owner polls it like an entry that does not exist.
+      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status === 'cancelled') return { status: 'not_found' as const }
       if (q.status === 'matched' && q.battleId) return { status: 'matched' as const, battle_uuid: q.battleId }
       if (q.status === 'expired' || q.status === 'abandoned' || q.status === 'matched') return { status: 'expired' as const }
       const now = this.clock.now()
@@ -259,6 +264,28 @@ export class QueueService {
     })
   }
 
+  /**
+   * API-GAME-14, the "Batal" of the queue overlay. Another pupil's entry, an unknown id and an entry that already has its
+   * battle are the same 404; an entry that already ended answers the same success.
+   * Stored as `cancelled` (48 GAME-01), which is never matched and polls as `not_found`; a pending joiner polls `expired`.
+   */
+  async cancel(userId: string, isTest: boolean, queueId: string): Promise<{ cancelled: true }> {
+    const notFound = () => ApiError.of('NOT_FOUND', { message: BATTLE_MESSAGES.queueNotFound })
+    const key = this.queueKey(queueId)
+    if (key === null) throw notFound()
+    return this.prisma.transaction(async () => {
+      const q = await this.lock(key)
+      if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status === 'matched') throw notFound()
+      if (q.status === 'waiting' || q.status === 'incoming_challenge') {
+        await this.prisma.client.battleQueue.update({
+          where: { id: q.id },
+          data: { status: 'cancelled', challengerUserId: null, ...(q.joinerOutcome === 'pending' ? { joinerOutcome: 'expired' } : {}) },
+        })
+      }
+      return { cancelled: true as const }
+    })
+  }
+
   /** M16-12. */
   async joinQueue(userId: string, isTest: boolean, queueId: string): Promise<{ success: true }> {
     const key = this.queueKey(queueId)
@@ -297,7 +324,7 @@ export class QueueService {
         }
         return { status: 'matched' as const, battle_uuid: battleId }
       }
-      if (q.status === 'matched' || q.status === 'expired' || q.status === 'abandoned') return { status: 'expired' as const }
+      if (q.status === 'matched' || q.status === 'expired' || q.status === 'abandoned' || q.status === 'cancelled') return { status: 'expired' as const }
       return { status: 'waiting' as const }
     })
   }

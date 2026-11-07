@@ -61,7 +61,7 @@ const MCQ = {
   'options[3]': '31',
   correctAnswer: 1,
   explanation: 'Dua belas campur lima belas ialah dua puluh tujuh.',
-  language: 'bm',
+  language: 'ms',
   pointsValue: 2,
 } as const
 
@@ -88,7 +88,7 @@ describe('#3 POST /api/questions', () => {
       questionType: 'mcq',
       options: ['25', '27', '29', '31'],
       correctAnswer: 1,
-      language: 'bm',
+      language: 'ms',
       pointsValue: 2,
       status: 'approved',
       isActive: true,
@@ -129,7 +129,41 @@ describe('#3 POST /api/questions', () => {
     expect(res.status).toBe(201)
     expect(res.body.data.correctAnswer).toBe(3)
     expect(res.body.data.pointsValue).toBe(1)
-    expect(res.body.data.language).toBe('bm')
+    expect(res.body.data.language).toBe('ms')
+  })
+
+  it.each([
+    ['bm', 'ms'],
+    ['ms', 'ms'],
+    ['en', 'en'],
+    ['ms+en', 'ms+en'],
+  ])('reads language %s back as %s (the bm alias is input only)', async (sent, back) => {
+    const res = await call<QuestionMutation<Question>>('POST', '/api/questions', ADMIN, {
+      subjectId: 3,
+      educationLevelId: 3,
+      difficultyLevel: 1,
+      questionType: 'mcq',
+      questionText: 'Pilih jawapan yang betul bagi soalan ini.',
+      options: ['a', 'b', 'c', 'd'],
+      correctAnswer: 0,
+      language: sent,
+    })
+    expect(res.status).toBe(201)
+    expect(res.body.data.language).toBe(back)
+  })
+
+  it('refuses an unknown language token with the Bahasa message', async () => {
+    const res = await call<{ fields?: Record<string, string> }>('POST', '/api/questions', ADMIN, {
+      subjectId: 3,
+      educationLevelId: 3,
+      difficultyLevel: 1,
+      questionType: 'mcq',
+      questionText: 'Pilih jawapan yang betul bagi soalan ini.',
+      options: ['a', 'b', 'c', 'd'],
+      correctAnswer: 0,
+      language: 'fr',
+    })
+    expect(res.status).toBe(422)
   })
 
   it('stores "Aras pemikiran" (REQ-B-027): one of the six levels, cleared by an empty value, refused otherwise', async () => {

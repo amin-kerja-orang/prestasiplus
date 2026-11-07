@@ -20,6 +20,7 @@ import { SchoolAdminPupilCreateRequestSchema, SchoolAdminPupilCreatedResultSchem
 import {
   SchoolAdminActivityReportSchema,
   SchoolAdminClassListResponseSchema,
+  SchoolAdminClassRowSchema,
   SchoolAdminDashboardSchema,
   SchoolAdminDskpHeatmapSchema,
   SchoolAdminMonthlyReportSchema,
@@ -37,6 +38,8 @@ import {
   SchoolAdminResetPasswordRequestSchema,
   SchoolAdminResetResultSchema,
   SchoolAdminUserDetailSchema,
+  SchoolAdminUserExportQuerySchema,
+  SchoolAdminUserListQuerySchema,
   SchoolAdminUserListMetaSchema,
   SchoolAdminUserUpdateRequestSchema,
   SchoolAdminUserWriteResultSchema,
@@ -65,6 +68,7 @@ const dashboard = {
   school: { id: '8880', name: 'SMK DEMO', state: 'Negeri Demo', ppd: 'PPD DEMO', code: 'DEMO0001' },
   roleLabel: 'Admin Sekolah',
   perutusan: [{ id: '5', title: 'Perutusan Demo', createdAt: AT, author: { initials: 'AD', roleLabel: 'Admin Pusat' } }],
+  pendingTeachers: 2,
   cards: { pupils: 59, teachers: 6, activeClasses: 4, subscription: { status: 'active', label: 'Aktif' } },
   performance: {
     gps: { value: 5.2, grade: 'C+', band: 'Sederhana', entries: 3 },
@@ -156,10 +160,10 @@ const classRow = {
   levelLabel: 'Tingkatan 4',
   teacherName: 'Cikgu Demo',
   members: 30,
-  joinCode: 'ABC123',
   isActive: true,
   link: '/prestasi/kelas/7',
 }
+const schoolClassRow = { ...classRow, key: 'school_class:8', kind: 'school_class', id: '8', link: null }
 const classList = {
   data: [classRow],
   meta: { ...meta, displayed: 1 },
@@ -262,6 +266,7 @@ const effectivenessEmpty = {
 describe('school-admin contract: reports', () => {
   it('parses the dashboard, including a school without risk data or practice', () => {
     expect(ok(SchoolAdminDashboardSchema, dashboard)).toBe(true)
+    expect(ok(SchoolAdminDashboardSchema, { ...dashboard, pendingTeachers: undefined })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, performance: { ...dashboard.performance, risk: null, gps: { value: null, grade: null, band: null, entries: 0 } } })).toBe(true)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, cards: { ...dashboard.cards, subscription: { status: 'paused', label: 'x' } } })).toBe(false)
     expect(ok(SchoolAdminDashboardSchema, { ...dashboard, perutusan: Array(4).fill(dashboard.perutusan[0]) })).toBe(false)
@@ -302,11 +307,28 @@ describe('school-admin contract: reports', () => {
     expect(ok(SchoolAdminClassListResponseSchema, classList)).toBe(true)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, tiles: undefined })).toBe(false)
     expect(ok(SchoolAdminClassListResponseSchema, { ...classList, meta: meta })).toBe(false) // displayed missing
-    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, kind: 'school_class' }] })).toBe(false)
+    // S6-T13: the list holds active classes of both kinds (equal to the Kelas Aktif tile).
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [schoolClassRow] })).toBe(true)
+    expect(ok(SchoolAdminClassRowSchema, schoolClassRow)).toBe(true) // school_class: link null, no class dashboard
+    expect(ok(SchoolAdminClassRowSchema, { ...classRow, link: '' })).toBe(false)
+    expect(ok(SchoolAdminClassListResponseSchema, { ...classList, data: [{ ...classRow, key: 'kelas:7', kind: 'kelas' }] })).toBe(false)
+  })
+
+  it('the class row has no joinCode (FR-AS-53-5)', () => {
+    expect(Object.keys(SchoolAdminClassRowSchema.shape)).not.toContain('joinCode')
+    const parsed = SchoolAdminClassRowSchema.parse({ ...classRow, joinCode: 'ABC123' })
+    expect('joinCode' in parsed).toBe(false)
   })
 })
 
 describe('school-admin contract: teachers and pupils', () => {
+  it('meta.counts carries the optional XS figures and the list query the level and class filters (FR-AS-51-1/2)', () => {
+    const counts = { total: 3, active: 2, inactive: 1, xs: 2, notCounted: 1 }
+    expect(ok(SchoolAdminPupilListResponseSchema, { data: [pupilListRow], meta: { ...meta, counts } })).toBe(true)
+    expect(SchoolAdminUserListQuerySchema.parse({ level: 'T4', classroomId: '7' })).toEqual({ level: 'T4', classroomId: '7' })
+    expect(SchoolAdminUserExportQuerySchema.parse({ level: 'T4', classroomId: '7' })).toEqual({ level: 'T4', classroomId: '7' })
+  })
+
   it('parses user list responses and requires meta.counts', () => {
     expect(ok(SchoolAdminPupilListResponseSchema, { data: [pupilListRow], meta })).toBe(true)
     expect(ok(SchoolAdminTeacherListResponseSchema, { data: [teacherListRow], meta })).toBe(true)

@@ -1,5 +1,5 @@
 /**
- * Search and 1:1 invitations (M16-07 to M16-11; BR-M16-06, BR-M16-11). D54(d): the search shows display name and school only.
+ * Search and 1:1 invitations (M16-07 to M16-11; BR-M16-06, BR-M16-11). 48 section 3.10: the search shows the display name only; the `school` fields stay in the contract, always empty.
  * An invitation is visible to its receiver (list, accept, decline); every other caller gets "Cabaran tidak dijumpai.".
  * Invitations written under Mod Pelajar (`is_test`) are only seen by Mod Pelajar sessions.
  */
@@ -47,18 +47,19 @@ export class InvitationsService {
       users: rows.map((u) => ({
         id: u.id,
         name: canSeeName(viewer, u.id, u.schoolId, own) ? u.name : displayName(u.name) || 'Pelajar',
-        school: u.schoolName ?? '',
+        school: '',
         avatar: u.avatar,
       })),
     }
   }
 
   /** M16-08. */
-  async invite(senderId: string, isTest: boolean, body: unknown): Promise<{ success: true }> {
+  async invite(who: { userId: string; role: string }, isTest: boolean, body: unknown): Promise<{ success: true }> {
+    const senderId = who.userId
     const grade = await this.engine.deps.gradeOf(senderId)
     let params: BattleParams
     try {
-      params = await parseBattleParams(body, grade, this.engine.deps, true)
+      params = await parseBattleParams(body, grade, this.engine.deps, who, true)
     } catch (e) {
       if (e instanceof ParamRefusal) throw e.forbidden ? rawForbidden(e.message) : rawInvalid(e.message)
       throw e
@@ -107,7 +108,7 @@ export class InvitationsService {
     return {
       invitations: rows.map((r) => {
         const s = senders.get(idToString(r.senderId))
-        return { uuid: r.id, sender_name: s?.name ?? 'Pelajar', sender_school: s?.schoolName ?? '' }
+        return { uuid: r.id, sender_name: displayName(s?.name ?? '') || 'Pelajar', sender_school: '' }
       }),
     }
   }
@@ -117,6 +118,15 @@ export class InvitationsService {
     const found = await this.prisma.client.$queryRaw<{ id: string }[]>`SELECT id::text FROM battle_invitations WHERE id = ${uuid}::uuid FOR UPDATE`
     if (found.length === 0) return null
     return this.prisma.client.battleInvitation.findUnique({ where: { id: uuid } })
+  }
+
+  /** A PKSK battle needs a grant for its level on both sides, checked at match start (48 GAME-01); the sender's was checked at invite. */
+  private async mustHavePkskGrant(who: { userId: string; role: string }, isTest: boolean, uuid: string): Promise<void> {
+    if (!isUuid(uuid)) return
+    const inv = await this.prisma.client.battleInvitation.findUnique({ where: { id: uuid } })
+    if (!inv || inv.isTest !== isTest || idToString(inv.receiverId) !== who.userId || inv.questionType !== 'pksk') return
+    const level = inv.pkskTargetLevel as 'T1' | 'T4'
+    if (!(await this.engine.deps.pkskAccess(who))[level]) throw rawForbidden(BATTLE_MESSAGES.pkskNoAccess)
   }
 
   /** The question draw, made before the transaction (undefined when the invitation does not qualify). */
@@ -129,7 +139,9 @@ export class InvitationsService {
   }
 
   /** M16-10: the sender is player A. */
-  async accept(userId: string, isTest: boolean, uuid: string): Promise<{ success: true; battle_uuid: string }> {
+  async accept(who: { userId: string; role: string }, isTest: boolean, uuid: string): Promise<{ success: true; battle_uuid: string }> {
+    const { userId } = who
+    await this.mustHavePkskGrant(who, isTest, uuid)
     const ids = await this.prefetchIds(userId, isTest, uuid)
     return this.prisma.transaction(async () => {
       const inv = await this.lock(uuid)

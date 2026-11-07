@@ -9,6 +9,8 @@
  * imported are counted in `failedCount` and listed in `failures` (BR-M04-10).
  */
 
+import type { SourcePaperDetail, SourcePaperListMeta, SourcePaperRow } from '@pp/contract'
+
 import { api, type BlobResult, type ListResult } from '@/api'
 
 /** DATA-M04-07 (D11 dataset, §6.13.5). */
@@ -86,4 +88,51 @@ export function downloadImportErrors(id: number): Promise<BlobResult> {
 /** #11 `GET /api/question-imports/template`: the CSV file `template-import-soalan.csv`. */
 export function downloadImportTemplate(): Promise<BlobResult> {
   return api.blob('/api/question-imports/template')
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* Sumber Kertas (S2-T09, PRD30 R1-ADM-Q-19, API-Q-23): the read-only registry of intake papers. */
+/* ------------------------------------------------------------------------------------------ */
+
+export type { SourcePaperDetail, SourcePaperListMeta, SourcePaperRow }
+
+type SourcePaperMetaExtra = Pick<SourcePaperListMeta, 'totalPapers' | 'needsReviewCount' | 'options'>
+
+/** `meta` of the list: the standard pager keys plus the tile totals and the filter options present in the data. */
+export type SourcePaperListResult = ListResult<SourcePaperRow, SourcePaperMetaExtra>
+
+export interface SourcePaperFilters {
+  q?: string | null
+  /** Subject code. */
+  subject?: string | null
+  year?: string | null
+  negeri?: string | null
+  kertas?: string | null
+  /** Jenis = the batch paper type code. */
+  jenis?: string | null
+  needsReview?: boolean
+  page?: number
+  signal?: AbortSignal
+}
+
+/** API-Q-23 `GET /api/admin/source-papers`: 25 per page, newest year first. Admin Pusat only. Same call in mock and http mode. */
+export function fetchSourcePapers(filters: SourcePaperFilters = {}): Promise<SourcePaperListResult> {
+  return api.list<SourcePaperRow, SourcePaperMetaExtra>('/api/admin/source-papers', {
+    query: {
+      q: filters.q || null,
+      subject: filters.subject || null,
+      year: filters.year || null,
+      negeri: filters.negeri || null,
+      kertas: filters.kertas || null,
+      jenis: filters.jenis || null,
+      needsReview: filters.needsReview ? 'true' : null,
+      page: filters.page && filters.page > 1 ? filters.page : null,
+    },
+    ...(filters.signal ? { signal: filters.signal } : {}),
+  })
+}
+
+/** API-Q-23 `GET /api/admin/source-papers/:id`: the facts, the import issues and the imported questions (404 for an unknown id or a guru batch). */
+export function fetchSourcePaper(id: string, signal?: AbortSignal): Promise<SourcePaperDetail> {
+  return api.get<SourcePaperDetail>(`/api/admin/source-papers/${encodeURIComponent(id)}`, signal ? { signal } : {})
 }

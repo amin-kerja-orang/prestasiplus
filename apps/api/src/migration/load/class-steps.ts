@@ -108,6 +108,65 @@ export async function classesWithAbsentTeacher(pool: Pick<pg.Pool, 'query'>, cla
   return new Set(res.rows.map((r) => r.id))
 }
 
+/** The index form of a class name: `lower(btrim(name))` (0203, `uq_classrooms_teacher_year_name`). */
+export const classNameKey = (name: string): string => name.replace(/^ +| +$/g, '').toLowerCase()
+
+/**
+ * S6-T14 (0203): a teacher may keep ONE class name per academic year, case and edge-space insensitive. Legacy data can hold "5 Bestari"
+ * and "5 bestari" for the same teacher and year, which would abort the whole `migrate:core` upsert on the unique index. The same rule
+ * as the 0203 data step applies: the first class keeps its name, the later ones become "<name> (2)", "(3)" ... (a suffix that is taken is
+ * skipped; the base is cut to fit the 255 character name check). Pure: `taken` maps "teacher|year" to the name keys already held by
+ * OTHER rows in the database; the input order decides who keeps the plain name, so a re-run gives the same names.
+ */
+export function uniqueClassNames<T extends { legacyId: string; values: Pick<ClassroomValues, 'kind' | 'name' | 'teacher_id' | 'academic_year'> }>(
+  items: readonly T[],
+  taken: ReadonlyMap<string, ReadonlySet<string>>,
+): { renamed: number; items: T[] } {
+  const used = new Map<string, Set<string>>()
+  let renamed = 0
+  const out = items.map((item) => {
+    const v = item.values
+    if (v.kind !== 'classroom' || v.teacher_id === null) return item
+    const scope = `${v.teacher_id}|${v.academic_year}`
+    let set = used.get(scope)
+    if (!set) {
+      set = new Set(taken.get(scope) ?? [])
+      used.set(scope, set)
+    }
+    let name = v.name
+    for (let k = 2; set.has(classNameKey(name)); k += 1) {
+      const suffix = ` (${k})`
+      name = `${v.name.replace(/^ +| +$/g, '').slice(0, 255 - suffix.length)}${suffix}`
+    }
+    set.add(classNameKey(name))
+    if (name === v.name) return item
+    renamed += 1
+    return { ...item, values: { ...v, name } }
+  })
+  return { renamed, items: out }
+}
+
+/** `taken` of `uniqueClassNames`: the names held in the database by teacher classes of these teachers, other than the given legacy ids. */
+async function heldClassNames(ctx: BatchContext, items: readonly { legacyId: string; values: ClassroomValues }[], source: string): Promise<Map<string, Set<string>>> {
+  const teachers = [...new Set(items.flatMap((i) => (i.values.kind === 'classroom' && i.values.teacher_id !== null ? [i.values.teacher_id] : [])))]
+  const out = new Map<string, Set<string>>()
+  if (teachers.length === 0) return out
+  const own = new Set(items.map((i) => i.legacyId))
+  const res = await ctx.db.query<{ teacher_id: string; academic_year: number; name: string; legacy_source: string | null; legacy_id: string | null }>(
+    `SELECT teacher_id::text AS teacher_id, academic_year, name, legacy_source, legacy_id FROM classrooms
+      WHERE kind = 'classroom' AND teacher_id = ANY($1::bigint[])`,
+    [teachers],
+  )
+  for (const r of res.rows) {
+    if (r.legacy_source === source && r.legacy_id !== null && own.has(r.legacy_id)) continue // the row this batch upserts
+    const scope = `${r.teacher_id}|${r.academic_year}`
+    const set = out.get(scope) ?? new Set<string>()
+    set.add(classNameKey(r.name))
+    out.set(scope, set)
+  }
+  return out
+}
+
 export function classroomsStep(core: CoreContext): AnyEntityStep {
   const entity = 'classrooms'
   return {
@@ -174,6 +233,10 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
         entity, table: 'classrooms', column: 'code', expr: 'upper(join_code)', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.join_code?.toUpperCase() ?? null,
       })
+      // 0203: the unique index on (teacher, year, lower(btrim(name))) must not abort the batch; a clash is renamed like the migration does.
+      const names = uniqueClassNames(items, await heldClassNames(ctx, items, ctx.source))
+      items = names.items
+      if (names.renamed > 0) core.notes.count('classrooms.name_suffixed_duplicate', names.renamed)
       // Counted once the class survives the join-code check: it is written with its old level.
       const keptCount = items.filter((i) => kept.has(i.legacyId)).length
       if (keptCount > 0) core.notes.count('classrooms.level_kept_no_pupils', keptCount)

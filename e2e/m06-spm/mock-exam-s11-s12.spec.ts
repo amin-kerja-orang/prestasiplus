@@ -302,12 +302,9 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     expect([...counts].sort((a, b) => b - a)).toEqual(counts)
     if (!ALESA_ON) await expect(tid(page, 'result-tip')).toHaveCount(0)
     else await expect(tid(page, 'result-tip')).toContainText(
-      '💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan jana nota ringkas untuk topik tersebut.',
+      '💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu.',
     )
-    if (ALESA_ON) await expect(tid(page, 'result-tip').getByRole('link')).toHaveAttribute(
-      'href',
-      '/pusat-nota-ringkas',
-    )
+    if (ALESA_ON) await expect(tid(page, 'result-tip').getByRole('link')).toHaveCount(0)
     await expect(page.getByRole('heading', { name: '📋 Review Setiap Soalan' })).toBeVisible()
     await expect(page.locator('[data-testid^=review-item-]')).toHaveCount(30)
     const first = tid(page, 'review-item-1')
@@ -325,9 +322,8 @@ test.describe('M06 S12 mock result', { tag: [moduleTag(6)] }, () => {
     // Fact gone in v2, left failing (S3-T03 report): the feedback line is not italic.
     await expect.soft(first.getByTestId('review-feedback')).toHaveCSS('font-style', 'italic')
     const actions = tid(page, 'result-actions').getByRole('link')
-    await expect(actions).toHaveText(['📝 Mock Lain', '📚 Belajar Topik Lemah'])
+    await expect(actions).toHaveText(['📝 Mock Lain'])
     await expect(actions.nth(0)).toHaveAttribute('href', '/spm-mock')
-    await expect(actions.nth(1)).toHaveAttribute('href', '/pusat-nota-ringkas')
     await expectNoHorizontalScroll(page)
   })
 

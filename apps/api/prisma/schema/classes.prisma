@@ -98,10 +98,10 @@ model TeacherProfile {
 model Mission {
   id              BigInt   @id @default(autoincrement())
   teacherId       BigInt   @map("teacher_id")
-  /// The class the mission was launched for; null for a migrated or orphaned row.
+  /// The class the mission was launched for; null for a migrated or orphaned row, or "all own classes" (S6-T07).
   classroomId     BigInt?  @map("classroom_id")
   title           String
-  /// latih_tubi, tracking_a, youtube (check constraint). The constant missionSource 'bank_soalan' is not stored.
+  /// latih_tubi, tracking_a, youtube, harian (check constraint). The constant missionSource 'bank_soalan' is not stored.
   missionType     String   @map("mission_type")
   missionDate     DateTime @map("mission_date") @db.Date
   subjectId       BigInt   @map("subject_id")
@@ -109,6 +109,10 @@ model Mission {
   chapterId       BigInt?  @map("chapter_id")
   questionCount   Int      @map("question_count") @db.SmallInt
   coinsPerCorrect Int      @default(3) @map("coins_per_correct") @db.SmallInt
+  /// Misi Harian description (max 500 in the API), S6-T07.
+  description     String?
+  /// Coins paid once at the target (0..100, check constraint), S6-T07; null for the older types.
+  rewardCoins     Int?     @map("reward_coins") @db.SmallInt
   resourceTitle   String?  @map("resource_title")
   resourceUrl     String?  @map("resource_url")
   resourceNote    String?  @map("resource_note")
@@ -185,10 +189,13 @@ model RemedialTestItem {
 model QuestionSet {
   id               BigInt    @id @default(autoincrement())
   teacherId        BigInt    @map("teacher_id")
-  /// Null only for a migrated header (`legacy_source` set, `needs_rebuild` true; Q4 A, AZ-31, check
-  /// `ck_question_sets_classroom_or_migrated`). Such a set is never listed to a student or served until rebuilt.
+  /// LEGACY (S6-T14, DM-46, migration 0201): no longer written and no longer read for new sets; the classes of a set are
+  /// the rows of `question_set_classrooms`. Kept for migrated headers and dropped in a later release. The check
+  /// `ck_question_sets_classroom_or_migrated` is gone (a draft has no class).
   classroomId      BigInt?   @map("classroom_id")
   subjectId        BigInt?   @map("subject_id")
+  /// "Tingkatan (pilihan)" of the teacher set form (S6-T14, DM-46); FK to education_levels (not a Prisma relation).
+  educationLevelId BigInt?   @map("education_level_id")
   title            String
   description      String?
   groupTag         String?   @map("group_tag")
@@ -208,12 +215,31 @@ model QuestionSet {
   legacySource     String?   @map("legacy_source")
   legacyId         String?   @map("legacy_id")
 
-  items QuestionSetItem[]
+  items      QuestionSetItem[]
+  classrooms QuestionSetClassroom[]
 
   @@unique([legacySource, legacyId], map: "uq_question_sets_legacy")
   @@index([classroomId, status], map: "ix_question_sets_classroom_id_status")
+  @@index([educationLevelId], map: "ix_question_sets_education_level_id")
   @@index([teacherId, createdAt], map: "ix_question_sets_teacher_id_created_at")
   @@map("question_sets")
+}
+
+/// The classes a set is assigned to (S6-T14, DM-46, migration 0201): a published set is visible only to pupils with an
+/// active enrolment in one of them; a set without a row is a draft with no class. Unique (set, class).
+model QuestionSetClassroom {
+  id            BigInt   @id @default(autoincrement())
+  questionSetId BigInt   @map("question_set_id")
+  classroomId   BigInt   @map("classroom_id")
+  /// users.id of the teacher who assigned the class (FK to users, not a Prisma relation).
+  assignedBy    BigInt   @map("assigned_by")
+  assignedAt    DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  questionSet QuestionSet @relation(fields: [questionSetId], references: [id], onDelete: Cascade, map: "fk_question_set_classrooms_question_set_id")
+
+  @@unique([questionSetId, classroomId], map: "uq_question_set_classrooms_set_id_classroom_id")
+  @@index([classroomId], map: "ix_question_set_classrooms_classroom_id")
+  @@map("question_set_classrooms")
 }
 
 /// The questions of a set in stored order; a deactivated question is skipped when served, never deleted here.

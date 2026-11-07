@@ -1,18 +1,31 @@
 <script setup lang="ts">
 /**
  * S8 table (FR-M27-112, 113, 115; PROPOSED, D23): columns "#", "Kelas" (name, a link to M08 S5
- * `/prestasi/kelas/{id}`; an inactive class carries the badge "Tidak Aktif"), "Subjek" ("Tiada Subjek"),
- * "Tingkatan", "Guru", "Murid", "Kod Kelas". Empty: "Tiada kelas dijumpai" and "Sila cipta kelas
+ * `/prestasi/kelas/{id}` for a classroom, plain text for a school_class; an inactive class carries the badge "Tidak Aktif"), "Subjek" ("Tiada Subjek"),
+ * "Tingkatan", "Guru", "Murid" (R1-AS-53: the number links to Senarai Pelajar filtered by the class, FR-AS-53-3;
+ * the class code column is gone, FR-AS-53-5). Empty: "Tiada kelas dijumpai" and "Sila cipta kelas
  * terlebih dahulu". Staff table from `md`, a card list below; paging is server side (25 per page).
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField } from '@/ds'
+import {
+  DsCluster,
+  DsDataTable,
+  DsDefinitionList,
+  DsEmptyState,
+  DsLink,
+  DsPanel,
+  DsStatusBadge,
+  DsText,
+  type CardField,
+  type DefinitionItem,
+} from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
+import { PUPIL_LIST_PATH } from '../users/users-format'
 
 const props = defineProps<{
   rows: SchoolClassRow[]
@@ -33,9 +46,10 @@ interface Item extends Record<string, unknown> {
   level: string
   teacher: string
   members: string
-  code: string
+  /** Senarai Pelajar filtered by this class. */
+  membersLink: string
   isActive: boolean
-  link: string
+  link: string | null
 }
 
 const items = computed<Item[]>(() =>
@@ -47,7 +61,7 @@ const items = computed<Item[]>(() =>
     level: c.levelLabel,
     teacher: c.teacherName ?? '-',
     members: formatCount(c.members),
-    code: c.joinCode ?? '-',
+    membersLink: `${PUPIL_LIST_PATH}?classroomId=${String(c.id)}`,
     isActive: c.isActive,
     link: c.link,
   })),
@@ -60,18 +74,19 @@ const columns: TableColumn<Item>[] = [
   { accessorKey: 'level', header: 'Tingkatan' },
   { accessorKey: 'teacher', header: 'Guru' },
   { accessorKey: 'members', header: 'Murid' },
-  { accessorKey: 'code', header: 'Kod Kelas' },
 ]
 const cardFields: CardField[] = [
   { key: 'subject', label: 'Subjek' },
   { key: 'level', label: 'Tingkatan' },
   { key: 'teacher', label: 'Guru' },
   { key: 'members', label: 'Murid' },
-  { key: 'code', label: 'Kod Kelas' },
 ]
 
+const cardItems = (row: Item): DefinitionItem[] =>
+  cardFields.map((f) => ({ key: f.key, label: f.label, value: String(row[f.key]) }))
+
 function open(row: Item): void {
-  void router.push(row.link)
+  if (row.link !== null) void router.push(row.link)
 }
 </script>
 
@@ -101,20 +116,18 @@ function open(row: Item): void {
       <span data-testid="kl-no">{{ row.original.no }}</span>
     </template>
     <template #name-cell="{ row }">
-      <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="kl-row">
-        <RouterLink
-          :to="row.original.link"
-          class="inline-flex min-h-11 items-center text-label text-highlighted"
-          data-testid="kl-name"
-          >{{ row.original.name }}</RouterLink
-        >
+      <DsCluster gap="sm" data-testid="kl-row">
+        <DsLink v-if="row.original.link !== null" :to="row.original.link" data-testid="kl-name">{{
+          row.original.name
+        }}</DsLink>
+        <DsText v-else as="span" variant="label" data-testid="kl-name">{{ row.original.name }}</DsText>
         <DsStatusBadge
           v-if="!row.original.isActive"
           status="inactive"
           label="Tidak Aktif"
           data-testid="kl-inactive"
         />
-      </div>
+      </DsCluster>
     </template>
     <template #subject-cell="{ row }">
       <span data-testid="kl-subject">{{ row.original.subject }}</span>
@@ -126,10 +139,19 @@ function open(row: Item): void {
       <span data-testid="kl-teacher">{{ row.original.teacher }}</span>
     </template>
     <template #members-cell="{ row }">
-      <span data-testid="kl-members">{{ row.original.members }}</span>
+      <DsLink :to="row.original.membersLink" data-testid="kl-members" @click.stop>{{
+        row.original.members
+      }}</DsLink>
     </template>
-    <template #code-cell="{ row }">
-      <span class="whitespace-nowrap" data-testid="kl-code">{{ row.original.code }}</span>
+    <!-- Below `md`: the default card, with "Murid" as the same link. -->
+    <template #card="{ row }">
+      <DsLink v-if="row.link !== null" :to="row.link">{{ row.name }}</DsLink>
+      <DsText v-else as="span" variant="label">{{ row.name }}</DsText>
+      <DsDefinitionList :items="cardItems(row)">
+        <template #value-members="{ item }">
+          <DsLink :to="row.membersLink" data-testid="kl-members" @click.stop>{{ item.value }}</DsLink>
+        </template>
+      </DsDefinitionList>
     </template>
   </DsDataTable>
 </template>

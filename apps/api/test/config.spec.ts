@@ -131,6 +131,14 @@ describe('env validation', () => {
     expect(() => loadEnv({ ...VALID, IC_HASH_KEY: 'short' })).toThrow(/IC_HASH_KEY/)
   })
 
+  it('PUPIL_DEFAULT_PASSWORD is optional everywhere (also in production), min 8 when set, empty is unset', () => {
+    const prod = { NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'p'.repeat(40), IC_HASH_KEY: 'k'.repeat(32), FILE_STORAGE_DIR: '/data/files' }
+    expect(loadEnv(prod).PUPIL_DEFAULT_PASSWORD).toBeUndefined()
+    expect(() => loadEnv({ ...prod, PUPIL_DEFAULT_PASSWORD: 'short' })).toThrow(/PUPIL_DEFAULT_PASSWORD/)
+    expect(loadEnv({ ...prod, PUPIL_DEFAULT_PASSWORD: 'z'.repeat(8) }).PUPIL_DEFAULT_PASSWORD).toBe('z'.repeat(8))
+    expect(loadEnv({ ...VALID, PUPIL_DEFAULT_PASSWORD: '' }).PUPIL_DEFAULT_PASSWORD).toBeUndefined()
+  })
+
   const required = Object.entries(EnvSchema.shape)
     .filter(([, schema]) => !schema.safeParse(undefined).success)
     .map(([key]) => key)

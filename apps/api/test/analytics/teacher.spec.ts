@@ -1,5 +1,5 @@
 import { AnalyticsItemAnalysisSchema, AnalyticsTeacherReportSchema, envelopeOf } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
   ADMIN,
@@ -108,6 +108,13 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
   })
 
   describe('report S1', () => {
+    // Bijak sittings inserted by the tests below; removed after each test so later tests still find pupils without any activity.
+    const bijakUsers: string[] = []
+    afterEach(async () => {
+      if (bijakUsers.length === 0) return
+      await t.db.query(`delete from practice_attempt_aggregates where source = 'bijak' and user_id = any($1::bigint[])`, [bijakUsers.splice(0)])
+    })
+
     it('population of the own active classes: all-classes view counts every distinct real member once', async () => {
       const body = report(await teacherA.get('/teacher/report'))
       // p1, p2 (Kirkpatrick + others), maju and susp (Kelas Item); the Mod Pelajar and removed enrolments and the inactive class add nobody new... maju is in Kelas Item.
@@ -127,7 +134,8 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       // Window 2026-09-20 .. now: p1 random 10-05 (10 q, 5 right), p2 latih_tubi 10-17 (6, 3), p1 ramalan 10-19 (4, 4).
       expect(body.activity.byType).toEqual({ kuiz: 1, struktur: 0, latihTubi: 1, trackingA: 1, battle: 0, permainan: 0 })
       expect(body.activity.total).toBe(3)
-      expect(body.score).toEqual({ overall: 60, byType: { kuiz: 50, struktur: null, latihTubi: 50, trackingA: 100, battle: null } })
+      // FR-GUR-42-2: the mean of the per-session accuracies (0.5, 0.5, 1), not pooled (13 / 20).
+      expect(body.score).toEqual({ overall: 67, byType: { kuiz: 50, struktur: null, latihTubi: 50, trackingA: 100, battle: null } })
       expect(body.trend).toHaveLength(30)
       expect(body.trend[0]?.date).toBe('20/09')
       expect(body.trend[29]).toEqual({ date: '19/10', count: 1 })
@@ -158,7 +166,7 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       expect(report(await teacherA.get(`/teacher/report?classroomId=${classMain}`)).population.total).toBe(2)
     })
 
-    it('ranges: 7 days keeps the last two activities, 90 days adds the 2026-09-10 session; the score is Σ correct ÷ Σ questions', async () => {
+    it('ranges: 7 days keeps the last two activities, 90 days adds the 2026-09-10 session; the score is the mean of per-session accuracies', async () => {
       const d7 = report(await teacherA.get(`/teacher/report?classroomId=${classMain}&range=7`))
       expect(d7.range).toBe(7)
       expect(d7.trend).toHaveLength(7)
@@ -167,8 +175,8 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       expect(d90.range).toBe(90)
       expect(d90.trend).toHaveLength(90)
       expect(d90.activity.byType.kuiz).toBe(2)
-      expect(d90.score.byType.kuiz).toBe(61) // 11 / 18
-      expect(d90.score.overall).toBe(64) // 18 / 28
+      expect(d90.score.byType.kuiz).toBe(63) // mean(6/8, 5/10) = 62.5
+      expect(d90.score.overall).toBe(69) // mean(0.75, 0.5, 0.5, 1) = 68.75
     })
 
     it('an invalid range is 30; a classroomId that is not an own class is ignored (all classes), never an error', async () => {
@@ -191,6 +199,81 @@ describe('M11 teacher report S1 and item analysis S6 (AC 1 to 3)', () => {
       const names = body.notLoggedIn.map((s) => s.name)
       expect(names).toEqual([...names].sort((x, y) => x.localeCompare(y, 'ms', { sensitivity: 'base' })))
       expect(body.population.practised).toBe(4)
+    })
+
+    it('AC-GUR-42-6: a pupil with only a Bijak sitting counts as practised and in Jumlah Aktiviti', async () => {
+      const lone = await addClass(t.db, { name: 'Kelas Bijak Sahaja', teacherId: w.ids.teacherA, schoolId: w.schoolA, members: [] })
+      const rows = await t.db.query<{ id: string }>(
+        `select u.id::text from users u where u.school_id = $1 and u.email like 'murid.demo001.%' and not exists (select 1 from practice_sessions s where s.user_id = u.id) order by u.id limit 3`,
+        [w.schoolA],
+      )
+      expect(rows.length).toBe(3)
+      bijakUsers.push(...rows.map((r) => r.id))
+      for (const r of rows) await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, r.id])
+      await t.db.query(
+        `insert into practice_attempt_aggregates (source, attempt_id, user_id, subject_code, kertas, mode, status, units_awarded, units_max, submitted_at)
+         values ('bijak', gen_random_uuid(), $1, 'MAT', 1, 'exam', 'submitted', 30, 60, '2026-10-19T08:00:00+08:00')`,
+        [(rows[0] as { id: string }).id],
+      )
+      const body = report(await teacherA.get(`/teacher/report?classroomId=${lone}`))
+      expect(body.population).toMatchObject({ total: 3, practised: 1 })
+      expect(body.activity.total).toBe(1)
+      expect(body.notPractisedAll).toHaveLength(2)
+    })
+
+    it('FR-GUR-42-6: is_test rows are excluded in both branches; a provisional sitting counts as activity but not in the score', async () => {
+      const lone = await addClass(t.db, { name: 'Kelas Ujian Bijak', teacherId: w.ids.teacherA, schoolId: w.schoolA, members: [] })
+      const rows = await t.db.query<{ id: string }>(
+        `select u.id::text from users u where u.school_id = $1 and u.email like 'murid.demo001.%' and not exists (select 1 from practice_sessions s where s.user_id = u.id) and not exists (select 1 from practice_attempt_aggregates g where g.user_id = u.id) order by u.id limit 3`,
+        [w.schoolA],
+      )
+      expect(rows.length).toBe(3)
+      const [onlyTest, prov, both] = rows.map((r) => r.id) as [string, string, string]
+      bijakUsers.push(onlyTest, prov, both)
+      for (const id of [onlyTest, prov, both]) await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, id])
+      const sitting = (user: string, at: string, opts: { isTest?: boolean; provisional?: boolean; awarded?: number } = {}) =>
+        t.db.query(
+          `insert into practice_attempt_aggregates (source, attempt_id, user_id, subject_code, kertas, mode, status, units_awarded, units_max, submitted_at, is_test, provisional)
+           values ('bijak', gen_random_uuid(), $1, 'MAT', 1, 'exam', 'submitted', $3, 60, $2::timestamptz, $4, $5)`,
+          [user, at, opts.awarded ?? 30, opts.isTest ?? false, opts.provisional ?? false],
+        )
+      // Mod Pelajar: a test sitting and a test session count nowhere.
+      await sitting(onlyTest, '2026-10-19T08:00:00+08:00', { isTest: true })
+      await addModeSession(t.db, { userId: onlyTest, subjectId: w.subjects[0], at: '2026-10-19T08:00:00+08:00', mode: 'random', questions: 4, correct: 4, isTest: true })
+      // A provisional sitting is activity and practised, with no accuracy.
+      await sitting(prov, '2026-10-19T08:00:00+08:00', { provisional: true, awarded: 60 })
+      // A session and a sitting of one pupil are 2 activity units.
+      await addModeSession(t.db, { userId: both, subjectId: w.subjects[0], at: '2026-10-18T10:00:00+08:00', mode: 'random', questions: 10, correct: 5 })
+      await sitting(both, '2026-10-19T08:00:00+08:00', { awarded: 15 })
+      const body = report(await teacherA.get(`/teacher/report?classroomId=${lone}`))
+      expect(body.population).toMatchObject({ total: 3, practised: 2 })
+      expect(body.notPractisedAll.map((s) => s.id)).toEqual([onlyTest])
+      expect(body.activity.total).toBe(3)
+      expect(body.mostActive.find((s) => s.id === both)?.activities).toBe(2)
+      // Accuracies: session 0.5 and sitting 0.25 (the provisional 1.0 is left out) -> 0.375 -> 38.
+      expect(body.score.overall).toBe(38)
+    })
+
+    it('FR-GUR-42-4: a sitting at 23:30 MYT falls on that day, one at 00:10 MYT on the next day', async () => {
+      const lone = await addClass(t.db, { name: 'Kelas Sempadan Hari', teacherId: w.ids.teacherA, schoolId: w.schoolA, members: [] })
+      const rows = await t.db.query<{ id: string }>(
+        `select u.id::text from users u where u.school_id = $1 and u.email like 'murid.demo001.%' and not exists (select 1 from practice_sessions s where s.user_id = u.id) and not exists (select 1 from practice_attempt_aggregates g where g.user_id = u.id) order by u.id limit 1`,
+        [w.schoolA],
+      )
+      const id = (rows[0] as { id: string }).id
+      bijakUsers.push(id)
+      await t.db.query(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [lone, id])
+      for (const at of ['2026-10-17T23:30:00+08:00', '2026-10-18T00:10:00+08:00']) {
+        await t.db.query(
+          `insert into practice_attempt_aggregates (source, attempt_id, user_id, subject_code, kertas, mode, status, units_awarded, units_max, submitted_at)
+           values ('bijak', gen_random_uuid(), $1, 'MAT', 1, 'exam', 'submitted', 30, 60, $2::timestamptz)`,
+          [id, at],
+        )
+      }
+      const body = report(await teacherA.get(`/teacher/report?classroomId=${lone}`))
+      expect(body.trend.find((x) => x.date === '17/10')?.count).toBe(1)
+      expect(body.trend.find((x) => x.date === '18/10')?.count).toBe(1)
+      expect(body.trend.find((x) => x.date === '19/10')?.count).toBe(0)
     })
 
     it('a pupil without any session is in notPractised (capped at 10) and notPractisedAll', async () => {
