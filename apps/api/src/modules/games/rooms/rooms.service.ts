@@ -36,6 +36,7 @@ import { DEFAULT_QUIZ_TILES } from '../games.constants'
 import { NamePrivacy } from '../core/name-privacy.service'
 import { GamesPorts } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
+import { GameSettingsService } from '../core/game-settings.service'
 import { GameSubjects } from '../core/subjects'
 import { GameUsers, type GameUser } from '../core/game-users'
 import { enumOfGrade, gradeFits, gradeLabel, gradeName } from '../core/grades'
@@ -56,10 +57,29 @@ import {
   type RoomAction,
   type RoomState,
 } from './engine'
+import { DEFAULT_GRADE, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
 import { RoomSecrets } from './room-secrets'
 import { type PlayerRow, type RoomRow, RoomsRepository } from './rooms.repository'
 
 const CODE_PATTERN = /^[A-Z0-9]{6}$/
+
+/** The hub's games: game key, draw size and whether it needs exactly 4 options (48 sections 3.2 and 3.5; Battle 5, ruling 13; Roda Nasib has no questions). */
+const HUB_GAMES = [
+  ['papan-bijak', POOL_SIZE['papan-bijak'], false],
+  ['battle', 5, false],
+  ['perang-fakta', POOL_SIZE['perang-fakta'], false],
+  ['benteng-ilmu', POOL_SIZE['benteng-ilmu'], false],
+  ['perlumbaan-matematik', POOL_SIZE['perlumbaan-matematik'], false],
+  ['kuiz-relay', POOL_SIZE['kuiz-relay'], false],
+  ['teka-silang-kata', POOL_SIZE['teka-silang-kata'], false],
+  ['betul-salah', SOLO_INFO['betul-salah'].items, false],
+  ['cabaran-kilat', SOLO_INFO['cabaran-kilat'].items, true],
+  ['tembak-jawapan', SOLO_INFO['tembak-jawapan'].items, true],
+  ['susun-jawapan', SOLO_INFO['susun-jawapan'].items, false],
+  ['kad-memori', SOLO_INFO['kad-memori'].items, false],
+  ['jutawan', JUTAWAN_QUESTIONS, false],
+  ['roda-nasib', 0, false],
+] as const
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -108,6 +128,7 @@ export class RoomsService {
     @Inject(GameSubjects) private readonly subjects: GameSubjects,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(RoomSecrets) private readonly secrets: RoomSecrets,
+    @Inject(GameSettingsService) private readonly settings: GameSettingsService,
   ) {}
 
   // --- hub and lobby ---------------------------------------------------------------------------------------
@@ -133,7 +154,23 @@ export class RoomsService {
         max: r.max,
       })),
       chips: { papanBijakPlayed: played, battled },
+      enabledGames: await this.enabledGames(caller),
     }
+  }
+
+  /**
+   * FR-GM-00.1, AC-GM-00.6, 48 section 3.1, ruling 13 on #497: the games switched on (`game_enabled_*`) whose pool for the
+   * caller's Tingkatan holds the draw. Text-length rules (Susun Jawapan, Teka Silang Kata) are applied at the start, not here.
+   */
+  private async enabledGames(caller: Caller): Promise<string[]> {
+    const levelId = await this.subjects.levelIdOfGrade((await this.users.get(caller.userId))?.grade ?? DEFAULT_GRADE)
+    const filter = levelId === null ? {} : { educationLevelId: levelId }
+    const [settings, pool, fourOptionPool] = await Promise.all([
+      this.settings.getMany(HUB_GAMES.map(([game]) => `game_enabled_${game}` as const)),
+      this.questions.eligibleCount(filter),
+      this.questions.eligibleCount({ ...filter, exactOptions: 4 }),
+    ])
+    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= draw).map(([game]) => game)
   }
 
   async lobby(caller: Caller, gameParam: string): Promise<GamesLobby> {
@@ -571,11 +608,7 @@ export class RoomsService {
             {},
           ]
     for (const filter of tries) {
-      const served = await this.questions.sample(
-        filter,
-        game === 'teka-silang-kata' ? n * 4 : n,
-        rng,
-      )
+      const served = await this.questions.draw(filter, game === 'teka-silang-kata' ? n * 4 : n, rng, room.hostId)
       const pool = served
         .map((s) => ({
           id: s.question.id,
@@ -586,7 +619,7 @@ export class RoomsService {
         }))
         .filter(fits)
         .slice(0, n)
-      if (pool.length >= Math.min(n, 3)) return pool
+      if (pool.length >= n) return pool
     }
     throw startNotEnoughQuestions()
   }
@@ -599,7 +632,7 @@ export class RoomsService {
     const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
     if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
-    // Children's names rule: players, host, winner and scores show a name the caller may see, else first name + initial.
+    // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
     const seen = await this.privacy.resolver(caller)
     const nameOf = (id: string): string => {

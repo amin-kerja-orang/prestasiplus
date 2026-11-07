@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { PracticePorts } from '../../src/modules/practice'
 import { SpmTrackingService } from '../../src/modules/spm'
+import { addAnswers, addAttempt, addLedger, addSession } from './activity-fixtures'
 import {
   addPool,
   addQuestion,
@@ -32,6 +33,7 @@ let t: SpmTestApp
 let student: Client
 let student2: Client
 let admin: Client
+let student3: Client
 
 /** Ids of the ADDMATH set fixtures (target 20). */
 const am: string[] = []
@@ -79,21 +81,55 @@ beforeAll(async () => {
   // GEO (size 40): eight sets of 3 questions, all locked.
   for (let n = 1; n <= 8; n++) await addSet(db, 'GEO', n, await Promise.all([1, 2, 3].map(() => addQuestion(db, { subject: 'GEO', pool: false }))))
 
-  // Practice history for the overview: pelajar 2 SPM sessions (+ ones that do not count), admin 1 + 1 test row.
+  // "Prestasi SPM Anda" (S3-T07 part F): sessions, answers per mode and ledger credits of the pupil (pelajar), a half-up case
+  // (pelajar2), the Mod Pelajar split (admin) and a pupil with nothing (pelajarmaju).
   const p = await uid('pelajar@demo.test')
+  const p2 = await uid('pelajar2@demo.test')
   const a = await uid('admin@demo.test')
-  const session = (user: string, mode: string, n: number, correct: number, coins: number, isTest = false) =>
-    db.query(
-      `insert into practice_sessions (user_id, mode, question_count, correct_count, coins_earned, status, started_at, completed_at, is_test)
-       values ($1, $2, $3, $4, $5, 'completed', '2026-10-18T01:00:00Z', '2026-10-18T01:10:00Z', $6)`,
-      [user, mode, n, correct, coins, isTest],
-    )
-  await session(p, 'past_year', 10, 5, 6)
-  await session(p, 'latih_tubi', 10, 8, 9)
-  await session(p, 'random', 10, 10, 50)
-  await session(p, 'ramalan', 10, 10, 50, true)
-  await session(a, 'ramalan', 4, 2, 3)
-  await session(a, 'past_year', 6, 6, 8, true)
+  const math = await idOf(db, 'subjects', 'MATH')
+  // Completed sessions of the SPM session modes count; a session of another mode, a test row, an abandoned and an open session do not.
+  await addSession(db, { user: p, mode: 'past_year' })
+  await addSession(db, { user: p, mode: 'latih_tubi' })
+  await addSession(db, { user: p, mode: 'random' })
+  await addSession(db, { user: p, mode: 'chapter' })
+  await addSession(db, { user: p, mode: 'ramalan', isTest: true })
+  await addSession(db, { user: p, mode: 'databank', status: 'abandoned' })
+  await addSession(db, { user: p, mode: 'databank', status: 'in_progress' })
+  await addSession(db, { user: a, mode: 'ramalan' })
+  await addSession(db, { user: a, mode: 'past_year', isTest: true })
+  // Closed sittings count as sessions (any paper kind); an abandoned or open attempt does not.
+  const sitting = { user: p, subject: 'MATH', subjectName: 'Matematik', startedAt: '2026-10-18T01:00:00Z' }
+  await addAttempt(db, { ...sitting, kind: 'pilihan', status: 'submitted', submittedAt: '2026-10-18T02:00:00Z', score: 20, max: 25 })
+  await addAttempt(db, { ...sitting, kind: 'subjektif', status: 'auto_submitted', submittedAt: '2026-10-18T03:00:00Z', score: 4, max: 10 })
+  await addAttempt(db, { ...sitting, kind: 'pilihan', status: 'abandoned' })
+  await addAttempt(db, { ...sitting, kind: 'structured', status: 'in_progress' })
+  await addAttempt(db, { ...sitting, kind: 'pilihan', status: 'submitted', submittedAt: '2026-10-18T04:00:00Z', score: 1, max: 2, isTest: true })
+  // Answers: 17 rows in the SPM modes (10 correct) and rows in other modes that never count (XS-8: no session needed for any of them).
+  const answers = (mode: string, n: number, correct: number, extra: { isTest?: boolean; marks?: { awarded: number; max: number } } = {}) =>
+    addAnswers(db, { user: p, mode, n, correct, subjectId: math, ...extra })
+  await answers('databank', 3, 2)
+  await answers('tracking_a', 2, 1)
+  await answers('structured', 1, 1, { marks: { awarded: 4, max: 4 } }) // a self-marked part is correct at full marks
+  await answers('structured', 1, 1, { marks: { awarded: 2, max: 4 } }) // flagged correct but only half the marks: not correct (XS-5)
+  await answers('subjektif', 1, 0)
+  await answers('simulasi', 3, 3)
+  await answers('kuiz', 2, 1)
+  await answers('latih_tubi', 2, 1)
+  await answers('past_year', 1, 1) // legacy, counted with databank
+  await answers('ramalan', 1, 0) // legacy, counted with tracking_a
+  await answers('chapter', 5, 5)
+  await answers('battle', 4, 4)
+  await answers('databank', 2, 0, { isTest: true })
+  await addAnswers(db, { user: p2, mode: 'databank', n: 8, correct: 1, subjectId: math }) // 12.5 percent rounds half up to 13
+  await addAnswers(db, { user: a, mode: 'databank', n: 2, correct: 1, subjectId: math })
+  await addAnswers(db, { user: a, mode: 'simulasi', n: 2, correct: 2, subjectId: math, isTest: true })
+  // Ledger: the SPM source only, test rows apart.
+  await addLedger(db, p, 'quiz_spm', 10)
+  await addLedger(db, p, 'quiz_spm', 5)
+  await addLedger(db, p, 'quiz_practice', 100)
+  await addLedger(db, p, 'quiz_spm', 7, true)
+  await addLedger(db, a, 'quiz_spm', 3)
+  await addLedger(db, a, 'quiz_spm', 8, true)
 
   // Papers for the Kertas Subjektif count: 2 published subjektif (one with a level_scope, one without), and the ones that do not count.
   const mathId = await idOf(db, 'subjects', 'MATH')
@@ -113,6 +149,7 @@ beforeAll(async () => {
   student = await loginAs(t, 'student')
   student2 = await loginAs(t, 'student2')
   admin = await loginAs(t, 'admin')
+  student3 = await loginAs(t, 'studentMaju')
 }, 240_000)
 
 afterAll(async () => {
@@ -248,12 +285,31 @@ describe('AC8 overview (M06-01)', () => {
     expect(o.modules.kertasSubjektif).toBe(Number(rows[0]?.n))
   })
 
-  it('me: only the SPM modes of the caller; Mod Pelajar rows count only in Mod Pelajar', async () => {
-    expect(parseData(await student.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 2, avgAccuracy: 65, coins: 15, answered: 20 })
-    expect(parseData(await student2.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 0, avgAccuracy: 0, coins: 0, answered: 0 })
-    expect(parseData(await admin.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 1, avgAccuracy: 50, coins: 3, answered: 4 })
+  it('me: answers of the SPM modes pooled to a whole number, sessions = completed sessions + closed sittings, coins from the ledger', async () => {
+    // pelajar: 10 correct of 17 answered = 58.8 -> 59; sessions 2 practice + 2 closed sittings; coins 10 + 5 of the quiz_spm source.
+    expect(parseData(await student.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 4, avgAccuracy: 59, coins: 15, answered: 17 })
+  })
+
+  it('me: 1 of 8 is 12.5 percent and rounds half up to 13', async () => {
+    expect(parseData(await student2.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 0, avgAccuracy: 13, coins: 0, answered: 8 })
+  })
+
+  it('me: with 0 answers the accuracy is null ("—"), not 0', async () => {
+    expect(parseData(await student3.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 0, avgAccuracy: null, coins: 0, answered: 0 })
+  })
+
+  it('me: answers of other modes, abandoned and open sessions and the ledger sources of other lanes never count', async () => {
+    const me = parseData(await student.get('/api/spm/overview'), SpmOverviewSchema).me
+    const rows = await t.db.query<{ n: string }>(`select count(*)::text n from practice_answers where user_id = $1 and not is_test`, [await uid('pelajar@demo.test')])
+    expect(Number(rows[0]?.n)).toBe(me.answered + 9) // 5 chapter + 4 battle answers are outside the SPM mode set
+    const spent = await t.db.query<{ n: string }>(`select sum(amount)::text n from coin_ledger where user_id = $1 and not is_test`, [await uid('pelajar@demo.test')])
+    expect(Number(spent[0]?.n)).toBe(me.coins + 100) // quiz_practice is another lane
+  })
+
+  it('me: rows written under Mod Pelajar count only in Mod Pelajar', async () => {
+    expect(parseData(await admin.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 1, avgAccuracy: 50, coins: 3, answered: 2 })
     const mod = await loginModPelajar(t, 'admin')
-    expect(parseData(await mod.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 2, avgAccuracy: 75, coins: 11, answered: 10 })
+    expect(parseData(await mod.get('/api/spm/overview'), SpmOverviewSchema).me).toEqual({ sessions: 2, avgAccuracy: 75, coins: 11, answered: 4 })
   })
 })
 

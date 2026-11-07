@@ -80,3 +80,15 @@ export const SPM_LIMITS = {
   trackingRead: { bucket: 'spm.tracking-read', env: 'THROTTLE_SPM_TRACKING_READ_PER_MINUTE', default: 120, per: 'user' },
   trackingWrite: { bucket: 'spm.tracking-write', env: 'THROTTLE_SPM_TRACKING_WRITE_PER_MINUTE', default: 60, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
+
+/**
+ * S3-T07 part F (ruling Q2, D46:576): the `practice_answers.mode` values of the "Prestasi SPM Anda" tiles. The legacy read-only
+ * `past_year` and `ramalan` are counted with `databank` and `tracking_a`.
+ */
+export const SPM_ANSWER_MODES = ['databank', 'tracking_a', 'structured', 'subjektif', 'simulasi', 'kuiz', 'latih_tubi', 'past_year', 'ramalan'] as const
+
+/** The `practice_sessions.mode` values listed in Sejarah Kuiz SPM and counted as sessions (legacy `past_year` and `ramalan` included). */
+export const SPM_SESSION_MODES = ['databank', 'past_year', 'latih_tubi', 'tracking_a', 'ramalan'] as const
+
+/** The M14 ledger `source` of every SPM credit: SPM practice lanes and Bijak SPM sittings (BR-M14-03, `practiceRewardSource`). */
+export const SPM_COIN_SOURCES = ['quiz_spm'] as const

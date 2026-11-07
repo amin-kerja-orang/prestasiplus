@@ -143,8 +143,9 @@ const finishedRoom = {
 describe('hub and lobby (M16-22, M16-23)', () => {
   it('parses the hub and rejects more than 6 open rooms and extra fields', () => {
     const room = { game: 'papan-bijak', code: 'PB1234', host: 'Aiman Fiktif', players: 1, max: 4 }
-    ok(GamesHubSchema, { openRooms: [room], chips: { papanBijakPlayed: false, battled: false } })
-    ok(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true } })
+    ok(GamesHubSchema, { openRooms: [room], chips: { papanBijakPlayed: false, battled: false }, enabledGames: ['papan-bijak'] })
+    ok(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true }, enabledGames: [] })
+    rejected(GamesHubSchema, { openRooms: [], chips: { papanBijakPlayed: true, battled: true } }) // ruling 13 on #497
     rejected(GamesHubSchema, { openRooms: Array(7).fill(room), chips: { papanBijakPlayed: false, battled: false } })
     rejected(GamesHubSchema, { openRooms: [{ ...room, game: 'battle' }], chips: { papanBijakPlayed: false, battled: false } })
     rejected(GamesHubSchema, { openRooms: [{ ...room, code: 'pb12' }], chips: { papanBijakPlayed: false, battled: false } })

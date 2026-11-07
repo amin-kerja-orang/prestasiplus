@@ -69,7 +69,7 @@ export class QuickMatchService {
       const viewer = await this.users.get(caller.userId)
       const code = await this.rooms.createRoom(caller, 'papan-bijak', {
         subject: s.subject as GamesRoomSubject,
-        gradeLevel: enumOfGrade(viewer?.grade ?? null) ?? 'DARJAH_4',
+        gradeLevel: enumOfGrade(viewer?.grade ?? null) ?? 'TINGKATAN_4', // no Darjah in any game level (FR-MUR-21-3)
         matchMode: s.matchMode,
         gradeMin: null,
         gradeMax: null,

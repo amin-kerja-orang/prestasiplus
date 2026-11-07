@@ -62,7 +62,9 @@ describe('arena (M16-16, M16-17)', () => {
       expect(v).toMatchObject({ uuid, status: 'active', you: 'A', index: 1, total: 10, secondsLeft: 15, scores: { A: 0, B: 0 } })
       expect(v.result).toBeUndefined()
       expect(v.question?.options.map((o) => [o.id, o.label])).toEqual([[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D']])
-      expect(v.players.A).toEqual({ name: 'Murid Demo', school: 'SMK Demo Satu' })
+      expect(v.players.A).toEqual({ name: 'Murid Demo', school: '' }) // FR-GM-00.8: own name in full, no school
+      expect(v.players.B.school).toBe('')
+      expect(v.players.B.name.split(' ')).toHaveLength(1) // the opponent: first given name only
       expect(leakedKeys(res.body)).toEqual([])
       const [first] = await rows<{ question_id: string }>(`select question_id::text from battle_questions where battle_id = $1 and position = 1`, [uuid])
       expect(v.question?.id).toBe(first?.question_id)
@@ -288,7 +290,7 @@ describe('arena (M16-16, M16-17)', () => {
       const uuid = (await b.post(`/battle/invite/${inv}/accept`)).body.battle_uuid as string
       const bView = parseData(BattleArenaViewSchema, await view(b, uuid))
       expect(bView.you).toBe('B')
-      expect(bView.players.A.name).toBe('Murid Demo')
+      expect(bView.players.A.name).toBe('Murid') // FR-GM-00.8: the opponent by first given name
       expect(bView.players.B.name).toBe('Murid Demo Kosong')
       const res = await answer(b, uuid, { questionId: bView.question?.id, optionId: 1, seconds: 0 })
       expect(res.status, JSON.stringify(res.body)).toBe(200)

@@ -507,7 +507,7 @@ export const GamesWeeklyRowSchema = z
   .strictObject({
     rank: z.number().int().min(1),
     userId: IdSchema.nullable().meta({ description: GAMES_NAME_RULE }),
-    name: z.string().meta({ description: 'Display name only (D54(d)); first name + initial outside the viewer\'s scope (children\'s names rule).' }),
+    name: z.string().meta({ description: 'Display name only (D54(d)); first given name outside the viewer\'s scope (children\'s names rule).' }),
     sesi: gamesCount,
     betul: gamesCount,
     tepat: z.number().min(0).max(100),
