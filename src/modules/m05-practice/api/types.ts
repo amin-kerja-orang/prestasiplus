@@ -14,6 +14,7 @@ export type PracticeMode =
   | 'chapter'
   | 'revision'
   | 'past_year'
+  | 'databank'
   | 'latih_tubi'
   | 'ramalan'
   | 'mission'
@@ -126,10 +127,12 @@ export interface DashboardRecentQuestion {
   id: EntityId
   subjectName: string
   difficulty: number
-  /** Cut at 100 characters + "..." (BR-29). */
+  /** Cut at 140 characters + "…" (FR-MUR-2-8). */
   text: string
   createdAt: string
   levelCode: string
+  /** Served URL of the question's first figure, shown as a small thumbnail; null when it has none (FR-MUR-2-8). */
+  figureThumbUrl: string | null
 }
 
 export interface DashboardSubjectStat {
@@ -418,6 +421,19 @@ export interface StartSessionRequest {
   questionSetId?: number
 }
 
+/** A stimulus of a served question (S5-T03 part B; the card's field names; the picture is `/api/files/<imageId>`). */
+export interface QuizStimulus {
+  id: string
+  kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+  label: string
+  text: string | null
+  caption: string | null
+  alt: string | null
+  source: string | null
+  imageId: string | null
+  table: { head: string[]; rows: string[][] } | null
+}
+
 export interface QuizQuestion {
   id: number
   questionText: string
@@ -426,7 +442,13 @@ export interface QuizQuestion {
   wrongTimes: number
   hasDskp: boolean
   contributor: { name: string; profileUrl: string | null } | null
-  options: { id: number; label: string; text: string }[]
+  /** "Rujukan" link of a personal question in a mission (FR-GUR-44a-9). */
+  referenceUrl?: string | null
+  options: { id: number; label: string; text: string; imageId?: string | null }[]
+  /** The stimuli of the question, shown once per group; empty when none. */
+  stimuli: QuizStimulus[]
+  /** Set for a member of a stimulus group (`index` is 1-based). */
+  group: { id: string; index: number; size: number } | null
 }
 
 export interface StartSessionResponse {
@@ -511,6 +533,8 @@ export interface StructuredCard {
   parts: number
   /** "{marks} markah" (SPM variant cards). */
   marks: number
+  /** The pupil's highest attempt total on this set; `null` without an attempt. */
+  bestScore: { awarded: number; max: number } | null
 }
 
 export interface StructuredListMeta {
@@ -520,6 +544,8 @@ export interface StructuredListMeta {
   track: StructuredTrack | null
   /** The "Subjek" options (without "Semua Subjek"): plain = 31 by name; Subjektif / Bahasa = FR-M05-134 order. */
   subjectOptions: { id: number; name: string }[]
+  /** Sets of the current filter with no usable scheme (the "menunggu skema pemarkahan" notice). */
+  pendingSchemeCount: number
 }
 
 /** #16 the answer page (Q3). */

@@ -30,14 +30,18 @@ import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { checkAnswer, startSession, submitSession } from '../../api/practice'
 import type { StartSessionRequest, StartSessionResponse } from '../../api/types'
+import QuizStimulusFrame from './QuizStimulusFrame.vue'
 import { PRACTICE_LABELS, SUBSCRIBE_LINK_TEXT, TRIAL_EXHAUSTED_TEXT } from './quiz-labels'
 import {
   comboOf,
   dsOptionState,
+  fileSrc,
   formatTime,
+  isHttpUrl,
   optionState,
   planStartError,
   safeHref,
+  toStimulusData,
 } from './quiz-lib'
 import type {
   QuizApi,
@@ -213,6 +217,10 @@ const timeText = computed(() => formatTime(clock.value))
 const takenText = computed(() => formatTime(elapsed.value))
 const progressPct = computed(() => (total.value > 0 ? ((index.value + 1) / total.value) * 100 : 0))
 const revisionMeta = computed(() => active.value?.revisionMeta ?? null)
+const referenceHref = computed(() => {
+  const url = current.value?.referenceUrl
+  return isHttpUrl(url) ? url : null
+})
 const contributorHref = computed(() => safeHref(current.value?.contributor?.profileUrl))
 const tints = computed(() => props.report.tints ?? DEFAULT_TINTS)
 
@@ -267,6 +275,9 @@ const checkedState = computed(() =>
 // --- v2 quiz kit: combo chip, exit, the feedback sheet's continue button
 const combo = computed(() => comboOf(answers.value))
 /** Jawi (rtl) and mixed-script text keeps the Arabic-script font. */
+/** The stimuli of the question on screen: the group's stimulus panel is shown once per group, the member sits beside it. */
+const stimuliOfCurrent = computed(() => (current.value?.stimuli ?? []).map(toStimulusData))
+
 function jawi(q: { textDirection?: string; scriptType?: string }): boolean {
   return q.textDirection === 'rtl' || q.scriptType === 'mixed'
 }
@@ -405,7 +416,13 @@ const feedbackExplanation = computed(() =>
             </div>
           </div>
 
-          <UCard v-if="current" data-testid="quiz-question">
+          <QuizStimulusFrame
+            v-if="current"
+            :key="current.group?.id ?? `q${current.id}`"
+            :stimuli="stimuliOfCurrent"
+            :group-id="current.group?.id"
+          >
+          <UCard data-testid="quiz-question">
             <div class="flex flex-col gap-4">
               <div class="flex flex-wrap items-center gap-2">
                 <UBadge color="primary" variant="solid" size="lg" icon="i-ph-question-bold"
@@ -449,6 +466,20 @@ const feedbackExplanation = computed(() =>
                 {{ current.questionText }}
               </h2>
 
+              <div v-if="referenceHref" data-testid="question-reference">
+                <UButton
+                  :to="referenceHref"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  color="neutral"
+                  variant="link"
+                  icon="i-ph-arrow-square-out-bold"
+                  class="min-h-11"
+                  data-testid="question-reference-link"
+                  >Rujukan</UButton
+                >
+              </div>
+
               <p
                 v-if="current.contributor"
                 class="flex flex-wrap items-center gap-2 text-caption text-muted"
@@ -479,8 +510,15 @@ const feedbackExplanation = computed(() =>
                   :dir="current.textDirection || 'ltr'"
                   :data-testid="`option-${option.label}`"
                   @select="run.select(option.id)"
-                  >{{ option.text }}</DsQuizOption
-                >
+                  >{{ option.text
+                  }}<img
+                    v-if="option.imageId"
+                    :src="fileSrc(option.imageId)"
+                    alt=""
+                    loading="lazy"
+                    class="block h-auto max-h-40 max-w-full object-contain"
+                    data-testid="option-image"
+                /></DsQuizOption>
               </div>
 
               <UAlert
@@ -509,6 +547,7 @@ const feedbackExplanation = computed(() =>
               >
             </div>
           </UCard>
+          </QuizStimulusFrame>
 
           <div v-if="result && current" class="relative flex flex-col gap-3">
             <div

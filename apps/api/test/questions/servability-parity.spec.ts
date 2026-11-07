@@ -63,7 +63,12 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     repo = t.app.get(QuestionsRepository)
     servability = t.app.get(ServabilityService)
     pool = t.app.get(QuestionsBijakPoolSource)
-    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository)
+    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository, undefined, {
+      publicIdsOf: async (ids: readonly string[]) => {
+        const rows = ids.length === 0 ? [] : await q(`select id::text id, public_id from files where id = any($1::bigint[])`, [ids])
+        return new Map(rows.map((r) => [r.id, r.public_id]))
+      },
+    })
     bijak = new Be09BijakQuestionSource(repo, t.app.get(CurriculumRepository), {
       publicIdsOf: async (ids: readonly string[]) => {
         const rows = ids.length === 0 ? [] : await q(`select id::text id, public_id from files where id = any($1::bigint[])`, [ids])
@@ -282,31 +287,39 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     // Databank is Latih Tubi narrowed to the subjects with a Tahun Lepas position.
     for (const id of databank) expect(latih.has(id)).toBe(true)
     const dropped = sorted(latih).filter((id) => !databank.has(id))
-    for (const id of dropped) expect(reports.get(id)!.activities.find((a) => a.activity === 'databank')!.reasons.map((r) => r.code)).toEqual(['subject_not_listed'])
+    // Databank is not a group surface yet (S3-T07): a figure, an option image or a group member is served by Latih Tubi (S5-T03 part B) but refused
+    // here with its own exact reason; every other dropped question is dropped for the subject list alone.
+    const databankOnly: Record<string, string[]> = {}
+    for (const [key, code] of [['stemImage', 'has_stimulus'], ['optionImage', 'has_option_image'], ['groupA', 'has_stimulus'], ['groupB', 'has_stimulus'], ['ownPassage', 'has_stimulus'], ['ownTable', 'has_stimulus'], ['ownTwoPictures', 'has_stimulus'], ['ownMixed', 'has_stimulus'], ['sharedGone', 'has_stimulus']] as const) {
+      if (made[key]) databankOnly[made[key]] = [code]
+    }
+    for (const id of dropped) {
+      expect(reports.get(id)!.activities.find((a) => a.activity === 'databank')!.reasons.map((r) => r.code), `databank ${id}`).toEqual(databankOnly[id] ?? ['subject_not_listed'])
+    }
     // The fixture: MATH is listed, so the plain question is in both.
     expect(latih.has(made.plain!)).toBe(true)
     expect(databank.has(made.plain!)).toBe(true)
   })
 
-  it('latih_tubi_spm (GROUP_SURFACES without the drills, until S5-T03 renders groups) gives the text-only practice reason and the SQL scope filter agrees', async () => {
-    expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual(['has_stimulus'])
-    expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual(['has_option_image'])
-    expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual(['has_stimulus'])
-    expect(reasonsOf('structured', 'latih_tubi_spm')).toEqual(['shape_unsupported'])
-    expect(reasonsOf('draft', 'latih_tubi_spm')).toEqual(['not_approved'])
-    expect(reasonsOf('archivedLive', 'latih_tubi_spm')).toEqual(['archived'])
-    expect(reasonsOf('withdrawn', 'latih_tubi_spm')).toEqual(['withdrawn'])
+  it('databank (not in GROUP_SURFACES until S3-T07) gives the text-only practice reason and the SQL scope filter agrees', async () => {
+    expect(reasonsOf('stemImage', 'databank')).toEqual(['has_stimulus'])
+    expect(reasonsOf('optionImage', 'databank')).toEqual(['has_option_image'])
+    expect(reasonsOf('groupA', 'databank')).toEqual(['has_stimulus'])
+    expect(reasonsOf('structured', 'databank')).toEqual(['shape_unsupported'])
+    expect(reasonsOf('draft', 'databank')).toEqual(['not_approved'])
+    expect(reasonsOf('archivedLive', 'databank')).toEqual(['archived'])
+    expect(reasonsOf('withdrawn', 'databank')).toEqual(['withdrawn'])
     // S4-T06: T1 to T5 are all offered; the flag still excludes at T1.
-    for (const key of ['otherLevel', 'levelT1', 'levelT5'] as const) expect(reasonsOf(key, 'latih_tubi_spm'), key).toEqual([])
-    expect(reasonsOf('flaggedT1', 'latih_tubi_spm')).toEqual(['figure_only'])
+    for (const key of ['otherLevel', 'levelT1', 'levelT5'] as const) expect(reasonsOf(key, 'databank'), key).toEqual([])
+    expect(reasonsOf('flaggedT1', 'databank')).toEqual(['figure_only'])
     // The SQL half: every id the evaluator serves passes the filter, and every id that passes the filter and the practice
     // mapper is served (the filter is the reader's own `QuestionFilter`).
-    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('latih_tubi_spm')))
-    for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
+    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('databank')))
+    for (const id of servedBy('databank')) expect(inScope.has(id), id).toBe(true)
   })
 
-  it('S1-T06: GROUP_SURFACES starts as Bijak papers and the Jana set; the drills and games are not in it', () => {
-    expect([...GROUP_SURFACES].sort()).toEqual(['jana_kertas', 'simulasi_paper'])
+  it('S5-T03 part B: GROUP_SURFACES is Bijak papers, the Jana set and the Latih Tubi and Bab drills; Databank and games are not in it', () => {
+    expect([...GROUP_SURFACES].sort()).toEqual(['bab', 'jana_kertas', 'latih_tubi_spm', 'simulasi_paper'])
     expect(ALL_GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'databank', 'bab']))
   })
 
@@ -380,7 +393,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(sorted(drawn)).toEqual(sorted([...servedBy('bab')].filter((id) => withChapter.has(id))))
     expect(servedBy('bab').has(made.plain!)).toBe(true)
     expect(reasonsOf('noChapter', 'bab')).toEqual(['no_chapter'])
-    expect(reasonsOf('groupA', 'bab')).toContain('has_stimulus')
+    expect(reasonsOf('groupA', 'bab')).toEqual([])
   })
 
   it('simulasi_kuiz: the bank SQL draw plus the kuiz mapper keep exactly the served set (groups and pictures allowed, D90)', async () => {
@@ -550,8 +563,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       for (const k of ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain']) expect(inScope.has(made[k]!), `${k} in ${activity} scope`).toBe(true)
       expect(inScope.has(made.structured!), `structured in ${activity} scope`).toBe(false)
     }
-    // Games stay out: the default (shipped) filter keeps the text-only ungrouped shape.
-    expect(filterOf('latih_tubi_spm').ungrouped).toBe(true)
+    // The shipped filter: Latih Tubi and Bab serve groups (S5-T03 part B); Databank (S3-T07) keeps the text-only ungrouped shape.
+    expect(filterOf('latih_tubi_spm').ungrouped).toBeUndefined()
+    expect(filterOf('databank').ungrouped).toBe(true)
     expect(filterOf('latih_tubi_spm', {}, all).ungrouped).toBeUndefined()
 
     // AC-QP-7: a group whose second member is only a draft is excluded whole, in the indicator and in the draw.

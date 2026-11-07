@@ -124,7 +124,8 @@ describe('admin servability reads (R1-T30)', () => {
     expect(report.activities.find((a) => a.activity === 'databank')?.served).toBe(true)
     expect(report.activities.find((a) => a.activity === 'simulasi_paper')?.served).toBe(true)
     const grouped = parseData(await admin.get(`/api/admin/servability/questions/${made.grouped}`), ServabilityReportSchema)
-    expect(grouped.activities.find((a) => a.activity === 'latih_tubi_spm')?.reasons.map((r) => r.code)).toEqual(['has_stimulus'])
+    expect(grouped.activities.find((a) => a.activity === 'latih_tubi_spm')?.reasons.map((r) => r.code)).toEqual([])
+    expect(grouped.activities.find((a) => a.activity === 'databank')?.reasons.map((r) => r.code)).toContain('has_stimulus')
     const draft = parseData(await admin.get(`/api/admin/servability/questions/${made.draft}`), ServabilityReportSchema)
     expect(draft.versionNo).toBeNull()
     expect(draft.servedCount).toBe(0)
@@ -175,9 +176,15 @@ describe('admin servability reads (R1-T30)', () => {
     const served = (a: string) => [...reports.values()].filter((r) => r.activities.find((x) => x.activity === a)?.served).length
     const by = new Map(overview.activities.map((a) => [a.activity, a]))
     expect(overview.activities.map((a) => a.activity)).toEqual([...SERVABILITY_ACTIVITIES])
-    for (const activity of ['latih_tubi_spm', 'bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
+    for (const activity of ['bab', 'simulasi_kuiz', 'simulasi_paper'] as const) {
       expect(by.get(activity)?.served, activity).toBe(served(activity))
     }
+    // Latih Tubi SPM indicator (S5-T03 part B): it stays on the SPM hub basis (ungrouped, text-only) until S3-T07 / S3-T05 flip the hub, while the
+    // per-question report already serves the group member. Fixture: 5 = the 2 seeded MATH MCQs (ids 1 and 2)
+    // + plain + second + liveWithDraft (ungrouped, text-only). `grouped` is served by the report (6) but not counted here;
+    // the draft, the archived question and the table_fill essay are not servable.
+    expect(by.get('latih_tubi_spm')?.served, 'latih_tubi_spm').toBe(5)
+    expect(served('latih_tubi_spm'), 'latih_tubi_spm report served set = the 5 plus the group member').toBe(6)
     expect(by.get('simulasi_paper')).toMatchObject({ basis: 'evaluated', total: 3 })
     expect(by.get('databank')?.basis).toBe('sql')
     expect(by.get('jana_kertas')?.basis).toBe('pool')

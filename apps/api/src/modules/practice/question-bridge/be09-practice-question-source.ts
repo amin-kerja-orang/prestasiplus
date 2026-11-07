@@ -2,10 +2,14 @@ import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
 import type { ServabilityActivity } from '@pp/contract'
 
 import { isIdString } from '../../../db/ids'
+import type { OutsideStimulus } from '../../bijak/question-bridge/be09-mapping'
+import { outsideStimuliOf } from '../../bijak/question-bridge/outside-media'
+import { FilesService } from '../../files'
 import { mulberry32, type Prng } from '../../../db/prng'
 import { QuestionsRepository } from '../../questions'
-import { GROUP_SURFACES, drawUnits, filterOf as servingFilterOf, type DrawCandidate } from '../../questions/serving'
-import type { QuestionFilter, QuestionRecord, StimulusGroupRecord } from '../../questions/types'
+import { isBankVersion } from '../../questions/learner-visibility'
+import { GROUP_SURFACES, bridgeRefusalOf, drawUnits, filterOf as servingFilterOf, type DrawCandidate } from '../../questions/serving'
+import type { QuestionFilter, QuestionRecord, StimulusGroupRecord, StimulusRecord } from '../../questions/types'
 import { UsersRepository } from '../../users'
 import type { PracticeDrillActivity, PracticeQuestion, PracticeQuestionSource, PracticeSelection } from '../ports'
 import { PRACTICE_GROUP_SURFACES, versionKey } from '../ports'
@@ -14,6 +18,13 @@ import { servableMcq, toPracticeQuestion, tpsOfDifficulty } from './be09-practic
 const DRILLS: readonly PracticeDrillActivity[] = ['latih_tubi_spm', 'databank', 'bab']
 
 /** A complete group: the stimulus content (`questionIds` narrowed to the SERVABLE members) and those members' records, in group order. */
+/** The media of a draw: public file tokens, the stimuli linked outside a group, and the stimuli a question shows (null = one cannot be drawn). */
+interface Media {
+  tokens: Map<string, string>
+  outside: Map<string, OutsideStimulus>
+  stimuliOf: (r: QuestionRecord, group: StimulusGroupRecord | null, lenient?: boolean) => StimulusRecord[] | null
+}
+
 interface GroupUnit {
   group: StimulusGroupRecord
   members: QuestionRecord[]
@@ -55,6 +66,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     @Inject(QuestionsRepository) private readonly questions: QuestionsRepository,
     @Inject(UsersRepository) private readonly users: UsersRepository,
     @Optional() @Inject(PRACTICE_GROUP_SURFACES) private readonly surfaces: readonly ServabilityActivity[] = GROUP_SURFACES,
+    @Optional() @Inject(FilesService) private readonly files?: Pick<FilesService, 'publicIdsOf'>,
   ) {}
 
   /** True when the drill is in the surface list: whole groups and figures are served and counted (D105). */
@@ -158,15 +170,16 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     return out
   }
 
-  async live(ids: readonly string[], activity?: PracticeDrillActivity): Promise<ReadonlyMap<string, PracticeQuestion>> {
+  async live(ids: readonly string[], activity?: PracticeDrillActivity, opts: { allowPrivate?: boolean } = {}): Promise<ReadonlyMap<string, PracticeQuestion>> {
+    const allowPrivate = opts.allowPrivate === true
     const wanted = [...new Set(ids)].filter(isIdString)
     if (wanted.length === 0) return new Map()
     if (this.allows(activity)) {
       // S1-T06: figures and whole groups. A member of a group with a member that cannot be served is dropped with the whole group.
-      const { records, groups } = await this.servableRecords(wanted)
-      return this.mapServable([...records.values()], (r) => r.id, true, groups)
+      const { records, groups, media } = await this.servableRecords(wanted, allowPrivate)
+      return this.mapServable([...records.values()], (r) => r.id, true, groups, media)
     }
-    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter(eligible)
+    const records = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
     return this.mapAll(records, (r) => r.id)
   }
 
@@ -176,12 +189,29 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
   }
 
   /** Pinned grading read only: never a serving path (it skips the active, published and PKSK scope). */
-  async versions(refs: readonly { questionId: string; versionNo: number }[]): Promise<ReadonlyMap<string, PracticeQuestion>> {
+  async versions(
+    refs: readonly { questionId: string; versionNo: number }[],
+    opts: { display?: boolean } = {},
+  ): Promise<ReadonlyMap<string, PracticeQuestion>> {
     const wanted = refs.filter((r) => isIdString(r.questionId) && Number.isSafeInteger(r.versionNo) && r.versionNo >= 1)
     if (wanted.length === 0) return new Map()
     const records = await this.questions.getVersions(wanted)
-    // Grading a version a session already served: once a drill joins the set it may have been served as a figure or a group member.
-    return this.mapAll(records, (r) => versionKey(r.id, r.version.versionNo), DRILLS.some((a) => this.allows(a)))
+    const allow = DRILLS.some((a) => this.allows(a))
+    const keyOf = (r: QuestionRecord): string => versionKey(r.id, r.version.versionNo)
+    if (!allow) return this.mapAll(records, keyOf, false)
+    // Pinned reads never filter on drawability (S5-T03 part B): a served version is always found for grading, even when a stimulus file or an
+    // option picture is gone since. Only the draw (`live`, `sample`) filters. A version that is no longer a servable MCQ shape stays refused as before.
+    const pinned = records.filter((r) => this.check(r, true))
+    if (opts.display !== true) return this.mapServable(pinned, keyOf, true, new Map(), 'none')
+    // Replay of an open session: every member as stored (the session was started whole), so the group is whole or absent; no bridge filtering and
+    // no narrowing of the group; a picture that cannot be resolved any more is left out of the member instead of dropping the question.
+    const defs = await this.questions.groupsByIds([...new Set(pinned.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))])
+    const groups = new Map<string, GroupUnit>()
+    for (const g of defs) {
+      const members = pinned.filter((r) => r.groupId === g.id).sort((a, b) => (a.groupPosition ?? 0) - (b.groupPosition ?? 0))
+      groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
+    }
+    return this.mapServable(pinned, keyOf, true, groups, 'lenient')
   }
 
   // --- internals ------------------------------------------------------------------------------------
@@ -207,32 +237,43 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
    * kept only when its WHOLE group is: every eligible member of the group must pass the shape check and the group must hold a
    * stimulus (the same rule as `wholeGroups` in SQL, plus the per-record shape), else the whole group is out.
    */
-  private async servableRecords(ids: readonly string[]): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit> }> {
+  private async servableRecords(ids: readonly string[], allowPrivate = false): Promise<{ records: Map<string, QuestionRecord>; groups: Map<string, GroupUnit>; media: Media }> {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
-    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible))
+    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r))))
     const groupIds = [...new Set(loaded.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
-    if (groupIds.length > 0) {
-      const have = new Map(loaded.map((r) => [r.id, r]))
-      const defs = await this.questions.groupsByIds(groupIds)
+    const have = new Map(loaded.map((r) => [r.id, r]))
+    const defs = groupIds.length > 0 ? await this.questions.groupsByIds(groupIds) : []
+    if (defs.length > 0) {
       const missing = [...new Set(defs.flatMap((g) => g.questionIds).filter((id) => !have.has(id)))]
       for (let i = 0; i < missing.length; i += HYDRATE_MAX) {
         for (const r of (await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible)) have.set(r.id, r)
       }
-      for (const g of defs) {
-        const eligibleMembers = g.questionIds.flatMap((id) => (have.has(id) ? [have.get(id) as QuestionRecord] : []))
-        const members = eligibleMembers.filter((m) => this.check(m, true))
-        if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length) {
-          groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
-        }
+    }
+    // One servability verdict with S1: the shape rule (`servableMcq`) and the Bijak bridge's own refusal (a figure or option picture that cannot be drawn,
+    // an empty stimulus, a stimulus shared outside a group), on the media the pupil would be sent.
+    const defById = new Map(defs.map((g) => [g.id, g]))
+    const media = await this.mediaOf([...have.values()], defById)
+    const ok = (r: QuestionRecord): boolean => {
+      if (!this.check(r, true)) return false
+      const refusal = bridgeRefusalOf(r, r.groupId === null ? null : (defById.get(r.groupId) ?? null), { tokens: media.tokens, outside: media.outside })
+      if (refusal === null) return true
+      this.logRefusal(r, refusal.message)
+      return false
+    }
+    for (const g of defs) {
+      const eligibleMembers = g.questionIds.flatMap((id) => (have.has(id) ? [have.get(id) as QuestionRecord] : []))
+      const members = eligibleMembers.filter(ok)
+      if (g.stimuli.length > 0 && members.length > 0 && members.length === eligibleMembers.length) {
+        groups.set(g.id, { group: { ...g, questionIds: members.map((m) => m.id) }, members })
       }
     }
     for (const r of loaded) {
       if (r.groupId !== null && !groups.has(r.groupId)) continue
-      if (this.check(r, true)) records.set(r.id, r)
+      if (r.groupId !== null || ok(r)) records.set(r.id, r)
     }
-    return { records, groups }
+    return { records, groups, media }
   }
 
   /** The `drawUnits` candidates of a window of ids: servable singles and the members of complete groups, each with its group size. */
@@ -270,15 +311,16 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
   /** `servableMcq`, logging a refusal once per version with the id and reason only (never content or the key). */
   private check(r: QuestionRecord, allowStimulus = false): boolean {
     const m = servableMcq(r, { allowStimulus })
-    if (!m.ok) {
-      const key = versionKey(r.id, r.version.versionNo)
-      if (!this.logged.has(key)) {
-        if (this.logged.size >= LOGGED_MAX) this.logged.clear()
-        this.logged.add(key)
-        this.logger.warn(`Question ${r.id} v${String(r.version.versionNo)} not served to practice: ${m.reason}`)
-      }
-    }
+    if (!m.ok) this.logRefusal(r, m.reason)
     return m.ok
+  }
+
+  private logRefusal(r: QuestionRecord, why: string): void {
+    const key = versionKey(r.id, r.version.versionNo)
+    if (this.logged.has(key)) return
+    if (this.logged.size >= LOGGED_MAX) this.logged.clear()
+    this.logged.add(key)
+    this.logger.warn(`Question ${r.id} v${String(r.version.versionNo)} not served to practice: ${why}`)
   }
 
   private mapAll(records: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus = false): Promise<Map<string, PracticeQuestion>> {
@@ -290,15 +332,75 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     )
   }
 
-  private async mapServable(servable: QuestionRecord[], keyOf: (r: QuestionRecord) => string, allowStimulus: boolean, groups: ReadonlyMap<string, GroupUnit>): Promise<Map<string, PracticeQuestion>> {
+  private async mapServable(
+    servable: QuestionRecord[],
+    keyOf: (r: QuestionRecord) => string,
+    allowStimulus: boolean,
+    groups: ReadonlyMap<string, GroupUnit>,
+    known?: Media | 'none' | 'lenient',
+  ): Promise<Map<string, PracticeQuestion>> {
     const contributors = await this.contributorsOf(servable)
+    // 'none': grading (no media queries at all); 'lenient': replay (media resolved, nothing dropped); a Media or undefined: the draw (drops what cannot be drawn).
+    const lenient = known === 'lenient'
+    const media =
+      !allowStimulus || known === 'none'
+        ? null
+        : typeof known === 'object'
+          ? known
+          : await this.mediaOf(servable, new Map([...groups].map(([id, u]) => [id, u.group] as const)))
     const out = new Map<string, PracticeQuestion>()
     for (const r of servable) {
       const group = r.groupId === null ? null : (groups.get(r.groupId)?.group ?? null)
-      const q = toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group })
-      if (q) out.set(keyOf(r), q)
+      const stimuli = media === null ? null : media.stimuliOf(r, group, lenient)
+      // A figure that cannot be drawn (no public file token) is never DRAWN without it (S5-T03, AC "no figure question without its figure").
+      if (stimuli === null && media !== null) continue
+      const q = toPracticeQuestion(r, r.createdById ? (contributors.get(r.createdById) ?? null) : null, { allowStimulus, group, stimuli })
+      if (!q) continue
+      if (media !== null) {
+        const options = q.options.map((o) => (o.imageId === undefined ? o : { ...o, imageId: media.tokens.get(o.imageId) }))
+        if (!lenient && options.some((o, i) => q.options[i]?.imageId !== undefined && o.imageId === undefined)) continue
+        q.options = options.map((o) => (o.imageId === undefined ? { label: o.label, text: o.text } : o))
+      } else if (known === 'none') {
+        q.options = q.options.map((o) => ({ label: o.label, text: o.text }))
+      }
+      out.set(keyOf(r), q)
     }
     return out
+  }
+
+  /**
+   * S5-T03 part B: the stimuli of the served questions and the public tokens of their files (stimulus and option pictures). The
+   * question's stimuli are its group's, then those linked straight to its version (`outsideStimuliOf`, the one reader Bijak uses).
+   */
+  private async mediaOf(records: readonly QuestionRecord[], groups: ReadonlyMap<string, StimulusGroupRecord>): Promise<Media> {
+    const { outside, fileIds } = await outsideStimuliOf(this.questions, records, groups)
+    for (const g of groups.values()) for (const st of g.stimuli) if (st.assetFileId) fileIds.add(st.assetFileId)
+    for (const r of records) for (const part of r.version.parts) collectOptionImages(part, fileIds)
+    const tokens = fileIds.size === 0 || this.files === undefined ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
+    const drawable = (st: StimulusRecord): StimulusRecord | null => {
+      if (st.assetFileId === null) return st
+      const token = tokens.get(st.assetFileId)
+      return token === undefined ? null : { ...st, assetFileId: token }
+    }
+    return {
+      tokens,
+      outside,
+      stimuliOf: (r, group, lenient = false) => {
+        const own = r.version.stimulusIds.flatMap((id): StimulusRecord[] => {
+          if (group?.stimuli.some((s) => s.id === id)) return []
+          const o = outside.get(id)
+          return o === undefined
+            ? []
+            : [{ id, kind: o.kind as StimulusRecord['kind'], label: o.label ?? '', bodyMs: o.bodyMs ?? null, bodyEn: null, assetFileId: o.assetFileId, alt: o.alt ?? null, caption: o.caption ?? null, sourceCitation: o.sourceCitation ?? null, tableData: o.tableData ?? null }]
+        })
+        // A linked stimulus the reader did not return (unknown, audio) cannot be shown: the question is not served.
+        if (!lenient && r.version.stimulusIds.some((id) => !(group?.stimuli.some((s) => s.id === id) ?? false) && !outside.has(id))) return null
+        const all = [...(group?.stimuli ?? []), ...own]
+        if (lenient) return all.map((st) => drawable(st) ?? { ...st, assetFileId: null })
+        const shown = all.map(drawable)
+        return shown.some((s) => s === null) ? null : (shown as StimulusRecord[])
+      },
+    }
   }
 
   /** "Soalan oleh:": the creator when they hold the teacher role; `profileUrl` is null (contract). */
@@ -316,6 +418,18 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
 
 /** Q-2: the live version is published and the question is active. */
 const eligible = (r: QuestionRecord): boolean => r.isActive && r.version.status === 'approved'
+/** DM-42: a personal question is served by a mission session only. */
+const notPrivate = (r: QuestionRecord): boolean => isBankVersion(r.version)
 
 /** The drill surface of a selection (`PracticeSelection.activity`, else Latih Tubi SPM for the SPM pool, Databank for the rest). */
 const activityOf = (s: PracticeSelection): PracticeDrillActivity => s.activity ?? (s.spmPool ? 'latih_tubi_spm' : 'databank')
+
+/** The internal ids of the option pictures of a part tree (an `mcq` leaf's options). */
+function collectOptionImages(part: QuestionRecord['version']['parts'][number], into: Set<string>): void {
+  if ('mode' in part) {
+    if (part.mode === 'mcq') for (const o of part.options) if (o.imageId) into.add(o.imageId)
+    return
+  }
+  const children = (part as { children?: QuestionRecord['version']['parts'] }).children
+  for (const c of children ?? []) collectOptionImages(c, into)
+}

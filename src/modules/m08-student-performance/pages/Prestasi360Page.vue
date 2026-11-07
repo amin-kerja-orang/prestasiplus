@@ -25,6 +25,7 @@ import {
 } from '@/ds'
 import type { ChartSeries } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
+import { clock, mytParts } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchStudentPerformance } from '../api/performance'
@@ -67,6 +68,9 @@ watch(
   },
   { immediate: true },
 )
+
+/** The session year of the Headcount empty copy: the current MYT calendar year, as the API's `me` read (FR-MUR-3-2). */
+const sessionYear = computed(() => mytParts(clock.now()).year)
 
 /** The back control is the browser history back (FR-M08-37); a pupil has no list to go back to. */
 const back = (): void => {
@@ -171,9 +175,10 @@ const activity = computed(() => {
       <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <HeadcountCards
-        v-if="data.headcount.length > 0"
+        v-if="data.headcount.length > 0 || isStudent"
         :user-id="data.user.id"
         :cards="data.headcount"
+        :year="sessionYear"
       />
 
       <DsPanel data-testid="trend-card">

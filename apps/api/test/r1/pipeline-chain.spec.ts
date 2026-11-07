@@ -657,7 +657,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
-  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; grouped members do not (R1 U2)', () => {
+  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; Latih Tubi SPM serves whole groups, Databank stays ungrouped (R1 U2, D105)', () => {
     const solos = () => [fx.soloA, fx.soloB, fx.soloC]
 
     it('Databank and Latih Tubi SPM count exactly the solo MCQs (grouped members and the essay are not counted)', async () => {
@@ -666,15 +666,17 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length)
       const lt = await pupil.get('/api/spm/latih-tubi/MATH')
       expect(lt.status, JSON.stringify(lt.body)).toBe(200)
-      expect(lt.body.data.total).toBe(solos().length)
+      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each (GROUP_SURFACES holds latih_tubi_spm since S5-T03 part B; #967 D91 counts a complete group once).
+      expect(lt.body.data.total).toBe(solos().length + 2)
     })
 
-    it('a Latih Tubi SPM session draws the solo MCQs and NONE of the D90 group members (explicit refusal)', async () => {
+    // S5-T03 Part B (issue #456 DOC DEFECT ruling; PRD D105): Latih Tubi SPM serves WHOLE stimulus groups (GROUP_SURFACES holds latih_tubi_spm and bab),
+    // so the draw is the solo MCQs plus every member of both fixture groups. Databank (past_year) stays ungrouped until S3-T07 (see the next test).
+    it('a Latih Tubi SPM session draws the solo MCQs AND both whole stimulus groups (every member), never the essay (D105)', async () => {
       const res = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 40 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const served = (res.body.data.questions as { id: string }[]).map((q) => q.id).sort()
-      expect(served).toEqual(solos().sort())
-      for (const member of [...fx.imageMembers, ...fx.passageMembers]) expect(served).not.toContain(member)
+      expect(served).toEqual([...solos(), ...fx.imageMembers, ...fx.passageMembers].sort())
       expect(served).not.toContain(fx.essay)
     })
 
@@ -693,7 +695,7 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
 
     // R1 U2 / R2: serving group members together with their stimulus in Databank / Latih Tubi is R2 (D90 in the practice family).
-    it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
+    it.todo('S3-T07: grouped members appear in Databank WITH their stimulus (today Databank refuses them: ungrouped filter; Latih Tubi SPM serves them since S5-T03 Part B)')
   })
 
   // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
@@ -710,14 +712,14 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
     })
 
-    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+    // S5-T03 Part B (#456 ruling, PRD D105): latih_tubi_spm and bab serve whole groups; databank still refuses a member with has_stimulus until S3-T07.
+    it('a stimulus-group member is served in Simulasi and Latih Tubi SPM; Databank still refuses it with the reason has_stimulus (AC-18.3, D105)', async () => {
       const v = await activities(fx.passageMembers[0]!)
       expect(v.simulasi_paper).toMatchObject({ served: true })
-      for (const a of ['databank', 'latih_tubi_spm']) {
-        expect(v[a]!.served, a).toBe(false)
-        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
-        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
-      }
+      expect(v.latih_tubi_spm).toMatchObject({ served: true, reasons: [] })
+      expect(v.databank!.served, 'databank').toBe(false)
+      expect(v.databank!.reasons.map((r) => r.code), 'databank').toContain('has_stimulus')
+      expect(v.databank!.reasons[0]!.message.length, 'databank').toBeGreaterThan(10)
     })
 
     it('the structured essay is served in Simulasi (kertas) only; every other activity says why in BM (AC-18.4)', async () => {

@@ -19,6 +19,7 @@ import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
 import { isOverloadError } from '../auth/auth.errors'
+import { AnswerLogPort } from '../practice'
 import type { PkskActor } from './actor'
 import { invalidAnswers } from './errors'
 import { PkskAccessService } from './pksk-access.service'
@@ -58,6 +59,7 @@ export class PkskStudentService {
     @Inject(PKSK_SHUFFLE) private readonly shuffle: Shuffle,
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(AnswerLogPort) private readonly answerLog: AnswerLogPort,
   ) {}
 
   /** M07-01. */
@@ -203,9 +205,10 @@ export class PkskStudentService {
     })
   }
 
-  /** M07-08: 30 A + 70 B + 1 C approved questions of the level (fewer when the pool is short). Nothing is stored. */
+  /** M07-08: 30 A + 70 B + 1 C approved questions of the level (fewer when the pool is short). Stores only the served ids. */
   async exam(actor: PkskActor, rawLevel: string): Promise<PkskExam> {
-    const level = await this.gate.gate(actor, rawLevel, this.clock.now())
+    const now = this.clock.now()
+    const level = await this.gate.gate(actor, rawLevel, now)
     const domains = await this.domains.list()
     const sections = []
     for (const part of EXAM_PLAN) {
@@ -213,6 +216,7 @@ export class PkskStudentService {
       const pool = this.shuffle(await this.questions.approvedPool(level, codes))
       sections.push({ bahagian: part.bahagian, weightPct: part.weightPct, questions: pool.slice(0, part.count).map(served) })
     }
+    await this.progress.markExamLoaded(actor.userId, level, now, sections.flatMap((s) => s.questions.map((q) => q.id)))
     return { sections }
   }
 
@@ -237,8 +241,14 @@ export class PkskStudentService {
     const pct = (b: PkskBahagian): number => bahagianPct(right[b], (EXAM_PLAN.find((p) => p.bahagian === b) as { count: number }).count)
     const [a, b, c] = [pct('A'), pct('B'), pct('C')] as [number, number, number]
     const scorePct = examScore(a, b, c)
-    const row = await this.write(() =>
-      this.progress.addAttempt({
+    const row = await this.write(async () => {
+      // Only the served set, and only once: no open set, or an id that was not served, is refused before anything is
+      // stored (the delete of the load rolls back with the refusal).
+      const loaded = await this.progress.takeExamLoaded(actor.userId, level)
+      if (loaded === null) throw invalidAnswers()
+      const servedIds = new Set(loaded.servedIds)
+      if (!answers.every((x) => servedIds.has(x.questionId))) throw invalidAnswers()
+      const attempt = await this.progress.addAttempt({
         userId: actor.userId,
         level,
         completedAt: now,
@@ -248,8 +258,28 @@ export class PkskStudentService {
         bahagianCPct: c,
         grade: gradeOf(scorePct),
         isTest: actor.isTest,
-      }),
-    )
+      })
+      // One answer row per exam answer through the single answer store (mode `pksk`); the attempt id is the decimal
+      // `pksk_exam_attempts.id`, which the port maps to a stable uuid. Same transaction as the attempt.
+      for (const x of answers) {
+        const key = keys.get(x.questionId) as PkskAnswerKey
+        const isCorrect = correct(bahagianByCode.get(key.domainCode) as PkskBahagian, key, x)
+        await this.answerLog.record({
+          userId: actor.userId,
+          attemptId: attempt.id,
+          questionId: x.questionId,
+          partRef: null,
+          mode: 'pksk',
+          isCorrect,
+          marksAwarded: isCorrect ? 1 : 0,
+          marksMax: 1,
+          answeredAt: now,
+          isTest: actor.isTest,
+          selectedLabel: x.optionIndex === undefined || x.optionIndex === null ? null : String.fromCharCode(65 + x.optionIndex),
+        })
+      }
+      return attempt
+    })
     return { id: row.id, completedAt: toMytTimestamp(row.completedAt), scorePct: row.scorePct, grade: row.grade }
   }
 

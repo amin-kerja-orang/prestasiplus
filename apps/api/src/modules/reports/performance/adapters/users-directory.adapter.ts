@@ -125,4 +125,8 @@ export class UsersDirectoryAdapter implements DirectoryPort {
     }
     return out
   }
+
+  async activeSubjects(): Promise<{ id: string; name: string }[]> {
+    return (await this.curriculum.subjects({ active: true })).map((s) => ({ id: s.id.toString(), name: s.name }))
+  }
 }

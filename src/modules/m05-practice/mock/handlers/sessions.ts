@@ -56,8 +56,14 @@ const intOrUndefined = (v: unknown): number | undefined =>
   typeof v === 'number' && Number.isInteger(v) ? v : undefined
 const intOrNull = (v: unknown): number | null | undefined => (v === null ? null : intOrUndefined(v))
 
+/**
+ * Seeded "Rujukan" link (FR-GUR-44a-9): the M10 personal-questions mock is not part of this tree, so the first question
+ * of a mission session carries this link in mock mode (a stand-in for a teacher's personal question).
+ */
+export const MOCK_MISSION_REFERENCE_URL = 'https://rujukan.example.org/sejarah/bab-1'
+
 /** #4 question item (keys never leave the mock). */
-function questionItem(q: Question, wrongTimes: number) {
+function questionItem(q: Question, wrongTimes: number, referenceUrl?: string) {
   const creator = q.createdBy > 0 ? users.get(q.createdBy) : undefined
   return {
     id: q.id,
@@ -70,7 +76,11 @@ function questionItem(q: Question, wrongTimes: number) {
     // "Soalan oleh:" for teacher contributions (INFERRED: a teacher creator; no profile link).
     contributor:
       creator && creator.role === 'teacher' ? { name: creator.name, profileUrl: null } : null,
+    ...(referenceUrl ? { referenceUrl } : {}),
     options: (q.options ?? []).map((text, i) => ({ id: i, label: LETTERS[i] ?? String(i), text })),
+    // S5-T03 part B wire fields: the mock bank has no figure question and no stimulus group, so none is served.
+    stimuli: [],
+    group: null,
   }
 }
 
@@ -124,7 +134,13 @@ export const sessionRoutes: RouteDef[] = [
         questions: s.questionIds
           .map((id) => byId.get(id))
           .filter((q): q is Question => q !== undefined)
-          .map((q) => questionItem(q, wrong.get(q.id) ?? 0)),
+          .map((q, i) =>
+            questionItem(
+              q,
+              wrong.get(q.id) ?? 0,
+              s.mode === 'mission' && i === 0 ? MOCK_MISSION_REFERENCE_URL : undefined,
+            ),
+          ),
         ...(r.revisionMeta ? { revisionMeta: r.revisionMeta } : {}),
         ...(s.mode === 'question_set' ? { timeLimitSec: s.timeLimitSec } : {}),
       })

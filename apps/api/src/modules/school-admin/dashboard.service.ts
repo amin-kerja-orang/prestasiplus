@@ -1,10 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { SCHOOL_ADMIN_ROLE_LABEL, type SchoolAdminDashboard, type SchoolAdminSubscriptionStatus } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import { isOverloadError } from '../auth/auth.errors'
+import { AmaranService } from './amaran/amaran.service'
+import type { AmaranCaller } from './amaran/amaran.access'
 import { PerutusanRepository } from '../content/perutusan'
 import { AUTHOR_ROLE_LABELS } from '../content/perutusan/perutusan.constants'
 import { initialsOf } from '../content/perutusan/perutusan.service'
@@ -52,6 +54,8 @@ export function currentSubscriptionStatus(rows: readonly SubscriptionFacts[], to
 /** The school dashboard (M27 S0) of the school admin's own school. */
 @Injectable()
 export class DashboardService {
+  private readonly log = new Logger(DashboardService.name)
+
   constructor(
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
@@ -61,29 +65,30 @@ export class DashboardService {
     @Inject(SCHOOL_PERFORMANCE_PORT) private readonly performance: SchoolPerformancePort,
     @Inject(SCHOOL_CLASS_COUNT_PORT) private readonly classes: SchoolClassCountPort,
     @Inject(XsQueries) private readonly xs: XsQueries,
+    @Inject(AmaranService) private readonly amaran: AmaranService,
   ) {}
 
   /**
    * `caller` is a school admin with a school (the controller checks). Nothing in the request chooses the school. No pupil name
    * is read or returned; the Bijak figures are BE-19's, k-cohort suppressed by the mapper.
    */
-  async dashboard(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx): Promise<SchoolAdminDashboard> {
+  async dashboard(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx, amaranCaller: AmaranCaller): Promise<SchoolAdminDashboard> {
     try {
-      return await this.build(caller, schoolId, perf)
+      return await this.build(caller, schoolId, perf, amaranCaller)
     } catch (err) {
       if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
       throw err
     }
   }
 
-  private async build(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx): Promise<SchoolAdminDashboard> {
+  private async build(caller: Caller, schoolId: string, perf: SchoolPerformanceCtx, amaranCaller: AmaranCaller): Promise<SchoolAdminDashboard> {
     const now = this.clock.now()
     const school = await this.schools.get(schoolId)
     if (!school) throw ApiError.of('FORBIDDEN') // a school admin whose school vanished: fail closed
     // XS-1 / XS-3 (S6-T03): the cards are the same named queries every other screen uses; the practice questions and accuracy
     // are XS-4 / XS-5 of the school, all time ("sepanjang masa").
     const scope = { kind: 'school', schoolId } as const
-    const [pupils, teachers, totals, posts, subs, view, activeClasses] = await Promise.all([
+    const [pupils, teachers, totals, posts, subs, view, activeClasses, pending, tally] = await Promise.all([
       this.xs.pupilCount(scope),
       this.xs.teacherCount(schoolId),
       this.xs.answerTotals(scope),
@@ -91,6 +96,12 @@ export class DashboardService {
       this.subscriptions.list(caller, {}),
       this.performance.school(perf),
       this.classes.activeClasses(schoolId),
+      this.users.pendingTeachersOfSchool(schoolId), // the query behind GET /admin-sekolah/guru/pending
+      // The tally of GET /amaran/schools/:id (whole school). An Amaran failure only hides the panel (risk null), never the dashboard.
+      this.amaran.schoolTally(amaranCaller, schoolId).catch((err: unknown) => {
+        this.log.warn(`Amaran tally for the dashboard failed: ${err instanceof Error ? err.message : String(err)}`)
+        return null
+      }),
     ])
     const shown = posts.slice(0, DASHBOARD_PERUTUSAN_LIMIT)
     const authors = new Map<string, Awaited<ReturnType<UsersRepository['get']>>>()
@@ -116,13 +127,14 @@ export class DashboardService {
           author: { initials: initialsOf(author?.name ?? ''), roleLabel: role ? (AUTHOR_ROLE_LABELS[role] as string) : '' },
         }
       }),
+      pendingTeachers: pending.length,
       cards: {
         pupils,
         teachers,
         activeClasses,
         subscription: { status, label: SUBSCRIPTION_LABEL[status] },
       },
-      performance: performanceBlock(view, { answered: totals.answered, accuracy: totals.accuracy }),
+      performance: performanceBlock(view, { answered: totals.answered, accuracy: totals.accuracy }, tally),
     }
   }
 }

@@ -160,6 +160,30 @@ export interface QuestionSetRow {
   createdAt: string
 }
 
+/**
+ * DATA-M42 personal question (PRD-50 DM-42, API-GUR-24): a teacher's private MCQ with an optional reference link. Owner
+ * M10 for the mock; the real store is `question_versions` with `visibility = 'teacher_private'`. `inActiveMission` stands
+ * for "drawn into an assignment of an active Misi" (the 409 delete guard): the mock has no mission-to-question table, so
+ * the seed rule sets it (see `seeds/personal-questions.ts`) and a runtime question starts without it.
+ */
+export interface PersonalQuestionRow {
+  id: number
+  ownerId: number
+  subjectId: number
+  educationLevelId: number
+  difficulty: number
+  text: string
+  chapterId: number | null
+  spIds: number[]
+  tp: number | null
+  cognitiveLevel: string | null
+  options: string[]
+  correctIndex: number
+  referenceUrl: string | null
+  inActiveMission: boolean
+  createdAt: string
+}
+
 /** The viewer of `remedialTests.get` (the caller resolves it from the session). */
 export interface Viewer {
   id: number

@@ -4,6 +4,7 @@ import { prngStream } from '../../src/db/prng'
 import { AccountDataRepository, QUESTION_COUNT_SQL } from '../../src/modules/account/account-data.repository'
 import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-bridge'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
+import { filterOf } from '../../src/modules/questions/serving'
 import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { QuestionsRepository } from '../../src/modules/questions'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
@@ -83,8 +84,7 @@ describe('the shared SPM-servable definition', () => {
   })
 
   it('the overview card counts and the login count equal the draw counts', async () => {
-    // D91: the card and the draw leave out stimulus-group members (the hub / draw rule); the login count keeps counting them.
-    const drawable = await repo.count({ type: 'mcq', spmPool: true, ungrouped: true, status: 'approved', active: true }) // all subjects
+    // D91, S5-T03 part B: the Latih Tubi card and draw serve the members of a COMPLETE stimulus group (whole), so on the demo seed (every group complete) card = login.
     const withGroups = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
     const matrix = await t.get(OverviewRepository).bankMatrix()
     const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
@@ -93,7 +93,8 @@ describe('the shared SPM-servable definition', () => {
     const cards = subjects.reduce((n, s) => n + bank.practice(s, levels), 0)
     const login = (await t.db.query<{ c: string }>(QUESTION_COUNT_SQL))[0]?.c
     expect(Number(login)).toBe(withGroups)
-    expect(cards).toBe(drawable)
+    const latihDraw = await repo.count({ ...filterOf('latih_tubi_spm'), status: 'approved', active: true })
+    expect(cards, 'practice card = latih_tubi_spm draw').toBe(latihDraw)
   })
 
   it('REQ-B-006: the login count is a tagged query ($queryRaw + Prisma.sql) and its value is unchanged', async () => {

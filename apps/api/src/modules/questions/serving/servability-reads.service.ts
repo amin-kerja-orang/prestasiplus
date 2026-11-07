@@ -158,6 +158,9 @@ interface TrackingSetView {
  * draw activities are the readers' own SQL filters (`filterOf`), so the hub, the lane and the student draw cannot drift; Simulasi
  * (kertas) is evaluated over the questions on published papers (the bridge decides); Jana is the pool facts before the bridge.
  */
+/** The surface list of the SPM hub pool: no drill serves groups there yet. */
+const HUB_TEXT_ONLY: readonly ServabilityActivity[] = ['simulasi_paper', 'jana_kertas']
+
 @Injectable()
 export class ServabilityReadsService {
   private readonly logger = new Logger(ServabilityReadsService.name)
@@ -255,7 +258,9 @@ export class ServabilityReadsService {
    * is the number of lane rows with a reason.
    */
   private async spmDraw(): Promise<{ bySubject: Map<string, number>; databankServed: number }> {
-    const live = this.questions.scopeSql({ ...filterOf('latih_tubi_spm'), status: SERVABLE_STATUS, active: true }, false)
+    // Pre-S5-T03 basis, pinned: the indicator equals the SPM hub pool (ungrouped, text-only) until S3-T07 / S3-T05 flip Databank and Tracking A (D115-b).
+    // The Latih Tubi practice card (overview) counts the draw of the drill, which now serves whole groups and figures.
+    const live = this.questions.scopeSql({ ...filterOf('latih_tubi_spm', {}, HUB_TEXT_ONLY), status: SERVABLE_STATUS, active: true }, false)
     const rows = await this.db.$queryRaw<{ subject_id: bigint | null; n: number; in_lane: number }[]>`
       SELECT v.subject_id AS subject_id, count(*)::int AS n, (count(*) FILTER (WHERE ${databankServedPredicate()}))::int AS in_lane
         ${live.from} WHERE ${live.where} GROUP BY 1`
