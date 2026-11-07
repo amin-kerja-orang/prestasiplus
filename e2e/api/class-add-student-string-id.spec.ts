@@ -52,7 +52,7 @@ test.describe('SW5-01 add pupil to class sends a string id @api', () => {
       expect(typeof sent.classroomId, 'classroomId on the wire').toBe('string')
       expect(sent.classroomId).toBe(classValue)
       expect(res.status(), `PUT /api/guru/students/:id ${await res.text()}`).toBe(200)
-      await expect(page.getByText('Pelajar berjaya ditambah ke kelas.')).toBeVisible()
+      await expect(page.getByText('Pelajar ditambah.')).toBeVisible()
       await expectNoHScroll(page)
       expect(dialogs).toEqual([])
     } finally {

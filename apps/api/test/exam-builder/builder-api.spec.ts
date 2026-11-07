@@ -53,7 +53,7 @@ describe('paper builder API', () => {
   const q = (sql: string, params: unknown[] = []) => t.db.query<Record<string, unknown>>(sql, params)
 
   async function newPaper(body: Record<string, unknown> = {}): Promise<string> {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, ...body })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2, ...body })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return Created.parse(res.body).data.id
   }
@@ -84,7 +84,7 @@ describe('paper builder API', () => {
 
   describe('AC1 assembling a draft', () => {
     it('creates a draft from the MAT kertas 2 blueprint, places questions in order and shows them in the editor and the list', async () => {
-      const id = await newPaper()
+      const id = await newPaper({ title: 'Percubaan SPM Matematik Kertas 2 (draf)' })
       const empty = await editor(id)
       expect(empty.blueprint?.code).toBe('1449/2')
       expect(empty.paper).toMatchObject({ subject: 'MAT', kertas: 2, code: '1449/2', status: 'draf', durationMin: 150 })
@@ -389,19 +389,19 @@ describe('paper builder API', () => {
 
   describe('create, update, delete rules', () => {
     it('create without a blueprint, or with a Draf-source blueprint, is 422 noBlueprint', async () => {
-      for (const body of [{ subject: 'SEJ', kertas: 1 }, { subject: 'XYZ', kertas: 1 }]) {
+      for (const body of [{ title: 'Set Ujian', subject: 'SEJ', kertas: 1 }, { title: 'Set Ujian', subject: 'XYZ', kertas: 1 }]) {
         const err = expectError(await admin.post('/api/admin/papers', body), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
         expect(err.fields).toBeUndefined()
       }
       await q(`update blueprints set source = 'draft', serves_students = false, verification_id = null where code = '4541/1'`)
-      expectError(await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1 }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
+      expectError(await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'SN', kertas: 1 }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
       await q(`update blueprints set ${SERVING} where code = '4541/1'`)
-      expect((await admin.post('/api/admin/papers', { subject: 'SN', kertas: 1 })).status).toBe(201)
+      expect((await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'SN', kertas: 1 })).status).toBe(201)
     })
 
     it('create with a kertas beyond the smallint range is 422 noBlueprint, not a 500', async () => {
       for (const kertas of [32768, 40000, 99999999999]) {
-        const err = expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
+        const err = expectError(await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas }), 'VALIDATION_ERROR', 422, MSG.noBlueprint)
         expect(err.fields).toBeUndefined()
       }
     })
@@ -441,18 +441,17 @@ describe('paper builder API', () => {
       expect((await auditRows(t.db, 'bijak.paper.published')).filter((r) => r.target_id === id2)).toHaveLength(1)
     })
 
-    it('create validates the body; a blank title gets the default, a given title is trimmed', async () => {
-      expectError(await admin.post('/api/admin/papers', { subject: 'MAT' }), 'VALIDATION_ERROR', 422)
-      const blank = await editor(await newPaper({ title: '   ' }))
-      expect(blank.paper.title).toMatch(/^Percubaan SPM .+ Kertas 2 \(draf\)$/)
+    it('create validates the body; a blank title is 422 (S3-T02, PRD30 13-01), a given title is trimmed', async () => {
+      expectError(await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT' }), 'VALIDATION_ERROR', 422)
+      expect(expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: '   ' }), 'VALIDATION_ERROR', 422).fields).toEqual({ title: MSG.setTitleRequired })
       expect((await editor(await newPaper({ title: '  Set Khas  ' }))).paper.title).toBe('Set Khas')
       const row = (await q(`select kind, status, created_by_id::text c, is_test, year from papers where id = $1`, [await newPaper()]))[0]!
       expect(row).toMatchObject({ kind: 'pilihan', status: 'draft', c: admin.userId, is_test: false, year: 2026 })
     })
 
     // REQ-C-008: the paper title is trimmed and at most 200 characters on create and on update (PUT), with one BM message.
-    it('REQ-C-008: a title of 200 characters is accepted, 201 is 422 on create and on PUT with the same message; spaces do not count', async () => {
-      const t200 = 'T'.repeat(200)
+    it('REQ-C-008 (S3-T02: the server limit is 120, PRD30 13-01): a title of 120 characters is accepted, 201 is 422 on create and on PUT with the schema message; spaces do not count', async () => {
+      const t200 = 'T'.repeat(120)
       expect((await editor(await newPaper({ title: t200 }))).paper.title).toBe(t200)
       expect((await editor(await newPaper({ title: `  ${t200}  ` }))).paper.title).toBe(t200)
       const tooLong = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'T'.repeat(201) })
@@ -468,12 +467,42 @@ describe('paper builder API', () => {
       expect((await editor(id)).paper.title).toBe(t200) // nothing changed
     })
 
+    // S3-T02, PRD30 13-01: `Tajuk set` is required and at most 120 after trim on the empty-set create and on the PUT that edits the same set.
+    it('Tajuk set rule (13-01): create and PUT refuse blank, whitespace and 121 characters on fields.title; 120 passes; omitted on create is refused', async () => {
+      const required = { title: 'Tajuk set diperlukan.' }
+      const tooLong = { title: 'Tajuk set tidak boleh melebihi 120 aksara.' }
+      expect(MSG.setTitleRequired).toBe(required.title)
+      const total = async () => (await q('select count(*) n from papers'))[0]!.n
+      const n = await total()
+      for (const title of ['', '   ', '\t']) {
+        expect(expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title }), 'VALIDATION_ERROR', 422).fields).toEqual(required)
+      }
+      expect(expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 }), 'VALIDATION_ERROR', 422).fields).toEqual(required)
+      expect(expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: 'T'.repeat(121) }), 'VALIDATION_ERROR', 422).fields).toEqual(tooLong)
+      expect(expectError(await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2, title: `  ${'T'.repeat(121)}  ` }), 'VALIDATION_ERROR', 422).fields).toEqual(tooLong)
+      expect(await total()).toBe(n)
+      const t120 = 'T'.repeat(120)
+      const id = await newPaper({ title: ` ${t120} ` })
+      expect((await editor(id)).paper.title).toBe(t120)
+
+      for (const title of ['', '   ']) {
+        expect(expectError(await admin.put(`/api/admin/papers/${id}`, { title }), 'VALIDATION_ERROR', 422).fields).toEqual(required)
+      }
+      expect(expectError(await admin.put(`/api/admin/papers/${id}`, { title: 'U'.repeat(121) }), 'VALIDATION_ERROR', 422).fields).toEqual(tooLong)
+      expect(expectError(await admin.put(`/api/admin/papers/${id}`, { title: 'U'.repeat(150) }), 'VALIDATION_ERROR', 422).fields).toEqual(tooLong)
+      expect((await editor(id)).paper.title).toBe(t120) // nothing changed
+      expect((await admin.put(`/api/admin/papers/${id}`, { title: `  ${'V'.repeat(120)}  ` })).status).toBe(200)
+      expect((await editor(id)).paper.title).toBe('V'.repeat(120))
+      expect((await admin.put(`/api/admin/papers/${id}`, { durationMin: 120 })).status).toBe(200) // a PUT without title leaves it
+      expect((await editor(id)).paper.title).toBe('V'.repeat(120))
+    })
+
     it('PUT: blank title, invalid section and invalid questions are 422 with the contract messages', async () => {
       const id = await newPaper()
       const e = await editor(id)
       const sid = e.paper.sections[0]!.id
       const blank = await admin.put(`/api/admin/papers/${id}`, { title: '   ' })
-      expect(expectError(blank, 'VALIDATION_ERROR', 422).fields?.title).toBe(MSG.titleRequired)
+      expect(expectError(blank, 'VALIDATION_ERROR', 422).fields?.title).toBe(MSG.setTitleRequired)
 
       const other = await newPaper()
       const foreign = (await editor(other)).paper.sections[0]!.id

@@ -4,7 +4,7 @@
  *
  * | Hook | Effect |
  * |---|---|
- * | `m20LoadFixture(name)` | `'m20-many'`: 15 extra active products of seller 1 (ids 11–25, for paging); `'m20-second-seller'`: seller 2 "Kedai Ujian Demo" owned by pelajar 2 (active, verified) with one product; `'m20-out-of-stock'`: product 4 becomes `out_of_stock` |
+ * | `m20LoadFixture(name)` | `'m20-many'`: 15 extra active products of seller 1 (ids 11–25, for paging); `'m20-second-seller'`: seller 2 "Kedai Ujian Demo" owned by pelajar 2 (active, verified) with one product; `'m20-out-of-stock'`: product 4 becomes `out_of_stock`; `'m20-seller-states'`: sellers 2 "Kedai Menunggu" (`pending`), 3 "Kedai Digantung" (`suspended`) and 4 "Kedai Diharamkan" (`banned`), owned by accounts 2, 3, 4, one product each (admin Penjual screens) |
  * | `m20WhatsappLog()` | the wa.me URLs handed over by #16 since the last seed (D14: e2e asserts them instead of following the link) |
  *
  * A bad call throws a `RangeError` (the hook promise rejects). Test fixtures carry no images.
@@ -93,8 +93,36 @@ function m20LoadFixture(name: string): { loaded: string } {
     mpProductsRepository.patch(4, { stockStatus: 'out_of_stock' })
     return { loaded: name }
   }
+  if (name === 'm20-seller-states') {
+    const states = [
+      [2, 'Kedai Menunggu', 'pending'],
+      [3, 'Kedai Digantung', 'suspended'],
+      [4, 'Kedai Diharamkan', 'banned'],
+    ] as const
+    for (const [id, shopName, status] of states) {
+      if (mpSellersRepository.get(id)) continue // idempotent
+      mpSellersRepository.insertMany([
+        {
+          id,
+          userId: id,
+          shopName,
+          description: null,
+          phone: `010000000${String(id)}`,
+          whatsapp: `6010000000${String(id)}`,
+          status,
+          verifiedAt: null,
+          whatsappClicks: 0,
+          createdAt: at,
+        },
+      ])
+      mpProductsRepository.insertMany([
+        fixtureProduct(10 + id, id, `Produk ${shopName}`, 4, '10.00', at),
+      ])
+    }
+    return { loaded: name }
+  }
   throw new RangeError(
-    `m20LoadFixture: unknown fixture '${name}' (m20-many | m20-second-seller | m20-out-of-stock)`,
+    `m20LoadFixture: unknown fixture '${name}' (m20-many | m20-second-seller | m20-out-of-stock | m20-seller-states)`,
   )
 }
 

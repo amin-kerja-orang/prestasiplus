@@ -31,6 +31,9 @@ import {
   PracticeReadProgressSubjectSchema,
   PracticeReadQuestSchema,
   PracticeReadRecentQuestionSchema,
+  PracticeReadRemedialCompletedSchema,
+  PracticeReadRemedialNeededSchema,
+  PracticeReadRemedialSuggestionsSchema,
   PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubjectCardSchema,
   PracticeReadRevisionSubjectSchema,
@@ -84,6 +87,9 @@ export const PRACTICE_READS_COMPONENT_SCHEMAS = {
   PracticeReadRevisionSubjectCard: PracticeReadRevisionSubjectCardSchema,
   PracticeReadRevisionOverview: PracticeReadRevisionOverviewSchema,
   PracticeReadRevisionSubject: PracticeReadRevisionSubjectSchema,
+  PracticeReadRemedialCompleted: PracticeReadRemedialCompletedSchema,
+  PracticeReadRemedialNeeded: PracticeReadRemedialNeededSchema,
+  PracticeReadRemedialSuggestions: PracticeReadRemedialSuggestionsSchema,
   PracticeReadProgressSubject: PracticeReadProgressSubjectSchema,
   PracticeReadProgress: PracticeReadProgressSchema,
   PracticeReadHistoryItem: PracticeReadHistoryItemSchema,
@@ -206,6 +212,15 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
 
   registerRoute(registry, {
     method: 'get',
+    path: '/practice/remedial-suggestions',
+    tags: [TAG],
+    summary: 'Own remedial suggestions: completed drills and subjects needing recovery (S5-T07)',
+    description: `GET /api/practice/remedial-suggestions (API-PRAC-08). completed: the newest 20 completed non-test revision sessions with Sebelum / Selepas. needed: subjects whose pooled accuracy (correct / answered over the non-test answer rows, whole number half up) is below 60 and whose revision drill has at least one servable question (FD-MUR-36). Pupils only; staff roles get empty arrays. Assigned tests stay on GET /remedial-tests/mine. ${WHO}`,
+    responses: { 200: json(envelopeOf(PracticeReadRemedialSuggestionsSchema), 'The completed sets and the needed subjects.'), 401: UNAUTHORIZED },
+  })
+
+  registerRoute(registry, {
+    method: 'get',
     path: '/practice/progress',
     tags: [TAG],
     summary: 'Own progress analytics (S8)',
@@ -229,7 +244,7 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
     path: '/practice/corrections',
     tags: [TAG],
     summary: 'Own corrections: first attempt versus later attempt per question (S11)',
-    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). ${WHO}`,
+    description: `Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; "before" is the first attempt, "after" counts a later correct attempt. SPM past_year / databank sessions are not counted (BR-18). ${WHO}`,
     request: { query: PracticeReadCorrectionsQuerySchema },
     responses: { 200: json(envelopeOf(PracticeReadCorrectionsSchema), 'The month report.'), 401: UNAUTHORIZED },
   })
@@ -268,19 +283,19 @@ export function registerPracticeReadsPaths(registry: OpenAPIRegistry): void {
     path: '/practice/structured/{id}/attempts',
     tags: [TAG],
     summary: 'Submit a structured attempt',
-    description: `Mock POST /api/practice/structured/:id/attempts. Stores one attempt of the caller (not idempotent: each call stores a new row) and returns it with the marks and the model answers. Marking is the mock placeholder (LS-7): a sub-question gets full marks when its trimmed answer has at least 20 characters, else 0; the server uses @pp/exam-core once BE-14 has merged. A sub-question left out of answers is marked 0. Any signed-in role; own attempts only.`,
+    description: `Mock POST /api/practice/structured/:id/attempts. Submits one attempt of the caller (single shot, not idempotent: each call is a new attempt) and returns it with the marks and the model answers. The attempt is a Bijak attempt (paper_kind structured, mode latihan) graded by the one grader (@pp/exam-core): a part with an answer key is marked now, a part the grader cannot mark counts 0 and stays provisional until the pupil self-marks it (Bijak API-BIJAK-05, with the attemptId of the result). A sub-question left out of answers is marked 0. Any signed-in role; own attempts only.`,
     request: {
       params: PracticeReadStructuredParamsSchema,
       headers: [csrf],
       body: { required: true, content: { 'application/json': { schema: PracticeReadStructuredAttemptRequestSchema } } },
     },
     responses: {
-      201: json(envelopeOf(PracticeReadStructuredAttemptResultSchema), 'The stored attempt with marks and model answers.'),
+      201: json(envelopeOf(PracticeReadStructuredAttemptResultSchema), 'The submitted attempt (its Bijak attemptId too) with marks and model answers.'),
       401: UNAUTHORIZED,
       403: err(csrfInvalid),
       404: NOT_FOUND_STRUCTURED,
       422: err(
-        `VALIDATION_ERROR with fields: scope or track "${PRACTICE_READS_MESSAGES.invalidScope}" (not 'spm' / 'bahasa', or track without scope 'spm'); answers "${PRACTICE_READS_MESSAGES.invalidAnswer}" (not an array); answers.<index> "${PRACTICE_READS_MESSAGES.invalidAnswer}" (bad row, unknown or repeated subQuestionId) or "${PRACTICE_READS_MESSAGES.answerTooLong(5000)}". message is the first field message, plus " (and N more error(s))" when there are several.`,
+        `VALIDATION_ERROR with fields: scope or track "${PRACTICE_READS_MESSAGES.invalidScope}" (not 'spm' / 'bahasa', or track without scope 'spm'); answers "${PRACTICE_READS_MESSAGES.invalidAnswer}" (not an array); answers.<index> "${PRACTICE_READS_MESSAGES.invalidAnswer}" (bad row, unknown or repeated subQuestionId) or "${PRACTICE_READS_MESSAGES.answerTooLong(5000)}". message is the first field message, plus " (and N more error(s))" when there are several. A set the grader cannot serve (a part mode it does not support) is VALIDATION_ERROR "Tiada soalan layak untuk kertas ini." with no fields.`,
       ),
     },
   })

@@ -68,7 +68,7 @@ const question = {
   modelAnswer: null,
   explanation: 'Penjelasan fiksyen.',
   aiExplanation: null,
-  language: 'bm',
+  language: 'ms',
   pointsValue: 1,
   status: 'approved',
   isActive: true,
@@ -128,12 +128,20 @@ describe('admin list, detail and mutation shapes', () => {
       numberLabel: '12(a)',
     }
     expect(QuestionRowSchema.safeParse(row).success).toBe(true)
-    expect(QuestionRowSchema.safeParse({ ...row, kertas: '4' }).success).toBe(false)
+    expect(QuestionRowSchema.safeParse({ ...row, kertas: '4' }).success).toBe(true)
+    expect(QuestionRowSchema.safeParse({ ...row, kertas: '5' }).success).toBe(false)
     expect(QuestionRowSchema.safeParse({ ...row, kertas: null, numberLabel: null }).success).toBe(true)
     expect(QuestionRowSchema.safeParse({ ...row, id: 101 }).success).toBe(false)
     expect(QuestionRowSchema.safeParse({ ...row, status: 'pending_review' }).success).toBe(false)
     expect(QuestionSchema.safeParse(question).success).toBe(true)
+    // Responses stay on the lenient read schema: stored v1 data (marks 101, duplicate option labels) must still serialise.
+    const stored = {
+      label: '', prompt: { ms: 'S?' }, marks: 101, mode: 'mcq', key: { kind: 'option', correct: 'A' },
+      options: ['A', 'B', 'C', 'A'].map((label) => ({ label, body: { ms: 'p' } })),
+    }
+    expect(QuestionSchema.safeParse({ ...question, parts: [stored] }).success).toBe(true)
     const { createdBy: _c, ...rest } = question
+    expect(QuestionDetailSchema.safeParse({ ...rest, parts: [stored] }).error?.issues.filter((i) => i.path[0] === 'parts') ?? []).toEqual([])
     void _c
     const detail = { ...rest, subject: null, level: null, dskp: null, createdBy: { id: '7', name: null } }
     expect(QuestionDetailSchema.safeParse(detail).success).toBe(true)
@@ -173,6 +181,31 @@ describe('create and update requests (mock validation copy)', () => {
   })
 })
 
+describe('language tokens and English twins (S1-T09b, 60 API-Q-03)', () => {
+  const base = { subjectId: '3', educationLevelId: '10', difficultyLevel: '3', questionText: 'Soalan contoh fiksyen.', questionType: 'true_false' }
+  it.each(['ms', 'en', 'ms+en', 'bm'])('accepts %s on input', (language) => {
+    expect(QuestionCreateRequestSchema.safeParse({ ...base, language }).success).toBe(true)
+    expect(QuestionUpdateRequestSchema.safeParse({ ...base, language }).success).toBe(true)
+  })
+  it('refuses another token with the Bahasa message', () => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...base, language: 'ms_en' })
+    expect(r.success).toBe(false)
+    expect(r.error?.issues[0]?.message).toBe(QUESTION_MESSAGES.language)
+  })
+  it('outputs ms, en and ms+en but never bm', () => {
+    for (const language of ['ms', 'en', 'ms+en']) expect(QuestionSchema.safeParse({ ...question, language }).success).toBe(true)
+    expect(QuestionSchema.safeParse({ ...question, language: 'bm' }).success).toBe(false)
+  })
+  it('carries the English stem on create, update and read, blank allowed (a draft saves with it empty)', () => {
+    const body = { ...base, questionTextEn: 'Sample English question.' }
+    expect(QuestionCreateRequestSchema.parse(body).questionTextEn).toBe('Sample English question.')
+    expect(QuestionCreateRequestSchema.parse({ ...base, language: 'ms+en', questionTextEn: '' }).questionTextEn).toBe('')
+    expect(QuestionCreateRequestSchema.parse({ ...base, language: 'ms+en', questionTextEn: null }).questionTextEn).toBeNull()
+    expect(QuestionUpdateRequestSchema.parse(body).questionTextEn).toBe('Sample English question.')
+    expect(QuestionSchema.parse({ ...question, questionTextEn: 'Sample English question.' }).questionTextEn).toBe('Sample English question.')
+  })
+})
+
 describe('part tree (D1 to D4)', () => {
   it('round-trips a single MCQ part and a 3-level tree', () => {
     expect(QuestionPartSchema.safeParse(mcqLeaf).success).toBe(true)
@@ -196,7 +229,7 @@ describe('part tree (D1 to D4)', () => {
   it('rejects a key of the wrong kind for the mode and a correct option that does not exist', () => {
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'rubric', marks: 1, criteria: [{ id: 'c', name: 'n' }], bands: [{ name: 'b', range: [0, 1] }] } }).success).toBe(false)
     expect(QuestionPartSchema.safeParse({ ...mcqLeaf, key: { kind: 'option', correct: 'H' } }).success).toBe(false)
-    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('AB') }).success).toBe(false)
+    expect(QuestionPartSchema.safeParse({ ...mcqLeaf, options: optionsOf('A') }).success).toBe(false)
   })
   it('validates the five key kinds and mark-point features', () => {
     const leaf = (mode: string, key: unknown, extra = {}) => ({ label: '', prompt: rt('x'), marks: 3, mode, key, ...extra })

@@ -4,29 +4,27 @@ import { ApiError } from '../../../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../../../db/clock'
 import { canOpenClassDashboard } from '../domain/access-policy'
 import {
-  COUNTED_MODES,
+  ACTIVE_DAYS,
+  AT_RISK_BELOW,
+  AT_RISK_LIMIT,
   LEVEL_CODES,
   LEVEL_NAMES,
   MIN_COHORT,
   REDACTED_ID,
+  SESSION_MODES,
   TOP_STUDENT_LIMIT,
-  TOP_STUDENT_MIN_SITTINGS,
-  isLegacySubject,
+  TOP_STUDENT_MIN_ANSWERS,
   type LevelCode,
 } from '../domain/constants'
 import { NO_SUBJECT_LABEL, SCHOOL_CLASS_LABEL } from '../domain/labels'
 import { canSeeName, isStaff, levelVisibleToNonStaff, meetsCohort, nameFor } from '../domain/privacy'
-import { GRADES, accuracyOf, compareIds, pct, round } from '../domain/rules'
+import { GRADES, compareIds, pct, round } from '../domain/rules'
+import { startOfDaysAgo } from '../domain/windows'
+import { toMytTimestamp } from '../../../../common/time/myt'
+import { xsAccuracy } from '../../../school-admin/xs-queries'
 import { HeadcountFactsService } from '../headcount/headcount-facts.service'
 import { latestAr } from '../headcount/headcount.rules'
-import {
-  DIRECTORY_PORT,
-  PerformancePorts,
-  type BijakSittingQuery,
-  type BijakTotals,
-  type ClassInfo,
-  type DirectoryPort,
-} from '../ports'
+import { DIRECTORY_PORT, PerformancePorts, XS_COUNTS_PORT, type AnswerFactsQuery, type ClassInfo, type DirectoryPort, type XsCountsPort } from '../ports'
 import type { HeadcountEntryView, HeadcountFacts } from './headcount-facts.types'
 import {
   achievementOf,
@@ -40,39 +38,64 @@ import {
   schoolGps,
   studentStatuses,
 } from './headcount-figures'
-import { distinctMembers, nameMap, ownPupilIds, viewScope, type ViewScope } from './support'
+import { distinctMembers, nameMap, ownPupilIds, sessionTotalsOf, viewScope, type ViewScope } from './support'
 import type { Ctx, PerformanceLevelCard, PerformanceLevelDetail, PerformanceSchool } from './types'
 
-/** Rows of the level's at-risk list. */
-const AT_RISK_LIMIT = 15
+/** One pupil's figures from the shared answer reader: every mode answers, game modes add no session. */
+interface UserTotals {
+  sessions: number
+  answered: number
+  correct: number
+  last: Date | null
+}
+
+interface SubjectTotals {
+  subjectId: string
+  sessions: number
+  answered: number
+  correct: number
+  /** Distinct pupils with an answer in the subject (privacy cohort). */
+  pupils: number
+}
+
+interface FactSet {
+  byUser: Map<string, UserTotals>
+  bySubject: Map<string, SubjectTotals>
+}
 
 interface Sums {
-  sittings: number
-  max: number
-  gradedScore: number
-  gradedMax: number
-  /** Pupils with at least one sitting. */
+  sessions: number
+  answered: number
+  correct: number
+  /** Pupils with at least one answer. */
   contributors: number
 }
 
-function sumOf(ids: readonly string[], byUser: ReadonlyMap<string, BijakTotals>): Sums {
-  const s: Sums = { sittings: 0, max: 0, gradedScore: 0, gradedMax: 0, contributors: 0 }
+/** t4 and t5 are always listed; t1 to t3 only when the scope has classes or pupils at that level. */
+function listedLevel(l: { code: LevelCode; classes: number; ids: readonly string[] }): boolean {
+  return l.code === 't4' || l.code === 't5' || l.classes > 0 || l.ids.length > 0
+}
+
+function sumOf(ids: readonly string[], byUser: ReadonlyMap<string, UserTotals>): Sums {
+  const s: Sums = { sessions: 0, answered: 0, correct: 0, contributors: 0 }
   for (const id of ids) {
     const t = byUser.get(id)
     if (!t) continue
-    s.sittings += t.sittings
-    s.max += t.max
-    s.gradedScore += t.gradedScore
-    s.gradedMax += t.gradedMax
+    s.sessions += t.sessions
+    s.answered += t.answered
+    s.correct += t.correct
     s.contributors += 1
   }
   return s
 }
 
-/** Zeroed when fewer than MIN_COHORT pupils stand behind it and the viewer is not staff. */
+/** XS-5 (decision 11) for every accuracy of this payload: pooled, one decimal, integer half up, never above 100. The contract's non-nullable fields show 0 without answers. */
+const accuracyOf = (correct: number, answered: number): number => xsAccuracy(correct, answered) ?? 0
+
+/** Zeroed when fewer than MIN_COHORT pupils stand behind it and the viewer is not staff. Pooled accuracy: correct / answered (XS-5). */
 function shown(ctx: Ctx, s: Sums): { sessions: number; accuracy: number } {
   if (!meetsCohort(ctx.role, s.contributors)) return { sessions: 0, accuracy: 0 }
-  return { sessions: s.sittings, accuracy: accuracyOf(s.gradedScore, s.gradedMax) }
+  return { sessions: s.sessions, accuracy: accuracyOf(s.correct, s.answered) }
 }
 
 interface Frame {
@@ -80,16 +103,31 @@ interface Frame {
   /** Active classes (both kinds) in scope. */
   classes: ClassInfo[]
   members: { all: string[]; byClass: Map<string, string[]> }
-  byUser: Map<string, BijakTotals>
+  /** One shared-reader read of the whole view scope (every pupil with an answer; class members are a subset). */
+  wide: FactSet
+  byUser: Map<string, UserTotals>
 }
 
-/** Prestasi sekolah and tingkatan (S1 to S3). Scope: admin = platform, others their own school, no school = empty. Exported for BE-21. level() throws NOT_FOUND for a code other than t4/t5. */
+/** Schools whose XS-3 count is read at once for the platform view. */
+const XS_TEACHER_BATCH = 20
+
+/** How many of `ids` are XS-1 pupils. */
+function countOf(ids: Iterable<string>, xsPupils: ReadonlySet<string>): number {
+  let n = 0
+  for (const id of ids) if (xsPupils.has(id)) n += 1
+  return n
+}
+
+const EMPTY_FACTS = (): FactSet => ({ byUser: new Map(), bySubject: new Map() })
+
+/** Prestasi sekolah and tingkatan (S1 to S3). Scope: admin = platform, others their own school, no school = empty. Exported for BE-21. level() throws NOT_FOUND for a code other than t1 to t5. */
 @Injectable()
 export class SchoolPerformanceService {
   constructor(
     protected readonly ports: PerformancePorts,
     @Inject(DIRECTORY_PORT) protected readonly directory: DirectoryPort,
     @Inject(CLOCK) protected readonly clock: Clock,
+    @Inject(XS_COUNTS_PORT) protected readonly xs: XsCountsPort,
     @Optional() @Inject(HeadcountFactsService) protected readonly facts?: HeadcountFacts,
   ) {}
 
@@ -116,19 +154,91 @@ export class SchoolPerformanceService {
     return hit
   }
 
-  private query(scope: ViewScope): BijakSittingQuery {
-    return scope.kind === 'school' ? { schoolIds: [scope.schoolId], modes: COUNTED_MODES.school } : { modes: COUNTED_MODES.school }
+  /** Per-request memo of the XS-1 pupil set of the view scope (same lifetime as `memo`). */
+  private readonly pupilMemo = new WeakMap<Ctx, Promise<ReadonlySet<string>>>()
+
+  /**
+   * XS-1 (S6-T03 `XsQueries.pupils`): the pupils of the view scope that count as "Murid". Every pupil figure of Prestasi sekolah and
+   * Tingkatan (header, stats, level rows, teacher cards) is a count over this set, so a suspended, pending, deactivated or
+   * non-Tingkatan-1-5 account never adds to a "Murid" number (AC-XS-1). A scope without a school is empty.
+   */
+  private xsPupils(ctx: Ctx, scope: ViewScope): Promise<ReadonlySet<string>> {
+    if (scope.kind === 'none') return Promise.resolve(new Set())
+    let hit = this.pupilMemo.get(ctx)
+    if (!hit) {
+      hit = this.xs.pupils(scope.kind === 'platform' ? { kind: 'platform' } : { kind: 'school', schoolId: scope.schoolId }).then((r) => new Set(r.ids))
+      this.pupilMemo.set(ctx, hit)
+      // A failed read is not kept: a later call with the same ctx tries again.
+      hit.catch(() => this.pupilMemo.delete(ctx))
+    }
+    return hit
   }
 
-  private async frame(ctx: Ctx): Promise<Frame> {
+  /**
+   * XS-3 "Guru" of the view scope as ids (`XsQueries.teachers`): the school's teachers, or those of every school for the platform (admin).
+   * The "Guru" count and the teacher cards both come from this one set (AC-AS-4-1), so they cannot disagree.
+   */
+  private async xsTeacherIds(scope: ViewScope): Promise<ReadonlySet<string>> {
+    if (scope.kind === 'none') return new Set()
+    if (scope.kind === 'school') return new Set((await this.xs.teachers(scope.schoolId)).ids)
+    const ids = (await this.directory.schoolsInScope({})).map((s) => s.id)
+    const all = new Set<string>()
+    for (let i = 0; i < ids.length; i += XS_TEACHER_BATCH) {
+      for (const r of await Promise.all(ids.slice(i, i + XS_TEACHER_BATCH).map((id) => this.xs.teachers(id)))) for (const t of r.ids) all.add(t)
+    }
+    return all
+  }
+
+  /** The shared answer reader (S10-T01): answers of every mode, sessions of the non-game modes; per pupil and per subject. */
+  private async loadFacts(query: AnswerFactsQuery, keep: ReadonlySet<string>): Promise<FactSet> {
+    const reader = this.ports.answerFacts
+    // (user x subject) grain: the figures here never need question, chapter or topic rows.
+    const [allRows, allSessionRows] = await Promise.all([reader.answerFacts({ ...query, grain: 'user-subject' }), reader.sessionCounts({ ...query, modes: SESSION_MODES })])
+    // XS-1 (S6-T03): only the answers and sessions of counted pupils (active, not suspended, Tingkatan 1-5) enter any figure, the same set as "Murid".
+    const rows = allRows.filter((r) => keep.has(r.userId))
+    const sessionRows = allSessionRows.filter((r) => keep.has(r.userId))
+    const byUser = new Map<string, UserTotals>()
+    const bySubject = new Map<string, SubjectTotals>()
+    const subjectUsers = new Map<string, Set<string>>()
+    for (const r of rows) {
+      const u = byUser.get(r.userId) ?? { sessions: 0, answered: 0, correct: 0, last: null }
+      u.answered += r.attempts
+      u.correct += r.correct
+      if (u.last === null || r.lastAnsweredAt > u.last) u.last = r.lastAnsweredAt
+      byUser.set(r.userId, u)
+      if (r.subjectId === '0') continue
+      const sub = bySubject.get(r.subjectId) ?? { subjectId: r.subjectId, sessions: 0, answered: 0, correct: 0, pupils: 0 }
+      sub.answered += r.attempts
+      sub.correct += r.correct
+      bySubject.set(r.subjectId, sub)
+      subjectUsers.set(r.subjectId, (subjectUsers.get(r.subjectId) ?? new Set<string>()).add(r.userId))
+    }
+    for (const [userId, sessions] of sessionTotalsOf(sessionRows)) {
+      const u = byUser.get(userId)
+      if (u) u.sessions = sessions
+    }
+    for (const r of sessionRows) {
+      if (r.subjectId !== null) {
+        const sub = bySubject.get(r.subjectId)
+        if (sub) sub.sessions += r.sessions
+      }
+    }
+    for (const [id, users] of subjectUsers) (bySubject.get(id) as SubjectTotals).pupils = users.size
+    return { byUser, bySubject }
+  }
+
+  /** `withFacts` false: the caller needs classes and rosters only (no answer read). */
+  private async frame(ctx: Ctx, withFacts = true): Promise<Frame> {
     const scope = viewScope(ctx)
     const all = scope.kind === 'platform' ? await this.ports.classes.allClasses() : scope.kind === 'school' ? await this.ports.classes.classesOfSchool(scope.schoolId) : []
     const classes = all.filter((c) => c.isActive)
     const members = await distinctMembers(this.ports, classes)
-    const rows = members.all.length === 0 ? [] : await this.ports.bijak.totals({ userIds: members.all, modes: COUNTED_MODES.school }, 'user')
-    const byUser = new Map<string, BijakTotals>()
-    for (const r of rows) if (r.userId !== undefined) byUser.set(r.userId, r)
-    return { scope, classes, members, byUser }
+    // One read per request: platform = no filter, school = the school id (never a pupil id list). Class figures filter this set in memory.
+    const wide =
+      !withFacts || scope.kind === 'none'
+        ? EMPTY_FACTS()
+        : await this.loadFacts(scope.kind === 'school' ? { schoolIds: [scope.schoolId] } : {}, await this.xsPupils(ctx, scope))
+    return { scope, classes, members, wide, byUser: wide.byUser }
   }
 
   async school(ctx: Ctx): Promise<PerformanceSchool> {
@@ -137,28 +247,26 @@ export class SchoolPerformanceService {
     const kind = scope.kind === 'platform' ? 'platform' : 'school'
     const classrooms = fr.classes.filter((c) => c.kind === 'classroom')
 
-    const schoolIds =
-      scope.kind === 'school' ? [scope.schoolId] : scope.kind === 'platform' ? (await this.directory.schoolsInScope({})).map((s) => s.id) : []
-    const sum = (m: ReadonlyMap<string, number>): number => [...m.values()].reduce((a, b) => a + b, 0)
-    const students = schoolIds.length === 0 ? 0 : sum(await this.directory.countPupils(schoolIds))
-    const teachers = schoolIds.length === 0 ? 0 : sum(await this.directory.countTeachers(schoolIds))
+    // XS-1 / XS-3 (S6-T03): the same named queries as the school admin Dashboard, through XS_COUNTS_PORT (FR-AS-4-1, AC-AS-4-1).
+    const [xsPupils, xsTeacherIds] = await Promise.all([this.xsPupils(ctx, scope), this.xsTeacherIds(scope)])
+    const teachers = xsTeacherIds.size
+    const students = xsPupils.size
 
+    // Sessions, answered and pooled accuracy come from the shared answer reader (all modes; XS-4, XS-5, XS-8), over the XS-1 pupils only (`loadFacts`).
     let sessions = 0
     let answered = 0
-    let gradedScore = 0
-    let gradedMax = 0
+    let correct = 0
     let totalPupils = 0
-    let subjectRows: BijakTotals[] = []
+    let subjectRows: SubjectTotals[] = []
     if (scope.kind !== 'none') {
-      const q = this.query(scope)
-      for (const r of await this.ports.bijak.totals(q, 'school')) {
-        sessions += r.sittings
-        answered += r.answered
-        gradedScore += r.gradedScore
-        gradedMax += r.gradedMax
-        totalPupils += r.pupils
+      const wide = fr.wide
+      for (const u of wide.byUser.values()) {
+        sessions += u.sessions
+        answered += u.answered
+        correct += u.correct
+        totalPupils += 1
       }
-      subjectRows = await this.ports.bijak.totals(q, 'subject')
+      subjectRows = [...wide.bySubject.values()]
     }
 
     const entries = await this.entriesOf(ctx, scope)
@@ -167,13 +275,14 @@ export class SchoolPerformanceService {
       const ids = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))]
       const sums = sumOf(ids, fr.byUser)
       const classPupils = lc.map((c) => sumOf(fr.members.byClass.get(c.id) ?? [], fr.byUser).contributors)
-      return { code, classes: lc.length, ids, sums, visible: levelVisibleToNonStaff(ctx.role, sums.contributors, classPupils) }
+      return { code, classes: lc.length, ids, counted: countOf(ids, xsPupils), sums, visible: levelVisibleToNonStaff(ctx.role, sums.contributors, classPupils) }
     })
-    const levels = levelSums.map((l) => ({
+    // t4 and t5 are always listed (zeros when empty); t1 to t3 only when the scope has classes or pupils at that level (R1-AS-4).
+    const levels = levelSums.filter(listedLevel).map((l) => ({
       code: l.code,
       accuracy: l.visible ? shown(ctx, l.sums).accuracy : 0,
       classes: l.classes,
-      students: l.ids.length,
+      students: l.counted,
       sessions: l.visible ? shown(ctx, l.sums).sessions : 0,
     }))
     // Non-staff: a total that would let a suppressed level (or a small remainder) be recovered by
@@ -192,7 +301,8 @@ export class SchoolPerformanceService {
 
     const byTeacher = new Map<string, { name: string; classes: ClassInfo[] }>()
     for (const c of classrooms) {
-      if (c.teacherId === null) continue
+      // Teacher cards list XS-3 teachers only: a pending, deactivated, suspended or school-admin class owner gets no card (AC-AS-4-1).
+      if (c.teacherId === null || !xsTeacherIds.has(c.teacherId)) continue
       const e = byTeacher.get(c.teacherId) ?? { name: c.teacherName ?? '', classes: [] }
       e.classes.push(c)
       byTeacher.set(c.teacherId, e)
@@ -208,7 +318,7 @@ export class SchoolPerformanceService {
               userId,
               name: e.name,
               classCount: e.classes.length,
-              studentCount: ids.length,
+              studentCount: countOf(ids, xsPupils),
               accuracy: shown(ctx, sumOf(ids, fr.byUser)).accuracy,
               onTrack: st ? st.on : null,
               below: st ? st.below : null,
@@ -217,12 +327,10 @@ export class SchoolPerformanceService {
           .sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.userId, b.userId))
       : []
 
-    // The aggregate keys subject totals by the Bijak CODE (`MAT`); classes and headcount entries use the curriculum
-    // subject id. Map code to id so one subject is one row with the headcount figures (SW13-08).
-    // Migrated 'legacy' sittings stay in the totals above but are not a subject row.
-    const subjectRowsShown = visibleSubjects.filter((r) => !isLegacySubject(r))
-    const idOfCode = await this.directory.subjectIdsOfCodes([...new Set(subjectRowsShown.flatMap((r) => (r.subjectId === undefined ? [] : [r.subjectId])))])
-    const hc = this.schoolFigures(ctx, entries, fr.classes, subjectRowsShown, idOfCode)
+    // The reader keys subject totals by the curriculum subject id, the same id classes and headcount entries carry: one subject is one row (SW13-08).
+    const subjectNames = await this.directory.subjectsOfIds(visibleSubjects.map((r) => r.subjectId))
+    const practiceRows = visibleSubjects.map((r) => ({ subjectId: r.subjectId, name: subjectNames.get(r.subjectId)?.name ?? '' }))
+    const hc = this.schoolFigures(ctx, entries, fr.classes, practiceRows)
 
     return {
       scope: kind,
@@ -234,7 +342,7 @@ export class SchoolPerformanceService {
         subjects: new Set(classrooms.map((c) => c.subjectId).filter((s): s is string => s !== null)).size,
         sessions: hideTotals ? 0 : sessions,
         answered: hideTotals ? 0 : answered,
-        accuracy: hideTotals ? 0 : accuracyOf(gradedScore, gradedMax),
+        accuracy: hideTotals ? 0 : accuracyOf(correct, answered),
       },
       gps: hc.gps,
       distribution: hc.distribution,
@@ -254,8 +362,7 @@ export class SchoolPerformanceService {
     ctx: Ctx,
     entries: readonly HeadcountEntryView[],
     classes: readonly ClassInfo[],
-    practiceRows: readonly BijakTotals[],
-    idOfCode: ReadonlyMap<string, string>,
+    practiceRows: readonly { subjectId: string; name: string }[],
   ): Pick<PerformanceSchool, 'gps' | 'distribution' | 'subjects'> {
     const staff = isStaff(ctx.role)
     const graded = gradedEntries(entries)
@@ -296,10 +403,8 @@ export class SchoolPerformanceService {
     }
     const rows = new Map<string, PerformanceSchool['subjects'][number]>()
     for (const r of practiceRows) {
-      if (r.subjectId === undefined) continue
-      const id = idOfCode.get(r.subjectId) ?? r.subjectId
-      // The curriculum name (classes, headcount) wins over the Bijak name when the subject is known there.
-      rows.set(id, rowOf(id, nameOfSubject.get(id) ?? r.subjectName ?? ''))
+      // The class / headcount name wins over the curriculum name when the subject is known there.
+      rows.set(r.subjectId, rowOf(r.subjectId, nameOfSubject.get(r.subjectId) ?? r.name))
     }
     for (const subjectId of bySubject.keys()) {
       const name = nameOfSubject.get(subjectId)
@@ -319,21 +424,34 @@ export class SchoolPerformanceService {
     return { gps, distribution, subjects }
   }
 
+  /**
+   * A teacher's Tingkatan view covers the teacher's own active classes only (R1-GUR-4, OPT-KELAS-OWN: aggregates over the teacher's
+   * pupils); the school-wide comparison belongs to the school admin screen (R1-AS-4). Other roles keep the whole scope.
+   */
+  private async scoped(ctx: Ctx, fr: Frame): Promise<Frame> {
+    if (ctx.role !== 'teacher') return fr
+    const own = new Set((await this.ports.classes.classesForTeacher(ctx.userId)).map((c) => c.id))
+    return { ...fr, classes: fr.classes.filter((c) => own.has(c.id)) }
+  }
+
   async levels(ctx: Ctx): Promise<PerformanceLevelCard[]> {
-    const fr = await this.frame(ctx)
-    return LEVEL_CODES.map((code) => {
+    const fr = await this.scoped(ctx, await this.frame(ctx, false))
+    const xsPupils = await this.xsPupils(ctx, fr.scope)
+    // t4 and t5 always, t1 to t3 only with classes or pupils: the Tingkatan cards and chips are built from this list.
+    return LEVEL_CODES.flatMap((code) => {
       const lc = fr.classes.filter((c) => c.levelSlug === code)
       const ids = new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))
-      return { code, name: LEVEL_NAMES[code], classes: lc.length, students: ids.size }
+      return listedLevel({ code, classes: lc.length, ids: [...ids] }) ? [{ code, name: LEVEL_NAMES[code], classes: lc.length, students: countOf(ids, xsPupils) }] : []
     })
   }
 
   async level(ctx: Ctx, code: string): Promise<PerformanceLevelDetail> {
     if (!(LEVEL_CODES as readonly string[]).includes(code)) throw ApiError.of('NOT_FOUND')
     const level = code as LevelCode
-    const fr = await this.frame(ctx)
+    const fr = await this.scoped(ctx, await this.frame(ctx))
     const lc = fr.classes.filter((c) => c.levelSlug === level)
     const students = [...new Set(lc.flatMap((c) => fr.members.byClass.get(c.id) ?? []))].sort(compareIds)
+    const xsPupils = await this.xsPupils(ctx, fr.scope)
     // Non-staff: a class row hidden for having 1 to 4 pupils would be recovered as total minus shown rows, so the total is hidden too.
     const visible = levelVisibleToNonStaff(
       ctx.role,
@@ -354,14 +472,7 @@ export class SchoolPerformanceService {
       )
     const pairs = hcVisible ? pairCounts(levelEntries) : { on: 0, below: 0, onPct: 0 }
 
-    const groupKey = (c: ClassInfo): [number, string] =>
-      c.kind === 'school_class' ? [2, ''] : c.subjectId === null ? [0, ''] : [1, c.subjectName ?? '']
     const classRows = [...lc]
-      .sort((a, b) => {
-        const [ga, na] = groupKey(a)
-        const [gb, nb] = groupKey(b)
-        return ga - gb || na.localeCompare(nb) || a.name.localeCompare(b.name) || compareIds(a.id, b.id)
-      })
       .map((c) => {
         const ids = fr.members.byClass.get(c.id) ?? []
         const s = shown(ctx, sumOf(ids, fr.byUser))
@@ -373,7 +484,7 @@ export class SchoolPerformanceService {
           name: c.name,
           subject: c.kind === 'school_class' ? SCHOOL_CLASS_LABEL : (c.subjectName ?? NO_SUBJECT_LABEL),
           teacher: c.teacherName,
-          students: ids.length,
+          students: countOf(ids, xsPupils),
           sessions: s.sessions,
           accuracy: s.accuracy,
           onTrack: st.on,
@@ -382,26 +493,54 @@ export class SchoolPerformanceService {
           href: canOpenClassDashboard(ctx, c) ? `/prestasi/kelas/${c.id}` : null,
         }
       })
+      // Perbandingan Kelas: accuracy descending (R1-AS-4); the page shows 25 per page.
+      .sort((a, b) => b.accuracy - a.accuracy || b.students - a.students || a.name.localeCompare(b.name) || compareIds(a.classId, b.classId))
 
+    // The pupil lists name XS-1 pupils only: an account outside the counted set has no figures here, so it must not appear as "no answer".
+    const xsStudents = students.filter((id) => xsPupils.has(id))
     let topStudents: PerformanceLevelDetail['topStudents'] = []
     let atRisk: PerformanceLevelDetail['atRisk'] = []
     if (isStaff(ctx.role)) {
       const own = await ownPupilIds(this.ports, ctx)
-      atRisk = await this.atRiskOf(ctx, levelEntries, lc, own)
-      const best = students
+      const classOf = new Map<string, string>()
+      for (const c of [...lc].sort((a, b) => a.name.localeCompare(b.name) || compareIds(a.id, b.id)))
+        for (const id of fr.members.byClass.get(c.id) ?? []) if (!classOf.has(id)) classOf.set(id, c.name)
+      // Murid Terbaik: at least TOP_STUDENT_MIN_ANSWERS answers, accuracy descending, ties by answers (then id).
+      const best = xsStudents
         .flatMap((userId) => {
           const t = fr.byUser.get(userId)
-          return t && t.sittings >= TOP_STUDENT_MIN_SITTINGS ? [{ userId, t, raw: t.gradedMax === 0 ? 0 : t.gradedScore / t.gradedMax }] : []
+          return t && t.answered >= TOP_STUDENT_MIN_ANSWERS ? [{ userId, t, raw: t.correct / t.answered }] : []
         })
-        .sort((a, b) => b.raw - a.raw || compareIds(a.userId, b.userId))
+        .sort((a, b) => b.raw - a.raw || b.t.answered - a.t.answered || compareIds(a.userId, b.userId))
         .slice(0, TOP_STUDENT_LIMIT)
-      const names = await nameMap(this.directory, best.map((b) => b.userId))
+      // Murid Berisiko: whole-number accuracy below AT_RISK_BELOW, or no answer in the last ACTIVE_DAYS days; accuracy ascending, pupils with no answer last.
+      const activeFrom = startOfDaysAgo(this.clock.now(), ACTIVE_DAYS - 1)
+      const risky = xsStudents
+        .flatMap((userId) => {
+          const t = fr.byUser.get(userId)
+          const accuracy = t ? xsAccuracy(t.correct, t.answered) : null
+          const inactive = !t || t.last === null || t.last < activeFrom
+          return (accuracy !== null && Math.round(accuracy) < AT_RISK_BELOW) || inactive ? [{ userId, t, accuracy }] : []
+        })
+        .sort((a, b) => (a.accuracy === null ? 1 : 0) - (b.accuracy === null ? 1 : 0) || (a.accuracy ?? 0) - (b.accuracy ?? 0) || compareIds(a.userId, b.userId))
+        .slice(0, AT_RISK_LIMIT)
+      const names = await nameMap(this.directory, [...best.map((b) => b.userId), ...risky.map((r) => r.userId)])
+      const shownName = (userId: string): { userId: string; name: string } => {
+        const visible = canSeeName(ctx.role, ctx.userId, userId, own)
+        return { userId: visible ? userId : REDACTED_ID, name: nameFor(names.get(userId) ?? '', visible) }
+      }
       topStudents = best.map(({ userId, t }) => ({
-        userId: canSeeName(ctx.role, ctx.userId, userId, own) ? userId : REDACTED_ID,
-        name: nameFor(names.get(userId) ?? '', canSeeName(ctx.role, ctx.userId, userId, own)),
-        sessions: t.sittings,
+        ...shownName(userId),
+        sessions: t.sessions,
         answered: t.answered,
-        accuracy: accuracyOf(t.gradedScore, t.gradedMax),
+        accuracy: accuracyOf(t.correct, t.answered),
+      }))
+      atRisk = risky.map(({ userId, t, accuracy }) => ({
+        ...shownName(userId),
+        className: classOf.get(userId) ?? '',
+        answered: t?.answered ?? 0,
+        accuracy,
+        lastAnsweredAt: t?.last ? toMytTimestamp(t.last) : null,
       }))
     }
 
@@ -409,7 +548,7 @@ export class SchoolPerformanceService {
       code: level,
       name: LEVEL_NAMES[level],
       classes: lc.length,
-      students: students.length,
+      students: countOf(students, xsPupils),
       subjects: new Set(lc.map((c) => c.subjectId).filter((s): s is string => s !== null)).size,
       accuracy: total.accuracy,
       sessions: total.sessions,
@@ -420,36 +559,5 @@ export class SchoolPerformanceService {
       topStudents,
       atRisk,
     }
-  }
-
-  /** Murid Berisiko (BR-M07): pairs below their target with an AR, gap ascending, then config and pupil; top 15. Staff only; names follow canSeeName. */
-  private async atRiskOf(
-    ctx: Ctx,
-    entries: readonly HeadcountEntryView[],
-    classes: readonly ClassInfo[],
-    own: ReadonlySet<string>,
-  ): Promise<PerformanceLevelDetail['atRisk']> {
-    const picked = entries
-      .flatMap((e) => {
-        const l = latestAr(e)
-        return l === null || l.target === null || l.ar >= l.target ? [] : [{ e, l, target: l.target, gap: l.ar - l.target }]
-      })
-      .sort((a, b) => a.gap - b.gap || compareIds(a.e.configId, b.e.configId) || compareIds(a.e.studentId, b.e.studentId))
-      .slice(0, AT_RISK_LIMIT)
-    if (picked.length === 0) return []
-    const names = await nameMap(this.directory, picked.map((x) => x.e.studentId))
-    const classNames = new Map(classes.map((c) => [c.id, c.name]))
-    return picked.map(({ e, l, target, gap }) => {
-      const visible = canSeeName(ctx.role, ctx.userId, e.studentId, own)
-      return {
-        userId: visible ? e.studentId : REDACTED_ID,
-        name: nameFor(names.get(e.studentId) ?? '', visible),
-        className: classNames.get(e.classroomId) ?? '',
-        checkpoint: l.n,
-        ar: l.ar,
-        target,
-        gap: round(gap, 1),
-      }
-    })
   }
 }

@@ -3,6 +3,7 @@ import type { PracticeMode } from '@pp/contract'
 
 import { idFromString, idToString } from '../../../../db/ids'
 import { PrismaService } from '../../../../db/prisma.service'
+import { BANK_VISIBLE_SQL } from '../../../questions/learner-visibility'
 
 export interface SubjectRow {
   id: string
@@ -59,6 +60,18 @@ export interface ChapterAnswerCount {
   correct: number
 }
 
+/** A completed revision drill with the pooled subject accuracy before it started (S5-T07). */
+export interface RemedialSetRow {
+  subjectId: string
+  setNo: number
+  questionCount: number
+  correctCount: number
+  completedAt: Date
+  /** Answers (non-test, any mode) of the subject given before the session started. */
+  beforeAnswered: number
+  beforeCorrect: number
+}
+
 const num = (v: bigint | number | null | undefined): number => Number(v ?? 0)
 
 /**
@@ -103,7 +116,7 @@ export class PracticeAnalyticsRepository {
          AND EXISTS (
            SELECT 1 FROM questions q
              JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-            WHERE q.id = rq.question_id AND q.is_active AND v.status = 'approved')
+            WHERE q.id = rq.question_id AND q.is_active AND v.status = 'approved' AND ${BANK_VISIBLE_SQL})
        GROUP BY rq.subject_id`
     return new Map(rows.map((r) => [idToString(r.subject_id), num(r.n)]))
   }
@@ -184,7 +197,7 @@ export class PracticeAnalyticsRepository {
 
   /**
    * BR-18: per question, the first answer (non-test, with a question and a subject, not from a
-   * `past_year` session) and whether a later answer was right; first answers inside `[from, to)` only.
+   * `past_year` / `databank` session) and whether a later answer was right; first answers inside `[from, to)` only.
    */
   async correctionRuns(userId: string, from: Date, to: Date): Promise<CorrectionRun[]> {
     const rows = await this.db.$queryRaw<{ subject_id: bigint; answered_at: Date; is_correct: boolean; later: boolean }[]>`
@@ -195,7 +208,7 @@ export class PracticeAnalyticsRepository {
           LEFT JOIN practice_sessions s ON s.id = pa.session_id
          WHERE pa.user_id = ${idFromString(userId)}::bigint AND NOT pa.is_test
            AND pa.question_id IS NOT NULL AND pa.subject_id IS NOT NULL
-           AND (pa.session_id IS NULL OR s.mode IS DISTINCT FROM 'past_year'))
+           AND (pa.session_id IS NULL OR s.mode IS NULL OR s.mode NOT IN ('past_year', 'databank')))
       SELECT f.subject_id, f.answered_at, f.is_correct,
              EXISTS (SELECT 1 FROM a b WHERE b.question_id = f.question_id AND b.rn > 1 AND b.is_correct) AS later
         FROM a f
@@ -217,6 +230,40 @@ export class PracticeAnalyticsRepository {
        WHERE user_id = ${uid}::bigint AND subject_id IS NOT NULL AND NOT is_test
        GROUP BY subject_id ORDER BY subject_id`
     return log.map((r) => ({ subjectId: idToString(r.subject_id), correct: num(r.correct), answered: num(r.answered), lastAnsweredAt: r.last }))
+  }
+
+  /**
+   * S5-T07: the user's completed, non-test `revision` sessions (newest `limit`), each with its per-subject ordinal (by
+   * `completed_at` ascending over ALL completed sets) and the subject's answers given before it started: one set-based
+   * statement (window function plus a lateral aggregate), no per-session query.
+   */
+  async completedRevisionSets(userId: string, limit: number): Promise<RemedialSetRow[]> {
+    const uid = idFromString(userId)
+    const rows = await this.db.$queryRaw<
+      { subject_id: bigint; set_no: bigint; question_count: number; correct_count: number; completed_at: Date; n: bigint; c: bigint }[]
+    >`
+      WITH s AS (
+        SELECT id, subject_id, question_count, correct_count, started_at, completed_at,
+               row_number() OVER (PARTITION BY subject_id ORDER BY completed_at, id) AS set_no
+          FROM practice_sessions
+         WHERE user_id = ${uid}::bigint AND mode = 'revision' AND status = 'completed' AND NOT is_test
+           AND subject_id IS NOT NULL AND completed_at IS NOT NULL)
+      SELECT s.subject_id, s.set_no, s.question_count, s.correct_count, s.completed_at, b.n, b.c
+        FROM (SELECT * FROM s ORDER BY completed_at DESC, id DESC LIMIT ${limit}::bigint) s
+        CROSS JOIN LATERAL (
+          SELECT count(*) AS n, count(*) FILTER (WHERE pa.is_correct) AS c
+            FROM practice_answers pa
+           WHERE pa.user_id = ${uid}::bigint AND pa.subject_id = s.subject_id AND NOT pa.is_test AND pa.answered_at < s.started_at) b
+       ORDER BY s.completed_at DESC, s.id DESC`
+    return rows.map((r) => ({
+      subjectId: idToString(r.subject_id),
+      setNo: num(r.set_no),
+      questionCount: r.question_count,
+      correctCount: r.correct_count,
+      completedAt: r.completed_at,
+      beforeAnswered: num(r.n),
+      beforeCorrect: num(r.c),
+    }))
   }
 
   /**

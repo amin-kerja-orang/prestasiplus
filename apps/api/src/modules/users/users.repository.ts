@@ -23,6 +23,7 @@ export interface UserRecord {
   schoolId: string | null
   grade: number | null
   bio: string | null
+  aspiration: string | null
   idDelima: string | null
   icMasked: string | null
   isActive: boolean
@@ -93,6 +94,7 @@ export interface UserPatchRow {
   username?: string | null
   phone?: string | null
   bio?: string | null
+  aspiration?: string | null
   schoolId?: string | null
   grade?: number | null
   icHash?: string | null
@@ -196,6 +198,7 @@ function toRecord(u: UserDb): UserRecord {
     schoolId: u.schoolId === null ? null : idToString(u.schoolId),
     grade: u.grade,
     bio: u.bio,
+    aspiration: u.aspiration,
     idDelima: u.idDelima,
     icMasked: u.icMasked,
     isActive: u.isActive,
@@ -692,6 +695,15 @@ export class UsersRepository {
     return rows.length > 0
   }
 
+  /** Which of the lower-case `usernames` already exist in the school (one query; the generator of S6-T10). */
+  async takenUsernames(schoolId: string, usernames: readonly string[]): Promise<Set<string>> {
+    if (!isIdString(schoolId) || usernames.length === 0) return new Set()
+    const lower = usernames.map((u) => u.toLowerCase())
+    const rows = await this.prisma.client.$queryRaw<{ u: string }[]>`
+      SELECT lower(username) AS u FROM users WHERE school_id = ${idFromString(schoolId)} AND lower(username) = ANY(${lower}::text[])`
+    return new Set(rows.map((r) => r.u))
+  }
+
   /** Lower-case e-mails among `emails` that already exist (one query for a whole import). */
   async existingEmails(emails: readonly string[]): Promise<Set<string>> {
     const lower = [...new Set(emails.map((e) => e.toLowerCase()))]
@@ -752,6 +764,7 @@ export class UsersRepository {
         ...(rest.username !== undefined ? { username: rest.username } : {}),
         ...(rest.phone !== undefined ? { phone: rest.phone } : {}),
         ...(rest.bio !== undefined ? { bio: rest.bio } : {}),
+        ...(rest.aspiration !== undefined ? { aspiration: rest.aspiration } : {}),
         ...(rest.grade !== undefined ? { grade: rest.grade } : {}),
         ...(rest.icHash !== undefined ? { icHash: rest.icHash } : {}),
         ...(rest.icMasked !== undefined ? { icMasked: rest.icMasked } : {}),

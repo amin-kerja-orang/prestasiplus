@@ -34,8 +34,22 @@ export class NoStructuredAttempts implements SpmStructuredAttemptSource {
   }
 }
 
+/** Papers as the hub sees them (S3-T07): only the count of the Kertas Subjektif card. */
+export interface SpmPaperSource {
+  /** Published papers with `surface = 'subjektif'`; `level_scope` is not applied (the S3-T06 list does not apply it). */
+  countPublishedSubjektif(): Promise<number>
+}
+
+/** Until the module binds its adapter: no papers. */
+export class NoPapers implements SpmPaperSource {
+  async countPublishedSubjektif(): Promise<number> {
+    return 0
+  }
+}
+
 @Injectable()
 export class SpmPorts {
+  private papersSource: SpmPaperSource = new NoPapers()
   private attemptSource: SpmStructuredAttemptSource = new NoStructuredAttempts()
   private readonly set = new Set<string>()
 
@@ -48,5 +62,16 @@ export class SpmPorts {
     if (this.set.has('structured attempts')) throw new Error('SpmPorts: the structured attempts source is already set')
     this.set.add('structured attempts')
     this.attemptSource = source
+  }
+
+  get papers(): SpmPaperSource {
+    return this.papersSource
+  }
+
+  /** The papers table adapter, bound by `SpmModule.onModuleInit`. */
+  providePapers(source: SpmPaperSource): void {
+    if (this.set.has('papers')) throw new Error('SpmPorts: the papers source is already set')
+    this.set.add('papers')
+    this.papersSource = source
   }
 }

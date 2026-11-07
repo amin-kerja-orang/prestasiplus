@@ -21,7 +21,7 @@ import { RateLimiter } from '../../../common/throttle'
 import { XsQueries } from '../xs-queries'
 import { isOverloadError } from '../../auth/auth.errors'
 import { PasswordService } from '../../auth/password.service'
-import { ClassesRepository } from '../../classes'
+import { ClassesRepository, gradeOfLevel } from '../../classes'
 import { SchoolsRepository, type SchoolRow } from '../../schools'
 import type { Caller } from '../../users/caller'
 import { generatePassword, UsersRepository, uniqueField, type ManagedCounts, type ManagedRole, type UserRecord } from '../../users'
@@ -201,13 +201,14 @@ export class ManagedUsersService {
 
     const id = await this.write(async (tx) => {
       if (classId !== null && !(await this.classIsValid(ctx, classId))) throw invalidFields({ classId: V.invalid('class id') })
+      const grade = classId !== null && kind.role === 'student' ? await this.classGrade(classId) : null
       const newId = await this.users.create({
         name: input.name,
         email: input.email,
         username: null,
         phone: input.phone,
         schoolId: ctx.actor.schoolId,
-        grade: null,
+        grade, // a pupil in a Tingkatan class takes its level (XS-1 needs grade 7..11); otherwise null
         passwordHash,
         mustChangePassword: false, // R39: an admin-created account is not forced to change its password
         icHash: null,
@@ -358,6 +359,15 @@ export class ManagedUsersService {
   private async classIsValid(ctx: PeopleCtx, classId: string): Promise<boolean> {
     const c = await this.classes.get(classId)
     return c !== null && c.kind === 'classroom' && c.isActive && c.schoolId === ctx.actor.schoolId
+  }
+
+  /** The Tingkatan grade (7..11) of a class's level, or null (no level grade, or a Darjah level). */
+  private async classGrade(classId: string): Promise<number | null> {
+    const c = await this.classes.get(classId)
+    if (!c) return null
+    const level = (await this.classes.levelGrades([c.educationLevelId])).get(c.educationLevelId)
+    const grade = gradeOfLevel(level)
+    return grade !== null && grade >= 7 && grade <= 11 ? grade : null
   }
 
   async schoolOf(ctx: PeopleCtx): Promise<SchoolRow> {

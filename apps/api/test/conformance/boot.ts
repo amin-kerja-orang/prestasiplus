@@ -29,7 +29,7 @@ import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
 import { PocBuilderQuestionSource } from '../support/poc/builder-source'
 import { battleConformanceEnv, seedBattleConformance } from './battle/fixtures'
 import { serveSeededBlueprints, setPocMarkBudgets } from '../support/serve-blueprints'
-import { createTestDatabase, type TestDatabase } from '../support/db'
+import { createTestDatabase, stubPlacedQuestions, type TestDatabase } from '../support/db'
 
 /** Fixed "now" (Malaysia time) of the injected clock, as the other integration suites use. */
 export const CONFORMANCE_START = '2026-10-19T09:00:00+08:00'
@@ -126,6 +126,7 @@ export interface BootOptions {
 export async function bootConformanceApp(opts: BootOptions = {}): Promise<ConformanceApp> {
   const db = await createTestDatabase()
   await runSeeds(CONFORMANCE_SEEDS, { prisma: db.prisma })
+  await stubPlacedQuestions(db) // DM-11: the scenarios place the reserved PoC ids of the fixture, which live in no table
   // The seeded second demo school (DEMO002) is primary (type SK, a Darjah 4 roster pupil). Secondary-only (D72) hides every primary
   // school and Darjah pupil from the lists and reads, so the scenarios that need "another school" would find none. The conformance
   // run makes it a secondary school with one Tingkatan 2 pupil (no teacher, no T4/T5 pupil, as the scenarios expect).

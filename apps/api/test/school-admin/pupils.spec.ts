@@ -8,6 +8,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { XsQueries } from '../../src/modules/school-admin/xs-queries'
 import { login, SCHOOL_ADMIN, schoolIdOf, STUDENT, TEACHER, userIdOf, type SchoolAdminTestApp } from './helpers'
 import { xsPupilCount } from './reports-fixtures'
 import { auditRows, bootPeopleApp, countOf, enrolIn, errorOf, expectNoCache, insertClass, insertUser, loginWith, peopleApiOf, userRow, type PeopleApi } from './people-helpers'
@@ -182,6 +183,27 @@ describe('BE-21 pupils: /admin-sekolah/pelajar', () => {
     for (const secret of ['Budi Demo', 'budi@ujian.test', body.credential.password]) expect(JSON.stringify(audit?.detail)).not.toContain(secret)
     // A blank classId means no class.
     expect((await admin.post('/admin-sekolah/pelajar', { name: 'Cahaya Demo', email: 'cahaya@ujian.test', classId: '' })).status).toBe(201)
+  })
+
+  it('create with a Tingkatan class takes the class grade and is counted by XS-1; without a class the grade stays null', async () => {
+    const levelOf = async (code: string, grade: number, stage: string) =>
+      (await t.db.query<{ id: string }>(`select id::text from education_levels where grade = $1`, [grade]))[0]?.id ??
+      (await t.db.query<{ id: string }>(`insert into education_levels (code, name, name_en, stage, curriculum, grade) values ($1, $1, $1, $2, 'KSSM', $3) returning id::text`, [code, stage, grade]))[0]?.id
+    const t4 = await levelOf('T4', 10, 'upper_secondary')
+    const cls4 = await insertClass(t.db, { name: '4 Cemerlang', schoolId: s1, teacherId: teacher })
+    await t.db.query(`update classrooms set education_level_id = $1::bigint where id = $2::bigint`, [t4, cls4])
+    const xs = t.app.get(XsQueries, { strict: false })
+    const scope = { kind: 'school', schoolId: s1 } as const
+    const before = await xs.pupilCount(scope)
+
+    const withClass = SchoolAdminPupilCreatedResultSchema.parse((await admin.post('/admin-sekolah/pelajar', { name: 'Eman Tingkatan', email: 'eman@ujian.test', classId: cls4 })).body)
+    expect((await userRow(t.db, withClass.data.id))?.grade).toBe(10)
+    expect(await xs.pupilCount(scope)).toBe(before + 1)
+    expect((await xs.pupils(scope)).ids).toContain(withClass.data.id)
+
+    const noClass = SchoolAdminPupilCreatedResultSchema.parse((await admin.post('/admin-sekolah/pelajar', { name: 'Farah Tanpa Kelas', email: 'farah@ujian.test' })).body)
+    expect((await userRow(t.db, noClass.data.id))?.grade).toBeNull()
+    expect(await xs.pupilCount(scope)).toBe(before + 1)
   })
 
   it('create: a class that is not an active classroom of THIS school is 422 "The selected class id is invalid." and nothing is written', async () => {

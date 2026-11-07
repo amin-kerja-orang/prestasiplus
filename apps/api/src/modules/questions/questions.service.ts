@@ -1,13 +1,17 @@
+import { isDeepStrictEqual } from 'node:util'
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common'
+import { z } from 'zod'
 import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
   QuestionPartSchema,
+  QuestionWritePartSchema,
   type QuestionPart,
 } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
+import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
@@ -20,6 +24,8 @@ import { gradeQuestion } from './grading'
 import {
   flatFromVersion,
   kertasOfPaperCode,
+  bilingualScriptConflict,
+  enText,
   languageToStore,
   partsFromFlat,
   paperCodeWithKertas,
@@ -33,7 +39,7 @@ import { GATES } from './workflow/lifecycle/gates'
 import { GroupMembers } from './group-members'
 import { assertServableSomewhere } from './serving/approval-guard'
 import { ServabilityService } from './serving/servability.service'
-import { QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
+import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
 import type {
@@ -42,6 +48,7 @@ import type {
   NamedRef,
   Page,
   PartAnswer,
+  PersonalQuestionWrite,
   PublicQuestion,
   QuestionActor,
   QuestionBulkAction,
@@ -87,6 +94,7 @@ export interface FilterBulkOutcome {
   remaining: number
   capped: boolean
   dryRun: boolean
+  affectedPapers?: { id: string; title: string }[]
 }
 
 const parse = (text: string): bigint | null => {
@@ -179,6 +187,8 @@ interface Normalized {
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
   stem: string
+  /** English stem: text sets it, null clears it, undefined keeps what is stored. */
+  stemEn?: string | null | undefined
   parts: QuestionPart[]
   language: VersionDraft['language']
   explanation: string | null
@@ -192,7 +202,7 @@ interface Normalized {
   /** Stem image file id: a string sets/replaces it, null removes it, undefined keeps what is stored. */
   stemImage?: string | null | undefined
   /** Kertas: a digit sets it, null clears it, undefined keeps what is stored. */
-  kertas?: '1' | '2' | '3' | null | undefined
+  kertas?: '1' | '2' | '3' | '4' | null | undefined
   /** A source paper code stored verbatim (intake); wins over `kertas`. */
   paperCode?: string | null | undefined
   /** Who writes: image files must be theirs (or the actor is an admin) when they are new to the question. */
@@ -209,6 +219,16 @@ interface Normalized {
  * Errors: 404 `NOT_FOUND` for an unknown id and for a row the caller may not see; 422
  * `VALIDATION_ERROR` with `fields`; 409 `CONFLICT` for a status pair outside the contract table.
  */
+/** S6-T16: what the caller of a personal-question write runs INSIDE the write transaction. */
+export interface PersonalTxHooks {
+  /** After the question row lock, before the write: throw to refuse (the in-use 409). */
+  guard?: (tx: TxClient) => Promise<unknown>
+  /** Delete only: removes rows that point at the question (its Ulang Kaji queue rows). */
+  cleanup?: (tx: TxClient) => Promise<unknown>
+  /** The audit of the write. */
+  after?: (tx: TxClient, questionId: string) => Promise<unknown>
+}
+
 /** [PROPOSED] (no V2 phrase): a flat edit of an `essay_choice` question may not change what lives on its part (REQ-B-021c). */
 const ESSAY_CHOICE_FLAT_MESSAGES = {
   modelAnswer: 'Jawapan model esei pilihan tidak boleh disunting di sini. Ubah kunci rubrik pada bahagian soalan.',
@@ -258,13 +278,18 @@ export class QuestionsService {
     }
   }
 
+  /** Status counts and questions created since `since`, on the same base as `summary` (Admin Pusat dashboard, S6-T11). */
+  statusSummary(since: Date): Promise<{ total: number; byStatus: Record<QuestionStatus, number>; createdSince: number }> {
+    return this.repo.statusSummary(since)
+  }
+
   /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
   async filterOptions(): Promise<{ negeri: string[] }> {
     return { negeri: await this.repo.examBoards() }
   }
 
   async getAdmin(id: string): Promise<QuestionDetailView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     // R1-T45b (PIPE AC-04.4): Admin Pusat only; the Guru and structured reads share `detail` but never get the papers.
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
@@ -295,6 +320,7 @@ export class QuestionsService {
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
         stem: input.questionText,
+        stemEn: enText(input.questionTextEn),
         parts,
         language: languageToStore(input.language, undefined),
         explanation: input.explanation?.trim() || null,
@@ -329,7 +355,7 @@ export class QuestionsService {
   }
 
   async update(id: string, input: QuestionUpdateInput, actor: QuestionActor): Promise<QuestionView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.viewOf(await this.applyUpdate(record, input, actor))
   }
@@ -346,7 +372,7 @@ export class QuestionsService {
     let versionNo = 0
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw questionNotFound()
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) throw questionNotFound()
       const v = record.version
       if (v.status === 'draft' || v.status === 'review') {
@@ -391,8 +417,14 @@ export class QuestionsService {
     return { id, versionNo }
   }
 
+  /** DM-42: an admin action by id treats a personal (teacher_private) question as unknown (404, no existence oracle). Guru `removeOwn` does not use it. */
+  private async assertBankQuestion(id: string): Promise<void> {
+    if (!(await this.repo.get(id, 'latest', BANK_ONLY))) throw questionNotFound()
+  }
+
   async remove(id: string, actor: QuestionActor): Promise<void> {
     void actor
+    await this.assertBankQuestion(id)
     if (!(await this.removeGuarded(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
@@ -433,7 +465,7 @@ export class QuestionsService {
     let done = false
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) return
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) return
       const v = record.version
       if (v.status === 'approved' || v.status === 'archived' || (await this.repo.versionIsPinned(id, v.versionNo))) {
@@ -493,6 +525,7 @@ export class QuestionsService {
     for (const id of new Set(ids)) {
       try {
         if (action === 'delete') {
+          await this.assertBankQuestion(id)
           if (await this.removeGuarded(id)) {
             affected += 1
             done.push(id)
@@ -517,6 +550,8 @@ export class QuestionsService {
         failed.push(failure)
       }
     }
+    // A bulk hard delete removes served questions: tell the pool and Databank caches (the status moves above invalidate in `setStatus`).
+    if (action === 'delete' && affected > 0) this.overview?.invalidate()
     // `skipped` is present only when a row was skipped (additive on the wire).
     return { affected, ids: done, failed, ...(skipped.length > 0 ? { skipped } : {}) }
   }
@@ -545,14 +580,22 @@ export class QuestionsService {
     }
     const base = { matched: targets.matched, eligible: targets.eligible, skipped: targets.matched - targets.eligible, cap, dryRun }
     if (dryRun || targets.ids.length === 0) {
-      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false }
+      // FR-QA-47: the confirm names the Terbit papers before anything is archived.
+      const placing = input.action === 'archived' && targets.eligible > 0 ? await this.repo.publishedPapersPlacing({ filter: input.filter, fromStatuses: from }) : []
+      return { ...base, processed: 0, affected: 0, ids: [], failed: [], remaining: targets.eligible, capped: false, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
     }
     const done = await this.bulkAction(input.action, targets.ids, actor)
     const remaining = targets.eligible - targets.ids.length
     // A row another request approved between `filterTargets` and `bulkAction` is left as it is (R1E2E-10): it is not applied and not a refusal,
     // so it counts in `skipped` (and still in `processed`, which counts rows tried), never in `affected` or `failed`.
     const raced = done.skipped?.length ?? 0
-    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0 }
+    const placing = input.action === 'archived' ? await this.papersPlacing(done.ids) : []
+    return { ...base, skipped: base.skipped + raced, processed: targets.ids.length, affected: done.affected, ids: done.ids, failed: done.failed, remaining, capped: remaining > 0, ...(placing.length > 0 ? { affectedPapers: placing } : {}) }
+  }
+
+  /** FR-QA-47: the Terbit papers that place these questions. */
+  papersPlacing(ids: readonly string[]): Promise<{ id: string; title: string }[]> {
+    return this.repo.publishedPapersPlacing({ ids })
   }
 
   // --- lifecycle (BE-10 calls these) ------------------------------------------------------------
@@ -561,7 +604,7 @@ export class QuestionsService {
     const actor = options.actor ?? 'admin'
     await this.prisma.transaction(async () => {
       if (!(await this.repo.lock(id))) throw questionNotFound()
-      const record = await this.repo.get(id, 'latest')
+      const record = await this.repo.get(id, 'latest', BANK_ONLY)
       if (!record) throw questionNotFound()
       const v = record.version
       if (options.skipIfAlready === true && v.status === status) throw new AlreadyInStatusError(status)
@@ -610,7 +653,7 @@ export class QuestionsService {
     }, TX)
     // Approve (Terbit), archive (Tarik balik) and the other transitions change what pupils are served (H-A21).
     this.overview?.invalidate()
-    const after = await this.repo.get(id, 'latest')
+    const after = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!after) throw questionNotFound()
     return this.viewOf(after)
   }
@@ -621,7 +664,7 @@ export class QuestionsService {
    * Empty = the gate holds. 404 for an unknown id.
    */
   async gateFieldsOf(id: string, gate: 'submit' | 'approve'): Promise<Record<string, string>> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.gateFields(gate, record, record.version)
   }
@@ -632,7 +675,7 @@ export class QuestionsService {
   }
 
   async getStatus(id: string): Promise<QuestionStatusInfo> {
-    const r = await this.repo.get(id, 'latest')
+    const r = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!r) throw questionNotFound()
     return {
       id: r.id,
@@ -645,11 +688,13 @@ export class QuestionsService {
   }
 
   async deactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.deactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
 
   async reactivate(id: string): Promise<void> {
+    await this.assertBankQuestion(id)
     if (!(await this.repo.reactivate(id))) throw questionNotFound()
     this.overview?.invalidate()
   }
@@ -677,7 +722,7 @@ export class QuestionsService {
   }
 
   async getStructured(id: string): Promise<QuestionDetailView> {
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record || record.version.type !== 'structured') throw questionNotFound()
     return this.detail(record)
   }
@@ -685,14 +730,18 @@ export class QuestionsService {
   // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
 
   /**
-   * One page of what a pupil is served (approved, live, figures present), newest first. `status=review` is the teacher's own submissions,
-   * which have no source yet: an empty page. The caller fixes the page size.
+   * One slice of what a pupil is served (approved, live, figures present), newest first; `total` is the approved count. The own `review`
+   * submissions of the caller are merged in by the controller (S6-T17), which sets `offset` and `limit` to the part of the union that is approved.
    */
-  async listGuruStructured(filter: StructuredListFilter, status: 'approved' | 'review'): Promise<Page<QuestionView>> {
-    if (status === 'review') return { rows: [], page: filter.page, pageSize: filter.pageSize, total: 0 }
+  async listGuruStructured(filter: StructuredListFilter): Promise<Page<QuestionView>> {
     const page = await this.repo.structuredIds({ ...filter, served: true, newestFirst: true })
     const records = await this.repo.getMany(page.ids, 'live')
     return { rows: await this.named(records), page: filter.page, pageSize: filter.pageSize, total: page.total }
+  }
+
+  /** Of these question ids, those the teacher list serves (so an own item whose question is NOT served stays on the own side). */
+  servedStructuredAmong(ids: readonly string[]): Promise<Set<string>> {
+    return this.repo.structuredServedAmong(ids)
   }
 
   /**
@@ -707,16 +756,94 @@ export class QuestionsService {
     return { ...(await this.viewOf(record)), stimulusGroup }
   }
 
+  // --- personal questions (S6-T16, API-GUR-24, DM-42) ------------------------------------------------------------
+  // A teacher's own MCQ: `visibility = 'teacher_private'`, `owner_user_id` = the teacher, `created_by_id` NULL (so no Sumbang count or badge
+  // sees it, FR-GUR-44a-4), saved already `approved` and live. It skips the approve gate (it never enters Semakan, the bank or a paper) and
+  // `assertServableSomewhere` (it is served by the owner's mission draw only). The caller (classes/teacher-tools) validates the curriculum
+  // rules (D112) and owns the 404/409 rules; this method only builds and writes the version.
+
+  private personalNormalized(input: PersonalQuestionWrite, userId: string): Normalized {
+    const spIds = [...new Set(input.spIds ?? [])]
+    const parts = this.checkedParts(
+      partsFromFlat({
+        questionType: 'mcq',
+        questionText: input.text,
+        options: input.options.map((o) => o.text),
+        correctAnswer: input.correctIndex,
+        ...(input.cognitiveLevel ? { cognitiveLevel: input.cognitiveLevel } : {}),
+      }),
+      false,
+    )
+    return {
+      subjectId: input.subjectId,
+      educationLevelId: input.educationLevelId,
+      tp: input.tp ?? input.difficulty,
+      difficultyLevel: input.difficulty,
+      stem: input.text,
+      parts,
+      language: languageToStore(undefined, undefined),
+      explanation: null,
+      ...(spIds.length === 0 ? {} : { tag: { unitId: null, spIds, tp: input.tp ?? null } }),
+      chapterId: input.chapterId ?? undefined,
+      actor: { userId, role: 'teacher' },
+      flatSp: spIds.length === 0,
+    }
+  }
+
+  /** Creates the personal question and returns its question id (decimal). `after` runs inside the same transaction (the caller's audit). */
+  async createPersonal(input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<string> {
+    const owner = parse(ownerUserId)
+    if (owner === null) throw questionNotFound()
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.visibility = 'teacher_private'
+    draft.ownerUserId = owner
+    draft.referenceUrl = input.referenceUrl ?? null
+    return this.prisma.transaction(async (tx) => {
+      const id = await this.repo.create({ sourceType: 'manual', createdById: null, groupId: null, groupPosition: null, now: this.clock.now(), version: draft })
+      await hooks.after?.(tx, id)
+      return id
+    }, TX)
+  }
+
+  /**
+   * Rewrites the content of a personal question in place (one version, no history). Owner and visibility never change. `guard` runs inside
+   * the transaction AFTER the question row lock (so a check and the write cannot be separated), `after` at the end of it.
+   */
+  async rewritePersonal(questionId: string, versionNo: number, input: PersonalQuestionWrite, ownerUserId: string, hooks: PersonalTxHooks = {}): Promise<void> {
+    const { draft } = await this.draftOf(this.personalNormalized(input, ownerUserId), 'approved', null)
+    draft.referenceUrl = input.referenceUrl ?? null
+    await this.prisma.transaction(async (tx) => {
+      if (!(await this.repo.lock(questionId))) throw questionNotFound()
+      await hooks.guard?.(tx)
+      await this.repo.rewriteVersion(questionId, versionNo, draft, this.clock.now())
+      await hooks.after?.(tx, questionId)
+    }, TX)
+  }
+
+  /** Hard-deletes a personal question (cascades to its version, parts, options and key). False when it is already gone. Hooks run in the same transaction after the lock. */
+  async removePersonal(questionId: string, hooks: PersonalTxHooks = {}): Promise<boolean> {
+    return this.prisma.transaction(async (tx) => {
+      if (!(await this.repo.lock(questionId))) return false
+      await hooks.guard?.(tx)
+      await hooks.cleanup?.(tx)
+      const removed = await this.repo.remove(questionId)
+      if (removed) await hooks.after?.(tx, questionId)
+      return removed
+    }, TX)
+  }
+
   // --- learners (BE-12, BE-15, BE-41); there is no student HTTP route (Q-3) ---------------------
 
+  // DM-42: these two have no caller in the mission path (the mission is served by the practice session, which reads by id and grades
+  // pinned versions), so a private question is simply not found here: a bank-only read, no owner option that nobody passes.
   async getPublicForLearner(id: string): Promise<PublicQuestion> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return toPublic(record)
   }
 
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
-    const record = await this.repo.get(id, 'live')
+    const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
     return gradeQuestion(record.id, record.version.parts, answers)
   }
@@ -740,20 +867,39 @@ export class QuestionsService {
 
   // --- internals ----------------------------------------------------------------------------------
 
+  /** Parses each top-level part with the strict write schema, or the lenient read schema when `unchanged(part, index)`. */
+  private parseParts(parts: QuestionPart[], unchanged: (p: QuestionPart, i: number) => boolean):
+    | { success: true; data: QuestionPart[] }
+    | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } } {
+    // The count rule is the one the schema always had (`array().min(1).max(20)`), so its message stays unchanged.
+    const sized = z.array(z.unknown()).min(1).max(20).safeParse(parts)
+    if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
+    const data: QuestionPart[] = []
+    for (const [i, p] of parts.entries()) {
+      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
+      data.push(r.data as QuestionPart)
+    }
+    return { success: true, data }
+  }
+
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean): QuestionPart[] {
+  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
     }
-    const res = QuestionPartSchema.array().min(1).max(20).safeParse(parts)
+    // Strict (write) rules for new and changed top-level parts; a part carried over unchanged from the stored version keeps the
+    // lenient read rules, so a legacy row (marks 0, duplicate labels) can still have its stem or tag fixed (#692).
+    const unchanged = (p: QuestionPart, i: number): boolean => stored?.[i] !== undefined && isDeepStrictEqual(stored[i], p)
+    const res = this.parseParts(parts, unchanged)
     if (res.success) {
       // BE-42: the PKSK leaf is valid only on a question tagged `pksk_domain`, which only PkskQuestionsService writes.
       if (leavesOf(res.data).some(({ leaf }) => leaf.mode === 'pksk_choice')) throw fail({ [supplied ? 'parts' : 'questionType']: PKSK_LEAF_REFUSED })
       return res.data
     }
     const issue = res.error.issues[0]
-    const deepest = issue ? deepestIssue(issue as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
+    const deepest = issue ? deepestIssue(issue as unknown as UnionLike, []) : { path: [] as PropertyKey[], message: 'Data tidak sah.' }
     const key = supplied ? ['parts', ...deepest.path.map(String)].join('.') : this.flatKeyOf(deepest.path)
     throw fail({ [key]: deepest.message })
   }
@@ -898,7 +1044,7 @@ export class QuestionsService {
       if (status === 'approved') await assertServableSomewhere(this.servability, String(created))
       return created
     }, TX)
-    const record = await this.repo.get(id, 'latest')
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record) throw questionNotFound()
     return this.viewOf(record)
   }
@@ -1038,7 +1184,7 @@ export class QuestionsService {
       status,
       type: versionTypeOf(n.parts),
       stemMs: n.stem,
-      stemEn: v?.stemEn ?? null,
+      stemEn: n.stemEn === undefined ? (v?.stemEn ?? null) : n.stemEn,
       numberLabel: n.numberLabel !== undefined ? (n.numberLabel === '' ? null : n.numberLabel) : (v?.numberLabel ?? null),
       language: n.language,
       explanationMs: n.explanation,
@@ -1104,7 +1250,7 @@ export class QuestionsService {
 
     let parts: QuestionPart[]
     if (input.parts) {
-      parts = this.checkedParts(input.parts, true)
+      parts = this.checkedParts(input.parts, true, v.parts)
     } else if (flatShaped) {
       // Remove wins; else a sent id (or null = no image) replaces the stored one; an omitted position keeps it.
       const optionImageIds = flat.optionImageIds.map((id, i) =>
@@ -1125,7 +1271,7 @@ export class QuestionsService {
         cognitiveLevel: input.cognitiveLevel === undefined ? ((single as { cognitiveLevel?: string | null } | undefined)?.cognitiveLevel ?? null) : input.cognitiveLevel,
       }
       if (flat.questionType === 'mcq' && src.options !== undefined && src.options.length !== 4) throw fail({ options: QUESTION_MESSAGES.options })
-      parts = this.checkedParts(partsFromFlat(src), false)
+      parts = this.checkedParts(partsFromFlat(src), false, v.parts)
     } else {
       // REQ-B-021c: an essay_choice question has no flat model answer or points field (its key and marks live on the part). A
       // flat edit that CHANGES either is refused; echoing the stored value (what the edit form reads back) is not a change.
@@ -1141,9 +1287,12 @@ export class QuestionsService {
 
     // Level 5 on the flat scale may be TP 5 or 6: keep the stored TP when the body repeats what was read.
     const keepTp = v.difficultyTp !== null && input.difficultyLevel === flat.difficultyLevel
+    // Known R1 limit: a Jawi or Arab question cannot be bilingual. Their stored script stays (the flat body has no script field); asking
+    // them to become `ms+en` is a 422 on `language`. A bilingual (`ms_en`) row follows the language sent, so it can go back to `ms` or `en`.
+    if (bilingualScriptConflict(input.language, v.language)) throw fail({ language: QUESTION_MESSAGES.language })
     const language = input.language === undefined
       ? v.language
-      : v.language === 'ar' || v.language === 'jawi' || v.language === 'ms_en'
+      : v.language === 'ar' || v.language === 'jawi'
         ? v.language
         : languageToStore(input.language, undefined)
     const dskpSpId = input.dskpSpId === undefined ? undefined : input.dskpSpId === '' ? null : input.dskpSpId
@@ -1154,6 +1303,7 @@ export class QuestionsService {
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
       stem: input.questionText,
+      stemEn: enText(input.questionTextEn),
       parts,
       language,
       explanation: input.explanation === undefined ? v.explanationMs : input.explanation?.trim() || null,
@@ -1177,7 +1327,7 @@ export class QuestionsService {
     await this.prisma.transaction(async () => {
       // Two concurrent edits serialise here; the second one sees the first one's version.
       if (!(await this.repo.lock(record.id))) throw questionNotFound()
-      const fresh = await this.repo.get(record.id, 'latest')
+      const fresh = await this.repo.get(record.id, 'latest', BANK_ONLY)
       if (!fresh) throw questionNotFound()
       // The image set, stimuli and paper code were derived from the record read before the lock. If another edit landed in
       // between, derive them again from the version read under the lock.
@@ -1208,7 +1358,7 @@ export class QuestionsService {
         await this.groupMembers.move(record.id, fresh.groupId, input.stimulusGroupId)
       }
     }, TX)
-    const after = await this.repo.get(record.id, 'latest')
+    const after = await this.repo.get(record.id, 'latest', BANK_ONLY)
     if (!after) throw questionNotFound()
     return after
   }
@@ -1258,8 +1408,10 @@ export class QuestionsService {
       (chapterIds.length === 0 ? [] : await this.curriculum.chaptersByIds(chapterIds)).map((c) => [idToString(c.id), c.name]),
     )
     const tokens = fileIds.size === 0 ? new Map<string, string>() : await this.files.publicIdsOf([...fileIds])
+    const liveFlags = await this.repo.openLiveFlags(records.map((r) => r.id))
     return records.map((r) => ({
       ...r,
+      openFlags: liveFlags.has(r.id) ? [liveFlags.get(r.id) as 'stimulus_missing' | 'figure_only' | 'stem_duplicated'] : [],
       subject: (r.version.subjectId && refs.subjects.get(r.version.subjectId)) || null,
       level: (r.version.educationLevelId && refs.levels.get(r.version.educationLevelId)) || null,
       imageTokens: Object.fromEntries(tokens),

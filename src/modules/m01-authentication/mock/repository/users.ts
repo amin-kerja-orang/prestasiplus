@@ -288,12 +288,14 @@ export interface AdminUserFilter {
 export interface UserInput {
   name: string
   email: string
+  username?: string | null
   role: UserRole
   phone?: string | null
   grade?: number | null
   schoolId?: number | null
   isActive?: boolean
   bio?: string | null
+  aspiration?: string | null
   avatarUrl?: string | null
   ppdState?: string | null
   ppdDistrict?: string | null
@@ -579,6 +581,7 @@ export const usersRepo = defineRepository({
           store.insert({
             name: input.name,
             email: input.email.trim(),
+            username: input.username ?? null,
             phone: input.phone ?? null,
             role: input.role,
             grade,
@@ -639,6 +642,17 @@ export const usersRepo = defineRepository({
         const ic = normaliseIc(icNumber)
         if (!s || s.icHash === null || ic === null) return false
         return hashSecret(s.salt, 'ic', ic) === s.icHash
+      },
+
+      /** `true` when some account already stores this IC (API-GUR-06 409); compared as entered after trimming. */
+      icInUse(icNumber: string): boolean {
+        const ic = normaliseIc(icNumber)
+        if (ic === null) return false
+        return (
+          stores.secrets.query({
+            match: (s) => s.icHash !== null && hashSecret(s.salt, 'ic', ic) === s.icHash,
+          }).total > 0
+        )
       },
 
       /** The masked IC ("xxxxxx-xx-xx" + last 2 digits), or null. */

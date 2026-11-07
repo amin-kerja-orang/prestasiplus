@@ -194,6 +194,17 @@ describe('table (FR-M27-112, 113, 115; AC-M27-31.2, 32.3)', () => {
     expect(router.currentRoute.value.fullPath).toBe('/admin-sekolah/pelajar?classroomId=2001')
   })
 
+  it('shows a school_class name as plain text: no anchor, no link (no class dashboard)', async () => {
+    const w = await mountPage(list([row(2001), row(2002, { kind: 'school_class', key: 'school_class:2002', link: null })]))
+    const names = w.findAll('[data-testid="kl-name"]')
+    expect(names).toHaveLength(2)
+    expect(names[0]?.element.tagName).toBe('A')
+    expect(names[1]?.text()).toBe('5 KELAS 2002')
+    expect(names[1]?.element.tagName).not.toBe('A')
+    expect(names[1]?.attributes('href')).toBeUndefined()
+    expect(names[1]?.find('a').exists()).toBe(false)
+  })
+
   it('shows the badge "Tidak Aktif" for an inactive class only', async () => {
     const w = await mountPage(list([row(1), row(2, { isActive: false })]))
     const badges = w.findAll('[data-testid="kl-inactive"]')

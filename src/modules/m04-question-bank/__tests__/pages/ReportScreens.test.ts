@@ -129,7 +129,8 @@ describe('QuestionReportsPage (M04 S7)', () => {
       'Ditolak (1)',
       'Semua (11)',
     ])
-    expect(w.findAll('[data-active=true]').map((t) => t.text())).toEqual(['Menunggu (2)'])
+    expect(w.findAll('[data-testid=reports-tabs] [data-active=true]').map((t) => t.text())).toEqual(['Menunggu (2)'])
+    expect(w.get('[data-testid=question-area-tab-laporan]').attributes('data-active')).toBe('true')
     expect(api.fetchQuestionReports).toHaveBeenCalledWith(expect.objectContaining({ status: null }))
   })
 
@@ -137,7 +138,7 @@ describe('QuestionReportsPage (M04 S7)', () => {
     api.fetchQuestionReports.mockResolvedValue(adminResult([], null))
     const w = await renderAdmin('/admin/question-reports?status=zzz')
     expect(w.get('[data-testid=reports-empty]').text()).toBe('Tiada laporan buat masa ini')
-    expect(w.findAll('[data-active=true]')).toHaveLength(0)
+    expect(w.findAll('[data-testid=reports-tabs] [data-active=true]')).toHaveLength(0)
   })
 
   it('a pending structured card: badges, pill, block, comment and all five actions', async () => {
@@ -224,6 +225,46 @@ describe('QuestionReportsPage (M04 S7)', () => {
     })
   })
 
+  it('"Disemak" sends reviewed with the notes, only on a pending report (PRD30 Q-22 machine)', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    const w = await renderAdmin()
+    await w.get('[data-testid=report-notes]').setValue('Dalam semakan')
+    await w.get('[data-testid=report-review]').trigger('click')
+    await flushPromises()
+    expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, { status: 'reviewed', adminNotes: 'Dalam semakan' })
+    expect(api.fetchQuestionReports).toHaveBeenCalledTimes(2)
+  })
+
+  it('a reviewed report has no "Disemak"; the card shows the paper when it has one (FR-ADM-Q22.1)', async () => {
+    api.fetchQuestionReports.mockResolvedValue(
+      adminResult([mcq(11, { paper: { label: 'Matematik Kertas 1' } })]),
+    )
+    const w = await renderAdmin('/admin/question-reports?status=reviewed')
+    expect(w.find('[data-testid=report-review]').exists()).toBe(false)
+    expect(w.get('[data-testid=report-paper]').text()).toBe('Kertas: Matematik Kertas 1')
+  })
+
+  it('a report without a paper, or with an empty paper label, shows no paper line', async () => {
+    const w = await renderAdmin()
+    expect(w.find('[data-testid=report-paper]').exists()).toBe(false)
+    wrapper?.unmount()
+    api.fetchQuestionReports.mockResolvedValue(adminResult([report(12, { paper: { label: '' } })]))
+    const again = await renderAdmin()
+    expect(again.find('[data-testid=report-paper]').exists()).toBe(false)
+  })
+
+  it('a reviewed report keeps "Arkib" and it still archives', async () => {
+    api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
+    api.fetchQuestionReports.mockResolvedValue(
+      adminResult([mcq(11, { question: { ...mcq(11).question, isActive: true } })]),
+    )
+    const w = await renderAdmin('/admin/question-reports?status=reviewed')
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await w.get('[data-testid=report-archive]').trigger('click')
+    await flushPromises()
+    expect(api.updateQuestionReport).toHaveBeenLastCalledWith(11, expect.objectContaining({ status: 'fixed', archive: true }))
+  })
+
   it('"Tolak & Aktifkan Semula" and "Nyahaktif Segera" send the fixed notes and flags', async () => {
     api.updateQuestionReport.mockResolvedValue({ data: {}, status: 'ok' })
     const w = await renderAdmin()
@@ -251,8 +292,9 @@ describe('QuestionReportsPage (M04 S7)', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     await btn.trigger('click')
     await flushPromises()
+    // `fixed` with an archived question is "Dikeluarkan" for the admin and the pupil (PRD30 Q-22).
     expect(api.updateQuestionReport).toHaveBeenLastCalledWith(10, {
-      status: 'reviewed',
+      status: 'fixed',
       adminNotes: 'Diarkibkan oleh admin',
       archive: true,
     })
@@ -385,6 +427,41 @@ describe('LaporanSoalanPage (M04 S13)', () => {
     const badges = wrapper.findAll('[data-testid=my-report-status]').map((n) => n.text())
     expect(badges.filter((t) => t === 'Dikeluarkan')).toHaveLength(1)
     expect(wrapper.text()).not.toContain('Selesai')
+  })
+
+  it('DD1: a card shows the first-reason chip, subject, 2-line text, comment and "Dihantar {d M Y}"', async () => {
+    api.fetchMyReports.mockResolvedValue(
+      mine(
+        [
+          mcq(6, {
+            reasons: ['wrong_answer', 'typo'],
+            reasonLabels: ['Jawapan tidak tepat', 'Kesalahan ejaan / taip'],
+            comment: 'Pilihan C pun salah.',
+            subject: { id: 2, name: 'Matematik' },
+            questionText: 'Rajah 16 menunjukkan dua segi tiga.',
+          }),
+          report(7, { subject: null, questionText: null, comment: null }),
+        ],
+        { pending: 1, reviewed: 1, fixed: 0, dismissed: 0, all: 2 },
+      ),
+    )
+    wrapper = mount(LaporanSoalanPage)
+    await flushPromises()
+    const card = wrapper.get('[data-testid=my-report-6]')
+    expect(card.findAll('[data-testid=my-report-reason]').map((c) => c.text())).toEqual([
+      'Jawapan tidak tepat',
+    ])
+    expect(card.get('[data-testid=my-report-subject]').text()).toBe('Matematik')
+    const text = card.get('[data-testid=my-report-text]')
+    expect(text.text()).toBe('Rajah 16 menunjukkan dua segi tiga.')
+    expect(text.classes()).toContain('line-clamp-2')
+    expect(card.get('[data-testid=my-report-comment]').text()).toBe('Pilihan C pun salah.')
+    expect(card.get('[data-testid=my-report-time]').text()).toBe('Dihantar 25 Sep 2026')
+    expect(card.get('[data-testid=my-report-status]').text()).toBe('Disemak')
+    const bare = wrapper.get('[data-testid=my-report-7]')
+    expect(bare.find('[data-testid=my-report-subject]').exists()).toBe(false)
+    expect(bare.find('[data-testid=my-report-text]').exists()).toBe(false)
+    expect(bare.find('[data-testid=my-report-comment]').exists()).toBe(false)
   })
 
   it('a load failure keeps the counters row and shows the red box', async () => {
