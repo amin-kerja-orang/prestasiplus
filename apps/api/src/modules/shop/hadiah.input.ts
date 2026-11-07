@@ -3,10 +3,9 @@ import { REWARD_BULK_ACTIONS, REWARD_CATEGORIES, REWARD_DELIVERY_METHODS, REWARD
 import { isIdString } from '../../db/ids'
 
 /**
- * Boundary validation of the Hadiah admin writes: a port of the mock `handlers/input.ts` (BR-M15-11, 12, 13).
- * The mock is lenient on purpose (digit strings are accepted for numbers, booleans may be 1/0/"on"/"off"); the
- * messages are the Laravel-style English texts the contract lists (no BM copy exists). The field order of the
- * checks is the order of the summary message ("first message (and N more errors)").
+ * Boundary validation of the Hadiah admin writes (P07-02..15, BR-M15-11, 12, 13). Lenient on the form of a value (digit
+ * strings are accepted for numbers, booleans may be 1/0/"on"/"off"). The messages are the P07 rows where they give one,
+ * else the ERR-REQ-10..15 patterns with the P07 labels.
  */
 
 export type Fields = Record<string, string>
@@ -53,7 +52,25 @@ function asBool(v: unknown, fallback: boolean): boolean | undefined {
   return undefined
 }
 
-const label = (field: string): string => field.replace(/([A-Z])/g, ' $1').toLowerCase()
+/** The P07 label of a field. */
+const LABELS: Readonly<Record<string, string>> = {
+  vendor: 'Vendor',
+  title: 'Tajuk',
+  description: 'Penerangan',
+  denominationRm: 'Nilai (RM)',
+  tokenCost: 'Kos Token',
+  iconEmoji: 'Emoji Icon',
+  stockQuantity: 'Stok',
+  maxPerMonthPerStudent: 'Maks/bulan/pelajar',
+  voucherValidityDays: 'Sah Hari',
+  vendorSku: 'Vendor SKU',
+  displayOrder: 'Display Order',
+  imageUrl: 'Image URL',
+  termsText: 'Terma Khas',
+}
+const label = (field: string): string => LABELS[field] ?? field
+const required = (field: string): string => `${label(field)} diperlukan.`
+const badFormat = (field: string): string => `Format ${label(field)} tidak sah.`
 const record = (body: unknown): Raw => (typeof body === 'object' && body !== null && !Array.isArray(body) ? (body as Raw) : {})
 
 export type ParsedInput = { ok: true; value: HadiahFields } | { ok: false; fields: Fields }
@@ -63,36 +80,36 @@ export function parseHadiahInput(body: unknown): ParsedInput {
   const fields: Fields = {}
   const b = record(body)
 
-  const text = (name: string, max: number, required: boolean): string | null => {
+  const text = (name: string, max: number, isRequired: boolean): string | null => {
     const v = b[name]
     if (isBlank(v)) {
-      if (required) fields[name] = `The ${label(name)} field is required.`
+      if (isRequired) fields[name] = required(name)
       return null
     }
     if (typeof v !== 'string') {
-      fields[name] = `The ${label(name)} field must be a string.`
+      fields[name] = badFormat(name)
       return null
     }
     if (v.length > max) {
-      fields[name] = `The ${label(name)} field must not be greater than ${String(max)} characters.`
+      fields[name] = `${label(name)} tidak boleh melebihi ${String(max)} aksara.`
       return null
     }
     return v
   }
 
-  const int = (name: string, min: number, max: number, required: boolean, fallback: number | null): number | null => {
+  const int = (name: string, min: number, max: number, isRequired: boolean, fallback: number | null): number | null => {
     const v = b[name]
     if (isBlank(v)) {
-      if (required) fields[name] = `The ${label(name)} field is required.`
+      if (isRequired) fields[name] = required(name)
       return fallback
     }
     const n = asInt(v)
     if (n === undefined) {
-      fields[name] = `The ${label(name)} field must be an integer.`
+      fields[name] = name === 'stockQuantity' ? MSG.stockValue : badFormat(name)
       return fallback
     }
     if (n < min || n > max) {
-      fields[name] = `The ${label(name)} field must be between ${String(min)} and ${String(max)}.`
+      fields[name] = name === 'stockQuantity' ? MSG.stockValue : `${label(name)} mesti antara ${String(min)} dan ${String(max)}.`
       return fallback
     }
     return n
@@ -123,10 +140,9 @@ export function parseHadiahInput(body: unknown): ParsedInput {
   const validity = int('voucherValidityDays', 1, 1825, false, 365)
   const displayOrder = int('displayOrder', 0, 9999, false, 100)
 
-  const isActive = asBool(b.isActive, true)
+  // Off by default: the admin activates the catalogue (P07-14, U-OP-09).
+  const isActive = asBool(b.isActive, false)
   if (isActive === undefined) fields.isActive = MSG.isActiveInvalid
-  const consent = asBool(b.requiresParentConsent, false)
-  if (consent === undefined) fields.requiresParentConsent = MSG.requiresParentConsentInvalid
 
   if (Object.keys(fields).length > 0) return { ok: false, fields }
   return {
@@ -148,7 +164,8 @@ export function parseHadiahInput(body: unknown): ParsedInput {
       imageUrl,
       termsText,
       isActive: isActive as boolean,
-      requiresParentConsent: consent as boolean,
+      // No consent status exists (FR-GM-21.3): a posted value is ignored.
+      requiresParentConsent: false,
     },
   }
 }

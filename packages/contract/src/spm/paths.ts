@@ -6,6 +6,12 @@ import { envelopeOf } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import { DutaCardSchema, DutaRecommendationQuerySchema, DutaRecommendationSchema, DutaTierSchema } from './duta'
 import {
+  SpmAdminTrackingACandidateSchema,
+  SpmAdminTrackingAMemberSchema,
+  SpmAdminTrackingASetCreateSchema,
+  SpmAdminTrackingASetItemSchema,
+  SpmAdminTrackingASetSaveSchema,
+  SpmAdminTrackingASetSchema,
   SpmBahasaSubjectSchema,
   SpmCountOptionSchema,
   SpmDatabankSubjectSchema,
@@ -26,6 +32,15 @@ import {
   SpmTrackingASubjectResultSchema,
   SpmTrackingASubjectSchema,
 } from './hub'
+import {
+  SpmHistoryMetaSchema,
+  SpmHistoryModSchema,
+  SpmHistoryQuerySchema,
+  SpmHistoryResponseSchema,
+  SpmHistoryRowModeSchema,
+  SpmHistoryRowSchema,
+  SpmMyStatsSchema,
+} from './history'
 import {
   SpmMockAnswerInputSchema,
   SpmMockCreateRequestSchema,
@@ -76,6 +91,12 @@ export const SPM_COMPONENT_SCHEMAS = {
   SpmWalkthroughSubject: SpmWalkthroughSubjectSchema,
   // hub
   SpmOverview: SpmOverviewSchema,
+  SpmMyStats: SpmMyStatsSchema,
+  SpmHistoryMod: SpmHistoryModSchema,
+  SpmHistoryRowMode: SpmHistoryRowModeSchema,
+  SpmHistoryRow: SpmHistoryRowSchema,
+  SpmHistoryMeta: SpmHistoryMetaSchema,
+  SpmHistoryResponse: SpmHistoryResponseSchema,
   SpmDatabankSubject: SpmDatabankSubjectSchema,
   SpmLatihTubiCard: SpmLatihTubiCardSchema,
   SpmLatihTubiList: SpmLatihTubiListSchema,
@@ -94,6 +115,13 @@ export const SPM_COMPONENT_SCHEMAS = {
   SpmTrackingASubjectResult: SpmTrackingASubjectResultSchema,
   SpmSubjektifSubject: SpmSubjektifSubjectSchema,
   SpmSubjektifOverview: SpmSubjektifOverviewSchema,
+  // Tracking A admin (API-BIJAK-13)
+  SpmAdminTrackingAMember: SpmAdminTrackingAMemberSchema,
+  SpmAdminTrackingACandidate: SpmAdminTrackingACandidateSchema,
+  SpmAdminTrackingASetItem: SpmAdminTrackingASetItemSchema,
+  SpmAdminTrackingASet: SpmAdminTrackingASetSchema,
+  SpmAdminTrackingASetCreate: SpmAdminTrackingASetCreateSchema,
+  SpmAdminTrackingASetSave: SpmAdminTrackingASetSaveSchema,
   // mock exams
   SpmMockListItem: SpmMockListItemSchema,
   SpmMockCreateRequest: SpmMockCreateRequestSchema,
@@ -152,8 +180,24 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
     tags: ['spm'],
     summary: 'SPM hub (M06-01): totals, module chips and the caller practice stats',
     description:
-      '`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is 0. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
+      '`me` is the caller\'s "Prestasi SPM Anda" panel: answers from `practice_answers` over the SPM modes (databank, tracking_a, structured, subjektif, simulasi, kuiz, latih_tubi; legacy past_year and ramalan count as databank and tracking_a), sessions = completed practice sessions + closed Bijak sittings, coins from the M14 ledger, `avgAccuracy` a whole number or null with 0 answers. `yearsAvailable` is omitted while there is no year source; `modules.kertasSubjektif` counts published subjektif papers. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).',
     responses: { 200: json(envelopeOf(SpmOverviewSchema), 'Hub figures.'), 401: UNAUTHORIZED },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/spm/history',
+    tags: ['spm'],
+    summary: 'Sejarah Kuiz SPM (API-BIJAK-07): the caller\'s closed SPM sittings, newest first, 15 per page',
+    description:
+      'Merges completed practice sessions and closed Bijak sittings (`exam_attempts`: submitted or auto_submitted; the row mode follows `paper_kind`). Abandoned, in-progress and swept sessions are never listed. Query `mod` (alias `type`): all, databank, latih_tubi, tracking_a; the legacy past_year and ramalan are accepted as aliases of databank and tracking_a, and the chips Tahun Lepas and Tracking A list the legacy rows too. Only `all` lists Bijak, Subjektif, Berstruktur and Kuiz rows. `halaman` is 1-based. `meta.stats` covers all modes, never the chip or the page. Pupil only.',
+    request: { query: SpmHistoryQuerySchema },
+    responses: {
+      200: json(SpmHistoryResponseSchema, 'One page of rows with the pager meta and the all-mode stats.'),
+      401: UNAUTHORIZED,
+      403: err('FORBIDDEN (the active role is not a pupil).'),
+      422: err('VALIDATION_ERROR (`mod`/`type` outside the list, or `halaman` not a positive integer).'),
+    },
   })
 
   registry.registerPath({
@@ -328,5 +372,64 @@ export function registerSpmPaths(registry: OpenAPIRegistry): void {
       'Picks an active `bintang` ambassador (inspirasi, tetamu and inactive rows are never returned); `data` is null when none is active. M24 takes the route over with the same path and body.',
     request: { query: DutaRecommendationQuerySchema },
     responses: { 200: json(envelopeOf(DutaRecommendationSchema), 'A card or null.'), 401: UNAUTHORIZED },
+  })
+
+  // API-BIJAK-13 (S3-T05): Tracking A admin. The list of sets is the lane read `GET /admin/servability/lanes/tracking-a` (API-BIJAK-12).
+  const SET_PARAMS = z.object({ id: IdSchema.meta({ description: 'Tracking A set id. An unknown id is 404.' }) })
+  const FORBIDDEN_ROLE = err('FORBIDDEN (not the `admin` role), or CSRF_INVALID (missing or wrong X-CSRF-Token) on a mutation.')
+
+  registry.registerPath({
+    method: 'post',
+    path: '/admin/spm/tracking-a',
+    tags: ['spm-admin'],
+    summary: 'Create an empty Tracking A set (Tambah Set)',
+    description: 'Admin Pusat only. BM and BI have no objective sets and are refused as `fields.subjectId` (D-11).',
+    request: {
+      headers: [csrf],
+      body: { required: true, content: { 'application/json': { schema: SpmAdminTrackingASetCreateSchema } } },
+    },
+    responses: {
+      201: json(envelopeOf(SpmAdminTrackingASetSchema), 'The new set.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ROLE,
+      422: err('VALIDATION_ERROR with fields.subjectId "Sila pilih subjek.", fields.year, or fields.setNo (out of range, or "Set {n} sudah wujud untuk subjek dan tahun ini.").'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/spm/tracking-a/{id}',
+    tags: ['spm-admin'],
+    summary: 'One Tracking A set with its units and candidates',
+    description: 'Admin Pusat only. `filled` and `attention` equal the lane row. `candidates` counts; `candidateItems` lists units, servable only, capped.',
+    request: { params: SET_PARAMS },
+    responses: {
+      200: json(envelopeOf(SpmAdminTrackingASetSchema), 'The set.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ROLE,
+      404: NOT_FOUND,
+    },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/spm/tracking-a/{id}',
+    tags: ['spm-admin'],
+    summary: 'Save a Tracking A set in one transaction',
+    description:
+      'Admin Pusat only. Replaces the members in the given order and recomputes `dskp_tagged`. A group is one item, added whole in group order. Refused whole, nothing written: an empty body, an item that is not servable, a group member sent alone, a repeat, a question held by a sibling set, a save above the target, a group that does not fit.',
+    request: {
+      params: SET_PARAMS,
+      headers: [csrf],
+      body: { required: true, content: { 'application/json': { schema: SpmAdminTrackingASetSaveSchema } } },
+    },
+    responses: {
+      200: json(envelopeOf(SpmAdminTrackingASetSchema), 'The saved set.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ROLE,
+      404: NOT_FOUND,
+      409: err('CONFLICT "Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi." (a concurrent save of this set won; nothing was written).'),
+      422: err('VALIDATION_ERROR with fields.items carrying the reason in BM.'),
+    },
   })
 }

@@ -10,6 +10,7 @@ import type { MockRuntime } from '@/mock/index'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
 
 import type {
+  ItemAnalysisMe,
   LevelDetail,
   Ranking,
   SchoolItemAnalysis,
@@ -113,7 +114,7 @@ describe('S6 access (§9)', () => {
 })
 
 describe('S9 / S10 / S11 access', () => {
-  it('S9: parents 403; own school for pelajar and school admin; another school by id is 403', async () => {
+  it('S9: parents and pelajar 403 (FR-MUR-6-2); own school for the school admin; another school by id is 403', async () => {
     expect((await getAs(runtime, PARENT, '/api/item-analysis/school')).status).toBe(403)
     expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/8880')).status).toBe(403)
     const own = await dataAs<SchoolItemAnalysis>(
@@ -127,7 +128,8 @@ describe('S9 / S10 / S11 access', () => {
     expect(own.students).toBe(10)
     expect(own.answers).toBeGreaterThan(80)
     expect(own.subjects.length).toBeGreaterThan(0)
-    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(200)
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school')).status).toBe(403)
+    expect((await getAs(runtime, PELAJAR, '/api/item-analysis/school/900001')).status).toBe(403)
     const officer = (await getAs(runtime, PPD, '/api/item-analysis/school/8880')).status
     expect([200, 403]).toContain(officer)
   })
@@ -325,4 +327,152 @@ describe('S1 / S3 follow writes of other modules (no stale memo)', () => {
     expect(after.stats.students).toBe(before.stats.students + 1)
     expect(after.header.studentCount).toBe(before.header.studentCount + 1)
   }, 120_000)
+})
+
+describe('Tingkatan view of a teacher (S10-T07, R1-GUR-4: own classes only)', () => {
+  const codes = ['t1', 't2', 't3', 't4', 't5'] as const
+
+  it('level detail lists only own classes and their pupils; the school admin still sees the rest', async () => {
+    // Another teacher of the same school and level, with a pupil of her own (a pupil the teacher does not teach).
+    const other = classrooms.create(
+      { name: '4 Guru Lain', teacherId: GURU + 1000, schoolId: 900001, subjectId: null, educationLevel: 'tingkatan-4' },
+      Date.parse('2026-09-25T15:40:00+08:00'),
+    )
+    classrooms.enrol(
+      { kind: 'classroom', classId: other.classId, studentId: PELAJAR2, source: 'teacher' },
+      Date.parse('2026-09-25T15:40:00+08:00'),
+    )
+    const own = new Set(
+      classrooms
+        .forTeacher(GURU)
+        .filter((c) => c.kind === 'classroom' && c.isActive)
+        .map((c) => c.classId),
+    )
+    const ownPupils = new Set(
+      classrooms
+        .forTeacher(GURU)
+        .filter((c) => own.has(c.classId))
+        .flatMap((c) => classrooms.memberIds(c.kind, c.classId)),
+    )
+    expect(own.has(other.classId)).toBe(false)
+    let otherClassesSeenByAdmin = 0
+    for (const code of codes) {
+      const guru = await dataAs<LevelDetail>(runtime, GURU, `/api/performance/levels/${code}`)
+      expect(
+        guru.classRows.every((r) => own.has(r.classId)),
+        `${code} class rows`,
+      ).toBe(true)
+      expect(guru.classes).toBe(guru.classRows.length)
+      expect(guru.topStudents.every((t) => ownPupils.has(t.userId))).toBe(true)
+      expect(guru.atRisk.every((t) => ownPupils.has(t.userId))).toBe(true)
+      if (!ownPupils.has(PELAJAR2)) {
+        expect([...guru.topStudents, ...guru.atRisk].some((t) => t.userId === PELAJAR2)).toBe(false)
+      }
+      const boss = await dataAs<LevelDetail>(runtime, ADMIN_SEKOLAH, `/api/performance/levels/${code}`)
+      otherClassesSeenByAdmin += boss.classRows.filter((r) => !own.has(r.classId)).length
+      expect(boss.classes).toBeGreaterThanOrEqual(guru.classes)
+    }
+    // Not vacuous: the school has classes the teacher does not teach, and the school admin sees them.
+    expect(otherClassesSeenByAdmin).toBeGreaterThan(0)
+  })
+
+  it('the Tingkatan cards count the own classes only', async () => {
+    const own = classrooms.forTeacher(GURU).filter((c) => c.kind === 'classroom' && c.isActive)
+    const cards = await dataAs<{ code: string; classes: number }[]>(runtime, GURU, '/api/performance/levels')
+    expect(cards.reduce((n, c) => n + c.classes, 0)).toBe(own.length)
+  })
+})
+
+describe('GET /api/item-analysis/me (API-RPT-05, R1-MUR-6)', () => {
+  it('answers the pupil own shape; every other role is 403', async () => {
+    const me = await dataAs<ItemAnalysisMe>(runtime, PELAJAR, '/api/item-analysis/me')
+    expect(Object.keys(me).sort()).toEqual(['counts', 'items', 'subjects', 'tiles'])
+    expect(me.tiles.answered).toBeGreaterThan(0)
+    expect(me.tiles.needRemedial).toBe(me.counts.pemulihan)
+    expect(me.tiles.needStrengthen).toBe(me.counts.pengukuhan)
+    const accuracies = me.subjects.map((s) => s.accuracy ?? 101)
+    expect(accuracies).toEqual([...accuracies].sort((a, b) => a - b))
+    for (const i of me.items) {
+      expect(['isyarat_awal', 'pemulihan', 'pengukuhan']).toContain(i.category)
+      if (i.category === 'isyarat_awal') expect([i.attempts, i.correct]).toEqual([1, 0])
+      if (i.category === 'pemulihan') expect(i.correct === 0 && i.attempts >= 2).toBe(true)
+      if (i.category === 'pengukuhan') expect(i.correct > 0 && i.correct < i.attempts).toBe(true)
+      expect(i.wrongTimes).toBe(i.attempts - i.correct)
+    }
+    for (const who of [GURU, ADMIN_SEKOLAH, ADMIN, PARENT]) {
+      expect((await getAs(runtime, who, '/api/item-analysis/me')).status).toBe(403)
+    }
+  })
+
+  it('tapis filters the items only; tiles and counts do not change', async () => {
+    const all = await dataAs<ItemAnalysisMe>(runtime, PELAJAR, '/api/item-analysis/me')
+    const wrong = await dataAs<ItemAnalysisMe>(
+      runtime,
+      PELAJAR,
+      '/api/item-analysis/me?tapis=selalu_salah',
+    )
+    const some = await dataAs<ItemAnalysisMe>(
+      runtime,
+      PELAJAR,
+      '/api/item-analysis/me?tapis=ada_betul',
+    )
+    expect(wrong.tiles).toEqual(all.tiles)
+    expect(wrong.counts).toEqual(all.counts)
+    expect(wrong.items.every((i) => i.attempts >= 2 && i.correct === 0)).toBe(true)
+    expect(some.items.every((i) => i.correct >= 1)).toBe(true)
+    expect(wrong.items.length).toBe(all.counts.pemulihan)
+  })
+})
+
+describe('S16 the feed `entries` and DELETE /api/timeline/:id (R1-MUR-39)', () => {
+  const png = () => new File([new Uint8Array(64)], 'a.png', { type: 'image/png' })
+  const create = async (userId: number, title: string): Promise<TimelinePost> => {
+    const form = new FormData()
+    form.append('title', title)
+    form.append('category', 'cerita')
+    form.append('photos[]', png())
+    return (await send<{ data: TimelinePost }>(runtime, userId, 'POST', '/api/timeline', form)).body.data
+  }
+
+  it('lists own sessions, badges and posts newest first (at most 100), each with a +08:00 time', async () => {
+    // 3001 is a designed pupil with a session history (the seeded pupils 2 and 3 have none).
+    const mine = await create(3001, 'Dalam suapan')
+    const t = await dataAs<Timeline>(runtime, 3001, '/api/timeline')
+    const entries = t.entries ?? []
+    expect(entries.length).toBeGreaterThan(1)
+    expect(entries.length).toBeLessThanOrEqual(100)
+    const ms = entries.map((e) => Date.parse(e.at))
+    expect(ms).toEqual([...ms].sort((a, b) => b - a))
+    expect(entries.every((e) => e.at.endsWith('+08:00'))).toBe(true)
+    expect(entries.some((e) => e.kind === 'session')).toBe(true)
+    const row = entries.find((e) => e.kind === 'post' && e.id === mine.id)
+    expect(row).toBeDefined()
+    for (const e of entries) {
+      if (e.kind === 'session') {
+        expect(e.answered).toBeGreaterThan(0)
+        expect(e.accuracy).toBe(Math.round((e.correct / e.answered) * 100))
+      }
+      if (e.kind === 'post') expect(e.post.userId).toBe(3001)
+    }
+  })
+
+  it('deletes an own post ({ deleted: 1 }); another user gets 404 and the post stays; an unknown id is 404', async () => {
+    const mine = await create(PELAJAR2, 'Untuk dipadam')
+    const other = await send(runtime, PELAJAR, 'DELETE', `/api/timeline/${String(mine.id)}`)
+    expect(other.status).toBe(404)
+    expect((await dataAs<Timeline>(runtime, PELAJAR2, '/api/timeline')).posts.map((p) => p.id)).toContain(mine.id)
+    const gone = await send<{ data: { deleted: number } }>(runtime, PELAJAR2, 'DELETE', `/api/timeline/${String(mine.id)}`)
+    expect(gone.status).toBe(200)
+    expect(gone.body.data).toEqual({ deleted: 1 })
+    const t = await dataAs<Timeline>(runtime, PELAJAR2, '/api/timeline')
+    expect(t.posts.map((p) => p.id)).not.toContain(mine.id)
+    expect((t.entries ?? []).some((e) => e.kind === 'post' && e.id === mine.id)).toBe(false)
+    expect((await send(runtime, PELAJAR2, 'DELETE', '/api/timeline/999999')).status).toBe(404)
+    expect((await send(runtime, null, 'DELETE', `/api/timeline/${String(mine.id)}`)).status).toBe(401)
+  })
+
+  it('the public profile carries posts only and no feed', async () => {
+    const pub = await dataAs<Record<string, unknown>>(runtime, null, '/api/public/students/2')
+    expect(pub).not.toHaveProperty('entries')
+  })
 })

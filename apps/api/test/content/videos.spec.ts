@@ -330,6 +330,18 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(res.body.data.canManage).toBe(true)
     })
 
+    it('a teacher who edits their own global video leaves it global, with no school share', async () => {
+      const vid = await insertVideo(t.db, { title: 'Global guru', uploader: TEACHER, category: 'tutorial', createdAt: '2026-10-06T10:00:00+08:00' })
+      const res = await api.teacher.put(`/videos/${vid}`, body({ title: 'Global guru diubah', visibility: 'school' }))
+      expect(res.status).toBe(200)
+      expect(res.body.data.title).toBe('Global guru diubah')
+      expect(res.body.data.visibility).toBe('global')
+      expect(await t.db.query(`select 1 from video_schools where video_id = $1`, [vid])).toHaveLength(0)
+      const [row] = await t.db.query<{ visibility: string }>(`select visibility from videos where id = $1`, [vid])
+      expect(row?.visibility).toBe('global')
+      await t.db.query(`delete from videos where id = $1`, [vid]) // keep the shared lists of the later tests as they were
+    })
+
     it('on update the role check (403) comes first, then 404, then validation', async () => {
       expectError(await api.student.put(`/videos/${id.global1}`, {}), 'FORBIDDEN')
       expectError(await api.admin.put('/videos/999999', {}), 'NOT_FOUND')
@@ -531,6 +543,48 @@ describe('videos: visibility by school, writes, validation (AC 5, AC 6, AC 8)', 
       expect(res.status).toBe(200)
       expect(idsOf(res)).toEqual(expect.not.arrayContaining([id.school1]))
     })
+  })
+})
+
+describe('videos: choosing a category lists only its videos (AC-GUR-7-1, AC-GUR-7-2, AC-AS-7-1)', () => {
+  let t: VpApp
+  let teacher: Api
+  let schoolAdmin: Api
+  const titlesOf = (res: { body: { data: { title: string }[] } }): string[] => res.body.data.map((v) => v.title).sort()
+
+  beforeAll(async () => {
+    t = await bootVp()
+    teacher = apiOf(await login(t, TEACHER))
+    schoolAdmin = apiOf(await login(t, SCHOOL_ADMIN))
+    // Two categories: "ceramah" with 2 videos, "tips-spm" with 1.
+    await insertVideo(t.db, { title: 'Ceramah satu', uploader: ADMIN, category: 'ceramah' })
+    await insertVideo(t.db, { title: 'Ceramah dua', uploader: ADMIN, category: 'ceramah' })
+    await insertVideo(t.db, { title: 'Tips satu', uploader: ADMIN, category: 'tips-spm' })
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('AC-GUR-7-1 / AC-AS-7-1: with 2 videos in one category and 1 in another, choosing the first lists exactly 2; the pill counts are 2 and 1', async () => {
+    for (const who of [teacher, schoolAdmin]) {
+      const res = await who.get('/videos?category=ceramah')
+      expect(res.status).toBe(200)
+      expect(titlesOf(res)).toEqual(['Ceramah dua', 'Ceramah satu'])
+      expect(res.body.meta.totalItems).toBe(2)
+      const counts = Object.fromEntries(res.body.meta.facets.categories.map((c: { code: string; count: number }) => [c.code, c.count]))
+      expect(counts).toMatchObject({ ceramah: 2, 'tips-spm': 1 })
+      expect(titlesOf(await who.get('/videos?category=tips-spm'))).toEqual(['Tips satu'])
+    }
+  })
+
+  it('AC-GUR-7-2: a teacher saves a video with a title, a category and a valid URL; it is then listed under that category (and not under another)', async () => {
+    const res = await teacher.post('/videos', body({ title: 'Video baharu guru', category: 'motivasi', videoUrl: YT }))
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.data.category).toBe('motivasi')
+    expect(titlesOf(await teacher.get('/videos?category=motivasi'))).toEqual(['Video baharu guru'])
+    expect(titlesOf(await teacher.get('/videos?category=ceramah'))).not.toContain('Video baharu guru')
+    const facets = (await teacher.get('/videos')).body.meta.facets.categories as { code: string; count: number }[]
+    expect(facets.find((c) => c.code === 'motivasi')?.count).toBe(1)
   })
 })
 

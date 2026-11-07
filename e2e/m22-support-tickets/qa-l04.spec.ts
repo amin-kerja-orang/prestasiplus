@@ -287,6 +287,35 @@ test.describe('L04 queue (S2)', MODULE, () => {
   })
 })
 
+test.describe('R1-ADM-N-07 settings', MODULE, () => {
+  test('AC-ADM-N07.2 a bad e-mail is refused; a good one saves and reaches Panduan config', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/admin/settings')
+    await expect(page.getByRole('heading', { level: 1, name: 'Tetapan' })).toBeVisible()
+    await expect(page.getByText('Hubungi Sokongan')).toBeVisible()
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('st-email').fill('bukan-emel')
+    await page.getByTestId('st-save').click()
+    await expect(page.getByText('E-mel tidak sah.')).toBeVisible()
+    await expect(page.getByTestId('st-flash')).toHaveCount(0)
+    await page.getByTestId('st-email').fill('bantuan@demo.test')
+    await page.getByTestId('st-save').click()
+    await expect(page.getByTestId('st-flash')).toContainText('Tetapan disimpan.')
+    await page.reload()
+    await expect(page.getByTestId('st-email')).toHaveValue('bantuan@demo.test')
+  })
+
+  test('FR-ADM-N07.3 a pupil is refused the page', async ({ page, loginAs, gotoApp }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/admin/settings')
+    await expect(page.getByTestId('st-page')).toHaveCount(0)
+  })
+})
+
 test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
   test('FR-ADM-P2-20.2 a row opens the detail; the status saves apart and the chips follow', async ({
     page,
@@ -307,6 +336,25 @@ test.describe('R1-ADM-P2-20 detail and status', MODULE, () => {
     await expect(page.getByTestId('tq-detail-flash')).toContainText('Status dikemas kini.')
     await expect(page.getByTestId('tq-chips')).toContainText('Selesai (1)')
     await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (1)')
+  })
+
+  test('FR-ADM-P2-20.2, AC-ADM-P2-20.3 the reply box stays visible; a reply saves apart and the row says "Ya"', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp(QUEUE)
+    if (viewportWidth(page) < 768) await page.locator('[data-testid="tq-table"] li button').first().click()
+    else await page.getByTestId('tq-row').first().click()
+    await page.getByTestId('tq-reply-text').fill('Kami sedang menyemak.')
+    await expect(page.getByTestId('tq-reply-save')).toBeInViewport()
+    await expectNoHorizontalScroll(page)
+    await page.getByTestId('tq-reply-save').click()
+    await expect(page.getByTestId('tq-reply-flash')).toContainText('Balasan disimpan.')
+    await expect(page.getByTestId('tq-chips')).toContainText('Dibuka (2)')
+    await page.reload()
+    await expect(page.getByTestId('tq-table')).toContainText('Ya')
   })
 
   test('AC-ADM-P2-20.2 a chip at 0 opens its empty state', async ({ page, loginAs, gotoApp }) => {

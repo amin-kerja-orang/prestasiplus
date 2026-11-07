@@ -16,7 +16,7 @@ mkdir -p "$w/conf.d" "$w/tmp" "$w/le/live/t.example.my" "$w/snip" "$w/web"
 # nginx workers drop to an unprivileged user when this runs as root: let them write the temp dir
 chmod 755 "$w"
 chmod 777 "$w/tmp"
-export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=22 PP_UPLOAD_BIG_MB=256 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5 PP_HSTS="max-age=300"
+export PP_DOMAIN=t.example.my PP_UPLOAD_FILES_MB=32 PP_UPLOAD_BIG_MB=336 PP_CSP_IMG_HOSTS="https://img.youtube.com" PP_CSP_MODE=report-only PP_EDGE_AUTH_RATE=30r/m PP_EDGE_AUTH_BURST=5 PP_HSTS="max-age=300"
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=$PP_DOMAIN" -keyout "$w/le/live/$PP_DOMAIN/privkey.pem" -out "$w/le/live/$PP_DOMAIN/fullchain.pem" 2>/dev/null
 cp "$here"/snippets/*.conf "$w/snip/"
 for t in "$here"/templates/snippets/*.template; do
@@ -76,13 +76,16 @@ expect "upload route HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/api/files")"
 expect "metrics 404 HSTS is PP_HSTS" "max-age=300" "$(hsts_of "$B/api/metrics")"
 expect "edge adds no CSP on /api" 0 "$(curlx -D- -o /dev/null "$B/api/health" | grep -ciE '^content-security')"
 expect "unknown host gets no certificate" "handshake-refused" "$(curl --noproxy '*' -sk -o /dev/null --resolve other.test:18443:127.0.0.1 https://other.test:18443/ && echo served || echo handshake-refused)"
-head -c 4000000 /dev/zero >"$w/4m"; head -c 30000000 /dev/zero >"$w/30m"; head -c 100000000 /dev/zero >"$w/100m"
+head -c 4000000 /dev/zero >"$w/4m"; head -c 30000000 /dev/zero >"$w/30m"; head -c 34000000 /dev/zero >"$w/34m"; head -c 100000000 /dev/zero >"$w/100m"; head -c 62000000 /dev/zero >"$w/62m"
 expect "4 MB JSON route is refused" 413 "$(code -X POST --data-binary @"$w/4m" "$B/api/foo")"
 expect "4 MB /api/files is allowed" 200 "$(code -X POST --data-binary @"$w/4m" "$B/api/files")"
-expect "30 MB /api/files is refused" 413 "$(code -X POST --data-binary @"$w/30m" "$B/api/files")"
-expect "30 MB Bijak photo is refused" 413 "$(code -X POST --data-binary @"$w/30m" "$B/api/bijak/attempts/a1/photos")"
+# Above PP_UPLOAD_FILES_MB (32 MB, the 30 MB intake file plus multipart overhead) is refused on the single-file tier.
+expect "34 MB /api/files is refused" 413 "$(code -X POST --data-binary @"$w/34m" "$B/api/files")"
+expect "34 MB Bijak photo is refused" 413 "$(code -X POST --data-binary @"$w/34m" "$B/api/bijak/attempts/a1/photos")"
 expect "30 MB intake file upload is allowed" 200 "$(code -X POST --data-binary @"$w/30m" "$B/api/intake/batches/abc/files")"
 expect "100 MB audio KBAT create is allowed" 200 "$(code -X POST --data-binary @"$w/100m" "$B/api/admin/audio-kbat-sets")"
+expect "62 MB paper source upload (paper + scheme) is allowed" 200 "$(code -X POST --data-binary @"$w/62m" "$B/api/admin/papers/p1/source")"
+expect "4 MB on another admin papers route is refused" 413 "$(code -X POST --data-binary @"$w/4m" "$B/api/admin/papers/p1/placements")"
 # edge flood guard on /api/auth/ (30r/m, burst 5 in this test): the first requests pass, a rapid run gets 429,
 # and other API paths are not affected
 u="https://$PP_DOMAIN:18443"

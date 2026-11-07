@@ -31,9 +31,18 @@ interface Signal {
 }
 const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
 
-/** #12 `GET /api/headcounts` (S12, the viewer's own configs, newest first). */
-export const fetchHeadcounts = (o: Signal = {}) =>
-  api.get<HeadcountListItem[]>('/api/headcounts', withSignal(o))
+/**
+ * #12 `GET /api/headcounts` (S12, the viewer's own configs, newest first). Admin Pusat names the school with
+ * `?schoolId=` (the M17 central view, S6-T13 PM-24); the school admin and the teacher send none.
+ */
+export const fetchHeadcounts = (o: { schoolId?: number | string | null } & Signal = {}) =>
+  api.get<HeadcountListItem[]>('/api/headcounts', {
+    ...withSignal(o),
+    ...(o.schoolId !== undefined && o.schoolId !== null ? { query: { schoolId: o.schoolId } } : {}),
+  })
+
+/** M-07 empty copy of the central Headcount view whose school has no data (PRD-30 R1-ADM-M-07). */
+export const HEADCOUNT_CENTRAL_EMPTY = 'Tiada data untuk sekolah ini.'
 
 /** #13 `GET /api/headcounts/dashboard` (S13). */
 export const fetchHeadcountDashboard = (o: Signal = {}) =>
@@ -121,3 +130,19 @@ export const saveHeadcountDefaults = (
   input: SaveDefaultsInput,
   o: Signal = {},
 ) => api.put<HeadcountDetail>(`/api/headcounts/${String(id)}/defaults`, { body: input, ...withSignal(o) })
+
+/** API-RPT-08 `GET /api/headcounts/me` (pupil only, S10-T09): the pupil's own configs of the year, newest first. */
+export const fetchHeadcountMe = (o: Signal = {}) =>
+  api.get<HeadcountListItem[]>('/api/headcounts/me', withSignal(o))
+
+/**
+ * API-RPT-08 `GET /api/headcounts/me/detail?configId=` (pupil only): the pupil's own line of one config;
+ * no `configId` = the config last updated. 404 for a config that is not the pupil's own.
+ */
+export const fetchHeadcountMeDetail = (configId?: number | string | null, o: Signal = {}) =>
+  api.get<HeadcountStudent>('/api/headcounts/me/detail', {
+    ...withSignal(o),
+    ...(configId !== undefined && configId !== null && configId !== ''
+      ? { query: { configId: wireId(configId) } }
+      : {}),
+  })

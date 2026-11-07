@@ -50,6 +50,10 @@ describe('S33 Kelas Saya (student)', () => {
     expect(w.find('[data-testid="join-form"]').exists()).toBe(false)
     expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
     expect(w.find('[data-testid="classes-empty"]').exists()).toBe(true)
+    expect(w.text()).toContain('Anda belum dimasukkan ke dalam kelas')
+    expect(w.text()).toContain(
+      'Guru anda yang menambah pelajar ke dalam kelas. Minta guru anda menambah nama anda supaya anda boleh melihat set soalan kelas dan kedudukan kelas.',
+    )
   })
 
   it('ignores ?kod= (nothing is pre-filled or joined)', async () => {
@@ -76,6 +80,16 @@ describe('S33 Kelas Saya (student)', () => {
     expect(t(w, 'class-subject').text()).toBe('Sejarah')
     expect(t(w, 'class-teacher').text()).toBe('Guru Demo')
     expect(t(w, 'class-level').text()).toBe('Ting. 5')
+  })
+
+  it('with a class added by the teacher there is still no join field or "Sertai" button (AC-MUR-8-3)', async () => {
+    api.fetchJoinedClasses.mockResolvedValue(list([CLASS]))
+    const w = await mountPage()
+    expect(t(w, 'class-name').text()).toBe('5 MARIKH - Sejarah')
+    expect(w.text()).not.toContain('Masukkan Kod Kelas')
+    expect(w.find('input').exists()).toBe(false)
+    expect(w.find('[data-testid="join-form"]').exists()).toBe(false)
+    expect(w.findAll('button').some((b) => b.text() === 'Sertai')).toBe(false)
   })
 
   it('shows an error state with retry when the list fails (@provisional not on live)', async () => {

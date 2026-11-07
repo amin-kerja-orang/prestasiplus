@@ -178,8 +178,8 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
       method: 'get',
       path: '/admin/bijak/subjects',
       tags: [BIJAK_STANDARDS_TAG],
-      summary: 'Bijak subject list for "Tambah Kontrak" (all active subjects, Bijak codes)',
-      description: `Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers all active subjects, not only those on the student hub. ${SPEC} ${ROLE_NOTE}`,
+      summary: 'Bijak subject list for "Tambah Kontrak" (active subjects whose DSKP is loaded, Bijak codes)',
+      description: `Unpaged. Returns Bijak codes (for example MAT), not the curriculum codes of GET /admin/subjects, and covers the active subjects with at least one DSKP unit at T4 or T5 (the units GET /admin/bijak/dskp/units serves), not only those on the student hub. FR-ADM-Q16.7: any other subject is left out, so it cannot be chosen. ${SPEC} ${ROLE_NOTE}`,
       responses: {
         200: json(envelopeOf(z.array(BijakSubjectSchema)), 'Subjects.'),
         401: UNAUTHORIZED,
@@ -333,7 +333,7 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/generate',
     tags: [BIJAK_STANDARDS_TAG],
     summary: 'Jana draf kertas: a draft Kertas Pilihan generated from the head blueprint (AC-29.2)',
-    description: `Same generator as Jana Kertas. Creates a draft pilihan paper that is opened for editing and never published automatically. Admin Pusat may use a Spec or Disahkan head. 422 NO_BLUEPRINT, 422 SHORTAGE and 503 GENERATE_LIMIT have the same shapes as POST /bijak/papers/generate. ${SPEC} ${ROLE_NOTE}`,
+    description: `Same generator as Jana Kertas. Creates a draft pilihan paper that is opened for editing and never published automatically. Admin Pusat may use a Spec or Disahkan head. 422 NO_BLUEPRINT, 422 SHORTAGE and 503 GENERATE_LIMIT have the error shapes of BijakGenerateNoBlueprintError, BijakGenerateShortageError and BijakGenerateLimitError. ${SPEC} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakDraftGenerateRequestSchema) },
     responses: {
       201: json(envelopeOf(BijakDraftGenerateResultSchema), 'The draft paper id.'),
@@ -341,7 +341,7 @@ export function registerBijakStandardsPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       422: json(
         z.union([BijakGenerateNoBlueprintErrorSchema, BijakGenerateShortageErrorSchema, ErrorBodySchema]),
-        'NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas).',
+        'NO_BLUEPRINT, SHORTAGE (error.details.shortages) or VALIDATION_ERROR (subject, kertas, title, years, negeri, count, levelScope).',
       ),
       500: err('SERVER_ERROR: the independent re-check found a violation (logged, never served).'),
       503: json(BijakGenerateLimitErrorSchema, 'GENERATE_LIMIT [PROPOSED]: solver budget reached.'),

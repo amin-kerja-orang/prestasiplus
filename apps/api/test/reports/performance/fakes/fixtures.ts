@@ -7,17 +7,21 @@ import { PerformancePorts } from '../../../../src/modules/reports/performance/po
 import {
   AnalyticsService,
   ClassPerformanceService,
+  ItemAnalysisMeService,
   ItemAnalysisService,
   SchoolPerformanceService,
   StudentPerformanceService,
 } from '../../../../src/modules/reports/performance/services'
-import { InMemoryAnswerFacts } from './in-memory-answer-facts'
+import { InMemoryAnswerFacts, InMemoryQuestionContent, type AnswerRow } from './in-memory-answer-facts'
 import { InMemoryBijakAggregate } from './in-memory-bijak-aggregate'
 import { InMemoryClasses } from './in-memory-classes'
+import { InMemoryPupilRoster } from './in-memory-pupil-roster'
 import { InMemoryDirectory } from './in-memory-directory'
 import { InMemoryGamification } from './in-memory-gamification'
 import { InMemoryHeadcountFacts } from './in-memory-headcount-facts'
 import { InMemoryPracticeRead } from './in-memory-practice-read'
+import { InMemorySpMap } from './in-memory-sp-map'
+import { InMemoryXsCounts } from './in-memory-xs-counts'
 
 /** The clock of every unit test: Friday 2026-09-25 15:40 MYT. */
 export const NOW = '2026-09-25T15:40:00+08:00'
@@ -71,6 +75,24 @@ export function item(over: Partial<BijakItemFact> & Pick<BijakItemFact, 'userId'
   }
 }
 
+let session = 0
+
+/**
+ * `n` answers of a pupil, `correct` of them right: one session (a distinct session id) of the given mode on the given day. The
+ * single answer store counts every mode, so this replaces a Bijak sitting in the figures (S10-T07).
+ */
+export function answers(
+  w: World,
+  userId: string,
+  n: number,
+  correct: number,
+  over: Partial<AnswerRow> = {},
+): World {
+  session += 1
+  w.answers.addMany(userId, n, correct, { mode: 'latih_tubi', subjectId: '1', answeredAt: new Date('2026-09-20T10:10:00+08:00'), sessionId: `fx${String(session)}`, ...over })
+  return w
+}
+
 export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { level: 'school', schoolId: 's1', label: 'Sekolah' }): Ctx => ({
   userId,
   role,
@@ -80,10 +102,13 @@ export const ctxOf = (role: RoleCode, userId: string, scope: Ctx['scope'] = { le
 
 export interface World {
   practice: InMemoryPracticeRead
+  spMap: InMemorySpMap
   answers: InMemoryAnswerFacts
+  content: InMemoryQuestionContent
   bijak: InMemoryBijakAggregate
   classes: InMemoryClasses
   directory: InMemoryDirectory
+  xs: InMemoryXsCounts
   gamification: InMemoryGamification
   facts: InMemoryHeadcountFacts
   ports: PerformancePorts
@@ -93,33 +118,41 @@ export interface World {
   school: SchoolPerformanceService
   klass: ClassPerformanceService
   items: ItemAnalysisService
+  mine: ItemAnalysisMeService
 }
 
 /** A fresh world: fakes wired into the real services. */
 export function world(): World {
   const directory = new InMemoryDirectory()
+  const xs = new InMemoryXsCounts(directory)
   const bijak = new InMemoryBijakAggregate()
   const classes = new InMemoryClasses()
   const gamification = new InMemoryGamification()
   const facts = new InMemoryHeadcountFacts()
-  const answers = new InMemoryAnswerFacts()
+  const answers = new InMemoryAnswerFacts((id) => ({ id, schoolId: directory.schoolOf(id), classroomIds: classes.classIdsOf(id) }))
   const practice = new InMemoryPracticeRead()
-  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers)
+  const content = new InMemoryQuestionContent()
+  const spMap = new InMemorySpMap()
+  const ports = new PerformancePorts(bijak, classes, practice, gamification, undefined, answers, content, spMap)
   const clock = new FixedClock(NOW)
   return {
     practice,
+    spMap,
     answers,
+    content,
     bijak,
     classes,
     directory,
+    xs,
     gamification,
     facts,
     ports,
     clock,
-    analytics: new AnalyticsService(ports, directory, clock),
+    analytics: new AnalyticsService(ports, directory, clock, new InMemoryPupilRoster(directory)),
     student: new StudentPerformanceService(ports, directory, clock, facts),
-    school: new SchoolPerformanceService(ports, directory, clock, facts),
+    school: new SchoolPerformanceService(ports, directory, clock, xs, facts),
     klass: new ClassPerformanceService(ports, directory, clock, facts),
-    items: new ItemAnalysisService(ports, directory, clock, facts),
+    items: new ItemAnalysisService(ports, directory, clock, xs, facts),
+    mine: new ItemAnalysisMeService(ports, directory),
   }
 }

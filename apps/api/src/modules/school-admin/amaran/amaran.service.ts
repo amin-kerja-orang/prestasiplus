@@ -6,6 +6,7 @@ import {
   type AmaranEffectivenessResult,
   type AmaranScope,
   type AmaranSchoolRisk,
+  type AmaranTally,
   type AmaranSubjectRisk,
   type AmaranSummary,
   type AmaranSummarySchoolRow,
@@ -20,7 +21,8 @@ import { PracticeRepository } from '../../practice'
 import { KirkpatrickRepository } from '../../reports/kirkpatrick'
 import { SchoolsRepository, type SchoolRow } from '../../schools'
 import { UsersRepository } from '../../users'
-import { K_COHORT, SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
+import { SCHOOL_ADMIN_AUDIT } from '../school-admin.constants'
+import { pooledAccuracy, XsQueries } from '../xs-queries'
 import { canReadSchool, schoolIdOf, type AmaranCaller } from './amaran.access'
 import { amaranCsv } from './amaran.csv'
 import {
@@ -33,6 +35,7 @@ import {
   compareIds,
   effectivenessReport,
   inTingkatan,
+  levelsOf,
   masteryLevelOf,
   parseTingkatan,
   pupilView,
@@ -68,6 +71,9 @@ async function each<T>(ids: readonly string[], fn: (part: string[]) => Promise<T
   return out
 }
 
+/** The pupils with a risk score (everyone but `not_started`). */
+const started = (pupils: readonly ScoredPupil[]): ScoredPupil[] => pupils.filter((p) => p.risk.status !== 'not_started')
+
 const isFixture = (id: string): boolean => {
   const n = BigInt(id)
   return n >= FIXTURE_MIN && n <= FIXTURE_MAX
@@ -101,6 +107,7 @@ export class AmaranService {
     @Inject(ClassesRepository) private readonly classes: ClassesRepository,
     @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(KirkpatrickRepository) private readonly interventions: KirkpatrickRepository,
+    @Inject(XsQueries) private readonly xs: XsQueries,
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -113,16 +120,32 @@ export class AmaranService {
       const now = this.clock.now().getTime()
       const t = parseTingkatan(rawTingkatan)
       const data = await this.load(school, now, caller)
-      const kept = t === undefined ? data.scored : data.scored.filter((p) => inTingkatan(p.facts.classes, t))
+      // The pills filter every block (FR-AS-49-1): list, tally and subject weakness all come from the same kept pupils.
+      const keptIdx = data.scored.flatMap((p, i) => (t === undefined || inTingkatan(p.facts.classes, t) ? [i] : []))
+      const kept = keptIdx.map((i) => data.scored[i] as ScoredPupil)
       const ranked = [...kept].sort(rankOrder)
       return {
         school: { id: school.id, name: school.name, code: school.code ?? '', district: school.district, state: school.state ?? '' },
-        levelFilter: t === undefined ? null : (`T${t}` as const),
+        levelFilter: t === undefined ? null : (`T${t}` as AmaranSchoolRisk['levelFilter']),
+        levels: levelsOf(data.scored),
         levelSuffix: t === undefined ? '' : ` — Tingkatan ${t}`,
         tally: tallyOf(kept),
-        weakness: await this.weakness(data.counters),
+        weakness: await this.weakness(keptIdx.map((i) => data.counters[i] as SubjectCounter[])),
         pupils: ranked.map((p, i) => pupilView(p, i + 1)),
       }
+    })
+  }
+
+  /**
+   * The Amaran Awal tally of the whole school (all levels) for the school dashboard panel: the SAME load and `tallyOf` as
+   * `schoolRisk` (so the numbers equal `tally` of GET /amaran/schools/:id), without the weakness rows or the pupil list.
+   * The backend tally has no separate "Belum Bermula" group (a pupil with no activity scores into `high`), so none is excluded here.
+   */
+  async schoolTally(caller: AmaranCaller, rawId: string): Promise<AmaranTally> {
+    return this.guard(async () => {
+      const school = await this.readableSchool(caller, rawId)
+      const data = await this.load(school, this.clock.now().getTime(), caller)
+      return tallyOf(data.scored)
     })
   }
 
@@ -145,7 +168,7 @@ export class AmaranService {
           pupilsLine: `${data.scored.length} pelajar`,
           generatedAt: now,
           tally: tallyOf(data.scored),
-          kombo: this.kombo(data.scored, now),
+          kombo: this.kombo(started(data.scored), now),
           weakness: await this.weakness(data.counters),
         }
       }
@@ -160,14 +183,16 @@ export class AmaranService {
       const rows: AmaranSummarySchoolRow[] = []
       for (const school of chosen) {
         const data = await this.load(school, now, caller)
-        if (data.scored.length === 0) continue
+        // A school with no started pupil has no risk figure to roll up (not_started is outside every group, FR-X4-3).
+        const live = started(data.scored)
         scored.push(...data.scored)
+        if (live.length === 0) continue
         const t = tallyOf(data.scored)
         rows.push({
           schoolId: school.id,
           school: school.name,
           pupils: t.total,
-          avgScore: round1(data.scored.reduce((a, p) => a + p.risk.score, 0) / t.total),
+          avgScore: round1(live.reduce((a, p) => a + (p.risk.score ?? 0), 0) / live.length),
           green: t.green,
           yellow: t.yellow,
           red: t.red,
@@ -175,13 +200,13 @@ export class AmaranService {
       }
       rows.sort((a, b) => b.avgScore - a.avgScore || compareIds(a.schoolId, b.schoolId))
       const tally = tallyOf(scored)
-      const kombo = this.kombo(scored, now)
+      const kombo = this.kombo(started(scored), now)
       if (scope.kind === 'district') {
         return {
           scope: 'district',
           title: chosen[0]?.district?.trim() || scope.district,
           subtitle: `${state} — Ringkasan Eksekutif`,
-          pupilsLine: `${tally.total} pelajar`,
+          pupilsLine: `${scored.length} pelajar`,
           generatedAt: now,
           tally,
           kombo,
@@ -304,25 +329,33 @@ export class AmaranService {
   }
 
   /**
-   * Pupils of one school (active and inactive), their classes and their practice facts. A teacher sees only the active members
+   * Pupils of one school (the XS-1 population), their classes and their practice facts. A teacher sees only the active members
    * of the own classes (as `/effectiveness`); admin and school_admin see the whole school. The practice facts are three
    * set-based reads (one query per 1000 pupils each), never one read per pupil.
    */
   private async load(school: SchoolRow, now: number, caller: AmaranCaller): Promise<SchoolData> {
-    let students = (await this.users.studentsOfSchool(school.id, '', '')).filter((s) => s.schoolId === school.id)
+    // XS-1: active, non-suspended pupils of Tingkatan 1-5 of the school, the same named query as the dashboard `cards.pupils`.
+    const population = await this.xs.pupils({ kind: 'school', schoolId: school.id })
+    let students = (await each(population.ids, (c) => this.users.getMany(c)))
+      .flat()
+      .filter((s) => s.schoolId === school.id)
     if (caller.role === 'teacher') {
       const own = new Set(await this.classes.teacherStudentIds(caller.userId))
       students = students.filter((s) => own.has(s.id))
     }
     const ids = students.map((s) => s.id)
     const classOf = await this.classesOf(school.id, ids)
-    const [stats, newest, masteryOf] = await Promise.all([
+    const [stats, newest, masteryOf, tallies] = await Promise.all([
       this.practice.statsOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.lastActivityOf(ids, { modes: PRACTICE_SESSION_MODES }),
       this.practice.masteryOf(ids),
+      // XS-5: the accuracy is pooled (correct / answered over all answer rows, all time), never a mean of session percentages.
+      // Pooled over the listed ids, so an inactive or suspended pupil who is listed keeps its own accuracy.
+      this.xs.tallyOfPupils(ids),
     ])
     const facts = students.map((s) => {
       const st = stats.get(s.id)
+      const tally = tallies.get(s.id)
       const mastery = (masteryOf.get(s.id) ?? []).filter((m) => m.answered > 0)
       const stamps = [newest.get(s.id) ?? null, ...mastery.map((m) => m.lastAnsweredAt)].filter((d): d is Date => d !== null).map((d) => d.getTime())
       const pupil: PupilFacts = {
@@ -330,7 +363,7 @@ export class AmaranService {
         name: s.name,
         grade: s.grade,
         classes: classOf.get(s.id) ?? [],
-        accuracy: st && st.sessions > 0 ? st.avgAccuracyPct : null,
+        accuracy: st && st.sessions > 0 && tally ? pooledAccuracy(tally.correct, tally.answered) : null,
         sessions: st?.sessions ?? 0,
         lastActiveAt: stamps.length === 0 ? null : Math.max(...stamps),
         masteryLevels: mastery.map((m) => masteryLevelOf(m.correct)),
@@ -357,7 +390,7 @@ export class AmaranService {
   }
 
   private async weakness(counters: readonly (readonly SubjectCounter[])[]): Promise<AmaranSubjectRisk[]> {
-    const rows = weaknessOf(counters, K_COHORT)
+    const rows = weaknessOf(counters) // staff-only screens: no minimum cohort (PO decision, issue #503)
     const names = await this.classes.subjectNames(rows.map((r) => r.subjectId))
     return rows.map((r) => ({ subjectId: r.subjectId, subjectName: names.get(r.subjectId) ?? `Subjek ${r.subjectId}`, weak: r.weak, total: r.total, pct: r.pct }))
   }

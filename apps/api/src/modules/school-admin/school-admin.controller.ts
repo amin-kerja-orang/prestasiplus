@@ -6,6 +6,7 @@ import { NoStoreInterceptor, ok } from '../../common/http'
 import { AUTH_CONTEXT_KEY } from '../../common/scope/auth-context'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { callerOf } from '../users/caller'
+import { amaranCallerOf } from './amaran/amaran.access'
 import { DashboardService } from './dashboard.service'
 import { PendingTeachersService } from './pending-teachers.service'
 import { schoolAdminOf, type SchoolAdminReq } from './school-admin.actor'
@@ -34,7 +35,7 @@ export class SchoolAdminController {
     const auth = req[AUTH_CONTEXT_KEY]
     if (!auth) throw ApiError.of('UNAUTHORIZED')
     const perf = { userId: auth.userId, role: auth.active.role, scope: auth.active.scope, isTest: auth.mode !== null }
-    return ok(await this.dashboard.dashboard(callerOf(req), schoolId, perf))
+    return ok(await this.dashboard.dashboard(callerOf(req), schoolId, perf, amaranCallerOf(req)))
   }
 
   /** Declared before any `:id` route so `pending` is never read as an id. */

@@ -24,13 +24,17 @@ import {
 import type { DropAction, HeadcountSort } from '../api/headcount-types'
 import HeadcountConfirmModals from '../components/headcount/HeadcountConfirmModals.vue'
 import HeadcountTable from '../components/headcount/HeadcountTable.vue'
-import { percentOf } from '../lib/headcount/format'
+import { useHeadcountReadOnly } from '../lib/headcount-access'
+import { DASH, percentOf, selisihText } from '../lib/headcount/format'
+import { jurangOf } from '../lib/headcount/otr'
 import { LOAD_ERROR, isLoadError, notFoundOutcome, useRouteData } from '../lib/prestasi/load'
 import { routeId } from '../lib/route-id'
 
 const route = useRoute()
 const router = useRouter()
 const pageMeta = usePageMeta()
+/** The school admin reads only (R1-AS-3): no write control is rendered. */
+const readOnly = useHeadcountReadOnly()
 
 const id = computed(() => routeId(route.params.id))
 /** An unknown `sort` is "ranking" (§5). */
@@ -63,6 +67,14 @@ const subtitle = computed(() => {
   return c
     ? `${c.className} · ${c.levelName} · ${String(c.year)} · Guru: ${c.teacherName}`
     : ''
+})
+
+/** "Jurang: +40": the subject-card targets (default ETR - default TOV, HC-1); "—" when either is empty. */
+const jurangText = computed(() => {
+  const c = data.value?.config
+  const j = c ? jurangOf(c.defaultTov, c.defaultEtr) : null
+  if (j === null) return DASH
+  return j === 0 ? '0' : selisihText(j)
 })
 
 const chips = computed(() => {
@@ -175,10 +187,18 @@ const exportHref = computed(
           :label="chips.total"
           data-testid="chip-total"
         />
+        <UBadge
+          color="neutral"
+          variant="subtle"
+          size="lg"
+          icon="i-ph-arrows-out-line-vertical"
+          :label="`Jurang: ${jurangText}`"
+          data-testid="chip-jurang"
+        />
       </div>
 
       <div class="flex flex-wrap items-start gap-2" data-testid="actions">
-        <div v-if="data.config.mode === 'manual'" ref="keyInRoot" class="flex flex-col gap-2">
+        <div v-if="!readOnly && data.config.mode === 'manual'" ref="keyInRoot" class="flex flex-col gap-2">
           <UButton
             type="button"
             size="lg"
@@ -205,6 +225,7 @@ const exportHref = computed(
           </DsPanel>
         </div>
         <UButton
+          v-if="!readOnly"
           :to="`/headcount/${String(id)}/edit`"
           color="neutral"
           variant="soft"
@@ -242,6 +263,7 @@ const exportHref = computed(
           data-testid="action-unjuran"
         />
         <UButton
+          v-if="!readOnly"
           :to="`/headcount/${String(id)}/settings`"
           color="neutral"
           variant="soft"
@@ -251,6 +273,7 @@ const exportHref = computed(
           data-testid="action-settings"
         />
         <UButton
+          v-if="!readOnly"
           type="button"
           color="neutral"
           variant="soft"
@@ -261,6 +284,7 @@ const exportHref = computed(
           @click="resetOpen = true"
         />
         <UButton
+          v-if="!readOnly"
           type="button"
           color="error"
           variant="soft"
@@ -308,7 +332,7 @@ const exportHref = computed(
         />
       </div>
 
-      <DsPanel v-if="selected.length > 0" data-testid="selection-bar">
+      <DsPanel v-if="!readOnly && selected.length > 0" data-testid="selection-bar">
         <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5" /><span data-testid="selection-count">{{
@@ -354,10 +378,11 @@ const exportHref = computed(
       </DsPanel>
 
       <div data-testid="table-card">
-        <HeadcountTable v-model:selected="selected" :detail="data" />
+        <HeadcountTable v-model:selected="selected" :detail="data" :selectable="!readOnly" />
       </div>
 
       <HeadcountConfirmModals
+        v-if="!readOnly"
         v-model:reset-open="resetOpen"
         v-model:delete-open="deleteOpen"
         :subject="data.config.subject"

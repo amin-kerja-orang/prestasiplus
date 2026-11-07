@@ -114,19 +114,22 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
     await db.query(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values (${paper}, 1, 'A', 1, 1)`)
     await rejects(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values (${paper}, 1, 'B', 1, 1)`)
     const section = (await db.query<{ id: string }>(`select id::text from paper_sections where paper_id = ${paper}`))[0]?.id as string
-    await db.query(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, 1, 1)`)
-    await rejects(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, 2, 1)`)
-    await rejects(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, 1, 2)`)
-    await rejects(`insert into paper_placements (paper_section_id, question_id, position, pinned_version_no) values (${section}, 3, 2, 0)`)
-    await rejects(`insert into paper_placements (paper_section_id, question_id, position, marks_override) values (${section}, 3, 2, -1)`)
-    await db.query(`insert into paper_placements (paper_section_id, question_id, position, marks_override) values (${section}, 3, 2, 4)`)
+    // DM-11: a placement needs its question row.
+    const [q1, q2, q3] = (await db.query<{ id: string }>(`insert into questions (source_type) values ('manual'), ('manual'), ('manual') returning id::text`)).map((r) => r.id)
+    await db.query(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, ${q1}, 1)`)
+    await rejects(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, ${q2}, 1)`)
+    await rejects(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, ${q1}, 2)`)
+    await rejects(`insert into paper_placements (paper_section_id, question_id, position, pinned_version_no) values (${section}, ${q3}, 2, 0)`)
+    await rejects(`insert into paper_placements (paper_section_id, question_id, position, marks_override) values (${section}, ${q3}, 2, -1)`)
+    await db.query(`insert into paper_placements (paper_section_id, question_id, position, marks_override) values (${section}, ${q3}, 2, 4)`)
   })
 
   it('deleting a paper cascades to its sections and placements; deleting the owner removes generated papers', async () => {
     const paper = await newPaper()
     await db.query(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values (${paper}, 1, 'A', 1, 1)`)
     const section = (await db.query<{ id: string }>(`select id::text from paper_sections where paper_id = ${paper}`))[0]?.id as string
-    await db.query(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, 10, 1)`)
+    const placed = (await db.query<{ id: string }>(`insert into questions (source_type) values ('manual') returning id::text`))[0]?.id as string
+    await db.query(`insert into paper_placements (paper_section_id, question_id, position) values (${section}, ${placed}, 1)`)
     await db.query(`delete from papers where id = ${paper}`)
     expect(await count(db, `select count(*) n from paper_sections where paper_id = ${paper}`)).toBe(0)
     expect(await count(db, `select count(*) n from paper_placements where paper_section_id = ${section}`)).toBe(0)
@@ -147,9 +150,10 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
     await rejects(`delete from blueprints where code = '1449/1'`)
   })
 
-  it('total marks are not stored on the paper (derived from the placements, Q-S6)', async () => {
+  it('total marks are not stored on a pilihan/jana paper (derived from the placements, Q-S6); only a subjektif paper may carry them (DM-23, INV-17)', async () => {
     const cols = await db.query<{ column_name: string }>(`select column_name from information_schema.columns where table_name = 'papers'`)
-    expect(cols.map((c) => c.column_name)).not.toContain('total_marks')
+    expect(cols.map((c) => c.column_name)).toContain('total_marks')
+    expect(await db.query(`select count(*)::int n from papers where total_marks is not null and surface <> 'subjektif'`)).toEqual([{ n: 0 }])
     expect(cols.map((c) => c.column_name)).toEqual(expect.arrayContaining(['status', 'version', 'printed_duration_min', 'generated_for_user_id']))
     const bp = await db.query<{ column_name: string }>(`select column_name from information_schema.columns where table_name = 'blueprints'`)
     expect(bp.map((c) => c.column_name)).toEqual(expect.arrayContaining(['version', 'status', 'source', 'provenance', 'confidence']))

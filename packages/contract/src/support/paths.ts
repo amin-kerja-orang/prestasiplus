@@ -6,6 +6,9 @@ import { envelopeOf } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import {
   SUPPORT_ADMIN_MESSAGES,
+  SUPPORT_SETTINGS_MESSAGES,
+  SupportSettingsSchema,
+  SupportSettingsUpdateRequestSchema,
   SupportOpenCountSchema,
   SupportQueueMetaSchema,
   SupportQueueQuerySchema,
@@ -35,6 +38,8 @@ export const SUPPORT_COMPONENT_SCHEMAS = {
   SupportQueueMeta: SupportQueueMetaSchema,
   SupportQueueResponse: SupportQueueResponseSchema,
   SupportOpenCount: SupportOpenCountSchema,
+  SupportSettings: SupportSettingsSchema,
+  SupportSettingsUpdateRequest: SupportSettingsUpdateRequestSchema,
   SupportTicketDetail: SupportTicketDetailSchema,
   SupportTicketReplyRequest: SupportTicketReplyRequestSchema,
   SupportTicketStatusRequest: SupportTicketStatusRequestSchema,
@@ -111,6 +116,30 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
 
   registry.registerPath({
     method: 'get',
+    path: '/admin/settings/support',
+    tags: ['support'],
+    summary: 'Support contact settings (API-ADM-10)',
+    description: 'Admin only. Empty strings when nothing is saved.',
+    responses: { 200: json(envelopeOf(SupportSettingsSchema), 'The contact.'), 401: unauthorized, 403: adminOnly },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/settings/support',
+    tags: ['support'],
+    summary: 'Save the support contact (API-ADM-10)',
+    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.',
+    request: { headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportSettingsUpdateRequestSchema } } } },
+    responses: {
+      200: json(envelopeOf(SupportSettingsSchema), 'The saved contact.'),
+      401: unauthorized,
+      403: adminWrite,
+      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}".`),
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
     path: '/admin/tiket/{id}',
     tags: ['support'],
     summary: 'One support ticket (API-SUP-05)',
@@ -124,7 +153,7 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     path: '/admin/tiket/{id}/reply',
     tags: ['support'],
     summary: 'Save the single reply (API-SUP-05)',
-    description: 'Admin only. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner gets an in-app notification.',
+    description: 'Admin only, audited. Sets the reply, the replier and the time; a second save replaces the text. The status does not change. The owner sees it in `GET /tiket`.',
     request: { params: idParams, headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportTicketReplyRequestSchema } } } },
     responses: {
       200: json(envelopeOf(SupportTicketDetailSchema), 'The updated ticket.'),

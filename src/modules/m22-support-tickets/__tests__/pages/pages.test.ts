@@ -10,6 +10,7 @@ import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 import { ApiError } from '@/api'
 
 import type { QueueList, Ticket, TicketList } from '../../api/types'
+import AdminSettingsPage from '../../pages/AdminSettingsPage.vue'
 import AdminTicketsPage from '../../pages/AdminTicketsPage.vue'
 import TicketsPage from '../../pages/TicketsPage.vue'
 import routes from '../../routes'
@@ -18,8 +19,11 @@ const api = vi.hoisted(() => ({
   fetchTickets: vi.fn(),
   createTicket: vi.fn(),
   fetchQueue: vi.fn(),
+  fetchSupportSettings: vi.fn(),
+  saveSupportSettings: vi.fn(),
   fetchTicketDetail: vi.fn(),
   setTicketStatus: vi.fn(),
+  replyToTicket: vi.fn(),
 }))
 vi.mock('../../api/tickets', () => api)
 
@@ -78,7 +82,7 @@ describe('routes (FR-M22-01, 28, 36, 27)', () => {
       roles: ['admin'],
       title: 'Tiket Sokongan - PRESTASIPLUS',
     })
-    expect(routes.map((r) => r.path).sort()).toEqual(['/admin/tiket', '/pusat-tuisyen/tiket'])
+    expect(routes.map((r) => r.path).sort()).toEqual(['/admin/settings', '/admin/tiket', '/pusat-tuisyen/tiket'])
   })
 })
 
@@ -253,6 +257,8 @@ const queue = (over: Partial<QueueList> = {}): QueueList => ({
       subject: 'Soalan kuiz tidak dipaparkan',
       status: 'dibuka',
       replied: false,
+      roleLabel: 'Murid',
+      school: 'SMK Demo',
     },
     {
       id: 6,
@@ -261,6 +267,8 @@ const queue = (over: Partial<QueueList> = {}): QueueList => ({
       subject: 'Kata laluan',
       status: 'selesai',
       replied: true,
+      roleLabel: null,
+      school: null,
     },
   ],
   meta: {
@@ -307,6 +315,8 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     expect(w.findAll('th').map((t) => t.text())).toEqual([
       'Tarikh',
       'Pengguna',
+      'Peranan',
+      'Sekolah',
       'Subjek',
       'Status',
       'Dibalas',
@@ -318,6 +328,8 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     expect(cells).toEqual([
       '2026-09-25 09:30:00',
       'Pelajar Maju Demo',
+      'Murid',
+      'SMK Demo',
       'Soalan kuiz tidak dipaparkan',
       'Dibuka',
       '—',
@@ -327,7 +339,9 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       ?.findAll('td')
       .map((c) => c.text())
     expect(second?.[1]).toBe('—')
-    expect(second?.[4]).toBe('Ya')
+    expect(second?.[2]).toBe('—')
+    expect(second?.[3]).toBe('—')
+    expect(second?.[6]).toBe('Ya')
     expect(w.find('tbody a, tbody button, tbody input').exists()).toBe(false)
   })
 
@@ -342,6 +356,28 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     table.vm.$emit('update:page', 3)
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/admin/tiket?status=dibuka&page=3')
+  })
+
+  it('the role filter asks for the role, lists 30 P20-02, and chips keep it', async () => {
+    api.fetchQueue.mockResolvedValue(queue())
+    const { w, router } = await open('/admin/tiket?role=teacher&page=3', AdminTicketsPage)
+    expect(api.fetchQueue.mock.calls[0]?.[0]).toMatchObject({ role: 'teacher', page: 3 })
+    const select = tid(w, 'tq-role')
+    expect(Array.from((select.element as HTMLSelectElement).options).map((o) => o.text)).toEqual([
+      'Semua Peranan',
+      'Murid',
+      'Guru',
+      'Admin Sekolah',
+    ])
+    expect(w.findAll('[data-testid="tq-chips"] a')[1]?.attributes('href')).toBe(
+      '/admin/tiket?status=dibuka&role=teacher',
+    )
+    await select.setValue('student')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/tiket?role=student')
+    await select.setValue('')
+    await flushPromises()
+    expect(router.currentRoute.value.fullPath).toBe('/admin/tiket')
   })
 
   describe('detail (FR-ADM-P2-20.2)', () => {
@@ -378,6 +414,8 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       expect(body('def-body')?.textContent).toContain('Butiran')
       expect(body('def-body')?.querySelector('textarea')?.value).toBe(detail.body)
       expect(body('def-reply')).toBeNull()
+      expect(body('def-role')?.textContent).toContain('Peranan')
+      expect(body('def-school')?.textContent).toContain('Sekolah')
       expect((body('tq-detail-status') as HTMLSelectElement).value).toBe('dibuka')
       expect(Array.from((body('tq-detail-status') as HTMLSelectElement).options).map((o) => o.text)).toEqual([
         'Dibuka',
@@ -404,20 +442,62 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
       api.fetchQueue.mockResolvedValue(queue())
       api.fetchTicketDetail.mockResolvedValue(detail)
       api.setTicketStatus.mockRejectedValue(
-        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.' }),
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
       )
       const { w } = await open('/admin/tiket', AdminTicketsPage)
       await openRow(w)
       await pick('selesai')
-      expect(document.body.textContent).toContain('Rekod tidak dijumpai. Ia mungkin telah dipadam.')
+      expect(document.body.textContent).toContain('Rekod tidak dijumpai.')
       expect(body('tq-detail-flash')).toBeNull()
       expect(api.fetchQueue).toHaveBeenCalledTimes(1)
+    })
+
+    const replyBox = () => body('tq-reply-text') as HTMLTextAreaElement | null
+
+    it('the reply box holds the saved reply; a save sends the text, shows the flash and keeps the status', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue({ ...detail, adminReply: 'Lama.' })
+      api.replyToTicket.mockResolvedValue({ ...detail, adminReply: 'Baharu.', repliedAt: detail.createdAt })
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(replyBox()?.value).toBe('Lama.')
+      await new DOMWrapper(replyBox()).setValue('Baharu.')
+      await new DOMWrapper(body('tq-reply-form') as HTMLFormElement).trigger('submit')
+      await flushPromises()
+      expect(api.replyToTicket).toHaveBeenCalledWith(detail.id, 'Baharu.')
+      expect(api.setTicketStatus).not.toHaveBeenCalled()
+      expect(body('tq-reply-flash')?.textContent).toContain('Balasan disimpan.')
+      expect(replyBox()?.value).toBe('Baharu.')
+      expect(api.fetchQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('a refused reply shows the field message and no flash', async () => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue(detail)
+      api.replyToTicket.mockRejectedValue(
+        new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Sila tulis balasan.', fields: { text: 'Sila tulis balasan.' } }),
+      )
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      await new DOMWrapper(body('tq-reply-form') as HTMLFormElement).trigger('submit')
+      await flushPromises()
+      expect(document.body.textContent).toContain('Sila tulis balasan.')
+      expect(body('tq-reply-flash')).toBeNull()
+    })
+
+    it.each(['selesai', 'ditutup'])('%s hides the reply box and shows a saved reply as text', async (status) => {
+      api.fetchQueue.mockResolvedValue(queue())
+      api.fetchTicketDetail.mockResolvedValue({ ...detail, status, adminReply: 'Lama.' })
+      const { w } = await open('/admin/tiket', AdminTicketsPage)
+      await openRow(w)
+      expect(body('tq-reply-form')).toBeNull()
+      expect(body('def-reply')?.querySelector('textarea')?.value).toBe('Lama.')
     })
 
     it('a failed load shows its message', async () => {
       api.fetchQueue.mockResolvedValue(queue())
       api.fetchTicketDetail.mockRejectedValue(
-        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.' }),
+        new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }),
       )
       const { w } = await open('/admin/tiket', AdminTicketsPage)
       await openRow(w)
@@ -446,5 +526,52 @@ describe('S2 admin queue (AC-M22-07, 08, 09)', () => {
     const { w } = await open('/admin/tiket', AdminTicketsPage)
     expect(tid(w, 'tq-error').text()).toContain('Ralat pelayan.')
     expect(w.findAll('button').some((b) => b.text() === 'Cuba Semula')).toBe(true)
+  })
+})
+
+describe('S3 settings (R1-ADM-N-07)', () => {
+  const contact = { email: 'sokongan@demo.test', phone: '', whatsapp: '60100000000', hours: '' }
+
+  it('shows the section with the saved values and no field for hours', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    expect(w.text()).toContain('Hubungi Sokongan')
+    expect(w.text()).toContain('E-mel sokongan')
+    expect(w.text()).toContain('Telefon / WhatsApp sokongan')
+    expect(w.text()).not.toContain('Waktu perkhidmatan')
+    expect((tid(w, 'st-email').element as HTMLInputElement).value).toBe(contact.email)
+    expect((tid(w, 'st-whatsapp').element as HTMLInputElement).value).toBe(contact.whatsapp)
+    expect(tid(w, 'st-save').text()).toBe('Simpan Tetapan')
+  })
+
+  it('a save sends both fields and shows the flash', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockResolvedValue({ ...contact, email: 'bantuan@demo.test' })
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    await tid(w, 'st-email').setValue('bantuan@demo.test')
+    await tid(w, 'st-form').trigger('submit')
+    await flushPromises()
+    expect(api.saveSupportSettings).toHaveBeenCalledWith({ email: 'bantuan@demo.test', whatsapp: contact.whatsapp })
+    expect(tid(w, 'st-flash').text()).toContain('Tetapan disimpan.')
+  })
+
+  it('AC-ADM-N07.2 a refused save shows the field message and no flash', async () => {
+    api.fetchSupportSettings.mockResolvedValue(contact)
+    api.saveSupportSettings.mockRejectedValue(
+      new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'E-mel tidak sah.', fields: { email: 'E-mel tidak sah.' } }),
+    )
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    await tid(w, 'st-form').trigger('submit')
+    await flushPromises()
+    expect(w.text()).toContain('E-mel tidak sah.')
+    expect(tid(w, 'st-flash').exists()).toBe(false)
+  })
+
+  it('a failed load shows the error', async () => {
+    api.fetchSupportSettings.mockRejectedValue(
+      new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'Ralat pelayan.' }),
+    )
+    const { w } = await open('/admin/settings', AdminSettingsPage)
+    expect(w.text()).toContain('Ralat pelayan.')
   })
 })

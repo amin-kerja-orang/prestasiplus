@@ -1,14 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   CLASS_MESSAGES,
   ClassCreateRequestSchema,
-  ClassJoinRequestSchema,
   ClassStudentAddRequestSchema,
   ClassStudentRemoveQuerySchema,
+  GURU_STUDENT_MESSAGES,
+  GuruStudentCreateRequestSchema,
   TEACHER_SCHOOL_TAB_LIMIT,
+  TEACHER_STUDENTS_PAGE_SIZE,
+  guruStudentCreatedMessage,
+  type GuruStudentCreated,
   TeacherChapterCreateRequestSchema,
   TeacherTopicCreateRequestSchema,
-  classJoinedText,
   type ClassQrData,
   type TeacherClass,
   type TeacherContributions,
@@ -25,13 +28,13 @@ import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { CurriculumRepository } from '../curriculum'
+import { UsersService } from '../users'
 import type { ClassActor } from './actor'
 import {
   CLASS_AUDIT,
   CONTRIBUTION_BREAKDOWN_REST_LABEL,
   CONTRIBUTION_BREAKDOWN_TOP,
   CONTRIBUTION_TIERS,
-  JOIN_ROLES,
 } from './classes.constants'
 import { gradeOfLevel, toTeacherClass, type ClassNames } from './classes.mapper'
 import { ClassesRepository, type ClassRecord } from './classes.repository'
@@ -52,6 +55,8 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : und
 
 @Injectable()
 export class ClassesService {
+  private readonly logger = new Logger(ClassesService.name)
+
   constructor(
     @Inject(ClassesRepository) private readonly repo: ClassesRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
@@ -60,6 +65,7 @@ export class ClassesService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
+    @Inject(UsersService) private readonly users: UsersService,
   ) {}
 
   // --- classes (S4, S5) ---------------------------------------------------------------------------------
@@ -171,39 +177,96 @@ export class ClassesService {
 
   // --- roster (S6) --------------------------------------------------------------------------------------
 
-  /** `GET /guru/students?tab=mine|school&search=` (BR-M10-04, BR-M10-30). */
+  /** `GET /guru/students?tab=mine|school&search=&page=` (BR-M10-04, BR-M10-30; 25 per page, name A to Z). */
   async students(actor: ClassActor, query: Record<string, unknown>) {
     const tab = str(query.tab) === 'school' ? 'school' : 'mine'
     const term = (str(query.search) ?? '').trim()
     const schoolSet = actor.schoolId !== null
+    const pageSize = TEACHER_STUDENTS_PAGE_SIZE
+    if (tab === 'school' && actor.schoolId === null) {
+      return { data: [] as TeacherStudent[], meta: { count: 0, schoolSet: false, page: 1, pageSize, totalPages: 1 } }
+    }
     const classesOf = await this.repo.classesByStudent(actor.userId)
 
     let lines
     let count: number
     if (tab === 'school') {
-      if (actor.schoolId === null) return { data: [] as TeacherStudent[], meta: { count: 0, schoolSet: false } }
-      const page = await this.repo.schoolStudentLines(actor.schoolId, term, TEACHER_SCHOOL_TAB_LIMIT)
-      lines = page.rows
-      count = page.total
+      const school = await this.repo.schoolStudentLines(actor.schoolId as string, term, TEACHER_SCHOOL_TAB_LIMIT)
+      lines = school.rows
+      count = school.total
     } else {
       lines = await this.repo.studentLines(await this.repo.teacherStudentIds(actor.userId), term)
       count = lines.length
     }
+    const totalPages = Math.max(1, Math.ceil(lines.length / pageSize))
+    const asked = Number(str(query.page))
+    const page = Number.isInteger(asked) && asked >= 1 ? Math.min(asked, totalPages) : 1
+    const slice = lines.slice((page - 1) * pageSize, page * pageSize)
+    const stats = await this.repo.studentStats(actor.userId, slice.map((l) => l.id))
     const levelNames = new Map<number, string | null>()
-    for (const grade of new Set(lines.flatMap((l) => (l.grade === null ? [] : [l.grade])))) {
+    for (const grade of new Set(slice.flatMap((l) => (l.grade === null ? [] : [l.grade])))) {
       levelNames.set(grade, (await this.curriculum.levelForGrade(grade))?.name ?? null)
     }
-    const data: TeacherStudent[] = lines.map((l) => {
+    const data: TeacherStudent[] = slice.map((l) => {
       const classes = classesOf.get(l.id) ?? []
+      const st = stats.get(l.id)
       return {
         id: l.id,
         name: l.name,
         levelName: l.grade === null ? null : (levelNames.get(l.grade) ?? null),
         classNames: classes.map((c) => c.name),
         classes,
+        username: l.username,
+        tugasan: st?.tugasan ?? 0,
+        skorPurata: st?.skorPurata ?? null,
+        lastActiveAt: st?.lastActiveAt ? toMytTimestamp(st.lastActiveAt) : null,
       }
     })
-    return { data, meta: { count, schoolSet } }
+    return { data, meta: { count, schoolSet, page, pageSize, totalPages } }
+  }
+
+  /**
+   * `POST /guru/students` (API-GUR-06, FR-GUR-41-3, FR-GUR-8-7): creates a pupil in an own active class. The school and
+   * the grade come from the class; the username is generated (users module) and the initial password is the
+   * configuration value `PUPIL_DEFAULT_PASSWORD`, shown once in the answer message and never logged or stored in clear.
+   */
+  async createStudent(actor: ClassActor, raw: unknown): Promise<GuruStudentCreated> {
+    const body = parseStrict(GuruStudentCreateRequestSchema, raw)
+    const cls = isRealId(body.classroomId) ? await this.repo.get(body.classroomId) : null
+    if (!cls || cls.kind !== 'classroom' || cls.teacherId !== actor.userId || !cls.isActive) {
+      const own = (await this.repo.forTeacher(actor.userId)).some((c) => c.isActive)
+      throw invalid({ classroomId: own ? GURU_STUDENT_MESSAGES.classroom : GURU_STUDENT_MESSAGES.noActiveClass })
+    }
+    if (actor.schoolId === null) throw invalid({ classroomId: GURU_STUDENT_MESSAGES.noSchool })
+    const password = this.config.get('PUPIL_DEFAULT_PASSWORD', { infer: true }) as string | undefined
+    if (!password) {
+      // The standard BM server-error copy goes to the client; the reason stays in the log (names the key only, never a value).
+      this.logger.error('PUPIL_DEFAULT_PASSWORD is not configured: Cipta Pelajar refused.')
+      throw ApiError.of('SERVER_ERROR')
+    }
+    const grade = gradeOfLevel((await this.repo.levelGrades([cls.educationLevelId])).get(cls.educationLevelId))
+
+    const now = this.clock.now()
+    const created = await this.users.createPupil(
+      { name: body.name, schoolId: actor.schoolId, grade, ic: body.ic, password, createdById: actor.userId },
+      async (studentId) => {
+        await this.repo.enrol({ classroomId: cls.id, studentId, source: 'teacher', now })
+        await this.audit.record({
+          action: CLASS_AUDIT.STUDENT_CREATED,
+          actorUserId: actor.userId,
+          actorRole: actor.role,
+          sessionRowId: actor.auth.sessionRowId,
+          targetType: 'classroom',
+          targetId: cls.id,
+          schoolId: actor.schoolId,
+          scopeLevel: actor.auth.active.scope.level,
+          requestId: actor.requestId,
+          ip: actor.ip,
+          details: { studentId, icGiven: body.ic !== undefined },
+        })
+      },
+    )
+    return { id: created.id, name: body.name, username: created.username, message: guruStudentCreatedMessage(created.username, password) }
   }
 
   /**
@@ -470,39 +533,5 @@ export class ClassesService {
         },
       ]
     })
-  }
-
-  /** `POST /kelas-saya/join` (BR-M10-02, FR-M10-39). Only a student (or the admin, who has the screen) may join. */
-  async join(actor: ClassActor, raw: unknown): Promise<{ data: { classroomId: string }; message: string }> {
-    if (!(JOIN_ROLES as readonly string[]).includes(actor.role)) throw ApiError.of('FORBIDDEN')
-    const body = parseStrict(ClassJoinRequestSchema, raw)
-    const cls = await this.repo.findByJoinCode(body.classCode)
-    if (!cls) throw notFound(CLASS_MESSAGES.joinNotFound)
-    if (await this.repo.isMember(cls.id, actor.userId, actor.isTest)) throw ApiError.of('CONFLICT', { message: CLASS_MESSAGES.joinAlready })
-
-    const now = this.clock.now()
-    const { outcome } = await this.prisma.transaction(async (tx) => {
-      const res = await this.repo.enrol({ classroomId: cls.id, studentId: actor.userId, source: 'code', isTest: actor.isTest, now })
-      if (res.outcome !== 'already') {
-        await this.audit.record({
-          tx,
-          action: CLASS_AUDIT.JOINED,
-          actorUserId: actor.userId,
-          actorRole: actor.role,
-          sessionRowId: actor.auth.sessionRowId,
-          targetType: 'classroom',
-          targetId: cls.id,
-          schoolId: cls.schoolId,
-          scopeLevel: actor.auth.active.scope.level,
-          requestId: actor.requestId,
-          ip: actor.ip,
-          details: { source: 'code' },
-          isTest: actor.isTest,
-        })
-      }
-      return res
-    })
-    if (outcome === 'already') throw ApiError.of('CONFLICT', { message: CLASS_MESSAGES.joinAlready })
-    return { data: { classroomId: cls.id }, message: classJoinedText(cls.name) }
   }
 }
