@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common'
 
 import { ApiError } from '../../../../common/errors/api-error'
 import { toMytTimestamp } from '../../../../common/time/myt'
-import { ClassesRepository } from '../../../classes'
 import { type AnswerFact, AnalyticsRepository, type QuestionFact } from '../analytics.repository'
 import { badgeOf, compareIds, levelLabelOf, percent, round1, severityOf, stripHtml } from '../domain/rules'
 import type { StudentAnswerRow, StudentDetail } from '../types'
@@ -29,7 +28,6 @@ interface Tally {
 export class StudentDetailService {
   constructor(
     @Inject(AnalyticsRepository) private readonly repo: AnalyticsRepository,
-    @Inject(ClassesRepository) private readonly classes: ClassesRepository,
   ) {}
 
   /**
@@ -44,8 +42,7 @@ export class StudentDetailService {
     const user = await this.repo.user(userId)
     if (!user || !user.isStudent || (user.grade !== 10 && user.grade !== 11)) return notFound()
     if (isSchoolForced(ctx.role) && user.schoolId !== ctx.schoolId) return notFound()
-    // A teacher opens only pupils of the own active classes (data minimisation); the same 404 as an unknown id.
-    if (ctx.role === 'teacher' && !(await this.classes.teacherStudentIds(ctx.userId)).includes(user.id)) return notFound()
+    // R1-GUR-10: a teacher opens any pupil of the own school, like the school admin (the school check above).
 
     const answers = await this.repo.answersOf(user.id)
     const facts = await this.repo.questionFacts(

@@ -78,10 +78,10 @@ server {
     return 404 '{"error":{"code":"NOT_FOUND","message":"Not found"}}';
   }
 
-  # --- uploads: many-file multipart routes (intake batches 11 x 20 MB, audio KBAT 4 x 20 MB, screenshots 20 x 10 MB,
-  #     perutusan, teacher question papers up to 101 MB). The API enforces each purpose itself; this is the outer fence.
+  # --- uploads: many-file multipart routes (intake batches 11 x 30 MB, audio KBAT 4 x 20 MB, screenshots 20 x 10 MB,
+  #     perutusan, teacher question papers up to 101 MB, paper source upload paper + scheme 2 x 30 MB). The API enforces each purpose itself; this is the outer fence.
   #     Value = PP_UPLOAD_BIG_MB. A new many-file route needs a line in this regex.
-  location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers)/?$ {
+  location ~ ^/api/(intake/batches(/[^/]+/files)?|admin/audio-kbat-sets|admin/screenshots|perutusan|guru/question-papers|admin/papers/[^/]+/source)/?$ {
     client_max_body_size ${PP_UPLOAD_BIG_MB}m;
     client_body_timeout 120s;
     limit_conn pp_big_uploads 2;         # per address

@@ -26,6 +26,8 @@ import {
   type BijakRewardInput,
   type BijakRewardPort,
   type BijakSelfMarkRewardInput,
+  type BijakStructuredRewardInput,
+  type AttemptPaper,
   type PaperResolution,
 } from '../../src/modules/bijak/attempts/ports'
 import { leavesOf, type PartAnswer } from '../../src/modules/bijak/attempts/exam-core.adapter'
@@ -42,6 +44,8 @@ const SLUG: Record<string, string> = { [PAPER.matK1]: 'mat-k1-2025-a', [PAPER.ma
 
 export class FakePaperSource implements BijakPaperSource {
   calls: { userId: string; paperId: string; isTest: boolean }[] = []
+  /** Fields laid over every resolved paper (e.g. `{ durationMin: 0 }` for an untimed Kertas Subjektif paper); reset it in a test. */
+  patch: Partial<AttemptPaper> = {}
   async resolveForAttempt(input: { userId: string; paperId: string; isTest: boolean }): Promise<PaperResolution> {
     this.calls.push(input)
     if (input.paperId === PAPER.notEligible) return { ok: false, reason: 'not_eligible' }
@@ -66,6 +70,7 @@ export class FakePaperSource implements BijakPaperSource {
           rule: s.rule,
           questionIds: [...s.questionIds],
         })),
+        ...this.patch,
       },
     }
   }
@@ -115,6 +120,12 @@ export class SpyReward implements BijakRewardPort {
   }
   async awardSelfMark(input: BijakSelfMarkRewardInput): Promise<void> {
     this.selfMarkCalls.push(input)
+    if (this.fail) throw new Error('wallet down')
+  }
+  /** S5-T11: the structured gains handed to the port (submit and self-mark). */
+  structuredCalls: BijakStructuredRewardInput[] = []
+  async awardStructured(input: BijakStructuredRewardInput): Promise<void> {
+    this.structuredCalls.push(input)
     if (this.fail) throw new Error('wallet down')
   }
 }

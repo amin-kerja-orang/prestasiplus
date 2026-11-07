@@ -6,9 +6,9 @@
 import type { BijakUnitRefView } from '@pp/contract'
 import { computed } from 'vue'
 
-import { DsFormField, DsFormSection } from '@/ds'
+import { DsFormField, DsFormSection, DsStack, DsText } from '@/ds'
 
-import { offeredMarks, questionRange, type ContractForm, type FormSection } from '../domain/form'
+import { answerLine, marksListOf, offeredMarks, questionRange, type ContractForm, type FormSection } from '../domain/form'
 import { fieldId, type Issue } from '../domain/validate'
 import NumField from './NumField.vue'
 import QuotaLinesEditor from './QuotaLinesEditor.vue'
@@ -53,6 +53,8 @@ const errAt = (name: string): string | undefined =>
   props.issues.find((i) => i.level === 'error' && i.target === fieldId(props.index, name))?.message
 const range = computed(() => questionRange(props.form.sections, props.index))
 const offered = computed(() => offeredMarks(s.value))
+/** AC-ADM-Q16.5: the total derived from `Markah setiap soalan`. */
+const marksTotal = computed(() => marksListOf(s.value)?.reduce((n, mark) => n + mark, 0) ?? null)
 const kbatErrors = computed(() =>
   props.issues.filter((i) => i.section === props.index && i.part === 'kbat' && i.level !== 'incomplete'),
 )
@@ -101,12 +103,13 @@ function setPerSlot(on: boolean): void {
     <DsFormSection title="Struktur Bahagian" icon="list-numbers" :columns="2">
       <DsFormField native :for="fieldId(index, 'label')" label="Label" required :error="errAt('label')">
         <template #default="f">
-          <UInput :id="f.id" v-model="s.label" :aria-invalid="f.invalid" class="w-full" :ui="{ base: 'min-h-11' }" />
+          <UInput :id="f.id" v-model="s.label" :aria-invalid="f.invalid" class="w-full" :ui="{ base: 'min-h-11' }" placeholder="Contoh: Bahagian A" />
         </template>
       </DsFormField>
       <div>
         <p class="text-label text-default">Julat soalan</p>
         <p class="mt-2 text-body text-muted" data-testid="section-range">{{ range }}</p>
+        <DsText variant="body" tone="muted" data-testid="answer-line">{{ answerLine(s) }}</DsText>
       </div>
 
       <div class="sm:col-span-2">
@@ -160,6 +163,26 @@ function setPerSlot(on: boolean): void {
       >
         <template #default="f">
           <NumField :id="f.id" v-model="s.markBudget" :invalid="f.invalid" :describedby="f.describedby" />
+        </template>
+      </DsFormField>
+
+      <DsStack gap="xs">
+        <UCheckbox
+          :id="fieldId(index, 'compulsory')"
+          v-model="s.compulsory"
+          label="Wajib dijawab"
+          :aria-invalid="errAt('compulsory') ? 'true' : undefined"
+          data-testid="section-compulsory"
+        />
+        <DsText v-if="errAt('compulsory')" variant="caption" tone="error" role="alert" data-testid="field-error">{{ errAt('compulsory') }}</DsText>
+      </DsStack>
+
+      <DsFormField native :for="fieldId(index, 'marks-list')" label="Markah setiap soalan" :error="errAt('marks-list')">
+        <template #default="f">
+          <DsStack gap="xs">
+            <UInput :id="f.id" v-model="s.marksPerQuestion" :aria-invalid="f.invalid" :aria-describedby="f.describedby" placeholder="3,3,3,5,4" data-testid="section-marks-list" />
+            <SumMeter v-if="marksTotal !== null" label="Jumlah markah" :value="marksTotal" :target="offered" unit="markah" />
+          </DsStack>
         </template>
       </DsFormField>
 

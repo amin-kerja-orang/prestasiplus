@@ -8,14 +8,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
+import { DsCluster, DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsText, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
 
-import type { BijakGenerateShortage } from '@pp/contract'
-
-import GenerateShortageAlert from '../components/GenerateShortageAlert.vue'
 import KeywordSuggestion from '../components/KeywordSuggestion.vue'
 import PartResultCard from '../components/PartResultCard.vue'
 import ReportQuestionButton from '../components/ReportQuestionButton.vue'
@@ -32,7 +29,6 @@ import type {
   QuestionResult,
   QuestionView,
   StimulusDef,
-  SubjectCode,
 } from '../domain/types'
 import { rewardItems } from '../lib/rewards'
 import { stimuliOf, toStimulusData } from '../lib/stimulus-data'
@@ -98,11 +94,31 @@ onMounted(() => window.addEventListener('beforeunload', warnOnUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', warnOnUnload))
 onBeforeRouteLeave(() => (unsaved.value.size ? window.confirm(LEAVE_WARNING) : true))
 
-async function saveSelfMark(body: { partId: string; mark: number; band?: string }): Promise<void> {
-  const out = await server.selfMark(user.value, attemptId.value, body)
-  refreshed.value = out.result
+/**
+ * The save of one sitting (S3-T06, autosave): bound to the attempt it was rendered for, so a change flushed when a control
+ * unmounts still reaches that attempt; saves run one after another page-wide, so every response holds all earlier marks
+ * and the last one is the newest state; a response for a sitting the page no longer shows is not applied.
+ */
+let saveChain: Promise<unknown> = Promise.resolve()
+function saveFor(id: string): (body: { partId: string; mark: number; band?: string }) => Promise<void> {
+  return (body) => {
+    const run = saveChain.then(async () => {
+      const out = await server.selfMark(user.value, id, body)
+      if (id === attemptId.value) refreshed.value = out.result
+    })
+    saveChain = run.catch(() => undefined)
+    return run
+  }
 }
+const saveSelfMark = computed(() => saveFor(attemptId.value))
 const percent = computed(() => result.value?.percent ?? 0)
+/** OPT-STATUS-ATTEMPT: the status chip of the Semakan (46 section 3.7). */
+const STATUS_LABEL: Record<string, string> = {
+  in_progress: 'Belum dihantar',
+  submitted: 'Dihantar',
+  auto_submitted: 'Dihantar automatik',
+  abandoned: 'Ditinggalkan',
+}
 const art = computed(() =>
   percent.value >= 90 ? 'party' : percent.value >= 60 ? 'trophy' : 'books',
 )
@@ -197,13 +213,10 @@ async function share(): Promise<void> {
   }
 }
 
-/** Retry on a Jana Kertas result (design 7.4): shortage / limit / no-contract show under the button. */
+/** Cuba Lagi (R1-B15, S3-T07): a fresh attempt on the same paper, for every paper kind; the 409 text is shown as it is. */
 const retrying = ref(false)
-const retryShortages = ref<BijakGenerateShortage[]>([])
-const retryShortageKey = ref(0)
 const retryMessage = ref('')
 
-/** Cuba Lagi on a Kertas Pilihan (R1-B15): a fresh attempt on the same paper; the 409 text is shown as it is. */
 async function retrySamePaper(attemptIdToRetry: string): Promise<void> {
   retrying.value = true
   retryMessage.value = ''
@@ -220,41 +233,10 @@ async function retrySamePaper(attemptIdToRetry: string): Promise<void> {
   }
 }
 
-/** Cuba Lagi on a Jana Kertas: a newly generated paper (design 7.4). */
-async function retryGenerated(subject: SubjectCode, kertas: number): Promise<void> {
-  retrying.value = true
-  retryShortages.value = []
-  retryMessage.value = ''
-  let paperId: string
-  try {
-    const out = await server.generatePaper(user.value, subject, kertas)
-    if (!out.ok) {
-      if (out.reason === 'shortage') {
-        retryShortages.value = out.shortages
-        retryShortageKey.value += 1
-      } else {
-        retryMessage.value =
-          out.reason === 'limit'
-            ? 'Kertas tidak dapat disusun sekarang. Cuba lagi.'
-            : 'Belum ada kontrak untuk subjek dan kertas ini'
-      }
-      return
-    }
-    paperId = out.paperId
-  } catch {
-    retryMessage.value = 'Kertas tidak dapat dijana sekarang. Cuba lagi.'
-    return
-  } finally {
-    retrying.value = false
-  }
-  await router.push({ name: 'm28.bijak.cover', params: { paperId } })
-}
-
 async function retry(): Promise<void> {
   const a = data.value?.attempt
   if (!a || retrying.value) return
-  if (a.paperKind === 'jana') await retryGenerated(a.subject, a.kertas)
-  else await retrySamePaper(a.id)
+  await retrySamePaper(a.id)
 }
 const home = computed(() => landingPath.value || '/dashboard')
 </script>
@@ -303,6 +285,19 @@ const home = computed(() => landingPath.value || '/dashboard')
         </template>
       </DsWinScreen>
 
+      <!-- FR-PA-26: status chip, "{score} / {max}" and the whole-number percent (rounded half up, 46 section 3.7). -->
+      <DsCluster justify="center" gap="xs" data-testid="result-summary">
+        <UBadge color="neutral" variant="subtle" data-testid="result-status">{{
+          STATUS_LABEL[data.attempt.status]
+        }}</UBadge>
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-score"
+          >{{ result.score }} / {{ result.max }}</DsText
+        >
+        <DsText variant="label" tone="highlighted" tabular data-testid="result-percent"
+          >{{ Math.round(percent) }}%</DsText
+        >
+      </DsCluster>
+
       <div class="flex flex-col gap-2 sm:flex-row sm:justify-center">
         <UButton
           color="neutral"
@@ -322,12 +317,6 @@ const home = computed(() => landingPath.value || '/dashboard')
           >Sejarah Bijak SPM</UButton
         >
       </div>
-      <GenerateShortageAlert
-        v-if="retryShortages.length"
-        :key="retryShortageKey"
-        :shortages="retryShortages"
-        class="mx-auto"
-      />
       <UAlert
         v-if="retryMessage"
         color="error"
@@ -360,8 +349,7 @@ const home = computed(() => landingPath.value || '/dashboard')
         color="info"
         variant="soft"
         icon="i-ph-hourglass-medium"
-        :title="`${result.pendingReview} bahagian belum dimarkah — perlu semakan`"
-        description="Jumlah markah ialah sementara sehingga semakan selesai."
+        :title="`Markah sementara - ${result.pendingReview} bahagian belum dimarkah.`"
         data-testid="provisional"
       />
 

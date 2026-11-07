@@ -68,6 +68,7 @@ function flatBase(q: QuestionView) {
     difficultyLevel: f.difficultyLevel,
     questionType: f.questionType,
     questionText: f.questionText,
+    questionTextEn: f.questionTextEn,
     // The stem image is the version's first image stimulus (file id); option images are ids on the options.
     questionImage: imageOf(q, q.version.stemImageId),
     options: f.options,
@@ -102,6 +103,8 @@ function flatBase(q: QuestionView) {
     textDirection: f.textDirection,
     createdAt: toMytTimestamp(q.createdAt),
     updatedAt: toMytTimestamp(q.updatedAt),
+    // S1-T07 (API-Q-12): the stored flag unless dismissed ("Bukan masalah").
+    flags: q.openFlags ?? [],
     usage: c.usage,
     parts: partsOf(q),
     numberLabel: v.numberLabel,
@@ -132,6 +135,7 @@ export function stimulusGroupView(g: StimulusGroupRecord, tokens: Record<string,
       imageId: s.assetFileId === null ? null : (tokens[s.assetFileId] ?? s.assetFileId),
       alt: s.alt,
       ...(s.caption ? { caption: s.caption } : {}),
+      ...(s.captionEn ? { captionEn: s.captionEn } : {}),
       ...(s.sourceCitation ? { sourceCitation: s.sourceCitation } : {}),
       ...(table(s).table ? { tableData: QuestionStimulusTableSchema.parse(table(s).table) } : {}),
     })),
@@ -168,6 +172,7 @@ export function rowView(q: QuestionView): QuestionRow {
     kertas: kertasOfPaperCode(q.version.paperCode),
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
+    flags: q.openFlags ?? [],
   })
 }
 
@@ -355,6 +360,8 @@ export function guruStructuredRowView(q: QuestionView, number: number): z.output
     subCount: countLeaves(parts),
     marks: marksOf(parts),
     status: 'approved',
+    source: 'question',
+    editable: false,
   })
 }
 
@@ -390,5 +397,8 @@ export function guruStructuredDetailView(d: GuruStructuredRecord): z.output<type
       depth: x.depth,
     })),
     createdAt: toMytTimestamp(d.createdAt),
+    source: 'question',
+    editable: false,
+    form: null,
   })
 }

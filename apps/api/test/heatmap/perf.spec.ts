@@ -37,9 +37,9 @@ describe.skipIf(!ENABLED)('AC8: heatmap read on 20 students and a generated answ
     await t.db.query(
       `with pick as (select id, subject_id from chapters where in_tree order by id limit 40),
             c as (select id, subject_id, row_number() over (order by id) as n, count(*) over () as total from pick)
-       insert into practice_answers (user_id, subject_id, chapter_id, is_correct, answered_at)
+       insert into practice_answers (user_id, subject_id, chapter_id, is_correct, answered_at, mode)
        select u.id, c.subject_id, case when g % 6 = 0 then null else c.id end, (g % 3 <> 0),
-              timestamptz '2026-10-19 12:00+08' - ((g * 104729 % 180) || ' days')::interval
+              timestamptz '2026-10-19 12:00+08' - ((g * 104729 % 180) || ' days')::interval, 'latih_tubi'
          from (select id from users where email like 'perf.%') u
          cross join generate_series(1, ($1::int / 20)) g
          join c on c.n = 1 + ((g * 7919 + u.id) % c.total)`,
@@ -69,7 +69,7 @@ describe.skipIf(!ENABLED)('AC8: heatmap read on 20 students and a generated answ
     const group = await t.db.query<Record<string, string>>(
       `explain (analyze, buffers) select chapter_id, count(*) as attempts, count(*) filter (where is_correct) as correct
          from practice_answers where user_id = ${uid} and chapter_id is not null and not is_test
-        group by chapter_id having count(*) >= 5 order by chapter_id`,
+        group by chapter_id order by chapter_id`,
     )
     report.push('--- EXPLAIN (ANALYZE, BUFFERS): grouping query (BE-13 chapterAnswerCounts shape) ---', ...group.map((r) => r['QUERY PLAN'] as string))
 
@@ -85,11 +85,11 @@ describe.skipIf(!ENABLED)('AC8: heatmap read on 20 students and a generated answ
       return out
     }
     const full = await time(() => service.forCaller({ userId: uid, isTest: false }))
-    const counts = await time(() => port.chapterAnswerCounts(uid, 5, false))
+    const counts = await time(() => port.chapterAnswerCounts(uid, false))
     report.push(`--- HeatmapService.forCaller, ${String(RUNS)} runs: median ${median(full).toFixed(1)} ms, max ${Math.max(...full).toFixed(1)} ms`)
     report.push(`--- answer counts (default port) alone, ${String(RUNS)} runs: median ${median(counts).toFixed(1)} ms`)
     const result = await service.forCaller({ userId: uid, isTest: false })
-    report.push(`--- cells shown: ${String(result.subjects.flatMap((s) => s.topics).length)} in ${String(result.subjects.length)} subjects`)
+    report.push(`--- cells shown: ${String(result.subjects.flatMap((s) => s.chapters).length)} in ${String(result.subjects.length)} subjects`)
     console.log(report.join('\n'))
     expect(median(full)).toBeGreaterThan(0)
   }, 600_000)

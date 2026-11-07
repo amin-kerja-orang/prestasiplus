@@ -47,13 +47,35 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       await level.selectOption(levelValue!)
       await subject.selectOption(subjectValue!)
 
+      // D112 (#739): Bab, SP, TP and Aras Pemikiran are required once the chosen Subjek + Tingkatan has
+      // chapters / DSKP nodes ("Sila pilih bab."). Wait for the lookups of the pair, then fill what exists.
+      const chapter = page.getByTestId('q-chapter')
+      const sp = page.getByTestId('q-sp')
+      await expect(async () => {
+        const first = await chapter.locator('option').first().textContent()
+        const settled =
+          (await chapter.isEnabled()) || (first ?? '').includes('Tiada bab untuk subjek dan tingkatan ini.')
+        expect(settled, 'the Bab lookup of the pair has settled').toBe(true)
+      }).toPass({ timeout: 15_000 })
+      if (await chapter.isEnabled()) {
+        await chapter.selectOption({ index: 1 })
+      }
+      if (await sp.isEnabled()) {
+        await sp.selectOption({ index: 1 })
+        await page.getByTestId('q-tp').selectOption('1')
+        await page.getByTestId('q-aras').selectOption({ index: 1 })
+      }
+
       // The type defaults to MCQ ("Aneka Pilihan (MCQ)"); no image is attached.
-      await page.getByTestId('q-difficulty').selectOption('easy')
+      // Kesukaran is 1 (Sangat mudah) to 5 (Sangat sukar) on the wire (S6-T06, QuestionGuruCreateRequest).
+      await page.getByTestId('q-difficulty').selectOption('1')
       await page.getByTestId('q-text').fill('Soalan ujian regresi SW7-08: pilih jawapan B.')
       for (const [i, text] of ['Pilihan A', 'Pilihan B', 'Pilihan C', 'Pilihan D'].entries()) {
         await page.getByTestId(`q-option-${String(i)}`).fill(text)
       }
-      await page.locator('[data-testid="q-correct"] [role="radio"]').nth(1).click()
+      // #1013 (AC-GUR-44-7) gives each choice a 44 px label laid over its small radio, so the tap goes to the label, as a user's does.
+      await page.locator('[data-testid="q-correct"] fieldset > div').nth(1).locator('label').click()
+      await expect(page.locator('[data-testid="q-correct"] [role="radio"]').nth(1)).toBeChecked()
       await expectNoHScroll(page)
 
       const post = page.waitForResponse(
@@ -76,14 +98,16 @@ test.describe('SW7-08 contribute a question without an image sends string ids @a
       const sent = res.request().postDataJSON() as {
         educationLevelId: unknown
         subjectId: unknown
+        difficultyLevel: unknown
       }
       expect(typeof sent.educationLevelId, 'educationLevelId on the wire').toBe('string')
       expect(typeof sent.subjectId, 'subjectId on the wire').toBe('string')
       expect(sent.educationLevelId).toBe(levelValue)
       expect(sent.subjectId).toBe(subjectValue)
+      expect(sent.difficultyLevel).toBe(1)
       expect(res.status(), `POST /api/guru/questions ${body}`).toBe(201)
 
-      await expect(page.getByText('Soalan berjaya dihantar untuk semakan.')).toBeVisible()
+      await expect(page.getByText('Soalan dihantar untuk semakan.')).toBeVisible()
       await expect(page).toHaveURL(/\/guru\/soalan$/)
       await expectNoHScroll(page)
       expect(dialogs).toEqual([])

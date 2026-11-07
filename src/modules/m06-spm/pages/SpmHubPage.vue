@@ -2,22 +2,25 @@
 /**
  * S1 `/spm` "Mod SPM" (M06-T2; FR-M06-01…05, BR-M06-01, DV-M06-01/03/04), restyled for v2.
  *
- * Pill, h1 and lead; the Bijak SPM hero card; four KPI tiles (2 columns, 4 from `md`); four feature
- * cards as whole-card links (1 / `md` 2 / `lg` 4 columns) with accent chips (the live Font Awesome Pro
+ * Pill, h1 and lead; the Bijak SPM hero card; four KPI tiles (2 columns, 4 from `md`); five feature
+ * cards as whole-card links (1 / `md` 2 / `lg` 3 / `xl` 5 columns) with accent chips (the live Font Awesome Pro
  * names render blank, DV-M06-03); "Prestasi SPM Anda" (the caller's SPM stats) and the "Sejarah Kuiz
- * SPM" link.
+ * SPM" link. S3-T07: five cards (Kertas Subjektif last); "Tahun Tersedia" is hidden while the overview
+ * carries no `yearsAvailable`; a card with zero content shows its data-empty text and is not a link.
  */
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { useApi } from '@/composables'
-import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
-import { formatCount, formatNumber } from '@/lib/number'
+import { useApi, useRouteExists } from '@/composables'
+import { DsGrid, DsGridItem, DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
+import { formatCount } from '@/lib/number'
 
 import { fetchSpmOverview } from '../api'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import { LOAD_ERROR } from '../lib/copy'
+import { formatAccuracy } from '../lib/history'
 
+const { routeExists } = useRouteExists()
 const { data, error, reload } = useApi((signal) => fetchSpmOverview({ signal }))
 
 interface Tile {
@@ -31,7 +34,7 @@ interface Tile {
 const stats = computed<Tile[]>(() => {
   const o = data.value
   if (!o) return []
-  return [
+  const tiles: Tile[] = [
     {
       id: 'total',
       value: formatCount(o.stats.totalQuestions),
@@ -47,13 +50,6 @@ const stats = computed<Tile[]>(() => {
       accent: 'action',
     },
     {
-      id: 'years',
-      value: formatCount(o.stats.yearsAvailable),
-      label: 'Tahun Tersedia',
-      icon: 'i-ph-calendar-check-duotone',
-      accent: 'friend',
-    },
-    {
       id: 'tracking',
       value: formatCount(o.stats.trackingAQuestions),
       label: 'Soalan Tracking A',
@@ -61,9 +57,33 @@ const stats = computed<Tile[]>(() => {
       accent: 'heat',
     },
   ]
+  // "Tahun Tersedia" is shown only when the API reports a year count; never a constant 0.
+  if (o.stats.yearsAvailable !== undefined) {
+    tiles.splice(2, 0, {
+      id: 'years',
+      value: formatCount(o.stats.yearsAvailable),
+      label: 'Tahun Tersedia',
+      icon: 'i-ph-calendar-check-duotone',
+      accent: 'friend',
+    })
+  }
+  return tiles
 })
 
-const modules = computed(() => {
+interface ModuleCard {
+  id: string
+  to: string
+  title: string
+  text: string
+  /** Shown instead of `text` when the card has no content; the card is then not a link. */
+  emptyText: string | null
+  chip: string
+  accent: DsAccent
+  icon: string
+  chipIcon: string | undefined
+}
+
+const modules = computed<ModuleCard[]>(() => {
   const o = data.value
   if (!o) return []
   return [
@@ -72,8 +92,9 @@ const modules = computed(() => {
       to: '/spm/tahun-lepas',
       title: 'Databank Soalan',
       text: 'Bank soalan SPM mengikut subjek, dipaparkan secara rawak.',
+      emptyText: o.modules.databank === 0 ? 'Tiada soalan tersedia lagi.' : null,
       chip: `${formatCount(o.modules.databank)} soalan`,
-      accent: 'action' as DsAccent,
+      accent: 'action',
       icon: 'i-ph-database-duotone',
       chipIcon: 'i-ph-file-text-bold',
     },
@@ -82,8 +103,9 @@ const modules = computed(() => {
       to: '/spm/latih-tubi',
       title: 'Latih Tubi SPM',
       text: 'Latihan ikut topik dan bab untuk Tingkatan 4 & 5.',
+      emptyText: null,
       chip: `${formatCount(o.modules.latihTubi)} soalan`,
-      accent: 'win' as DsAccent,
+      accent: 'win',
       icon: 'i-ph-barbell-duotone',
       chipIcon: 'i-ph-barbell-bold',
     },
@@ -92,8 +114,9 @@ const modules = computed(() => {
       to: '/spm/ramalan',
       title: 'Tracking A',
       text: 'Set objektif penuh dan lane bahasa khas untuk latihan intensif menjelang SPM.',
+      emptyText: null,
       chip: `${formatCount(o.modules.trackingA)} soalan`,
-      accent: 'friend' as DsAccent,
+      accent: 'friend',
       icon: 'i-ph-magic-wand-duotone',
       chipIcon: 'i-ph-sparkle-bold',
     },
@@ -101,14 +124,32 @@ const modules = computed(() => {
       id: 'subjektif',
       to: '/spm/subjektif',
       title: 'Subjektif',
-      text: 'Latihan soalan esei & jawapan panjang, disemak oleh guru.',
+      text: 'Latihan soalan berstruktur & esei, semak sendiri dengan skema.',
+      emptyText: o.modules.subjektifSets === 0 ? 'Tiada soalan berstruktur ditemui' : null,
       chip: `${formatCount(o.modules.subjektifSets)} set subjektif`,
-      accent: 'heat' as DsAccent,
+      accent: 'heat',
       icon: 'i-ph-pen-nib-duotone',
+      chipIcon: undefined,
+    },
+    {
+      id: 'kertas-subjektif',
+      to: '/kertas-subjektif',
+      title: 'Kertas Subjektif',
+      text: 'Kertas 2, 3 & 4 percubaan negeri — baca, jawab, buka skema untuk semak sendiri.',
+      emptyText:
+        o.modules.kertasSubjektif === 0
+          ? 'Kertas subjektif sedang dalam penyediaan. Semak semula tidak lama lagi.'
+          : null,
+      chip: `${formatCount(o.modules.kertasSubjektif)} kertas`,
+      accent: 'win',
+      icon: 'i-ph-scroll-duotone',
       chipIcon: undefined,
     },
   ]
 })
+
+/** A card is a link only when it has content and its target screen is built (never a dead link). */
+const isLink = (m: ModuleCard): boolean => m.emptyText === null && routeExists(m.to)
 
 const mine = computed<Tile[]>(() => {
   const m = data.value?.me
@@ -123,7 +164,7 @@ const mine = computed<Tile[]>(() => {
     },
     {
       id: 'accuracy',
-      value: `${formatNumber(m.avgAccuracy, { decimals: 1 })}%`,
+      value: formatAccuracy(m.avgAccuracy),
       label: 'Purata Ketepatan',
       icon: 'i-ph-crosshair-duotone',
       accent: 'win',
@@ -190,24 +231,44 @@ const mine = computed<Tile[]>(() => {
 
     <template v-if="data">
       <!-- Stats -->
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="spm-stats">
-        <div v-for="s in stats" :key="s.id" class="min-w-0" :data-testid="`spm-stat-${s.id}`">
+      <DsGrid
+        gap="sm"
+        :cols="{ base: 2, md: stats.length === 4 ? 4 : 3 }"
+        data-testid="spm-stats"
+      >
+        <DsGridItem
+          v-for="(s, i) in stats"
+          :key="s.id"
+          :span="stats.length === 3 && i === 2 ? { base: 2, md: 1 } : undefined"
+          :data-testid="`spm-stat-${s.id}`"
+        >
           <DsStatTile :value="s.value" :unit="s.label" :icon="s.icon" :accent="s.accent" />
-        </div>
-      </div>
+        </DsGridItem>
+      </DsGrid>
 
       <!-- Feature cards -->
       <ul
-        class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-4"
+        class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-5"
         data-testid="spm-modules"
       >
         <li v-for="m in modules" :key="m.id" class="min-w-0">
-          <RouterLink :to="m.to" class="block h-full" :data-testid="`spm-module-${m.id}`">
+          <component
+            :is="isLink(m) ? RouterLink : 'div'"
+            v-bind="isLink(m) ? { to: m.to } : {}"
+            class="block h-full"
+            :data-testid="`spm-module-${m.id}`"
+            :data-empty="m.emptyText === null ? undefined : 'true'"
+          >
             <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
               <DsIconChip :icon="m.icon" :accent="m.accent" size="lg" data-testid="module-icon" />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
                 <h2 class="text-subheading text-highlighted">{{ m.title }}</h2>
-                <p class="text-body text-muted">{{ m.text }}</p>
+                <p
+                  class="text-body text-muted"
+                  :data-testid="m.emptyText === null ? undefined : 'module-empty'"
+                >
+                  {{ m.emptyText ?? m.text }}
+                </p>
               </div>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <UBadge
@@ -217,13 +278,16 @@ const mine = computed<Tile[]>(() => {
                   data-testid="module-chip"
                   >{{ m.chip }}</UBadge
                 >
-                <span class="inline-flex items-center gap-1 text-label text-primary-t">
+                <span
+                  v-if="isLink(m)"
+                  class="inline-flex items-center gap-1 text-label text-primary-t"
+                >
                   Mula
                   <UIcon name="i-ph-arrow-right-bold" class="size-4" aria-hidden="true" />
                 </span>
               </div>
             </UCard>
-          </RouterLink>
+          </component>
         </li>
       </ul>
 

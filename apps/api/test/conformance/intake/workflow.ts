@@ -132,6 +132,12 @@ export const intakeWorkflowScenarios: Scenario[] = [
       expectError(ctx, res, 409, 'CONFLICT')
       ctx.check(errorOf(res).message === 'Kumpulan ini belum boleh diekstrak: tiada fail, atau fail masih diproses.', 'the not-extractable message differs')
       expectError(ctx, await teacher.request('POST', '/intake/batches/999999999/extract', { body: {} }), 404, 'NOT_FOUND')
+      // S1-T04: `pages[]` is `{ fileId, pageNo }` only; a provider choice is still refused; an empty list is refused.
+      expectError(ctx, await teacher.request('POST', `/intake/batches/${batch}/extract`, { body: { provider: 'openai' } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await teacher.request('POST', `/intake/batches/${batch}/extract`, { body: { pages: [] } }), 422, 'VALIDATION_ERROR')
+      expectError(ctx, await teacher.request('POST', `/intake/batches/${batch}/extract`, { body: { pages: [{ fileId: '1', pageNo: 0 }] } }), 422, 'VALIDATION_ERROR')
+      // A well-formed pages[] on a batch that is not finished is the same 409 (nothing is re-run).
+      expectError(ctx, await teacher.request('POST', `/intake/batches/${batch}/extract`, { body: { pages: [{ fileId: '999999999', pageNo: 1 }] } }), 409, 'CONFLICT')
       await teacher.request('POST', `/intake/batches/${batch}/cancel`)
     },
   },

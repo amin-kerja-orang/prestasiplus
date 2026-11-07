@@ -29,12 +29,16 @@ export interface UserRow {
   id: number
   name: string
   email: string
+  /** Login name of a pupil created by a teacher (API-GUR-06, S6-T10); absent on seeded rows. */
+  username?: string | null
   phone: string | null
   role: UserRole
   /** 1–6 Darjah, 7–11 Tingkatan; null for non-students (and for students without one). */
   grade: number | null
   schoolId: number | null
   bio: string | null
+  /** "Cita-Cita Saya" (DM-80), max 255; students only in practice. */
+  aspiration?: string | null
   avatarUrl: string | null
   /** Inactive → login refused (M01 BR-23, M02 BR-05). */
   isActive: boolean

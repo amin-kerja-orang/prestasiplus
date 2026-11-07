@@ -11,8 +11,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
 import type { BijakProgressSource, PaperProgress } from '../../src/modules/bijak/papers'
+import { seedJanaPaper } from '../support/jana-paper'
 import golden from './golden-mock.json'
-import { allKeys, bootPapersApp, expectError, loginAs, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
+import { NOT_SERVING } from '../support/serve-blueprints'
+import { allKeys, bootPapersApp, count, expectError, loginAs, serveSeededBlueprints, setPocMarkBudgets, type Client, type PapersTestApp } from './helpers'
 
 /** Keys that would reveal an answer key, a scheme or a question (AC 6, US-15). */
 const FORBIDDEN_KEYS = [
@@ -143,34 +145,43 @@ describe('Bijak papers API (BE-15)', () => {
   })
 
   describe('GET /api/bijak/contracts and /api/bijak/subjects', () => {
-    it('lists the blueprints with their sections and take, source tags included (golden)', async () => {
+    const contracts = async () => envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
+
+    it('S3-T01: a Spec contract is never listed: the seeded Spec blueprints give an empty list', async () => {
+      expect(await count(t.db, `select count(*) n from blueprints where status = 'active' and source = 'spec'`)).toBe(4)
+      expect(await contracts()).toEqual([])
+    })
+
+    it('lists the Disahkan versions with their sections and take (golden)', async () => {
+      await serveSeededBlueprints(t.db)
       const res = await student.get('/api/bijak/contracts')
       expect(res.status).toBe(200)
       const data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse(res.body).data
-      // The mock golden predates BJS-01 `canGenerate`; for a student it is true only for a serving (Disahkan) version.
+      // The mock golden predates BJS-01 `canGenerate` and shows the seeded source Spec; only a serving (Disahkan) version reaches a pupil.
       expect(
         data.map((c) => {
           const rest: Record<string, unknown> = { ...c }
           delete rest.canGenerate
-          delete rest.unavailableReason
           return rest
         }),
-      ).toEqual(golden.contracts)
+      ).toEqual(golden.contracts.map((c) => ({ ...c, source: 'Disahkan' })))
       for (const c of data) {
-        expect(c.canGenerate, c.code).toBe(c.source === 'Disahkan')
-        expect(c.unavailableReason, c.code).toBe(c.canGenerate ? undefined : 'NO_BLUEPRINT')
+        expect(c.canGenerate, c.code).toBe(true)
+        expect(c.unavailableReason, c.code).toBeUndefined()
       }
       expect(allKeys(res.body).has('pool')).toBe(false)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where status = 'active'`)
     })
 
-    it('lists only active blueprints; a Draf source is listed, a retired or draft version is not', async () => {
+    it('S3-T01: a contract that no longer serves is not listed', async () => {
+      await serveSeededBlueprints(t.db)
+      expect((await contracts()).map((c) => c.code)).toContain('4541/1')
+      await t.db.query(`update blueprints set ${NOT_SERVING} where code = '4541/1'`)
+      expect((await contracts()).map((c) => c.code)).not.toContain('4541/1')
       await t.db.query(`update blueprints set source = 'draft' where code = '4541/1'`)
-      let data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
-      expect(data.find((c) => c.code === '4541/1')?.source).toBe('Draf')
-      await t.db.query(`update blueprints set source = 'spec', status = 'retired' where code = '4541/1'`)
-      data = envelopeOf(z.array(BijakBlueprintContractSchema)).parse((await student.get('/api/bijak/contracts')).body).data
-      expect(data.map((c) => c.code)).not.toContain('4541/1')
-      await t.db.query(`update blueprints set status = 'active' where code = '4541/1'`)
+      expect((await contracts()).map((c) => c.code)).not.toContain('4541/1')
+      await t.db.query(`update blueprints set source = 'spec' where code = '4541/1'`)
+      await t.db.query(`update blueprints set ${NOT_SERVING} where status = 'active'`)
     })
 
     it('serves the hub subjects with the Bijak codes (MAT, SN, SEJ)', async () => {
@@ -184,16 +195,13 @@ describe('Bijak papers API (BE-15)', () => {
     await setPocMarkBudgets(t.db)
     await serveSeededBlueprints(t.db)
     const id = await idOf('1449/2', 2)
-    const gen = await student.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 2 })
-    expect(gen.status).toBe(201)
+    const janaId = await seedJanaPaper(t.db, { userId: student.userId, subject: 'MAT', kertas: 2 })
     const bodies = [
       (await student.get('/api/bijak/papers')).body,
       (await student.get(`/api/bijak/papers/${id}`)).body,
-      (await student.get(`/api/bijak/papers/${String((gen.body as { data: { paperId: string } }).data.paperId)}`)).body,
+      (await student.get(`/api/bijak/papers/${janaId}`)).body,
       (await student.get('/api/bijak/contracts')).body,
       (await student.get('/api/bijak/subjects')).body,
-      gen.body,
-      (await student.post('/api/bijak/papers/generate', { subject: 'SN', kertas: 1 })).body,
     ]
     for (const body of bodies) {
       const keys = allKeys(body)
@@ -212,26 +220,17 @@ describe('Bijak papers API (BE-15)', () => {
     it('no session is 401 on every route', async () => {
       const anon = t.agent()
       for (const [, path] of routes) expectError(await anon.get(path), 'UNAUTHORIZED')
-      expectError(await anon.post('/api/bijak/papers/generate').send({ subject: 'MAT', kertas: 1 }), 'UNAUTHORIZED')
     })
 
     it.each(['guru@demo.test', 'admin@demo.test', 'adminsekolah@demo.test'])('%s outside Mod Pelajar is 403 on every route', async (who) => {
       const c = await loginAs(t, who)
       for (const [, path] of routes) expectError(await c.get(path), 'FORBIDDEN')
-      expectError(await c.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'FORBIDDEN')
     })
 
-    it.each(['admin@demo.test', 'adminsekolah@demo.test'])('%s inside Mod Pelajar acts as a student and may read and generate', async (who) => {
+    it.each(['admin@demo.test', 'adminsekolah@demo.test'])('%s inside Mod Pelajar acts as a student and may read', async (who) => {
       const c = await loginAs(t, who)
       await c.enterMod()
       for (const [, path] of routes.filter(([, p]) => !p.endsWith('/1'))) expect((await c.get(path)).status).toBe(200)
-      expect((await c.post('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 })).status).toBe(201)
-    })
-
-    it('a POST without the CSRF token is 403 CSRF_INVALID and creates nothing', async () => {
-      const before = Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)
-      expectError(await student.postNoCsrf('/api/bijak/papers/generate', { subject: 'MAT', kertas: 1 }), 'CSRF_INVALID', 403)
-      expect(Number((await t.db.query<{ n: string }>(`select count(*) n from papers`))[0]?.n)).toBe(before)
     })
   })
 })

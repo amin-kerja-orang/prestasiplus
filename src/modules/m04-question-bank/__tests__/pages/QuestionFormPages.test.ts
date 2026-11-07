@@ -166,7 +166,7 @@ describe('QuestionCreatePage (M04 S2)', () => {
     expect(checked(w, 'q-correct-0', '0')).toBe('true')
     expect(t(w, 'q-option-0').attributes('required')).toBeDefined()
     expect(value(w, 'q-points')).toBe('1')
-    expect(value(w, 'q-language')).toBe('bm')
+    expect(value(w, 'q-language')).toBe('ms')
     expect(t(w, 'form-submit').text()).toBe('Simpan Soalan')
     expect(t(w, 'form-cancel').attributes('href')).toBe('/admin/questions')
     expect(w.find('[data-testid=question-form]').attributes('novalidate')).toBeUndefined()
@@ -371,7 +371,7 @@ describe('QuestionCreatePage (M04 S2)', () => {
       questionType: 'mcq',
       options: ['A', 'B', 'C', 'D'],
       correctAnswer: '1',
-      language: 'bm',
+      language: 'ms',
       pointsValue: '1',
       dskpSpId: '',
     })

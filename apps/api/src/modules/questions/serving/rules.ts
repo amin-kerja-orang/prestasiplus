@@ -1,3 +1,5 @@
+// DM-42: this JS twin never sees a personal (teacher_private) question: every record it evaluates comes from a read through `QuestionsRepository.scope()`
+// (bank-only SQL) or a `bankOnly` by-id read, so it has no private reason; `private-exclusion-sql.spec.ts` proves the surfaces' SQL.
 /**
  * R1-B03 (lite): where is a bank question served to pupils, and if not, why. PURE: no database, no clock. `ServabilityService`
  * loads the facts in batch; `evaluate` applies the rules.
@@ -34,7 +36,6 @@ import { markableLeaf, leavesOf, optionImageIds, resolveStimuli } from '../../bi
 import { BRIDGE_REFUSAL_REASONS_MS } from '../../bijak/question-bridge/refusals'
 import { mapBe09Question, UnsupportedQuestionError, type BridgeMedia } from '../../bijak/question-bridge/be09-mapping'
 import { servableMcq } from '../../practice/question-bridge/be09-practice-mapping'
-import { OFFERED_LEVEL_CODES } from '../../practice/rules'
 import { SERVABLE_STATUS } from '../learner-visibility'
 import type { QuestionRecord } from '../types'
 import type { ServabilityFacts } from './types'
@@ -77,7 +78,7 @@ function commonReasons(f: ServabilityFacts, activity: ServabilityActivity): Serv
     else if (!f.level.isActive) out.push(reason('level_inactive', activity))
   }
   // S1-T07: the flag and the key checks are part of the servable rule (JS twins of NOT_FLAGGED_SQL and ALL_LEAVES_KEYED_SQL).
-  out.push(...flagReasons(live, activity), ...keyReasons(live, activity))
+  out.push(...flagReasons(live, activity), ...keyReasons(live, activity), ...mediaReasons(f, activity))
   return out
 }
 
@@ -127,10 +128,35 @@ function keyReasons(live: QuestionRecord, activity: ServabilityActivity): Servab
   return [...modes].map((code) => reason(code, activity))
 }
 
-/** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T4, T5), active subject linked to that level. */
+/** Postgres `btrim()` strips spaces only (not tabs, newlines or NBSP), unlike JS `trim()`; this keeps the twin identical to `mediaResolvedSql`. */
+const blankLikeSql = (v: string | null): boolean => (v ?? '').replace(/^ +| +$/g, '') === ''
+
+/**
+ * JS twin of `MEDIA_RESOLVED_SQL` (S1-T06, FR-X1-4f), the same definition as `mediaResolvedSql`: a stimulus the live version shows cannot be shown when a picture
+ * kind has no file, a table has no grid, no file and no pipe table in its body, or a passage has no text; or the version carries a `legacy_image_unresolved`
+ * import hold. The facts list the stimuli of the question's own links, its parts and its GROUP, so every member of a group with one such stimulus gets the
+ * reason (the complete-group rule). It reuses `image_missing` ("Imej belum dimuat naik"), the existing cause and fix.
+ */
+export function mediaUnresolved(media: NonNullable<ServabilityFacts['media']>): boolean {
+  if (media.importIssueCodes.includes('legacy_image_unresolved')) return true
+  return media.stimuli.some((s) => {
+    if (PICTURE_KINDS.includes(s.kind)) return !s.hasFile
+    if (s.kind === 'table') return !s.hasTableData && !s.hasFile && (s.bodyMs === null || !s.bodyMs.includes('|'))
+    if (s.kind === 'passage') return blankLikeSql(s.bodyMs) && blankLikeSql(s.bodyEn)
+    return false
+  })
+}
+const PICTURE_KINDS: readonly string[] = ['image', 'diagram', 'map', 'infographic', 'graph']
+
+function mediaReasons(f: ServabilityFacts, activity: ServabilityActivity): ServabilityReason[] {
+  return f.media !== undefined && mediaUnresolved(f.media) ? [reason('image_missing', activity, 'media_unresolved')] : []
+}
+
+/** JS twin of `SPM_SERVABLE_SQL` beyond the learner level: offered level (T1 to T5 are all learner levels; the active/non-primary checks are in `commonReasons`), active subject linked to that level. */
 function spmReasons(f: ServabilityFacts, activity: ServabilityActivity): ServabilityReason[] {
   const out: ServabilityReason[] = []
-  if (f.level === null || !OFFERED_LEVEL_CODES.includes(f.level.code)) out.push(reason('level_not_offered', activity))
+  // S4-T06: every active non-primary level is offered; only a question with NO level is refused here (the SQL twin's EXISTS on education_levels).
+  if (f.level === null) out.push(reason('level_not_offered', activity))
   if (f.subject === null || !f.subject.isActive || !f.subject.linkedToLevel) out.push(reason('subject_unavailable', activity))
   return out
 }

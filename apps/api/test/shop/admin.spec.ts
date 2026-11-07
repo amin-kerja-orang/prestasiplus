@@ -8,7 +8,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, TEACHER, actorFor, apiOf, bootShopApp, expectError, fund, insertReward, login, stockOf, userIdOf, walletRow, type Api, type ShopTestApp } from './helpers'
+import { ADMIN, STUDENT, STUDENT_2, STUDENT_MAJU, TEACHER, actorFor, apiOf, bareUser, bootShopApp, expectError, fund, insertReward, login, stockOf, userIdOf, walletRow, type Api, type ShopTestApp } from './helpers'
 
 const MINIMAL = { category: 'ewallet', vendor: 'Vendor Ujian', title: 'Baucar Baharu', denominationRm: 10, tokenCost: 12 }
 
@@ -130,8 +130,8 @@ describe('M15 admin routes (BE-23)', () => {
       expect(res.status).toBe(200)
       const item = RewardItemSchema.parse(res.body.data)
       expect(item).toMatchObject({ id, title: 'Baucar Baca', stockQuantity: 4, maxPerMonthPerStudent: 2, denominationRm: 10, imageUrl: null, isActive: true })
-      expectError(await admin.get('/admin/hadiah/999999'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
-      expectError(await admin.get('/admin/hadiah/abc'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.get('/admin/hadiah/999999'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expectError(await admin.get('/admin/hadiah/abc'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
     })
 
     it('does not read the static path "redemptions" as an id', async () => {
@@ -146,11 +146,13 @@ describe('M15 admin routes (BE-23)', () => {
       const res = await admin.post('/admin/hadiah', MINIMAL)
       expect(res.status, JSON.stringify(res.body)).toBe(201)
       const item = RewardItemSchema.parse(res.body.data)
-      expect(item).toMatchObject({ voucherValidityDays: 365, deliveryMethod: 'manual', displayOrder: 100, isActive: true, requiresParentConsent: false, stockQuantity: null, maxPerMonthPerStudent: null, description: null })
+      expect(item).toMatchObject({ voucherValidityDays: 365, deliveryMethod: 'manual', displayOrder: 100, isActive: false, requiresParentConsent: false, stockQuantity: null, maxPerMonthPerStudent: null, description: null })
       const audit = await t.db.query<{ action: string; target_type: string; target_id: string }>(`select action, target_type, target_id from audit_events where action = 'shop.reward.created'`)
       expect(audit.at(-1)).toEqual({ action: 'shop.reward.created', target_type: 'reward', target_id: item.id })
       const digits = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: '25', tokenCost: '30', stockQuantity: '3' })
       expect(RewardItemSchema.parse(digits.body.data)).toMatchObject({ denominationRm: 25, tokenCost: 30, stockQuantity: 3 })
+      const posted = await admin.post('/admin/hadiah', { ...MINIMAL, isActive: true, requiresParentConsent: true })
+      expect(RewardItemSchema.parse(posted.body.data), 'a posted consent is ignored (FR-GM-21.3)').toMatchObject({ isActive: true, requiresParentConsent: false })
     })
 
     it('stores imageUrl (http/https only) and returns it on create, read and replace', async () => {
@@ -160,18 +162,24 @@ describe('M15 admin routes (BE-23)', () => {
       expect(RewardItemSchema.parse((await admin.get(`/admin/hadiah/${id}`)).body.data).imageUrl).toBe('https://cdn.example.test/a.png')
       expect(RewardItemSchema.parse((await admin.put(`/admin/hadiah/${id}`, MINIMAL)).body.data).imageUrl).toBeNull()
       for (const bad of ['javascript:alert(1)', 'data:image/png;base64,AAAA', 'ftp://x']) {
-        expect(expectError(await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: bad }), 422, 'VALIDATION_ERROR').fields).toEqual({ imageUrl: 'The image url field must be a valid URL.' })
+        expect(expectError(await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: bad }), 422, 'VALIDATION_ERROR').fields).toEqual({ imageUrl: 'Format Image URL tidak sah.' })
       }
     })
 
-    it('422 with a field per problem and the Laravel-style summary; nothing is created', async () => {
+    it('422 with a field per problem, the P07 and ERR-REQ texts and the ERR-REQ-01 summary; nothing is created', async () => {
       const before = (await t.db.query<{ n: string }>(`select count(*)::text as n from rewards`))[0]!.n
       const res = await admin.post('/admin/hadiah', { category: 'nope', title: 'x'.repeat(201), denominationRm: 0, tokenCost: 10001, maxPerMonthPerStudent: 100, voucherValidityDays: 1826, displayOrder: 10000, imageUrl: 'ftp://x' })
       const e = expectError(res, 422, 'VALIDATION_ERROR')
       expect(Object.keys(e.fields ?? {}).sort()).toEqual(['category', 'denominationRm', 'displayOrder', 'imageUrl', 'maxPerMonthPerStudent', 'title', 'tokenCost', 'vendor', 'voucherValidityDays'])
-      expect(e.fields!.category).toBe('The selected category is invalid.')
-      expect(e.fields!.vendor).toBe('The vendor field is required.')
-      expect(e.message).toBe('The selected category is invalid. (and 8 more errors)')
+      expect(e.fields).toMatchObject({
+        category: 'Format kategori tidak sah.',
+        vendor: 'Vendor diperlukan.',
+        title: 'Tajuk tidak boleh melebihi 200 aksara.',
+        denominationRm: 'Nilai (RM) mesti antara 1 dan 10000.',
+        tokenCost: 'Kos Token mesti antara 1 dan 10000.',
+        maxPerMonthPerStudent: 'Maks/bulan/pelajar mesti antara 1 dan 99.',
+      })
+      expect(e.message).toBe('9 medan perlu dibetulkan.')
       expect((await t.db.query<{ n: string }>(`select count(*)::text as n from rewards`))[0]!.n).toBe(before)
     })
 
@@ -180,7 +188,7 @@ describe('M15 admin routes (BE-23)', () => {
       const res = await admin.put(`/admin/hadiah/${id}`, { ...MINIMAL, title: 'Tajuk Baharu', isActive: false })
       expect(res.status).toBe(200)
       expect(RewardItemSchema.parse(res.body.data)).toMatchObject({ id, title: 'Tajuk Baharu', isActive: false, stockQuantity: null, maxPerMonthPerStudent: null, displayOrder: 100 })
-      expectError(await admin.put('/admin/hadiah/999999', {}), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.put('/admin/hadiah/999999', {}), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
       expectError(await admin.put(`/admin/hadiah/${id}`, {}), 422, 'VALIDATION_ERROR')
       expect((await t.db.query(`select 1 from audit_events where action = 'shop.reward.updated' and target_id = $1`, [id]))).toHaveLength(1)
     })
@@ -222,14 +230,14 @@ describe('M15 admin routes (BE-23)', () => {
 
     it('422 for an unknown action, empty or bad ids and bad values', async () => {
       const f = async (body: object) => expectError(await admin.post('/admin/hadiah/bulk', body), 422, 'VALIDATION_ERROR').fields
-      expect(await f({ action: 'nope', ids: ['1'] })).toEqual({ action: 'The selected action is invalid.' })
-      expect(await f({ ids: ['1'] })).toEqual({ action: 'The action field is required.' })
-      expect(await f({ action: 'activate', ids: [] })).toEqual({ ids: 'The ids field is required.' })
-      expect(await f({ action: 'activate', ids: ['0'] })).toEqual({ ids: 'The ids field must contain positive integers.' })
-      expect(await f({ action: 'set_stock', ids: ['1'], stockValue: '1000000' })).toEqual({ stockValue: 'The stock value must be 0-999999 or empty.' })
-      expect(await f({ action: 'set_max_per_month', ids: ['1'], maxPerMonthValue: '100' })).toEqual({ maxPerMonthValue: 'The max per month value must be 0-99 or empty.' })
-      expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '0' })).toEqual({ tokenCostDeltaPct: 'The token cost adjustment must be between -90 and 500 (not 0).' })
-      expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '501' })).toEqual({ tokenCostDeltaPct: 'The token cost adjustment must be between -90 and 500 (not 0).' })
+      expect(await f({ action: 'nope', ids: ['1'] })).toEqual({ action: 'Format tindakan tidak sah.' })
+      expect(await f({ ids: ['1'] })).toEqual({ action: 'Sila pilih tindakan.' })
+      expect(await f({ action: 'activate', ids: [] })).toEqual({ ids: 'Sila pilih hadiah.' })
+      expect(await f({ action: 'activate', ids: ['0'] })).toEqual({ ids: 'Format hadiah tidak sah.' })
+      expect(await f({ action: 'set_stock', ids: ['1'], stockValue: '1000000' })).toEqual({ stockValue: 'Stok tidak sah.' })
+      expect(await f({ action: 'set_max_per_month', ids: ['1'], maxPerMonthValue: '100' })).toEqual({ maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 99.' })
+      expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '0' })).toEqual({ tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.' })
+      expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '501' })).toEqual({ tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.' })
     })
   })
 
@@ -257,6 +265,68 @@ describe('M15 admin routes (BE-23)', () => {
     })
   })
 
+  describe('doubleSubmit on the queue (S7-T05, FR-ADM-P2-08.3)', () => {
+    const FAR = '2031-05-05T10:00:00+08:00'
+    const redemption = async (userId: string, rewardId: string | null, secondsAfter: number, status = 'pending_admin') =>
+      (
+        await t.db.query<{ id: string }>(
+          `insert into reward_redemptions (user_id, reward_id, reward_title, reward_vendor, denomination_rm, token_cost, token_cost_snapshot, cost_value_sen_snapshot, status, created_at)
+           values ($1, $2, 'Hadiah', 'Vendor', 1, 1, 1, 0, $3, $4::timestamptz + make_interval(secs => $5)) returning id::text`,
+          [userId, rewardId, status, FAR, secondsAfter],
+        )
+      )[0]!.id
+    const flags = async (query = 'status=all') => {
+      // Not parsed: a row whose reward was deleted answers rewardId '', which the contract's IdSchema refuses (older than this field).
+      const rows = (await admin.get(`/admin/hadiah/redemptions?${query}`)).body.data as { id: string; doubleSubmit: boolean }[]
+      return new Map(rows.map((r) => [r.id, r.doubleSubmit]))
+    }
+    const tidy = (ids: string[]) => t.db.query(`delete from reward_redemptions where id = any($1::bigint[])`, [ids])
+
+    it('flags both rows of one pupil and one reward at up to 60 seconds, not at 61, not across pupils or rewards', async () => {
+      const [a, b] = [await bareUser(t, 'Dua Kali A'), await bareUser(t, 'Dua Kali B')]
+      const [r1, r2, r3] = [await insertReward(t), await insertReward(t), await insertReward(t)]
+      const near = [await redemption(a, r1, 0), await redemption(a, r1, 60)]
+      const far = [await redemption(a, r2, 0), await redemption(a, r2, 61)]
+      const others = [await redemption(a, r3, 0), await redemption(b, r3, 1), await redemption(a, r2, 300)]
+      const got = await flags()
+      expect(near.map((id) => got.get(id))).toEqual([true, true])
+      expect(far.map((id) => got.get(id))).toEqual([false, false])
+      expect(others.map((id) => got.get(id))).toEqual([false, false, false])
+      await tidy([...near, ...far, ...others])
+    })
+
+    it('a cancelled partner does not flag; a delivered partner outside the filter does; a row with no reward is never flagged', async () => {
+      const a = await bareUser(t, 'Dua Kali C')
+      const [r1, r2] = [await insertReward(t), await insertReward(t)]
+      const cancelled = await redemption(a, r1, 0, 'cancelled')
+      const alone = await redemption(a, r1, 10)
+      const delivered = await redemption(a, r2, 0, 'delivered')
+      const pending = await redemption(a, r2, 10)
+      const orphans = [await redemption(a, null, 0), await redemption(a, null, 1)]
+      const got = await flags('status=pending_admin')
+      expect(got.get(alone)).toBe(false)
+      expect(got.get(pending)).toBe(true)
+      expect(got.has(delivered)).toBe(false)
+      expect(orphans.map((id) => got.get(id))).toEqual([false, false])
+      // Read literally: the cancelled row itself has another non-cancelled redemption within 60 seconds.
+      expect((await flags('status=cancelled')).get(cancelled)).toBe(true)
+      await tidy([cancelled, alone, delivered, pending, ...orphans])
+    })
+
+    it('a row of the page sees a partner on the next page', async () => {
+      const a = await bareUser(t, 'Dua Kali D')
+      const reward = await insertReward(t)
+      const ids: string[] = []
+      for (let i = 0; i < 51; i++) ids.push(await redemption(a, reward, i === 1 ? 30 : i * 120))
+      const page = async (n: number) => RewardRedemptionListResponseSchema.parse((await admin.get(`/admin/hadiah/redemptions?status=all&page=${String(n)}`)).body).data
+      const first = await page(1)
+      expect(first).toHaveLength(50)
+      expect(first.filter((r) => r.doubleSubmit).map((r) => r.id)).toEqual([ids[1]])
+      expect((await page(2)).find((r) => r.id === ids[0])?.doubleSubmit).toBe(true)
+      await tidy(ids)
+    })
+  })
+
   describe('deliver and cancel', () => {
     it('delivers: trimmed code stored, expiresAt = now + validity days, 409 the second time, the code is never returned or audited', async () => {
       const r = await redemption(STUDENT, { validityDays: 30 })
@@ -277,12 +347,12 @@ describe('M15 admin routes (BE-23)', () => {
     })
 
     it('deliver: 404 unknown id (even with a bad body), 422 for a blank or 101-character code', async () => {
-      expectError(await admin.post('/admin/hadiah/redemptions/999999/deliver', {}), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
-      expectError(await admin.post('/admin/hadiah/redemptions/abc/deliver', { code: 'X' }), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.post('/admin/hadiah/redemptions/999999/deliver', {}), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
+      expectError(await admin.post('/admin/hadiah/redemptions/abc/deliver', { code: 'X' }), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
       const r = await redemption(STUDENT_2)
-      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, {}), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'The code field is required.' })
-      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: '   ' }), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'The code field is required.' })
-      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: 'x'.repeat(101) }), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'The code field must not be greater than 100 characters.' })
+      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, {}), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'Kod baucar diperlukan.' })
+      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: '   ' }), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'Kod baucar diperlukan.' })
+      expect(expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: 'x'.repeat(101) }), 422, 'VALIDATION_ERROR').fields).toEqual({ code: 'Kod baucar tidak boleh melebihi 100 aksara.' })
       expect((await t.db.query<{ status: string }>(`select status from reward_redemptions where id = $1`, [r.id]))[0]!.status).toBe('pending_admin')
     })
 
@@ -312,11 +382,15 @@ describe('M15 admin routes (BE-23)', () => {
       await admin.post(`/admin/hadiah/redemptions/${d.id}/deliver`, { code: 'ABC' })
       expectError(await admin.post(`/admin/hadiah/redemptions/${d.id}/cancel`), 409, 'CONFLICT')
       expectError(await admin.post('/admin/hadiah/redemptions/999999/cancel'), 404, 'NOT_FOUND', 'Tebusan tidak dijumpai.')
-      expectError(await admin.post('/admin/hadiah/redemptions/abc/cancel'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
+      expectError(await admin.post('/admin/hadiah/redemptions/abc/cancel'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
     })
 
-    it('a redemption waiting for parent consent (parent routes not built, UD-3) can be cancelled with one refund and the reserved stock back, but not delivered', async () => {
-      const r = await redemption(STUDENT, { consent: true, tokenCost: 7, stock: 3 })
+    it('a stored row waiting for parent consent has no filter of its own, shows under all, and can be cancelled with one refund and the reserved stock back, but not delivered', async () => {
+      const r = await redemption(STUDENT, { tokenCost: 7, stock: 3 })
+      await t.db.query(`update reward_redemptions set status = 'pending_parent_consent' where id = $1`, [r.id])
+      const list = (query: string) => admin.get(`/admin/hadiah/redemptions?status=${query}`)
+      expect(((await list('pending_parent_consent')).body.data as { id: string }[]).map((x) => x.id)).not.toContain(r.id)
+      expect(((await list('all')).body.data as { id: string }[]).map((x) => x.id)).toContain(r.id)
       expect(await stockOf(t, r.reward)).toBe(2)
       const spent = await walletRow(t, r.uid)
       expectError(await admin.post(`/admin/hadiah/redemptions/${r.id}/deliver`, { code: 'ABC' }), 409, 'CONFLICT')

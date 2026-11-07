@@ -1,34 +1,29 @@
 import { randomInt } from 'node:crypto'
 
 import { Inject, Injectable } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
 import {
   GAMES_LEAGUE_CLASS_LEVELS,
-  GAMES_MESSAGES,
   type GamesLeagueCard,
   type GamesLeagueDetail,
-  type GamesLeagueIdResult,
   type GamesLeagueList,
   type GamesLeagueStandingRow,
   type GamesLeagueStatus,
-  type GamesSekolahBersaing,
+  type GamesSekolahBersaingBoard,
 } from '@pp/contract'
 
-import type { Env } from '../../../common/config/env.schema'
-import { publicBaseUrl } from '../../../common/config/public-base-url'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, isIdString } from '../../../db/ids'
 import { CurriculumRepository } from '../../curriculum'
+import { PracticeRepository } from '../../practice'
 import { isPrimarySchoolType, SchoolsRepository } from '../../schools'
-import { fieldError, leagueAlreadyIn, leagueEnded, leagueFull, leagueInviteInvalid, leagueNeedsSchool, leagueNotFound } from '../errors'
+import { SEKOLAH_BERSAING_MIN_PUPILS, SEKOLAH_BERSAING_TOP_N } from '../games.constants'
+import { leagueAlreadyIn, leagueEnded, leagueFull, leagueNotFound, leagueSchoolInvalid } from '../errors'
 import { GameUsers } from '../core/game-users'
 import { NamePrivacy } from '../core/name-privacy.service'
-import { mytDateOf, startOfMytWeek } from '../core/time'
 import type { GamesCaller } from '../caller'
 import { type LeagueRecord, LeaguesRepository } from './leagues.repository'
-import { dateOnly, INVITE_ALPHABET, LABELS, type LeagueInput, shareUrl } from './leagues.rules'
+import { dateOnly, INVITE_ALPHABET, LABELS, parseEnrolInput, parseLeagueInput, rankSekolahBersaing } from './leagues.rules'
 
-const M = GAMES_MESSAGES
 type GamesLeagueClassLevel = (typeof GAMES_LEAGUE_CLASS_LEVELS)[number]
 
 /** Tries per create before giving up (a collision of 36^8 codes is vanishingly rare). */
@@ -42,8 +37,8 @@ export class LeaguesService {
     @Inject(NamePrivacy) private readonly privacy: NamePrivacy,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(CurriculumRepository) private readonly curriculum: CurriculumRepository,
+    @Inject(PracticeRepository) private readonly practice: PracticeRepository,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(ConfigService) private readonly config: ConfigService<Env, true>,
   ) {}
 
   private async subjectName(subjectId: string | null): Promise<string | null> {
@@ -55,7 +50,7 @@ export class LeaguesService {
     return (await this.users.get(userId))?.schoolId ?? null
   }
 
-  /** The creator may be a pupil (any role creates a league): children's names rule, name only (the response has no id). */
+  /** The creator is an Admin Pusat (only the admin creates a league): children's names rule, name only (the response has no id). */
   private async creatorName(caller: GamesCaller, creatorId: string | null): Promise<string> {
     if (creatorId === null) return ''
     const creator = await this.users.get(creatorId)
@@ -97,7 +92,6 @@ export class LeaguesService {
     if (!isIdString(id)) throw leagueNotFound()
     const l = await this.repo.league(id, caller.isTest)
     if (!l) throw leagueNotFound()
-    const viewerSchool = await this.schoolIdOf(caller.userId)
     const allSchoolIds = await this.repo.schoolIds(l.id, caller.isTest)
     const levels = await this.repo.classLevels(l.id)
     const storedAll = await this.repo.standings(l.id)
@@ -125,7 +119,6 @@ export class LeaguesService {
         }
       })
     }
-    const total = await this.repo.membershipCount(l.id)
     const { schools: _count, ...card } = this.cardOf(l, await this.subjectName(l.subjectId), schoolIds.length)
     void _count
     return {
@@ -133,25 +126,20 @@ export class LeaguesService {
       scoringLabel: LABELS.scoring[l.scoringMethod as keyof typeof LABELS.scoring],
       creatorName: await this.creatorName(caller, l.creatorId),
       classLevels: levels as GamesLeagueClassLevel[],
-      inviteCode: l.inviteCode,
-      shareUrl: shareUrl(l.name, l.inviteCode, publicBaseUrl(this.config)),
-      canJoin: l.status !== 'ended' && (viewerSchool === null || !schoolIds.includes(viewerSchool)) && (l.maxSchools === null || total < l.maxSchools),
       schools: schoolIds.map((sid) => ({ id: sid, name: byId.get(sid)?.name ?? '' })),
       standings,
     }
   }
 
-  /** M16-47: league `upcoming`, an 8-character invite code (retried on collision), the creator's school joins. */
-  async create(caller: GamesCaller, input: LeagueInput): Promise<GamesLeagueIdResult> {
-    let subjectId: string | null = null
-    if (input.subjectId !== null) {
-      const subject = isIdString(input.subjectId) ? await this.curriculum.subject(idFromString(input.subjectId)) : null
-      if (!subject) throw fieldError('subject_id', M.leagueSubject)
-      subjectId = input.subjectId
-    }
-    const schoolId = await this.schoolIdOf(caller.userId)
+  /**
+   * M16-47 (API-ADM-25, Admin Pusat): league `upcoming`, an 8-character invite code (retried on collision; the column
+   * is NOT NULL). No school joins on create: Admin Pusat enrols schools afterwards (FR-GM-15.1).
+   */
+  async create(caller: GamesCaller, body: unknown): Promise<GamesLeagueDetail> {
+    const input = await parseLeagueInput(body, async (sid) => (await this.curriculum.subject(idFromString(sid))) !== null)
+    const subjectId = input.subjectId
     const now = this.clock.now()
-    return this.repo.transaction(async () => {
+    const id = await this.repo.transaction(async () => {
       for (let n = 0; n < CODE_TRIES; n++) {
         // Invite codes are unguessable: CSPRNG, not the seeded stream (security M3).
         const code = Array.from({ length: 8 }, () => INVITE_ALPHABET[randomInt(INVITE_ALPHABET.length)]).join('')
@@ -174,73 +162,48 @@ export class LeaguesService {
         )
         if (id === null) continue
         await this.repo.addClassLevels(id, input.classLevels)
-        if (schoolId !== null) await this.repo.addSchool(id, schoolId, caller.isTest, now)
-        return { id }
+        return id
       }
       throw new Error('league invite code: no free code after retries')
     })
+    return this.detail(caller, id)
   }
 
-  /** M16-48: the caller's school joins by invite code. The league row is locked, so joins never exceed `max_schools`. */
-  async join(caller: GamesCaller, rawCode: unknown): Promise<GamesLeagueIdResult> {
-    const code = typeof rawCode === 'string' ? rawCode.trim().toUpperCase() : ''
-    const found = code === '' ? null : await this.repo.leagueByCode(code, caller.isTest)
-    if (!found) throw leagueInviteInvalid()
-    const schoolId = await this.schoolIdOf(caller.userId)
+  /**
+   * API-ADM-25 (Admin Pusat only, FR-GM-15.1): enrols the given schools, all or nothing. The league row is locked, so
+   * enrolments never exceed `max_schools`. Ended is judged by `end_date` (through 23:59:59 MYT) against the clock, not
+   * by the stored status (an `upcoming` league can be enrolled). A school already in, or repeated in the body, is
+   * "already in"; unknown ids and empty lists are field errors. The first failing school in the given order decides the 422 (`fields.schoolIds`).
+   */
+  async enrolSchools(caller: GamesCaller, id: string, body: unknown): Promise<GamesLeagueDetail> {
+    if (!isIdString(id) || !(await this.repo.league(id, caller.isTest))) throw leagueNotFound()
+    const schoolIds = parseEnrolInput(body) // after the 404, before the ended check
     const now = this.clock.now()
-    return this.repo.transaction(async () => {
-      const league = await this.repo.lockLeague(found.id)
-      if (!league) throw leagueInviteInvalid()
-      if (league.status === 'ended') throw leagueEnded()
-      if (schoolId === null) throw leagueNeedsSchool()
-      if (await this.repo.hasSchool(league.id, schoolId)) throw leagueAlreadyIn()
-      if (league.maxSchools !== null && (await this.repo.membershipCount(league.id)) >= league.maxSchools) throw leagueFull()
-      await this.repo.addSchool(league.id, schoolId, caller.isTest, now)
-      return { id: league.id }
-    })
-  }
-
-  /** M16-50: the stored weekly snapshot. `week`: a valid YYYY-MM-DD gives its Monday, anything else the current week. */
-  async sekolahBersaing(week: unknown): Promise<GamesSekolahBersaing> {
-    const weekStart = weekStartOf(week, this.clock.now())
-    const allRows = await this.repo.sekolahBersaing(weekStart)
-    const schools = await this.schools.getMany([...new Set(allRows.map((r) => r.schoolId))])
-    const byId = new Map(schools.map((s) => [s.id, s]))
-    const rows = allRows.filter((r) => !isPrimarySchoolType(byId.get(r.schoolId)?.type)) // secondary-only (2026-10-29)
-    return {
-      weekStart,
-      count: rows.length,
-      rows: rows.map((r) => ({
-        rank: r.rank,
-        schoolName: r.isAnonymous ? M.sekolahAnonymous : (byId.get(r.schoolId)?.name ?? ''),
-        state: byId.get(r.schoolId)?.state ?? '',
-        aktifPct: r.aktifPct,
-        streakAvg: r.streakAvg,
-        notaPer10: r.notaPer10,
-        anonymous: r.isAnonymous,
-      })),
-    }
-  }
-}
-
-/**
- * Monday (`YYYY-MM-DD`, Malaysia) of the week named by `value`: a valid calendar date gives its week, anything
- * else (missing, repeated, malformed, impossible date, out of range) the week of `now`. Never throws.
- */
-export function weekStartOf(value: unknown, now: Date): string {
-  if (typeof value === 'string') {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-    if (m) {
-      const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])]
-      const at = new Date(Date.UTC(y, mo - 1, d))
-      if (y >= 1 && at.getUTCFullYear() === y && at.getUTCMonth() === mo - 1 && at.getUTCDate() === d) {
-        const dow = at.getUTCDay() // 0 = Sunday
-        return dateOnlyUtc(new Date(at.getTime() - ((dow + 6) % 7) * 86_400_000))
+    await this.repo.transaction(async () => {
+      const league = await this.repo.lockLeague(id)
+      if (!league) throw leagueNotFound()
+      // Body validation, step 2: an unknown school id is "Format sekolah tidak sah.", before "ended" and the per-school checks.
+      const known = new Set((await this.schools.getMany([...new Set(schoolIds)])).map((s) => s.id))
+      if (schoolIds.some((sid) => !known.has(sid))) throw leagueSchoolInvalid()
+      if (now.getTime() > Date.parse(`${dateOnly(league.endDate)}T23:59:59.999+08:00`)) throw leagueEnded()
+      let count = await this.repo.membershipCount(league.id)
+      const seen = new Set<string>()
+      for (const schoolId of schoolIds) {
+        if (seen.has(schoolId) || (await this.repo.hasSchool(league.id, schoolId))) throw leagueAlreadyIn()
+        seen.add(schoolId)
+        if (league.maxSchools !== null && count >= league.maxSchools) throw leagueFull()
+        await this.repo.addSchool(league.id, schoolId, caller.isTest, now)
+        count++
       }
-    }
+    })
+    return this.detail(caller, id)
   }
-  return mytDateOf(startOfMytWeek(now))
+
+  /** API-AS-14: the live board, computed on request from M05 sessions and the M02 register (FR-AS-45-4, DM-31). */
+  async sekolahBersaing(): Promise<GamesSekolahBersaingBoard> {
+    const facts = await this.practice.sessionAccuracyBySchool()
+    const schools = await this.schools.getMany(facts.map((f) => f.schoolId))
+    const secondary = schools.filter((s) => !isPrimarySchoolType(s.type)) // secondary-only (2026-10-29)
+    return rankSekolahBersaing(facts, secondary, { minPupils: SEKOLAH_BERSAING_MIN_PUPILS, topN: SEKOLAH_BERSAING_TOP_N })
+  }
 }
-
-const dateOnlyUtc = (d: Date): string => d.toISOString().slice(0, 10)
-

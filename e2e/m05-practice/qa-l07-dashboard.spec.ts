@@ -936,8 +936,9 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
       ).toBeGreaterThan(0)
       await expect(it.getByTestId('dash-recent-stars').locator('svg, span')).not.toHaveCount(0)
       const text = ((await it.getByTestId('dash-recent-text').textContent()) ?? '').trim()
-      expect(text.length).toBeLessThanOrEqual(103)
-      if (text.endsWith('...')) expect(text.length).toBe(103)
+      // FR-MUR-2-8 (S5-T04, #909): the text is cut at 140 characters plus "…" (contract max 141).
+      expect(text.length).toBeLessThanOrEqual(141)
+      if (text.endsWith('…')) expect(text.length).toBe(141)
       expect(((await it.getByTestId('dash-recent-level').textContent()) ?? '').trim()).toMatch(
         /^(D[1-6]|T[1-5])$/,
       )
@@ -1299,7 +1300,8 @@ test.describe('M05 S1 dashboard G5 QA', MODULE, () => {
   }) => {
     await loginAs(PELAJAR2)
     await gotoApp('/practice')
-    await mock.networkErrorNext('GET /api/dashboard')
+    // The client retries a failed GET twice (S0-T12, X10.3.4): fail all three attempts so the error box shows.
+    for (let i = 0; i < 3; i += 1) await mock.networkErrorNext('GET /api/dashboard')
     await navigateInApp(page, '/dashboard')
     await expect(tid(page, 'dashboard-error')).toContainText(
       'Maaf, berlaku ralat. Sila cuba semula.',

@@ -1,4 +1,4 @@
-import type { SchoolAdminDashboard } from '@pp/contract'
+import type { AmaranTally, SchoolAdminDashboard } from '@pp/contract'
 
 import { gradeOfPoints } from '../reports/performance/services/headcount-figures'
 import type { SchoolPerformanceView } from './school-admin.ports'
@@ -25,10 +25,10 @@ const LEVELS = [
  * No pupil name is ever on this block.
  *
  * `gps` is BE-19's headcount GPS (value, band, entries; BE-19 treats the school admin as staff). The grade is
- * derived with the same `gradeOfPoints` helper the service uses. No GPS is null with 0 entries. `risk` stays
- * null (the panel is hidden): the Amaran Awal tally belongs to the M18 routes, which are outside this slice.
+ * derived with the same `gradeOfPoints` helper the service uses. No GPS is null with 0 entries. `risk` is the
+ * Amaran Awal school tally (green = safe, yellow = watch, red = high; the same figures as `tally` of GET /amaran/schools/:id), null hides the panel.
  */
-export function performanceBlock(view: SchoolPerformanceView, xs: PracticeXs): Performance {
+export function performanceBlock(view: SchoolPerformanceView, xs: PracticeXs, tally: AmaranTally | null = null): Performance {
   // Staff screen (PO decision 2026-11-05, #503 batch 3): no minimum cohort, every figure is shown.
   const sessions = view.stats.sessions
   const distribution = view.distribution.map((d) => ({ grade: d.grade, count: d.count, pct: d.pct }))
@@ -38,7 +38,7 @@ export function performanceBlock(view: SchoolPerformanceView, xs: PracticeXs): P
       view.gps.value === null
         ? { value: null, grade: null, band: null, entries: 0 }
         : { value: view.gps.value, grade: gradeOfPoints(view.gps.value), band: view.gps.band, entries: view.gps.entries },
-    risk: null,
+    risk: tally === null ? null : { safe: tally.green, watch: tally.yellow, high: tally.red, total: tally.total },
     practice: {
       // No answers is null, never 0 % (XS-5).
       accuracy: xs.accuracy,
@@ -47,7 +47,7 @@ export function performanceBlock(view: SchoolPerformanceView, xs: PracticeXs): P
     },
     levels: LEVELS.map(({ code, name }) => {
       const level = view.levels.find((l) => l.code === code)
-      return { code, name, accuracy: level ? level.accuracy : 0 }
+      return { code, name, accuracy: level ? level.accuracy : null }
     }),
     distribution,
     total: distribution.reduce((sum, d) => sum + d.count, 0),
