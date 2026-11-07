@@ -95,8 +95,9 @@ describe('personal questions in the mission pool (DM-42)', () => {
   })
 
   describe('the mission draw by Tingkatan (lead ruling: no T4/T5 top-up for a T1-T3 class)', () => {
+    let classSeq = 0
     const makeMission = async (teacher: string, level: string, pupil: string, chapterId: string | null = null) => {
-      const [cls] = await q(`insert into classrooms (kind, name, teacher_id, education_level_id, academic_year) values ('classroom', 'Kelas T16', $1, $2, 2026) returning id::text id`, [teacher, level])
+      const [cls] = await q(`insert into classrooms (kind, name, teacher_id, education_level_id, academic_year) values ('classroom', $3, $1, $2, 2026) returning id::text id`, [teacher, level, `Kelas T16 ${++classSeq}`])
       await q(`insert into enrolments (classroom_id, student_id) values ($1, $2)`, [cls!.id, pupil])
       return { id: '1', teacherId: teacher, classroomId: cls!.id, missionType: 'latih_tubi', subjectId: tag.subjectId, chapterId, questionCount: 10, coinsPerCorrect: 3 } as never
     }
