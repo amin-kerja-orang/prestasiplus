@@ -97,12 +97,19 @@ export interface ArenaQuestion {
   options: { id: number; label: string; text: string }[]
 }
 
+/** A side of the arena; `isBot` is the robot opponent ("Robot PrestasiPlus", chip "Latihan"). */
+export interface ArenaPlayer {
+  name: string
+  school: string
+  isBot?: boolean
+}
+
 /** #16 `GET /api/battle/arena/{uuid}` (PROVISIONAL). */
 export interface ArenaView {
   uuid: string
   status: BattleStatus
   you: 'A' | 'B'
-  players: { A: { name: string; school: string }; B: { name: string; school: string } }
+  players: { A: ArenaPlayer; B: ArenaPlayer }
   scores: { A: number; B: number }
   index: number
   total: number

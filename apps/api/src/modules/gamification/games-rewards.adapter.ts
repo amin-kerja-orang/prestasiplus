@@ -25,4 +25,8 @@ export class GamesRewardsAdapter implements GameRewardsPort {
     if (options.isTest) return { coinsCredited: 0, xpAdded: 0 }
     return this.gamification.onGameResult(userId, input, options.tx ? { tx: options.tx, isTest: false } : { isTest: false })
   }
+
+  firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null> {
+    return this.gamification.firstGameResult(sessionId, userId)
+  }
 }
