@@ -271,11 +271,11 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
     await gotoApp('/admin/structured-questions')
     await expect(page.getByRole('heading', { name: 'Soalan Berstruktur' }).first()).toBeVisible()
     await expect(page.getByText('Semua soalan berstruktur SPM dalam sistem')).toBeVisible()
-    // D9 dead link: the M10 create form is not routed, so the button is hidden.
-    await expect(byId(page, 'structured-add')).toHaveCount(0)
-    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
+    // S6-T17: the M10 create form is routed (teacher + admin), so the button opens it.
+    await expect(byId(page, 'structured-add')).toHaveAttribute('href', '/guru/soalan-berstruktur/cipta')
+    await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(1)
     await expect(byId(page, 'structured-stat-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'structured-stat-published')).toContainText('Published')
+    await expect(byId(page, 'structured-stat-published')).toContainText('Diluluskan')
     const kbat = (await byId(page, 'structured-kbat').locator('option').allInnerTexts()).map((s) =>
       s.trim(),
     )
@@ -311,7 +311,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'structured-subs-heading')).toContainText(
       'Bahagian Soalan (3 sub-soalan)',
     )
-    // D9 dead link: the M10 edit form is not routed, so the button is hidden.
+    // The M10 edit form exists only for the teacher's own submissions (g{n}): no button on an approved question.
     await expect(byId(page, 'structured-edit')).toHaveCount(0)
     await expect(page.locator('a[href*="soalan-berstruktur"]')).toHaveCount(0)
     await expect(byId(page, 'structured-back-list')).toContainText('Balik ke Senarai')

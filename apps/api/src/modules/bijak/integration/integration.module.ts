@@ -18,7 +18,7 @@ import { BijakPapersModule } from '../papers'
 import { BijakPapersAttemptSource } from '../papers/attempt-source'
 import { BijakPapersPorts } from '../papers/ports'
 import { BankBijakPoolSource, BankPaperQuestionSource, Be09BijakQuestionSource } from '../question-bridge'
-import { WalletBijakReward, WalletPracticeReward } from './bindings'
+import { BijakStructuredAttempts, WalletBijakReward, WalletPracticeReward } from './bindings'
 import { PracticeFactsAdapter } from './practice-facts'
 import { PrismaBijakAggregate } from './performance-bijak-aggregate'
 
@@ -34,6 +34,7 @@ import { PrismaBijakAggregate } from './performance-bijak-aggregate'
  * - BE-11 wallet credit (`quiz_spm`)       -> BE-16 `provideReward` (exam only, idempotent per attempt,
  *   nothing under Mod Pelajar: AC-20.3)
  * - BE-11 streak + wallet (source by mode)  -> BE-12 `PracticePorts.provideReward`
+ * - BE-16 `BijakAttemptsService.submitStructured` -> BE-12 `PracticePorts.provideStructuredAttempts` (S5-T11)
  * - BE-12 `PracticeFactsAdapter` (PracticeRepository reads) -> BE-23 `GamificationPorts.providePracticeFacts`
  *   (daily challenge progress, mastery, session counts; FIX-3 D-07)
  * - `PrismaBijakAggregate` (attempts + results + BE-09 bank, read only) -> BE-19 `PerformancePorts.provideBijak`
@@ -46,7 +47,7 @@ import { PrismaBijakAggregate } from './performance-bijak-aggregate'
  */
 @Module({
   imports: [BijakPapersModule, BijakAttemptsModule, BijakKuizModule, PracticeModule, WalletModule, QuestionsModule, CurriculumModule, PerformanceModule, GamificationModule, FilesModule],
-  providers: [WalletBijakReward, WalletPracticeReward, PracticeFactsAdapter, Be09BijakQuestionSource, PrismaBijakAggregate],
+  providers: [WalletBijakReward, WalletPracticeReward, BijakStructuredAttempts, PracticeFactsAdapter, Be09BijakQuestionSource, PrismaBijakAggregate],
 })
 export class BijakIntegrationModule implements OnModuleInit {
   constructor(
@@ -58,6 +59,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     @Inject(PracticeAggregateService) private readonly aggregate: PracticeAggregateService,
     @Inject(WalletBijakReward) private readonly bijakReward: WalletBijakReward,
     @Inject(WalletPracticeReward) private readonly practiceReward: WalletPracticeReward,
+    @Inject(BijakStructuredAttempts) private readonly structuredAttempts: BijakStructuredAttempts,
     @Inject(Be09BijakQuestionSource) private readonly bankQuestions: Be09BijakQuestionSource,
     @Inject(QuestionsBijakPoolSource) private readonly bankPool: QuestionsBijakPoolSource,
     @Inject(PerformancePorts) private readonly performancePorts: PerformancePorts,
@@ -82,6 +84,7 @@ export class BijakIntegrationModule implements OnModuleInit {
     this.attemptPorts.provideAggregate(this.aggregate)
     this.attemptPorts.provideReward(this.bijakReward)
     this.practicePorts.provideReward(this.practiceReward)
+    this.practicePorts.provideStructuredAttempts(this.structuredAttempts)
     this.gamificationPorts.providePracticeFacts(this.practiceFacts)
     this.warnDeprecatedFlag()
     this.attemptPorts.provideQuestionSource(this.bankQuestions)

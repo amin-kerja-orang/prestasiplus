@@ -611,7 +611,7 @@ export class MockBuilderServer implements BuilderApi {
       return { ok: true, errors: [] }
     }
     if (options.override && (options.reason ?? '').trim().length < 5)
-      throw new BuilderError('invalid', 'Sebab diperlukan untuk menerbitkan walaupun tidak memenuhi kontrak blueprint')
+      throw new BuilderError('invalid', BIJAK_BUILDER_MESSAGES.overrideReasonRequired)
     const a = await this.a()
     const lines = await this.overridable(await a.getPaperEditor(id))
     if (lines.length && !options.override) {
