@@ -85,7 +85,11 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   if (row.mode === 'essay_choice') candidate.topics = row.topics
   // DM-55: mode_config round-trips as `modeConfig`; NULL stays absent.
   if (row.modeConfig !== null) candidate.modeConfig = row.modeConfig
-  const parsed = QuestionLeafPartSchema.safeParse(candidate)
+  // S4-T04: the duplicate-stem trim stores an EMPTY leaf prompt (the stem carries the text), but the write contract demands `prompt.ms` min 1.
+  // Validate the key, options and mode with a placeholder prompt, then return the leaf with its real (empty) prompt, so the trimmed row stays
+  // readable and every other column is still checked strictly.
+  const emptyPrompt = row.promptMs === null || row.promptMs === ''
+  const parsed = QuestionLeafPartSchema.safeParse(emptyPrompt ? { ...candidate, prompt: { ...rich(row.promptMs, row.promptEn), ms: '-' } } : candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
     // #805: an MCQ whose key names no option is tolerated (and only that: the leaf must parse once the key is pointed at a real option);
@@ -93,7 +97,8 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
     if (lenient && row.mode === 'mcq' && keyNamesNoOption(candidate)) return candidate as unknown as QuestionLeaf
     throw new StoredKeyError(idToString(row.id))
   }
-  return parsed.data as QuestionLeaf
+  const leaf = parsed.data as QuestionLeaf
+  return emptyPrompt ? ({ ...leaf, prompt: rich(row.promptMs, row.promptEn) } as QuestionLeaf) : leaf
 }
 
 function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
