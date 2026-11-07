@@ -59,7 +59,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
-      ['PM-03', 'Monitoring', '/guru/monitoring'],
+      ['PM-03', 'Monitoring', '/admin/monitoring'],
       ['PM-04', 'Analitik'],
       ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
       ['PM-06', 'Tahap 1: Reaksi', '/admin/kirkpatrick/reaction', K],
@@ -177,8 +177,8 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
       ['PG-11', 'Tetapan Permainan', undefined, 'Permainan'],
       ['PG-12', 'Ranking Sekolah (Battle)', undefined, 'Permainan'],
       ['PG-13', 'Leaderboard (Battle)', undefined, 'Permainan'],
-      ['PG-14', 'Produk', undefined, 'Marketplace'],
-      ['PG-15', 'Penjual', undefined, 'Marketplace'],
+      ['PG-14', 'Produk', '/admin/marketplace/products', 'Marketplace'],
+      ['PG-15', 'Penjual', '/admin/marketplace/sellers', 'Marketplace'],
       ['PG-16', 'Penajaan'],
       ['PG-17', 'Anak Angkat'],
       ['PG-18', 'Permohonan Anak Angkat'],
@@ -206,7 +206,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Sistem',
     icon: 'gear',
     items: items([
-      ['SY-01', 'Tetapan'],
+      ['SY-01', 'Tetapan', '/admin/settings'],
       ['SY-02', 'Kawalan Ciri'],
       ['SY-03', 'Prestasi Sistem'],
       ['SY-04', 'Log Audit'],

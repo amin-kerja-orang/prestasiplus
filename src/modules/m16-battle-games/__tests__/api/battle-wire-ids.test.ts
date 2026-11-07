@@ -4,6 +4,7 @@ import { createHttpTransport, installTransport } from '@/api'
 
 import {
   acceptChallenger,
+  cancelQueue,
   joinQueue,
   pollChallenger,
   pollMatch,
@@ -98,6 +99,17 @@ describe('battle wire ids', () => {
       'POST /api/battle/reject-challenger/1',
       'POST /api/battle/join-queue/1',
       'GET /api/battle/poll-challenger/1',
+    ])
+  })
+
+  it('cancelQueue posts to the queue cancel route with the encoded id', async () => {
+    vi.stubEnv('VITE_API_MODE', 'http')
+    answer = { data: { cancelled: true } }
+    await expect(cancelQueue('41')).resolves.toEqual({ cancelled: true })
+    await cancelQueue(7)
+    expect(sent.map((r) => `${r.method} ${r.url}`)).toEqual([
+      'POST /api/battle/queue/41/cancel',
+      'POST /api/battle/queue/7/cancel',
     ])
   })
 

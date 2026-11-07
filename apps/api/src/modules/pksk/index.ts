@@ -1,5 +1,6 @@
 export { PkskModule } from './pksk.module'
 export { PkskAccessService } from './pksk-access.service'
+export { PkskDomainsRepository } from './pksk-domains.repository'
 export {
   PKSK_PRACTICE_PORT,
   PKSK_QUESTIONS_PORT,

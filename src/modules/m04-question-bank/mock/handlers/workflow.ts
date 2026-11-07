@@ -11,13 +11,11 @@ import { importRoutes } from './imports'
 import { masterNoteRoutes } from './master-notes'
 import { qualityRoutes } from './quality'
 import { structuredRoutes } from './structured'
-import { submissionRoutes } from './submissions'
 
 export const workflowRoutes: RouteDef[] = [
   ...importRoutes,
   ...qualityRoutes,
   ...structuredRoutes,
-  ...submissionRoutes,
   ...diagramRoutes,
   ...masterNoteRoutes,
 ]

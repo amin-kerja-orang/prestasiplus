@@ -96,6 +96,7 @@ describe('access', () => {
     ['GET', '/api/battle/poll-match/1'],
     ['POST', '/api/battle/accept-challenger/1'],
     ['POST', '/api/battle/reject-challenger/1'],
+    ['POST', '/api/battle/queue/1/cancel'],
     ['GET', '/api/battle/search-opponent?q=ab'],
     ['POST', '/api/battle/invite'],
     ['GET', '/api/battle/invitations'],
@@ -309,6 +310,16 @@ describe('#5 / #6 incoming challenger', () => {
     expect((await poll(D5_STUDENT, q)).body.status).toBe('waiting')
     expect((await poll(D5_STUDENT, q)).body.status).toBe('waiting')
     expect((await poll(D5_STUDENT, q)).body.status).toBe('matched')
+  })
+
+  it('API-GAME-14 cancel: 200 once and again, then the entry is gone; matched or foreign is 404', async () => {
+    const q = await startQueue(D5_STUDENT)
+    const url = `/api/battle/queue/${String(q)}/cancel`
+    expect((await post(url, D1_STUDENT)).status).toBe(404)
+    const first = await post<{ data: unknown }>(url, D5_STUDENT)
+    expect([first.status, first.body.data]).toEqual([200, { cancelled: true }])
+    expect((await post(url, D5_STUDENT)).status).toBe(200)
+    expect((await post('/api/battle/queue/0/cancel', D5_STUDENT)).status).toBe(404)
   })
 
   it('answers 404 {error} for a queue without a challenger or of another user', async () => {
