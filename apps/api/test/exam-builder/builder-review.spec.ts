@@ -58,7 +58,7 @@ describe('R1-T34 builder review: pools, servability rows, override, paper edits'
   }
   const setPool = (id: string, pools: string[]) => admin.put(`/api/admin/section-pools/${id}`, { pools })
   const newPaper = async (): Promise<string> => {
-    const res = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const res = await admin.post('/api/admin/papers', { title: 'Set Ujian', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     return res.body.data.id as string
   }

@@ -17,4 +17,9 @@ export const REMEDIAL_MAX_QUESTIONS = 10
 export const MISSION_AUDIT = {
   REMEDIAL_GENERATED: 'classes.remedial.generated',
   REMEDIAL_CANCELLED: 'classes.remedial.cancelled',
+  MISSION_CREATED: 'classes.mission.created',
+  MISSION_DELETED: 'classes.mission.deleted',
 } as const
+
+/** ERR-GAME-17 (48 Game spec): `rewardCoins` above `mission_reward_max`, 422. The form shows the field text of the contract; this is the API answer. */
+export const MISSION_REWARD_TOO_HIGH = { code: 'MISSION_REWARD_TOO_HIGH', message: 'Ganjaran misi melebihi had.' } as const

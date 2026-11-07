@@ -580,7 +580,6 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'tiket-bantuan', label: 'Tiket Bantuan', to: '/pusat-tuisyen/tiket', fa: 'fa-life-ring', color: 'text-emerald-500' },
   // Observed "6,144" is the default text; the shell replaces it with the live M04 count (nav-badges.ts).
   { kind: 'item', id: 'gambar-rajah', label: 'Gambar Rajah', to: '/admin/soalan-gambar', fa: 'fa-images', color: 'text-amber-500', badge: { text: '6,144', cls: B_COUNT_AMBER }, surfaces: ['sidebar'], roles: A },
-
 ]
 
 /**

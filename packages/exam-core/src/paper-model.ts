@@ -15,6 +15,9 @@ interface PartLike {
   children?: PartLike[]
 }
 
+/** 46 section 3.5: the kinds "Semak" reveals in Mod Latihan. Essay, working, drawing and table_fill wait for "Hantar". */
+export const SEMAK_KINDS: ReadonlySet<string> = new Set(['mcq', 'true_false', 'mcq_multi', 'match_letter', 'short_text', 'numeric'])
+
 export interface Leaf {
   id: string
   /** Label chain, e.g. "(c)(i)". */

@@ -43,7 +43,7 @@ import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
-import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
+import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplaceAdminPaths, registerMarketplacePaths } from './marketplace/paths'
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
 import { SCHOOLS_COMPONENT_SCHEMAS, registerSchoolsPaths } from './schools/paths' // BE-05
 import { USERS_COMPONENT_SCHEMAS, registerUsersPaths } from './users/paths' // BE-05
@@ -178,6 +178,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
+  registerMarketplaceAdminPaths(registry) // S7-T08 (M20 admin, API-ADM-19)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
   registerSchoolsPaths(registry) // BE-05
   registerUsersPaths(registry) // BE-05

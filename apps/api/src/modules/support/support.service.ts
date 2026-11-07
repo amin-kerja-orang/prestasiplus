@@ -5,6 +5,8 @@ import {
   SUPPORT_ROLE_LABELS,
   SUPPORT_TICKET_STATUS_LABELS,
   type SupportQueueResponse,
+  type SupportSettings,
+  type SupportSettingsUpdateRequest,
   type SupportTicket,
   type SupportTicketCreateRequest,
   type SupportTicketDetail,
@@ -206,6 +208,41 @@ export class SupportService {
     const config = await this.guard(() => this.repo.config())
     // Four-key wire shape (#458 decision 2): phone and hours are not stored until S7-T09.
     return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
+  }
+
+  /** GET /admin/settings/support: '' when nothing is saved. `phone` and `hours` have no store yet. */
+  async settings(): Promise<SupportSettings> {
+    const config = await this.guard(() => this.repo.config())
+    return { email: config?.email ?? '', phone: '', whatsapp: config?.whatsappNumber ?? '', hours: '' }
+  }
+
+  /** PUT /admin/settings/support: an omitted field keeps its value. The row and its audit row commit together; no change writes nothing. */
+  async saveSettings(actor: Actor, input: SupportSettingsUpdateRequest): Promise<SupportSettings> {
+    return this.write(async (tx) => {
+      const current = await this.repo.config()
+      const email = input.email ?? current?.email ?? ''
+      const whatsapp = input.whatsapp ?? current?.whatsappNumber ?? ''
+      const changed = [...(email !== (current?.email ?? '') ? ['email'] : []), ...(whatsapp !== (current?.whatsappNumber ?? '') ? ['whatsapp'] : [])]
+      if (changed.length > 0) {
+        await this.repo.saveConfig({ email, whatsappNumber: whatsapp, now: this.clock.now() })
+        await this.audit.record({
+          tx,
+          action: SUPPORT_AUDIT.CONFIG_UPDATED,
+          actorUserId: actor.userId,
+          actorRole: actor.role,
+          sessionRowId: actor.sessionRowId,
+          scopeLevel: actor.scopeLevel,
+          schoolId: actor.schoolId,
+          requestId: actor.requestId,
+          ip: actor.ip,
+          isTest: actor.isTest,
+          targetType: 'support_config',
+          targetId: '1',
+          details: { changed },
+        })
+      }
+      return { email, phone: '', whatsapp, hours: '' }
+    })
   }
 
   // --- helpers ------------------------------------------------------------------------------------
