@@ -451,3 +451,72 @@ export const GamificationRewardControlSchema = z
   })
   .meta({ id: 'GamificationRewardControl' })
 export type GamificationRewardControl = z.infer<typeof GamificationRewardControlSchema>
+
+// ---------------------------------------------------------------------------------------------
+// Kotak Misteri admin (S7-T07 part P7, DM-37, API-GAME-09)
+// ---------------------------------------------------------------------------------------------
+
+export const GAMIFICATION_BOX_PRIZE_KINDS = ['syiling', 'token'] as const
+export const GamificationBoxPrizeKindSchema = z
+  .enum(GAMIFICATION_BOX_PRIZE_KINDS)
+  .meta({ id: 'GamificationBoxPrizeKind', description: 'Prize kind of a mystery box row: syiling or token (the contract has no XP prize).' })
+export type GamificationBoxPrizeKind = z.infer<typeof GamificationBoxPrizeKindSchema>
+
+/** One prize row of a mystery box as the admin sees it. `weight` is an integer percent; `stock` null = unlimited. */
+export const GamificationBoxPrizeSchema = z
+  .object({
+    label: z.string(),
+    kind: GamificationBoxPrizeKindSchema,
+    amount: z.number().int().min(1),
+    weight: z.number().int().min(0).max(100).meta(FIELD('Percent chance (Peluang %); the weights of a box total 100.')),
+    stock: count.nullable().meta(FIELD('Null = unlimited; 0 = out of stock (absent from the pupil odds table).')),
+  })
+  .meta({ id: 'GamificationBoxPrize' })
+export type GamificationBoxPrize = z.infer<typeof GamificationBoxPrizeSchema>
+
+/** One mystery box (ids 1 to 4 are the four old boxes, inactive and without prizes; one box is active). */
+export const GamificationMysteryBoxSchema = z
+  .object({
+    id: IdSchema,
+    label: z.string(),
+    costSyiling: z.number().int().min(1),
+    isActive: z.boolean(),
+    prizes: z.array(GamificationBoxPrizeSchema),
+  })
+  .meta({ id: 'GamificationMysteryBox' })
+export type GamificationMysteryBox = z.infer<typeof GamificationMysteryBoxSchema>
+
+/** Openings of one Malaysia-time day (all boxes). */
+export const GamificationBoxOpeningsDaySchema = z
+  .object({ day: DateOnlySchema, count })
+  .meta({ id: 'GamificationBoxOpeningsDay' })
+export type GamificationBoxOpeningsDay = z.infer<typeof GamificationBoxOpeningsDaySchema>
+
+/**
+ * `GET /admin/reward-control/mystery-boxes` data (also the answer of the PUT). `dailyMax` is the
+ * `gamification_settings` key `mystery_box_daily_max` (1..20, "Had kotak sehari"). `openingsPerDay` has seven rows,
+ * the last 7 Malaysia days, oldest first, today last ("Kotak dibuka sehari" [PROPOSED]).
+ */
+export const GamificationMysteryBoxesAdminSchema = z
+  .object({
+    boxes: z.array(GamificationMysteryBoxSchema),
+    dailyMax: z.number().int().min(1).max(20),
+    openingsPerDay: z.array(GamificationBoxOpeningsDaySchema),
+  })
+  .meta({ id: 'GamificationMysteryBoxesAdmin' })
+export type GamificationMysteryBoxesAdmin = z.infer<typeof GamificationMysteryBoxesAdminSchema>
+
+/**
+ * `PUT /admin/reward-control/mystery-boxes/{id}` body. The prize rows replace the stored rows. There is no POST (R1):
+ * boxes are never created through the API. A box with `isActive` true needs at least one prize and weights totalling 100.
+ */
+export const GamificationMysteryBoxUpdateRequestSchema = z
+  .object({
+    label: nonBlank(120),
+    costSyiling: z.number().int().min(1).max(500),
+    isActive: z.boolean(),
+    prizes: z.array(GamificationBoxPrizeSchema.extend({ label: nonBlank(120), stock: count.nullable().optional() })).max(20),
+    dailyMax: z.number().int().min(1).max(20).optional().meta(FIELD('Optional: saves mystery_box_daily_max.')),
+  })
+  .meta({ id: 'GamificationMysteryBoxUpdateRequest' })
+export type GamificationMysteryBoxUpdateRequest = z.infer<typeof GamificationMysteryBoxUpdateRequestSchema>

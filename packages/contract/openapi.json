@@ -7017,6 +7017,194 @@
           "draws"
         ]
       },
+      "GamificationBoxPrizeKind": {
+        "type": "string",
+        "enum": [
+          "syiling",
+          "token"
+        ],
+        "description": "Prize kind of a mystery box row: syiling or token (the contract has no XP prize)."
+      },
+      "GamificationBoxPrize": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GamificationBoxPrizeKind"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percent chance (Peluang %); the weights of a box total 100."
+          },
+          "stock": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Null = unlimited; 0 = out of stock (absent from the pupil odds table)."
+          }
+        },
+        "required": [
+          "label",
+          "kind",
+          "amount",
+          "weight",
+          "stock"
+        ]
+      },
+      "GamificationMysteryBox": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "costSyiling": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationBoxPrize"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "costSyiling",
+          "isActive",
+          "prizes"
+        ]
+      },
+      "GamificationBoxOpeningsDay": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "day",
+          "count"
+        ]
+      },
+      "GamificationMysteryBoxesAdmin": {
+        "type": "object",
+        "properties": {
+          "boxes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationMysteryBox"
+            }
+          },
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "openingsPerDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationBoxOpeningsDay"
+            }
+          }
+        },
+        "required": [
+          "boxes",
+          "dailyMax",
+          "openingsPerDay"
+        ]
+      },
+      "GamificationMysteryBoxUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "costSyiling": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "pattern": "\\S"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/GamificationBoxPrizeKind"
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "weight": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Percent chance (Peluang %); the weights of a box total 100."
+                },
+                "stock": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "label",
+                "kind",
+                "amount",
+                "weight"
+              ]
+            },
+            "maxItems": 20
+          },
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Optional: saves mystery_box_daily_max."
+          }
+        },
+        "required": [
+          "label",
+          "costSyiling",
+          "isActive",
+          "prizes"
+        ]
+      },
       "RewardCategory": {
         "type": "string",
         "enum": [
@@ -94939,6 +95127,160 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message), or \"Tarikh tutup tidak sah.\" (closesAt), or fields.closesAt \"Medan ini tidak sah.\" (not a real date).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/mystery-boxes": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Kotak Misteri: boxes, daily limit and openings per day",
+        "description": "Every box with its prize rows (prize rows in stored order), dailyMax (mystery_box_daily_max) and the openings of the last 7 Malaysia days.",
+        "responses": {
+          "200": {
+            "description": "Boxes, dailyMax and openingsPerDay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationMysteryBoxesAdmin"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/mystery-boxes/{id}": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Save a Kotak Misteri box",
+        "description": "Replaces the label, cost, active flag and prize rows of the box; dailyMax (optional) saves mystery_box_daily_max. There is no POST: boxes are not created through the API. An active box needs weights that total 100.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationMysteryBoxUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The list after the save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationMysteryBoxesAdmin"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kotak tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Jumlah peluang mesti 100%.\" with fields.prizes (an active box whose weights do not total 100, or an active box with no prize).",
             "content": {
               "application/json": {
                 "schema": {
