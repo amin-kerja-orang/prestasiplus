@@ -1,8 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common'
 import {
+  ClientUuidSchema,
   GAMIFICATION_BOX_PRIZE_KINDS,
   GAMIFICATION_MESSAGES as MSG,
   REWARD_MESSAGES,
+  REWARD_VALIDATION_MESSAGES,
+  type RewardMysteryBoxOpened,
+  type RewardMysteryBoxesView,
   type GamificationBoxOpeningsDay,
   type GamificationBoxPrize,
   type GamificationBoxPrizeKind,
@@ -12,15 +16,19 @@ import {
 
 import { AUDIT_ACTIONS, AuditService } from '../../common/audit'
 import { ApiError } from '../../common/errors/api-error'
+import { toMytTimestamp } from '../../common/time/myt'
 import type { PrismaClient, TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay, startOfMytDay } from '../../db/clock'
 import { Prisma } from '../../db/generated/client'
-import { idToString } from '../../db/ids'
+import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { GameSettingsService } from '../games/core/game-settings.service'
-import { MAX_AMOUNT_PER_CALL } from '../wallet'
+import { MAX_AMOUNT_PER_CALL, WalletService } from '../wallet'
 import type { ShopActor } from './actor'
-import { plainNotFound } from './shop.errors'
+import { BOX_RANDOM, type BoxRandom, type BoxStream } from './box-random'
+import { SOURCES } from './shop.constants'
+import { boxNotFound, modPelajarRefused, plainNotFound, rewardError, validation } from './shop.errors'
+import { ShopRepository } from './shop.repository'
 
 /** Kotak Misteri admin rules (48 GAME-23, DM-37). The odds are integer percents and total 100. */
 export const MYSTERY_BOX_LIMITS = {
@@ -39,6 +47,7 @@ export const MYSTERY_BOX_LIMITS = {
 } as const
 
 const DIGITS = /^\d{1,9}$/
+const INT4_MAX = 2_147_483_647
 const DAY_MS = 86_400_000
 
 interface PrizeRow {
@@ -64,11 +73,49 @@ const wholeOf = (v: unknown): number | undefined => (typeof v === 'number' && Nu
 
 const fieldError = (fields: Record<string, string>, message: string = MSG.summary): ApiError => ApiError.of('VALIDATION_ERROR', { message, fields })
 
+/** A prize row as read under its lock. */
+interface PrizeLock {
+  id: bigint
+  label: string
+  kind: GamificationBoxPrizeKind
+  amount: number
+  weight: number
+  stock: number | null
+}
+
+/** The box row as read under its share lock. */
+interface BoxLock {
+  id: number
+  label: string
+  costSyiling: number
+  isActive: boolean
+}
+
+/** A prize can be won when it has weight and its stock is unlimited (null) or above 0 (AC-GM-23.6). */
+const winnable = (p: { weight: number; stock: number | null }): boolean => p.weight > 0 && (p.stock === null || p.stock > 0)
+
+/** One weighted draw: `rng.int(1, totalWeight)` walked over the prizes that can be won (FR-GM-23.2). `prizes` is not empty. */
+export function pickPrize<T extends { weight: number }>(prizes: readonly T[], rng: BoxStream): T {
+  const total = prizes.reduce((sum, p) => sum + p.weight, 0)
+  let pick = rng.int(1, total)
+  return prizes.find((p) => (pick -= p.weight) <= 0) ?? (prizes[prizes.length - 1] as T)
+}
+
 /**
- * Kotak Misteri admin side (S7-T07 part P7, DM-37, API-GAME-09): the boxes and their prize rows, the daily limit
- * (`mystery_box_daily_max`, read through the games settings reader) and the openings per day. The cost lives only in
- * `mystery_boxes.cost_syiling` (ruling R2). There is no create route (ruling R1): ids 1 to 4 are the four old boxes,
- * kept inactive without prizes, and id 5 is the one active box. The pupil opening flow is unchanged here (part P8).
+ * Kotak Misteri (S7-T07, DM-37, API-GAME-08 and API-GAME-09).
+ *
+ * Admin side (part P7): the boxes and their prize rows, the daily limit (`mystery_box_daily_max`, read through the
+ * games settings reader) and the openings per day. The cost lives only in `mystery_boxes.cost_syiling` (ruling R2).
+ * There is no create route (ruling R1): ids 1 to 4 are the four old boxes, kept inactive without prizes, and id 5 is the
+ * one active box.
+ *
+ * Pupil side (part P8): `boxes()` shows the one active box and never draws; `open()` runs in ONE transaction.
+ * Locking: the user's shop lock first, then the box row FOR SHARE, then its prize rows FOR UPDATE. The admin save takes
+ * every box row FOR UPDATE and only then rewrites the prizes, so the two orders never cycle. Checks, in order: Mod
+ * Pelajar (403), a repeat of the same `clientUuid` (the stored opening, nothing moves), box exists and is active (404),
+ * no prize can be won (409 `BOX_UNAVAILABLE`, N5), daily limit (429 `MYSTERY_DAILY_LIMIT`), syiling balance (409
+ * `INSUFFICIENT_BALANCE`); only then the cost is debited (key `opening:{id}:cost`), the prize is drawn by weight among
+ * the prizes that can be won, a limited stock drops by 1 and the prize is credited (key `opening:{id}:prize`).
  */
 @Injectable()
 export class MysteryBoxesService {
@@ -77,7 +124,132 @@ export class MysteryBoxesService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(GameSettingsService) private readonly settings: GameSettingsService,
+    @Inject(WalletService) private readonly wallet: WalletService,
+    @Inject(ShopRepository) private readonly repo: ShopRepository,
+    @Inject(BOX_RANDOM) private readonly random: BoxRandom,
   ) {}
+
+  // --- pupil: GET /gamification/mystery-boxes -----------------------------------------------------------
+
+  /** The one active box with the chances of the prizes still in stock (one decimal, renormalised); never draws (FR-MUR-35-5). */
+  async boxes(userId: string): Promise<RewardMysteryBoxesView> {
+    const uid = idFromString(userId)
+    const day = startOfMytDay(this.clock.now())
+    const [box, summary, dailyMax, openedToday, openings] = await Promise.all([
+      this.prisma.client.mysteryBox.findFirst({ where: { isActive: true }, include: { prizes: { orderBy: { id: 'asc' } } } }),
+      this.wallet.summary(userId),
+      this.settings.get(MYSTERY_BOX_LIMITS.dailyMaxKey),
+      this.repo.countOpeningsBetween(uid, day, new Date(day.getTime() + DAY_MS)),
+      this.repo.recentOpenings(uid, 10),
+    ])
+    const eligible = box ? box.prizes.filter(winnable) : []
+    const total = eligible.reduce((sum, p) => sum + p.weight, 0)
+    return {
+      box: box
+        ? {
+            id: idToString(box.id),
+            label: box.label,
+            costSyiling: box.costSyiling,
+            prizes: eligible.map((p) => ({ label: p.label, kind: p.kind as GamificationBoxPrizeKind, amount: p.amount, chance: Math.round((p.weight / total) * 1000) / 10 })),
+          }
+        : null,
+      available: eligible.length > 0,
+      syilingBalance: summary.currentSyiling,
+      dailyMax,
+      openedToday,
+      history: openings.map((o) => ({
+        id: idToString(o.id),
+        boxId: String(o.boxId),
+        boxName: o.box.label,
+        prizeLabel: o.prizeLabel,
+        prizeKind: o.prizeKind as GamificationBoxPrizeKind | null,
+        prizeAmount: o.prizeAmount,
+        createdAt: toMytTimestamp(o.createdAt),
+      })),
+    }
+  }
+
+  // --- pupil: POST /gamification/mystery-boxes/:id/open -------------------------------------------------
+
+  async open(actor: ShopActor, idText: string, body: unknown): Promise<RewardMysteryBoxOpened> {
+    if (actor.isTest) throw modPelajarRefused()
+    const raw = isRecord(body) ? body.clientUuid : undefined
+    if (typeof raw !== 'string' || !ClientUuidSchema.safeParse(raw).success) throw validation({ clientUuid: REWARD_VALIDATION_MESSAGES.clientUuidInvalid })
+    const clientUuid = raw.toLowerCase()
+    if (!DIGITS.test(idText)) throw plainNotFound()
+    const boxId = Number(idText)
+    const userId = idFromString(actor.userId)
+    return this.prisma.transaction(async (tx) => {
+      await this.repo.lockUser(actor.userId)
+      // A repeat answers before any other check and moves nothing; the user lock above makes the read safe against a double tap.
+      const first = await this.repo.openingByClientUuid(userId, clientUuid)
+      if (first) {
+        // The key belongs to the box it opened: on another box it is no repeat.
+        if (first.boxId !== boxId) throw validation({ clientUuid: REWARD_VALIDATION_MESSAGES.clientUuidInvalid })
+        const summary = await this.wallet.summary(actor.userId, { tx })
+        const kind = (first.prizeKind ?? 'syiling') as GamificationBoxPrizeKind
+        const stored = await tx.mysteryBox.findUnique({ where: { id: first.boxId }, select: { label: true } })
+        return {
+          openingId: idToString(first.id),
+          boxId: String(first.boxId),
+          boxName: stored?.label ?? '',
+          // `?? first.coins` only satisfies the nullable column: a row with a client_uuid always has its prize fields
+          // (pre-P8 rows lack them but also lack a client_uuid, so they never reach this branch).
+          prize: { label: first.prizeLabel ?? '', kind, amount: first.prizeAmount ?? first.coins },
+          tokenBalance: summary.tokenBalance,
+          syilingBalance: summary.currentSyiling,
+        }
+      }
+      if (boxId < 1 || boxId > INT4_MAX) throw boxNotFound()
+      const boxes = await tx.$queryRaw<BoxLock[]>`SELECT id, label, cost_syiling AS "costSyiling", is_active AS "isActive" FROM mystery_boxes WHERE id = ${boxId} FOR SHARE`
+      const box = boxes[0]
+      if (!box?.isActive) throw boxNotFound()
+      const prizes = await tx.$queryRaw<PrizeLock[]>`
+        SELECT id, label, kind, amount, weight, stock FROM mystery_box_prizes WHERE box_id = ${boxId} ORDER BY id FOR UPDATE`
+      const eligible = prizes.filter(winnable)
+      // N5: nothing is debited and no opening row is written when no prize can be won.
+      if (eligible.length === 0) throw rewardError('BOX_UNAVAILABLE')
+      const at = this.clock.now()
+      const day = startOfMytDay(at)
+      const dailyMax = await this.settings.get(MYSTERY_BOX_LIMITS.dailyMaxKey, tx)
+      if ((await this.repo.countOpeningsBetween(userId, day, new Date(day.getTime() + DAY_MS))) >= dailyMax) throw rewardError('MYSTERY_DAILY_LIMIT')
+      if ((await this.wallet.summary(actor.userId, { tx })).currentSyiling < box.costSyiling) throw rewardError('INSUFFICIENT_BALANCE')
+
+      // The outcome comes from the injected source: a CSPRNG in production, the seeded stream (key = user + opening number) in tests.
+      const rng = this.random.stream(`m15-mystery:${actor.userId}:${String(await this.repo.countOpenings(userId))}`)
+      const prize = pickPrize(eligible, rng)
+
+      const opening = await this.repo.insertOpening({
+        userId,
+        boxId,
+        coins: prize.kind === 'syiling' ? prize.amount : 0,
+        prizeLabel: prize.label,
+        prizeKind: prize.kind,
+        prizeAmount: prize.amount,
+        clientUuid,
+        at,
+      })
+      const ref = `opening:${idToString(opening.id)}`
+      await this.wallet.debit({ userId: actor.userId, amount: box.costSyiling, source: SOURCES.box, sourceId: `${ref}:cost`, description: `Kotak Misteri: ${box.label}`, type: 'spend', isTest: false }, { tx })
+      if (prize.stock !== null) await tx.$executeRaw`UPDATE mystery_box_prizes SET stock = stock - 1, updated_at = ${at}::timestamptz WHERE id = ${prize.id} AND stock > 0`
+      if (prize.kind === 'syiling') {
+        await this.wallet.credit({ userId: actor.userId, amount: prize.amount, source: SOURCES.box, sourceId: `${ref}:prize`, description: `Kotak Misteri: ${prize.label}`, type: 'earn', isTest: false }, { tx })
+      } else {
+        await this.wallet.creditTokens({ userId: actor.userId, amount: prize.amount, source: SOURCES.box, refId: `${ref}:prize`, isTest: false }, { tx })
+      }
+      const after = await this.wallet.summary(actor.userId, { tx })
+      return {
+        openingId: idToString(opening.id),
+        boxId: String(box.id),
+        boxName: box.label,
+        prize: { label: prize.label, kind: prize.kind, amount: prize.amount },
+        tokenBalance: after.tokenBalance,
+        syilingBalance: after.currentSyiling,
+      }
+    })
+  }
+
+  // --- admin ----------------------------------------------------------------------------------------------
 
   /** `GET /admin/reward-control/mystery-boxes`. */
   async adminView(db: TxClient | PrismaClient = this.prisma.client): Promise<GamificationMysteryBoxesAdmin> {
@@ -222,9 +394,8 @@ export class MysteryBoxesService {
 
     if (Object.keys(fields).length > 0 || cost === undefined) throw fieldError(fields)
     // Rows are complete here. A box with prizes, or an active one, must total 100 (AC-GM-23.5).
-    // TODO-P8: an active box whose every prize has stock 0 is saved as is (no existing catalogue text fits a refusal, and
-    // none is invented here). P8 must answer an empty box at draw time: 409 "Kotak tidak tersedia buat masa ini." (N5)
-    // before any debit.
+    // An active box whose every prize has stock 0 is saved as is; the pupil side answers it at open time with 409
+    // BOX_UNAVAILABLE (N5), before any debit.
     const total = prizes.reduce((sum, p) => sum + p.weight, 0)
     const isActive = b.isActive as boolean
     if ((isActive || prizes.length > 0) && total !== MYSTERY_BOX_LIMITS.weightTotal) throw fieldError({ prizes: MSG.boxOddsTotal }, MSG.boxOddsTotal)

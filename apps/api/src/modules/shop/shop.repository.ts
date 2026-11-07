@@ -251,12 +251,33 @@ export class ShopRepository {
     return this.db.mysteryBoxOpening.count({ where: { userId } })
   }
 
-  recentOpenings(userId: bigint, limit: number): Promise<MysteryBoxOpening[]> {
-    return this.db.mysteryBoxOpening.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit })
+  /** The caller's newest openings (all boxes), with the box label for the history list. */
+  recentOpenings(userId: bigint, limit: number): Promise<(MysteryBoxOpening & { box: { label: string } })[]> {
+    return this.db.mysteryBoxOpening.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit, include: { box: { select: { label: true } } } })
   }
 
-  insertOpening(userId: bigint, boxId: number, coins: number, xp: number, at: Date): Promise<MysteryBoxOpening> {
-    return this.db.mysteryBoxOpening.create({ data: { userId, boxId, coins, xp, createdAt: at } })
+  /** The openings of one user in [from, to): the daily limit counts the Malaysia day. */
+  countOpeningsBetween(userId: bigint, from: Date, to: Date): Promise<number> {
+    return this.db.mysteryBoxOpening.count({ where: { userId, createdAt: { gte: from, lt: to } } })
+  }
+
+  /** The first opening of this key (DM-78). */
+  openingByClientUuid(userId: bigint, clientUuid: string): Promise<MysteryBoxOpening | null> {
+    return this.db.mysteryBoxOpening.findFirst({ where: { userId, clientUuid } })
+  }
+
+  insertOpening(data: {
+    userId: bigint
+    boxId: number
+    coins: number
+    prizeLabel: string
+    prizeKind: string
+    prizeAmount: number
+    clientUuid: string
+    at: Date
+  }): Promise<MysteryBoxOpening> {
+    const { at, ...rest } = data
+    return this.db.mysteryBoxOpening.create({ data: { ...rest, xp: 0, createdAt: at } })
   }
 
   // --- draws (ticket side) ----------------------------------------------------------------------------

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import type { Scenario, ScenarioContext, HttpClient } from '@pp/contract-tests'
 
 import { API_ONLY, dataOf, errorOf, expectError, listOf, nextTag } from '../helpers'
@@ -11,9 +13,9 @@ import { API_ONLY, dataOf, errorOf, expectError, listOf, nextTag } from '../help
 
 const NEW_REWARD = { category: 'ewallet', vendor: 'Vendor Ujian', denominationRm: 10, tokenCost: 2, stockQuantity: 2 }
 
-/** Tokens of the caller, read from the Kotak Misteri view. */
+/** Tokens of the caller, read from the wallet. */
 async function tokensOf(client: HttpClient): Promise<number> {
-  return Number(dataOf(await client.request('GET', '/gamification/mystery-boxes')).tokenBalance)
+  return Number(dataOf(await client.request('GET', '/gamification/wallet')).tokenBalance)
 }
 
 /** Gives the student tokens through the M14 conversion (100 syiling = 2 tokens at the bronze rate). False when it is not served or refused. */
@@ -184,37 +186,44 @@ export const shopScenarios: Scenario[] = [
     },
   },
   {
-    id: 'shop-api/Kotak Misteri: four boxes, own history only, a refusal writes nothing, an opening pays inside the ranges',
+    id: 'shop-api/Kotak Misteri: one box, own history only, a refusal writes nothing, an opening pays the drawn prize once per clientUuid',
     domain: 'shop',
     targets: API_ONLY,
     async run(ctx) {
       const student = await ctx.as('student')
       const other = await ctx.as('admin')
       const view = dataOf(await student.request('GET', '/gamification/mystery-boxes'))
-      const boxes = view.boxes as { id: string; costTokens: number; coinMin: number; coinMax: number; xpMin: number; xpMax: number }[]
-      ctx.check(boxes.length === 4 && boxes.map((b) => b.costTokens).join(',') === '2,5,10,25', 'the four boxes cost 2, 5, 10 and 25 tokens')
-      expectError(ctx, await student.request('POST', '/gamification/mystery-boxes/99/open'), 404, 'NOT_FOUND')
+      const box = view.box as { id: string; costSyiling: number; prizes: { chance: number; kind: string; amount: number }[] } | null
+      ctx.check(box !== null && box.prizes.length === 7 && box.costSyiling === 50, 'the one box costs 50 syiling and lists seven prizes')
+      if (!box) return
+      ctx.check(Math.abs(box.prizes.reduce((sum, p) => sum + p.chance, 0) - 100) < 0.5, 'the chances must total 100')
+      expectError(ctx, await student.request('POST', '/gamification/mystery-boxes/99/open', { body: { clientUuid: randomUUID() } }), 404, 'NOT_FOUND')
+      expectError(ctx, await student.request('POST', `/gamification/mystery-boxes/${box.id}/open`, { body: {} }), 422, 'VALIDATION_ERROR')
       const adminHistory = (dataOf(await other.request('GET', '/gamification/mystery-boxes')).history as { id: string }[]).map((h) => h.id)
       const studentHistory = (view.history as { id: string }[]).map((h) => h.id)
       ctx.check(studentHistory.every((h) => !adminHistory.includes(h)), 'an opening must appear in one user history only')
 
-      const tokens = Number(view.tokenBalance)
-      if (tokens < 2) {
-        const refused = await student.request('POST', '/gamification/mystery-boxes/4/open')
-        expectError(ctx, refused, 409, 'INSUFFICIENT_TOKENS')
-        ctx.check(errorOf(refused).message === 'Token tidak mencukupi.', 'the message must be "Token tidak mencukupi."')
-        ctx.check((await tokensOf(student)) === tokens, 'a refused opening must not debit')
-        if (!(await fundTokens(ctx, student))) return
+      const syiling = Number(view.syilingBalance)
+      if (Number(view.openedToday) >= Number(view.dailyMax)) {
+        expectError(ctx, await student.request('POST', `/gamification/mystery-boxes/${box.id}/open`, { body: { clientUuid: randomUUID() } }), 429, 'MYSTERY_DAILY_LIMIT')
+        return
       }
-      const before = await tokensOf(student)
-      const coinsBefore = Number(dataOf(await student.request('GET', '/gamification/wallet')).currentSyiling)
-      const open = await student.request('POST', '/gamification/mystery-boxes/1/open')
+      if (syiling < box.costSyiling) {
+        const refused = await student.request('POST', `/gamification/mystery-boxes/${box.id}/open`, { body: { clientUuid: randomUUID() } })
+        expectError(ctx, refused, 409, 'INSUFFICIENT_BALANCE')
+        ctx.check(errorOf(refused).message === 'Baki syiling tidak mencukupi.', 'the message must be "Baki syiling tidak mencukupi."')
+        ctx.check(Number(dataOf(await student.request('GET', '/gamification/mystery-boxes')).syilingBalance) === syiling, 'a refused opening must not debit')
+        return
+      }
+      const clientUuid = randomUUID()
+      const open = await student.request('POST', `/gamification/mystery-boxes/${box.id}/open`, { body: { clientUuid } })
       ctx.expectStatus(open, 200)
       const o = dataOf(open)
-      const box = boxes[0]!
-      ctx.check(Number(o.coins) >= box.coinMin && Number(o.coins) <= box.coinMax && Number(o.xp) >= box.xpMin && Number(o.xp) <= box.xpMax, 'coins and xp must fall inside the box ranges')
-      ctx.check(o.tokenBalance === before - box.costTokens, 'the box cost must be debited in tokens')
-      ctx.check(o.syilingBalance === coinsBefore + Number(o.coins), 'the coins must be credited to the syiling balance')
+      const prize = o.prize as { kind: string; amount: number }
+      const credited = prize.kind === 'syiling' ? prize.amount : 0
+      ctx.check(o.syilingBalance === syiling - box.costSyiling + credited, 'the cost must be debited and a syiling prize credited')
+      const again = dataOf(await student.request('POST', `/gamification/mystery-boxes/${box.id}/open`, { body: { clientUuid } }))
+      ctx.check(again.openingId === o.openingId && again.syilingBalance === o.syilingBalance, 'a repeat of the same clientUuid must answer the first opening and move nothing')
       const after = dataOf(await student.request('GET', '/gamification/mystery-boxes'))
       ctx.check((after.history as { id: string }[])[0]?.id === o.openingId, 'the newest opening must head the history')
     },

@@ -1,7 +1,5 @@
 import {
   RewardCabutanViewSchema,
-  RewardMysteryBoxOpenedSchema,
-  RewardMysteryBoxesViewSchema,
   RewardRedeemResultSchema,
   RewardTicketBoughtSchema,
   ShopDigitalItemsResponseSchema,
@@ -268,75 +266,7 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
-  describe('Kotak Misteri', () => {
-    it('lists the four boxes with the token balance and an empty history', async () => {
-      const api = await as(STUDENT_2)
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.boxes.map((b) => [b.id, b.name, b.costTokens])).toEqual([
-        ['1', 'Kotak Gangsa', 2],
-        ['2', 'Kotak Perak', 5],
-        ['3', 'Kotak Emas', 10],
-        ['4', 'Kotak Legenda', 25],
-      ])
-      expect(view.history).toEqual([])
-    })
-
-    it('opens a box: 200, tokens debited, coins credited with the ledger text, xp added, deterministic under the seeded PRNG', async () => {
-      const api = await as(STUDENT_MAJU)
-      const uid = await userIdOf(t.db, STUDENT_MAJU)
-      await fund(t, uid, { tokens: 40 }, 'box')
-      const before = await walletRow(t, uid)
-      const res = await api.post('/gamification/mystery-boxes/2/open')
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      const o = RewardMysteryBoxOpenedSchema.parse(res.body.data)
-      expect(o).toMatchObject({ boxId: '2', boxName: 'Kotak Perak', icon: '🎁' })
-      expect(o.coins).toBeGreaterThanOrEqual(10)
-      expect(o.coins).toBeLessThanOrEqual(50)
-      expect(o.xp).toBeGreaterThanOrEqual(5)
-      expect(o.xp).toBeLessThanOrEqual(25)
-      const after = await walletRow(t, uid)
-      expect(after.tokens).toBe(before.tokens - 5)
-      expect(after.syiling).toBe(before.syiling + o.coins)
-      expect(after.xp).toBe(before.xp + o.xp)
-      expect(o).toMatchObject({ tokenBalance: after.tokens, syilingBalance: after.syiling })
-      const led = await t.db.query<{ type: string; description: string; amount: number; source_id: string }>(`select type, description, amount, source_id from coin_ledger where user_id = $1 and source = 'mystery_box'`, [uid])
-      expect(led).toEqual([{ type: 'earn', description: 'Kotak Misteri: Kotak Perak', amount: o.coins, source_id: `opening:${o.openingId}` }])
-      // Same (user, opening number) => same result: the stream depends only on the seed string.
-      const { fnv1a32, mulberry32 } = await import('../../src/db/prng')
-      const rng = mulberry32(fnv1a32(`m15-mystery:${uid}:0`))
-      expect([o.coins, o.xp]).toEqual([rng.int(10, 50), rng.int(5, 25)])
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.history).toHaveLength(1)
-      expect(view.history[0]).toMatchObject({ id: o.openingId, boxId: '2', boxName: 'Kotak Perak', coins: o.coins, xp: o.xp })
-      expect(view.tokenBalance).toBe(after.tokens)
-    })
-
-    it('keeps at most the last 10 openings, newest first', async () => {
-      const api = await as(STUDENT_MAJU)
-      const uid = await userIdOf(t.db, STUDENT_MAJU)
-      await fund(t, uid, { tokens: 60 }, 'box10')
-      for (let i = 0; i < 11; i++) {
-        t.clock.advance(1000)
-        expect((await api.post('/gamification/mystery-boxes/1/open')).status).toBe(200)
-      }
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.history).toHaveLength(10)
-      const ids = view.history.map((h) => Number(h.id))
-      expect(ids).toEqual([...ids].sort((a, b) => b - a))
-    })
-
-    it('404 for an unknown box (Kotak tidak dijumpai.) and a non-numeric id (Not Found.); 409 INSUFFICIENT_TOKENS writes nothing', async () => {
-      const api = await as(STUDENT_2)
-      const uid = await userIdOf(t.db, STUDENT_2)
-      expectError(await api.post('/gamification/mystery-boxes/9/open'), 404, 'NOT_FOUND', 'Kotak tidak dijumpai.')
-      expectError(await api.post('/gamification/mystery-boxes/abc/open'), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
-      await t.db.query(`update wallets set token_balance = 3 where user_id = $1`, [uid]) // fixture: below the cost of the Legenda box
-      const before = await walletRow(t, uid)
-      expectError(await api.post('/gamification/mystery-boxes/4/open'), 409, 'INSUFFICIENT_TOKENS', 'Token tidak mencukupi.')
-      expect(await walletRow(t, uid)).toEqual(before)
-      expect(await t.db.query(`select 1 from mystery_box_openings where user_id = $1`, [uid])).toHaveLength(0)
-    })
-  })
+  // Kotak Misteri (pupil box on the 0222 tables, S7-T07 P8): see mystery-box.spec.ts.
 
   describe('mystery box randomness', () => {
     it('production binds the CSPRNG source: in range and not a function of the key', async () => {
@@ -460,7 +390,7 @@ describe('M15 student routes (BE-23)', () => {
       const before = await walletRow(t, uid)
       const e1 = expectError(await api.post('/hadiah/redemptions', { rewardId: reward }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expect(e1.code).toBe('FORBIDDEN')
-      expectError(await api.post('/gamification/mystery-boxes/1/open'), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
+      expectError(await api.post('/gamification/mystery-boxes/5/open', { clientUuid: '0b7e6f3a-52a1-4c9d-8e11-3f6a9d2c4b70' }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expectError(await api.post(`/cabutan/${draw}/tickets`), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expect(await walletRow(t, uid)).toEqual(before)
       expect(await stockOf(t, reward)).toBe(5)

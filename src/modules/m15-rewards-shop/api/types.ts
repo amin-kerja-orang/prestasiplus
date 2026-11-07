@@ -193,35 +193,43 @@ export interface RedeemResult {
   tokenBalance: number
 }
 
-/** DATA-M15-03 as returned by #10. */
-export interface MysteryBoxView {
-  id: number
-  name: string
-  description: string
-  icon: string
-  rarity: 'rare' | 'epic' | 'legendary' | null
-  costTokens: number
-  coinMin: number
-  coinMax: number
-  xpMin: number
-  xpMax: number
-  color1: string
-  color2: string
+/** One prize row of the odds table. `chance` is a percent with one decimal, over the prizes still in stock. */
+export interface MysteryBoxPrizeView {
+  label: string
+  kind: 'syiling' | 'token'
+  amount: number
+  chance: number
 }
 
+/** The one active box as returned by #10 (S7-T07 P8; cost in syiling, no rarity or colours). */
+export interface MysteryBoxView {
+  id: number
+  label: string
+  costSyiling: number
+  prizes: MysteryBoxPrizeView[]
+}
+
+/** The prize fields are `null` for an opening made before the 0222 tables. */
 export interface MysteryBoxHistoryItem {
   id: number
   boxId: number
   boxName: string
-  coins: number
-  xp: number
+  prizeLabel: string | null
+  prizeKind: 'syiling' | 'token' | null
+  prizeAmount: number | null
   createdAt: string
 }
 
-/** #10 data. `history` = the viewer's openings, newest first, 10 at most. */
+/**
+ * #10 data. `box` is null and `available` false when no box is active; `available` is also false when no prize can be
+ * won (N5). `history` = the viewer's openings, newest first, 10 at most.
+ */
 export interface MysteryBoxesView {
-  tokenBalance: number
-  boxes: MysteryBoxView[]
+  box: MysteryBoxView | null
+  available: boolean
+  syilingBalance: number
+  dailyMax: number
+  openedToday: number
   history: MysteryBoxHistoryItem[]
 }
 
@@ -230,9 +238,7 @@ export interface MysteryBoxOpened {
   openingId: number
   boxId: number
   boxName: string
-  icon: string
-  coins: number
-  xp: number
+  prize: { label: string; kind: 'syiling' | 'token'; amount: number }
   tokenBalance: number
   syilingBalance: number
 }
@@ -291,7 +297,7 @@ export interface ApproveResult {
   status: 'pending_admin'
 }
 
-/** Module error codes carried in `ApiError.code` (all 409). */
+/** Module error codes carried in `ApiError.code` (409, except `MYSTERY_DAILY_LIMIT`, 429). */
 export type M15ConflictCode =
   | 'OUT_OF_STOCK'
   | 'MONTHLY_CAP'
@@ -299,6 +305,8 @@ export type M15ConflictCode =
   | 'DRAW_CLOSED'
   | 'TICKET_LIMIT'
   | 'INSUFFICIENT_BALANCE'
+  | 'BOX_UNAVAILABLE'
+  | 'MYSTERY_DAILY_LIMIT'
   | 'CONFLICT'
 
 // --- L43 Kedai Hadiah Digital (SRS M15 v1.6 §7 #19, #20; BR-M15-26…28) ---------------------------------

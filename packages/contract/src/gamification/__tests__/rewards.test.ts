@@ -21,6 +21,7 @@ import {
   RewardListQuerySchema,
   RewardListResponseSchema,
   RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequestSchema,
   RewardMysteryBoxesViewSchema,
   RewardRedeemRequestSchema,
   RewardRedeemResultSchema,
@@ -206,30 +207,40 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
 
   it('parses the mystery box view and an opening', () => {
     const box = {
-      id: '1',
-      name: 'Kotak Gangsa',
-      description: 'Kotak biasa',
-      icon: '📦',
-      rarity: null,
-      costTokens: 2,
-      coinMin: 1,
-      coinMax: 20,
-      xpMin: 1,
-      xpMax: 10,
-      color1: '#9ca3af',
-      color2: '#6b7280',
+      id: '5',
+      label: 'Kotak Misteri',
+      costSyiling: 50,
+      prizes: [
+        { label: '10 syiling', kind: 'syiling', amount: 10, chance: 40 },
+        { label: '1 token', kind: 'token', amount: 1, chance: 10.5 },
+      ],
     }
     const view = {
-      tokenBalance: 5,
-      boxes: [box, { ...box, id: '2', rarity: 'rare' }],
-      history: [{ id: '1', boxId: '1', boxName: 'Kotak Gangsa', coins: 7, xp: 3, createdAt: AT }],
+      box,
+      available: true,
+      syilingBalance: 80,
+      dailyMax: 5,
+      openedToday: 1,
+      history: [
+        { id: '1', boxId: '5', boxName: 'Kotak Misteri', prizeLabel: '10 syiling', prizeKind: 'syiling', prizeAmount: 10, createdAt: AT },
+        { id: '2', boxId: '1', boxName: 'Kotak Gangsa', prizeLabel: null, prizeKind: null, prizeAmount: null, createdAt: AT },
+      ],
     }
     expect(RewardMysteryBoxesViewSchema.safeParse(view).success).toBe(true)
-    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, boxes: [{ ...box, rarity: 'common' }] }).success).toBe(false)
+    // N5 / no active box: box null, available false.
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: null, available: false, history: [] }).success).toBe(true)
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: { ...box, prizes: [{ ...box.prizes[0], kind: 'xp' }] } }).success).toBe(false)
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: { ...box, costSyiling: 0 } }).success).toBe(false)
     expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, history: Array(11).fill(view.history[0]) }).success).toBe(false)
-    const opened = { openingId: '2', boxId: '1', boxName: 'Kotak Gangsa', icon: '📦', coins: 7, xp: 3, tokenBalance: 3, syilingBalance: 127 }
+    // The old token shape is gone.
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, available: undefined }).success).toBe(false)
+    const opened = { openingId: '2', boxId: '5', boxName: 'Kotak Misteri', prize: { label: '10 syiling', kind: 'syiling', amount: 10 }, tokenBalance: 3, syilingBalance: 40 }
     expect(RewardMysteryBoxOpenedSchema.safeParse(opened).success).toBe(true)
     expect(RewardMysteryBoxOpenedSchema.safeParse({ ...opened, syilingBalance: undefined }).success).toBe(false)
+    expect(RewardMysteryBoxOpenedSchema.safeParse({ ...opened, prize: undefined }).success).toBe(false)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({ clientUuid: '8f14e45f-ceea-467a-9575-0c1f6a2c5b3a' }).success).toBe(true)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({}).success).toBe(false)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({ clientUuid: 'nope' }).success).toBe(false)
   })
 
   it('parses open draws and a bought ticket', () => {
@@ -279,8 +290,10 @@ describe('errors', () => {
     expect(REWARD_ERRORS.DRAW_CLOSED.messages).toEqual(['Cabutan ditutup.'])
     expect(REWARD_ERRORS.TICKET_LIMIT.messages).toEqual(['Had tiket dicapai.'])
     expect(REWARD_ERRORS.INSUFFICIENT_BALANCE.messages).toEqual(['Baki syiling tidak mencukupi.'])
+    expect(REWARD_ERRORS.MYSTERY_DAILY_LIMIT).toEqual({ status: 429, messages: ['Had kotak hari ini telah dicapai. Cuba lagi esok.'] })
+    expect(REWARD_ERRORS.BOX_UNAVAILABLE).toEqual({ status: 409, messages: ['Kotak tidak tersedia buat masa ini.'] })
     for (const code of REWARD_ERROR_CODES) {
-      expect(REWARD_ERRORS[code].status).toBe(409)
+      expect(REWARD_ERRORS[code].status).toBe(code === 'MYSTERY_DAILY_LIMIT' ? 429 : 409)
       for (const message of REWARD_ERRORS[code].messages) {
         expect(ErrorBodySchema.safeParse({ error: { code, message } }).success).toBe(true)
       }
