@@ -7,7 +7,8 @@
  * `mpImages`, `mpSellers`, `mpReviews`; `mpSellers.forUser(userId)` is the contract of the user-shell
  * link "Kedai Saya" (FR-M20-79, XR-M20-02).
  *
- * Routes: #13–#17 buyer (`handlers/buyer.ts`). Admin #1–#12 (M20-T4) and seller #18–#24 (M20-T6) are
+ * Routes: #13–#17 buyer (`handlers/buyer.ts`); API-ADM-19 admin products and sellers plus the image
+ * upload `POST /api/files?purpose=marketplace_image` (`handlers/admin.ts`, S7-T08). Seller #18–#24 (M20-T6) are
  * deferred. Hooks: `hooks.ts` (§6.13). Seeded product photos are referenced by path only; the files
  * are not in the repo yet (see `data/seed-data.ts`).
  *
@@ -16,6 +17,7 @@
 
 import { defineMockModule } from '@/mock/define'
 
+import { adminRoutes } from './handlers/admin'
 import { buyerRoutes } from './handlers/buyer'
 import { m20Hooks } from './hooks'
 import {
@@ -42,7 +44,7 @@ const plugin = defineMockModule({
   },
   seed: seedMarketplace,
   finalise: checkSeed,
-  routes: [...buyerRoutes],
+  routes: [...buyerRoutes, ...adminRoutes],
   hooks: m20Hooks,
 })
 

@@ -114,7 +114,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | question_version_sp_nodes | 501 |
 | question_version_stimuli | 7 |
 | question_versions | 1271 |
-| questions | 1271 |
+| questions | 1296 |
 | reward_settings | 1 |
 | rewards | 59 |
 | rph_plans | 2 |
@@ -146,7 +146,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 102 of 206. Total rows: 22020.
+Tables with rows: 102 of 206. Total rows: 22045.
 <!-- poc-counts:end -->
 
 `mystery_boxes` (5 rows: the four old boxes inactive, one active 50-syiling box) and `mystery_box_prizes` (7 rows) come from migration `0222_s7_mystery_boxes` (S7-T07, DM-37), not from a seed module; the counts above include them.

@@ -318,10 +318,11 @@ describe('AdminPaper and AdminPaperSummary (mock shapes)', () => {
     expect(BijakBuilderPaperListQuerySchema.parse({ page: '2', status: 'terbit' })).toEqual({
       page: 2,
       status: 'terbit',
+      surface: 'simulasi',
     })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ status: 'ready' }).success).toBe(false)
     // R12 filters; REQ-C-008 title bound
-    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto' })
+    expect(BijakBuilderPaperListQuerySchema.parse({ subject: ' MAT ', search: '  kuarto ' })).toEqual({ subject: 'MAT', search: 'kuarto', surface: 'simulasi' })
     expect(BijakBuilderPaperListQuerySchema.safeParse({ search: 'x'.repeat(101) }).success).toBe(false)
     expect(BijakBuilderPaperListQuerySchema.safeParse({ subject: 'x'.repeat(33) }).success).toBe(false)
     expect(BijakBuilderPaperCreateSchema.parse({ subject: 'MAT', kertas: 2, title: ` ${'T'.repeat(200)} ` }).title).toBe('T'.repeat(200))
@@ -495,7 +496,7 @@ describe('createPaper and PaperPatch (single PUT)', () => {
     expect(BijakBuilderPaperPatchSchema.safeParse({ durationMin: 0 }).success).toBe(false)
     const r = BijakBuilderPaperPatchSchema.safeParse({ title: '' })
     expect(r.success).toBe(false)
-    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.titleRequired)
+    if (!r.success) expect(r.error.issues[0]!.message).toBe(BIJAK_BUILDER_MESSAGES.setTitleRequired)
   })
 })
 
@@ -530,7 +531,7 @@ describe('publish, delete and preview results', () => {
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'MADE_UP', message: 'x', overridable: false }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ code: 'NOT_SERVABLE', message: 'x' }).success).toBe(false)
     expect(BijakBuilderBlockerSchema.safeParse({ ...blocker, extra: 1 }).success).toBe(false)
-    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(29) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT
+    expect(BIJAK_BUILDER_BLOCKER_CODES).toHaveLength(31) // T34's 18 + T48's RULE_NOT_IN_CONTRACT, SECTION_NOT_IN_CONTRACT, RULE_N_EXCEEDS_QUESTIONS, SECTION_EMPTY + REQ-A-013's REFERENCE_IMAGE_INVALID + T43b's NO_QUESTIONS, ZERO_MARK_SECTION, TOTAL_MARKS_BELOW_ONE + S3-T02's CHOICE_UNITS_UNEQUAL, COMPULSORY_CHOOSE, MARKS_NOT_IN_CONTRACT + S3-T06's TOTAL_MARKS_MISMATCH, NO_SCHEME
     expect(BIJAK_BUILDER_BLOCKER_CODES.filter((c) => BIJAK_BUILDER_BLOCKER_OVERRIDABLE[c]).sort()).toEqual(['BLUEPRINT_NOT_VERIFIED', 'INELIGIBLE', 'MARKS_NOT_IN_CONTRACT', 'RULE_NOT_IN_CONTRACT', 'SECTION_NOT_IN_CONTRACT'])
   })
 
@@ -1041,7 +1042,7 @@ describe('openapi document', () => {
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.paperLocked)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidQuestion)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidSection)
-    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
+    expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.setTitleRequired)
     expect(text('/admin/papers/{id}', 'put')).toContain('subject check only')
     expect(text('/admin/papers/{id}', 'put')).toContain('Checks run in the mock order')
     expect(text('/admin/papers/{id}', 'delete')).toContain(BIJAK_BUILDER_MESSAGES.deleteTerbit)
@@ -1280,5 +1281,33 @@ describe('S3-T02 One Set Builder', () => {
     const pool = paths['/admin/papers/{id}/sections/{sid}/pool']?.get
     expect(JSON.stringify(pool)).toContain('BijakBuilderSourceFilters')
     expect(BIJAK_LEVEL_SCOPE_LABELS).toEqual({ t4: 'Tingkatan 4', t5: 'Tingkatan 5', t4_t5: 'Tingkatan 4 dan 5' })
+  })
+
+  describe('S3-T06 Kertas Subjektif create (superRefine)', () => {
+    const ok = { subject: 'MAT', kertas: 3, surface: 'subjektif', title: 'Percubaan Negeri', examBoard: 'Selangor', year: 2024, totalMarks: 80, durationMinutes: 90 }
+    const messages = (body: Record<string, unknown>) => {
+      const r = BijakBuilderPaperCreateSchema.safeParse(body)
+      return r.success ? [] : r.error.issues.map((x) => x.message)
+    }
+    it('accepts a full body and an untimed one (Tempoh omitted, 0 or null)', () => {
+      expect(BijakBuilderPaperCreateSchema.safeParse(ok).success).toBe(true)
+      for (const durationMinutes of [undefined, 0, null]) expect(BijakBuilderPaperCreateSchema.safeParse({ ...ok, durationMinutes }).success).toBe(true)
+    })
+    it.each([
+      ['kertas 1', { kertas: 1 }, BIJAK_BUILDER_MESSAGES.kertasInvalid],
+      ['kertas 5', { kertas: 5 }, BIJAK_BUILDER_MESSAGES.kertasInvalid],
+      ['no Negeri', { examBoard: undefined }, BIJAK_BUILDER_MESSAGES.examBoardRequired],
+      ['no Tahun', { year: undefined }, BIJAK_BUILDER_MESSAGES.yearRequired],
+      ['no Jumlah Markah', { totalMarks: undefined }, BIJAK_BUILDER_MESSAGES.totalMarksRange],
+      ['Tempoh 301', { durationMinutes: 301 }, BIJAK_BUILDER_MESSAGES.durationRange],
+      ['Tempoh -1', { durationMinutes: -1 }, BIJAK_BUILDER_MESSAGES.durationRange],
+      ['no title', { title: undefined }, BIJAK_BUILDER_MESSAGES.subjektifTitleRequired],
+      ['title over 150', { title: 'T'.repeat(151) }, BIJAK_BUILDER_MESSAGES.subjektifTitleTooLong],
+    ])('refuses %s', (_name, over, message) => {
+      expect(messages({ ...ok, ...over })).toContain(message)
+    })
+    it('refuses the subjektif-only fields on a Simulasi body with the shared BM message', () => {
+      expect(messages({ subject: 'MAT', kertas: 2, totalMarks: 10 })).toContain(BIJAK_BUILDER_MESSAGES.subjektifOnly)
+    })
   })
 })

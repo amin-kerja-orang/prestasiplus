@@ -169,8 +169,10 @@ describe('admin catalogue', () => {
       tokenCost: 20,
       status: 'pending_admin',
       createdAt: AT,
+      doubleSubmit: false,
     }
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [row], meta: { ...meta, activeStatus: 'pending_admin' } }).success).toBe(true)
+    expect(RewardRedemptionListResponseSchema.safeParse({ data: [{ ...row, doubleSubmit: undefined }], meta: { ...meta, activeStatus: 'pending_admin' } }).success).toBe(false)
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [], meta: { ...meta, activeStatus: null } }).success).toBe(true)
     expect(RewardRedemptionListResponseSchema.safeParse({ data: [{ ...row, status: 'shipped' }], meta: { ...meta, activeStatus: 'all' } }).success).toBe(false)
     expect(RewardRedemptionListQuerySchema.safeParse({}).success).toBe(true)
@@ -283,6 +285,7 @@ describe('errors', () => {
     expect(Object.keys(REWARD_ERRORS).sort()).toEqual([...REWARD_ERROR_CODES].sort())
     expect(REWARD_ERRORS.OUT_OF_STOCK.messages).toEqual(['Stok hadiah telah habis.'])
     expect(REWARD_ERRORS.MONTHLY_CAP.messages).toEqual(['Had tebusan bulanan dicapai.'])
+    expect(REWARD_ERRORS.REDEEM_BUDGET.messages).toEqual(['Had tebusan sesi ini telah dicapai.'])
     expect(REWARD_ERRORS.INSUFFICIENT_TOKENS.messages).toEqual(['Token tidak mencukupi.'])
     expect(REWARD_ERRORS.DRAW_CLOSED.messages).toEqual(['Cabutan ditutup.'])
     expect(REWARD_ERRORS.TICKET_LIMIT.messages).toEqual(['Had tiket dicapai.'])

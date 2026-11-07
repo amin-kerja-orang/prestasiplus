@@ -51,6 +51,7 @@ import {
 
 export interface SetView extends TrackingASetCard {
   subjectId: number
+  year: number
   /** Eligible questions in the set (a deactivated one leaves it). */
   eligibleCount: number
   size: number
@@ -106,6 +107,7 @@ export const spmRepo = defineRepository({
       const dskpTotal = bankSource ?? readyCount
       return {
         subjectId: row.subjectId,
+        year: row.year,
         setNo: row.setNo,
         status: setStatus(readyCount, bankSource, size),
         readyCount,

@@ -22,6 +22,7 @@ import {
   IntakeBatchListQuerySchema,
   IntakeBatchSummarySchema,
   IntakePageListSchema,
+  IntakeRetryResultSchema,
   IntakeUploadResultSchema,
   type IntakeBatchCreate,
   type IntakeBatchListQuery,
@@ -133,6 +134,22 @@ export class IntakeFilesController {
   @RateLimit(INTAKE_LIMITS.write)
   async cancel(@Req() req: Req, @Param('id') id: string) {
     return ok(IntakeBatchDetailSchema.parse(await this.batches.cancelBatch(authOf(req), id, infoOf(req))))
+  }
+
+  /** S1-T04 (API-Q-26): failed pages of one file again. 202 `{ data: { attempt, retriesLeft } }`; no body. */
+  @Post('files/:id/retry')
+  @HttpCode(202)
+  @RateLimit(INTAKE_LIMITS.write)
+  async retryFile(@Req() req: Req, @Param('id') id: string) {
+    return ok(IntakeRetryResultSchema.parse(await this.batches.retryFile(authOf(req), id)))
+  }
+
+  /** S1-T04 (API-Q-26): failed pages of every file of the batch again. */
+  @Post('batches/:id/retry')
+  @HttpCode(202)
+  @RateLimit(INTAKE_LIMITS.write)
+  async retryBatch(@Req() req: Req, @Param('id') id: string) {
+    return ok(IntakeRetryResultSchema.parse(await this.batches.retryBatch(authOf(req), id)))
   }
 
   @Get('files/:id/pages')

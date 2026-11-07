@@ -69,6 +69,7 @@ export type RewardBulkAction = z.infer<typeof RewardBulkActionSchema>
 export const REWARD_ERROR_CODES = [
   'OUT_OF_STOCK',
   'MONTHLY_CAP',
+  'REDEEM_BUDGET',
   'INSUFFICIENT_TOKENS',
   'DRAW_CLOSED',
   'TICKET_LIMIT',
@@ -84,6 +85,7 @@ export type RewardErrorCode = z.infer<typeof RewardErrorCodeSchema>
 export const REWARD_ERRORS = {
   OUT_OF_STOCK: { status: 409, messages: ['Stok hadiah telah habis.'] },
   MONTHLY_CAP: { status: 409, messages: ['Had tebusan bulanan dicapai.'] },
+  REDEEM_BUDGET: { status: 409, messages: ['Had tebusan sesi ini telah dicapai.'] },
   INSUFFICIENT_TOKENS: { status: 409, messages: ['Token tidak mencukupi.'] },
   DRAW_CLOSED: { status: 409, messages: ['Cabutan ditutup.'] },
   TICKET_LIMIT: { status: 409, messages: ['Had tiket dicapai.'] },
@@ -287,6 +289,9 @@ export const RewardRedemptionListItemSchema = z
     tokenCost: z.number().int().min(1),
     status: RewardRedemptionStatusSchema,
     createdAt: TimestampSchema,
+    doubleSubmit: z
+      .boolean()
+      .meta(FIELD('The same pupil has another non-cancelled redemption of the same reward within 60 seconds of this one (FR-ADM-P2-08.3); computed, never stored.')),
   })
   .meta({ id: 'RewardRedemptionListItem' })
 export type RewardRedemptionListItem = z.infer<typeof RewardRedemptionListItemSchema>

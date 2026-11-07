@@ -48,6 +48,8 @@ const ID_ROUTES = (batch: string, file: string): Array<[string, string, string]>
   ['GET', `/intake/batches/${batch}`, ''],
   ['POST', `/intake/batches/${batch}/files`, 'upload'],
   ['POST', `/intake/batches/${batch}/cancel`, ''],
+  ['POST', `/intake/batches/${batch}/retry`, ''],
+  ['POST', `/intake/files/${file}/retry`, ''],
   ['GET', `/intake/files/${file}/pages`, ''],
   ['GET', `/intake/files/${file}/pages/1/image`, ''],
   ['GET', `/intake/files/${file}/pages/1/thumb`, ''],
@@ -71,7 +73,7 @@ export const intakeScenarios: Scenario[] = [
       const fileId = String(uploaded[0]?.id)
 
       const done = await waitFinished(teacher, id)
-      ctx.check(done.status === 'ready_for_review' && done.statusLabel === 'Sedia untuk semakan', `batch ended ${String(done.status)}, expected ready_for_review`)
+      ctx.check(done.status === 'ready_for_review' && done.statusLabel === 'Selesai', `batch ended ${String(done.status)}, expected ready_for_review`)
       const file = ((done.files ?? []) as Array<Record<string, unknown>>)[0]
       ctx.check(file?.status === 'done', 'the file must be done')
       const progress = file?.progress as { total: number; done: number; failed: number } | undefined
@@ -175,6 +177,29 @@ export const intakeScenarios: Scenario[] = [
       ctx.expectStatus(await teacher.request('POST', `/intake/batches/${id}/cancel`), 200)
       const closed = await teacher.request('POST', `/intake/batches/${id}/files`, { file: pdfPart(textPdf(1, 6)) })
       expectError(ctx, closed, 409, 'CONFLICT')
+    },
+  },
+  {
+    id: 'intake-api/retry: a finished batch with no failed page is 409, a cancelled batch is 409, and the status label of a partly failed batch is Selesai dengan ralat',
+    domain: 'intake-files',
+    targets: API_ONLY,
+    async run(ctx) {
+      const teacher = await ctx.as('teacher')
+      const id = await createBatch(ctx, teacher)
+      const up = await teacher.request('POST', `/intake/batches/${id}/files`, { file: pdfPart(textPdf(1, 11)) })
+      ctx.expectStatus(up, 201)
+      const fileId = String(((dataOf(up).files ?? []) as Array<{ id: string }>)[0]?.id)
+      const done = await waitFinished(teacher, id)
+      ctx.check(done.status === 'ready_for_review', 'the batch must be finished first')
+      // Nothing failed, so there is nothing a retry can fix (generic conflict, not ERR-INT-11).
+      for (const path of [`/intake/files/${fileId}/retry`, `/intake/batches/${id}/retry`]) {
+        const res = await teacher.request('POST', path)
+        expectError(ctx, res, 409, 'CONFLICT')
+        ctx.check(errorOf(res).message !== 'Fail ini gagal diproses berulang kali. Sila hubungi sokongan.', `${path} must not answer ERR-INT-11`)
+      }
+      const other = await createBatch(ctx, teacher)
+      ctx.expectStatus(await teacher.request('POST', `/intake/batches/${other}/cancel`), 200)
+      expectError(ctx, await teacher.request('POST', `/intake/batches/${other}/retry`), 409, 'CONFLICT')
     },
   },
   {
