@@ -414,6 +414,30 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
     expect(legacy.body.data.failures).toEqual([])
   })
 
+  it('[CI] a T1-T3 Subjek + Tingkatan with unit nodes only (no SP) imports through the code header with no SP or TP (SP nodes only, #453)', async () => {
+    const [free] = await t.db.query<{ subject_id: string; code: string; level_id: string }>(
+      `select s.id::text as subject_id, s.code, l.id::text as level_id from subjects s, education_levels l
+        where l.code = 'T1' and not exists (select 1 from curriculum_nodes n where n.subject_id = s.id and n.education_level_id = l.id)
+          and not exists (select 1 from chapters ch where ch.subject_id = s.id and ch.education_level_id = l.id) limit 1`,
+    )
+    expect(free, 'a subject without DSKP nodes or chapters at T1').toBeDefined()
+    const [unit] = await t.db.query<{ code: string }>(
+      `insert into curriculum_nodes (subject_id, education_level_id, kind, code, title, edition) values ($1::bigint, $2::bigint, 'unit', 'U-IMP-NOSP', 'Unit tanpa SP', 'KSSM') returning code`,
+      [free!.subject_id, free!.level_id],
+    )
+    const res = await importAdmin(
+      csvOf(line({ question_key: 'T1U', subject_code: free!.code, tingkatan: '1', kertas: '', unit_code: unit!.code, sp_kod: '', tp: '', aras: '', bab_kod: '', topik_kod: '', difficulty: '2' })),
+    )
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    expect(res.body.data.failures).toEqual([])
+    const [v] = await t.db.query<{ difficulty_tp: number | null; difficulty_level: number | null; sp: number }>(
+      `select v.difficulty_tp, v.difficulty_level, (select count(*)::int from question_version_sp_nodes where question_version_id = v.id) as sp
+         from question_versions v where v.subject_id = $1::bigint and v.education_level_id = $2::bigint order by v.id desc limit 1`,
+      [free!.subject_id, free!.level_id],
+    )
+    expect(v).toEqual({ difficulty_tp: null, difficulty_level: 2, sp: 0 })
+  })
+
   describe('the Guru route takes all three header formats into the intake, never the bank (S6-T06 ruling)', () => {
     const questionsN = () => count(t.db, 'select count(*) as n from questions')
     const itemsOf = (owner: string) =>
