@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { FEATURE_ROUTE_PREFIXES, pathHasPrefix } from '@pp/contract'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RouteLocationNormalized } from 'vue-router'
@@ -114,6 +115,111 @@ describe('the router', () => {
     withFlags({ permainan: true })
     const router = testRouter()
     await router.push('/dashboard')
+    expect(useRouteOutcome().value).toBeNull()
+  })
+})
+
+/** S0-T11: every one of the 32 keys, OFF -> the in-place 404 on each fe prefix, ON (or absent) -> allow. */
+describe('every Kawalan Ciri key (S0-T11)', () => {
+  const entries = Object.entries(FEATURE_ROUTE_PREFIXES)
+
+  it('has 32 keys', () => {
+    expect(entries).toHaveLength(32)
+  })
+
+  it.each(entries)('%s: OFF answers the in-place 404 on its fe paths, ON and missing pass', (key, p) => {
+    for (const raw of p.fe) {
+      const prefix = raw.replace(':id', '3001')
+      for (const path of [prefix, `${prefix}/1`]) {
+        const owner = entries.find(
+          ([, o]) => o.fe.some((f) => pathHasPrefix(path, f)) && !(o.feExcept ?? []).some((e) => pathHasPrefix(path, e)),
+        )
+        // A sub-path that a more specific key owns is asserted under that key.
+        if (owner?.[0] !== key) continue
+        withFlags({ [key]: false })
+        expect(decideAccess(route(path), student), `${key} OFF ${path}`).toEqual({ kind: 'in-place', status: 404 })
+        withFlags({ [key]: true })
+        expect(decideAccess(route(path), student), `${key} ON ${path}`).toEqual({ kind: 'allow' })
+        withFlags({})
+        expect(decideAccess(route(path), student), `${key} absent ${path}`).toEqual({ kind: 'allow' })
+        // A look-alike on the segment boundary is not covered.
+        withFlags({ [key]: false })
+        expect(decideAccess(route(`${prefix}x`), student)).toEqual({ kind: 'allow' })
+      }
+    }
+  })
+
+  it.each(entries.filter(([, p]) => (p.feExcept ?? []).length > 0))('%s: OFF leaves its feExcept paths reachable', (key, p) => {
+    withFlags({ [key]: false })
+    for (const except of (p.feExcept ?? []).map((e) => e.replace(':id', '3001'))) {
+      expect(decideAccess(route(except), student), `${key} OFF ${except}`).toEqual({ kind: 'allow' })
+    }
+  })
+
+  it('every feExcept path (bar the two other-module ones of S0-T10) is owned by another key', () => {
+    for (const [key, p] of entries) {
+      for (const except of (p.feExcept ?? []).map((e) => e.replace(':id', '3001'))) {
+        if (['/practice/chapter', '/practice/revision'].includes(except)) continue
+        const owners = entries.filter(([k, o]) => k !== key && o.fe.some((f) => pathHasPrefix(except, f)))
+        expect(owners.length > 0, `${key} feExcept ${except}`).toBe(true)
+      }
+    }
+  })
+
+  it('latih-tubi OFF keeps Kemajuan Saya and Sejarah Latihan; their own keys hide them', () => {
+    withFlags({ 'latih-tubi': false })
+    expect(decideAccess(route('/practice/progress'), student)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/practice/history'), student)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/practice/session'), student)).toEqual({ kind: 'in-place', status: 404 })
+    withFlags({ 'kemajuan-saya': false, 'sejarah-latihan': false })
+    expect(decideAccess(route('/practice/progress'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/practice/history'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/practice'), student)).toEqual({ kind: 'allow' })
+  })
+
+  it('shared pages follow the key that owns them (D-3): prestasi vs guru.prestasi, cita-cita vs universiti', () => {
+    withFlags({ prestasi: false })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/prestasi/kelas'), student)).toEqual({ kind: 'allow' })
+    withFlags({ 'guru.prestasi': false })
+    expect(decideAccess(route('/prestasi/kelas/2001'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'allow' })
+    withFlags({ 'cita-cita': false })
+    expect(decideAccess(route('/cita-cita'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/cita-cita/universiti'), student)).toEqual({ kind: 'allow' })
+    withFlags({ universiti: false })
+    expect(decideAccess(route('/cita-cita/universiti'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/cita-cita/biasiswa'), student)).toEqual({ kind: 'allow' })
+  })
+
+  it('Prestasi 360 drill-down /prestasi/<id> follows guru.prestasi: prestasi OFF keeps it, guru.prestasi OFF closes it', () => {
+    withFlags({ prestasi: false })
+    expect(decideAccess(route('/prestasi/3001'), student)).toEqual({ kind: 'allow' })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'in-place', status: 404 })
+    withFlags({ 'guru.prestasi': false })
+    expect(decideAccess(route('/prestasi/3001'), student)).toEqual({ kind: 'in-place', status: 404 })
+    expect(decideAccess(route('/prestasi'), student)).toEqual({ kind: 'allow' })
+  })
+
+  it('a :id segment matches digits only', () => {
+    expect(pathHasPrefix('/prestasi/12', '/prestasi/:id')).toBe(true)
+    expect(pathHasPrefix('/prestasi/12/x', '/prestasi/:id')).toBe(true)
+    expect(pathHasPrefix('/prestasi/kelas', '/prestasi/:id')).toBe(false)
+    expect(pathHasPrefix('/prestasi', '/prestasi/:id')).toBe(false)
+    expect(pathHasPrefix('/prestasi/12a', '/prestasi/:id')).toBe(false)
+  })
+
+  it('AC-ADM-P2-19.1: Leaderboard OFF answers 404 on /leaderboard and its duplicate, keeps the URL, ON restores it', async () => {
+    withFlags({ leaderboard: false })
+    expect(decideAccess(route('/gamification/leaderboard'), student)).toEqual({ kind: 'in-place', status: 404 })
+    withFlags({ leaderboard: false })
+    const router = testRouter()
+    await router.push('/leaderboard')
+    expect(router.currentRoute.value.path).toBe('/leaderboard')
+    expect(useRouteOutcome().value).toBe(404)
+    withFlags({ leaderboard: true })
+    await router.push('/dashboard')
+    await router.push('/leaderboard')
     expect(useRouteOutcome().value).toBeNull()
   })
 })
