@@ -3,7 +3,7 @@
  *
  * | Hook | Effect |
  * |---|---|
- * | `battleSim({mode, afterPolls?})` | the NEXT battle queue: `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
+ * | `battleSim({mode, afterPolls?, robot?})` | the NEXT battle queue (`robot: true` with `match`: the matched poll carries `robot: true` and seat B is the robot): `match` (default, 3rd poll), `incoming` (challenge on the 2nd), `never`, `expired`, `not_found`, `error:<status>` (every poll answers that HTTP status) |
  * | `battleWaiting({targetUserId, outcome, viewerId?})` | DV-M16-06: a waiting queue of `targetUserId` with a join request of `viewerId` (default 1) whose decision is `matched`, `rejected` or `expired`; returns `{queueId}` |
  * | `m16Fixture(name, options?)` | `tournaments`, `invitation` (`{viewerId?}`, default 1), `openRoom` (Papan Bijak `PB1234`, waiting, host 4320), `settingCoins` (M14 `games_award_syiling` = 1), `spinNothing` / `spinSyiling5` (the next spin lands on segment 5 / 2) — the §6.11.7 fixtures |
  * | `setBattleScores(uuid, {a, b})` | sets the scores of a battle |
@@ -40,7 +40,7 @@ const FIXTURES = [
   'spinSyiling5',
 ] as const
 
-export function battleSim(opts: { mode: string; afterPolls?: number }): void {
+export function battleSim(opts: { mode: string; afterPolls?: number; robot?: boolean }): void {
   if (typeof opts !== 'object' || opts === null || typeof opts.mode !== 'string') {
     throw new TypeError('battleSim: expected {mode}')
   }
@@ -59,6 +59,12 @@ export function battleSim(opts: { mode: string; afterPolls?: number }): void {
       throw new RangeError('battleSim: afterPolls must be a positive integer')
     }
     spec.afterPolls = opts.afterPolls
+  }
+  if (opts.robot !== undefined) {
+    if (typeof opts.robot !== 'boolean' || (opts.robot && spec.mode !== 'match')) {
+      throw new RangeError("battleSim: robot is a boolean and only applies to mode 'match'")
+    }
+    if (opts.robot) spec.robot = true
   }
   setPendingSim(spec)
 }

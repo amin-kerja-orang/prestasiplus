@@ -1,6 +1,6 @@
-export { BattleEngine, type BattleMode, type QueueMode, type BattleSide } from './battle-engine.service'
+export { BATTLE_REVEAL_MS, BattleEngine, type BattleTiming, type BattleMode, type QueueMode, type BattleSide } from './battle-engine.service'
 export { BattleEngineModule } from './battle-engine.module'
 export { parseBattleParams, ParamRefusal, type BattleParams } from './battle-params'
-export { botAnswers, pickBot, type BotAnswer } from './bots'
+export { botAnswer, botAnswers, type BotAnswer } from './bots'
 export { gradeLabel, isUuid } from './labels'
 export { battleCaller } from './caller'

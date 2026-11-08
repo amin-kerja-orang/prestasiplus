@@ -60,3 +60,38 @@ describe('ChallengeFriendModal search', () => {
     expect(api.searchOpponent).not.toHaveBeenCalled()
   })
 })
+
+describe('ChallengeFriendModal invite body (S7-T01 part C)', () => {
+  it('sends the chosen question_count with the receiver in the invite body', async () => {
+    wrapper!.unmount()
+    api.sendInvite.mockReset()
+    api.sendInvite.mockResolvedValue({ status: 200, headers: {}, body: { success: true } })
+    api.searchOpponent.mockResolvedValue({
+      status: 200,
+      headers: {},
+      body: { users: [{ id: 77, name: 'Aina', school: '', avatar: null }] },
+    })
+    vi.stubGlobal('alert', vi.fn())
+    wrapper = mount(ChallengeFriendModal, {
+      attachTo: document.body,
+      props: {
+        open: true,
+        params: { question_type: 'biasa', open_to_all: false, subject_id: 3, question_count: 20 },
+      },
+    })
+    await flushPromises()
+    await type('ai')
+    vi.advanceTimersByTime(300)
+    await flushPromises()
+    document.querySelector<HTMLElement>('[data-testid="battle-challenge-result"]')!.click()
+    await flushPromises()
+    expect(api.sendInvite).toHaveBeenCalledWith({
+      question_type: 'biasa',
+      open_to_all: false,
+      subject_id: 3,
+      question_count: 20,
+      receiver_id: 77,
+    })
+    vi.unstubAllGlobals()
+  })
+})
