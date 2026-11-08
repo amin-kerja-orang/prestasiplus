@@ -42,7 +42,7 @@ const MARKS_MIN_MESSAGE = 'Nilai mata mesti sekurang-kurangnya 1.'
 const MARKS_MAX_MESSAGE = 'Markah bahagian tidak boleh melebihi 100.'
 /** 45:463. */
 const MCQ_OPTIONS_MESSAGE = 'Soalan aneka pilihan mesti ada 2 hingga 8 pilihan.'
-const MCQ_MULTI_COUNT_MESSAGE = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
+export const MCQ_MULTI_COUNT_MESSAGE = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
 /** 45:475. */
 const ESSAY_CHOICE_COUNT_MESSAGE = 'Esei pilihan mesti mempunyai 2 hingga 6 topik.'
 /** 45:481 / DM-55: 1..100, or 0 on an example leaf; enforced by `refineLeaf(true)` on the write path only (no schema bound: oasdiff). */

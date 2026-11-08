@@ -160,6 +160,12 @@ export interface ImportedQuestionInput {
   language?: 'en' | 'ms+en'
   /** S1-T05 part 2: the stimulus (id) the one leaf is shown with (`part_stimulus`); the importer sets it after it creates the group's stimuli. */
   partStimulusId?: string
+  /**
+   * S1-T05 part 5a: `true_false` / `mcq_multi` rows (absent = mcq). `parts` is the one V3 leaf the importer built and validated with the
+   * contract schemas (`QuestionTrueFalseLeafSchema` / `QuestionLeafPartV3Schema`); the adapter sends it as `parts` to `QuestionsService.create`.
+   */
+  questionType?: 'true_false' | 'mcq_multi'
+  parts?: unknown[]
 }
 
 /** The stem and subject of one exact version (the version a report was filed against), for the reporter's own list. */
