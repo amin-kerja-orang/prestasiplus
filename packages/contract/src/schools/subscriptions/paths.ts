@@ -253,7 +253,7 @@ export function registerSubscriptionPaths(registry: OpenAPIRegistry): void {
     tags: subTags,
     summary: 'Import students from DELIMa text (CSV or paste)',
     description:
-      'status: "Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.". 422 `fields.schoolId`: "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan." (no active or grace subscription) or "Kuota tidak mencukupi." (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: "Tiada data untuk diimport.". Central admin only. v2 limits (security review): at most 1000 rows and 1 MB, else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).',
+      'status: "Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.". 422 `fields.schoolId`: "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan." (no active or grace subscription) or "Kuota tidak mencukupi." (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: "Tiada data untuk diimport.". Central admin only. v2 limits (security review): at most 1000 rows and 2 MB (2,097,152 bytes, E-11), else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).',
     request: {
       body: {
         required: true,
@@ -271,7 +271,7 @@ export function registerSubscriptionPaths(registry: OpenAPIRegistry): void {
         z.union([StudentImportNoSubscriptionRefusalSchema, StudentImportQuotaShortRefusalSchema, StudentImportNoDataRefusalSchema, ErrorBodySchema]),
         'VALIDATION_ERROR: the BM refusals above, or `fields` with the mock English templates (school id, class level, import mode).',
       ),
-      413: json(StudentImportTooLargeSchema, 'PAYLOAD_TOO_LARGE "Fail import melebihi had yang dibenarkan.": more than 1000 rows or 1 MB (v2 limits; the mock has none).'),
+      413: json(StudentImportTooLargeSchema, 'PAYLOAD_TOO_LARGE "Fail import melebihi had yang dibenarkan.": more than 1000 rows or 2 MB (v2 limits; the mock has none).'),
       429: limited,
     },
   })

@@ -48,8 +48,11 @@ describe('CHK-M27-01 privacy scan of M27-owned files', () => {
     expect(ownedFiles().length).toBeGreaterThan(5)
   })
 
-  /** Generic placeholders observed on live (not personal data): M02 FR-M02-22 / FR-M02-32. */
-  const ALLOWED_PLACEHOLDERS = new Set(['contoh@email.com'])
+  /**
+   * Generic placeholders observed on live (not personal data): M02 FR-M02-22 / FR-M02-32; and the fictitious row of the
+   * Import Pelajar template fixed by PRD-20 R1-AS-51 (`templat-pelajar.csv`, S6-T09).
+   */
+  const ALLOWED_PLACEHOLDERS = new Set(['contoh@email.com', 'murid.contoh@example.org'])
 
   it('(a) contains no e-mail address other than @demo.test or an observed live placeholder', () => {
     const email = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g
