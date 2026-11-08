@@ -8,9 +8,12 @@
  * success texts and server errors are UNVERIFIED COPY (SRS §8). The form is seeded from the cached
  * session user; a background `GET /api/me` refresh re-seeds it only while the user has not typed.
  */
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useFlash } from '@/composables/useFlash'
+import { clearDraft, DRAFT_NOTICE_BM, restoreDraft, saveDraft } from '@/lib/draft'
+import { createSubmitLock } from '@/lib/submit-lock'
 import { useSessionStore } from '@/stores/session'
 
 import { updateProfile, type UserMe } from '../api'
@@ -44,8 +47,20 @@ function schoolAdminProfileErrors(input: { name: string; phone: string }): strin
 const name = ref('')
 const phone = ref('')
 const bio = ref('')
-const saving = ref(false)
 const touched = ref(false)
+
+// FR-ERR-8: the text fields are kept as a draft so a 401 re-login does not lose them. The route is
+// named `m01.profile.edit`; the fallback only covers an unnamed test route. No picture, no password.
+const route = useRoute()
+const draftRoute = typeof route.name === 'string' ? route.name : 'm01.profile.edit'
+const draftRestored = ref(false)
+const DRAFT_DEBOUNCE_MS = 500
+let draftTimer: ReturnType<typeof setTimeout> | undefined
+
+function saveProfileDraft(): void {
+  draftTimer = undefined
+  saveDraft(draftRoute, null, { name: name.value, phone: phone.value, bio: bio.value })
+}
 
 function seed(me: UserMe): void {
   name.value = me.name
@@ -54,6 +69,30 @@ function seed(me: UserMe): void {
 }
 
 if (session.user) seed(session.user)
+
+const draft = restoreDraft(draftRoute, null)
+if (draft) {
+  const text = (v: unknown, fallback: string): string => (typeof v === 'string' ? v : fallback)
+  name.value = text(draft.values.name, name.value)
+  phone.value = text(draft.values.phone, phone.value)
+  bio.value = text(draft.values.bio, bio.value)
+  touched.value = true // the late GET /api/me refresh must not overwrite the restored edits
+  draftRestored.value = true
+  saveProfileDraft() // restoring removed it; keep it until the profile is saved
+}
+
+watch([name, phone, bio], () => {
+  if (!touched.value) return
+  clearTimeout(draftTimer)
+  draftTimer = setTimeout(saveProfileDraft, DRAFT_DEBOUNCE_MS)
+})
+
+onBeforeUnmount(() => {
+  if (draftTimer !== undefined) {
+    clearTimeout(draftTimer)
+    saveProfileDraft() // a page left inside the debounce window (a 401 redirect) still keeps its edits
+  }
+})
 
 onMounted(async () => {
   const fresh = await session.refreshUser()
@@ -90,7 +129,6 @@ async function submit(): Promise<void> {
       return
     }
   }
-  saving.value = true
   try {
     // The school admin's values are sent trimmed, as they were checked (S5-T14).
     const sentName = isSchoolAdmin.value ? name.value.trim() : name.value
@@ -103,13 +141,18 @@ async function submit(): Promise<void> {
     session.setUser(result.data)
     seed(result.data)
     touched.value = false
+    clearTimeout(draftTimer)
+    draftTimer = undefined
+    clearDraft(draftRoute, null)
+    draftRestored.value = false
     showSuccess(isSchoolAdmin.value ? SCHOOL_ADMIN_PROFILE_SAVED : result.status)
   } catch (err) {
     showErrors(errorLines(err))
-  } finally {
-    saving.value = false
   }
 }
+
+/** FR-ERR-10 / AC-ERR-5: one request per press burst; the button shows "Menyimpan..." until it settles. */
+const lock = createSubmitLock(submit)
 </script>
 
 <template>
@@ -125,10 +168,20 @@ async function submit(): Promise<void> {
       @failed="showErrors"
     />
 
+    <UAlert
+      v-if="draftRestored"
+      color="info"
+      variant="soft"
+      icon="i-ph-info"
+      role="status"
+      :description="DRAFT_NOTICE_BM"
+      data-testid="draft-restored-notice"
+    />
+
     <form
       class="flex flex-col gap-4 md:gap-6"
       data-testid="profile-form"
-      @submit.prevent="submit"
+      @submit.prevent="lock.run()"
       @input="touched = true"
     >
       <UCard>
@@ -210,10 +263,11 @@ async function submit(): Promise<void> {
           color="primary"
           size="lg"
           icon="i-ph-floppy-disk"
-          :loading="saving"
-          :disabled="saving"
+          :loading="lock.pending.value"
+          :disabled="lock.pending.value"
+          :aria-busy="lock.pending.value"
           data-testid="profile-save"
-          >Simpan Profil</UButton
+          >{{ lock.labelFor('Simpan Profil') }}</UButton
         >
       </div>
     </form>

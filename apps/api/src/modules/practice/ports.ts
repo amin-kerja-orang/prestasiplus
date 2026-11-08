@@ -166,6 +166,11 @@ export interface PracticeAssignmentSource {
   resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution>
   /** Runs inside the submit transaction when a remedial session completes (mock `seams().remedialComplete`). */
   remedialCompleted(input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }, tx: TxClient): Promise<void>
+  /**
+   * Runs inside the submit transaction AFTER the reward port when a session with a `mission_id` completes (S6-T07): pays the once-only target
+   * reward of that mission and credits the wallet in the same transaction. Returns the coins credited by THIS call (0 = not met or already paid).
+   */
+  payTargetReward(input: { userId: string; missionId: string; sessionId: string; isTest: boolean; at: Date }, tx: TxClient): Promise<{ paid: number }>
 }
 
 export class NoAssignments implements PracticeAssignmentSource {
@@ -173,6 +178,9 @@ export class NoAssignments implements PracticeAssignmentSource {
     return { status: 'not_ready' }
   }
   async remedialCompleted(): Promise<void> {}
+  async payTargetReward(): Promise<{ paid: number }> {
+    return { paid: 0 }
+  }
 }
 
 /* ------------------------------------------------------------------------------ BE-41: ramalan */

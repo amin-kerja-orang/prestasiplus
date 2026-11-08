@@ -68,6 +68,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | enrolments | 34 |
 | essay_markings | 1 |
 | exam_attempts | 15 |
+| feature_flags | 32 |
 | game_room_players | 8 |
 | game_rooms | 4 |
 | game_sessions | 3 |
@@ -145,7 +146,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 101 of 212. Total rows: 22843.
+Tables with rows: 102 of 214. Total rows: 22875.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

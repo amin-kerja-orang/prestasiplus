@@ -7,7 +7,7 @@
 import type { Page } from '@playwright/test'
 
 import { expect, test } from '../fixtures/test'
-import { expectNoHorizontalScroll, isDesktopShell } from '../support'
+import { expectNoHorizontalScroll } from '../support'
 import { HTTP_MODE } from './bijak-flow'
 
 test.skip(
@@ -21,12 +21,9 @@ test.skip(
 
 const TITLE = 'Kertas UAT Terbit'
 
-/** Admin Pusat -> the old Pembina Kertas menu entry -> the Set Builder it redirects to (FR-ADM-Q15.6; drawer below 1024 px). */
+/** Admin Pusat -> the old Pembina Kertas URL (S0-T07: no sidebar entry any more) -> the Set Builder it redirects to (FR-ADM-Q15.6). */
 async function openPaperBuilder(page: Page, gotoApp: (p: string) => Promise<void>): Promise<void> {
-  await gotoApp('/admin/command-center')
-  if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
-  const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
-  await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
+  await gotoApp('/admin/spm/kertas')
   await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
   await expect(page.getByTestId('set-builder-page')).toBeVisible()
   await expectNoHorizontalScroll(page)

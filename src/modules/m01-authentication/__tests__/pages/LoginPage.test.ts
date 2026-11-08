@@ -186,6 +186,47 @@ describe('LoginPage (M01 S1)', () => {
     expect(w.get('[data-testid=login-submit]').text()).toBe('Log Masuk')
   })
 
+  describe('429 countdown (ERR-AUTH-09, AC-ERR-3)', () => {
+    const submitButton = (w: VueWrapper) => w.get('[data-testid=login-submit]')
+
+    it('counts down from retryAfter and keeps the submit disabled until 0', async () => {
+      vi.useFakeTimers()
+      apiMocks.login.mockRejectedValue(
+        new ApiError({ status: 429, code: 'RATE_LIMITED', message: 'x', retryAfter: 30 }),
+      )
+      const w = await render()
+      await fillAndSubmit(w, 'pelajar@demo.test', 'Demo1234')
+      expect(w.text()).toContain('Cuba lagi dalam 30 saat.')
+      expect(submitButton(w).attributes('disabled')).toBeDefined()
+
+      vi.advanceTimersByTime(29_000)
+      await flushPromises()
+      expect(w.text()).toContain('Cuba lagi dalam 1 saat.')
+      expect(submitButton(w).attributes('disabled')).toBeDefined()
+
+      vi.advanceTimersByTime(1000)
+      await flushPromises()
+      expect(w.text()).not.toContain('Cuba lagi dalam')
+      expect(submitButton(w).attributes('disabled')).toBeUndefined()
+      vi.useRealTimers()
+    })
+
+    it('keeps the red alert for other errors and leaves the submit enabled', async () => {
+      apiMocks.login.mockRejectedValue(
+        new ApiError({
+          status: 401,
+          code: 'UNAUTHORIZED',
+          message: 'Emel atau kata laluan salah.',
+        }),
+      )
+      const w = await render()
+      await fillAndSubmit(w, 'pelajar@demo.test', 'salah')
+      expect(w.text()).not.toContain('Cuba lagi dalam')
+      expect(w.get('[data-testid=login-alert]').text()).toContain('Emel atau kata laluan salah.')
+      expect(submitButton(w).attributes('disabled')).toBeUndefined()
+    })
+  })
+
   describe('401 return (ERR-AUTH-01, AC-ERR-2)', () => {
     const BANNER = '[data-testid=login-session-expired]'
 
@@ -273,9 +314,12 @@ describe('LoginPage (M01 S1)', () => {
       }),
     )
     await fillAndSubmit(w, 'tidakaktif@demo.test', 'Demo1234')
-    expect(w.get('[data-testid=login-alert]').text()).toBe(
-      'Too many login attempts. Please try again in 30 seconds.',
+    // ERR-AUTH-09: the BM throttle text and the countdown replace the server's English line.
+    expect(w.get('[data-testid=login-rate-limited]').text()).toContain(
+      'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
     )
+    expect(w.text()).toContain('Cuba lagi dalam 30 saat.')
+    expect(w.find('[data-testid=login-alert]').exists()).toBe(false)
   })
 
   it('accepts a username: the input is not an e-mail field and the value is sent as typed (AM2-A1b)', async () => {

@@ -479,7 +479,7 @@ Keep column: the single source of truth. Action words: MERGE (move functions int
 | Studio list and `Senarai Soalan` | V2 has both over one store (M-01). |
 | PKSK questions (`/admin/pksk/questions`, tags `pksk_*` on `question_tags`) | A tag-filtered view of questions, not a second bank. |
 | `dskp_*` tables | Teacher picking list kept on purpose (DM-15). |
-| Teacher `Databank Soalan` (`/guru/databank`) listed for several roles in `user-nav.ts:350,490,537` | One route, per-role menu entries. |
+| Teacher `Databank Soalan` (`/guru/databank`) listed for several roles in `user-nav.ts:350,490,537` | One route, per-role menu entries; the two admin-only items (`:490`, `:537`) point to `/admin/spm/databank` (D9; lead ruling 2026-11-05, #503). |
 
 ---
 

@@ -116,12 +116,16 @@ describe('navFor with the prototype scope on', () => {
       'Laporan Mingguan',
       'Sumbang Soalan',
       'Perutusan',
+      'Databank Soalan',
     ]) {
       expect(shown, label).toContain(label)
     }
-    for (const label of ['Misi Harian', 'Broadcast', 'Databank Soalan', 'Liga Pertandingan']) {
+    for (const label of ['Misi Harian', 'Broadcast', 'Liga Pertandingan']) {
       expect(shown, label).not.toContain(label)
     }
+    // S6-T14: /guru/set-soalan is in scope (Dashboard tile "Set Soalan"), but there is no sidebar item.
+    expect(shown).not.toContain('Set Soalan')
+    expect(isPathInScope('teacher', '/guru/set-soalan')).toBe(true)
   })
 
   it('Perutusan menu: the pupil has no item, Admin Pusat keeps it, the school admin sidebar hides it (S5-T09)', () => {
@@ -218,9 +222,12 @@ describe('navFor with the prototype scope on', () => {
   })
 })
 
+// Admin Pusat has its own portal (Pentadbiran menu); this shell serves the other roles.
+const ADMIN_SHELL_ROLES = PROTOTYPE.filter((r) => r !== 'admin')
+
 describe('admin shell navigation with the prototype scope on', () => {
   it('adminMenuFor / lagiFor only list allowed routes', () => {
-    for (const role of PROTOTYPE) {
+    for (const role of ADMIN_SHELL_ROLES) {
       for (const entry of flatItems(adminMenuFor(role))) {
         expect(isPathInScope(role, entry.to), `${role} menu ${entry.label}`).toBe(true)
       }
@@ -234,7 +241,7 @@ describe('admin shell navigation with the prototype scope on', () => {
   })
 
   it('bottom nav and drawer account links stay inside the scope', () => {
-    for (const role of PROTOTYPE) {
+    for (const role of ADMIN_SHELL_ROLES) {
       for (const entry of bottomNavFor(role)) {
         if (entry.kind === 'link') expect(isPathInScope(role, entry.to), role).toBe(true)
       }

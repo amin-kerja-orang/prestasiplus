@@ -98,8 +98,6 @@ export const GAMES_SEED_LEAGUES: readonly LeaguePlan[] = [
   },
 ]
 
-const at = (iso: string): Date => new Date(iso)
-
 async function userId(prisma: PrismaClient, email: string): Promise<bigint | null> {
   const u = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true } })
   return u?.id ?? null
@@ -197,14 +195,14 @@ async function seedLeagues(ctx: SeedContext): Promise<void> {
     const league = await prisma.league.create({
       data: {
         name: plan.name, type: plan.type, scope: plan.scope, subjectId: subject?.id ?? null, gameMode: 'mixed', scoringMethod: 'total_score',
-        startDate: at(`${plan.startDate}T00:00:00.000Z`), endDate: at(`${plan.endDate}T00:00:00.000Z`), maxSchools: null,
-        inviteCode: plan.inviteCode, creatorId, status: plan.status, frozenAt: plan.frozenAt ? at(plan.frozenAt) : null, isTest: false, createdAt: at(plan.createdAt),
+        startDate: ctx.date(`${plan.startDate}T00:00:00.000Z`), endDate: ctx.date(`${plan.endDate}T00:00:00.000Z`), maxSchools: null,
+        inviteCode: plan.inviteCode, creatorId, status: plan.status, frozenAt: plan.frozenAt ? ctx.date(plan.frozenAt) : null, isTest: false, createdAt: ctx.date(plan.createdAt),
       },
     })
     await prisma.leagueClassLevel.createMany({ data: plan.classLevels.map((level) => ({ leagueId: league.id, level })) })
     for (const code of plan.schools) {
       const schoolId = await schoolIdByCode(prisma, code)
-      if (schoolId !== null) await prisma.leagueSchool.create({ data: { leagueId: league.id, schoolId, joinedAt: at('2026-03-31T09:00:00+08:00') } })
+      if (schoolId !== null) await prisma.leagueSchool.create({ data: { leagueId: league.id, schoolId, joinedAt: ctx.date('2026-03-31T09:00:00+08:00') } })
     }
     const perLevel = new Map<string, number>()
     for (const s of plan.standings) {

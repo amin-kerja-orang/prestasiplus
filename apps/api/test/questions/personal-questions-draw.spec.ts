@@ -103,7 +103,7 @@ describe('personal questions in the mission pool (DM-42)', () => {
     }
     const draw = async (mission: never, pupil: string): Promise<string[]> => {
       const prisma = t.app.get(PrismaService)
-      const adapter = new PracticeAssignmentsAdapter(new MissionsRepository(prisma), new QuestionPool(repo), {} as never)
+      const adapter = new PracticeAssignmentsAdapter(new MissionsRepository(prisma), new QuestionPool(repo), {} as never, {} as never)
       return (adapter as unknown as { missionQuestionIds(m: unknown, u: string): Promise<string[]> }).missionQuestionIds(mission, pupil)
     }
     let pupil: string

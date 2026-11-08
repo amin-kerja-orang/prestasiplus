@@ -264,6 +264,8 @@ export class PracticeService {
             },
             tx,
           )
+          // S6-T07: the once-only target reward of the session's mission, credited after the streak was touched. The response keeps the session coins; only `totalBalance` moves.
+          const bonus = s.missionId !== null ? (await this.ports.assignments.payTargetReward({ userId: s.userId, missionId: s.missionId, sessionId: s.id, isTest: test, at: completed.completedAt }, tx)).paid : 0
           if (s.mode === 'remedial' && s.remedialTestId !== null) {
             const accuracy = completed.total === 0 ? 0 : (completed.correct / completed.total) * 100
             await this.ports.assignments.remedialCompleted(
@@ -277,7 +279,7 @@ export class PracticeService {
               tx,
             )
           }
-          return credit
+          return bonus > 0 ? { ...credit, totalBalance: credit.totalBalance + bonus } : credit
         },
       },
     )

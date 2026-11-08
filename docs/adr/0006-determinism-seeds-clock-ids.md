@@ -49,6 +49,9 @@ Delivery Lead decisions, detailed in ADR-0013 Amendment 1.
 
 Canonical seed data (M02 v1.16, XL3 R2-01). The fixture schools are **900001–900004**: 900001 "SMK DEMO", 900002 "SK Demo", 900003 "SMK Demo Seri Putra" and 900004 "SK Demo Bestari". **Canonical account 4 (pelajarmaju) is at 900004**, and 900002 now holds only account 1. Decision 1 is updated to match: the core's school references are 900001, 900002 and 900004.
 
+## Amendment 3 (2026-11, #481, M7)
+
+Seed clock split: the demo profile (`poc`) dates every seed row as a fixed offset from the seed run date (same offsets and PRNG streams, no fixed calendar), so FR-AS-0-3 windows are non-empty; CI/test profiles (`uat-like`, `e2e`, anything not listed in `RUN_DATE_SEED_PROFILES`) keep `SEED_NOW`. The shift is opt-in: only `SEED_CLOCK=rundate` (the demo/UAT reseed, `docs/ops/demo-reseed.md`) moves `poc`; unset or `fixed` keeps `SEED_NOW` everywhere. Known limit: observed battles and PKSK attempts are older than 7 days / this month, so those windows stay empty until new seed rows are added (#503 6654991141).
 ## Amendment 4 (2026-11-05, lead ruling 2026-11-05, #481)
 
 D95 stays: no demo `poc` seed on UAT. The UAT seed profile (`uat-like`, S4-T01) opts in to `SEED_CLOCK=rundate` through a one-line change in the UAT run sheet, so that FR-AS-0-3 holds on UAT; the CI/test profiles keep the fixed `SEED_NOW`. Battle (team-cc, S7) and PKSK (team-bb, S5) seed dates become offsets from the clock anchor so they fall inside the 7-day and "this month" windows; only the dates change and the observed values stay.

@@ -467,6 +467,13 @@
           "mustChangePassword": {
             "type": "boolean",
             "description": "True while a forced password change is pending; other routes answer 403 PASSWORD_CHANGE_REQUIRED."
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "S0-T10 (API-AUTH-03): feature key to enabled, from the server flags; always present on GET /session. A key that is absent counts as ON."
           }
         },
         "required": [
@@ -20948,6 +20955,689 @@
           "holders"
         ]
       },
+      "AdminClass": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "teacher": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "school": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "pupils": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "joinCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level",
+          "teacher",
+          "school",
+          "pupils",
+          "joinCode",
+          "isActive"
+        ]
+      },
+      "AdminClassListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminClass"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "AdminDashboard": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byStatus": {
+                "type": "object",
+                "properties": {
+                  "draft": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "review": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "approved": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "archived": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "draft",
+                  "review",
+                  "approved",
+                  "archived"
+                ]
+              },
+              "thisWeek": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Questions created since Monday 00:00 (Asia/Kuala_Lumpur) of the current week."
+              }
+            },
+            "required": [
+              "total",
+              "byStatus",
+              "thisWeek"
+            ]
+          },
+          "subjects": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "active"
+            ]
+          },
+          "levels": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tingkatan 1 to 5 (active, non-primary levels); Darjah is never counted."
+          },
+          "users": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "students": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "teachers": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "students",
+              "teachers"
+            ]
+          },
+          "battles": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "finished": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "active",
+              "finished"
+            ]
+          }
+        },
+        "required": [
+          "questions",
+          "subjects",
+          "levels",
+          "users",
+          "battles"
+        ]
+      },
+      "AdminDashboardResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminDashboard"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "AdminAnalytics": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d",
+              "90d"
+            ]
+          },
+          "platform": {
+            "type": "object",
+            "properties": {
+              "schools": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeSubscriptions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "students": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeStudents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pupils with at least one answer in the range."
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Answers of the range (all modes, test rows excluded)."
+              },
+              "accuracy": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Pooled correct / answered x 100, one decimal; null when nothing was answered."
+              }
+            },
+            "required": [
+              "schools",
+              "activeSubscriptions",
+              "students",
+              "activeStudents",
+              "answered",
+              "accuracy"
+            ]
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "date",
+                "answered"
+              ]
+            },
+            "description": "One entry per day of the range ending today (YYYY-MM-DD, Asia/Kuala_Lumpur)."
+          },
+          "topSchools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "school": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "schoolId",
+                "school",
+                "answered"
+              ]
+            },
+            "description": "Up to 10 schools by answers in the range."
+          },
+          "bank": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bySubject": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "total"
+                  ]
+                }
+              },
+              "byLevel": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "total"
+                  ]
+                }
+              },
+              "byStatus": {
+                "type": "object",
+                "properties": {
+                  "draft": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "review": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "approved": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "archived": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "draft",
+                  "review",
+                  "approved",
+                  "archived"
+                ]
+              },
+              "dskpTaggedShare": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Share (one decimal) of questions linked to a DSKP unit."
+              },
+              "chapterCoverage": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Share (one decimal) of questions linked to a chapter (Bab)."
+              },
+              "servability": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Servable questions per activity key (latih_tubi_spm, bab, simulasi_kuiz). Activities whose read is not exported by the questions module are absent."
+              }
+            },
+            "required": [
+              "total",
+              "bySubject",
+              "byLevel",
+              "byStatus",
+              "dskpTaggedShare",
+              "chapterCoverage",
+              "servability"
+            ]
+          }
+        },
+        "required": [
+          "range",
+          "platform",
+          "trend",
+          "topSchools",
+          "bank"
+        ]
+      },
+      "AdminAnalyticsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminAnalytics"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "AdminLaporan": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  7
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  30
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  90
+                ]
+              }
+            ]
+          },
+          "tiles": {
+            "type": "object",
+            "properties": {
+              "schools": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "teachers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pupils": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pupilsAccessed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pupils with a recorded login (Murid Pernah Akses, of `pupils`)."
+              },
+              "teachersAccessed": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Teachers with a recorded login (Cikgu Pernah Akses, of `teachers`)."
+              },
+              "pupilsPractised": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pupils with at least one completed practice session (Murid Buat Latihan)."
+              },
+              "activities": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Answer rows (all modes, non-test) in the range (Jumlah Aktiviti)."
+              },
+              "averageScore": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Pooled correct / answered x 100 over those answer rows, one decimal (Skor Purata)."
+              }
+            },
+            "required": [
+              "schools",
+              "teachers",
+              "pupils",
+              "pupilsAccessed",
+              "teachersAccessed",
+              "pupilsPractised",
+              "activities",
+              "averageScore"
+            ]
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "date",
+                "count"
+              ]
+            },
+            "description": "Always 14 entries ending today; date is dd/mm."
+          },
+          "breakdown": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "kuiz",
+                    "struktur",
+                    "latihTubi",
+                    "trackingA",
+                    "battle",
+                    "permainan"
+                  ]
+                },
+                "label": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "type",
+                "label",
+                "count"
+              ]
+            },
+            "description": "Activities of the range per type (Pecahan Aktiviti); every type is listed, in a fixed order."
+          },
+          "mostActive": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "school": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                },
+                "activities": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "school",
+                "activities"
+              ]
+            },
+            "description": "Up to 10 pupils by activities in the range (Admin Pusat only: names)."
+          },
+          "schoolActivity": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "activities": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "activePupils": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "schoolId",
+                "name",
+                "activities",
+                "activePupils"
+              ]
+            },
+            "description": "Up to 20 schools by activities in the range (Aktiviti Mengikut Sekolah)."
+          }
+        },
+        "required": [
+          "range",
+          "tiles",
+          "trend",
+          "breakdown",
+          "mostActive",
+          "schoolActivity"
+        ]
+      },
+      "AdminLaporanResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdminLaporan"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
       "ClassEducationLevelSlug": {
         "type": "string",
         "enum": [
@@ -21897,6 +22587,393 @@
           "subjectName",
           "teacherName",
           "levelLabel"
+        ]
+      },
+      "DatabankSubjectTile": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "nameMs": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subjectId",
+          "nameMs",
+          "nameEn",
+          "count"
+        ]
+      },
+      "DatabankOverview": {
+        "type": "object",
+        "properties": {
+          "totalQuestions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of every tile count (questions, not units)."
+          },
+          "activeSubjects": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Subjects with count > 0."
+          },
+          "teras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankSubjectTile"
+            },
+            "description": "Core subjects, by sort order then name; includes zero-count tiles."
+          },
+          "elektif": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankSubjectTile"
+            },
+            "description": "The other active subjects, same order; includes zero-count tiles."
+          }
+        },
+        "required": [
+          "totalQuestions",
+          "activeSubjects",
+          "teras",
+          "elektif"
+        ]
+      },
+      "DatabankQuestionsQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,18}$"
+          },
+          "q": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "DatabankStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "description": "passage, image, diagram, table, graph, map, infographic or audio."
+          },
+          "label": {
+            "type": "string"
+          },
+          "bodyMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bodyEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "File id of the figure (read through GET /files/:id; teachers may read it while the question is served).",
+            "example": "1042"
+          },
+          "alt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceCitation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tableData": {
+            "description": "Table grid as stored (`{ head, rows }` for a table stimulus)."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "bodyMs",
+          "bodyEn",
+          "imageId",
+          "alt",
+          "caption",
+          "sourceCitation"
+        ]
+      },
+      "DatabankOption": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "bodyMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bodyEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "imageId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "label",
+          "bodyMs",
+          "bodyEn",
+          "imageId"
+        ]
+      },
+      "DatabankQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stemMs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stemEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "description": "Stored question type, for example mcq."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankOption"
+            },
+            "description": "Options of a single-MCQ question in label order; empty otherwise."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankStimulus"
+            },
+            "description": "Figures linked directly to this question (group figures are on the unit `group`)."
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "levelLabel": {
+            "type": "string",
+            "description": "For example \"Tingkatan 4\"."
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Kesukaran 1 to 5 stars, null when not set."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved"
+            ],
+            "description": "Always approved: the list shows \"Diluluskan\"."
+          },
+          "groupPosition": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stemMs",
+          "stemEn",
+          "type",
+          "options",
+          "stimuli",
+          "subjectId",
+          "subject",
+          "levelLabel",
+          "difficulty",
+          "status",
+          "groupPosition"
+        ]
+      },
+      "DatabankRow": {
+        "type": "object",
+        "properties": {
+          "unitId": {
+            "type": "string",
+            "description": "`g<groupId>` for a group, `q<questionId>` for a standalone question."
+          },
+          "group": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "stimuli": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DatabankStimulus"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "stimuli"
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankQuestion"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "unitId",
+          "group",
+          "questions"
+        ]
+      },
+      "DatabankListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "totalUnits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Units matching the filter (equals totalItems)."
+          },
+          "totalQuestions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions inside those units; with a subject and no search it equals the tile count."
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "totalUnits",
+          "totalQuestions"
+        ],
+        "additionalProperties": {}
+      },
+      "DatabankQuestionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DatabankRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/DatabankListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
         ]
       },
       "BattleQuestionType": {
@@ -31547,7 +32624,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
@@ -31634,7 +32711,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
@@ -31755,7 +32832,7 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6
+            "minLength": 8
           },
           "passwordConfirmation": {
             "type": "string"
@@ -34771,6 +35848,148 @@
           "credential",
           "mustChangePassword",
           "status"
+        ]
+      },
+      "SchoolAdminPupilImportLevel": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "SchoolAdminPupilImportQuery": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ],
+            "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited."
+          }
+        }
+      },
+      "SchoolAdminPupilImportRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "maxLength": 2097152
+          },
+          "level": {
+            "$ref": "#/components/schemas/SchoolAdminPupilImportLevel"
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "SchoolAdminPupilImportMultipartRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "format": "binary"
+          },
+          "level": {
+            "$ref": "#/components/schemas/SchoolAdminPupilImportLevel"
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "SchoolAdminPupilImportError": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based line of the file (the header is line 1)."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "row",
+          "message"
+        ]
+      },
+      "SchoolAdminPupilImportPreviewRow": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The `kelas` cell as typed; null when empty."
+          }
+        },
+        "required": [
+          "row",
+          "name",
+          "email",
+          "className"
+        ]
+      },
+      "SchoolAdminPupilImportResult": {
+        "type": "object",
+        "properties": {
+          "dryRun": {
+            "type": "boolean"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminPupilImportError"
+            }
+          },
+          "preview": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolAdminPupilImportPreviewRow"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "dryRun",
+          "rows",
+          "created",
+          "skipped",
+          "errors"
         ]
       },
       "AmaranRiskStatus": {
@@ -71313,15 +72532,15 @@
               "string",
               "null"
             ],
-            "maxLength": 1000000,
-            "description": "CSV text, used when importMode is csv (at most 1 MB and 1000 rows)."
+            "maxLength": 2097152,
+            "description": "CSV text, used when importMode is csv (at most 2 MB and 1000 rows)."
           },
           "pasteContent": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 1000000,
+            "maxLength": 2097152,
             "description": "Used when importMode is paste (same limits)."
           }
         },
@@ -71374,7 +72593,7 @@
               "string",
               "null"
             ],
-            "maxLength": 1000000
+            "maxLength": 2097152
           }
         },
         "required": [
@@ -97304,6 +98523,86 @@
           "data"
         ]
       },
+      "FeatureAudience": {
+        "type": "string",
+        "enum": [
+          "pelajar",
+          "guru"
+        ]
+      },
+      "FeatureToggle": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "labelMs": {
+            "type": "string",
+            "minLength": 1
+          },
+          "audience": {
+            "$ref": "#/components/schemas/FeatureAudience"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "audience",
+          "enabled",
+          "locked"
+        ]
+      },
+      "FeatureToggleListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeatureToggle"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "FeatureToggleUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "FeatureToggleResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FeatureToggle"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "FeatureMap": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "boolean"
+        },
+        "description": "Feature key to enabled. A key that is absent counts as ON (FR-ADM-N06.4)."
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -113161,6 +114460,327 @@
         }
       }
     },
+    "/admin/classes": {
+      "get": {
+        "tags": [
+          "admin-central"
+        ],
+        "summary": "Kelas Sekolah: classes of every school (API-ADM-05)",
+        "description": "Role admin only. Classroom-kind classes of secondary levels (Darjah is hidden), active and inactive, name A to Z, across all schools; filters schoolId, level (slug), teacherId and search (class name). `pupils` is the active member count. Responses are no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Only the classes of this school.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Only the classes of this school.",
+            "name": "schoolId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "tahun-1",
+                "tahun-2",
+                "tahun-3",
+                "tahun-4",
+                "tahun-5",
+                "tahun-6",
+                "tingkatan-1",
+                "tingkatan-2",
+                "tingkatan-3",
+                "tingkatan-4",
+                "tingkatan-5"
+              ],
+              "description": "Level slug, for example `tingkatan-4`."
+            },
+            "required": false,
+            "description": "Level slug, for example `tingkatan-4`.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Only the classes of this class teacher.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Only the classes of this class teacher.",
+            "name": "teacherId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Case-insensitive part of the class name (at most 100 characters)."
+            },
+            "required": false,
+            "description": "Case-insensitive part of the class name (at most 100 characters).",
+            "name": "search",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of classes with `meta`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminClassListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields` (bad id, level, page, pageSize or a search longer than 100).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (database overloaded or per-user limit); retry after the `Retry-After` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "tags": [
+          "admin-central"
+        ],
+        "summary": "Admin Pusat dashboard tiles (API-ADM-11)",
+        "description": "Role admin only. Question counts use the same base query as `GET /questions/summary` (latest version, no PKSK, no Darjah). Users: teachers are approved teacher accounts (XS-3). `levels` counts Tingkatan 1 to 5 (Darjah never counted). `battles` counts game rooms (test rooms excluded; `active` = playing).",
+        "responses": {
+          "200": {
+            "description": "The tiles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDashboardResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (database overloaded or per-user limit); retry after the `Retry-After` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/analytics": {
+      "get": {
+        "tags": [
+          "admin-central"
+        ],
+        "summary": "Admin Pusat analytics: platform, trend, top schools, question bank (API-ADM-12)",
+        "description": "Role admin only. `range` (7d, 30d, 90d) is tolerant: anything else is 30d. Accuracy is pooled with one decimal. The bank figures are computed from the question bank, never stored; the servability map has only the activities the questions module exposes as reads.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "7d, 30d or 90d. Anything else (or absent) is treated as 30d."
+            },
+            "required": false,
+            "description": "7d, 30d or 90d. Anything else (or absent) is treated as 30d.",
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The analytics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminAnalyticsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (database overloaded or per-user limit); retry after the `Retry-After` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/laporan": {
+      "get": {
+        "tags": [
+          "admin-central"
+        ],
+        "summary": "Admin Pusat Laporan: tiles, 14-day trend, breakdown, top pupils, schools (API-ADM-13)",
+        "description": "Role admin only. Activity is the answer rows of all practice modes (non-test) by answer day (Asia/Kuala_Lumpur): 3 answers add 3 (AC-ADM-M06.2). The Guru Laporan (`GET /teacher/report`) still counts sessions. `range` (7, 30, 90) is tolerant: anything else is 30. Pupil names are returned to the admin only and never logged. Responses are no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Days of the tiles: 7, 30 or 90. Anything else is treated as 30. The trend is always 14 days."
+            },
+            "required": false,
+            "description": "Days of the tiles: 7, 30 or 90. Anything else is treated as 30. The trend is always 14 days.",
+            "name": "range",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLaporanResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (database overloaded or per-user limit); retry after the `Retry-After` seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/education-levels": {
       "get": {
         "tags": [
@@ -118777,6 +120397,134 @@
           },
           "403": {
             "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/databank/overview": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Databank Soalan (guru): totals and subject tiles, Teras then Elektif (API-GUR-27)",
+        "description": "Read-only. Counts are questions pupils can be served (approved live version, active, learner-visible, whole groups only), Tingkatan 1-5 only (D11, D91, D101).",
+        "responses": {
+          "200": {
+            "description": "`{ data: DatabankOverview }`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DatabankOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/databank/questions": {
+      "get": {
+        "tags": [
+          "classes"
+        ],
+        "summary": "Databank Soalan (guru): the question list, 20 units per page, newest first (API-GUR-27)",
+        "description": "A whole stimulus group is ONE unit (members in group order, stimuli once on the unit); a standalone question is one unit. `q` searches the question text (a group is listed when any member matches). The answer key is never returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$"
+            },
+            "required": false,
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "`{ data: DatabankRow[], meta }`; meta carries totalUnits and totalQuestions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabankQuestionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Sesi anda telah tamat. Sila log masuk semula.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"Anda tidak dibenarkan melakukan tindakan ini.\"): role is not teacher; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.q \"Taip sekurang-kurangnya 2 aksara.\"; subjectId \"Subjek tidak sah.\"; page \"Halaman tidak sah.\"",
             "content": {
               "application/json": {
                 "schema": {
@@ -131681,6 +133429,169 @@
           },
           "403": {
             "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, or the school admin has no school; a missing school never means \"all schools\"). The Admin (Pusat) role gets 403 on every /admin-sekolah/* route except the five read reports of API-ADM-22 (usage, laporan-aktiviti, laporan-bulanan, dskp-heatmap, kelas).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (proposed copy, same text as the auth routes) with error.retryAfter in seconds and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (equals error.retryAfter).",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-sekolah/pelajar/import": {
+      "post": {
+        "tags": [
+          "school-admin"
+        ],
+        "summary": "Import pupils from a CSV file (API-AS-06, S6-T09)",
+        "description": "Matches before the {id} route. multipart/form-data `csvFile` (.csv or .txt, at most 2 MB = 2,097,152 bytes, at most 1000 data rows; header nama,email,kelas, comma or semicolon, `nama` required) and `level` T1 to T5 (optional; used only for a row whose kelas names no class of the school). `?dryRun=true` validates the file and returns the first 10 rows as `preview`, creating and auditing nothing. Only new accounts are created, always `is_active = false` (pending Admin Pusat approval) with role student, the school of the session and, when kelas names an active classroom of THIS school (case-insensitive), an enrolment (source school_admin); another school class is never matched. Valid rows import even when others fail. Quota: remaining seats = student_quota of the latest active or grace subscription minus ALL pupils of the school, pending ones included; more new pupils than the remaining seats refuses the WHOLE file with 409 QUOTA_FULL \"Kuota penuh! Sila tingkatkan kuota dahulu.\" (checked before hashing and again under a per-school lock); no active subscription is 409 NO_SUBSCRIPTION \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\". Row messages: \"Sila isi nama.\", \"Nama penuh tidak boleh melebihi 255 aksara.\", \"Format e-mel tidak sah.\", \"E-mel berulang dalam fail.\" (a later duplicate inside the file), \"Kelas tidak dijumpai.\" (no class match and no level), \"E-mel sudah wujud (dilangkau).\" (e-mail already on the platform: counted in `skipped` AND listed in `errors`). The imported pupils get one shared initial password that is hashed once and never returned, shown or sent (PUPIL_IMPORT_DEFAULT_PASSWORD, at least 8 characters, else a random value nobody knows); the school admin uses \"Tetapkan semula kata laluan\" once a pupil is approved. One audit event (counts and ids only). Rate limited. Always confined to the caller school; no query or body value can change it (a schoolId sent by the client is ignored).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited."
+            },
+            "required": false,
+            "description": "`true` validates the file and returns the first 10 rows as `preview`; nothing is created and nothing is audited.",
+            "name": "dryRun",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolAdminPupilImportMultipartRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolAdminPupilImportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result (or the preview with dryRun=true).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolAdminPupilImportResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "QUOTA_FULL \"Kuota penuh! Sila tingkatkan kuota dahulu.\" (the whole file is refused, nothing is created), or NO_SUBSCRIPTION \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Fail atau data terlalu besar. Saiz maksimum ialah 2 MB.\" (file over 2,097,152 bytes) or \"Fail melebihi 1000 baris.\" (more than 1000 data rows).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "UNSUPPORTED_MEDIA_TYPE \"Jenis fail tidak disokong. Format dibenarkan: CSV, TXT.\" (not a .csv or .txt file).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: csvFile \"Sila pilih fail.\" (none), \"Tiada data untuk diimport.\" (no data row), \"Lajur wajib tiada: nama. Gunakan templat yang disediakan.\" (no nama header); level \"The selected level is invalid.\".",
             "content": {
               "application/json": {
                 "schema": {
@@ -152666,7 +154577,7 @@
           "school-subscriptions"
         ],
         "summary": "Import students from DELIMa text (CSV or paste)",
-        "description": "status: \"Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.\". 422 `fields.schoolId`: \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\" (no active or grace subscription) or \"Kuota tidak mencukupi.\" (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: \"Tiada data untuk diimport.\". Central admin only. v2 limits (security review): at most 1000 rows and 1 MB, else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).",
+        "description": "status: \"Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.\". 422 `fields.schoolId`: \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\" (no active or grace subscription) or \"Kuota tidak mencukupi.\" (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: \"Tiada data untuk diimport.\". Central admin only. v2 limits (security review): at most 1000 rows and 2 MB (2,097,152 bytes, E-11), else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).",
         "requestBody": {
           "required": true,
           "content": {
@@ -152728,7 +154639,7 @@
             }
           },
           "413": {
-            "description": "PAYLOAD_TOO_LARGE \"Fail import melebihi had yang dibenarkan.\": more than 1000 rows or 1 MB (v2 limits; the mock has none).",
+            "description": "PAYLOAD_TOO_LARGE \"Fail import melebihi had yang dibenarkan.\": more than 1000 rows or 2 MB (v2 limits; the mock has none).",
             "content": {
               "application/json": {
                 "schema": {
@@ -158458,6 +160369,139 @@
                 }
               }
             },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-toggles": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Kawalan Ciri: list the feature toggles",
+        "description": "Admin Pusat only. Ordered by sort_order.",
+        "responses": {
+          "200": {
+            "description": "All toggles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureToggleListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/feature-toggles/{key}": {
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Kawalan Ciri: switch one toggle",
+        "description": "Admin Pusat only, audited (actor, key, old, new). Effective on the next request (5 s in-process cache, dropped on write). `{enabled:true}` on a locked key answers 409 CONFLICT.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "key",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeatureToggleUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The toggle after the write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeatureToggleResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (not an admin) or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: no such key.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: the key is locked and cannot be switched on.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: enabled is not a boolean.",
             "content": {
               "application/json": {
                 "schema": {

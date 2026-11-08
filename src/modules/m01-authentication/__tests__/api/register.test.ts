@@ -15,8 +15,8 @@ const REQUEST: RegisterRequest = {
   grade: 3,
   icNumber: null,
   schoolId: null,
-  password: 'rahsia1',
-  passwordConfirmation: 'rahsia1',
+  password: 'rahsia111',
+  passwordConfirmation: 'rahsia111',
   referralCode: null,
 }
 

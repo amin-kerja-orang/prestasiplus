@@ -10,6 +10,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 
 import { DsPage, DsLoadError } from '@/ds'
+import { createSubmitLock } from '@/lib/submit-lock'
 import { useSessionStore } from '@/stores/session'
 
 import { getSettings, saveSettings, type Faith, type UserSettings } from '../api'
@@ -51,7 +52,6 @@ const session = useSessionStore()
 const user = computed(() => session.user)
 const loading = ref(true)
 const loadFailed = ref(false)
-const saving = ref(false)
 const errors = ref<string[]>([])
 const status = ref('')
 
@@ -61,7 +61,7 @@ const faithModel = computed({
     form.faith = value === NO_FAITH ? '' : (value as Faith)
   },
 })
-const canSave = computed(() => !loading.value && !loadFailed.value && !saving.value)
+const loaded = computed(() => !loading.value && !loadFailed.value)
 
 function fill(s: UserSettings): void {
   form.spiritualMode = s.spiritualMode
@@ -96,8 +96,7 @@ function savedToast(fallback: string): string {
 }
 
 async function submit(): Promise<void> {
-  if (!canSave.value) return
-  saving.value = true
+  if (!loaded.value) return
   errors.value = []
   status.value = ''
   try {
@@ -106,10 +105,12 @@ async function submit(): Promise<void> {
     status.value = savedToast(result.status)
   } catch (err) {
     errors.value = errorLines(err)
-  } finally {
-    saving.value = false
   }
 }
+
+/** FR-ERR-10 / AC-ERR-5: one request per press burst; the button shows "Menyimpan..." until it settles. */
+const lock = createSubmitLock(submit)
+const canSave = computed(() => loaded.value && !lock.pending.value)
 
 onMounted(() => {
   // "Tetapan Akaun" reads the cached user and refreshes it from `GET /api/me` (R1-MUR-A2, R1-GUR-A2, R1-AS-A2).
@@ -164,7 +165,7 @@ onMounted(() => {
       v-else
       class="flex flex-col gap-4 md:gap-6"
       data-testid="tetapan-form"
-      @submit.prevent="submit"
+      @submit.prevent="lock.run()"
     >
       <div class="grid grid-cols-1 items-start gap-4 md:gap-6 xl:grid-cols-2">
         <UCard>
@@ -253,10 +254,11 @@ onMounted(() => {
           color="primary"
           size="lg"
           icon="i-ph-floppy-disk"
-          :loading="saving"
+          :loading="lock.pending.value"
           :disabled="!canSave"
+          :aria-busy="lock.pending.value"
           data-testid="tetapan-submit"
-          >Simpan Tetapan</UButton
+          >{{ lock.labelFor('Simpan Tetapan') }}</UButton
         >
       </div>
     </form>

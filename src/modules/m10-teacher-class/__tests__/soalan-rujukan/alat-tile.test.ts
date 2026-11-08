@@ -9,7 +9,7 @@ import { decideAccess } from '@/app/router'
 import AlatSoalanBlock from '../../components/soalan/AlatSoalanBlock.vue'
 import routes from '../../routes/soalan-rujukan'
 
-const sessionMock = vi.hoisted((): { role: string | null } => ({ role: 'teacher' }))
+const sessionMock = vi.hoisted((): { role: string | null; features: Record<string, boolean> } => ({ role: 'teacher', features: {} }))
 vi.mock('@/stores/session', () => ({ useSessionStore: () => sessionMock }))
 
 beforeEach(() => {

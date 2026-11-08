@@ -1,0 +1,1069 @@
+{
+  "full": [
+    {
+      "key": "pintasan",
+      "icon": "pulse",
+      "items": [
+        {
+          "id": "PM-01",
+          "label": "Command Center",
+          "badge": "LIVE",
+          "to": "/admin/command-center",
+          "built": true
+        },
+        {
+          "id": "PM-02",
+          "label": "Aktiviti Harian",
+          "to": "/admin/command-center/daily-activity",
+          "built": true
+        },
+        {
+          "id": "BS-07",
+          "label": "Audio KBAT",
+          "to": "/admin/audio-kbat",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "harian",
+      "label": "Harian",
+      "icon": "squares-four",
+      "items": [
+        {
+          "id": "PP-01",
+          "label": "Dashboard",
+          "to": "/admin",
+          "built": true
+        },
+        {
+          "id": "PP-02",
+          "label": "Laporan Eksekutif",
+          "to": "/admin/p/pp-02",
+          "built": false
+        }
+      ]
+    },
+    {
+      "key": "analitik",
+      "label": "Analitik",
+      "icon": "chart-line-up",
+      "items": [
+        {
+          "id": "PM-04",
+          "label": "Analitik",
+          "to": "/admin/analytics",
+          "built": true
+        },
+        {
+          "id": "PM-03",
+          "label": "Monitoring",
+          "to": "/admin/monitoring",
+          "built": true
+        },
+        {
+          "id": "PM-05",
+          "label": "Overview",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick",
+          "built": true
+        },
+        {
+          "id": "PM-06",
+          "label": "T1: Reaksi",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/reaction",
+          "built": true
+        },
+        {
+          "id": "PM-07",
+          "label": "T2: Pembelajaran",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/learning",
+          "built": true
+        },
+        {
+          "id": "PM-08",
+          "label": "T3: Tingkah Laku",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/behavior",
+          "built": true
+        },
+        {
+          "id": "PM-09",
+          "label": "T4: Hasil",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/results",
+          "built": true
+        },
+        {
+          "id": "PM-10",
+          "label": "Rantaian Impak",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/chain",
+          "built": true
+        },
+        {
+          "id": "PM-11",
+          "label": "Intervensi",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/interventions",
+          "built": true
+        },
+        {
+          "id": "PM-29",
+          "label": "Laporan",
+          "to": "/admin/laporan",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kurikulum",
+      "label": "Kurikulum",
+      "icon": "book-open",
+      "items": [
+        {
+          "id": "KK-01",
+          "label": "Kurikulum",
+          "to": "/admin/curriculum",
+          "built": true
+        },
+        {
+          "id": "KK-02",
+          "label": "Subjek",
+          "to": "/admin/subjects",
+          "built": true
+        },
+        {
+          "id": "KK-04",
+          "label": "Tahap Pendidikan",
+          "to": "/admin/education-levels",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "soalan",
+      "label": "Soalan",
+      "icon": "books",
+      "items": [
+        {
+          "id": "KS-01",
+          "label": "SPM",
+          "to": "/admin/spm",
+          "built": true
+        },
+        {
+          "id": "BS-08",
+          "label": "Bank Soalan (Studio)",
+          "to": "/admin/studio",
+          "built": true
+        },
+        {
+          "id": "BS-02",
+          "label": "Import & Semakan",
+          "to": "/admin/spm/soalan/ekstrak",
+          "built": true
+        },
+        {
+          "id": "KS-17",
+          "label": "Set Builder",
+          "to": "/admin/studio/sets",
+          "built": true
+        },
+        {
+          "id": "BS-03",
+          "label": "Sumber Kertas",
+          "to": "/admin/source-papers",
+          "built": true
+        },
+        {
+          "id": "KS-07",
+          "label": "Kertas Subjektif",
+          "to": "/admin/kertas-subjektif",
+          "built": true
+        },
+        {
+          "id": "BS-09",
+          "label": "Audit Rajah",
+          "to": "/admin/soalan-gambar",
+          "built": true
+        },
+        {
+          "id": "BS-01",
+          "label": "Senarai Soalan",
+          "sub": "Bank Lama (Legasi)",
+          "nested": true,
+          "to": "/admin/questions",
+          "built": true
+        },
+        {
+          "id": "BS-10",
+          "label": "Soalan Berstruktur",
+          "sub": "Bank Lama (Legasi)",
+          "nested": true,
+          "to": "/admin/structured-questions",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "pengguna",
+      "label": "Pengguna",
+      "icon": "users",
+      "items": [
+        {
+          "id": "PS-01",
+          "label": "Senarai Pengguna",
+          "to": "/admin/users",
+          "built": true
+        },
+        {
+          "id": "PS-02",
+          "label": "Sekolah",
+          "to": "/admin/schools",
+          "built": true
+        },
+        {
+          "id": "KW-05",
+          "label": "Langganan Sekolah",
+          "to": "/admin/school-subscriptions",
+          "built": true
+        },
+        {
+          "id": "PS-04",
+          "label": "Import Pelajar",
+          "to": "/admin/import-students",
+          "built": true
+        },
+        {
+          "id": "PS-06",
+          "label": "Pelajar Komplimen",
+          "to": "/admin/comp-students",
+          "built": true
+        },
+        {
+          "id": "PS-05",
+          "label": "Import Pengguna",
+          "to": "/admin/users/bulk-import",
+          "built": true
+        },
+        {
+          "id": "PS-03",
+          "label": "Kelas Sekolah",
+          "to": "/admin/classes",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "spm",
+      "label": "SPM",
+      "icon": "scroll",
+      "items": [
+        {
+          "id": "KS-18",
+          "label": "Databank Soalan",
+          "to": "/admin/spm/databank",
+          "built": true
+        },
+        {
+          "id": "KS-03",
+          "label": "Latih Tubi",
+          "to": "/admin/p/ks-03",
+          "built": false
+        },
+        {
+          "id": "KS-04",
+          "label": "Tracking A",
+          "to": "/admin/p/ks-04",
+          "built": false
+        },
+        {
+          "id": "KS-05",
+          "label": "Subjektif",
+          "to": "/admin/p/ks-05",
+          "built": false
+        }
+      ]
+    },
+    {
+      "key": "premium",
+      "label": "Premium",
+      "icon": "star",
+      "items": [
+        {
+          "id": "BS-06",
+          "label": "PKSK Soalan",
+          "to": "/admin/pksk/questions",
+          "built": true
+        },
+        {
+          "id": "KW-06",
+          "label": "PKSK Akses",
+          "to": "/admin/pksk/access",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kawalan-ciri",
+      "label": "Sistem",
+      "icon": "gear",
+      "items": [
+        {
+          "id": "SY-02",
+          "label": "Kawalan Ciri",
+          "to": "/admin/feature-toggles",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "gamifikasi",
+      "label": "Gamifikasi",
+      "icon": "trophy",
+      "items": [
+        {
+          "id": "PG-01",
+          "label": "Overview",
+          "to": "/admin/p/pg-01",
+          "built": false
+        },
+        {
+          "id": "PG-02",
+          "label": "Tier Config",
+          "to": "/admin/p/pg-02",
+          "built": false
+        },
+        {
+          "id": "PG-03",
+          "label": "Cabaran",
+          "to": "/admin/p/pg-03",
+          "built": false
+        },
+        {
+          "id": "PG-04",
+          "label": "Pelajar",
+          "to": "/admin/p/pg-04",
+          "built": false
+        },
+        {
+          "id": "PG-05",
+          "label": "Transaksi",
+          "to": "/admin/p/pg-05",
+          "built": false
+        },
+        {
+          "id": "PG-06",
+          "label": "Kedai Hadiah",
+          "to": "/admin/p/pg-06",
+          "built": false
+        },
+        {
+          "id": "PG-10",
+          "label": "Kawalan Reward",
+          "to": "/admin/p/pg-10",
+          "built": false
+        }
+      ]
+    },
+    {
+      "key": "battle-permainan",
+      "label": "Battle & Permainan",
+      "icon": "game-controller",
+      "items": [
+        {
+          "id": "PG-12",
+          "label": "Ranking Sekolah",
+          "to": "/admin/p/pg-12",
+          "built": false
+        },
+        {
+          "id": "PG-13",
+          "label": "Leaderboard",
+          "to": "/admin/p/pg-13",
+          "built": false
+        },
+        {
+          "id": "PG-11",
+          "label": "Tetapan Permainan",
+          "to": "/admin/p/pg-11",
+          "built": false
+        },
+        {
+          "id": "PG-23",
+          "label": "Tournament",
+          "to": "/admin/p/pg-23",
+          "built": false
+        }
+      ]
+    },
+    {
+      "key": "marketplace",
+      "label": "Marketplace",
+      "icon": "gift",
+      "items": [
+        {
+          "id": "PG-14",
+          "label": "Produk",
+          "to": "/admin/marketplace/products",
+          "built": true
+        },
+        {
+          "id": "PG-15",
+          "label": "Penjual",
+          "to": "/admin/marketplace/sellers",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kandungan",
+      "label": "Kandungan",
+      "icon": "book-open-text",
+      "items": [
+        {
+          "id": "KK-06",
+          "label": "Artikel",
+          "to": "/admin/articles",
+          "built": true
+        },
+        {
+          "id": "KK-05",
+          "label": "Banner",
+          "to": "/admin/banners",
+          "built": true
+        },
+        {
+          "id": "KK-07",
+          "label": "Nota",
+          "to": "/admin/notes",
+          "built": true
+        },
+        {
+          "id": "SY-05",
+          "label": "Upload Screenshot",
+          "to": "/admin/tools/screenshots",
+          "built": true
+        },
+        {
+          "id": "KK-08",
+          "label": "Video",
+          "to": "/admin/videos",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "sistem",
+      "label": "Sistem",
+      "icon": "gear",
+      "items": [
+        {
+          "id": "SY-01",
+          "label": "Tetapan",
+          "to": "/admin/settings",
+          "built": true
+        },
+        {
+          "id": "PG-22",
+          "label": "Tiket Bantuan",
+          "to": "/admin/tiket",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "ditangguh",
+      "label": "Ditangguhkan",
+      "icon": "wallet",
+      "items": [
+        {
+          "id": "PM-12",
+          "label": "Laporan Aktiviti",
+          "to": "/admin/p/pm-12",
+          "built": false
+        },
+        {
+          "id": "PM-13",
+          "label": "Amaran Wellbeing",
+          "to": "/admin/p/pm-13",
+          "built": false
+        },
+        {
+          "id": "PM-14",
+          "label": "Papan Pemuka Wilayah",
+          "to": "/admin/p/pm-14",
+          "built": false
+        },
+        {
+          "id": "PM-15",
+          "label": "Statistik Penggunaan",
+          "to": "/admin/p/pm-15",
+          "built": false
+        },
+        {
+          "id": "PM-16",
+          "label": "Ranking Kebangsaan",
+          "to": "/admin/p/pm-16",
+          "built": false
+        },
+        {
+          "id": "PM-17",
+          "label": "Benchmark Sekolah",
+          "to": "/admin/p/pm-17",
+          "built": false
+        },
+        {
+          "id": "PM-18",
+          "label": "Leaderboard Sekolah",
+          "to": "/admin/p/pm-18",
+          "built": false
+        },
+        {
+          "id": "PM-19",
+          "label": "Peta Haba",
+          "to": "/admin/p/pm-19",
+          "built": false
+        },
+        {
+          "id": "PM-20",
+          "label": "Export Laporan",
+          "to": "/admin/p/pm-20",
+          "built": false
+        },
+        {
+          "id": "PM-21",
+          "label": "DSKP Heatmap",
+          "to": "/admin/p/pm-21",
+          "built": false
+        },
+        {
+          "id": "PM-22",
+          "label": "Amaran Awal",
+          "to": "/admin/p/pm-22",
+          "built": false
+        },
+        {
+          "id": "PM-23",
+          "label": "Laporan Bulanan",
+          "to": "/admin/p/pm-23",
+          "built": false
+        },
+        {
+          "id": "PM-24",
+          "label": "Headcount",
+          "to": "/admin/p/pm-24",
+          "built": false
+        },
+        {
+          "id": "PM-25",
+          "label": "Prestasi",
+          "to": "/admin/p/pm-25",
+          "built": false
+        },
+        {
+          "id": "PM-26",
+          "label": "Analitik Adaptif",
+          "to": "/admin/p/pm-26",
+          "built": false
+        },
+        {
+          "id": "PM-27",
+          "label": "Analisa Item",
+          "to": "/admin/p/pm-27",
+          "built": false
+        },
+        {
+          "id": "PM-28",
+          "label": "Sekolah Bersaing",
+          "to": "/admin/p/pm-28",
+          "built": false
+        },
+        {
+          "id": "KK-09",
+          "label": "Laluan Kerjaya",
+          "to": "/admin/p/kk-09",
+          "built": false
+        },
+        {
+          "id": "KK-10",
+          "label": "Universiti",
+          "to": "/admin/p/kk-10",
+          "built": false
+        },
+        {
+          "id": "KK-11",
+          "label": "Biasiswa",
+          "to": "/admin/p/kk-11",
+          "built": false
+        },
+        {
+          "id": "KK-12",
+          "label": "Video Sekolah",
+          "to": "/admin/p/kk-12",
+          "built": false
+        },
+        {
+          "id": "PG-07",
+          "label": "Gamifikasi Guru",
+          "to": "/admin/p/pg-07",
+          "built": false
+        },
+        {
+          "id": "PG-08",
+          "label": "Lencana Guru",
+          "to": "/admin/p/pg-08",
+          "built": false
+        },
+        {
+          "id": "PG-16",
+          "label": "Penajaan",
+          "to": "/admin/p/pg-16",
+          "built": false
+        },
+        {
+          "id": "PG-17",
+          "label": "Anak Angkat",
+          "to": "/admin/p/pg-17",
+          "built": false
+        },
+        {
+          "id": "PG-18",
+          "label": "Permohonan Anak Angkat",
+          "to": "/admin/p/pg-18",
+          "built": false
+        },
+        {
+          "id": "PG-19",
+          "label": "Permohonan Duta",
+          "to": "/admin/p/pg-19",
+          "built": false
+        },
+        {
+          "id": "PG-20",
+          "label": "Push Notifikasi",
+          "to": "/admin/p/pg-20",
+          "built": false
+        },
+        {
+          "id": "PG-21",
+          "label": "Chatbot",
+          "to": "/admin/p/pg-21",
+          "built": false
+        },
+        {
+          "id": "KW-01",
+          "label": "Pembayaran",
+          "to": "/admin/p/kw-01",
+          "built": false
+        },
+        {
+          "id": "KW-02",
+          "label": "Billing Dashboard",
+          "to": "/admin/p/kw-02",
+          "built": false
+        },
+        {
+          "id": "KW-03",
+          "label": "Invois",
+          "to": "/admin/p/kw-03",
+          "built": false
+        },
+        {
+          "id": "KW-04",
+          "label": "Dunning Log",
+          "to": "/admin/p/kw-04",
+          "built": false
+        },
+        {
+          "id": "SY-03",
+          "label": "Prestasi Sistem",
+          "to": "/admin/p/sy-03",
+          "built": false
+        },
+        {
+          "id": "SY-04",
+          "label": "Log Audit",
+          "to": "/admin/p/sy-04",
+          "built": false
+        }
+      ]
+    }
+  ],
+  "rendered": [
+    {
+      "key": "pintasan",
+      "icon": "pulse",
+      "items": [
+        {
+          "id": "PM-01",
+          "label": "Command Center",
+          "badge": "LIVE",
+          "to": "/admin/command-center",
+          "built": true
+        },
+        {
+          "id": "PM-02",
+          "label": "Aktiviti Harian",
+          "to": "/admin/command-center/daily-activity",
+          "built": true
+        },
+        {
+          "id": "BS-07",
+          "label": "Audio KBAT",
+          "to": "/admin/audio-kbat",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "harian",
+      "label": "Harian",
+      "icon": "squares-four",
+      "items": [
+        {
+          "id": "PP-01",
+          "label": "Dashboard",
+          "to": "/admin",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "analitik",
+      "label": "Analitik",
+      "icon": "chart-line-up",
+      "items": [
+        {
+          "id": "PM-04",
+          "label": "Analitik",
+          "to": "/admin/analytics",
+          "built": true
+        },
+        {
+          "id": "PM-03",
+          "label": "Monitoring",
+          "to": "/admin/monitoring",
+          "built": true
+        },
+        {
+          "id": "PM-05",
+          "label": "Overview",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick",
+          "built": true
+        },
+        {
+          "id": "PM-06",
+          "label": "T1: Reaksi",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/reaction",
+          "built": true
+        },
+        {
+          "id": "PM-07",
+          "label": "T2: Pembelajaran",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/learning",
+          "built": true
+        },
+        {
+          "id": "PM-08",
+          "label": "T3: Tingkah Laku",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/behavior",
+          "built": true
+        },
+        {
+          "id": "PM-09",
+          "label": "T4: Hasil",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/results",
+          "built": true
+        },
+        {
+          "id": "PM-10",
+          "label": "Rantaian Impak",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/chain",
+          "built": true
+        },
+        {
+          "id": "PM-11",
+          "label": "Intervensi",
+          "sub": "Kirkpatrick",
+          "to": "/admin/kirkpatrick/interventions",
+          "built": true
+        },
+        {
+          "id": "PM-29",
+          "label": "Laporan",
+          "to": "/admin/laporan",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kurikulum",
+      "label": "Kurikulum",
+      "icon": "book-open",
+      "items": [
+        {
+          "id": "KK-01",
+          "label": "Kurikulum",
+          "to": "/admin/curriculum",
+          "built": true
+        },
+        {
+          "id": "KK-02",
+          "label": "Subjek",
+          "to": "/admin/subjects",
+          "built": true
+        },
+        {
+          "id": "KK-04",
+          "label": "Tahap Pendidikan",
+          "to": "/admin/education-levels",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "soalan",
+      "label": "Soalan",
+      "icon": "books",
+      "items": [
+        {
+          "id": "KS-01",
+          "label": "SPM",
+          "to": "/admin/spm",
+          "built": true
+        },
+        {
+          "id": "BS-08",
+          "label": "Bank Soalan (Studio)",
+          "to": "/admin/studio",
+          "built": true
+        },
+        {
+          "id": "BS-02",
+          "label": "Import & Semakan",
+          "to": "/admin/spm/soalan/ekstrak",
+          "built": true
+        },
+        {
+          "id": "KS-17",
+          "label": "Set Builder",
+          "to": "/admin/studio/sets",
+          "built": true
+        },
+        {
+          "id": "BS-03",
+          "label": "Sumber Kertas",
+          "to": "/admin/source-papers",
+          "built": true
+        },
+        {
+          "id": "KS-07",
+          "label": "Kertas Subjektif",
+          "to": "/admin/kertas-subjektif",
+          "built": true
+        },
+        {
+          "id": "BS-09",
+          "label": "Audit Rajah",
+          "to": "/admin/soalan-gambar",
+          "built": true
+        },
+        {
+          "id": "BS-01",
+          "label": "Senarai Soalan",
+          "sub": "Bank Lama (Legasi)",
+          "nested": true,
+          "to": "/admin/questions",
+          "built": true
+        },
+        {
+          "id": "BS-10",
+          "label": "Soalan Berstruktur",
+          "sub": "Bank Lama (Legasi)",
+          "nested": true,
+          "to": "/admin/structured-questions",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "pengguna",
+      "label": "Pengguna",
+      "icon": "users",
+      "items": [
+        {
+          "id": "PS-01",
+          "label": "Senarai Pengguna",
+          "to": "/admin/users",
+          "built": true
+        },
+        {
+          "id": "PS-02",
+          "label": "Sekolah",
+          "to": "/admin/schools",
+          "built": true
+        },
+        {
+          "id": "KW-05",
+          "label": "Langganan Sekolah",
+          "to": "/admin/school-subscriptions",
+          "built": true
+        },
+        {
+          "id": "PS-04",
+          "label": "Import Pelajar",
+          "to": "/admin/import-students",
+          "built": true
+        },
+        {
+          "id": "PS-06",
+          "label": "Pelajar Komplimen",
+          "to": "/admin/comp-students",
+          "built": true
+        },
+        {
+          "id": "PS-05",
+          "label": "Import Pengguna",
+          "to": "/admin/users/bulk-import",
+          "built": true
+        },
+        {
+          "id": "PS-03",
+          "label": "Kelas Sekolah",
+          "to": "/admin/classes",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "spm",
+      "label": "SPM",
+      "icon": "scroll",
+      "items": [
+        {
+          "id": "KS-18",
+          "label": "Databank Soalan",
+          "to": "/admin/spm/databank",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "premium",
+      "label": "Premium",
+      "icon": "star",
+      "items": [
+        {
+          "id": "BS-06",
+          "label": "PKSK Soalan",
+          "to": "/admin/pksk/questions",
+          "built": true
+        },
+        {
+          "id": "KW-06",
+          "label": "PKSK Akses",
+          "to": "/admin/pksk/access",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kawalan-ciri",
+      "label": "Sistem",
+      "icon": "gear",
+      "items": [
+        {
+          "id": "SY-02",
+          "label": "Kawalan Ciri",
+          "to": "/admin/feature-toggles",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "marketplace",
+      "label": "Marketplace",
+      "icon": "gift",
+      "items": [
+        {
+          "id": "PG-14",
+          "label": "Produk",
+          "to": "/admin/marketplace/products",
+          "built": true
+        },
+        {
+          "id": "PG-15",
+          "label": "Penjual",
+          "to": "/admin/marketplace/sellers",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "kandungan",
+      "label": "Kandungan",
+      "icon": "book-open-text",
+      "items": [
+        {
+          "id": "KK-06",
+          "label": "Artikel",
+          "to": "/admin/articles",
+          "built": true
+        },
+        {
+          "id": "KK-05",
+          "label": "Banner",
+          "to": "/admin/banners",
+          "built": true
+        },
+        {
+          "id": "KK-07",
+          "label": "Nota",
+          "to": "/admin/notes",
+          "built": true
+        },
+        {
+          "id": "SY-05",
+          "label": "Upload Screenshot",
+          "to": "/admin/tools/screenshots",
+          "built": true
+        },
+        {
+          "id": "KK-08",
+          "label": "Video",
+          "to": "/admin/videos",
+          "built": true
+        }
+      ]
+    },
+    {
+      "key": "sistem",
+      "label": "Sistem",
+      "icon": "gear",
+      "items": [
+        {
+          "id": "SY-01",
+          "label": "Tetapan",
+          "to": "/admin/settings",
+          "built": true
+        },
+        {
+          "id": "PG-22",
+          "label": "Tiket Bantuan",
+          "to": "/admin/tiket",
+          "built": true
+        }
+      ]
+    }
+  ]
+}

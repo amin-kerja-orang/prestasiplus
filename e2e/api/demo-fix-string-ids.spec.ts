@@ -49,7 +49,7 @@ test.describe('DEMO-FIX-1 string ids @api', () => {
     const name = `DF1 ${info.project.name} ${String(Date.now()).slice(-6)}`
     await page.getByTestId('kelas-name').fill(name)
     await subject.selectOption({ label: 'Matematik' })
-    await page.getByTestId('kelas-levels').getByRole('radio', { name: 'Ting. 4' }).click()
+    await page.getByTestId('kelas-level').selectOption('tingkatan-4')
     await expectNoHScroll(page)
 
     const created = page.waitForResponse(

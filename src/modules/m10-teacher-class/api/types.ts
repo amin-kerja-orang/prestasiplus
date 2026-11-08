@@ -88,30 +88,14 @@ export interface GuruClass {
   /** "Tahun n" / "Ting. n". */
   levelLabel: string
   academicYear: number
+  /** Tahun Sesi (S6-T14), the same value as `academicYear`; absent on an older API. */
+  year?: number
   description: string | null
   joinCode: string
   isActive: boolean
   createdAt: string
   /** Active enrolments (BR-M10-04). */
   studentCount: number
-}
-
-export interface CreateClassRequest {
-  /** Sent as a string id in http mode (`ClassCreateRequestSchema`, DEMO-FIX-1 D-01). */
-  schoolId?: number | string | null
-  name: string
-  /** The `<select>` value or a mock number; sent as a string id in http mode. */
-  subjectId: number | string
-  educationLevel: EducationLevelSlug
-  description?: string | null
-}
-
-export interface ClassQrData {
-  name: string
-  /** School name, or `null` when the class has none. */
-  school: string | null
-  /** BR-M10-02: `https://prestasiplus.my/kelas-saya?kod={code}` (PROPOSED). */
-  joinUrl: string
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -376,4 +360,87 @@ export interface QuestionPaperRequest {
 /** API-GUR-17 `data`: the id of the `source = guru` intake batch. */
 export interface QuestionPaper {
   batchId: number | string
+}
+
+// ---------------------------------------------------------------------------------------------
+// S6-T19 `GET /api/guru/databank/overview` and `/questions` (R1-GUR-44d, API-GUR-27; read-only)
+// ---------------------------------------------------------------------------------------------
+
+/** One subject tile: BM name, English name and the count of servable Tingkatan 1-5 questions. */
+export interface DatabankSubjectTile {
+  subjectId: number
+  nameMs: string
+  nameEn: string
+  count: number
+}
+
+export interface DatabankOverview {
+  data: {
+    totalQuestions: number
+    /** Subjects with at least one servable question (a zero-question subject is not counted, D11). */
+    activeSubjects: number
+    teras: DatabankSubjectTile[]
+    elektif: DatabankSubjectTile[]
+  }
+}
+
+/** One stimulus (Rajah, petikan, jadual); a picture is served by `GET /files/:id`. */
+export interface DatabankStimulus {
+  id: string | number
+  kind: 'passage' | 'image' | 'diagram' | 'table' | 'map' | 'infographic' | 'graph'
+  label: string
+  bodyMs: string | null
+  bodyEn: string | null
+  imageId: string | number | null
+  alt: string | null
+  caption: string | null
+  sourceCitation: string | null
+  tableData: { head: string[]; rows: string[][]; caption?: string } | null
+}
+
+export interface DatabankOption {
+  label: string
+  bodyMs: string | null
+  bodyEn: string | null
+  imageId: string | number | null
+}
+
+/** A servable question as the teacher sees it; the response carries no answer key. */
+export interface DatabankQuestion {
+  id: number
+  stemMs: string | null
+  stemEn: string | null
+  type: string
+  options: DatabankOption[]
+  stimuli: DatabankStimulus[]
+  subjectId: number
+  subject: string
+  levelLabel: string
+  /** 1 to 5 stars, or null. */
+  difficulty: number | null
+  status: 'approved'
+  groupPosition: number | null
+}
+
+/** A listed unit: `unitId` `g<id>` is a stimulus group (stimuli once, then its questions), `q<id>` one question. */
+export interface DatabankRow {
+  unitId: string
+  group: { id: string | number; stimuli: DatabankStimulus[] } | null
+  questions: DatabankQuestion[]
+}
+
+export interface DatabankQuestionsMeta {
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+  from: number
+  to: number
+  totalUnits: number
+  totalQuestions: number
+}
+
+export interface DatabankQuestionsResult {
+  data: DatabankRow[]
+  meta: DatabankQuestionsMeta
 }

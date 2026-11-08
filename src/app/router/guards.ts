@@ -35,6 +35,7 @@ import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
+import { isFeatureRouteOff } from '../features'
 import {
   isPathAllowed,
   isPrototypeRole,
@@ -102,6 +103,15 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
   }
 
   if (roles !== undefined && (session.role === null || !roles.includes(session.role))) {
+    // The server landing of this role is the refused path itself (the API lands a school admin on `/admin`,
+    // admin only): send it to its own home, not a 403 (D106, G4 #394). Scope on or off.
+    if (
+      session.landingPath === to.path &&
+      isPrototypeRole(session.role) &&
+      scopeHomePath(session.role) !== to.path
+    ) {
+      return { kind: 'redirect', to: scopeHomePath(session.role) }
+    }
     const outcome = to.meta.onForbidden ?? DEFAULT_ON_FORBIDDEN
     if (outcome === '403') return { kind: 'in-place', status: 403 }
     if (outcome === '404') return { kind: 'in-place', status: 404 }
@@ -136,6 +146,9 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
   if (isPrototypeScopeOn() && !isPathAllowed(session.role, to.path)) {
     return { kind: 'in-place', status: 404 }
   }
+
+  // Kawalan Ciri (S0-T10): a page of a feature switched OFF answers the same in-place 404 page (URL kept).
+  if (isFeatureRouteOff(to.path)) return { kind: 'in-place', status: 404 }
 
   return ALLOW
 }

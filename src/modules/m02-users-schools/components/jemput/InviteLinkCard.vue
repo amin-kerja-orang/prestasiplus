@@ -3,10 +3,13 @@
  * S1 card "Link Jemputan" (L45 FR-L45-06..10, DV-L45-03/04). Read-only URL field plus "Salin",
  * "Hantar via WhatsApp" and "Jana Link Baru". The page owns the token and the regenerate request;
  * this card owns the copy feedback. "Salin" shows "Disalin!" for 2 s only after a successful clipboard
- * write (DV-L45-04). The WhatsApp anchor keeps its `href` but the click does not navigate (D14,
+ * write (DV-L45-04); a blocked clipboard shows "Salin pautan secara manual." (R1-MUR-40). "Jana Link Baru" asks first (dialog
+ * "Jana pautan baharu?"). The WhatsApp anchor keeps its `href` but the click does not navigate (D14,
  * DV-L45-03). No ARIA beyond native elements (D10, NFR-L45-02).
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
+
+import { DsDialog, DsText } from '@/ds'
 
 import { inviteUrl, whatsAppHref } from '../../lib/jemput'
 import WhatsAppIcon from './WhatsAppIcon.vue'
@@ -16,6 +19,9 @@ const emit = defineEmits<{ regenerate: [] }>()
 
 const COPIED_MS = 2000
 const copied = ref(false)
+/** R1-MUR-40: the clipboard is blocked, so the pupil is told to copy by hand. */
+const copyFailed = ref(false)
+const confirmOpen = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
 
 // http mode, later visit: the server keeps only a hash, so there is no clear token to show (D58). Never
@@ -29,14 +35,21 @@ async function copy(): Promise<void> {
   try {
     await navigator.clipboard.writeText(url.value)
   } catch {
-    return // FR-L45-08: clipboard unavailable or refused, no change and no message
+    copyFailed.value = true // R1-MUR-40: clipboard unavailable or refused
+    return
   }
+  copyFailed.value = false
   copied.value = true
   if (timer) clearTimeout(timer)
   timer = setTimeout(() => {
     copied.value = false
     timer = null
   }, COPIED_MS)
+}
+
+function confirmRegenerate(): void {
+  confirmOpen.value = false
+  emit('regenerate')
 }
 
 onBeforeUnmount(() => {
@@ -104,9 +117,40 @@ onBeforeUnmount(() => {
         :disabled="regenerating"
         :loading="regenerating"
         data-testid="jemput-regenerate"
-        @click="emit('regenerate')"
+        @click="confirmOpen = true"
         >Jana Link Baru</UButton
       >
     </div>
+    <DsText
+      v-if="copyFailed"
+      variant="label"
+      tone="muted"
+      role="status"
+      data-testid="jemput-copy-failed"
+    >
+      Salin pautan secara manual.
+    </DsText>
+
+    <DsDialog v-model:open="confirmOpen" title="Jana pautan baharu?" data-testid="jemput-regen-modal">
+      <DsText variant="body">
+        Pautan lama tidak akan berfungsi lagi. Ibu bapa yang sudah dihubungkan kekal.
+      </DsText>
+      <template #footer>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          label="Batal"
+          data-testid="jemput-regen-cancel"
+          @click="confirmOpen = false"
+        />
+        <UButton
+          type="button"
+          label="Jana Baharu"
+          data-testid="jemput-regen-confirm"
+          @click="confirmRegenerate"
+        />
+      </template>
+    </DsDialog>
   </section>
 </template>
