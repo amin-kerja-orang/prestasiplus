@@ -31,6 +31,8 @@ export const PASSWORD_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxy
 export const PASSWORD_LENGTH = 14
 /** FR-ADM-U02.4 / AC-ADM-U05.3: no account password is shorter than this (admin create, reset and import). */
 export const MIN_PASSWORD_LENGTH = 8
+/** Shown when an admin-entered password is shorter than MIN_PASSWORD_LENGTH. */
+export const PASSWORD_TOO_SHORT_MESSAGE = `Kata laluan mesti sekurang-kurangnya ${MIN_PASSWORD_LENGTH} aksara.`
 
 /** Limits of the import transaction (hashing happens before it, so it only inserts). */
 export const IMPORT_TX = { maxWait: 20_000, timeout: 60_000 } as const
