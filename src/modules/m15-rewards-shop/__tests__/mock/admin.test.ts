@@ -1,7 +1,8 @@
 /**
  * M15-T1 admin endpoints #1–#8 (SRS M15 v1.4 §6.7, §6.8, §7; BR-M15-02, 04, 08–11, 14, 15, 24):
  * the seed values, the catalogue list and cards, create / edit / bulk, the redemption queue and its
- * deliver / cancel transitions. Every test starts from a fresh seed.
+ * deliver / cancel transitions. Every test starts from a fresh seed. Row ids are opaque text on the
+ * wire (API-ADM-15; S7-T11 part 1A).
  */
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -124,7 +125,7 @@ describe('#1 catalogue list', () => {
     expect(p1.status).toBe(200)
     expect(p1.body.data).toHaveLength(50)
     expect(p1.body.data[0]).toMatchObject({
-      id: 1,
+      id: '1',
       categoryLabel: '🎮 Gaming',
       title: 'Roblox Gift Card RM10',
       iconEmoji: '🎮',
@@ -143,7 +144,7 @@ describe('#1 catalogue list', () => {
       cards: { total: 59, active: 0, redemptionsThisMonth: 0, pendingAdmin: 0 },
     })
     const p2 = await call<Rewards>('GET', '/api/admin/hadiah?page=2', ADMIN)
-    expect(p2.body.data.map((r) => r.id)).toEqual([51, 52, 53, 54, 55, 56, 57, 58, 59])
+    expect(p2.body.data.map((r) => r.id)).toEqual(['51', '52', '53', '54', '55', '56', '57', '58', '59'])
     expect(p2.body.meta).toMatchObject({ from: 51, to: 59 })
   })
 
@@ -157,7 +158,7 @@ describe('#1 catalogue list', () => {
     const telco = await call<Rewards>('GET', '/api/admin/hadiah?cat=telco', ADMIN)
     expect(telco.body.data).toHaveLength(11)
     expect(telco.body.data[0]).toMatchObject({
-      id: 9,
+      id: '9',
       categoryLabel: '📱 Telco Topup',
       stockQuantity: 5,
     })
@@ -177,7 +178,7 @@ describe('#2–#4 create and edit', () => {
     const created = await call<{ data: HadiahReward }>('POST', '/api/admin/hadiah', ADMIN, MINIMAL)
     expect(created.status).toBe(201)
     expect(created.body.data).toMatchObject({
-      id: 60,
+      id: '60',
       voucherValidityDays: 365,
       deliveryMethod: 'manual',
       displayOrder: 100,
@@ -189,11 +190,11 @@ describe('#2–#4 create and edit', () => {
     })
     const del = await call<{ data: HadiahBulkResult }>('POST', '/api/admin/hadiah/bulk', ADMIN, {
       action: 'delete',
-      ids: [60],
+      ids: ['60'],
     })
     expect(del.body.data).toEqual({ affected: 1, keptIds: [] })
     const again = await call<{ data: HadiahReward }>('POST', '/api/admin/hadiah', ADMIN, MINIMAL)
-    expect(again.body.data.id).toBe(61)
+    expect(again.body.data.id).toBe('61')
   })
 
   it('accepts digit strings for numbers and rejects bad input with 422 fields', async () => {
@@ -236,7 +237,7 @@ describe('#2–#4 create and edit', () => {
   it('reads and replaces a reward; unknown ids are 404', async () => {
     const got = await call<{ data: HadiahReward }>('GET', '/api/admin/hadiah/9', ADMIN)
     expect(got.body.data).toMatchObject({
-      id: 9,
+      id: '9',
       vendor: 'Hotlink',
       stockQuantity: 5,
       requiresParentConsent: false,
@@ -248,7 +249,7 @@ describe('#2–#4 create and edit', () => {
     })
     expect(put.status).toBe(200)
     expect(put.body.data).toMatchObject({
-      id: 9,
+      id: '9',
       title: 'Hotlink Baru',
       isActive: true,
       description: null,
@@ -319,12 +320,12 @@ describe('#5 bulk actions (BR-M15-11, BR-M15-24)', () => {
 
   it('deletes rewards without redemptions and keeps those with any (ids 10 and 16)', async () => {
     const created = await call<{ data: HadiahReward }>('POST', '/api/admin/hadiah', ADMIN, MINIMAL)
-    const r = await bulk({ action: 'delete', ids: [10, 16, created.body.data.id, 1] })
-    expect(r.body.data).toEqual({ affected: 2, keptIds: [10, 16] })
+    const r = await bulk({ action: 'delete', ids: ['10', '16', created.body.data.id, '1'] })
+    expect(r.body.data).toEqual({ affected: 2, keptIds: ['10', '16'] })
     expect(hadiah.get(10)).toBeDefined()
     expect(hadiah.get(16)).toBeDefined()
     expect(hadiah.get(1)).toBeUndefined()
-    expect(hadiah.get(created.body.data.id)).toBeUndefined()
+    expect(hadiah.get(Number(created.body.data.id))).toBeUndefined()
   })
 })
 
@@ -336,7 +337,7 @@ describe('#6 redemption queue (BR-M15-15)', () => {
     expect(d.body.data).toEqual([])
     expect(d.body.meta).toMatchObject({ activeStatus: 'pending_admin', totalItems: 0 })
     const c = await queue('?status=cancelled')
-    expect(c.body.data.map((r) => r.id)).toEqual([3, 2, 1])
+    expect(c.body.data.map((r) => r.id)).toEqual(['3', '2', '1'])
     expect(c.body.data[0]).toMatchObject({
       rewardTitle: 'Hotlink Topup RM10',
       rewardVendor: 'Hotlink',
@@ -345,7 +346,7 @@ describe('#6 redemption queue (BR-M15-15)', () => {
       status: 'cancelled',
       createdAt: '2026-04-30T14:11:00+08:00',
     })
-    expect(c.body.data[0]?.user.id).toBe(3151)
+    expect(c.body.data[0]?.user.id).toBe('3151')
     expect(c.body.data[0]?.user.name).not.toBe('')
     expect(c.body.meta.activeStatus).toBe('cancelled')
     const u = await queue('?status=bogus')
@@ -354,12 +355,21 @@ describe('#6 redemption queue (BR-M15-15)', () => {
     expect(u.body.meta.activeStatus).toBeNull()
   })
 
+  it('has no consent filter: a stored pending_parent_consent row shows under "all" only', async () => {
+    m15Hooks.m15LoadFixture('queue')
+    const consent = await queue('?status=pending_parent_consent')
+    expect(consent.body.data).toEqual([])
+    expect(consent.body.meta.activeStatus).toBeNull()
+    const all = await queue('?status=all')
+    expect(all.body.data.find((r) => r.id === '15102')?.status).toBe('pending_parent_consent')
+  })
+
   it('shows the queue fixture: all rows newest first, counts and cards follow', async () => {
     m15Hooks.m15LoadFixture('queue')
     m15Hooks.m15LoadFixture('queue') // idempotent
     const all = await queue('?status=all')
-    expect(all.body.data.map((r) => r.id)).toEqual([15102, 15101, 15103, 3, 2, 1])
-    expect((await queue()).body.data.map((r) => r.id)).toEqual([15101])
+    expect(all.body.data.map((r) => r.id)).toEqual(['15102', '15101', '15103', '3', '2', '1'])
+    expect((await queue()).body.data.map((r) => r.id)).toEqual(['15101'])
     expect(hadiah.cards()).toEqual({
       total: 59,
       active: 0,
@@ -389,7 +399,7 @@ describe('#7 deliver, #8 cancel (BR-M15-08…10)', () => {
     )
     expect(r.status).toBe(200)
     expect(r.body.data).toEqual({
-      id: 15101,
+      id: '15101',
       status: 'delivered',
       deliveredAt: '2026-09-25T15:40:00+08:00',
       expiresAt: '2027-09-25T15:40:00+08:00', // reward 40: 365 days
@@ -416,7 +426,7 @@ describe('#7 deliver, #8 cancel (BR-M15-08…10)', () => {
       '/api/admin/hadiah/redemptions/15101/cancel',
       ADMIN,
     )
-    expect(r.body.data).toEqual({ id: 15101, status: 'cancelled', refundedTokens: 10 })
+    expect(r.body.data).toEqual({ id: '15101', status: 'cancelled', refundedTokens: 10 })
     expect(wallet.summary(2).tokenBalance).toBe(30)
     expect(hadiah.get(40)?.stockQuantity).toBe(5)
     const row = hadiah.getRedemption(15101)
@@ -426,10 +436,16 @@ describe('#7 deliver, #8 cancel (BR-M15-08…10)', () => {
       'CONFLICT',
     )
     expect(wallet.summary(2).tokenBalance).toBe(30)
-    // a pending_parent_consent row is the parent's to decide, not the admin's
-    expect((await call('POST', '/api/admin/hadiah/redemptions/15102/cancel', ADMIN)).status).toBe(
-      409,
-    )
     expect((await call('POST', '/api/admin/hadiah/redemptions/777/cancel', ADMIN)).status).toBe(404)
+  })
+
+  it('cancels a stored pending_parent_consent row too (no parent route exists), refunding once', async () => {
+    const url = '/api/admin/hadiah/redemptions/15102/cancel'
+    const r = await call<{ data: CancelResult }>('POST', url, ADMIN)
+    expect(r.status).toBe(200)
+    expect(r.body.data).toEqual({ id: '15102', status: 'cancelled', refundedTokens: 10 })
+    expect(wallet.summary(4).tokenBalance).toBe(25)
+    expect(codeOf(await call('POST', url, ADMIN))).toBe('CONFLICT')
+    expect(wallet.summary(4).tokenBalance).toBe(25)
   })
 })
