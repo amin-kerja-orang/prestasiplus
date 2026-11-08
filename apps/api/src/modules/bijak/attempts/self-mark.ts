@@ -30,7 +30,8 @@ export type SelfMarks = Record<string, SelfMarkEntry>
 
 /**
  * Parts a person marks: scheme kind mark-scheme points (V2 mark_scheme_points) or rubric (band_rubric), and any part the
- * grader left `belum_dimarkah` (an `accepted` answer waiting for a person, K20, 46 section 3.4).
+ * grader left `belum_dimarkah` (FR-PA-21, K20, API-BIJAK-05, 46 section 3.4): an `accepted` part whose short text of 3 or more
+ * words matched nothing, or an unreadable number. `status` is the automatic one.
  */
 export function isSelfMarkable(scheme: SchemeDef | undefined, status?: BijakAttemptPartResult['status']): boolean {
   return scheme?.kind === 'points' || scheme?.kind === 'rubric' || status === 'belum_dimarkah'

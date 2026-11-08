@@ -202,7 +202,8 @@ function gradePoint(
         : { hit: false, reason: 'Isi yang dikehendaki tidak dikesan.' }
     }
     case 'manual':
-      return { hit: false, reason: 'Disemak oleh guru.', manual: true }
+      // [PROPOSED] FR-PA-21: marking is self-mark, no teacher is involved; the docs give no line for a manual point.
+      return { hit: false, reason: 'Tanda sendiri mengikut skema.', manual: true }
   }
 }
 
