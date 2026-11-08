@@ -178,10 +178,10 @@ export const hadiahRepo = defineRepository({
                 store.update(row.id, { maxPerMonthPerStudent: change.value, updatedAt: at })
                 break
               case 'set_token_cost': {
-                // BR-M15-11 (PROPOSED rounding): half up, clamped 1…10000; denominationRm unchanged.
+                // BR-M15-11 (PROPOSED rounding): half up, clamped 1…100000 (P07-07); denominationRm unchanged.
                 const next = Math.floor(row.tokenCost * (1 + change.pct / 100) + 0.5)
                 store.update(row.id, {
-                  tokenCost: Math.max(1, Math.min(10000, next)),
+                  tokenCost: Math.max(1, Math.min(100_000, next)),
                   updatedAt: at,
                 })
                 break

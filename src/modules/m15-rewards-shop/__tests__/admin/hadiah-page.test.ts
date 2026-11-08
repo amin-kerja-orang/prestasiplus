@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 /**
- * R1-ADM-P2-07 `/admin/hadiah` against a mocked client (S7-T11 part 1A; 30 P2-07, P07-01 and P07-15): the four tiles, the
+ * R1-ADM-P2-07 `/admin/hadiah` against a mocked client (S7-T11; 30 P2-07, P07-01 and P07-15): the four tiles, the
  * category pills, the table, 50 a page with an out-of-range page sent to the last, the bulk toolbar with its seven
- * actions, `Padam` keeping a reward that has a redemption, the "Tebusan Queue" card and the two routes (the form routes are part 1B).
+ * actions, `Padam` keeping a reward that has a redemption, the "Tebusan Queue" card and the three routes.
  */
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -31,14 +31,15 @@ vi.mock('../../api/admin', () => api)
 const ROWS = [
   hadiahRow(),
   hadiahRow({ id: '2', title: 'TnG eWallet RM10', vendor: 'Touch n Go', category: 'ewallet', iconEmoji: '💳', isActive: true, stockQuantity: 5, redemptionCount: 0 }),
-  hadiahRow({ id: '3', title: 'Telco RM5', vendor: 'Hotlink', category: 'telco', iconEmoji: '📱', denominationRm: 5, tokenCost: 1500, redemptionCount: 0 }),
+  hadiahRow({ id: '3', title: 'Telco RM5', vendor: 'Hotlink', category: 'telco', iconEmoji: '📱', denominationRm: 5.5, tokenCost: 1500, redemptionCount: 0 }),
 ]
 
-async function open(at = '/admin/hadiah'): Promise<{ w: VueWrapper; router: ReturnType<typeof routerAt> }> {
+async function open(at = '/admin/hadiah', props: Record<string, unknown> = {}): Promise<{ w: VueWrapper; router: ReturnType<typeof routerAt> }> {
   const router = routerAt()
   await router.push(at)
   await router.isReady()
   const w = mount(HadiahAdminPage, {
+    props,
     global: { plugins: [router], stubs: { DsDialog: DsDialogStub } },
     attachTo: document.body,
   })
@@ -69,14 +70,26 @@ beforeEach(() => {
 })
 
 describe('routes', () => {
-  it('has the catalogue route and the queue, in the admin shell, admin only', () => {
-    expect(routes.map((r) => r.path)).toEqual(['/admin/hadiah', '/admin/hadiah/tebusan'])
+  it('has the three catalogue routes and the queue, in the admin shell, admin only', () => {
+    expect(routes.map((r) => r.path)).toEqual([
+      '/admin/hadiah',
+      '/admin/hadiah/baharu',
+      '/admin/hadiah/tebusan',
+      '/admin/hadiah/:id(\\d+)/edit',
+    ])
     for (const r of routes) {
       expect(r.meta).toMatchObject({ layout: 'admin', access: 'auth', roles: ['admin'], module: 'M15' })
     }
     expect(routes[0]!.meta).toMatchObject({
       header: { title: '🎁 Kedai Hadiah Digital', subtitle: 'Urus catalog hadiah + proses tebusan pelajar' },
     })
+  })
+
+  it('hands the mode and the id to the page', () => {
+    expect(routes[0]!.props).toEqual({ mode: 'list' })
+    expect(routes[1]!.props).toEqual({ mode: 'create' })
+    const edit = routes[3]!.props as (r: { params: Record<string, string> }) => unknown
+    expect(edit({ params: { id: '17' } })).toEqual({ mode: 'edit', id: '17' })
   })
 })
 
@@ -139,7 +152,7 @@ describe('the category pills (P07-01)', () => {
 })
 
 describe('the table', () => {
-  it('has the eight columns, ∞ for no stock limit, and On / Off', async () => {
+  it('has the eight columns, ∞ for no stock limit, On / Off, and an Edit link to the form', async () => {
     const { w } = await open()
     expect(tid(w, 'hadiah-table').findAll('th').map((h) => h.text()).slice(1)).toEqual([
       'Hadiah',
@@ -149,6 +162,7 @@ describe('the table', () => {
       'Stok',
       'Tebusan',
       'Status',
+      'Tindakan',
     ])
     const first = w.findAll('tbody tr')[0]!.text()
     expect(first).toContain('Roblox Gift Card RM10')
@@ -156,23 +170,23 @@ describe('the table', () => {
     expect(first).toContain('Off')
     expect(tid(w, 'hadiah-status-2').text()).toBe('On')
     expect(w.findAll('tbody tr')[1]!.text()).toContain('5')
+    expect(tid(w, 'hadiah-edit-3').attributes('href')).toBe('/admin/hadiah/3/edit')
   })
 
-  it('shows RM as a whole number and the token with a thousands comma', async () => {
+  it('shows RM with its cents only when it has them, and the token with a thousands comma', async () => {
     const { w } = await open()
     const third = w.findAll('tbody tr')[2]!.text()
-    expect(third).not.toContain('5.00')
+    expect(third).toContain('5.50')
     expect(third).toContain('1,500')
     expect(w.findAll('tbody tr')[0]!.text()).not.toContain('10.00')
   })
 
-  it('links Tebusan Queue in the page header and shows no Tambah Hadiah or Edit (part 1B)', async () => {
+  it('links Tebusan Queue and Tambah Hadiah in the page header', async () => {
     const { w } = await open()
     expect(tid(w, 'hadiah-queue-link').attributes('href')).toBe('/admin/hadiah/tebusan')
     expect(tid(w, 'hadiah-queue-link').text()).toBe('Tebusan Queue')
-    expect(tid(w, 'hadiah-add').exists()).toBe(false)
-    expect(tid(w, 'hadiah-edit-1').exists()).toBe(false)
-    expect(w.text()).not.toContain('Tambah Hadiah')
+    expect(tid(w, 'hadiah-add').attributes('href')).toBe('/admin/hadiah/baharu')
+    expect(tid(w, 'hadiah-add').text()).toBe('Tambah Hadiah')
   })
 })
 
@@ -385,5 +399,24 @@ describe('the Tebusan Queue card (decision 4)', () => {
     w.findComponent(RedemptionsAdminPage).vm.$emit('changed')
     await flushPromises()
     expect(api.fetchHadiahList).toHaveBeenCalledOnce()
+  })
+})
+
+describe('the form modes', () => {
+  it('renders the form, not the list, for /baharu and sends nothing to the list API', async () => {
+    const { w } = await open('/admin/hadiah/baharu', { mode: 'create' })
+    expect(tid(w, 'hadiah-form').exists()).toBe(true)
+    expect(tid(w, 'hadiah-table').exists()).toBe(false)
+    expect(api.fetchHadiahList).not.toHaveBeenCalled()
+    expect(api.fetchHadiah).not.toHaveBeenCalled()
+  })
+
+  it('goes back to the list with the flash after a save', async () => {
+    api.createHadiah.mockResolvedValue({ id: '60' })
+    const { w, router } = await open('/admin/hadiah/baharu', { mode: 'create' })
+    await w.getComponent({ name: 'HadiahAdminForm' }).vm.$emit('saved', { id: '60' })
+    await flushPromises()
+    expect(router.currentRoute.value.path).toBe('/admin/hadiah')
+    expect(useFlashStore().current ?? useFlashStore().pending).toEqual({ type: 'success', message: 'Hadiah ditambah.' })
   })
 })

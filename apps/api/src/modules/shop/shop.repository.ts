@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import { Prisma, type Draw, type DrawPrize, type MysteryBoxOpening, type Reward, type RewardRedemption } from '../../db/generated/client'
+import { Prisma, type Draw, type DrawPrize, type DrawWinner, type MysteryBoxOpening, type Reward, type RewardRedemption } from '../../db/generated/client'
 import { idFromString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import type { HadiahFields } from './hadiah.input'
@@ -20,6 +20,9 @@ export interface LockedReward {
 }
 
 export type DrawWithPrizes = Draw & { prizes: DrawPrize[] }
+
+/** A drawn draw with its winners, each with the label of the prize line it took (prize order, then slot). */
+export type DrawnWithWinners = Draw & { winners: (DrawWinner & { drawPrize: DrawPrize })[] }
 
 export interface QueueRow extends RewardRedemption {
   userName: string
@@ -250,18 +253,63 @@ export class ShopRepository {
     return this.db.mysteryBoxOpening.count({ where: { userId } })
   }
 
-  recentOpenings(userId: bigint, limit: number): Promise<MysteryBoxOpening[]> {
-    return this.db.mysteryBoxOpening.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit })
+  /** The caller's newest openings (all boxes), with the box label for the history list. */
+  recentOpenings(userId: bigint, limit: number): Promise<(MysteryBoxOpening & { box: { label: string } })[]> {
+    return this.db.mysteryBoxOpening.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit, include: { box: { select: { label: true } } } })
   }
 
-  insertOpening(userId: bigint, boxId: number, coins: number, xp: number, at: Date): Promise<MysteryBoxOpening> {
-    return this.db.mysteryBoxOpening.create({ data: { userId, boxId, coins, xp, createdAt: at } })
+  /** The openings of one user in [from, to): the daily limit counts the Malaysia day. */
+  countOpeningsBetween(userId: bigint, from: Date, to: Date): Promise<number> {
+    return this.db.mysteryBoxOpening.count({ where: { userId, createdAt: { gte: from, lt: to } } })
+  }
+
+  /** The first opening of this key (DM-78). */
+  openingByClientUuid(userId: bigint, clientUuid: string): Promise<MysteryBoxOpening | null> {
+    return this.db.mysteryBoxOpening.findFirst({ where: { userId, clientUuid } })
+  }
+
+  insertOpening(data: {
+    userId: bigint
+    boxId: number
+    coins: number
+    prizeLabel: string
+    prizeKind: string
+    prizeAmount: number
+    clientUuid: string
+    at: Date
+  }): Promise<MysteryBoxOpening> {
+    const { at, ...rest } = data
+    return this.db.mysteryBoxOpening.create({ data: { ...rest, xp: 0, createdAt: at } })
   }
 
   // --- draws (ticket side) ----------------------------------------------------------------------------
 
   openDraws(): Promise<DrawWithPrizes[]> {
     return this.db.draw.findMany({ where: { status: 'open' }, include: { prizes: { orderBy: { position: 'asc' } } } })
+  }
+
+  /** The newest drawn draws, newest first (cancelled and every other status never appear). */
+  drawnDraws(limit: number): Promise<DrawnWithWinners[]> {
+    return this.db.draw.findMany({
+      where: { status: 'drawn' },
+      orderBy: [{ drawnAt: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+      take: limit,
+      include: { winners: { include: { drawPrize: true }, orderBy: [{ drawPrize: { position: 'asc' } }, { slot: 'asc' }] } },
+    })
+  }
+
+  /** Names of pupils by id (first given names are cut by the caller). */
+  async userNames(ids: bigint[]): Promise<Map<bigint, string>> {
+    if (ids.length === 0) return new Map()
+    const users = await this.db.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true } })
+    return new Map(users.map((u) => [u.id, u.name]))
+  }
+
+  /** Tickets sold per draw, all pupils. */
+  async ticketTotals(drawIds: bigint[]): Promise<Map<bigint, number>> {
+    if (drawIds.length === 0) return new Map()
+    const rows = await this.db.drawTicket.groupBy({ by: ['drawId'], where: { drawId: { in: drawIds } }, _count: { _all: true } })
+    return new Map(rows.map((r) => [r.drawId, r._count._all]))
   }
 
   draw(id: bigint): Promise<Draw | null> {

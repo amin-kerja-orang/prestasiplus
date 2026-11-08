@@ -4,7 +4,6 @@ import {
   REWARD_CATEGORIES,
   REWARD_VALIDATION_MESSAGES,
   type RewardCabutanView,
-  type RewardMysteryBox,
   type RewardMysteryBoxOpened,
   type RewardMysteryBoxesView,
   type RewardRedeemResult,
@@ -15,15 +14,15 @@ import {
 
 import { ApiError } from '../../common/errors/api-error'
 import { listMeta } from '../../common/http/respond'
-import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
 import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { WalletService } from '../wallet'
-import { BOX_RANDOM, type BoxRandom } from './box-random'
+import { MysteryBoxesService } from './mystery-boxes.service'
 import { RewardSettingsService } from './reward-settings.service'
-import { MYSTERY_BOXES, SOURCES } from './shop.constants'
-import { boxNotFound, modPelajarRefused, plainNotFound, rewardError, rewardNotFound, validation } from './shop.errors'
+import { SOURCES } from './shop.constants'
+import { modPelajarRefused, plainNotFound, rewardError, rewardNotFound, validation } from './shop.errors'
+import { ShopPorts } from './shop.ports'
 import { ShopRepository, idOrNull } from './shop.repository'
 import { drawStillOpen, mytMonthRange, mytYearRange } from './shop.time'
 import type { ShopActor } from './actor'
@@ -56,6 +55,15 @@ function clientUuidOf(body: unknown): string | null {
 
 const DIGITS = /^\d+$/
 
+/** "Keputusan Cabutan" lists this many drawn draws (ruling N6). */
+const RESULTS_LIMIT = 10
+
+/** The first given name only: no surname, school or class (48 rule 8; `10-murid.md` 4.3). */
+function firstGivenName(name: string): string {
+  // "Pelajar" is the V3 fallback for a pupil without a usable name (battle/queue/invitations.service.ts).
+  return name.trim().split(/\s+/)[0] || 'Pelajar'
+}
+
 /**
  * Student side of M15 (SRS M15 section 7 #9 to #13, #19, #20). Every coin or token movement goes through
  * `WalletService` inside ONE transaction with the shop write, with a per-movement idempotency key.
@@ -76,8 +84,9 @@ export class ShopService {
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(WalletService) private readonly wallet: WalletService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(BOX_RANDOM) private readonly random: BoxRandom,
+    @Inject(MysteryBoxesService) private readonly mysteryBoxes: MysteryBoxesService,
     @Inject(RewardSettingsService) private readonly rewardSettings: RewardSettingsService,
+    @Inject(ShopPorts) private readonly ports: ShopPorts,
   ) {}
 
   // --- #9 redeem --------------------------------------------------------------------------------------
@@ -137,51 +146,27 @@ export class ShopService {
 
   // --- #10, #11 mystery boxes -------------------------------------------------------------------------
 
-  async boxes(userId: string): Promise<RewardMysteryBoxesView> {
-    const [{ tokenBalance }, openings] = await Promise.all([this.wallet.summary(userId), this.repo.recentOpenings(idFromString(userId), 10)])
-    return {
-      tokenBalance,
-      boxes: MYSTERY_BOXES.map((b) => ({ ...b })),
-      history: openings.map((o) => ({
-        id: idToString(o.id),
-        boxId: String(o.boxId),
-        boxName: MYSTERY_BOXES.find((b) => b.id === String(o.boxId))?.name ?? '',
-        coins: o.coins,
-        xp: o.xp,
-        createdAt: toMytTimestamp(o.createdAt),
-      })),
-    }
+  /** Delegates to `MysteryBoxesService` (S7-T07 P8): the one active box on the 0222 tables. */
+  boxes(userId: string): Promise<RewardMysteryBoxesView> {
+    return this.mysteryBoxes.boxes(userId)
   }
 
-  async openBox(actor: ShopActor, idText: string): Promise<RewardMysteryBoxOpened> {
-    if (actor.isTest) throw modPelajarRefused()
-    if (!DIGITS.test(idText)) throw plainNotFound()
-    const box: RewardMysteryBox | undefined = MYSTERY_BOXES.find((b) => b.id === idText.replace(/^0+(?=\d)/, ''))
-    if (!box) throw boxNotFound()
-    const userId = idFromString(actor.userId)
-    return this.prisma.transaction(async (tx) => {
-      await this.repo.lockUser(actor.userId)
-      // The outcome comes from the injected source: a CSPRNG in production, the seeded stream (key = user + opening number, like the mock) in tests.
-      const rng = this.random.stream(`m15-mystery:${actor.userId}:${String(await this.repo.countOpenings(userId))}`)
-      const coins = rng.int(box.coinMin, box.coinMax)
-      const xp = rng.int(box.xpMin, box.xpMax)
-      const opening = await this.repo.insertOpening(userId, Number(box.id), coins, xp, this.clock.now())
-      const ref = `opening:${idToString(opening.id)}`
-      const { tokenBalance } = await tokensOr(() => this.wallet.debitTokens({ userId: actor.userId, amount: box.costTokens, source: SOURCES.box, refId: ref, isTest: false }, { tx }))
-      const credited = await this.wallet.credit(
-        { userId: actor.userId, amount: coins, source: SOURCES.box, sourceId: ref, description: `Kotak Misteri: ${box.name}`, type: 'earn', isTest: false },
-        { tx },
-      )
-      if (xp > 0) await this.wallet.addXp({ userId: actor.userId, amount: xp, isTest: false }, { tx })
-      return { openingId: idToString(opening.id), boxId: box.id, boxName: box.name, icon: box.icon, coins, xp, tokenBalance, syilingBalance: credited.currentSyiling }
-    })
+  async openBox(actor: ShopActor, idText: string, body: unknown): Promise<RewardMysteryBoxOpened> {
+    const opened = await this.mysteryBoxes.open(actor, idText, body)
+    // FR-GM-25.2 "Kotak Misteri": the opening is committed; the badges it unlocks are evaluated after it, in their own transaction
+    // and ledger rows (`achievement:<id>`), so a badge can never undo or fail the opening. The hook never throws.
+    const unlocked = await this.ports.afterBoxOpened(actor.userId)
+    if (unlocked.length === 0) return opened
+    // A badge reward is paid after the opening: the balances answered are the current ones, as a replay of the same clientUuid answers them.
+    const now = await this.wallet.summary(actor.userId)
+    return { ...opened, tokenBalance: now.tokenBalance, syilingBalance: now.currentSyiling, achievementsUnlocked: unlocked.map((b) => ({ code: b.code, name: b.name })) }
   }
 
   // --- #12, #13 Cabutan Bertuah -----------------------------------------------------------------------
 
   async cabutan(userId: string): Promise<RewardCabutanView> {
     const now = this.clock.now()
-    const [{ currentSyiling }, all] = await Promise.all([this.wallet.summary(userId), this.repo.openDraws()])
+    const [{ currentSyiling }, all, drawn] = await Promise.all([this.wallet.summary(userId), this.repo.openDraws(), this.repo.drawnDraws(RESULTS_LIMIT)])
     const open = all
       .filter((d) => drawStillOpen(d.closesAt, now))
       .sort((a, b) => {
@@ -192,7 +177,12 @@ export class ShopService {
         const db = mytDay(b.closesAt)
         return da === db ? (a.id < b.id ? -1 : 1) : da < db ? -1 : 1
       })
-    const owned = await this.repo.ticketCounts(idFromString(userId), open.map((d) => d.id))
+    const me = idFromString(userId)
+    const [owned, sold, names] = await Promise.all([
+      this.repo.ticketCounts(me, open.map((d) => d.id)),
+      this.repo.ticketTotals(open.map((d) => d.id)),
+      this.repo.userNames([...new Set(drawn.flatMap((d) => d.winners.map((w) => w.userId)))]),
+    ])
     return {
       syilingBalance: currentSyiling,
       draws: open.map((d) => ({
@@ -202,8 +192,14 @@ export class ShopService {
         ticketCostSyiling: d.ticketCostSyiling,
         maxTicketsPerStudent: d.maxTicketsPerStudent,
         ticketsOwned: owned.get(d.id) ?? 0,
+        ticketsSold: sold.get(d.id) ?? 0,
         closesAt: d.closesAt === null ? null : mytDay(d.closesAt),
         prizePool: d.prizes.map((p) => ({ label: p.label, valueSen: p.valueSen, qty: p.qty })),
+      })),
+      results: drawn.map((d) => ({
+        id: idToString(d.id),
+        title: d.title,
+        winners: d.winners.map((w) => ({ prize: w.drawPrize.label, name: firstGivenName(names.get(w.userId) ?? ''), isYou: w.userId === me })),
       })),
     }
   }

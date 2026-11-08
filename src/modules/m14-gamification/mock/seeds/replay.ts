@@ -37,8 +37,9 @@ export interface ReplayResult {
   }[]
 }
 
+/** The designed wallets were observed when only challenges 1 to 10 existed; ids 11 to 14 (S7-T04) are not replayed. */
 const ACTIVE_CHALLENGES = [...SEED_CHALLENGES]
-  .filter((c) => c.isActive)
+  .filter((c) => c.isActive && c.id <= 10)
   .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
 const FLAT = SEED_SETTINGS.find((s) => s.key === 'flat_quiz_reward')?.value ?? 0
 

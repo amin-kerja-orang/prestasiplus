@@ -4721,7 +4721,8 @@
           "accuracy",
           "topic_variety",
           "streak",
-          "time_spent"
+          "time_spent",
+          "combo"
         ]
       },
       "GamificationRarity": {
@@ -5354,7 +5355,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" Absent when there is nothing to tell, and always absent on a replay."
+            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" or \"Lencana baru: {name}!\" (one per badge the claim unlocked). Absent when there is nothing to tell, and always absent on a replay."
           }
         },
         "required": [
@@ -6855,7 +6856,9 @@
         "type": "object",
         "properties": {
           "label": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "\\S"
           },
           "valueSen": {
             "type": "integer"
@@ -6878,7 +6881,64 @@
         "enum": [
           "draft",
           "open",
-          "closed"
+          "closed",
+          "drawn",
+          "cancelled"
+        ]
+      },
+      "GamificationDrawWinner": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "prizePosition": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "prizeLabel": {
+            "type": "string"
+          },
+          "slot": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ticketId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "drawnAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "deliveredAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "prizePosition",
+          "prizeLabel",
+          "slot",
+          "userId",
+          "name",
+          "ticketId",
+          "drawnAt",
+          "deliveredAt"
         ]
       },
       "GamificationDraw": {
@@ -6929,6 +6989,13 @@
           "ticketsSold": {
             "type": "integer",
             "minimum": 0
+          },
+          "winners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDrawWinner"
+            },
+            "description": "Empty until the draw is drawn; then in prize order, slot order."
           }
         },
         "required": [
@@ -6941,7 +7008,8 @@
           "closesAt",
           "status",
           "createdAt",
-          "ticketsSold"
+          "ticketsSold",
+          "winners"
         ]
       },
       "GamificationDrawCreateRequest": {
@@ -6949,25 +7017,27 @@
         "properties": {
           "title": {
             "type": "string",
-            "maxLength": 150,
+            "maxLength": 120,
             "pattern": "\\S"
           },
           "description": {
             "type": "string",
-            "maxLength": 1000
+            "maxLength": 500
           },
           "ticketCostSyiling": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 10000
           },
           "maxTicketsPerStudent": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 1,
+            "maximum": 100
           },
           "closesAt": {
             "type": "string",
             "format": "date",
-            "description": "YYYY-MM-DD, a real calendar date.",
+            "description": "YYYY-MM-DD, a real calendar date, today (Malaysia) or later.",
             "example": "2026-10-16"
           },
           "openNow": {
@@ -6980,7 +7050,8 @@
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/GamificationDrawPrizeInput"
-                }
+                },
+                "minItems": 1
               },
               {
                 "type": "string"
@@ -6991,7 +7062,8 @@
         "required": [
           "title",
           "ticketCostSyiling",
-          "maxTicketsPerStudent"
+          "maxTicketsPerStudent",
+          "prizePool"
         ]
       },
       "GamificationRewardControl": {
@@ -7050,6 +7122,194 @@
           "draws"
         ]
       },
+      "GamificationBoxPrizeKind": {
+        "type": "string",
+        "enum": [
+          "syiling",
+          "token"
+        ],
+        "description": "Prize kind of a mystery box row: syiling or token (the contract has no XP prize)."
+      },
+      "GamificationBoxPrize": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GamificationBoxPrizeKind"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "weight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Percent chance (Peluang %); the weights of a box total 100."
+          },
+          "stock": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Null = unlimited; 0 = out of stock (absent from the pupil odds table)."
+          }
+        },
+        "required": [
+          "label",
+          "kind",
+          "amount",
+          "weight",
+          "stock"
+        ]
+      },
+      "GamificationMysteryBox": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "costSyiling": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationBoxPrize"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "costSyiling",
+          "isActive",
+          "prizes"
+        ]
+      },
+      "GamificationBoxOpeningsDay": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "day",
+          "count"
+        ]
+      },
+      "GamificationMysteryBoxesAdmin": {
+        "type": "object",
+        "properties": {
+          "boxes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationMysteryBox"
+            }
+          },
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "openingsPerDay": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationBoxOpeningsDay"
+            }
+          }
+        },
+        "required": [
+          "boxes",
+          "dailyMax",
+          "openingsPerDay"
+        ]
+      },
+      "GamificationMysteryBoxUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "costSyiling": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "maxLength": 120,
+                  "pattern": "\\S"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/GamificationBoxPrizeKind"
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "weight": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100,
+                  "description": "Percent chance (Peluang %); the weights of a box total 100."
+                },
+                "stock": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "label",
+                "kind",
+                "amount",
+                "weight"
+              ]
+            },
+            "maxItems": 20
+          },
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "Optional: saves mystery_box_daily_max."
+          }
+        },
+        "required": [
+          "label",
+          "costSyiling",
+          "isActive",
+          "prizes"
+        ]
+      },
       "RewardCategory": {
         "type": "string",
         "enum": [
@@ -7102,7 +7362,9 @@
           "DRAW_CLOSED",
           "TICKET_LIMIT",
           "INSUFFICIENT_BALANCE",
-          "CONFLICT"
+          "CONFLICT",
+          "MYSTERY_DAILY_LIMIT",
+          "BOX_UNAVAILABLE"
         ]
       },
       "RewardItem": {
@@ -7127,8 +7389,8 @@
             ]
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -7227,12 +7489,12 @@
           },
           "vendor": {
             "type": "string",
-            "maxLength": 100,
+            "maxLength": 60,
             "pattern": "\\S"
           },
           "title": {
             "type": "string",
-            "maxLength": 200,
+            "maxLength": 100,
             "pattern": "\\S"
           },
           "description": {
@@ -7240,24 +7502,25 @@
               "string",
               "null"
             ],
-            "maxLength": 1000
+            "maxLength": 500
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1,
+            "type": "number",
+            "minimum": 0.01,
             "maximum": 10000
           },
           "tokenCost": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 10000
+            "maximum": 100000
           },
           "iconEmoji": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 8
+            "maxLength": 16,
+            "description": "1 to 2 characters as a reader counts them (an emoji may take several code units)."
           },
           "stockQuantity": {
             "type": [
@@ -7266,7 +7529,7 @@
             ],
             "minimum": 0,
             "maximum": 999999999,
-            "description": "null or absent = unlimited."
+            "description": "null or absent = unlimited"
           },
           "maxPerMonthPerStudent": {
             "type": [
@@ -7274,23 +7537,28 @@
               "null"
             ],
             "minimum": 1,
-            "maximum": 99,
+            "maximum": 100,
             "description": "null or absent = no cap."
           },
           "voucherValidityDays": {
             "type": "integer",
             "minimum": 1,
-            "maximum": 1825
+            "maximum": 3650
           },
           "deliveryMethod": {
-            "$ref": "#/components/schemas/RewardDeliveryMethod"
+            "type": "string",
+            "enum": [
+              "manual",
+              "instant"
+            ],
+            "description": "`api` is not offered (FR-ADM-P2-07.3); a stored row may still read `api`."
           },
           "vendorSku": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 100
+            "maxLength": 50
           },
           "displayOrder": {
             "type": "integer",
@@ -7303,14 +7571,14 @@
               "null"
             ],
             "maxLength": 500,
-            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:\\/\\/\\S+$"
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]:\\/\\/\\S+$"
           },
           "termsText": {
             "type": [
               "string",
               "null"
             ],
-            "maxLength": 2000
+            "maxLength": 1000
           },
           "isActive": {
             "type": "boolean"
@@ -7368,8 +7636,8 @@
             ]
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -7612,8 +7880,8 @@
             "type": "string"
           },
           "denominationRm": {
-            "type": "integer",
-            "minimum": 1
+            "type": "number",
+            "minimum": 0.01
           },
           "tokenCost": {
             "type": "integer",
@@ -7830,67 +8098,55 @@
           "id": {
             "$ref": "#/components/schemas/Id"
           },
-          "name": {
+          "label": {
             "type": "string"
           },
-          "description": {
-            "type": "string"
-          },
-          "icon": {
-            "type": "string"
-          },
-          "rarity": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "enum": [
-              "rare",
-              "epic",
-              "legendary",
-              null
-            ]
-          },
-          "costTokens": {
+          "costSyiling": {
             "type": "integer",
             "minimum": 1
           },
-          "coinMin": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "coinMax": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xpMin": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xpMax": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "color1": {
-            "type": "string"
-          },
-          "color2": {
-            "type": "string"
+          "prizes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardMysteryBoxPrize"
+            }
           }
         },
         "required": [
           "id",
-          "name",
-          "description",
-          "icon",
-          "rarity",
-          "costTokens",
-          "coinMin",
-          "coinMax",
-          "xpMin",
-          "xpMax",
-          "color1",
-          "color2"
+          "label",
+          "costSyiling",
+          "prizes"
+        ]
+      },
+      "RewardMysteryBoxPrize": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "syiling",
+              "token"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "chance": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "label",
+          "kind",
+          "amount",
+          "chance"
         ]
       },
       "RewardMysteryBoxHistoryItem": {
@@ -7905,13 +8161,29 @@
           "boxName": {
             "type": "string"
           },
-          "coins": {
-            "type": "integer",
-            "minimum": 0
+          "prizeLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "xp": {
-            "type": "integer",
-            "minimum": 0
+          "prizeKind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "syiling",
+              "token",
+              null
+            ]
+          },
+          "prizeAmount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
           },
           "createdAt": {
             "$ref": "#/components/schemas/Timestamp"
@@ -7921,23 +8193,42 @@
           "id",
           "boxId",
           "boxName",
-          "coins",
-          "xp",
+          "prizeLabel",
+          "prizeKind",
+          "prizeAmount",
           "createdAt"
         ]
       },
       "RewardMysteryBoxesView": {
         "type": "object",
         "properties": {
-          "tokenBalance": {
+          "box": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RewardMysteryBox"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "syilingBalance": {
             "type": "integer",
             "minimum": 0
           },
-          "boxes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RewardMysteryBox"
-            }
+          "dailyMax": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "openedToday": {
+            "type": "integer",
+            "minimum": 0
           },
           "history": {
             "type": "array",
@@ -7948,8 +8239,11 @@
           }
         },
         "required": [
-          "tokenBalance",
-          "boxes",
+          "box",
+          "available",
+          "syilingBalance",
+          "dailyMax",
+          "openedToday",
           "history"
         ]
       },
@@ -7965,16 +8259,29 @@
           "boxName": {
             "type": "string"
           },
-          "icon": {
-            "type": "string"
-          },
-          "coins": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "xp": {
-            "type": "integer",
-            "minimum": 0
+          "prize": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "syiling",
+                  "token"
+                ]
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "label",
+              "kind",
+              "amount"
+            ]
           },
           "tokenBalance": {
             "type": "integer",
@@ -7983,17 +8290,50 @@
           "syilingBalance": {
             "type": "integer",
             "minimum": 0
+          },
+          "achievementsUnlocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AchievementUnlocked"
+            },
+            "description": "Badges this opening unlocked (their reward is a separate ledger row). Absent when none."
           }
         },
         "required": [
           "openingId",
           "boxId",
           "boxName",
-          "icon",
-          "coins",
-          "xp",
+          "prize",
           "tokenBalance",
           "syilingBalance"
+        ]
+      },
+      "AchievementUnlocked": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "RewardMysteryBoxOpenRequest": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key (DM-78), per user: a repeat returns the first opening and moves nothing."
+          }
+        },
+        "required": [
+          "clientUuid"
         ]
       },
       "RewardCabutanDraw": {
@@ -8019,6 +8359,11 @@
           "ticketsOwned": {
             "type": "integer",
             "minimum": 0
+          },
+          "ticketsSold": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Tickets sold in this draw to all pupils (\"Jumlah tiket terjual\", the published odds line)."
           },
           "closesAt": {
             "allOf": [
@@ -8047,8 +8392,53 @@
           "ticketCostSyiling",
           "maxTicketsPerStudent",
           "ticketsOwned",
+          "ticketsSold",
           "closesAt",
           "prizePool"
+        ]
+      },
+      "RewardCabutanWinner": {
+        "type": "object",
+        "properties": {
+          "prize": {
+            "type": "string",
+            "description": "Label of the prize line the winner took."
+          },
+          "name": {
+            "type": "string",
+            "description": "The first given name only: no surname, school or class."
+          },
+          "isYou": {
+            "type": "boolean",
+            "description": "True for the caller's own win: the page shows \"Anda menang!\"."
+          }
+        },
+        "required": [
+          "prize",
+          "name",
+          "isYou"
+        ]
+      },
+      "RewardCabutanResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "winners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardCabutanWinner"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "winners"
         ]
       },
       "RewardCabutanView": {
@@ -8063,11 +8453,18 @@
             "items": {
               "$ref": "#/components/schemas/RewardCabutanDraw"
             }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardCabutanResult"
+            }
           }
         },
         "required": [
           "syilingBalance",
-          "draws"
+          "draws",
+          "results"
         ]
       },
       "RewardTicketBought": {
@@ -95935,12 +96332,62 @@
       }
     },
     "/admin/reward-control/draws": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "List the lucky draws (Cabutan Bertuah), newest first (API-GAME-09)",
+        "description": "Every draw with its prize pool, ticketsSold and winners (empty until the draw is drawn). An open draw whose closing day (Malaysia time) has passed reads closed: the state is derived on read and nothing is written.",
+        "responses": {
+          "200": {
+            "description": "The draws, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GamificationDraw"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "gamification-admin"
         ],
         "summary": "Create a lucky draw (Cabutan Bertuah)",
-        "description": "status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets); there is no route that draws winners (open question).",
+        "description": "status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines and holds at least one; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets). Limits (30 P10-01..05): title 120, description 500, ticket price 1 to 10000, tickets per pupil 1 to 100, prize label 120, closesAt today or later.",
         "parameters": [
           {
             "schema": {
@@ -96004,7 +96451,564 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message), or \"Tarikh tutup tidak sah.\" (closesAt), or fields.closesAt \"Medan ini tidak sah.\" (not a real date).",
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Field messages: fields.title \"Tajuk diperlukan.\" (missing or blank), fields.ticketCostSyiling \"Harga tiket tidak sah.\", fields.prizePool \"Hadiah diperlukan.\" (no prize line, or a blank label; also the top-level message when it is the only error), fields.closesAt \"Tarikh tutup mesti pada masa hadapan.\" (a past day) or \"Medan ini tidak sah.\" (not a real date). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/open": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Open a draft draw: Buka (API-ADM-24)",
+        "description": "No body. draft to open; the draw then sells tickets until its closing day ends or the admin closes it.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status open.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is not a draft).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.closesAt \"Tarikh tutup mesti pada masa hadapan.\" (the closing day of the draft has passed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/close": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Close an open draw: Tutup (API-GAME-09)",
+        "description": "No body. open to closed; tickets can no longer be bought. Winners are drawn from a closed draw by POST /admin/reward-control/draws/{id}/winners.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status closed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the stored state of the draw is not open).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/winners": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Cabut pemenang: draw the winners of a closed draw (API-GAME-09)",
+        "description": "No body. One press draws every prize slot in prize order, in one transaction, and sets the draw to drawn (final: no redraw). Each slot takes one ticket uniformly at random (CSPRNG) among the remaining tickets; the winner's other tickets then leave the pool, so a pupil wins at most one prize per draw. Fewer pupils than prizes gives fewer winners. Allowed on a closed draw, and on an open draw whose closing day (Malaysia time) has passed. Each winner gets the in-app notice \"Tahniah! Anda memenangi {prize} dalam {title}.\". Audited. Safe on a double press: the second answers 409.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw, status drawn, with its winners.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the draw is not closed: draft, still open, already drawn or cancelled), or NO_PARTICIPANTS \"Tiada peserta\" (no ticket was sold; the draw stays closed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws/{id}/winners/{winnerId}/deliver": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Tandakan Dihantar: mark a prize as handed over (API-ADM-24)",
+        "description": "No body. Sets deliveredAt on the winner (the prize is handed over outside the app). Audited. A winner already marked answers 409.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; the id of a winner of this draw (GamificationDrawWinner.id).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; the id of a winner of this draw (GamificationDrawWinner.id).",
+            "name": "winnerId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The draw with the winner marked delivered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (no such draw, or the winner is not a winner of this draw; a non-numeric id gets the router default message).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tindakan ini bercanggah dengan keadaan semasa. Muat semula dan cuba lagi.\" (the winner is already marked delivered).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/mystery-boxes": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Kotak Misteri: boxes, daily limit and openings per day",
+        "description": "Every box with its prize rows (prize rows in stored order), dailyMax (mystery_box_daily_max) and the openings of the last 7 Malaysia days.",
+        "responses": {
+          "200": {
+            "description": "Boxes, dailyMax and openingsPerDay.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationMysteryBoxesAdmin"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/mystery-boxes/{id}": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Save a Kotak Misteri box",
+        "description": "Replaces the label, cost, active flag and prize rows of the box; dailyMax (optional) saves mystery_box_daily_max. There is no POST: boxes are not created through the API. An active box needs weights that total 100.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationMysteryBoxUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The list after the save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationMysteryBoxesAdmin"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kotak tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Jumlah peluang mesti 100%.\" with fields.prizes (an active box whose weights do not total 100, or an active box with no prize).",
             "content": {
               "application/json": {
                 "schema": {
@@ -96197,10 +97201,11 @@
         "tags": [
           "rewards"
         ],
-        "summary": "Kotak Misteri: boxes, token balance, last 10 openings",
+        "summary": "Kotak Misteri: the active box, odds, balance, daily count, last 10 openings",
+        "description": "Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false only when no box is active. An active box with no prize that can be won is returned with prizes [] and available false (N5).",
         "responses": {
           "200": {
-            "description": "Boxes and own history.",
+            "description": "The box, own balance and history.",
             "content": {
               "application/json": {
                 "schema": {
@@ -96236,7 +97241,7 @@
           "rewards"
         ],
         "summary": "Open a mystery box",
-        "description": "One transaction: opening row, token debit (costTokens, source mystery_box), syiling credit of coins (ledger earn, source mystery_box, description \"Kotak Misteri: {box name}\", ref opening:{id}), xp added when above 0. coins and xp are uniform integers inside the box ranges (the RNG is not specified). Success is 200, not 201. No body.",
+        "description": "One transaction (lock order: user, box FOR SHARE, prizes FOR UPDATE). Checks run in this order: Mod Pelajar (403), a repeat of the same clientUuid (returns the first opening, moves nothing), box exists and is active (404), N5 no prize can be won (409 BOX_UNAVAILABLE), daily limit mystery_box_daily_max per Malaysia day (429 MYSTERY_DAILY_LIMIT), syiling balance (409 INSUFFICIENT_BALANCE). Then the cost (mystery_boxes.cost_syiling) is debited as a spend (source mystery_box, key opening:{id}:cost), one prize is drawn by weight among the prizes whose stock is null or above 0, and credited: syiling as an earn \"Kotak Misteri: {prize}\" (key opening:{id}:prize) or tokens. A limited stock drops by 1. Success is 200, not 201.",
         "parameters": [
           {
             "schema": {
@@ -96263,6 +97268,16 @@
             "in": "header"
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardMysteryBoxOpenRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Opened.",
@@ -96293,7 +97308,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "FORBIDDEN \"Tidak dibenarkan dalam Mod Pelajar.\" (Mod Pelajar), or the CSRF refusal.",
             "content": {
               "application/json": {
                 "schema": {
@@ -96303,7 +97318,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Kotak tidak dijumpai.\"",
+            "description": "NOT_FOUND \"Kotak tidak dijumpai.\" (unknown, inactive or malformed id).",
             "content": {
               "application/json": {
                 "schema": {
@@ -96313,7 +97328,27 @@
             }
           },
           "409": {
-            "description": "INSUFFICIENT_TOKENS \"Token tidak mencukupi.\"",
+            "description": "INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\"; BOX_UNAVAILABLE \"Kotak tidak tersedia buat masa ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.clientUuid \"The client uuid field must be a valid UUID.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "MYSTERY_DAILY_LIMIT \"Had kotak hari ini telah dicapai. Cuba lagi esok.\" (or the write rate limit).",
             "content": {
               "application/json": {
                 "schema": {
@@ -96330,11 +97365,11 @@
         "tags": [
           "rewards"
         ],
-        "summary": "Cabutan Bertuah: open draws",
-        "description": "Only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id.",
+        "summary": "Cabutan Bertuah: open draws and results (API-GAME-08)",
+        "description": "draws: only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id; each carries ticketsOwned (the caller) and ticketsSold (all pupils). results (\"Keputusan Cabutan\"): drawn draws only, newest 10 by drawn time, never cancelled draws; winners in prize order then slot, shown by first given name; the caller's own win has isYou true.",
         "responses": {
           "200": {
-            "description": "Open draws with the caller ticket counts.",
+            "description": "Open draws with the caller ticket counts, and the latest results.",
             "content": {
               "application/json": {
                 "schema": {
@@ -96618,7 +97653,7 @@
           "rewards-admin"
         ],
         "summary": "Bulk action on rewards",
-        "description": "activate, deactivate, delete (rewards with any redemption row are kept and reported in keptIds), set_stock, set_max_per_month, set_token_cost (new cost = floor(cost * (1 + pct/100) + 0.5), clamped to 1..10000; denominationRm is unchanged).",
+        "description": "activate, deactivate, delete (rewards with any redemption row are kept and reported in keptIds), set_stock, set_max_per_month, set_token_cost (new cost = floor(cost * (1 + pct/100) + 0.5), clamped to 1..100000; denominationRm is unchanged).",
         "parameters": [
           {
             "schema": {

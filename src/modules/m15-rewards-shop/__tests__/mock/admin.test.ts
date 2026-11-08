@@ -2,7 +2,8 @@
  * M15-T1 admin endpoints #1–#8 (SRS M15 v1.4 §6.7, §6.8, §7; BR-M15-02, 04, 08–11, 14, 15, 24):
  * the seed values, the catalogue list and cards, create / edit / bulk, the redemption queue and its
  * deliver / cancel transitions. Every test starts from a fresh seed. Row ids are opaque text on the
- * wire (API-ADM-15; S7-T11 part 1A).
+ * wire (API-ADM-15), and the validation follows the server's P07 limits and BM messages (S7-T11,
+ * the mock in step with `shop/hadiah.input.ts`).
  */
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
@@ -182,7 +183,7 @@ describe('#2–#4 create and edit', () => {
       voucherValidityDays: 365,
       deliveryMethod: 'manual',
       displayOrder: 100,
-      isActive: true,
+      isActive: false, // P07-14: the admin switches the catalogue on
       requiresParentConsent: false,
       stockQuantity: null,
       maxPerMonthPerStudent: null,
@@ -209,13 +210,13 @@ describe('#2–#4 create and edit', () => {
 
     const bad = await call<ErrorBody>('POST', '/api/admin/hadiah', ADMIN, {
       category: 'nope',
-      title: 'x'.repeat(201),
+      title: 'x'.repeat(101),
       denominationRm: 0,
-      tokenCost: 10001,
-      maxPerMonthPerStudent: 100,
-      voucherValidityDays: 1826,
+      tokenCost: 100_001,
+      maxPerMonthPerStudent: 101,
+      voucherValidityDays: 3651,
       displayOrder: 10000,
-      imageUrl: 'ftp://x',
+      imageUrl: 'http://x.example/a.png',
     })
     expect(bad.status).toBe(422)
     expect(Object.keys(bad.body.error.fields ?? {}).sort()).toEqual(
@@ -232,6 +233,79 @@ describe('#2–#4 create and edit', () => {
       ].sort(),
     )
     expect(hadiah.cards().total).toBe(60)
+  })
+
+  it('answers the P07 limits and BM messages of the server', async () => {
+    const post = async (extra: Record<string, unknown>) =>
+      (await call<ErrorBody>('POST', '/api/admin/hadiah', ADMIN, { ...MINIMAL, ...extra })).body
+        .error.fields ?? {}
+    const empty = (await call<ErrorBody>('POST', '/api/admin/hadiah', ADMIN, {})).body.error.fields
+    expect(empty).toEqual({
+      category: 'Kategori diperlukan.',
+      vendor: 'Vendor diperlukan.',
+      title: 'Tajuk diperlukan.',
+      denominationRm: 'Nilai (RM) diperlukan.',
+      tokenCost: 'Kos Token diperlukan.',
+    })
+    expect(await post({ vendor: 'v'.repeat(61) })).toEqual({
+      vendor: 'Vendor tidak boleh melebihi 60 aksara.',
+    })
+    expect(await post({ description: 'd'.repeat(501) })).toEqual({
+      description: 'Penerangan tidak boleh melebihi 500 aksara.',
+    })
+    expect(await post({ denominationRm: 0.005 })).toEqual({
+      denominationRm: 'Format Nilai (RM) tidak sah.',
+    })
+    expect(await post({ denominationRm: 10001 })).toEqual({
+      denominationRm: 'Nilai (RM) mesti antara 0.01 dan 10000.',
+    })
+    expect(await post({ tokenCost: 0 })).toEqual({
+      tokenCost: 'Kos Token mesti antara 1 dan 100000.',
+    })
+    expect(await post({ stockQuantity: -1 })).toEqual({ stockQuantity: 'Stok tidak sah.' })
+    expect(await post({ maxPerMonthPerStudent: 0 })).toEqual({
+      maxPerMonthPerStudent: 'Maks/bulan/pelajar mesti antara 1 dan 100.',
+    })
+    expect(await post({ voucherValidityDays: 0 })).toEqual({
+      voucherValidityDays: 'Sah Hari mesti antara 1 dan 3650.',
+    })
+    expect(await post({ iconEmoji: 'abc' })).toEqual({
+      iconEmoji: 'Emoji Icon tidak boleh melebihi 2 aksara.',
+    })
+    expect(await post({ vendorSku: 's'.repeat(51) })).toEqual({
+      vendorSku: 'Vendor SKU tidak boleh melebihi 50 aksara.',
+    })
+    expect(await post({ termsText: 't'.repeat(1001) })).toEqual({
+      termsText: 'Terma Khas tidak boleh melebihi 1000 aksara.',
+    })
+    expect(await post({ imageUrl: 'http://x.example/a.png' })).toEqual({
+      imageUrl: 'Format Image URL tidak sah.',
+    })
+    expect(await post({ deliveryMethod: 'api' })).toEqual({
+      deliveryMethod: 'Format delivery tidak sah.',
+    })
+  })
+
+  it('accepts 2 decimals, a one-character flag or a two-emoji icon, https and instant delivery', async () => {
+    const ok = await call<{ data: HadiahReward }>('POST', '/api/admin/hadiah', ADMIN, {
+      ...MINIMAL,
+      denominationRm: 0.01,
+      iconEmoji: '🇲🇾',
+      imageUrl: 'https://img.example/a.png',
+      deliveryMethod: 'instant',
+      tokenCost: 100_000,
+      voucherValidityDays: 3650,
+      maxPerMonthPerStudent: 100,
+      requiresParentConsent: true, // ignored: no consent status exists (FR-GM-21.3)
+    })
+    expect(ok.status).toBe(201)
+    expect(ok.body.data).toMatchObject({
+      denominationRm: 0.01,
+      iconEmoji: '🇲🇾',
+      deliveryMethod: 'instant',
+      tokenCost: 100_000,
+      requiresParentConsent: false,
+    })
   })
 
   it('reads and replaces a reward; unknown ids are 404', async () => {
@@ -282,13 +356,17 @@ describe('#5 bulk actions (BR-M15-11, BR-M15-24)', () => {
     await bulk({ action: 'set_max_per_month', ids: [1], maxPerMonthValue: '0' })
     expect(hadiah.get(1)?.maxPerMonthPerStudent).toBeNull()
     for (const bad of [
-      { action: 'set_stock', stockValue: '1000000' },
+      { action: 'set_stock', stockValue: '1000000000' },
       { action: 'set_stock', stockValue: '-1' },
       { action: 'set_stock', stockValue: '1.5' },
-      { action: 'set_max_per_month', maxPerMonthValue: '100' },
+      { action: 'set_max_per_month', maxPerMonthValue: '101' },
     ]) {
       expect((await bulk({ ...bad, ids: [1] })).status).toBe(422)
     }
+    await bulk({ action: 'set_stock', ids: [1], stockValue: '999999999' })
+    expect(hadiah.get(1)?.stockQuantity).toBe(999_999_999)
+    await bulk({ action: 'set_max_per_month', ids: [1], maxPerMonthValue: '100' })
+    expect(hadiah.get(1)?.maxPerMonthPerStudent).toBe(100)
   })
 
   it('adjusts the token cost by parseInt(text) percent, half up, clamped (denomination unchanged)', async () => {
@@ -305,9 +383,15 @@ describe('#5 bulk actions (BR-M15-11, BR-M15-24)', () => {
     expect(hadiah.get(3)?.tokenCost).toBe(10)
     await bulk({ action: 'set_token_cost', ids: [57], tokenCostDeltaPct: '500' })
     expect(hadiah.get(57)?.tokenCost).toBe(6000)
+    await bulk({ action: 'set_token_cost', ids: [57], tokenCostDeltaPct: '500' })
+    await bulk({ action: 'set_token_cost', ids: [57], tokenCostDeltaPct: '500' })
+    expect(hadiah.get(57)?.tokenCost).toBe(100_000) // clamped to the P07-07 maximum
     for (const bad of ['abc', '0', '', '-91', '501', '-0']) {
       const r = await bulk({ action: 'set_token_cost', ids: [1], tokenCostDeltaPct: bad })
       expect(r.status).toBe(422)
+      expect((r.body as unknown as ErrorBody).error.fields).toEqual({
+        tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.',
+      })
     }
   })
 
@@ -316,6 +400,8 @@ describe('#5 bulk actions (BR-M15-11, BR-M15-24)', () => {
     expect((await bulk({ action: 'activate', ids: [] })).status).toBe(422)
     expect((await bulk({ action: 'activate' })).status).toBe(422)
     expect((await bulk({ action: 'activate', ids: ['x'] })).status).toBe(422)
+    const none = (await bulk({ action: 'activate', ids: [] })).body as unknown as ErrorBody
+    expect(none.error.fields).toEqual({ ids: 'Sila pilih hadiah.' })
   })
 
   it('deletes rewards without redemptions and keeps those with any (ids 10 and 16)', async () => {
@@ -362,6 +448,13 @@ describe('#6 redemption queue (BR-M15-15)', () => {
     expect(consent.body.meta.activeStatus).toBeNull()
     const all = await queue('?status=all')
     expect(all.body.data.find((r) => r.id === '15102')?.status).toBe('pending_parent_consent')
+  })
+
+  it('a page beyond the last has no rows and totalPages for the screen to go back to', async () => {
+    m15Hooks.m15LoadFixture('queue')
+    const r = await queue('?status=all&page=9')
+    expect(r.body.data).toEqual([])
+    expect(r.body.meta).toMatchObject({ page: 9, totalPages: 1, totalItems: 6, from: null })
   })
 
   it('shows the queue fixture: all rows newest first, counts and cards follow', async () => {
@@ -447,5 +540,15 @@ describe('#7 deliver, #8 cancel (BR-M15-08…10)', () => {
     expect(wallet.summary(4).tokenBalance).toBe(25)
     expect(codeOf(await call('POST', url, ADMIN))).toBe('CONFLICT')
     expect(wallet.summary(4).tokenBalance).toBe(25)
+  })
+
+  it('answers the BM conflict text and the code messages of the server', async () => {
+    const url = '/api/admin/hadiah/redemptions'
+    const twice = await call<ErrorBody>('POST', `${url}/15103/cancel`, ADMIN)
+    expect(twice.body.error.message).toBe('Tebusan ini tidak lagi menunggu pemprosesan.')
+    const blank = await call<ErrorBody>('POST', `${url}/15101/deliver`, ADMIN, { code: ' ' })
+    expect(blank.body.error.fields).toEqual({ code: 'Kod baucar diperlukan.' })
+    const long = await call<ErrorBody>('POST', `${url}/15101/deliver`, ADMIN, { code: 'x'.repeat(101) })
+    expect(long.body.error.fields).toEqual({ code: 'Kod baucar tidak boleh melebihi 100 aksara.' })
   })
 })

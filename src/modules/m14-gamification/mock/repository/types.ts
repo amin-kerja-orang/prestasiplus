@@ -67,7 +67,7 @@ export interface Tier {
   isActive: boolean
 }
 
-export type ChallengeType = 'quiz_count' | 'accuracy' | 'topic_variety' | 'streak' | 'time_spent'
+export type ChallengeType = 'quiz_count' | 'accuracy' | 'topic_variety' | 'streak' | 'time_spent' | 'combo'
 /** BR-M14-12 internal metric. */
 export type ChallengeMetric =
   | 'sessions'
@@ -77,6 +77,7 @@ export type ChallengeMetric =
   | 'chapters'
   | 'minutes'
   | 'streak'
+  | 'bestCombo'
 export type Difficulty = 'easy' | 'medium' | 'hard'
 
 /** DATA-M14-04 DailyChallenge. */

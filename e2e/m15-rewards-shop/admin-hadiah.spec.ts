@@ -1,6 +1,6 @@
 /**
- * M15 admin Hadiah and Tebusan at 375 / 768 / 1280 (S7-T11 part 1A; 30 P2-07, P2-08, 48 GAME-21): the catalogue
- * list, `Hantar kod` and `Batal` on the queue. The admin (Admin Pusat)
+ * M15 admin Hadiah and Tebusan at 375 / 768 / 1280 (S7-T11; 30 P2-07, P2-08, 48 GAME-21): the catalogue
+ * list, a new reward through the form, `Hantar kod` and `Batal` on the queue. The admin (Admin Pusat)
  * works on the mock: 59 rewards, all Off, and the `queue` fixture (one Menunggu, one stored
  * pending_parent_consent, one Dihantar row).
  */
@@ -39,14 +39,14 @@ async function spaGo(page: Page, path: string): Promise<void> {
 const wide = (page: Page): boolean => viewportWidth(page) >= 768
 
 test.describe('M15 admin Hadiah', MODULE, () => {
-  test('list: tiles, pills, 50 a page, bulk toolbar, out-of-range page @m15', async ({
+  test('list: tiles, pills, 50 a page, bulk toolbar, edit link, out-of-range page @m15', async ({
     page,
     gotoApp,
     loginAs,
     mock,
   }) => {
     await loginAs(ADMIN)
-    await gotoApp('/admin/hadiah/tebusan')
+    await gotoApp('/admin/hadiah/baharu')
     await mock.hook('m15LoadFixture', 'queue')
     await spaGo(page, '/admin/hadiah')
 
@@ -124,6 +124,61 @@ test.describe('M15 admin Hadiah', MODULE, () => {
     await spaGo(page, '/admin/hadiah?page=9')
     await expect(page).toHaveURL(/page=2/)
     await expect(page.getByTestId('hadiah-status-59')).toBeVisible()
+  })
+
+  test('create: field messages first, then a new reward that is Off @m15', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs(ADMIN)
+    await gotoApp('/admin/hadiah')
+    await page.getByTestId('hadiah-add').click()
+    await expect(page).toHaveURL(/\/admin\/hadiah\/baharu$/)
+    await expect(page.getByTestId('hadiah-form')).toBeVisible()
+
+    // The consent field is not on the form; `api` is not offered.
+    await expect(page.getByText('Perlu kelulusan ibu bapa')).toHaveCount(0)
+    const delivery = page.getByTestId('hadiah-delivery')
+    await expect(delivery.locator('option')).toHaveText(['Manual (admin paste)', 'Instant'])
+    await expect(page.getByTestId('hadiah-active')).not.toBeChecked()
+
+    await page.getByRole('button', { name: 'Tambah' }).click()
+    for (const message of [
+      'Kategori diperlukan.',
+      'Vendor diperlukan.',
+      'Tajuk diperlukan.',
+      'Nilai (RM) diperlukan.',
+      'Kos Token diperlukan.',
+    ]) {
+      await expect(page.getByText(message)).toBeVisible()
+    }
+    await expectNoHorizontalScroll(page)
+
+    await page.getByTestId('hadiah-category').selectOption('telco')
+    await page.getByTestId('hadiah-vendor').fill('Hotlink')
+    await page.getByTestId('hadiah-title').fill('Hotlink Topup RM10')
+    await page.getByTestId('hadiah-denomination').fill('10')
+    await page.getByTestId('hadiah-token-cost').fill('10')
+    await page.getByTestId('hadiah-stock').fill('5')
+    await page.getByRole('button', { name: 'Tambah' }).click()
+
+    // Back on the list; the new reward (id 60) is in Telco and Off.
+    await expect(page).toHaveURL(/\/admin\/hadiah$/)
+    await expect(page.getByTestId('hadiah-tile-total')).toContainText('60')
+    await spaGo(page, '/admin/hadiah?cat=telco')
+    await expect(page.getByTestId('hadiah-status-60')).toHaveText('Off')
+
+    // Edit it: the form is filled and a save returns to the list.
+    await page.getByTestId('hadiah-edit-60').click()
+    await expect(page).toHaveURL(/\/admin\/hadiah\/60\/edit$/)
+    await expect(page.getByTestId('hadiah-title')).toHaveValue('Hotlink Topup RM10')
+    await page.getByTestId('hadiah-title').fill('Hotlink Topup RM12')
+    await page.getByRole('button', { name: 'Simpan' }).click()
+    await expect(page).toHaveURL(/\/admin\/hadiah$/)
+    await spaGo(page, '/admin/hadiah?cat=telco')
+    if (wide(page)) await expect(page.getByTestId('hadiah-title-60')).toContainText('Hotlink Topup RM12')
+    else await expect(page.getByTestId('hadiah-card-60')).toContainText('Hotlink Topup RM12')
   })
 })
 

@@ -9,12 +9,20 @@ import { ApiError } from '../../common/errors/api-error'
  */
 export type Body = Readonly<Record<string, unknown>>
 
-export type FieldSpec =
+/** Field-specific copy where an SRS row gives one; without it the generic "Medan ini diperlukan." / "Medan ini tidak sah." apply. */
+export interface FieldMessages {
+  required?: string
+  invalid?: string
+}
+
+export type FieldSpec = (
   | { kind: 'int'; min?: number; max?: number; optional?: boolean }
   | { kind: 'id'; optional?: boolean }
   | { kind: 'text'; max?: number; pattern?: RegExp; optional?: boolean }
   | { kind: 'enum'; values: readonly string[]; optional?: boolean }
   | { kind: 'bool'; optional?: boolean }
+) &
+  FieldMessages
 
 type Specs = Readonly<Record<string, FieldSpec>>
 type Out<F extends FieldSpec> = F extends { optional: true }
@@ -59,52 +67,58 @@ export const notFoundError = (message?: string): ApiError => ApiError.of('NOT_FO
 
 /** Reads `input` by `specs`; throws the 422 when any field fails. Absent or blank optional fields read `undefined`. */
 export function readFields<S extends Specs>(input: unknown, specs: S): Parsed<S> {
+  const { value, fields } = collectFields(input, specs)
+  if (Object.keys(fields).length > 0) throw validationFailure(fields)
+  return value
+}
+
+/** As `readFields`, but returns the failing fields instead of throwing, so the caller can add its own checks to the same answer. */
+export function collectFields<S extends Specs>(input: unknown, specs: S): { value: Parsed<S>; fields: Record<string, string> } {
   const body = bodyOf(input)
   const fields: Record<string, string> = {}
   const value: Record<string, unknown> = {}
   for (const [name, spec] of Object.entries(specs)) {
     const raw = body[name]
     if (isEmpty(raw)) {
-      if (!spec.optional) fields[name] = MSG.required
+      if (!spec.optional) fields[name] = spec.required ?? MSG.required
       continue
     }
     switch (spec.kind) {
       case 'int': {
         const n = intOf(raw)
-        if (n === undefined || (spec.min !== undefined && n < spec.min) || (spec.max !== undefined && n > spec.max)) fields[name] = MSG.invalid
+        if (n === undefined || (spec.min !== undefined && n < spec.min) || (spec.max !== undefined && n > spec.max)) fields[name] = spec.invalid ?? MSG.invalid
         else value[name] = n
         break
       }
       case 'id': {
         const text = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : ''
         if (/^[1-9]\d{0,18}$/.test(text) && BigInt(text) <= 9223372036854775807n) value[name] = text
-        else fields[name] = MSG.invalid
+        else fields[name] = spec.invalid ?? MSG.invalid
         break
       }
       case 'text': {
-        if (typeof raw !== 'string') fields[name] = MSG.invalid
+        if (typeof raw !== 'string') fields[name] = spec.invalid ?? MSG.invalid
         else {
           const text = raw.trim()
-          if ((spec.max !== undefined && [...text].length > spec.max) || (spec.pattern !== undefined && !spec.pattern.test(text))) fields[name] = MSG.invalid
+          if ((spec.max !== undefined && [...text].length > spec.max) || (spec.pattern !== undefined && !spec.pattern.test(text))) fields[name] = spec.invalid ?? MSG.invalid
           else value[name] = text
         }
         break
       }
       case 'enum': {
         if (typeof raw === 'string' && spec.values.includes(raw)) value[name] = raw
-        else fields[name] = MSG.invalid
+        else fields[name] = spec.invalid ?? MSG.invalid
         break
       }
       case 'bool': {
         const b = boolOf(raw)
-        if (b === undefined) fields[name] = MSG.invalid
+        if (b === undefined) fields[name] = spec.invalid ?? MSG.invalid
         else value[name] = b
         break
       }
     }
   }
-  if (Object.keys(fields).length > 0) throw validationFailure(fields)
-  return value as Parsed<S>
+  return { value: value as Parsed<S>, fields }
 }
 
 /** A route `:id`: digits only and within bigint range, else the router's own 404 NOT_FOUND (generic BM default) (the mock `int()` param). */

@@ -51,7 +51,7 @@ import {
 } from '../../api/types'
 import { nowMs } from '../repository/clock'
 import { hadiahRepo } from '../repository/hadiah'
-import { balanceOf, buyTicket, listOpenDraws, ticketsOwned } from '../repository/m14-seam'
+import { balanceOf, buyTicket, listOpenDraws, ticketKeyUsedElsewhere, ticketsOwned, ticketsSold } from '../repository/m14-seam'
 import { mysteryBoxRepo } from '../repository/mystery-box'
 import { M15Error, type HadiahRedemption } from '../repository/types'
 import { refusal } from './admin'
@@ -91,38 +91,35 @@ function redeem(req: MockRequest): MockResponse {
 // --- #10, #11 --------------------------------------------------------------------------------------
 
 function listBoxes(req: MockRequest): MockResponse {
-  const userId = sessionUserId(req)
-  const boxes = mysteryBoxRepo.boxes()
-  const data: MysteryBoxesView = {
-    tokenBalance: balanceOf(userId).tokenBalance,
-    boxes: boxes.map((b) => ({ ...b })),
-    history: mysteryBoxRepo.openingsOf(userId, 10).map((o) => ({
-      id: o.id,
-      boxId: o.boxId,
-      boxName: mysteryBoxRepo.box(o.boxId)?.name ?? '',
-      coins: o.coins,
-      xp: o.xp,
-      createdAt: o.createdAt,
-    })),
-  }
+  const data: MysteryBoxesView = mysteryBoxRepo.view(sessionUserId(req))
   return ok(data)
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function openBox(req: MockRequest): MockResponse {
+  const raw =
+    typeof req.body === 'object' && req.body !== null
+      ? (req.body as { clientUuid?: unknown }).clientUuid
+      : undefined
+  if (typeof raw !== 'string' || !UUID.test(raw)) {
+    return validationError({ clientUuid: 'The client uuid field must be a valid UUID.' })
+  }
   try {
-    const r = mysteryBoxRepo.open(sessionUserId(req), idOf(req))
+    const r = mysteryBoxRepo.open(sessionUserId(req), idOf(req), raw.toLowerCase())
     const data: MysteryBoxOpened = {
       openingId: r.opening.id,
-      boxId: r.box.id,
-      boxName: r.box.name,
-      icon: r.box.icon,
-      coins: r.opening.coins,
-      xp: r.opening.xp,
+      boxId: r.opening.boxId,
+      boxName: r.boxName,
+      prize: r.prize,
       tokenBalance: r.tokenBalance,
       syilingBalance: r.syilingBalance,
     }
     return ok(data)
   } catch (e) {
+    if (e instanceof M15Error && e.code === 'CLIENT_UUID_REUSED') {
+      return validationError({ clientUuid: e.message })
+    }
     if (e instanceof M15Error) return refusal(e)
     throw e
   }
@@ -146,10 +143,12 @@ function listCabutan(req: MockRequest): MockResponse {
     ticketCostSyiling: d.ticketCostSyiling,
     maxTicketsPerStudent: d.maxTicketsPerStudent,
     ticketsOwned: ticketsOwned(d.id, userId),
+    ticketsSold: ticketsSold(d.id),
     closesAt: d.closesAt,
     prizePool: d.prizePool.map((p) => ({ label: p.label, valueSen: p.valueSen, qty: p.qty })),
   }))
-  const data: CabutanView = { syilingBalance: balanceOf(userId).syilingBalance, draws }
+  // The mock has no `drawn` state (M14 draws are draft | open | closed), so there is no result to list.
+  const data: CabutanView = { syilingBalance: balanceOf(userId).syilingBalance, draws, results: [] }
   return ok(data)
 }
 
@@ -157,7 +156,15 @@ function buyCabutanTicket(req: MockRequest): MockResponse {
   const userId = sessionUserId(req)
   const drawId = Number(req.params.drawId)
   try {
-    const syilingBalance = buyTicket(drawId, userId)
+    const key =
+      typeof req.body === 'object' && req.body !== null
+        ? (req.body as { clientUuid?: unknown }).clientUuid
+        : undefined
+    const clientUuid = typeof key === 'string' ? key : undefined
+    if (clientUuid !== undefined && ticketKeyUsedElsewhere(drawId, userId, clientUuid)) {
+      return validationError({ clientUuid: 'The client uuid field must be a valid UUID.' })
+    }
+    const syilingBalance = buyTicket(drawId, userId, clientUuid)
     const data: TicketBought = {
       drawId,
       ticketsOwned: ticketsOwned(drawId, userId),

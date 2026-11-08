@@ -22,7 +22,7 @@
  *  11. poc-classes            classes and rosters over the population
  *  12. poc-bijak-sittings     submitted Bijak SPM sittings, results and aggregates
  *  13. battle                 battle arena demo rows (BE-44)
- *  14. games                  Permainan rooms, solo sessions, leagues, Sekolah Bersaing (BE-45)
+ *  14. games                  Permainan rooms, solo sessions, leagues (BE-45)
  *  15. poc-cikgu              Cikgu Alesa demo rows
  *  16. pksk                   PKSK demo rows (BE-42)
  *  17. poc-performance        headcount configs and entries, timeline posts (BE-19)

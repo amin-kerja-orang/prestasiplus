@@ -1,7 +1,5 @@
 import {
   RewardCabutanViewSchema,
-  RewardMysteryBoxOpenedSchema,
-  RewardMysteryBoxesViewSchema,
   RewardRedeemResultSchema,
   RewardTicketBoughtSchema,
   ShopDigitalItemsResponseSchema,
@@ -268,75 +266,7 @@ describe('M15 student routes (BE-23)', () => {
     })
   })
 
-  describe('Kotak Misteri', () => {
-    it('lists the four boxes with the token balance and an empty history', async () => {
-      const api = await as(STUDENT_2)
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.boxes.map((b) => [b.id, b.name, b.costTokens])).toEqual([
-        ['1', 'Kotak Gangsa', 2],
-        ['2', 'Kotak Perak', 5],
-        ['3', 'Kotak Emas', 10],
-        ['4', 'Kotak Legenda', 25],
-      ])
-      expect(view.history).toEqual([])
-    })
-
-    it('opens a box: 200, tokens debited, coins credited with the ledger text, xp added, deterministic under the seeded PRNG', async () => {
-      const api = await as(STUDENT_MAJU)
-      const uid = await userIdOf(t.db, STUDENT_MAJU)
-      await fund(t, uid, { tokens: 40 }, 'box')
-      const before = await walletRow(t, uid)
-      const res = await api.post('/gamification/mystery-boxes/2/open')
-      expect(res.status, JSON.stringify(res.body)).toBe(200)
-      const o = RewardMysteryBoxOpenedSchema.parse(res.body.data)
-      expect(o).toMatchObject({ boxId: '2', boxName: 'Kotak Perak', icon: '🎁' })
-      expect(o.coins).toBeGreaterThanOrEqual(10)
-      expect(o.coins).toBeLessThanOrEqual(50)
-      expect(o.xp).toBeGreaterThanOrEqual(5)
-      expect(o.xp).toBeLessThanOrEqual(25)
-      const after = await walletRow(t, uid)
-      expect(after.tokens).toBe(before.tokens - 5)
-      expect(after.syiling).toBe(before.syiling + o.coins)
-      expect(after.xp).toBe(before.xp + o.xp)
-      expect(o).toMatchObject({ tokenBalance: after.tokens, syilingBalance: after.syiling })
-      const led = await t.db.query<{ type: string; description: string; amount: number; source_id: string }>(`select type, description, amount, source_id from coin_ledger where user_id = $1 and source = 'mystery_box'`, [uid])
-      expect(led).toEqual([{ type: 'earn', description: 'Kotak Misteri: Kotak Perak', amount: o.coins, source_id: `opening:${o.openingId}` }])
-      // Same (user, opening number) => same result: the stream depends only on the seed string.
-      const { fnv1a32, mulberry32 } = await import('../../src/db/prng')
-      const rng = mulberry32(fnv1a32(`m15-mystery:${uid}:0`))
-      expect([o.coins, o.xp]).toEqual([rng.int(10, 50), rng.int(5, 25)])
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.history).toHaveLength(1)
-      expect(view.history[0]).toMatchObject({ id: o.openingId, boxId: '2', boxName: 'Kotak Perak', coins: o.coins, xp: o.xp })
-      expect(view.tokenBalance).toBe(after.tokens)
-    })
-
-    it('keeps at most the last 10 openings, newest first', async () => {
-      const api = await as(STUDENT_MAJU)
-      const uid = await userIdOf(t.db, STUDENT_MAJU)
-      await fund(t, uid, { tokens: 60 }, 'box10')
-      for (let i = 0; i < 11; i++) {
-        t.clock.advance(1000)
-        expect((await api.post('/gamification/mystery-boxes/1/open')).status).toBe(200)
-      }
-      const view = RewardMysteryBoxesViewSchema.parse((await api.get('/gamification/mystery-boxes')).body.data)
-      expect(view.history).toHaveLength(10)
-      const ids = view.history.map((h) => Number(h.id))
-      expect(ids).toEqual([...ids].sort((a, b) => b - a))
-    })
-
-    it('404 for an unknown box (Kotak tidak dijumpai.) and a non-numeric id (Not Found.); 409 INSUFFICIENT_TOKENS writes nothing', async () => {
-      const api = await as(STUDENT_2)
-      const uid = await userIdOf(t.db, STUDENT_2)
-      expectError(await api.post('/gamification/mystery-boxes/9/open'), 404, 'NOT_FOUND', 'Kotak tidak dijumpai.')
-      expectError(await api.post('/gamification/mystery-boxes/abc/open'), 404, 'NOT_FOUND', 'Rekod tidak dijumpai.')
-      await t.db.query(`update wallets set token_balance = 3 where user_id = $1`, [uid]) // fixture: below the cost of the Legenda box
-      const before = await walletRow(t, uid)
-      expectError(await api.post('/gamification/mystery-boxes/4/open'), 409, 'INSUFFICIENT_TOKENS', 'Token tidak mencukupi.')
-      expect(await walletRow(t, uid)).toEqual(before)
-      expect(await t.db.query(`select 1 from mystery_box_openings where user_id = $1`, [uid])).toHaveLength(0)
-    })
-  })
+  // Kotak Misteri (pupil box on the 0222 tables, S7-T07 P8): see mystery-box.spec.ts.
 
   describe('mystery box randomness', () => {
     it('production binds the CSPRNG source: in range and not a function of the key', async () => {
@@ -460,7 +390,7 @@ describe('M15 student routes (BE-23)', () => {
       const before = await walletRow(t, uid)
       const e1 = expectError(await api.post('/hadiah/redemptions', { rewardId: reward }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expect(e1.code).toBe('FORBIDDEN')
-      expectError(await api.post('/gamification/mystery-boxes/1/open'), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
+      expectError(await api.post('/gamification/mystery-boxes/5/open', { clientUuid: '0b7e6f3a-52a1-4c9d-8e11-3f6a9d2c4b70' }), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expectError(await api.post(`/cabutan/${draw}/tickets`), 403, 'FORBIDDEN', 'Tidak dibenarkan dalam Mod Pelajar.')
       expect(await walletRow(t, uid)).toEqual(before)
       expect(await stockOf(t, reward)).toBe(5)
@@ -469,6 +399,76 @@ describe('M15 student routes (BE-23)', () => {
       expect(await t.db.query(`select 1 from mystery_box_openings where user_id = $1`, [uid])).toHaveLength(0)
       expect((await api.get('/cabutan')).status).toBe(200)
       expect((await api.get('/gamification/mystery-boxes')).status).toBe(200)
+    })
+  })
+
+  describe('Cabutan Bertuah: ticketsSold and Keputusan Cabutan (S7-T07 P4, API-GAME-08)', () => {
+    const namedUser = async (name: string): Promise<string> => (await t.db.query<{ id: string }>(`insert into users (name) values ($1) returning id::text`, [name]))[0]!.id
+
+    /** A drawn draw whose prize lines take `winners` (one user per prize line, in prize order), drawn at `drawnAt`. */
+    async function insertDrawn(title: string, drawnAt: string, winners: string[], status = 'drawn'): Promise<string> {
+      const draw = await insertDraw(t, { title, status: 'closed' })
+      const prizes = await t.db.query<{ id: string }>(`select id::text from draw_prizes where draw_id = $1 order by position`, [draw])
+      for (const [i, userId] of winners.entries()) {
+        const ticket = (await t.db.query<{ id: string }>(`insert into draw_tickets (draw_id, user_id) values ($1, $2) returning id::text`, [draw, userId]))[0]!.id
+        await t.db.query(`insert into draw_winners (draw_id, draw_prize_id, ticket_id, slot, user_id, drawn_at) values ($1, $2, $3, 0, $4, $5::timestamptz)`, [draw, prizes[i]!.id, ticket, userId, drawnAt])
+      }
+      await t.db.query(`update draws set status = $2, drawn_at = $3::timestamptz where id = $1`, [draw, status, drawnAt])
+      return draw
+    }
+
+    it('ticketsSold counts the tickets of every pupil, ticketsOwned only the caller', async () => {
+      const draw = await insertDraw(t, { title: 'Cabutan Jumlah', cost: 1, max: 5 })
+      const a = await userIdOf(t.db, STUDENT_MAJU)
+      const b = await userIdOf(t.db, STUDENT_2)
+      await fund(t, a, { syiling: 10 }, 'sold-a')
+      await fund(t, b, { syiling: 10 }, 'sold-b')
+      await (await as(STUDENT_MAJU)).post(`/cabutan/${draw}/tickets`)
+      await (await as(STUDENT_MAJU)).post(`/cabutan/${draw}/tickets`)
+      await (await as(STUDENT_2)).post(`/cabutan/${draw}/tickets`)
+      const view = RewardCabutanViewSchema.parse((await (await as(STUDENT_2)).get('/cabutan')).body.data)
+      expect(view.draws.find((d) => d.id === draw)).toMatchObject({ ticketsOwned: 1, ticketsSold: 3 })
+    })
+
+    it('results list drawn draws only (no cancelled, closed or open), newest 10 first, winners by first given name, own win flagged', async () => {
+      const me = await userIdOf(t.db, STUDENT_MAJU)
+      const other = await namedUser('Zahra Binti Contoh Beta')
+      const third = await namedUser('Daniel Contoh Gamma')
+      const ids: string[] = []
+      for (let i = 1; i <= 11; i++) ids.push(await insertDrawn(`Keputusan ${String(i).padStart(2, '0')}`, `2026-09-${String(i).padStart(2, '0')}T12:00:00+08:00`, i === 11 ? [other, me] : [other, third]))
+      await insertDrawn('Keputusan Batal', '2026-09-30T12:00:00+08:00', [other], 'cancelled')
+      const view = RewardCabutanViewSchema.parse((await (await as(STUDENT_MAJU)).get('/cabutan')).body.data)
+      expect(view.results.map((r) => r.title)).toEqual(['Keputusan 11', 'Keputusan 10', 'Keputusan 09', 'Keputusan 08', 'Keputusan 07', 'Keputusan 06', 'Keputusan 05', 'Keputusan 04', 'Keputusan 03', 'Keputusan 02'])
+      expect(view.results[0]!.id).toBe(ids[10])
+      expect(view.results[0]!.winners).toEqual([
+        { prize: 'Hadiah Utama', name: 'Zahra', isYou: false },
+        { prize: 'Hadiah Saguhati', name: view.results[0]!.winners[1]!.name, isYou: true },
+      ])
+      expect(view.results[1]!.winners).toEqual([
+        { prize: 'Hadiah Utama', name: 'Zahra', isYou: false },
+        { prize: 'Hadiah Saguhati', name: 'Daniel', isYou: false },
+      ])
+      expect(JSON.stringify(view.results)).not.toMatch(/Contoh|Binti/)
+    })
+
+    it('shows an honorific/"bin" name as its first word only, and a blank name as "Pelajar"', async () => {
+      const long = await namedUser('Muhammad Ali bin Abu')
+      const blank = await namedUser('   ')
+      await insertDrawn('Keputusan Nama', '2026-10-02T12:00:00+08:00', [long, blank])
+      const view = RewardCabutanViewSchema.parse((await (await as(STUDENT_2)).get('/cabutan')).body.data)
+      const r = view.results.find((x) => x.title === 'Keputusan Nama')!
+      expect(r.winners.map((w) => w.name)).toEqual(['Muhammad', 'Pelajar'])
+      expect(JSON.stringify(r)).not.toMatch(/Ali|bin|Abu/)
+    })
+
+    it('a pupil who did not win sees every winner as someone else; a draw not yet drawn has no result', async () => {
+      const winner = await namedUser('Aiman Contoh Delta')
+      await insertDrawn('Keputusan Aiman', '2026-10-01T12:00:00+08:00', [winner])
+      await insertDraw(t, { title: 'Cabutan Belum Dicabut', status: 'closed' })
+      const view = RewardCabutanViewSchema.parse((await (await as(STUDENT_2)).get('/cabutan')).body.data)
+      expect(view.results.some((r) => r.title === 'Cabutan Belum Dicabut')).toBe(false)
+      const mine = view.results.find((r) => r.title === 'Keputusan Aiman')!
+      expect(mine.winners).toEqual([{ prize: 'Hadiah Utama', name: 'Aiman', isYou: false }])
     })
   })
 

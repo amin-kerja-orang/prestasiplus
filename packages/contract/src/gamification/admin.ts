@@ -381,10 +381,31 @@ export const GamificationDrawPrizeSchema = z
   .meta({ id: 'GamificationDrawPrize' })
 export type GamificationDrawPrize = z.infer<typeof GamificationDrawPrizeSchema>
 
+/** Draw form messages: exact copy of 30 R1-ADM-P2-10 rows P10-01, P10-03 and P10-05. */
+export const GAMIFICATION_DRAW_MESSAGES = {
+  titleRequired: 'Tajuk diperlukan.',
+  ticketPriceInvalid: 'Harga tiket tidak sah.',
+  prizeRequired: 'Hadiah diperlukan.',
+  closeDatePast: 'Tarikh tutup mesti pada masa hadapan.',
+  /** 48 GAME-22, AC-GM-22.5: "Cabut pemenang" on a closed draw with no tickets; the draw stays closed. */
+  noParticipants: 'Tiada peserta',
+} as const
+
+/** Draw form limits (P10-01..P10-05). */
+export const GAMIFICATION_DRAW_LIMITS = {
+  titleMax: 120,
+  descriptionMax: 500,
+  ticketPriceMin: 1,
+  ticketPriceMax: 10_000,
+  maxTicketsMin: 1,
+  maxTicketsMax: 100,
+  prizeLabelMax: 120,
+} as const
+
 /** One prize line in a create body: `valueSen` or its snake_case twin `value_sen` must be present. */
 export const GamificationDrawPrizeInputSchema = z
   .object({
-    label: z.string(),
+    label: nonBlank(GAMIFICATION_DRAW_LIMITS.prizeLabelMax),
     valueSen: int.optional(),
     value_sen: int.optional().meta(FIELD('Alias of valueSen (the live form posts this name).')),
     qty: int,
@@ -395,11 +416,35 @@ export const GamificationDrawPrizeInputSchema = z
   .meta({ id: 'GamificationDrawPrizeInput' })
 export type GamificationDrawPrizeInput = z.infer<typeof GamificationDrawPrizeInputSchema>
 
-export const GAMIFICATION_DRAW_STATUSES = ['draft', 'open', 'closed'] as const
+/**
+ * Draw states of 48 GAME-22 (DM-65 adds `drawn` and `cancelled`). `closed` is also what the admin reads for an `open`
+ * draw whose closing day (Malaysia time) has passed: the state is derived on read, no job rewrites the stored value.
+ */
+export const GAMIFICATION_DRAW_STATUSES = ['draft', 'open', 'closed', 'drawn', 'cancelled'] as const
 export const GamificationDrawStatusSchema = z
   .enum(GAMIFICATION_DRAW_STATUSES)
   .meta({ id: 'GamificationDrawStatus' })
 export type GamificationDrawStatus = z.infer<typeof GamificationDrawStatusSchema>
+
+/**
+ * One winner of a drawn Cabutan Bertuah draw (DM-36): the pupil that won one prize slot. `prizePosition` is the 0-based index of the
+ * prize line in the draw's `prizePool`; `slot` counts the winners of that line from 0. `deliveredAt` is set by "Tandakan Dihantar".
+ * The admin sees the pupil's name (the pupil page shows other winners by first name only, 48 GAME-22).
+ */
+export const GamificationDrawWinnerSchema = z
+  .object({
+    id: IdSchema,
+    prizePosition: count,
+    prizeLabel: z.string(),
+    slot: count,
+    userId: IdSchema,
+    name: z.string(),
+    ticketId: IdSchema,
+    drawnAt: TimestampSchema,
+    deliveredAt: TimestampSchema.nullable(),
+  })
+  .meta({ id: 'GamificationDrawWinner' })
+export type GamificationDrawWinner = z.infer<typeof GamificationDrawWinnerSchema>
 
 /** A lucky draw (Cabutan Bertuah) as the admin sees it, newest first in the reward-control list. */
 export const GamificationDrawSchema = z
@@ -414,24 +459,27 @@ export const GamificationDrawSchema = z
     status: GamificationDrawStatusSchema,
     createdAt: TimestampSchema,
     ticketsSold: count,
+    winners: z.array(GamificationDrawWinnerSchema).meta(FIELD('Empty until the draw is drawn; then in prize order, slot order.')),
   })
   .meta({ id: 'GamificationDraw' })
 export type GamificationDraw = z.infer<typeof GamificationDrawSchema>
 
 /**
- * `POST /admin/reward-control/draws` body. `status` of the result is `open` when `openNow` is true,
- * else `draft`. `prizePool` is an array of lines or the JSON text of `[{label, value_sen, qty}]`
- * (the live form); anything else is 422 "Format JSON kolam hadiah tidak sah." with `fields.prizePool`.
+ * `POST /admin/reward-control/draws` body (30 R1-ADM-P2-10 rows P10-01..P10-05). `status` of the result is `open` when
+ * `openNow` is true, else `draft`. `prizePool` is an array of lines or the JSON text of `[{label, value_sen, qty}]`
+ * (the live form) and holds at least one line; anything else is 422 "Format JSON kolam hadiah tidak sah." with
+ * `fields.prizePool`, and an empty pool or a blank label is "Hadiah diperlukan.". `closesAt` is a Malaysia date, today or
+ * later (sales run through 23:59:59 of that day); a past day is "Tarikh tutup mesti pada masa hadapan.".
  */
 export const GamificationDrawCreateRequestSchema = z
   .object({
-    title: nonBlank(150),
-    description: z.string().max(1000).optional(),
-    ticketCostSyiling: z.number().int().min(1),
-    maxTicketsPerStudent: z.number().int().min(1),
-    closesAt: DateOnlySchema.optional().meta(FIELD('YYYY-MM-DD, a real calendar date.')),
+    title: nonBlank(GAMIFICATION_DRAW_LIMITS.titleMax),
+    description: z.string().max(GAMIFICATION_DRAW_LIMITS.descriptionMax).optional(),
+    ticketCostSyiling: z.number().int().min(GAMIFICATION_DRAW_LIMITS.ticketPriceMin).max(GAMIFICATION_DRAW_LIMITS.ticketPriceMax),
+    maxTicketsPerStudent: z.number().int().min(GAMIFICATION_DRAW_LIMITS.maxTicketsMin).max(GAMIFICATION_DRAW_LIMITS.maxTicketsMax),
+    closesAt: DateOnlySchema.optional().meta(FIELD('YYYY-MM-DD, a real calendar date, today (Malaysia) or later.')),
     openNow: z.boolean().optional().meta(FIELD('"Buka serta-merta": create as open instead of draft.')),
-    prizePool: z.union([z.array(GamificationDrawPrizeInputSchema), z.string()]).optional(),
+    prizePool: z.union([z.array(GamificationDrawPrizeInputSchema).min(1), z.string()]),
   })
   .meta({ id: 'GamificationDrawCreateRequest' })
 export type GamificationDrawCreateRequest = z.infer<typeof GamificationDrawCreateRequestSchema>
@@ -451,3 +499,72 @@ export const GamificationRewardControlSchema = z
   })
   .meta({ id: 'GamificationRewardControl' })
 export type GamificationRewardControl = z.infer<typeof GamificationRewardControlSchema>
+
+// ---------------------------------------------------------------------------------------------
+// Kotak Misteri admin (S7-T07 part P7, DM-37, API-GAME-09)
+// ---------------------------------------------------------------------------------------------
+
+export const GAMIFICATION_BOX_PRIZE_KINDS = ['syiling', 'token'] as const
+export const GamificationBoxPrizeKindSchema = z
+  .enum(GAMIFICATION_BOX_PRIZE_KINDS)
+  .meta({ id: 'GamificationBoxPrizeKind', description: 'Prize kind of a mystery box row: syiling or token (the contract has no XP prize).' })
+export type GamificationBoxPrizeKind = z.infer<typeof GamificationBoxPrizeKindSchema>
+
+/** One prize row of a mystery box as the admin sees it. `weight` is an integer percent; `stock` null = unlimited. */
+export const GamificationBoxPrizeSchema = z
+  .object({
+    label: z.string(),
+    kind: GamificationBoxPrizeKindSchema,
+    amount: z.number().int().min(1),
+    weight: z.number().int().min(0).max(100).meta(FIELD('Percent chance (Peluang %); the weights of a box total 100.')),
+    stock: count.nullable().meta(FIELD('Null = unlimited; 0 = out of stock (absent from the pupil odds table).')),
+  })
+  .meta({ id: 'GamificationBoxPrize' })
+export type GamificationBoxPrize = z.infer<typeof GamificationBoxPrizeSchema>
+
+/** One mystery box (ids 1 to 4 are the four old boxes, inactive and without prizes; one box is active). */
+export const GamificationMysteryBoxSchema = z
+  .object({
+    id: IdSchema,
+    label: z.string(),
+    costSyiling: z.number().int().min(1),
+    isActive: z.boolean(),
+    prizes: z.array(GamificationBoxPrizeSchema),
+  })
+  .meta({ id: 'GamificationMysteryBox' })
+export type GamificationMysteryBox = z.infer<typeof GamificationMysteryBoxSchema>
+
+/** Openings of one Malaysia-time day (all boxes). */
+export const GamificationBoxOpeningsDaySchema = z
+  .object({ day: DateOnlySchema, count })
+  .meta({ id: 'GamificationBoxOpeningsDay' })
+export type GamificationBoxOpeningsDay = z.infer<typeof GamificationBoxOpeningsDaySchema>
+
+/**
+ * `GET /admin/reward-control/mystery-boxes` data (also the answer of the PUT). `dailyMax` is the
+ * `gamification_settings` key `mystery_box_daily_max` (1..20, "Had kotak sehari"). `openingsPerDay` has seven rows,
+ * the last 7 Malaysia days, oldest first, today last ("Kotak dibuka sehari" [PROPOSED]).
+ */
+export const GamificationMysteryBoxesAdminSchema = z
+  .object({
+    boxes: z.array(GamificationMysteryBoxSchema),
+    dailyMax: z.number().int().min(1).max(20),
+    openingsPerDay: z.array(GamificationBoxOpeningsDaySchema),
+  })
+  .meta({ id: 'GamificationMysteryBoxesAdmin' })
+export type GamificationMysteryBoxesAdmin = z.infer<typeof GamificationMysteryBoxesAdminSchema>
+
+/**
+ * `PUT /admin/reward-control/mystery-boxes/{id}` body. The prize rows replace the stored rows. There is no POST (R1):
+ * boxes are never created through the API. A box with `isActive` true needs at least one prize and weights totalling 100.
+ */
+export const GamificationMysteryBoxUpdateRequestSchema = z
+  .object({
+    label: nonBlank(120),
+    costSyiling: z.number().int().min(1).max(500),
+    isActive: z.boolean(),
+    prizes: z.array(GamificationBoxPrizeSchema.extend({ label: nonBlank(120), stock: count.nullable().optional() })).max(20),
+    dailyMax: z.number().int().min(1).max(20).optional().meta(FIELD('Optional: saves mystery_box_daily_max.')),
+  })
+  .meta({ id: 'GamificationMysteryBoxUpdateRequest' })
+export type GamificationMysteryBoxUpdateRequest = z.infer<typeof GamificationMysteryBoxUpdateRequestSchema>

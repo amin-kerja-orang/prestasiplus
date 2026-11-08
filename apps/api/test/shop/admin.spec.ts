@@ -151,35 +151,35 @@ describe('M15 admin routes (BE-23)', () => {
       expect(audit.at(-1)).toEqual({ action: 'shop.reward.created', target_type: 'reward', target_id: item.id })
       const digits = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: '25', tokenCost: '30', stockQuantity: '3' })
       expect(RewardItemSchema.parse(digits.body.data)).toMatchObject({ denominationRm: 25, tokenCost: 30, stockQuantity: 3 })
-      const posted = await admin.post('/admin/hadiah', { ...MINIMAL, isActive: true, requiresParentConsent: true })
-      expect(RewardItemSchema.parse(posted.body.data), 'a posted consent is ignored (FR-GM-21.3)').toMatchObject({ isActive: true, requiresParentConsent: false })
+      const posted = await admin.post('/admin/hadiah', { ...MINIMAL, denominationRm: 0.5, tokenCost: 100_000, maxPerMonthPerStudent: 100, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: true })
+      expect(RewardItemSchema.parse(posted.body.data), 'a posted consent is ignored (FR-GM-21.3)').toMatchObject({ denominationRm: 0.5, tokenCost: 100_000, maxPerMonthPerStudent: 100, iconEmoji: '🇲🇾', isActive: true, requiresParentConsent: false })
     })
 
-    it('stores imageUrl (http/https only) and returns it on create, read and replace', async () => {
+    it('stores imageUrl (https only) and returns it on create, read and replace', async () => {
       const res = await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: 'https://cdn.example.test/a.png' })
       expect(RewardItemSchema.parse(res.body.data).imageUrl).toBe('https://cdn.example.test/a.png')
       const id = res.body.data.id as string
       expect(RewardItemSchema.parse((await admin.get(`/admin/hadiah/${id}`)).body.data).imageUrl).toBe('https://cdn.example.test/a.png')
       expect(RewardItemSchema.parse((await admin.put(`/admin/hadiah/${id}`, MINIMAL)).body.data).imageUrl).toBeNull()
-      for (const bad of ['javascript:alert(1)', 'data:image/png;base64,AAAA', 'ftp://x']) {
+      for (const bad of ['javascript:alert(1)', 'data:image/png;base64,AAAA', 'ftp://x', 'http://x.test/a.png']) {
         expect(expectError(await admin.post('/admin/hadiah', { ...MINIMAL, imageUrl: bad }), 422, 'VALIDATION_ERROR').fields).toEqual({ imageUrl: 'Format Image URL tidak sah.' })
       }
     })
 
     it('422 with a field per problem, the P07 and ERR-REQ texts and the ERR-REQ-01 summary; nothing is created', async () => {
       const before = (await t.db.query<{ n: string }>(`select count(*)::text as n from rewards`))[0]!.n
-      const res = await admin.post('/admin/hadiah', { category: 'nope', title: 'x'.repeat(201), denominationRm: 0, tokenCost: 10001, maxPerMonthPerStudent: 100, voucherValidityDays: 1826, displayOrder: 10000, imageUrl: 'ftp://x' })
+      const res = await admin.post('/admin/hadiah', { category: 'nope', title: 'x'.repeat(101), denominationRm: 0, tokenCost: 100_001, maxPerMonthPerStudent: 101, voucherValidityDays: 3651, displayOrder: 10000, imageUrl: 'ftp://x', deliveryMethod: 'api', iconEmoji: 'abc' })
       const e = expectError(res, 422, 'VALIDATION_ERROR')
-      expect(Object.keys(e.fields ?? {}).sort()).toEqual(['category', 'denominationRm', 'displayOrder', 'imageUrl', 'maxPerMonthPerStudent', 'title', 'tokenCost', 'vendor', 'voucherValidityDays'])
+      expect(Object.keys(e.fields ?? {}).sort()).toEqual(['category', 'deliveryMethod', 'denominationRm', 'displayOrder', 'iconEmoji', 'imageUrl', 'maxPerMonthPerStudent', 'title', 'tokenCost', 'vendor', 'voucherValidityDays'])
       expect(e.fields).toMatchObject({
         category: 'Format kategori tidak sah.',
         vendor: 'Vendor diperlukan.',
-        title: 'Tajuk tidak boleh melebihi 200 aksara.',
-        denominationRm: 'Nilai (RM) mesti antara 1 dan 10000.',
-        tokenCost: 'Kos Token mesti antara 1 dan 10000.',
-        maxPerMonthPerStudent: 'Maks/bulan/pelajar mesti antara 1 dan 99.',
+        title: 'Tajuk tidak boleh melebihi 100 aksara.',
+        denominationRm: 'Nilai (RM) mesti antara 0.01 dan 10000.',
+        tokenCost: 'Kos Token mesti antara 1 dan 100000.',
+        iconEmoji: 'Emoji Icon tidak boleh melebihi 2 aksara.',
       })
-      expect(e.message).toBe('9 medan perlu dibetulkan.')
+      expect(e.message).toBe('11 medan perlu dibetulkan.')
       expect((await t.db.query<{ n: string }>(`select count(*)::text as n from rewards`))[0]!.n).toBe(before)
     })
 
@@ -210,6 +210,8 @@ describe('M15 admin routes (BE-23)', () => {
       await call({ action: 'set_max_per_month', ids: [b], maxPerMonthValue: '0' })
       const caps = await t.db.query<{ id: string; max_per_month_per_student: number | null }>(`select id::text, max_per_month_per_student from rewards where id in ($1, $2) order by id`, [a, b])
       expect(caps.map((c) => c.max_per_month_per_student)).toEqual([2, null])
+      await call({ action: 'set_max_per_month', ids: [a], maxPerMonthValue: '100' }) // the bulk limit is the form limit (P07-10)
+      expect((await t.db.query<{ m: number }>(`select max_per_month_per_student m from rewards where id = $1`, [a]))[0]!.m).toBe(100)
       await call({ action: 'set_token_cost', ids: [a, b], tokenCostDeltaPct: '50%' }) // 10 -> 15, 7 -> 10.5 -> 11 (half up)
       const costs = await t.db.query<{ token_cost: number; denomination_rm: string }>(`select token_cost, denomination_rm::text from rewards where id in ($1, $2) order by id`, [a, b])
       expect(costs.map((c) => c.token_cost)).toEqual([15, 11])
@@ -234,8 +236,8 @@ describe('M15 admin routes (BE-23)', () => {
       expect(await f({ ids: ['1'] })).toEqual({ action: 'Sila pilih tindakan.' })
       expect(await f({ action: 'activate', ids: [] })).toEqual({ ids: 'Sila pilih hadiah.' })
       expect(await f({ action: 'activate', ids: ['0'] })).toEqual({ ids: 'Format hadiah tidak sah.' })
-      expect(await f({ action: 'set_stock', ids: ['1'], stockValue: '1000000' })).toEqual({ stockValue: 'Stok tidak sah.' })
-      expect(await f({ action: 'set_max_per_month', ids: ['1'], maxPerMonthValue: '100' })).toEqual({ maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 99.' })
+      expect(await f({ action: 'set_stock', ids: ['1'], stockValue: '1000000000' })).toEqual({ stockValue: 'Stok tidak sah.' })
+      expect(await f({ action: 'set_max_per_month', ids: ['1'], maxPerMonthValue: '101' })).toEqual({ maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 100.' })
       expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '0' })).toEqual({ tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.' })
       expect(await f({ action: 'set_token_cost', ids: ['1'], tokenCostDeltaPct: '501' })).toEqual({ tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.' })
     })

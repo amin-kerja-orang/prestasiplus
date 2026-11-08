@@ -9,19 +9,34 @@ export const SHOP_COPY = {
   emptyBody: 'Hadiah akan ditambah tidak lama lagi. Tunggu ya!',
 } as const
 
+/** Kotak Misteri (48 GAME-23, 10-murid R1-MUR-35). Exact BM; `{n}` etc. are filled by the helpers below. */
 export const BOX_COPY = {
   heading: '📦 Kotak Misteri',
   sub: 'Buka kotak & menang ganjaran rawak — nasib baik menanti!',
-  chip: '🎫 Token Anda:',
-  token: 'Token',
-  locked: '🔒 Token Tidak Cukup',
-  /** PROPOSED (FN-M15-6.2.1). */
+  cost: (n: number) => `Kos satu kotak ${String(n)} syiling`,
+  balance: 'Baki syiling anda:',
+  oddsHeading: 'Peluang ganjaran',
+  oddsPrize: 'Ganjaran',
+  oddsChance: 'Peluang',
+  disclaimer:
+    'Purata ganjaran lebih rendah daripada kos kotak — main untuk keseronokan, bukan untuk mengumpul syiling.',
+  short: (n: number) => `Anda perlu ${String(n)} syiling lagi untuk membuka kotak.`,
+  collect: 'Kumpul syiling',
+  /** PROPOSED: the disabled open button while the balance is short. */
+  shortButton: 'Syiling Tidak Cukup',
+  daily: 'Had kotak hari ini telah dicapai. Cuba lagi esok.',
+  /** PROPOSED (N5): no prize can be won, or no box is active. */
+  unavailable: 'Kotak tidak tersedia buat masa ini.',
   open: 'Buka Kotak',
   opening: 'Membuka…',
-  /** PROPOSED (FN-M15-6.2.3). */
+  confirmTitle: 'Buka kotak?',
+  confirmBody: (cost: number, balance: number) =>
+    `${String(cost)} syiling akan ditolak daripada baki anda (${String(balance)} syiling).`,
+  cancel: 'Batal',
+  won: (prize: string) => `Tahniah! Anda dapat ${prize}.`,
   close: 'Tutup',
-  /** PROPOSED (FN-M15-6.2.4). */
-  historyHeading: 'Sejarah Kotak Misteri',
+  historyHeading: 'Kotak yang telah dibuka',
+  historyEmpty: 'Anda belum membuka sebarang kotak.',
 } as const
 
 export const DRAW_COPY = {
@@ -33,6 +48,24 @@ export const DRAW_COPY = {
   /** PROPOSED (FN-M15-7.1.3/7.1.4). */
   buy: '🎟️ Beli Tiket',
   buying: 'Memproses…',
+  /** Confirm dialog B-056a (48 GAME-22; 10 R1-MUR-22): "Batal" is the safe default. */
+  confirmTitle: 'Beli tiket cabutan?',
+  confirmBody: (price: number, balance: number): string =>
+    `${String(price)} syiling akan ditolak daripada baki anda (${String(balance)} syiling).`,
+  confirmBuy: 'Beli Tiket',
+  confirmCancel: 'Batal',
+  /** Published odds on the card (48 GAME-22 "Fairness text"). */
+  fairEqual: 'Setiap tiket mempunyai peluang yang sama.',
+  ticketsSold: (sold: number): string => `Jumlah tiket terjual: ${String(sold)}`,
+  /** Fairness line (48 GAME-22), with spaces. */
+  ticketsOwned: (owned: number, max: number): string => `Tiket anda: ${String(owned)} / ${String(max)}`,
+  /** Compact counter beside "Beli Tiket" (AC-GM-22.1, AC-MUR-22-1). */
+  counter: (owned: number, max: number): string => `${String(owned)}/${String(max)}`,
+  coinNote: 'Tiket dibeli dengan syiling yang anda kumpul, bukan wang.',
+  /** Past draws (FR-MUR-22-3; ruling N6: drawn draws only, newest 10). */
+  /** The row format "{prize}: {name}" is [PROPOSED]: the PRD gives no result-row layout. */
+  resultsHeading: 'Keputusan Cabutan',
+  youWon: 'Anda menang!',
 } as const
 
 /** Shared error convention (FR-G-10); M15 adds no further error copy. */
@@ -63,12 +96,13 @@ export const MY_REDEMPTIONS_COPY = {
 } as const
 
 /**
- * R1-ADM-P2-07 `/admin/hadiah` (30 P2-07, P07-15; S7-T11 part 1A; the form copy is part 1B). Every
+ * R1-ADM-P2-07 `/admin/hadiah`, `/baharu`, `/:id/edit` (30 P2-07, field list P07-01..15; S7-T11). Every
  * string here is exact BM from the SRS; the strings it does not give are in `HADIAH_ADMIN_PROPOSED`.
  */
 export const HADIAH_ADMIN_COPY = {
   heading: '🎁 Kedai Hadiah Digital',
   sub: 'Urus catalog hadiah + proses tebusan pelajar',
+  addNew: 'Tambah Hadiah',
   queueLink: 'Tebusan Queue',
   tiles: {
     total: 'Total Hadiah',
@@ -93,6 +127,7 @@ export const HADIAH_ADMIN_COPY = {
   unlimited: '∞',
   statusOn: 'On',
   statusOff: 'Off',
+  edit: 'Edit',
   /** Category filters only (FR-ADM-P2-07.2). */
   empty: 'Tiada hadiah dalam kategori ini.',
   selected: (n: number): string => `${String(n)} hadiah dipilih`,
@@ -107,6 +142,33 @@ export const HADIAH_ADMIN_COPY = {
   },
   /** `keptIds` of a bulk delete (P07-15). */
   hasRedemptions: 'Hadiah ini mempunyai tebusan. Nyahaktifkan sahaja.',
+  form: {
+    createTitle: 'Tambah Hadiah',
+    editTitle: 'Edit Hadiah',
+    category: 'Kategori',
+    vendor: 'Vendor',
+    vendorPlaceholder: 'cth: Roblox, Touch n Go, Hotlink',
+    title: 'Tajuk',
+    titlePlaceholder: 'cth: TnG eWallet RM50',
+    description: 'Penerangan',
+    denominationRm: 'Nilai (RM)',
+    tokenCost: 'Kos Token',
+    tokenCostHint: '100 syiling = 1 token = RM1',
+    iconEmoji: 'Emoji Icon',
+    stockQuantity: 'Stok (kosong = tanpa had)',
+    maxPerMonthPerStudent: 'Maks/bulan/pelajar',
+    voucherValidityDays: 'Sah Hari (default 365)',
+    deliveryMethod: 'Delivery',
+    deliveryManual: 'Manual (admin paste)',
+    deliveryInstant: 'Instant',
+    vendorSku: 'Vendor SKU (optional)',
+    displayOrder: 'Display Order',
+    imageUrl: 'Image URL (optional)',
+    termsText: 'Terma Khas',
+    isActive: 'Aktif',
+    create: 'Tambah',
+    save: 'Simpan',
+  },
 } as const
 
 /**
@@ -147,8 +209,8 @@ export const TEBUSAN_ADMIN_COPY = {
 } as const
 
 /**
- * PROPOSED (no source in 10, 30, 40 or 48): the bulk prompts and flashes, the delete confirmation
- * and the delivery code field. Each is a labelled placeholder for the product owner.
+ * PROPOSED (no source in 10, 30, 40 or 48): the bulk prompts and flashes, the delete confirmation, the
+ * save flashes and the delivery code field. Each is a labelled placeholder for the product owner.
  */
 export const HADIAH_ADMIN_PROPOSED = {
   stockPrompt: 'Stok (kosong = tanpa had)',
@@ -161,6 +223,8 @@ export const HADIAH_ADMIN_PROPOSED = {
   deleteGo: 'Ya, Padam',
   bulkDone: (n: number): string => `${String(n)} hadiah dikemas kini.`,
   bulkDeleted: (n: number): string => `${String(n)} hadiah dipadam.`,
+  created: 'Hadiah ditambah.',
+  saved: 'Hadiah disimpan.',
   codeLabel: 'Kod baucar',
   cancelled: 'Tebusan dibatalkan.',
 } as const

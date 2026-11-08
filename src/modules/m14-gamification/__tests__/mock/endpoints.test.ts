@@ -318,26 +318,26 @@ describe('#5 convert view', () => {
 })
 
 describe('#7 challenges', () => {
-  it('admin: 10 active, none completed, the streak challenge is today-only (last activity not today -> Kombo 0/2)', async () => {
+  it('admin: 15 active, none completed, the streak challenge is today-only (last activity not today -> Kombo 0/2)', async () => {
     const res = await get('/api/gamification/challenges', admin)
     const items =
       dataOf<{ id: number; target: number; progress: number; pct: number; completed: boolean }[]>(
         res,
       )
-    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 10, claimed: 0 })
-    expect(items).toHaveLength(10)
+    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 15, claimed: 0 })
+    expect(items).toHaveLength(15)
     const kombo = items.find((c) => c.id === 8)
     expect(kombo).toMatchObject({ target: 2, progress: 0, pct: 0, completed: false })
   })
 
-  it('designed completions at the clock: pelajar 7/10, pelajarmaju 4/10 (Q-DAILY-FINISHERS 0)', async () => {
+  it('designed completions at the clock: pelajar 7/15, pelajarmaju 4/15 (Q-DAILY-FINISHERS 0)', async () => {
     const a = await get('/api/gamification/challenges', pelajar)
-    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 10, claimed: 0 })
+    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 15, claimed: 0 })
     const done = dataOf<{ id: number; completed: boolean; progress: number; target: number }[]>(a)
     expect(done.filter((c) => c.completed).map((c) => c.id)).toEqual([2, 4, 5, 6, 7, 8, 10])
     expect(done.filter((c) => c.completed).every((c) => c.progress === c.target)).toBe(true)
     const b = await get('/api/gamification/challenges', pelajarmaju)
-    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 10, claimed: 0 })
+    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 15, claimed: 0 })
   })
 })
 
@@ -636,7 +636,7 @@ describe('#18 overview', () => {
       syilingGenerated: 3_124_192,
       tokensConverted: 7801,
       conversions: 534,
-      activeChallenges: 10,
+      activeChallenges: 15,
       completedToday: 0,
     })
     expect(d.tierDistribution.map((t) => [t.key, t.count])).toEqual([
@@ -655,7 +655,7 @@ describe('#18 overview', () => {
 })
 
 describe('#19 / #23 catalogues', () => {
-  it('4 tiers as seeded; 10 challenges by (sortOrder, id) without the internal metric', async () => {
+  it('4 tiers as seeded; 15 challenges by (sortOrder, id) without the internal metric', async () => {
     const tiers = dataOf<
       {
         id: number
@@ -674,7 +674,7 @@ describe('#19 / #23 catalogues', () => {
     const ch = dataOf<{ id: number; title: string }[]>(
       await get('/api/admin/gamification/challenges', admin),
     )
-    expect(ch).toHaveLength(10)
+    expect(ch).toHaveLength(15)
     expect(ch[0]).not.toHaveProperty('metric')
     expect(ch.map((c) => c.id)).toContain(10)
   })
@@ -897,7 +897,7 @@ describe('#31 / #36 / #38 / #40 admin reads', () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('#6 convert', () => {
-  it('converts 100 syiling at the gold rate 30: 3 tokens, the remainder is not refunded, lifetime unchanged', async () => {
+  it('FR-GM-18.1: 100 syiling at the gold rate 30 debits 90 for 3 tokens, the remainder stays, lifetime unchanged', async () => {
     const before = wallet.summary(4034)
     expect(before.tier.key).toBe('gold')
     const res = await send(runtime, 'POST', '/api/gamification/convert', {
@@ -913,9 +913,9 @@ describe('#6 convert', () => {
       transactionId: number
     }>(res)
     expect(d).toMatchObject({
-      syilingDebited: 100,
+      syilingDebited: 90,
       tokensCredited: 3,
-      currentSyiling: before.currentSyiling - 100,
+      currentSyiling: before.currentSyiling - 90,
       tokenBalance: before.tokenBalance + 3,
     })
     const after = wallet.summary(4034)
@@ -925,9 +925,9 @@ describe('#6 convert', () => {
     expect(row).toMatchObject({
       type: 'convert',
       source: 'token_conversion',
-      amount: -100,
+      amount: -90,
       tokens: 3,
-      description: 'Tukar 100 syiling → 3 token',
+      description: 'Tukar 90 syiling → 3 token',
       balanceAfter: after.currentSyiling,
     })
   })
@@ -953,14 +953,36 @@ describe('#6 convert', () => {
     expect(coinLedger.forUser(4034)).toHaveLength(rowsBefore)
   })
 
-  it('accepts a numeric string and the exact balance', async () => {
+  it('FR-ERR-9: a repeat with one clientUuid answers the first result and moves nothing; a bad key is 422', async () => {
+    wallet.setFields(4034, { syiling: 120 })
+    const before = wallet.summary(4034)
+    const rows = coinLedger.forUser(4034).length
+    const key = crypto.randomUUID()
+    const post = (body: Record<string, unknown>) =>
+      send(runtime, 'POST', '/api/gamification/convert', { token: gold, body })
+    const first = await post({ syilingAmount: 90, clientUuid: key })
+    expect(first.status).toBe(200)
+    const second = await post({ syilingAmount: 90, clientUuid: key })
+    expect(second.status).toBe(200)
+    expect(dataOf(second)).toEqual(dataOf(first))
+    expect(wallet.summary(4034).currentSyiling).toBe(before.currentSyiling - 90)
+    expect(coinLedger.forUser(4034)).toHaveLength(rows + 1)
+    const bad = await post({ syilingAmount: 30, clientUuid: 'bad key!' })
+    expect(bad.status).toBe(422)
+    expect((bad.body as { error: { fields: unknown } }).error.fields).toEqual({
+      clientUuid: 'Medan ini tidak sah.',
+    })
+    expect(coinLedger.forUser(4034)).toHaveLength(rows + 1)
+  })
+
+  it('accepts a numeric string and the exact balance; only the multiple is debited', async () => {
     const balance = wallet.summary(4034).currentSyiling
     const res = await send(runtime, 'POST', '/api/gamification/convert', {
       token: gold,
       body: { syilingAmount: String(balance) },
     })
     expect(res.status).toBe(200)
-    expect(wallet.summary(4034).currentSyiling).toBe(0)
+    expect(wallet.summary(4034).currentSyiling).toBe(balance % 30)
   })
 
   it('a refusal inside a failed request leaves the whole step undone (failNext fault)', async () => {
@@ -1202,18 +1224,18 @@ describe('#24 – #27 challenges', () => {
     })
     expect(created.status).toBe(201)
     const c = dataOf<{ id: number; isActive: boolean }>(created)
-    expect(c).toMatchObject({ id: 11, isActive: true, title: 'Cabaran Uji' })
+    expect(c).toMatchObject({ id: 16, isActive: true, title: 'Cabaran Uji' })
     expect(c).not.toHaveProperty('metric')
     expect(dataOf<unknown[]>(await get('/api/admin/gamification/challenges', admin))).toHaveLength(
-      11,
+      16,
     )
     expect(
       await get('/api/gamification/challenges', admin).then(
         (r) => (r.body as { meta: { active: number } }).meta.active,
       ),
-    ).toBe(11)
+    ).toBe(16)
 
-    const edited = await send(runtime, 'PUT', '/api/admin/gamification/challenges/11', {
+    const edited = await send(runtime, 'PUT', '/api/admin/gamification/challenges/16', {
       token: admin,
       body: {
         ...CHALLENGE_BODY,
@@ -1228,7 +1250,7 @@ describe('#24 – #27 challenges', () => {
       targetValue: 90,
     })
 
-    const off = await send(runtime, 'POST', '/api/admin/gamification/challenges/11/toggle', {
+    const off = await send(runtime, 'POST', '/api/admin/gamification/challenges/16/toggle', {
       token: admin,
     })
     expect(dataOf(off)).toEqual({ isActive: false })
@@ -1236,18 +1258,18 @@ describe('#24 – #27 challenges', () => {
       await get('/api/gamification/challenges', admin).then(
         (r) => (r.body as { meta: { active: number } }).meta.active,
       ),
-    ).toBe(10)
+    ).toBe(15)
 
-    const del = await send(runtime, 'DELETE', '/api/admin/gamification/challenges/11', {
+    const del = await send(runtime, 'DELETE', '/api/admin/gamification/challenges/16', {
       token: admin,
     })
     expect(dataOf(del)).toEqual({ deleted: 1 })
     expect(
-      (await send(runtime, 'DELETE', '/api/admin/gamification/challenges/11', { token: admin }))
+      (await send(runtime, 'DELETE', '/api/admin/gamification/challenges/16', { token: admin }))
         .status,
     ).toBe(404)
     expect(dataOf<unknown[]>(await get('/api/admin/gamification/challenges', admin))).toHaveLength(
-      10,
+      15,
     )
   })
 

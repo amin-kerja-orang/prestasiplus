@@ -74,9 +74,11 @@ export interface HadiahReward {
 
 /**
  * `HadiahInput` (#3, #4): every writable field of §6.2. Required: `category`, `vendor`, `title`,
- * `denominationRm`, `tokenCost`. An omitted optional field takes the BR-M15-13 default
- * (`voucherValidityDays` 365, `deliveryMethod` 'manual', `displayOrder` 100, `isActive` true,
- * `requiresParentConsent` false, other fields null). Numbers may be sent as numbers or digit strings.
+ * `denominationRm`, `tokenCost`. PUT replaces, so a screen sends every field. An omitted optional
+ * field takes the default (`voucherValidityDays` 365, `deliveryMethod` 'manual', `displayOrder` 100,
+ * `isActive` false (U-OP-09), other fields null). Numbers may be sent as numbers or digit strings.
+ * `deliveryMethod` is `manual` or `instant` (`api` is refused). `requiresParentConsent` is ignored by
+ * the server (FR-GM-21.3) and no screen sends it.
  */
 export interface HadiahInput {
   category: HadiahCategory
@@ -89,7 +91,7 @@ export interface HadiahInput {
   stockQuantity?: number | null
   maxPerMonthPerStudent?: number | null
   voucherValidityDays?: number
-  deliveryMethod?: DeliveryMethod
+  deliveryMethod?: Exclude<DeliveryMethod, 'api'>
   vendorSku?: string | null
   displayOrder?: number
   imageUrl?: string | null
@@ -200,35 +202,43 @@ export interface RedeemResult {
   tokenBalance: number
 }
 
-/** DATA-M15-03 as returned by #10. */
-export interface MysteryBoxView {
-  id: number
-  name: string
-  description: string
-  icon: string
-  rarity: 'rare' | 'epic' | 'legendary' | null
-  costTokens: number
-  coinMin: number
-  coinMax: number
-  xpMin: number
-  xpMax: number
-  color1: string
-  color2: string
+/** One prize row of the odds table. `chance` is a percent with one decimal, over the prizes still in stock. */
+export interface MysteryBoxPrizeView {
+  label: string
+  kind: 'syiling' | 'token'
+  amount: number
+  chance: number
 }
 
+/** The one active box as returned by #10 (S7-T07 P8; cost in syiling, no rarity or colours). */
+export interface MysteryBoxView {
+  id: number
+  label: string
+  costSyiling: number
+  prizes: MysteryBoxPrizeView[]
+}
+
+/** The prize fields are `null` for an opening made before the 0222 tables. */
 export interface MysteryBoxHistoryItem {
   id: number
   boxId: number
   boxName: string
-  coins: number
-  xp: number
+  prizeLabel: string | null
+  prizeKind: 'syiling' | 'token' | null
+  prizeAmount: number | null
   createdAt: string
 }
 
-/** #10 data. `history` = the viewer's openings, newest first, 10 at most. */
+/**
+ * #10 data. `box` is null and `available` false when no box is active; `available` is also false when no prize can be
+ * won (N5). `history` = the viewer's openings, newest first, 10 at most.
+ */
 export interface MysteryBoxesView {
-  tokenBalance: number
-  boxes: MysteryBoxView[]
+  box: MysteryBoxView | null
+  available: boolean
+  syilingBalance: number
+  dailyMax: number
+  openedToday: number
   history: MysteryBoxHistoryItem[]
 }
 
@@ -237,9 +247,7 @@ export interface MysteryBoxOpened {
   openingId: number
   boxId: number
   boxName: string
-  icon: string
-  coins: number
-  xp: number
+  prize: { label: string; kind: 'syiling' | 'token'; amount: number }
   tokenBalance: number
   syilingBalance: number
 }
@@ -257,15 +265,32 @@ export interface OpenDrawView {
   ticketCostSyiling: number
   maxTicketsPerStudent: number
   ticketsOwned: number
+  /** Tickets sold to all pupils ("Jumlah tiket terjual"). */
+  ticketsSold: number
   /** Local date `yyyy-MM-dd`, or `null` (M14). */
   closesAt: string | null
   prizePool: PrizeLineView[]
 }
 
-/** #12 data: open draws ordered by close date (null last) then id. */
+/** One winner of a drawn draw: the first given name only; `isYou` is the pupil's own win ("Anda menang!"). */
+export interface DrawWinnerView {
+  prize: string
+  name: string
+  isYou: boolean
+}
+
+/** One "Keputusan Cabutan" entry: a drawn draw, winners in prize order. */
+export interface DrawResultView {
+  id: number
+  title: string
+  winners: DrawWinnerView[]
+}
+
+/** #12 data: open draws ordered by close date (null last) then id; `results` are the newest 10 drawn draws. */
 export interface CabutanView {
   syilingBalance: number
   draws: OpenDrawView[]
+  results: DrawResultView[]
 }
 
 /** #13 data. */
@@ -298,7 +323,7 @@ export interface ApproveResult {
   status: 'pending_admin'
 }
 
-/** Module error codes carried in `ApiError.code` (all 409). */
+/** Module error codes carried in `ApiError.code` (409, except `MYSTERY_DAILY_LIMIT`, 429). */
 export type M15ConflictCode =
   | 'OUT_OF_STOCK'
   | 'MONTHLY_CAP'
@@ -306,6 +331,8 @@ export type M15ConflictCode =
   | 'DRAW_CLOSED'
   | 'TICKET_LIMIT'
   | 'INSUFFICIENT_BALANCE'
+  | 'BOX_UNAVAILABLE'
+  | 'MYSTERY_DAILY_LIMIT'
   | 'CONFLICT'
 
 // --- L43 Kedai Hadiah Digital (SRS M15 v1.6 §7 #19, #20; BR-M15-26…28) ---------------------------------
