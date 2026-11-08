@@ -1,5 +1,32 @@
+import { Logger } from '@nestjs/common'
+
 import { startOfMytDay } from '../../../db/clock'
 import { toMytTimestamp } from '../../../common/time/myt'
+
+/** FR-GM-00.7, 48 section 3.3: the background sweep of the game clocks, so a game with no poller still moves. */
+export const GAME_SWEEP_MS = 5_000
+
+/**
+ * Runs `pass` every 5 s (the plain interval of `AttemptSweeper`, no `@nestjs/schedule`); off under NODE_ENV=test, where specs
+ * call the pass themselves. A pass never overlaps itself and a failing one is logged. Safe on several API instances: every
+ * step takes its row lock and re-checks. Returns the stop function.
+ */
+export function startGameSweep(name: string, nodeEnv: string | undefined, pass: () => Promise<unknown>): () => void {
+  if (nodeEnv === 'test') return () => undefined
+  const logger = new Logger(name)
+  let running = false
+  const timer = setInterval(() => {
+    if (running) return
+    running = true
+    void pass()
+      .catch((err: unknown) => logger.warn(`Game clock sweep failed: ${err instanceof Error ? err.message : String(err)}`))
+      .finally(() => {
+        running = false
+      })
+  }, GAME_SWEEP_MS)
+  timer.unref()
+  return () => clearInterval(timer)
+}
 
 const DAY_MS = 86_400_000
 const MYT_OFFSET_MS = 8 * 3_600_000
