@@ -279,6 +279,7 @@ export interface SupportConfig {
   email: string
   phone: string
   whatsapp: string
+  /** Service hours; '' when not set (PO decision 18). */
   hours: string
   /** @deprecated Use `whatsapp`. Optional; the server may omit it. */
   whatsappNumber?: string

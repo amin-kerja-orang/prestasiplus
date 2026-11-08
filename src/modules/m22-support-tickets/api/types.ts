@@ -41,6 +41,7 @@ export const TICKET_CREATED_FLASH =
 export const SETTINGS_MESSAGES = {
   emailInvalid: 'E-mel tidak sah.',
   phoneInvalid: 'No. telefon tidak sah.',
+  hoursTooLong: 'Waktu perkhidmatan tidak boleh melebihi 120 aksara.',
 } as const
 export const SETTINGS_SAVED_FLASH = 'Tetapan disimpan.'
 

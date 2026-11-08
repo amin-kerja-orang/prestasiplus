@@ -4245,7 +4245,9 @@
             "type": "string"
           },
           "hours": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 120,
+            "description": "Service hours; '' when not set."
           },
           "whatsappNumber": {
             "type": "string",
@@ -4556,6 +4558,16 @@
             ]
           },
           "whatsapp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hours": {
             "anyOf": [
               {
                 "type": "string"
@@ -89409,7 +89421,7 @@
           "content"
         ],
         "summary": "Support contact (help box)",
-        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone and hours are always empty until S7-T09; the client hides a contact whose value is empty.",
+        "description": "Public. If the config row is missing the server answers 200 with empty strings {email: \"\", phone: \"\", whatsapp: \"\", hours: \"\"} (S5-T05, DM-33); phone is always empty; the client hides a contact whose value is empty.",
         "responses": {
           "200": {
             "description": "E-mail, phone, WhatsApp number and hours (empty strings when not set).",
@@ -92706,7 +92718,7 @@
           "support"
         ],
         "summary": "Save the support contact (API-ADM-10)",
-        "description": "Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.",
+        "description": "Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` is refused: the phone is `whatsapp`.",
         "parameters": [
           {
             "schema": {
@@ -92770,7 +92782,7 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR with fields: email \"E-mel tidak sah.\"; whatsapp \"No. telefon tidak sah.\".",
+            "description": "VALIDATION_ERROR with fields: email \"E-mel tidak sah.\"; whatsapp \"No. telefon tidak sah.\"; hours \"Waktu perkhidmatan tidak boleh melebihi 120 aksara.\".",
             "content": {
               "application/json": {
                 "schema": {

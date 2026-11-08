@@ -296,18 +296,18 @@ export const supportRepo = defineRepository({
       const row = store.get(1)
       // DM-33 / API-SUP-04: no row is not an error; the server answers empty values (S5-T05).
       if (!row) return { email: '', phone: '', whatsapp: '', hours: '' }
-      // phone and hours are not stored until S7-T09 (#458 decision 2).
-      return { email: row.email, phone: '', whatsapp: row.whatsappNumber, hours: '' }
+      // phone is not stored (#458 decision 2).
+      return { email: row.email, phone: '', whatsapp: row.whatsappNumber, hours: row.hours ?? '' }
     },
 
     /** The contact for the admin (API-ADM-10): empty strings when no row exists. */
-    contact(): { email: string; whatsappNumber: string } {
+    contact(): { email: string; whatsappNumber: string; hours: string } {
       const row = store.get(1)
-      return { email: row?.email ?? '', whatsappNumber: row?.whatsappNumber ?? '' }
+      return { email: row?.email ?? '', whatsappNumber: row?.whatsappNumber ?? '', hours: row?.hours ?? '' }
     },
 
     /** API-ADM-10 (S7): the admin saves the contact; the row is created on the first save. */
-    saveContact(input: { email: string; whatsappNumber: string }): void {
+    saveContact(input: { email: string; whatsappNumber: string; hours: string }): void {
       transaction(() => {
         if (store.get(1)) store.update(1, input)
         else store.insert({ id: 1, ...input })

@@ -128,13 +128,13 @@ export function registerSupportPaths(registry: OpenAPIRegistry): void {
     path: '/admin/settings/support',
     tags: ['support'],
     summary: 'Save the support contact (API-ADM-10)',
-    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` and `hours` are refused until they have a store.',
+    description: 'Admin only, audited. An omitted field keeps its value; null or blank clears it. `phone` is refused: the phone is `whatsapp`.',
     request: { headers: [csrf], body: { required: true, content: { 'application/json': { schema: SupportSettingsUpdateRequestSchema } } } },
     responses: {
       200: json(envelopeOf(SupportSettingsSchema), 'The saved contact.'),
       401: unauthorized,
       403: adminWrite,
-      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}".`),
+      422: err(`VALIDATION_ERROR with fields: email "${SUPPORT_SETTINGS_MESSAGES.emailInvalid}"; whatsapp "${SUPPORT_SETTINGS_MESSAGES.phoneInvalid}"; hours "${SUPPORT_SETTINGS_MESSAGES.hoursTooLong}".`),
     },
   })
 
