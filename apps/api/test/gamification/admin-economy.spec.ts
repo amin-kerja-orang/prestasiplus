@@ -37,7 +37,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   })
 
   describe('guards: anonymous 401, student and teacher 403, a write without CSRF 403 CSRF_INVALID', () => {
-    const READS = ['/admin/gamification/overview', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/settings', '/admin/reward-control']
+    const READS = ['/admin/gamification/overview', '/admin/gamification/tiers', '/admin/gamification/challenges', '/admin/gamification/students', '/admin/gamification/transactions', '/admin/gamification/settings', '/admin/reward-control', '/admin/reward-control/draws']
     const WRITES: [string, string][] = [
       ['post', '/admin/gamification/award'],
       ['post', '/admin/gamification/challenges'],
@@ -51,6 +51,8 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       ['put', '/admin/reward-control/settings'],
       ['put', '/admin/reward-control/rewards/1/cost'],
       ['post', '/admin/reward-control/draws'],
+      ['post', '/admin/reward-control/draws/1/open'],
+      ['post', '/admin/reward-control/draws/1/close'],
     ]
 
     it('anonymous is 401 on every route', async () => {

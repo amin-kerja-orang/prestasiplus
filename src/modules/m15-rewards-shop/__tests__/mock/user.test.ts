@@ -239,6 +239,7 @@ describe('#12, #13 Cabutan Bertuah over M14 draws (BR-M15-19)', () => {
     const r = await call<{ data: CabutanView }>('GET', '/api/cabutan', PELAJAR)
     expect(r.status).toBe(200)
     expect(r.body.data.draws).toEqual([])
+    expect(r.body.data.results).toEqual([])
     expect(r.body.data.syilingBalance).toBe(wallet.summary(PELAJAR).currentSyiling)
     expect((await call('GET', '/api/cabutan', null)).status).toBe(401)
   })
@@ -258,6 +259,7 @@ describe('#12, #13 Cabutan Bertuah over M14 draws (BR-M15-19)', () => {
         ticketCostSyiling: 50,
         maxTicketsPerStudent: 10,
         ticketsOwned: 0,
+        ticketsSold: 0,
         closesAt: '2026-09-30',
         prizePool: [
           { label: 'Baucar Topup RM50', valueSen: 5000, qty: 1 },
@@ -278,6 +280,34 @@ describe('#12, #13 Cabutan Bertuah over M14 draws (BR-M15-19)', () => {
     expect(wallet.summary(PELAJAR).currentSyiling).toBe(20)
     const open = await call<{ data: CabutanView }>('GET', '/api/cabutan', PELAJAR)
     expect(open.body.data.draws[0]?.ticketsOwned).toBe(2)
+    expect(open.body.data.draws[0]?.ticketsSold).toBe(2)
+  })
+
+  it('a repeated clientUuid buys one ticket and debits once (AC-MUR-22-3, DM-78)', async () => {
+    m15Hooks.m15LoadFixture('draw')
+    wallet.setFields(PELAJAR, { syiling: 120 })
+    const key = { clientUuid: '3d2c1b0a-9f8e-4d7c-8b6a-5e4d3c2b1a09' }
+    const first = await call<{ data: TicketBought }>('POST', '/api/cabutan/1/tickets', PELAJAR, key)
+    const again = await call<{ data: TicketBought }>('POST', '/api/cabutan/1/tickets', PELAJAR, key)
+    expect(first.body.data).toEqual({ drawId: 1, ticketsOwned: 1, syilingBalance: 70 })
+    expect(again.body.data).toEqual(first.body.data)
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(70)
+    const other = await call<{ data: TicketBought }>('POST', '/api/cabutan/1/tickets', PELAJAR, {
+      clientUuid: '4e3d2c1b-0a9f-4e8d-9c7b-6f5e4d3c2b1a',
+    })
+    expect(other.body.data.ticketsOwned).toBe(2)
+  })
+
+  it('a clientUuid already used for another draw is a 422 on fields.clientUuid and buys nothing (as the API)', async () => {
+    m15Hooks.m15LoadFixture('draw')
+    const second = draws.create({ title: 'Cabutan Kedua', ticketCostSyiling: 10, maxTicketsPerStudent: 5, closesAt: '2026-09-30', openNow: true })
+    wallet.setFields(PELAJAR, { syiling: 120 })
+    const key = { clientUuid: '5f4e3d2c-1b0a-4f9e-8d7c-7a6f5e4d3c2b' }
+    await call('POST', '/api/cabutan/1/tickets', PELAJAR, key)
+    const reused = await call<{ error: { fields?: Record<string, string> } }>('POST', `/api/cabutan/${String(second.id)}/tickets`, PELAJAR, key)
+    expect(reused.status).toBe(422)
+    expect(reused.body.error.fields).toEqual({ clientUuid: 'The client uuid field must be a valid UUID.' })
+    expect(wallet.summary(PELAJAR).currentSyiling).toBe(70)
   })
 
   it('refuses a missing draw (DRAW_CLOSED) and the ticket cap (TICKET_LIMIT)', async () => {

@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsRewardChip } from '@/ds'
+import { DsCluster, DsIconChip, DsRewardChip, DsStack, DsText } from '@/ds'
 
 import type { OpenDrawView } from '../api'
 import { DRAW_COPY } from './copy'
@@ -38,27 +38,33 @@ const canBuy = computed(
           Harga tiket:
           <DsRewardChip :value="draw.ticketCostSyiling" art="coin" />
         </div>
-        <div data-testid="draw-owned">
-          Tiket anda: {{ draw.ticketsOwned }}/{{ draw.maxTicketsPerStudent }}
-        </div>
         <div v-if="draw.closesAt" data-testid="draw-closes">
           Tutup: {{ formatDate(draw.closesAt) }}
         </div>
       </dl>
+      <DsStack gap="2xs" data-testid="draw-fairness">
+        <DsText variant="caption" tone="muted" data-testid="draw-fair-equal">{{ DRAW_COPY.fairEqual }}</DsText>
+        <DsText variant="caption" tone="muted" data-testid="draw-owned">{{ DRAW_COPY.ticketsOwned(draw.ticketsOwned, draw.maxTicketsPerStudent) }}</DsText>
+        <DsText variant="caption" tone="muted" data-testid="draw-sold">{{ DRAW_COPY.ticketsSold(draw.ticketsSold) }}</DsText>
+        <DsText variant="caption" tone="muted" data-testid="draw-coin-note">{{ DRAW_COPY.coinNote }}</DsText>
+      </DsStack>
       <ul v-if="draw.prizePool.length > 0" class="flex flex-wrap gap-2">
         <li v-for="(p, i) in draw.prizePool" :key="i" data-testid="draw-prize">
           <UBadge color="neutral" variant="soft" size="lg">{{ p.label }} × {{ p.qty }}</UBadge>
         </li>
       </ul>
-      <UButton
-        size="xl"
-        class="min-h-14 w-full justify-center sm:w-auto sm:self-start"
-        :disabled="!canBuy || busy"
-        data-testid="draw-buy"
-        @click="$emit('buy', draw.id)"
-      >
-        {{ DRAW_COPY.buy }}
-      </UButton>
+      <DsCluster gap="sm">
+        <UButton
+          size="xl"
+          class="min-h-14 w-full justify-center sm:w-auto sm:self-start"
+          :disabled="!canBuy || busy"
+          data-testid="draw-buy"
+          @click="$emit('buy', draw.id)"
+        >
+          {{ DRAW_COPY.buy }}
+        </UButton>
+        <DsText variant="label" tone="default" data-testid="draw-counter">{{ DRAW_COPY.counter(draw.ticketsOwned, draw.maxTicketsPerStudent) }}</DsText>
+      </DsCluster>
     </article>
   </UCard>
 </template>

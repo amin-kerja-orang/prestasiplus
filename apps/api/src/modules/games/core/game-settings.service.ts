@@ -45,7 +45,6 @@ export const GAME_SETTINGS = {
   challenge_accuracy_min_questions: { default: 5, min: 1, max: 20 },
   daily_login_syiling: { default: 2, min: 0, max: 10 },
   spm_first_session_syiling: { default: 7, min: 0, max: 20 },
-  mystery_box_cost: { default: 50, min: 1, max: 500 },
   mystery_box_daily_max: { default: 5, min: 1, max: 20 },
   draw_max_tickets_per_pupil: { default: 10, min: 1, max: 100 },
   referral_referrer_syiling: { default: 100, min: 0, max: 1000 },
@@ -70,6 +69,8 @@ export const GAME_SETTINGS = {
   'game_enabled_roda-nasib': { default: 1, min: 0, max: 1 },
 } as const satisfies Record<string, RangeSpec | ChoiceSpec>
 
+// `mystery_box_cost` is not here on purpose (ruling 2 on #505): the cost of a Kotak Misteri lives only in `mystery_boxes.cost_syiling` (DM-37).
+// Its row is still in `gamification_settings` (0224 is merged; the row and the key check are left as they are) and nothing reads it; the generic `PUT /admin/settings` can still store a value, with no effect.
 export type GameSettingKey = keyof typeof GAME_SETTINGS
 
 export function isGameSettingKey(key: string): key is GameSettingKey {

@@ -136,6 +136,7 @@ const draw = {
   status: 'open',
   createdAt: AT,
   ticketsSold: 7,
+  winners: [],
 }
 
 describe('student: dashboard and convert', () => {
@@ -432,14 +433,20 @@ describe('admin: settings, reward control, draws', () => {
     }
     expect(GamificationRewardControlSchema.safeParse(control).success).toBe(true)
     expect(GamificationDrawSchema.safeParse({ ...draw, status: 'finished' }).success).toBe(false)
+    for (const status of ['draft', 'open', 'closed', 'drawn', 'cancelled']) expect(GamificationDrawSchema.safeParse({ ...draw, status }).success, status).toBe(true)
     expect(GamificationDrawSchema.safeParse({ ...draw, closesAt: null }).success).toBe(true)
+    const winner = { id: '9', prizePosition: 0, prizeLabel: 'Baucar Buku RM10', slot: 0, userId: '12', name: 'Aisyah', ticketId: '31', drawnAt: AT, deliveredAt: null }
+    expect(GamificationDrawSchema.safeParse({ ...draw, status: 'drawn', winners: [winner, { ...winner, id: '10', slot: 1, userId: '13', ticketId: '32', deliveredAt: AT }] }).success).toBe(true)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: [{ ...winner, deliveredAt: undefined }] }).success).toBe(false)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: [{ ...winner, slot: -1 }] }).success).toBe(false)
+    expect(GamificationDrawSchema.safeParse({ ...draw, winners: undefined }).success).toBe(false)
     expect(GamificationDrawSchema.safeParse({ ...draw, closesAt: '2026-12-31T00:00:00+08:00' }).success).toBe(false)
     expect(GamificationRewardCostRequestSchema.safeParse({ costValueSen: 0 }).success).toBe(true)
     expect(GamificationRewardCostRequestSchema.safeParse({ costValueSen: -1 }).success).toBe(false)
   })
 
   it('validates the draw create body for each prize pool form', () => {
-    const base = { title: 'Cabutan Hujung Tahun', ticketCostSyiling: 50, maxTicketsPerStudent: 10 }
+    const base = { title: 'Cabutan Hujung Tahun', ticketCostSyiling: 50, maxTicketsPerStudent: 10, prizePool: [{ label: 'Baucar', valueSen: 1000, qty: 2 }] }
     expect(GamificationDrawCreateRequestSchema.safeParse(base).success).toBe(true)
     expect(
       GamificationDrawCreateRequestSchema.safeParse({
@@ -455,7 +462,22 @@ describe('admin: settings, reward control, draws', () => {
     expect(GamificationDrawCreateRequestSchema.safeParse({ ...base, closesAt: '2026-02-31' }).success).toBe(false)
     expect(GamificationDrawCreateRequestSchema.safeParse({ ...base, ticketCostSyiling: 0 }).success).toBe(false)
     expect(GamificationDrawCreateRequestSchema.safeParse({ ...base, title: ' ' }).success).toBe(false)
-    expect(GamificationDrawCreateRequestSchema.safeParse({ ...base, title: 'x'.repeat(151) }).success).toBe(false)
+  })
+
+  it('tightens the draw create body to the limits of P10-01..P10-05, and requires a prize', () => {
+    const base = { title: 'Cabutan Hujung Tahun', ticketCostSyiling: 50, maxTicketsPerStudent: 10, prizePool: [{ label: 'Baucar', valueSen: 1000, qty: 1 }] }
+    const ok = (change: Record<string, unknown>) => GamificationDrawCreateRequestSchema.safeParse({ ...base, ...change }).success
+    expect(ok({ title: 'x'.repeat(120), description: 'd'.repeat(500), ticketCostSyiling: 10_000, maxTicketsPerStudent: 100 })).toBe(true)
+    expect(ok({ ticketCostSyiling: 1, maxTicketsPerStudent: 1, prizePool: [{ label: 'p'.repeat(120), valueSen: 0, qty: 1 }] })).toBe(true)
+    expect(ok({ title: 'x'.repeat(121) })).toBe(false)
+    expect(ok({ description: 'd'.repeat(501) })).toBe(false)
+    expect(ok({ ticketCostSyiling: 10_001 })).toBe(false)
+    expect(ok({ maxTicketsPerStudent: 101 })).toBe(false)
+    expect(ok({ maxTicketsPerStudent: 0 })).toBe(false)
+    expect(ok({ prizePool: [] })).toBe(false)
+    expect(ok({ prizePool: [{ label: ' ', valueSen: 1, qty: 1 }] })).toBe(false)
+    expect(ok({ prizePool: [{ label: 'p'.repeat(121), valueSen: 1, qty: 1 }] })).toBe(false)
+    expect(GamificationDrawCreateRequestSchema.safeParse({ title: 'A', ticketCostSyiling: 1, maxTicketsPerStudent: 1 }).success).toBe(false)
   })
 })
 
@@ -503,7 +525,10 @@ describe('openapi registration', () => {
     has('/admin/reward-control', 'get')
     has('/admin/reward-control/settings', 'put')
     has('/admin/reward-control/rewards/{id}/cost', 'put')
+    has('/admin/reward-control/draws', 'get')
     has('/admin/reward-control/draws', 'post')
+    has('/admin/reward-control/draws/{id}/open', 'post')
+    has('/admin/reward-control/draws/{id}/close', 'post')
   })
 
   it('does not register the BE-11 wallet routes, the teacher economy or the parent approvals', () => {

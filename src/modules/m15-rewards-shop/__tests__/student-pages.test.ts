@@ -9,6 +9,7 @@ import { useFlashStore } from '@/stores/flash'
 
 import type {
   CabutanView,
+  DrawResultView,
   MysteryBoxOpened,
   MysteryBoxView,
   MysteryBoxesView,
@@ -104,6 +105,7 @@ const DRAW: OpenDrawView = {
   ticketCostSyiling: 50,
   maxTicketsPerStudent: 10,
   ticketsOwned: 0,
+  ticketsSold: 7,
   closesAt: '2026-09-30',
   prizePool: [
     { label: 'Baucar Topup RM50', valueSen: 5000, qty: 1 },
@@ -339,14 +341,26 @@ describe('MysteryResultModal', () => {
 })
 
 describe('S7 CabutanPage', () => {
-  const view = (draws: OpenDrawView[], syilingBalance = 256): CabutanView => ({
+  const view = (draws: OpenDrawView[], syilingBalance = 256, results: DrawResultView[] = []): CabutanView => ({
     syilingBalance,
     draws,
+    results,
   })
+
+  /** The real DsDialog teleports into a modal; the stub renders its slots in place while open. */
+  const DIALOG_STUB = {
+    props: ['open', 'title', 'loading'],
+    template: '<section v-if="open" data-testid="dialog" :data-title="title"><slot /><footer><slot name="footer" /></footer></section>',
+  }
+  async function mountCabutan() {
+    wrapper = mount(CabutanPage, { global: { stubs: { teleport: true, DsDialog: DIALOG_STUB } }, attachTo: document.body })
+    await flushPromises()
+    return wrapper
+  }
 
   it('shows the header, the syiling tile, "Cabutan Dibuka" and the empty box', async () => {
     api.fetchCabutan.mockResolvedValue(view([]))
-    const w = await mountPage(CabutanPage)
+    const w = await mountCabutan()
     expect(w.get('h1').text()).toBe('🎟️ Cabutan Bertuah')
     expect(w.text()).toContain('Guna syiling untuk beli tiket & menangi hadiah hebat!')
     expect(w.get('[data-testid="cabutan-tile"]').text()).toContain('Syiling anda')
@@ -355,53 +369,144 @@ describe('S7 CabutanPage', () => {
     expect(w.get('[data-testid="cabutan-empty"]').text()).toBe(
       'Tiada cabutan dibuka buat masa ini. Nanti datang lagi! 🎈',
     )
+    expect(w.find('[data-testid="cabutan-results"]').exists()).toBe(false)
   })
 
-  it('renders a card per open draw and buys one ticket', async () => {
+  it('renders a card per open draw with the fairness lines, then confirms and buys one ticket with one key', async () => {
     api.fetchCabutan.mockResolvedValueOnce(view([DRAW]))
     api.buyCabutanTicket.mockResolvedValue({ drawId: 1, ticketsOwned: 1, syilingBalance: 206 })
-    api.fetchCabutan.mockResolvedValue(view([{ ...DRAW, ticketsOwned: 1 }], 206))
-    const w = await mountPage(CabutanPage)
+    api.fetchCabutan.mockResolvedValue(view([{ ...DRAW, ticketsOwned: 1, ticketsSold: 8 }], 206))
+    const w = await mountCabutan()
     const card = w.get('[data-testid="draw-1"]')
     expect(card.text()).toContain('Cabutan Demo')
     expect(card.get('[data-testid="draw-price"]').text()).toBe('Harga tiket: 50')
-    expect(card.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 0/10')
+    expect(card.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 0 / 10')
+    expect(card.get('[data-testid="draw-counter"]').text()).toBe('0/10')
     expect(card.get('[data-testid="draw-closes"]').text()).toBe('Tutup: 30/09/2026')
+    expect(card.get('[data-testid="draw-fair-equal"]').text()).toBe('Setiap tiket mempunyai peluang yang sama.')
+    expect(card.get('[data-testid="draw-sold"]').text()).toBe('Jumlah tiket terjual: 7')
+    expect(card.get('[data-testid="draw-coin-note"]').text()).toBe('Tiket dibeli dengan syiling yang anda kumpul, bukan wang.')
     expect(card.findAll('[data-testid="draw-prize"]').map((n) => n.text())).toEqual([
       'Baucar Topup RM50 × 1',
       'Baucar RM5 × 10',
     ])
     expect(w.find('[data-testid="cabutan-empty"]').exists()).toBe(false)
+    // B-056a: the press asks first; nothing is bought yet.
+    expect(w.find('[data-testid="dialog"]').exists()).toBe(false)
     await card.get('[data-testid="draw-buy"]').trigger('click')
     await flushPromises()
-    expect(api.buyCabutanTicket).toHaveBeenCalledWith(1)
+    expect(api.buyCabutanTicket).not.toHaveBeenCalled()
+    expect(w.get('[data-testid="dialog"]').attributes('data-title')).toBe('Beli tiket cabutan?')
+    expect(w.get('[data-testid="draw-confirm-body"]').text()).toBe('50 syiling akan ditolak daripada baki anda (256 syiling).')
+    expect(w.get('[data-testid="draw-confirm-cancel"]').text()).toBe('Batal')
+    expect(w.get('[data-testid="draw-confirm-buy"]').text()).toBe('Beli Tiket')
+    await w.get('[data-testid="draw-confirm-buy"]').trigger('click')
+    await flushPromises()
+    expect(api.buyCabutanTicket).toHaveBeenCalledTimes(1)
+    expect(api.buyCabutanTicket).toHaveBeenCalledWith(1, expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/))
+    expect(w.find('[data-testid="dialog"]').exists()).toBe(false)
     expect(w.get('[data-testid="cabutan-balance"]').text()).toBe('206')
-    expect(w.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 1/10')
+    expect(w.get('[data-testid="draw-owned"]').text()).toBe('Tiket anda: 1 / 10')
+    expect(w.get('[data-testid="draw-counter"]').text()).toBe('1/10')
+    expect(w.get('[data-testid="draw-sold"]').text()).toBe('Jumlah tiket terjual: 8')
+  })
+
+  it('"Batal" closes the dialog and buys nothing; each press gets its own key', async () => {
+    api.fetchCabutan.mockResolvedValue(view([DRAW]))
+    api.buyCabutanTicket.mockResolvedValue({ drawId: 1, ticketsOwned: 1, syilingBalance: 206 })
+    const w = await mountCabutan()
+    await w.get('[data-testid="draw-buy"]').trigger('click')
+    // B-056a: the safe button has the default focus.
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    expect(document.activeElement).toBe(w.get('[data-testid="draw-confirm-cancel"]').element)
+    await w.get('[data-testid="draw-confirm-cancel"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="dialog"]').exists()).toBe(false)
+    expect(api.buyCabutanTicket).not.toHaveBeenCalled()
+    for (let i = 0; i < 2; i++) {
+      await w.get('[data-testid="draw-buy"]').trigger('click')
+      await w.get('[data-testid="draw-confirm-buy"]').trigger('click')
+      await flushPromises()
+    }
+    const keys = api.buyCabutanTicket.mock.calls.map((c) => c[1])
+    expect(keys).toHaveLength(2)
+    expect(keys[0]).not.toBe(keys[1])
+  })
+
+  it('a double click on the confirm button buys one ticket (AC-GM-22.7, AC-MUR-22-3)', async () => {
+    api.fetchCabutan.mockResolvedValue(view([DRAW]))
+    let release: (v: { drawId: number; ticketsOwned: number; syilingBalance: number }) => void = () => undefined
+    api.buyCabutanTicket.mockReturnValue(new Promise((r) => (release = r)))
+    const w = await mountCabutan()
+    await w.get('[data-testid="draw-buy"]').trigger('click')
+    const confirm = w.get('[data-testid="draw-confirm-buy"]')
+    await confirm.trigger('click')
+    await confirm.trigger('click')
+    release({ drawId: 1, ticketsOwned: 1, syilingBalance: 206 })
+    await flushPromises()
+    expect(api.buyCabutanTicket).toHaveBeenCalledTimes(1)
+  })
+
+  it('lists "Keputusan Cabutan" with winners by first name and "Anda menang!" for the pupil', async () => {
+    api.fetchCabutan.mockResolvedValue(
+      view([], 256, [
+        {
+          id: 9,
+          title: 'Cabutan Merdeka',
+          winners: [
+            { prize: 'Hadiah Utama', name: 'Zahra', isYou: false },
+            { prize: 'Hadiah Saguhati', name: 'Aiman', isYou: true },
+          ],
+        },
+      ]),
+    )
+    const w = await mountCabutan()
+    const section = w.get('[data-testid="cabutan-results"]')
+    expect(section.get('h2').text()).toBe('Keputusan Cabutan')
+    const card = section.get('[data-testid="result-9"]')
+    expect(card.get('h3').text()).toBe('Cabutan Merdeka')
+    const rows = card.findAll('[data-testid="result-winner"]').map((n) => n.text())
+    expect(rows).toEqual(['Hadiah Utama: Zahra', 'Hadiah Saguhati: Anda menang!'])
+    expect(card.text()).not.toContain('Aiman')
   })
 
   it('disables the buy button below the price and at the ticket cap', async () => {
     api.fetchCabutan.mockResolvedValue(view([DRAW], 40))
-    let w = await mountPage(CabutanPage)
+    let w = await mountCabutan()
     expect(w.get('[data-testid="draw-buy"]').attributes('disabled')).toBeDefined()
     w.unmount()
     api.fetchCabutan.mockResolvedValue(view([{ ...DRAW, ticketsOwned: 10 }], 256))
-    w = await mountPage(CabutanPage)
+    w = await mountCabutan()
     expect(w.get('[data-testid="draw-buy"]').attributes('disabled')).toBeDefined()
   })
 
   it('omits the close line when the draw has no close date', async () => {
     api.fetchCabutan.mockResolvedValue(view([{ ...DRAW, closesAt: null }]))
-    const w = await mountPage(CabutanPage)
+    const w = await mountCabutan()
     expect(w.find('[data-testid="draw-closes"]').exists()).toBe(false)
   })
 
-  it('flashes the M14 refusal message', async () => {
+  it.each([
+    ['TICKET_LIMIT', 'Had tiket dicapai.'],
+    ['DRAW_CLOSED', 'Cabutan ditutup.'],
+    ['INSUFFICIENT_BALANCE', 'Baki syiling tidak mencukupi.'],
+  ])('flashes the server message of a %s refusal (AC-GM-22.2, AC-GM-22.3, AC-MUR-22-2)', async (code, message) => {
     api.fetchCabutan.mockResolvedValue(view([DRAW]))
-    api.buyCabutanTicket.mockRejectedValue(
-      new ApiError({ status: 409, code: 'TICKET_LIMIT', message: 'Had tiket dicapai.' }),
-    )
-    const w = await mountPage(CabutanPage)
+    api.buyCabutanTicket.mockRejectedValue(new ApiError({ status: 409, code, message }))
+    const w = await mountCabutan()
     await w.get('[data-testid="draw-buy"]').trigger('click')
+    await w.get('[data-testid="draw-confirm-buy"]').trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current?.message).toBe(message)
+    expect(w.find('[data-testid="dialog"]').exists()).toBe(false)
+  })
+
+  it('keeps the shared copy for an error that is not a refusal', async () => {
+    api.fetchCabutan.mockResolvedValue(view([DRAW]))
+    api.buyCabutanTicket.mockRejectedValue(new ApiError({ status: 500, code: 'SERVER_ERROR', message: 'boom' }))
+    const w = await mountCabutan()
+    await w.get('[data-testid="draw-buy"]').trigger('click')
+    await w.get('[data-testid="draw-confirm-buy"]').trigger('click')
     await flushPromises()
     expect(useFlashStore().current?.message).toBe('Ralat berlaku. Sila cuba lagi.')
   })
