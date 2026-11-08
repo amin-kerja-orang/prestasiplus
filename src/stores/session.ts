@@ -46,9 +46,11 @@ import {
 export const SESSION_LIFETIME_MS = 120 * MINUTE_MS
 
 /** What the store does after clearing the session on a 401 (F-13 registers `replace('/login')`). */
-export type UnauthorizedRedirect = () => unknown
+export type UnauthorizedRedirect = (returnTo?: string) => unknown
 
 let unauthorizedRedirect: UnauthorizedRedirect | null = null
+type UnauthorizedDefer = (proceed: (returnTo?: string) => void) => void
+let unauthorizedDefer: UnauthorizedDefer | null = null
 
 /**
  * Registers the redirect run after a 401 has cleared the session (FR-M01-14). F-13 calls it once
@@ -58,6 +60,21 @@ export function setUnauthorizedRedirect(redirect: UnauthorizedRedirect | null): 
   unauthorizedRedirect = redirect
   return () => {
     if (unauthorizedRedirect === redirect) unauthorizedRedirect = null
+  }
+}
+
+/**
+ * ERR-AUTH-01, timed Bijak sitting: the session is still cleared, but the redirect waits until the pupil confirms a dialog. The page registers
+ * this while it is mounted; `proceed` runs the normal redirect, and `returnTo` is the path to come back to after login. Returns a function that removes the registration.
+ *
+ * There is a single slot: one registration at a time. A later call replaces the earlier one (the last registration wins), and `null` clears the slot.
+ * The returned remover clears the slot only if it still holds this registration, so an earlier page unmounting
+ * cannot remove a later page's registration. Call it on unmount.
+ */
+export function deferUnauthorizedRedirect(defer: UnauthorizedDefer | null): () => void {
+  unauthorizedDefer = defer
+  return () => {
+    if (unauthorizedDefer === defer) unauthorizedDefer = null
   }
 }
 
@@ -347,6 +364,10 @@ export const useSessionStore = defineStore('session', () => {
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
     clear()
+    if (unauthorizedDefer) {
+      unauthorizedDefer((returnTo) => void unauthorizedRedirect?.(returnTo))
+      return
+    }
     await unauthorizedRedirect?.()
   }
 
