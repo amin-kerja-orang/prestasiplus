@@ -9942,6 +9942,30 @@
       "approved_by_card": null
     },
     {
+      "name": "TournamentRound",
+      "table": "tournament_rounds",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "name": "TournamentEntry",
+      "table": "tournament_entries",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
+      "name": "TournamentRoundScore",
+      "table": "tournament_round_scores",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/battle.prisma",
+      "approved_by_card": "S7-T06"
+    },
+    {
       "name": "ExamAttempt",
       "table": "exam_attempts",
       "status": "canonical",
@@ -10594,6 +10618,14 @@
       "sector": "S7",
       "file": "apps/api/prisma/schema/games.prisma",
       "approved_by_card": null
+    },
+    {
+      "name": "LeagueContribution",
+      "table": "league_contributions",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/prisma/schema/games.prisma",
+      "approved_by_card": "S7-T06"
     },
     {
       "name": "SekolahBersaingWeek",

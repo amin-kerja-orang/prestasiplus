@@ -285,12 +285,15 @@ model League {
   creatorId     BigInt?  @map("creator_id")
   /// upcoming, ongoing, ended (check); stored, not moved by dates.
   status        String   @default("upcoming")
+  /// Set once the final recompute of an ended league has run (0225, DM-62); standings no longer change after it.
+  frozenAt      DateTime? @map("frozen_at") @db.Timestamptz(6)
   isTest        Boolean  @default(false) @map("is_test")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   classLevels LeagueClassLevel[]
   schools     LeagueSchool[]
   standings   LeagueStanding[]
+  contributions LeagueContribution[]
 
   @@index([status], map: "ix_leagues_status")
   @@map("leagues")
@@ -332,12 +335,31 @@ model LeagueStanding {
   skor      Decimal @default(0) @db.Decimal(10, 1)
   purata    Decimal @default(0) @db.Decimal(5, 1)
   sortOrder Int     @default(0) @map("sort_order")
+  /// Time of the hourly recompute that wrote this row (0225, DM-62); null on a seeded row.
+  recomputedAt DateTime? @map("recomputed_at") @db.Timestamptz(6)
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, map: "fk_league_standings_league_id")
 
   @@unique([leagueId, level, schoolId], map: "uq_league_standings_league_id_level_school_id")
   @@index([leagueId, level, sortOrder], map: "ix_league_standings_league_id_level_sort_order")
   @@map("league_standings")
+}
+
+/// "Penyumbang": one pupil's points in one league, written by the hourly job (0225, team-aa ruling 2, AC-GM-15.1).
+model LeagueContribution {
+  id       BigInt @id @default(autoincrement())
+  leagueId BigInt @map("league_id")
+  schoolId BigInt @map("school_id")
+  userId   BigInt @map("user_id")
+  points   Int    @default(0)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, map: "fk_league_contributions_league_id")
+
+  @@unique([leagueId, userId], map: "uq_league_contributions_league_id_user_id")
+  @@index([leagueId, schoolId], map: "ix_league_contributions_league_id_school_id")
+  @@index([schoolId], map: "ix_league_contributions_school_id")
+  @@index([userId], map: "ix_league_contributions_user_id")
+  @@map("league_contributions")
 }
 
 /// Stored weekly snapshot of the Sekolah Bersaing board (seed-only in B1).
