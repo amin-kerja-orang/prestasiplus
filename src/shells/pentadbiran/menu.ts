@@ -101,7 +101,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: pick('PM-01', 'PM-02', 'BS-07'),
   },
   {
-    // V2 section HARIAN. `/admin` redirects to Command Center outside the dev hub, so no route here.
+    // V2 section HARIAN. `/admin` is the Dashboard (S6-T11, R1-ADM-M-01).
     key: 'harian',
     label: 'Harian',
     icon: 'squares-four',

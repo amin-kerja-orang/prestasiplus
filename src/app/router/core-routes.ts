@@ -79,13 +79,10 @@ export function devRoutes(): RouteRecordRaw[] {
   // Prototype scope (D43): neither the hub ("pautan semua skrin") nor the `/__dev/*` pages exist in
   // any mode; only the design-system sandbox `/__ds` stays. `VITE_PROTOTYPE_SCOPE=off` restores them.
   const scoped = isPrototypeScopeOn()
-  // The admin landing `/admin` (D48; the API's LANDING_PATHS for admin and school_admin) has no M17
-  // dashboard page yet. Only dev and demo with the scope OFF show the preview hub there; every other build
-  // (production with VITE_PROTOTYPE_SCOPE=off included, UAT 28 Oct) redirects by role (adminLandingFor).
+  // `/admin` is the M17 Dashboard (R1-ADM-M-01, S6-T11). Only dev and demo with the scope OFF still show the
+  // preview hub there.
   const previewHub = !scoped && (import.meta.env.DEV || import.meta.env.MODE === 'demo')
-  const hub: RouteRecordRaw[] = previewHub
-    ? previewHubRoutes()
-    : [{ path: '/admin', redirect: () => adminLandingFor(useSessionStore().role) }]
+  const hub: RouteRecordRaw[] = previewHub ? previewHubRoutes() : []
   // Design-system gallery (V2-T05): dev and demo, never the e2e build.
   const ds: RouteRecordRaw[] =
     import.meta.env.DEV || import.meta.env.MODE === 'demo'

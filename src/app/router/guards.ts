@@ -103,6 +103,15 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
   }
 
   if (roles !== undefined && (session.role === null || !roles.includes(session.role))) {
+    // The server landing of this role is the refused path itself (the API lands a school admin on `/admin`,
+    // admin only): send it to its own home, not a 403 (D106, G4 #394). Scope on or off.
+    if (
+      session.landingPath === to.path &&
+      isPrototypeRole(session.role) &&
+      scopeHomePath(session.role) !== to.path
+    ) {
+      return { kind: 'redirect', to: scopeHomePath(session.role) }
+    }
     const outcome = to.meta.onForbidden ?? DEFAULT_ON_FORBIDDEN
     if (outcome === '403') return { kind: 'in-place', status: 403 }
     if (outcome === '404') return { kind: 'in-place', status: 404 }

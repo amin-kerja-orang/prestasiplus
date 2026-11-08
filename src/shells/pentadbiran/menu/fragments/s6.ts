@@ -12,4 +12,8 @@ export const S6_ROWS: readonly Row[] = [
   ['PS-06', 'Pelajar Komplimen', '/admin/comp-students'],
   ['PS-05', 'Import Pengguna', '/admin/users/bulk-import'],
   ['SY-02', 'Kawalan Ciri', '/admin/feature-toggles'],
+  ['PP-01', 'Dashboard', '/admin'],
+  ['PM-04', 'Analitik', '/admin/analytics'],
+  ['PM-29', 'Laporan', '/admin/laporan'],
+  ['PS-03', 'Kelas Sekolah', '/admin/classes'],
 ]

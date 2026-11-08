@@ -91,7 +91,7 @@ function fixtureSecrets(): FixtureSecret[] {
 const plugin = defineMockModule({
   id: 'M02',
   dependsOn: ['core', 'M01'],
-  version: 6,
+  version: 7,
   overrides: M02_OVERRIDES,
   tables: {
     jpn: jpnTable,

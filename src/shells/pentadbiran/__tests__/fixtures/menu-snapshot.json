@@ -33,8 +33,8 @@
         {
           "id": "PP-01",
           "label": "Dashboard",
-          "to": "/admin/p/pp-01",
-          "built": false
+          "to": "/admin",
+          "built": true
         },
         {
           "id": "PP-02",
@@ -52,8 +52,8 @@
         {
           "id": "PM-04",
           "label": "Analitik",
-          "to": "/admin/p/pm-04",
-          "built": false
+          "to": "/admin/analytics",
+          "built": true
         },
         {
           "id": "PM-03",
@@ -113,8 +113,8 @@
         {
           "id": "PM-29",
           "label": "Laporan",
-          "to": "/admin/p/pm-29",
-          "built": false
+          "to": "/admin/laporan",
+          "built": true
         }
       ]
     },
@@ -252,8 +252,8 @@
         {
           "id": "PS-03",
           "label": "Kelas Sekolah",
-          "to": "/admin/p/ps-03",
-          "built": false
+          "to": "/admin/classes",
+          "built": true
         }
       ]
     },
@@ -720,10 +720,29 @@
       ]
     },
     {
+      "key": "harian",
+      "label": "Harian",
+      "icon": "squares-four",
+      "items": [
+        {
+          "id": "PP-01",
+          "label": "Dashboard",
+          "to": "/admin",
+          "built": true
+        }
+      ]
+    },
+    {
       "key": "analitik",
       "label": "Analitik",
       "icon": "chart-line-up",
       "items": [
+        {
+          "id": "PM-04",
+          "label": "Analitik",
+          "to": "/admin/analytics",
+          "built": true
+        },
         {
           "id": "PM-03",
           "label": "Monitoring",
@@ -777,6 +796,12 @@
           "label": "Intervensi",
           "sub": "Kirkpatrick",
           "to": "/admin/kirkpatrick/interventions",
+          "built": true
+        },
+        {
+          "id": "PM-29",
+          "label": "Laporan",
+          "to": "/admin/laporan",
           "built": true
         }
       ]
@@ -910,6 +935,12 @@
           "id": "PS-05",
           "label": "Import Pengguna",
           "to": "/admin/users/bulk-import",
+          "built": true
+        },
+        {
+          "id": "PS-03",
+          "label": "Kelas Sekolah",
+          "to": "/admin/classes",
           "built": true
         }
       ]

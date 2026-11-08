@@ -60,6 +60,7 @@ describe('Pentadbiran menu data', () => {
     // the top shortcuts have no heading (30 §3.1 row 0)
     expect(PENTADBIRAN_MENU.map((g) => g.label)).toEqual([
       undefined,
+      'Harian', // Dashboard (S6-T11)
       'Analitik',
       'Kurikulum',
       'Soalan',
@@ -73,7 +74,9 @@ describe('Pentadbiran menu data', () => {
     ])
     expect(PENTADBIRAN_MENU.map((g) => g.items.map((i) => i.label))).toEqual([
       ['Command Center', 'Aktiviti Harian', 'Audio KBAT'],
+      ['Dashboard'],
       [
+        'Analitik',
         'Monitoring',
         'Overview',
         'T1: Reaksi',
@@ -82,6 +85,7 @@ describe('Pentadbiran menu data', () => {
         'T4: Hasil',
         'Rantaian Impak',
         'Intervensi',
+        'Laporan',
       ],
       ['Kurikulum', 'Subjek', 'Tahap Pendidikan'],
       [
@@ -102,6 +106,7 @@ describe('Pentadbiran menu data', () => {
         'Import Pelajar',
         'Pelajar Komplimen',
         'Import Pengguna',
+        'Kelas Sekolah',
       ],
       ['Databank Soalan'],
       ['PKSK Soalan', 'PKSK Akses'],
@@ -162,7 +167,7 @@ describe('Pentadbiran menu data', () => {
     // S0-T10: Kawalan Ciri is built
     expect(byId.get('SY-02')).toMatchObject({ label: 'Kawalan Ciri', to: '/admin/feature-toggles', built: true })
     // unbuilt target routes stay out of the rendered menu (FR-ADM-H0.2)
-    for (const id of ['PP-01', 'PP-02', 'PM-04', 'PM-29', 'PS-03']) {
+    for (const id of ['PP-02']) {
       expect(byId.has(id), id).toBe(false)
       expect(FULL_ITEMS.find((i) => i.id === id)?.built, id).toBe(false)
     }
