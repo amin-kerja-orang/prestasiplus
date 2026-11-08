@@ -18,10 +18,15 @@ export type Winner = 'A' | 'B' | null
  */
 export type BattleQueueId = number | string
 
+/** The "Bilangan Soalan" chips (48 GAME-01). */
+export type BattleQuestionCount = 5 | 10 | 15 | 20
+
 /** Body of #2, #3 and #8 (`receiver_id` only for #8). Ids go out as strings in http mode. */
 export interface BattleStartBody {
   question_type: QuestionType
   open_to_all: boolean
+  /** Optional chip; absent = the server default (`battle_questions_default`). */
+  question_count?: BattleQuestionCount
   subject_id?: number | string
   pksk_domain_id?: number | string
   pksk_target_level?: PkskLevel
@@ -36,7 +41,8 @@ export interface BattleStartResponse {
   queue_id?: BattleQueueId
   matched?: boolean
   battle_uuid?: string
-  error?: string
+  /** A string on the live-shaped bodies; the `{code, message, retryAfter?}` envelope on a 429. */
+  error?: string | { code?: string; message?: string; retryAfter?: number }
   message?: string
 }
 
@@ -46,7 +52,7 @@ export type PollMatchResponse =
       status: 'incoming_challenge'
       challenger: { name: string; grade_label: string; school: string }
     }
-  | { status: 'matched'; battle_uuid: string }
+  | { status: 'matched'; battle_uuid: string; robot?: boolean }
 
 export interface PollChallengerResponse {
   status: 'waiting' | 'matched' | 'rejected' | 'expired' | 'not_found'
@@ -97,17 +103,50 @@ export interface ArenaQuestion {
   options: { id: number; label: string; text: string }[]
 }
 
-/** #16 `GET /api/battle/arena/{uuid}` (PROVISIONAL). */
+/** A side of the arena; `isBot` is the robot opponent ("Robot PrestasiPlus", chip "Latihan"). */
+export interface ArenaPlayer {
+  name: string
+  school: string
+  isBot?: boolean
+}
+
+/** Where the battle is: answering a question, the 3 s reveal of the round just closed, or over. */
+export type ArenaPhase = 'answering' | 'reveal' | 'finished'
+
+/** One side of the round just closed (`optionId` null = timeout). */
+export interface ArenaRevealSide {
+  optionId: number | null
+  correct: boolean
+  points: number
+}
+
+/** The key and both sides' picks and points of the round just closed (phase `reveal`). */
+export interface ArenaReveal {
+  index: number
+  correctOptionId: number
+  you: ArenaRevealSide
+  opponent: ArenaRevealSide
+}
+
+/**
+ * #16 `GET /api/battle/arena/{uuid}`. Rounds are shared: `index` of `total` (the battle's question
+ * count, 5..20). `secondsLeft` counts the answering time only (grace is invisible) and is 0 outside
+ * `answering`. `roundEndsAt` ends the current phase. Optional fields are absent on older servers.
+ */
 export interface ArenaView {
   uuid: string
   status: BattleStatus
   you: 'A' | 'B'
-  players: { A: { name: string; school: string }; B: { name: string; school: string } }
+  players: { A: ArenaPlayer; B: ArenaPlayer }
   scores: { A: number; B: number }
   index: number
   total: number
   question: ArenaQuestion | null
   secondsLeft: number
+  phase?: ArenaPhase
+  roundEndsAt?: string
+  youAnswered?: boolean
+  reveal?: ArenaReveal
   result?: { winner: Winner; scoreA: number; scoreB: number }
 }
 
@@ -117,14 +156,14 @@ export interface ArenaAnswerBody {
   seconds: number
 }
 
-/** #17 (PROVISIONAL). */
+/**
+ * #17: the answer is only accepted. It never carries the key or the correctness (ruling 45): those
+ * come from the view at phase `reveal`.
+ */
 export interface ArenaAnswerResult {
-  correct: boolean
-  correctOptionId: number
-  points: number
-  you: { score: number }
-  opponent: { answered: true; correct: boolean; score: number }
-  next?: ArenaQuestion | null
+  accepted: boolean
+  phase?: ArenaPhase
+  roundEndsAt?: string
   result?: { winner: Winner; scoreA: number; scoreB: number }
 }
 

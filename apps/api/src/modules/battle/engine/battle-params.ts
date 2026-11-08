@@ -4,7 +4,7 @@
  * Tingkatan 4 is "forbidden" before its subject is looked at. The body is an unknown JSON value: only the fields named
  * here are read, everything else (points, scores, ...) is ignored.
  */
-import { BATTLE_MESSAGES, BATTLE_RULES, BattleInviteRequestSchema, BattleStartRequestSchema } from '@pp/contract'
+import { BATTLE_MESSAGES, BATTLE_QUESTION_COUNTS, BATTLE_RULES, BattleInviteRequestSchema, BattleStartRequestSchema, type BattleQuestionCount } from '@pp/contract'
 
 import { isIdString } from '../../../db/ids'
 import type { BattleDeps } from '../battle.deps'
@@ -15,6 +15,8 @@ export interface BattleParams {
   pkskDomainId: string | null
   pkskTargetLevel: 'T1' | 'T4' | null
   openToAll: boolean
+  /** The chip (5, 10, 15, 20): how many questions the battle draws (FR-GM-01.1). */
+  questionCount: BattleQuestionCount
 }
 
 /** A refused body: `forbidden` is a 403 (SPM below Tingkatan 4, PKSK without a grant for the level), anything else a 422. */
@@ -32,14 +34,17 @@ const asRecord = (body: unknown): Record<string, unknown> =>
 
 const idOf = (v: unknown): string | null => (typeof v === 'string' && isIdString(v) ? v : null)
 
-export async function parseBattleParams(body: unknown, callerGrade: number | null, deps: BattleDeps, who: { userId: string; role: string }, withReceiver = false): Promise<BattleParams> {
+const isQuestionCount = (v: unknown): v is BattleQuestionCount => BATTLE_QUESTION_COUNTS.some((n) => n === v)
+
+/** `defaultCount` is `battle_questions_default`; it is used only when the body has no `question_count`. */
+export async function parseBattleParams(body: unknown, callerGrade: number | null, deps: BattleDeps, who: { userId: string; role: string }, defaultCount: BattleQuestionCount, withReceiver = false): Promise<BattleParams> {
   const b = asRecord(body)
   const type = b.question_type
   const bad = (message: string): ParamRefusal => new ParamRefusal(false, message)
   if (type !== 'biasa' && type !== 'pksk' && type !== 'spm') throw bad(BATTLE_MESSAGES.typeInvalid)
   const openToAll = b.open_to_all === true
   const subject = idOf(b.subject_id)
-  let params: BattleParams
+  let params: Omit<BattleParams, 'questionCount'>
   if (type === 'biasa') {
     if (subject === null || (await deps.subject(subject)) === null) throw bad(BATTLE_MESSAGES.subjectInvalid)
     params = { questionType: type, subjectId: subject, pkskDomainId: null, pkskTargetLevel: null, openToAll }
@@ -55,8 +60,14 @@ export async function parseBattleParams(body: unknown, callerGrade: number | nul
     if (subject === null || (await deps.subject(subject)) === null || (await deps.spmPoolCount(subject)) === 0) throw bad(BATTLE_MESSAGES.subjectInvalid)
     params = { questionType: type, subjectId: subject, pkskDomainId: null, pkskTargetLevel: null, openToAll }
   }
+  // FR-GM-01.1: absent is the default chip; anything that is not one of the four chips (a string, null, 7, an array) is refused.
+  let questionCount = defaultCount
+  if (Object.hasOwn(b, 'question_count')) {
+    if (!isQuestionCount(b.question_count)) throw bad(BATTLE_MESSAGES.outOfRange)
+    questionCount = b.question_count
+  }
   // The contract schema is the final word on the shape (receiver_id is checked by the caller with its own message).
   const shape = { ...b, open_to_all: openToAll, ...(withReceiver ? { receiver_id: typeof b.receiver_id === 'string' && b.receiver_id !== '' ? b.receiver_id : '0' } : {}) }
   if (!(withReceiver ? BattleInviteRequestSchema : BattleStartRequestSchema).safeParse(shape).success) throw bad(BATTLE_MESSAGES.typeInvalid)
-  return params
+  return { ...params, questionCount }
 }

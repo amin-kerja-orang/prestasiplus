@@ -9,9 +9,7 @@ import {
   BattleSuccessSchema,
 } from '@pp/contract'
 
-import { prngStream } from '../../src/db/prng'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
-import { pickBot } from '../../src/modules/battle/engine'
 import { addMcqs, bootBattleApp, client, matchBot, parse, startQueue, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
 
 const DENIED = 'Giliran tidak dijumpai.'
@@ -88,60 +86,31 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
   })
 
   describe('poll-match (AC 4, 5, 16)', () => {
-    it('waits for two polls, matches a bot on the third, repeats the answer afterwards', async () => {
+    it('FR-PA-29: waits until battle_bot_fallback_seconds (30), then matches the robot, repeats the answer afterwards', async () => {
       const qid = await startQueue(a, s.math)
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 9; i++) {
         const w = await a.get(`/battle/poll-match/${qid}`)
         expect(parse(BattlePollMatchResponseSchema, w)).toEqual({ status: 'waiting' })
+        t.clock.advance(3_000)
       }
+      t.clock.advance(2_999)
+      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'waiting' })
+      t.clock.advance(1)
       const m = parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))
       expect(m.status).toBe('matched')
       const uuid = (m as { battle_uuid: string }).battle_uuid
-      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid: uuid })
-      const [battle] = await rows<{ status: string; mode: string; is_test: boolean; winner: string | null; level_id: string }>(
-        `select status, mode, is_test, winner, level_id::text from battles where id = $1`,
+      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid: uuid, robot: true })
+      const [battle] = await rows<{ status: string; mode: string; is_test: boolean; winner: string | null; level_id: string; counts_for_ranking: boolean }>(
+        `select status, mode, is_test, winner, level_id::text, counts_for_ranking from battles where id = $1`,
         [uuid],
       )
-      expect(battle).toEqual({ status: 'active', mode: 'quick_match', is_test: false, winner: null, level_id: s.t4 })
-      const parts = await rows<{ side: string; user_id: string; is_bot: boolean; is_test: boolean }>(`select side, user_id::text, is_bot, is_test from battle_participants where battle_id = $1 order by side`, [uuid])
+      expect(battle).toEqual({ status: 'active', mode: 'quick_match', is_test: false, winner: null, level_id: s.t4, counts_for_ranking: false })
+      const parts = await rows<{ side: string; user_id: string | null; school_id: string | null; is_bot: boolean; is_test: boolean }>(`select side, user_id::text, school_id::text, is_bot, is_test from battle_participants where battle_id = $1 order by side`, [uuid])
       expect(parts.map((p) => [p.side, p.is_bot, p.is_test])).toEqual([['A', false, false], ['B', true, false]])
       expect(parts[0]?.user_id).toBe(a.id)
-      expect(parts[1]?.user_id).not.toBe(a.id)
+      expect(parts[1]).toMatchObject({ user_id: null, school_id: null }) // AC-GM-00.4: no user, no school
       const qs = await rows<{ n: string; d: string }>(`select count(*)::text n, count(distinct question_id)::text d from battle_questions where battle_id = $1`, [uuid])
       expect(qs[0]).toEqual({ n: '10', d: '10' })
-    })
-
-    it('the bot is the seeded pick of the stream m16:battle:<queueId>, same grade first', async () => {
-      const deps = t.get(BattleDeps)
-      const qid = await startQueue(a, s.math)
-      const uuid = await matchBot(a, qid)
-      const owner = (await deps.players([a.id])).get(a.id)!
-      const expected = pickBot({ id: a.id, grade: owner.grade, schoolId: owner.schoolId }, 'quick_match', false, await deps.activeStudents({ excludeIds: new Set([a.id]) }), prngStream(`m16:battle:${qid}`))
-      const [bot] = await rows<{ user_id: string }>(`select user_id::text from battle_participants where battle_id = $1 and side = 'B'`, [uuid])
-      expect(bot?.user_id).toBe(expected?.id)
-      expect(expected?.grade).toBe(owner.grade)
-    })
-
-    it('school battle: the bot is from another school (widened past the grade when nobody else fits)', async () => {
-      // Secondary-only (D72): the seeded pupils of the other schools are Darjah, which a bot is never picked from. The secondary
-      // pupil of a second school is test-local fixture data, so the seed stays as it is (H-A6).
-      const [owner] = await rows<{ school_id: string }>(`select school_id::text from users where id = $1`, [a.id])
-      const [other] = await rows<{ id: string }>(`select id::text from schools where id <> $1 order by id limit 1`, [owner?.school_id])
-      const [fixture] = await rows<{ id: string }>(
-        `insert into users (name, email, school_id, grade, is_active) values ('Murid Ujian Sekolah Lain', 'murid.sekolah-lain.t05@example.test', $1, 10, true) returning id::text`,
-        [other?.id],
-      )
-      await rows(`insert into user_roles (user_id, role) values ($1, 'student')`, [fixture?.id])
-      t.get(BattleDeps).invalidateCache()
-      const uuid = await matchBot(a, await startQueue(a, s.math, {}, '/battle/school-battle'))
-      const [bot] = await rows<{ school_id: string | null; mode: string }>(
-        `select p.school_id::text, b.mode from battle_participants p join battles b on b.id = p.battle_id where p.battle_id = $1 and p.side = 'B'`,
-        [uuid],
-      )
-      expect(bot?.mode).toBe('school_battle')
-      expect(bot?.school_id).not.toBeNull()
-      expect(bot?.school_id).not.toBe(owner?.school_id)
-      expect(bot?.school_id).toBe(other?.id)
     })
 
     it('an unknown, foreign or malformed queue id answers {status: not_found} with HTTP 200', async () => {
@@ -153,6 +122,35 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       }
       const [q] = await rows<{ polls: number }>(`select polls from battle_queues where id = $1`, [qid])
       expect(q?.polls).toBe(0)
+    })
+
+    it('battle_bot_fallback_seconds = 120 (its maximum), the same as the queue: the robot comes, the entry does not expire first', async () => {
+      await rows(`update gamification_settings set value = 120 where key = 'battle_bot_fallback_seconds'`)
+      try {
+        const qid = await startQueue(a, s.math)
+        for (let i = 0; i < 14; i++) {
+          expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'waiting' })
+          t.clock.advance(i === 13 ? 3_000 : 9_000) // polled at 0, 9 ... 117 s, then at exactly 120 s
+        }
+        expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`)).status).toBe('matched')
+      } finally {
+        await rows(`update gamification_settings set value = 30 where key = 'battle_bot_fallback_seconds'`)
+      }
+    })
+
+    it('battle_bot_fallback_seconds = 0: never a robot; the entry expires after 120 s', async () => {
+      await rows(`update gamification_settings set value = 0 where key = 'battle_bot_fallback_seconds'`)
+      try {
+        const qid = await startQueue(a, s.math)
+        for (let i = 0; i < 14; i++) {
+          expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'waiting' })
+          t.clock.advance(i === 13 ? 3_000 : 9_000)
+        }
+        expect((await a.get(`/battle/poll-match/${qid}`)).body).toEqual({ status: 'expired' })
+        expect((await rows<{ status: string }>(`select status from battle_queues where id = $1`, [qid]))[0]?.status).toBe('expired')
+      } finally {
+        await rows(`update gamification_settings set value = 30 where key = 'battle_bot_fallback_seconds'`)
+      }
     })
 
     it('a queue not polled for more than 10 s is expired (and stays so)', async () => {
@@ -204,7 +202,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect(accepted.status).toBe(200)
       const { battle_uuid } = parse(BattleAcceptChallengerResponseSchema, accepted)
       expect(parse(BattlePollChallengerResponseSchema, await b.get(`/battle/poll-challenger/${qid}`))).toEqual({ status: 'matched', battle_uuid })
-      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid })
+      expect(parse(BattlePollMatchResponseSchema, await a.get(`/battle/poll-match/${qid}`))).toEqual({ status: 'matched', battle_uuid, robot: false })
       const parts = await rows<{ side: string; user_id: string; is_bot: boolean }>(`select side, user_id::text, is_bot from battle_participants where battle_id = $1 order by side`, [battle_uuid])
       expect(parts).toEqual([{ side: 'A', user_id: a.id, is_bot: false }, { side: 'B', user_id: b.id, is_bot: false }])
       // the queue is matched: a second accept is the documented not-found
@@ -261,8 +259,7 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       const qid = await startQueue(a, s.math)
       const before = Number((await rows<{ n: string }>(`select count(*)::text n from battles`))[0]?.n)
       await rows(`update questions set is_active = false where id in (select q.id from questions q join question_versions v on v.question_id = q.id where v.subject_id = $1)`, [s.math])
-      await a.get(`/battle/poll-match/${qid}`)
-      await a.get(`/battle/poll-match/${qid}`)
+      await rows(`update battle_queues set created_at = created_at - interval '30 seconds' where id = $1`, [qid])
       const res = await a.get(`/battle/poll-match/${qid}`)
       expect(res.status).toBe(422)
       expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Soalan tidak mencukupi.' })
@@ -272,35 +269,19 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       await rows(`update questions set is_active = true`)
     })
 
-    it('no student to pick: 404 {error: "Tiada lawan dijumpai."}', async () => {
-      const qid = await startQueue(a, s.math)
+    it('no other pupil at all: the robot still comes (no real pupil is read)', async () => {
       await rows(`update users set is_active = false where id <> $1`, [a.id])
       t.get(BattleDeps).invalidateCache()
-      await a.get(`/battle/poll-match/${qid}`)
-      await a.get(`/battle/poll-match/${qid}`)
-      const res = await a.get(`/battle/poll-match/${qid}`)
-      expect(res.status).toBe(404)
-      expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Tiada lawan dijumpai.' })
+      const qid = await startQueue(a, s.math)
+      await matchBot(a, qid)
       await rows(`update users set is_active = true`)
       await rows(`update users set is_active = false where email = 'tidakaktif@demo.test'`)
       t.get(BattleDeps).invalidateCache()
     })
-
-    it('the student pool of the bot pick is cached for 60 s (read through the Clock)', async () => {
-      const deps = t.get(BattleDeps)
-      const first = await deps.activeStudents({})
-      const victim = first.find((u) => u.id !== a.id)!
-      await rows(`update users set is_active = false where id = $1`, [victim.id])
-      expect((await deps.activeStudents({})).map((u) => u.id)).toContain(victim.id)
-      t.clock.advance(61_000)
-      expect((await deps.activeStudents({})).map((u) => u.id)).not.toContain(victim.id)
-      await rows(`update users set is_active = true where id = $1`, [victim.id])
-      deps.invalidateCache()
-    })
   })
 
   describe('Mod Pelajar (is_test)', () => {
-    it('writes is_test rows, gets a real student as the bot, and cannot meet real queues', async () => {
+    it('writes is_test rows, gets the robot, and cannot meet real queues', async () => {
       const admin = await client(t, 'admin@demo.test', { modPelajar: true })
       const qid = await startQueue(admin, s.math)
       const [q] = await rows<{ is_test: boolean }>(`select is_test from battle_queues where id = $1`, [qid])
@@ -308,12 +289,9 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       const uuid = await matchBot(admin, qid)
       const [battle] = await rows<{ is_test: boolean }>(`select is_test from battles where id = $1`, [uuid])
       expect(battle?.is_test).toBe(true)
-      const parts = await rows<{ is_test: boolean; is_bot: boolean; role: string | null }>(
-        `select p.is_test, p.is_bot, (select string_agg(r.role, ',') from user_roles r where r.user_id = p.user_id) role from battle_participants p where p.battle_id = $1 order by side`,
-        [uuid],
-      )
+      const parts = await rows<{ is_test: boolean; is_bot: boolean; user_id: string | null }>(`select is_test, is_bot, user_id::text from battle_participants where battle_id = $1 order by side`, [uuid])
       expect(parts[0]).toMatchObject({ is_test: true, is_bot: false })
-      expect(parts[1]).toMatchObject({ is_test: true, is_bot: true, role: 'student' })
+      expect(parts[1]).toEqual({ is_test: true, is_bot: true, user_id: null })
 
       // test and real queues never meet
       const real = await startQueue(a, s.math)
@@ -336,10 +314,8 @@ describe('battle queue (M16-02 to M16-06, M16-12, M16-13)', () => {
       expect((await b.get('/battle/invitations')).body.invitations).toEqual([])
     })
 
-    it('no staff account is ever picked as a bot', async () => {
-      const bots = await rows<{ n: string }>(
-        `select count(*)::text n from battle_participants p where p.is_bot and not exists (select 1 from user_roles r where r.user_id = p.user_id and r.role = 'student')`,
-      )
+    it('AC-GM-00.4: no account is ever a robot', async () => {
+      const bots = await rows<{ n: string }>(`select count(*)::text n from battle_participants where is_bot and user_id is not null`)
       expect(bots[0]?.n).toBe('0')
     })
   })

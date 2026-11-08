@@ -147,12 +147,12 @@ describe('children names in battle surfaces (issue #76)', () => {
       const r2 = p.recent.find((r) => r.uuid === battle2)!
       expect([r2.playerA.id, r2.playerA.name, r2.playerB.id, r2.playerB.name]).toEqual([null, PEOPLE.bilal.masked, null, PEOPLE.dewi.masked])
     })
-    it('student: own row full; own match full on both sides; a match of others masked', async () => {
+    it('student: own row full; own match: the own name full, the other pupil masked (FR-GM-00.8); a match of others masked', async () => {
       const p = await page(who.aina, d1)
       shows(bySkor(p.fighters, 'aina'), 'aina', true)
       shows(bySkor(p.fighters, 'bilal'), 'bilal', false)
       const r1 = p.recent.find((r) => r.uuid === battle1)!
-      expect([r1.playerA.id, r1.playerA.name, r1.playerB.id, r1.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, id.cheng, PEOPLE.cheng.name])
+      expect([r1.playerA.id, r1.playerA.name, r1.playerB.id, r1.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, null, PEOPLE.cheng.masked])
       const r2 = p.recent.find((r) => r.uuid === battle2)!
       expect([r2.playerA.id, r2.playerB.id]).toEqual([null, null])
     })
@@ -164,10 +164,10 @@ describe('children names in battle surfaces (issue #76)', () => {
     })
   })
 
-  it('GET /battle/history: the caller own battles keep full names and ids on both sides', async () => {
+  it('GET /battle/history: the caller keeps the own full name and id; the other pupil is a first given name with no id (FR-GM-00.8)', async () => {
     const res = await getAs(who.aina, '/battle/history')
     const rows = History.parse(res.body).data
     expect(rows.map((r) => r.uuid)).toEqual([battle1])
-    expect([rows[0]!.playerA.id, rows[0]!.playerA.name, rows[0]!.playerB.id, rows[0]!.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, id.cheng, PEOPLE.cheng.name])
+    expect([rows[0]!.playerA.id, rows[0]!.playerA.name, rows[0]!.playerB.id, rows[0]!.playerB.name]).toEqual([id.aina, PEOPLE.aina.name, null, PEOPLE.cheng.masked])
   })
 })
