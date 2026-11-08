@@ -110,6 +110,7 @@ function flatBase(q: QuestionView) {
     parts: partsOf(q),
     numberLabel: v.numberLabel,
     textbookRef: v.textbookRef,
+    schemeRules: v.schemeRules ?? null,
     rejectionReason: v.rejectionReason,
     tag: { unitId: v.unitId, spIds: v.spIds, tp: v.difficultyTp },
     kbat: v.kbat,
@@ -174,6 +175,7 @@ export function rowView(q: QuestionView): QuestionRow {
     numberLabel: q.version.numberLabel,
     ...(f.essayTopics === null ? {} : { essayTopics: f.essayTopics }),
     flags: q.openFlags ?? [],
+    ...(q.groupId === null ? {} : { stimulusGroupId: q.groupId }),
   })
 }
 

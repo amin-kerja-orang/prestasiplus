@@ -1,6 +1,15 @@
 /** Verbatim .cloud labels (DISC 1.4/1.5) and the [PROPOSED] lines of docs/design/v2-admin-student-pipeline.md 11. */
 export const qdCopy = {
   mcqAria: 'Pilihan jawapan',
+  /** 46 section 2.2 `mcq_multi` helper line. */
+  mcqMultiHint: 'Pilih semua jawapan yang betul.',
+  /** Fixed true_false labels (FR-PA-02). */
+  trueLabel: 'Betul',
+  falseLabel: 'Salah',
+  /** Inline gap and table cell labels. */
+  gapAria: (n: number): string => `Ruang kosong ${n}`,
+  gapMax: (n: number): string => `Maksimum ${n} patah perkataan.`,
+  cellAria: (row: number, col: number): string => `Baris ${row}, lajur ${col}`,
   shortTextPlaceholder: 'Tulis jawapan…',
   shortTextAria: 'Jawapan',
   numericPlaceholder: 'cth. 3.14…',
@@ -79,6 +88,21 @@ export function overLabel(max: number): string {
 export function shortLabel(n: number, min: number): string {
   return `Jawapan terlalu pendek (${n} patah perkataan; minimum ${min}).`
 }
+/** FR-PA-35: shown when a hard-limited essay reaches its maximum. */
+export function capLabel(max: number): string {
+  return `Had ${max} patah perkataan dicapai.`
+}
+/** FR-PA-35: a short answer over its `maxWords` (the text is kept). */
+export function maxWordsLabel(n: number): string {
+  return `Maksimum ${n} patah perkataan.`
+}
+export const langCopy = {
+  aria: 'Bahasa soalan',
+  ms: 'BM',
+  en: 'English',
+  both: 'BM + English',
+} as const
+export const matchingBankCopy = { title: 'Senarai pilihan', aria: 'Senarai padanan' } as const
 export function chipLabel(label: string): string {
   return `Lihat ${label}`
 }

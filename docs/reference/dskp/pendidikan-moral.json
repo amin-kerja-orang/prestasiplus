@@ -2,13 +2,351 @@
   "subject": "Pendidikan Moral",
   "subjectCode": null,
   "levels": [
+    "T1",
+    "T2",
+    "T3",
     "T4",
     "T5"
   ],
   "source": "Pendidikan Moral.pdf",
-  "edition": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (KSSM Pendidikan Moral Tingkatan 4 dan 5)",
-  "structureNote": "Hierarchy: Bidang (theme; the whole KSSM Moral has 7 bidang, Bidang 1-4 are Tingkatan 1-3, this DSKP covers Bidang 5 Insan Bermoral, 6 Jati Diri Moral, 7 Moral dan Kenegaraan for BOTH T4 and T5 with different topics per form) > Standard Kandungan (x.y, a topic) > 6 Standard Pembelajaran (x.y.1-x.y.6). In this file one unit = one SK (topic) because each SK carries its own Standard Prestasi table of Tahap Penguasaan 1-6; the unit therefore has exactly one entry in standards. Every SK has the same 6-SP pattern (x.y.1-x.y.4 cognitive: define/list -> explain -> evaluate/predict -> analyse; x.y.5 express feeling (afektif); x.y.6 practise in daily life (perlakuan)). Minimum 64 hours over T4+T5 (min hours per year). Catatan column (Cadangan nilai / isu / aktiviti) deliberately not extracted. Printed typos kept as printed (e.g. \"Berbeza\" capitalised in SP 7.2.5 T4). Bidang headings use the printed numbering 5.0/6.0/7.0 in both forms, so the same SK code (e.g. 5.1) exists in T4 and T5 with different titles - always key by (level, code).",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T4": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (KSSM Pendidikan Moral Tingkatan 4 dan 5)",
+    "T5": "Terbitan 2018, Bahagian Pembangunan Kurikulum KPM, September 2018 (KSSM Pendidikan Moral Tingkatan 4 dan 5)"
+  },
+  "structureNote": "Hierarchy: Bidang (theme; the whole KSSM Moral has 7 bidang, Bidang 1-4 are Tingkatan 1-3, this DSKP covers Bidang 5 Insan Bermoral, 6 Jati Diri Moral, 7 Moral dan Kenegaraan for BOTH T4 and T5 with different topics per form) > Standard Kandungan (x.y, a topic) > 6 Standard Pembelajaran (x.y.1-x.y.6). In this file one unit = one SK (topic) because each SK carries its own Standard Prestasi table of Tahap Penguasaan 1-6; the unit therefore has exactly one entry in standards. Every SK has the same 6-SP pattern (x.y.1-x.y.4 cognitive: define/list -> explain -> evaluate/predict -> analyse; x.y.5 express feeling (afektif); x.y.6 practise in daily life (perlakuan)). Minimum 64 hours over T4+T5 (min hours per year). Catatan column (Cadangan nilai / isu / aktiviti) deliberately not extracted. Printed typos kept as printed (e.g. \"Berbeza\" capitalised in SP 7.2.5 T4). Bidang headings use the printed numbering 5.0/6.0/7.0 in both forms, so the same SK code (e.g. 5.1) exists in T4 and T5 with different titles - always key by (level, code). T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
   "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Kepercayaan kepada Tuhan",
+      "titlePrinted": "KEPERCAYAAN KEPADA TUHAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Baik Hati",
+      "titlePrinted": "BAIK HATI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Bertanggungjawab",
+      "titlePrinted": "BERTANGGUNGJAWAB",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Hormat dan Taat",
+      "titlePrinted": "HORMAT DAN TAAT",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Kasih Sayang terhadap Alam",
+      "titlePrinted": "KASIH SAYANG TERHADAP ALAM",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Serlahkan Potensi Diri",
+      "titlePrinted": "SERLAHKAN POTENSI DIRI",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Bijaksana Memilih dan Etiket Keluarga",
+      "titlePrinted": "BIJAKSANA MEMILIH DAN ETIKET KELUARGA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Hindari Ketagihan",
+      "titlePrinted": "HINDARI KETAGIHAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Patuhi Peraturan Sekolah",
+      "titlePrinted": "PATUHI PERATURAN SEKOLAH",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Kenali Hak Kanak-kanak",
+      "titlePrinted": "KENALI HAK KANAK-KANAK",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Rasuah Musuh Negara",
+      "titlePrinted": "RASUAH MUSUH NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "INDEKS",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "dan Bidang 4: Moral, Peraturan dan Undang-undang. Bidang-bidang ini dibahagikan kepada",
+      "titlePrinted": "DAN BIDANG 4: MORAL, PERATURAN DAN UNDANG-UNDANG. BIDANG-BIDANG INI DIBAHAGIKAN KEPADA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Sumber Moral Asas Pembentukan Akhlak Mulia",
+      "titlePrinted": "SUMBER MORAL ASAS PEMBENTUKAN AKHLAK MULIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Agama atau Kepercayaan Membentuk Keperibadian Mulia",
+      "titlePrinted": "AGAMA ATAU KEPERCAYAAN MEMBENTUK KEPERIBADIAN MULIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Tanggungjawab Diri Terlaksana Hidup Makin Bahagia",
+      "titlePrinted": "TANGGUNGJAWAB DIRI TERLAKSANA HIDUP MAKIN BAHAGIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Tanggungjawab Diri Membentuk Keluarga Bahagia",
+      "titlePrinted": "TANGGUNGJAWAB DIRI MEMBENTUK KELUARGA BAHAGIA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Adab Dijaga, Persahabatan Terbela",
+      "titlePrinted": "ADAB DIJAGA, PERSAHABATAN TERBELA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Jiran Sepakat Membawa Berkat",
+      "titlePrinted": "JIRAN SEPAKAT MEMBAWA BERKAT",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Masyarakat Penyayang Tonggak Aspirasi Negara",
+      "titlePrinted": "MASYARAKAT PENYAYANG TONGGAK ASPIRASI NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Perkhidmatan Awam Pemangkin Pembangunan Negara",
+      "titlePrinted": "PERKHIDMATAN AWAM PEMANGKIN PEMBANGUNAN NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Hargai Alam Warisan Kita",
+      "titlePrinted": "HARGAI ALAM WARISAN KITA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Gaya Hidup Sihat dan Selamat Menjamin Keharmonian Bersama",
+      "titlePrinted": "GAYA HIDUP SIHAT DAN SELAMAT MENJAMIN KEHARMONIAN BERSAMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Adab di Tempat Awam Dijaga, Nikmat Hidup Dirasai Bersama",
+      "titlePrinted": "ADAB DI TEMPAT AWAM DIJAGA, NIKMAT HIDUP DIRASAI BERSAMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Etika dan Undang-undang Siber Membantu Pembentukan Jati Diri",
+      "titlePrinted": "ETIKA DAN UNDANG-UNDANG SIBER MEMBANTU PEMBENTUKAN JATI DIRI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Keselamatan di Jalan Raya Tanggungjawab Bersama",
+      "titlePrinted": "KESELAMATAN DI JALAN RAYA TANGGUNGJAWAB BERSAMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "14.0",
+      "title": "Menangani Konflik Identiti Diri Asas Pembentukan Personaliti",
+      "titlePrinted": "MENANGANI KONFLIK IDENTITI DIRI ASAS PEMBENTUKAN PERSONALITI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "15.0",
+      "title": "Hak Asasi Manusia Dilindungi Bersama",
+      "titlePrinted": "HAK ASASI MANUSIA DILINDUNGI BERSAMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "BIDANG 1 PENGENALAN MORAL",
+      "titlePrinted": "BIDANG 1 PENGENALAN MORAL",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "UNIT 1: Pilihan Bermoral Pilihan Saya",
+      "titlePrinted": "UNIT 1: PILIHAN BERMORAL PILIHAN SAYA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "BIDANG 2 DIRI, KELUARGA DAN PERSAHABATAN",
+      "titlePrinted": "BIDANG 2 DIRI, KELUARGA DAN PERSAHABATAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "UNIT 2: Anugerah Alam Ciptaan Tuhan",
+      "titlePrinted": "UNIT 2: ANUGERAH ALAM CIPTAAN TUHAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "UNIT 3: Kebestarian Diri",
+      "titlePrinted": "UNIT 3: KEBESTARIAN DIRI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "UNIT 4: Amalan Tradisi Kekeluargaan Khazanah Kita",
+      "titlePrinted": "UNIT 4: AMALAN TRADISI KEKELUARGAAN KHAZANAH KITA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "UNIT 5: Konflik dalam Adab Persahabatan",
+      "titlePrinted": "UNIT 5: KONFLIK DALAM ADAB PERSAHABATAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "BIDANG 3 HUBUNGAN ANTARA DIRI, KOMUNITI",
+      "titlePrinted": "BIDANG 3 HUBUNGAN ANTARA DIRI, KOMUNITI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "9.0",
+      "title": "UNIT 6: Hidup Bersatu Padu Menjana Kesejahteraan",
+      "titlePrinted": "UNIT 6: HIDUP BERSATU PADU MENJANA KESEJAHTERAAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "10.0",
+      "title": "UNIT 7: Kualiti Perkhidmatan Awam Aspirasi Pembangunan Negara",
+      "titlePrinted": "UNIT 7: KUALITI PERKHIDMATAN AWAM ASPIRASI PEMBANGUNAN NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "11.0",
+      "title": "UNIT 8: Bumi Hijau Bumi Kita",
+      "titlePrinted": "UNIT 8: BUMI HIJAU BUMI KITA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "12.0",
+      "title": "UNIT 9: Tanggungjawab Sosial Tanggungjawab Bersama",
+      "titlePrinted": "UNIT 9: TANGGUNGJAWAB SOSIAL TANGGUNGJAWAB BERSAMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "13.0",
+      "title": "BIDANG 4 MORAL, PERATURAN DAN UNDANG-UNDANG",
+      "titlePrinted": "BIDANG 4 MORAL, PERATURAN DAN UNDANG-UNDANG",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "14.0",
+      "title": "UNIT 10: Hidup Beradab Cerminan Diri",
+      "titlePrinted": "UNIT 10: HIDUP BERADAB CERMINAN DIRI",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "15.0",
+      "title": "UNIT 11: Hindari Jenayah Kanak-kanak",
+      "titlePrinted": "UNIT 11: HINDARI JENAYAH KANAK-KANAK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "16.0",
+      "title": "UNIT 12: Kebebasan Bersuara Menjamin Kemakmuran Negara",
+      "titlePrinted": "UNIT 12: KEBEBASAN BERSUARA MENJAMIN KEMAKMURAN NEGARA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "17.0",
+      "title": "UNIT 13: Amalan Tradisi Masyarakat Majmuk",
+      "titlePrinted": "UNIT 13: AMALAN TRADISI MASYARAKAT MAJMUK",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "18.0",
+      "title": "UNIT 14: Kemanusiaan Asas Kemoralan",
+      "titlePrinted": "UNIT 14: KEMANUSIAAN ASAS KEMORALAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "19.0",
+      "title": "INDEKS",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
     {
       "level": "T4",
       "code": "5.1",

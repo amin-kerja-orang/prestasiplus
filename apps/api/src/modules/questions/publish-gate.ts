@@ -7,6 +7,9 @@ import { INTAKE_GATE_MESSAGES, type QuestionPart } from '@pp/contract'
 
 import { PUBLISH_TAG_MESSAGES } from './errors'
 import { isLeaf, leavesOf } from './grading'
+import { reachableIds, schemeTotal, type SchemeDeduction, type SchemeKeyLike } from './scheme-total'
+
+export { schemeTotal, reachableIds, type SchemeKeyLike }
 
 export interface TagGateInput {
   subjectId: string | null
@@ -47,9 +50,9 @@ export function checkTagGate(input: TagGateInput): Record<string, string> {
   return fields
 }
 
-/** NO_DIFFICULTY (row 9, S): refused only when neither the typed Kesukaran nor a TP exists (readers fall back to `least(5, tp)`, else 3). */
+/** NO_DIFFICULTY (row 9, S): the typed Kesukaran is required on its own, whatever the TP (FR-ADM-QE3.7, AC-ADM-QE3.3; team-dd ruling on #503). */
 export function checkDifficultyGate(input: { difficultyLevel?: number | null; tp: number | null }): Record<string, string> {
-  return (input.difficultyLevel ?? null) === null && input.tp === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
+  return (input.difficultyLevel ?? null) === null ? { difficultyLevel: PUBLISH_TAG_MESSAGES.difficultyLevel } : {}
 }
 
 /** STEM_SHORT (row 10, S): the stem of an MCQ (one top-level MCQ leaf) has at least 10 characters. A blank stem is the REQUIRED_FIELD item, not this one. */
@@ -59,6 +62,27 @@ export function checkStemGate(stem: string | null | undefined, parts: readonly Q
   const only = parts[0]!
   if (!isLeaf(only) || only.mode !== 'mcq') return {}
   return Array.from(text).length < 10 ? { questionText: PUBLISH_TAG_MESSAGES.stem } : {}
+}
+
+/** Gate rows 25 and 26 (S, A): text of the open stimulus flag. `{Rajah 3}` of the PRD is the reference the text contains. */
+export const STIMULUS_FLAG_MESSAGES = {
+  missing: (rujukan: string): string => `Soalan menyebut ${rujukan} tetapi tiada rangsangan. Pilih kumpulan atau tambah rangsangan.`,
+  figureOnly: 'Soalan ini hanya mengandungi rangsangan. Tukarkan kepada rangsangan kumpulan.',
+} as const
+
+export interface StimulusFlagGateInput {
+  stimulusFlag?: 'stimulus_missing' | 'figure_only' | 'stem_duplicated' | null
+  flagDismissedAt?: Date | null
+  /** The reference the text contains ("Rajah 3"), for `stimulus_missing`. */
+  stimulusRefText?: string | null
+}
+
+/** Rows 25 STIMULUS_MISSING and 26 FIGURE_ONLY: an item only while the flag is open (not dismissed); `stem_duplicated` never blocks. */
+export function checkStimulusFlagGate(input: StimulusFlagGateInput): Record<string, string> {
+  if (input.flagDismissedAt != null) return {}
+  if (input.stimulusFlag === 'stimulus_missing') return { stimulusMissing: STIMULUS_FLAG_MESSAGES.missing(input.stimulusRefText ?? 'Rajah') }
+  if (input.stimulusFlag === 'figure_only') return { figureOnly: STIMULUS_FLAG_MESSAGES.figureOnly }
+  return {}
 }
 
 /** Sum of the marks a points key can award: free points, plus `anyN` of each group. */
@@ -74,10 +98,147 @@ function pointsTotal(key: Extract<QuestionPart, { mode: 'working' }>['key']): nu
   return free + groups
 }
 
+/* -------------------------------------------------------------------------------------------------
+ * Scheme engine (S1-T09a part 3): best reachable marks (45 section 7.0) and the scheme validator. Pure: no database, no clock.
+ * The key is read structurally (v1 and v2 shapes), so the engine does not depend on the parse path that produced it.
+ * ------------------------------------------------------------------------------------------------- */
+
+/**
+ * The maximum marks a scheme can award (45 section 7.0 "Best reachable marks").
+ * - v1 key (`scheme_v` absent): the existing `pointsTotal` semantics; a points key with `paths` returns null (not evaluated).
+ * - v2 points: the best single alternative (`alternatives`; none = one alternative holding every point); deductions and `zeroIf` never raise it.
+ * - rubric: `perCriterion` = sum of the criteria `max`; otherwise the highest band (or floor band) upper bound. `contentPoints` add nothing.
+ * - any other kind (option, accepted, mapping, ...): `marks` as passed, else the key's own `marks`, else null.
+ * `essay_choice` shares one key across its alternatives, so they never add.
+ */
+export function bestReachable(key: SchemeKeyLike, marks?: number): number | null {
+  if (key.kind === 'points') {
+    if (key.scheme_v !== 2) return pointsTotal(key as unknown as Parameters<typeof pointsTotal>[0])
+    return schemeTotal(key)
+  }
+  if (key.kind === 'rubric') {
+    if (key.scheme_v === 2 && key.scoring === 'perCriterion') return (key.criteria ?? []).reduce((s, c) => s + (c.max ?? 0), 0)
+    return Math.max(0, ...(key.bands ?? []).map((b) => b.range[1]), ...(key.floorBand ? [key.floorBand.range[1]] : []))
+  }
+  return marks ?? key.marks ?? null
+}
+
+export interface SchemeIssue {
+  code: string
+  message: string
+  path: string
+}
+export interface SchemeValidateOptions {
+  /** Path prefix of the issues, e.g. `parts.a.key`. */
+  path: string
+  /** `modeConfig.example` is present: the sum check is skipped (card). */
+  example?: boolean
+  /** Label of the leaf (for `dependsOnPart`); with `partLabels` it detects a missing or later part. */
+  ownLabel?: string
+  /** Leaf labels of the question in order. */
+  partLabels?: readonly string[]
+  /** `modeConfig.dependsOnPart`. */
+  dependsOnPart?: string
+  /** Question-level deductions (`scheme_rules`); those with scope `part` are checked against the leaf marks. */
+  schemeRules?: { deductions?: readonly SchemeDeduction[] }
+  /** Total marks of the question: with `schemeRules`, the deductions of scope `question` are capped by it (45 4.1: leaf or question). */
+  questionMarks?: number
+}
+
+/** 45 section 4.1 rows 13 to 16 and 3.1.7 (R1 copy, D113). Codes without PRD text return the code as the message. */
+export const SCHEME_MESSAGES = {
+  sum: (n: number, m: number) => `Jumlah skema (${String(n)}) mesti sama dengan markah bahagian (${String(m)}).`,
+  depends: (label: string) => `Mata ${label} bergantung pada mata yang tiada.`,
+  bandRange: (marks: number) => `Julat band tidak meliputi 0 hingga ${String(marks)}.`,
+  noScheme: '⚠ tiada skema',
+  penalty: 'Jumlah penalti melebihi markah bahagian.',
+} as const
+/** The deduction code is `SCHEME_PENALTY` (team-dd ruling on issue 558, D5); the text has no other source. */
+export const SCHEME_PENALTY_CODE = 'SCHEME_PENALTY'
+
+/**
+ * Does the band set cover every mark 1..marks? (floor band included.) Mark 0 is implicit: example 7.1 has no floor band and passes the
+ * gate (45 section 7.1), so a missing 0 is not a gap; any hole above 0 is.
+ */
+function bandsCover(key: SchemeKeyLike, marks: number): boolean {
+  const ranges = [...(key.bands ?? []).map((b) => b.range), ...(key.floorBand ? [key.floorBand.range] : [])]
+  for (let m = 1; m <= marks; m++) if (!ranges.some(([lo, hi]) => lo <= m && m <= hi)) return false
+  return true
+}
+
+/**
+ * Validates one leaf scheme against the leaf marks. A `null`/`undefined` key is `NO_SCHEME`. Only meaningful for `points` and `rubric`
+ * keys; every other kind returns no issues (its completeness is the contract's).
+ */
+export function validateScheme(key: SchemeKeyLike | null | undefined, leafMarks: number, opts: SchemeValidateOptions): SchemeIssue[] {
+  const issues: SchemeIssue[] = []
+  const add = (code: string, message: string, sub = '') => issues.push({ code, message, path: opts.path + sub })
+  if (key == null) return [{ code: 'NO_SCHEME', message: SCHEME_MESSAGES.noScheme, path: opts.path }]
+  if (key.kind !== 'points' && key.kind !== 'rubric') return issues
+
+  if (opts.dependsOnPart !== undefined && opts.partLabels !== undefined) {
+    const at = opts.partLabels.indexOf(opts.dependsOnPart)
+    const own = opts.ownLabel === undefined ? -1 : opts.partLabels.indexOf(opts.ownLabel)
+    if (at < 0 || (own >= 0 && at >= own)) add('SCHEME_DEPENDS', 'SCHEME_DEPENDS', '.dependsOnPart')
+  }
+  if (key.kind === 'points') {
+    const points = key.points ?? []
+    const ids = new Set(points.map((p) => p.id))
+    const ok = reachableIds(points)
+    points.forEach((p, i) => {
+      const missing = (p.requires ?? []).some((r) => !ids.has(r) || r === p.id)
+      const badEcf = p.ecf !== undefined && opts.partLabels !== undefined && !opts.partLabels.includes(p.ecf.fromPart)
+      // A cycle makes a point unreachable although every id exists.
+      if (missing || badEcf || !ok.has(p.id)) add('SCHEME_DEPENDS', SCHEME_MESSAGES.depends(p.label ?? p.id), `.points.${String(i)}`)
+    })
+  }
+  if (!opts.example) {
+    if (key.kind === 'rubric') {
+      const max = bestReachable(key) ?? 0
+      if (max !== leafMarks || (key.marks !== undefined && key.marks !== leafMarks)) {
+        add('SCHEME_SUM', SCHEME_MESSAGES.sum(key.marks !== undefined && key.marks !== leafMarks ? key.marks : max, leafMarks), '.marks')
+      }
+      // perCriterion: the bands only describe levels (45 7.5 lists one band of [5, 5]); the criteria maxima decide the total.
+      if (key.scoring !== 'perCriterion' && !bandsCover(key, leafMarks)) add('BAND_RANGE', SCHEME_MESSAGES.bandRange(leafMarks))
+    } else {
+      const max = bestReachable(key)
+      if (key.marks !== undefined && key.marks !== leafMarks) add('SCHEME_SUM', SCHEME_MESSAGES.sum(key.marks, leafMarks), '.marks')
+      else if (max !== null && max !== leafMarks) add('SCHEME_SUM', SCHEME_MESSAGES.sum(max, leafMarks), '.points')
+    }
+  }
+  const deductions = [...(key.deductions ?? []), ...(opts.schemeRules?.deductions ?? []).filter((d) => d.scope === 'part')]
+  if (deductions.reduce((s, d) => s + (d.cap ?? d.amount), 0) > leafMarks) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
+  else if (opts.questionMarks !== undefined && questionPenaltyExceeds(opts.schemeRules, opts.questionMarks)) add(SCHEME_PENALTY_CODE, SCHEME_MESSAGES.penalty, '.deductions')
+  return issues
+}
+
+/** The ONE question-level cap rule (45 4.1): the `scope: question` deductions of `scheme_rules` (each at its cap, else its amount) exceed the question marks. */
+export function questionPenaltyExceeds(schemeRules: { deductions?: readonly SchemeDeduction[] } | null | undefined, questionMarks: number): boolean {
+  const asked = (schemeRules?.deductions ?? []).filter((d) => d.scope === 'question')
+  return asked.reduce((s, d) => s + (d.cap ?? d.amount), 0) > questionMarks
+}
+
+/** Optional question-level context of the gate (additive: absent = the leaf checks only, as before). */
+export interface KeysGateOptions {
+  schemeRules?: { deductions?: readonly SchemeDeduction[] } | null
+}
+
+/** Field of the question-level penalty refusal when no leaf field already carries it. */
+export const SCHEME_RULES_PENALTY_FIELD = 'schemeRules.deductions'
+
+/** S1-T09a: the question-level penalty cap alone (what the submit gate reads; the approve gate gets it through `checkKeysGate`). */
+export function checkSchemeRulesGate(parts: readonly QuestionPart[], schemeRules: KeysGateOptions['schemeRules']): Record<string, string> {
+  if (!schemeRules) return {}
+  const total = leavesOf(parts).reduce((s, { leaf }) => s + (isLeaf(leaf) ? leaf.marks : 0), 0)
+  return questionPenaltyExceeds(schemeRules, total) ? { [SCHEME_RULES_PENALTY_FIELD]: SCHEME_MESSAGES.penalty } : {}
+}
+
 /** Problems keyed by the part path: key marks must equal the leaf marks and the sum of the points. */
-export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, string> {
+export function checkKeysGate(parts: readonly QuestionPart[], opts: KeysGateOptions = {}): Record<string, string> {
   const fields: Record<string, string> = {}
-  for (const { path, leaf } of leavesOf(parts)) {
+  const leaves = leavesOf(parts)
+  const questionMarks = leaves.reduce((s, { leaf }) => s + (isLeaf(leaf) ? leaf.marks : 0), 0)
+  for (const { path, leaf } of leaves) {
     if (!isLeaf(leaf)) continue
     if (leaf.mode === 'essay_choice') {
       const ids = leaf.topics.map((t) => t.id)
@@ -87,8 +248,24 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
     }
     if (leaf.mode === 'working' || leaf.mode === 'drawing' || leaf.mode === 'essay' || leaf.mode === 'essay_choice') {
       const key = leaf.key
+      const mc = (leaf as { modeConfig?: { example?: unknown; dependsOnPart?: string } }).modeConfig
+      // An example leaf (`modeConfig.example`, marks 0) is not marked: its key is exempt from the sum check, v1 or v2.
+      if (mc?.example !== undefined && (key as SchemeKeyLike).scheme_v !== 2) continue
+      if ((key as SchemeKeyLike).scheme_v === 2) {
+        // Scheme v2 (45 section 7.0): the shared validator; the first issue is the field message.
+        const [first] = validateScheme(key as SchemeKeyLike, leaf.marks, {
+          path: `parts.${path}.key`,
+          example: mc?.example !== undefined,
+          ownLabel: path,
+          partLabels: leaves.map((l) => l.path),
+          ...(mc?.dependsOnPart !== undefined ? { dependsOnPart: mc.dependsOnPart } : {}),
+          ...(opts.schemeRules ? { schemeRules: opts.schemeRules, questionMarks } : {}),
+        })
+        if (first) fields[`parts.${path}.key`] = first.message
+        continue
+      }
       if (key.kind === 'points') {
-        const total = pointsTotal(key)
+        const total = bestReachable(key as SchemeKeyLike)
         if (key.marks !== leaf.marks || (total !== null && total !== key.marks)) {
           fields[`parts.${path}.key`] = 'Jumlah markah tidak sepadan dengan skema.'
         }
@@ -97,5 +274,7 @@ export function checkKeysGate(parts: readonly QuestionPart[]): Record<string, st
       }
     }
   }
+  // A question whose question-scope deductions exceed its marks is refused even when no leaf carries a v2 key to report it on.
+  if (!Object.values(fields).includes(SCHEME_MESSAGES.penalty)) Object.assign(fields, checkSchemeRulesGate(parts, opts.schemeRules))
   return fields
 }

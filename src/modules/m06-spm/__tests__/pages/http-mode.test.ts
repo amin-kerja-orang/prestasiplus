@@ -11,6 +11,7 @@ import {
   SpmSubjektifOverviewSchema,
   SpmTrackingAHubSchema,
   SpmTrackingASubjectResultSchema,
+  type SpmTrackingASubjectResult,
 } from '@pp/contract'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -103,8 +104,8 @@ const HUB = {
 const TRACKING_SUBJECT = {
   code: 'MATH', name: 'Matematik', icon: 'calculator', color: '#EF4444', targetType: 'spm', targetSize: 40,
   summary: { bersih: 0, bankBesar: 1, readyQuestions: 40, belumCukup: 0 },
-  sets: [{ setNo: 1, status: 'bank_besar', readyCount: 40, bankSource: 49, dskpTagged: 49, dskpTotal: 49 }],
-} satisfies TrackingASubjectResult
+  sets: [{ year: 2026, setNo: 1, status: 'bank_besar', readyCount: 40, bankSource: 49, dskpTagged: 49, dskpTotal: 49 }],
+} satisfies SpmTrackingASubjectResult // the wire shape the contract parses (`year` is required since S3-T05)
 
 const REDIRECT = { redirect: '/latihan-berstruktur?subject_id=1&scope=spm&track=bahasa' } satisfies TrackingASubjectResult
 

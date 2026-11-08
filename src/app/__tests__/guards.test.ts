@@ -8,6 +8,7 @@ import { usePageMeta } from '@/composables/usePageMeta'
 import { clock } from '@/lib/time'
 import {
   PP_AUTH_STORAGE_KEY,
+  deferUnauthorizedRedirect,
   setUnauthorizedRedirect,
   useFlashStore,
   useNotificationBadgeStore,
@@ -492,6 +493,37 @@ describe('401 policy (FR-M01-14)', () => {
     await router.push('/tetapan')
     expect(router.currentRoute.value.path).toBe('/login')
     expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+  })
+})
+
+describe('401 redirect deferred by a timed Bijak sitting (ERR-AUTH-01)', () => {
+  const expireWith = async (returnTo?: string) => {
+    logIn(STUDENT)
+    const router = testRouter()
+    connectUnauthorizedRedirect(router)
+    await router.push('/dashboard')
+    const stop = deferUnauthorizedRedirect((proceed) => proceed(returnTo))
+    try {
+      await useSessionStore().handleUnauthorized()
+      await settle()
+    } finally {
+      stop()
+    }
+    return router
+  }
+
+  it('reaches the router as /login?redirect=<path>, and the login page goes back there', async () => {
+    const router = await expireWith('/dashboard?dari=sesi')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?dari=sesi' })
+    const student = { isLoggedIn: true, role: STUDENT.role, landingPath: STUDENT.landingPath }
+    expect(resolvePostLoginTarget(router, router.currentRoute.value.query.redirect, student)).toBe('/dashboard?dari=sesi')
+  })
+
+  it.each(['//evil.example', '/login', undefined])('%s takes the normal 401 policy (the page it left, as ?kembali=)', async (returnTo) => {
+    const router = await expireWith(returnTo)
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard' })
   })
 })
 

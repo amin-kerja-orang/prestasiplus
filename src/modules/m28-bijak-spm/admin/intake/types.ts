@@ -47,6 +47,8 @@ export interface IntakePart {
   /** Unit shown after a numeric answer (kept when a bank question is edited). */
   unit?: string
   wordRange?: { min: number; max: number }
+  /** `drawing` leaf: graph paper or image the pupil draws on; carried through an edit unchanged. */
+  answerTemplate?: { grid: Record<string, unknown> } | { imageId: string }
   /**
    * Ancestors of a nested part (a bank question keeps its tree): the part is "(a)(i)" under the
    * texts of "(a)". The editor shows one flat list; the nesting is rebuilt on save.
@@ -76,6 +78,8 @@ export interface IntakeQuestion {
   parts: IntakePart[]
   /** Answer key of a question without parts (MCQ key, short answer, essay points). */
   scheme?: SchemeDef
+  /** Quick Edit only (http): the explanation of the question. */
+  explanation?: string
   tag: CurriculumTag
   /** Stimulus group (the figure is stored once on the batch). */
   stimulusId?: string

@@ -17,6 +17,10 @@ export interface PaperListFilter {
   year?: number
   /** S3-T06: a `bijakNegeriSlug`; `exam_board` is stored as that slug. */
   examBoardSlug?: string
+  /** S1-T10 `imported=true`: only papers created from an intake batch (`source_batch_id` set). */
+  imported?: boolean
+  /** S1-T10: only the paper(s) of this intake batch. */
+  sourceBatchId?: bigint
 }
 
 export interface SubjectRef {
@@ -49,14 +53,16 @@ export interface NewPaper {
   printedDurationMin: number
   instructions: string[]
   referenceSheets: Prisma.InputJsonValue
-  /** Null on a Kertas Subjektif paper (no Kontrak). */
+  /** Null on a Kertas Subjektif paper (no Kontrak), and on a paper imported from an intake batch when the subject has no Disahkan Kontrak (S1-T10). */
   blueprintId: bigint | null
   /** S3-T06: omitted = `simulasi`. */
   surface?: 'simulasi' | 'subjektif'
   examBoard?: string | null
   durationMinutes?: number | null
   totalMarks?: number | null
-  createdById: bigint
+  /** S1-T10 (DM-45): the intake batch the paper was imported from. */
+  sourceBatchId?: bigint | null
+  createdById: bigint | null
   isTest: boolean
   /** S3-T02 `Dilihat murid`; null (not restricted) only for a copy of a paper older than PO decision item 6, and for a paper a seed writes. */
   levelScope?: string | null
@@ -109,7 +115,7 @@ export class BuilderRepository {
     return this.prisma.client.paper.findMany({
       where: this.listWhere(statuses, filter),
       include: TREE,
-      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      orderBy: filter?.imported || filter?.sourceBatchId !== undefined ? [{ createdAt: 'desc' }, { id: 'desc' }] : [{ updatedAt: 'desc' }, { id: 'desc' }],
       skip,
       take,
     })
@@ -126,6 +132,7 @@ export class BuilderRepository {
       ...(filter?.examBoardSlug ? { examBoard: filter.examBoardSlug } : {}),
       ...(statuses ? { status: { in: [...statuses] } } : {}),
       ...(filter?.subjectId !== undefined ? { subjectId: filter.subjectId } : {}),
+      ...(filter?.sourceBatchId !== undefined ? { sourceBatchId: filter.sourceBatchId } : filter?.imported ? { sourceBatchId: { not: null } } : {}),
       ...(search ? { OR: [{ title: { contains: search, mode: 'insensitive' } }, { paperCode: { contains: search, mode: 'insensitive' } }] } : {}),
     }
   }
@@ -196,6 +203,7 @@ export class BuilderRepository {
         examBoard: input.examBoard ?? null,
         durationMinutes: input.durationMinutes ?? null,
         totalMarks: input.totalMarks ?? null,
+        sourceBatchId: input.sourceBatchId ?? null,
         levelScope: input.levelScope ?? null,
         status: 'draft',
         version: 1,
@@ -310,5 +318,57 @@ export class BuilderRepository {
 
   async deletePaper(id: bigint): Promise<void> {
     await this.prisma.client.paper.delete({ where: { id } })
+  }
+
+  // --- S1-T10 import region (accepted intake batch -> ONE draft paper) --------------------------------
+
+  /** Serialises two imports of the same batch (transaction-scoped advisory lock, key space 0x53313130 = "S110"); call inside the open transaction. */
+  async lockImportBatch(batchId: bigint): Promise<void> {
+    await this.prisma.client.$executeRaw`select pg_advisory_xact_lock(${0x53313130}::int, ${Number(batchId % 2147483647n)}::int)`
+  }
+
+  /** The paper imported from a batch (lowest id when a batch somehow has several), or null. */
+  findBySourceBatch(sourceBatchId: bigint): Promise<PaperTree | null> {
+    return this.prisma.client.paper.findFirst({ where: { sourceBatchId, kind: 'pilihan' }, include: TREE, orderBy: { id: 'asc' } })
+  }
+
+  /** Adds one Bahagian to an existing paper and returns its id. */
+  async insertSection(paperId: bigint, section: NewPaperSection & { position: number }): Promise<bigint> {
+    const row = await this.prisma.client.paperSection.create({
+      data: {
+        paperId,
+        position: section.position,
+        label: section.label,
+        instruction: section.instruction,
+        ruleType: section.ruleType,
+        ruleN: section.ruleN,
+        questionCount: section.questionCount,
+        markBudget: section.markBudget,
+        compulsory: section.compulsory,
+        adminCreated: section.adminCreated ?? false,
+      },
+      select: { id: true },
+    })
+    return row.id
+  }
+
+  /** Appends placements at the end of a section (positions continue from `firstPosition`); nothing already there is touched. */
+  async appendPlacements(sectionId: bigint, firstPosition: number, placements: readonly { questionId: bigint; pinnedVersionNo: number; numberLabel: string | null }[]): Promise<void> {
+    if (placements.length === 0) return
+    await this.prisma.client.paperPlacement.createMany({
+      data: placements.map((p, i) => ({ paperSectionId: sectionId, questionId: p.questionId, pinnedVersionNo: p.pinnedVersionNo, position: firstPosition + i, numberLabel: p.numberLabel, marksOverride: null })),
+    })
+  }
+
+  /** Names of the columns of `papers` among `names` that exist (the 0161 `surface` / `exam_board` check). */
+  async existingPaperColumns(names: readonly string[]): Promise<Set<string>> {
+    const rows = await this.prisma.client.$queryRaw<{ column_name: string }[]>`select column_name from information_schema.columns where table_schema = current_schema() and table_name = 'papers' and column_name = any(${[...names]}::text[])`
+    return new Set(rows.map((r) => r.column_name))
+  }
+
+  /** Writes the 0161 columns of a paper; only call for columns `existingPaperColumns` reported. */
+  async setSurface(id: bigint, surface: string | null, examBoard: string | null, columns: { surface: boolean; examBoard: boolean }): Promise<void> {
+    if (columns.surface) await this.prisma.client.$executeRaw`update papers set surface = ${surface} where id = ${id}`
+    if (columns.examBoard && examBoard !== null) await this.prisma.client.$executeRaw`update papers set exam_board = ${examBoard} where id = ${id}`
   }
 }

@@ -32,6 +32,11 @@ const routes: RouteRecordRaw[] = [
   // PRD47 Bank-lists, KS-02: the list redirects to the Databank lane (the query is dropped by design); `/:qid/sunting` Quick Edit below stays.
   { path: '/admin/spm/soalan', name: ADMIN_ROUTES.bank, redirect: { path: '/admin/spm/databank', query: {} } },
   {
+    // PRD30 Q-24: the pupil preview of a bank question is the Studio preview.
+    path: '/admin/spm/soalan/:qid/pratonton',
+    redirect: (to) => `/admin/studio/questions/${String(to.params.qid)}/sunting?pratonton=1`,
+  },
+  {
     path: '/admin/spm/soalan/:qid/sunting',
     name: ADMIN_ROUTES.bankEdit,
     component: () => import('../admin/papers/BankEditPage.vue'),

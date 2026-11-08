@@ -59,6 +59,15 @@ export const NOT_SOURCE_TAKEN_DOWN_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM so
  */
 export const NOT_FLAGGED_SQL = Prisma.sql`(v.stimulus_flag IS NULL OR v.stimulus_flag = 'stem_duplicated' OR v.flag_dismissed_at IS NOT NULL)`
 
+/** SQL twin of `stimulusTableOf` for a stored grid (`s.table_data`): an array whose first row is a non-empty head, or an object with a non-empty `head`/`headers`/`columns` and a `rows` array. */
+export const TABLE_GRID_READABLE_SQL = Prisma.sql`(CASE jsonb_typeof(s.table_data)
+    WHEN 'array' THEN CASE WHEN jsonb_typeof(s.table_data -> 0) = 'array' THEN jsonb_array_length(s.table_data -> 0) > 0 ELSE false END
+    WHEN 'object' THEN CASE
+      WHEN jsonb_typeof(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) = 'array'
+        THEN jsonb_array_length(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) > 0 AND jsonb_typeof(s.table_data -> 'rows') = 'array'
+      ELSE false END
+    ELSE false END)`
+
 /**
  * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
  * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
@@ -67,7 +76,7 @@ export const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql):
   NOT EXISTS (
     SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
      WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
         OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
   )
   AND NOT coalesce(jsonb_typeof(${importIssues}) = 'array' AND ${importIssues} @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)
@@ -84,6 +93,17 @@ export const VERSION_STIMULI_SQL = Prisma.sql`SELECT vs.stimulus_id AS sid FROM 
  * `VERSION_STIMULI_SQL`, so every member of the group drops together: the complete-group rule). Written once, ANDed wherever `NOT_FLAGGED_SQL` is.
  */
 export const MEDIA_RESOLVED_SQL = mediaResolvedSql(VERSION_STIMULI_SQL, Prisma.sql`v.import_issues`)
+
+/**
+ * S1-T09a (AC-PA-35, D-PA-6): an `mcq_multi` question (several correct options, ticks sent together) is not served in a drill that takes ONE option
+ * (46:967: Latih Tubi, Chapter, Databank, Tracking A objective, Remedial, Misi, PKSK and games). Written once and applied by every read that sets
+ * `spmPool` (true: `SPM_SERVABLE_SQL`; false: its complement with the flag, key and this condition, `QuestionsRepository.scope`). It is NOT part of
+ * the learner scope: the Bijak sitting, Kuiz, Set Soalan Guru, Subjektif and Kertas Subjektif serve it. PKSK is a separate surface (M07):
+ * `NOT_PKSK_SQL` keeps its questions out of `SPM_SERVABLE_SQL`, and M07 serves them as single-option items. Alias `v`. The JS twin is the type check
+ * of `servableMcq` / `groupSurfaceShapeReasons` (serving/rules.ts), which reports `shape_unsupported`; no new reason code is needed.
+ */
+export const MCQ_MULTI_TYPE = 'mcq_multi' as const
+export const NOT_MCQ_MULTI_SQL = Prisma.sql`v.type <> ${Prisma.raw(`'${MCQ_MULTI_TYPE}'`)}`
 
 /**
  * S1-T07 (lead decision on #424): a question is served only when every LEAF of its live version has an `answer_keys` row (a key for an MCQ, a scheme for any
@@ -106,4 +126,4 @@ export const ALL_LEAVES_KEYED_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM questio
 export const ACTIVE_SUBJECT_SQL = Prisma.sql`EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active)`
 
 // DM-42: the bank predicate is part of the definition, so a caller of SPM_SERVABLE_SQL alone can never serve a personal question.
-export const SPM_SERVABLE_SQL = Prisma.sql`(${BANK_VISIBLE_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.stage <> 'primary' AND ol.is_active) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`
+export const SPM_SERVABLE_SQL = Prisma.sql`(${BANK_VISIBLE_SQL} AND ${LEARNER_LEVEL_SQL} AND ${NOT_SOURCE_TAKEN_DOWN_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_MCQ_MULTI_SQL} AND ${MEDIA_RESOLVED_SQL} AND ${NOT_PKSK_SQL} AND EXISTS (SELECT 1 FROM education_levels ol WHERE ol.id = v.education_level_id AND ol.stage <> 'primary' AND ol.is_active) AND EXISTS (SELECT 1 FROM subjects sj WHERE sj.id = v.subject_id AND sj.is_active) AND EXISTS (SELECT 1 FROM subject_levels sl WHERE sl.subject_id = v.subject_id AND sl.education_level_id = v.education_level_id))`

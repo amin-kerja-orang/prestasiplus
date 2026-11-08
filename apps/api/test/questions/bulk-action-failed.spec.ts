@@ -62,8 +62,10 @@ describe('AZ-14: bulk-action failed entries', () => {
     expect(entry.fields).toEqual({
       unitId: 'Sila pilih unit DSKP.',
       spIds: 'Sila pilih sekurang-kurangnya satu SP DSKP.',
+      tp: 'Sila pilih tahap penguasaan (TP).',
+      'parts.1.difficultyTp': 'Bahagian (1) belum ada TP.',
     })
-    expect(entry.message).toBe('Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP.')
+    expect(entry.message).toBe('Sila pilih unit DSKP. Sila pilih sekurang-kurangnya satu SP DSKP. Sila pilih tahap penguasaan (TP). Bahagian (1) belum ada TP.')
   })
 
   it('publishing a tagged question whose point marks do not match the scheme fails the keys gate', async () => {

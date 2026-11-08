@@ -3268,6 +3268,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/tracking-a|",
+      "path": "/admin/spm/tracking-a",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingAListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "/admin/spm/tracking-a/:set/sunting|",
+      "path": "/admin/spm/tracking-a/:set/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingASetEditorPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -3392,6 +3412,18 @@
       "redirects_to": "(dynamic)",
       "note": "KS-02 list; docs/prd/r1/30-admin-pusat.md 3.3 (the list redirects; /admin/spm/soalan/:qid/sunting stays as Quick Edit). Register M-01.",
       "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/soalan/:qid/pratonton|",
+      "path": "/admin/spm/soalan/:qid/pratonton",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting?pratonton=1",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
+      "note": "PRD30 Q-24 Pratonton; ruling on #432",
+      "approved_by_card": "S2-T05"
     },
     {
       "key": "/admin/spm/soalan/:qid/sunting|",
@@ -16113,6 +16145,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/questions/:p/parts/:p/scheme/validate",
+      "method": "POST",
+      "path": "/api/questions/:id/parts/:partId/scheme/validate",
+      "api_id": "API-Q-30",
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/admin.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "POST /api/questions",
       "method": "POST",
       "path": "/api/questions",
@@ -18111,6 +18153,36 @@
       "sector": "S3",
       "file": "apps/api/src/modules/spm/spm.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/spm/tracking-a",
+      "method": "POST",
+      "path": "/api/admin/spm/tracking-a",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "GET /api/admin/spm/tracking-a/:p",
+      "method": "GET",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "PUT /api/admin/spm/tracking-a/:p",
+      "method": "PUT",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
     },
     {
       "key": "GET /api/spm/tracking-a",

@@ -30,14 +30,16 @@
  *   (--dry-run is accepted and means the default; --batch-size=N overrides the 5,000; --sample=N the sample size, default 10)
  *
  * Exit code: 0 done (dry run, apply or restore); 1 a failure, or a restore that had to skip parts; 2 a usage error
- * (bad flag, flags that exclude each other, DATABASE_URL not set). Self-contained for now (S4-T03's `uat-ops/lib.ts` is
- * not merged). The report holds counts and ids only, never question text. The connection string comes from the
- * environment, never from this file.
+ * (bad flag, flags that exclude each other, DATABASE_URL not set). Arguments, the database connection, the report
+ * (`.evidence/uat-ops/trim-duplicate-stem-<ISO time>.txt`) and the exit code come from `uat-ops/lib.ts`. The report holds
+ * counts and ids only, never question text. The connection string comes from the environment, never from this file.
+ *
+ * Known limit: a trimmed question cannot be re-saved from the editor until its leaf prompt is filled (the write schema
+ * requires `prompt.ms` min 1). Fill the prompt, or run --restore, before the question is edited.
  */
-import { resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import type pg from 'pg'
 
-import pg from 'pg'
+import { exitCodeOf, isMain, line, openDb, parseUatArgs, UsageError, writeReport, type CheckLine, type UatArgsSpec } from './lib'
 
 export const BACKUP_TABLE = '_bk_r1_trim_duplicate_stem'
 export const DEFAULT_BATCH_SIZE = 5000
@@ -306,28 +308,28 @@ export async function restore(client: Queryable, options: Pick<Options, 'batchSi
   return { mode: 'restore', restored, skipped, batches }
 }
 
+export const SPEC: UatArgsSpec = {
+  name: 'trim-duplicate-stem',
+  allowApply: true,
+  flags: { restore: { type: 'boolean' }, 'batch-size': { type: 'string' }, sample: { type: 'string' } },
+}
+
+/** Throws `UsageError` (exit code 2) on a bad command line. `--dry-run` is the default; `--apply` and `--restore` are explicit. */
 export function parseArgs(argv: readonly string[]): Options {
-  let mode: Mode | null = null
-  let batchSize = DEFAULT_BATCH_SIZE
-  let sample = DEFAULT_SAMPLE
-  const set = (m: Mode): void => {
-    if (mode !== null && mode !== m) throw new Error('--dry-run, --apply and --restore exclude each other')
-    mode = m
-  }
-  const positive = (flag: string, value: string | undefined, min: number): number => {
+  const modes = new Set(argv.filter((a) => a === '--dry-run' || a === '--apply' || a === '--restore'))
+  if (modes.size > 1) throw new UsageError('--dry-run, --apply and --restore exclude each other')
+  const args = parseUatArgs(argv, SPEC)
+  const positive = (flag: string, value: string | boolean | undefined, dflt: number, min: number): number => {
+    if (value === undefined) return dflt
     const n = Number(value)
-    if (value === undefined || !Number.isInteger(n) || n < min) throw new Error(`${flag} needs an integer >= ${String(min)}`)
+    if (typeof value !== 'string' || !Number.isInteger(n) || n < min) throw new UsageError(`${flag} needs an integer >= ${String(min)}`)
     return n
   }
-  for (const arg of argv) {
-    if (arg === '--dry-run') set('dry-run')
-    else if (arg === '--apply') set('apply')
-    else if (arg === '--restore') set('restore')
-    else if (arg.startsWith('--batch-size=')) batchSize = positive('--batch-size', arg.slice('--batch-size='.length), 1)
-    else if (arg.startsWith('--sample=')) sample = positive('--sample', arg.slice('--sample='.length), 0)
-    else throw new Error(`unknown argument ${arg}`)
+  return {
+    mode: args.apply ? 'apply' : args.values.restore === true ? 'restore' : 'dry-run',
+    batchSize: positive('--batch-size', args.values['batch-size'], DEFAULT_BATCH_SIZE, 1),
+    sample: positive('--sample', args.values.sample, DEFAULT_SAMPLE, 0),
   }
-  return { mode: mode ?? 'dry-run', batchSize, sample }
 }
 
 export function formatReport(r: Report | RestoreReport, target = ''): string[] {
@@ -359,35 +361,38 @@ const targetOf = (url: string): string => {
   }
 }
 
+/** The report file: every printed line as INFO; a restore that had to skip parts adds a FAIL (exit code 1). */
+export function reportLines(r: Report | RestoreReport): CheckLine[] {
+  const lines = formatReport(r).map((text) => line('INFO', text))
+  if (r.mode === 'restore' && r.skipped > 0) lines.push(line('FAIL', `restore skipped ${String(r.skipped)} parts (edited since the trim, or gone)`))
+  return lines
+}
+
 async function main(): Promise<number> {
-  let options: Options
+  const started = new Date()
+  let db: Awaited<ReturnType<typeof openDb>> | undefined
   try {
-    options = parseArgs(process.argv.slice(2))
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : String(e))
-    return 2
-  }
-  const url = process.env.DATABASE_URL
-  if (!url) {
-    console.error('DATABASE_URL is not set.')
-    return 2
-  }
-  const client = new pg.Client({ connectionString: url })
-  try {
-    await client.connect()
-    const log = (line: string): void => console.log(line)
+    const options = parseArgs(process.argv.slice(2))
+    db = await openDb()
+    const log = (text: string): void => console.log(text)
     const report =
-      options.mode === 'apply' ? await apply(client, options, log) : options.mode === 'restore' ? await restore(client, options, log) : await dryRun(client, options)
-    for (const line of formatReport(report, targetOf(url))) console.log(line)
-    return report.mode === 'restore' && report.skipped > 0 ? 1 : 0
+      options.mode === 'apply'
+        ? await apply(db.client, options, log)
+        : options.mode === 'restore'
+          ? await restore(db.client, options, log)
+          : { mode: 'dry-run' as const, ...(await db.readOnly((c) => findMatches(c, options.sample))), batches: 0, skipped: 0 }
+    for (const text of formatReport(report, targetOf(process.env.DATABASE_URL ?? ''))) console.log(text)
+    const lines = reportLines(report)
+    console.log(`report written: ${writeReport('trim-duplicate-stem', lines, { now: started })}`)
+    return exitCodeOf(lines)
   } catch (e) {
     console.error(e instanceof Error ? e.message : String(e))
-    return 1
+    return e instanceof UsageError ? 2 : 1
   } finally {
-    await client.end().catch(() => undefined)
+    await db?.close().catch(() => undefined)
   }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   void main().then((code) => process.exit(code))
 }

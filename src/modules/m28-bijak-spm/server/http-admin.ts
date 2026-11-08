@@ -7,8 +7,8 @@
  * extracted-question editor, the extraction step and the review queue call the BE-38 routes
  * (`/api/intake/items*`, `/stimuli`, `/extract`, `/review`; ./intake-wire, ./review-wire); the bank
  * list, stats and preview read the BE-09 admin questions (`/api/questions*`; ./bank-wire). The few
- * methods with no route (the bank "Sunting" versions, "Minta Pembetulan") REJECT (never throw
- * synchronously) with `BijakError('unavailable')`, so each page shows its own state, not a crash.
+ * methods with no route REJECT (never throw synchronously) with `BijakError('unavailable')`, so each
+ * page shows its own state, not a crash.
  *
  * Like `./http` this must never import `store.ts` or the seed registry (type imports only).
  */
@@ -43,6 +43,7 @@ import type {
   BankRow,
   BankStats,
   DecisionAction,
+  BankEditable,
   DecisionResult,
   QueueFilter,
   QueueItem,
@@ -65,6 +66,9 @@ import type {
 } from '../admin/intake/types'
 import {
   bankDetailFrom,
+  quickEditLeaf,
+  QUICK_EDIT_OUT_OF_SCOPE,
+  type WireQuickEdit,
   bankRowFrom,
   wireStatusesOf,
   type WireBankDetail,
@@ -242,6 +246,7 @@ interface QuestionListAnswer<T> {
 const EMPTY_COUNTS: IntakeItemStateCounts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
 const REMOVED_REASON = 'Dibuang oleh penyemak.'
 const REJECT_REASON_REQUIRED = 'Sebab penolakan diperlukan.'
+const NO_QUESTION_YET = 'Item ini belum mempunyai soalan.'
 
 /** 409 of an item that was accepted or rejected meanwhile (contract INTAKE_MESSAGES.itemLocked / itemAlreadyAccepted). */
 const ITEM_LOCKED = [
@@ -286,10 +291,6 @@ export function decisionErrors(e: ApiError): string[] {
   if (issues && issues.length > 0) return issues.map((i) => `${i.where}: ${i.message}`)
   if (e.fields && Object.keys(e.fields).length > 0) return Object.values(e.fields)
   return [e.message]
-}
-
-function unavailable<T>(): Promise<T> {
-  return Promise.reject(new BijakError('unavailable', UNAVAILABLE_MESSAGE))
 }
 
 /** 413 / 422 of the upload to the UI copy (the 422 body names the rule in `fields.files`). */
@@ -888,13 +889,13 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
   /**
    * Lulus = accept (creates a Draf question, never publishes); Tolak = reject with the mandatory
    * reason. A gate failure (422 `details.issues`) or a locked item (409) comes back as `errors`, the
-   * way the page shows them. "Minta Pembetulan" has no route (the page hides it in http mode).
+   * way the page shows them. "Minta Pembetulan" (`betulkan`) moves the item's question back to draft (API-Q-06); the page disables it until the item has a question.
    */
   async reviewDecision(
     key: string,
     d: { action: DecisionAction; reason?: string; by?: string },
   ): Promise<DecisionResult> {
-    if (d.action === 'betulkan') return unavailable()
+    if (d.action === 'betulkan') return this.moveQuestion(key, 'draft', d.reason?.trim() ?? '')
     const reason = d.reason?.trim() ?? ''
     if (d.action === 'tolak' && !reason) return { ok: false, errors: [REJECT_REASON_REQUIRED] }
     try {
@@ -1071,14 +1072,108 @@ export class HttpBijakAdminServer extends HttpBijakServer implements BijakAdminM
 
   /* ------------------------------------------------ no backend route: not available */
 
-  // The bank "Sunting" makes version n+1 of a published question; BE-09 edits a question in place
-  // (PUT /questions/{id}) and has no version or revision queue, and the flat BE-09 shape cannot be
-  // round-tripped into the intake editor without losing the mark scheme.
-  getBankEditable: BijakAdminMethods['getBankEditable'] = () => unavailable()
-  reviseQuestion: BijakAdminMethods['reviseQuestion'] = () => unavailable()
-  reviseQuestionFull: BijakAdminMethods['reviseQuestionFull'] = () => unavailable()
-  // An accepted or rejected item is final (409); the queue has no correction or resubmit step.
-  resubmit: BijakAdminMethods['resubmit'] = () => unavailable()
+  /**
+   * Quick Edit (FR-ADM-Q24.3): the flat fields of a single-leaf MCQ outside a group. Any other question is out of scope, so
+   * nothing the form cannot hold is dropped. `Menunggu Semakan` is locked; an open draft is reused.
+   */
+  async getBankEditable(qid: string): Promise<BankEditable> {
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    // Neither side read is needed to edit: a failure costs the display code or the completeness list, not the form.
+    const subjects = await this.ensureSubjects().catch(() => [])
+    const name = d.subject?.name ?? ''
+    const subject = subjects.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase()) ?? { code: name, name }
+    const leaf = quickEditLeaf(d)
+    const gate = await this.send<{ issues: { message: string }[] }>('GET', `/api/questions/${enc(qid)}/gate-check?gate=approve`).catch(() => null)
+    return {
+      row: bankRowFrom(d, d, subject),
+      question: {
+        id: d.id,
+        label: d.numberLabel ?? '',
+        type: 'mcq',
+        stem: d.questionText,
+        options: (leaf?.options ?? []).map((o) => ({ id: o.label, text: o.body.ms })),
+        marks: leaf?.marks ?? d.pointsValue,
+        mode: 'short_text',
+        parts: [],
+        ...(leaf ? { scheme: { kind: 'option', marks: leaf.marks, correct: leaf.key.correct } as IntakeQuestion['scheme'] } : {}),
+        tag: { subject: subject.code, level: '', unit: '', sp: [], tp: 1 } as unknown as IntakeQuestion['tag'],
+        explanation: d.explanation ?? '',
+        page: 1,
+        lowFields: [],
+        confirmed: [],
+      },
+      pendingRevision: d.status === 'review',
+      legacyTag: false,
+      quickEdit: { outOfScope: leaf === null, gate: gate ? gate.issues.map((i) => i.message) : null },
+    }
+  }
+
+  /** Text-only revision: the same `edit-as-draft` then `PUT` as `reviseQuestionFull`, with the other flat fields kept as they are (the note has no field in `PUT`). */
+  async reviseQuestion(qid: string, stem: string): Promise<DecisionResult> {
+    if (!stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    const leaf = quickEditLeaf(d)
+    if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
+    return this.reviseQuestionFull(qid, {
+      stem,
+      options: leaf.options.map((o) => ({ id: o.label, text: o.body.ms })),
+      explanation: d.explanation ?? '',
+    } as unknown as IntakeQuestion)
+  }
+
+  /**
+   * Moves the question an accepted review item created along the lifecycle (API-Q-06, `POST /api/questions/:id/status`).
+   * An item not accepted yet has no question; a refused pair (409) or a gate failure (422) comes back as `errors`.
+   */
+  private async moveQuestion(itemKey: string, to: 'draft' | 'review', reason: string): Promise<DecisionResult> {
+    const item = await this.send<WireItem>('GET', `/api/intake/items/${enc(itemKey)}`)
+    if (!item.question) return { ok: false, errors: [NO_QUESTION_YET] }
+    try {
+      await this.exec('POST', `/api/questions/${enc(item.question.id)}/status`, to === 'draft' ? { to, reason } : { to })
+      return { ok: true, errors: [] }
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 409 || e.status === 422)) {
+        return { ok: false, errors: decisionErrors(e) }
+      }
+      throw toBijakError(e)
+    }
+  }
+
+  /** `POST edit-as-draft` for a question still live on its latest version (API-Q-03), then `PUT` with its one leaf rewritten. */
+  async reviseQuestionFull(qid: string, edited: IntakeQuestion): Promise<DecisionResult> {
+    const d = await this.send<WireQuickEdit>('GET', `/api/questions/${enc(qid)}`)
+    const leaf = quickEditLeaf(d)
+    if (!leaf) return { ok: false, errors: [QUICK_EDIT_OUT_OF_SCOPE] }
+    // The page locks this state; another tab may have sent the draft for review since it loaded.
+    if (d.status === 'review') return { ok: false, errors: ['Versi baharu menunggu semakan'] }
+    let message: string | undefined
+    if (d.status === 'approved') {
+      const res = await this.send<{ id: string }>('POST', `/api/questions/${enc(qid)}/edit-as-draft`, {})
+      message = `Draf baharu #${res.id} dicipta. Soalan asal kekal diterbitkan sehingga draf ini diterbitkan.`
+    }
+    const correct = edited.scheme?.kind === 'option' ? edited.scheme.correct : leaf.key.correct
+    await this.send('PUT', `/api/questions/${enc(qid)}`, {
+      subjectId: d.subjectId,
+      educationLevelId: d.educationLevelId,
+      difficultyLevel: d.difficultyLevel,
+      questionText: edited.stem.trim(),
+      explanation: edited.explanation?.trim() || null,
+      parts: [
+        {
+          ...leaf,
+          prompt: { ...leaf.prompt, ms: edited.stem.trim() },
+          options: leaf.options.map((o, i) => ({ ...o, body: { ...o.body, ms: edited.options[i]?.text ?? o.body.ms } })),
+          key: { kind: 'option', correct },
+        },
+      ],
+    })
+    return { ok: true, errors: [], message: message ?? 'Soalan dikemas kini.' }
+  }
+
+  /** The question of an accepted item goes back to review (API-Q-06, `to: review`). */
+  resubmit(key: string): Promise<DecisionResult> {
+    return this.moveQuestion(key, 'review', '')
+  }
 }
 
 export function createHttpBijakAdminServer(options: HttpBijakOptions = {}): HttpBijakAdminServer {

@@ -128,6 +128,8 @@ export interface ReviewDetail {
   optionBank?: McqOption[]
   history: HistoryEntry[]
   reason?: string
+  /** http mode: the question the item created on accept; null before that. Absent in the mock. */
+  questionId?: string | null
   /** Why the publish gate fails (empty = can publish). */
   gate: string[]
   /** For a revision: the stem that is live now. */
@@ -142,6 +144,8 @@ export type DecisionAction = 'terbit' | 'tolak' | 'betulkan'
 export interface DecisionResult {
   ok: boolean
   errors: string[]
+  /** The API's flash text of a save, when it has one. */
+  message?: string
 }
 
 export interface BankFilter {
@@ -188,6 +192,12 @@ export interface BankEditable {
   stimulus?: IntakeStimulus
   /** The live version is read-only while a newer one waits for review. */
   pendingRevision: boolean
+  /** Http only (FR-ADM-Q24): Quick Edit keeps to the flat fields of a single-leaf MCQ outside a group. */
+  quickEdit?: {
+    outOfScope: boolean
+    /** The approval gate of the stored question, by message (FR-QA-44); null when the read failed. */
+    gate: string[] | null
+  }
   /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
   legacyTag: boolean
 }

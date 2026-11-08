@@ -189,11 +189,16 @@ export function toBijakError(e: unknown): unknown {
 
 /* ------------------------------------------------------------------------------- the client */
 
+/** `fetch` keepalive bodies are capped at 64 KB in total; stay under it with room for headers. */
+const KEEPALIVE_MAX_BYTES = 60_000
+
 export class HttpBijakServer implements BijakApi {
   protected readonly client: Pick<ApiClient, 'request'>
   private readonly now: () => number
   private readonly csrfSource: (refresh: boolean) => Promise<string>
   private csrfCache: Promise<string> | null = null
+  /** The last CSRF token that arrived, readable at once (a keepalive `fetch` cannot wait for a promise). */
+  private csrfLast: string | null = null
   private clockOffsetMs = 0
   protected readonly subjectList = reactive<Subject[]>([])
   protected subjectsRequested = false
@@ -213,6 +218,9 @@ export class HttpBijakServer implements BijakApi {
         .request<{ data: { csrf: string } }>('GET', '/api/session', { raw: true })
         .then((body) => body.data.csrf)
       this.csrfCache = pending
+      pending.then((token) => {
+        if (this.csrfCache === pending) this.csrfLast = token
+      }, () => undefined)
       // A failed fetch must not stay cached.
       pending.catch(() => {
         if (this.csrfCache === pending) this.csrfCache = null
@@ -328,6 +336,26 @@ export class HttpBijakServer implements BijakApi {
       payloadToWire(payload),
     )
     return { ...out, savedAt: toMs(out.savedAt) }
+  }
+
+  /**
+   * `pagehide` / hidden tab (lead ruling Q4): the same `PUT .../answers` as `saveAnswers`, sent with `fetch({ keepalive: true })`
+   * so the browser finishes it while the page goes away. Same-origin cookie session and the cached CSRF token, like the transport.
+   * Over the keepalive limit, or no token cached yet: nothing is sent and the local mirror plus the 15 s flush cover it.
+   */
+  saveAnswersKeepalive(_userId: number, attemptId: string, payload: SavePayload): boolean {
+    const csrf = this.csrfLast
+    if (!csrf || typeof fetch !== 'function') return false
+    const body = JSON.stringify(payloadToWire(payload))
+    if (new TextEncoder().encode(body).length > KEEPALIVE_MAX_BYTES) return false
+    fetch(`/api/bijak/attempts/${encodeURIComponent(attemptId)}/answers`, {
+      method: 'PUT',
+      keepalive: true,
+      credentials: 'include',
+      headers: { accept: 'application/json', 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+      body,
+    }).catch(() => undefined)
+    return true
   }
 
   submit(_userId: number, attemptId: string, payload: SubmitPayload): Promise<SubmitResult> {

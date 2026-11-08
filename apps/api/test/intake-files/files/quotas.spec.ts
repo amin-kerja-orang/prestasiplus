@@ -23,6 +23,13 @@ function expectQuota(res: Response): void {
   expect(error.message).toBe(INTAKE_FILE_MESSAGES.quota)
 }
 
+function expectDailyQuota(res: Response): void {
+  expect(res.status, JSON.stringify(res.body)).toBe(429)
+  const error = ErrorBodySchema.parse(res.body).error
+  expect(error.code).toBe('INTAKE_DAILY_PAGE_QUOTA')
+  expect(error.message).toBe('Kuota halaman harian (5) telah dicapai. Cuba lagi esok.')
+}
+
 describe('quotas', () => {
   let t: IntakeTestApp
   let teacher: LoggedIn
@@ -87,11 +94,11 @@ describe('daily page quota', () => {
     await uploadOk(teacher, b.id, [{ bytes: textPdf(3, 2) }])
     const files = await countRows(t.db, 'files')
     const jobs = await countRows(t.db, 'jobs')
-    expectQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(3, 3) }]))
+    expectDailyQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(3, 3) }]))
     expect(await countRows(t.db, 'files')).toBe(files)
     expect(await countRows(t.db, 'jobs')).toBe(jobs)
     await uploadOk(teacher, b.id, [{ bytes: textPdf(2, 4) }]) // exactly 5
-    expectQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(1, 5) }]))
+    expectDailyQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(1, 5) }]))
 
     const adminBatch = await createBatch(admin)
     await uploadOk(admin, adminBatch.id, [{ bytes: textPdf(3, 6) }, { bytes: textPdf(3, 7) }])
@@ -99,7 +106,7 @@ describe('daily page quota', () => {
     t.clock.advance(24 * 3600 * 1000) // the clock starts at 09:00 +08:00: +24 h is the next Malaysia day
     teacher = await loginAs(t, 'guru@demo.test') // the old session has idled out
     await uploadOk(teacher, b.id, [{ bytes: textPdf(4, 8) }])
-    expectQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(2, 9) }]))
+    expectDailyQuota(await uploadFiles(teacher, b.id, [{ bytes: textPdf(2, 9) }]))
   })
 })
 

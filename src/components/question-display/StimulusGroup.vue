@@ -16,6 +16,7 @@ import { useMedia } from '@/ds/useMedia'
 import { chipLabel, qdCopy } from './copy'
 import { stimuliLabel } from './lib/stimulus-data'
 import { STIMULUS_GROUP_KEY, useStimulusOpen } from './lib/useStimulusOpen'
+import MatchingBank from './MatchingBank.vue'
 import StimulusFigure from './StimulusFigure.vue'
 import type { StimulusData } from './types'
 
@@ -32,8 +33,10 @@ const props = withDefaults(
     hint?: boolean
     /** Wide split: `half` (default, 1:1) or `sitting` (the V3 attempt ratio: stimulus 4 : questions 5). */
     split?: 'half' | 'sitting'
+    /** Lettered bank of a matching group, shown once in the stimulus panel (FR-PA-10). */
+    matchingBank?: readonly { id: string; text: string }[]
   }>(),
-  { stimuli: undefined, stimulus: undefined, groupId: undefined, initialOpen: true, hint: true, split: 'half' },
+  { stimuli: undefined, stimulus: undefined, groupId: undefined, initialOpen: true, hint: true, split: 'half', matchingBank: undefined },
 )
 const emit = defineEmits<{
   loaded: [id: string]
@@ -107,6 +110,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
       @retry="emit('retry', st.id)"
       @report="emit('report', st.id)"
     />
+    <MatchingBank v-if="matchingBank?.length" :options="matchingBank" />
   </DsStack>
 
   <div
@@ -141,6 +145,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           @retry="emit('retry', st.id)"
           @report="emit('report', st.id)"
         />
+        <MatchingBank v-if="matchingBank?.length" :options="matchingBank" />
       </DsStack>
     </aside>
     <div class="min-w-0" :class="split === 'sitting' ? 'col-span-5' : undefined" data-testid="stimulus-questions">
@@ -197,6 +202,7 @@ const iconOnly = computed(() => thumb.value?.kind === 'passage' || thumb.value?.
           @retry="emit('retry', st.id)"
           @report="emit('report', st.id)"
         />
+        <MatchingBank v-if="matchingBank?.length" :options="matchingBank" />
       </DsStack>
     </template>
   </UDrawer>

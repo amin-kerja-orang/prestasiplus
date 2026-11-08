@@ -227,25 +227,6 @@ describe('HttpBijakAdminServer', () => {
     ])
   })
 
-  it('rejects (never throws) methods without a backend route', async () => {
-    const { server } = setup()
-    const calls = [
-      () => server.resubmit('k'),
-      () => server.getBankEditable('q'),
-      () => server.reviseQuestion('q', 's', 'n'),
-      () => server.reviseQuestionFull('q', {} as never, undefined, 'n'),
-      () => server.reviewDecision('k', { action: 'betulkan', reason: 'x' }),
-    ]
-    for (const c of calls) {
-      let p: Promise<unknown> | undefined
-      expect(() => {
-        p = c()
-      }).not.toThrow()
-      await expect(p).rejects.toBeInstanceOf(BijakError)
-      await expect(p).rejects.toMatchObject({ code: 'unavailable', message: UNAVAILABLE_MESSAGE })
-    }
-  })
-
   it('mappers', () => {
     expect(questionStatusFromWire('review')).toBe('semakan')
     expect(questionStatusFromWire('approved')).toBe('terbit')

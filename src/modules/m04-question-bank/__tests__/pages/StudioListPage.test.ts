@@ -276,6 +276,40 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
   })
 
+  it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {
+    const w = await render('/admin/studio?tingkatan=7&dskp=belum')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ educationLevelId: '7', dskpFilter: 'untagged' }),
+    )
+    expect(w.text()).toContain('Tingkatan: Tingkatan 4')
+    expect(w.text()).toContain('Penandaan DSKP: Belum Ditag')
+    expect(t(w, 'studio-level-filter').text()).toContain('Semua tingkatan')
+    expect(t(w, 'studio-dskp-filter').findAll('option').map((o) => o.text())).toEqual([
+      'Semua',
+      'Ada DSKP Tag',
+      'Belum Ditag',
+    ])
+  })
+
+  it('clears the selection when a filter changes, not when the page does', async () => {
+    const w = await render('/admin/studio')
+    const table = w.getComponent({ name: 'DsDataTable' })
+    table.vm.$emit('update:selection', [{ id: '1' }])
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?page=2')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?status=draft')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual([])
+  })
+
+  it('drops a Penandaan DSKP value the API has no meaning for', async () => {
+    await render('/admin/studio?dskp=lain')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
+  })
+
   it('drops a filter value the API would refuse instead of sending it', async () => {
     await render('/admin/studio?tahun=24&kertas=9&jenis=ujian')
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: null, kertas: null, jenis: null }))

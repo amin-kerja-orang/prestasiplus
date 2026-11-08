@@ -113,6 +113,7 @@ describe('BE-37 enums and messages', () => {
     expect(INTAKE_FILE_MESSAGES.tooComplex).toBe('Fail PDF terlalu kompleks untuk diproses.')
     expect(INTAKE_FILE_MESSAGES.duplicate).toBe('Fail ini telah diimport dalam kelompok lain.')
     expect(INTAKE_FILE_MESSAGES.tooManyFiles(10)).toBe('Maksimum 10 fail bagi setiap kelompok.')
+    expect(INTAKE_FILE_MESSAGES.dailyPageQuota(500)).toBe('Kuota halaman harian (500) telah dicapai. Cuba lagi esok.')
     expect(INTAKE_FILE_MESSAGES.quota).toBe('Had kuota muat naik harian telah dicapai. Cuba lagi esok.')
     expect(INTAKE_FILE_MESSAGES.batchClosed).toBe('Kelompok ini tidak lagi menerima fail.')
   })

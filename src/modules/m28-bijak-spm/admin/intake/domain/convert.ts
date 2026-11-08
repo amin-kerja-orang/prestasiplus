@@ -100,6 +100,7 @@ export function intakeToDef(q: IntakeQuestion, o: ToDefOptions): QuestionContent
           kind: p.mode,
           ...(p.unit ? { unit: p.unit } : {}),
           ...(p.wordRange ? { wordRange: p.wordRange } : {}),
+          ...(p.answerTemplate ? { answerTemplate: p.answerTemplate } : {}),
         },
       }
       placePart(roots, nodes, p, leaf)
@@ -142,6 +143,8 @@ function flatten(
       continue
     }
     const sc = schemeOf(p.id)
+    const tpl = (p.answer as { answerTemplate?: IntakePart['answerTemplate'] } | undefined)
+      ?.answerTemplate
     out.push({
       id: p.id,
       label: `${lead.map((l) => l.label).join('')}${p.label}`,
@@ -151,6 +154,7 @@ function flatten(
       ...(sc ? { scheme: sc } : {}),
       ...(p.answer?.unit ? { unit: p.answer.unit } : {}),
       ...(p.answer?.wordRange ? { wordRange: p.answer.wordRange } : {}),
+      ...(tpl ? { answerTemplate: tpl } : {}),
       ...(lead.length > 0 ? { lead } : {}),
     })
   }

@@ -550,3 +550,58 @@ describe('imports: #719 review minors', () => {
     expect(join('2').failures.map((f) => [f.code, f.message])).toEqual([['GROUP_ORDER_INVALID', 'Baris 2: Susunan kumpulan tidak sah.']])
   })
 })
+
+describe('imports: true_false and mcq_multi rows of the new header (S1-T05 part 5a, Q74: the S1-T09a validators)', () => {
+  const tf = (over: Record<string, string> = {}) => row({ type: 'true_false', option_a: '', option_b: '', option_c: '', option_d: '', correct: 'betul', ...over })
+  const multi = (over: Record<string, string> = {}) => row({ type: 'mcq_multi', correct: 'A;C', ...over })
+  const fail = (line: string) => codePlan([line]).failures.map((f) => ({ field: f.field, code: f.code, message: f.message }))
+  const WRONG = 'Sila pilih jawapan betul.'
+
+  it('[CI] true_false: betul and SALAH (any case, trimmed) build the V3 leaf with options A=Betul, B=Salah and the single key', () => {
+    const p = codePlan([tf({ question_key: 'T1', correct: ' Betul ' }), tf({ question_key: 'T2', correct: 'SALAH' })])
+    expect(p.failures).toEqual([])
+    expect(p.rows.map((r) => r.input.questionType)).toEqual(['true_false', 'true_false'])
+    expect(p.rows[0]?.input.options).toEqual([{ label: 'A', text: 'Betul' }, { label: 'B', text: 'Salah' }])
+    const leaf = (r: (typeof p.rows)[number]) => (r.input.parts as { options: unknown; key: unknown; mode: string; marks: number }[])[0]
+    expect(leaf(p.rows[0]!)).toMatchObject({ mode: 'mcq', marks: 2, options: [{ label: 'A', body: { ms: 'Betul' } }, { label: 'B', body: { ms: 'Salah' } }], key: { kind: 'option', correct: 'A' } })
+    expect(leaf(p.rows[1]!)).toMatchObject({ key: { kind: 'option', correct: 'B' } })
+    expect(p.rows[0]?.input).toMatchObject({ unitId: '40', spIds: ['411', '412'], tp: 3, cognitiveLevel: 'mengaplikasi', chapterId: '700', topicId: '7002', kertas: '1', numberLabel: '12A' })
+  })
+
+  it('[CI] true_false: a blank or other correct gives "Sila pilih jawapan betul." (CORRECT_REQUIRED); a filled option cell is refused', () => {
+    expect(fail(tf({ correct: '' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(tf({ correct: 'ya' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(tf({ correct: 'A' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(tf({ option_a: 'Betul', option_b: 'Salah' }))).toEqual([{ field: 'option_a', code: 'TYPE_INVALID', message: 'Baris 2: Jenis soalan tidak sah.' }])
+  })
+
+  it('[CI] mcq_multi: A;C with 4 options builds the multi leaf; spaces, case and a repeated letter are normalised (A;A is one correct answer)', () => {
+    const p = codePlan([multi(), multi({ question_key: 'K2', correct: ' a ; c ' }), multi({ question_key: 'K3', correct: 'A;A' })])
+    expect(p.failures).toEqual([])
+    const leaf = (i: number) => (p.rows[i]?.input.parts as { key: unknown; modeConfig: unknown; mode: string; options: unknown[] }[])[0]
+    expect(p.rows[0]?.input.questionType).toBe('mcq_multi')
+    expect(leaf(0)).toMatchObject({ mode: 'mcq', modeConfig: { multi: true }, key: { kind: 'options', correctOptionIds: ['A', 'C'] } })
+    expect(leaf(0)?.options).toHaveLength(4)
+    expect(leaf(1)).toMatchObject({ key: { kind: 'options', correctOptionIds: ['A', 'C'] } })
+    expect(leaf(2)).toMatchObject({ key: { kind: 'options', correctOptionIds: ['A'] } })
+  })
+
+  it('[CI] mcq_multi: all options correct or none gives the count message; a letter outside the filled options gives "Sila pilih jawapan betul."', () => {
+    const COUNT = 'Pilih sekurang-kurangnya satu jawapan betul dan sekurang-kurangnya satu jawapan salah.'
+    expect(fail(multi({ correct: 'A;B;C;D' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${COUNT}` }])
+    expect(fail(multi({ correct: 'A;B', option_c: '', option_d: '' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${COUNT}` }])
+    expect(fail(multi({ correct: 'A;E' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(multi({ correct: '' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(multi({ correct: 'A;1' }))).toEqual([{ field: 'correct', code: 'CORRECT_REQUIRED', message: `Baris 2: ${WRONG}` }])
+    expect(fail(multi({ option_b: '' }))[0]).toMatchObject({ code: 'OPTIONS_BLANK' })
+  })
+
+  it('[CI] the other types still get the Studio text; mcq stays a single-letter row without the V3 leaf', () => {
+    for (const type of ['match', 'short_answer', 'fill_blank', 'structured', 'working', 'essay', 'drawing', 'table_fill', 'essay_choice']) {
+      expect(fail(row({ type })), type).toEqual([{ field: 'type', code: 'TYPE_STUDIO_ONLY', message: 'Baris 2: Jenis ini dimasukkan melalui wizard Studio.' }])
+    }
+    const mcq = codePlan([row()]).rows[0]?.input
+    expect(mcq?.parts).toBeUndefined()
+    expect(mcq?.questionType).toBeUndefined()
+  })
+})

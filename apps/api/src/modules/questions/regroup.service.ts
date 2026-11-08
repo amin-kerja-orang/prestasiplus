@@ -3,7 +3,7 @@ import {
   REGROUP_MESSAGES,
   STIMULUS_MESSAGES as M,
   type RegroupRequest,
-  StimulusCreateRequestSchema,
+  StimulusCreateLegacySchema,
   type StimulusFlag,
   type StimulusGroupDetail,
 } from '@pp/contract'
@@ -211,7 +211,7 @@ export class RegroupService {
         level: r.level ?? '',
         flag: r.flag as StimulusFlag,
         reference: r.ref === 'numbered' || r.ref === 'unnumbered' ? r.ref : null,
-        paper: r.paper_id === null ? null : { id: idToString(r.paper_id), paperCode: r.paper_code, year: r.year, examType: r.exam_type },
+        paper: r.paper_id === null ? null : { id: idToString(r.paper_id), title: [r.paper_code, r.exam_type, r.year].filter((x) => x !== null && x !== '').join(' ') || null, paperCode: r.paper_code, year: r.year, examType: r.exam_type },
       })),
       total: total[0]?.n ?? 0,
       counts: {
@@ -261,7 +261,7 @@ export class RegroupService {
       originalFigureStimuli = figure.originalStimulusIds
       figureRow = figure.row
     } else {
-      const parsed = StimulusCreateRequestSchema.safeParse(input.stimulus)
+      const parsed = StimulusCreateLegacySchema.safeParse(input.stimulus) // no label/alt rule here: regroup behaves as before
       if (!parsed.success) throw fail(Object.fromEntries(parsed.error.issues.map((i) => [`stimulus.${i.path.join('.')}`.replace(/\.$/, ''), i.message])))
       const created = await this.stimuli.createStimulus(parsed.data)
       createdStimulusId = created.result.id

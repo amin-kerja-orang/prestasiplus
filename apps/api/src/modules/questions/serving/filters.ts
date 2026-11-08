@@ -8,7 +8,7 @@
  *
  * - latih_tubi_spm, databank: what `Be09PracticeQuestionSource.sample({ spmPool: true })` and the SPM pool read.
  * - bab:                      what `chapterPage` / `chapterCounts` read.
- * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, one MCQ leaf; groups allowed, D90).
+ * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, or an ungrouped `mcq_multi`; one MCQ leaf; groups allowed for `mcq`, D90).
  * - simulasi_paper, jana_kertas: the bank scope only; the bridge, the paper and the pool facts are per-record checks.
  */
 import { PRACTICE_SHAPE } from '../../practice/question-bridge/be09-practice-mapping'
@@ -43,12 +43,25 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
     case 'bab':
       return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), ...drillShape(activity, surfaces) }
     case 'simulasi_kuiz':
-      return { ...subject, type: 'mcq', singleMcqLeaf: true }
+      return { ...subject, servesMcqMulti: true, singleMcqLeaf: true }
+    case 'permainan':
+      // The games draw (`GameQuestions`, `battle.deps` BATTLE_POOL): plain text MCQ of 2 to 4 options, ungrouped.
+      return { ...subject, type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } }
     case 'simulasi_paper':
     case 'jana_kertas':
       return { ...subject }
   }
 }
+
+/**
+ * D-10: what a Tracking A set can hold, the ONE definition of its candidates, its `filled` and "tersedia", on the admin lane and editor and on the
+ * pupil's counts. It is the pupil start rule for a set: a live, active, text-only, ungrouped MCQ the practice bridge accepts (`servableMcq`, whose
+ * SQL shape is `PRACTICE_SHAPE`).
+ * Figure and stimulus questions (own stimulus, standalone figure, group member) are excluded: today's pupil start (`be09-practice-question-source.ts`,
+ * `start.planner.ts`) serves text-only questions, so a set counted complete with them would serve fewer than its size.
+ */
+// TODO(S5-T03, S5-T15): lift when the pupil start serves stimulus questions (back to `wholeGroups: true` and `allowStimulus: true`).
+export const trackingAFilter = (subjectId: string): QuestionFilter => ({ subjectId, type: 'mcq', ungrouped: true, mcqShape: PRACTICE_SHAPE })
 
 /**
  * The ONE scope of the Databank lane (R1-B11): the questions the lane lists AND the questions the hub card counts, so the card's

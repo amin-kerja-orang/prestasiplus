@@ -53,7 +53,7 @@ describe('chooseState and copy', () => {
   it('uses the exact BM copy', () => {
     expect(chooseCounterLine(1, 2)).toBe('1 / 2 soalan dipilih')
     expect(chooseFullHint(1)).toBe(
-      'Anda sudah memilih 1 soalan. Nyahpilih soalan lain untuk menukar pilihan.',
+      'Anda hanya boleh memilih 1 soalan dalam bahagian ini.',
     )
     expect(chooseOverflowHint(2, 1)).toBe(
       'Anda telah menjawab 2 soalan. Hanya 1 soalan dengan markah tertinggi akan dikira.',

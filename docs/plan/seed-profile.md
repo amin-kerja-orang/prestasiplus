@@ -59,7 +59,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | chat_threads | 1 |
 | classrooms | 15 |
 | coin_ledger | 53 |
-| curriculum_nodes | 2844 |
+| curriculum_nodes | 3652 |
 | curriculum_tp_descriptors | 1394 |
 | draw_prizes | 2 |
 | draws | 1 |
@@ -145,7 +145,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | videos | 3 |
 | wallets | 3 |
 
-Tables with rows: 101 of 212. Total rows: 22035.
+Tables with rows: 101 of 212. Total rows: 22843.
 <!-- poc-counts:end -->
 
 Mod Pelajar (`is_test`) rows: none are seeded; the profile counts and `verify` rules exclude them anyway.

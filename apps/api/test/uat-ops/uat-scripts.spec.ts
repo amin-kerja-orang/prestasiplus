@@ -21,6 +21,7 @@ const ALLOW_LIST: Record<string, string> = {
   'lib.ts': 'shared helper imported by the scripts, not a script',
   'group-integrity.sql': 'read-only SQL run with psql (U-OP-18), not tsx',
   'paper-group-integrity.sql': 'read-only SQL run with psql (DM-26, S3-T02), not tsx',
+  'tracking-sibling-duplicates.sql': 'read-only SQL run with psql before migration 0162 (DM-24, S3-T05), not tsx',
   'tag-integrity.sql': 'read-only SQL run with psql, no U-OP number',
   // U-OP-06 (#715): the script lands with S4-T04; its `uat:trim-duplicate-stem` entry and runbook row follow in S4-T08 once the PO picks the 45:444 option.
   'trim-duplicate-stem.ts': 'U-OP-06 (S4-T04, #715): npm entry and runbook row wait for the PO decision on 45:444',

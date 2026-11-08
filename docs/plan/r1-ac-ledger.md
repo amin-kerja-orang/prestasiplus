@@ -53,6 +53,13 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
 | S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
 | S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
+| S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
+| S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts |
+| S8-T02 | AC-PA-03 | CI | Pass | 2026-11-05 | team-aa/S-1 | stimulus-panel-responsive.spec.ts (375/768/1280): 10 questions counted, the group shows on 4 members and not on question 9, panel at 375, figure full width at 768, pinned left at 1280 |
+| S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
+| S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts, drawing-pad-responsive.spec.ts (375/768/1280) |
+| S8-T03 | AC-PA-37 | CI | Pass | 2026-11-05 | team-aa/S-1 | word-limit.test.ts |
+| S8-T03 | AC-PA-40 | CI | Pass | 2026-11-05 | team-aa/S-1 | prefill.test.ts |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 | S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
@@ -116,6 +123,19 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T01 | AC-GUR-43-11 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts; contract guru-weekly-report.test.ts |
 | S3-T01 | AC-ADM-Q16.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | blueprint-standards-api.spec.ts; kontrak-disahkan.test.ts |
 | S3-T01 | AC-ADM-R8 | CI | Pass | 2026-11-06 | team-cc/S-1 | kontrak.spec.ts |
+| S1-T02 | AC-ADM-QE4.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | dskp-gate.spec.ts::AC-ADM-QE4.1: a draft with no tag lists exactly the unit and the SP gate-check approve returns two items, NO_UNIT then NO_SP, at step 4 with the PRD text |
+| S1-T02 | AC-ADM-QE4.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | gate-rows.spec.ts::AC-ADM-QE4.2: an SP outside the unit "12.1.1" gives SP_NOT_IN_TAXONOMY with the contract text, step 4 |
+| S1-T02 | AC-ADM-QE4.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::without nodes a complete draft approves (200) and the panel never lists unit, SP or TP; once an SP node is loaded the same draft is refused |
+| S1-T02 | AC-QA-42 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-QA-42: the unloaded subject publishes; MATH (loaded) refuses unit, SP, TP and the aras of the leaf |
+| S1-T02 | AC-QA-29 | CI | Pass | 2026-11-05 | team-aa/S-3 | textbook-ref.test.ts::AC-QA-29 Rujukan buku teks the compact form is "B3T4 M56", and "B3T4 M56-58" with hingga |
+| S1-T02 | AC-ADM-QE4.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::a stem that names a figure with no stimulus: the detector flags it; submit and approve answer 422 with STIMULUS_MISSING; Bukan masalah lets it pass |
+| S1-T02 | AC-ADM-QE3.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
+| S1-T02 | AC-QA-31 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
+| S1-T01 | AC-ADM-QE1.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-QE1.2 and AC-ADM-QE1.4 (swap half): after the swap every member names the NEW stimulus, the old stimulus row is unchanged, and a version-1 read is unchanged |
+| S1-T01 | AC-ADM-QE1.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/servability-parity.spec.ts::S1-T06 (D105, AC-QP-7): with every INCLUDE surface, drills serve figures and whole groups, and an incomplete group is excluded as a whole |
+| S1-T01 | AC-ADM-Q05.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-Q05.1: a draft copy staged [c,b,a] is published, groupOf lists [c,b,a], and the practice read returns that order |
+| S1-T01 | AC-QA-07 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S1-T01 | AC-QA-10 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::AC-QA-10 (G-06): an image stimulus with no or blank alt text is 422 on alt with "Sila isi teks alternatif untuk imej ini."; a clearing update is 422; a table or passage needs none; questions/group-option-bank.spec.ts::AC-QA-10: a letter that a leaf key of a member uses cannot be dropped; keeping it, or dropping an unused one, works |
 
 ## Sprint 2
 
@@ -145,6 +165,22 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T06 | AC-GUR-44-12 | CI | Pass | 2026-11-06 | team-dd/S-3 | QuestionForm.test.ts; dskp-rule.test.ts |
 | S6-T06 | AC-GUR-44-13 | CI | Pass | 2026-11-06 | team-dd/S-3 | guru-csv.spec.ts; SumbangSoalanPage.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts |
 | S6-T06 | AC-GUR-44-14 | CI | Pass | 2026-11-06 | team-dd/S-3 | HantarKertasCard.test.ts; paper-csv-rules.test.ts; guru-handlers.test.ts; missions/papers.spec.ts; papers-guru-intake.spec.ts |
+| S4-T03 | AC-ADM-C05.1 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::sets the Bab in place on the eligible rows, with expectedCount = matched, and writes one counts-only audit entry (no new version, status and live version unchanged); bulk-chapter.spec.ts::is live: a bulk run moves the counts at once |
+| S4-T03 | AC-ADM-C05.2 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::counts a question of another subject or level as refused and leaves it alone (AC-ADM-C05.2) |
+| S4-T03 | AC-ADM-C05.4 | CI | Pass | 2026-11-05 | team-bb/S-3 | bulk-chapter.spec.ts::overwrite=false keeps an existing Bab (AC-ADM-C05.4: 10 selected, 4 with a Bab -> 6 linked, 4 refused); bulk-chapter.spec.ts::overwrite=true replaces an existing Bab (AC-ADM-C05.4: all 10 linked) |
+| S1-T05 | AC-QA-34 | CI | Pass | 2026-11-05 | team-aa/S-3 | imports.spec.ts::[CI] the 2,000-row cap is admin-only: the Guru route refuses more than 500 rows with "Fail melebihi 500 baris." for every header, the admin route 2,001 rows with the 2,000 message; imports-csv.spec.ts::[CI] more than 2,000 data rows refuses the file whole (both formats); 2,000 is accepted; imports.spec.ts::[CI] AC-QA-34: 10 questions with 1 invalid: 9 imported, the error CSV has exactly one line |
+| S1-T05 | AC-ADM-QE6.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import; questions-workflow/imports-csv.spec.ts::[CI] one group of 3 rows is one group with 3 members in group_order and one stimulus |
+| S1-T05 | AC-ADM-QE6.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
+| S1-T05 | AC-ADM-Q11.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
+| S1-T07 | AC-ADM-G7.1 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] creating "Rajah 14 menunjukkan ..." with no figure stores stimulus_missing, numbered, with a timestamp; stimulus-flags-unit.spec.ts: 45 6.6.1 keyword rule |
+| S1-T07 | AC-ADM-G7.3 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] stimulus_missing excludes the question from the draw and gives its reason on every pupil surface |
+| S1-T07 | AC-MUR-13-19 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] stimulus_missing excludes the question from the draw and gives its reason on every pupil surface |
+| S1-T07 | AC-ADM-QE2.5 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-ADM-QE2.5: removing a member that names "Rajah 3" from its group sets stimulus_missing |
+| S1-T07 | AC-QA-12 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags-unit.spec.ts: [CI] unnumbered form: a figure or source word with a positional phrase within 3 words; stimulus-flags.spec.ts: [CI] an unnumbered reference is stored with ref unnumbered |
+| S1-T07 | AC-QA-13 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-13 / AC-ADM-QE8.3: figure + 2 served members -> 1 group, 2 members, own image removed, still Diluluskan |
+| S1-T07 | AC-QA-32 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-32 rejected=true or false reads rejection_reason (DM-58) |
+| S1-T07 | AC-QA-47 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-47 q: a question id finds the row, text finds the stem |
+| S1-T07 | AC-QA-45 | CI | Pass | 2026-11-05 | team-aa/S-4 | servability-parity.spec.ts: [CI] AC-QA-45: the indicator reads n of 6 (jana_kertas listed but not counted) and permainan is counted and equals the games draw |
 
 ## Sprint 3
 
@@ -178,6 +214,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S3-T02 | AC-ADM-Q14.3 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
 | S3-T02 | AC-ADM-Q15.1 | CI | Pass | 2026-11-06 | team-cc/S-1 | builder-page.test.ts; semak-kertas.test.ts |
 | S3-T02 | AC-ADM-QE7.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
+| S1-T06 | AC-ADM-QE7.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | exam-builder/builder-placements.spec.ts::D90: a stimulus group is one unit > placing ONE member places the whole group, contiguous in group order |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | v2-write-path.spec.ts: [CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq; served-mcq-multi.spec.ts: [CI] Latih Tubi, Databank, Tracking A, Misi and Battle SPM (spmPool without a type filter) never draw an mcq_multi |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | kuiz-mcq-multi.spec.ts: [CI] the random quiz draws the ungrouped mcq_multi question, and the indicator says served and agrees with the draw; kuiz-mcq-multi.spec.ts: [CI] a random-quiz check on the mcq_multi stores the comma-joined ticks in selected_label and the all-ticks-right verdict in is_correct; optionId alone is 422; kuiz-mcq-multi.spec.ts: [CI] a GROUPED mcq_multi (a member of a stimulus group) is not drawn by the random quiz, and the indicator says shape_unsupported |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | v2-write-path.spec.ts: [CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq; served-mcq-multi.spec.ts: [CI] Latih Tubi, Databank, Tracking A, Misi and Battle SPM (spmPool without a type filter) never draw an mcq_multi |
 
 ## Sprint 4
 
@@ -236,6 +276,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T10 | AC-GUR-42-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
 | S3-T07 | AC-PA-32 | CI | Pass | 2026-11-06 | team-dd/S-3 | bijak-papers/generate.spec.ts; bijak-hub-no-jana.test.ts |
 | S3-T07 | AC-MUR-13-29 | CI | Pass | 2026-11-06 | team-dd/S-3 | m06-spm/__tests__/pages/pages.test.ts; spm/hub.spec.ts (six hub entries per FR-MUR-13-1: five cards + Bijak SPM banner, lead ruling) |
+| S1-T08 | AC-ADM-Q12.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
 
 ## Sprint 5
 

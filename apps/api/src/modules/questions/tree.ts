@@ -4,7 +4,7 @@
  * this file only converts. A key that does not parse as the contract leaf for its mode fails
  * closed (`StoredKeyError`, mapped to a 500 by the service with the part id logged).
  */
-import { QuestionLeafPartSchema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema, type ModeConfigSchema, type QuestionCognitiveLevel, type QuestionPart } from '@pp/contract'
 import type { z } from 'zod'
 
 import type { AnswerKey, PartOption, QuestionPart as PartRow } from '../../db/generated/client'
@@ -89,7 +89,7 @@ function leafFromRow(row: PartRow, options: PartOption[], key: AnswerKey | undef
   // Validate the key, options and mode with a placeholder prompt, then return the leaf with its real (empty) prompt, so the trimmed row stays
   // readable and every other column is still checked strictly.
   const emptyPrompt = row.promptMs === null || row.promptMs === ''
-  const parsed = QuestionLeafPartSchema.safeParse(emptyPrompt ? { ...candidate, prompt: { ...rich(row.promptMs, row.promptEn), ms: '-' } } : candidate)
+  const parsed = QuestionLeafPartReadV3Schema.safeParse(emptyPrompt ? { ...candidate, prompt: { ...rich(row.promptMs, row.promptEn), ms: '-' } } : candidate)
   if (!parsed.success) {
     if (lenient && key === undefined) return candidate as unknown as QuestionLeaf
     // #805: an MCQ whose key names no option is tolerated (and only that: the leaf must parse once the key is pointed at a real option);
@@ -105,7 +105,7 @@ function keyNamesNoOption(candidate: Record<string, unknown>): boolean {
   const first = (candidate.options as { label: string }[] | undefined)?.[0]
   const k = candidate.key as { kind?: unknown } | undefined
   if (first === undefined || k?.kind !== 'option') return false
-  return QuestionLeafPartSchema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
+  return QuestionLeafPartReadV3Schema.safeParse({ ...candidate, key: { kind: 'option', correct: first.label } }).success
 }
 
 // --- tree -> row drafts ---------------------------------------------------------------------------
@@ -255,11 +255,15 @@ export function totalMarks(parts: readonly QuestionPart[]): number {
 }
 
 /** Part type of a version: `structured` for a tree or several leaves, otherwise by the single leaf mode. */
-export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
+export function versionTypeOf(parts: readonly QuestionPart[]): 'mcq' | 'mcq_multi' | 'match' | 'short' | 'structured' | 'working' | 'essay' | 'drawing' | 'table' {
   const [only] = parts
   if (parts.length !== 1 || only === undefined || !isLeaf(only)) return 'structured'
   switch (only.mode) {
     case 'mcq':
+      // S1-T09a (AC-PA-35): a single `mcq` leaf with the multi flag is stored as `mcq_multi`, so NOT_MCQ_MULTI_SQL and the `type = 'mcq'` readers keep it
+      // out of the single-option drills. A Betul/Salah leaf stays `mcq`: every learner reader selects `type = 'mcq'`, and the flat view derives
+      // `true_false` from the options at read time (projection.ts).
+      return (only.modeConfig as { multi?: boolean } | undefined)?.multi === true ? 'mcq_multi' : 'mcq'
     case 'pksk_choice':
       return 'mcq'
     case 'match_letter':

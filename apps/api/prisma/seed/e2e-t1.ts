@@ -75,9 +75,11 @@ export async function seedE2eT1(ctx: SeedContext, adminId: bigint): Promise<void
         if (await tx.questionVersion.findFirst({ where: { numberLabel: label }, select: { id: true } })) continue
         const part = partOf(it)
         const tp = (i % 4) + 1
+        // Kesukaran is required on its own (team-dd ruling, #917); the fixture uses the documented default min(5, TP).
+        const difficultyLevel = Math.min(5, tp)
         const failed = GATES.approve({
           id: label, parts: [part], marks: 1, subjectId: subject.id.toString(), educationLevelId: level.id.toString(), chapterId: '1', // placeholder for the approve gate only; the row's Bab is linked by linkPracticeChapters
-          unitId: null, spIds: [], tp, unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true,
+          unitId: null, spIds: [], tp, difficultyLevel, unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true,
           missingRequiredFields: [], lastEditedByAi: false, spmBound: false, hasDskpNodes: false, stem: it.text,
         })
         if (Object.keys(failed).length > 0) throw new Error(`e2e-t1: ${label} fails the approve gate: ${JSON.stringify(failed)}`)
@@ -87,7 +89,7 @@ export async function seedE2eT1(ctx: SeedContext, adminId: bigint): Promise<void
         const version = await tx.questionVersion.create({
           data: {
             questionId: question.id, versionNo: 1, status: 'approved', publishedAt: now, type: 'mcq', stemMs: it.text, numberLabel: label, language: 'ms',
-            subjectId: subject.id, educationLevelId: level.id, unitNodeId: null, formOrigin: 't1_t3', cognitiveLevel: (i % 3) + 1, difficultyTp: tp,
+            subjectId: subject.id, educationLevelId: level.id, unitNodeId: null, formOrigin: 't1_t3', cognitiveLevel: (i % 3) + 1, difficultyTp: tp, difficultyLevel,
             sourceKind: 'publisher', rightsStatus: 'own', createdAt: now, updatedAt: now,
           },
         })

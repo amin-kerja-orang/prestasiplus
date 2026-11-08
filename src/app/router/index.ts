@@ -62,12 +62,14 @@ const UNAUTHORIZED_REDIRECT_DEBOUNCE_MS = 2000
 /**
  * 401 policy (FR-M01-14, FR-ERR-7): after the session store has cleared the session, go to
  * `/login?kembali=<current page>` (same-origin path only; the login page shows the expired-session
- * banner and returns there). Returns the unregister function.
+ * banner and returns there). A page that deferred the redirect and names where to return (ERR-AUTH-01,
+ * timed Bijak sitting) goes to `/login?redirect=<that page>` instead. Returns the unregister function.
  */
 export function connectUnauthorizedRedirect(router: Router): () => void {
   let lastRedirectAt = Number.NEGATIVE_INFINITY
-  return setUnauthorizedRedirect(() => {
+  return setUnauthorizedRedirect((returnTo) => {
     useNotificationBadgeStore().reset()
+    if (isSafeRedirect(returnTo)) return router.replace({ path: LOGIN_PATH, query: { redirect: returnTo } })
     // One redirect per 2 s: parallel requests that all answer 401 must not stack navigations.
     const now = Date.now()
     if (now - lastRedirectAt < UNAUTHORIZED_REDIRECT_DEBOUNCE_MS) return undefined

@@ -1,0 +1,356 @@
+{
+  "subject": "Pendidikan Jasmani & Kesihatan",
+  "subjectCode": null,
+  "levels": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "language": "ms",
+  "source": "V3 chapter data (apps/api/prisma/seed/curriculum-data/chapters.json)",
+  "edition": {
+    "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+    "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)"
+  },
+  "structureNote": "T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
+  "manualCorrections": [],
+  "units": [
+    {
+      "level": "T1",
+      "code": "1.0",
+      "title": "Gimnastik Asas",
+      "titlePrinted": "GIMNASTIK ASAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "2.0",
+      "title": "Pergerakan Berirama",
+      "titlePrinted": "PERGERAKAN BERIRAMA",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "3.0",
+      "title": "Kategori Serangan",
+      "titlePrinted": "KATEGORI SERANGAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "4.0",
+      "title": "Kategori Jaring",
+      "titlePrinted": "KATEGORI JARING",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "5.0",
+      "title": "Olahraga Asas",
+      "titlePrinted": "OLAHRAGA ASAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "6.0",
+      "title": "Rekreasi dan Kesenggangan",
+      "titlePrinted": "REKREASI DAN KESENGGANGAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "7.0",
+      "title": "Kecergasan Fizikal",
+      "titlePrinted": "KECERGASAN FIZIKAL",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "8.0",
+      "title": "Pemakanan",
+      "titlePrinted": "PEMAKANAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "9.0",
+      "title": "Pendidikan Kesihatan Reproduktif dan Sosial",
+      "titlePrinted": "PENDIDIKAN KESIHATAN REPRODUKTIF DAN SOSIAL",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "10.0",
+      "title": "Pertolongan Cemas",
+      "titlePrinted": "PERTOLONGAN CEMAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "11.0",
+      "title": "Mental dan Emosi 148 PERTOLONGAN CEMAS",
+      "titlePrinted": "MENTAL DAN EMOSI 148 PERTOLONGAN CEMAS",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "12.0",
+      "title": "Kekeluargaan",
+      "titlePrinted": "KEKELUARGAAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "13.0",
+      "title": "Perhubungan",
+      "titlePrinted": "PERHUBUNGAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "14.0",
+      "title": "Penyakit",
+      "titlePrinted": "PENYAKIT",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "15.0",
+      "title": "Keselamatan",
+      "titlePrinted": "KESELAMATAN",
+      "standards": []
+    },
+    {
+      "level": "T1",
+      "code": "16.0",
+      "title": "INDEKS",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "1.0",
+      "title": "Gimnastik Asas",
+      "titlePrinted": "GIMNASTIK ASAS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "2.0",
+      "title": "Pergerakan Berirama",
+      "titlePrinted": "PERGERAKAN BERIRAMA",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "3.0",
+      "title": "Permainan Kategori Serangan",
+      "titlePrinted": "PERMAINAN KATEGORI SERANGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "4.0",
+      "title": "Permainan Kategori Jaring",
+      "titlePrinted": "PERMAINAN KATEGORI JARING",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "5.0",
+      "title": "Permainan Kategori Memadang",
+      "titlePrinted": "PERMAINAN KATEGORI MEMADANG",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "6.0",
+      "title": "Olahraga Asas",
+      "titlePrinted": "OLAHRAGA ASAS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "7.0",
+      "title": "Rekreasi dan Kesenggangan",
+      "titlePrinted": "REKREASI DAN KESENGGANGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "8.0",
+      "title": "Kecergasan",
+      "titlePrinted": "KECERGASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "9.0",
+      "title": "Pendidikan Kesihatan Reproduktif dan Sosial",
+      "titlePrinted": "PENDIDIKAN KESIHATAN REPRODUKTIF DAN SOSIAL",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "10.0",
+      "title": "Pemakanan",
+      "titlePrinted": "PEMAKANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "11.0",
+      "title": "Pertolongan Cemas",
+      "titlePrinted": "PERTOLONGAN CEMAS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "12.0",
+      "title": "Muka Taip Teks: Myriad Pro • SMK Undang Jelebu, SMK Dato’ Undang • Lumba Jalan Kaki",
+      "titlePrinted": "MUKA TAIP TEKS: MYRIAD PRO • SMK UNDANG JELEBU, SMK DATO’ UNDANG • LUMBA JALAN KAKI",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "13.0",
+      "title": "Saiz Muka Taip Teks: 11 poin Musa Al-Haj, SMK Bukit Kepayang, • Lompat Jauh",
+      "titlePrinted": "SAIZ MUKA TAIP TEKS: 11 POIN MUSA AL-HAJ, SMK BUKIT KEPAYANG, • LOMPAT JAUH",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "14.0",
+      "title": "Dicetak oleh: SMK Agama Kuala Lumpur • Merejam Lembing",
+      "titlePrinted": "DICETAK OLEH: SMK AGAMA KUALA LUMPUR • MEREJAM LEMBING",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "15.0",
+      "title": "Taman Industri SB Jaya, • Semua pihak yang terlibat secara UNIT 7: Rekreasi dan Kesenggangan",
+      "titlePrinted": "TAMAN INDUSTRI SB JAYA, • SEMUA PIHAK YANG TERLIBAT SECARA UNIT 7: REKREASI DAN KESENGGANGAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "16.0",
+      "title": "UNIT 8: Kecergasan",
+      "titlePrinted": "UNIT 8: KECERGASAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "17.0",
+      "title": "UNIT 1: Pendidikan Kesihatan Reproduktif",
+      "titlePrinted": "UNIT 1: PENDIDIKAN KESIHATAN REPRODUKTIF",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "18.0",
+      "title": "2.0 : Penyalahgunaan Bahan",
+      "titlePrinted": "2.0 : PENYALAHGUNAAN BAHAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "19.0",
+      "title": "UNIT 2: Pemakanan",
+      "titlePrinted": "UNIT 2: PEMAKANAN",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "20.0",
+      "title": "Prosedur T.O.T.A.P.S.",
+      "titlePrinted": "PROSEDUR T.O.T.A.P.S.",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "21.0",
+      "title": "Indeks",
+      "titlePrinted": "INDEKS",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "22.0",
+      "title": "4 SP: 1.1.1, 2.1.1, 5.1.1, 5.2.1",
+      "titlePrinted": "4 SP: 1.1.1, 2.1.1, 5.1.1, 5.2.1",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "23.0",
+      "title": "6 SP: 1.1.1, 2.1.1, 5.1.1, 5.1.2",
+      "titlePrinted": "6 SP: 1.1.1, 2.1.1, 5.1.1, 5.1.2",
+      "standards": []
+    },
+    {
+      "level": "T2",
+      "code": "24.0",
+      "title": "8 SP: 1.1.1, 2.1.1, 5.1.1, 5.1.2",
+      "titlePrinted": "8 SP: 1.1.1, 2.1.1, 5.1.1, 5.1.2",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "1.0",
+      "title": "GIMNASTIK ASAS",
+      "titlePrinted": "GIMNASTIK ASAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "2.0",
+      "title": "PERGERAKAN BERIRAMA",
+      "titlePrinted": "PERGERAKAN BERIRAMA",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "3.0",
+      "title": "PERMAINAN KATEGORI SERANGAN",
+      "titlePrinted": "PERMAINAN KATEGORI SERANGAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "4.0",
+      "title": "PERMAINAN KATEGORI JARING",
+      "titlePrinted": "PERMAINAN KATEGORI JARING",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "5.0",
+      "title": "PERMAINAN KATEGORI MEMADANG",
+      "titlePrinted": "PERMAINAN KATEGORI MEMADANG",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "6.0",
+      "title": "OLAHRAGA ASAS",
+      "titlePrinted": "OLAHRAGA ASAS",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "7.0",
+      "title": "REKREASI DAN KESENGGANGAN",
+      "titlePrinted": "REKREASI DAN KESENGGANGAN",
+      "standards": []
+    },
+    {
+      "level": "T3",
+      "code": "8.0",
+      "title": "KECERGASAN FIZIKAL BERDASARKAN KESIHATAN",
+      "titlePrinted": "KECERGASAN FIZIKAL BERDASARKAN KESIHATAN",
+      "standards": []
+    }
+  ]
+}

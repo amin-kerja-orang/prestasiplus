@@ -12,6 +12,12 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error' | 'cl
 
 export interface AutosaveApi {
   save(payload: SavePayload): Promise<unknown>
+  /**
+   * Fire-and-forget `PUT .../answers` with `fetch({ keepalive: true })` for a tab that is hiding or unloading
+   * (lead ruling Q4; `sendBeacon` is POST only). Returns false when it sent nothing (no way to send, or the body
+   * is over the 64 KB keepalive limit); the local mirror and the 15 s flush then cover the change.
+   */
+  saveKeepalive?(payload: SavePayload): boolean
 }
 
 interface LocalDoc {
@@ -31,6 +37,8 @@ export interface AutosaveOptions {
   api: AutosaveApi
   debounceMs?: number
   retryMs?: number
+  /** FR-MUR-13-10: while there is unsent work, a flush at least this often, so typing without a pause still reaches the server. */
+  dirtyFlushMs?: number
   now?: () => number
   onStatus?: (status: SaveStatus) => void
   /** The server reports the attempt closed (deadline passed); the page then opens its Semakan and clears the local copy. */
@@ -50,6 +58,17 @@ export interface Autosave {
   setPicks(picks: Record<string, string[]>): void
   setPosition(position: number): void
   flush(): Promise<boolean>
+  /**
+   * The flush for the automatic triggers (15 s dirty timer, field blur, question change): does nothing while the
+   * offline retry is armed or the browser reports offline, so no request, no saving/offline flicker. The retry timer
+   * and the page's "online" handler (which call `flush()`) send the pending changes once the connection is back.
+   */
+  flushAuto(): Promise<boolean>
+  /**
+   * `pagehide` / tab hidden: sends only the dirty changes with a keepalive `fetch`. True when a request went out.
+   * Nothing is marked saved (the reply is not awaited): the changes stay pending, a later flush repeats them (idempotent per revision).
+   */
+  flushHidden(): boolean
   answers(): Record<string, PartAnswer>
   flags(): string[]
   picks(): Record<string, string[]>
@@ -70,6 +89,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   const key = `${LOCAL_PREFIX}${opts.attemptId}`
   const debounceMs = opts.debounceMs ?? 800
   const retryMs = opts.retryMs ?? 5000
+  const dirtyFlushMs = opts.dirtyFlushMs ?? 15_000
   const now = opts.now ?? (() => Date.now())
   let doc: LocalDoc = {
     answers: {},
@@ -81,6 +101,9 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
   }
   let timer: ReturnType<typeof setTimeout> | undefined
   let retry: ReturnType<typeof setTimeout> | undefined
+  let dirtyTimer: ReturnType<typeof setTimeout> | undefined
+  /** Counts flag, pick and position changes: one made while a request is in flight is not in its payload, so that response must not clear `metaDirty`. */
+  let metaChanges = 0
   let current: SaveStatus = 'idle'
   let inFlight: Promise<boolean> | null = null
   let disposed = false
@@ -117,24 +140,38 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     }, debounceMs)
   }
 
+  const armDirtyFlush = (): void => {
+    if (dirtyTimer || disposed || closed) return
+    dirtyTimer = setTimeout(() => {
+      dirtyTimer = undefined
+      if (!doc.pending.length && !doc.metaDirty) return
+      void flushAuto()
+      armDirtyFlush()
+    }, dirtyFlushMs)
+  }
+
   const touched = (): void => {
     writeLocal()
     setStatus('saving')
     schedule()
+    armDirtyFlush()
   }
+
+  const payloadOfPending = (parts: readonly string[]): SavePayload => ({
+    changes: parts.map((partId) => {
+      const st = doc.answers[partId]!
+      return { partId, answer: st.answer, rev: st.rev, savedAt: st.savedAt }
+    }),
+    flags: doc.flags,
+    picks: doc.picks,
+    position: doc.position,
+  })
 
   async function send(): Promise<boolean> {
     const parts = [...doc.pending]
     const revs = new Map(parts.map((p) => [p, doc.answers[p]?.rev ?? 0]))
-    const payload: SavePayload = {
-      changes: parts.map((partId) => {
-        const st = doc.answers[partId]!
-        return { partId, answer: st.answer, rev: st.rev, savedAt: st.savedAt }
-      }),
-      flags: doc.flags,
-      picks: doc.picks,
-      position: doc.position,
-    }
+    const metaSent = metaChanges
+    const payload = payloadOfPending(parts)
     try {
       const res = (await opts.api.save(payload)) as { closed?: boolean } | undefined
       if (res?.closed) {
@@ -147,24 +184,32 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       setStatus((e as { code?: string }).code === 'offline' ? 'offline' : 'error')
       if (!disposed) {
         if (retry) clearTimeout(retry)
-        retry = setTimeout(() => void flush(), retryMs)
+        retry = setTimeout(() => {
+          retry = undefined
+          void flush()
+        }, retryMs)
       }
       return false
     }
     // Keep a part pending when it changed again while the request was in flight.
+    if (retry) {
+      clearTimeout(retry)
+      retry = undefined
+    }
     doc.pending = doc.pending.filter((p) => (doc.answers[p]?.rev ?? 0) !== revs.get(p))
-    if (!doc.pending.length) doc.metaDirty = false
+    if (!doc.pending.length && metaChanges === metaSent) doc.metaDirty = false
     writeLocal()
     return true
   }
 
   async function flush(): Promise<boolean> {
-    if (closed) return false
+    if (closed || disposed) return false
     if (timer) {
       clearTimeout(timer)
       timer = undefined
     }
-    if (inFlight) await inFlight.catch(() => false)
+    // A loop, not one wait: flushes waiting on one request must not all send when it ends, or a newer one overlaps an older one.
+    while (inFlight) await inFlight.catch(() => false)
     for (let round = 0; round < 4; round++) {
       if (!doc.pending.length && !doc.metaDirty) {
         setStatus('saved')
@@ -177,6 +222,14 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       if (!ok) return false
     }
     return !doc.pending.length
+  }
+
+  const offlineNow = (): boolean =>
+    retry !== undefined || (typeof navigator !== 'undefined' && navigator.onLine === false)
+
+  async function flushAuto(): Promise<boolean> {
+    if (offlineNow()) return false
+    return flush()
   }
 
   return {
@@ -204,6 +257,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       if (doc.pending.length || doc.metaDirty) {
         setStatus('saving')
         schedule()
+        armDirtyFlush()
       }
     },
     setAnswer(partId, answer) {
@@ -215,20 +269,34 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
     setFlags(flags) {
       doc.flags = flags
       doc.metaDirty = true
+      metaChanges += 1
       touched()
     },
     setPicks(picks) {
       doc.picks = picks
       doc.metaDirty = true
+      metaChanges += 1
       touched()
     },
     setPosition(position) {
       doc.position = position
       doc.metaDirty = true
+      metaChanges += 1
       writeLocal()
       schedule()
+      armDirtyFlush()
     },
     flush,
+    flushAuto,
+    flushHidden() {
+      if (closed || disposed || !opts.api.saveKeepalive) return false
+      if (!doc.pending.length && !doc.metaDirty) return false
+      try {
+        return opts.api.saveKeepalive(payloadOfPending(doc.pending))
+      } catch {
+        return false
+      }
+    },
     answers: () => Object.fromEntries(Object.entries(doc.answers).map(([k, v]) => [k, v.answer])),
     flags: () => doc.flags,
     picks: () => doc.picks,
@@ -245,6 +313,7 @@ export function createAutosave(opts: AutosaveOptions): Autosave {
       disposed = true
       if (timer) clearTimeout(timer)
       if (retry) clearTimeout(retry)
+      if (dirtyTimer) clearTimeout(dirtyTimer)
     },
   }
 }
