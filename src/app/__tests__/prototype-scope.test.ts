@@ -138,6 +138,7 @@ describe('isPathInScope', () => {
       '/guru/soalan-guru/12/sunting',
       '/guru/soalan-berstruktur',
       '/guru/soalan-berstruktur/4454',
+      '/guru/databank',
       '/guru/analisis-item',
       '/guru/laporan-mingguan-kelas',
       '/headcount/12/summary',
@@ -151,7 +152,6 @@ describe('isPathInScope', () => {
     }
     for (const path of [
       '/dashboard',
-      '/guru/databank',
       '/guru/laporan-mingguan',
       '/practice',
       '/practice/revision',

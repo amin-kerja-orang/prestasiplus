@@ -71,7 +71,6 @@ Item menu di bawah memberi 404 kerana modulnya belum dibina dan bukan baris matr
 | `/guru/perbandingan-kelas` | Perbandingan Kelas | Guru | M11 (S7, M11-T4) | belum dibina; bukan baris matriks |
 | `/guru/soalan-guru` | Soalan & Rujukan | Guru | Portal Guru (lanjutan) | bukan baris matriks |
 | `/guru/soalan-berstruktur` | Soalan Berstruktur (Guru) | Guru | Portal Guru (lanjutan) | bukan baris matriks (L22 ialah Murid) |
-| `/guru/databank` | Databank Soalan | Guru | Portal Guru (lanjutan) | bukan baris matriks |
 | `/guru/set-soalan` | Set Soalan | Guru | Portal Guru (lanjutan) | bukan baris matriks (L31 ialah Murid) |
 | `/guru/kertas-peperiksaan` | Kertas Peperiksaan | Guru | Portal Guru (lanjutan) | bukan baris matriks |
 | `/guru/penjana-peperiksaan` | Penjana Peperiksaan | Guru | Portal Guru (lanjutan) | bukan baris matriks |

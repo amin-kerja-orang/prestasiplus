@@ -50,7 +50,7 @@ describe('S6-T17 structured routes (R1-GUR-44b)', () => {
 })
 
 describe('S21-S24 route access (decideAccess)', () => {
-  it('declares the four routes for teacher and admin only on the user shell', () => {
+  it('declares the five routes for teacher and admin only on the user shell', () => {
     expect(
       routes.filter((r) => !r.path.startsWith('/guru/soalan-berstruktur')).map((r) => r.path),
     ).toEqual([
@@ -58,6 +58,7 @@ describe('S21-S24 route access (decideAccess)', () => {
       '/guru/soalan/cipta',
       '/guru/soalan/:id([0-9]+)',
       '/guru/soalan/:id([0-9]+)/edit',
+      '/guru/databank',
     ])
     for (const r of routes) {
       expect(r.meta?.layout).toBe('user')

@@ -21,6 +21,8 @@ import type {
   Contributions,
   CreateClassRequest,
   CreateQuestionRequest,
+  DatabankOverview,
+  DatabankQuestionsResult,
   ErrorBodyLive,
   GuruClass,
   GuruDashboard,
@@ -376,4 +378,20 @@ export async function deleteTeacherMission(id: string): Promise<{ deleted: numbe
     { raw: true },
   )
   return res.data
+}
+
+/** S6-T19 `GET /api/guru/databank/overview` (R1-GUR-44d): totals and the Teras / Elektif subject tiles. */
+export function fetchDatabankOverview(options: Signal = {}): Promise<DatabankOverview> {
+  return api.get<DatabankOverview>('/api/guru/databank/overview', withSignal(options))
+}
+
+/** S6-T19 `GET /api/guru/databank/questions`: 20 units per page, a stimulus group is one unit. */
+export function fetchDatabankQuestions(
+  params: { subjectId?: number; q?: string; page?: number } = {},
+  options: Signal = {},
+): Promise<DatabankQuestionsResult> {
+  return api.get<DatabankQuestionsResult>('/api/guru/databank/questions', {
+    query: { subjectId: params.subjectId, q: params.q, page: params.page },
+    ...withSignal(options),
+  })
 }
