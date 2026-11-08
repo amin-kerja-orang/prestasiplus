@@ -3237,6 +3237,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/tracking-a|",
+      "path": "/admin/spm/tracking-a",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingAListPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "/admin/spm/tracking-a/:set/sunting|",
+      "path": "/admin/spm/tracking-a/:set/sunting",
+      "name": null,
+      "status": "canonical",
+      "sector": "S3",
+      "component": "src/modules/m28-bijak-spm/admin/kandungan/pages/TrackingASetEditorPage.vue",
+      "file": "src/modules/m28-bijak-spm/routes/admin-kandungan.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
       "key": "/admin/spm/simulasi|",
       "path": "/admin/spm/simulasi",
       "name": null,
@@ -17901,6 +17921,36 @@
       "sector": "S3",
       "file": "apps/api/src/modules/spm/spm.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/spm/tracking-a",
+      "method": "POST",
+      "path": "/api/admin/spm/tracking-a",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "GET /api/admin/spm/tracking-a/:p",
+      "method": "GET",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
+    },
+    {
+      "key": "PUT /api/admin/spm/tracking-a/:p",
+      "method": "PUT",
+      "path": "/api/admin/spm/tracking-a/:p",
+      "api_id": "API-BIJAK-13",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/src/modules/spm/spm.controller.ts",
+      "approved_by_card": "S3-T05"
     },
     {
       "key": "GET /api/spm/tracking-a",

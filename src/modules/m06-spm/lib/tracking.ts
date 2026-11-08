@@ -33,13 +33,32 @@ export function targetChip(type: TargetType, size: number): string {
 export const tileTarget = (code: string, size: number): string =>
   `${code} · Target set: ${String(size)} soalan`
 
-/** "2026 Set {n} · {ready}/{target}" (locked chip of a readiness tile). */
-export const lockChip = (set: { setNo: number; readyCount: number; target: number }): string =>
-  `2026 Set ${String(set.setNo)} · ${String(set.readyCount)}/${String(set.target)}`
+/** "{tahun} Set {n} · {ready}/{target}" (locked chip of a readiness tile). */
+export const lockChip = (set: { year: number; setNo: number; readyCount: number; target: number }): string =>
+  `${String(set.year)} Set ${String(set.setNo)} · ${String(set.readyCount)}/${String(set.target)}`
 
 /** Link that starts a ready set (Q3). */
-export const setHref = (code: string, setNo: number): string =>
-  `/spm/ramalan/${encodeURIComponent(code)}?year=2026&set=${String(setNo)}`
+export const setHref = (code: string, year: number, setNo: number): string =>
+  `/spm/ramalan/${encodeURIComponent(code)}?year=${String(year)}&set=${String(setNo)}`
+
+/** "{tahun} · Set {n}": the row of a set (46 section 4.5). */
+export const setRowTitle = (set: Pick<TrackingASetCard, 'year' | 'setNo'>): string =>
+  `${String(set.year)} · Set ${String(set.setNo)}`
+
+/** The empty text of the hub when no objective set is ready (46 section 4.5, AC-MUR-13-11). */
+export const TRACKING_EMPTY_TEXT =
+  'Tiada set objektif Tracking A yang bersedia lagi. Set sedang dibina — semua set semasa masih dalam proses pengisian. Semak semula tidak lama lagi!'
+
+/** The server order (year descending, then set number) as one group per year (D-14). */
+export function setsByYear<T extends { year: number }>(sets: readonly T[]): { year: number; sets: T[] }[] {
+  const out: { year: number; sets: T[] }[] = []
+  for (const s of sets) {
+    const last = out.at(-1)
+    if (last?.year === s.year) last.sets.push(s)
+    else out.push({ year: s.year, sets: [s] })
+  }
+  return out
+}
 
 /** Link of a Tracking A Bahasa card (S5 → S7). */
 export const bahasaHref = (subjectId: WireId): string =>

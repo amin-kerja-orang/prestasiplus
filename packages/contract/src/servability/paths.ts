@@ -18,6 +18,7 @@ import {
   servabilityLaneListOf,
   ServabilityOverviewActivitySchema,
   ServabilityOverviewSchema,
+  ServabilityTrackingLaneSchema,
   ServabilityPaperRowSchema,
   QuestionPaperServabilityMetaSchema,
   QuestionPaperServabilityResponseSchema,
@@ -142,7 +143,7 @@ export function registerServabilityPaths(registry: OpenAPIRegistry): void {
       responses: { 200: json(schema, description), 401: unauthorized, 403: forbidden, 422: invalid },
     })
   lane('latih-tubi', 'Lane "Latih Tubi": subjects x Tingkatan with servable counts and the switch state', ServabilityLatihTubiLaneSchema, 'A page of cells; `count` counts questions; `meta.switchEnabled` is the `latih-tubi` switch. `status` is ignored.')
-  lane('tracking-a', 'Lane "Tracking A": one row per set, with the sets that are not complete', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of sets, sorted by title. `status` is ignored.')
+  lane('tracking-a', 'Lane "Tracking A": one row per set, with the sets that are not complete', ServabilityTrackingLaneSchema, 'A page of sets, sorted by title. `status` is ignored. `setSubjects` are the options of `Subjek` in the editor (field 17-01).')
   lane('subjektif', 'Lane "Subjektif": structured and essay questions', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of questions, newest first. `status` filters the lifecycle code.')
   lane('kertas-subjektif', 'Lane "Kertas Subjektif": the Kertas Subjektif papers', servabilityLaneListOf(ServabilityLaneRowSchema), 'A page of papers, newest first; empty until papers carry a surface (DM-23).')
 }
