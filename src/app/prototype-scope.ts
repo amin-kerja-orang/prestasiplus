@@ -198,7 +198,8 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
   // [S6 begin]
   item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
-  item(2, 'Dashboard Guru', p('/guru', true), p('/guru/misi-harian')),
+  // /guru/misi-harian and /guru/set-soalan: child pages of the Dashboard checklist / tile "Set Soalan" ("Urus set →", R1-GUR-8b); no sidebar item.
+  item(2, 'Dashboard Guru', p('/guru', true), p('/guru/misi-harian'), p('/guru/set-soalan')),
   // [S6 end]
   // [S10 begin]
   item(3, 'Headcount', p('/headcount')),

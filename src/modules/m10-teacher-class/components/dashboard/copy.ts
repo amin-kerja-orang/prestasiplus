@@ -1,6 +1,17 @@
 /** Exact BM copy of S1 Dashboard Guru (SRS M10 FR-M10-08…13; URS FN-M10-2.1.1–2.1.8). */
 export const GUIDE_STORAGE_KEY = 'hideGuruGuide'
 
+/**
+ * One quick-action tile. `link` is the optional second line "Urus set →" (S6-T14, R1-GUR-8b: the
+ * "Set Soalan" tile opens `/guru/set-soalan`); tiles without it show only title and text.
+ */
+export interface QuickTile {
+  title: string
+  text: string
+  to: string
+  link?: string
+}
+
 export const DASH_COPY = {
   showGuide: 'Tunjuk panduan mula',
   guideTitle: 'Mula Di Sini — 3 Langkah Mudah',
@@ -89,7 +100,12 @@ export const DASH_COPY = {
       text: 'Hantar soalan ke bank kebangsaan.',
       to: '/guru/soalan/cipta',
     },
-    { title: 'Set Soalan', text: 'Bina & terbitkan set latihan.', to: '/guru/set-soalan' },
+    {
+      title: 'Set Soalan',
+      text: 'Bina & terbitkan set latihan.',
+      to: '/guru/set-soalan',
+      link: 'Urus set →',
+    },
     { title: 'Prestasi Kelas', text: 'Lihat ketepatan & pelajar terbaik.', to: '/prestasi/kelas' },
   ],
   onTrack: 'On Track',

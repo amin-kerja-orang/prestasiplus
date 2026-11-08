@@ -706,13 +706,14 @@ const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
  * Menu items with no sidebar link for a role. Perutusan (Admin Sekolah, AC-SH-2, Delivery A): the
  * page works and the dashboard card links to it, the sidebar item stays hidden. Misi Harian (teacher)
  * is a child page of the Dashboard checklist with no sidebar item (D106, 20 R1-GUR-2b, OQ-G-13): its
- * route is in scope, the rows stay in the data but never render.
+ * route is in scope, the rows stay in the data but never render. Set Soalan (teacher, S6-T14,
+ * R1-GUR-8b) is reached from the Dashboard tile "Set Soalan", so `t-set-soalan` and `guru-set-soalan` are hidden too.
  */
-const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
+export const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
   student: STUDENT_HIDDEN_IDS,
   school_admin: new Set(['sa-perutusan']),
-  teacher: new Set(['t-misi-harian']),
-  admin: new Set(['guru-misi-harian']),
+  teacher: new Set(['t-misi-harian', 't-set-soalan']),
+  admin: new Set(['guru-misi-harian', 'guru-set-soalan']),
 }
 const isRoleHidden = (role: string | null, id: string): boolean =>
   role !== null && ROLE_HIDDEN_IDS[role]?.has(id) === true
@@ -778,7 +779,9 @@ export function navFor(
     withoutServerOff(withoutKeluargaAngkat(withoutAlesa(entries)))
       .filter((entry) => visibleTo(entry, role, surface) && inScope(entry))
       .map((entry) =>
-        entry.kind === 'group' ? { ...entry, children: entry.children.filter(inScope) } : entry,
+        entry.kind === 'group'
+          ? { ...entry, children: entry.children.filter(inScope) }
+          : entry,
       )
       .filter((entry) => entry.kind !== 'group' || entry.children.length > 0),
     role,

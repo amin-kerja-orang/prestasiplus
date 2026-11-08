@@ -123,6 +123,9 @@ describe('navFor with the prototype scope on', () => {
     for (const label of ['Misi Harian', 'Broadcast', 'Liga Pertandingan']) {
       expect(shown, label).not.toContain(label)
     }
+    // S6-T14: /guru/set-soalan is in scope (Dashboard tile "Set Soalan"), but there is no sidebar item.
+    expect(shown).not.toContain('Set Soalan')
+    expect(isPathInScope('teacher', '/guru/set-soalan')).toBe(true)
   })
 
   it('Perutusan menu: the pupil has no item, Admin Pusat keeps it, the school admin sidebar hides it (S5-T09)', () => {
