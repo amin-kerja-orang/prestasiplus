@@ -21,14 +21,18 @@ export const supportTicketsRepo = defineRepository({
       })
     },
 
-    /** Q-M22-USER: the user's tickets (id descending), optionally one vocabulary status; `total` = all of the user's. */
-    forUser(userId: number, status?: string | null): { rows: TicketRow[]; total: number } {
+    /** Q-M22-USER: the user's tickets (id descending), optionally one vocabulary status; `total` and `counts` = all of the user's. */
+    forUser(
+      userId: number,
+      status?: string | null,
+    ): { rows: TicketRow[]; total: number; counts: { status: TicketStatus; count: number }[] } {
       const total = store.count({ userId })
+      const counts = TICKET_STATUSES.map((s) => ({ status: s, count: store.count({ userId, status: s }) }))
       const where = isTicketStatus(status) ? { userId, status } : { userId }
       const rows = store
         .query({ where, sort: { field: 'id', dir: 'desc' } })
         .rows.map((r) => ({ ...r }))
-      return { rows, total }
+      return { rows, total, counts }
     },
 
     /**
