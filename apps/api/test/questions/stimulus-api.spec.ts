@@ -97,13 +97,13 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
     it('creates every one of the seven kinds, returns the BM flash and reads it back', async () => {
       const png = await upload()
       const cases: Record<string, unknown>[] = [
-        { kind: 'passage', body: { ms: 'Petikan', en: 'Passage' }, caption: 'Tajuk', sourceCitation: 'Sumber 2024' },
-        { kind: 'image', imageFileId: png, alt: 'Gambar' },
-        { kind: 'diagram', imageFileId: png, alt: 'Rajah 1', caption: 'Rajah 1' },
-        { kind: 'table', tableData: { head: ['a', 'b'], rows: [['1', '2']] }, caption: 'Jadual 1' },
-        { kind: 'map', imageFileId: png },
-        { kind: 'infographic', imageFileId: png },
-        { kind: 'graph', imageFileId: png },
+        { kind: 'passage', label: 'Petikan 1', body: { ms: 'Petikan', en: 'Passage' }, caption: 'Tajuk', sourceCitation: 'Sumber 2024' },
+        { kind: 'image', label: 'Gambar 1', imageFileId: png, alt: 'Gambar' },
+        { kind: 'diagram', label: 'Rajah 1', imageFileId: png, alt: 'Rajah 1', caption: 'Rajah 1' },
+        { kind: 'table', label: 'Jadual 1', tableData: { head: ['a', 'b'], rows: [['1', '2']] }, caption: 'Jadual 1' },
+        { kind: 'map', label: 'Peta 1', imageFileId: png, alt: 'Peta' },
+        { kind: 'infographic', label: 'Info 1', imageFileId: png, alt: 'Infografik' },
+        { kind: 'graph', label: 'Graf 1', imageFileId: png, alt: 'Graf' },
       ]
       for (const body of cases) {
         const res = await admin.post('/api/stimuli', body)
@@ -128,12 +128,12 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect((await admin.put(`/api/stimuli/${made.id}`, { caption: 'Lain' })).body.data.style).toBe('mono')
       expect((await admin.put(`/api/stimuli/${made.id}`, { style: null })).body.data.style).toBeNull()
       expect((await stimulus()).style).toBeNull()
-      expect((await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'x' }, style: 'k'.repeat(33) })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan A', body: { ms: 'x' }, style: 'k'.repeat(33) })).status).toBe(422)
     })
 
     it('the picture is a token of a question_image file and the admin can download it', async () => {
       const png = await upload()
-      const made = await stimulus({ kind: 'image', imageFileId: png, body: undefined })
+      const made = await stimulus({ kind: 'image', imageFileId: png, alt: 'Gambar', body: undefined })
       expect(made.imageId).toBe(png)
       const file = await admin.get(`/api/files/${made.imageId as string}`)
       expect(file.status).toBe(200)
@@ -146,34 +146,84 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
         expectError(res, 'VALIDATION_ERROR')
         expect(res.body.error.fields[field], JSON.stringify(res.body)).toBe(message)
       }
-      await bad({ kind: 'passage' }, 'body', STIMULUS_MESSAGES.bodyRequired)
-      await bad({ kind: 'diagram' }, 'imageFileId', STIMULUS_MESSAGES.imageRequired)
-      await bad({ kind: 'image', alt: 'x' }, 'imageFileId', STIMULUS_MESSAGES.imageRequired)
-      await bad({ kind: 'table' }, 'tableData', STIMULUS_MESSAGES.tableRequired)
-      await bad({ kind: 'poster', body: { ms: 'x' } }, 'kind', STIMULUS_MESSAGES.kind)
+      await bad({ label: 'Petikan A', kind: 'passage' }, 'body', STIMULUS_MESSAGES.bodyRequired)
+      await bad({ label: 'Rajah 1', kind: 'diagram', alt: 'x' }, 'imageFileId', STIMULUS_MESSAGES.imageRequired)
+      await bad({ label: 'Rajah 1', kind: 'image', alt: 'x' }, 'imageFileId', STIMULUS_MESSAGES.imageRequired)
+      await bad({ label: 'Jadual 1', kind: 'table' }, 'tableData', STIMULUS_MESSAGES.tableRequired)
+      await bad({ label: 'Petikan A', kind: 'poster', body: { ms: 'x' } }, 'kind', STIMULUS_MESSAGES.kind)
+    })
+
+    it('AC-ADM-Q05.3 (G-01): a missing, empty or blank label is 422 on label with "Sila isi label rangsangan."; clearing it on update is 422 too; nothing is written', async () => {
+      const count = async () => Number((await t.db.query<{ n: string }>('select count(*)::text n from stimuli'))[0]!.n)
+      const before = await count()
+      for (const label of [undefined, null, '', '   ']) {
+        const res = await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'Teks.' }, ...(label === undefined ? {} : { label }) })
+        expectError(res, 'VALIDATION_ERROR')
+        expect(res.body.error.fields.label, String(label)).toBe('Sila isi label rangsangan.')
+        expect(res.body.error.fields.label).toBe(STIMULUS_MESSAGES.labelRequired)
+      }
+      expect(await count()).toBe(before)
+      const made = await stimulus({ label: 'Rajah 3' })
+      for (const label of [null, '', '  ']) {
+        const res = await admin.put(`/api/stimuli/${made.id}`, { label })
+        expectError(res, 'VALIDATION_ERROR')
+        expect(res.body.error.fields.label, String(label)).toBe(STIMULUS_MESSAGES.labelRequired)
+      }
+      expect((await admin.get(`/api/stimuli/${made.id}`)).body.data.label).toBe('Rajah 3')
+      expect((await admin.put(`/api/stimuli/${made.id}`, { label: 'Rajah 4' })).body.data.label).toBe('Rajah 4')
+    })
+
+    it('AC-QA-10 (G-06): an image stimulus with no or blank alt text is 422 on alt with "Sila isi teks alternatif untuk imej ini."; a clearing update is 422; a table or passage needs none', async () => {
+      expect(STIMULUS_MESSAGES.altRequired).toBe('Sila isi teks alternatif untuk imej ini.')
+      const file = await upload()
+      for (const kind of ['image', 'diagram', 'map', 'infographic', 'graph']) {
+        for (const alt of [undefined, null, '', '  ']) {
+          const res = await admin.post('/api/stimuli', { kind, label: 'Rajah 1', imageFileId: file, ...(alt === undefined ? {} : { alt }) })
+          expectError(res, 'VALIDATION_ERROR')
+          expect(res.body.error.fields.alt, `${kind} ${String(alt)}`).toBe(STIMULUS_MESSAGES.altRequired)
+        }
+      }
+      const made = await stimulus({ kind: 'diagram', label: 'Rajah 1', imageFileId: file, alt: 'Penerangan rajah', body: undefined })
+      for (const alt of [null, '', '  ']) {
+        const res = await admin.put(`/api/stimuli/${made.id}`, { alt })
+        expectError(res, 'VALIDATION_ERROR')
+        expect(res.body.error.fields.alt, String(alt)).toBe(STIMULUS_MESSAGES.altRequired)
+      }
+      expect((await admin.get(`/api/stimuli/${made.id}`)).body.data.alt).toBe('Penerangan rajah')
+      expect((await admin.put(`/api/stimuli/${made.id}`, { caption: 'Kapsyen baharu' })).status).toBe(200)
+      // a LEGACY image stimulus with no alt: a caption-only edit still succeeds; sending a blank alt, or a new picture without alt, is refused
+      await t.db.query(`update stimuli set alt_text = null where id = $1`, [made.id])
+      const legacy = await admin.put(`/api/stimuli/${made.id}`, { caption: 'Sunting kapsyen sahaja' })
+      expect(legacy.status, JSON.stringify(legacy.body)).toBe(200)
+      expect(legacy.body.data.alt).toBeNull()
+      expect((await admin.put(`/api/stimuli/${made.id}`, { alt: '' })).body.error.fields.alt).toBe(STIMULUS_MESSAGES.altRequired)
+      expect((await admin.put(`/api/stimuli/${made.id}`, { imageFileId: await upload() })).body.error.fields.alt).toBe(STIMULUS_MESSAGES.altRequired)
+      // a table with a picture and a passage have no alt rule
+      expect((await admin.post('/api/stimuli', { kind: 'table', label: 'Jadual 1', imageFileId: file })).status).toBe(201)
+      expect((await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan B', body: { ms: 'Teks.' } })).status).toBe(201)
     })
 
     it('never writes inline svg or html: unknown keys are 422; stray keys stored nowhere', async () => {
-      const res = await admin.post('/api/stimuli', { kind: 'diagram', svg: '<svg onload=alert(1)>', imageFileId: await upload() })
+      const res = await admin.post('/api/stimuli', { kind: 'diagram', label: 'Rajah 1', alt: 'x', svg: '<svg onload=alert(1)>', imageFileId: await upload() })
       expect(res.status).toBe(422)
-      expect((await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'x' }, html: '<script>' })).status).toBe(422)
-      expect((await admin.post('/api/stimuli', { kind: 'audio', body: { ms: 'x' } })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan A', body: { ms: 'x' }, html: '<script>' })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { kind: 'audio', label: 'Bunyi', body: { ms: 'x' } })).status).toBe(422)
     })
 
     it('a picture must be a question_image file: another purpose, an unknown token and a malformed value are the same 422', async () => {
       const avatar = await upload(admin, 'avatar')
       for (const imageFileId of [avatar, 'tiada-fail-ini', '0', '99999999999']) {
-        const res = await admin.post('/api/stimuli', { kind: 'image', imageFileId })
+        const res = await admin.post('/api/stimuli', { kind: 'image', label: 'Rajah 1', alt: 'Gambar', imageFileId })
         expect(res.status, imageFileId).toBe(422)
         expect(res.body.error.fields.imageFileId).toBe(STIMULUS_MESSAGES.image)
       }
     })
 
     it('bounds the free text and the table', async () => {
-      expect((await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'x'.repeat(20_001) } })).status).toBe(422)
-      expect((await admin.post('/api/stimuli', { kind: 'passage', body: { ms: 'x' }, caption: 'c'.repeat(301) })).status).toBe(422)
-      expect((await admin.post('/api/stimuli', { kind: 'table', tableData: { head: Array.from({ length: 13 }, () => 'h'), rows: [['1']] } })).status).toBe(422)
-      expect((await admin.post('/api/stimuli', { kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: 61 }, () => ['1']) } })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { label: 'L', kind: 'passage', body: { ms: 'x'.repeat(20_001) } })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { label: 'L', kind: 'passage', body: { ms: 'x' }, caption: 'c'.repeat(301) })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { label: 'L', kind: 'table', tableData: { head: Array.from({ length: 13 }, () => 'h'), rows: [['1']] } })).status).toBe(422)
+      expect((await admin.post('/api/stimuli', { label: 'L', kind: 'table', tableData: { head: ['h'], rows: Array.from({ length: 61 }, () => ['1']) } })).status).toBe(422)
     })
 
     it('updates only the keys sent; null clears; the merged result must still satisfy the kind; an empty body is 422; unknown is 404', async () => {
@@ -194,7 +244,7 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
     })
 
     it('swaps the picture of an image stimulus and refuses to remove it', async () => {
-      const made = await stimulus({ kind: 'image', imageFileId: await upload(), body: undefined })
+      const made = await stimulus({ kind: 'image', imageFileId: await upload(), alt: 'Gambar', body: undefined })
       const next = await upload()
       const res = await admin.put(`/api/stimuli/${made.id}`, { imageFileId: next })
       expect(res.body.data.imageId).toBe(next)
@@ -210,6 +260,11 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect(del.body.status).toBe(STIMULUS_MESSAGES.deleted)
       expect((await admin.get(`/api/stimuli/${free.id}`)).status).toBe(404)
       expect((await admin.delete(`/api/stimuli/${free.id}`)).status).toBe(404)
+
+      // a group with 1 member shows no warning (AC-QA-07)
+      const lone = await group([(await stimulus()).id], [await question()])
+      expect(lone.warning ?? null).toBeNull()
+      expect(StimulusGroupDetailSchema.parse((await admin.get(`/api/stimulus-groups/${lone.id}`)).body.data).warning ?? null).toBeNull()
 
       const used = await stimulus()
       await group([used.id], [await question(), await question()])
@@ -411,6 +466,26 @@ describe('stimulus and stimulus group API (admin, real database)', () => {
       expect(res.status, JSON.stringify(res.body)).toBe(409)
       expect(res.body.error.message).toBe(STIMULUS_MESSAGES.memberServed)
       expect((await t.db.query<{ v: number | null; g: string | null }>(`select live_version_no v, group_id::text g from questions where id = $1`, [seeded]))[0]).toEqual({ v: live, g: null })
+    })
+  })
+
+  describe('AC-ADM-QE1.1 the question list shows the members, never the stimulus', () => {
+    it('a group of 1 stimulus and 4 members gives exactly 4 rows in GET /api/questions, the stimulus is not a row, and each row carries its group', async () => {
+      const total = async (): Promise<number> => (await admin.get('/api/questions?pageSize=100')).body.meta.totalItems as number
+      const before = await total()
+      const members = [await question(), await question(), await question(), await question()]
+      const g = await group([(await stimulus({ label: 'Rajah 3' })).id], members)
+      const res = await admin.get('/api/questions?pageSize=100')
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const rows = res.body.data as { id: string; stimulusGroupId?: string | null }[]
+      // 4 new rows: the stimulus and the group add none
+      expect(res.body.meta.totalItems).toBe(before + 4)
+      expect(rows.filter((r) => r.stimulusGroupId === g.id).map((r) => r.id).sort()).toEqual([...members].sort())
+      expect(rows.filter((r) => members.includes(r.id))).toHaveLength(4)
+      // a row names the group by id only; no row is the stimulus (rows are questions: every row has a question text and none has a stimulus kind)
+      for (const r of rows.filter((x) => members.includes(x.id))) expect(r).toMatchObject({ stimulusGroupId: g.id, questionText: expect.any(String) })
+      expect(rows.some((r) => 'kind' in r || 'imageId' in r)).toBe(false)
+      expect(await total()).toBe(before + 4)
     })
   })
 

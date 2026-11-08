@@ -3,7 +3,7 @@ import {
   REGROUP_MESSAGES,
   STIMULUS_MESSAGES as M,
   type RegroupRequest,
-  StimulusCreateRequestSchema,
+  StimulusCreateLegacySchema,
   type StimulusFlag,
   type StimulusGroupDetail,
 } from '@pp/contract'
@@ -261,7 +261,7 @@ export class RegroupService {
       originalFigureStimuli = figure.originalStimulusIds
       figureRow = figure.row
     } else {
-      const parsed = StimulusCreateRequestSchema.safeParse(input.stimulus)
+      const parsed = StimulusCreateLegacySchema.safeParse(input.stimulus) // no label/alt rule here: regroup behaves as before
       if (!parsed.success) throw fail(Object.fromEntries(parsed.error.issues.map((i) => [`stimulus.${i.path.join('.')}`.replace(/\.$/, ''), i.message])))
       const created = await this.stimuli.createStimulus(parsed.data)
       createdStimulusId = created.result.id

@@ -162,6 +162,8 @@ export const QuestionRowSchema = z
     essayTopics: z.array(QuestionEssayTopicSchema).optional(),
     /** S1-T07 (API-Q-12, DM-05): the open stimulus flags; empty or absent = none. */
     flags: z.array(StimulusFlagSchema).optional(),
+    /** AC-ADM-QE1.1: the stimulus group the question belongs to (the badge of the group); null or absent = ungrouped. */
+    stimulusGroupId: IdSchema.nullable().optional(),
   })
   .meta({ id: 'QuestionRow' })
 

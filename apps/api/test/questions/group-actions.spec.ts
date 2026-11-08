@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { QUESTION_MESSAGES, QuestionSchema, STIMULUS_MESSAGES, StimulusGroupDetailSchema, StimulusSchema, mutationEnvelopeOf } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { pinServableForNewSitting } from '../../src/modules/questions/pin-servable'
 import { bootQuestionsApp, loginAs, type Client, type QuestionsTestApp } from './helpers'
 import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
 
@@ -568,6 +569,19 @@ describe('stimulus group actions (admin, real database)', () => {
       const live2 = await t.db.query<{ live_version_no: number | null }>(`select live_version_no from questions where id = any($1::bigint[])`, [s.ids])
       expect(live2.every((r) => r.live_version_no === null)).toBe(true)
       expect((await auditRows('stimulus.group.retired')).at(-1)).toMatchObject({ target_id: s.id, detail: { archived: 2, papers: [live] } })
+    })
+
+    it('AC-QA-05: retire sets archive_reason withdrawn on each version, and a withdrawn pin is not servable to a new sitting', async () => {
+      const s = await servedGroup(2)
+      const res = await admin.post(`/api/stimulus-groups/${s.id}/retire`, { confirm: true })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      const rows = await t.db.query<{ question_id: string; status: string; archive_reason: string | null }>(
+        `select question_id::text, status, archive_reason from question_versions where question_id = any($1::bigint[]) order by question_id, version_no`,
+        [s.ids],
+      )
+      expect(rows).toHaveLength(2)
+      for (const r of rows) expect(r, r.question_id).toMatchObject({ status: 'archived', archive_reason: 'withdrawn' })
+      expect(pinServableForNewSitting({ status: 'archived', archiveReason: 'withdrawn' })).toBe(false)
     })
 
     it('members already archived are not counted; Draf and Menunggu Semakan members are archived too; no paper gives an empty list', async () => {

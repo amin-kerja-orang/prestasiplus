@@ -124,6 +124,11 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T02 | AC-ADM-QE4.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::a stem that names a figure with no stimulus: the detector flags it; submit and approve answer 422 with STIMULUS_MISSING; Bukan masalah lets it pass |
 | S1-T02 | AC-ADM-QE3.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
 | S1-T02 | AC-QA-31 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
+| S1-T01 | AC-ADM-QE1.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-QE1.2 and AC-ADM-QE1.4 (swap half): after the swap every member names the NEW stimulus, the old stimulus row is unchanged, and a version-1 read is unchanged |
+| S1-T01 | AC-ADM-QE1.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/servability-parity.spec.ts::S1-T06 (D105, AC-QP-7): with every INCLUDE surface, drills serve figures and whole groups, and an incomplete group is excluded as a whole |
+| S1-T01 | AC-ADM-Q05.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/group-swap.spec.ts::AC-ADM-Q05.1: a draft copy staged [c,b,a] is published, groupOf lists [c,b,a], and the practice read returns that order |
+| S1-T01 | AC-QA-07 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::deletes an unused stimulus; a stimulus shown by a group is 409 with the BM message; audio rows are invisible |
+| S1-T01 | AC-QA-10 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions/stimulus-api.spec.ts::AC-QA-10 (G-06): an image stimulus with no or blank alt text is 422 on alt with "Sila isi teks alternatif untuk imej ini."; a clearing update is 422; a table or passage needs none; questions/group-option-bank.spec.ts::AC-QA-10: a letter that a leaf key of a member uses cannot be dropped; keeping it, or dropping an unused one, works |
 
 ## Sprint 2
 
