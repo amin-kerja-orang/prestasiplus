@@ -35,6 +35,7 @@ import { useSessionStore } from '@/stores/session'
 import type { Role } from '@/stores/session-types'
 import { useShellStore } from '@/stores/shell'
 
+import { isFeatureRouteOff } from '../features'
 import {
   isPathAllowed,
   isPrototypeRole,
@@ -136,6 +137,9 @@ export function decideAccess(to: RouteLocationNormalized, session: GuardSession)
   if (isPrototypeScopeOn() && !isPathAllowed(session.role, to.path)) {
     return { kind: 'in-place', status: 404 }
   }
+
+  // Kawalan Ciri (S0-T10): a page of a feature switched OFF answers the same in-place 404 page (URL kept).
+  if (isFeatureRouteOff(to.path)) return { kind: 'in-place', status: 404 }
 
   return ALLOW
 }

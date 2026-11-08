@@ -14,7 +14,9 @@
  * number in the prototype types (V2-T09 moves it to string).
  */
 
-import { api, ApiError } from '@/api'
+import { featureKeyForApiPath } from '@pp/contract'
+
+import { api, ApiError, type Transport } from '@/api'
 import { isPrototypeRole, isPrototypeScopeOn, scopeHomePath } from '@/app/prototype-scope'
 
 import { readStoredSession, useSessionStore } from './session'
@@ -37,6 +39,8 @@ export interface ApiSession {
   expiresAt: string
   csrf: string
   mustChangePassword: boolean
+  /** S0-T10: server feature flags (`FEATURE_ROUTE_PREFIXES` keys); a key that is absent counts as ON. */
+  features?: Record<string, boolean>
 }
 
 /** `true` for a body that has the real API session shape (`csrf` + `active`). */
@@ -79,6 +83,7 @@ export function toClientSessionFromApi(session: ApiSession, remember: boolean): 
   }
   // Only a flagged account carries the key, so a re-read after the change drops it.
   if (session.mustChangePassword) out.mustChangePassword = true
+  if (session.features) out.features = { ...session.features }
   // Mod Pelajar is a server-side mode here: nothing is parked client-side, so `parent` is only a
   // placeholder (the staff identity under the return role) that keeps the stored shape valid.
   // Leaving is `DELETE /api/session/mode`, which returns the real staff session.
@@ -134,5 +139,37 @@ export async function restoreHttpSession(): Promise<void> {
     }
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) store.clear()
+  }
+}
+
+/** Minimum gap between two session re-reads caused by a feature 404 (ms). */
+export const FEATURE_REFRESH_GAP_MS = 60_000
+
+/**
+ * S0-T10: only `GET /api/session` carries `features`, so a pupil already in the SPA keeps an item the admin
+ * has just switched OFF until the session is read again. When an API call answers 404 on a path under an
+ * OFF-able api prefix (`FEATURE_ROUTE_PREFIXES[key].api`), the session is re-read once (not while a read runs,
+ * and not again within `FEATURE_REFRESH_GAP_MS`), so `features` refreshes and the menu drops the item.
+ * A genuine 404 (an unknown id) only costs one extra read. The response itself is passed on unchanged.
+ */
+export function withFeatureRefresh(
+  inner: Transport,
+  refresh: () => Promise<void> = restoreHttpSession,
+  now: () => number = Date.now,
+): Transport {
+  let running = false
+  let last = Number.NEGATIVE_INFINITY
+  return {
+    async request(req, signal) {
+      const res = await inner.request(req, signal)
+      if (res.status === 404 && !running && now() - last >= FEATURE_REFRESH_GAP_MS && featureKeyForApiPath(req.url) !== null) {
+        running = true
+        last = now()
+        void refresh().finally(() => {
+          running = false
+        })
+      }
+      return res
+    },
   }
 }

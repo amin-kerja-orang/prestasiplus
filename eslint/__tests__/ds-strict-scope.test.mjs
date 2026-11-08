@@ -55,7 +55,9 @@ describe('T1 portal route walker', () => {
         if (hit) checked.push({ path, page: hit.page })
       }
     }
-    expect(checked.length).toBeGreaterThan(20)
+    // Guard against an empty read. S0-T07 removed the dead admin-role branch of admin-nav.ts, so the
+    // checked set is now the built Pentadbiran menu items (20 today) plus the remaining admin-nav paths.
+    expect(checked.length).toBeGreaterThanOrEqual(15)
     expect(checked.filter((c) => !covered(c.page))).toEqual([])
   })
 

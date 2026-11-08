@@ -15,6 +15,7 @@ import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './c
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
+import { FEATURE_FLAGS_COMPONENT_SCHEMAS, registerFeatureFlagsPaths } from './common/feature-flags'
 import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
 import { PRACTICE_READS_COMPONENT_SCHEMAS, registerPracticeReadsPaths } from './practice/reads/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
@@ -148,6 +149,7 @@ export const COMPONENT_SCHEMAS = {
   ...INTAKE_FILES_COMPONENT_SCHEMAS, // BE-37
   ...INTAKE_DASHBOARD_COMPONENT_SCHEMAS, // BE-40
   ...SOURCE_PAPERS_COMPONENT_SCHEMAS, // S2-T09
+  ...FEATURE_FLAGS_COMPONENT_SCHEMAS, // S0-T10
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -210,6 +212,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerIntakeFilesPaths(registry) // BE-37
   registerIntakeDashboardPaths(registry) // BE-40
   registerSourcePapersPaths(registry) // S2-T09
+  registerFeatureFlagsPaths(registry) // S0-T10
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
