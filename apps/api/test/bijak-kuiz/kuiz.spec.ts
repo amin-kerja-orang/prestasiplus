@@ -238,7 +238,7 @@ describe('random quiz: marking and the practice-session write (U8)', () => {
     expect(queue).toEqual([{ question_id: items[1]!.id, wrong_times: 1 }])
     // the checks of the open session are gone and nothing more can be checked or finished
     expect(Number((await t.db.query(`select count(*) as n from practice_checks where session_id = $1`, [sessionId]))[0]!.n)).toBe(0)
-    expect((await student.post(`/api/bijak/kuiz/sessions/${sessionId}/finish`, {})).status).toBe(409)
+    expect((await student.post(`/api/bijak/kuiz/sessions/${sessionId}/finish`, {})).status).toBe(200) // API-BIJAK-06: a second finish is 200 with the stored result
     expect((await student.post(`/api/bijak/kuiz/sessions/${sessionId}/check`, { itemId: items[3]!.id, optionId: 'A' })).status).toBe(409)
   })
 
@@ -352,15 +352,24 @@ describe('per-paper quiz (V2 ExamQuizController::paper): paged by Bahagian, mark
     expect((await r('junk')).status).toBe(422)
   })
 
-  it('17. stores nothing: no practice session, check, answer or revision row', async () => {
+  it('17. stores no session, check or revision row; a check adds exactly one answer row and a re-check overwrites it (S3-T04)', async () => {
+    const tables = ['practice_sessions', 'practice_checks', 'revision_queue', 'mastery', 'practice_answers']
     const count = async () => {
       const q = async (table: string) => Number((await t.db.query(`select count(*) as n from ${table}`))[0]!.n)
-      return [await q('practice_sessions'), await q('practice_checks'), await q('practice_answers'), await q('revision_queue'), await q('mastery')]
+      return Promise.all(tables.map(q))
     }
+    const answers = tables.indexOf('practice_answers')
+    const delta = (after: number[], before: number[]) => after.map((n, i) => n - before[i]!)
+    // MATH-T5: no earlier test checks it on this paper, so its DM-44 row does not exist yet (test 16 already wrote the MATH-T4 row)
+    const check = () => student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: id('SEED-MCQ-MATH-T5'), optionId: 'A' })
     const before = await count()
     await student.get(`/api/bijak/kuiz/papers/${paperId}`)
-    await student.post(`/api/bijak/kuiz/papers/${paperId}/check`, { itemId: id('SEED-MCQ-MATH-T4'), optionId: 'A' })
     expect(await count()).toEqual(before)
+    expect((await check()).status).toBe(200)
+    const afterCheck = await count()
+    expect(delta(afterCheck, before)).toEqual(tables.map((_, i) => (i === answers ? 1 : 0)))
+    expect((await check()).status).toBe(200) // a re-check overwrites the DM-44 row
+    expect(delta(await count(), afterCheck)).toEqual(tables.map(() => 0))
   })
 
   it('18. marks the version pinned on the paper, not a later edit', async () => {
