@@ -211,15 +211,16 @@ describe('DSKP-complete approve gate, gate-check and status route (real bank)', 
   })
 
   describe('AC-ADM-QE4.1: a draft with no tag lists exactly the unit and the SP', () => {
-    it('gate-check approve returns two items, NO_UNIT then NO_SP, at step 4 with the PRD text', async () => {
+    it('gate-check approve lists NO_UNIT then NO_SP at step 4 with the PRD text (and, since #783, the missing TP: Kesukaran no longer stands in for it)', async () => {
       // The subject has SP nodes (R-DSKP applies); the draft has aras, kertas, Bab and TP-free difficulty, so only the two tag items remain.
       const id = await draft({ tag: undefined, cognitiveLevel: 'mengaplikasi', kertas: '1' })
       const g = await issues(c.admin, id, 'approve')
       expect(g.ok).toBe(false)
-      expect(g.issues).toEqual([
+      expect(g.issues.filter((i) => i.code === 'NO_UNIT' || i.code === 'NO_SP')).toEqual([
         { path: 'unitId', code: 'NO_UNIT', step: 4, message: PUBLISH_TAG_MESSAGES.unitId },
         { path: 'spIds', code: 'NO_SP', step: 4, message: PUBLISH_TAG_MESSAGES.spIds },
       ])
+      expect(g.issues.map((i) => i.code)).toEqual(['NO_UNIT', 'NO_SP', 'TP_MISSING', 'LEAF_NO_TP'])
       // The constants are the PRD 30 AC-ADM-QE4.1 text.
       expect(PUBLISH_TAG_MESSAGES.unitId).toBe('Sila pilih unit DSKP.')
       expect(PUBLISH_TAG_MESSAGES.spIds).toBe('Sila pilih sekurang-kurangnya satu SP DSKP.')

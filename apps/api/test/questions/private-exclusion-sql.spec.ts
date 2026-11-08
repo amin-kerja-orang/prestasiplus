@@ -199,7 +199,7 @@ describe('DM-42: the exam builder pools, the pupil image rule and the chapter co
 describe('DM-42: one definition cannot be used without the bank predicate', () => {
   it('SPM_SERVABLE_SQL carries BANK_VISIBLE_SQL itself, and so does the served lock', () => {
     expect(SPM_SERVABLE_SQL.sql).toContain(BANK)
-    expect(QUESTION_SERVED.sql).toContain(`sv.visibility = 'bank'`)
+    expect(QUESTION_SERVED.sql).toContain(`v.visibility = 'bank'`)
   })
 
   it('servability reads (scopeSql) and the evaluate twin: a private row is never in a surface', () => {
