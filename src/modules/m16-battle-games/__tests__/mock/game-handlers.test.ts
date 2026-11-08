@@ -282,6 +282,8 @@ async function createRoom(game: string, as = T4_STUDENT): Promise<string> {
 
 /** Polls as the host until the minimum players are in, then starts. */
 async function startRoom(game: string, code: string, as = T4_STUDENT): Promise<Room> {
+  // Papan Bijak robots come only after `battle_bot_fallback_seconds` (ruling 53): the hook seats one at once.
+  if (game === 'papan-bijak') expect(m16Hooks.roomBots({ count: 1, code })).toBe(1)
   for (let i = 0; i < 5; i++) await get(roomPath(game, code), as)
   const r = await post<Data<Room>>(roomPath(game, code, '/start'), as)
   expect(r.status).toBe(200)
@@ -328,10 +330,16 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
 
   it('joins a waiting room: the host polls a bot in, a fitting grade joins, a wrong Tingkatan gets 403, unknown codes "Bilik tidak dijumpai."', async () => {
     const code = await createRoom('papan-bijak')
+    // Ruling 53: the robot is not there at once; `robotInSeconds` counts down from the 30 s fallback.
+    const early = await get<Data<Room>>(roomPath('papan-bijak', code), T4_STUDENT)
+    expect(early.body.data.players).toHaveLength(1)
+    expect(early.body.data.robotInSeconds).toBe(30)
+    booted.clock.advance(30_000)
     const first = await get<Data<Room>>(roomPath('papan-bijak', code), T4_STUDENT)
     expect(first.status).toBe(200)
     expect(first.body.data.players).toHaveLength(2)
     expect(first.body.data.players.filter((p: Any) => p.isBot)).toHaveLength(1)
+    expect(first.body.data.robotInSeconds).toBeUndefined()
     expect(first.body.data.status).toBe('waiting')
     expect(first.body.data.settings).toMatchObject({
       maxPlayers: 4,
@@ -434,8 +442,9 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
   it('adds the Papan Bijak winner to the standings and a game to every player', async () => {
     const before = await get<Data<Any>>('/api/games/papan-bijak/lobby', ADMIN)
     expect(before.body.data.top10).toHaveLength(10)
+    // 48 GAME-R: a game with one human (and robots) writes no standing, so the chip stays off for the solo player.
     const hub = await get<Data<Any>>('/api/games/hub', T4_STUDENT)
-    expect(hub.body.data.chips.papanBijakPlayed).toBe(true)
+    expect(hub.body.data.chips.papanBijakPlayed).toBe(false)
   })
 })
 
@@ -453,8 +462,9 @@ describe('hooks and fixtures (SRS §6.14, §6.11.7)', () => {
     })
     expect(hub.body.data.openRooms.length).toBeLessThanOrEqual(6)
     expect(m16Hooks.roomBots({ count: 2, code: 'PB1234' })).toBe(2)
+    // Robots are not counted in the room's players (nor in max_players).
     expect(open((await get<Data<Any>>('/api/games/hub', ADMIN)).body.data.openRooms).players).toBe(
-      3,
+      1,
     )
     expect(() => m16Hooks.roomBots({ count: 0 })).toThrow(RangeError)
     expect(() => m16Hooks.m16Fixture('nope')).toThrow(RangeError)
@@ -912,7 +922,7 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
 
   it('builds the Papan Bijak board from the setting (BR-M16-20): 50 tiles, fixed specials, quiz tiles', async () => {
     const code = await createRoom('papan-bijak', D5_STUDENT)
-    await get(roomPath('papan-bijak', code), D5_STUDENT)
+    m16Hooks.roomBots({ count: 1, code })
     const started = await post<Data<Room>>(roomPath('papan-bijak', code, '/start'), D5_STUDENT)
     const board: string[] = started.body.data.state.board
     expect(board).toHaveLength(50)
