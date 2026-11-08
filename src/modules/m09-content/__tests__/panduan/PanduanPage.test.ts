@@ -217,6 +217,14 @@ describe('PanduanPage', () => {
     expect(answers[0]!.text()).toContain('Kombo bermaksud')
   })
 
+  it('shows the service hours inside the contact block only when they are set (PO decision 18)', async () => {
+    const none = await render()
+    expect(none.find('[data-testid="panduan-hours"]').exists()).toBe(false)
+    api.fetchSupportConfig.mockResolvedValue({ email: 'a@b.my', phone: '', whatsapp: '60111111111', hours: 'Isnin - Jumaat' })
+    const set = await render()
+    expect(set.get('[data-testid="panduan-contact"] [data-testid="panduan-hours"]').text()).toBe('Waktu perkhidmatan: Isnin - Jumaat')
+  })
+
   it('FAQ toggle buttons carry aria-expanded that follows each item', async () => {
     const w = await render()
     const buttons = w.findAll('[data-testid="panduan-faq-toggle"]')

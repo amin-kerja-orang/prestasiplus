@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
  * `/admin/settings` "Tetapan" (R1-ADM-N-07): one section `Hubungi Sokongan`, the values Panduan and the ticket
- * screens show. Admin shell, platform admin only. `Waktu perkhidmatan` (N07-03) waits for its store (open on
- * #458, #507). The other V2 sections are not built (FD-N07).
+ * screens show. Admin shell, platform admin only. The other V2 sections are not built (FD-N07).
  */
 import { ref, watch } from 'vue'
 
@@ -17,10 +16,12 @@ const { data, error, reload } = useApi((signal) => fetchSupportSettings({ signal
 
 const email = ref('')
 const whatsapp = ref('')
+const hours = ref('')
 watch(data, (saved) => {
   if (!saved) return
   email.value = saved.email
   whatsapp.value = saved.whatsapp
+  hours.value = saved.hours
 })
 
 const saving = ref(false)
@@ -34,9 +35,14 @@ async function save(): Promise<void> {
   fields.value = {}
   formError.value = ''
   try {
-    const answer = await saveSupportSettings({ email: email.value, whatsapp: whatsapp.value })
+    const answer = await saveSupportSettings({
+      email: email.value,
+      whatsapp: whatsapp.value,
+      hours: hours.value,
+    })
     email.value = answer.email
     whatsapp.value = answer.whatsapp
+    hours.value = answer.hours
     saved.value = true
   } catch (err) {
     if (isApiError(err) && err.fields) fields.value = err.fields
@@ -73,6 +79,15 @@ async function save(): Promise<void> {
             :error="fields.whatsapp"
           >
             <UInput v-model="whatsapp" type="text" inputmode="tel" data-testid="st-whatsapp" />
+          </DsFormField>
+          <DsFormField label="Waktu perkhidmatan" name="hours" :error="fields.hours">
+            <UInput
+              v-model="hours"
+              type="text"
+              maxlength="120"
+              placeholder="Isnin - Jumaat, 9 pagi - 5 petang"
+              data-testid="st-hours"
+            />
           </DsFormField>
         </DsFormSection>
         <DsStack align="start">
