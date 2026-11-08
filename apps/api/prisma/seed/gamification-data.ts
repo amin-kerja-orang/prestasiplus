@@ -45,6 +45,7 @@ export const ACHIEVEMENT_ROWS = [
   { name: 'Raja Syiling', description: 'Kumpul 5,000 syiling sepanjang masa', icon: '👑', rarity: 'legendary', rewardSyiling: 500, rewardXp: 250, criterionKind: 'lifetime_syiling', criterionMin: 5000, criterionAccuracy: null, progressTarget: null },
   { name: 'Ilmuwan Sejati', description: 'Jawab 1,000 soalan dengan ketepatan 85%+', icon: '🧠', rarity: 'legendary', rewardSyiling: 300, rewardXp: 200, criterionKind: 'answers_accuracy', criterionMin: 1000, criterionAccuracy: 85, progressTarget: null },
   { name: 'Wira JomBelajar', description: 'Lengkapkan semua cabaran dalam 30 hari berturut', icon: '🦸', rarity: 'legendary', rewardSyiling: 400, rewardXp: 300, criterionKind: 'perfect_days', criterionMin: 30, criterionAccuracy: null, progressTarget: null },
+  { name: 'Juara Battle', description: 'Menang 10 battle', icon: '⚔️', rarity: 'rare', rewardSyiling: 30, rewardXp: 20, criterionKind: 'battle_wins', criterionMin: 10, criterionAccuracy: null, progressTarget: null },
 ] as const
 
 export const SETTING_ROWS = [
