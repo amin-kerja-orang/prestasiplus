@@ -10,7 +10,10 @@
  *     A ticked blank question can still be "Tidak dikira" when the free slots run out first
  *     (e.g. N=2, Q1 and Q2 ticked and blank, Q3 answered: Q3 and Q1 count, Q2 does not).
  *  4. Nothing attempted and nothing ticked: no question counts ("Soalan yang dikira: tiada").
- *  5. On the attempt screen, typing in a question below the cap ticks it (the counter then equals
+ *  5. A stimulus group is ONE choice unit (45 section 5.4 rule 4, FR-QA-41): it counts 1 toward N, its awarded
+ *     marks are the sum of its members, it is attempted when any member is, and it is ticked when any member is.
+ *     Every member of a counted unit counts. A question with no `groupId` is its own unit (nothing changes).
+ *  6. On the attempt screen, typing in a question below the cap ticks it (the counter then equals
  *     the number of questions the student is working on); above the cap the student is told that
  *     only the best N will count.
  */
@@ -20,6 +23,34 @@ export interface ChooseCandidate {
   /** Any answer was entered (text, choice, steps, final or photo). */
   attempted: boolean
   awarded: number
+  /** Stimulus group of the question: members of one group are one choice unit. */
+  groupId?: string | undefined
+}
+
+interface ChooseUnit {
+  ids: string[]
+  attempted: boolean
+  awarded: number
+  ticked: boolean
+}
+
+/** Candidates folded into choice units, in paper order (a group sits at its first member). */
+function unitsOf(candidates: readonly ChooseCandidate[], tickedSet: ReadonlySet<string>): ChooseUnit[] {
+  const units: ChooseUnit[] = []
+  const byGroup = new Map<string, ChooseUnit>()
+  for (const c of candidates) {
+    let u = c.groupId === undefined ? undefined : byGroup.get(c.groupId)
+    if (!u) {
+      u = { ids: [], attempted: false, awarded: 0, ticked: false }
+      units.push(u)
+      if (c.groupId !== undefined) byGroup.set(c.groupId, u)
+    }
+    u.ids.push(c.id)
+    u.attempted ||= c.attempted
+    u.awarded += c.awarded
+    u.ticked ||= tickedSet.has(c.id)
+  }
+  return units
 }
 
 /**
@@ -33,21 +64,21 @@ export function countedIds(
   n: number,
   ticked: readonly string[] = [],
 ): string[] {
-  const best = candidates
-    .map((c, pos) => ({ c, pos }))
-    .filter((x) => x.c.attempted)
-    .sort((x, y) => y.c.awarded - x.c.awarded || x.pos - y.pos)
-    .slice(0, n)
-    .map((x) => x.c.id)
-  const counted = new Set(best)
-  if (counted.size < n) {
-    const tickedSet = new Set(ticked)
-    for (const c of candidates) {
-      if (counted.size >= n) break
-      if (!c.attempted && tickedSet.has(c.id)) counted.add(c.id)
-    }
+  const units = unitsOf(candidates, new Set(ticked))
+  const counted = new Set<ChooseUnit>(
+    units
+      .map((u, pos) => ({ u, pos }))
+      .filter((x) => x.u.attempted)
+      .sort((x, y) => y.u.awarded - x.u.awarded || x.pos - y.pos)
+      .slice(0, n)
+      .map((x) => x.u),
+  )
+  for (const u of units) {
+    if (counted.size >= n) break
+    if (!u.attempted && u.ticked) counted.add(u)
   }
-  return candidates.filter((c) => counted.has(c.id)).map((c) => c.id)
+  const ids = new Set(units.filter((u) => counted.has(u)).flatMap((u) => u.ids))
+  return candidates.filter((c) => ids.has(c.id)).map((c) => c.id)
 }
 
 export interface ChooseState {

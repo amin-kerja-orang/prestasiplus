@@ -208,6 +208,8 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S3-T02 | AC-ADM-Q15.1 | CI | Pass | 2026-11-06 | team-cc/S-1 | builder-page.test.ts; semak-kertas.test.ts |
 | S3-T02 | AC-ADM-QE7.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | set-builder.spec.ts |
 | S1-T06 | AC-ADM-QE7.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | exam-builder/builder-placements.spec.ts::D90: a stimulus group is one unit > placing ONE member places the whole group, contiguous in group order |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | v2-write-path.spec.ts: [CI] AC-PA-35: an mcq_multi leaf is stored as type mcq_multi; dropping the flag on edit stores mcq again; a Betul/Salah leaf stays mcq; served-mcq-multi.spec.ts: [CI] Latih Tubi, Databank, Tracking A, Misi and Battle SPM (spmPool without a type filter) never draw an mcq_multi |
+| S1-T09a | AC-PA-35 | CI | Pass | 2026-11-05 | team-aa/S-4 | kuiz-mcq-multi.spec.ts: [CI] the random quiz draws the ungrouped mcq_multi question, and the indicator says served and agrees with the draw; kuiz-mcq-multi.spec.ts: [CI] a random-quiz check on the mcq_multi stores the comma-joined ticks in selected_label and the all-ticks-right verdict in is_correct; optionId alone is 422; kuiz-mcq-multi.spec.ts: [CI] a GROUPED mcq_multi (a member of a stimulus group) is not drawn by the random quiz, and the indicator says shape_unsupported |
 
 ## Sprint 4
 

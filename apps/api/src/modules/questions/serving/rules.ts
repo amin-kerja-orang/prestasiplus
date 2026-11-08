@@ -264,7 +264,8 @@ function activityReasons(f: ServabilityFacts, activity: ServabilityActivity, sur
       const out: ServabilityReason[] = []
       const leaves = leavesOf(live.id, live.version.parts)
       const only = leaves[0]
-      if (live.version.type !== 'mcq' || leaves.length !== 1 || only === undefined || markableLeaf(only) === null) {
+      const typeServed = live.version.type === 'mcq' || (live.version.type === 'mcq_multi' && live.groupId === null)
+      if (!typeServed || leaves.length !== 1 || only === undefined || markableLeaf(only) === null) {
         out.push(reason('shape_unsupported', activity))
       } else if (!resolveStimuli(live, f.group, f.linkedAssets).complete) {
         out.push(reason('shape_unsupported', activity, 'a linked stimulus has neither a group home nor a picture'))

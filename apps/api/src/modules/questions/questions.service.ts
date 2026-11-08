@@ -5,11 +5,14 @@ import {
   QUESTION_WORKFLOW_STATUSES,
   isQuestionWorkflowTransitionAllowed,
   QUESTION_MESSAGES,
-  QuestionPartSchema,
+  QuestionPartReadV3Schema,
   QuestionWritePartSchema,
   type QuestionPart,
+  type QuestionSchemeRules,
+  type QuestionSchemeValidateResult,
 } from '@pp/contract'
 
+import { validateSchemeBody } from './scheme-validate'
 import { ApiError } from '../../common/errors/api-error'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock } from '../../db/clock'
@@ -43,6 +46,7 @@ import { ServabilityService } from './serving/servability.service'
 import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
+import { deepestIssue, type UnionLike } from './issue-path'
 import type {
   AdminListFilter,
   AdminListResult,
@@ -108,37 +112,6 @@ const parse = (text: string): bigint | null => {
 
 const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATION_ERROR', { fields })
 
-interface FlatIssue {
-  path: PropertyKey[]
-  message: string
-}
-interface UnionLike {
-  code: string
-  path: readonly PropertyKey[]
-  message: string
-  errors?: readonly (readonly UnionLike[])[]
-}
-
-/**
- * A failed `z.union` reports only "Invalid input" at the union. This walks into the branches and keeps
- * the issue that got furthest into the value (longest path), so an `mcq` leaf with a `rubric` key
- * names `key.kind` instead of the whole part.
- */
-function deepestIssue(issue: UnionLike, prefix: readonly PropertyKey[]): FlatIssue {
-  const path = [...prefix, ...issue.path]
-  if (issue.code === 'invalid_union' && issue.errors && issue.errors.length > 0) {
-    let best: FlatIssue | undefined
-    for (const branch of issue.errors) {
-      for (const inner of branch) {
-        const flat = deepestIssue(inner, path)
-        if (!best || flat.path.length > best.path.length) best = flat
-      }
-    }
-    if (best) return best
-  }
-  return { path, message: issue.message }
-}
-
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
 
@@ -187,6 +160,8 @@ interface Normalized {
   difficultyLevel: number
   /** DM-56: a value sets the reference, null clears it, undefined keeps what is stored. */
   textbookRef?: TextbookRef | null | undefined
+  /** DM-54: a value sets the scheme rules, null clears them, undefined keeps what is stored. */
+  schemeRules?: QuestionSchemeRules | null | undefined
   stem: string
   /** English stem: text sets it, null clears it, undefined keeps what is stored. */
   stemEn?: string | null | undefined
@@ -298,6 +273,18 @@ export class QuestionsService {
     return { ...(await this.detail(record)), ...(await this.repo.placementsOf(record.id)) }
   }
 
+  /**
+   * API-Q-30: validates a scheme v2 body against the stored leaf `partId` of the latest version. Read-only; an unknown question or part is 404.
+   * The question-level `scheme_rules` of the version are applied (part-scoped deductions).
+   */
+  async validateScheme(id: string, partId: string, body: unknown): Promise<QuestionSchemeValidateResult> {
+    const record = await this.repo.get(id, 'latest')
+    if (!record) throw questionNotFound()
+    const result = validateSchemeBody(record.version.parts, partId, body, record.version.schemeRules ?? null)
+    if (!result) throw questionNotFound()
+    return result
+  }
+
   async create(raw: QuestionCreateInput & { curriculumTopicId?: string | null }, actor: QuestionActor, provenance?: QuestionProvenance): Promise<QuestionView> {
     const input = await this.withImageKeys(raw)
     const flat: FlatSource = {
@@ -324,6 +311,7 @@ export class QuestionsService {
         tp: input.tag?.tp ?? null,
         difficultyLevel: input.difficultyLevel,
         textbookRef: input.textbookRef,
+        schemeRules: input.schemeRules,
         stem: input.questionText,
         stemEn: enText(input.questionTextEn),
         parts,
@@ -851,7 +839,7 @@ export class QuestionsService {
   async gradeAnswer(id: string, answers: readonly PartAnswer[]): Promise<QuestionGrade> {
     const record = await this.repo.get(id, 'live', BANK_ONLY)
     if (!record || !record.isActive || record.version.status !== 'approved') throw questionNotFound()
-    return gradeQuestion(record.id, record.version.parts, answers)
+    return gradeQuestion(record.id, record.version.parts, answers, { schemeRules: record.version.schemeRules })
   }
 
   // --- stimuli and groups (tests and later cards; no HTTP route in this contract) ---------------
@@ -882,7 +870,7 @@ export class QuestionsService {
     if (!sized.success) return { success: false, error: { issues: sized.error.issues.map((x) => ({ path: x.path, message: x.message })) } }
     const data: QuestionPart[] = []
     for (const [i, p] of parts.entries()) {
-      const r = (unchanged(p, i) ? QuestionPartSchema : QuestionWritePartSchema).safeParse(p)
+      const r = (unchanged(p, i) ? QuestionPartReadV3Schema : QuestionWritePartSchema).safeParse(p)
       if (!r.success) return { success: false, error: { issues: r.error.issues.map((x) => ({ ...x, path: [i, ...x.path] })) as never } }
       data.push(r.data as QuestionPart)
     }
@@ -890,7 +878,8 @@ export class QuestionsService {
   }
 
   /** Re-validates a built tree with the contract; a failure is a 422 on the first offending path. */
-  private checkedParts(parts: QuestionPart[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+  private checkedParts(rawParts: readonly unknown[], supplied: boolean, stored?: readonly QuestionPart[]): QuestionPart[] {
+    const parts = rawParts as QuestionPart[]
     // Size caps run on the raw input, before the schema walks it (DoS): top level, total and depth.
     if (parts.length > MAX_TOP_PARTS || treeSize(parts, 1) > MAX_TOTAL_PARTS || treeDepth(parts) > MAX_PART_DEPTH) {
       throw fail({ parts: PARTS_TOO_LARGE })
@@ -915,12 +904,12 @@ export class QuestionsService {
    * internal ids, so tokens are swapped here, before the tree is built; an unknown token stays as sent and fails the
    * image check with the same 422 as any other bad image.
    */
-  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: QuestionPart[] | undefined }>(input: T): Promise<T> {
+  private async withImageKeys<T extends { questionImageFileId?: string | null | undefined; optionImageFileIds?: (string | null)[] | undefined; parts?: readonly unknown[] | undefined }>(input: T): Promise<T> {
     const out: T = { ...input }
     if (typeof out.questionImageFileId === 'string') out.questionImageFileId = await this.files.internalIdOf(out.questionImageFileId)
     if (out.optionImageFileIds) out.optionImageFileIds = await Promise.all(out.optionImageFileIds.map((id) => (typeof id === 'string' ? this.files.internalIdOf(id) : id)))
     // Studio (T13): option pictures of a part tree are named by the same public token, in and out.
-    if (out.parts) out.parts = await mapOptionImageIds(out.parts, (id) => this.files.internalIdOf(id))
+    if (out.parts) out.parts = (await mapOptionImageIds(out.parts as QuestionPart[], (id) => this.files.internalIdOf(id))) as T['parts']
     return out
   }
 
@@ -1219,6 +1208,7 @@ export class QuestionsService {
       difficultyTp: n.tp,
       difficultyLevel: n.difficultyLevel,
       ...(n.textbookRef === undefined ? {} : { textbookRef: n.textbookRef }),
+      ...(n.schemeRules === undefined ? {} : { schemeRules: n.schemeRules }),
       sourcePage: v?.sourcePage ?? null,
       setLabel: v?.setLabel ?? null,
       spNodeIds: spKeys,
@@ -1320,6 +1310,7 @@ export class QuestionsService {
       tp: input.tag?.tp ?? v.difficultyTp,
       difficultyLevel: input.difficultyLevel,
       textbookRef: input.textbookRef,
+      schemeRules: input.schemeRules,
       stem: input.questionText,
       stemEn: enText(input.questionTextEn),
       parts,

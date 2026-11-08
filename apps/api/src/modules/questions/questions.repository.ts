@@ -1,11 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common'
+import { QuestionSchemeRulesSchema, type QuestionSchemeRules } from '@pp/contract'
 
 import { ApiError } from '../../common/errors/api-error'
 import { Prisma } from '../../db/generated/client'
 import type { Prisma as PrismaTypes } from '../../db/generated/client'
 import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, mediaResolvedSql, VERSION_STIMULI_SQL, NOT_FLAGGED_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
+import { ALL_LEAVES_KEYED_SQL, BANK_VISIBLE_SQL, isBankVersion, LEARNER_LEVEL_SQL, MEDIA_RESOLVED_SQL, mediaResolvedSql, VERSION_STIMULI_SQL, NOT_FLAGGED_SQL, NOT_MCQ_MULTI_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL, NOT_SOURCE_TAKEN_DOWN_SQL, SPM_SERVABLE_SQL } from './learner-visibility'
 import type { Prng } from '../../db/prng'
 import { adminFilterConds, bi, likePattern } from './admin-filter'
 import { kbatOf, refreshStimulusFlag, refreshStimulusFlagsOf, type StimulusFlag } from './effective-leaf'
@@ -77,6 +78,8 @@ export interface VersionDraft {
   difficultyLevel: number | null
   /** DM-56: `undefined` keeps what is stored (a new version inherits it); an object writes the jsonb and the three int columns; `null` clears them. */
   textbookRef?: TextbookRef | null
+  /** DM-54: question-level scheme rules (`scheme_rules`); `undefined` keeps what is stored (a new version inherits it), `null` clears it. */
+  schemeRules?: QuestionSchemeRules | null
   sourcePage: number | null
   setLabel: string | null
   /**
@@ -1217,6 +1220,7 @@ export class QuestionsRepository {
         textbookTingkatan: true,
         textbookPage: true,
         textbookRef: true,
+        schemeRules: true,
         sourcePaperId: true,
         sourceFileId: true,
         sourceRegion: true,
@@ -1529,6 +1533,7 @@ export class QuestionsRepository {
           : { textbookRef: c.textbookRef as unknown as Prisma.InputJsonValue, textbookBab: smallInt(c.textbookRef.bab), textbookTingkatan: smallInt(c.textbookRef.tingkatan.replace(/^T/i, '')), textbookPage: c.textbookRef.mukaSurat }),
       sourcePage: c.sourcePage,
       setLabel: c.setLabel,
+      ...(c.schemeRules === undefined ? {} : { schemeRules: c.schemeRules === null ? Prisma.DbNull : (c.schemeRules as unknown as Prisma.InputJsonValue) }),
       ...(c.paperCode === undefined ? {} : { paperCode: c.paperCode }),
       ...(c.importIssues === undefined ? {} : { importIssues: c.importIssues === null || c.importIssues.length === 0 ? Prisma.DbNull : (c.importIssues as unknown as Prisma.InputJsonValue) }),
       lastEditor: c.lastEditor ?? 'person',
@@ -1579,6 +1584,7 @@ export class QuestionsRepository {
       textbookTingkatan: number | null
       textbookPage: number | null
       textbookRef: unknown
+      schemeRules?: unknown
       sourcePaperId: bigint | null
       sourceFileId: bigint | null
       sourceRegion: unknown
@@ -1602,6 +1608,9 @@ export class QuestionsRepository {
         // DM-42: carried from the previous version (a new bank version stays bank, a private one stays private).
         ...(inherited?.visibility === undefined ? {} : { visibility: inherited.visibility, ownerUserId: inherited.ownerUserId ?? null }),
         ...(inherited?.referenceUrl === undefined ? {} : { referenceUrl: inherited.referenceUrl }),
+        ...(inherited === undefined || draft.schemeRules !== undefined || inherited.schemeRules === null || inherited.schemeRules === undefined
+          ? {}
+          : { schemeRules: inherited.schemeRules as Prisma.InputJsonValue }),
         ...(inherited === undefined
           ? {}
           : { ...inheritedOf(inherited, draft.textbookRef !== undefined), sourceRegion: inherited.sourceRegion === null || inherited.sourceRegion === undefined ? undefined : (inherited.sourceRegion as object) }),
@@ -1746,7 +1755,7 @@ export class QuestionsRepository {
           ? ownPrivate === null
             ? SPM_SERVABLE_SQL
             : Prisma.sql`(${SPM_SERVABLE_SQL} OR ${ownPrivate})`
-          : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${MEDIA_RESOLVED_SQL})`,
+          : Prisma.sql`(NOT ${SPM_SERVABLE_SQL} AND ${NOT_FLAGGED_SQL} AND ${ALL_LEAVES_KEYED_SQL} AND ${NOT_MCQ_MULTI_SQL} AND ${MEDIA_RESOLVED_SQL})`,
       )
     }
     if (filter.spId !== undefined) {
@@ -1760,6 +1769,7 @@ export class QuestionsRepository {
     const tp = filter.tp ?? filter.difficultyTp
     if (tp !== undefined) conds.push(Prisma.sql`v.difficulty_tp = ${tp}`)
     if (filter.type) conds.push(Prisma.sql`v.type = ${filter.type}`)
+    if (filter.servesMcqMulti) conds.push(Prisma.sql`(v.type = 'mcq' OR (v.type = 'mcq_multi' AND q.group_id IS NULL))`)
     if (filter.excludeIds && filter.excludeIds.length > 0) {
       const keys = filter.excludeIds.map(bi).filter((k): k is bigint => k !== null)
       if (keys.length > 0) conds.push(Prisma.sql`q.id <> ALL(${keys}::bigint[])`)
@@ -1888,6 +1898,7 @@ export class QuestionsRepository {
       difficultyTp: v.difficultyTp,
       difficultyLevel: v.difficultyLevel,
       textbookRef: textbookRefOf(v.textbookRef),
+      schemeRules: schemeRulesOf(v.schemeRules),
       rejectionReason: v.rejectionReason,
       visibility: v.visibility === 'teacher_private' ? 'teacher_private' : 'bank',
       ownerUserId: v.ownerUserId === null ? null : idToString(v.ownerUserId),
@@ -1922,8 +1933,10 @@ export class QuestionsRepository {
  * The provenance a new version inherits from the one it edits. The textbook reference (jsonb and its three int columns) is inherited only when
  * the save did not send one (`textbookSent` false); a sent value, or a cleared one, is written by `versionColumns` instead.
  */
-function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown }>(inherited: T, textbookSent: boolean) {
-  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, ...rest } = inherited
+function inheritedOf<T extends { textbookBab: number | null; textbookTingkatan: number | null; textbookPage: number | null; textbookRef: unknown; schemeRules?: unknown }>(inherited: T, textbookSent: boolean) {
+  // `schemeRules` is inherited by insertVersion itself (typed JSON), so it is dropped here.
+  const { textbookBab, textbookTingkatan, textbookPage, textbookRef, schemeRules: _schemeRules, ...rest } = inherited
+  void _schemeRules
   if (textbookSent) return rest
   return { ...rest, textbookBab, textbookTingkatan, textbookPage, textbookRef: textbookRef === null || textbookRef === undefined ? Prisma.DbNull : (textbookRef as Prisma.InputJsonValue) }
 }
@@ -1940,4 +1953,10 @@ function textbookRefOf(raw: unknown): TextbookRef | null {
 function smallInt(text: string): number | null {
   const t = text.trim()
   return /^\d{1,5}$/.test(t) && Number(t) <= 32767 ? Number(t) : null
+}
+
+/** The stored `scheme_rules` jsonb (DM-54) when it parses as `QuestionSchemeRules`, else null (a bad stored value is never served). */
+function schemeRulesOf(raw: unknown): QuestionSchemeRules | null {
+  const parsed = QuestionSchemeRulesSchema.safeParse(raw)
+  return parsed.success ? parsed.data : null
 }

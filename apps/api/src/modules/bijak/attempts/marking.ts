@@ -19,12 +19,14 @@ import type {
 
 import {
   defuseAnswer,
+  countedIds,
   effectiveMarks,
   gradePart,
   isBlank,
   leavesOf,
   numericValue,
   SEMAK_KINDS,
+  type ChooseCandidate,
   type Leaf,
   type McqOption,
   type PartAnswer,
@@ -193,7 +195,7 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
   const questions: QuestionResult[] = []
   for (const s of composition) for (const qid of s.questionIds) questions.push(gradeQuestion(composition, bundles, answers, qid, ++n, true))
   seedSuggestions(questions, bundles, answers)
-  return assembleResult(composition, questions, coinRate)
+  return assembleResult(composition, questions, coinRate, groupIdsOf(bundles))
 }
 
 /**
@@ -202,7 +204,12 @@ export function gradeAttempt(composition: readonly SectionSnapshot[], bundles: B
  * -> ExamBestNScorer). Sets `counted` on the questions it is given. `coinRate` is Syiling per mark (S5-T15 `coinsPerCorrect()`,
  * resolved by the caller; this function stays pure).
  */
-export function assembleResult(composition: readonly SectionSnapshot[], questions: QuestionResult[], coinRate: number): BijakAttemptResult {
+export function assembleResult(
+  composition: readonly SectionSnapshot[],
+  questions: QuestionResult[],
+  coinRate: number,
+  groupIds: ReadonlyMap<string, string | undefined> = new Map(),
+): BijakAttemptResult {
   const byId = new Map(questions.map((q) => [q.questionId, q]))
   const sections: SectionResult[] = []
   for (const s of composition) {
@@ -210,20 +217,21 @@ export function assembleResult(composition: readonly SectionSnapshot[], question
     for (const q of qs) q.counted = true
     let counted = qs
     if (s.rule.type === 'choose') {
-      // Best N attempted by marks (ties: the lower position). Ticks never change the score.
-      const ranked = qs
-        .map((q, pos) => ({ q, pos }))
-        .filter((x) => x.q.attempted)
-        .sort((x, y) => y.q.awarded - x.q.awarded || x.pos - y.pos)
-        .slice(0, s.rule.n)
-      const ids = new Set(ranked.map((x) => x.q.questionId))
+      // Best N attempted CHOICE UNITS by marks (ties: the lower position); a stimulus group is one unit (45 5.4 rule 4).
+      // Ticks never change the score, so none are passed.
+      const ids = new Set(
+        countedIds(
+          qs.map((q): ChooseCandidate => ({ id: q.questionId, attempted: q.attempted, awarded: q.awarded, groupId: groupIds.get(q.questionId) })),
+          s.rule.n,
+        ),
+      )
       for (const q of qs) q.counted = ids.has(q.questionId)
       counted = qs.filter((q) => q.counted)
     }
     sections.push({
       sectionId: s.id,
       label: s.label,
-      marks: effectiveMarks(s.rule, qs.map((q) => q.marks)),
+      marks: effectiveMarks(s.rule, qs.map((q) => q.marks), qs.map((q) => groupIds.get(q.questionId))),
       awarded: counted.reduce((x, q) => x + q.awarded, 0),
       ...(s.rule.type === 'choose' ? { chooseN: s.rule.n } : {}),
       counted: counted.map((q) => q.questionId),
@@ -246,6 +254,11 @@ export function assembleResult(composition: readonly SectionSnapshot[], question
     coins: score * coinRate,
     points: score * XP_PER_MARK,
   }
+}
+
+/** Question id to its stimulus group id, for the Pilih N choice units. */
+export function groupIdsOf(bundles: Bundles): Map<string, string | undefined> {
+  return new Map([...bundles].map(([id, b]) => [id, b.question.groupId]))
 }
 
 /** The graded question of a "Semak" check or a `checks` entry of the view. */

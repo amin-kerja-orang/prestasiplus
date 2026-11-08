@@ -27,7 +27,7 @@ export function missingRequiredFieldsOf(stem: string | null, parts: readonly Que
 
 /** What the builder reads of a version (a stored one, or a draft that is not stored yet). */
 export type GateVersion = Pick<QuestionVersionRecord, 'stemMs' | 'parts' | 'subjectId' | 'educationLevelId' | 'chapterId' | 'unitId' | 'spIds' | 'difficultyTp' | 'difficultyLevel' | 'paperCode'> &
-  Partial<Pick<QuestionVersionRecord, 'stimulusFlag' | 'stimulusFlagRef' | 'flagDismissedAt' | 'stemEn'>>
+  Partial<Pick<QuestionVersionRecord, 'stimulusFlag' | 'stimulusFlagRef' | 'flagDismissedAt' | 'stemEn' | 'schemeRules'>>
 
 /** The parts of a draft tree, flattened as the stimulus-flag detector reads them (the create-as-approved gate decides the flag before the row exists). */
 export function flagPartsOf(parts: readonly QuestionPart[]): FlagPart[] {
@@ -99,5 +99,6 @@ export function gateDataOf(
     stimulusFlag: v.stimulusFlag ?? null,
     flagDismissedAt: v.flagDismissedAt ?? null,
     stimulusRefText: v.stimulusFlag === 'stimulus_missing' ? stimulusRefTextOf(v) : null,
+    ...(v.schemeRules ? { schemeRules: v.schemeRules } : {}),
   }
 }
