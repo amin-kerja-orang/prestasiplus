@@ -41,6 +41,9 @@ const FE_ONLY_KEYS = [
 ] as const
 
 const apiKeys = ALL_KEYS.filter((k) => !(FE_ONLY_KEYS as readonly string[]).includes(k))
+/** Locked keys are OFF for ever (INV-29, D102): their OFF -> 404 answer is covered by feature.guard.spec.ts, not by this ON -> OFF loop. */
+const LOCKED_KEYS = ['cikgu-alesa', 'keluarga-angkat'] as const
+const toggleKeys = apiKeys.filter((k) => !(LOCKED_KEYS as readonly string[]).includes(k))
 
 describe('FEATURE_ROUTE_PREFIXES coverage (S0-T11)', () => {
   it('has exactly the 32 keys, each with at least one front-end prefix', () => {
@@ -172,7 +175,7 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
   afterAll(() => app.close())
   beforeEach(() => {
     rows.clear()
-    for (const key of ALL_KEYS) rows.set(key, true)
+    for (const key of ALL_KEYS) rows.set(key, !(LOCKED_KEYS as readonly string[]).includes(key))
     service.invalidate()
   })
 
@@ -180,10 +183,10 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
     expect(apiKeys).toHaveLength(32 - FE_ONLY_KEYS.length)
   })
 
-  for (const key of apiKeys) {
+  for (const key of toggleKeys) {
     const prefixes = FEATURE_ROUTE_PREFIXES[key]?.api ?? []
     it(`${key}: OFF answers 404 NOT_FOUND on ${prefixes.join(', ')}, other keys stay reachable, ON answers normally`, async () => {
-      const other = apiKeys.find((k) => k !== key && (FEATURE_ROUTE_PREFIXES[k]?.api.length ?? 0) > 0) ?? 'permainan'
+      const other = toggleKeys.find((k) => k !== key && (FEATURE_ROUTE_PREFIXES[k]?.api.length ?? 0) > 0) ?? 'permainan'
       const otherPrefix = FEATURE_ROUTE_PREFIXES[other]?.api[0] ?? '/api/games'
       for (const prefix of prefixes) {
         // ON: anonymous reaches AuthGuard (401), signed in reaches the handler.
@@ -212,7 +215,7 @@ describe('per-key OFF -> 404, ON -> normal answer (API keys)', () => {
   it('a fe-only key switched OFF never changes an api answer', async () => {
     for (const key of FE_ONLY_KEYS) rows.set(key, false)
     service.invalidate()
-    for (const key of apiKeys) {
+    for (const key of toggleKeys) {
       for (const prefix of FEATURE_ROUTE_PREFIXES[key]?.api ?? []) {
         expect((await http().get(`${prefix}/1`).set(signed)).status, prefix).toBe(200)
       }
