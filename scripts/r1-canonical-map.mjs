@@ -193,7 +193,9 @@ export const isRouteFile = (p) => /^src\/(?:.*\/)?routes\/[^/]+\.ts$/.test(p) &&
 export const isCoreRouteFile = (p) => p === 'src/app/router/core-routes.ts'
 export const isRouterSource = (p) => isRouteFile(p) || isCoreRouteFile(p)
 export const isNavFile = (p) => /^src\/shells\/(?:.*\/)?nav\/[^/]+\.ts$/.test(p) && !/out-of-scope\.ts$/.test(p)
-export const isPentadbiranMenu = (p) => p === 'src/shells/pentadbiran/menu.ts'
+export const isPentadbiranComposer = (p) => p === 'src/shells/pentadbiran/menu.ts'
+export const isPentadbiranFragment = (p) => /^src\/shells\/pentadbiran\/menu\/fragments\/[^/]+\.ts$/.test(p) && !/\.(test|spec)\.ts$/.test(p)
+export const isPentadbiranMenu = (p) => isPentadbiranComposer(p) || isPentadbiranFragment(p)
 export const isMenuSource = (p) => isNavFile(p) || isPentadbiranMenu(p)
 export const isSchemaFile = (p) => /^apps\/api\/prisma\/schema\/[^/]+\.prisma$/.test(p)
 export const isControllerFile = (p) => /^apps\/api\/src\/.*\.controllers?\.ts$/.test(p)
@@ -252,6 +254,18 @@ function parseRoles(raw, table) {
   return id && table.has(id[1]) ? table.get(id[1]) : null
 }
 
+/** Pentadbiran composer: doc id -> group key, from `key: '...'` headings followed by `pick('ID', ...)` lists. */
+export function menuGroupsOf(text) {
+  const src = stripComments(text)
+  const groupKeys = [...src.matchAll(/\bkey\s*:\s*'([^']+)'/g)].map((m) => ({ at: m.index, key: m[1] }))
+  const out = new Map()
+  for (const m of src.matchAll(/\bpick\(([^)]*)\)/g)) {
+    const grp = [...groupKeys].reverse().find((g) => g.at < m.index)
+    for (const id of m[1].matchAll(/'([A-Z]{2}-\d+)'/g)) if (grp) out.set(id[1], grp.key)
+  }
+  return out
+}
+
 /** Menu entries (items only) of one nav/menu source file. Returns [{source,id,label,route,roles,built?,group?,file}]. */
 export function extractMenus(file, text) {
   const f = norm(file)
@@ -259,8 +273,10 @@ export function extractMenus(file, text) {
   const out = []
 
   if (isPentadbiranMenu(f)) {
-    // rows: ['PM-01', 'Langsung', '/admin/command-center', K],  inside groups { key: '...', label: '...', items: items([ ... ]) }
+    // rows: ['PM-01', 'Langsung', '/admin/command-center', 'Kirkpatrick'],  in a fragment file (menu/fragments/s<n>.ts);
+    // the composer (menu.ts) only lists ids per group (pick('PM-01', ...)), read by menuGroupsOf(); old inline rows still parse.
     const groupKeys = [...src.matchAll(/\bkey\s*:\s*'([^']+)'/g)].map((m) => ({ at: m.index, key: m[1] }))
+    if (isPentadbiranComposer(f) && /\bpick\(/.test(src)) return out
     const end = src.indexOf('export const FULL_ITEMS')
     const area = end > 0 ? src.slice(0, end) : src
     for (const m of area.matchAll(/\[\s*'([A-Z]{2}-\d+)'\s*,\s*'((?:\\'|[^'])*)'\s*(?:,\s*(?:'([^']*)'|undefined))?\s*(?:,\s*([A-Za-z'][^\]]*?))?\s*\]/g)) {
@@ -400,6 +416,12 @@ export function scanTree(fs) {
     else if (isMenuSource(p)) menus.push(...extractMenus(p, fs.read(p)))
     else if (isSchemaFile(p)) models.push(...extractModels(p, fs.read(p)))
     else if (isControllerFile(p) && !/\.(spec|test)\.ts$/.test(p)) apis.push(...extractApis(p, fs.read(p)))
+  }
+  // Pentadbiran rows sit in fragment files; their group comes from the composer's pick() lists.
+  const composer = fs.files.find(isPentadbiranComposer)
+  if (composer) {
+    const groups = menuGroupsOf(fs.read(composer))
+    for (const m of menus) if (m.source === 'pentadbiran' && !m.group && groups.has(m.id)) m.group = groups.get(m.id)
   }
   return { routes: dedupe(routes, routeKey), menus: dedupe(menus, menuKey), models, apis: dedupe(apis, apiKey) }
 }
@@ -1029,13 +1051,15 @@ function selfTest() {
       ] },
     ]`)
   eq('menus: roles + group inherit', ms.map((m) => [m.id, m.roles.join()]), [['a', 'student'], ['c', 'teacher']])
-  const pm = extractMenus('src/shells/pentadbiran/menu.ts', `export const PENTADBIRAN_FULL_MENU = [ { key: 'g1', label: 'G', items: items([
+  const pm = extractMenus('src/shells/pentadbiran/menu/fragments/s0.ts', `export const S0_ROWS: readonly Row[] = [
       ['PM-01', 'Langsung', '/admin/command-center'],
       ['PM-04', 'Analitik'],
-      ['PM-05', 'Ringkasan', '/admin/kirkpatrick', K],
-    ]) } ]
-    export const FULL_ITEMS = 1`)
-  eq('pentadbiran rows', pm.map((m) => [m.id, m.route, m.built]), [['PM-01', '/admin/command-center', true], ['PM-04', '/admin/p/pm-04', false], ['PM-05', '/admin/kirkpatrick', true]])
+      ['PM-05', 'Ringkasan', '/admin/kirkpatrick', 'Kirkpatrick'],
+    ]`)
+  eq('pentadbiran fragment rows', pm.map((m) => [m.id, m.route, m.built, m.file]), [['PM-01', '/admin/command-center', true, 'src/shells/pentadbiran/menu/fragments/s0.ts'], ['PM-04', '/admin/p/pm-04', false, 'src/shells/pentadbiran/menu/fragments/s0.ts'], ['PM-05', '/admin/kirkpatrick', true, 'src/shells/pentadbiran/menu/fragments/s0.ts']])
+  const composerSrc = `export const PENTADBIRAN_FULL_MENU = [ { key: 'g1', label: 'G', items: pick('PM-01', 'PM-04') }, { key: 'g2', items: pick('PM-05') } ]`
+  eq('pentadbiran composer yields no rows', extractMenus('src/shells/pentadbiran/menu.ts', composerSrc), [])
+  eq('pentadbiran composer groups', [...menuGroupsOf(composerSrc)], [['PM-01', 'g1'], ['PM-04', 'g1'], ['PM-05', 'g2']])
   const md = extractModels('x.prisma', 'model A {\n  id Int @id\n  @@map("a_tbl")\n}\n\nmodel B {\n  id Int @id\n}\n')
   eq('models', md.map((m) => [m.name, m.table]), [['A', 'a_tbl'], ['B', null]])
   const ap = extractApis('apps/api/src/x/x.controller.ts', `@Controller('q')

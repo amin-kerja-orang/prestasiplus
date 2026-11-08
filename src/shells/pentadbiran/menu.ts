@@ -8,7 +8,24 @@
  * Hidden or merged out of the definition (routes stay reachable by link or button): KS-02, KS-08,
  * KS-13, KS-14, KS-15, KS-16 (hidden); BS-04, BS-05 (tabs of Senarai Soalan); KS-09 (Set Builder);
  * KS-06 (hub lane card). Removed: KK-03, KS-10, KS-11, KS-12.
+ *
+ * This file is the composer (S0): group structure, order, icons and the id order inside each group.
+ * The rows themselves (id, label, target route) live in `menu/fragments/s<n>.ts`, one file per sector
+ * that owns the target route; a new row comes via a one-line cross-sector PR to S0 (plan section on
+ * `menu.ts` ownership). The rendered menu also drops a repeated route or redirect target (`render.ts`).
+ * `PENTADBIRAN_MENU` is the static render: it drops repeated routes only (no router here, so no cycle).
+ * The layout builds the router-aware render, `renderMenu(PENTADBIRAN_FULL_MENU, redirectsFrom(router.getRoutes()))`,
+ * which also drops an entry whose route is a router redirect to a page an earlier entry shows.
  */
+import { renderMenu } from './menu/render'
+import type { Row } from './menu/row'
+import { S0_ROWS } from './menu/fragments/s0'
+import { S2_ROWS } from './menu/fragments/s2'
+import { S3_ROWS } from './menu/fragments/s3'
+import { S4_ROWS } from './menu/fragments/s4'
+import { S5_ROWS } from './menu/fragments/s5'
+import { S6_ROWS } from './menu/fragments/s6'
+import { S7_ROWS } from './menu/fragments/s7'
 
 export interface PentadbiranItem {
   /** Doc id, for example `PM-04`. */
@@ -41,13 +58,11 @@ export interface PentadbiranGroup {
 /** Internal key of an item that is not built (never rendered, never routed). */
 export const placeholderPath = (id: string): string => `/admin/p/${id.toLowerCase()}`
 
-type Row = readonly [id: string, label: string, to?: string, sub?: string]
-
 const NESTED_SUBS: ReadonlySet<string> = new Set(['Bank Lama (Legasi)'])
 const BADGES: Readonly<Record<string, string>> = { 'PM-01': 'LIVE' }
 
-function items(rows: readonly Row[]): PentadbiranItem[] {
-  return rows.map(([id, label, to, sub]) => ({
+function toItem([id, label, to, sub]: Row): PentadbiranItem {
+  return {
     id,
     label,
     ...(sub ? { sub } : {}),
@@ -55,228 +70,136 @@ function items(rows: readonly Row[]): PentadbiranItem[] {
     ...(BADGES[id] ? { badge: BADGES[id] } : {}),
     to: to ?? placeholderPath(id),
     built: to !== undefined,
-  }))
+  }
 }
 
-const K = 'Kirkpatrick'
-const L = 'Bank Lama (Legasi)'
+const ROWS_BY_ID: ReadonlyMap<string, Row> = (() => {
+  const map = new Map<string, Row>()
+  for (const rows of [S0_ROWS, S2_ROWS, S3_ROWS, S4_ROWS, S5_ROWS, S6_ROWS, S7_ROWS]) {
+    for (const row of rows) {
+      if (map.has(row[0])) throw new Error(`Pentadbiran menu: row ${row[0]} is defined in two fragments`)
+      map.set(row[0], row)
+    }
+  }
+  return map
+})()
+
+/** The group's items, in the order of the ids, from whichever fragment holds each row. */
+function pick(...ids: string[]): PentadbiranItem[] {
+  return ids.map((id) => {
+    const row = ROWS_BY_ID.get(id)
+    if (!row) throw new Error(`Pentadbiran menu: no fragment row for ${id}`)
+    return toItem(row)
+  })
+}
 
 export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
   {
     // V2 top shortcuts (30 §3.1 row 0).
     key: 'pintasan',
     icon: 'pulse',
-    items: items([
-      ['PM-01', 'Command Center', '/admin/command-center'],
-      ['PM-02', 'Aktiviti Harian', '/admin/command-center/daily-activity'],
-      ['BS-07', 'Audio KBAT', '/admin/audio-kbat'],
-    ]),
+    items: pick('PM-01', 'PM-02', 'BS-07'),
   },
   {
     // V2 section HARIAN. `/admin` redirects to Command Center outside the dev hub, so no route here.
     key: 'harian',
     label: 'Harian',
     icon: 'squares-four',
-    items: items([
-      ['PP-01', 'Dashboard'],
-      ['PP-02', 'Laporan Eksekutif'],
-    ]),
+    items: pick('PP-01', 'PP-02'),
   },
   {
     // V2 section ANALITIK. The seven Kirkpatrick pages fold into one row (tabs inside the section).
     key: 'analitik',
     label: 'Analitik',
     icon: 'chart-line-up',
-    items: items([
-      ['PM-04', 'Analitik'],
-      ['PM-03', 'Monitoring', '/admin/monitoring'],
-      ['PM-05', 'Overview', '/admin/kirkpatrick', K],
-      ['PM-06', 'T1: Reaksi', '/admin/kirkpatrick/reaction', K],
-      ['PM-07', 'T2: Pembelajaran', '/admin/kirkpatrick/learning', K],
-      ['PM-08', 'T3: Tingkah Laku', '/admin/kirkpatrick/behavior', K],
-      ['PM-09', 'T4: Hasil', '/admin/kirkpatrick/results', K],
-      ['PM-10', 'Rantaian Impak', '/admin/kirkpatrick/chain', K],
-      ['PM-11', 'Intervensi', '/admin/kirkpatrick/interventions', K],
-      ['PM-29', 'Laporan'],
-    ]),
+    items: pick('PM-04', 'PM-03', 'PM-05', 'PM-06', 'PM-07', 'PM-08', 'PM-09', 'PM-10', 'PM-11', 'PM-29'),
   },
   {
     key: 'kurikulum',
     label: 'Kurikulum',
     icon: 'book-open',
-    items: items([
-      ['KK-01', 'Kurikulum', '/admin/curriculum'],
-      ['KK-02', 'Subjek', '/admin/subjects'],
-      ['KK-04', 'Tahap Pendidikan', '/admin/education-levels'],
-    ]),
+    items: pick('KK-01', 'KK-02', 'KK-04'),
   },
   {
     // 30 §3.2: nine definitions, all built (Sumber Kertas S2-T09, Kertas Subjektif S3-T06).
     key: 'soalan',
     label: 'Soalan',
     icon: 'books',
-    items: items([
-      ['KS-01', 'SPM', '/admin/spm'],
-      ['BS-08', 'Bank Soalan (Studio)', '/admin/studio'],
-      ['BS-02', 'Import & Semakan', '/admin/spm/soalan/ekstrak'],
-      ['KS-17', 'Set Builder', '/admin/studio/sets'],
-      ['BS-03', 'Sumber Kertas', '/admin/source-papers'],
-      ['KS-07', 'Kertas Subjektif', '/admin/kertas-subjektif'],
-      ['BS-09', 'Audit Rajah', '/admin/soalan-gambar'],
-      ['BS-01', 'Senarai Soalan', '/admin/questions', L],
-      ['BS-10', 'Soalan Berstruktur', '/admin/structured-questions', L],
-    ]),
+    items: pick('KS-01', 'BS-08', 'BS-02', 'KS-17', 'BS-03', 'KS-07', 'BS-09', 'BS-01', 'BS-10'),
   },
   {
     key: 'pengguna',
     label: 'Pengguna',
     icon: 'users',
-    items: items([
-      ['PS-01', 'Senarai Pengguna', '/admin/users'],
-      ['PS-02', 'Sekolah', '/admin/schools'],
-      ['KW-05', 'Langganan Sekolah', '/admin/school-subscriptions'],
-      ['PS-04', 'Import Pelajar', '/admin/import-students'],
-      ['PS-06', 'Pelajar Komplimen', '/admin/comp-students'],
-      ['PS-05', 'Import Pengguna', '/admin/users/bulk-import'],
-      ['PS-03', 'Kelas Sekolah'],
-    ]),
+    items: pick('PS-01', 'PS-02', 'KW-05', 'PS-04', 'PS-06', 'PS-05', 'PS-03'),
   },
   {
     // The four lane pages open the admin lane page (FD-MENU-2); only the databank is built.
     key: 'spm',
     label: 'SPM',
     icon: 'scroll',
-    items: items([
-      ['KS-18', 'Databank Soalan', '/admin/spm/databank'],
-      ['KS-03', 'Latih Tubi'],
-      ['KS-04', 'Tracking A'],
-      ['KS-05', 'Subjektif'],
-    ]),
+    items: pick('KS-18', 'KS-03', 'KS-04', 'KS-05'),
   },
   {
     key: 'premium',
     label: 'Premium',
     icon: 'star',
-    items: items([
-      ['BS-06', 'PKSK Soalan', '/admin/pksk/questions'],
-      ['KW-06', 'PKSK Akses', '/admin/pksk/access'],
-    ]),
+    items: pick('BS-06', 'KW-06'),
   },
   {
     key: 'kawalan-ciri',
     label: 'Sistem',
     icon: 'gear',
-    items: items([['SY-02', 'Kawalan Ciri', '/admin/feature-toggles']]),
+    items: pick('SY-02'),
   },
   {
     // Cabutan (PG-09) and Kotak Misteri are sections of Kawalan Reward, not menu rows.
     key: 'gamifikasi',
     label: 'Gamifikasi',
     icon: 'trophy',
-    items: items([
-      ['PG-01', 'Overview'],
-      ['PG-02', 'Tier Config'],
-      ['PG-03', 'Cabaran'],
-      ['PG-04', 'Pelajar'],
-      ['PG-05', 'Transaksi'],
-      ['PG-06', 'Kedai Hadiah'],
-      ['PG-10', 'Kawalan Reward'],
-    ]),
+    items: pick('PG-01', 'PG-02', 'PG-03', 'PG-04', 'PG-05', 'PG-06', 'PG-10'),
   },
   {
     key: 'battle-permainan',
     label: 'Battle & Permainan',
     icon: 'game-controller',
-    items: items([
-      ['PG-12', 'Ranking Sekolah'],
-      ['PG-13', 'Leaderboard'],
-      ['PG-11', 'Tetapan Permainan'],
-      ['PG-23', 'Tournament'],
-    ]),
+    items: pick('PG-12', 'PG-13', 'PG-11', 'PG-23'),
   },
   {
     key: 'marketplace',
     label: 'Marketplace',
     icon: 'gift',
-    items: items([
-      ['PG-14', 'Produk', '/admin/marketplace/products'],
-      ['PG-15', 'Penjual', '/admin/marketplace/sellers'],
-    ]),
+    items: pick('PG-14', 'PG-15'),
   },
   {
     key: 'kandungan',
     label: 'Kandungan',
     icon: 'book-open-text',
-    items: items([
-      ['KK-06', 'Artikel', '/admin/articles'],
-      ['KK-05', 'Banner', '/admin/banners'],
-      ['KK-07', 'Nota', '/admin/notes'],
-      ['SY-05', 'Upload Screenshot', '/admin/tools/screenshots'],
-      ['KK-08', 'Video', '/admin/videos'],
-    ]),
+    items: pick('KK-06', 'KK-05', 'KK-07', 'SY-05', 'KK-08'),
   },
   {
     key: 'sistem',
     label: 'Sistem',
     icon: 'gear',
-    items: items([
-      ['SY-01', 'Tetapan', '/admin/settings'],
-      ['PG-22', 'Tiket Bantuan', '/admin/tiket'],
-    ]),
+    items: pick('SY-01', 'PG-22'),
   },
   {
     // Deferred or excluded (30 §3.1 last row, backlog): kept as data, never rendered.
     key: 'ditangguh',
     label: 'Ditangguhkan',
     icon: 'wallet',
-    items: items([
-      ['PM-12', 'Laporan Aktiviti'],
-      ['PM-13', 'Amaran Wellbeing'],
-      ['PM-14', 'Papan Pemuka Wilayah'],
-      ['PM-15', 'Statistik Penggunaan'],
-      ['PM-16', 'Ranking Kebangsaan'],
-      ['PM-17', 'Benchmark Sekolah'],
-      ['PM-18', 'Leaderboard Sekolah'],
-      ['PM-19', 'Peta Haba'],
-      ['PM-20', 'Export Laporan'],
-      ['PM-21', 'DSKP Heatmap'],
-      ['PM-22', 'Amaran Awal'],
-      ['PM-23', 'Laporan Bulanan'],
-      ['PM-24', 'Headcount'],
-      ['PM-25', 'Prestasi'],
-      ['PM-26', 'Analitik Adaptif'],
-      ['PM-27', 'Analisa Item'],
-      ['PM-28', 'Sekolah Bersaing'],
-      ['KK-09', 'Laluan Kerjaya'],
-      ['KK-10', 'Universiti'],
-      ['KK-11', 'Biasiswa'],
-      ['KK-12', 'Video Sekolah'],
-      ['PG-07', 'Gamifikasi Guru'],
-      ['PG-08', 'Lencana Guru'],
-      ['PG-16', 'Penajaan'],
-      ['PG-17', 'Anak Angkat'],
-      ['PG-18', 'Permohonan Anak Angkat'],
-      ['PG-19', 'Permohonan Duta'],
-      ['PG-20', 'Push Notifikasi'],
-      ['PG-21', 'Chatbot'],
-      ['KW-01', 'Pembayaran'],
-      ['KW-02', 'Billing Dashboard'],
-      ['KW-03', 'Invois'],
-      ['KW-04', 'Dunning Log'],
-      ['SY-03', 'Prestasi Sistem'],
-      ['SY-04', 'Log Audit'],
-    ]),
+    items: pick('PM-12', 'PM-13', 'PM-14', 'PM-15', 'PM-16', 'PM-17', 'PM-18', 'PM-19', 'PM-20', 'PM-21', 'PM-22', 'PM-23', 'PM-24', 'PM-25', 'PM-26', 'PM-27', 'PM-28', 'KK-09', 'KK-10', 'KK-11', 'KK-12', 'PG-07', 'PG-08', 'PG-16', 'PG-17', 'PG-18', 'PG-19', 'PG-20', 'PG-21', 'KW-01', 'KW-02', 'KW-03', 'KW-04', 'SY-03', 'SY-04'),
   },
 ]
 
 /** All items, built or not (backlog data). */
 export const FULL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_FULL_MENU.flatMap((g) => g.items)
 
-/** The rendered menu: built screens only; a group with no built item is dropped. */
-export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = PENTADBIRAN_FULL_MENU.map((g) => ({
-  ...g,
-  items: g.items.filter((i) => i.built),
-})).filter((g) => g.items.length > 0)
+/**
+ * The static rendered menu: built screens only, none whose route an earlier entry already shows; a group
+ * left with no item is dropped. Redirect targets are deduped by the layout (see the file header).
+ */
+export const PENTADBIRAN_MENU: readonly PentadbiranGroup[] = renderMenu(PENTADBIRAN_FULL_MENU)
 
 export const ALL_ITEMS: readonly PentadbiranItem[] = PENTADBIRAN_MENU.flatMap((g) => g.items)
 
