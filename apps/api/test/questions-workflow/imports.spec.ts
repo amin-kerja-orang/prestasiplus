@@ -5,6 +5,8 @@ import {
   QUESTION_IMPORT_GURU_HEADER,
   QUESTION_IMPORT_GURU_TEMPLATE_CSV,
   QUESTION_IMPORT_GURU_TEMPLATE_FILENAME,
+  QUESTION_IMPORT_HEADER,
+  QUESTION_IMPORT_MESSAGES,
   QUESTION_IMPORT_TEMPLATE_CONTENT_TYPE,
   QUESTION_IMPORT_TEMPLATE_CSV,
   QUESTION_IMPORT_TEMPLATE_FILENAME,
@@ -402,6 +404,27 @@ describe('S1-T05 part 1: CSV with DSKP codes (real bank)', () => {
       { row: 5, message: 'Baris 5: Pilih paling banyak 3 SP.', questionKey: 'BAD2', field: 'sp_kod', code: 'SP_TOO_MANY' },
     ])
     expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 2)
+  })
+
+  it('[CI] AC-QA-34: 10 questions with 1 invalid: 9 imported, the error CSV has exactly one line', async () => {
+    const before = await count(t.db, 'select count(*) as n from questions')
+    const rows = Array.from({ length: 10 }, (_, i) =>
+      line({ question_key: `QA34-${String(i + 1)}`, number_label: String(20 + i), ...(i === 6 ? { sp_kod: 'TIADA-SP' } : {}) }),
+    )
+    const res = await importAdmin(csvOf(...rows), 'sepuluh.csv')
+    expect(res.status, JSON.stringify(res.body)).toBe(201)
+    const body = QuestionImportCreatedSchema.parse(res.body)
+    expect(body.data.importedCount).toBe(9)
+    expect(body.data.failedCount).toBe(1)
+    expect(body.status).toBe(QUESTION_IMPORT_MESSAGES.imported(9, 1))
+    expect(body.status).toBe('Import selesai: 9 soalan diimport, 1 gagal.')
+    expect(await count(t.db, 'select count(*) as n from questions')).toBe(before + 9)
+    const csv = await c.admin.get(`/api/question-imports/${body.data.id}/errors`)
+    expect(csv.status).toBe(200)
+    const lines = csv.text.split('\r\n').filter((l) => l !== '')
+    expect(lines[0]).toBe('baris,question_key,medan,kod_ralat,mesej')
+    expect(lines).toHaveLength(2)
+    expect(lines[1]).toMatch(/^8,QA34-7,sp_kod,/)
   })
 
   it('[CI] unknown header cells give a warning in the answer, and the legacy header gives none', async () => {
