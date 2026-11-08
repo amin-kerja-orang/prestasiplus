@@ -23,6 +23,33 @@ export type { Chapter, CurriculumNode, CurriculumTpDescriptor, EducationLevel, S
 /** A subject with the ids of its linked levels, in level order (BR-08). */
 export type SubjectWithLevels = Subject & { educationLevelIds: bigint[] }
 
+/** S10-T05 part 3: an SP node as the heatmap needs it (Tingkatan 1 to 5). `title` is the SP text, `sortOrder` the printed order. */
+export interface HeatmapSpNode {
+  id: bigint
+  subjectId: bigint
+  code: string
+  title: string
+  sortOrder: number
+  levelCode: string
+  levelOrder: number
+}
+
+interface SpNodeRow {
+  id: bigint
+  subject_id: bigint
+  code: string
+  title: string
+  sort_order: number
+  level_code: string
+  level_order: number
+}
+
+const SP_NODE_COLUMNS = Prisma.sql`n.id, n.subject_id, n.code, n.title, n.sort_order, el.code AS level_code, el.sort_order AS level_order`
+
+function toSpNode(r: SpNodeRow): HeatmapSpNode {
+  return { id: r.id, subjectId: r.subject_id, code: r.code, title: r.title, sortOrder: r.sort_order, levelCode: r.level_code, levelOrder: r.level_order }
+}
+
 /** One offered Subjek x Tingkatan with its live DSKP counts (API-DSKP-11, S4-T02). */
 export interface DskpReportRow {
   subjectId: bigint
@@ -360,6 +387,63 @@ export class CurriculumRepository {
       const level = c.educationLevelId === null ? undefined : byLevel.get(c.educationLevelId)
       if (c.name == null || !level) continue
       out.push({ id: c.id, subjectId: c.subjectId, name: c.name, chapterNumber: c.chapterNumber, levelCode: level.code, levelOrder: level.sortOrder })
+    }
+    return out
+  }
+
+  /**
+   * S10-T05 part 3 (heatmap SP fallback, FR-MUR-14-3): the (subject, Tingkatan) pairs among `subjectIds` that have Bab data, that is at least one
+   * active question whose LIVE version is `approved`, belongs to that subject and Tingkatan (T1 to T5, active level) and is linked to an active
+   * in-tree chapter (the same "approved" meaning as `chapterQuestionCounts.questionCount`). Every other pair falls back to SP tiles.
+   */
+  async subjectLevelsWithBab(subjectIds: readonly bigint[]): Promise<{ subjectId: bigint; levelCode: string }[]> {
+    if (subjectIds.length === 0) return []
+    const rows = await this.db.$queryRaw<{ subject_id: bigint; code: string }[]>`
+      SELECT DISTINCT v.subject_id, el.code
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+        JOIN chapters c ON c.id = v.chapter_id AND c.in_tree AND c.is_active
+        JOIN education_levels el ON el.id = v.education_level_id AND el.is_active AND el.code ~ '^T[1-5]$'
+       WHERE v.subject_id = ANY(${[...new Set(subjectIds)]}::bigint[]) AND q.is_active AND v.status = 'approved'`
+    return rows.map((r) => ({ subjectId: r.subject_id, levelCode: r.code }))
+  }
+
+  /**
+   * S10-T05 part 3: the SP nodes (`kind = 'sp'`) of the given subjects in the active Tingkatan 1 to 5 levels that are tagged on at least one active
+   * question whose LIVE version is `approved` (`question_version_sp_nodes`). Unsorted; the caller orders them.
+   */
+  async spNodesOfApprovedQuestions(subjectIds: readonly bigint[]): Promise<HeatmapSpNode[]> {
+    if (subjectIds.length === 0) return []
+    const rows = await this.db.$queryRaw<SpNodeRow[]>`
+      SELECT DISTINCT ON (n.id) ${SP_NODE_COLUMNS}
+        FROM question_version_sp_nodes qs
+        JOIN question_versions v ON v.id = qs.question_version_id
+        JOIN questions q ON q.id = v.question_id AND v.version_no = q.live_version_no
+        JOIN curriculum_nodes n ON n.id = qs.node_id AND n.kind = 'sp'
+        JOIN education_levels el ON el.id = n.education_level_id AND el.is_active AND el.code ~ '^T[1-5]$'
+       WHERE n.subject_id = ANY(${[...new Set(subjectIds)]}::bigint[]) AND q.is_active AND v.status = 'approved'`
+    return rows.map(toSpNode)
+  }
+
+  /**
+   * S10-T05 part 3: per question id, the SP nodes tagged on its LIVE version (Tingkatan 1 to 5, active level), whatever the version status, so an
+   * answered question keeps its tiles after it is archived. A question without an SP tag is absent from the map.
+   */
+  async spNodesOfQuestions(questionIds: readonly bigint[]): Promise<Map<bigint, HeatmapSpNode[]>> {
+    const out = new Map<bigint, HeatmapSpNode[]>()
+    if (questionIds.length === 0) return out
+    const rows = await this.db.$queryRaw<(SpNodeRow & { question_id: bigint })[]>`
+      SELECT q.id AS question_id, ${SP_NODE_COLUMNS}
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
+        JOIN question_version_sp_nodes qs ON qs.question_version_id = v.id
+        JOIN curriculum_nodes n ON n.id = qs.node_id AND n.kind = 'sp'
+        JOIN education_levels el ON el.id = n.education_level_id AND el.is_active AND el.code ~ '^T[1-5]$'
+       WHERE q.id = ANY(${[...new Set(questionIds)]}::bigint[])`
+    for (const r of rows) {
+      const list = out.get(r.question_id)
+      if (list) list.push(toSpNode(r))
+      else out.set(r.question_id, [toSpNode(r)])
     }
     return out
   }

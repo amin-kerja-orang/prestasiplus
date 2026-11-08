@@ -407,7 +407,7 @@ describe('test mode (Mod Pelajar, is_test)', () => {
 describe('HeatmapPorts', () => {
   it('a second registration of the answer source throws', () => {
     const ports = new HeatmapPorts(t.app.get(PracticeRepository))
-    const fake = { chapterAnswerCounts: async () => [] }
+    const fake = { chapterAnswerCounts: async () => [], questionAnswerCounts: async () => [] }
     ports.provideAnswerCounts(fake)
     expect(() => ports.provideAnswerCounts(fake)).toThrow(/already provided/)
   })

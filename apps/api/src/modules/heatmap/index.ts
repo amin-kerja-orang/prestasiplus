@@ -9,5 +9,13 @@ export {
   compareIds,
   compareNames,
   compareSubjectRefs,
+  compareSpRefs,
+  levelKey,
+  spCounts,
+  spKey,
+  spTile,
   type ChapterCount,
+  type HeatmapSpInput,
+  type HeatmapSpRef,
+  type QuestionCount,
 } from './heatmap.rules'
