@@ -224,6 +224,19 @@ describe('R1-B12 self-mark', () => {
     expect(sec.awarded).toBe(2)
   })
 
+  it('S3-T04: the self-mark updates the answer row of the part (null while waiting, then the pupil mark), through the port', async () => {
+    const id = await sains()
+    const rowsOf = () => t.answerLog.entries.filter((e) => e.attemptId === id && e.partRef === SEL_B)
+    expect(rowsOf()).toHaveLength(1)
+    expect(rowsOf()[0]).toMatchObject({ mode: 'simulasi', marksAwarded: null, isCorrect: false, marksMax: 2 })
+    expect(BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 2 })).body.data).awarded).toBe(2)
+    expect(rowsOf()).toHaveLength(2) // the same key again: the port updates the row
+    expect(rowsOf()[1]).toMatchObject({ mode: 'simulasi', marksAwarded: 2, isCorrect: true, marksMax: 2 })
+    // a repeat with the same mark changes nothing and writes nothing
+    await selfMark(me, id, { partId: SEL_B, mark: 2 })
+    expect(rowsOf()).toHaveLength(2)
+  })
+
   it('clamps to 0..part marks instead of refusing', async () => {
     const id = await sains()
     expect(BijakAttemptSelfMarkResultSchema.parse((await selfMark(me, id, { partId: SEL_B, mark: 99 })).body.data).awarded).toBe(2)

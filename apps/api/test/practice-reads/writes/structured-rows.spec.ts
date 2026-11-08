@@ -106,6 +106,28 @@ describe('A5 one practice_answers row per leaf', () => {
     expect((await rowsOf(out.attemptId)).map((r) => [r.mode, r.marks_awarded])).toEqual([['tracking_a', 3]])
   })
 
+  it('a self-mark on a structured attempt keeps its rows structured (no simulasi rows) (S3-T04)', async () => {
+    const id = await publish([leaf('(a)', 2), leaf('(b)', 3)])
+    const c = await loginAs(t, 'student')
+    const out = await submit(c, id, { '(a)': 'jawapan (a)', '(b)': UNSURE })
+    const before = await rowsOf(out.attemptId)
+    expect(before.map((r) => [r.part_ref, r.mode])).toEqual([
+      ['(a)', 'structured'],
+      ['(b)', 'structured'],
+    ])
+    await selfMark(c, out.attemptId, 2, 1) // the pupil marks (b), the part that waited
+    const after = await rowsOf(out.attemptId)
+    // base's structured writer updates the same leaf row in place: the count is unchanged, only (b) gains its marks
+    expect(after).toHaveLength(before.length)
+    expect(after.map((r) => [r.part_ref, r.mode, r.marks_awarded])).toEqual([
+      ['(a)', 'structured', 2],
+      ['(b)', 'structured', 2],
+    ])
+    expect(after.map((r) => r.id)).toEqual(before.map((r) => r.id))
+    const simulasi = await t.db.query("select 1 from practice_answers where attempt_id = $1 and mode = 'simulasi'", [out.attemptId])
+    expect(simulasi).toHaveLength(0)
+  })
+
   it('AC-MUR-13-24: the self-mark 3 of 4, then 2, updates the one row; the Sesi list shows 3 / 4 and then 2 / 4', async () => {
     const id = await publish()
     const c = await loginAs(t, 'student2')

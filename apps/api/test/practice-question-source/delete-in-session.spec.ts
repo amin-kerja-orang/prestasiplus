@@ -201,7 +201,7 @@ describe('Kuiz (POST /bijak/kuiz/sessions)', () => {
     await readsAreFine('kuiz answered then deleted')
   })
 
-  it('COMPLETED: the history still renders after the questions are deleted; a second finish is 409', async () => {
+  it('COMPLETED: the history still renders after the questions are deleted; a second finish is 200 (API-BIJAK-06)', async () => {
     for (let i = 0; i < 6; i++) await mcq()
     const start = await startKuiz()
     expect(start.status, JSON.stringify(start.body)).toBe(201)
@@ -217,7 +217,7 @@ describe('Kuiz (POST /bijak/kuiz/sessions)', () => {
     expect(after.status).toBe(200)
     expect(JSON.stringify(after.body.data)).toBe(JSON.stringify(before.body.data))
     const again = await pupil.post(`/bijak/kuiz/sessions/${sid}/finish`, { timeSpent: 30 })
-    expect(again.status).toBe(409)
-    expect(again.body.error.code).toBe('ALREADY_SUBMITTED')
+    expect(again.status).toBe(200)
+    expect(again.body.data).toMatchObject({ answered: 3 })
   })
 })
