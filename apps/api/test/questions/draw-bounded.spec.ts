@@ -574,6 +574,8 @@ describe('re-G4 minors', () => {
       { subjects: async () => [{ id: 1n, code: 'MATH', name: 'Matematik' }, { id: 2n, code: 'BI', name: 'English' }] } as never,
       {} as never,
       clock,
+      {} as never,
+      {} as never,
     )
     const caller = { userId: '1' } as never
     const pages = await Promise.all([svc.page(caller, '10'), svc.page(caller, '10'), svc.page(caller, '10')])

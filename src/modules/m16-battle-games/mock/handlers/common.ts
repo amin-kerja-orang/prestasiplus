@@ -35,6 +35,8 @@ export function liveRefusal(error: unknown): MockResponse {
       return raw(403, { error: error.message })
     case 'CONFLICT':
       return raw(409, { error: error.message })
+    case 'DAILY_LIMIT':
+      return raw(429, { error: error.message })
     default:
       return raw(404, { error: error.message })
   }
@@ -45,6 +47,12 @@ export function startRefusal(error: unknown): MockResponse {
   if (!(error instanceof M16Error)) throw error
   if (error.code === 'VALIDATION_ERROR') return raw(422, {})
   if (error.code === 'FORBIDDEN') return raw(403, {})
+  if (error.code === 'DAILY_LIMIT') {
+    // ERR-GAME-05: the 429 envelope with the BM text and `retryAfter` (seconds to the next MYT day)
+    return raw(429, {
+      error: { code: 'BATTLE_DAILY_LIMIT', message: error.message, retryAfter: Number(error.fields?.retryAfter ?? 1) },
+    })
+  }
   return liveRefusal(error)
 }
 

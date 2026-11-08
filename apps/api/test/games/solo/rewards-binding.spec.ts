@@ -71,7 +71,7 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ syiling_awarded: 0, correct_count: 5, total_answered: 6 })
     expect(await ledger(student.userId)).toEqual([])
     expect(await syiling(student.userId)).toBe(before)
-    expect(await events(student.userId)).toEqual([{ game_session_id: id, xp: 0, syiling: 0, capped_reason: null }])
+    expect(await events(student.userId)).toEqual([{ game_session_id: id, xp: 55, syiling: 0, capped_reason: null }]) // 5 x 10 + the play XP
   })
 
   it('games_award_syiling = 1: credits the computed coins once, under game:<game key> with the M14 wording; a replay returns the first result', async () => {
@@ -80,11 +80,11 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     const id = await play(student, 'TTTFTT')
     const res = await submit(student, id)
     expect(res.status, JSON.stringify(res.body)).toBe(200)
-    expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ syiling_awarded: 9, correct_count: 5, total_answered: 6 })
+    expect(GamesSoloSubmitResponseSchema.parse(res.body)).toMatchObject({ syiling_awarded: 5, correct_count: 5, total_answered: 6 })
     const rows = await ledger(student.userId)
-    expect(rows).toEqual([{ source: 'game:betul-salah', source_id: `game:${id}`, amount: 9, description: 'Betul/Salah: 5 betul, streak 3', is_test: false }])
-    expect(await syiling(student.userId)).toBe(before + 9)
-    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 0, syiling: 9, capped_reason: null })
+    expect(rows).toEqual([{ source: 'game:betul-salah', source_id: `game:${id}`, amount: 5, description: 'Betul/Salah: 5 betul, streak 3', is_test: false }])
+    expect(await syiling(student.userId)).toBe(before + 5)
+    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 55, syiling: 5, capped_reason: null })
     // a second submit is refused and a direct replay of the same session adds nothing
     expect((await submit(student, id)).status).toBe(409)
     const again = await t.app.get(GamificationService, { strict: false }).onGameResult(
@@ -92,9 +92,9 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
       { game: 'betul_salah', event: 'finish', coins: 9, xp: 0, correct: 5, total: 6, detail: { maxStreak: 3 }, key: id, session: { id, gameKey: 'betul-salah' } },
       { isTest: false },
     )
-    expect(again).toEqual({ coinsCredited: 9, xpAdded: 0, cappedReason: null })
+    expect(again).toEqual({ coinsCredited: 5, xpAdded: 55, cappedReason: null })
     expect(await ledger(student.userId)).toHaveLength(1)
-    expect(await syiling(student.userId)).toBe(before + 9)
+    expect(await syiling(student.userId)).toBe(before + 5)
   })
 
   it('two concurrent submits pay exactly once', async () => {
@@ -139,7 +139,7 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
     const res = await submit(student, id)
     expect((GamesSoloSubmitResponseSchema.parse(res.body) as { syiling_awarded: number }).syiling_awarded).toBe(0)
     expect((await ledger(student.userId)).length).toBe(before)
-    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 0, syiling: 0, capped_reason: 'syiling_cap' })
+    expect((await events(student.userId)).at(-1)).toEqual({ game_session_id: id, xp: 25, syiling: 0, capped_reason: 'syiling_cap' })
     await t.db.query(`update gamification_settings set value = 100 where key = 'games_daily_syiling_cap'`)
   })
 
@@ -156,8 +156,8 @@ describe('games rewards port bound to GamificationService (D-13)', () => {
       const r = await student2.post(`/api/games/jutawan/${sessionId}/answer`, { questionId: item.question_id, optionId })
       expect(r.status, JSON.stringify(r.body)).toBe(200)
     }
-    expect((await events(u)).at(-1)).toEqual({ game_session_id: sessionId, xp: 0, syiling: 50, capped_reason: null })
-    expect((await ledger(u)).at(-1)).toMatchObject({ source: 'game:jutawan', source_id: `game:${sessionId}`, amount: 50 })
+    expect((await events(u)).at(-1)).toEqual({ game_session_id: sessionId, xp: 105, syiling: 10, capped_reason: null })
+    expect((await ledger(u)).at(-1)).toMatchObject({ source: 'game:jutawan', source_id: `game:${sessionId}`, amount: 10 })
   })
 
   it('Papan Bijak: the rates come from the wallet tier and the credits use the M14 wording', async () => {

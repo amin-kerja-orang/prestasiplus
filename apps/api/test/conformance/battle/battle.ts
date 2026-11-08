@@ -2,7 +2,7 @@ import { sessionLogin, type HttpClient, type HttpResponse, type Scenario, type S
 
 import { DEMO_PASSWORD, OTHER_STUDENT } from '../accounts'
 import { API_ONLY, dataOf, expectError, listOf } from '../helpers'
-import { battleFixture } from './fixtures'
+import { BATTLE_ROBOT_WAIT_MS, battleFixture } from './fixtures'
 
 /**
  * Battle conformance (BE-44, M16): all 25 routes of the queue, invitations, forfeit, lobby, arena, standings, history,
@@ -27,32 +27,59 @@ async function startQueue(ctx: ScenarioContext, who: HttpClient, path = '/battle
   return String(body(res).queue_id)
 }
 
-/** Polls three times; the third poll matches a bot. Returns the battle uuid. */
+/**
+ * The queue is polled the way the app does (an entry not polled for a while is abandoned): waiting at 0, 9, 18 and 27 s
+ * of the injected clock, then the poll at 30 s (`battle_bot_fallback_seconds`, FR-PA-29) seats Robot PrestasiPlus.
+ * Returns the battle uuid.
+ */
 async function matchBot(ctx: ScenarioContext, who: HttpClient, queueId: string): Promise<string> {
-  let last: HttpResponse | null = null
-  for (let i = 0; i < 3; i++) last = await who.request('GET', `/battle/poll-match/${queueId}`)
-  ctx.expectStatus(last as HttpResponse, 200)
-  ctx.check(body(last as HttpResponse).status === 'matched', `the third poll must match a bot, got ${JSON.stringify(body(last as HttpResponse))}`)
-  return String(body(last as HttpResponse).battle_uuid)
+  for (let i = 0; i < 4; i++) {
+    const w = await who.request('GET', `/battle/poll-match/${queueId}`)
+    ctx.expectStatus(w, 200)
+    ctx.check(body(w).status === 'waiting', 'the polls before the wait is over must answer waiting')
+    battleFixture.advanceClock(i === 3 ? BATTLE_ROBOT_WAIT_MS - 27_000 : 9_000)
+  }
+  const last = await who.request('GET', `/battle/poll-match/${queueId}`)
+  ctx.expectStatus(last, 200)
+  ctx.check(body(last).status === 'matched', `the poll after the wait must match a robot, got ${JSON.stringify(body(last))}`)
+  return String(body(last).battle_uuid)
 }
 
-/** Plays the 10 questions (always option 1, the key of every fixture question) and returns the last answer response. */
-async function playToEnd(ctx: ScenarioContext, who: HttpClient, uuid: string): Promise<HttpResponse> {
-  const view = await who.request('GET', `/battle/arena/${uuid}`)
-  ctx.expectStatus(view, 200)
-  let question = dataOf(view).question as { id: string } | null
-  let last: HttpResponse = view
-  for (let n = 0; n < 10 && question; n++) {
-    last = await who.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 3 } })
-    ctx.expectStatus(last, 200)
-    question = (dataOf(last).next as { id: string } | undefined) ?? null
+/**
+ * Waits like a client until the battle is over or a round after `index` is open: the clock moves one second at a time with a poll
+ * after each (the robot answers 2 to 12 s into a round, and a closed round is revealed for 3 s). Returns the last arena view.
+ */
+async function waitForRound(ctx: ScenarioContext, who: HttpClient, uuid: string, index: number): Promise<HttpResponse> {
+  for (let i = 0; i < 40; i++) {
+    battleFixture.advanceClock(1_000)
+    const view = await who.request('GET', `/battle/arena/${uuid}`)
+    ctx.expectStatus(view, 200)
+    const v = dataOf(view)
+    if (v.status !== 'active' || (v.phase === 'answering' && (v.index as number) > index)) return view
   }
-  return last
+  throw new Error(`battle ${uuid}: round ${index} did not close`)
+}
+
+/**
+ * Plays the battle to its end (always option 1, the key of every fixture question), one answer per round. `answeredFirst`: the
+ * caller already answered the round on screen, so the first step waits for the next one. Returns the finished arena view.
+ */
+async function playToEnd(ctx: ScenarioContext, who: HttpClient, uuid: string, answeredFirst = false): Promise<HttpResponse> {
+  let view = await who.request('GET', `/battle/arena/${uuid}`)
+  ctx.expectStatus(view, 200)
+  if (answeredFirst) view = await waitForRound(ctx, who, uuid, dataOf(view).index as number)
+  for (let n = 0; n < 20 && dataOf(view).status === 'active'; n++) {
+    const question = dataOf(view).question as { id: string }
+    const answered = await who.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 3 } })
+    ctx.expectStatus(answered, 200)
+    view = await waitForRound(ctx, who, uuid, dataOf(view).index as number)
+  }
+  return view
 }
 
 export const battleScenarios: Scenario[] = [
   {
-    id: 'battle-api/quick-match: queue, three polls match a bot, the arena is played to question 10 and the battle shows in history and standings',
+    id: 'battle-api/quick-match: queue, polls wait, the robot comes after the wait, the arena is played to question 10 and the battle shows in history and standings',
     domain: 'battle',
     targets: API_ONLY,
     async run(ctx) {
@@ -63,16 +90,17 @@ export const battleScenarios: Scenario[] = [
       ctx.check(l.spmUnlocked === true && Array.isArray(l.spmSubjects) && l.gradeLabel === 'Tingkatan 4', 'the grade 10 student must have SPM unlocked and the label Tingkatan 4')
       ctx.check((l.subjects as Json[]).some((s) => s.id === battleFixture.mathId), 'the lobby must list the battle subject')
 
+      // A ranked battle between two pupils moves the list (the arena cannot play one yet, so a finished row is seeded); the list
+      // is then non-empty, so the robot check below cannot pass on two empty lists.
+      const empty = await student.request('GET', '/battle/standings/students?period=monthly')
+      ctx.expectStatus(empty, 200)
+      await battleFixture.seedRankedBattle()
+      const standingsBefore = await student.request('GET', '/battle/standings/students?period=monthly')
+      ctx.expectStatus(standingsBefore, 200)
+      ctx.check(listOf(standingsBefore).length >= listOf(empty).length + 1, 'a finished ranked battle between two pupils must add them to the monthly standings')
+      ctx.check(JSON.stringify(listOf(standingsBefore)) !== JSON.stringify(listOf(empty)), 'a ranked battle must change the monthly standings')
       const queueId = await startQueue(ctx, student)
-      for (let i = 0; i < 2; i++) {
-        const w = await student.request('GET', `/battle/poll-match/${queueId}`)
-        ctx.expectStatus(w, 200)
-        ctx.check(body(w).status === 'waiting', 'the first two polls must answer waiting')
-      }
-      const m = await student.request('GET', `/battle/poll-match/${queueId}`)
-      ctx.expectStatus(m, 200)
-      ctx.check(body(m).status === 'matched', 'the third poll must match')
-      const uuid = String(body(m).battle_uuid)
+      const uuid = await matchBot(ctx, student, queueId) // waits, then the robot comes
 
       const view = await student.request('GET', `/battle/arena/${uuid}`)
       ctx.expectStatus(view, 200)
@@ -91,10 +119,10 @@ export const battleScenarios: Scenario[] = [
 
       const first = await student.request('POST', `/battle/arena/${uuid}/answer`, { body: { questionId: question.id, optionId: 1, seconds: 0 } })
       ctx.expectStatus(first, 200)
-      ctx.check(dataOf(first).correct === true && dataOf(first).correctOptionId === 1 && dataOf(first).points === 1000, 'a correct answer at 0 s scores 1000')
-      const end = await playToEnd(ctx, student, uuid)
+      ctx.check(dataOf(first).accepted === true && dataOf(first).phase === 'answering' && dataOf(first).correctOptionId === undefined && dataOf(first).correct === undefined && dataOf(first).points === undefined, 'an answer in an open round is accepted and carries no key, correctness or points')
+      const end = await playToEnd(ctx, student, uuid, true)
       const result = dataOf(end).result as { winner: string | null; scoreA: number } | undefined
-      ctx.check(result !== undefined && result.scoreA > 0, 'question 10 must return a result with the caller score')
+      ctx.check(result !== undefined && result.scoreA > 0, 'the last round must end the battle with a result carrying the caller score')
 
       const done = await student.request('GET', `/battle/arena/${uuid}`)
       ctx.expectStatus(done, 200)
@@ -109,7 +137,8 @@ export const battleScenarios: Scenario[] = [
       ctx.check(listOf(history).some((r) => r.uuid === uuid), 'the finished battle must be in the history')
       const standings = await student.request('GET', '/battle/standings/students?period=monthly')
       ctx.expectStatus(standings, 200)
-      ctx.check(listOf(standings).length > 0, 'a finished battle must put a student in the monthly standings')
+      // FR-MUR-21-9 / DM-60: a battle against Robot PrestasiPlus counts for no ranking, so the standings do not move.
+      ctx.check(JSON.stringify(listOf(standings)) === JSON.stringify(listOf(standingsBefore)), 'a finished robot battle must not change the (non-empty) monthly standings')
       ctx.expectStatus(await student.request('GET', '/battle/standings/students'), 200)
     },
   },
@@ -309,7 +338,7 @@ export const battleScenarios: Scenario[] = [
     },
   },
   {
-    id: 'battle-api/school standings, podium and school page agree after a finished battle; unknown school is 404',
+    id: 'battle-api/school standings, podium and school page agree on seed data after a robot battle; unknown school is 404',
     domain: 'battle',
     targets: API_ONLY,
     async run(ctx) {

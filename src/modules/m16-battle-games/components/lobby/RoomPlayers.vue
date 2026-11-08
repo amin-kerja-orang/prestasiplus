@@ -48,6 +48,9 @@ defineProps<{ room: RoomView; showMetric: boolean }>()
           data-testid="room-player-host"
           >Hos</UBadge
         >
+        <UBadge v-if="p.isBot" color="neutral" variant="soft" data-testid="room-player-robot"
+          >Robot</UBadge
+        >
       </li>
     </ul>
   </UCard>
