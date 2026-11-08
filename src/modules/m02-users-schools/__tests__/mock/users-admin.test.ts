@@ -219,6 +219,7 @@ describe('GET /api/admin/users (#1)', () => {
         'email',
         'id',
         'isActive',
+        'isSuspended',
         'name',
         'phone',
         'role',
@@ -631,7 +632,7 @@ describe('POST /api/admin/users (#4)', () => {
       )
       expect(
         (await fieldsOf(newUser({ password: '12345', passwordConfirmation: '12345' }))).password,
-      ).toBe('The password field must be at least 6 characters.')
+      ).toBe('The password field must be at least 8 characters.')
       expect((await fieldsOf(newUser({ passwordConfirmation: 'lain-lain' }))).password).toBe(
         'The password field confirmation does not match.',
       )
@@ -777,12 +778,12 @@ describe('PUT /api/admin/users/:id (#5)', () => {
     })
   })
 
-  it('sets a new password only when filled; it must be ≥ 6 and confirmed', async () => {
+  it('sets a new password only when filled; it must be ≥ 8 and confirmed', async () => {
     const d = await createUser({ password: 'lama-lama', passwordConfirmation: 'lama-lama' })
     const url = `/api/admin/users/${String(d.id)}`
     const short = await put(url, base(d, { newPassword: '123', newPasswordConfirmation: '123' }))
     expect(short.body.error?.fields?.newPassword).toBe(
-      'The new password field must be at least 6 characters.',
+      'The new password field must be at least 8 characters.',
     )
     const mismatch = await put(
       url,
@@ -1426,5 +1427,45 @@ describe('the typed api/ client against the handlers', () => {
     expect(session.user).toMatchObject({ id: 2, landingPath: '/dashboard' })
     expect((await searchStudents('pelajar@demo'))[0]).toMatchObject({ id: 2, classLevel: 'T4' })
     expect((await fetchAdminDefaults()).compStudentDefaultPassword).toMatch(/^\d{8}$/)
+  })
+})
+
+describe('pending approval (U-01, D115): status filter, isSuspended and meta.pendingCount', () => {
+  const list = async (query: string) =>
+    (await get(`/api/admin/users?${query}`)).body as {
+      data: AdminUserListItem[]
+      meta: { totalItems: number; pendingCount: number }
+    }
+
+  it('every inactive account is pending: not suspended, counted in meta.pendingCount', async () => {
+    const pending = await list('status=pending')
+    expect(pending.data.length).toBeGreaterThan(0)
+    expect(pending.data.every((u) => !u.isActive && u.isSuspended === false)).toBe(true)
+    expect(pending.meta.totalItems).toBe(pending.meta.pendingCount)
+    expect((await list('')).meta.pendingCount).toBe(pending.meta.pendingCount)
+    expect((await list('isActive=0')).meta.totalItems).toBe(pending.meta.pendingCount)
+  })
+
+  it('status=active lists active accounts; status=suspended matches nothing (no suspended flag)', async () => {
+    const active = await list('status=active')
+    expect(active.data.every((u) => u.isActive && u.isSuspended === false)).toBe(true)
+    expect((await list('status=suspended')).data).toEqual([])
+  })
+
+  it('approving through toggle-active removes the account from the pending list', async () => {
+    const before = await list('status=pending')
+    const target = before.data[0]
+    if (!target) throw new Error('no pending account')
+    const res = await post(`/api/admin/users/${String(target.id)}/toggle-active`)
+    expect(res.status).toBe(200)
+    const after = await list('status=pending')
+    expect(after.meta.pendingCount).toBe(before.meta.pendingCount - 1)
+    expect(users.get(target.id)?.isActive).toBe(true)
+    // Put it back so later tests see the original state.
+    await post(`/api/admin/users/${String(target.id)}/toggle-active`)
+  })
+
+  it('an unknown status matches nothing', async () => {
+    expect((await list('status=ditolak')).data).toEqual([])
   })
 })

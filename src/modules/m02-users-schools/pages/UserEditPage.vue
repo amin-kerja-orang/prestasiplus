@@ -48,7 +48,13 @@ import GradeCards from '../components/GradeCards.vue'
 import ParentStudentLinker from '../components/ParentStudentLinker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import type { CredentialRow } from '../lib/credential-row'
-import { errorLines, initialsOf, USERS_LIST_PATH } from '../lib/user-list'
+import {
+  errorLines,
+  initialsOf,
+  isPasswordTooShort,
+  PASSWORD_SHORT_MESSAGE,
+  USERS_LIST_PATH,
+} from '../lib/user-list'
 import {
   formatDate,
   formatDateTime,
@@ -186,6 +192,13 @@ function buildRequest(role: Role): UpdateAdminUserRequest {
 
 async function submit(): Promise<void> {
   if (saving.value || form.role === '') return
+  // FR-ADM-U02.4: a typed new password has at least 8 characters.
+  if (!http && isPasswordTooShort(form.newPassword)) {
+    errors.value = [PASSWORD_SHORT_MESSAGE]
+    await nextTick()
+    alertBox.value?.scrollIntoView?.({ block: 'start' })
+    return
+  }
   saving.value = true
   errors.value = []
   try {
@@ -513,7 +526,7 @@ async function submit(): Promise<void> {
                       type="password"
                       name="new_password"
                       autocomplete="new-password"
-                      placeholder="Minimum 6 aksara"
+                      placeholder="Minimum 8 aksara"
                       class="w-full"
                       data-testid="user-new-password"
                     />

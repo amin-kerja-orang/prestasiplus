@@ -29,6 +29,8 @@ export interface AdminUserListItem {
   role: AdminUserRole
   school: { id: number; name: string } | null
   isActive: boolean
+  /** Suspended by an admin (`Digantung`); an inactive, not suspended account is `Menunggu kelulusan`. */
+  isSuspended?: boolean
   /** ISO 8601 (+08:00). */
   createdAt: string
   avatarUrl: string | null
@@ -45,14 +47,21 @@ export interface RoleCounts {
   admin: number
 }
 
+/** U-01 account status filter (`status` query): pending approval, active or suspended. */
+export type AdminUserStatus = 'pending' | 'active' | 'suspended'
+
 export interface AdminUserListMeta {
   roleCounts: RoleCounts
+  /** Accounts waiting for approval (inactive, not suspended) in the caller's scope. */
+  pendingCount?: number
 }
 
 export interface AdminUserListQuery {
   role?: AdminUserRole | '' | null
   schoolId?: number | null
   isActive?: boolean | null
+  /** `pending` = `Menunggu kelulusan`, `suspended` = `Digantung`. */
+  status?: AdminUserStatus | null
   /** Name or e-mail substring. */
   search?: string | null
   page?: number | null
@@ -225,6 +234,7 @@ export async function fetchAdminUsers(
       schoolId: query.schoolId ?? null,
       isActive:
         query.isActive === undefined || query.isActive === null ? null : query.isActive ? 1 : 0,
+      status: query.status || null,
       search: query.search || null,
       page: query.page ?? null,
     },

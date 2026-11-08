@@ -51,6 +51,8 @@ export interface ListQuery {
   search?: unknown
   state?: unknown
   type?: unknown
+  /** 'true' shows the primary types too (R1-ADM-U-04); anything else keeps them hidden. */
+  includePrimary?: unknown
   page?: unknown
 }
 
@@ -147,6 +149,8 @@ export class SchoolsService {
     const search = text(query.search)
     const state = text(query.state)
     const type = text(query.type)
+    // Primary rows are visible when asked for, or when the type filter itself names a primary type.
+    const primaryVisible = text(query.includePrimary) === 'true' || (type !== undefined && isPrimarySchoolType(type))
     const [result, counts, types] = await Promise.all([
       this.repo.list({
         page,
@@ -154,9 +158,10 @@ export class SchoolsService {
         ...(search ? { search } : {}),
         ...(state ? { state } : {}),
         ...(type ? { type } : {}),
+        ...(primaryVisible ? { includePrimary: true } : {}),
       }),
-      this.repo.counts(),
-      this.repo.types(),
+      this.repo.counts(primaryVisible),
+      this.repo.types(primaryVisible),
     ])
     const members = await this.repo.memberCounts(result.rows.map((r) => r.id))
     return {
