@@ -55,6 +55,7 @@ import {
   computeSettlement,
   EngineRefusal,
   handOverSeat,
+  mathraceSettleDefault,
   pbSettleDefault,
   skipSeat,
   shouldWritePoll,
@@ -663,9 +664,16 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
       // FR-GM-02.5, AC-GM-02.4: the default winner of Papan Bijak is scored 10 x correct + 50 (the others 10 x correct).
       const seats = enginePlayers(rest)
+      // GAME-05: the default winner of Perlumbaan Matematik keeps its steps as points (skor = steps), as does every seat.
+      const settled =
+        room.game === 'papan-bijak'
+          ? pbSettleDefault(seats, last.seat)
+          : room.game === 'perlumbaan-matematik'
+            ? mathraceSettleDefault(seats, state.meter)
+            : seats
       return this.applyOut(tx, room, rest, {
         state,
-        players: room.game === 'papan-bijak' ? pbSettleDefault(seats, last.seat) : seats,
+        players: settled,
         finished: true,
       })
     }
