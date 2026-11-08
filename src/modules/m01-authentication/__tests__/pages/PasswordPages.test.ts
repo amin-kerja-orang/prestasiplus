@@ -179,7 +179,7 @@ describe('PasswordResetPage (S4)', () => {
     expect(w.get('input[name=token]').attributes('value')).toBe('apa-apa')
     expect(w.get('[data-testid=reset-password]').attributes()).toMatchObject({
       autocomplete: 'new-password',
-      placeholder: 'Minimum 6 aksara',
+      placeholder: 'Minimum 8 aksara',
       required: '',
     })
     expect(w.get('[data-testid=reset-confirm]').attributes()).toMatchObject({

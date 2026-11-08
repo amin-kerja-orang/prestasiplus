@@ -105,7 +105,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expect(page.getByTestId('role-student')).toHaveAttribute('data-selected', 'true')
     await expect(page.getByText('Pilih Tahap Anda')).toBeVisible()
     await expect(form.getByLabel('No. Kad Pengenalan (Pilihan)')).toHaveAttribute('maxlength', '14')
-    await expect(page.getByText('Minimum 6 aksara')).toBeVisible()
+    await expect(page.getByText('Minimum 8 aksara')).toBeVisible()
     await expect(form.getByRole('button', { name: 'Daftar Sekarang' })).toBeEnabled()
 
     await page.getByTestId('role-teacher').click()

@@ -145,7 +145,7 @@ const msg = {
   confirmed: (attr: string) => `The ${attr} field confirmation does not match.`,
 }
 
-export const ACCOUNT_PASSWORD_MIN = 6
+export const ACCOUNT_PASSWORD_MIN = 8
 export const ACCOUNT_NAME_MAX = 255
 export const ACCOUNT_EMAIL_MAX = 255
 export const ACCOUNT_PHONE_MAX = 14
@@ -188,7 +188,7 @@ const emailField = z
   .check(z.email({ error: msg.email('email') }))
   .max(ACCOUNT_EMAIL_MAX, { error: msg.maxChars('email', ACCOUNT_EMAIL_MAX) })
 
-/** Password: never trimmed, minimum 6 characters (mock `min(6)`). */
+/** Password: never trimmed, minimum 8 characters (FR-ADM-U02.4; the mock still uses `min(6)`). */
 const passwordField = (attr: string) =>
   z
     .string({ error: msg.required(attr) })

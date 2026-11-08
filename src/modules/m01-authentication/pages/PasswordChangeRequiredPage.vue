@@ -93,7 +93,7 @@ async function submit(): Promise<void> {
           id="password"
           v-model="password"
           name="password"
-          placeholder="Minimum 6 aksara"
+          placeholder="Minimum 8 aksara"
           autocomplete="new-password"
           testid="change-new"
         />

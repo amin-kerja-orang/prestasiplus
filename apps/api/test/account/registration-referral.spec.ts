@@ -137,7 +137,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
   it('FR-GM-24.2, AC-MUR-AUTH-4: a pending teacher with a known code is created and nothing is paid or stored (new pupils only)', async () => {
     const referrerBefore = (await syiling(db, referrerId)) ?? 0
     const referralsBefore = await count(db, 'referrals')
-    const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
+    const res = await register({ name: 'Guru Rujuk', email: 'guru.rujuk@ujian.test', role: 'teacher', schoolId, password: 'rahsia111', passwordConfirmation: 'rahsia111', referralCode: code })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const row = (await userRow(db, 'guru.rujuk@ujian.test'))!
     expect(row.school_id).toBeNull()
@@ -151,7 +151,7 @@ describe('self-registration applies the referral code (XR-M14-02, BR-M14-19)', (
     const referrerBefore = await syiling(db, referrerId)
     const referralsBefore = await count(db, 'referrals')
     const ledgerBefore = await count(db, 'coin_ledger')
-    const res = await register({ name: 'Penjaga Rujuk', email: 'penjaga.rujuk@ujian.test', phone: '0191234567', role: 'parent', password: 'rahsia1', passwordConfirmation: 'rahsia1', referralCode: code })
+    const res = await register({ name: 'Penjaga Rujuk', email: 'penjaga.rujuk@ujian.test', phone: '0191234567', role: 'parent', password: 'rahsia111', passwordConfirmation: 'rahsia111', referralCode: code })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const id = (await userRow(db, 'penjaga.rujuk@ujian.test'))!.id
     expect(await ledger(db, id)).toEqual([])
