@@ -39,7 +39,7 @@ describe('games demo seed (BE-45)', () => {
     await db.drop()
   })
 
-  it('seeds the observed leagues, standings and weekly boards with fictitious demo data only', async () => {
+  it('seeds the observed leagues and standings with fictitious demo data only, and no weekly board', async () => {
     const leagues = await db.query<{ name: string; invite_code: string; status: string }>('select name, invite_code, status from leagues order by id')
     expect(leagues).toEqual([
       { name: 'Liga Sejarah 2026 5ST', invite_code: 'RMU4VCBS', status: 'upcoming' },
@@ -49,8 +49,9 @@ describe('games demo seed (BE-45)', () => {
     expect(schools[0]!.n).toBe('5')
     const st = await db.query<{ n: string }>('select count(*)::text as n from league_standings')
     expect(st[0]!.n).toBe('4')
-    const weeks = await db.query<{ week_start: string; n: string }>(`select week_start::text, count(*)::text as n from sekolah_bersaing_weeks group by 1 order by 1`)
-    expect(weeks.map((w) => [w.week_start, w.n])).toEqual([['2026-08-31', '4'], ['2026-09-07', '4'], ['2026-09-14', '4'], ['2026-09-21', '4']])
+    // The Sekolah Bersaing board is live (S7-T02): no weekly snapshot is seeded.
+    const weeks = await db.query<{ n: string }>('select count(*)::text as n from sekolah_bersaing_weeks')
+    expect(weeks[0]!.n).toBe('0')
     const standings = await db.query<{ n: string }>('select count(*)::text as n from game_standings')
     expect(Number(standings[0]!.n)).toBeGreaterThan(0)
     const legacy = await db.query<{ n: string }>(`select (select count(*) from game_rooms where legacy_source is not null) + (select count(*) from game_sessions where legacy_source is not null) as n`)

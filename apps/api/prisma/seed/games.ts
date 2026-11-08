@@ -1,21 +1,18 @@
 /**
  * Games demo seed (BE-45, M16 part 2): game standings, personal bests, Jutawan and spin stats for a few demo
- * students, a few closed rooms and submitted sessions, the two observed leagues with their stored standings and
- * the Sekolah Bersaing weekly snapshots. Demo kind: refused in production unless ALLOW_DEMO_SEED. Fictitious data
- * only; users are found by e-mail and schools by code (never by id), `legacy_*` is never set. The `game_settings`
+ * students, a few closed rooms and submitted sessions, and the two observed leagues with their stored standings.
+ * The Sekolah Bersaing weekly snapshots are no longer seeded: the board is live (S7-T02, D115). Demo kind: refused
+ * in production unless ALLOW_DEMO_SEED. Fictitious data only; users are found by e-mail and schools by code (never by id), `legacy_*` is never set. The `game_settings`
  * row is inserted by the migration and is not touched here.
  *
- * Source of the values: the frontend mock (`src/modules/m16-battle-games/mock/data/{leagues,sekolah-bersaing-seed}.ts`)
- * for the leagues and the board; the standings, bests and stats are generated from `ctx.prng` (the mock's are
+ * Source of the values: the frontend mock (`src/modules/m16-battle-games/mock/data/leagues.ts`)
+ * for the leagues; the standings, bests and stats are generated from `ctx.prng` (the mock's are
  * generated too). Deviations from the mock (each is a row of docs/architecture/v2-backend-deviations.md):
- *  - the mock places leagues and Sekolah Bersaing rows on its school register; here the four demo schools
+ *  - the mock places leagues on its school register; here the four demo schools
  *    (DEMO001..DEMO004) stand in: league 1 (observed 8080, 8082, 8106) -> DEMO001, DEMO002, DEMO003; league 2
  *    (8078, 8090) -> DEMO004, DEMO001;
- *  - Sekolah Bersaing rows name a school as "the n-th school of a state"; only rows whose placement exists among
- *    the demo schools are seeded (Selangor 1-2 -> DEMO001, DEMO002; Johor 1-2 -> DEMO003, DEMO004), in stored order,
- *    and their ranks are compacted to 1..n (no gaps). The other rows are not seeded (no school to show);
  *  - creators are the demo teacher / admin accounts (the mock's are real accounts of its own dataset);
- *  - league and Sekolah Bersaing rows are the stored job output: nothing recomputes them (OQ-M16-09).
+ *  - league rows are the stored job output: nothing recomputes them (OQ-M16-09).
  *
  * Idempotent: every row is matched by its natural key and an existing row is left as it is. Deterministic: random
  * figures come from `ctx.prng`, times from `ctx.clock`. Skips (does not fail) any user or school it cannot find.
@@ -97,15 +94,6 @@ export const GAMES_SEED_LEAGUES: readonly LeaguePlan[] = [
     ],
   },
 ]
-
-/** Sekolah Bersaing weeks (mock `SB_WEEKS`): the rows whose placement exists among the demo schools, stored order. */
-const SB_ROWS: readonly (readonly [state: string, n: number, aktifPct: number, streakAvg: number, notaPer10: number])[] = [
-  ['Johor', 1, 0.0, 9.3, 0.0],
-  ['Selangor', 1, 0.0, 8.2, 0.0],
-  ['Selangor', 2, 0.0, 8.1, 0.0],
-  ['Johor', 2, 0.0, 7.9, 0.0],
-]
-export const GAMES_SEED_SB_WEEKS = ['2026-09-21', '2026-09-14', '2026-09-07', '2026-08-31'] as const
 
 const at = (iso: string): Date => new Date(iso)
 
@@ -226,26 +214,6 @@ async function seedLeagues(ctx: SeedContext): Promise<void> {
   }
 }
 
-async function seedSekolahBersaing(ctx: SeedContext): Promise<void> {
-  const { prisma } = ctx
-  // "n-th school of the state" among the demo schools, by code.
-  const demo = await prisma.school.findMany({ where: { code: { startsWith: 'DEMO' } }, select: { id: true, code: true, state: true }, orderBy: { code: 'asc' } })
-  const byState = new Map<string, bigint[]>()
-  for (const s of demo) if (s.state) byState.set(s.state, [...(byState.get(s.state) ?? []), s.id])
-  const placed = SB_ROWS.flatMap(([state, n, aktifPct, streakAvg, notaPer10]) => {
-    const schoolId = byState.get(state)?.[n - 1]
-    return schoolId === undefined ? [] : [{ schoolId, aktifPct, streakAvg, notaPer10 }]
-  })
-  for (const week of GAMES_SEED_SB_WEEKS) {
-    const weekStart = at(`${week}T00:00:00.000Z`)
-    for (const [i, p] of placed.entries()) {
-      const rank = i + 1
-      if (await prisma.sekolahBersaingWeek.findUnique({ where: { weekStart_rank: { weekStart, rank } } })) continue
-      await prisma.sekolahBersaingWeek.create({ data: { weekStart, rank, schoolId: p.schoolId, aktifPct: p.aktifPct, streakAvg: p.streakAvg, notaPer10: p.notaPer10, isAnonymous: false } })
-    }
-  }
-}
-
 export const gamesSeed: SeedModule = {
   name: 'games',
   kind: 'demo',
@@ -254,6 +222,5 @@ export const gamesSeed: SeedModule = {
     await seedStats(ctx)
     await seedRoomsAndSessions(ctx)
     await seedLeagues(ctx)
-    await seedSekolahBersaing(ctx)
   },
 }
