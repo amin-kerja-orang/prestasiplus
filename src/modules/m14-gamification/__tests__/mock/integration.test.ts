@@ -83,9 +83,9 @@ describe('against the real M05 and M03', () => {
     ])
   })
 
-  it('S13 for the designed pelajar: 7 of 14 completed (the seeded replay agrees with M05)', async () => {
+  it('S13 for the designed pelajar: 7 of 15 completed (the seeded replay agrees with M05)', async () => {
     const res = await get('/api/gamification/challenges', setUser(2).token)
-    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 14, claimed: 0 })
+    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 15, claimed: 0 })
   })
 })
 

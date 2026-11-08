@@ -7,6 +7,7 @@ import { idFromString, idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { AnswerLogPort, type WritableAnswerMode, writableModeOf } from './answer-log.port'
 import { coinsPerCorrect } from './coins'
+import { GAME_ANSWER_MODES, longestRunInSession } from './day-facts'
 import { alreadySubmitted, notFound } from './errors'
 import { BANK_VISIBLE_SQL } from '../questions/learner-visibility'
 import { MAX_SECONDS_PER_QUESTION, type OfferedLevel, offeredLevels, POINTS_PER_CORRECT, sessionCoins } from './rules'
@@ -25,6 +26,9 @@ export function chunksOf<T>(items: readonly T[], size = 1000): T[][] {
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
   return out
 }
+
+/** `practice_answers` of a practice session: game and battle answers do not count (FR-GM-19.4). `mode` is NOT NULL since 0188. */
+const NOT_GAME_ANSWER = [{ mode: { notIn: [...GAME_ANSWER_MODES] } }]
 
 const bigOrNull = (id: string | null | undefined): bigint | null => (id == null ? null : idFromString(id))
 const strOrNull = (id: bigint | null): string | null => (id === null ? null : idToString(id))
@@ -771,10 +775,30 @@ export class PracticeRepository {
       orderBy: [{ completedAt: 'asc' }, { id: 'asc' }],
     })
     const answers = await this.db.practiceAnswer.findMany({
-      where: { userId: uid, answeredAt: { gte: from, lt: to }, chapterId: { not: null } },
+      where: { userId: uid, answeredAt: { gte: from, lt: to }, chapterId: { not: null }, OR: NOT_GAME_ANSWER },
       select: { chapterId: true },
     })
     return { sessions: rows.map(toSession), chapterIds: answers.flatMap((a) => (a.chapterId === null ? [] : [idToString(a.chapterId)])) }
+  }
+
+  /**
+   * M14 `best_combo` (S7-T04 part 14, R 4): the longest run of consecutive correct answers inside ONE practice
+   * session, among the answers given in `[from, to)`. Runs of two sessions are never summed; answers without a
+   * session and game answers (`mode` game / battle) are ignored. The run counts answer rows, not questions: a structured
+   * or subjective question writes one row per leaf, and a pending self-mark is written as `is_correct = false`, which
+   * breaks the run. Read-only.
+   */
+  async bestCombo(userId: string, from: Date, to: Date): Promise<number> {
+    // Scope (R 4, "in one session today"): the window is on `answered_at`, not on the session, and there is no status
+    // filter, so an in-progress session counts live. A session that crosses Malaysia midnight is split at the day
+    // boundary: its answers before 00:00 MYT count for the previous day, those from 00:00 for the new day, and each
+    // day's run starts fresh at the first answer inside its window (a streak of correct answers never bridges midnight).
+    const rows = await this.db.practiceAnswer.findMany({
+      where: { userId: idFromString(userId), sessionId: { not: null }, answeredAt: { gte: from, lt: to }, OR: NOT_GAME_ANSWER },
+      select: { sessionId: true, isCorrect: true },
+      orderBy: [{ answeredAt: 'asc' }, { id: 'asc' }],
+    })
+    return longestRunInSession(rows)
   }
 
   /** Counts and sums over EVERY completed session of `modes` (not only one page or one `type`). */

@@ -138,7 +138,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
   it('challenge completions and consecutive perfect days (Wira JomBelajar) come from the completion rows', async () => {
     const u = await bareStudent(t, 'Cabaran Lengkap')
     await t.db.query(`update achievements set criterion_min = 2 where name = 'Wira JomBelajar'`)
-    await t.db.query(`update achievements set criterion_min = 15 where name = 'Cabaran Selesai'`)
+    await t.db.query(`update achievements set criterion_min = 25 where name = 'Cabaran Selesai'`)
     try {
       const fill = (day: string) =>
         t.db.query(
@@ -149,7 +149,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
       await fill('2026-10-19') // today only: one perfect day is not two
       await t.gamification.evaluateAchievements(u, { isTest: false })
       expect(await unlockRows(u)).toEqual([])
-      await fill('2026-10-18') // yesterday as well -> two consecutive perfect days; 20 completions reach "Cabaran Selesai" at 15
+      await fill('2026-10-18') // yesterday as well -> two consecutive perfect days; 30 completions (15 active challenges a day) reach "Cabaran Selesai" at 25
       await t.gamification.evaluateAchievements(u, { isTest: false })
       expect((await unlockRows(u)).map((r) => r.name).sort()).toEqual(['Cabaran Selesai', 'Wira JomBelajar'])
     } finally {

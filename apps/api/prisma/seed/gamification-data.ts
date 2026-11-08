@@ -21,6 +21,8 @@ export const CHALLENGE_ROWS = [
   { title: 'Ketepatan 80%', description: 'Capai ketepatan 80% dalam latihan', icon: '🎯', challengeType: 'accuracy', metric: 'best_accuracy', targetValue: 80, rewardSyiling: 80, rewardXp: 150, difficulty: 'medium', sortOrder: 6, isActive: true },
   { title: '3 Topik Berbeza', description: 'Cuba 3 topik berlainan', icon: '🗺️', challengeType: 'topic_variety', metric: 'chapters', targetValue: 3, rewardSyiling: 60, rewardXp: 120, difficulty: 'medium', sortOrder: 7, isActive: true },
   { title: 'Belajar 15 Minit', description: 'Habiskan 15 minit latihan', icon: '⏱️', challengeType: 'time_spent', metric: 'minutes', targetValue: 15, rewardSyiling: 40, rewardXp: 80, difficulty: 'medium', sortOrder: 9, isActive: true },
+  // S7-T04 part 14: V2 position 8. Difficulty `medium` follows ruling 19 and Part 6; only the icon is unobserved (D9-style deviation, DOC DEFECT 19).
+  { title: 'Kombo 10', description: 'Capai kombo 10 jawapan betul', icon: '🔥', challengeType: 'combo', metric: 'best_combo', targetValue: 10, rewardSyiling: 120, rewardXp: 200, difficulty: 'medium', sortOrder: 8, isActive: true },
 ] as const
 
 export const ACHIEVEMENT_ROWS = [

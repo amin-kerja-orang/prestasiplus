@@ -318,26 +318,26 @@ describe('#5 convert view', () => {
 })
 
 describe('#7 challenges', () => {
-  it('admin: 14 active, none completed, the streak challenge is today-only (last activity not today -> Kombo 0/2)', async () => {
+  it('admin: 15 active, none completed, the streak challenge is today-only (last activity not today -> Kombo 0/2)', async () => {
     const res = await get('/api/gamification/challenges', admin)
     const items =
       dataOf<{ id: number; target: number; progress: number; pct: number; completed: boolean }[]>(
         res,
       )
-    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 14, claimed: 0 })
-    expect(items).toHaveLength(14)
+    expect((res.body as { meta: unknown }).meta).toEqual({ completed: 0, active: 15, claimed: 0 })
+    expect(items).toHaveLength(15)
     const kombo = items.find((c) => c.id === 8)
     expect(kombo).toMatchObject({ target: 2, progress: 0, pct: 0, completed: false })
   })
 
-  it('designed completions at the clock: pelajar 7/14, pelajarmaju 4/14 (Q-DAILY-FINISHERS 0)', async () => {
+  it('designed completions at the clock: pelajar 7/15, pelajarmaju 4/15 (Q-DAILY-FINISHERS 0)', async () => {
     const a = await get('/api/gamification/challenges', pelajar)
-    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 14, claimed: 0 })
+    expect((a.body as { meta: unknown }).meta).toEqual({ completed: 7, active: 15, claimed: 0 })
     const done = dataOf<{ id: number; completed: boolean; progress: number; target: number }[]>(a)
     expect(done.filter((c) => c.completed).map((c) => c.id)).toEqual([2, 4, 5, 6, 7, 8, 10])
     expect(done.filter((c) => c.completed).every((c) => c.progress === c.target)).toBe(true)
     const b = await get('/api/gamification/challenges', pelajarmaju)
-    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 14, claimed: 0 })
+    expect((b.body as { meta: unknown }).meta).toEqual({ completed: 4, active: 15, claimed: 0 })
   })
 })
 
@@ -636,7 +636,7 @@ describe('#18 overview', () => {
       syilingGenerated: 3_124_192,
       tokensConverted: 7801,
       conversions: 534,
-      activeChallenges: 14,
+      activeChallenges: 15,
       completedToday: 0,
     })
     expect(d.tierDistribution.map((t) => [t.key, t.count])).toEqual([
@@ -655,7 +655,7 @@ describe('#18 overview', () => {
 })
 
 describe('#19 / #23 catalogues', () => {
-  it('4 tiers as seeded; 14 challenges by (sortOrder, id) without the internal metric', async () => {
+  it('4 tiers as seeded; 15 challenges by (sortOrder, id) without the internal metric', async () => {
     const tiers = dataOf<
       {
         id: number
@@ -674,7 +674,7 @@ describe('#19 / #23 catalogues', () => {
     const ch = dataOf<{ id: number; title: string }[]>(
       await get('/api/admin/gamification/challenges', admin),
     )
-    expect(ch).toHaveLength(14)
+    expect(ch).toHaveLength(15)
     expect(ch[0]).not.toHaveProperty('metric')
     expect(ch.map((c) => c.id)).toContain(10)
   })
@@ -1224,18 +1224,18 @@ describe('#24 – #27 challenges', () => {
     })
     expect(created.status).toBe(201)
     const c = dataOf<{ id: number; isActive: boolean }>(created)
-    expect(c).toMatchObject({ id: 15, isActive: true, title: 'Cabaran Uji' })
+    expect(c).toMatchObject({ id: 16, isActive: true, title: 'Cabaran Uji' })
     expect(c).not.toHaveProperty('metric')
     expect(dataOf<unknown[]>(await get('/api/admin/gamification/challenges', admin))).toHaveLength(
-      15,
+      16,
     )
     expect(
       await get('/api/gamification/challenges', admin).then(
         (r) => (r.body as { meta: { active: number } }).meta.active,
       ),
-    ).toBe(15)
+    ).toBe(16)
 
-    const edited = await send(runtime, 'PUT', '/api/admin/gamification/challenges/15', {
+    const edited = await send(runtime, 'PUT', '/api/admin/gamification/challenges/16', {
       token: admin,
       body: {
         ...CHALLENGE_BODY,
@@ -1250,7 +1250,7 @@ describe('#24 – #27 challenges', () => {
       targetValue: 90,
     })
 
-    const off = await send(runtime, 'POST', '/api/admin/gamification/challenges/15/toggle', {
+    const off = await send(runtime, 'POST', '/api/admin/gamification/challenges/16/toggle', {
       token: admin,
     })
     expect(dataOf(off)).toEqual({ isActive: false })
@@ -1258,18 +1258,18 @@ describe('#24 – #27 challenges', () => {
       await get('/api/gamification/challenges', admin).then(
         (r) => (r.body as { meta: { active: number } }).meta.active,
       ),
-    ).toBe(14)
+    ).toBe(15)
 
-    const del = await send(runtime, 'DELETE', '/api/admin/gamification/challenges/15', {
+    const del = await send(runtime, 'DELETE', '/api/admin/gamification/challenges/16', {
       token: admin,
     })
     expect(dataOf(del)).toEqual({ deleted: 1 })
     expect(
-      (await send(runtime, 'DELETE', '/api/admin/gamification/challenges/15', { token: admin }))
+      (await send(runtime, 'DELETE', '/api/admin/gamification/challenges/16', { token: admin }))
         .status,
     ).toBe(404)
     expect(dataOf<unknown[]>(await get('/api/admin/gamification/challenges', admin))).toHaveLength(
-      14,
+      15,
     )
   })
 

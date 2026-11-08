@@ -571,8 +571,8 @@ describe('M14 read contract', () => {
     const rajin = achievements.forUser(4).items.find((a) => a.name === 'Pelajar Rajin')
     expect(rajin?.progress).toEqual({ value: 4, target: 10 })
     expect(streak.get(4).practisedToday).toBe(true)
-    // M05 AC-06.3: quests 4 completed (M14 BR-M14-13 over the M05 reads); 14 active with the 4 V2 rows of S7-T04 part 6.
-    expect(challenges.today(4)).toMatchObject({ completed: 4, active: 14 })
+    // M05 AC-06.3: quests 4 completed (M14 BR-M14-13 over the M05 reads); 15 active with the 4 V2 rows of part 6 and Kombo 10 of part 14.
+    expect(challenges.today(4)).toMatchObject({ completed: 4, active: 15 })
   })
 
   it('GET /api/me/gamification-summary for account 2 still returns 370 / 916 / 2', async () => {
