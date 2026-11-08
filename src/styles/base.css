@@ -22,3 +22,10 @@
     color: var(--color-text-strong);
   }
 }
+
+/* Edge/IE add their own reveal and clear buttons to password and text inputs. The app's password
+   fields already have an eye toggle (PasswordInput), so the browser's one showed a second eye. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
