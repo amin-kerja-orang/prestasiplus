@@ -58,6 +58,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
 | S2-T03 | AC-ADM-Q03.1 | CI | Pass | 2026-11-05 | team-cc/S-2 | StudioListPage.test.ts |
 | S0-T10 | AC-ADM-N06.1 | CI | Pass | 2026-11-05 | team-aa/S-2 | feature-routes.test.ts |
+| S0-T05 | AC-SH-6 | CI | Pass | 2026-11-05 | team-aa/S-2 | prototype-scope-guard.test.ts |
 
 ## Sprint 1
 
