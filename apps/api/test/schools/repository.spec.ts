@@ -102,16 +102,21 @@ describe('SchoolsRepository (the interface other modules use)', () => {
   })
 
   it('list/counts/types hide primary types unless includePrimary is set', async () => {
+    // Other specs in this file may already hold primary-type schools, so compare before and after the insert.
+    const hidden0 = await repo.list({ page: 1, pageSize: 100 })
+    const shown0 = await repo.list({ page: 1, pageSize: 100, includePrimary: true })
+    const c0 = await repo.counts()
+    const c0p = await repo.counts(true)
     await db.query(`insert into schools (name, code, type, state, is_active) values ('SK Repo Primary', 'RPRIM01', 'SK', 'Perak', true)`)
     try {
       const hidden = await repo.list({ page: 1, pageSize: 100 })
       const shown = await repo.list({ page: 1, pageSize: 100, includePrimary: true })
       expect(hidden.rows.some((r) => r.code === 'RPRIM01')).toBe(false)
       expect(shown.rows.some((r) => r.code === 'RPRIM01')).toBe(true)
-      expect(shown.total).toBe(hidden.total + 1)
-      const c0 = await repo.counts()
-      const c1 = await repo.counts(true)
-      expect(c1).toEqual({ total: c0.total + 1, active: c0.active + 1, inactive: c0.inactive })
+      expect(hidden.total).toBe(hidden0.total)
+      expect(shown.total).toBe(shown0.total + 1)
+      expect(await repo.counts()).toEqual(c0)
+      expect(await repo.counts(true)).toEqual({ total: c0p.total + 1, active: c0p.active + 1, inactive: c0p.inactive })
       expect(await repo.types()).not.toContain('SK')
       expect(await repo.types(true)).toContain('SK')
     } finally {
