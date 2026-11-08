@@ -46,6 +46,8 @@ export interface NewLedgerRow {
   type: string
   source: string
   sourceId: string | null
+  /** DM-79: the client's idempotency key, set at insert (rows are append-only). */
+  clientUuid?: string | null
   tokens: number | null
   amount: number
   balanceAfter: number
@@ -230,6 +232,7 @@ export class WalletRepository {
         type: row.type,
         source: row.source,
         sourceId: row.sourceId,
+        clientUuid: row.clientUuid ?? null,
         tokens: row.tokens,
         amount: row.amount,
         balanceAfter: row.balanceAfter,
@@ -244,6 +247,12 @@ export class WalletRepository {
   /** The row that already holds this idempotency key, if any. */
   async ledgerByKey(db: Db, userId: string, source: string, sourceId: string): Promise<LedgerRow | null> {
     const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), source, sourceId } })
+    return r ? toLedger(r) : null
+  }
+
+  /** The row that already holds this client key of the user (DM-79), if any. */
+  async ledgerByClientUuid(db: Db, userId: string, clientUuid: string): Promise<LedgerRow | null> {
+    const r = await db.coinLedger.findFirst({ where: { userId: idFromString(userId), clientUuid } })
     return r ? toLedger(r) : null
   }
 

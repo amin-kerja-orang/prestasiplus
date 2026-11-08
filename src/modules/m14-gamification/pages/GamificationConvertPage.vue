@@ -1,20 +1,24 @@
 <script setup lang="ts">
 /**
- * S12 `/gamification/convert` "Tukar Syiling → Token" (M14-T2a; FR-M14-27…33, BR-M14-10, 11). Reads #5,
- * posts #6; the PROPOSED success and error messages are SRS §8.2.
+ * S12 `/gamification/convert` "Tukar Syiling → Token" (GAME-18, R1-MUR-29). Reads #5 and #4 (`type=convert`,
+ * "Sejarah penukaran", FR-MUR-29-3) and posts #6. Each press sends one `clientUuid`, and a retry after an
+ * unknown outcome reuses it, so the server moves the wallet once (AC-GM-18.3, FR-ERR-9).
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsPage, DsRewardChip } from '@/ds'
+import { DsHeading, DsPage, DsRewardChip, DsStack, DsSurface, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
+import { formatDateTime } from '@/lib/time/format'
 
-import { fetchConvertView, convertSyiling } from '../api'
+import { convertSyiling, fetchConvertView, fetchGamificationTransactions } from '../api'
 import S12ConvertForm from '../components/student-a/S12ConvertForm.vue'
 import S12TierRates from '../components/student-a/S12TierRates.vue'
+import { s12NewClientUuid } from '../lib/student/s12-convert'
 
 const info = useApi((signal) => fetchConvertView({ signal }))
+const history = useApi((signal) => fetchGamificationTransactions({ type: 'convert' }, { signal }))
 
 /** Balances after a conversion (the response carries the new ones). */
 const balances = ref<{ syiling: number; token: number } | null>(null)
@@ -25,15 +29,42 @@ const failure = ref('')
 const syiling = () => balances.value?.syiling ?? info.data.value?.currentSyiling ?? 0
 const token = () => balances.value?.token ?? info.data.value?.tokenBalance ?? 0
 
+/** The tier chip of the rate line, for example "🥉 Gangsa". */
+const tierChip = computed(() => {
+  const view = info.data.value
+  const icon = view?.tiers.find((t) => t.isMine)?.icon
+  return icon ? `${icon} ${view?.tierLabel ?? ''}` : (view?.tierLabel ?? '')
+})
+
+/** The request whose outcome is unknown: pressing again with the same amount repeats its key. */
+let unsettled: { amount: number; clientUuid: string } | null = null
+
+/** The server answered and moved nothing, so the next press is a new request; 408 and 429 may be repeated as they are. */
+function refused(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.status >= 400 &&
+    err.status < 500 &&
+    ![408, 429].includes(err.status)
+  )
+}
+
 async function onConvert(amount: number): Promise<void> {
+  if (submitting.value) return
   submitting.value = true
   success.value = ''
   failure.value = ''
+  const request =
+    unsettled?.amount === amount ? unsettled : { amount, clientUuid: s12NewClientUuid() }
+  unsettled = request
   try {
-    const res = await convertSyiling(amount)
+    const res = await convertSyiling(request.amount, request.clientUuid)
+    unsettled = null
     balances.value = { syiling: res.currentSyiling, token: res.tokenBalance }
-    success.value = `Berjaya! ${formatCount(res.syilingDebited)} syiling ditukar kepada ${formatCount(res.tokensCredited)} token.`
+    success.value = `Berjaya menukar ${formatCount(res.syilingDebited)} syiling kepada ${formatCount(res.tokensCredited)} token.`
+    void history.reload()
   } catch (err) {
+    if (refused(err)) unsettled = null
     failure.value =
       err instanceof ApiError && err.status === 422
         ? 'Jumlah syiling tidak sah.'
@@ -68,18 +99,24 @@ async function onConvert(amount: number): Promise<void> {
       <UCard data-testid="s12-hero">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted">
-              Tukar Syiling → Token
-            </h1>
+            <h1 class="text-title text-highlighted">Tukar Syiling → Token</h1>
             <p class="text-body text-muted">Tukar syiling anda kepada token untuk tebus hadiah</p>
           </div>
           <div class="flex shrink-0 gap-4 text-center">
             <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="coin" :value="formatCount(syiling())" data-testid="s12-balance-syiling" />
+              <DsRewardChip
+                art="coin"
+                :value="formatCount(syiling())"
+                data-testid="s12-balance-syiling"
+              />
               <span class="text-caption text-muted">Baki Syiling</span>
             </div>
             <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="bolt" :value="formatCount(token())" data-testid="s12-balance-token" />
+              <DsRewardChip
+                art="bolt"
+                :value="formatCount(token())"
+                data-testid="s12-balance-token"
+              />
               <span class="text-caption text-muted">Baki Token</span>
             </div>
           </div>
@@ -93,12 +130,45 @@ async function onConvert(amount: number): Promise<void> {
         <S12ConvertForm
           :balance="syiling()"
           :rate="info.data.value.rate"
-          :tier-label="info.data.value.tierLabel"
+          :tier-label="tierChip"
           :submitting="submitting"
           @convert="onConvert"
         />
         <S12TierRates :tiers="info.data.value.tiers" />
       </div>
+
+      <UCard class="min-w-0" data-testid="s12-history">
+        <DsStack>
+          <DsHeading :level="2" variant="subheading">Sejarah penukaran</DsHeading>
+          <UAlert
+            v-if="history.error.value"
+            color="error"
+            variant="subtle"
+            title="Ralat berlaku. Sila cuba lagi."
+          />
+          <USkeleton v-else-if="!history.data.value" class="h-16 w-full" aria-busy="true" />
+          <DsText
+            v-else-if="history.data.value.data.length === 0"
+            variant="body"
+            tone="muted"
+            data-testid="s12-history-empty"
+          >
+            Belum ada penukaran.
+          </DsText>
+          <DsStack v-else as="ul" gap="xs">
+            <li v-for="r in history.data.value.data" :key="r.id" class="min-w-0">
+              <DsSurface padding="sm" shadow="lift" data-testid="s12-history-row">
+                <DsStack gap="2xs">
+                  <DsText as="p" variant="label" tone="highlighted" wrap="anywhere">{{
+                    r.description
+                  }}</DsText>
+                  <DsText variant="caption">{{ formatDateTime(r.createdAt) }}</DsText>
+                </DsStack>
+              </DsSurface>
+            </li>
+          </DsStack>
+        </DsStack>
+      </UCard>
     </template>
   </DsPage>
 </template>
