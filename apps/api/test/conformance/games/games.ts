@@ -246,6 +246,17 @@ export const gamesScenarios: Scenario[] = [
       const again = await admin.request('POST', `/leagues/${id}/schools`, { body: { schoolIds: [schoolId] } })
       ctx.expectStatus(again, 422)
       ctx.check(errorOf(again).message === 'Sekolah ini sudah menyertai liga ini.', 'enrolling twice says "Sekolah ini sudah menyertai liga ini."')
+      // API-GAME-13 (S7-T06 part 3): role M only; the stored standings and the pupil's own position.
+      const board = await s.request('GET', `/leagues/${id}/standings?level=4`)
+      ctx.expectStatus(board, 200)
+      ctx.check(board.headers['cache-control'] === 'no-store', 'the standings are Cache-Control: no-store')
+      ctx.check(Array.isArray(dataOf(board).rows) && dataOf(board).recomputedAt === null, 'before the first job run: rows [] and recomputedAt null')
+      const mine = await s.request('GET', `/leagues/${id}/me`)
+      ctx.expectStatus(mine, 200)
+      ctx.check(Array.isArray(dataOf(mine).contributors) && typeof (dataOf(mine).mine as { points?: unknown }).points === 'number', 'me carries mine.points and contributors')
+      expectError(ctx, await s.request('GET', `/leagues/${id}/standings?level=9`), 422, 'VALIDATION_ERROR')
+      for (const path of [`/leagues/${id}/standings`, `/leagues/${id}/me`]) expectError(ctx, await admin.request('GET', path), 403, 'FORBIDDEN')
+      expectError(ctx, await s.request('GET', '/leagues/abc/standings'), 404, 'NOT_FOUND')
       // AC-GM-15.2: join answers 403 for every role.
       for (const who of [s, admin]) expectError(ctx, await who.request('POST', '/leagues/join', { body: { invite_code: 'TEST2026' } }), 403, 'FORBIDDEN')
       expectError(ctx, await s.request('GET', '/leagues/abc'), 404, 'NOT_FOUND')

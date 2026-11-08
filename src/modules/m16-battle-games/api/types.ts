@@ -298,7 +298,7 @@ export interface TournamentDetail {
   createdAt: string
 }
 
-export type LeagueStatus = 'upcoming' | 'ongoing' | 'ended'
+export type LeagueStatus = 'upcoming' | 'active' | 'ended'
 
 export interface LeagueCard {
   id: number
@@ -330,6 +330,20 @@ export interface LeagueDetail extends Omit<LeagueCard, 'schools'> {
   schools: { id: number; name: string }[]
   /** One entry per class level that has standings. */
   standings: Record<string, LeagueStandingRow[]>
+}
+
+/** API-GAME-13 `GET /api/leagues/{id}/standings?level=` (role M only; `level` 1..5 = T1..T5). */
+export interface LeagueStandings {
+  rows: { rank: number; schoolName: string; score: number; participants: number; avgAccuracy: number }[]
+  recomputedAt: string | null
+  frozen: boolean
+}
+
+/** API-GAME-13 `GET /api/leagues/{id}/me` (role M only). */
+export interface LeagueMe {
+  school: { rank: number; score: number; participants: number } | null
+  mine: { points: number }
+  contributors: { name: string; points: number }[]
 }
 
 /** Body of #47 (API-ADM-25, Admin Pusat): `levelIds` 1..5 = T1..T5. */

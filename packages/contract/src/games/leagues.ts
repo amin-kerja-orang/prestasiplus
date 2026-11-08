@@ -6,8 +6,9 @@ import { GAMES_MESSAGES, gamesCount } from './common'
 /**
  * Leagues (M16-46 to M16-49) and the Sekolah Bersaing board (API-AS-14). All bodies are `{ data }`.
  *
- * League standings are stored job output in the mock and are never recomputed (BE-45 Open question 7); league `status`
- * is stored; "ended" is judged by date on enrolment (statuses move to date-derived in S7-T06 part 3). Sekolah Bersaing is computed on request (DM-31).
+ * League standings are stored output of the hourly job (S7-T06 part 3, FR-GM-15.3); league `status` is derived by date on
+ * read (upcoming before the start date 00:00 MYT, active through the end date 23:59:59 MYT, ended after; the stored
+ * column is not read). Sekolah Bersaing is computed on request (DM-31).
  * D54(d): only the creator's display name and school names are shown (the creator's name follows the children's
  * names rule, issue #76: first given name unless the viewer may see it).
  */
@@ -16,7 +17,7 @@ export const GAMES_LEAGUE_TYPES = ['friendly', 'tournament', 'league'] as const
 export const GAMES_LEAGUE_SCOPES = ['school', 'district', 'state', 'national'] as const
 export const GAMES_LEAGUE_GAME_MODES = ['mixed', 'quiz', 'multiplayer'] as const
 export const GAMES_LEAGUE_SCORINGS = ['total_score', 'avg_accuracy', 'wins'] as const
-export const GAMES_LEAGUE_STATUSES = ['upcoming', 'ongoing', 'ended'] as const
+export const GAMES_LEAGUE_STATUSES = ['upcoming', 'active', 'ended'] as const
 /** Class levels a league can include: Darjah 1..6 (D1..D6) and Tingkatan 1..5 (T1..T5). */
 export const GAMES_LEAGUE_CLASS_LEVELS = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'T1', 'T2', 'T3', 'T4', 'T5'] as const
 
@@ -25,7 +26,7 @@ export const GAMES_LEAGUE_LABELS = {
   type: { friendly: 'Persahabatan', tournament: 'Kejohanan', league: 'Liga' },
   scope: { school: 'Sekolah', district: 'Daerah', state: 'Negeri', national: 'Kebangsaan' },
   scoring: { total_score: 'Jumlah Markah', avg_accuracy: 'Purata Ketepatan', wins: 'Bilangan Kemenangan' },
-  status: { upcoming: 'Akan Datang', ongoing: 'Sedang Berlangsung', ended: 'Tamat' },
+  status: { upcoming: 'Akan Datang', active: 'Aktif', ended: 'Tamat' },
 } as const
 
 export const GamesLeagueTypeSchema = z.enum(GAMES_LEAGUE_TYPES).meta({ id: 'GamesLeagueType' })
@@ -145,7 +146,7 @@ export const GamesLeagueDetailSchema = z
     schools: z.array(z.strictObject({ id: IdSchema, name: z.string() })),
     standings: z
       .partialRecord(GamesLeagueClassLevelSchema, z.array(GamesLeagueStandingRowSchema))
-      .meta({ description: 'Class level to rows, only for the levels that have rows (stored job output, never recomputed).' }),
+      .meta({ description: 'Class level to rows, only for the levels that have rows (stored output of the hourly job).' }),
   })
   .meta({ id: 'GamesLeagueDetail' })
 export type GamesLeagueDetail = z.infer<typeof GamesLeagueDetailSchema>
@@ -173,3 +174,56 @@ export const GamesSekolahBersaingBoardSchema = z
   .array(GamesSekolahBersaingBoardRowSchema)
   .meta({ id: 'GamesSekolahBersaingBoard', description: 'Rank order; [] when no school has a session.' })
 export type GamesSekolahBersaingBoard = z.infer<typeof GamesSekolahBersaingBoardSchema>
+
+// --- standings and own position (API-GAME-13, S7-T06 part 3) ------------------------------------------------------------
+
+/** `GET /leagues/{id}/standings?level=`: numeric 1..5 = T1..T5 through `gamesLevelIdToClassLevel`. */
+export const GamesLeagueStandingsQuerySchema = z
+  .object({
+    level: z
+      .string()
+      .optional()
+      .meta({ description: 'Tingkatan 1..5 (T1..T5). Default: the lowest level of the league. Otherwise 422 "Tingkatan tidak sah." (level).' }),
+  })
+  .meta({ id: 'GamesLeagueStandingsQuery' })
+
+/** One ranked school. Primary schools are left out (secondary-only). `avgAccuracy`: percent, one decimal. */
+export const GamesLeagueRankedRowSchema = z
+  .strictObject({
+    rank: z.number().int().min(1),
+    schoolName: z.string(),
+    score: z.number().min(0).meta({ description: 'The scoring method value, one decimal.' }),
+    participants: gamesCount.meta({ description: 'Distinct pupils of the school with points.' }),
+    avgAccuracy: z.number().min(0).max(100).meta({ description: 'Correct / answered, percent, one decimal.' }),
+  })
+  .meta({ id: 'GamesLeagueRankedRow' })
+export type GamesLeagueRankedRow = z.infer<typeof GamesLeagueRankedRowSchema>
+
+export const GamesLeagueStandingsSchema = z
+  .strictObject({
+    rows: z
+      .array(GamesLeagueRankedRowSchema)
+      .meta({ description: 'Score desc, participants desc, school name asc. Under avg_accuracy a school with fewer than 30 answers is absent.' }),
+    recomputedAt: z.iso.datetime({ offset: true }).nullable().meta({ description: 'Time of the last hourly recompute; null before the first run.' }),
+    frozen: z.boolean().meta({ description: 'True when the derived status is ended, or the final recompute has run (frozen_at).' }),
+  })
+  .meta({ id: 'GamesLeagueStandings' })
+export type GamesLeagueStandings = z.infer<typeof GamesLeagueStandingsSchema>
+
+export const GamesLeagueContributorSchema = z
+  .strictObject({ name: z.string().meta({ description: "Display name (children's names rule)." }), points: gamesCount })
+  .meta({ id: 'GamesLeagueContributor' })
+export type GamesLeagueContributor = z.infer<typeof GamesLeagueContributorSchema>
+
+/** `GET /leagues/{id}/me`: the caller's school position at the caller's own Tingkatan, and the caller's points. */
+export const GamesLeagueMeSchema = z
+  .strictObject({
+    school: z
+      .strictObject({ rank: z.number().int().min(1), score: z.number().min(0), participants: gamesCount })
+      .nullable()
+      .meta({ description: 'null when the school is not enrolled, is not ranked (avg_accuracy under 30 answers), or has no standing yet.' }),
+    mine: z.strictObject({ points: gamesCount }),
+    contributors: z.array(GamesLeagueContributorSchema).max(10).meta({ description: 'Top 10 pupils of the school by points desc, then name asc.' }),
+  })
+  .meta({ id: 'GamesLeagueMe' })
+export type GamesLeagueMe = z.infer<typeof GamesLeagueMeSchema>
