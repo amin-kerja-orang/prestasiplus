@@ -36,6 +36,7 @@ import StudioDskpFields from '../components/studio/StudioDskpFields.vue'
 import StudioGroupEditor from '../components/studio/StudioGroupEditor.vue'
 import StudioImageField from '../components/studio/StudioImageField.vue'
 import StudioLeafEditor from '../components/studio/StudioLeafEditor.vue'
+import StudioRichTextField from '../components/studio/StudioRichTextField.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
 import StudioStatusBar from '../components/studio/StudioStatusBar.vue'
 import { backspaceAtCaret, insertAtCaret, type KeyboardMode } from '../lib/arabic-keyboard'
@@ -431,7 +432,7 @@ async function save(): Promise<void> {
             <UButton type="button" color="neutral" variant="soft" icon="keyboard" title="Papan kekunci Arab / Jawi" data-testid="studio-keyboard-toggle" @mousedown.prevent @click="toggleKeyboard">Papan kekunci</UButton>
           </DsCluster>
           <DsFormField v-slot="{ id: fid }" native label="Teks soalan (stem)" for="studio-stem" required :error="fieldProblems.questionText">
-            <UTextarea :id="fid" v-model="draft.stem" :rows="4" placeholder="Contoh: Rajah 1 menunjukkan litar bersiri." :disabled="readOnly" data-testid="studio-stem" />
+            <StudioRichTextField :id="fid" v-model="draft.stem" :rows="4" placeholder="Contoh: Rajah 1 menunjukkan litar bersiri." :disabled="readOnly" testid="studio-stem" />
           </DsFormField>
           <DsFormField label="Gambar soalan (pilihan)">
             <StudioImageField v-model="draft.stemImageToken" testid="studio-stem-image" :disabled="readOnly" />
