@@ -223,7 +223,9 @@ test.describe('Intake review over HTTP @bijak @api', () => {
       await page.goto(`/admin/spm/semakan/${String(mine?.id)}`)
       await expect(page.getByTestId('review-item-page')).toBeVisible()
       await expect(page.getByTestId('review-gate')).toContainText('Semua syarat dipenuhi')
-      await expect(page.getByTestId('action-correct')).toHaveCount(0) // no route for corrections
+      // "Minta Pembetulan" is wired over http (S2-T05) but moves the question Terima creates, so it waits for it.
+      await expect(page.getByTestId('action-correct')).toBeDisabled()
+      await expect(page.getByTestId('no-question-hint')).toHaveText('Item ini belum mempunyai soalan.')
       await expectNoHorizontalScrollHttp(page)
       await page.getByTestId('action-publish').click() // "Terima (Draf)"
       await page.waitForURL(/\/admin\/studio\?status=review$/)

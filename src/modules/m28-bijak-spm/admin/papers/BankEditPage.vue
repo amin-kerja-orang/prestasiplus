@@ -5,6 +5,9 @@
  * creates version n+1 in the review queue (same gate as an extracted batch); the live version keeps
  * serving students until the new one is approved. The adjacent-editor pattern of .cloud
  * (`/spm/soalan/{q}/sunting`).
+ *
+ * On the real API (`data.quickEdit`, FR-ADM-Q24) it is the flat form of a single-leaf MCQ: text, options, the key and the
+ * explanation. Any other question shows the out-of-scope text and `Buka editor penuh`, so nothing is dropped.
  */
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,6 +15,7 @@ import { useRouter } from 'vue-router'
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
 import {
+  DsCallout,
   DsCluster,
   DsEmptyState,
   DsFormField,
@@ -27,6 +31,7 @@ import { StimulusView } from '../../../../components/question-display'
 import QuestionEditor from '../intake/components/QuestionEditor.vue'
 import { validateRevision } from '../intake/domain/validation'
 import type { IntakeQuestion, IntakeStimulus } from '../intake/types'
+import { QUICK_EDIT_OUT_OF_SCOPE } from '../../server/bank-wire'
 import { bijakAdminServer } from '../../server/client'
 import { isUnavailable, UNAVAILABLE_TITLE } from '../../server/errors'
 import { ADMIN_ROUTES, KIND_LABEL, STATUS_BADGE, detailMessage } from './ui'
@@ -57,11 +62,34 @@ watch(
 )
 
 const locked = computed(() => data.value?.pendingRevision === true)
-const issues = computed<string[]>(() =>
-  draft.value
-    ? validateRevision(draft.value, stimulus.value, data.value?.legacyTag ?? false)
-    : [],
-)
+const quick = computed(() => data.value?.quickEdit ?? null)
+const outOfScope = computed(() => quick.value?.outOfScope === true)
+const studioPath = computed(() => `/admin/studio/questions/${props.qid}/sunting`)
+
+/** Fields 24-01 and 24-03. */
+function flatIssues(q: IntakeQuestion): string[] {
+  const out: string[] = []
+  const stem = q.stem.trim()
+  if (stem === '') out.push('Teks soalan tidak boleh kosong.')
+  else if (stem.length < 10) out.push('Teks soalan mesti sekurang-kurangnya 10 aksara.')
+  for (const o of q.options) if (o.text.trim() === '') out.push(`Pilihan ${o.id} tidak boleh kosong.`)
+  if (q.scheme?.kind !== 'option' || !q.scheme.correct) out.push('Tiada jawapan betul dipilih — soalan ini tidak boleh ditanda.')
+  return out
+}
+
+const correct = computed({
+  get: () => (draft.value?.scheme?.kind === 'option' ? draft.value.scheme.correct : ''),
+  set: (value: string) => {
+    if (draft.value?.scheme?.kind === 'option') draft.value.scheme = { ...draft.value.scheme, correct: value }
+  },
+})
+const correctItems = computed(() => (draft.value?.options ?? []).map((o) => ({ value: o.id, label: o.id })))
+
+const issues = computed<string[]>(() => {
+  if (!draft.value) return []
+  if (quick.value) return outOfScope.value ? [] : flatIssues(draft.value)
+  return validateRevision(draft.value, stimulus.value, data.value?.legacyTag ?? false)
+})
 const nextVersion = computed(() => (data.value?.row.version ?? 1) + 1)
 
 function patchStimulus(p: Partial<IntakeStimulus>): void {
@@ -69,7 +97,7 @@ function patchStimulus(p: Partial<IntakeStimulus>): void {
 }
 
 async function save(): Promise<void> {
-  if (!draft.value || locked.value || issues.value.length > 0 || busy.value) return
+  if (!draft.value || locked.value || outOfScope.value || issues.value.length > 0 || busy.value) return
   busy.value = true
   serverErrors.value = []
   try {
@@ -83,9 +111,9 @@ async function save(): Promise<void> {
       serverErrors.value = res.errors
       return
     }
-    flash.show({
+    flash.set({
       type: 'success',
-      message: 'Versi baharu dihantar untuk semakan. Versi semasa terus melayani pelajar.',
+      message: res.message ?? 'Versi baharu dihantar untuk semakan. Versi semasa terus melayani pelajar.',
     })
     await router.push({ name: ADMIN_ROUTES.bank, query: { buka: props.qid } })
   } catch (e) {
@@ -116,6 +144,70 @@ async function save(): Promise<void> {
       message="Tidak dapat memuatkan soalan untuk disunting."
       @retry="reload()"
     />
+
+    <template v-else-if="data && draft && quick">
+      <DsPanel data-testid="edit-meta">
+        <DsCluster>
+          <DsStatusBadge :status="STATUS_BADGE[data.row.status]" />
+          <DsText variant="caption" tone="muted" as="span">{{ data.row.id }}</DsText>
+          <DsText variant="caption" tone="muted" as="span">{{ data.row.subjectName }} · {{ KIND_LABEL[data.row.kind] }}</DsText>
+        </DsCluster>
+      </DsPanel>
+
+      <DsCallout v-if="outOfScope" tone="warning" data-testid="edit-out-of-scope">
+        {{ QUICK_EDIT_OUT_OF_SCOPE }}
+        <UButton :to="studioPath" color="neutral" variant="link" data-testid="edit-open-studio">Buka editor penuh</UButton>
+      </DsCallout>
+
+      <template v-else>
+        <DsCallout v-if="locked" tone="warning" data-testid="edit-locked">
+          Versi baharu menunggu semakan
+          <UButton :to="studioPath" color="neutral" variant="link">Buka dalam Baris Gilir Semakan</UButton>
+        </DsCallout>
+
+        <DsPanel data-testid="edit-question">
+          <DsStack as="fieldset" gap="sm">
+            <DsText as="legend" variant="subheading" tone="highlighted">Soalan objektif #{{ data.row.id }}</DsText>
+            <DsFormField native for="edit-stem" label="Teks soalan" required>
+              <UTextarea id="edit-stem" v-model="draft.stem" :rows="4" maxlength="2000" :disabled="locked" class="w-full" data-testid="edit-stem" />
+            </DsFormField>
+            <DsFormField v-for="(o, i) in draft.options" :key="o.id" native :for="`edit-option-${o.id}`" :label="`Pilihan ${o.id}`" required>
+              <UInput :id="`edit-option-${o.id}`" v-model="draft.options[i]!.text" maxlength="500" :disabled="locked" class="w-full" :data-testid="`edit-option-${o.id}`" />
+            </DsFormField>
+            <URadioGroup v-model="correct" required legend="Pilihan jawapan — pilih yang betul" :items="correctItems" orientation="horizontal" variant="card" :disabled="locked" data-testid="edit-correct" />
+            <DsFormField native for="edit-explanation" label="Penjelasan">
+              <UTextarea id="edit-explanation" v-model="draft.explanation" :rows="3" :disabled="locked" class="w-full" data-testid="edit-explanation" />
+            </DsFormField>
+          </DsStack>
+        </DsPanel>
+
+        <DsCallout v-if="issues.length > 0" tone="warning" data-testid="edit-gate">
+          Soalan ini tidak boleh ditanda seperti sedia ada:
+          <DsStack as="ul" gap="2xs">
+            <DsText v-for="e in issues" :key="e" as="li" variant="body">{{ e }}</DsText>
+          </DsStack>
+        </DsCallout>
+        <DsCallout v-if="serverErrors.length > 0" tone="error" role="alert" data-testid="edit-server-errors">
+          <DsStack as="ul" gap="2xs">
+            <DsText v-for="e in serverErrors" :key="e" as="li" variant="body">{{ e }}</DsText>
+          </DsStack>
+        </DsCallout>
+
+        <DsCallout v-if="quick.gate === null" tone="warning" data-testid="edit-completeness-failed">
+          Semakan kelengkapan tidak dapat dimuatkan. Muat semula halaman untuk cuba lagi.
+        </DsCallout>
+        <DsPanel v-else-if="quick.gate.length > 0" :title="`${quick.gate.length} belum lengkap`" data-testid="edit-completeness">
+          <DsStack as="ul" gap="2xs">
+            <DsText v-for="m in quick.gate" :key="m" as="li" variant="body">{{ m }}</DsText>
+          </DsStack>
+        </DsPanel>
+      </template>
+
+      <DsCluster justify="end" data-testid="edit-actions">
+        <UButton color="neutral" variant="ghost" label="Batal" :to="{ name: ADMIN_ROUTES.bank }" data-testid="edit-cancel" />
+        <UButton label="Simpan" :loading="busy" :disabled="locked || outOfScope || issues.length > 0" data-testid="edit-submit" @click="save" />
+      </DsCluster>
+    </template>
 
     <template v-else-if="data && draft">
       <DsPanel data-testid="edit-meta">
@@ -204,7 +296,7 @@ async function save(): Promise<void> {
       </DsPanel>
 
       <DsPanel>
-        <fieldset :disabled="locked" class="min-w-0">
+        <fieldset :disabled="locked">
           <DsFormField native for="edit-note" label="Nota perubahan">
             <UInput
               id="edit-note"
@@ -242,14 +334,12 @@ async function save(): Promise<void> {
           color="neutral"
           variant="ghost"
           label="Batal"
-          class="min-h-11"
           :to="{ name: ADMIN_ROUTES.bank }"
           data-testid="edit-cancel"
         />
         <UButton
           icon="i-ph-paper-plane-tilt"
           label="Hantar untuk semakan"
-          class="min-h-11"
           :loading="busy"
           :disabled="locked || issues.length > 0"
           data-testid="edit-submit"

@@ -3382,6 +3382,18 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/soalan/:qid/pratonton|",
+      "path": "/admin/spm/soalan/:qid/pratonton",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting?pratonton=1",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
+      "note": "PRD30 Q-24 Pratonton; ruling on #432",
+      "approved_by_card": "S2-T05"
+    },
+    {
       "key": "/admin/spm/soalan/:qid/sunting|",
       "path": "/admin/spm/soalan/:qid/sunting",
       "name": null,
