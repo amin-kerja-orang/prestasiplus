@@ -116,6 +116,14 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T01 | AC-GUR-43-11 | CI | Pass | 2026-11-06 | team-dd/S-2 | unit/guru-weekly-report.spec.ts; LaporanMingguanGuruPage.test.ts; contract guru-weekly-report.test.ts |
 | S3-T01 | AC-ADM-Q16.4 | CI | Pass | 2026-11-06 | team-cc/S-1 | blueprint-standards-api.spec.ts; kontrak-disahkan.test.ts |
 | S3-T01 | AC-ADM-R8 | CI | Pass | 2026-11-06 | team-cc/S-1 | kontrak.spec.ts |
+| S1-T02 | AC-ADM-QE4.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | dskp-gate.spec.ts::AC-ADM-QE4.1: a draft with no tag lists exactly the unit and the SP gate-check approve returns two items, NO_UNIT then NO_SP, at step 4 with the PRD text |
+| S1-T02 | AC-ADM-QE4.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | gate-rows.spec.ts::AC-ADM-QE4.2: an SP outside the unit "12.1.1" gives SP_NOT_IN_TAXONOMY with the contract text, step 4 |
+| S1-T02 | AC-ADM-QE4.5 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::without nodes a complete draft approves (200) and the panel never lists unit, SP or TP; once an SP node is loaded the same draft is refused |
+| S1-T02 | AC-QA-42 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-QA-42: the unloaded subject publishes; MATH (loaded) refuses unit, SP, TP and the aras of the leaf |
+| S1-T02 | AC-QA-29 | CI | Pass | 2026-11-05 | team-aa/S-3 | textbook-ref.test.ts::AC-QA-29 Rujukan buku teks the compact form is "B3T4 M56", and "B3T4 M56-58" with hingga |
+| S1-T02 | AC-ADM-QE4.6 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::a stem that names a figure with no stimulus: the detector flags it; submit and approve answer 422 with STIMULUS_MISSING; Bukan masalah lets it pass |
+| S1-T02 | AC-ADM-QE3.3 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
+| S1-T02 | AC-QA-31 | CI | Pass | 2026-11-05 | team-aa/S-3 | close-gates.spec.ts::AC-ADM-QE3.3 and AC-QA-31: Kesukaran is required on its own a draft with a TP and no Kesukaran is refused on submit and approve with "Sila pilih tahap kesukaran."; once typed it passes |
 
 ## Sprint 2
 

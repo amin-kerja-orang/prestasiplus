@@ -34,7 +34,8 @@ import {
   type FlatType,
 } from './projection'
 import { MAX_SP_NODES } from './publish-gate'
-import { gateDataOf } from './gate-data'
+import { detectStimulusFlag } from './effective-leaf'
+import { flagPartsOf, gateDataOf } from './gate-data'
 import { GATES } from './workflow/lifecycle/gates'
 import { GroupMembers } from './group-members'
 import { assertServableSomewhere } from './serving/approval-guard'
@@ -990,10 +991,21 @@ export class QuestionsService {
       // on the same builder. The question is not stored yet, so the facts that need a stored row are the new-question ones.
       const subjectId = draft.subjectId === null ? null : idToString(draft.subjectId)
       const levelId = draft.educationLevelId === null ? null : idToString(draft.educationLevelId)
+      // Rows 25 and 26: the detector writes the stored flag only after the create, so decide it here on the draft (same pure detector).
+      const flagged = detectStimulusFlag({
+        stemMs: draft.stemMs,
+        stemEn: draft.stemEn,
+        hasGroup: n.stimulusGroupId !== null && n.stimulusGroupId !== undefined,
+        hasStemStimulus: draft.stimulusIds.length > 0 || newStemFileId !== null,
+        parts: flagPartsOf(n.parts),
+      })
       const data = gateDataOf(
         {
           id: '0',
           version: {
+            stimulusFlag: flagged?.flag ?? null,
+            stimulusFlagRef: flagged?.ref ?? null,
+            stemEn: draft.stemEn,
             stemMs: draft.stemMs,
             parts: n.parts,
             subjectId,
