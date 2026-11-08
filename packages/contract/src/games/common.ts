@@ -191,6 +191,10 @@ export const GAMES_MESSAGES = {
   /** ERR-REQ-11 / ERR-REQ-14 for the enrol body. */
   leagueSchoolsPick: 'Sila pilih sekolah.',
   leagueSchoolFormat: 'Format sekolah tidak sah.',
+  gameRecordNotFound: 'Rekod tidak dijumpai. Ia mungkin telah dipadam.',
+  quizTilesMax: 'Maksimum 38 petak soalan.',
+  quizTilesInvalid: 'Bilangan petak tidak sah.',
+  spinWeightsTotal: 'Jumlah berat mesti 100.',
   quizTiles: 'Nilai mesti antara 0 dan 38.',
 } as const
 

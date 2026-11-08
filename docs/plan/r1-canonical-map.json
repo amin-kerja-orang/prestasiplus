@@ -702,6 +702,7 @@
       "sector": "S2",
       "component": null,
       "file": "src/modules/m04-question-bank/routes/questions-form.ts",
+      "redirects_to": "(dynamic)",
       "note": "V3 duplicates register M-06 (D113): old flat form redirects to Studio after the field comparison",
       "approved_by_card": null
     },
@@ -809,18 +810,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin/studio/questions/:id(\\d+)/edit|",
-      "path": "/admin/studio/questions/:id(\\d+)/edit",
-      "name": null,
-      "status": "redirect-to:/admin/studio/questions/:id/sunting",
-      "sector": "S2",
-      "component": null,
-      "file": "src/modules/m04-question-bank/routes/studio.ts",
-      "redirects_to": "/admin/studio/questions/:id/sunting",
-      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
-      "approved_by_card": "S2-T01"
-    },
-    {
       "key": "/admin/studio/questions/:id(\\d+)/preview|",
       "path": "/admin/studio/questions/:id(\\d+)/preview",
       "name": null,
@@ -830,6 +819,18 @@
       "file": "src/modules/m04-question-bank/routes/studio.ts",
       "redirects_to": "(dynamic)",
       "approved_by_card": "S2-T03"
+    },
+    {
+      "key": "/admin/studio/questions/:id(\\d+)/edit|",
+      "path": "/admin/studio/questions/:id(\\d+)/edit",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "(dynamic)",
+      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
+      "approved_by_card": "S2-T01"
     },
     {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",
@@ -2556,6 +2557,16 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/permainan|m16.admin-settings",
+      "path": "/admin/permainan",
+      "name": "m16.admin-settings",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m16-battle-games/pages/TetapanPermainanPage.vue",
+      "file": "src/modules/m16-battle-games/routes/admin.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
       "key": "/permainan|m16.permainan",
       "path": "/permainan",
       "name": "m16.permainan",
@@ -3356,8 +3367,9 @@
       "name": null,
       "status": "redirect-to:/admin/spm/databank",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/BankPage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
       "note": "KS-02 list; docs/prd/r1/30-admin-pusat.md 3.3 (the list redirects; /admin/spm/soalan/:qid/sunting stays as Quick Edit). Register M-01.",
       "approved_by_card": null
     },
@@ -3958,7 +3970,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -4048,7 +4060,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7097,7 +7109,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7966,7 +7978,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -14290,6 +14302,36 @@
       "sector": "S7",
       "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
       "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/admin/games/:p/active",
+      "method": "PUT",
+      "path": "/api/admin/games/:gameKey/active",
+      "api_id": "API-ADM-08",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "GET /api/admin/games/spin-segments",
+      "method": "GET",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
+    },
+    {
+      "key": "PUT /api/admin/games/spin-segments",
+      "method": "PUT",
+      "path": "/api/admin/games/spin-segments",
+      "api_id": "API-ADM-23",
+      "status": "canonical",
+      "sector": "S7",
+      "file": "apps/api/src/modules/games/rooms/admin/admin-games.controller.ts",
+      "approved_by_card": "S7-T03"
     },
     {
       "key": "POST /api/papan-bijak/quick-match",
