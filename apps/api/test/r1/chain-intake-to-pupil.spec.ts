@@ -371,15 +371,15 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect(result.provisional).toBe(false)
   })
 
-  it('8b. the submit paid the reward ONCE on this bank paper: one quiz_spm ledger row for the attempt (6 marks = 12 syiling), 60 XP, a streak; a replay of the same key or another key adds nothing', async () => {
+  it('8b. the submit paid the reward ONCE on this bank paper: one quiz_spm ledger row for the attempt (6 marks = 6 syiling), 60 XP, a streak; a replay of the same key or another key adds nothing', async () => {
     const pupilId = pupil.userId
     const ledger = () => q(`select user_id::text uid, amount, is_test, type from coin_ledger where source = 'quiz_spm' and source_id = $1`, [attempt])
     const xp = async () => Number((await q(`select xp from wallets where user_id = $1`, [pupilId]))[0]?.xp ?? 0)
     const rows = await ledger()
     expect(rows).toHaveLength(1)
-    // 2 syiling and 10 XP per mark (BIJAK reward rate); the score is 6 of 6
+    // marks x coinsPerCorrect() (1 per mark with no reward_settings row) and 10 XP per mark; the score is 6 of 6
     expect(rows[0]).toMatchObject({ uid: pupilId, is_test: false, type: 'earn' })
-    expect(Number(rows[0]!.amount)).toBe(12)
+    expect(Number(rows[0]!.amount)).toBe(6)
     expect((await xp()) - xpBefore).toBe(60)
     expect(Number((await q(`select current from streaks where user_id = $1`, [pupilId]))[0]?.current ?? 0)).toBeGreaterThanOrEqual(1)
     // The replays. NOTE: the wallet's own replay guard (credit with the same source id) is NOT what stops these: a submit of a closed attempt returns
@@ -389,7 +389,7 @@ let xpBefore = 0 // the seeded pupil already has XP: the reward is checked as a 
     expect(same.status, JSON.stringify(same.body)).toBe(200)
     const other = await pupil.post(`/api/bijak/attempts/${attempt}/submit`, { idempotencyKey: 'chain-intake-2', changes: [] })
     expect(other.status, JSON.stringify(other.body)).toBe(200)
-    expect((await ledger()).map((r) => Number(r.amount))).toEqual([12])
+    expect((await ledger()).map((r) => Number(r.amount))).toEqual([6])
     expect((await xp()) - xpBefore).toBe(60)
   })
 

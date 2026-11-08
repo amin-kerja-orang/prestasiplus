@@ -253,7 +253,7 @@ describe('WalletBijakReward.award', () => {
 })
 
 describe('WalletBijakReward.awardSelfMark (D94: V2 rates on the net gain of the best-N total of an attempt)', () => {
-  const total = (attemptId: string, score: number, over: { max?: number; base?: number; userId?: string; isTest?: boolean } = {}) =>
+  const total = (attemptId: string, score: number, over: { max?: number; base?: number; userId?: string; isTest?: boolean; coinRate?: number } = {}) =>
     bijak.awardSelfMark({
       attemptId,
       userId: over.userId ?? studentId,
@@ -261,6 +261,7 @@ describe('WalletBijakReward.awardSelfMark (D94: V2 rates on the net gain of the 
       base: over.base ?? 1,
       score,
       max: over.max ?? 4,
+      coinRate: over.coinRate ?? 2, // the binding pays gain x the rate it is handed (the service resolves coinsPerCorrect()); these cases use 2 per mark
       description: BIJAK_REWARD_DESCRIPTION,
     })
   const xpOf = async (userId: string) => Number((await t.db.query('select xp from wallets where user_id = $1', [userId]))[0]?.xp ?? 0)
@@ -358,6 +359,16 @@ describe('WalletBijakReward.awardSelfMark (D94: V2 rates on the net gain of the 
     expect((await rows(att)).map((r) => [r.source_id, r.amount])).toEqual([[`${att}:score:1.5`, 1]])
     expect(await balance(studentId)).toBe(bal + 1)
     expect(await xpOf(studentId)).toBe(xp + 5)
+  })
+
+  it('the gain is paid at the rate handed over (S3-T04): rate 3 pays 3 syiling per mark, XP stays 10', async () => {
+    const att = randomUUID()
+    const bal = await balance(studentId)
+    const xp = await xpOf(studentId)
+    await total(att, 3, { coinRate: 3 }) // base 1 -> 3: 2 marks
+    expect((await rows(att)).map((r) => r.amount)).toEqual([6])
+    expect(await balance(studentId)).toBe(bal + 6)
+    expect(await xpOf(studentId)).toBe(xp + 20)
   })
 
   it('AC-20.3: a Mod Pelajar self-mark pays nothing', async () => {

@@ -88,7 +88,7 @@ export interface BijakRewardInput {
   userId: string
   /** True under Mod Pelajar: the wallet must flag the line as test data. */
   isTest: boolean
-  /** The display values of the result (`score * 2` coins, `score * 10` points). */
+  /** The display values of the result (coins = marks x `coinsPerCorrect()`, points = marks x 10). */
   coins: number
   points: number
   /** When the attempt closed (the streak day); absent for a caller that has no time. */
@@ -151,6 +151,8 @@ export interface BijakSelfMarkRewardInput {
   score: number
   /** The attempt's maximum best-N score; the paid level never goes above it. */
   max: number
+  /** Syiling per mark of the gain: S5-T15 `coinsPerCorrect()` read when the self-mark was saved. */
+  coinRate: number
   description: typeof BIJAK_REWARD_DESCRIPTION
 }
 
