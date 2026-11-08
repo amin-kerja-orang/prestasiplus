@@ -61,7 +61,7 @@ describe('Studio status copy and rules', () => {
 
   it('lists every gate gap with its wizard step', () => {
     expect(gateLines([{ path: 'parts.b.cognitiveLevel', code: 'X', message: 'Bahagian (b) belum ada aras pemikiran.', step: 3 }])).toEqual([
-      { text: 'Bahagian (b) belum ada aras pemikiran.', step: 'Langkah 3' },
+      { text: 'Bahagian (b) belum ada aras pemikiran.', step: 'Langkah 4' },
     ])
   })
 

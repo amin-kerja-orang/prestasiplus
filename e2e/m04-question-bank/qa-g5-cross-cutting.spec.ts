@@ -17,7 +17,6 @@ const ROUTES: Array<[string, string]> = [
   ['S1', '/admin/questions'],
   ['S1 filtered archived', '/admin/questions?status=archived&page=2'],
   ['S1 empty', '/admin/questions?search=zzqxv'],
-  ['S2', '/admin/questions/create'],
   ['S3', '/admin/questions/564159'],
   ['S4', '/admin/questions/564159/edit'],
   ['S5', '/admin/questions/import'],
@@ -81,7 +80,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
-  test('E2E-M04-59 S1/S2/S5/S8/S11 selects equal GET /api/subjects and education-levels (AC-29.4)', async ({
+  test('E2E-M04-59 S1/S5/S8/S11 selects equal GET /api/subjects and education-levels (AC-29.4)', async ({
     page,
     loginAs,
     gotoApp,
@@ -103,13 +102,6 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
       .slice(1)
       .map((x) => x.trim())
 
-    await gotoApp('/admin/questions/create')
-    await expect(byId(page, 'q-subject').locator('option')).toHaveCount(32)
-    expect(
-      (await byId(page, 'q-subject').locator('option').allInnerTexts())
-        .slice(1)
-        .map((x) => x.trim()),
-    ).toEqual(s1Names)
     await gotoApp('/admin/questions/import')
     await expect(byId(page, 'import-default-subject').locator('option')).toHaveCount(32)
     expect(

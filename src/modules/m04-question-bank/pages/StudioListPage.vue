@@ -18,8 +18,10 @@ import {
   DsCallout,
   DsCluster,
   DsDataTable,
+  DsDialog,
   DsEmptyState,
   DsFilterBar,
+  DsFormField,
   DsGrid,
   DsLoadError,
   DsNativeSelect,
@@ -27,7 +29,9 @@ import {
   DsPanel,
   DsRowActions,
   DsStack,
+  DsStatRow,
   DsStatTile,
+  type StatItem,
   DsText,
   useConfirm,
   type CardField,
@@ -36,8 +40,11 @@ import {
 
 import { useMedia } from '@/ds/useMedia'
 
-import { fetchSubjects } from '../api/lookups'
+import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
+import { fetchQuestionSummary, type QuestionBulkFilter } from '../api/questions'
 import {
+  createGroup,
+  createStimulus,
   editAsDraft,
   EditAsDraftRefused,
   fetchGroup,
@@ -49,10 +56,13 @@ import {
   studioAvailable,
   type StudioRow,
 } from '../api/studio'
+import StudioBulkBar from '../components/studio/StudioBulkBar.vue'
 import StudioPreview from '../components/studio/StudioPreview.vue'
+import StudioStimulusEditor from '../components/studio/StudioStimulusEditor.vue'
 import { excerpt, sourceLabel } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
 import { hydrate, blankDraft, type StudioDraft } from '../lib/studio/draft'
+import { BANK_LETTERS, bankIssue, blankStimulus, stimulusIssue, toCreateBody, toOptionBank, type StimulusForm } from '../lib/studio/stimulus'
 import type { GroupView } from '../lib/studio/group-members'
 import {
   ARCHIVE_DIALOG,
@@ -85,7 +95,13 @@ const JENIS_OPTIONS = [
 ]
 const PAGE_SIZES = [25, 50, 100]
 const DEFAULT_PAGE_SIZE = 25
-const KEYS = ['subject_id', 'status', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
+/** Field 03-10, OPT-DSKP-TAG. */
+const DSKP_TAG_OPTIONS = [
+  { value: 'ada', wire: 'tagged', label: 'Ada DSKP Tag' },
+  { value: 'belum', wire: 'untagged', label: 'Belum Ditag' },
+]
+const dskpWire = (value: string): string | null => DSKP_TAG_OPTIONS.find((o) => o.value === value)?.wire ?? null
+const KEYS = ['subject_id', 'tingkatan', 'status', 'dskp', 'search', 'tahun', 'negeri', 'kertas', 'jenis'] as const
 type Key = (typeof KEYS)[number]
 
 const route = useRoute()
@@ -103,6 +119,7 @@ const validFilter = (k: Key, v: string): string => {
   if (k === 'tahun') return /^\d{4}$/.test(v) ? v : ''
   if (k === 'kertas') return KERTAS_OPTIONS.includes(v) ? v : ''
   if (k === 'jenis') return JENIS_OPTIONS.some((o) => o.value === v) ? v : ''
+  if (k === 'dskp') return dskpWire(v) === null ? '' : v
   if (k === 'negeri') return v.slice(0, 64)
   return v
 }
@@ -131,6 +148,8 @@ const list = useApi(
     available
       ? fetchStudioList({
           subjectId: applied.value.subject_id || null,
+          educationLevelId: applied.value.tingkatan || null,
+          dskpFilter: dskpWire(applied.value.dskp),
           status: applied.value.status || null,
           search: applied.value.search || null,
           tahun: applied.value.tahun || null,
@@ -145,6 +164,110 @@ const list = useApi(
   [...KEYS.map((k) => () => route.query[k]), () => route.query.page, () => route.query.per_page],
 )
 const subjects = useApi((signal) => (available ? fetchSubjects({ signal }) : Promise.resolve(null)))
+
+/**
+ * FR-ADM-QE2.1: `Cipta baharu` offers `Soalan tunggal` and `Kumpulan rangsangan`. A group is always scoped and starts with its
+ * first stimulus (API-Q-08 needs 1 to 3; decision 2 on #428), then opens on its own page.
+ */
+const startOpen = ref(false)
+const startGroup = ref(false)
+const groupForm = ref({ subjectId: '', educationLevelId: '', kertas: '' })
+const groupStimulus = ref<StimulusForm>(blankStimulus())
+/** `Bank pilihan (A-H)` (G-09): set here, as the group update route does not take it yet; empty = no bank. */
+const groupBank = ref<string[]>([])
+const groupErrors = ref<Record<string, string>>({})
+const groupProblems = ref<string[]>([])
+const groupBusy = ref(false)
+const levels = useApi((signal) => (available ? fetchEducationLevels({ signal }) : Promise.resolve(null)))
+const levelOptions = computed(() => levels.data.value?.data ?? [])
+
+function openStart(): void {
+  startGroup.value = false
+  groupForm.value = { subjectId: '', educationLevelId: '', kertas: '' }
+  groupStimulus.value = blankStimulus()
+  groupBank.value = []
+  groupErrors.value = {}
+  groupProblems.value = []
+  startOpen.value = true
+}
+
+async function createNewGroup(): Promise<void> {
+  const f = groupForm.value
+  const errors: Record<string, string> = {}
+  if (f.subjectId === '') errors.subjectId = 'Sila pilih subjek.'
+  if (f.educationLevelId === '') errors.educationLevelId = 'Sila pilih tahap pendidikan.'
+  groupErrors.value = errors
+  const issue = stimulusIssue(groupStimulus.value) ?? bankIssue(groupBank.value)
+  groupProblems.value = issue === null ? [] : [issue]
+  if (Object.keys(errors).length > 0 || issue !== null) return
+  groupBusy.value = true
+  try {
+    const stim = await createStimulus(toCreateBody(groupStimulus.value))
+    const g = await createGroup({
+      label: groupStimulus.value.label.trim(),
+      stimulusIds: [stim.data.id],
+      subjectId: f.subjectId,
+      educationLevelId: f.educationLevelId,
+      kertas: f.kertas === '' ? null : f.kertas,
+      ...(groupBank.value.length === 0 ? {} : { optionBank: toOptionBank(groupBank.value) }),
+    })
+    startOpen.value = false
+    await router.push(`/admin/studio/groups/${g.data.id}`)
+  } catch (err) {
+    groupProblems.value = errorLines(err)
+  } finally {
+    groupBusy.value = false
+  }
+}
+
+/** FR-ADM-Q03.5: rows picked for the bulk bar; the selection survives paging, not a change of filter. */
+const selected = ref<TableRow[]>([])
+watch(
+  () => KEYS.map((k) => queryText(route.query[k])).join('\u0000'),
+  () => {
+    selected.value = []
+  },
+)
+const selectedIds = computed(() => selected.value.map((r) => r.id))
+/** The applied filter as the filter route takes it; the status filter is already the wire code here. */
+const bulkFilter = computed<QuestionBulkFilter>(() => {
+  const a = applied.value
+  return Object.fromEntries(
+    Object.entries({ subjectId: a.subject_id, educationLevelId: a.tingkatan, dskpFilter: dskpWire(a.dskp) ?? '', status: a.status, search: a.search, tahun: a.tahun, negeri: a.negeri, kertas: a.kertas, jenis: a.jenis }).filter(([, v]) => v !== ''),
+  )
+})
+async function afterBulk(): Promise<void> {
+  selected.value = []
+  await Promise.all([list.reload(), summary.reload()])
+}
+
+/** The KPI strip by Subjek (plan S2-T01, copied from `BankPage.vue`; data API-Q-01 `/summary`). A failed read just hides it. */
+const summary = useApi((signal) => (available ? fetchQuestionSummary({ signal }) : Promise.resolve(null)))
+const kpi = computed<StatItem[]>(() => {
+  const s = summary.data.value
+  if (!s) return []
+  return [
+    {
+      key: 'total',
+      label: 'Jumlah soalan',
+      value: s.total,
+      icon: 'books' as const,
+      active: applied.value.subject_id === '',
+      onClick: () => void router.push({ path: STUDIO_PATH, query: { ...pagerQuery.value, subject_id: undefined, page: undefined } }),
+    },
+    ...s.subjects
+      .filter((x) => x.total > 0)
+      .map((x) => ({
+        key: String(x.id),
+        label: x.name,
+        value: x.approved,
+        sub: `${String(x.approved)} Terbit`,
+        icon: 'book-open' as const,
+        active: applied.value.subject_id === String(x.id),
+        onClick: () => void router.push({ path: STUDIO_PATH, query: { ...pagerQuery.value, subject_id: String(x.id), page: undefined } }),
+      })),
+  ]
+})
 
 const rows = computed<StudioRow[]>(() => list.data.value?.data ?? [])
 const firstLoad = computed(() => available && list.data.value === null && list.error.value === null)
@@ -194,7 +317,17 @@ const chips = computed(() => {
     const s = subjectOptions.value.find((o) => String(o.id) === applied.value.subject_id)
     out.push({ key: 'subject_id', label: `Subjek: ${s?.name ?? applied.value.subject_id}` })
   }
+  if (applied.value.tingkatan !== '') {
+    const l = levelOptions.value.find((o) => String(o.id) === applied.value.tingkatan)
+    out.push({ key: 'tingkatan', label: `Tingkatan: ${l?.name ?? applied.value.tingkatan}` })
+  }
   if (applied.value.status !== '') out.push({ key: 'status', label: `Status: ${statusBadge(applied.value.status)}` })
+  if (applied.value.dskp !== '') {
+    out.push({
+      key: 'dskp',
+      label: `Penandaan DSKP: ${DSKP_TAG_OPTIONS.find((o) => o.value === applied.value.dskp)?.label ?? ''}`,
+    })
+  }
   if (applied.value.search !== '') out.push({ key: 'search', label: `Cari: ${applied.value.search}` })
   if (applied.value.tahun !== '') out.push({ key: 'tahun', label: `Tahun: ${applied.value.tahun}` })
   if (applied.value.negeri !== '') out.push({ key: 'negeri', label: `Negeri: ${applied.value.negeri}` })
@@ -266,7 +399,8 @@ async function hide(row: StudioRow): Promise<void> {
   try {
     await moveQuestionStatus(row.id, 'archived', REASON.archive)
     flash.show({ type: 'success', message: FLASH.archived })
-    await list.reload()
+    selected.value = selected.value.filter((r) => r.id !== row.id)
+    await Promise.all([list.reload(), summary.reload()])
   } catch (err) {
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {
@@ -416,7 +550,7 @@ const cardFields: CardField[] = [
 <template>
   <DsPage subtitle="Bank soalan kanonikal - cipta, semak, terbit" data-testid="studio-list-page">
     <template #actions>
-      <UButton :to="CREATE_PATH" icon="i-ph-plus" class="min-h-11 shrink-0" data-testid="studio-create">Cipta baharu</UButton>
+      <UButton type="button" icon="i-ph-plus" class="min-h-11 shrink-0" aria-haspopup="dialog" data-testid="studio-create" @click="openStart">Cipta baharu</UButton>
     </template>
 
     <DsCallout v-if="!available" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
@@ -434,6 +568,8 @@ const cardFields: CardField[] = [
           :part-prefix="`studio-tile-${s}`"
         />
       </DsGrid>
+
+      <DsStatRow v-if="kpi.length > 0" :items="kpi" density="compact" aria-label="Ringkasan bank soalan" prefix="studio-kpi" data-testid="studio-kpis" />
 
       <DsFilterBar
         :active-count="activeCount"
@@ -456,6 +592,14 @@ const cardFields: CardField[] = [
             <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
           </DsNativeSelect>
         </div>
+        <DsNativeSelect id="studio-level-filter" v-model="draft.tingkatan" aria-label="Tingkatan" data-testid="studio-level-filter">
+          <option value="">Semua tingkatan</option>
+          <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+        </DsNativeSelect>
+        <DsNativeSelect id="studio-dskp-filter" v-model="draft.dskp" aria-label="Penandaan DSKP" data-testid="studio-dskp-filter">
+          <option value="">Semua</option>
+          <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
+        </DsNativeSelect>
         <div class="w-full min-w-0 md:w-48">
           <DsNativeSelect id="studio-status-filter" v-model="draft.status" name="status" aria-label="Status" data-testid="studio-status-filter">
             <option value="">Semua status</option>
@@ -482,6 +626,8 @@ const cardFields: CardField[] = [
         </div>
       </DsFilterBar>
 
+      <StudioBulkBar :selected-ids="selectedIds" :filter="bulkFilter" :matched="list.data.value?.meta.totalItems ?? 0" @done="afterBulk" />
+
       <DsLoadError v-if="list.error.value" :message="listLoadMessage(list.error.value)" testid="studio-error" retry-testid="studio-retry" @retry="list.reload()" />
 
       <DsPanel v-else-if="!firstLoad && rows.length === 0" data-testid="studio-empty">
@@ -495,9 +641,11 @@ const cardFields: CardField[] = [
 
       <DsDataTable
         v-else
+        v-model:selection="selected"
         variant="flush"
         :layout="lg ? 'fixed' : 'auto'"
         row-key="id"
+        selectable
         :data="tableRows"
         :columns="columns"
         caption="Senarai soalan Studio"
@@ -570,5 +718,50 @@ const cardFields: CardField[] = [
     </template>
 
     <StudioPreview v-model:open="previewOpen" :group="previewGroup" :draft="previewDraft" :question-id="previewId" :unsupported="previewUnsupported" />
+    <DsDialog v-model:open="startOpen" title="Cipta baharu" data-testid="studio-start">
+      <DsStack gap="md">
+        <DsCluster v-if="!startGroup" gap="sm">
+          <UButton :to="CREATE_PATH" color="primary" data-testid="studio-start-single">Soalan tunggal</UButton>
+          <UButton type="button" color="neutral" variant="soft" data-testid="studio-start-group" @click="startGroup = true">Kumpulan rangsangan</UButton>
+        </DsCluster>
+        <DsStack v-else as="form" gap="md" data-testid="studio-start-form" @submit.prevent="createNewGroup">
+          <DsFormField v-slot="{ id }" native label="Subjek" for="studio-start-subject" required :error="groupErrors.subjectId">
+            <DsNativeSelect :id="id" v-model="groupForm.subjectId" placeholder="Pilih subjek" data-testid="studio-start-subject">
+              <option v-for="o in subjectOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField v-slot="{ id }" native label="Tingkatan" for="studio-start-level" required :error="groupErrors.educationLevelId">
+            <DsNativeSelect :id="id" v-model="groupForm.educationLevelId" placeholder="Pilih Tingkatan" data-testid="studio-start-level">
+              <option v-for="o in levelOptions" :key="o.id" :value="String(o.id)">{{ o.name }}</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <DsFormField v-slot="{ id }" native label="Kertas (pilihan)" for="studio-start-kertas">
+            <DsNativeSelect :id="id" v-model="groupForm.kertas" data-testid="studio-start-kertas">
+              <option value="">—</option>
+              <option value="1">Kertas 1</option>
+              <option value="2">Kertas 2</option>
+              <option value="3">Kertas 3</option>
+            </DsNativeSelect>
+          </DsFormField>
+          <StudioStimulusEditor v-model="groupStimulus" testid="studio-start-stimulus" />
+          <DsStack gap="xs" data-testid="studio-start-bank">
+            <DsText variant="label">Bank pilihan (A-H)</DsText>
+            <DsCluster v-for="(_b, i) in groupBank" :key="i" gap="xs" :wrap="false">
+              <DsText variant="label" tabular>{{ BANK_LETTERS[i] }}</DsText>
+              <UInput v-model="groupBank[i]" :aria-label="`Pilihan ${BANK_LETTERS[i]}`" :data-testid="`studio-start-bank-${i}`" />
+              <UButton type="button" color="error" variant="soft" :data-testid="`studio-start-bank-${i}-remove`" @click="groupBank.splice(i, 1)">Buang</UButton>
+            </DsCluster>
+            <UButton v-if="groupBank.length < BANK_LETTERS.length" type="button" color="neutral" variant="soft" data-testid="studio-start-bank-add" @click="groupBank.push('')">+ Pilihan</UButton>
+          </DsStack>
+          <DsStack v-if="groupProblems.length > 0" gap="2xs" role="alert" data-testid="studio-start-problems">
+            <DsText v-for="p in groupProblems" :key="p" variant="body" tone="error">{{ p }}</DsText>
+          </DsStack>
+          <DsCluster gap="sm">
+            <UButton type="submit" color="primary" :loading="groupBusy" data-testid="studio-start-create">Cipta kumpulan</UButton>
+            <UButton type="button" color="neutral" variant="soft" data-testid="studio-start-cancel" @click="startOpen = false">Batal</UButton>
+          </DsCluster>
+        </DsStack>
+      </DsStack>
+    </DsDialog>
   </DsPage>
 </template>

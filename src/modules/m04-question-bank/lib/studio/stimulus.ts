@@ -79,9 +79,11 @@ export function stimulusFormOf(s: WireStimulus): StimulusForm {
 
 /** The BM message of what stops the stimulus being saved (the API's kind rules), or null. */
 export function stimulusIssue(f: StimulusForm): string | null {
+  if (f.label.trim() === '') return 'Sila isi label rangsangan.'
   if (f.kind === 'passage' && f.body.trim() === '') return STIMULUS_MESSAGES_BM.passage
   if (f.kind === 'table' && parseTable(f.tableText) === null && f.imageToken === null) return STIMULUS_MESSAGES_BM.table
   if (IMAGE_KINDS.includes(f.kind) && f.imageToken === null) return STIMULUS_MESSAGES_BM.image
+  if (IMAGE_KINDS.includes(f.kind) && f.alt.trim() === '') return 'Sila isi teks alternatif untuk imej ini.'
   return null
 }
 
@@ -120,3 +122,17 @@ export interface PendingGroup {
   /** Other questions chosen to share the stimulus (the new question joins them when it is saved). */
   memberIds: string[]
 }
+
+/* ---- `Bank pilihan (A-H)` of a group (G-09, DM-52): 2 to 8 rows for `match` questions; the letters follow the order ---- */
+
+export const BANK_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const
+export const BANK_MIN_MESSAGE = 'Bank pilihan mesti ada sekurang-kurangnya 2 pilihan.'
+
+/** Null when the bank is empty (no bank) or has at least 2 filled rows. */
+export function bankIssue(rows: readonly string[]): string | null {
+  if (rows.length === 0) return null
+  return rows.filter((r) => r.trim() !== '').length < 2 || rows.some((r) => r.trim() === '') ? BANK_MIN_MESSAGE : null
+}
+
+export const toOptionBank = (rows: readonly string[]): { label: string; body: { ms: string } }[] =>
+  rows.map((text, i) => ({ label: BANK_LETTERS[i] as string, body: { ms: text.trim() } }))
