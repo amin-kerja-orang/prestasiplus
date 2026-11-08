@@ -704,11 +704,15 @@ const STUDENT_HIDDEN_IDS: ReadonlySet<string> = new Set([
 ])
 /**
  * Menu items with no sidebar link for a role. Perutusan (Admin Sekolah, AC-SH-2, Delivery A): the
- * page works and the dashboard card links to it, the sidebar item stays hidden.
+ * page works and the dashboard card links to it, the sidebar item stays hidden. Misi Harian (teacher)
+ * is a child page of the Dashboard checklist with no sidebar item (D106, 20 R1-GUR-2b, OQ-G-13): its
+ * route is in scope, the rows stay in the data but never render.
  */
 const ROLE_HIDDEN_IDS: Readonly<Record<string, ReadonlySet<string>>> = {
   student: STUDENT_HIDDEN_IDS,
   school_admin: new Set(['sa-perutusan']),
+  teacher: new Set(['t-misi-harian']),
+  admin: new Set(['guru-misi-harian']),
 }
 const isRoleHidden = (role: string | null, id: string): boolean =>
   role !== null && ROLE_HIDDEN_IDS[role]?.has(id) === true
