@@ -28,6 +28,8 @@
 
 Counts: 11 menu/screen duplicates, 5 route/page groups, 7 data-structure duplicates, 4 data-content duplicates, 7 code/API duplicates = 34 entries. No item is open: every formerly open point is now **DECIDED (D113)** (section 8). Section 7 records the document fixes that were applied.
 
+**Status 2026-11-08 (gap analysis 8 Nov, V3-local `b50fa8d41`; the decisions above are unchanged):** the menu/screen decisions M-01 to M-09 are NOT yet implemented in the sidebar. Counted on V3-local: 40 links in 8 groups; 9 to 10 duplicate or action items remain (three "Bank Soalan" items, "Import & Semakan" plus "Senarai Ekstrak", "Muat Naik Kertas", "Tulis Soalan Manual", "Baris Gilir Semakan", "Pembina Kertas" plus "Set Builder", "Kontrak Simulasi", "Kualiti Soalan", "Laporan Soalan"), and these target items are not in the sidebar: Audit Rajah, Soalan Berstruktur, Latih Tubi, Tracking A, Subjektif, Kiriman Guru, Import Pengguna, Kelas Sekolah. Behind the menu one duplicate is already closed: the review queue is a single queue (`/admin/spm/semakan` redirects to `/admin/studio?status=review`, M-04). Live check: V2 itself keeps both banks (Studio and the sub-group "Bank Lama (Legasi)" with a link "Bank lama (legasi) →" on the Studio screen), so a legacy list next to the canonical one has a V2 precedent (M-01 keeps `Senarai Soalan` under Bank Lama).
+
 ---
 
 ## Summary table
