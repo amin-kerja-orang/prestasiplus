@@ -1,5 +1,5 @@
 /**
- * Matchmaking queues (M16-02 to M16-06, M16-12, M16-13; BR-M16-03 to BR-M16-05). Every mutation locks the queue row
+ * Matchmaking queues (M16-02 to M16-06, M16-12, M16-13; BR-M16-03, BR-M16-04). Every mutation locks the queue row
  * (`SELECT ... FOR UPDATE`) inside one transaction, so two concurrent accepts create exactly one battle. A queue is
  * visible to its owner (and to its joiner for the joiner poll) only; anything else is the documented not-found answer.
  * Queues written under Mod Pelajar (`is_test`) only talk to Mod Pelajar sessions and the other way round.
@@ -48,14 +48,16 @@ interface QueueRow {
 
 interface Prefetch {
   owner: BattleStudent
-  bot: BattleStudent | null
   /** The 10 drawn question ids, or null when the pool is too small. */
   ids: string[] | null
   forQueue: bigint
 }
 
-/** Stream of the question draw of a queue's battle (the pick uses `m16:battle:<queueId>`). */
+/** Stream of the question draw of a queue's battle. */
 const poolStream = (queueId: bigint): string => `m16:battle:${idToString(queueId)}:pool`
+
+/** FR-PA-29, 48 GAME-01: the robot comes once the entry has waited `battle_bot_fallback_seconds` (null: never a robot). */
+const robotDue = (q: QueueRow, now: Date, fallbackMs: number | null): boolean => fallbackMs !== null && now.getTime() - q.createdAt.getTime() >= fallbackMs
 
 const paramsOf = (q: QueueRow): BattleParams => ({
   questionType: q.questionType as BattleParams['questionType'],
@@ -127,7 +129,8 @@ export class QueueService {
   async pollMatch(userId: string, isTest: boolean, queueId: string): Promise<PollMatch> {
     const key = this.queueKey(queueId)
     if (key === null) return { status: 'not_found' }
-    const prefetched = await this.prefetchOpponent(key, userId, isTest)
+    const fallback = await this.engine.robotFallbackMs()
+    const prefetched = await this.prefetchRobotBattle(key, userId, isTest, fallback)
     return this.prisma.transaction(async () => {
       const q = await this.lock(key)
       // 48 GAME-01: "Batal" removes the entry at once, so the owner polls it like an entry that does not exist.
@@ -139,11 +142,13 @@ export class QueueService {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'abandoned' } })
         return { status: 'expired' as const }
       }
-      if (now.getTime() - q.createdAt.getTime() >= QUEUE_EXPIRES_MS) {
+      // The robot comes first: with a fallback equal to the queue time the entry must not expire on the same poll.
+      const robotComes = q.status === 'waiting' && q.joinerOutcome !== 'pending' && robotDue(q, now, fallback)
+      if (!robotComes && now.getTime() - q.createdAt.getTime() >= QUEUE_EXPIRES_MS) {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'expired' } })
         return { status: 'expired' as const }
       }
-      const polled = await this.prisma.client.battleQueue.update({
+      await this.prisma.client.battleQueue.update({
         where: { id: q.id },
         data: { polls: { increment: 1 }, waitPolls: { increment: 1 }, lastPolledAt: now },
       })
@@ -155,8 +160,8 @@ export class QueueService {
         await this.prisma.client.battleQueue.update({ where: { id: q.id }, data: { status: 'incoming_challenge', challengerUserId: q.joinerUserId } })
         return { status: 'incoming_challenge' as const, challenger }
       }
-      if (polled.waitPolls >= BATTLE_RULES.matchOnPoll) {
-        const battleId = await this.matchWithBot(q, userId, isTest, prefetched)
+      if (robotComes) {
+        const battleId = await this.matchWithRobot(q, userId, isTest, prefetched)
         return { status: 'matched' as const, battle_uuid: battleId }
       }
       return { status: 'waiting' as const }
@@ -164,35 +169,26 @@ export class QueueService {
   }
 
   /**
-   * The owner and the bot of a queue whose NEXT poll will match (read before the transaction: the student read of the
-   * users owner runs queries side by side, which a transaction connection must not). Null when this poll cannot match
-   * or the pick failed; the transaction then picks for itself.
+   * The owner and the draw of a queue whose robot is due (read before the transaction: the questions owner hydrates SPM
+   * pools with queries that must not share a transaction connection). Null when this poll cannot match.
    */
-  private async prefetchOpponent(key: bigint, userId: string, isTest: boolean): Promise<Prefetch | null> {
+  private async prefetchRobotBattle(key: bigint, userId: string, isTest: boolean, fallback: number | null): Promise<Prefetch | null> {
     const q = (await this.prisma.client.battleQueue.findUnique({ where: { id: key } })) as QueueRow | null
-    if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status !== 'waiting' || q.waitPolls + 1 < BATTLE_RULES.matchOnPoll) return null
+    if (!q || idToString(q.ownerId) !== userId || q.isTest !== isTest || q.status !== 'waiting' || !robotDue(q, this.clock.now(), fallback)) return null
     const owner = await this.engine.player(userId)
     if (!owner) return null
-    return {
-      owner,
-      bot: await this.engine.pickOpponent(idToString(q.id), owner, q.mode as QueueMode, q.openToAll),
-      ids: await this.engine.draw(paramsOf(q), owner.grade, poolStream(q.id)),
-      forQueue: q.id,
-    }
+    return { owner, ids: await this.engine.draw(paramsOf(q), owner.grade, poolStream(q.id)), forQueue: q.id }
   }
 
-  private async matchWithBot(q: QueueRow, ownerId: string, isTest: boolean, prefetched: Prefetch | null): Promise<string> {
-    const ready = prefetched !== null && prefetched.forQueue === q.id && prefetched.bot !== null ? prefetched : null
+  private async matchWithRobot(q: QueueRow, ownerId: string, isTest: boolean, prefetched: Prefetch | null): Promise<string> {
+    const ready = prefetched !== null && prefetched.forQueue === q.id ? prefetched : null
     const owner = ready?.owner ?? (await this.engine.player(ownerId))
     if (!owner) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
-    const bot = ready?.bot ?? (await this.engine.pickOpponent(idToString(q.id), owner, q.mode as QueueMode, q.openToAll))
-    if (!bot) throw rawNotFound(BATTLE_MESSAGES.noOpponent)
     const battleId = await this.engine.createBattle({
       mode: q.mode as QueueMode,
       params: paramsOf(q),
       a: { id: owner.id, schoolId: owner.schoolId },
-      b: { id: bot.id, schoolId: bot.schoolId },
-      bIsBot: true,
+      b: null,
       isTest,
       ownerGrade: owner.grade,
       drawStream: poolStream(q.id),
@@ -239,7 +235,6 @@ export class QueueService {
       params: paramsOf(q),
       a: { id: owner.id, schoolId: owner.schoolId },
       b: { id: other.id, schoolId: other.schoolId },
-      bIsBot: false,
       isTest,
       ownerGrade: owner.grade,
       drawStream: poolStream(q.id),

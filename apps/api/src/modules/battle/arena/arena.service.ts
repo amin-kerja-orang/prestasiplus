@@ -3,27 +3,30 @@
  * `questionId`, `optionId` and `seconds`, nothing else is read. The answer key is revealed only in the answer response of
  * the question just answered. A battle is visible to its two players only (anyone else: 404 "Battle tidak dijumpai.").
  */
-import { Inject, Injectable } from '@nestjs/common'
-import { BATTLE_MESSAGES, BATTLE_RULES, battleArenaPoints, battleWinner } from '@pp/contract'
+import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { BATTLE_MESSAGES, BATTLE_RULES, GAMES_ROBOT_NAME, battleArenaPoints, battleWinner, type GamesReward } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
+import { toMytTimestamp } from '../../../common/time/myt'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import { startGameSweep } from '../../games/core/time'
 import type { ArenaQuestionView } from '../battle.deps'
 import { BattleEngine, botAnswers, gradeLabel, isUuid } from '../engine'
 import { displayName } from '../privacy'
 
 /** Subjects whose SPM pool the lobby counts at the same time. */
 const LOBBY_PARALLEL = 4
-/** Time allowed past the 15 s of a question before the answer counts as a timeout. */
-const GRACE_SECONDS = 3
+const SWEEP_BATTLES = 200
 
 type Side = 'A' | 'B'
 interface Result {
   winner: Side | null
   scoreA: number
   scoreB: number
+  reward?: GamesReward
 }
 
 const notFound = (message: string = BATTLE_MESSAGES.battleNotFound): ApiError => ApiError.of('NOT_FOUND', { message })
@@ -36,12 +39,74 @@ const asRecord = (body: unknown): Record<string, unknown> =>
 const hasUser = <P extends { userId: bigint | null }>(p: P): p is P & { userId: bigint } => p.userId !== null
 
 @Injectable()
-export class ArenaService {
+export class ArenaService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ArenaService.name)
+  private stopSweep: () => void = () => undefined
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(BattleEngine) private readonly engine: BattleEngine,
+    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
+
+  onModuleInit(): void {
+    this.stopSweep = startGameSweep(ArenaService.name, this.config.get<string>('NODE_ENV'), () => this.sweepClocks())
+  }
+
+  onModuleDestroy(): void {
+    this.stopSweep()
+  }
+
+  /** FR-GM-00.7: one pass over the active battles with a question past its time. Returns how many pupils timed out. */
+  async sweepClocks(): Promise<number> {
+    const cutoff = new Date(this.clock.now().getTime() - (await this.engine.questionLimitMs()))
+    const due = await this.prisma.client.$queryRaw<{ id: string }[]>`
+      SELECT b.id::text AS id FROM battles b
+       WHERE b.status = 'active' AND b.created_at <= ${cutoff}
+         AND NOT EXISTS (SELECT 1 FROM battle_answers a WHERE a.battle_id = b.id AND a.created_at > ${cutoff})
+       ORDER BY b.created_at
+       LIMIT ${SWEEP_BATTLES}`
+    let timedOut = 0
+    for (const { id } of due) {
+      try {
+        const battle = await this.prisma.client.battle.findUnique({ where: { id }, include: { participants: true } })
+        for (const seat of battle?.participants.filter(hasUser).filter((p) => !p.isBot) ?? []) {
+          if (await this.timeOutSeat(id, seat)) timedOut += 1
+        }
+      } catch (err) {
+        this.logger.warn(`Battle clock failed for ${id}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+    return timedOut
+  }
+
+  /** The seat's question has run out: stores the timeout through the path of an answer. False when nothing is due or it moved first. */
+  private async timeOutSeat(uuid: string, seat: { id: bigint; side: string; userId: bigint }): Promise<boolean> {
+    const done = await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: seat.userId } })
+    const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid } })
+    if (!battle || battle.status !== 'active' || done >= BATTLE_RULES.arenaQuestions) return false
+    const served = await this.servedAt(uuid, seat.userId, done, battle.createdAt)
+    if (this.clock.now().getTime() - served.getTime() <= (await this.engine.questionLimitMs())) return false
+    const expected = await this.questionAt(uuid, done + 1)
+    if (!expected) return false
+    try {
+      await this.store(uuid, seat, done, expected, null, BATTLE_RULES.questionSeconds, served, true)
+      return true
+    } catch (err) {
+      if (!(err instanceof ApiError)) throw err
+      // The pupil's own answer got in first, or the battle ended: nothing to do. Anything else must be seen.
+      if (err.message !== BATTLE_MESSAGES.battleOver && err.message !== BATTLE_MESSAGES.questionInvalid) this.logger.warn(`Battle clock refused for ${uuid}: ${err.message}`)
+      return false
+    }
+  }
+
+  /** When the pupil's question was served: the battle start (question 1), then the previous answer. */
+  private async servedAt(uuid: string, userId: bigint, done: number, startedAt: Date): Promise<Date> {
+    if (done === 0) return startedAt
+    const previous = await this.prisma.client.battleAnswer.findUnique({ where: { battleId_userId_position: { battleId: uuid, userId, position: done } }, select: { createdAt: true } })
+    return previous?.createdAt ?? startedAt
+  }
 
   /** M16-15. */
   async lobby(who: { userId: string; role: string }) {
@@ -71,7 +136,7 @@ export class ArenaService {
   private async load(uuid: string, userId: string) {
     if (!isUuid(uuid)) throw notFound()
     const battle = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
-    // A pupil used as a simulated opponent (side B, is_bot) is not a participant of the battle: same not-found as a stranger.
+    // A seat marked is_bot, also one from before FR-GM-00.4 that still points at a pupil, is not a participant: same not-found as a stranger.
     const mine = battle?.participants.filter(hasUser).find((p) => idToString(p.userId) === userId && !p.isBot)
     if (!battle || !mine) throw notFound()
     return { battle, mine }
@@ -83,6 +148,18 @@ export class ArenaService {
 
   /** M16-16. */
   async view(uuid: string, userId: string) {
+    const opened = await this.load(uuid, userId)
+    // 48 section 3.3: a poll moves the clock too. A question past its time is a timeout, then the battle is read as it now stands.
+    // A read never fails on it: the sweep retries the seat, so an error here is logged and the view is still answered.
+    if (opened.battle.status === 'active') {
+      try {
+        await this.timeOutSeat(uuid, opened.mine)
+      } catch (err) {
+        // Deliberately broad: the clock is a best-effort side effect of a GET; any failure (lock timeout, DB error)
+        // is logged and the view is still served, as the 5 s sweep does. The sweep retries the seat later.
+        this.logger.warn(`Battle clock failed on view for ${uuid}: ${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
     const { battle, mine } = await this.load(uuid, userId)
     const a = battle.participants.find((p) => p.side === 'A')
     const b = battle.participants.find((p) => p.side === 'B')
@@ -95,11 +172,15 @@ export class ArenaService {
       question = row ? await this.engine.deps.arenaQuestion(idToString(row.questionId)) : null
       if (!question) throw notFound(BATTLE_MESSAGES.questionNotFound)
     }
+    const served = active ? await this.servedAt(uuid, mine.userId, done, battle.createdAt) : null
+    const reward = active ? undefined : await this.engine.rewardOf(uuid, userId, battle.createdAt, battle.isTest)
     const people = await this.engine.deps.players([a, b].filter(hasUser).map((p) => idToString(p.userId)))
     // FR-GM-00.8, 48 section 3.10: the opponent by first given name, no school; `school` stays in the contract, always empty.
+    // FR-MUR-21-9: a robot is "Robot PrestasiPlus", also on a seat from before FR-GM-00.4 that still points at a pupil.
     const player = (p: typeof a) => {
+      if (p.isBot) return { name: GAMES_ROBOT_NAME, school: '', isBot: true }
       const name = (p.userId === null ? undefined : people.get(idToString(p.userId)))?.name ?? ''
-      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '' }
+      return { name: (p.side === mine.side ? name : displayName(name)) || 'Pelajar', school: '', isBot: false }
     }
     return {
       uuid,
@@ -111,7 +192,8 @@ export class ArenaService {
       total: BATTLE_RULES.arenaQuestions,
       question,
       secondsLeft: active ? BATTLE_RULES.questionSeconds : 0,
-      ...(active ? {} : { result: { winner: battle.winner as Side | null, scoreA: a.score, scoreB: b.score } as Result }),
+      ...(served ? { roundEndsAt: toMytTimestamp(new Date(served.getTime() + (await this.engine.questionLimitMs()))) } : {}),
+      ...(active ? {} : { result: { winner: battle.winner as Side | null, scoreA: a.score, scoreB: b.score, ...(reward ? { reward } : {}) } as Result }),
     }
   }
 
@@ -136,39 +218,48 @@ export class ArenaService {
     if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > BATTLE_RULES.questionSeconds) {
       throw invalid('seconds', BATTLE_MESSAGES.timeInvalid)
     }
-    // Time is the server's: the question was served when the battle started (question 1) or when the previous answer
-    // was stored. The client's `seconds` can only make the answer slower, never faster.
+    return this.store(uuid, mine, done, expected, optionId, seconds, await this.servedAt(uuid, mine.userId, done, battle.createdAt))
+  }
+
+  /**
+   * Grades and stores one answer or timeout of a seat. Time is the server's: the question was served when the battle started
+   * (question 1) or when the previous answer was stored. The client's `seconds` can only make the answer slower, never faster.
+   * `byClock` is the sweep's own timeout: nobody reads the response, so a question that can no longer be served (archived) still
+   * times out and the battle reaches its end.
+   */
+  private async store(uuid: string, mine: { id: bigint; side: string; userId: bigint }, done: number, expected: { questionId: bigint }, optionId: number | null, seconds: number, served: Date, byClock = false) {
+    const userId = idToString(mine.userId)
+    const questionId = idToString(expected.questionId)
     const now = this.clock.now()
-    const previous = done === 0 ? null : await this.prisma.client.battleAnswer.findUnique({ where: { battleId_userId_position: { battleId: uuid, userId: mine.userId, position: done } }, select: { createdAt: true } })
-    const served = previous?.createdAt ?? battle.createdAt
-    const elapsed = Math.max(0, Math.floor((now.getTime() - served.getTime()) / 1000))
-    const timedOut = elapsed > BATTLE_RULES.questionSeconds + GRACE_SECONDS
+    const elapsedMs = now.getTime() - served.getTime()
+    const elapsed = Math.max(0, Math.floor(elapsedMs / 1000))
+    const timedOut = elapsedMs > (await this.engine.questionLimitMs())
     const whole = timedOut ? BATTLE_RULES.questionSeconds : Math.min(BATTLE_RULES.questionSeconds, Math.max(Math.floor(seconds), elapsed))
-    const graded = await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)
+    const graded = (await this.engine.deps.gradeAnswer(questionId, timedOut ? null : optionId)) ?? (byClock ? { correct: false, correctOptionId: 0 } : null)
     if (!graded) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const index = done + 1
     const last = index >= BATTLE_RULES.arenaQuestions
-    const nextRow = last ? null : await this.questionAt(uuid, index + 1)
+    const nextRow = last || byClock ? null : await this.questionAt(uuid, index + 1)
     const next = nextRow ? await this.engine.deps.arenaQuestion(idToString(nextRow.questionId)) : null
-    if (!last && !next) throw notFound(BATTLE_MESSAGES.questionNotFound)
+    if (!last && !next && !byClock) throw notFound(BATTLE_MESSAGES.questionNotFound)
     const bot = botAnswers(uuid, await this.engine.botAccuracy())[done]
     if (!bot) throw notFound()
 
     const points = graded.correct ? battleArenaPoints(whole) : 0
-    let ended: { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null = null
-    const out = await this.prisma
-      .transaction(async () => {
+    return this.prisma
+      .transaction(async (tx) => {
         await this.prisma.client.$queryRaw`SELECT id FROM battles WHERE id = ${uuid}::uuid FOR UPDATE`
         const locked = await this.prisma.client.battle.findUnique({ where: { id: uuid }, include: { participants: true } })
         if (!locked) throw notFound()
         if (locked.status !== 'active') throw ApiError.of('CONFLICT', { message: BATTLE_MESSAGES.battleOver })
         // Another answer of the caller got in first: this position is no longer the next one.
         if ((await this.prisma.client.battleAnswer.count({ where: { battleId: uuid, userId: mine.userId } })) !== done) throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
-        const opp = locked.participants.filter(hasUser).find((p) => p.userId !== mine.userId)
+        const opp = locked.participants.find((p) => p.side !== mine.side)
         if (!opp) throw notFound()
         await this.prisma.client.battleAnswer.create({
           data: { battleId: uuid, userId: mine.userId, position: index, questionId: expected.questionId, optionId: timedOut ? null : optionId, correct: graded.correct, seconds: whole, points, createdAt: now },
         })
+        if (!locked.isTest) await this.engine.recordAnswer({ userId, battleId: uuid, questionId, position: index, isCorrect: graded.correct, answeredAt: now })
         // The opponent is simulated from its pre-drawn list (D53(a)); a row already there for this position is kept as it is.
         const simulated = await this.prisma.client.battleAnswer.createMany({
           data: [
@@ -211,16 +302,13 @@ export class ArenaService {
         const scoreB = mine.side === 'A' ? oppNow.score : meNow.score
         const winner = battleWinner(scoreA, scoreB)
         await this.prisma.client.battle.update({ where: { id: uuid }, data: { status: 'finished', winner, finishedAt: now } })
-        ended = { side: mine.side as Side, winner, correct: meNow.correct, total: index, isTest: locked.isTest }
-        return { ...base, result: { winner, scoreA, scoreB } as Result }
+        const reward = await this.engine.report({ tx, battleId: uuid, startedAt: locked.createdAt, userId, side: mine.side as Side, winner, forfeited: false, robotsOnly: opp.isBot, correct: meNow.correct, total: index, isTest: locked.isTest })
+        return { ...base, result: { winner, scoreA, scoreB, ...(reward ? { reward } : {}) } as Result }
       })
       .catch((e: unknown) => {
         // A unique violation on (battle, user, position) is a replay of an answered position.
         if (typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 'P2002') throw invalid('questionId', BATTLE_MESSAGES.questionInvalid)
         throw e
       })
-    const finished = ended as { side: Side; winner: Side | null; correct: number; total: number; isTest: boolean } | null
-    if (finished) await this.engine.reportSafely({ userId, forfeited: false, ...finished })
-    return out
   }
 }

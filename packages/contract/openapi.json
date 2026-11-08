@@ -22279,6 +22279,44 @@
           "scoreB": {
             "type": "integer",
             "minimum": 0
+          },
+          "reward": {
+            "type": "object",
+            "properties": {
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "capped": {
+                "type": "boolean",
+                "description": "A daily cap reduced the reward."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "xp_cap",
+                  "syiling_cap",
+                  "xp_and_syiling_cap",
+                  "pace_guard",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "xp",
+              "syiling",
+              "capped",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "description": "What this battle gave the caller."
           }
         },
         "required": [
@@ -22315,6 +22353,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -22331,6 +22373,10 @@
                   },
                   "school": {
                     "type": "string"
+                  },
+                  "isBot": {
+                    "type": "boolean",
+                    "description": "True for the robot opponent (\"Robot PrestasiPlus\"), shown with the chip \"Latihan\" (48 GAME-01)."
                   }
                 },
                 "required": [
@@ -22392,6 +22438,13 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 15
+          },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While active: when the caller's question times out, grace included (48 section 3.3).",
+            "example": "2026-10-16T09:30:00+08:00"
           },
           "result": {
             "$ref": "#/components/schemas/BattleArenaResult"
@@ -23951,11 +24004,15 @@
         "type": "object",
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Keys `state.positions` / `meter`: the user id, or an opaque seat id for a robot (no user).",
+            "example": "1042"
           },
           "name": {
             "type": "string",
-            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). The id stays: it keys `state.positions` / `meter`."
+            "description": "Display name only (D54(d)); first given name outside the viewer's scope (children's names rule). A robot is \"Robot PrestasiPlus {n}\"."
           },
           "grade": {
             "type": "string",
@@ -24101,7 +24158,7 @@
           "roundSecondsLeft": {
             "type": "integer",
             "minimum": 0,
-            "description": "Perang Fakta: seconds left in the 10 s round (server clock)."
+            "description": "Seconds left of the current turn or round by the server clock (48 GAME-02 to GAME-06; Perang Fakta 10 s). Absent for Teka Silang Kata."
           },
           "secondsLeft": {
             "type": "integer",
@@ -24180,6 +24237,44 @@
               ],
               "additionalProperties": false
             }
+          },
+          "reward": {
+            "type": "object",
+            "properties": {
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "capped": {
+                "type": "boolean",
+                "description": "A daily cap reduced the reward."
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "xp_cap",
+                  "syiling_cap",
+                  "xp_and_syiling_cap",
+                  "pace_guard",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "xp",
+              "syiling",
+              "capped",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "description": "What this game gave the caller."
           }
         },
         "required": [
@@ -24244,6 +24339,13 @@
             "type": "integer",
             "minimum": 0,
             "description": "Present with `state`."
+          },
+          "roundEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "While playing: when the server clock ends the current turn or round (Teka Silang Kata: the game).",
+            "example": "2026-10-16T09:30:00+08:00"
           },
           "question": {
             "$ref": "#/components/schemas/GamesKeylessQuestion"
@@ -25524,6 +25626,9 @@
               "credited": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "reward": {
+                "$ref": "#/components/schemas/GamesReward"
               }
             },
             "required": [
@@ -25536,6 +25641,43 @@
         "required": [
           "correct",
           "level"
+        ],
+        "additionalProperties": false
+      },
+      "GamesReward": {
+        "type": "object",
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "capped": {
+            "type": "boolean",
+            "description": "A daily cap reduced the reward."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "xp_cap",
+              "syiling_cap",
+              "xp_and_syiling_cap",
+              "pace_guard",
+              null
+            ]
+          }
+        },
+        "required": [
+          "xp",
+          "syiling",
+          "capped",
+          "reason"
         ],
         "additionalProperties": false
       },

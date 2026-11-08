@@ -4,18 +4,12 @@
  * standings, tournaments) injects `BattleDeps` and never an owner repository. Ids are decimal strings.
  *
  * Fallbacks where an owner exports no fitting read (listed for the lead; no owner module was edited):
- *  1. Active students (bot pick, search): `UsersRepository.search` (name/e-mail substring, name A-Z) with an empty or
- *     name term, capped at `STUDENT_POOL_CAP`; the filters (active, not suspended, grade, school) run here. A direct
- *     `activeStudents({grade, schoolId, excludeIds, limit})` read in BE-05 would remove the cap.
  *  2. SPM pool: the `spmPool` filter of `QuestionFilter`: the size is one SQL count and a draw is `sampleIds` (no id list).
  *  3. Arena question and key: `flatFromVersion` from `questions/projection` (not in the questions index) gives text,
  *     options and the key index of a one-leaf MCQ.
- *  4. Platform answer accuracy: BE-12 exports only per-user reads (`PracticeRepository.answers(userId)`), no platform
- *     total (so no `PracticeRepository` is injected here). `platformAccuracy()` returns 0 (the SRS value for "no answers"), so bots answer wrong until BE-12 adds one.
  *  5. Avatar: no owner serves a user avatar yet; `avatar` is always null.
- *  5b. OPEN QUESTION for the lead: BE-05 should export a bounded read of active students (grade, school, exclude ids,
- *     limit). Until then the read in 1 and the pool count in 2 are cached in process for
- *     `CACHE_TTL_MS` (read through the Clock) so polls and the lobby do not rescan the tables; `invalidateCache()` is for tests.
+ *  5b. The pool count in 2 is cached in process for `CACHE_TTL_MS` (read through the Clock) so polls and the lobby do not
+ *     rescan the tables; `invalidateCache()` is for tests.
  *  6. PKSK: domains and the grant come from the PKSK owner (`PkskDomainsRepository`, `PkskAccessService`), the questions
  *     from the PKSK read of the questions owner. Only a question `pkskArenaLeaf` accepts enters a battle.
  */
@@ -34,9 +28,7 @@ import { SchoolsRepository } from '../schools'
 import { UsersRepository, type UserRecord } from '../users'
 import type { Caller } from '../users/caller'
 
-/** Most users one student read looks at (see fallback 1). */
-export const STUDENT_POOL_CAP = 5000
-/** Student pool and SPM pool reads are reused this long (see 5b). */
+/** SPM pool reads are reused this long (see 5b). */
 export const CACHE_TTL_MS = 60_000
 
 /**
@@ -44,7 +36,7 @@ export const CACHE_TTL_MS = 60_000
  * always 0..3 (`ARENA_OPTIONS`, `projection.ts` `correctAnswer`). A 5 to 8 option question never enters a battle draw or count.
  */
 const BATTLE_POOL = { type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } } as const satisfies QuestionFilter
-/** Secondary-only (2026-10-29): grades 1..6 (Darjah) are hidden from opponent search and the bot pick; no grade stays visible. */
+/** Secondary-only (2026-10-29): grades 1..6 (Darjah) are hidden from opponent search; no grade stays visible. */
 const isSecondaryGrade = (grade: number | null): boolean => grade === null || grade >= 7
 /** Rows read by the name search before the active / not-suspended filter (the caller sees at most `limit`). */
 const SEARCH_OVER_READ = 40
@@ -92,16 +84,6 @@ export interface BattleSchool {
   type: string | null
   /** The PPD / district name as the owner stores it. */
   district: string | null
-}
-
-export interface StudentFilter {
-  /** Only students of this grade. */
-  grade?: number
-  /** Only students of this school. */
-  schoolId?: string
-  /** Not students of this school (a student without a school is excluded too, as the mock requires a school). */
-  notSchoolId?: string
-  excludeIds?: ReadonlySet<string>
 }
 
 export interface PoolSpec {
@@ -197,21 +179,6 @@ export class BattleDeps {
     const rows = await this.users.getMany(ids)
     const students = await this.toStudents(rows)
     return new Map(students.map((s) => [s.id, s]))
-  }
-
-  /** Active students, name A-Z then id (deterministic), after the filters. For the bot pick. */
-  async activeStudents(filter: StudentFilter = {}, limit: number = STUDENT_POOL_CAP): Promise<BattleStudent[]> {
-    const rows = await this.cached(`students:${filter.schoolId ?? '*'}`, () =>
-      this.users.search({ q: '', role: 'student', ...(filter.schoolId === undefined ? {} : { schoolId: filter.schoolId }), limit: STUDENT_POOL_CAP }),
-    )
-    const kept = rows.filter(
-      (u) =>
-        this.isActiveStudent(u) && isSecondaryGrade(u.grade) &&
-        (filter.grade === undefined || u.grade === filter.grade) &&
-        (filter.notSchoolId === undefined || (u.schoolId !== null && u.schoolId !== filter.notSchoolId)) &&
-        !(filter.excludeIds?.has(u.id) ?? false),
-    )
-    return this.toStudents(kept.slice(0, limit))
   }
 
   /**
@@ -366,12 +333,5 @@ export class BattleDeps {
     const [record] = await this.questions.getMany([id], 'live', 'only')
     const leaf = record ? pkskArenaLeaf(record) : null
     return record && leaf ? { record, leaf } : null
-  }
-
-  // --- practice (BE-12) --------------------------------------------------------------------------------
-
-  /** Platform answer accuracy p in [0, 1] for the bot's answers (fallback 4: 0 until BE-12 exports a platform total; the caller reads it once per process start). */
-  async platformAccuracy(): Promise<number> {
-    return 0
   }
 }

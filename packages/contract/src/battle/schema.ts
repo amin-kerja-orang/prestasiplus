@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { GamesRewardSchema } from '../games/common'
 import { PkskAccessSchema } from '../pksk/student'
 
 /**
@@ -177,7 +178,7 @@ export const BattleChallengerSchema = z
   .meta({ id: 'BattleChallenger' })
 
 /**
- * 200 of M16-04. `waiting` for the first two polls, `matched` (bot) on the third (BATTLE_RULES.matchOnPoll);
+ * 200 of M16-04. `waiting` until a human is matched or, after `battle_bot_fallback_seconds` (48 GAME-01), the robot;
  * the queue is `expired` after 120 s or after more than 10 s without a poll; another user's queue is
  * `not_found` (never an HTTP error).
  */
@@ -312,11 +313,20 @@ export const BattleArenaQuestionSchema = z
   .strictObject({ id: IdSchema, text: z.string(), options: z.array(BattleArenaOptionSchema).min(2).max(4) })
   .meta({ id: 'BattleArenaQuestion' })
 
-const ArenaPlayerSchema = z.strictObject({ name: z.string(), school: z.string() })
+const ArenaPlayerSchema = z.strictObject({
+  name: z.string(),
+  school: z.string(),
+  isBot: z.boolean().optional().meta({ description: 'True for the robot opponent ("Robot PrestasiPlus"), shown with the chip "Latihan" (48 GAME-01).' }),
+})
 const ScoresSchema = z.strictObject({ A: z.number().int().min(0), B: z.number().int().min(0) })
 
 export const BattleArenaResultSchema = z
-  .strictObject({ winner: BattleWinnerSchema, scoreA: z.number().int().min(0), scoreB: z.number().int().min(0) })
+  .strictObject({
+    winner: BattleWinnerSchema,
+    scoreA: z.number().int().min(0),
+    scoreB: z.number().int().min(0),
+    reward: GamesRewardSchema.optional().meta({ description: 'What this battle gave the caller.' }),
+  })
   .meta({ id: 'BattleArenaResult' })
 
 /**
@@ -334,6 +344,7 @@ export const BattleArenaViewSchema = z
     total: z.literal(BATTLE_RULES.arenaQuestions),
     question: BattleArenaQuestionSchema.nullable(),
     secondsLeft: z.number().int().min(0).max(BATTLE_RULES.questionSeconds),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the caller\'s question times out, grace included (48 section 3.3).' }),
     result: BattleArenaResultSchema.optional(),
   })
   .superRefine((v, ctx) => {
