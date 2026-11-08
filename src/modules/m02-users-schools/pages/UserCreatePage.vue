@@ -37,7 +37,12 @@ import SchoolAdminGenerator from '../components/SchoolAdminGenerator.vue'
 import StudentSchoolPicker from '../components/StudentSchoolPicker.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import type { CredentialRow } from '../lib/credential-row'
-import { errorLines, USERS_LIST_PATH } from '../lib/user-list'
+import {
+  errorLines,
+  isPasswordTooShort,
+  PASSWORD_SHORT_MESSAGE,
+  USERS_LIST_PATH,
+} from '../lib/user-list'
 import {
   generatedAdminEmail,
   generatedAdminName,
@@ -210,6 +215,13 @@ async function submit(): Promise<void> {
   if (saving.value) return
   const request = buildRequest()
   if (!request) return
+  // FR-ADM-U02.4: a typed password has at least 8 characters (the generator's default password is not typed).
+  if (!http && role.value !== 'school_admin' && isPasswordTooShort(form.password)) {
+    errors.value = [PASSWORD_SHORT_MESSAGE]
+    await nextTick()
+    alertBox.value?.scrollIntoView?.({ block: 'start' })
+    return
+  }
   saving.value = true
   errors.value = []
   try {
@@ -437,7 +449,7 @@ async function submit(): Promise<void> {
             type="password"
             name="password"
             autocomplete="new-password"
-            placeholder="Minimum 6 aksara"
+            placeholder="Minimum 8 aksara"
             class="w-full"
             data-testid="user-password"
           />

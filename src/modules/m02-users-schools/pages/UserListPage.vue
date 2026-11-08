@@ -17,6 +17,8 @@ import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 import { isHttpMode } from '@/api/mode'
 import { useApi, useFlash, useSession } from '@/composables'
 import {
+  DsCallout,
+  DsCluster,
   DsDataTable,
   DsEmptyState,
   DsFilterBar,
@@ -26,6 +28,8 @@ import {
   DsPanel,
   DsRowActions,
   DsStatusBadge,
+  DsText,
+  type DsStatus,
   type RowAction,
   useConfirm,
 } from '@/ds'
@@ -39,11 +43,14 @@ import {
   toggleUserActive,
   type AdminUserListItem,
   type AdminUserRole,
+  type AdminUserStatus,
 } from '../api/users'
 import UserDeleteModals from '../components/UserDeleteModals.vue'
 import UserIdentityCell from '../components/UserIdentityCell.vue'
 import UserStatCards from '../components/UserStatCards.vue'
 import {
+  ACCOUNT_STATE_LABELS,
+  accountState,
   errorLines,
   formatUserDate,
   initialsOf,
@@ -70,8 +77,14 @@ function queryText(value: LocationQueryValue | LocationQueryValue[] | undefined)
 const applied = computed(() => {
   const active = queryText(route.query.is_active)
   const school = Number.parseInt(queryText(route.query.school), 10)
+  const statusText = queryText(route.query.status)
+  const accountStatus: AdminUserStatus | null =
+    statusText === 'pending' || statusText === 'active' || statusText === 'suspended'
+      ? statusText
+      : null
   return {
     role: queryText(route.query.role),
+    accountStatus,
     school: Number.isFinite(school) && school > 0 ? school : null,
     isActive: active === '1' ? true : active === '0' ? false : null,
     search: queryText(route.query.search).trim(),
@@ -84,15 +97,28 @@ const role = ref(queryText(route.query.role))
 const school = ref(queryText(route.query.school))
 const status = ref(queryText(route.query.is_active))
 const search = ref(queryText(route.query.search))
+/** The `status` query (pending / active / suspended) kept by the form until another Status is picked. */
+const accountStatus = ref<AdminUserStatus | null>(applied.value.accountStatus)
 watch(
-  () => [route.query.role, route.query.school, route.query.is_active, route.query.search] as const,
+  () =>
+    [
+      route.query.role,
+      route.query.school,
+      route.query.is_active,
+      route.query.search,
+      route.query.status,
+    ] as const,
   ([r, s, a, q]) => {
     role.value = queryText(r)
     school.value = queryText(s)
     status.value = queryText(a)
     search.value = queryText(q)
+    accountStatus.value = applied.value.accountStatus
   },
 )
+watch(status, (value) => {
+  if (value !== '') accountStatus.value = null
+})
 
 const { data, error, reload } = useApi(
   (signal) =>
@@ -100,6 +126,7 @@ const { data, error, reload } = useApi(
       role: (applied.value.role || null) as AdminUserRole | null,
       schoolId: applied.value.school,
       isActive: applied.value.isActive,
+      status: applied.value.accountStatus,
       search: applied.value.search || null,
       page: applied.value.page,
       signal,
@@ -108,6 +135,7 @@ const { data, error, reload } = useApi(
     () => route.query.role,
     () => route.query.school,
     () => route.query.is_active,
+    () => route.query.status,
     () => route.query.search,
     () => route.query.page,
   ],
@@ -118,6 +146,7 @@ const schoolOptions = computed(() => schoolFilters.data.value ?? [])
 
 const rows = computed<AdminUserListItem[]>(() => data.value?.data ?? [])
 const counts = computed(() => data.value?.meta.roleCounts ?? null)
+const pendingCount = computed(() => data.value?.meta.pendingCount ?? 0)
 const firstLoad = computed(() => data.value === null && error.value === null)
 type UserRow = AdminUserListItem & Record<string, unknown>
 const tableRows = computed(() => rows.value as UserRow[])
@@ -130,6 +159,7 @@ const activeCount = computed(
     (applied.value.role !== '' ? 1 : 0) +
     (applied.value.school !== null ? 1 : 0) +
     (applied.value.isActive !== null ? 1 : 0) +
+    (applied.value.accountStatus !== null ? 1 : 0) +
     (applied.value.search !== '' ? 1 : 0),
 )
 
@@ -138,6 +168,7 @@ function filterQuery(): Record<string, string> {
   if (role.value !== '') out.role = role.value
   if (school.value !== '') out.school = school.value
   if (status.value !== '') out.is_active = status.value
+  else if (accountStatus.value !== null) out.status = accountStatus.value
   const s = search.value.trim()
   if (s !== '') out.search = s
   return out
@@ -149,9 +180,16 @@ const pagerQuery = computed(() => {
   if (applied.value.role !== '') out.role = applied.value.role
   if (applied.value.school !== null) out.school = String(applied.value.school)
   if (applied.value.isActive !== null) out.is_active = applied.value.isActive ? '1' : '0'
+  if (applied.value.accountStatus !== null) out.status = applied.value.accountStatus
   if (applied.value.search !== '') out.search = applied.value.search
   return out
 })
+
+/** The banner link: the same list narrowed to the accounts waiting for approval. */
+const pendingLink = computed(() => ({
+  path: USERS_LIST_PATH,
+  query: { ...pagerQuery.value, is_active: undefined, status: 'pending', page: undefined },
+}))
 
 /** Removable chips of the applied filters (the URL is the source of truth). */
 const chips = computed<{ key: string; label: string }[]>(() => {
@@ -163,6 +201,11 @@ const chips = computed<{ key: string; label: string }[]>(() => {
   }
   if (applied.value.isActive !== null)
     out.push({ key: 'is_active', label: applied.value.isActive ? 'Aktif' : 'Tidak Aktif' })
+  if (applied.value.accountStatus !== null)
+    out.push({
+      key: 'status',
+      label: ACCOUNT_STATE_LABELS[applied.value.accountStatus],
+    })
   return out
 })
 
@@ -186,6 +229,7 @@ async function resetFilter(): Promise<void> {
   role.value = ''
   school.value = ''
   status.value = ''
+  accountStatus.value = null
   search.value = ''
   await submitFilter()
 }
@@ -275,6 +319,46 @@ async function loginAs(user: AdminUserListItem): Promise<void> {
 
 const deleting = ref<{ id: number; name: string } | null>(null)
 const bulkOpen = ref(false)
+/** The rows the open bulk dialog removes: every ticked row (Padam) or only the pending ones (Tolak). */
+const bulkTargets = ref<number[]>([])
+
+// --- Approval (U-01): only rows still pending in the loaded list are approved or rejected.
+const pendingSelected = computed(() =>
+  rows.value
+    .filter((u) => selected.value.includes(u.id) && accountState(u) === 'pending')
+    .map((u) => u.id),
+)
+const approving = ref(false)
+
+function openBulk(ids: number[]): void {
+  bulkTargets.value = ids
+  bulkOpen.value = true
+}
+
+/** `Luluskan`: `toggle-active` once per ticked pending row, then a fresh list so none is flipped twice. */
+async function approveSelected(): Promise<void> {
+  if (approving.value || busy.value) return
+  const ids = pendingSelected.value
+  if (ids.length === 0) return
+  approving.value = true
+  let approved = 0
+  try {
+    for (const id of ids) {
+      await toggleUserActive(id)
+      approved++
+    }
+    flash.show({ type: 'success', message: `${String(approved)} akaun diluluskan.` })
+  } catch (err) {
+    flash.show({ type: 'error', message: errorLines(err) })
+  } finally {
+    selected.value = []
+    try {
+      await reloadAfterMutation()
+    } finally {
+      approving.value = false
+    }
+  }
+}
 
 async function confirmDelete(): Promise<void> {
   const target = deleting.value
@@ -295,16 +379,18 @@ async function confirmDelete(): Promise<void> {
 }
 
 async function confirmBulk(): Promise<void> {
-  if (busy.value || selected.value.length === 0) return
+  if (busy.value || bulkTargets.value.length === 0) return
   busy.value = true
   try {
-    const result = await bulkDeleteAdminUsers(selected.value)
+    const result = await bulkDeleteAdminUsers(bulkTargets.value)
     bulkOpen.value = false
+    bulkTargets.value = []
     selected.value = []
     await reloadAfterMutation()
     flash.show({ type: 'success', message: result.status })
   } catch (err) {
     bulkOpen.value = false
+    bulkTargets.value = []
     flash.show({ type: 'error', message: errorLines(err) })
   } finally {
     busy.value = false
@@ -337,6 +423,14 @@ function menuActions(user: AdminUserListItem): RowAction[] {
     },
   })
   return actions
+}
+
+/** Status badge of a row: Menunggu kelulusan / Digantung / Aktif (no stored "Ditolak"). */
+function stateBadge(user: AdminUserListItem): { status: DsStatus; label: string } {
+  const state = accountState(user)
+  const status: DsStatus =
+    state === 'pending' ? 'pending-approval' : state === 'suspended' ? 'inactive' : 'active'
+  return { status, label: ACCOUNT_STATE_LABELS[state] }
 }
 
 const SKELETON_ROWS = 6
@@ -399,6 +493,30 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
     <UserStatCards :counts="counts" :active-role="applied.role" />
 
+    <!-- U-01 approval banner: accounts that cannot log in until approved. -->
+    <DsCallout
+      v-if="pendingCount > 0"
+      tone="warning"
+      icon="hourglass"
+      data-testid="users-pending-banner"
+    >
+      <DsCluster gap="sm">
+        <DsText variant="body" as="span" data-testid="users-pending-text"
+          ><DsText variant="body" as="strong" data-testid="users-pending-count">{{
+            pendingCount
+          }}</DsText>
+          akaun menunggu kelulusan — belum boleh log masuk.</DsText
+        >
+        <UButton
+          :to="pendingLink"
+          color="warning"
+          variant="link"
+          label="Semak & luluskan"
+          data-testid="users-pending-review"
+        />
+      </DsCluster>
+    </DsCallout>
+
     <DsFilterBar
       :chips="chips"
       :active-count="activeCount"
@@ -459,20 +577,43 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
     <!-- Bulk bar (FR-M02-15): only while at least one row is ticked. -->
     <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="users-bulk-bar">
-      <div class="flex items-center justify-between gap-4">
+      <DsCluster justify="between" gap="md">
         <span class="flex items-center gap-2 text-body text-default">
           <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
           <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
         </span>
-        <UButton
-          type="button"
-          color="error"
-          icon="i-ph-trash"
-          label="Padam"
-          data-testid="users-bulk-delete"
-          @click="bulkOpen = true"
-        />
-      </div>
+        <DsCluster gap="sm">
+          <template v-if="pendingSelected.length > 0">
+            <UButton
+              type="button"
+              color="success"
+              label="Luluskan"
+              :disabled="approving"
+              :loading="approving"
+              data-testid="users-bulk-approve"
+              @click="approveSelected"
+            />
+            <UButton
+              type="button"
+              color="error"
+              variant="soft"
+              label="Tolak"
+              :disabled="approving"
+              data-testid="users-bulk-reject"
+              @click="openBulk(pendingSelected)"
+            />
+          </template>
+          <UButton
+            type="button"
+            color="error"
+            icon="i-ph-trash"
+            label="Padam"
+            :disabled="approving"
+            data-testid="users-bulk-delete"
+            @click="openBulk([...selected])"
+          />
+        </DsCluster>
+      </DsCluster>
     </DsPanel>
 
     <DsLoadError
@@ -550,7 +691,8 @@ const COLUMNS: TableColumn<UserRow>[] = [
       </template>
       <template #active-cell="{ row }">
         <DsStatusBadge
-          :status="row.original.isActive ? 'active' : 'inactive'"
+          :status="stateBadge(row.original).status"
+          :label="stateBadge(row.original).label"
           data-testid="user-status"
         />
       </template>
@@ -606,7 +748,11 @@ const COLUMNS: TableColumn<UserRow>[] = [
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex flex-wrap items-center gap-2">
                 <UBadge color="neutral" variant="subtle" :label="roleLabel(asUser(row).role)" />
-                <DsStatusBadge :status="asUser(row).isActive ? 'active' : 'inactive'" />
+                <DsStatusBadge
+                  :status="stateBadge(asUser(row)).status"
+                  :label="stateBadge(asUser(row)).label"
+                  data-testid="user-status"
+                />
               </div>
               <div
                 class="flex items-center gap-1"
@@ -634,7 +780,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
     <UserDeleteModals
       :single="deleting"
-      :bulk-count="bulkOpen ? selected.length : 0"
+      :bulk-count="bulkOpen ? bulkTargets.length : 0"
       :busy="busy"
       @close-single="deleting = null"
       @close-bulk="bulkOpen = false"

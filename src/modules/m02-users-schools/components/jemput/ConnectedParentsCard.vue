@@ -1,14 +1,32 @@
 <script setup lang="ts">
 /**
  * S1 card "Ibu Bapa Dihubungkan" (L45 FR-L45-14..16). One row per linked parent: icon tile (never an
- * image, D22), name and email, both truncated. No relationship chip (DV-L45-02) and no remove control
- * (BR-L45-09). Empty state with plain emoji text.
+ * image, D22), name and email, both truncated, and "Buang" (R1-MUR-40, dialog "Buang ibu bapa ini?"). No
+ * relationship chip (DV-L45-02). Empty state with plain emoji text.
  */
-import { DsIconChip } from '@/ds'
+import { computed, ref } from 'vue'
+
+import { DsDialog, DsIconChip, DsText } from '@/ds'
 
 import type { LinkedParent } from '../../api/parent-invite'
 
-defineProps<{ parents: readonly LinkedParent[] }>()
+defineProps<{ parents: readonly LinkedParent[]; removing?: boolean }>()
+const emit = defineEmits<{ remove: [parent: LinkedParent] }>()
+
+/** R1-MUR-40: "Buang ibu bapa" asks first (dialog "Buang ibu bapa ini?"). */
+const target = ref<LinkedParent | null>(null)
+const dialogOpen = computed({
+  get: () => target.value !== null,
+  set: (open: boolean) => {
+    if (!open) target.value = null
+  },
+})
+
+function confirm(): void {
+  const parent = target.value
+  target.value = null
+  if (parent) emit('remove', parent)
+}
 </script>
 
 <template>
@@ -34,6 +52,16 @@ defineProps<{ parents: readonly LinkedParent[] }>()
             {{ parent.email }}
           </p>
         </div>
+        <UButton
+          v-if="parent.linkId !== undefined"
+          type="button"
+          color="error"
+          variant="ghost"
+          label="Buang"
+          :disabled="removing"
+          data-testid="jemput-parent-remove"
+          @click="target = parent"
+        />
       </li>
     </ul>
 
@@ -42,5 +70,28 @@ defineProps<{ parents: readonly LinkedParent[] }>()
       <p class="mt-3 text-label text-highlighted">Belum ada ibu bapa dihubungkan</p>
       <p class="mt-1 text-caption text-muted">Hantar link jemputan di atas</p>
     </div>
+
+    <DsDialog v-model:open="dialogOpen" title="Buang ibu bapa ini?" data-testid="jemput-remove-modal">
+      <DsText v-if="target" variant="body">
+        {{ target.name }} tidak lagi dapat memantau kemajuan anda.
+      </DsText>
+      <template #footer>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          label="Batal"
+          data-testid="jemput-remove-cancel"
+          @click="target = null"
+        />
+        <UButton
+          type="button"
+          color="error"
+          label="Buang"
+          data-testid="jemput-remove-confirm"
+          @click="confirm"
+        />
+      </template>
+    </DsDialog>
   </section>
 </template>

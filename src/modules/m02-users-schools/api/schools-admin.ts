@@ -43,6 +43,8 @@ export interface SchoolListQuery {
   search?: string | null
   state?: string | null
   type?: string | null
+  /** U-04 (OQ-U1): `true` also lists the primary types SK, SJK(C), SJK(T); hidden by default. */
+  includePrimary?: boolean
   page?: number
   signal?: AbortSignal
 }
@@ -79,6 +81,7 @@ export function fetchAdminSchools(
       search: query.search ?? null,
       state: query.state ?? null,
       type: query.type ?? null,
+      includePrimary: query.includePrimary === true ? 'true' : null,
       page: query.page ?? null,
     },
     ...(query.signal ? { signal: query.signal } : {}),
