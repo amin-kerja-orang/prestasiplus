@@ -98,7 +98,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users',
     tags,
     summary: 'List users (25 per page, newest first)',
-    description: `${access('GET /admin/users')} Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). \`meta.roleCounts\` counts users per role and ignores the filters (but not the caller scope). Responses carry the masked IC only and are no-store.`,
+    description: `${access('GET /admin/users')} Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). \`meta.roleCounts\` counts users per role and ignores the filters (but not the caller scope). \`status\` (pending | active | suspended) filters by account state: pending = inactive and not suspended (awaiting approval, R1-ADM-U-01), active = active and not suspended, suspended = suspended; it wins over \`isActive\`, which keeps working. \`meta.pendingCount\` is the number of pending accounts in the caller scope (admin: all; school_admin: own school), ignoring every filter. Items expose \`isActive\` and \`isSuspended\`. Responses carry the masked IC only and are no-store.`,
     request: { query: UserListQuerySchema },
     responses: {
       200: jsonNoStore(z.object({ data: z.array(AdminUserListItemSchema), meta: UserListMetaSchema }), 'A page of users.'),

@@ -42,7 +42,7 @@ function user(id: number, extra: Partial<AdminUserListItem> = {}): AdminUserList
   }
 }
 
-function listResult(rows: AdminUserListItem[], total = rows.length, page = 1) {
+function listResult(rows: AdminUserListItem[], total = rows.length, page = 1, pendingCount = 0) {
   return {
     data: rows,
     meta: {
@@ -61,6 +61,7 @@ function listResult(rows: AdminUserListItem[], total = rows.length, page = 1) {
         ppdOfficer: 5,
         admin: 2,
       },
+      pendingCount,
     },
   }
 }
@@ -110,7 +111,7 @@ beforeEach(() => {
       [
         user(ME, { name: 'Admin Contoh', role: 'admin' }),
         user(2, { school: { id: 7, name: 'SK CONTOH' }, phone: '0123456789' }),
-        user(3, { role: 'school_admin', isActive: false }),
+        user(3, { role: 'school_admin', isActive: false, isSuspended: true }),
       ],
       5159,
     ),
@@ -207,7 +208,105 @@ describe('UserListPage (M02 S1)', () => {
     closeMenus()
     expect(await openRowMenu(w, '[data-user-id="3"]')).toContain('Pakej')
     closeMenus()
-    expect(rowOf(w, 3).get('[data-testid="user-status"]').text()).toBe('Tidak Aktif')
+    expect(rowOf(w, 3).get('[data-testid="user-status"]').text()).toBe('Digantung')
+  })
+
+  it('labels the status: Aktif, Digantung, Menunggu kelulusan (never Ditolak)', async () => {
+    api.fetchAdminUsers.mockResolvedValue(
+      listResult(
+        [
+          user(2),
+          user(3, { isActive: false, isSuspended: true }),
+          user(4, { isActive: false, isSuspended: false }),
+        ],
+        3,
+        1,
+        1,
+      ),
+    )
+    const w = await render()
+    expect(rowOf(w, 2).get('[data-testid="user-status"]').text()).toBe('Aktif')
+    expect(rowOf(w, 3).get('[data-testid="user-status"]').text()).toBe('Digantung')
+    expect(rowOf(w, 4).get('[data-testid="user-status"]').text()).toBe('Menunggu kelulusan')
+    expect(w.text()).not.toContain('Ditolak')
+  })
+
+  describe('approval (U-01)', () => {
+    const pendingRows = () => [
+      user(ME, { name: 'Admin Contoh', role: 'admin' }),
+      user(2),
+      user(4, { isActive: false, isSuspended: false }),
+      user(5, { isActive: false, isSuspended: false }),
+      user(6, { isActive: false, isSuspended: true }),
+    ]
+
+    it('shows no banner without pending accounts', async () => {
+      const w = await render()
+      expect(w.find('[data-testid="users-pending-banner"]').exists()).toBe(false)
+    })
+
+    it('shows the count and the link applies the pending status filter', async () => {
+      api.fetchAdminUsers.mockResolvedValue(listResult(pendingRows(), 5, 1, 2))
+      const w = await render('/admin/users?is_active=1')
+      const banner = w.get('[data-testid="users-pending-banner"]')
+      expect(banner.text()).toContain('2 akaun menunggu kelulusan — belum boleh log masuk.')
+      const link = w.get('[data-testid="users-pending-review"]')
+      expect(link.text()).toBe('Semak & luluskan')
+      await link.trigger('click')
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({ status: 'pending' })
+      expect(api.fetchAdminUsers.mock.calls.at(-1)?.[0]).toMatchObject({ status: 'pending' })
+    })
+
+    it('Luluskan toggles only the selected rows that are still pending, then reloads and clears', async () => {
+      let release: () => void = () => undefined
+      api.toggleUserActive
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              release = () => resolve({ data: { isActive: true }, status: 'ok' })
+            }),
+        )
+        .mockResolvedValue({ data: { isActive: true }, status: 'ok' })
+      api.fetchAdminUsers.mockResolvedValue(listResult(pendingRows(), 5, 1, 2))
+      const w = await render()
+      await w.get('[data-testid="users-select-all"]').trigger('click')
+      expect(w.get('[data-testid="users-selected-count"]').text()).toBe('4')
+      const approve = w.get('[data-testid="users-bulk-approve"]')
+      expect(approve.text()).toBe('Luluskan')
+      const before = api.fetchAdminUsers.mock.calls.length
+      await approve.trigger('click')
+      await flushPromises()
+      // Disabled while the calls run: a second click does nothing.
+      expect(approve.attributes('disabled')).toBeDefined()
+      await approve.trigger('click')
+      expect(api.toggleUserActive).toHaveBeenCalledTimes(1)
+      release()
+      await flushPromises()
+      expect(api.toggleUserActive.mock.calls.map((c) => c[0])).toEqual([4, 5])
+      expect(api.fetchAdminUsers.mock.calls.length).toBe(before + 1)
+      expect(w.find('[data-testid="users-bulk-bar"]').exists()).toBe(false)
+    })
+
+    it('hides Luluskan and Tolak when no selected row is pending', async () => {
+      const w = await render()
+      await w.get('[data-testid="users-select-all"]').trigger('click')
+      expect(w.find('[data-testid="users-bulk-approve"]').exists()).toBe(false)
+      expect(w.find('[data-testid="users-bulk-reject"]').exists()).toBe(false)
+    })
+
+    it('Tolak opens the bulk delete dialog for the pending rows only', async () => {
+      api.bulkDeleteAdminUsers.mockResolvedValue({ data: { deleted: 2 }, status: 'ok' })
+      api.fetchAdminUsers.mockResolvedValue(listResult(pendingRows(), 5, 1, 2))
+      const w = await render()
+      await w.get('[data-testid="users-select-all"]').trigger('click')
+      await w.get('[data-testid="users-bulk-reject"]').trigger('click')
+      expect(document.body.textContent).toContain('Padam Pengguna Terpilih?')
+      expect(document.querySelector('[data-testid="users-bulk-count"]')?.textContent).toBe('2')
+      ;(document.querySelector('[data-testid="users-bulk-confirm"]') as HTMLElement).click()
+      await flushPromises()
+      expect(api.bulkDeleteAdminUsers).toHaveBeenCalledWith([4, 5])
+    })
   })
 
   it('toggles after the native confirm and does nothing on cancel', async () => {

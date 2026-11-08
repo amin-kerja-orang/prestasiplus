@@ -373,7 +373,7 @@ describe('#12 POST /api/admin/users/bulk-import (S4, BR-14)', () => {
     expect(fieldsOf(res)).toEqual({
       role: 'The selected role is invalid.',
       schoolId: 'The selected school id is invalid.',
-      defaultPassword: 'The default password field must be at least 6 characters.',
+      defaultPassword: 'The default password field must be at least 8 characters.',
       importMode: 'The selected import mode is invalid.',
     })
     const admin = await bulk({ role: 'admin', importMode: 'paste', pasteContent: 'A,a@x.my' })

@@ -204,7 +204,15 @@ export const RoleCountsSchema = z
   })
   .meta({ id: 'RoleCounts' })
 
-export const UserListMetaSchema = ListMetaSchema.extend({ roleCounts: RoleCountsSchema }).meta({ id: 'UserListMeta' })
+export const UserListMetaSchema = ListMetaSchema.extend({
+  roleCounts: RoleCountsSchema,
+  pendingCount: z.number().int().min(0).meta({
+    description:
+      'Accounts awaiting approval (is_active = false and is_suspended = false) among the users the caller can see (admin: all; school_admin: own school). Ignores every list filter except the caller scope (R1-ADM-U-01 banner).',
+  }),
+}).meta({ id: 'UserListMeta' })
+
+export const USER_STATUS_FILTERS = ['pending', 'active', 'suspended'] as const
 
 /** GET /admin/users. Page size is fixed (25); newest first. Unknown role/school values match nothing. */
 export const UserListQuerySchema = z
@@ -212,6 +220,10 @@ export const UserListQuerySchema = z
     role: z.string().optional().meta({ description: 'A role code; any other non-empty value gives an empty page.' }),
     schoolId: z.string().optional().meta({ description: 'School id; an unknown id gives an empty page.' }),
     isActive: z.string().optional().meta({ description: '"1" or "0"; other values mean no filter.' }),
+    status: z.string().optional().meta({
+      description:
+        '"pending" (is_active false, not suspended), "active" (is_active true, not suspended) or "suspended" (is_suspended true). Other values mean no filter. Takes precedence over isActive when both are sent.',
+    }),
     search: z.string().optional().meta({ description: 'Case-insensitive substring of name or e-mail.' }),
     page: z.string().optional().meta({ description: 'Page number; a missing, non-numeric or < 1 value is treated as 1 (not an error).' }),
   })
