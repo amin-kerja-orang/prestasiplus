@@ -124,11 +124,7 @@ describe('S7 Papan Bijak lobby: static content (FR-M16-54, 58)', () => {
     const how = wrapper!.get('[data-testid="pb-how-to"]')
     expect(how.text()).toContain('Cara Bermain:')
     expect(how.findAll('li').map((l) => l.text())).toEqual([
-      '🎲 1. Gulung dadu dan bergerak di papan',
-      '📝 2. Jatuh di petak kuiz — jawab soalan!',
-      '🪜 3. Naik tangga untuk shortcut',
-      '🐍 4. Elak ular yang menarik turun',
-      '🏆 5. Sampai petak 50 dulu = MENANG!',
+      'Gulung dadu dan bergerak ke petak 50. Petak soalan: jawab dengan betul untuk kekal di petak itu; jawapan salah membawa anda kembali.',
     ])
   })
 

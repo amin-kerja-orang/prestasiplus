@@ -168,7 +168,8 @@ describe('seed (SRS §6.11.0, §6.11.3, §6.11.5)', () => {
     expect(r.status).toBe(200)
     expect(r.body.data).toEqual({
       stats: { rooms: 160, playing: 0, finished: 0, players: 189 },
-      settings: { boardgameQuizTiles: 35 },
+      settings: expect.objectContaining({ boardgameQuizTiles: 35, game_win_xp: 20 }) as unknown,
+      games: expect.any(Array) as unknown,
     })
     expect(rooms.plainTiles()).toBe(3)
   })
@@ -282,6 +283,8 @@ async function createRoom(game: string, as = T4_STUDENT): Promise<string> {
 
 /** Polls as the host until the minimum players are in, then starts. */
 async function startRoom(game: string, code: string, as = T4_STUDENT): Promise<Room> {
+  // Papan Bijak robots come only after `battle_bot_fallback_seconds` (ruling 53): the hook seats one at once.
+  if (game === 'papan-bijak') expect(m16Hooks.roomBots({ count: 1, code })).toBe(1)
   for (let i = 0; i < 5; i++) await get(roomPath(game, code), as)
   const r = await post<Data<Room>>(roomPath(game, code, '/start'), as)
   expect(r.status).toBe(200)
@@ -328,10 +331,16 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
 
   it('joins a waiting room: the host polls a bot in, a fitting grade joins, a wrong Tingkatan gets 403, unknown codes "Bilik tidak dijumpai."', async () => {
     const code = await createRoom('papan-bijak')
+    // Ruling 53: the robot is not there at once; `robotInSeconds` counts down from the 30 s fallback.
+    const early = await get<Data<Room>>(roomPath('papan-bijak', code), T4_STUDENT)
+    expect(early.body.data.players).toHaveLength(1)
+    expect(early.body.data.robotInSeconds).toBe(30)
+    booted.clock.advance(30_000)
     const first = await get<Data<Room>>(roomPath('papan-bijak', code), T4_STUDENT)
     expect(first.status).toBe(200)
     expect(first.body.data.players).toHaveLength(2)
     expect(first.body.data.players.filter((p: Any) => p.isBot)).toHaveLength(1)
+    expect(first.body.data.robotInSeconds).toBeUndefined()
     expect(first.body.data.status).toBe('waiting')
     expect(first.body.data.settings).toMatchObject({
       maxPlayers: 4,
@@ -434,8 +443,9 @@ describe('rooms (SRS §7 #24-#28, BR-M16-18/19/20)', () => {
   it('adds the Papan Bijak winner to the standings and a game to every player', async () => {
     const before = await get<Data<Any>>('/api/games/papan-bijak/lobby', ADMIN)
     expect(before.body.data.top10).toHaveLength(10)
+    // 48 GAME-R: a game with one human (and robots) writes no standing, so the chip stays off for the solo player.
     const hub = await get<Data<Any>>('/api/games/hub', T4_STUDENT)
-    expect(hub.body.data.chips.papanBijakPlayed).toBe(true)
+    expect(hub.body.data.chips.papanBijakPlayed).toBe(false)
   })
 })
 
@@ -453,8 +463,9 @@ describe('hooks and fixtures (SRS §6.14, §6.11.7)', () => {
     })
     expect(hub.body.data.openRooms.length).toBeLessThanOrEqual(6)
     expect(m16Hooks.roomBots({ count: 2, code: 'PB1234' })).toBe(2)
+    // Robots are not counted in the room's players (nor in max_players).
     expect(open((await get<Data<Any>>('/api/games/hub', ADMIN)).body.data.openRooms).players).toBe(
-      3,
+      1,
     )
     expect(() => m16Hooks.roomBots({ count: 0 })).toThrow(RangeError)
     expect(() => m16Hooks.m16Fixture('nope')).toThrow(RangeError)
@@ -894,15 +905,21 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
   it('saves boardgame_quiz_tiles 0-38 and refuses anything else', async () => {
     const save = (v: unknown) =>
       call<Any>('PUT', '/api/admin/games/settings', ADMIN, { boardgame_quiz_tiles: v })
-    expect((await save(20)).body).toEqual({ data: { boardgameQuizTiles: 20 } })
+    expect((await save(20)).body.data.boardgameQuizTiles).toBe(20)
     expect(
       (await get<Data<Any>>('/api/admin/games', ADMIN)).body.data.settings.boardgameQuizTiles,
     ).toBe(20)
     expect(rooms.plainTiles()).toBe(18)
-    for (const bad of [39, -1, 1.5, 'x', null, undefined]) {
+    for (const [bad, message] of [
+      [39, 'Maksimum 38 petak soalan.'],
+      [-1, 'Bilangan petak tidak sah.'],
+      [1.5, 'Bilangan petak tidak sah.'],
+      ['x', 'Bilangan petak tidak sah.'],
+      [null, 'Bilangan petak tidak sah.'],
+    ] as const) {
       const r = await save(bad)
       expect(r.status).toBe(422)
-      expect(r.body.error.fields.boardgame_quiz_tiles).toBe('Nilai mesti antara 0 dan 38.')
+      expect(r.body.error.fields.boardgame_quiz_tiles).toBe(message)
     }
     expect((await save(0)).status).toBe(200)
     expect((await save(38)).status).toBe(200)
@@ -910,9 +927,100 @@ describe('game settings (SRS §7 #51-#52, BR-M16-36)', () => {
     expect((await save(35)).status).toBe(200)
   })
 
+  it('is partial, all or nothing and strict, as the server', async () => {
+    const save = (body: unknown) => call<Any>('PUT', '/api/admin/games/settings', ADMIN, body)
+    const saved = await save({ game_win_xp: 30, battle_questions_default: 15 })
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toMatchObject({ game_win_xp: 30, battle_questions_default: 15, game_draw_xp: 10, boardgameQuizTiles: 35 })
+
+    const range = await save({ game_win_xp: 40, battle_question_seconds: 5 })
+    expect(range.status).toBe(422)
+    expect(range.body.error.message).toBe('Nilai mesti antara 10 dan 60.')
+    expect(range.body.error.fields).toEqual({ battle_question_seconds: 'Nilai mesti antara 10 dan 60.' })
+
+    const choice = await save({ battle_questions_default: 12 })
+    expect(choice.body.error.fields).toEqual({ battle_questions_default: 'Nilai mesti antara 5 dan 20.' })
+
+    const unknown = await save({ game_win_xp: 40, xp_per_correct: 20 })
+    expect(unknown.status).toBe(422)
+    expect(unknown.body.error.fields).toEqual({ xp_per_correct: 'The xp_per_correct field is not allowed.' })
+
+    const after = await get<Data<Any>>('/api/admin/games', ADMIN)
+    expect(after.body.data.settings.game_win_xp).toBe(30)
+    expect((await save({})).status).toBe(422)
+    await save({ game_win_xp: 20, battle_questions_default: 10 })
+  })
+
+  it('serves and saves the 8 spin segments (API-ADM-23): weights total 100, positions once each', async () => {
+    const url = '/api/admin/games/spin-segments'
+    const read = await get<Data<Any[]>>(url, ADMIN)
+    expect(read.status).toBe(200)
+    const rows = read.body.data
+    expect(rows).toHaveLength(8)
+    expect(rows[0]).toEqual({ position: 1, label: '1 Syiling', syiling: 1, weight: 25, active: true })
+    expect(rows[5]).toEqual({ position: 6, label: 'Cuba Lagi', syiling: 0, weight: 15, active: true })
+    const save = (segments: unknown) => call<Any>('PUT', url, ADMIN, { segments })
+
+    const short = await save(rows.map((r, i) => (i === 0 ? { ...r, weight: 24 } : r)))
+    expect(short.status).toBe(422)
+    expect(short.body.error.message).toBe('Jumlah berat mesti 100.')
+    expect(short.body.error.fields).toEqual({ segments: 'Jumlah berat mesti 100.' })
+    expect((await save(rows.slice(1))).status).toBe(422)
+    const label = await save(rows.map((r, i) => (i === 2 ? { ...r, label: 'x'.repeat(21) } : r)))
+    expect(label.body.error.fields).toEqual({ 'segments.2.label': 'Label tidak boleh melebihi 20 aksara.' })
+
+    const changed = rows.map((r, i) => (i === 0 ? { ...r, label: 'Satu', weight: 20 } : i === 1 ? { ...r, weight: 25, active: false } : r))
+    const saved = await save(changed)
+    expect(saved.status).toBe(200)
+    expect(saved.body.data).toEqual(changed)
+    expect((await get<Data<Any[]>>(url, ADMIN)).body.data).toEqual(changed)
+    await save(rows)
+  })
+
+  it('Senarai Permainan: 14 games, no tournament or sambung-kata; the switch answers the row; 404 outside the list', async () => {
+    const list = async () => (await get<Data<Any>>('/api/admin/games', ADMIN)).body.data.games as Any[]
+    const keys = (await list()).map((g) => g.key as string)
+    expect(keys).toHaveLength(14)
+    expect(keys).toContain('roda-nasib')
+    expect(keys).not.toContain('tournament')
+    expect(keys).not.toContain('sambung-kata')
+
+    const off = await call<Any>('PUT', '/api/admin/games/kad-memori/active', ADMIN, { active: false })
+    expect(off.status).toBe(200)
+    expect(off.body.data).toEqual({
+      key: 'kad-memori',
+      name: 'Kad Memori',
+      active: false,
+      description: 'Padankan soalan dengan jawapan. 6 pasangan (12 kad).',
+    })
+    expect((await list()).filter((g) => !g.active).map((g) => g.key as string)).toEqual(['kad-memori'])
+
+    for (const key of ['tournament', 'sambung-kata', 'nope']) {
+      const missing = await call<Any>('PUT', `/api/admin/games/${key}/active`, ADMIN, { active: false })
+      expect(missing.status).toBe(404)
+      expect(missing.body.error.message).toBe('Rekod tidak dijumpai. Ia mungkin telah dipadam.')
+    }
+    const bad = await call<Any>('PUT', '/api/admin/games/battle/active', ADMIN, { active: 'x' })
+    expect(bad.body.error.fields).toEqual({ active: 'Nilai tidak sah.' })
+    const extra = await call<Any>('PUT', '/api/admin/games/battle/active', ADMIN, { active: true, extra: 1 })
+    expect(extra.body.error.fields).toEqual({ extra: 'The extra field is not allowed.' })
+    await call('PUT', '/api/admin/games/kad-memori/active', ADMIN, { active: true })
+  })
+
+  it('every admin game route is admin only', async () => {
+    for (const url of ['/api/admin/games', '/api/admin/games/spin-segments']) {
+      expect((await get(url, null)).status).toBe(401)
+      expect((await get(url, T4_STUDENT)).status).toBe(403)
+    }
+    expect((await call('PUT', '/api/admin/games/settings', T4_STUDENT, { game_win_xp: 1 })).status).toBe(403)
+    expect((await call('PUT', '/api/admin/games/spin-segments', T4_STUDENT, { segments: [] })).status).toBe(403)
+    expect((await call('PUT', '/api/admin/games/battle/active', T4_STUDENT, { active: false })).status).toBe(403)
+    expect((await call('PUT', '/api/admin/games/battle/active', null, { active: false })).status).toBe(401)
+  })
+
   it('builds the Papan Bijak board from the setting (BR-M16-20): 50 tiles, fixed specials, quiz tiles', async () => {
     const code = await createRoom('papan-bijak', D5_STUDENT)
-    await get(roomPath('papan-bijak', code), D5_STUDENT)
+    m16Hooks.roomBots({ count: 1, code })
     const started = await post<Data<Room>>(roomPath('papan-bijak', code, '/start'), D5_STUDENT)
     const board: string[] = started.body.data.state.board
     expect(board).toHaveLength(50)

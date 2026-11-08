@@ -12,6 +12,6 @@ import { SekolahBersaingController } from './sekolah-bersaing.controller'
   imports: [GamesCoreModule, PracticeModule],
   controllers: [LeaguesController, SekolahBersaingController],
   providers: [LeaguesService, LeaguesRepository],
-  exports: [],
+  exports: [LeaguesService],
 })
 export class LeaguesModule {}

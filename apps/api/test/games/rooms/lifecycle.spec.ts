@@ -214,6 +214,44 @@ describe('room join and lifecycle (S7-T01 part GAME-R): FR-GM-R.1..R.7, ruling 1
       expect(await t.db.query(`select wins, jumlah from game_standings where game = 'papan-bijak' and user_id = $1`, [student.userId])).toEqual([{ wins: 0, jumlah: 1 }])
     })
 
+    it('FR-GM-02.5, AC-GM-02.4: the Papan Bijak default winner is scored 10 x correct + 50 (4 correct = 90), a robot 10 x correct', async () => {
+      await t.db.query("delete from game_standings where game = 'papan-bijak'")
+      const code = await createRoom(student, 'papan-bijak', PB_FORM)
+      await join(student2, 'papan-bijak', code)
+      await join(teacher, 'papan-bijak', code)
+      parseRoom(await student.post(P('papan-bijak', code, '/start')))
+      await t.db.query('update game_room_players set correct = 4 where room_code = $1 and user_id = $2', [code, teacher.userId])
+      expect(parseRoom(await leave(student, 'papan-bijak', code)).status).toBe('playing') // a robot takes the seat
+      const done = parseRoom(await leave(student2, 'papan-bijak', code))
+      expect(done.status).toBe('finished')
+      expect(done.result?.winnerId).toBe(teacher.userId)
+      expect(done.result?.scores.find((x) => x.userId === teacher.userId)).toMatchObject({ points: 90, correct: 4 })
+      expect(done.result?.scores.filter((x) => x.userId !== teacher.userId).every((x) => x.points === 0)).toBe(true)
+      expect(await t.db.query(`select wins, jumlah, skor, betul from game_standings where game = 'papan-bijak' and user_id = $1`, [teacher.userId])).toEqual([
+        { wins: 1, jumlah: 1, skor: 90, betul: 4 },
+      ])
+    })
+
+    it('GAME-05: the Perlumbaan Matematik default winner with 7 steps has result points 7, standing skor 7 and wins 1', async () => {
+      await t.db.query("delete from game_standings where game = 'perlumbaan-matematik'")
+      const code = await createRoom(student, 'perlumbaan-matematik', { ...FORM, max_players: 4 })
+      await join(student2, 'perlumbaan-matematik', code)
+      await join(teacher, 'perlumbaan-matematik', code)
+      parseRoom(await student.post(P('perlumbaan-matematik', code, '/start')))
+      await t.db.query(
+        `update game_rooms set state = jsonb_set(state, '{meter}', coalesce(state->'meter', '{}'::jsonb) || jsonb_build_object($2::text, 7)) where code = $1`,
+        [code, teacher.userId],
+      )
+      expect(parseRoom(await leave(student, 'perlumbaan-matematik', code)).status).toBe('playing') // a robot takes the seat
+      const done = parseRoom(await leave(student2, 'perlumbaan-matematik', code))
+      expect(done.status).toBe('finished')
+      expect(done.result?.winnerId).toBe(teacher.userId)
+      expect(done.result?.scores.find((x) => x.userId === teacher.userId)?.points).toBe(7)
+      expect(await t.db.query(`select wins, jumlah, skor from game_standings where game = 'perlumbaan-matematik' and user_id = $1`, [teacher.userId])).toEqual([
+        { wins: 1, jumlah: 1, skor: 7 },
+      ])
+    })
+
     it('R1 Q2: the leaver of another room game (Kuiz Relay) also gets jumlah + 1, menang 0', async () => {
       await t.db.query(`delete from game_standings where game = 'kuiz-relay'`)
       const code = await createRoom(student, 'kuiz-relay', { ...FORM, max_players: 4 })

@@ -89,9 +89,10 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(res.status).toBe(200)
       const list = parseData(res, GamesLeagueListSchema)
       expect(list.mine.map((l) => l.name)).toEqual(['Liga Sejarah 2026 5ST', 'Liga Matematik Sprint Test'])
-      expect(list.open.map((l) => l.name)).toEqual(['Liga Sejarah 2026 5ST'])
+      // The status is derived by date: at the test clock (19 October 2026) both seeded leagues are past their end date.
+      expect(list.open.map((l) => l.name)).toEqual([])
       const sejarah = list.mine[0]!
-      expect(sejarah).toMatchObject({ status: 'upcoming', statusLabel: 'Akan Datang', scopeLabel: 'Sekolah', typeLabel: 'Persahabatan', subjectName: expect.any(String), startDate: '2026-03-31', endDate: '2026-04-01', schools: 3 })
+      expect(sejarah).toMatchObject({ status: 'ended', statusLabel: 'Tamat', scopeLabel: 'Sekolah', typeLabel: 'Persahabatan', subjectName: expect.any(String), startDate: '2026-03-31', endDate: '2026-04-01', schools: 3 })
       expect(list.mine[1]).toMatchObject({ status: 'ended', statusLabel: 'Tamat', schools: 2 })
     })
 
@@ -123,7 +124,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       ])
       expect(d.standings.T4![0]!.ppdState).toContain('Selangor')
       // League 1 has no stored standing rows, as live.
-      const sejarah = list.open[0]!
+      const sejarah = list.mine[0]! // demo003 is in league 1 only
       const d1 = parseData(await s.get(`/api/leagues/${sejarah.id}`), GamesLeagueDetailSchema)
       expect(d1.standings).toEqual({})
     })

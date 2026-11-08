@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useFlash, useSession } from '@/composables'
-import { DsArt3D, DsLeaderRow, DsPage } from '@/ds'
+import { DsArt3D, DsLeaderRow, DsPage, DsText } from '@/ds'
 
 import { fetchRoom, joinRoom, roomAction, startRoom, type RoomGame, type RoomView } from '../api'
 import {
@@ -44,6 +44,7 @@ import {
   lastRoll,
   questionMode,
   resultHeadline,
+  rewardLine,
   roundText,
 } from '../components/lobby/room-lib'
 import { useRoomPolling } from '../composables/useRoomPolling'
@@ -217,6 +218,7 @@ const isHost = computed(() => (room.value ? isHostIn(room.value, userId.value) :
 const acts = computed(() => (room.value ? canActIn(room.value, userId.value) : false))
 const startable = computed(() => (room.value ? canStartIn(room.value) : false))
 const headline = computed(() => (room.value ? resultHeadline(room.value) : null))
+const reward = computed(() => rewardLine(room.value?.result?.reward))
 const round = computed(() => (room.value ? roundText(room.value) : ''))
 const dice = computed(() => lastRoll(room.value?.state?.log))
 const awaiting = computed(() => room.value?.state?.awaiting ?? null)
@@ -432,6 +434,16 @@ const meters = computed(() => {
                 >
                   🎲 Gulung Dadu
                 </UButton>
+                <DsText
+                  v-if="countdown !== null"
+                  as="p"
+                  variant="label"
+                  tone="toned"
+                  tabular
+                  data-testid="room-roll-countdown"
+                >
+                  {{ countdown }}
+                </DsText>
                 <p v-if="dice !== null" class="text-body text-muted" data-testid="room-dice">
                   🎲 Dadu: {{ dice }}
                 </p>
@@ -485,6 +497,9 @@ const meters = computed(() => {
                 medal="trophy"
               />
             </ul>
+            <DsText v-if="reward" as="p" variant="label" tone="toned" data-testid="room-reward">
+              {{ reward }}
+            </DsText>
             <UButton
               to="/permainan"
               size="xl"

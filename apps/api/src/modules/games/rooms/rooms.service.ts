@@ -55,8 +55,12 @@ import {
   computeSettlement,
   EngineRefusal,
   handOverSeat,
+  mathraceSettleDefault,
+  pbSettleDefault,
   skipSeat,
-  markSeen,
+  shouldWritePoll,
+  ABSENT_TIMEOUTS,
+  SEEN_GAP_MS,
   playedHumans,
   seatPresent,
   POOL_SIZE,
@@ -136,10 +140,6 @@ const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_p
 /** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
 const SHORTEST_CLOCK_MS = 10_000
 const SWEEP_ROOMS = 200
-/** FR-GM-R.4, ruling 49: this many timeouts of a seat's own turns in a row, polled or not, remove it. Only an in-time action resets the count. */
-const ABSENT_TIMEOUTS = 3
-/** A poll refreshes a seat's presence at most this often (one write per seat per 5 s). */
-const SEEN_GAP_MS = 5_000
 
 @Injectable()
 export class RoomsService implements OnModuleInit, OnModuleDestroy {
@@ -254,12 +254,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
   private async enabledGames(caller: Caller): Promise<string[]> {
     const levelId = await this.subjects.levelIdOfGrade((await this.users.get(caller.userId))?.grade ?? DEFAULT_GRADE)
     const filter = levelId === null ? {} : { educationLevelId: levelId }
-    const [settings, pool, fourOptionPool] = await Promise.all([
+    const [settings, pool, fourOptionPool, quizTiles] = await Promise.all([
       this.settings.getMany(HUB_GAMES.map(([game]) => `game_enabled_${game}` as const)),
       this.questions.eligibleCount(filter),
       this.questions.eligibleCount({ ...filter, exactOptions: 4 }),
+      this.repo.quizTiles(),
     ])
-    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= draw).map(([game]) => game)
+    // AC-GM-02.3: with 0 quiz tiles Papan Bijak needs no questions, so its draw is 0.
+    const drawOf = (game: string, draw: number): number => (game === 'papan-bijak' && (quizTiles ?? DEFAULT_QUIZ_TILES) === 0 ? 0 : draw)
+    return HUB_GAMES.filter(([game, draw, fourOptions]) => settings[`game_enabled_${game}`] === 1 && (fourOptions ? fourOptionPool : pool) >= drawOf(game, draw)).map(([game]) => game)
   }
 
   async lobby(caller: Caller, gameParam: string): Promise<GamesLobby> {
@@ -452,10 +455,14 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const { room, players: seated } = await this.mustPlayer(caller, game, rawCode)
       if (room.hostId !== caller.userId) throw startHostOnly()
       if (room.status !== 'waiting') throw startAlreadyStarted()
-      const players = await this.robotsAfterWait(room, seated)
-      if (players.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
-      const pool = await this.drawPool(room, game)
+      const waited = await this.robotsAfterWait(room, seated)
+      if (waited.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
+      // AC-GM-02.3: with 0 quiz tiles Papan Bijak asks no question, so it draws no pool.
+      const quizTiles = (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES
+      const pool = game === 'papan-bijak' && quizTiles === 0 ? [] : await this.drawPool(room, game)
       const now = this.clock.now()
+      // DM-90: every human seat is present at the start, with no timeouts.
+      const players = waited.map((p) => (p.isBot ? p : { ...p, lastPolledAt: now, consecutiveTimeouts: 0 }))
       const out = startGame({
         room: engineRoom(room),
         players: enginePlayers(players),
@@ -463,13 +470,14 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         seed: seedOf(room, this.secrets),
         secretInt: (max) => this.secrets.int(max),
         pool,
-        quizTiles: (await this.repo.quizTiles()) ?? DEFAULT_QUIZ_TILES,
+        quizTiles,
         p: await this.botAccuracy(),
         nowMs: now.getTime(),
       })
       // DM-67: every `waiting` to `playing` is a new play of the room, with its own attempt id.
       const sessionId = randomUUID()
       await this.repo.updateRoom(room.code, { status: 'playing', sessionId, startedAt: now }, now)
+      await this.repo.startPresence(room.code, now)
       const started: RoomRow = { ...room, status: 'playing', sessionId, startedAt: now }
       const done = await this.applyOut(tx, started, players, out)
       return this.viewOf(caller, done.room, done.players)
@@ -537,6 +545,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
           nowMs: this.clock.now().getTime(),
         })
         const done = await this.applyOut(tx, room, players, out)
+        // DM-90: an action is presence too (its count was reset by the engine).
+        const mine = done.players.find((p) => p.seat === caller.userId)
+        if (mine) await this.repo.touchSeat(mine.id, this.clock.now())
         return this.viewOf(caller, done.room, done.players)
       } catch (e) {
         // The clock moved the room during this request, so the action was for a turn that has passed: a refusal would roll
@@ -647,11 +658,24 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     if (last) await this.repo.removeSeat(seat.id)
     const rest = last ? players.filter((p) => p !== seat) : players
     const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
-    // `seenMs` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
-    const present = last !== undefined && seatPresent(st, last.seat, now.getTime(), absentMs + SEEN_GAP_MS)
+    // `last_polled_at` is written at most every SEEN_GAP_MS, so the window is the absence limit plus that gap.
+    const present = last !== undefined && seatPresent(last.lastPolledAt?.getTime(), now.getTime(), absentMs + SEEN_GAP_MS)
     if (last && present) {
       const state: RoomState = { ...st, humanId: last.seat, awaiting: null, pendingQ: null, winnerId: last.seat, mvpId: last.seat }
-      return this.applyOut(tx, room, rest, { state, players: enginePlayers(rest), finished: true })
+      // FR-GM-02.5, AC-GM-02.4: the default winner of Papan Bijak is scored 10 x correct + 50 (the others 10 x correct).
+      const seats = enginePlayers(rest)
+      // GAME-05: the default winner of Perlumbaan Matematik keeps its steps as points (skor = steps), as does every seat.
+      const settled =
+        room.game === 'papan-bijak'
+          ? pbSettleDefault(seats, last.seat)
+          : room.game === 'perlumbaan-matematik'
+            ? mathraceSettleDefault(seats, state.meter)
+            : seats
+      return this.applyOut(tx, room, rest, {
+        state,
+        players: settled,
+        finished: true,
+      })
     }
     // Nobody present is left: the game ends with no winner, no standing and no reward (`settledAt` is set so nothing settles later).
     const state: RoomState = { ...st, awaiting: null, pendingQ: null, winnerId: null, mvpId: null }
@@ -674,8 +698,11 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * The one locked advance of a playing room, shared by the poll, the 5 s sweep and the action (the caller holds the room row
-   * lock): marks the caller present (a poll never resets the timeout count), resolves the server clocks (idempotent: same time,
-   * same result) and removes the seats that missed 3 turns in a row, polled or not (ruling 49). Calling it again moves nothing.
+   * lock): resolves the server clocks (idempotent: same time, same result; an absent seat's turn closes early, ruling 49.2),
+   * marks the caller present (`last_polled_at`; a poll never resets the timeout count) and removes the seats with 3 consecutive
+   * timeouts, polled or not (ruling 49.1). The clocks run first, on the presence the seat had before this call, so a seat
+   * that comes back after a long absence is timed out for the turns whose clock ran out. The turn open now is never early-closed
+   * for the calling seat: its own request is presence. Calling it again moves nothing.
    */
   private async advance(
     tx: TxClient,
@@ -684,24 +711,35 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     seen?: string,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     if (room.status !== 'playing' || !room.state) return { room, players }
+    const absentMs = (await this.settings.get('games_absent_seconds')) * 1000
     let cur = { room, players }
-    // Presence is written in place: the room object stays the same, so a caller can tell the clock moved the room.
-    if (seen !== undefined && markSeen(room.state, seen, this.clock.now().getTime(), SEEN_GAP_MS)) {
-      await this.repo.updateRoom(room.code, { state: room.state }, this.clock.now())
-    }
-    cur = await this.runClocks(tx, cur.room, cur.players)
     for (let i = 0; i < 8; i++) {
-      const st = cur.room.state
-      if (cur.room.status !== 'playing' || !st) break
+      cur = await this.runClocks(tx, cur.room, cur.players, absentMs, seen)
+      if (i === 0 && seen !== undefined && cur.room.status === 'playing') cur = await this.notePoll(cur, seen)
+      if (cur.room.status !== 'playing' || !cur.room.state) break
       // Ruling 49, every room game: 3 timeouts in a row remove the seat. With other humans the game goes on (or the last
       // present one wins); a lone human who is absent ends the game with nothing settled (ruling 50.3). In the own-part
       // games (GAME-03/04/05/07) only the one acting human is awaited, so only that seat can miss turns; absence of the
       // simulated seats comes with each part's simultaneous rounds.
-      const absent = cur.players.find((p) => !p.isBot && (st.seats?.[p.seat]?.missed ?? 0) >= ABSENT_TIMEOUTS)
+      const absent = cur.players.find((p) => !p.isBot && p.consecutiveTimeouts >= ABSENT_TIMEOUTS)
       if (!absent) break
       cur = await this.dropSeat(tx, cur.room, cur.players, absent)
     }
-    return cur.room === room ? { room, players } : cur
+    return cur
+  }
+
+  /** The caller polled: `last_polled_at` is written at most every SEEN_GAP_MS per seat. The room object stays the same. */
+  private async notePoll(
+    cur: { room: RoomRow; players: PlayerRow[] },
+    seen: string,
+  ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
+    const row = cur.players.find((p) => p.seat === seen && !p.isBot)
+    const now = this.clock.now()
+    if (!row || !shouldWritePoll(row.lastPolledAt?.getTime(), now.getTime(), SEEN_GAP_MS)) return cur
+    await this.repo.touchSeat(row.id, now)
+    // The room has a poller: the 5 s sweep leaves it alone for the shortest clock.
+    await this.repo.updateRoom(cur.room.code, {}, now)
+    return { room: cur.room, players: cur.players.map((p) => (p === row ? { ...p, lastPolledAt: now } : p)) }
   }
 
   /** Resolves the server clocks of a playing room (idempotent) and writes the outcome back. */
@@ -709,6 +747,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     tx: TxClient,
     room: RoomRow,
     players: PlayerRow[],
+    absentMs: number,
+    callerSeat?: string,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     if (room.status !== 'playing' || !room.state) return { room, players }
     const res = resolveClocks({
@@ -718,6 +758,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       startedAtMs: (room.startedAt ?? this.clock.now()).getTime(),
       nowMs: this.clock.now().getTime(),
       p: await this.botAccuracy(),
+      absentMs,
+      ...(callerSeat === undefined ? {} : { callerSeat }),
     })
     if (!res.changed) return { room, players }
     return this.applyOut(tx, room, players, {
@@ -762,11 +804,14 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
           team: ep.team,
           points: ep.points,
           correct: ep.correct,
+          ...(ep.consecutiveTimeouts === undefined ? {} : { consecutiveTimeouts: ep.consecutiveTimeouts }),
         })
     }
     const nextPlayers = players.map((p) => {
       const ep = out.players.find((x) => x.userId === p.seat)
-      return ep ? { ...p, team: ep.team, points: ep.points, correct: ep.correct } : p
+      return ep
+        ? { ...p, team: ep.team, points: ep.points, correct: ep.correct, consecutiveTimeouts: ep.consecutiveTimeouts ?? p.consecutiveTimeouts }
+        : p
     })
     if (!out.finished) {
       await this.repo.updateRoom(room.code, { state: out.state }, now)
@@ -933,8 +978,11 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       return u ? seen.name(u) : ''
     }
     // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
+    // Ruling 62: a single robot is "Robot PrestasiPlus"; the robots are numbered only when the room has 2 or more.
+    // Numbering follows the current robot count, so a name can change from "Robot PrestasiPlus" to "... 1" when a second robot joins; seat ids stay stable.
+    const manyRobots = players.filter((p) => p.robot !== null).length >= 2
     const seatName = (p: PlayerRow): string =>
-      p.robot !== null ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : nameOf(p.seat)
+      p.robot !== null ? (manyRobots ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : GAMES_ROBOT_NAME) : nameOf(p.seat)
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,
@@ -1020,6 +1068,8 @@ function enginePlayers(players: PlayerRow[]): EnginePlayer[] {
     points: p.points,
     correct: p.correct,
     isBot: p.isBot,
+    lastPolledMs: p.lastPolledAt === null ? null : p.lastPolledAt.getTime(),
+    consecutiveTimeouts: p.consecutiveTimeouts,
   }))
 }
 

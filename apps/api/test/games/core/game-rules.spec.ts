@@ -78,7 +78,7 @@ describe('GAME-00 common rules', () => {
       const code = await createRoom(student, 'perang-fakta')
       const v = parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
       expect(v.players.map((p) => [p.name.startsWith('Robot'), p.isBot])).toEqual([[false, false], [true, true]])
-      expect(v.players[1]).toMatchObject({ name: 'Robot PrestasiPlus 1', grade: '' })
+      expect(v.players[1]).toMatchObject({ name: 'Robot PrestasiPlus', grade: '' })
       const seats = await t.db.query<{ user_id: string | null; is_bot: boolean }>('select user_id::text, is_bot from game_room_players where room_code = $1 order by id', [code])
       expect(seats).toEqual([{ user_id: student.userId, is_bot: false }, { user_id: null, is_bot: true }])
       await vote(student, code, true)
@@ -230,7 +230,7 @@ describe('GAME-00 common rules', () => {
       expect((await rowsOf(await sessionOf(code))).map((r) => [r.part_ref, r.is_correct])).toEqual([['benteng-ilmu#1', false]])
     })
 
-    it('the sweep finishes a room with no poller, once, with its rows and its reward', async () => {
+    it('the sweep finishes a room with no poller, once: the lone absent human is removed at the 3rd timeout (ruling 49), with the 3 timeout rows and no reward', async () => {
       const code = await createRoom(student, 'perang-fakta')
       parseRoom(await fillAndStart(t, student, 'perang-fakta', code))
       const rooms = t.app.get(RoomsService, { strict: false })
@@ -241,10 +241,10 @@ describe('GAME-00 common rules', () => {
       await rooms.sweepClocks()
       expect(await roomStatus(code)).toBe('finished')
       const session = await sessionOf(code)
-      expect(await rowsOf(session)).toHaveLength(15)
+      expect(await rowsOf(session)).toHaveLength(3) // the 3 timeouts that removed the seat; the other 12 rounds are never played
       await rooms.sweepClocks()
-      expect(await rowsOf(session)).toHaveLength(15)
-      expect(await t.db.query('select 1 from game_reward_events where game_session_id = $1::uuid', [session])).toHaveLength(1)
+      expect(await rowsOf(session)).toHaveLength(3)
+      expect(await t.db.query('select 1 from game_reward_events where game_session_id = $1::uuid', [session])).toHaveLength(0) // nothing is settled
     })
 
     it('AC-GM-08.4: a Betul atau Salah check at 55 s is taken, at 56 s it is refused with "Masa sudah tamat."; the submit still scores', async () => {

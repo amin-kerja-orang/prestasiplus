@@ -182,14 +182,9 @@ export const QM_MESSAGES = {
   network: 'Ralat rangkaian. Sila cuba lagi.',
 } as const
 
-/** Papan Bijak "Cara Bermain:" lines (FN-M16-5.1.5). */
-export const PB_HOW_TO = [
-  '🎲 1. Gulung dadu dan bergerak di papan',
-  '📝 2. Jatuh di petak kuiz — jawab soalan!',
-  '🪜 3. Naik tangga untuk shortcut',
-  '🐍 4. Elak ular yang menarik turun',
-  '🏆 5. Sampai petak 50 dulu = MENANG!',
-] as const
+/** Papan Bijak "Cara Bermain:" text (48 GAME-02 Copy, D113 `†`): one paragraph. */
+export const PB_HOW_TO =
+  'Gulung dadu dan bergerak ke petak 50. Petak soalan: jawab dengan betul untuk kekal di petak itu; jawapan salah membawa anda kembali.'
 
 /** `USelect` items of the grade select: a label row per group, then its options. */
 export const GRADE_ITEMS: readonly (

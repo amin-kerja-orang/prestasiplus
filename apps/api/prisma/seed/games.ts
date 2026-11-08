@@ -53,6 +53,8 @@ interface LeaguePlan {
   status: string
   creatorEmail: string
   createdAt: string
+  /** Set on the observed ended league: the standings job skips a frozen league, so the observed figures stay (S7-T06 part 3). */
+  frozenAt?: string
   /** School codes in join order. */
   schools: string[]
   /** Stored standings: level, school code, peserta, skor, purata (stored order). */
@@ -88,6 +90,7 @@ export const GAMES_SEED_LEAGUES: readonly LeaguePlan[] = [
     status: 'ended',
     creatorEmail: 'admin@demo.test',
     createdAt: '2026-03-31T09:00:00+08:00',
+    frozenAt: '2026-05-01T00:00:00+08:00', // the midnight after the end date
     schools: ['DEMO004', 'DEMO001'],
     standings: [
       { level: 'T4', school: 'DEMO001', peserta: 8, skor: 2935.0, purata: 77.2 },
@@ -207,7 +210,7 @@ async function seedLeagues(ctx: SeedContext): Promise<void> {
       data: {
         name: plan.name, type: plan.type, scope: plan.scope, subjectId: subject?.id ?? null, gameMode: 'mixed', scoringMethod: 'total_score',
         startDate: at(`${plan.startDate}T00:00:00.000Z`), endDate: at(`${plan.endDate}T00:00:00.000Z`), maxSchools: null,
-        inviteCode: plan.inviteCode, creatorId, status: plan.status, isTest: false, createdAt: at(plan.createdAt),
+        inviteCode: plan.inviteCode, creatorId, status: plan.status, frozenAt: plan.frozenAt ? at(plan.frozenAt) : null, isTest: false, createdAt: at(plan.createdAt),
       },
     })
     await prisma.leagueClassLevel.createMany({ data: plan.classLevels.map((level) => ({ leagueId: league.id, level })) })

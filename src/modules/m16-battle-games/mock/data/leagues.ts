@@ -79,7 +79,7 @@ export const LEAGUE_SCORING_LABELS = {
 
 export const LEAGUE_STATUS_LABELS = {
   upcoming: 'Akan Datang',
-  ongoing: 'Sedang Berlangsung',
+  active: 'Aktif',
   ended: 'Tamat',
 } as const
 

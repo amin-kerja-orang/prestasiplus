@@ -34,6 +34,8 @@ describe('multi-human rooms (R2): Papan Bijak and Kuiz Relay', () => {
     t.clock.set(START)
     await t.db.query('delete from game_standings')
     await t.db.query('delete from game_reward_events')
+    // rooms an earlier case left playing must not be moved by this case's sweeps (the clock is rewound to START here)
+    await t.db.query("update game_rooms set status = 'closed' where status = 'playing'")
   })
 
   const join = (c: Client, game: string, code: string) => c.post(P(game, undefined, '/join'), { room_code: code })

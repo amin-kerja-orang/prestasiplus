@@ -3,6 +3,14 @@
  * spin keep the live JSON bodies; the others use the `{data}` envelope (the client functions unwrap it).
  */
 
+import type {
+  GamesAdminGame,
+  GamesAdminOverview,
+  GamesAdminSettingsResult,
+  GamesAdminSettingsUpdateRequest,
+  GamesAdminSpinSegment,
+} from '@pp/contract'
+
 import type { EntityId } from '@/api'
 
 export type RoomGame =
@@ -110,7 +118,17 @@ export interface RoomView {
     winnerName: string | null
     mvpId: number | null
     scores: { userId: number; name: string; points: number; correct: number }[]
+    /** What the game gave the caller (48 section 3.4); absent for a seat that did not play or a forfeit. */
+    reward?: RoomReward
   }
+}
+
+/** Contract `GamesReward`: `reason` says what held the reward back (a daily cap, or the pace guard that credits nothing). */
+export interface RoomReward {
+  xp: number
+  syiling: number
+  capped: boolean
+  reason: 'xp_cap' | 'syiling_cap' | 'xp_and_syiling_cap' | 'pace_guard' | null
 }
 
 export type RoomActionBody =
@@ -334,7 +352,34 @@ export interface WeeklyCompetition {
 }
 
 /** #51 `GET /api/admin/games`. */
-export interface AdminGames {
-  stats: { rooms: number; playing: number; finished: number; players: number }
-  settings: { boardgameQuizTiles: number }
+export type AdminGames = GamesAdminOverview
+
+/** One row of `Senarai Permainan`. */
+export type AdminGame = GamesAdminGame
+
+/** The answer of `PUT /api/admin/games/settings`: every setting. */
+export type AdminGameSettings = GamesAdminSettingsResult
+
+/**
+ * The body of `PUT /api/admin/games/settings`: only the keys being saved. `null` stands for an input that is not a
+ * number; the server refuses it on that key, so its message shows at the field.
+ */
+export type AdminGameSettingsPatch = Partial<Record<keyof GamesAdminSettingsUpdateRequest, number | null>>
+
+/** API-ADM-23 one row of `spin_segments`. */
+export type AdminSpinSegment = GamesAdminSpinSegment
+
+/** A row in the segments editor: the numbers as typed. */
+export interface SpinSegmentForm {
+  position: number
+  label: string
+  syiling: string
+  weight: string
+  active: boolean
+}
+
+/** A row being saved: `null` stands for a number input that holds no number (the server refuses it on that field). */
+export type AdminSpinSegmentInput = Omit<AdminSpinSegment, 'syiling' | 'weight'> & {
+  syiling: number | null
+  weight: number | null
 }

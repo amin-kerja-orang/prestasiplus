@@ -185,18 +185,25 @@ model Tournament {
   /// Always null: exam_paper is refused (no exam paper exists).
   examPaperId          BigInt?   @map("exam_paper_id")
   totalQuestions       Int       @map("total_questions") @db.SmallInt
-  timeWindowMinutes    Int       @map("time_window_minutes") @db.SmallInt
-  topNScoring          Int       @map("top_n_scoring") @db.SmallInt
-  minParticipants      Int       @map("min_participants") @db.SmallInt
+  /// Nullable since 0225 (S7-T06): R1 does not use these three; the check ranges still hold for a value.
+  timeWindowMinutes    Int?      @map("time_window_minutes") @db.SmallInt
+  topNScoring          Int?      @map("top_n_scoring") @db.SmallInt
+  minParticipants      Int?      @map("min_participants") @db.SmallInt
   registrationOpensAt  DateTime? @map("registration_opens_at") @db.Timestamptz(6)
   registrationClosesAt DateTime? @map("registration_closes_at") @db.Timestamptz(6)
-  /// draft, registration, ongoing, completed (check).
+  /// draft, registration, ongoing, completed, cancelled (check, 0225).
   status               String    @default("draft")
+  /// Round 1 opens at 00:00 MYT on this date (0225); the end date is computed, never stored.
+  startDate            DateTime? @map("start_date") @db.Date
+  /// 1..10 (check, 0225); one for single_match.
+  rounds               Int?      @db.SmallInt
   createdBy            BigInt    @map("created_by")
   isTest               Boolean   @default(false) @map("is_test")
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  subjects TournamentSubject[]
+  subjects  TournamentSubject[]
+  roundRows TournamentRound[]
+  entries   TournamentEntry[]
 
   @@index([status, registrationOpensAt], map: "ix_tournaments_status_registration_opens_at")
   @@map("tournaments")
@@ -212,4 +219,56 @@ model TournamentSubject {
 
   @@unique([tournamentId, subjectId], map: "uq_tournament_subjects_tournament_id_subject_id")
   @@map("tournament_subjects")
+}
+
+/// One round of a tournament (0225, DM-61): opens 00:00 MYT, closes 23:59:59 MYT the same day; the same ten questions for everyone.
+model TournamentRound {
+  id           BigInt   @id @default(autoincrement())
+  tournamentId String   @map("tournament_id") @db.Uuid
+  n            Int      @db.SmallInt
+  opensAt      DateTime @map("opens_at") @db.Timestamptz(6)
+  closesAt     DateTime @map("closes_at") @db.Timestamptz(6)
+  questionIds  BigInt[] @default([]) @map("question_ids")
+
+  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade, map: "fk_tournament_rounds_tournament_id")
+  scores     TournamentRoundScore[]
+
+  @@unique([tournamentId, n], map: "uq_tournament_rounds_tournament_id_n")
+  @@map("tournament_rounds")
+}
+
+/// A pupil registered for a tournament (0225, DM-61), once per tournament.
+model TournamentEntry {
+  id           BigInt   @id @default(autoincrement())
+  tournamentId String   @map("tournament_id") @db.Uuid
+  userId       BigInt   @map("user_id")
+  schoolId     BigInt?  @map("school_id")
+  registeredAt DateTime @default(now()) @map("registered_at") @db.Timestamptz(6)
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade, map: "fk_tournament_entries_tournament_id")
+
+  @@unique([tournamentId, userId], map: "uq_tournament_entries_tournament_id_user_id")
+  @@index([userId], map: "ix_tournament_entries_user_id")
+  @@index([schoolId], map: "ix_tournament_entries_school_id")
+  @@map("tournament_entries")
+}
+
+/// One pupil's play of one round (0225, DM-61). `attemptId` is the answer-store attempt_id (part_ref `tournament#<position>`).
+model TournamentRoundScore {
+  id         BigInt    @id @default(autoincrement())
+  roundId    BigInt    @map("round_id")
+  userId     BigInt    @map("user_id")
+  score      Int       @default(0)
+  correct    Int       @default(0) @db.SmallInt
+  answered   Int       @default(0) @db.SmallInt
+  totalMs    Int       @default(0) @map("total_ms")
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz(6)
+  attemptId  String    @unique(map: "uq_tournament_round_scores_attempt_id") @default(dbgenerated("gen_random_uuid()")) @map("attempt_id") @db.Uuid
+
+  round TournamentRound @relation(fields: [roundId], references: [id], onDelete: Cascade, map: "fk_tournament_round_scores_round_id")
+
+  @@unique([roundId, userId], map: "uq_tournament_round_scores_round_id_user_id")
+  @@index([userId], map: "ix_tournament_round_scores_user_id")
+  @@map("tournament_round_scores")
 }

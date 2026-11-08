@@ -465,7 +465,7 @@ describe('arena (M16-16, M16-17)', () => {
       expect(row).toEqual({ winner: null, status: 'finished' })
       expect(t.reports.at(-1)).toMatchObject({ event: 'finish', correct: 10 })
       setAccuracy(0)
-    })
+    }, 120_000) // three full ten-round battles: ~28 s alone, over the 30 s default under load
 
     it('the bot\'s answers come from the stream m16:battle:<battleUuid>, one round at a time, and are returned as `opponent` once the round has both', async () => {
       setAccuracy(1)
@@ -493,7 +493,7 @@ describe('arena (M16-16, M16-17)', () => {
       expect(stored.map((r) => [r.seconds, r.correct, r.points])).toEqual(bot.map((x) => [x.seconds, x.correct, x.points]))
       expect((await finalView(a, uuid)).scores.B).toBe(bot.reduce((sum, x) => sum + x.points, 0))
       setAccuracy(0)
-    })
+    }, 120_000)
 
     it('validation: questionId must be the caller\'s next question; optionId 0..3 or null; seconds 0..15 (field messages)', async () => {
       const uuid = await botBattle(a, s.math)
