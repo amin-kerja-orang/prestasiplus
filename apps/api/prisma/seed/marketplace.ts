@@ -12,7 +12,7 @@ import type { SeedModule } from './index'
 import { MARKETPLACE_CATEGORIES } from './core/marketplace-categories'
 
 /** One instant for every seeded `created_at`: it reproduces the observed tie orders. */
-const SEED_AT = new Date('2026-02-09T12:00:00+08:00')
+const SEED_AT_ISO = '2026-02-09T12:00:00+08:00'
 /** Natural key of the owner: the canonical Admin Pusat demo account. */
 const SELLER_OWNER_EMAIL = 'admin@demo.test'
 
@@ -68,7 +68,8 @@ export const PRODUCTS: readonly ProductSeed[] = [
 /** Relative path of a seeded product photo; the files stay frontend assets (BE-46 open question 2). */
 export const imageUrl = (productNumber: number, position: number): string => `/images/marketplace/products/${String(productNumber)}/img_${String(position)}.jpg`
 
-async function run(prisma: PrismaClient): Promise<void> {
+async function run(prisma: PrismaClient, date: (iso: string) => Date): Promise<void> {
+  const SEED_AT = date(SEED_AT_ISO)
   const categoryIds: bigint[] = []
   // The categories are reference data (core-marketplace-categories) and must already exist.
   for (const c of MARKETPLACE_CATEGORIES) {
@@ -117,6 +118,6 @@ async function run(prisma: PrismaClient): Promise<void> {
 export const marketplaceSeed: SeedModule = {
   name: 'marketplace',
   async run(ctx) {
-    await run(ctx.prisma)
+    await run(ctx.prisma, ctx.date)
   },
 }
