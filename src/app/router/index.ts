@@ -18,7 +18,7 @@ import { setUnauthorizedRedirect } from '@/stores/session'
 
 import { modules, type ModuleManifest } from '../modules'
 import { catchAllRoute, devRoutes, leadingCoreRoutes } from './core-routes'
-import { installGuards, LOGIN_PATH } from './guards'
+import { installGuards, isSafeRedirect, LOGIN_PATH } from './guards'
 
 export * from './guards'
 export * from './layouts'
@@ -56,13 +56,25 @@ export function createAppRouter(options: CreateAppRouterOptions = {}): Router {
   return router
 }
 
+/** Two 401 redirects closer than this count as one (FR-ERR-7). */
+const UNAUTHORIZED_REDIRECT_DEBOUNCE_MS = 2000
+
 /**
- * 401 policy (FR-M01-14): after the session store has cleared the session, go to `/login` with no
- * query and no message. Returns the unregister function.
+ * 401 policy (FR-M01-14, FR-ERR-7): after the session store has cleared the session, go to
+ * `/login?kembali=<current page>` (same-origin path only; the login page shows the expired-session
+ * banner and returns there). Returns the unregister function.
  */
 export function connectUnauthorizedRedirect(router: Router): () => void {
+  let lastRedirectAt = Number.NEGATIVE_INFINITY
   return setUnauthorizedRedirect(() => {
     useNotificationBadgeStore().reset()
-    return router.replace(LOGIN_PATH)
+    // One redirect per 2 s: parallel requests that all answer 401 must not stack navigations.
+    const now = Date.now()
+    if (now - lastRedirectAt < UNAUTHORIZED_REDIRECT_DEBOUNCE_MS) return undefined
+    lastRedirectAt = now
+    const current = router.currentRoute.value
+    // Already on an auth page: stay (its own page handles the 401). Else remember the page.
+    if (!isSafeRedirect(current.fullPath)) return router.replace(LOGIN_PATH)
+    return router.replace({ path: LOGIN_PATH, query: { kembali: current.fullPath } })
   })
 }

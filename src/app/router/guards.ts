@@ -60,7 +60,8 @@ const PASSWORD_CHANGE_ALLOWED = [PASSWORD_CHANGE_PATH, '/logout']
 /** A same-origin app path that is worth returning to (not `/`, not an auth page, no `//host`). */
 export function isSafeRedirect(value: unknown): value is string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return false
-  if (value.includes('\\') ||value === '/') return false
+  // Backslash and control characters (a browser drops tab/newline, so `/\t/host` would become `//host`).
+  if (value.includes('\\') || /[\u0000-\u001f\u007f]/.test(value) || value === '/') return false
   const path = value.split(/[?#]/)[0] ?? ''
   return !['/login', '/logout', '/register'].includes(path)
 }
@@ -159,7 +160,10 @@ export function installGuards(router: Router): void {
     // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`); the login
     // page returns there when the role may open it. The 401 policy and `/logout` stay plain.
     if (decision.to === LOGIN_PATH && isSafeRedirect(to.fullPath)) {
-      return { path: LOGIN_PATH, query: { redirect: to.fullPath } }
+      // A session just ended by a 401 says `kembali` (banner + return, AC-ERR-2) even when this guard wins the race with the
+      // 401 redirect; a plain guest keeps `redirect` (no banner).
+      const key = session.takeEndedByUnauthorized() ? 'kembali' : 'redirect'
+      return { path: LOGIN_PATH, query: { [key]: to.fullPath } }
     }
     return decision.to
   })
