@@ -114,6 +114,7 @@ const groupBind = computed(() =>
     ? {
         stimuli: groupData.value,
         groupId: group.value.id,
+        matchingBank: current.value?.optionBank,
         split: 'sitting' as const,
         onError: onStimError,
         onLoaded: onStimLoaded,

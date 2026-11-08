@@ -55,6 +55,9 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
 | S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
 | S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts |
+| S8-T02 | AC-PA-03 | CI | Pass | 2026-11-05 | team-aa/S-1 | stimulus-panel-responsive.spec.ts (375/768/1280): 10 questions counted, the group shows on 4 members and not on question 9, panel at 375, figure full width at 768, pinned left at 1280 |
+| S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
+| S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts, drawing-pad-responsive.spec.ts (375/768/1280) |
 | S8-T03 | AC-PA-37 | CI | Pass | 2026-11-05 | team-aa/S-1 | word-limit.test.ts |
 | S8-T03 | AC-PA-40 | CI | Pass | 2026-11-05 | team-aa/S-1 | prefill.test.ts |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |

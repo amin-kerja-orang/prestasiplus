@@ -146,7 +146,25 @@ export const leaf = (
   marks: number,
   kind: LeafKind,
   unit?: string,
-): PartDef => ({ id, label, prompt, marks, answer: { kind, ...(unit ? { unit } : {}) } })
+  /** Optional mode config the contract carries beyond `PartDef.answer` (e.g. a `drawing` `answerTemplate`). */
+  extra?: { answerTemplate?: { grid: GridTemplate } | { imageId: string } },
+): PartDef => ({
+  id,
+  label,
+  prompt,
+  marks,
+  answer: { kind, ...(unit ? { unit } : {}), ...extra },
+})
+
+/** Graph-paper template of a `drawing` leaf (contract `modeConfig.answerTemplate.grid`). */
+export interface GridTemplate {
+  xMin: number
+  xMax: number
+  yMin: number
+  yMax: number
+  step: number
+  scale: string
+}
 
 export const branch = (
   id: string,
