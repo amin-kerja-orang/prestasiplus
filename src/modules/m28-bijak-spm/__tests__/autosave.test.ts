@@ -52,6 +52,38 @@ describe('autosave', () => {
     expect(auto.status()).toBe('saved')
   })
 
+  it('FR-MUR-13-10: typing without a pause still reaches the server every 15 s while dirty, then the timer stops', async () => {
+    const { auto, server, attemptId, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    // A keystroke every 500 ms: the 800 ms debounce never fires.
+    for (let i = 1; i <= 29; i++) {
+      auto.setAnswer(q, { choice: `c${i}` })
+      await vi.advanceTimersByTimeAsync(500)
+    }
+    expect(save).not.toHaveBeenCalled()
+    auto.setAnswer(q, { choice: 'c30' })
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(server.debugSaved(attemptId)[q]!.answer.choice).toBe('c30')
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('a choose-N tick made while a request is in flight stays unsent until a later request carries it', async () => {
+    const { auto, server, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    auto.setAnswer(q, { choice: 'a' })
+    const first = auto.flush()
+    auto.setPicks({ s1: [q] })
+    await first
+    await vi.advanceTimersByTimeAsync(2000)
+    const payloads = save.mock.calls.map((c) => c[2] as { picks: Record<string, string[]> })
+    expect(payloads.at(-1)!.picks).toEqual({ s1: [q] })
+  })
+
   it('coalesces fast typing into one revision per part sent', async () => {
     const { auto, view } = await setup()
     const q = view.questions[0]!.id
@@ -162,5 +194,115 @@ describe('autosave', () => {
     })
     expect(a.answers().p).toEqual({ text: 'server' })
     expect(a.pendingCount()).toBe(0)
+  })
+})
+
+describe('flushHidden (lead ruling Q4: keepalive PUT on pagehide / hidden tab)', () => {
+  function bare(saveKeepalive?: (p: unknown) => boolean) {
+    const calls: unknown[] = []
+    const auto = createAutosave({
+      attemptId: 'a1',
+      storage: new MemoryStorage(),
+      api: {
+        save: () => Promise.resolve({ closed: false }),
+        ...(saveKeepalive ? { saveKeepalive: (p) => (calls.push(p), saveKeepalive(p)) } : {}),
+      },
+    })
+    auto.init({ answers: {}, flags: [], picks: {}, position: 0 })
+    return { auto, calls }
+  }
+
+  it('sends only the dirty changes through the keepalive path, and keeps them pending', () => {
+    const { auto, calls } = bare(() => true)
+    auto.setAnswer('p1', { text: 'satu' })
+    auto.setAnswer('p2', { text: 'dua' })
+    expect(auto.flushHidden()).toBe(true)
+    expect(calls).toHaveLength(1)
+    const sent = calls[0] as { changes: { partId: string; rev: number }[] }
+    expect(sent.changes.map((c) => c.partId)).toEqual(['p1', 'p2'])
+    expect(auto.pendingCount()).toBe(2)
+  })
+
+  it('sends nothing when nothing is dirty', () => {
+    const { auto, calls } = bare(() => true)
+    expect(auto.flushHidden()).toBe(false)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('returns false when the api cannot send (too large, or no keepalive)', () => {
+    const refusing = bare(() => false)
+    refusing.auto.setAnswer('p1', { text: 'x' })
+    expect(refusing.auto.flushHidden()).toBe(false)
+    const none = bare()
+    none.auto.setAnswer('p1', { text: 'x' })
+    expect(none.auto.flushHidden()).toBe(false)
+    expect(none.auto.pendingCount()).toBe(1)
+  })
+
+  it('sends nothing once disposed', () => {
+    const { auto, calls } = bare(() => true)
+    auto.setAnswer('p1', { text: 'x' })
+    auto.dispose()
+    expect(auto.flushHidden()).toBe(false)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('dispose clears the dirty timer, the debounce and the retry: no timer is left', async () => {
+    const { auto, view } = await setup()
+    const q = view.questions[0]!.id
+    auto.setAnswer(q, { choice: 'a' })
+    expect(vi.getTimerCount()).toBeGreaterThan(0)
+    auto.dispose()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('a flush after dispose (late blur or question change) sends nothing', async () => {
+    const { auto, server, view } = await setup()
+    const q = view.questions[0]!.id
+    const save = vi.spyOn(server, 'saveAnswers')
+    auto.setAnswer(q, { choice: 'a' })
+    auto.dispose()
+    expect(await auto.flush()).toBe(false)
+    expect(await auto.flushAuto()).toBe(false)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  describe('offline', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('the 15 s dirty flush is skipped while the browser is offline, and the pending change goes when it is back', async () => {
+      const { auto, server, view } = await setup()
+      const q = view.questions[0]!.id
+      const save = vi.spyOn(server, 'saveAnswers')
+      vi.stubGlobal('navigator', { onLine: false })
+      for (let i = 1; i <= 40; i++) {
+        auto.setAnswer(q, { choice: `c${i}` })
+        await vi.advanceTimersByTimeAsync(500)
+      }
+      expect(await auto.flushAuto()).toBe(false)
+      expect(save).not.toHaveBeenCalled()
+      vi.stubGlobal('navigator', { onLine: true })
+      await auto.flush() // the page's "online" handler
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(auto.pendingCount()).toBe(0)
+    })
+
+    it('while the retry is armed the automatic flushes are skipped, and the retry still sends the change', async () => {
+      const { auto, server, view } = await setup()
+      const q = view.questions[0]!.id
+      const err = Object.assign(new Error('offline'), { code: 'offline' })
+      const save = vi.spyOn(server, 'saveAnswers').mockRejectedValueOnce(err)
+      auto.setAnswer(q, { choice: 'a' })
+      await vi.advanceTimersByTimeAsync(800)
+      expect(save).toHaveBeenCalledTimes(1)
+      expect(auto.status()).toBe('offline')
+      expect(await auto.flushAuto()).toBe(false) // blur / goTo
+      await vi.advanceTimersByTimeAsync(500) // before the 1000 ms retry
+      expect(save).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(600) // retryMs 1000 passed
+      expect(save).toHaveBeenCalledTimes(2)
+      expect(auto.status()).toBe('saved')
+    })
   })
 })

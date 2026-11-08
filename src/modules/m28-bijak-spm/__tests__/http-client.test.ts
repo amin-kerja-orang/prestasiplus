@@ -272,6 +272,36 @@ describe('HttpBijakServer: writes', () => {
     })
   })
 
+  it('saveAnswersKeepalive: fetch PUT with keepalive, the cookie session and the CSRF token; no sendBeacon; nothing over 60 KB', async () => {
+    const { server } = setup({
+      'PUT /api/bijak/attempts/att-1/answers': ok({ savedAt: T1 }),
+    })
+    const fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 200 })))
+    vi.stubGlobal('fetch', fetchMock)
+    const beacon = vi.fn()
+    vi.stubGlobal('navigator', { ...globalThis.navigator, sendBeacon: beacon })
+    try {
+      const payload = { changes: [{ partId: 'q-1', answer: { choice: 'b' }, rev: 3, savedAt: T0_MS }], position: 1 }
+      // no CSRF token has arrived yet: nothing is sent
+      expect(server.saveAnswersKeepalive(7, 'att-1', payload)).toBe(false)
+      await server.saveAnswers(7, 'att-1', payload)
+      await Promise.resolve()
+      expect(server.saveAnswersKeepalive(7, 'att-1', payload)).toBe(true)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+      expect(url).toBe('/api/bijak/attempts/att-1/answers')
+      expect(init).toMatchObject({ method: 'PUT', keepalive: true, credentials: 'include' })
+      expect((init.headers as Record<string, string>)['x-csrf-token']).toBe('csrf-1')
+      expect(JSON.parse(init.body as string).changes[0]).toMatchObject({ partId: 'q-1', rev: 3, savedAt: new Date(T0_MS).toISOString() })
+      expect(beacon).not.toHaveBeenCalled()
+      const big = { changes: [{ partId: 'q-1', answer: { text: 'x'.repeat(70_000) }, rev: 4, savedAt: T0_MS }] }
+      expect(server.saveAnswersKeepalive(7, 'att-1', big)).toBe(false)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('submit sends the idempotency key in the body and the carried answers as ISO', async () => {
     const { server, last } = setup({
       'POST /api/bijak/attempts/att-1/submit': ok({ attemptId: 'att-1', late: 4 }),

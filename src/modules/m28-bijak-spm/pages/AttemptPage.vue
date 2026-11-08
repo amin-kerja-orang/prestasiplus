@@ -16,9 +16,11 @@ import {
   DsQuizHeader,
   DsLoadError,
   DsStack,
+  DsSurface,
   DsText,
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
+import { deferUnauthorizedRedirect } from '@/stores/session'
 
 import {
   AttemptShell,
@@ -98,6 +100,43 @@ const dialogContent = {
 }
 
 const isExam = computed(() => view.value?.attempt.mode === 'exam')
+/** ERR-NET-01 / ERR-NET-03 (46 section 2.6): device offline, or a save that could not reach the server. */
+const offline = ref(false)
+const reconnected = ref(false)
+let reconnectedTimer: ReturnType<typeof setTimeout> | undefined
+const RECONNECTED_MS = 3000
+watch(saveStatus, (status) => {
+  if (status === 'offline') offline.value = true
+  // A flush with nothing unsent also says "saved" (a hidden tab while offline): that is not a connection back.
+  else if (status === 'saved' && offline.value && navigator.onLine !== false) showReconnected()
+})
+function showReconnected(): void {
+  offline.value = false
+  reconnected.value = true
+  clearTimeout(reconnectedTimer)
+  reconnectedTimer = setTimeout(() => (reconnected.value = false), RECONNECTED_MS)
+}
+function onOffline(): void {
+  reconnected.value = false
+  offline.value = true
+}
+/** ERR-AUTH-01: a timed sitting keeps the screen until the pupil confirms; the answers stay on the device. */
+const sessionExpired = ref(false)
+let proceedToLogin: (() => void) | null = null
+let loginStarted = false
+/** The redirect runs once: a second quick click or tap while it is under way does nothing. */
+function loginAgain(): void {
+  if (loginStarted || !proceedToLogin) return
+  loginStarted = true
+  proceedToLogin()
+}
+const stopDeferring = deferUnauthorizedRedirect((proceed) => {
+  // Only a timed attempt asks first; Mod Latihan and a page that failed to load take the normal redirect.
+  if (!isExam.value) return proceed()
+  proceedToLogin = () => proceed(route.fullPath)
+  loginStarted = false
+  sessionExpired.value = true
+})
 const questions = computed(() => view.value?.questions ?? [])
 const current = computed(() => questions.value[index.value])
 const section = computed(() => view.value?.sections.find((s) => s.id === current.value?.sectionId))
@@ -265,7 +304,12 @@ async function load(): Promise<void> {
     autosave = createAutosave({
       attemptId: attemptId.value,
       storage: browserStorage(),
-      api: { save: (p) => server.saveAnswers(user.value, attemptId.value, p) },
+      api: {
+        save: (p) => server.saveAnswers(user.value, attemptId.value, p),
+        saveKeepalive: server.saveAnswersKeepalive
+          ? (p) => server.saveAnswersKeepalive!(user.value, attemptId.value, p)
+          : undefined,
+      },
       onStatus: (s) => (saveStatus.value = s),
       onClosed: () => void goResult(),
     })
@@ -321,7 +365,10 @@ onMounted(() => {
   })
   tick = setInterval(() => (now.value = Date.now()), 1000)
   document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('pagehide', flushOnLeave)
   window.addEventListener('online', onOnline)
+  window.addEventListener('offline', onOffline)
+  if (navigator.onLine === false) offline.value = true
 })
 onBeforeUnmount(() => {
   if (tick) clearInterval(tick)
@@ -329,16 +376,33 @@ onBeforeUnmount(() => {
   scrollNode?.removeEventListener('scroll', onScroll)
   stopRetry()
   document.removeEventListener('visibilitychange', onVisibility)
+  window.removeEventListener('pagehide', flushOnLeave)
   window.removeEventListener('online', onOnline)
-  void autosave?.flush()
+  window.removeEventListener('offline', onOffline)
+  clearTimeout(reconnectedTimer)
+  stopDeferring()
+  // ERR-AUTH-01: no token now, so this save would answer 401 with no deferral and drop `?redirect=`. The local mirror replays after login.
+  if (!sessionExpired.value) void autosave?.flush()
   autosave?.dispose()
 })
+/** FR-MUR-13-10: leaving a field sends what it holds now. Moving focus with nothing unsent sends nothing. */
+function onFieldBlur(): void {
+  if (autosave?.pendingCount()) void autosave.flushAuto()
+}
 function onVisibility(): void {
-  if (document.visibilityState === 'hidden') void autosave?.flush()
+  if (document.visibilityState === 'hidden') flushOnLeave()
+}
+/** Lead ruling Q4: a hiding or unloading tab sends only the dirty changes with a keepalive `fetch` PUT; without one (mock, over 64 KB) the normal flush runs. */
+function flushOnLeave(): void {
+  if (!autosave?.flushHidden()) void autosave?.flush()
 }
 function onOnline(): void {
   if (submitPending.value) void retrySubmit()
-  else void autosave?.flush()
+  // Nothing was unsent, so the save status does not change: the banner still has to end here.
+  else
+    void autosave?.flush().then((ok) => {
+      if (ok && offline.value) showReconnected()
+    })
 }
 
 function startRetry(): void {
@@ -416,6 +480,8 @@ async function goTo(i: number): Promise<void> {
   if (i < 0 || i >= questions.value.length) return
   index.value = i
   autosave?.setPosition(i)
+  // FR-MUR-13-10: the answers of the question just left go now, not after the debounce.
+  void autosave?.flushAuto()
   writePosition(attemptId.value, { questionIndex: i, scrollTop: 0 })
   navOpen.value = false
   await nextTick()
@@ -575,6 +641,34 @@ const feedback = computed(() => {
     </template>
 
     <template #banner>
+      <DsSurface
+        v-if="offline && !timeUp"
+        level="elevated"
+        radius="none"
+        shadow="none"
+        padding="sm"
+        role="status"
+        data-short-compact
+        data-testid="offline-banner"
+      >
+        <DsText variant="label" tone="warning" align="center">
+          Anda sedang luar talian. Semak sambungan internet anda.
+        </DsText>
+      </DsSurface>
+      <DsSurface
+        v-else-if="reconnected"
+        level="elevated"
+        radius="none"
+        shadow="none"
+        padding="sm"
+        role="status"
+        data-short-compact
+        data-testid="reconnected-banner"
+      >
+        <DsText variant="label" tone="success" align="center">
+          Sambungan dipulihkan.
+        </DsText>
+      </DsSurface>
       <!-- One bar for both notices: the 5-minute warning (timer still running) and, at 0 while
            offline, "Masa tamat" (the two never show together). -->
       <p
@@ -617,7 +711,7 @@ const feedback = computed(() => {
         <USkeleton class="h-24 w-full" />
         <USkeleton class="h-16 w-full" />
       </div>
-      <div v-else class="flex flex-col gap-4 pt-2">
+      <div v-else class="flex flex-col gap-4 pt-2" @focusout="onFieldBlur">
         <div v-if="section" class="flex flex-col gap-1" data-testid="section-header">
           <p class="text-overline text-muted">
             {{ section.label }} · [{{ section.effectiveMarks }} markah]
@@ -889,16 +983,27 @@ const feedback = computed(() => {
 
   <UModal
     v-model:open="confirmExit"
-    title="Keluar daripada kertas?"
-    description="Jawapan anda telah disimpan. Anda boleh menyambung kemudian."
+    title="Keluar daripada percubaan?"
+    :description="isExam ? 'Jawapan anda disimpan dan masa terus berjalan.' : 'Jawapan anda disimpan.'"
   >
     <template #footer>
       <div class="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-        <UButton color="neutral" variant="soft" class="min-h-11" @click="confirmExit = false"
-          >Terus menjawab</UButton
+        <UButton color="neutral" variant="soft" class="min-h-11" data-testid="exit-stay" @click="confirmExit = false"
+          >Kekal</UButton
         >
         <UButton class="min-h-11" data-testid="confirm-exit" @click="exitNow">Keluar</UButton>
       </div>
+    </template>
+  </UModal>
+
+  <UModal
+    :open="sessionExpired"
+    title="Sesi anda telah tamat. Jawapan anda disimpan pada peranti ini. Log masuk semula untuk meneruskan."
+    :dismissible="false"
+    :close="false"
+  >
+    <template #footer>
+      <UButton class="min-h-11" data-testid="session-login" @click="loginAgain()">Log Masuk Semula</UButton>
     </template>
   </UModal>
 </template>
