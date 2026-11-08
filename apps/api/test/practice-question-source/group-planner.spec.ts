@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { StartSessionRequest } from '@pp/contract'
 
-import { PracticeStartPlanner } from '../../src/modules/practice/start.planner'
+import { PracticeStartPlanner, RemedialSelector } from '../../src/modules/practice/start.planner'
 import type { PracticeDrillActivity, PracticePorts, PracticeQuestion, PracticeSelection } from '../../src/modules/practice/ports'
 
 /**
@@ -112,5 +112,41 @@ describe('planner: group-ready', () => {
     const { p } = planner({ page: ['s1'], answered: ['s2', 's3', 's4', 's5', 's6'], bank })
     const plan = await p.plan('u', req({ mode: 'chapter', chapterId: '9', count: 5 }), now, false)
     expect(plan.served.map((q) => q.id)).toEqual(['s1', 's2', 's3', 's4', 's5'])
+  })
+
+  it('revision, ramalan, mission and remedial stay text-only: they ask the source with NO drill surface, so a group member or a figure question is never served', async () => {
+    const calls: (PracticeDrillActivity | undefined)[] = []
+    const figure = { ...question('f1'), stemImageId: 'F' } as PracticeQuestion
+    const mixed = [question('t1'), question('g1', ['g1', 'g2']), question('g2', ['g1', 'g2']), figure, question('t2')]
+    const byId = new Map(mixed.map((x) => [x.id, x]))
+    // The fake source behaves as the real one: with no drill surface only text, ungrouped questions come back.
+    const live = (ids: readonly string[], activity?: PracticeDrillActivity) => {
+      calls.push(activity)
+      const textOnly = (x: PracticeQuestion) => activity !== undefined || (x.groupId === undefined && (x as { stemImageId?: string }).stemImageId === undefined)
+      return Promise.resolve(new Map(ids.flatMap((id) => (byId.has(id) && textOnly(byId.get(id) as PracticeQuestion) ? [[id, byId.get(id) as PracticeQuestion] as const] : []))))
+    }
+    const all = ['t1', 'g1', 'g2', 'f1', 't2']
+    const ports = {
+      questions: { live },
+      ramalan: { ramalanQuestionIds: () => Promise.resolve(all) },
+      assignments: { resolve: () => Promise.resolve({ status: 'ok', questionIds: all, subjectId: '1', coinsPerCorrect: 1, completed: false }) },
+    } as unknown as PracticePorts
+    const curriculum = { subjectByCode: () => Promise.resolve({ id: 1n, code: 'ZZ', isActive: true, educationLevelIds: [1n] }) }
+    const repo = {
+      countSessions: () => Promise.resolve(0),
+      linkedSessions: () => Promise.resolve([]),
+      queue: () => Promise.resolve(all.map((questionId) => ({ questionId }))),
+      weakTopicQuestionIds: () => Promise.resolve([]),
+    }
+    const p = new PracticeStartPlanner(curriculum as never, ports, repo as never, { trial: () => Promise.resolve({ active: false, remaining: 1 }) } as never)
+
+    const ramalan = await p.plan('u', req({ mode: 'ramalan', subjectCode: 'ZZ', year: 2024, setNo: 1 }), now, false)
+    const mission = await p.plan('u', req({ mode: 'mission', missionId: '5' }), now, false)
+    const remedial = await p.plan('u', req({ mode: 'remedial', remedialTestId: '6' }), now, false)
+    // The fake source filters text-only itself, so what is asserted is the planner's call: every path asks with no drill surface (the real source then refuses groups and figures).
+    for (const plan of [ramalan, mission, remedial]) expect(plan.served.length).toBeGreaterThan(0)
+    await new RemedialSelector(repo as never, ports).select('u', '1') // the auto revision drill and the remedial suggestions
+    expect(calls.length).toBeGreaterThanOrEqual(4)
+    expect(calls.every((a) => a === undefined)).toBe(true)
   })
 })

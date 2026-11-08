@@ -59,6 +59,15 @@ export const NOT_SOURCE_TAKEN_DOWN_SQL = Prisma.sql`NOT EXISTS (SELECT 1 FROM so
  */
 export const NOT_FLAGGED_SQL = Prisma.sql`(v.stimulus_flag IS NULL OR v.stimulus_flag = 'stem_duplicated' OR v.flag_dismissed_at IS NOT NULL)`
 
+/** SQL twin of `stimulusTableOf` for a stored grid (`s.table_data`): an array whose first row is a non-empty head, or an object with a non-empty `head`/`headers`/`columns` and a `rows` array. */
+export const TABLE_GRID_READABLE_SQL = Prisma.sql`(CASE jsonb_typeof(s.table_data)
+    WHEN 'array' THEN CASE WHEN jsonb_typeof(s.table_data -> 0) = 'array' THEN jsonb_array_length(s.table_data -> 0) > 0 ELSE false END
+    WHEN 'object' THEN CASE
+      WHEN jsonb_typeof(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) = 'array'
+        THEN jsonb_array_length(coalesce(s.table_data -> 'head', s.table_data -> 'headers', s.table_data -> 'columns')) > 0 AND jsonb_typeof(s.table_data -> 'rows') = 'array'
+      ELSE false END
+    ELSE false END)`
+
 /**
  * `true` when every stimulus the question shows can be shown: a picture kind has its file, a table has a grid, a file or a pipe table in the
  * body, a passage has text, and the version carries no `legacy_image_unresolved` import hold. `stimuli` is a statement selecting `sid`.
@@ -67,7 +76,7 @@ export const mediaResolvedSql = (stimuli: Prisma.Sql, importIssues: Prisma.Sql):
   NOT EXISTS (
     SELECT 1 FROM (${stimuli}) l JOIN stimuli s ON s.id = l.sid
      WHERE (s.kind IN ('image', 'diagram', 'map', 'infographic', 'graph') AND s.asset_file_id IS NULL)
-        OR (s.kind = 'table' AND s.table_data IS NULL AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%'))
+        OR (s.kind = 'table' AND s.asset_file_id IS NULL AND (s.body_ms IS NULL OR s.body_ms NOT LIKE '%|%') AND NOT coalesce(${TABLE_GRID_READABLE_SQL}, false))
         OR (s.kind = 'passage' AND btrim(coalesce(s.body_ms, '')) = '' AND btrim(coalesce(s.body_en, '')) = '')
   )
   AND NOT coalesce(jsonb_typeof(${importIssues}) = 'array' AND ${importIssues} @> '[{"code": "legacy_image_unresolved"}]'::jsonb, false)
