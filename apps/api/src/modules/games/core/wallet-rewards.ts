@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common'
-import type { GamesReward } from '@pp/contract'
 
 import type { TxClient } from '../../../db/client'
 import { coinsPerCorrect } from '../../practice/coins'
@@ -39,15 +38,6 @@ export async function rewardNow(settings: GameSettingsService, tx: TxClient, fac
   return gameReward(facts, await settings.getMany(REWARD_SETTINGS, tx), await coinsPerCorrect(tx))
 }
 
-/** The reward block of a result (API-GAME-01..03). */
-export function rewardBlock(o: GameResultOutcome): GamesReward {
-  const reason = o.cappedReason ?? null
-  return { xp: o.xpAdded, syiling: o.coinsCredited, capped: reason !== null, reason }
-}
-
-/** Rule 5: stored and scored, credits nothing. */
-export const PACE_GUARD_REWARD: GamesReward = { xp: 0, syiling: 0, capped: false, reason: 'pace_guard' }
-
 /** Static BM ledger wording of a game result (copy of the M14 mock `gameRow`; no personal data). */
 export function gameRow(
   game: string,
@@ -81,18 +71,6 @@ export function gameRow(
       return { source: 'cabaran_kilat', description: `Cabaran Kilat: ${correct} betul, combo ${String(n(d['maxCombo'], 1))}x` }
     case 'betul_salah':
       return { source: 'betul_salah', description: `Betul/Salah: ${correct} betul, streak ${String(n(d['maxStreak'], 1))}` }
-    case 'battle':
-      return { source: 'battle', description: `Battle Arena: ${correct} betul` }
-    case 'kuiz_relay':
-      return { source: game, description: `Kuiz Relay: ${correct} betul` }
-    case 'teka_silang_kata':
-      return { source: game, description: `Teka Silang Kata: ${correct} betul` }
-    case 'tembak_jawapan':
-      return { source: game, description: `Tembak Jawapan: ${correct} betul` }
-    case 'susun_jawapan':
-      return { source: game, description: `Susun Jawapan: ${correct} betul` }
-    case 'kad_memori':
-      return { source: game, description: `Kad Memori: ${correct} pasangan` }
     default:
       return { source: game, description: `${game}: ${correct} betul` }
   }
@@ -118,10 +96,6 @@ export class WalletGameRewards implements GameRewardsPort {
 
   async tierRates(): Promise<{ correct: number; win: number }> {
     return { correct: 0, win: 0 }
-  }
-
-  async firstGameResult(): Promise<GameResultOutcome | null> {
-    return null
   }
 
   async onGameResult(

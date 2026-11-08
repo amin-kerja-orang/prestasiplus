@@ -15,14 +15,6 @@ export const KR_ROUNDS = 10
 export const BENTENG_HP = 100
 export const BENTENG_DAMAGE = 20
 export const MATHRACE_STEPS = 20
-/** Papan Bijak: 200 rounds with nobody on tile 50 end the game (48 GAME-02). */
-export const PB_MAX_ROUNDS = 200
-/** Server clocks of 48 GAME-02, GAME-04, GAME-05 and GAME-06. */
-export const PB_ROLL_MS = 30_000
-export const PB_ANSWER_MS = 20_000
-export const BENTENG_ROUND_MS = 15_000
-export const MATHRACE_ANSWER_MS = 20_000
-export const RELAY_ANSWER_MS = 15_000
 export const CROSSWORD_WORDS = 8
 
 /** Pool sizes drawn at start per game. */
@@ -33,4 +25,12 @@ export const POOL_SIZE = {
   'perlumbaan-matematik': 40,
   'kuiz-relay': KR_ROUNDS,
   'teka-silang-kata': CROSSWORD_WORDS,
+} as const
+
+/** M14 coin rates of the room games (BR-M16-28): benteng 8 / 35, perang fakta win 10, mathrace 5. */
+export const ROOM_COINS = {
+  bentengPlay: 8,
+  bentengWin: 35,
+  perangFaktaWin: 10,
+  mathracePlay: 5,
 } as const

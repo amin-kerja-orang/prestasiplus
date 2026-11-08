@@ -21,11 +21,11 @@ Shared root files (`battle-core.module.ts`, `battle.deps.ts`, ...) change only w
 - **Raw routes (M16-02..14, M16-01)**: return the bare object (no `ok()`); put `@UseFilters(BattleRawErrorFilter)` on the controller
   and throw `rawNotFound(text)` (404), `rawConflict(text)` (409), `rawInvalid(text?)` (422), `rawForbidden(text?)` (403) from
   `'../raw-response'`. No text = the empty `{}` body (M16-02/03). Other errors (401, CSRF, 429) keep the standard envelope.
-- **Owner reads**: inject `BattleDeps` (`'../battle.deps'`, from `BattleCoreModule`): `searchStudents`, `student`,
+- **Owner reads**: inject `BattleDeps` (`'../battle.deps'`, from `BattleCoreModule`): `activeStudents`, `searchStudents`, `student`,
   `players`, `gradeOf`, `school(s)`, `subjects`, `subject`, `levelIdOfGrade`, `spmPoolCount`, `drawQuestions`, `arenaQuestion`
-  (keyless), `gradeAnswer`, `pkskDomains`. Never inject an owner repository or query `users`, `schools`,
+  (keyless), `gradeAnswer`, `platformAccuracy`, `pkskDomains`. Never inject an owner repository or query `users`, `schools`,
   `subjects`, `questions` tables yourself. Fallbacks and limits are listed at the top of `battle.deps.ts`.
-- **Rewards and the answer store**: `BattleEngine.report` and `recordAnswer`, over `GamesPorts` (FR-GM-00.3, FR-GM-00.5).
+- **M14 report**: `@Inject(GAME_RESULT_PORT) port: GameResultPort` (`'../game-result.port'`), no-op until the owner binds it.
 - **DB**: `PrismaService` (global): `this.prisma.client.battle|battleParticipant|battleQuestion|battleAnswer|battleQueue|battleInvitation|tournament|tournamentSubject`;
   group writes in `this.prisma.transaction(async (tx) => ...)`. Ids: `idToString`/`idFromString` from `'../../../db/ids'`. Row locks via `$queryRaw ... FOR UPDATE`.
 - **Tests**: `apps/api/test/battle/`; boot pattern `apps/api/test/classes/helpers.ts` (`createTestDatabase`, `FixedClock`, seeds).

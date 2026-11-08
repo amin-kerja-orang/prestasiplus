@@ -40,9 +40,6 @@ export interface BattleRowData {
   /** Null for a robot side (DM-60). */
   playerA: string | null
   playerB: string | null
-  /** The seat is a robot, also one from before FR-GM-00.4 that still points at a pupil. */
-  botA: boolean
-  botB: boolean
   schoolA: string | null
   schoolB: string | null
 }
@@ -55,13 +52,11 @@ interface RawBattle {
   created_at: Date
   user_a: bigint | null
   user_b: bigint | null
-  bot_a: boolean
-  bot_b: boolean
   school_a: bigint | null
   school_b: bigint | null
 }
 
-const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND b.counts_for_ranking AND p.is_test = false AND p.is_bot = false`
+const COUNTED = Prisma.sql`b.status IN ('finished', 'forfeited') AND b.is_test = false AND p.is_test = false AND p.is_bot = false`
 
 const windowSql = (w: PeriodWindow): Prisma.Sql => {
   const parts: Prisma.Sql[] = []
@@ -72,7 +67,7 @@ const windowSql = (w: PeriodWindow): Prisma.Sql => {
 
 const num = (v: bigint | number | null): number => Number(v ?? 0)
 
-/** Bot sides (`is_bot`) never earn standings, history or school credit; a robot battle counts for nobody (DM-60). */
+/** Bot sides (`is_bot`, real pupils used as simulated opponents) never earn standings, history or school credit. */
 /** Aggregations over `battle_participants` / `battles` (BE-44 AC 13). Reads only the battle tables. */
 @Injectable()
 export class StandingsRepository {
@@ -183,8 +178,6 @@ export class StandingsRepository {
       createdAt: r.created_at,
       playerA: r.user_a === null ? null : idToString(r.user_a),
       playerB: r.user_b === null ? null : idToString(r.user_b),
-      botA: r.bot_a,
-      botB: r.bot_b,
       schoolA: r.school_a === null ? null : idToString(r.school_a),
       schoolB: r.school_b === null ? null : idToString(r.school_b),
     }
@@ -192,7 +185,7 @@ export class StandingsRepository {
 
   private static readonly BATTLE_COLUMNS = Prisma.sql`
       b.id::text AS id, a.score AS score_a, c.score AS score_b, b.winner, b.created_at,
-      a.user_id AS user_a, c.user_id AS user_b, a.is_bot AS bot_a, c.is_bot AS bot_b, a.school_id AS school_a, c.school_id AS school_b`
+      a.user_id AS user_a, c.user_id AS user_b, a.school_id AS school_a, c.school_id AS school_b`
 
   /** The user's finished and forfeited battles (both sides), newest first. */
   async historyOf(userId: string): Promise<BattleRowData[]> {

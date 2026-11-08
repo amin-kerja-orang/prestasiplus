@@ -12,34 +12,11 @@ export const battleConformanceEnv: Record<string, string> = {
   THROTTLE_BATTLE_WRITE_PER_MINUTE: '100000',
   THROTTLE_BATTLE_POLL_PER_MINUTE: '100000',
   THROTTLE_BATTLE_SEARCH_PER_MINUTE: '100000',
-  // The national standings are cached 30 s on the injected (fixed) clock, which would hide a battle added between two reads.
-  BATTLE_STANDINGS_CACHE_SECONDS: '0',
 }
 
 /** Id of the subject the scenarios battle on; set by `seedBattleConformance`. */
 /** `emptyId`: a subject with no question at all (SEJ), for the "no SPM pool" refusal. */
-export const battleFixture = {
-  mathId: '',
-  emptyId: '',
-  /**
-   * Moves the injected clock of the booted app forward (`boot.ts` sets it). The robot comes once a queue entry has waited
-   * `battle_bot_fallback_seconds` (30 s, FR-PA-29), so the scenarios advance the clock instead of counting polls.
-   */
-  advanceClock: ((): void => {
-    throw new Error('battle conformance: the clock is not wired (boot.ts sets battleFixture.advanceClock)')
-  }) as (ms: number) => void,
-  /**
-   * Inserts one finished, ranked battle between the two demo pupils (pelajar A 7000, pelajar2 B 3000; both seats real users,
-   * `counts_for_ranking` true) at the injected clock, as if two pupils had played it. A real human-vs-human battle cannot be
-   * played through the arena yet (the opponent is simulated until GAME-R), so the standings are proven on this row. boot.ts sets it.
-   */
-  seedRankedBattle: (async (): Promise<void> => {
-    throw new Error('battle conformance: the seed seam is not wired (boot.ts sets battleFixture.seedRankedBattle)')
-  }) as () => Promise<void>,
-}
-
-/** The default `battle_bot_fallback_seconds` (48 GAME-01) in milliseconds. */
-export const BATTLE_ROBOT_WAIT_MS = 30_000
+export const battleFixture = { mathId: '', emptyId: '' }
 
 const QUESTIONS = 12
 const PUBLISHED_AT = new Date('2026-10-19T09:00:00+08:00')

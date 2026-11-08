@@ -780,12 +780,6 @@ export class GamificationService {
     return firstResult(event)
   }
 
-  /** The reward event of a session and pupil as `recordGameReward` returned it (DM-87); null when none exists. */
-  async firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null> {
-    const e = await this.repo.gameRewardEvent(this.repo.handle(), sessionId, userId)
-    return e ? { coinsCredited: e.syiling, xpAdded: e.xp, cappedReason: e.cappedReason } : null
-  }
-
   /**
    * XR-M14-02 / GAME-24 (called by registration): a known code of ANOTHER existing pupil, given to a NEW pupil not
    * referred before, stores a referral. The amounts are the settings `referral_referrer_syiling` and

@@ -1,8 +1,7 @@
 import type { GamesRoomGame, GamesRoomSubject } from '@pp/contract'
 
-/** A seat as the engine sees it. */
+/** A player as the engine sees them. `userId` is the decimal string id. */
 export interface EnginePlayer {
-  /** The key of the seat in the engine state: the decimal string user id, or `robot-<n>` for a robot (no user). */
   userId: string
   team: number | null
   points: number
@@ -62,26 +61,12 @@ export interface RoomState {
   /** Start of the current round, ms since epoch (injected clock), null before the start. */
   roundStartedMs: number | null
   log: string[]
-  /** Questions the acting human answered or timed out on: the `part_ref` position (absent on a room from before FR-GM-00.5). */
-  answerCount?: number
-  /** When the acting human really answered, in order; a timeout is no answer (the pace guard reads it). */
-  answerMs?: number[]
-}
-
-/** One bank question the acting human answered or timed out on (FR-GM-00.5); a robot's or a simulated seat's answer is never one. */
-export interface AnsweredQuestion {
-  questionId: string
-  position: number
-  correct: boolean
-  atMs: number
 }
 
 export interface EngineOut {
   state: RoomState
   players: EnginePlayer[]
   finished: boolean
-  /** What this step answered, in order; the service writes each through the answer port in the same transaction. */
-  answered?: AnsweredQuestion[]
 }
 
 export type RoomAction =

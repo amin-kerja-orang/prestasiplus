@@ -14,11 +14,9 @@ export function shuffle<T>(items: T[], rng: Prng): T[] {
 /** True with probability `p` (the mock's `rng.chance`). */
 export const chance = (rng: Prng, p: number): boolean => rng.next() < p
 
-/** Compares two seats: user ids numerically (bigints on the wire), then the robot seats by number. */
+/** Compares two decimal-string ids numerically (ids are bigints on the wire). */
 export function cmpId(a: string, b: string): number {
-  const robot = (s: string): number => (s.startsWith('robot-') ? Number(s.slice(6)) : 0)
-  if (robot(a) !== robot(b)) return robot(a) - robot(b)
-  const x = BigInt(robot(a) === 0 ? a : 0)
-  const y = BigInt(robot(b) === 0 ? b : 0)
+  const x = BigInt(a)
+  const y = BigInt(b)
   return x < y ? -1 : x > y ? 1 : 0
 }

@@ -180,13 +180,13 @@ describe("children's names rule in the games rankings (issue #76)", () => {
     })
   })
 
-  it('a seat marked is_bot that still points at a pupil (before FR-GM-00.4) shows the robot label, never the pupil', async () => {
+  it('bots are real pupils of the host school: a bot player is redacted like any other pupil', async () => {
     const code = (await t.db.query<{ code: string }>('select code from game_rooms limit 1'))[0]?.code as string
     await t.db.query(`delete from game_room_players where room_code = $1 and user_id = $2::bigint`, [code, id.B])
     await t.db.query(`insert into game_room_players (room_code, user_id, is_bot, is_test, joined_at) values ($1, $2::bigint, true, false, now())`, [code, id.B])
     const stud = VIEWERS[1] as (typeof VIEWERS)[number]
     const view = parseRoom(await as(stud).get(P('kuiz-relay', code)))
     const b = view.players.find((p) => p.id === id.B)
-    expect(b).toMatchObject({ isBot: true, name: 'Robot PrestasiPlus 1', grade: '' })
+    expect(b).toMatchObject({ isBot: true, name: displayName(full.B) })
   })
 })

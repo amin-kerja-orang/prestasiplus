@@ -7,14 +7,15 @@
  *                      (copies BE-23 semantics, credits through `WalletService`) but `canEarnSyiling` is FALSE until
  *                      BE-23 merges, because the `games_award_syiling` setting (seed 0) lives in BE-23. On the
  *                      BE-23 merge the lead rebinds this port to `GamificationService` (provideRewards).
- * - `platformAccuracy` The robots' chance of a correct answer, `p`. Default: the setting `battle_bot_accuracy_pct` (48 section 3.6).
+ * - `platformAccuracy` BE-13 (platform answer accuracy, the bots' `p`). Default: the mock's fallback (0).
  * - `battle`           BE-44 (`BattleReadService.hasBattled`). Default: false.
+ * - `botPool`          bot picker. Default: students of the host's school (school-scoped; a platform-wide pick needs a BE-05 read).
  */
 import { Inject, Injectable } from '@nestjs/common'
 
 import type { TxClient } from '../../../db/client'
-import { AnswerLogPort, type AnswerLogEntry } from '../../practice/answer-log.port'
-import { GameSettingsService } from './game-settings.service'
+import { BOT_ACCURACY_FALLBACK } from '../games.constants'
+import { SchoolBotPool } from './bot-pool'
 import { WalletGameRewards } from './wallet-rewards'
 
 /* ---------------------------------------------------------------------------------------- rewards */
@@ -24,9 +25,9 @@ export interface GameResultInput {
   /** M14 game token: `papan_bijak`, `benteng_ilmu`, `perang_fakta`, `mathrace`, `jutawan`, `roda_nasib`, `betul_salah`, `cabaran_kilat`... */
   game: string
   event: string
-  /** What the result asks for, from `rewardNow`; the port applies `games_award_syiling` and the caps. */
+  /** Absent for `papan_bijak`: the port uses the tier rates. */
   coins?: number
-  /** From `rewardNow` (FR-GM-00.3); 0 for Roda Nasib. */
+  /** Always 0 for games (BR-M16-28). */
   xp: number
   correct?: number
   total?: number
@@ -67,23 +68,18 @@ export interface GameRewardsPort {
    * still returns `{0, 0}` for `isTest` as a second guard.
    */
   onGameResult(userId: string, input: GameResultInput, options: { tx?: TxClient; isTest: boolean }): Promise<GameResultOutcome>
-  /** The first result of a session and pupil (DM-87), for a result read again later; null when no reward event exists. */
-  firstGameResult(sessionId: string, userId: string): Promise<GameResultOutcome | null>
 }
 
 /* ------------------------------------------------------------------------------ platform accuracy */
 
 export interface PlatformAccuracySource {
-  /** The robots' probability of a correct answer, 0..1. */
+  /** Platform answer accuracy 0..1 (the bots' probability of a correct answer). */
   accuracy(): Promise<number>
 }
 
-/** Read per call, so a saved change applies to the next answer (48 section 2). */
-export class RobotAccuracySetting implements PlatformAccuracySource {
-  constructor(private readonly settings: GameSettingsService) {}
-
+export class FallbackPlatformAccuracy implements PlatformAccuracySource {
   async accuracy(): Promise<number> {
-    return (await this.settings.get('battle_bot_accuracy_pct')) / 100
+    return BOT_ACCURACY_FALLBACK
   }
 }
 
@@ -100,25 +96,29 @@ export class NoBattle implements BattleReadPort {
   }
 }
 
-/* ------------------------------------------------------------------------------------------ answers */
+/* --------------------------------------------------------------------------------------- bot pool */
 
-/**
- * FR-GM-00.5, 48 section 3.5: the row of one answered or timed-out bank question. Marks follow `isCorrect`, a timeout is
- * not correct. The pupil's pick and seconds stay in the per-game logs. Mod Pelajar writes no row at all: callers skip it.
- */
-export function gameAnswerEntry(a: { userId: string; attemptId: string; questionId: string; gameKey: string; position: number; isCorrect: boolean; answeredAt: Date }): AnswerLogEntry {
-  return {
-    userId: a.userId,
-    attemptId: a.attemptId,
-    questionId: a.questionId,
-    partRef: `${a.gameKey}#${String(a.position)}`,
-    mode: a.gameKey === 'battle' ? 'battle' : 'game',
-    isCorrect: a.isCorrect,
-    marksAwarded: a.isCorrect ? 1 : 0,
-    marksMax: 1,
-    answeredAt: a.answeredAt,
-    isTest: false,
-  }
+export interface BotCandidate {
+  id: string
+  /** Display name only (D54(d)). */
+  name: string
+  grade: number | null
+}
+
+export interface BotPickInput {
+  /** The room host: its school scopes the pool. */
+  hostId: string
+  /** Whether a candidate's grade fits the room (use `gradeFits`). */
+  fits: (grade: number | null) => boolean
+  /** User ids already in the room (and the host). */
+  exclude: readonly string[]
+  /** Named PRNG stream, e.g. `games:bot:<roomCode>:<n>`. */
+  stream: string
+}
+
+export interface BotPoolPort {
+  /** One fictitious student of a fitting grade not in `exclude`, or null when none exists. Deterministic per stream. */
+  pick(input: BotPickInput): Promise<BotCandidate | null>
 }
 
 /* -------------------------------------------------------------------------------------- the holder */
@@ -126,18 +126,14 @@ export function gameAnswerEntry(a: { userId: string; attemptId: string; question
 @Injectable()
 export class GamesPorts {
   private rewardsPort: GameRewardsPort
-  private accuracySource: PlatformAccuracySource
+  private accuracySource: PlatformAccuracySource = new FallbackPlatformAccuracy()
   private battlePort: BattleReadPort = new NoBattle()
+  private botPoolPort: BotPoolPort
   private readonly bound = new Set<string>()
 
-  constructor(
-    @Inject(WalletGameRewards) rewards: WalletGameRewards,
-    @Inject(GameSettingsService) settings: GameSettingsService,
-    /** The one writer of `practice_answers` (S5-T15); joins the caller's transaction. */
-    @Inject(AnswerLogPort) readonly answers: AnswerLogPort,
-  ) {
+  constructor(@Inject(WalletGameRewards) rewards: WalletGameRewards, @Inject(SchoolBotPool) bots: SchoolBotPool) {
     this.rewardsPort = rewards
-    this.accuracySource = new RobotAccuracySetting(settings)
+    this.botPoolPort = bots
   }
 
   get rewards(): GameRewardsPort {
@@ -148,6 +144,9 @@ export class GamesPorts {
   }
   get battle(): BattleReadPort {
     return this.battlePort
+  }
+  get botPool(): BotPoolPort {
+    return this.botPoolPort
   }
 
   private once(name: string): void {
@@ -169,5 +168,9 @@ export class GamesPorts {
   provideBattle(port: BattleReadPort): void {
     this.once('battle port')
     this.battlePort = port
+  }
+  provideBotPool(port: BotPoolPort): void {
+    this.once('bot pool')
+    this.botPoolPort = port
   }
 }

@@ -206,14 +206,6 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
           <div class="flex flex-col items-center gap-1 text-center">
             <UBadge v-if="side === you" color="primary" variant="soft" size="sm">Anda</UBadge>
             <p class="max-w-full truncate text-label text-highlighted">{{ view.players[side].name }}</p>
-            <UBadge
-              v-if="view.players[side].isBot"
-              color="neutral"
-              variant="soft"
-              size="sm"
-              :data-testid="`battle-arena-robot-${side}`"
-              >Latihan</UBadge
-            >
             <p class="mt-2 text-overline text-muted">Skor</p>
             <p
               class="tabular text-title text-primary-t"

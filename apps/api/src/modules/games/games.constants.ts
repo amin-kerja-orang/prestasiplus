@@ -28,6 +28,9 @@ export const GAME_TOKENS = {
   'teka-silang-kata': 'teka_silang_kata',
 } as const
 
+/** Bot answer accuracy when the platform has no figure (the mock's `botAccuracy` falls back to 0 with no answers). */
+export const BOT_ACCURACY_FALLBACK = 0
+
 /** Default of `game_settings.boardgame_quiz_tiles` (mock SEED_QUIZ_TILES); max is 38. */
 export const DEFAULT_QUIZ_TILES = 35
 export const MAX_QUIZ_TILES = 38

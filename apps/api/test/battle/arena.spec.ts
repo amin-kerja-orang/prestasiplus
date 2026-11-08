@@ -1,7 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { BATTLE_RULES, BattleAnswerResultSchema, BattleArenaViewSchema, ErrorBodySchema, battleArenaPoints } from '@pp/contract'
 
-import { ArenaService } from '../../src/modules/battle/arena/arena.service'
 import { BattleEngine } from '../../src/modules/battle/engine'
 import { botAnswers } from '../../src/modules/battle/engine'
 import { addMcqs, bootBattleApp, botBattle, client, parseData, STUDENT_G10, STUDENT_G10_B, STUDENT_G11, subjectsOf, type BattleTestApp, type Client, type Subjects } from './arena-helpers'
@@ -28,7 +27,7 @@ describe('arena (M16-16, M16-17)', () => {
   let c: Client
   const rows = <T extends Record<string, unknown>>(sql: string, params: unknown[] = []) => t.db.query<T>(sql, params)
   const setAccuracy = (p: number) => {
-    vi.spyOn(t.get(BattleEngine), 'botAccuracy').mockResolvedValue(p)
+    ;(t.get(BattleEngine) as unknown as { accuracy: Promise<number> | null }).accuracy = Promise.resolve(p)
   }
   const view = async (who: Client, uuid: string) => who.get(`/battle/arena/${uuid}`)
   const questionOf = async (who: Client, uuid: string): Promise<string> => parseData(BattleArenaViewSchema, await view(who, uuid)).question?.id as string
@@ -63,8 +62,9 @@ describe('arena (M16-16, M16-17)', () => {
       expect(v).toMatchObject({ uuid, status: 'active', you: 'A', index: 1, total: 10, secondsLeft: 15, scores: { A: 0, B: 0 } })
       expect(v.result).toBeUndefined()
       expect(v.question?.options.map((o) => [o.id, o.label])).toEqual([[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D']])
-      expect(v.players.A).toEqual({ name: 'Murid Demo', school: '', isBot: false }) // FR-GM-00.8: own name in full, no school
-      expect(v.players.B).toEqual({ name: 'Robot PrestasiPlus', school: '', isBot: true }) // FR-MUR-21-9
+      expect(v.players.A).toEqual({ name: 'Murid Demo', school: '' }) // FR-GM-00.8: own name in full, no school
+      expect(v.players.B.school).toBe('')
+      expect(v.players.B.name.split(' ')).toHaveLength(1) // the opponent: first given name only
       expect(leakedKeys(res.body)).toEqual([])
       const [first] = await rows<{ question_id: string }>(`select question_id::text from battle_questions where battle_id = $1 and position = 1`, [uuid])
       expect(v.question?.id).toBe(first?.question_id)
@@ -83,27 +83,6 @@ describe('arena (M16-16, M16-17)', () => {
         expect(ErrorBodySchema.parse(post.body).error.message).toBe('Battle tidak dijumpai.')
       }
     })
-  })
-
-  describe('view when the seat clock fails', () => {
-    it('a timeOutSeat error is logged and the view is still answered (a GET never 500s on it)', async () => {
-      setAccuracy(0)
-      const uuid = await botBattle(a, s.math)
-      const arena = t.get(ArenaService) as unknown as { timeOutSeat: (...args: unknown[]) => Promise<boolean> }
-      const spy = vi.spyOn(arena, 'timeOutSeat').mockRejectedValue(new Error('clock down'))
-      try {
-        const res = await view(a, uuid)
-        expect(res.status, JSON.stringify(res.body)).toBe(200)
-        expect(parseData(BattleArenaViewSchema, res).status).toBe('active')
-        expect(spy).toHaveBeenCalledTimes(1)
-      } finally {
-        spy.mockRestore()
-      }
-    })
-  })
-
-  describe('human-vs-human (GAME-R)', () => {
-    it.todo('human-vs-human completion: both humans answer every round and both get reward and answer-port rows (GAME-R)')
   })
 
   describe('answer (AC 11)', () => {
@@ -132,7 +111,7 @@ describe('arena (M16-16, M16-17)', () => {
       expect(results.at(-1)?.you.score).toBe(total)
       expect(results.slice(0, 9).every((r) => r.next !== undefined && r.result === undefined)).toBe(true)
       expect(results[9]?.next).toBeUndefined()
-      expect(results[9]?.result).toMatchObject({ winner: 'A', scoreA: total, scoreB: 0 })
+      expect(results[9]?.result).toEqual({ winner: 'A', scoreA: total, scoreB: 0 })
 
       const [battle] = await rows<{ status: string; winner: string; answered: number; finished_at: Date }>(`select status, winner, answered, finished_at from battles where id = $1`, [uuid])
       expect(battle).toMatchObject({ status: 'finished', winner: 'A', answered: 10 })
@@ -147,8 +126,8 @@ describe('arena (M16-16, M16-17)', () => {
       // the finished arena shows the result and no question
       const done = parseData(BattleArenaViewSchema, await view(a, uuid))
       expect(done).toMatchObject({ status: 'finished', question: null, secondsLeft: 0, index: 10, result: { winner: 'A', scoreA: total, scoreB: 0 } })
-      // FR-GM-00.3, 48 section 3.4 rule 3: against the robot 7 x 10 + the play XP, no win XP and no win bonus
-      expect(t.reports.at(-1)).toEqual({ userId: a.id, game: 'battle', event: 'win', coins: 7, xp: 75, correct: 7, total: 10, session: uuid })
+      // M14 report (AC 12): the caller, coins 0, xp 0
+      expect(t.reports.at(-1)).toEqual({ userId: a.id, game: 'battle', event: 'win', coins: 0, xp: 0, correct: 7, total: 10, isTest: false })
     })
 
     it('time is the server\'s: the client cannot answer faster than the clock (question 1 from the battle start, then from the previous answer)', async () => {
@@ -164,10 +143,9 @@ describe('arena (M16-16, M16-17)', () => {
       t.clock.advance(18_000)
       const r3 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
       expect(parseData(BattleAnswerResultSchema, r3).points).toBe(battleArenaPoints(15))
-      // 19 s: a timeout, still stored, the battle moves on (the question was read in time: a later poll moves the clock too)
-      const fourth = await questionOf(a, uuid)
+      // 19 s: a timeout, still stored, the battle moves on
       t.clock.advance(19_000)
-      const r4 = await answer(a, uuid, { questionId: fourth, optionId: 1, seconds: 0 })
+      const r4 = await answer(a, uuid, { questionId: await questionOf(a, uuid), optionId: 1, seconds: 0 })
       expect(parseData(BattleAnswerResultSchema, r4)).toMatchObject({ correct: false, points: 0, correctOptionId: 1 })
       const stored = await rows<{ seconds: number; points: number; option_id: number | null; created_at: Date }>(`select seconds, points, option_id, created_at from battle_answers where battle_id = $1 and user_id = $2 order by position`, [uuid, a.id])
       expect(stored.map((r) => r.seconds)).toEqual([8, 6, 15, 15])
@@ -188,7 +166,7 @@ describe('arena (M16-16, M16-17)', () => {
       setAccuracy(0)
       const zero = await botBattle(a, s.math)
       const zeroRes = await play(a, zero, ten(0, 5))
-      expect(zeroRes[9]?.result).toMatchObject({ winner: 'B', scoreA: 0, scoreB: 0 })
+      expect(zeroRes[9]?.result).toEqual({ winner: 'B', scoreA: 0, scoreB: 0 })
       expect(t.reports.at(-1)).toMatchObject({ event: 'finish', correct: 0 })
       // B wins: the bot answers right, the pupil wrong
       setAccuracy(1)
@@ -223,7 +201,7 @@ describe('arena (M16-16, M16-17)', () => {
         expect(r.opponent).toEqual({ answered: true, correct: true, score: running })
       })
       const stored = await rows<{ position: number; seconds: number; correct: boolean; points: number; is_bot: boolean }>(
-        `select position, seconds, correct, points, user_id is null as is_bot from battle_answers where battle_id = $1 and user_id is null order by position`,
+        `select a.position, a.seconds, a.correct, a.points, p.is_bot from battle_answers a join battle_participants p on p.battle_id = a.battle_id and p.user_id = a.user_id where a.battle_id = $1 and p.is_bot order by a.position`,
         [uuid],
       )
       expect(stored.map((r) => [r.seconds, r.correct, r.points])).toEqual(bot.map((x) => [x.seconds, x.correct, x.points]))
@@ -324,16 +302,15 @@ describe('arena (M16-16, M16-17)', () => {
   })
 
   describe('Mod Pelajar (is_test)', () => {
-    it('a test battle plays the same and reports nothing (AC-GM-00.12)', async () => {
+    it('a test battle plays the same and reports isTest', async () => {
       setAccuracy(0)
       const admin = await client(t, 'admin@demo.test', { modPelajar: true })
       const uuid = await botBattle(admin, s.math)
-      const before = t.reports.length
       const results = await play(admin, uuid, ten(1, 0))
       // a staff account has no grade, so the pool is every level: the seeded questions have other keys than B
       expect(results[9]?.result).toMatchObject({ winner: 'A', scoreB: 0 })
       expect(results[9]?.result?.scoreA).toBeGreaterThan(0)
-      expect(t.reports.length).toBe(before)
+      expect(t.reports.at(-1)).toMatchObject({ userId: admin.id, isTest: true })
       const [b2] = await rows<{ is_test: boolean }>(`select is_test from battles where id = $1`, [uuid])
       expect(b2?.is_test).toBe(true)
     })

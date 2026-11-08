@@ -15,7 +15,7 @@ import {
   type Client,
   type GamesTestApp,
 } from '../helpers'
-import { FORM, P, createRoom, insertShortMcqs, parseRoom, fillAndStart } from './support'
+import { FORM, P, createRoom, insertShortMcqs, parseRoom } from './support'
 
 const M = GAMES_MESSAGES
 
@@ -105,7 +105,8 @@ describe('admin game settings (M16-51, M16-52)', () => {
         (await admin.put('/api/admin/games/settings', { boardgame_quiz_tiles: tiles })).status,
       ).toBe(200)
       const code = await createRoom(student, 'papan-bijak', { ...FORM, max_players: 2 })
-      const v = parseRoom(await fillAndStart(t, student, 'papan-bijak', code))
+      await student.get(P('papan-bijak', code))
+      const v = parseRoom(await student.post(P('papan-bijak', code, '/start')))
       const board = v.state?.board ?? []
       expect(board.filter((x) => x === 'quiz')).toHaveLength(tiles)
       expect(board.filter((x) => x === 'plain')).toHaveLength(plain)

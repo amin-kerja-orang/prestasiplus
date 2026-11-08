@@ -53,18 +53,12 @@ describe('own battle history (M16-21)', () => {
     expect(times).toEqual([...times].sort((a, b) => b - a))
   })
 
-  it('a robot side (DM-60: no user) is listed with no id and the robot name (FR-MUR-21-9)', async () => {
+  it('a robot side (DM-60: no user) is listed with no id and the fallback name', async () => {
     const uuid = await addBattle(t.db, { a: S.PELAJAR, b: S.D1(1), scoreA: 3000, scoreB: 1000, at: '2026-10-20T10:00:00+08:00' })
     await t.db.query(`update battle_participants set user_id = null, is_bot = true where battle_id = $1::uuid and side = 'B'`, [uuid])
     const rows = await history()
     expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ uuid, playerA: { id: await userIdOf(t.db, S.PELAJAR) }, playerB: { id: null, name: 'Robot PrestasiPlus' } })
-  })
-
-  it('FR-MUR-21-9: a seat marked is_bot from before FR-GM-00.4 shows the robot, never the pupil it still points at', async () => {
-    const uuid = await addBattle(t.db, { a: S.PELAJAR, b: S.D1(1), scoreA: 3000, scoreB: 1000, at: '2026-10-20T10:00:00+08:00', botB: true })
-    const rows = await history()
-    expect(rows.find((r) => r.uuid === uuid)?.playerB).toEqual({ id: null, name: 'Robot PrestasiPlus' })
+    expect(rows[0]).toMatchObject({ uuid, playerA: { id: await userIdOf(t.db, S.PELAJAR) }, playerB: { id: null, name: 'Pelajar' } })
   })
 
   it('row shape: A is the first side, B the second, winner A|B|null, createdAt in +08:00, homeHere false, names only', async () => {
@@ -74,17 +68,15 @@ describe('own battle history (M16-21)', () => {
     await addBattle(t.db, { a: S.PELAJAR, b: S.D2(1), scoreA: 0, scoreB: 0, at: '2026-10-19T10:00:00+08:00' }) // 0-0 goes to B
     const res = await getAs(me, '/battle/history')
     const rows = Envelope.parse(res.body).data
-    // FR-GM-00.8: the other pupil has no id and only a first given name, also in the pupil's own battles
-    expect(rows[0]).toMatchObject({ playerA: { id: null, homeHere: false }, playerB: { id: me1 }, scoreA: 3000, scoreB: 3000, winner: null })
+    expect(rows[0]).toMatchObject({ playerA: { id: other, homeHere: false }, playerB: { id: me1 }, scoreA: 3000, scoreB: 3000, winner: null })
     expect(rows[0]!.createdAt).toBe('2026-10-20T10:00:00.000+08:00')
-    expect(rows[1]).toMatchObject({ playerA: { id: me1, homeHere: false }, playerB: { id: null }, winner: 'B' })
+    expect(rows[1]).toMatchObject({ playerA: { id: me1, homeHere: false }, playerB: { id: other }, winner: 'B' })
     const raw = (res.body as { data: Record<string, unknown>[] }).data[0]!
     expect(Object.keys(raw).sort()).toEqual(['createdAt', 'playerA', 'playerB', 'scoreA', 'scoreB', 'uuid', 'winner'])
     expect(Object.keys(raw.playerA as object).sort()).toEqual(['homeHere', 'id', 'name'])
     expect(Object.keys(raw.playerB as object).sort()).toEqual(['id', 'name'])
-    const [mine, theirs] = await Promise.all([me1, other].map(async (id) => (await t.db.query<{ name: string }>(`select name from users where id = $1`, [id]))[0]!.name))
-    expect(rows[0]!.playerB.name).toBe(mine)
-    expect(rows[0]!.playerA.name).toBe(theirs!.split(' ')[0])
+    const names = await t.db.query<{ name: string }>(`select name from users where id in ($1, $2)`, [me1, other])
+    expect(new Set(names.map((n) => n.name))).toEqual(new Set([rows[0]!.playerA.name, rows[0]!.playerB.name]))
   })
 
   it('a pupil who was only the bot side never sees that battle; the human side does', async () => {

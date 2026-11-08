@@ -15,12 +15,10 @@ import {
   BOARD_STEP,
   KR_ROUNDS,
   MATHRACE_STEPS,
-  PB_MAX_ROUNDS,
 } from './constants'
 import { chance, cmpId, shuffle } from './rng'
 import {
   EngineRefusal,
-  type AnsweredQuestion,
   type EngineOut,
   type EnginePlayer,
   type EngineRoom,
@@ -36,8 +34,6 @@ interface Ctx {
   s: RoomState
   streams: StreamFactory
   p: number
-  nowMs: number
-  answered: AnsweredQuestion[]
 }
 
 const defaultStreams: StreamFactory = (name) => prngStream(name)
@@ -53,17 +49,6 @@ const nextQ = (c: Ctx): string => {
   return id
 }
 const clampSeconds = (v: number): number => Math.min(15, Math.max(0, Math.floor(v)))
-
-/** Notes one answer of the acting human for the answer store; `timedOut` is a wrong answer that is no answer for the pace guard. */
-function logAnswer(c: Ctx, questionId: string, correct: boolean, timedOut: boolean): void {
-  const position = (c.s.answerCount ?? 0) + 1
-  c.s.answerCount = position
-  if (!timedOut) (c.s.answerMs ??= []).push(c.nowMs)
-  c.answered.push({ questionId, position, correct, atMs: c.nowMs })
-}
-
-/** An answer with no pick and no value: the client's explicit "time ran out", or the server's. */
-const noPick = (a: Answer): boolean => a.optionId === null && a.value === undefined
 
 export function emptyState(humanId: string, seed: string): RoomState {
   return {
@@ -122,8 +107,6 @@ export function startGame(input: StartInput): EngineOut {
     s: emptyState(input.humanId, input.seed),
     streams,
     p: input.p,
-    nowMs: input.nowMs,
-    answered: [],
   }
   c.s.qIds = pool.map((q) => q.id)
   for (const q of pool) {
@@ -238,8 +221,6 @@ export function applyAction(input: ActionInput): EngineOut {
     s: structuredClone(input.state),
     streams: input.streams ?? defaultStreams,
     p: input.p,
-    nowMs: input.nowMs,
-    answered: [],
   }
   if (action.type === 'roll') {
     if (room.game !== 'papan-bijak' || c.s.awaiting !== 'roll') {
@@ -288,8 +269,8 @@ export interface TimeoutInput {
 }
 
 /**
- * Time ran out for the room's clock (FR-GM-00.7): a Perang Fakta round advances as a no-vote of the acting player; a Teka
- * Silang Kata game ends with the words found so far; a Papan Bijak roll rolls itself; any other question is a wrong answer.
+ * Time ran out for the room's clock (BR-M16-20): a Perang Fakta round advances as a no-vote of the acting player;
+ * a Teka Silang Kata game ends with the words found so far.
  */
 export function applyTimeout(input: TimeoutInput): EngineOut {
   const { room } = input
@@ -299,33 +280,23 @@ export function applyTimeout(input: TimeoutInput): EngineOut {
     s: structuredClone(input.state),
     streams: input.streams ?? defaultStreams,
     p: input.p,
-    nowMs: input.roundStartMs,
-    answered: [],
   }
   if (room.game === 'perang-fakta' && c.s.awaiting === 'answer') {
-    return stamp(input.state, pfAdvance(c, false, true), input.roundStartMs)
-  }
-  if (room.game === 'papan-bijak' && c.s.awaiting === 'roll') {
-    return stamp(input.state, pbRoll(c), input.roundStartMs)
-  }
-  if (c.s.awaiting === 'answer' && c.s.pendingQ !== null && room.game !== 'teka-silang-kata') {
-    const noAnswer: Answer = { type: 'answer', questionId: c.s.pendingQ, optionId: null, value: undefined, seconds: 15 }
-    const timedOut = room.game === 'papan-bijak' ? pbAnswer(c, noAnswer) : room.game === 'benteng-ilmu' ? bentengAnswer(c, noAnswer) : room.game === 'perlumbaan-matematik' ? mathraceAnswer(c, noAnswer) : relayAnswer(c, noAnswer)
-    return stamp(input.state, timedOut, input.roundStartMs)
+    return stamp(input.state, pfAdvance(c, false), input.roundStartMs)
   }
   if (room.game === 'teka-silang-kata') {
-    // AC-GM-07.3: the words not attempted at 300 s are wrong and written as timeouts.
-    for (const word of c.s.words.slice(c.s.round - 1)) logAnswer(c, word.qId, false, true)
     c.s.winnerId = topWinner(c, (x) => x.points)
     return stamp(input.state, finish(c), input.roundStartMs)
   }
   throw new EngineRefusal('conflict', 'Tiada jam untuk permainan ini.')
 }
 
-/** The round clock restarts when the round, the Papan Bijak turn or what the room awaits changes (and at the start). */
+/** The round clock restarts when the round number changes (and at the start). */
 function stamp(prev: RoomState | null, out: EngineOut, startMs: number): EngineOut {
-  const same = prev && prev.round === out.state.round && prev.turn === out.state.turn && prev.awaiting === out.state.awaiting
-  out.state.roundStartedMs = same && prev.roundStartedMs !== null ? prev.roundStartedMs : startMs
+  out.state.roundStartedMs =
+    prev && prev.roundStartedMs !== null && prev.round === out.state.round
+      ? prev.roundStartedMs
+      : startMs
   return out
 }
 
@@ -360,13 +331,13 @@ function run(c: Ctx): EngineOut {
 
 function out(c: Ctx): EngineOut {
   const finished = c.s.awaiting === null && c.s.pendingQ === null
-  return { state: c.s, players: c.players, finished, answered: c.answered }
+  return { state: c.s, players: c.players, finished }
 }
 
 function finish(c: Ctx): EngineOut {
   c.s.awaiting = null
   c.s.pendingQ = null
-  return { state: c.s, players: c.players, finished: true, answered: c.answered }
+  return { state: c.s, players: c.players, finished: true }
 }
 
 /** The winner with the highest `of` value; a tie has no winner. */
@@ -408,16 +379,9 @@ function pbSettle(c: Ctx): EngineOut {
   return finish(c)
 }
 
-/** 48 GAME-02: the safety rule: the highest tile wins, equal highest tiles are a draw. */
-function pbSafety(c: Ctx): EngineOut {
-  c.s.winnerId = topWinner(c, (x) => c.s.positions[x.userId] ?? 1)
-  return pbSettle(c)
-}
-
 function pbRun(c: Ctx): EngineOut {
   for (let i = 0; i < 600; i++) {
     if (c.s.winnerId !== null) return pbSettle(c)
-    if (c.s.turn >= PB_MAX_ROUNDS * c.players.length) return pbSafety(c)
     const pl = c.players[c.s.turn % c.players.length] as EnginePlayer
     if (pl.userId === c.s.humanId) {
       c.s.awaiting = 'roll'
@@ -453,9 +417,7 @@ function pbRoll(c: Ctx): EngineOut {
 
 function pbAnswer(c: Ctx, a: Answer): EngineOut {
   const pl = human(c)
-  const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) pl.correct += 1
+  if (mcqRight(c, c.s.pendingQ as string, a.optionId)) pl.correct += 1
   else c.s.positions[pl.userId] = c.s.meter[pl.userId] ?? 1
   c.s.pendingQ = null
   c.s.awaiting = null
@@ -476,12 +438,11 @@ function pfAnswer(c: Ctx, a: Answer): EngineOut {
     throw new EngineRefusal('validation', 'Jawapan tidak sah.', 'value')
   }
   const fact = c.s.facts[c.s.round - 1] as { isTrue: boolean }
-  return pfAdvance(c, vote !== null && vote === fact.isTrue, timeout)
+  return pfAdvance(c, vote !== null && vote === fact.isTrue)
 }
 
-function pfAdvance(c: Ctx, humanRight: boolean, timedOut: boolean): EngineOut {
+function pfAdvance(c: Ctx, humanRight: boolean): EngineOut {
   const me = human(c)
-  logAnswer(c, c.s.pendingQ as string, humanRight, timedOut)
   if (humanRight) {
     me.correct += 1
     me.points += 1
@@ -507,9 +468,7 @@ function bentengAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
   const foe = others(c)[0] as EnginePlayer
   const hp = (pl: EnginePlayer): number => c.s.meter[pl.userId] ?? BENTENG_HP
-  const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) {
+  if (mcqRight(c, c.s.pendingQ as string, a.optionId)) {
     me.correct += 1
     me.points += 10
     c.s.meter[foe.userId] = hp(foe) - BENTENG_DAMAGE
@@ -546,9 +505,7 @@ function bentengAnswer(c: Ctx, a: Answer): EngineOut {
 
 function mathraceAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
-  const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) {
+  if (mcqRight(c, c.s.pendingQ as string, a.optionId)) {
     me.correct += 1
     c.s.meter[me.userId] = (c.s.meter[me.userId] ?? 0) + 1
   }
@@ -611,9 +568,7 @@ function relayRun(c: Ctx): EngineOut {
 
 function relayAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
-  const right = mcqRight(c, c.s.pendingQ as string, a.optionId)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) {
+  if (mcqRight(c, c.s.pendingQ as string, a.optionId)) {
     const gain = relayScore(clampSeconds(a.seconds))
     me.correct += 1
     me.points += gain
@@ -641,9 +596,7 @@ function relayEnd(c: Ctx): EngineOut {
 function crosswordAnswer(c: Ctx, a: Answer): EngineOut {
   const me = human(c)
   const word = c.s.words[c.s.round - 1] as { answer: string }
-  const right = typeof a.value === 'string' && norm(a.value) === norm(word.answer)
-  logAnswer(c, c.s.pendingQ as string, right, noPick(a))
-  if (right) {
+  if (typeof a.value === 'string' && norm(a.value) === norm(word.answer)) {
     me.correct += 1
     me.points += 1
     c.s.meter[me.userId] = (c.s.meter[me.userId] ?? 0) + 1

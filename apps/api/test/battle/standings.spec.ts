@@ -194,37 +194,15 @@ describe('battle standings (M16-18, M16-19)', () => {
       expect(rows.map((r) => r.rank)).toEqual(rows.map((_, i) => i + 1))
     })
 
-    it('a played battle against Robot PrestasiPlus (a seat with no user, counts_for_ranking = false) is absent: the human earns no row either', async () => {
+    it('a bot side earns no standing; the human side of the same battle counts normally', async () => {
       const at = '2026-10-20T10:00:00+08:00'
-      await addBattle(t.db, { a: S.D1(1), b: '', robotB: true, scoreA: 9000, scoreB: 3000, at })
-      expect(await students()).toEqual([])
-      expect((await schools()).rows).toEqual([])
-      expect((await schools('?period=monthly')).rows).toEqual([])
-      // The same pupil in a battle against another pupil ranks, and only that battle counts.
-      await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 5000, scoreB: 100, at })
+      // D1(2) is only the simulated opponent and wins on points: no row for D1(2).
+      await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 3000, scoreB: 9000, at, botB: true })
       const rows = await students()
-      expect(rows.map((r) => [r.userId, r.menang, r.kalah, r.skor])).toEqual([
-        [await userIdOf(t.db, S.D1(1)), 1, 0, 50],
-        [await userIdOf(t.db, S.D1(2)), 0, 1, 1],
-      ])
-    })
-
-    it('a robot seat does not make a ranked battle: counts_for_ranking = false excludes even a battle with two pupil seats', async () => {
-      await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 5000, scoreB: 100, at: '2026-10-20T10:00:00+08:00', countsForRanking: false })
-      expect(await students()).toEqual([])
-    })
-
-    it('a finished human-vs-human battle (both seats real pupils, counts_for_ranking = true) counts: both pupils appear, weekly and monthly', async () => {
-      const at = '2026-10-20T10:00:00+08:00'
-      await addBattle(t.db, { a: S.D1(1), b: S.D1(2), scoreA: 7000, scoreB: 3000, at, countsForRanking: true })
-      const ids = [await userIdOf(t.db, S.D1(1)), await userIdOf(t.db, S.D1(2))]
-      for (const q of ['', '?period=monthly']) {
-        const rows = await students(q)
-        expect(rows.map((r) => [r.userId, r.menang, r.seri, r.kalah, r.skor]), q).toEqual([
-          [ids[0], 1, 0, 0, 70],
-          [ids[1], 0, 0, 1, 30],
-        ])
-      }
+      expect(rows.map((r) => [r.userId, r.menang, r.kalah, r.skor])).toEqual([[await userIdOf(t.db, S.D1(1)), 0, 1, 30]])
+      // The same pupil playing as a human elsewhere still ranks.
+      await addBattle(t.db, { a: S.D1(2), b: S.D1(3), scoreA: 5000, scoreB: 100, at })
+      expect((await students()).map((r) => r.userId)).toContain(await userIdOf(t.db, S.D1(2)))
     })
 
     it('shows the CURRENT school of the student, whatever school the participant row stored', async () => {

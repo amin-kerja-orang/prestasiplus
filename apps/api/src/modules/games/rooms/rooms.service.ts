@@ -1,17 +1,14 @@
 import { randomUUID } from 'node:crypto'
 
-import { Inject, Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
+import { Inject, Injectable } from '@nestjs/common'
 import {
   GamesRoomActionRequestSchema,
   GamesRoomGameSchema,
-  GAMES_ROBOT_NAME,
   GAMES_ROOM_LIMITS,
   gamesRoomCreateRequestFor,
   gamesRoomMaxPlayers,
   type GamesHub,
   type GamesLobby,
-  type GamesReward,
   type GamesRoomGame,
   type GamesRoomSubject,
   type GamesRoomView,
@@ -19,7 +16,6 @@ import {
 } from '@pp/contract'
 
 import { ApiError } from '../../../common/errors/api-error'
-import { toMytTimestamp } from '../../../common/time/myt'
 import type { TxClient } from '../../../db/client'
 import { CLOCK, type Clock } from '../../../db/clock'
 import { PrismaService } from '../../../db/prisma.service'
@@ -38,14 +34,12 @@ import {
 } from '../errors'
 import { DEFAULT_QUIZ_TILES } from '../games.constants'
 import { NamePrivacy } from '../core/name-privacy.service'
-import { GamesPorts, gameAnswerEntry } from '../core/ports'
+import { GamesPorts } from '../core/ports'
 import { GameQuestions } from '../core/game-questions.service'
 import { GameSettingsService } from '../core/game-settings.service'
 import { GameSubjects } from '../core/subjects'
-import { PACE_GUARD_REWARD, rewardBlock, rewardNow } from '../core/wallet-rewards'
 import { GameUsers, type GameUser } from '../core/game-users'
 import { enumOfGrade, gradeFits, gradeLabel, gradeName } from '../core/grades'
-import { startGameSweep } from '../core/time'
 import { initialsOf, kadarOf, truncateName } from '../core/names'
 import {
   applyAction,
@@ -54,7 +48,6 @@ import {
   POOL_SIZE,
   questionView,
   resolveClocks,
-  roundEndsAtMs,
   startGame,
   stateView,
   type EngineOut,
@@ -64,7 +57,7 @@ import {
   type RoomAction,
   type RoomState,
 } from './engine'
-import { DEFAULT_GRADE, hasFastGap, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
+import { DEFAULT_GRADE, JUTAWAN_QUESTIONS, SOLO_INFO } from '../solo/play/solo.rules'
 import { RoomSecrets } from './room-secrets'
 import { type PlayerRow, type RoomRow, RoomsRepository } from './rooms.repository'
 
@@ -123,15 +116,8 @@ export interface NewRoomInput {
 
 const CREATE_RANK = ['subject', 'grade_level', 'match_mode', 'grade_min', 'max_players']
 
-/** The shortest clock of a room (Perang Fakta): a room moved more recently has nothing due. */
-const SHORTEST_CLOCK_MS = 10_000
-const SWEEP_ROOMS = 200
-
 @Injectable()
-export class RoomsService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RoomsService.name)
-  private stopSweep: () => void = () => undefined
-
+export class RoomsService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RoomsRepository) private readonly repo: RoomsRepository,
@@ -143,36 +129,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(RoomSecrets) private readonly secrets: RoomSecrets,
     @Inject(GameSettingsService) private readonly settings: GameSettingsService,
-    @Inject(ConfigService) private readonly config: ConfigService,
   ) {}
-
-  onModuleInit(): void {
-    this.stopSweep = startGameSweep(RoomsService.name, this.config.get<string>('NODE_ENV'), () => this.sweepClocks())
-  }
-
-  onModuleDestroy(): void {
-    this.stopSweep()
-  }
-
-  /** FR-GM-00.7: one pass over the rooms with no poller; every room takes its lock and re-checks. Returns how many moved. */
-  async sweepClocks(): Promise<number> {
-    const codes = await this.repo.playingIdleSince(new Date(this.clock.now().getTime() - SHORTEST_CLOCK_MS), SWEEP_ROOMS)
-    let moved = 0
-    for (const code of codes) {
-      try {
-        const changed = await this.prisma.transaction(async (tx) => {
-          await this.repo.lock(code)
-          const room = await this.repo.room(code)
-          if (room?.status !== 'playing') return false
-          return (await this.runClocks(tx, room, await this.repo.players(code))).room !== room
-        })
-        if (changed) moved += 1
-      } catch (err) {
-        this.logger.warn(`Room clock failed for ${code}: ${err instanceof Error ? err.message : String(err)}`)
-      }
-    }
-    return moved
-  }
 
   // --- hub and lobby ---------------------------------------------------------------------------------------
 
@@ -321,7 +278,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         seed,
       )
       if (inserted) {
-        await this.repo.addPlayer(code, host.userId, host.isTest, now)
+        await this.repo.addPlayer(code, host.userId, false, host.isTest, now)
         return code
       }
     }
@@ -342,19 +299,15 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const ps = await this.repo.players(code)
       if (ps.some((p) => p.userId === caller.userId)) return { code }
       const viewer = await this.users.get(caller.userId)
-      const robots = ps.filter((p) => p.robot !== null)
       if (
         room.status !== 'waiting' ||
-        ps.length - robots.length >= room.maxPlayers ||
+        ps.length >= room.maxPlayers ||
         !gradeFits(room, viewer?.grade ?? null) ||
         room.isTest !== caller.isTest // no mixed rooms: test actors and normal users never share one
       ) {
         throw roomNotFound()
       }
-      // 48 section 3.6, humans first: a pupil takes the seat of a robot, so a robot never blocks a join.
-      const seatToFree = robots.at(-1)
-      if (seatToFree) await this.repo.removeSeat(seatToFree.id)
-      await this.repo.addPlayer(code, caller.userId, caller.isTest, this.clock.now())
+      await this.repo.addPlayer(code, caller.userId, false, caller.isTest, this.clock.now())
       return { code }
     })
   }
@@ -384,8 +337,13 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.transaction(async (tx) => {
       await this.repo.lock(probe.room.code)
       let { room, players } = await this.mustPlayer(caller, game, rawCode)
-      if (room.status === 'waiting' && room.hostId === caller.userId) {
-        players = await this.robotsAfterWait(room, players)
+      if (
+        room.status === 'waiting' &&
+        room.hostId === caller.userId &&
+        players.length < GAMES_ROOM_LIMITS[game].minPlayers
+      ) {
+        await this.addBot(room, players)
+        players = await this.repo.players(room.code)
       }
       if (room.status === 'playing') {
         const after = await this.runClocks(tx, room, players)
@@ -404,10 +362,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     return this.prisma.transaction(async (tx) => {
       const probe = await this.mustPlayer(caller, game, rawCode)
       await this.repo.lock(probe.room.code)
-      const { room, players: seated } = await this.mustPlayer(caller, game, rawCode)
+      const { room, players } = await this.mustPlayer(caller, game, rawCode)
       if (room.hostId !== caller.userId) throw startHostOnly()
       if (room.status !== 'waiting') throw startAlreadyStarted()
-      const players = await this.robotsAfterWait(room, seated)
       if (players.length < GAMES_ROOM_LIMITS[game].minPlayers) throw startNotEnoughPlayers()
       const pool = await this.drawPool(room, game)
       const now = this.clock.now()
@@ -476,7 +433,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       if (before.room.status === 'playing' && clocked.room.status === 'finished')
         return this.viewOf(caller, clocked.room, clocked.players)
       const { room, players } = clocked
-      const movedByClock = room !== before.room
       if (room.status !== 'playing' || !room.state) throw actionNotStarted()
       if (room.state.humanId !== caller.userId) throw actionNotYourTurn()
       try {
@@ -491,9 +447,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         const done = await this.applyOut(tx, room, players, out)
         return this.viewOf(caller, done.room, done.players)
       } catch (e) {
-        // The clock moved the room during this request, so the action was for a turn that has passed: a refusal would roll
-        // the timeouts back. They commit and the pupil gets the room as it now stands.
-        if (movedByClock && e instanceof EngineRefusal) return this.viewOf(caller, room, players)
         throw mapRefusal(e)
       }
     })
@@ -526,7 +479,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       state: res.state,
       players: res.players,
       finished: res.finished,
-      answered: res.answered,
     })
   }
 
@@ -541,24 +493,8 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     out: EngineOut,
   ): Promise<{ room: RoomRow; players: PlayerRow[] }> {
     const now = this.clock.now()
-    // FR-GM-00.5, 48 section 3.5: in the same transaction as the state change; Mod Pelajar writes no row.
-    if (!room.isTest) {
-      for (const a of out.answered ?? []) {
-        await this.ports.answers.record(
-          gameAnswerEntry({
-            userId: out.state.humanId,
-            attemptId: room.sessionId,
-            questionId: a.questionId,
-            gameKey: room.game,
-            position: a.position,
-            isCorrect: a.correct,
-            answeredAt: new Date(a.atMs),
-          }),
-        )
-      }
-    }
     for (const ep of out.players) {
-      const row = players.find((p) => p.seat === ep.userId)
+      const row = players.find((p) => p.userId === ep.userId)
       if (row)
         await this.repo.updatePlayer(row.id, {
           team: ep.team,
@@ -567,7 +503,7 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         })
     }
     const nextPlayers = players.map((p) => {
-      const ep = out.players.find((x) => x.userId === p.seat)
+      const ep = out.players.find((x) => x.userId === p.userId)
       return ep ? { ...p, team: ep.team, points: ep.points, correct: ep.correct } : p
     })
     if (!out.finished) {
@@ -609,22 +545,25 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     const game = room.game as GamesRoomGame
     const s = computeSettlement({ code: room.code, game, state: out.state, players: out.players })
     const now = this.clock.now()
-    const byId = new Map(players.map((p) => [p.seat, p]))
+    const byId = new Map(players.map((p) => [p.userId, p]))
     for (const d of s.standings) {
       if (byId.get(d.userId)?.isTest || (d.wins === 0 && d.jumlah === 0)) continue
       await this.repo.bumpStanding(game, d.userId, d, now)
     }
     const r = s.report
     if (!r || byId.get(r.userId)?.isTest) return // the Mod Pelajar actor never earns: no reward call at all
-    if (await this.paceTripped(room, out.state)) return // 48 section 3.4 rule 5: stored and scored, credits nothing
-    const reward = await rewardNow(this.settings, tx, { correct: r.correct, outcome: r.outcome, robotsOnly: r.robotsOnly, fastGap: false })
+    let coins = r.coins
+    if (coins === undefined) {
+      const rates = await this.ports.rewards.tierRates(r.userId, { tx })
+      coins = r.correct * rates.correct + (r.won ? rates.win : 0)
+    }
     await this.ports.rewards.onGameResult(
       r.userId,
       {
         game: r.game,
         event: r.event,
-        coins: reward.coins,
-        xp: reward.xp,
+        coins,
+        xp: 0,
         correct: r.correct,
         total: r.total,
         detail: r.detail,
@@ -635,35 +574,19 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
     )
   }
 
-  /** Rule 5 of 48 section 3.4: a gap between the acting human's answers (the first: from the start) is under the minimum. */
-  private async paceTripped(room: RoomRow, st: RoomState): Promise<boolean> {
-    const times = (st.answerMs ?? []).map((ms) => new Date(ms))
-    return hasFastGap(room.startedAt ?? room.createdAt, times, await this.settings.get('games_min_ms_per_answer'))
-  }
-
-  /** The reward block of the finished room for the acting human; nothing for a seat that did not play or for Mod Pelajar. */
-  private async rewardOf(caller: Caller, room: RoomRow, st: RoomState): Promise<GamesReward | undefined> {
-    if (room.isTest || st.humanId !== caller.userId) return undefined
-    const first = await this.ports.rewards.firstGameResult(room.sessionId, caller.userId)
-    if (first) return rewardBlock(first)
-    return (await this.paceTripped(room, st)) ? PACE_GUARD_REWARD : undefined
-  }
-
-  /** 48 GAME-R: the robots of a room that has waited `battle_bot_fallback_seconds` below its minimum; else the seats as they are. */
-  private async robotsAfterWait(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
-    const waited = this.clock.now().getTime() - room.createdAt.getTime()
-    const seconds = await this.settings.get('battle_bot_fallback_seconds')
-    return waited >= seconds * 1000 ? this.addRobots(room, players) : players
-  }
-
-  /** One robot per seat missing to the minimum, when robots are on (`games_room_bots_enabled`; a fallback of 0 is "never a robot", 48 section 2). */
-  async addRobots(room: RoomRow, players: PlayerRow[]): Promise<PlayerRow[]> {
-    const missing = GAMES_ROOM_LIMITS[room.game as GamesRoomGame].minPlayers - players.length
-    if (missing <= 0) return players
-    const s = await this.settings.getMany(['games_room_bots_enabled', 'battle_bot_fallback_seconds'])
-    if (s.games_room_bots_enabled !== 1 || s.battle_bot_fallback_seconds === 0) return players
-    for (let i = 0; i < missing; i++) await this.repo.addRobot(room.code, room.isTest, this.clock.now())
-    return this.repo.players(room.code)
+  /** One fictitious student of a fitting grade not yet in the room (BR-M16-19); none when the pool is empty. */
+  async addBot(room: RoomRow, players: PlayerRow[]): Promise<void> {
+    const exclude = players.map((p) => p.userId)
+    const stream = `m16:room:${room.code}:${seedOf(room, this.secrets)}:bot:${String(players.length)}`
+    const pick =
+      (await this.ports.botPool.pick({
+        hostId: room.hostId,
+        fits: (g) => gradeFits(room, g),
+        exclude,
+        stream,
+      })) ??
+      (await this.ports.botPool.pick({ hostId: room.hostId, fits: () => true, exclude, stream }))
+    if (pick) await this.repo.addPlayer(room.code, pick.id, true, room.isTest, this.clock.now())
   }
 
   /** Draws the question pool through BE-09 for the room subject and level, widening like the mock. */
@@ -705,8 +628,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
 
   private async viewOf(caller: Caller, room: RoomRow, players: PlayerRow[]): Promise<GamesRoomView> {
     const game = room.game as GamesRoomGame
-    const ids = [room.hostId, ...players.flatMap((p) => (p.userId === null ? [] : [p.userId]))]
+    const ids = [room.hostId, ...players.map((p) => p.userId)]
     const st = room.status === 'waiting' ? null : room.state // a waiting room only stores its secret seed
+    if (st?.winnerId) ids.push(st.winnerId)
     const names = await this.users.getMany(ids)
     // Children's names rule: players, host, winner and scores show a name the caller may see, else first given name.
     // Ids stay: they key `state.positions` / `meter` and `humanId`, which the room client needs to draw the game.
@@ -715,9 +639,6 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       const u = names.get(id)
       return u ? seen.name(u) : ''
     }
-    // A robot is never shown as a person, also on a seat from before FR-GM-00.4 that still points at a pupil.
-    const seatName = (p: PlayerRow): string =>
-      p.robot !== null ? `${GAMES_ROBOT_NAME} ${String(p.robot)}` : nameOf(p.seat)
     const nowMs = this.clock.now().getTime()
     const view: GamesRoomView = {
       code: room.code,
@@ -725,9 +646,9 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
       status: room.status as GamesRoomView['status'],
       host: { id: room.hostId, name: nameOf(room.hostId) },
       players: players.map((p) => ({
-        id: p.seat,
-        name: seatName(p),
-        grade: p.robot === null ? gradeLabel((names.get(p.seat) as GameUser | undefined)?.grade ?? null) : '',
+        id: p.userId,
+        name: nameOf(p.userId),
+        grade: gradeLabel((names.get(p.userId) as GameUser | undefined)?.grade ?? null),
         ...(p.team === null ? {} : { team: p.team }),
         points: p.points,
         isBot: p.isBot,
@@ -746,25 +667,20 @@ export class RoomsService implements OnModuleInit, OnModuleDestroy {
         : null,
     }
     if (st) view.round = st.round
-    const endsAt = st ? roundEndsAtMs(game, room.status, st, room.startedAt ? room.startedAt.getTime() : null) : null
-    if (endsAt !== null) view.roundEndsAt = toMytTimestamp(new Date(endsAt))
     const q = questionView(game, room.status, st)
     if (q) view.question = q
     if (room.status === 'finished' && st) {
-      const winnerSeat = players.find((p) => p.seat === st.winnerId)
       view.result = {
         winnerId: st.winnerId,
-        winnerName: winnerSeat ? seatName(winnerSeat) : null,
+        winnerName: st.winnerId === null ? null : nameOf(st.winnerId),
         mvpId: st.mvpId,
         scores: players.map((p) => ({
-          userId: p.seat,
-          name: seatName(p),
+          userId: p.userId,
+          name: nameOf(p.userId),
           points: p.points,
           correct: p.correct,
         })),
       }
-      const reward = await this.rewardOf(caller, room, st)
-      if (reward) view.result.reward = reward
     }
     return view
   }
@@ -792,7 +708,7 @@ function engineRoom(room: RoomRow): EngineRoom {
 
 function enginePlayers(players: PlayerRow[]): EnginePlayer[] {
   return players.map((p) => ({
-    userId: p.seat,
+    userId: p.userId,
     team: p.team,
     points: p.points,
     correct: p.correct,

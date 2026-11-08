@@ -92,34 +92,30 @@ export interface FixtureBattle {
   /** The listed side is a simulated opponent (a real pupil used as a bot). */
   botA?: boolean
   botB?: boolean
-  /** Side B is Robot PrestasiPlus: a seat with no user, no school, `is_bot`; `b` is ignored (DM-60, 48 section 3.6). */
-  robotB?: boolean
-  /** `battles.counts_for_ranking`; defaults to true (false for every robot battle). */
-  countsForRanking?: boolean
 }
 
 /** Inserts a battle with both participants; students and schools by e-mail / code. Returns the battle uuid. */
 export async function addBattle(db: TestDatabase, f: FixtureBattle): Promise<string> {
   const userA = await userIdOf(db, f.a)
-  const userB = f.robotB ? null : await userIdOf(db, f.b)
+  const userB = await userIdOf(db, f.b)
   const schoolOfUser = async (email: string): Promise<string | null> => {
     const rows = await db.query<{ s: string | null }>(`select school_id::text s from users where lower(email) = lower($1)`, [email])
     return rows[0]?.s ?? null
   }
   const code = async (c: string | null | undefined, email: string): Promise<string | null> =>
-    f.robotB && email === f.b ? null : c === undefined ? schoolOfUser(email) : c === null ? null : await schoolIdOf(db, c)
+    c === undefined ? schoolOfUser(email) : c === null ? null : await schoolIdOf(db, c)
   const winner = f.winner === undefined || f.winner === 'auto' ? (f.scoreA === 0 && f.scoreB === 0 ? 'B' : f.scoreA > f.scoreB ? 'A' : f.scoreB > f.scoreA ? 'B' : null) : f.winner
   const [row] = await db.query<{ id: string }>(
-    `insert into battles (mode, question_type, status, answered, winner, is_test, created_at, finished_at, counts_for_ranking)
-     values ('quick_match', 'biasa', $1, $2, $3, $4, $5, $5, $6) returning id::text`,
-    [f.status ?? 'finished', f.answered ?? 10, winner, f.isTest ?? false, f.at, f.countsForRanking ?? !f.robotB],
+    `insert into battles (mode, question_type, status, answered, winner, is_test, created_at, finished_at)
+     values ('quick_match', 'biasa', $1, $2, $3, $4, $5, $5) returning id::text`,
+    [f.status ?? 'finished', f.answered ?? 10, winner, f.isTest ?? false, f.at],
   )
   const id = row!.id
   const part = f.partIsTest ?? false
   await db.query(
     `insert into battle_participants (battle_id, side, user_id, school_id, score, correct, is_test, is_bot)
      values ($1, 'A', $2, $3, $4, $5, $9, $11), ($1, 'B', $6, $7, $8, $10, $9, $12)`,
-    [id, userA, await code(f.schoolA, f.a), f.scoreA, f.correctA ?? 0, userB, await code(f.schoolB, f.b), f.scoreB, part, f.correctB ?? 0, f.botA ?? false, f.botB ?? f.robotB ?? false],
+    [id, userA, await code(f.schoolA, f.a), f.scoreA, f.correctA ?? 0, userB, await code(f.schoolB, f.b), f.scoreB, part, f.correctB ?? 0, f.botA ?? false, f.botB ?? false],
   )
   return id
 }

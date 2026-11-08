@@ -8,6 +8,7 @@ import { SchoolsModule } from '../schools'
 import { UsersModule } from '../users'
 import { BattleDeps } from './battle.deps'
 import { BattleReadService } from './battle-read.service'
+import { GAME_RESULT_PORT, NoopGameResultPort } from './game-result.port'
 import { BattleRawErrorFilter } from './raw-response'
 
 /**
@@ -16,7 +17,7 @@ import { BattleRawErrorFilter } from './raw-response'
  */
 @Module({
   imports: [ClassesModule, UsersModule, SchoolsModule, CurriculumModule, QuestionsModule, PkskModule],
-  providers: [BattleDeps, BattleReadService, BattleRawErrorFilter],
-  exports: [BattleDeps, BattleReadService, BattleRawErrorFilter],
+  providers: [BattleDeps, BattleReadService, BattleRawErrorFilter, { provide: GAME_RESULT_PORT, useClass: NoopGameResultPort }],
+  exports: [BattleDeps, BattleReadService, BattleRawErrorFilter, GAME_RESULT_PORT],
 })
 export class BattleCoreModule {}

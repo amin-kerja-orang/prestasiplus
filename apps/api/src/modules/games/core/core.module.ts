@@ -3,11 +3,11 @@ import { Module } from '@nestjs/common'
 import { ThrottleModule } from '../../../common/throttle'
 import { ClassesModule } from '../../classes'
 import { CurriculumModule } from '../../curriculum'
-import { PracticeModule } from '../../practice'
 import { QuestionsModule } from '../../questions'
 import { SchoolsModule } from '../../schools'
 import { UsersModule } from '../../users'
 import { WalletModule } from '../../wallet'
+import { SchoolBotPool } from './bot-pool'
 import { GameQuestions } from './game-questions.service'
 import { GameReadService } from './game-read.service'
 import { GameSettingsService } from './game-settings.service'
@@ -23,8 +23,8 @@ import { WalletGameRewards } from './wallet-rewards'
  * curriculum, users, schools), so a sub-module never has to list them. `DbModule` is global.
  */
 @Module({
-  imports: [ThrottleModule, WalletModule, QuestionsModule, CurriculumModule, UsersModule, SchoolsModule, ClassesModule, PracticeModule],
-  providers: [WalletGameRewards, GamesPorts, GameSubjects, GameUsers, NamePrivacy, GameQuestions, GameReadService, GameSettingsService],
+  imports: [ThrottleModule, WalletModule, QuestionsModule, CurriculumModule, UsersModule, SchoolsModule, ClassesModule],
+  providers: [WalletGameRewards, SchoolBotPool, GamesPorts, GameSubjects, GameUsers, NamePrivacy, GameQuestions, GameReadService, GameSettingsService],
   exports: [
     ThrottleModule,
     WalletModule,

@@ -29,12 +29,7 @@ export interface RoomRow {
 
 export interface PlayerRow {
   id: bigint
-  /** What the engine state is keyed by: the user id, or `robot-<n>` for a seat with no user (DM-67). */
-  seat: string
-  /** Null for a robot seat. */
-  userId: string | null
-  /** The number of a robot among the robots of the room, from 1; null for a pupil. */
-  robot: number | null
+  userId: string
   team: number | null
   points: number
   correct: number
@@ -113,22 +108,17 @@ const toRoom = (r: {
   createdAt: r.createdAt,
 })
 
-const toPlayer = (
-  p: {
-    id: bigint
-    userId: bigint | null
-    team: number | null
-    points: number
-    correct: number
-    isBot: boolean
-    isTest: boolean
-  },
-  robot: number | null,
-): PlayerRow => ({
+const toPlayer = (p: {
+  id: bigint
+  userId: bigint
+  team: number | null
+  points: number
+  correct: number
+  isBot: boolean
+  isTest: boolean
+}): PlayerRow => ({
   id: p.id,
-  seat: p.userId === null ? `robot-${String(robot)}` : idToString(p.userId),
-  userId: p.userId === null ? null : idToString(p.userId),
-  robot,
+  userId: idToString(p.userId),
   team: p.team,
   points: p.points,
   correct: p.correct,
@@ -158,25 +148,13 @@ export class RoomsRepository {
     return rows.length > 0
   }
 
-  /** FR-GM-00.7: playing rooms that have not moved since `before`, oldest first (a shorter idle cannot be on a clock's end). */
-  async playingIdleSince(before: Date, limit: number): Promise<string[]> {
-    const rows = await this.db.gameRoom.findMany({
-      where: { status: 'playing', updatedAt: { lte: before } },
-      orderBy: { updatedAt: 'asc' },
-      take: limit,
-      select: { code: true },
-    })
-    return rows.map((r) => r.code)
-  }
-
-  /** Every seat, in seat order; a robot seat has no user (48 section 3.6). */
+  /** The human seats, in seat order. Robot seats (null `user_id`) are written and read by part GAME-R, which keys the engine by seat. */
   async players(code: string): Promise<PlayerRow[]> {
     const rows = await this.db.gameRoomPlayer.findMany({
       where: { roomCode: code },
       orderBy: { id: 'asc' },
     })
-    let robots = 0
-    return rows.map((r) => toPlayer(r, r.isBot ? ++robots : null))
+    return rows.flatMap((r) => (r.userId === null ? [] : [toPlayer({ ...r, userId: r.userId })]))
   }
 
   /** Inserts a waiting room with `code`; false when the code is taken (the caller draws the next code). */
@@ -188,21 +166,16 @@ export class RoomsRepository {
     return n === 1
   }
 
-  async addPlayer(code: string, userId: string, isTest: boolean, joinedAt: Date): Promise<void> {
+  async addPlayer(
+    code: string,
+    userId: string,
+    isBot: boolean,
+    isTest: boolean,
+    joinedAt: Date,
+  ): Promise<void> {
     await this.db.gameRoomPlayer.create({
-      data: { roomCode: code, userId: idFromString(userId), isBot: false, isTest, joinedAt },
+      data: { roomCode: code, userId: idFromString(userId), isBot, isTest, joinedAt },
     })
-  }
-
-  /** A robot seat: `is_bot` and no user (FR-GM-00.4). */
-  async addRobot(code: string, isTest: boolean, joinedAt: Date): Promise<void> {
-    await this.db.gameRoomPlayer.create({
-      data: { roomCode: code, userId: null, isBot: true, isTest, joinedAt },
-    })
-  }
-
-  async removeSeat(id: bigint): Promise<void> {
-    await this.db.gameRoomPlayer.delete({ where: { id } })
   }
 
   async updateRoom(code: string, patch: RoomPatch, at: Date): Promise<void> {
@@ -253,7 +226,7 @@ export class RoomsRepository {
 
   // --- reads ----------------------------------------------------------------------------------------------
 
-  /** Up to `limit` newest waiting rooms with a seat free for a pupil (a robot gives its seat up) whose host is not a test actor. */
+  /** Up to `limit` newest waiting rooms with a free seat whose host is not a test actor. */
   async openRooms(
     limit: number,
   ): Promise<{ code: string; game: string; hostId: string; players: number; max: number }[]> {
@@ -261,10 +234,10 @@ export class RoomsRepository {
       { code: string; game: string; host_id: bigint; n: number; max_players: number }[]
     >`
       SELECT r.code, r.game, r.host_id, r.max_players,
-             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) AS n
+             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code) AS n
         FROM game_rooms r
        WHERE r.status = 'waiting' AND NOT r.is_test
-         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) < r.max_players
+         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code) < r.max_players
        ORDER BY r.created_at DESC, r.code ASC
        LIMIT ${limit}`
     return rows.map((r) => ({
