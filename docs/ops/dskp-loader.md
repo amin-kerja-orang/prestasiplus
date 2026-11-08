@@ -1,15 +1,15 @@
 # DSKP loader runbook (R1-B04)
 
-Loads the DSKP curriculum tree (Tingkatan 4-5 today) into `curriculum_nodes` and `curriculum_tp_descriptors`. UAT has 0 nodes until this runs, so DSKP tagging in the Studio, blueprints and Jana Kertas cannot work there.
+Loads the DSKP curriculum tree (Tingkatan 4-5 in full; Tingkatan 1-3 as Bab-level units only) into `curriculum_nodes` and `curriculum_tp_descriptors`. UAT has 0 nodes until this runs, so DSKP tagging in the Studio, blueprints and Jana Kertas cannot work there.
 
 It is a script, not a migration: the data is large (600+ KB), editable by admins afterwards, and must not be re-applied by `migrate`. Nobody runs it from the repo on a server except DevOps, as part of a deploy. Plan: `docs/architecture/v2-admin-student-pipeline.md` 13.4 R1-B04, 13.7 item 2, 13.8a. Requirement: `docs/requirements/v3-bijak-spm-scope.md` R1-12.
 
 ## What it does and does not do
 
-- Reads the 13 extracts packaged in the API image at `apps/api/src/modules/curriculum/dskp/data/*.json` (a copy of `docs/reference/dskp`; a test fails if the two drift).
+- Reads the 20 extracts packaged in the API image at `apps/api/src/modules/curriculum/dskp/data/*.json` (a copy of `docs/reference/dskp`; a test fails if the two drift).
 - One transaction per subject: a subject loads fully or not at all. A failing subject does not stop the others; the exit code is then 1.
 - Insert-only and idempotent. Nodes are matched by (subject, level, edition, kind, code). A second run inserts 0. An existing node is never updated or deleted, so an admin edit survives; a new edition (a changed `edition` text) adds nodes beside the old ones. The report column `update` is therefore always 0; `drift` counts existing nodes whose text differs from the file (left as they are).
-- Loads Tingkatan 1-5 only. Any other level (Darjah) is ignored and listed. A TP row without a number (or a printed range such as `1-4`) is skipped, counted and listed with its reason. Printed text is stored as is. The edition is stored on every node.
+- Loads Tingkatan 1-5 only (T1-T3 are Bab-level units, S4-T09). Any other level (Darjah) is ignored and listed. A TP row without a number (or a printed range such as `1-4`) is skipped, counted and listed with its reason. Printed text is stored as is. The edition is stored on every node.
 - Does not touch chapters, topics, subtopics, questions, papers or any student-visible content (AC-R1-12.5). `curriculum_nodes` is a separate tree used for question tagging, blueprints and Jana Kertas.
 - Needs the base rows: `education_levels` (T4, T5) and `subjects` (13 subject codes: BM, BI, MATH, ADDMATH, PHY, SCI, SEJ, PI, TI, PM, PSV, LNR, KNP). If a subject row is missing that subject fails with a clear message. LNR and KNP are not in the observed subject list; add `--create-missing-subjects` to create them (inactive, no level link), otherwise they fail.
 
@@ -113,4 +113,4 @@ When T1-T3 extracts exist in the same format, add the file(s) to `apps/api/src/m
 
 ## Open points in the extracts
 
-A local dry run on an empty tree reports 2,844 nodes and 1,394 TP descriptors (42 of them general levels) over 13 subjects, and 4 rejected TP rows, all in Landskap dan Nurseri: no `tp` number on T4 units 1.0, 3.0 and 4.0, and a printed range `1-4` on T5 unit 7.0. These are skipped by design (tp must be 1-6) and listed by the script. The extracts have no Darjah rows, so the "ignored" list is empty today. The extracts carry no `subjectCode` (it is `null` in every file), so the file name to subject code map lives in `dskp-load.ts` (`DSKP_FILES`).
+From S4-T09 the packaged data also holds 808 Tingkatan 1-3 Bab-level units (unit nodes only, no TP; see `docs/reference/dskp/README.md`) in 20 files, so a local dry run on an empty tree reports 3,652 nodes (2,844 at T4-T5 + 808 at T1-T3), 1,394 TP descriptors (unchanged) and 20 subjects. The T4-T5 figures below are the earlier baseline: a local dry run on an empty tree reported 2,844 nodes and 1,394 TP descriptors (42 of them general levels) over 13 subjects, and 4 rejected TP rows, all in Landskap dan Nurseri: no `tp` number on T4 units 1.0, 3.0 and 4.0, and a printed range `1-4` on T5 unit 7.0. These are skipped by design (tp must be 1-6) and listed by the script. The extracts have no Darjah rows, so the "ignored" list is empty today. The extracts carry no `subjectCode` (it is `null` in every file), so the file name to subject code map lives in `dskp-load.ts` (`DSKP_FILES`).

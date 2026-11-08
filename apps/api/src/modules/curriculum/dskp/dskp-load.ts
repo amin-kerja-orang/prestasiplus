@@ -26,7 +26,7 @@ export const DSKP_DATA_DIR = new URL('./data/', import.meta.url)
 /** Rows per `createMany` (the pg driver allows 65,535 bind parameters per statement). */
 const BATCH = 1000
 
-/** The 13 packaged extracts and the subject code each belongs to. */
+/** The 20 packaged extracts and the subject code each belongs to (13 with Tingkatan 4-5 DSKP content, 7 with Tingkatan 1-3 Bab-level nodes only: S4-T09). */
 export const DSKP_FILES: readonly { file: string; subject: string }[] = [
   { file: 'bahasa-melayu.json', subject: 'BM' },
   { file: 'bahasa-inggeris.json', subject: 'BI' },
@@ -41,6 +41,13 @@ export const DSKP_FILES: readonly { file: string; subject: string }[] = [
   { file: 'pendidikan-seni-visual.json', subject: 'PSV' },
   { file: 'landskap-dan-nurseri.json', subject: 'LNR' },
   { file: 'katering-dan-penyajian.json', subject: 'KNP' },
+  { file: 'geografi.json', subject: 'GEO' },
+  { file: 'pendidikan-jasmani-dan-kesihatan.json', subject: 'PJK' },
+  { file: 'reka-bentuk-dan-teknologi.json', subject: 'RBT' },
+  { file: 'sains-komputer.json', subject: 'SK' },
+  { file: 'bahasa-arab.json', subject: 'BA' },
+  { file: 'bahasa-cina.json', subject: 'BC' },
+  { file: 'bahasa-tamil.json', subject: 'BT' },
 ]
 
 /**
