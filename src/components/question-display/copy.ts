@@ -88,6 +88,21 @@ export function overLabel(max: number): string {
 export function shortLabel(n: number, min: number): string {
   return `Jawapan terlalu pendek (${n} patah perkataan; minimum ${min}).`
 }
+/** FR-PA-35: shown when a hard-limited essay reaches its maximum. */
+export function capLabel(max: number): string {
+  return `Had ${max} patah perkataan dicapai.`
+}
+/** FR-PA-35: a short answer over its `maxWords` (the text is kept). */
+export function maxWordsLabel(n: number): string {
+  return `Maksimum ${n} patah perkataan.`
+}
+export const langCopy = {
+  aria: 'Bahasa soalan',
+  ms: 'BM',
+  en: 'English',
+  both: 'BM + English',
+} as const
+export const matchingBankCopy = { title: 'Senarai pilihan', aria: 'Senarai padanan' } as const
 export function chipLabel(label: string): string {
   return `Lihat ${label}`
 }

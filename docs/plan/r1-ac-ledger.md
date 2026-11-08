@@ -53,6 +53,10 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S0-T12 | AC-ERR-7 | CI | Pass | 2026-11-05 | team-aa/S-1 | wave0.test.ts::shows Rujukan only on 5xx with a requestId; wave0.test.ts::Salin copies the request id |
 | S0-T12 | AC-ERR-10 | CI | Pass | 2026-11-05 | team-aa/S-1 | client.test.ts::retries a GET 503 twice (about 1 s, then 3 s) and then fails; client.test.ts::never retries POST, PUT, PATCH or DELETE |
 | S0-T12 | AC-ERR-12 | CI | Pass | 2026-11-05 | team-aa/S-1 | error-filter.spec.ts::415 gives UNSUPPORTED_MEDIA_TYPE with the generic text |
+| S8-T03 | AC-PA-04 | CI | Pass | 2026-11-05 | team-aa/S-1 | bilingual-wiring.test.ts, language-toggle.test.ts |
+| S8-T03 | AC-PA-16 | CI | Pass | 2026-11-05 | team-aa/S-1 | drawing-pad.test.ts, drawing-photo.test.ts |
+| S8-T03 | AC-PA-37 | CI | Pass | 2026-11-05 | team-aa/S-1 | word-limit.test.ts |
+| S8-T03 | AC-PA-40 | CI | Pass | 2026-11-05 | team-aa/S-1 | prefill.test.ts |
 | S8-T02 | AC-PA-39 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::AC-PA-39: "Bahan 2" renders a button that opens Bahan 2; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; stimulus-panel.test.ts::FR-PA-37 source line |
 | S8-T02 | AC-QA-09 | CI | Pass | 2026-11-05 | team-aa/S-1 | leaf-links.test.ts::FR-PA-37: the stimulus sits in the leaf, inline from 768; leaf-links.test.ts::FR-PA-37: a leaf without stimulusId is unchanged; leaf-links.test.ts::AC-PA-39: "semua bahan" opens all (3 shown) in the drawer |
 | S6-T05 | AC-AS-0-2 | CI | Pass | 2026-11-05 | team-dd/S-1 | dashboard.spec.ts, amaran-access.spec.ts |
