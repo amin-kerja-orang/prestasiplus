@@ -57,6 +57,8 @@ import { ZodValidationPipe } from '../../../common/validation/zod-validation.pip
 import { CLOCK, type Clock } from '../../../db/clock'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
+import type { TxClient } from '../../../db/client'
+import { runInClient } from '../../../db/transaction'
 import { fnv1a32 } from '../../../db/prng'
 import { isOverloadError } from '../../auth/auth.errors'
 import { generateLimit, noBlueprint, shortage } from '../../bijak/papers/errors'
@@ -97,6 +99,7 @@ import {
   type StandardBlueprint,
 } from './exam-core.adapter'
 import { checkPaperDetailed, normalizeUnits, reorderUnits, unitMarksOf, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
+import { PaperImportGroupSplitError, PaperImportPublishedError, PaperImportQuestionError, PaperImportSectionLimitError } from './import-errors'
 import { blockerView, toBlockers, type BlockerDraft } from './blockers'
 import { isScaledPaper, shortageToWire, standardForPaper, violationLines } from './standard'
 import { BijakBuilderPorts, type BuilderGroupInfo, type BuilderQuestionInfo, type BuilderQuestionOrigin, type BuilderQuestionRef } from './ports'
@@ -214,6 +217,42 @@ interface Evaluation {
   check: PaperCheck
   /** The blocking lines of `check` with their codes (same order as `publishErrors(check)`). */
   issues: CheckIssue[]
+}
+
+/** S1-T10: printed duration of an imported paper when the subject has no Disahkan Kontrak (the column must be positive). */
+const IMPORT_DEFAULT_DURATION_MIN = 120
+
+export interface ImportPlacement {
+  questionId: bigint
+  /** Pinned version (a Draf question has one too). */
+  versionNo: number
+  /** The printed Nombor soalan. */
+  numberLabel: string
+}
+
+/** Input of `BuilderService.importDraftPaper` (API-Q-25). */
+export interface ImportDraftPaperInput {
+  subjectId: bigint
+  kertas: number
+  year: number
+  /** Default: `DEFAULT_TITLE` of the subject and kertas. */
+  title?: string
+  paperCode: string
+  sourceBatchId: bigint
+  /** Written to the 0161 `exam_board` column when it exists. */
+  examBoard?: string | null
+  /** Bahagian in printed order; an empty list gives one "Bahagian A". */
+  sections: { label: string; placements: ImportPlacement[] }[]
+  /** Admin who imports (creator and audit actor). Without it no audit row is written. */
+  actor?: AuditActor
+}
+
+export interface ImportDraftPaperResult {
+  paperId: bigint
+  /** False when the batch already had its paper and only missing questions were appended. */
+  created: boolean
+  /** Placements written by this call. */
+  added: number
 }
 
 /**
@@ -498,6 +537,7 @@ export class BuilderService {
     // R12: Subjek and Cari. A subject code that matches no subject has no papers, so the answer is an empty page.
     const subject = query.subject ? await this.repo.subjectByCode(curriculumCodeOf(query.subject)) : undefined
     // S3-T06: `surface` defaults to simulasi, so the Set Builder list never shows a Kertas Subjektif row.
+    const batchId = query.sourceBatchId === undefined ? null : parseId(query.sourceBatchId)
     const filter = {
       ...(subject ? { subjectId: subject.id } : {}),
       ...(query.search ? { search: query.search } : {}),
@@ -505,6 +545,9 @@ export class BuilderService {
       ...(query.kertas !== undefined ? { kertas: query.kertas } : {}),
       ...(query.year !== undefined ? { year: query.year } : {}),
       ...(query.negeri ? { examBoardSlug: bijakNegeriSlug(query.negeri) } : {}),
+      ...(query.imported === 'true' ? { imported: true } : {}),
+      // An id that is not a number matches no paper (the schema already limits it to the id shape).
+      ...(query.sourceBatchId !== undefined ? { sourceBatchId: batchId ?? -1n } : {}),
     }
     const noSubject = Boolean(query.subject) && !subject
     const [total, rows] = noSubject
@@ -537,7 +580,7 @@ export class BuilderService {
     }
     const data = await Promise.all(
       rows.map(async (paper, i): Promise<BijakBuilderPaperSummary> => {
-        const { check } = evaluations[i]!
+        const { check, info } = evaluations[i]!
         const subject = subjects.get(paper.subjectId.toString())
         const code = subject ? bijakCodeOf(subject.code) : ''
         return {
@@ -565,6 +608,9 @@ export class BuilderService {
                 durationMinutes: paper.durationMinutes,
               }
             : {}),
+          sourceBatchId: paper.sourceBatchId === null ? null : idToString(paper.sourceBatchId),
+          // S1-T10 (D7): placed questions that are not Terbit (`approved`) yet; only an imported paper carries Draf questions on purpose.
+          importIssueCount: paper.sourceBatchId === null ? 0 : this.placedIdsOf(paper).filter((id) => info.get(id)?.status !== 'approved').length,
         }
       }),
     )
@@ -1893,5 +1939,184 @@ export class BuilderService {
   async preview(rawBody: unknown): Promise<BijakBuilderPreview> {
     const body = parseWith(BijakBuilderPreviewRequestSchema, rawBody)
     return this.questions.review(body.ids)
+  }
+
+  // --- S1-T10: import of an accepted intake batch (ONE draft paper per batch; this builder stays the only paper writer) ----------
+
+  /** Cached `information_schema` answer for the 0161 columns (`surface`, `exam_board`); the promise is dropped when the check fails. */
+  private importColumns: Promise<{ surface: boolean; examBoard: boolean }> | undefined
+
+  private columns0161(): Promise<{ surface: boolean; examBoard: boolean }> {
+    this.importColumns ??= this.repo.existingPaperColumns(['surface', 'exam_board']).then(
+      (found) => ({ surface: found.has('surface'), examBoard: found.has('exam_board') }),
+      (error: unknown) => {
+        this.importColumns = undefined
+        throw error
+      },
+    )
+    return this.importColumns
+  }
+
+  /**
+   * API-Q-25 write side. Creates the ONE draft paper of an accepted intake batch, or appends to it (idempotent per `sourceBatchId`).
+   * Runs in one transaction: pass the caller's open client as `tx` (the S1 service's), else it opens its own. Questions may be Draf (D1);
+   * each is pinned at the given version with its printed Nombor soalan. A stimulus group is kept whole and contiguous in one Bahagian and
+   * is never split: only the members given in the input are placed (a rejected member is not in the input and is not pulled in).
+   * Refusals are `PaperImportError`s (see `import-errors.ts`).
+   */
+  async importDraftPaper(input: ImportDraftPaperInput, tx?: TxClient): Promise<ImportDraftPaperResult> {
+    const run = () => this.prisma.transaction(() => this.importInTransaction(input))
+    return tx ? runInClient(tx, run) : run()
+  }
+
+  private async importInTransaction(input: ImportDraftPaperInput): Promise<ImportDraftPaperResult> {
+    await this.repo.lockImportBatch(input.sourceBatchId)
+    const existing = await this.repo.findBySourceBatch(input.sourceBatchId)
+    if (existing) {
+      await this.repo.lockPaper(existing.id)
+      const paper = (await this.repo.findPilihan(existing.id))!
+      if (paper.status === 'published') throw new PaperImportPublishedError(paper.id)
+    }
+
+    // One Bahagian per label (trimmed, case-insensitive), in order of first appearance; the same question is placed once (first wins).
+    const groupsIn: { label: string; placements: ImportPlacement[] }[] = []
+    const seen = new Set<string>()
+    for (const s of input.sections.length > 0 ? input.sections : [{ label: 'Bahagian A', placements: [] }]) {
+      let target = groupsIn.find((g) => sameLabel(g.label, s.label))
+      if (!target) groupsIn.push((target = { label: s.label.trim(), placements: [] }))
+      for (const pl of s.placements) {
+        const key = pl.questionId.toString()
+        if (seen.has(key)) continue
+        seen.add(key)
+        target.placements.push(pl)
+      }
+    }
+    if (groupsIn.length > MAX_SECTIONS) throw new PaperImportSectionLimitError(MAX_SECTIONS)
+
+    // Which question is on the paper already (re-call): those are not placed again.
+    const onPaper = new Set(existing?.sections.flatMap((sec) => sec.placements.map((pl) => idToString(pl.questionId))) ?? [])
+    const fresh = groupsIn.map((g) => ({ ...g, placements: g.placements.filter((pl) => !onPaper.has(pl.questionId.toString())) }))
+    const ids = [...new Set([...onPaper, ...fresh.flatMap((g) => g.placements.map((pl) => pl.questionId.toString()))])]
+    const st = await this.structure(ids)
+    for (const g of fresh) for (const pl of g.placements) if (!st.info.has(pl.questionId.toString())) throw new PaperImportQuestionError(pl.questionId.toString())
+
+    // A group may sit in one Bahagian only, counting the members already on the paper. Members not in this import are not pulled in.
+    const present = new Set(ids)
+    const sectionOfGroup = new Map<string, { section: string; questionIds: string[] }>()
+    const claim = (group: string, section: string, questionId: string): void => {
+      const seenGroup = sectionOfGroup.get(group)
+      if (!seenGroup) sectionOfGroup.set(group, { section, questionIds: [questionId] })
+      else if (seenGroup.section !== section) throw new PaperImportGroupSplitError(group, [...seenGroup.questionIds, questionId])
+      else seenGroup.questionIds.push(questionId)
+    }
+    for (const sec of existing?.sections ?? []) for (const pl of sec.placements) {
+      const group = st.groupOf(idToString(pl.questionId))
+      if (group) claim(group, `id:${sec.id.toString()}`, idToString(pl.questionId))
+    }
+    // A label that matches an existing section of the paper is that section.
+    const existingSection = (label: string) => existing?.sections.find((sec) => sameLabel(sec.label, label))
+    for (const g of fresh) for (const pl of g.placements) {
+      const qid = pl.questionId.toString()
+      const group = st.groupOf(qid)
+      if (group) claim(group, existingSection(g.label) ? `id:${existingSection(g.label)!.id.toString()}` : `label:${g.label.toLowerCase()}`, qid)
+    }
+    const membersOf = (group: string): string[] => st.membersOf(group).filter((id) => present.has(id))
+
+    const blueprint = await this.importBlueprint(input)
+    let paperId: bigint
+    let created = false
+    if (!existing) {
+      created = true
+      const subject = (await this.repo.subjectsByIds([input.subjectId])).get(input.subjectId.toString())
+      const title = input.title?.trim() || DEFAULT_TITLE(subject?.name ?? '', input.kertas)
+      paperId = await this.repo.createPaper({
+        title,
+        subjectId: input.subjectId,
+        kertas: input.kertas,
+        year: input.year,
+        paperCode: input.paperCode,
+        printedDurationMin: blueprint?.durationMin ?? IMPORT_DEFAULT_DURATION_MIN,
+        instructions: blueprint?.instructions ?? [],
+        referenceSheets: blueprint ? referencePanels(blueprint.referenceSheets) : [],
+        blueprintId: blueprint?.id ?? null,
+        sourceBatchId: input.sourceBatchId,
+        createdById: input.actor ? BigInt(input.actor.userId) : null,
+        isTest: input.actor?.isTest ?? false,
+        levelScope: blueprint ? this.contractLevelScope(blueprint) : null,
+        sections: fresh.map((g) => this.importSection(g.label, g.placements.length, blueprint)),
+      })
+      const columns = await this.columns0161()
+      if (columns.surface || columns.examBoard) await this.repo.setSurface(paperId, 'simulasi', input.examBoard ?? null, columns)
+    } else {
+      paperId = existing.id
+    }
+
+    const tree = (await this.repo.findPilihan(paperId))!
+    let added = 0
+    for (const g of fresh) {
+      let section = tree.sections.find((sec) => sameLabel(sec.label, g.label))
+      if (!section) {
+        if (tree.sections.length >= MAX_SECTIONS) throw new PaperImportSectionLimitError(MAX_SECTIONS)
+        const sid = await this.repo.insertSection(paperId, { ...this.importSection(g.label, g.placements.length, blueprint), position: Math.max(0, ...tree.sections.map((x) => x.position)) + 1 })
+        section = (await this.repo.findPilihan(paperId))!.sections.find((sec) => sec.id === sid)!
+        tree.sections.push(section)
+      }
+      if (g.placements.length === 0) continue
+      const current = section.placements.map((pl) => idToString(pl.questionId))
+      const pins = new Map(g.placements.map((pl) => [pl.questionId.toString(), pl] as const))
+      const next = normalizeUnits([...current, ...g.placements.map((pl) => pl.questionId.toString())], st.groupOf, membersOf)
+      const fits = next.slice(0, current.length).every((id, i) => id === current[i])
+      if (fits) {
+        await this.repo.appendPlacements(
+          section.id,
+          Math.max(0, ...section.placements.map((pl) => pl.position)) + 1,
+          next.slice(current.length).map((id) => ({ questionId: BigInt(id), pinnedVersionNo: pins.get(id)!.versionNo, numberLabel: pins.get(id)!.numberLabel })),
+        )
+      } else {
+        // A new member of a group whose other members are in the middle of the section: the group is made contiguous again (the rest keeps its order).
+        const kept = new Map(section.placements.map((pl) => [idToString(pl.questionId), pl.pinnedVersionNo]))
+        await this.repo.replacePlacements(
+          section.id,
+          next.map((id) => ({ questionId: BigInt(id), pinnedVersionNo: kept.get(id) ?? pins.get(id)!.versionNo, ...(pins.has(id) ? { numberLabel: pins.get(id)!.numberLabel } : {}) })),
+        )
+      }
+      added += g.placements.length
+    }
+
+    if (added > 0 || created) await this.repo.updatePaper(paperId, { updatedAt: this.clock.now() })
+    if (input.actor && (created || added > 0)) {
+      await this.record(input.actor, created ? AUDIT_ACTIONS.BIJAK_PAPER_CREATED : AUDIT_ACTIONS.BIJAK_PAPER_UPDATED, paperId, {
+        from: created ? null : 'draf',
+        to: 'draf',
+        op: 'import',
+        sourceBatchId: input.sourceBatchId.toString(),
+        added,
+      })
+    }
+    return { paperId, created, added }
+  }
+
+  /** The active Disahkan Kontrak of the subject and kertas, or null (a Spec or Draf Kontrak is not copied from). */
+  private async importBlueprint(input: ImportDraftPaperInput) {
+    const bp = await this.repo.activeBlueprint(input.subjectId, input.kertas)
+    return bp && bp.source === 'verified' ? bp : null
+  }
+
+  /** A Bahagian of an import: a Disahkan Kontrak section with the same label (trimmed, case-insensitive) lends its rule and figures; else admin-created, Jawab Semua. */
+  private importSection(label: string, placed: number, blueprint: Awaited<ReturnType<BuilderService['importBlueprint']>>) {
+    const match = blueprint?.sections.find((s) => sameLabel(s.label, label))
+    if (match) {
+      return {
+        label,
+        instruction: match.instruction,
+        ruleType: match.ruleType === 'choose' ? ('choose' as const) : ('all' as const),
+        ruleN: match.ruleType === 'choose' ? match.ruleN : null,
+        questionCount: match.questionCount,
+        markBudget: match.markBudget ?? match.questionCount,
+        compulsory: match.compulsory,
+        adminCreated: false,
+      }
+    }
+    return { label, instruction: null, ruleType: 'all' as const, ruleN: null, questionCount: placed, markBudget: 0, compulsory: false, adminCreated: true }
   }
 }

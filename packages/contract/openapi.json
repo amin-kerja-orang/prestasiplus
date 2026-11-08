@@ -85598,6 +85598,21 @@
             ],
             "description": "S3-T02 `Dilihat murid` column; null = not restricted. Always sent by the server."
           },
+          "sourceBatchId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T10 (DM-45): the intake batch the paper was imported from; null for every other paper.",
+            "example": "1042"
+          },
+          "importIssueCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "S1-T10 (D7): placed questions whose status is not `approved` (Draf or Semak). 0 for a paper that is not imported."
+          },
           "origins": {
             "type": "array",
             "items": {
@@ -85674,7 +85689,9 @@
           "marks",
           "budget",
           "ok",
-          "updatedAt"
+          "updatedAt",
+          "sourceBatchId",
+          "importIssueCount"
         ],
         "additionalProperties": false
       },
@@ -87349,6 +87366,20 @@
             "type": "string",
             "maxLength": 60,
             "description": "S3-T06 filter `Negeri` (compared by slug with `exam_board`)."
+          },
+          "imported": {
+            "type": "string",
+            "enum": [
+              "true"
+            ],
+            "description": "S1-T10 `Kertas Diimport`: only papers created from an intake batch (`sourceBatchId` set), newest first. Only `true` is accepted; omit it for all papers."
+          },
+          "sourceBatchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "S1-T10: only the paper imported from this intake batch.",
+            "example": "1042"
           }
         }
       },
@@ -144274,6 +144305,32 @@
             "required": false,
             "description": "S3-T06 filter `Negeri` (compared by slug with `exam_board`).",
             "name": "negeri",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ],
+              "description": "S1-T10 `Kertas Diimport`: only papers created from an intake batch (`sourceBatchId` set), newest first. Only `true` is accepted; omit it for all papers."
+            },
+            "required": false,
+            "description": "S1-T10 `Kertas Diimport`: only papers created from an intake batch (`sourceBatchId` set), newest first. Only `true` is accepted; omit it for all papers.",
+            "name": "imported",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "S1-T10: only the paper imported from this intake batch.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "S1-T10: only the paper imported from this intake batch.",
+            "name": "sourceBatchId",
             "in": "query"
           }
         ],
