@@ -3,7 +3,7 @@
  * S3 `/admin/users/:id/edit` "Edit Pengguna" (M02-T5; FR-M02-37…46), v2 staff theme. One card: the profile
  * header (avatar, name, e-mail, "Daftar" / "Kemaskini"), the common fields and the role sections, which
  * follow the "Peranan" select (DV-M02-04, FR-M02-45): `student` -> grade, IC, "Pakej Langganan" and school;
- * `teacher` -> school; `parent` -> "Anak yang Dipautkan"; any other role -> none. The state of a hidden
+ * `teacher` -> school; `parent` -> the tab "Ibu Bapa" (own writer, outside this form); any other role -> none. The state of a hidden
  * section is kept, so returning to the saved role shows it again; a section shown for a role the record did
  * not have starts empty (only the saved role's section is loaded from the record). Hidden sections are not
  * submitted (BR-11).
@@ -30,6 +30,7 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsPillNav,
 } from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
@@ -38,14 +39,13 @@ import {
   rolesAfterEdit,
   updateAdminUser,
   type AdminUserDetail,
-  type StudentSearchItem,
   type SubscriptionPackage,
   type UpdateAdminUserRequest,
 } from '../api/users'
 import AdminSchoolPicker from '../components/AdminSchoolPicker.vue'
 import GeneratedCredentials from '../components/GeneratedCredentials.vue'
 import GradeCards from '../components/GradeCards.vue'
-import ParentStudentLinker from '../components/ParentStudentLinker.vue'
+import AdminParentsTab from '../components/AdminParentsTab.vue'
 import UserFormSwitch from '../components/UserFormSwitch.vue'
 import type { CredentialRow } from '../lib/credential-row'
 import {
@@ -114,7 +114,6 @@ const form = reactive<EditForm>({
 })
 const grade = ref<number | null>(null)
 const school = ref<SchoolSummary | null>(null)
-const linked = ref<StudentSearchItem[]>([])
 const passwordOpen = ref(false)
 /** The IC as loaded (masked for a runtime-set IC, DV-M02-16): only sent when the admin edits it. */
 const loadedIc = ref('')
@@ -132,7 +131,6 @@ function fill(user: AdminUserDetail): void {
   form.subscriptionPackage = student ? user.subscriptionPackage : 'none'
   form.hasPksk = student ? user.hasPkskSubscription : false
   school.value = student || user.role === 'teacher' ? user.school : null
-  linked.value = user.role === 'parent' ? [...user.linkedStudents] : []
   form.newPassword = ''
   form.newPasswordConfirmation = ''
   form.resetPassword = false
@@ -160,7 +158,13 @@ const alertBox = ref<HTMLElement | null>(null)
 
 const showStudent = computed(() => form.role === 'student')
 const showSchool = computed(() => form.role === 'student' || form.role === 'teacher')
-const showParent = computed(() => form.role === 'parent')
+/** R1-ADM-P2-16: the tab "Ibu Bapa" belongs to a saved parent; its links save on their own (one writer). */
+const hasParentsTab = computed(() => loaded.value?.role === 'parent')
+const pageTab = ref<'maklumat' | 'parent'>('maklumat')
+const PAGE_TABS: { key: 'maklumat' | 'parent'; label: string }[] = [
+  { key: 'maklumat', label: 'Maklumat' },
+  { key: 'parent', label: 'Ibu Bapa' },
+]
 
 /** FR-M02-46: the common fields, the visible section's fields and, when filled, the new password. */
 function buildRequest(role: Role): UpdateAdminUserRequest {
@@ -180,7 +184,6 @@ function buildRequest(role: Role): UpdateAdminUserRequest {
     request.hasPkskSubscription = form.hasPksk
   }
   if (role === 'student' || role === 'teacher') request.schoolId = school.value?.id ?? null
-  if (role === 'parent') request.linkedStudentIds = linked.value.map((s) => s.id)
   if (http) {
     if (form.resetPassword) request.resetPassword = true
   } else if (form.newPassword !== '' || form.newPasswordConfirmation !== '') {
@@ -260,7 +263,17 @@ async function submit(): Promise<void> {
     </template>
 
     <template v-else>
+      <DsPillNav
+        v-if="hasParentsTab"
+        :items="PAGE_TABS"
+        :active="pageTab"
+        label="Bahagian pengguna"
+        testid-prefix="user-tab"
+        data-testid="user-tabs"
+        @select="pageTab = $event"
+      />
       <form
+        v-show="!hasParentsTab || pageTab === 'maklumat'"
         method="post"
         class="flex w-full min-w-0 flex-col gap-6"
         data-testid="user-form"
@@ -473,17 +486,6 @@ async function submit(): Promise<void> {
           <div class="sm:col-span-2"><AdminSchoolPicker v-model="school" /></div>
         </DsFormSection>
 
-        <!-- parent: FR-M02-42 -->
-        <DsFormSection
-          v-if="showParent"
-          title="Anak yang Dipautkan"
-          description="Pelajar yang dipautkan kepada ibu bapa ini."
-          icon="users"
-          :columns="2"
-        >
-          <div class="min-w-0 sm:col-span-2"><ParentStudentLinker v-model="linked" variant="edit" /></div>
-        </DsFormSection>
-
         <!-- FR-M02-43: password reset -->
         <DsPanel padding="none">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
@@ -576,6 +578,13 @@ async function submit(): Promise<void> {
 
         <DsFormBar :cancel-to="USERS_LIST_PATH" submit-label="Kemaskini" :saving="saving" />
       </form>
+      <DsPanel
+        v-if="hasParentsTab"
+        v-show="pageTab === 'parent'"
+        data-testid="user-parents-panel"
+      >
+        <AdminParentsTab :user="loaded" />
+      </DsPanel>
     </template>
   </DsPage>
 </template>

@@ -16,8 +16,12 @@
  */
 
 import {
+  int,
+  noContent,
   ok,
   notFound,
+  paginate,
+  queryInt,
   requireRole,
   route,
   str,
@@ -30,6 +34,7 @@ import { users, type UserRow } from '@/modules/m01-authentication/mock'
 
 import type {
   AcceptResult,
+  AdminParentLink,
   GeneratedParentInvite,
   InvitePreview,
   LinkedParent,
@@ -80,7 +85,13 @@ export function linkedParentsOf(studentId: number): LinkedParent[] {
   for (const link of parentLinksRepo.listParentsOfStudent(studentId)) {
     const parent = users.get(link.parentId)
     if (parent?.role !== 'parent') continue
-    out.push({ id: parent.id, name: parent.name, email: parent.email, linkedAt: link.createdAt })
+    out.push({
+      id: parent.id,
+      name: parent.name,
+      email: parent.email,
+      linkedAt: link.createdAt,
+      linkId: link.id,
+    })
   }
   return out.sort(
     (a, b) => a.name.localeCompare(b.name, 'ms', { sensitivity: 'base' }) || a.id - b.id,
@@ -143,6 +154,74 @@ function acceptInvite(req: MockRequest, ctx: MockContext): MockResponse {
   return ok(data)
 }
 
+// --- admin / own links -------------------------------------------------------------------------------
+
+const adminOrSchoolAdmin = requireRole('admin', 'school_admin')
+const linkParam = { linkId: int() }
+/** Contract: "Fixed page size 50". */
+const LINK_PAGE_SIZE = 50
+
+/** `x***@domain`: the first character, `***`, then the domain (contract `ParentEmailMasked`). */
+function maskEmail(email: string): string {
+  const at = email.indexOf('@')
+  return `${Array.from(email)[0] ?? '?'}***${at >= 0 ? email.slice(at) : '@'}`
+}
+
+/** A school_admin sees only pupils of the own school; `admin` sees all. */
+function inScope(req: MockRequest, student: UserRow): boolean {
+  if (req.session?.role !== 'school_admin') return true
+  const own = users.get(sessionUserId(req))
+  return own?.schoolId != null && own.schoolId === student.schoolId
+}
+
+function toAdminLink(
+  link: { id: number; createdAt: string },
+  parent: UserRow,
+  student: UserRow,
+): AdminParentLink {
+  return {
+    linkId: link.id,
+    parent: { id: parent.id, name: parent.name, emailMasked: maskEmail(parent.email) },
+    student: { id: student.id, name: student.name, schoolName: schoolNameOf(student) },
+    relationship: null,
+    linkedAt: link.createdAt,
+  }
+}
+
+function listAdminLinks(req: MockRequest): MockResponse {
+  const parentId = queryInt(req.query, 'parentId')
+  const studentId = queryInt(req.query, 'studentId')
+  const page = Math.max(1, queryInt(req.query, 'page') ?? 1)
+  const rows: AdminParentLink[] = []
+  for (const link of parentLinksRepo.all()) {
+    if (parentId !== undefined && link.parentId !== parentId) continue
+    if (studentId !== undefined && link.studentId !== studentId) continue
+    const parent = users.get(link.parentId)
+    const student = users.get(link.studentId)
+    if (parent?.role !== 'parent' || student?.role !== 'student') continue
+    if (!inScope(req, student)) continue
+    rows.push(toAdminLink(link, parent, student))
+  }
+  return paginate(rows, { page, pageSize: LINK_PAGE_SIZE })
+}
+
+function deleteAdminLink(req: MockRequest): MockResponse {
+  const link = parentLinksRepo.all().find((l) => l.id === Number(req.params.linkId))
+  const student = link ? users.get(link.studentId) : undefined
+  if (!link || !student || !inScope(req, student)) return notFound()
+  parentLinksRepo.removeById(link.id)
+  return noContent()
+}
+
+/** The caller (pupil or parent) removes one of the own links; any other id is 404. */
+function deleteMyLink(req: MockRequest): MockResponse {
+  const me = sessionUserId(req)
+  const link = parentLinksRepo.all().find((l) => l.id === Number(req.params.linkId))
+  if (!link || (link.studentId !== me && link.parentId !== me)) return notFound()
+  parentLinksRepo.removeById(link.id)
+  return noContent()
+}
+
 const tokenParam = { token: str() }
 
 export const parentInviteRoutes: RouteDef[] = [
@@ -151,5 +230,12 @@ export const parentInviteRoutes: RouteDef[] = [
   route('GET', '/api/parent-invites/:token', previewInvite, { params: tokenParam }),
   route('POST', '/api/parent-invites/:token/accept', [parentOnly], acceptInvite, {
     params: tokenParam,
+  }),
+  route('GET', '/api/admin/parent-links', [adminOrSchoolAdmin], listAdminLinks),
+  route('DELETE', '/api/admin/parent-links/:linkId', [adminOrSchoolAdmin], deleteAdminLink, {
+    params: linkParam,
+  }),
+  route('DELETE', '/api/me/parent-links/:linkId', [requireRole('student', 'parent')], deleteMyLink, {
+    params: linkParam,
   }),
 ]
