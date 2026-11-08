@@ -219,6 +219,9 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
     const walletOf2 = async (userId: string) => (await t.db.query<{ current_syiling: number }>(`select current_syiling from wallets where user_id = $1`, [userId]))[0]
     const referralRow = async (refereeId: string) =>
       (await t.db.query<{ referrer_id: string; rewarded: boolean }>(`select referrer_id::text, rewarded from referrals where referee_id = $1::bigint`, [refereeId]))[0]
+    /** Syiling the badges paid (a referrer's lifetime total can cross a badge after the reward: FR-GM-25.2, its own ledger row). */
+    const badgeSyilingOf = async (userId: string): Promise<number> =>
+      Number((await t.db.query<{ n: string }>(`select coalesce(sum(amount), 0)::text as n from coin_ledger where user_id = $1::bigint and source = 'achievement'`, [userId]))[0]!.n)
     const ledgerOf = (userId: string) => t.db.query<{ amount: number; source_id: string }>(`select amount, source_id from coin_ledger where user_id = $1::bigint and source = 'referral'`, [userId])
     /** A setting row for the test; the reader answers the 48 section 2 default for a key with no row. */
     const setSetting = (key: string, value: number) =>
@@ -268,7 +271,10 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
       expect(await t.gamification.applyReferral(referrer, code, { isTest: false })).toEqual({ applied: false }) // not your own code
       expect(await walletOf2(friend)).toBeUndefined()
       expect(await ledgerOf(friend)).toEqual([])
-      expect((await walletOf2(referrer))!.current_syiling).toBe(470)
+      // 370 + 100 for the referral, and the referral pushed the lifetime total over a badge (evaluated for the referrer after the reward, FR-GM-25.2): its +10 is its own ledger row.
+      const badges = await t.db.query<{ amount: number; description: string }>(`select amount, description from coin_ledger where user_id = $1 and source = 'achievement'`, [referrer])
+      expect(badges).toEqual([{ amount: 10, description: 'Pencapaian: Pengumpul Syiling' }])
+      expect((await walletOf2(referrer))!.current_syiling).toBe(470 + 10)
       expect(await ledgerOf(referrer)).toEqual([{ amount: 100, source_id: `referral:${friend}` }])
       const r = GamificationReferralSchema.parse(dataOf(await student.get('/gamification/referral')))
       expect(r.stats).toEqual({ referrals: 1, rewarded: 1, syilingEarned: 100 })
@@ -302,7 +308,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
         for (const f of friends) expect(await t.gamification.applyReferral(f, code, { isTest: false })).toEqual({ applied: true })
         expect((await Promise.all(friends.map((f) => referralRow(f)))).map((r) => r?.rewarded)).toEqual([true, true, false])
         expect(await ledgerOf(friends[2]!)).toEqual([])
-        expect((await walletOf2(referrer))!.current_syiling).toBe(200)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(200 + (await badgeSyilingOf(referrer)))
         const view = await t.gamification.referral(referrer)
         expect(view.maxRewarded).toBe(2)
         expect(view.stats).toEqual({ referrals: 3, rewarded: 2, syilingEarned: 200 })
@@ -323,7 +329,7 @@ describe('M14 student reads (BE-23, AC4, AC6, AC7)', () => {
         expect(rows.every((r) => r !== undefined)).toBe(true) // every unrewarded referral is still stored
         expect(rows.filter((r) => r?.rewarded)).toHaveLength(3)
         expect(rows.filter((r) => r && !r.rewarded)).toHaveLength(5)
-        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100)
+        expect((await walletOf2(referrer))!.current_syiling).toBe(3 * 100 + (await badgeSyilingOf(referrer)))
         expect(await ledgerOf(referrer)).toHaveLength(3)
       } finally {
         await unsetSetting('referral_max_rewarded')

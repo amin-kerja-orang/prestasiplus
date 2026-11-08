@@ -5355,7 +5355,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" Absent when there is nothing to tell, and always absent on a replay."
+            "description": "Ready-made BM lines for the pupil, built server-side (ruling 21 on #500), for example \"Tahniah! Anda naik ke tier {label}.\" or \"Lencana baru: {name}!\" (one per badge the claim unlocked). Absent when there is nothing to tell, and always absent on a replay."
           }
         },
         "required": [
@@ -7990,6 +7990,13 @@
           "syilingBalance": {
             "type": "integer",
             "minimum": 0
+          },
+          "achievementsUnlocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AchievementUnlocked"
+            },
+            "description": "Badges this opening unlocked (their reward is a separate ledger row). Absent when none."
           }
         },
         "required": [
@@ -8001,6 +8008,21 @@
           "xp",
           "tokenBalance",
           "syilingBalance"
+        ]
+      },
+      "AchievementUnlocked": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ]
       },
       "RewardCabutanDraw": {

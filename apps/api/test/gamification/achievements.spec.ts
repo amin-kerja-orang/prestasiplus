@@ -34,7 +34,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     t.facts.counts = { all: 1, practice: 1 }
     const out = await t.gamification.evaluateAchievements(u, { isTest: false })
     const id = await idOf('Langkah Pertama')
-    expect(out).toEqual({ unlockedIds: [id], syiling: 5, xp: 3 })
+    expect(out).toEqual({ unlockedIds: [id], unlocked: [{ code: id, name: 'Langkah Pertama' }], syiling: 5, xp: 3 })
     expect(await unlockRows(u)).toEqual([{ name: 'Langkah Pertama', is_test: false }])
     expect(await ledgerOf(t, u)).toEqual([expect.objectContaining({ type: 'earn', source: 'achievement', source_id: `achievement:${id}`, amount: 5, balance_after: 5, description: 'Pencapaian: Langkah Pertama', is_test: false })])
     expect(await walletOf(t, u)).toMatchObject({ current_syiling: 5, total_syiling_earned: 5, xp: 3 })
@@ -46,7 +46,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     const runs = await Promise.all(Array.from({ length: 5 }, () => t.gamification.evaluateAchievements(u, { isTest: false })))
     expect(runs.filter((r) => r.unlockedIds.length === 1)).toHaveLength(1)
     const again = await t.gamification.evaluateAchievements(u, { isTest: false })
-    expect(again).toEqual({ unlockedIds: [], syiling: 0, xp: 0 })
+    expect(again).toEqual({ unlockedIds: [], unlocked: [], syiling: 0, xp: 0 })
     expect(await unlockRows(u)).toHaveLength(1)
     expect(await achievementRows(u)).toHaveLength(1)
     expect(await walletOf(t, u)).toMatchObject({ current_syiling: 5, xp: 3 })
@@ -54,7 +54,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
 
   it('nothing is unlocked while no criterion is met (a brand-new pupil with no practice)', async () => {
     const u = await bareStudent(t, 'Kosong')
-    expect(await t.gamification.evaluateAchievements(u, { isTest: false })).toEqual({ unlockedIds: [], syiling: 0, xp: 0 })
+    expect(await t.gamification.evaluateAchievements(u, { isTest: false })).toEqual({ unlockedIds: [], unlocked: [], syiling: 0, xp: 0 })
     expect(await unlockRows(u)).toEqual([])
     expect(await walletOf(t, u)).toBeUndefined()
   })
@@ -135,15 +135,15 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
     }
   })
 
-  it('challenge completions and consecutive perfect days (Wira JomBelajar) come from the completion rows', async () => {
+  it('challenge claims and consecutive perfect days (Wira JomBelajar) come from the claim rows (ruling 12 on #500)', async () => {
     const u = await bareStudent(t, 'Cabaran Lengkap')
     await t.db.query(`update achievements set criterion_min = 2 where name = 'Wira JomBelajar'`)
     await t.db.query(`update achievements set criterion_min = 25 where name = 'Cabaran Selesai'`)
     try {
       const fill = (day: string) =>
         t.db.query(
-          `insert into challenge_completions (user_id, challenge_id, completion_date, completed_at, is_test)
-           select $1::bigint, id, $2::date, now(), false from challenges where is_active`,
+          `insert into challenge_claims (user_id, challenge_id, myt_date, reward_syiling, reward_xp, claimed_at)
+           select $1::bigint, id, $2::date, 0, 0, now() from challenges where is_active`,
           [u, day],
         )
       await fill('2026-10-19') // today only: one perfect day is not two
@@ -175,7 +175,7 @@ describe('M14 achievements: evaluateAchievements (BR-M14-16, FR-M14-51)', () => 
       const id = await userIdOf(t.db, who)
       const before = (await ledgerOf(t, id)).length
       for (const isTest of [false, true]) {
-        expect(await t.gamification.evaluateAchievements(id, { isTest })).toEqual({ unlockedIds: [], syiling: 0, xp: 0 })
+        expect(await t.gamification.evaluateAchievements(id, { isTest })).toEqual({ unlockedIds: [], unlocked: [], syiling: 0, xp: 0 })
       }
       expect(await unlockRows(id)).toEqual([])
       expect((await ledgerOf(t, id)).length).toBe(before)

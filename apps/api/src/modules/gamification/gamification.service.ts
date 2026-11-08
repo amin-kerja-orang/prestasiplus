@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type {
   GamificationAchievements,
@@ -53,6 +53,14 @@ export interface Viewer {
 }
 
 /** Options of the entry points other modules call inside their own transaction. */
+/** What one pass of `evaluateAchievements` unlocked. `code` is the achievement id (decimal string; the table has no other code). */
+export interface AchievementEvaluation {
+  unlockedIds: string[]
+  unlocked: { code: string; name: string }[]
+  syiling: number
+  xp: number
+}
+
 export interface EntryOptions {
   /** The caller's transaction; omitted = the ambient one, else a new one. */
   tx?: TxClient
@@ -60,6 +68,8 @@ export interface EntryOptions {
   isTest: boolean
   /** The event time (default the clock); decides the Malaysia day of a completion. */
   at?: Date
+  /** `evaluateAchievements` only: evaluate just the achievements of these criterion kinds (default: all). The daily login passes `['streak']`. */
+  kinds?: readonly string[]
 }
 
 export interface GameResultInput {
@@ -161,6 +171,8 @@ const progressOf = (c: ChallengeRecord, metrics: Record<string, number>): number
  */
 @Injectable()
 export class GamificationService {
+  private readonly logger = new Logger(GamificationService.name)
+
   constructor(
     private readonly repo: GamificationRepository,
     @Inject(WalletService) private readonly wallet: WalletService,
@@ -577,10 +589,11 @@ export class GamificationService {
    * XR-M14-02(a) / BR-M14-14 / FR-M14-64 (called by the login hook after a STUDENT's successful password login; the
    * caller filters the role, so an admin or teacher login never reaches it): moves the streak (a qualifying event;
    * the same Malaysia day changes nothing) and, on the FIRST login of the Malaysia day, credits +2 syiling
-   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`). Idempotent: the day mark
+   * (`earn`, source `daily_login`, "Streak activity (daily_login)", key `daily_login:<day>`), then evaluates the streak badges once (savepoint, never
+   * fails the login). Idempotent: the day mark
    * is unique per (user, day), so a second login the same day writes nothing, and the ledger key stops a replay.
    * A complimentary student (`coinsEnabled` false) gets the streak but no row. The streak is locked before the wallet
-   * (BE-11 lock order). Never `is_test`: a login is not Mod Pelajar.
+   * (BE-11 lock order).
    */
   async onLogin(userId: string, opts: { tx?: TxClient } = {}): Promise<{ firstToday: boolean; credited: number; streak: number }> {
     return this.run(opts.tx, async (db) => {
@@ -589,12 +602,21 @@ export class GamificationService {
       // day), so the streak day and the daily mark day always agree, also when the call straddles midnight.
       const streak = await this.streaks.touch(userId, { tx })
       const mark = await this.streaks.markDailyLogin(userId, { tx })
-      if (!mark.firstToday || !(await this.coinsEnabled(userId, { tx }))) return { firstToday: mark.firstToday, credited: 0, streak: streak.current }
-      await this.wallet.credit(
-        { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
-        { tx },
-      )
-      return { firstToday: true, credited: DAILY_LOGIN_REWARD, streak: streak.current }
+      // Only the FIRST login of the Malaysia day can have moved the streak or the lifetime total (FR-GM-25.2, "daily login"): a second
+      // login the same day evaluates nothing. A bonus, so it runs in a savepoint and never fails the login.
+      if (!mark.firstToday) return { firstToday: false, credited: 0, streak: streak.current }
+      let credited = 0
+      if (await this.coinsEnabled(userId, { tx })) {
+        await this.wallet.credit(
+          { userId, amount: DAILY_LOGIN_REWARD, source: 'daily_login', sourceId: `daily_login:${mark.day}`, description: DAILY_LOGIN_DESCRIPTION, isTest: false },
+          { tx },
+        )
+        credited = DAILY_LOGIN_REWARD
+      }
+      // `isTest: false` always: a login is never Mod Pelajar (the hook fires on password logins only), so no test unlock is written here.
+      // Only the streak badges: the login moved the streak and nothing else, and a full pass would pay the syiling-total badge the seeded pupil already qualifies for (XL3-30: a form login reads 372).
+      await this.evaluateAchievementsSafely(userId, { tx, isTest: false, kinds: ['streak'] })
+      return { firstToday: true, credited, streak: streak.current }
     })
   }
 
@@ -631,9 +653,9 @@ export class GamificationService {
    * for the achievements after it in the same pass (the mock engine's live counters). Only a `student` account is evaluated.
    * Returns the ids unlocked by THIS call.
    */
-  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<{ unlockedIds: string[]; syiling: number; xp: number }> {
+  async evaluateAchievements(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
     return this.run(opts.tx, async (db) => {
-      const out = { unlockedIds: [] as string[], syiling: 0, xp: 0 }
+      const out: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
       // BR-M14-16 is the pupil's: a teacher or an admin (also in Mod Pelajar, where the ACTOR keeps their own role) unlocks and earns nothing.
       if (!(await this.repo.isStudent(db, userId))) return out
       const [catalogue, unlocks] = await Promise.all([this.repo.achievements(db), this.repo.unlocksOf(db, userId)])
@@ -674,6 +696,9 @@ export class GamificationService {
           // BR-M14-16 "when recorded": the practice submit does not store per-answer times yet, so this stays 0 (as the mock engine).
           case 'fast_answers':
             return 0
+          // FR-GM-25.4: won real Battles only (no robot, no test, no forfeit win).
+          case 'battle_wins':
+            return count('battle_wins', () => this.repo.wonRealBattles(db, userId))
           case 'referrals':
             return count('referrals', () => this.repo.rewardedReferralCount(db, userId))
           case 'unlocked':
@@ -693,17 +718,49 @@ export class GamificationService {
       }
       for (const a of catalogue) {
         if (unlocks.has(a.id) || a.criterionKind === null || a.criterionMin === null) continue
+        if (opts.kinds && !opts.kinds.includes(a.criterionKind)) continue
         if ((await metric(a)) < a.criterionMin) continue
         const r = await this.unlockRecord(db, userId, a, { ...opts, tx: db as TxClient, at })
         if (!r.unlocked) continue
         unlocks.set(a.id, at)
         memo.delete('lifetime_syiling')
         out.unlockedIds.push(a.id)
+        out.unlocked.push({ code: a.id, name: a.name })
         out.syiling += r.syiling
         out.xp += r.xp
       }
       return out
     })
+  }
+
+  /**
+   * `evaluateAchievements` for a trigger that must never fail its caller (box opening, challenge claim, referral): the
+   * evaluation runs in a SAVEPOINT when the caller's transaction is given (rolled back to it on an error, the error NAME
+   * logged, no user data), or in its own transaction otherwise (a failure rolls that one back). On any error the answer is
+   * "nothing unlocked".
+   */
+  async evaluateAchievementsSafely(userId: string, opts: EntryOptions): Promise<AchievementEvaluation> {
+    const none: AchievementEvaluation = { unlockedIds: [], unlocked: [], syiling: 0, xp: 0 }
+    const { tx } = opts
+    if (!tx) {
+      try {
+        return await this.evaluateAchievements(userId, opts)
+      } catch (err) {
+        this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+        return none
+      }
+    }
+    await tx.$executeRaw`SAVEPOINT achievements_safe`
+    try {
+      const out = await this.evaluateAchievements(userId, opts)
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return out
+    } catch (err) {
+      this.logger.warn(`achievement evaluation skipped: ${err instanceof Error ? err.name : 'unknown error'}`)
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT achievements_safe`
+      await tx.$executeRaw`RELEASE SAVEPOINT achievements_safe`
+      return none
+    }
   }
 
   /**
@@ -851,6 +908,8 @@ export class GamificationService {
           { tx },
         )
       }
+      // FR-GM-25.2 "Sahabat Belajar": the referrer's count just changed. A bonus, so it never fails the sign-up (savepoint).
+      await this.evaluateAchievementsSafely(referrerId, { tx, isTest: opts.isTest, at })
       return { applied: true }
     })
   }
