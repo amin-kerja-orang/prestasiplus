@@ -7,7 +7,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** S7-T01, migration 0235: DM-89. Each case runs the reversal written in the file's own comment and then the file again. */
 const MIGRATION = readFileSync(fileURLToPath(new URL('../../prisma/migrations/0235_s7_game_sessions_due_index/migration.sql', import.meta.url)), 'utf8')
-const REVERSE = MIGRATION.split('\n')
+const REVERSE = MIGRATION.split(/\r?\n/)
   .filter((line) => /^-- Reversible: DROP INDEX /.test(line))
   .map((line) => line.replace('-- Reversible: ', ''))
   .join('\n')
