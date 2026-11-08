@@ -32,6 +32,7 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { api, type Transport, type TransportRequest } from '@/api'
+import { clearAllDrafts, setDraftUserProvider } from '@/lib/draft'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
 import {
@@ -194,6 +195,24 @@ function dropPrefixed(store: Storage | null, prefixes: readonly string[]): void 
   }
 }
 
+/** Id of the user the browser's `pp:draft:*` / `pp.draft.*` drafts belong to (kept across a 401 and an expiry, so a different user never sees them). */
+const DRAFT_OWNER_KEY = 'pp:draft-owner'
+function draftOwner(): string | null {
+  try {
+    return storage()?.getItem(DRAFT_OWNER_KEY) ?? null
+  } catch {
+    return null
+  }
+}
+function setDraftOwner(id: string | null): void {
+  try {
+    if (id === null) storage()?.removeItem(DRAFT_OWNER_KEY)
+    else storage()?.setItem(DRAFT_OWNER_KEY, id)
+  } catch {
+    // Storage blocked: the drafts cannot be kept either.
+  }
+}
+
 function dropLocalDrafts(): void {
   dropPrefixed(storage(), [LOCAL_DRAFT_PREFIX, BIJAK_LOCAL_PREFIX, SESSION_DRAFT_PREFIX])
   let session: Storage | null = null
@@ -232,6 +251,8 @@ export const useSessionStore = defineStore('session', () => {
   const auth = shallowRef<ClientSession | null>(null)
 
   const isLoggedIn = computed(() => auth.value !== null)
+  /** Set when a 401 ended the session (FR-ERR-7); read once by the router guard so its login redirect also says `kembali`. */
+  let endedByUnauthorized = false
   const token = computed<string | null>(() => auth.value?.token ?? null)
   const user = computed<UserMe | null>(() => auth.value?.user ?? null)
   const role = computed<Role | null>(() => auth.value?.user.role ?? null)
@@ -271,9 +292,15 @@ export const useSessionStore = defineStore('session', () => {
 
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
+    endedByUnauthorized = false
     // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
-    const previous = auth.value
-    if (previous && String(previous.user.id) !== String(session.user.id)) dropLocalDrafts()
+    // The owner is recorded at sign-in, so it survives a 401 or an expiry that left no previous session. Drafts of an unknown owner go too.
+    const id = String(session.user.id)
+    if (draftOwner() !== id) {
+      dropLocalDrafts()
+      clearAllDrafts()
+    }
+    setDraftOwner(id)
     commit({ ...session })
   }
 
@@ -346,8 +373,24 @@ export const useSessionStore = defineStore('session', () => {
 
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
+    // Only a session that existed can "end": a 401 with no session (a guest, or storage already cleared) keeps the plain
+    // `/login?redirect=` of the guard.
+    const hadSession = auth.value !== null
     clear()
-    await unauthorizedRedirect?.()
+    endedByUnauthorized = hadSession
+    // A guest (no session) is already handled by the route guard; redirecting again would race with it and could drop
+    // the guard's `?redirect=` (for example a 401 that lands while /login?redirect=... is open).
+    if (hadSession) await unauthorizedRedirect?.()
+  }
+
+  /**
+   * Whether the session was just ended by a 401, then forgets it (one-shot). A navigation that runs into the guard after the 401
+   * cleared the session (a race with the 401 redirect) still lands on `/login?kembali=` with the expired-session banner (AC-ERR-2).
+   */
+  function takeEndedByUnauthorized(): boolean {
+    const was = endedByUnauthorized
+    endedByUnauthorized = false
+    return was
   }
 
   /**
@@ -378,8 +421,13 @@ export const useSessionStore = defineStore('session', () => {
       }
     }
     clear()
+    endedByUnauthorized = false
     dropLocalDrafts()
+    clearAllDrafts() // pp.draft.* (FR-ERR-8): removed on logout, kept on a 401
+    setDraftOwner(null)
   }
+
+  setDraftUserProvider(() => auth.value?.user.id ?? null)
 
   // Wiring: the API client reads the token from this store and reports 401s to it.
   api.configure({
@@ -412,6 +460,7 @@ export const useSessionStore = defineStore('session', () => {
     slide,
     clear,
     handleUnauthorized,
+    takeEndedByUnauthorized,
     refreshUser,
     logout,
   }

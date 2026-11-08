@@ -21,6 +21,7 @@ import {
   createAppRouter,
   decideAccess,
   FORBIDDEN_TITLE,
+  isSafeRedirect,
   NOT_FOUND_TITLE,
   resolvePostLoginTarget,
   scrollBehavior,
@@ -401,6 +402,16 @@ describe('after each navigation (overview §5.4 step 5)', () => {
   })
 })
 
+describe('isSafeRedirect', () => {
+  it.each(['/\\evil', '/\t/evil', '//evil', 'https://evil', '/', '/login'])('refuses %j', (v) => {
+    expect(isSafeRedirect(v)).toBe(false)
+  })
+  it.each(['/profile', '/dashboard?x=1', '/%2f/evil'])('accepts %j', (v) => {
+    // A literal `/%2f/evil` stays a same-origin path: the router never decodes %2f into a host separator.
+    expect(isSafeRedirect(v)).toBe(true)
+  })
+})
+
 describe('401 policy (FR-M01-14)', () => {
   it('a 401 clears the session and replaces the route with /login', async () => {
     transport = fakeTransport((req) =>
@@ -421,7 +432,66 @@ describe('401 policy (FR-M01-14)', () => {
     expect(useNotificationBadgeStore().count).toBe(0)
     expect(localStorage.getItem(PP_AUTH_STORAGE_KEY)).toBeNull()
     expect(router.currentRoute.value.path).toBe('/login')
-    expect(router.currentRoute.value.query).toEqual({})
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard' })
+  })
+
+  it('does not stack a second redirect inside 2 s and keeps an auth page as it is', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    const replace = vi.spyOn(router, 'replace')
+    const stop = connectUnauthorizedRedirect(router)
+    await router.push('/dashboard?x=1')
+    await useSessionStore().handleUnauthorized()
+    await useSessionStore().handleUnauthorized()
+    expect(replace).toHaveBeenCalledTimes(1)
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/dashboard?x=1' })
+    stop()
+  })
+
+  it('a navigation that reaches the guard after a 401 cleared the session still says kembali (race with the 401 redirect)', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    await router.push('/dashboard')
+    // The 401 ends the session but its own redirect does not run (no redirect registered): the next navigation meets the guard.
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/tetapan' })
+  })
+
+  it('the 401 mark is one-shot: a later guest navigation says redirect again', async () => {
+    installTransport(fakeTransport(() => ({})))
+    logIn(STUDENT)
+    const router = testRouter()
+    await router.push('/dashboard')
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.query).toEqual({ kembali: '/tetapan' })
+    await router.push('/dashboard?y=2')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/dashboard?y=2' })
+  })
+
+  it('a 401 with no session does not navigate: /login?redirect= keeps its return path', async () => {
+    installTransport(fakeTransport(() => ({})))
+    const router = testRouter()
+    connectUnauthorizedRedirect(router)
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+    await useSessionStore().handleUnauthorized()
+    await settle()
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
+  })
+
+  it('a 401 with no session (storage already cleared) does not mark kembali: the guard keeps redirect', async () => {
+    installTransport(fakeTransport(() => ({})))
+    const router = testRouter()
+    await useSessionStore().handleUnauthorized()
+    await router.push('/tetapan')
+    expect(router.currentRoute.value.path).toBe('/login')
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/tetapan' })
   })
 })
 
@@ -534,7 +604,7 @@ describe('session survives a reload and returns to the requested page', () => {
       role: STUDENT.role,
       landingPath: STUDENT.landingPath,
     }
-        expect(resolvePostLoginTarget(router, '/no/such/page', student)).toBe(student.landingPath)
+    expect(resolvePostLoginTarget(router, '/no/such/page', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, '//evil.example', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, '/login', student)).toBe(student.landingPath)
     expect(resolvePostLoginTarget(router, undefined, student)).toBe(student.landingPath)
@@ -560,22 +630,35 @@ describe('forced password change (AM2-A1, DV-26)', () => {
       id: 'M98' as const,
       slug: 'm98-stub',
       routes: [
-        { path: '/password/change', component: stub('change'), meta: { layout: 'bare' as const, access: 'auth' as const } },
-        { path: '/password/reset/:token', component: stub('reset'), meta: { layout: 'bare' as const, access: 'public' as const } },
+        {
+          path: '/password/change',
+          component: stub('change'),
+          meta: { layout: 'bare' as const, access: 'auth' as const },
+        },
+        {
+          path: '/password/reset/:token',
+          component: stub('reset'),
+          meta: { layout: 'bare' as const, access: 'public' as const },
+        },
       ],
     },
   ]
   const flaggedRouter = () => createAppRouter({ history: createMemoryHistory(), registry })
 
-  it.each(['/dashboard', '/admin', '/login', '/register', '/password/reset/abc', '/artikel', '/tetapan'])(
-    'sends a flagged session from %s to /password/change',
-    async (path) => {
-      logIn(path === '/admin' ? ADMIN : STUDENT, { mustChangePassword: true })
-      const router = flaggedRouter()
-      await router.push(path)
-      expect(router.currentRoute.value.path).toBe('/password/change')
-    },
-  )
+  it.each([
+    '/dashboard',
+    '/admin',
+    '/login',
+    '/register',
+    '/password/reset/abc',
+    '/artikel',
+    '/tetapan',
+  ])('sends a flagged session from %s to /password/change', async (path) => {
+    logIn(path === '/admin' ? ADMIN : STUDENT, { mustChangePassword: true })
+    const router = flaggedRouter()
+    await router.push(path)
+    expect(router.currentRoute.value.path).toBe('/password/change')
+  })
 
   it('lets a flagged session open /password/change and sign out via /logout', async () => {
     logIn(STUDENT, { mustChangePassword: true })
@@ -602,7 +685,12 @@ describe('forced password change (AM2-A1, DV-26)', () => {
   })
 
   it('ignores one trailing slash, a query and a hash on the exempt paths, but not nesting', () => {
-    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const flagged = {
+      isLoggedIn: true,
+      role: 'student' as const,
+      landingPath: '/dashboard',
+      mustChangePassword: true,
+    }
     const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
     const redirect = { kind: 'redirect', to: '/password/change' }
     expect(decideAccess(route('/logout/'), flagged)).toEqual({ kind: 'allow' })
@@ -645,9 +733,17 @@ describe('forced password change (AM2-A1, DV-26)', () => {
   })
 
   it('decideAccess redirects a flagged session and allows the exempt paths', () => {
-    const flagged = { isLoggedIn: true, role: 'student' as const, landingPath: '/dashboard', mustChangePassword: true }
+    const flagged = {
+      isLoggedIn: true,
+      role: 'student' as const,
+      landingPath: '/dashboard',
+      mustChangePassword: true,
+    }
     const route = (path: string) => ({ path, meta: {} }) as unknown as RouteLocationNormalized
-    expect(decideAccess(route('/dashboard'), flagged)).toEqual({ kind: 'redirect', to: '/password/change' })
+    expect(decideAccess(route('/dashboard'), flagged)).toEqual({
+      kind: 'redirect',
+      to: '/password/change',
+    })
     expect(decideAccess(route('/password/change'), flagged)).toEqual({ kind: 'allow' })
     expect(decideAccess(route('/logout'), flagged)).toEqual({ kind: 'allow' })
   })
