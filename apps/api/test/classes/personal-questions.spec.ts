@@ -214,7 +214,7 @@ describe('FR-GUR-44a-10: the mission draw', () => {
     const repo = { pupilLevelIds: () => Promise.resolve(levels) }
     // `emptyBab`: the bank has no question in the Bab (the existence draw, which has no owner, answers nothing).
     const pool = { draw: (f: Record<string, unknown>) => (draws.push(f), Promise.resolve(emptyBab && f.chapterId !== undefined && f.ownerPrivateUserId === undefined ? [] : ['1'])) }
-    const a = new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never)
+    const a = new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never, {} as never)
     const run = (m: Record<string, unknown>) => (a as unknown as { missionQuestionIds(m: unknown, u: string): Promise<string[]> }).missionQuestionIds(m, '20')
     return { draws, run }
   }

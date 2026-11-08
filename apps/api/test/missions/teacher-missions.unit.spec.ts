@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../src/common/errors/api-error'
 import { FixedClock } from '../../src/db/clock'
+import type { GuruGlobalChallenge } from '@pp/contract'
 import type { ClassActor } from '../../src/modules/classes/actor'
 import type { ClassRecord } from '../../src/modules/classes/classes.repository'
 import { MissionsService } from '../../src/modules/classes/missions/missions.service'
@@ -39,11 +40,15 @@ interface World {
   roster: Map<string, string[]>
   completed: Map<string, number>
   audits: string[]
+  /** The teacher's pupil set handed to the challenge reader, and the challenge rows it answers. */
+  pupils: string[]
+  asked: (readonly string[])[]
+  challenges: GuruGlobalChallenge[]
   nextId: number
 }
 
 function build(clockAt = NOW) {
-  const world: World = { missions: [], items: new Map(), classes: [], roster: new Map(), completed: new Map(), audits: [], nextId: 100 }
+  const world: World = { missions: [], items: new Map(), classes: [], roster: new Map(), completed: new Map(), audits: [], pupils: ['21', '22'], asked: [], challenges: [], nextId: 100 }
   const repo = {
     listForTeacher: (teacherId: string) =>
       Promise.resolve(
@@ -95,11 +100,13 @@ function build(clockAt = NOW) {
     activeSubjectExists: (id: string) => Promise.resolve(id === SUBJECT),
     get: (id: string) => Promise.resolve(world.classes.find((c) => c.id === id) ?? null),
     subjectNames: () => Promise.resolve(new Map([[SUBJECT, 'Matematik']])),
+    teacherStudentIds: () => Promise.resolve(world.pupils),
   }
   const practice = { linkedSessions: () => Promise.resolve([]) }
+  const gamification = { challengesForTeacher: (pupils: readonly string[]) => (world.asked.push(pupils), Promise.resolve(world.challenges)) }
   const audit = { record: (e: { action: string }) => (world.audits.push(e.action), Promise.resolve()) }
   const prisma = { transaction: <T>(fn: (tx: unknown) => Promise<T>) => fn({}) }
-  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt))
+  const service = new MissionsService(repo as never, classes as never, practice as never, audit as never, prisma as never, new FixedClock(clockAt), gamification as never)
   return { world, repo, service }
 }
 
@@ -272,6 +279,42 @@ describe('S6-T07 list and delete', () => {
     for (const r of rows) TeacherMissionSchema.parse(r)
   })
 
+  const challenge = (over: Partial<GuruGlobalChallenge> = {}): GuruGlobalChallenge => ({ id: '5', title: 'Cabaran A', description: 'Jawab soalan', target: 10, rewardSyiling: 30, rewardXp: 50, difficulty: 'easy', icon: 'target', completedToday: 3, ...over })
+
+  it('appends one Global row per active challenge after the own missions, with the mapped fields and today\'s MYT date', async () => {
+    const { service, world } = build()
+    world.challenges = [challenge(), challenge({ id: '6', title: 'Cabaran B', description: '', completedToday: 0 })]
+    await service.create(actor(), body({ date: '2026-11-20' }))
+    const rows = await service.list(actor())
+    expect(rows.map((r) => r.title)).toEqual(['Jawab 20 soalan', 'Cabaran A', 'Cabaran B'])
+    expect(rows[0]).toMatchObject({ global: false })
+    expect(rows[1]).toEqual({ id: 'challenge-5', title: 'Cabaran A', description: 'Jawab soalan', targetQuestions: 10, rewardCoins: 30, date: TODAY, classroomId: null, subjectId: null, subjectName: null, global: true, completedCount: 3 })
+    expect(rows[2]).toMatchObject({ id: 'challenge-6', description: null, completedCount: 0 })
+    for (const r of rows) TeacherMissionSchema.parse(r)
+  })
+
+  it('counts over the teacher\'s pupil set; an empty set gives 0; a teacher without missions still sees the challenges', async () => {
+    const { service, world } = build()
+    world.challenges = [challenge({ completedToday: 4 })]
+    expect((await service.list(actor()))[0]).toMatchObject({ global: true, completedCount: 4 })
+    expect(world.asked).toEqual([['21', '22']])
+    world.pupils = []
+    expect((await service.list(actor()))[0]).toMatchObject({ completedCount: 0 })
+    expect(world.asked[1]).toEqual([])
+  })
+
+  it('delete never reaches a challenge: its id is not a mission id, 403 (AC-GUR-2b-6)', async () => {
+    const { service, world } = build()
+    world.challenges = [challenge({ id: '1' })]
+    const own = await service.create(actor(), body())
+    const err = await refusal(service.remove(actor(), 'challenge-1'))
+    expect(err.code).toBe('FORBIDDEN')
+    expect(err.getStatus()).toBe(403)
+    expect(err.message).toBe('Misi global tidak boleh dipadam.')
+    expect((await refusal(service.remove(actor(), '987654321'))).code).toBe('NOT_FOUND')
+    expect(world.missions.some((m) => m.id === own.id)).toBe(true)
+  })
+
   it('delete: own OK (and gone), foreign and unknown 404', async () => {
     const { service, world } = build()
     const own = await service.create(actor(), body())
@@ -314,7 +357,7 @@ describe('S6-T07 the practice adapter serves harian like latih_tubi', () => {
     const draws: unknown[] = []
     const repo = { missionOfRecipient: () => Promise.resolve(m), pupilLevelIds: () => Promise.resolve([] as string[]) }
     const pool = { draw: (filter: unknown) => (draws.push(filter), Promise.resolve(['q1', 'q2', 'q3'])) }
-    return { draws, adapter: new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never) }
+    return { draws, adapter: new PracticeAssignmentsAdapter(repo as never, pool as never, {} as never, {} as never) }
   }
   const at = new Date(NOW)
 
