@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import {
   BATTLE_MESSAGES,
   BATTLE_RULES,
+  GAMES_ROBOT_NAME,
   type BattleListRowSchema,
   type BattlePodiumEntrySchema,
   type BattleSchoolDetailSchema,
@@ -158,14 +159,15 @@ export class StandingsService {
     const players = await this.deps.players([...new Set(rows.flatMap((r) => [r.playerA, r.playerB]).filter((id) => id !== null))])
     const mask = await this.masker(viewer)
     return rows.map((r) => {
-      const own = r.playerA === viewer.userId || r.playerB === viewer.userId
-      const one = (id: string | null): { id: string | null; name: string } => {
-        if (id === null) return { id: null, name: FALLBACK_NAME }
+      // FR-MUR-21-9: a side with no user, or marked is_bot, is the robot. FR-GM-00.8: `mask` keeps the viewer's own name in full,
+      // also in the viewer's own battles; another pupil follows the children's names rule.
+      const one = (id: string | null, isBot: boolean): { id: string | null; name: string } => {
+        if (id === null || isBot) return { id: null, name: GAMES_ROBOT_NAME }
         const p = players.get(id)
-        return own ? { id, name: p?.name ?? FALLBACK_NAME } : mask(id, p?.schoolId ?? null, p?.name ?? FALLBACK_NAME)
+        return mask(id, p?.schoolId ?? null, p?.name ?? FALLBACK_NAME)
       }
-      const a = one(r.playerA)
-      const b = one(r.playerB)
+      const a = one(r.playerA, r.botA)
+      const b = one(r.playerB, r.botB)
       return {
         uuid: r.id,
         playerA: { id: a.id, name: a.name, homeHere: homeSchoolId !== null && r.playerA !== null && players.get(r.playerA)?.schoolId === homeSchoolId },

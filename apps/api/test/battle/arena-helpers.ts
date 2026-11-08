@@ -25,11 +25,26 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { AuthModule } from '../../src/modules/auth'
 import { BattleModule } from '../../src/modules/battle'
-import { GAME_RESULT_PORT, type GameResultReport } from '../../src/modules/battle/game-result.port'
+import { GamesPorts, type GameResultOutcome, type GameRewardsPort } from '../../src/modules/games'
 import { loginAs, START, type LoggedIn } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export { START }
+
+/** The database of the app this spec file booted (one per file). */
+let entries: TestDatabase
+
+/** What a battle reported to the rewards port (FR-GM-00.3). */
+export interface GameResultReport {
+  userId: string
+  game: string
+  event: string
+  coins: number | undefined
+  xp: number
+  correct: number | undefined
+  total: number | undefined
+  session: string | undefined
+}
 
 export interface BattleTestApp {
   db: TestDatabase
@@ -82,12 +97,27 @@ export async function bootBattleApp(opts: { env?: Record<string, string | undefi
   const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, BattleModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .overrideProvider(GAME_RESULT_PORT)
-    .useValue({ onGameResult: async (r: GameResultReport) => void reports.push(r) })
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
+  // A double that records each report and keeps the first result per session and pupil (the real one: rewards-binding.spec).
+  const first = new Map<string, GameResultOutcome>()
+  const rewards: GameRewardsPort = {
+    canEarnSyiling: async () => true,
+    tierRates: async () => ({ correct: 0, win: 0 }),
+    onGameResult: async (userId, input) => {
+      reports.push({ userId, game: input.game, event: input.event, coins: input.coins, xp: input.xp, correct: input.correct, total: input.total, session: input.session?.id })
+      const out = { coinsCredited: input.coins ?? 0, xpAdded: input.xp, cappedReason: null }
+      first.set(`${input.session?.id ?? ''}:${userId}`, out)
+      return out
+    },
+    firstGameResult: async (sessionId, userId) => first.get(`${sessionId}:${userId}`) ?? null,
+  }
+  app.get(GamesPorts, { strict: false }).provideRewards(rewards)
   await app.init()
+  entries = db
+  // Most specs answer on a frozen clock; the pace guard has its own spec (game-rules.spec).
+  await db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
   return {
     db,
     clock,
@@ -215,8 +245,10 @@ export async function startQueue(owner: Client, subjectId: string, over: Record<
 
 /** Polls three times: the third poll matches a bot. Returns the battle uuid. */
 export async function matchBot(owner: Client, queueId: string): Promise<string> {
+  // The entry has waited `battle_bot_fallback_seconds` (48 GAME-01), without moving the clock of the test.
+  await entries.query(`update battle_queues set created_at = created_at - interval '30 seconds' where id = $1`, [queueId])
   let last: Response | null = null
-  for (let i = 0; i < 3; i++) last = await owner.get(`/battle/poll-match/${queueId}`)
+  last = await owner.get(`/battle/poll-match/${queueId}`)
   expect((last as Response).body.status, JSON.stringify((last as Response).body)).toBe('matched')
   return (last as Response).body.battle_uuid as string
 }
@@ -230,4 +262,48 @@ export async function botBattle(owner: Client, subjectId: string): Promise<strin
 export function parseData<T>(schema: { parse(v: unknown): T }, res: Response): T {
   expect(Object.keys(res.body as object), JSON.stringify(res.body)).toEqual(['data'])
   return parse(schema, { body: res.body.data, status: res.status } as Response)
+}
+
+/** The round clock of a battle as stored (`answered` = rounds closed; the next round opens at `round_started_at`, which is in the future during a reveal). */
+export async function roundOf(t: BattleTestApp, uuid: string): Promise<{ status: string; answered: number; startedAt: Date; questionCount: number }> {
+  const [row] = await t.db.query<{ status: string; answered: number; round_started_at: Date | null; created_at: Date; question_count: number }>(
+    `select status, answered, round_started_at, created_at, question_count from battles where id = $1`,
+    [uuid],
+  )
+  if (!row) throw new Error(`no battle ${uuid}`)
+  return { status: row.status, answered: row.answered, startedAt: row.round_started_at ?? row.created_at, questionCount: row.question_count }
+}
+
+/**
+ * Moves the clock like a waiting client does, until round `round` (1-based) has closed and the next one is open: one second at a
+ * time, with a poll of the arena of `viewer` after each (the poll and the robot's own time close the round), then to the exact
+ * start of the next round. Returns at once when the battle is over. Call it after the answers of `round`.
+ */
+export async function nextRound(t: BattleTestApp, viewer: Client, uuid: string, round: number): Promise<void> {
+  for (let i = 0; i < 60; i++) {
+    await viewer.get(`/battle/arena/${uuid}`)
+    const state = await roundOf(t, uuid)
+    if (state.status !== 'active') return
+    if (state.answered >= round) {
+      if (state.startedAt.getTime() > t.clock.now().getTime()) t.clock.set(state.startedAt)
+      return
+    }
+    t.clock.advance(1000)
+  }
+  throw new Error(`round ${round} of ${uuid} did not close`)
+}
+
+/** Settings of 48 section 2 changed for one test; the caller puts them back with `restoreSetting`. */
+export async function setSetting(t: BattleTestApp, key: string, value: number): Promise<void> {
+  await t.db.query(`update gamification_settings set value = $2 where key = $1`, [key, value])
+}
+
+/** A battle between two pupils: `owner` invites `receiver` (same school) and `receiver` accepts. Returns the battle uuid. */
+export async function humanBattle(owner: Client, receiver: Client, subjectId: string, over: Record<string, unknown> = {}): Promise<string> {
+  const invite = await owner.post('/battle/invite', { question_type: 'biasa', subject_id: subjectId, receiver_id: receiver.id, ...over })
+  expect(invite.status, JSON.stringify(invite.body)).toBe(200)
+  const pending = (await receiver.get('/battle/invitations')).body.invitations as { uuid: string }[]
+  const accepted = await receiver.post(`/battle/invite/${pending[0]?.uuid}/accept`)
+  expect(accepted.status, JSON.stringify(accepted.body)).toBe(200)
+  return accepted.body.battle_uuid as string
 }

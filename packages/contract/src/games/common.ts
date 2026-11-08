@@ -111,6 +111,23 @@ export const GamesRoomCodeSchema = z
 /** Non-negative integer (counts, scores). */
 export const gamesCount = z.number().int().min(0)
 
+/**
+ * API-GAME-01, API-GAME-02, API-GAME-03: what a finished game gave the pupil (48 section 3.4), absent for Mod Pelajar and for
+ * a seat that did not play. `reason` says what held it back: a daily cap, or the pace guard (credits nothing).
+ */
+export const GamesRewardSchema = z
+  .strictObject({
+    xp: gamesCount,
+    syiling: gamesCount,
+    capped: z.boolean().meta({ description: 'A daily cap reduced the reward.' }),
+    reason: z.enum(['xp_cap', 'syiling_cap', 'xp_and_syiling_cap', 'pace_guard']).nullable(),
+  })
+  .meta({ id: 'GamesReward' })
+export type GamesReward = z.infer<typeof GamesRewardSchema>
+
+/** 48 section 3.6: a robot is no person: this name, no user, no school. A room adds its number ("Robot PrestasiPlus 1", GAME-R). */
+export const GAMES_ROBOT_NAME = 'Robot PrestasiPlus'
+
 /** Exact BM (and generic English) messages of the mock, by use. Tests assert these. */
 export const GAMES_MESSAGES = {
   unauthenticated: 'Sesi anda telah tamat. Sila log masuk semula.',
@@ -141,6 +158,7 @@ export const GAMES_MESSAGES = {
   level: 'Tahap tidak sah.',
   soloInvalidResult: 'Keputusan tidak sah.',
   soloAlreadySubmitted: 'Keputusan sudah dihantar.',
+  soloTimeUp: 'Masa sudah tamat.',
   soloSessionNotFound: 'Sesi tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloItemNotFound: 'Soalan tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloAlreadyChecked: 'Soalan sudah dijawab.', // [PROPOSED]
