@@ -116,6 +116,10 @@ export const PAPER_UNAVAILABLE = 'Kertas ini sedang dikemas kini dan tidak boleh
 /** [PROPOSED] H-A13: the API's 409 line when "Cuba Lagi" targets a paper that is being updated. */
 export const RETRY_UNAVAILABLE = 'Kertas ini sudah tidak tersedia untuk dicuba semula.'
 
+/** Syiling per mark: the S5-T15 `coinsPerCorrect()` default (no reward_settings row). XP per mark is the API `XP_PER_MARK`. */
+const COINS_PER_CORRECT = 1
+const XP_PER_MARK = 10
+
 /**
  * S3-T01 (D76), as `GET /bijak/contracts`: a pupil sees a contract only when a Disahkan version serves. The set is read from the
  * registry (`BLUEPRINTS`), the same rows the Kontrak admin mock seeds as Disahkan, so one entity has one status in both mocks.
@@ -837,9 +841,28 @@ export class BijakServer implements BijakApi {
       pendingReview: pending,
       sections,
       questions,
-      coins: score * 2,
-      points: score * 10,
+      ...this.paidFigures(a, score, questions),
     }
+  }
+
+  /**
+   * Coins and points of a result = what the ledger credits (mirrors the API `withPaidFigures`, FR-PA-16, 46 D-PA-13). Exam and Kertas Subjektif: score x coinRate / x XP_PER_MARK.
+   * Mod Latihan: only the counted questions' parts that "Semak" never revealed (answer `revealed` flag, or a part "Semak" shows of a checked question) pay. 0 marks is 0/0.
+   */
+  private paidFigures(a: Attempt, score: number, questions: QuestionResult[]): { coins: number; points: number } {
+    const coinRate = COINS_PER_CORRECT
+    if (a.mode !== 'latihan' || a.paperKind === 'subjektif') return { coins: score * coinRate, points: score * XP_PER_MARK }
+    const revealed = new Set<string>()
+    for (const [partId, row] of Object.entries(a.answers)) if (row.answer?.revealed === true) revealed.add(partId)
+    for (const qid of a.checked) {
+      if (BANK.questions.has(qid)) for (const id of this.semakParts(qid)) revealed.add(id)
+    }
+    const payable = questions
+      .filter((q) => q.counted)
+      .flatMap((q) => q.parts)
+      .filter((p) => !revealed.has(p.partId))
+      .reduce((n, p) => n + p.awarded, 0)
+    return { coins: payable * coinRate, points: payable * XP_PER_MARK }
   }
 
   /** Latihan "Semak" (AC-15.3): grades one question and reveals only its scheme. */
@@ -956,7 +979,7 @@ export class BijakServer implements BijakApi {
           0,
           Math.round(((a.submittedAt ?? this.now()) - a.startedAt) / 1000),
         ),
-        ...(a.result ? { score: a.result.score, max: a.result.max } : {}),
+        ...(a.result ? { score: a.result.score, max: a.result.max, coins: a.result.coins } : {}),
       }))
   }
 

@@ -4,6 +4,7 @@ import type { BijakAttemptKind, BijakAttemptResult } from '@pp/contract'
 import { idFromString, idToString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
 import type { PartAnswer, SectionSnapshot } from './exam-core.adapter'
+import { XP_PER_MARK } from './marking'
 import type { SelfMarks } from './self-mark'
 
 export type AttemptStatus = 'in_progress' | 'submitted' | 'auto_submitted' | 'abandoned'
@@ -71,6 +72,8 @@ export interface HistoryRecord {
   row: AttemptRow
   score: number | null
   max: number | null
+  /** Syiling credited for the attempt (ledger `quiz_spm`, `sourceId` = attempt id or `<id>:score:<level>`). */
+  coins: number
 }
 
 type DbAttempt = Awaited<ReturnType<AttemptsRepository['rawFind']>>
@@ -294,8 +297,8 @@ export class AttemptsRepository {
       pendingReview: r.pendingReview,
       sections: graded.sections,
       questions: graded.questions,
-      coins: r.coins ?? score * 2,
-      points: r.points ?? score * 10,
+      coins: r.coins ?? 0, // never invent a pay figure
+      points: r.points ?? score * XP_PER_MARK,
     }
     return { result: base, selfMarks: graded.selfMarks ?? {} }
   }
@@ -358,10 +361,23 @@ export class AttemptsRepository {
       take: limit,
       include: { result: { select: { score: true, maxScore: true } } },
     })
+    const ids = rows.map((r) => String(r.id))
+    const ledger = ids.length
+      ? await this.prisma.client.coinLedger.findMany({
+          where: { userId: idFromString(userId), source: 'quiz_spm', OR: [{ sourceId: { in: ids } }, ...ids.map((id) => ({ sourceId: { startsWith: `${id}:score:` } }))] },
+          select: { sourceId: true, amount: true },
+        })
+      : []
+    const coinsOf = new Map<string, number>()
+    for (const l of ledger) {
+      const key = (l.sourceId ?? '').split(':')[0] ?? ''
+      coinsOf.set(key, (coinsOf.get(key) ?? 0) + l.amount)
+    }
     return rows.map((r) => ({
       row: this.toRow(r),
       score: r.result ? Number(r.result.score) : null,
       max: r.result ? Number(r.result.maxScore) : null,
+      coins: Math.max(0, coinsOf.get(String(r.id)) ?? 0),
     }))
   }
 

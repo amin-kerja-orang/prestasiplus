@@ -13276,6 +13276,11 @@
           "max": {
             "type": "integer",
             "minimum": 0
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Syiling actually credited for this attempt (quiz_spm ledger rows of the attempt); 0 when none."
           }
         },
         "required": [

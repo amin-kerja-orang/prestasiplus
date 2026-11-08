@@ -237,7 +237,7 @@ async function writeSittings(ctx: SeedContext, pupils: Map<string, bigint>, aggr
       answers.set(qid, { choice: right ? correct : wrongPick })
       savedAt.set(qid, startedMs + Math.floor(((i + 1) / questionIds.length) * durationMin * 60_000))
     }
-    const result = gradeAttempt(t.composition, t.bundles, answers)
+    const result = gradeAttempt(t.composition, t.bundles, answers, 1) // seed: the default rate, 1 Syiling per mark
     const startedAt = new Date(startedMs)
     const submittedAt = new Date(startedMs + durationMin * 60_000)
 
