@@ -128,6 +128,7 @@ model GameSession {
 
   @@unique([legacySource, legacyId], map: "uq_game_sessions_legacy")
   @@index([userId, game], map: "ix_game_sessions_user_id_game")
+  /// DM-89: partial index ix_game_sessions_jutawan_due (created_at) for the Jutawan sweep, written in migration 0235 only (Prisma cannot express partial indexes).
   @@map("game_sessions")
 }
 

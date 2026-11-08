@@ -5,7 +5,8 @@
  */
 import type { GamesKeylessQuestion, GamesRoomGame } from '@pp/contract'
 
-import { CROSSWORD_MS, PF_ROUND_MS } from './constants'
+import { turnMs } from './clocks'
+import { CROSSWORD_MS } from './constants'
 import type { RoomState } from './types'
 
 /** The keyless question awaiting an answer, or undefined. */
@@ -42,15 +43,23 @@ export function clocksOf(
   nowMs: number,
 ): { roundSecondsLeft?: number; secondsLeft?: number } {
   if (status !== 'playing') return {}
-  if (game === 'perang-fakta') {
-    const began = st.roundStartedMs ?? startedAtMs ?? nowMs
-    return { roundSecondsLeft: Math.max(0, Math.ceil((PF_ROUND_MS - (nowMs - began)) / 1000)) }
-  }
   if (game === 'teka-silang-kata') {
     const began = startedAtMs ?? nowMs
     return { secondsLeft: Math.max(0, Math.ceil((CROSSWORD_MS - (nowMs - began)) / 1000)) }
   }
-  return {}
+  const ms = turnMs(game, st.awaiting)
+  if (ms === null) return {}
+  const began = st.roundStartedMs ?? startedAtMs ?? nowMs
+  return { roundSecondsLeft: Math.max(0, Math.ceil((ms - (nowMs - began)) / 1000)) }
+}
+
+/** When the server clock ends the current turn or round (Teka Silang Kata: the game), ms; null when none runs. */
+export function roundEndsAtMs(game: GamesRoomGame, status: string, st: RoomState, startedAtMs: number | null): number | null {
+  if (status !== 'playing') return null
+  if (game === 'teka-silang-kata') return startedAtMs === null ? null : startedAtMs + CROSSWORD_MS
+  const ms = turnMs(game, st.awaiting)
+  const began = st.roundStartedMs ?? startedAtMs
+  return ms === null || began === null ? null : began + ms
 }
 
 export interface PublicState {

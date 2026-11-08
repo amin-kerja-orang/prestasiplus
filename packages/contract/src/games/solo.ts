@@ -8,6 +8,7 @@ import {
   gamesCount,
   gamesGradeNumber,
   type GamesSoloGame,
+  GamesRewardSchema,
 } from './common'
 
 /**
@@ -478,7 +479,7 @@ export const GamesJutawanAnswerResponseSchema = z
     correct: z.boolean(),
     level: z.number().int().min(0).max(15),
     next: GamesKeylessQuestionSchema.optional(),
-    result: z.strictObject({ level: z.number().int().min(0).max(15), credited: gamesCount }).optional(),
+    result: z.strictObject({ level: z.number().int().min(0).max(15), credited: gamesCount, reward: GamesRewardSchema.optional() }).optional(),
   })
   .refine((v) => (v.next === undefined) !== (v.result === undefined), {
     error: 'Exactly one of next and result is present.',

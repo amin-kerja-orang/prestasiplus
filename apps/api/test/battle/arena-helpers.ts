@@ -25,11 +25,26 @@ import { PrismaService } from '../../src/db/prisma.service'
 import { BattleDeps } from '../../src/modules/battle/battle.deps'
 import { AuthModule } from '../../src/modules/auth'
 import { BattleModule } from '../../src/modules/battle'
-import { GAME_RESULT_PORT, type GameResultReport } from '../../src/modules/battle/game-result.port'
+import { GamesPorts, type GameResultOutcome, type GameRewardsPort } from '../../src/modules/games'
 import { loginAs, START, type LoggedIn } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export { START }
+
+/** The database of the app this spec file booted (one per file). */
+let entries: TestDatabase
+
+/** What a battle reported to the rewards port (FR-GM-00.3). */
+export interface GameResultReport {
+  userId: string
+  game: string
+  event: string
+  coins: number | undefined
+  xp: number
+  correct: number | undefined
+  total: number | undefined
+  session: string | undefined
+}
 
 export interface BattleTestApp {
   db: TestDatabase
@@ -82,12 +97,27 @@ export async function bootBattleApp(opts: { env?: Record<string, string | undefi
   const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, BattleModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .overrideProvider(GAME_RESULT_PORT)
-    .useValue({ onGameResult: async (r: GameResultReport) => void reports.push(r) })
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
+  // A double that records each report and keeps the first result per session and pupil (the real one: rewards-binding.spec).
+  const first = new Map<string, GameResultOutcome>()
+  const rewards: GameRewardsPort = {
+    canEarnSyiling: async () => true,
+    tierRates: async () => ({ correct: 0, win: 0 }),
+    onGameResult: async (userId, input) => {
+      reports.push({ userId, game: input.game, event: input.event, coins: input.coins, xp: input.xp, correct: input.correct, total: input.total, session: input.session?.id })
+      const out = { coinsCredited: input.coins ?? 0, xpAdded: input.xp, cappedReason: null }
+      first.set(`${input.session?.id ?? ''}:${userId}`, out)
+      return out
+    },
+    firstGameResult: async (sessionId, userId) => first.get(`${sessionId}:${userId}`) ?? null,
+  }
+  app.get(GamesPorts, { strict: false }).provideRewards(rewards)
   await app.init()
+  entries = db
+  // Most specs answer on a frozen clock; the pace guard has its own spec (game-rules.spec).
+  await db.query(`update gamification_settings set value = 0 where key = 'games_min_ms_per_answer'`)
   return {
     db,
     clock,
@@ -215,8 +245,10 @@ export async function startQueue(owner: Client, subjectId: string, over: Record<
 
 /** Polls three times: the third poll matches a bot. Returns the battle uuid. */
 export async function matchBot(owner: Client, queueId: string): Promise<string> {
+  // The entry has waited `battle_bot_fallback_seconds` (48 GAME-01), without moving the clock of the test.
+  await entries.query(`update battle_queues set created_at = created_at - interval '30 seconds' where id = $1`, [queueId])
   let last: Response | null = null
-  for (let i = 0; i < 3; i++) last = await owner.get(`/battle/poll-match/${queueId}`)
+  last = await owner.get(`/battle/poll-match/${queueId}`)
   expect((last as Response).body.status, JSON.stringify((last as Response).body)).toBe('matched')
   return (last as Response).body.battle_uuid as string
 }

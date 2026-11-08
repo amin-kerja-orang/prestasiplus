@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
+import { GamesRewardSchema } from '../games/common'
 import { PkskAccessSchema } from '../pksk/student'
 
 /**
@@ -71,11 +72,19 @@ export const BATTLE_MESSAGES = {
   dateInvalid: 'Tarikh tidak sah.',
   closeBeforeOpen: 'Tarikh tutup mesti selepas tarikh buka.',
   actionInvalid: 'Tindakan tidak sah.',
+  /** ERR-GAME-05 (48 section 3.8). */
+  dailyLimit: 'Had battle hari ini telah dicapai. Cuba lagi esok.',
+  invitationExpired: 'Cabaran tamat tempoh.',
 } as const
 
 // -------------------------------------------------------------------------------------------
 // Enums
 // -------------------------------------------------------------------------------------------
+
+/** 48 GAME-01: the "Bilangan Soalan" chips; a battle has one question per count. */
+export const BATTLE_QUESTION_COUNTS = [5, 10, 15, 20] as const
+export const BattleQuestionCountSchema = z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(20)]).meta({ id: 'BattleQuestionCount' })
+export type BattleQuestionCount = z.infer<typeof BattleQuestionCountSchema>
 
 export const BATTLE_QUESTION_TYPES = ['biasa', 'pksk', 'spm'] as const
 export const BattleQuestionTypeSchema = z.enum(BATTLE_QUESTION_TYPES).meta({ id: 'BattleQuestionType' })
@@ -114,9 +123,8 @@ export function battleArenaPoints(seconds: number): number {
   return 1000 - Math.round((500 * s) / BATTLE_RULES.questionSeconds)
 }
 
-/** Higher total wins; equal and non-zero is a draw (`null`); 0-0 is player B (DV-M16-35). */
+/** Higher total wins; equal totals, 0-0 included, are a draw `null` (48 section 3.4, AC-GM-01.3; DV-M16-35 is replaced). */
 export function battleWinner(scoreA: number, scoreB: number): 'A' | 'B' | null {
-  if (scoreA === 0 && scoreB === 0) return 'B'
   if (scoreA > scoreB) return 'A'
   if (scoreB > scoreA) return 'B'
   return null
@@ -149,15 +157,19 @@ const openToAll = z
   .optional()
   .meta({ description: 'Treated as true only when literally true (anything else is false). No effect on an invitation.' })
 
+const questionCount = BattleQuestionCountSchema.optional().meta({
+  description: 'The "Bilangan Soalan" chip (48 GAME-01): 5, 10, 15 or 20; absent is `battle_questions_default`. A pupil is matched only with the same count.',
+})
+
 /**
  * Body of M16-02 and M16-03. `biasa`: `subject_id` is a battle subject. `pksk`: an active domain and
  * `T1|T4`. `spm`: a subject with a non-empty SPM pool; callers below grade 10 get 403 `{}`.
  */
 export const BattleStartRequestSchema = z
   .discriminatedUnion('question_type', [
-    z.object({ ...biasaFields, open_to_all: openToAll }),
-    z.object({ ...pkskFields, open_to_all: openToAll }),
-    z.object({ ...spmFields, open_to_all: openToAll }),
+    z.object({ ...biasaFields, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...pkskFields, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...spmFields, open_to_all: openToAll, question_count: questionCount }),
   ])
   .meta({ id: 'BattleStartRequest' })
 export type BattleStartRequest = z.infer<typeof BattleStartRequestSchema>
@@ -177,7 +189,7 @@ export const BattleChallengerSchema = z
   .meta({ id: 'BattleChallenger' })
 
 /**
- * 200 of M16-04. `waiting` for the first two polls, `matched` (bot) on the third (BATTLE_RULES.matchOnPoll);
+ * 200 of M16-04. `waiting` until a human is matched or, after `battle_bot_fallback_seconds` (48 GAME-01), the robot;
  * the queue is `expired` after 120 s or after more than 10 s without a poll; another user's queue is
  * `not_found` (never an HTTP error).
  */
@@ -190,7 +202,11 @@ export const BattlePollMatchResponseSchema = z
     z.strictObject({ status: z.literal('expired') }),
     z.strictObject({ status: z.literal('not_found') }),
     z.strictObject({ status: z.literal('incoming_challenge'), challenger: BattleChallengerSchema }),
-    z.strictObject({ status: z.literal('matched'), battle_uuid: IdSchema }),
+    z.strictObject({
+      status: z.literal('matched'),
+      battle_uuid: IdSchema,
+      robot: z.boolean().optional().meta({ description: 'True when the opponent is "Robot PrestasiPlus": the overlay says so for 2 s before the arena (48 GAME-01).' }),
+    }),
   ])
   .meta({ id: 'BattlePollMatchResponse' })
 
@@ -234,9 +250,9 @@ const receiver = { receiver_id: IdSchema.meta({ description: 'An existing studen
 /** Body of M16-08: the start body plus `receiver_id`. */
 export const BattleInviteRequestSchema = z
   .discriminatedUnion('question_type', [
-    z.object({ ...biasaFields, ...receiver, open_to_all: openToAll }),
-    z.object({ ...pkskFields, ...receiver, open_to_all: openToAll }),
-    z.object({ ...spmFields, ...receiver, open_to_all: openToAll }),
+    z.object({ ...biasaFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...pkskFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
+    z.object({ ...spmFields, ...receiver, open_to_all: openToAll, question_count: questionCount }),
   ])
   .meta({ id: 'BattleInviteRequest' })
 export type BattleInviteRequest = z.infer<typeof BattleInviteRequestSchema>
@@ -245,7 +261,7 @@ export const BattleInvitationSchema = z
   .strictObject({ uuid: IdSchema, sender_name: z.string(), sender_school: z.string() })
   .meta({ id: 'BattleInvitation' })
 
-/** 200 of M16-09: pending invitations younger than 24 h, newest first. */
+/** 200 of M16-09: pending invitations younger than `battle_invitation_hours`, newest first. */
 export const BattleInvitationsResponseSchema = z
   .strictObject({ invitations: z.array(BattleInvitationSchema) })
   .meta({ id: 'BattleInvitationsResponse' })
@@ -312,11 +328,20 @@ export const BattleArenaQuestionSchema = z
   .strictObject({ id: IdSchema, text: z.string(), options: z.array(BattleArenaOptionSchema).min(2).max(4) })
   .meta({ id: 'BattleArenaQuestion' })
 
-const ArenaPlayerSchema = z.strictObject({ name: z.string(), school: z.string() })
+const ArenaPlayerSchema = z.strictObject({
+  name: z.string(),
+  school: z.string(),
+  isBot: z.boolean().optional().meta({ description: 'True for the robot opponent ("Robot PrestasiPlus"), shown with the chip "Latihan" (48 GAME-01).' }),
+})
 const ScoresSchema = z.strictObject({ A: z.number().int().min(0), B: z.number().int().min(0) })
 
 export const BattleArenaResultSchema = z
-  .strictObject({ winner: BattleWinnerSchema, scoreA: z.number().int().min(0), scoreB: z.number().int().min(0) })
+  .strictObject({
+    winner: BattleWinnerSchema,
+    scoreA: z.number().int().min(0),
+    scoreB: z.number().int().min(0),
+    reward: GamesRewardSchema.optional().meta({ description: 'What this battle gave the caller.' }),
+  })
   .meta({ id: 'BattleArenaResult' })
 
 /**
@@ -334,6 +359,7 @@ export const BattleArenaViewSchema = z
     total: z.literal(BATTLE_RULES.arenaQuestions),
     question: BattleArenaQuestionSchema.nullable(),
     secondsLeft: z.number().int().min(0).max(BATTLE_RULES.questionSeconds),
+    roundEndsAt: TimestampSchema.optional().meta({ description: 'While active: when the caller\'s question times out, grace included (48 section 3.3).' }),
     result: BattleArenaResultSchema.optional(),
   })
   .superRefine((v, ctx) => {
