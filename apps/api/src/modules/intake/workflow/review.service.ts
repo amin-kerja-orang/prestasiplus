@@ -14,7 +14,9 @@ import {
   type IntakeItem,
   type IntakeItemCreateRequest,
   type IntakeItemListQuery,
+  type IntakeKirimanCounts,
   type IntakeKirimanStatus,
+  type IntakeItemStateCounts,
   type IntakeItemListResponse,
   type IntakeItemPatch,
   type IntakeItemPatchResult,
@@ -135,7 +137,9 @@ export class IntakeReviewService {
       ...(q.duplicate === undefined ? {} : DUPLICATE_WHERE[q.duplicate]),
     }
     const stateWhere = q.state === undefined ? base : { ...base, reviewState: q.state }
-    const kiriman = q.kirimanStatus === undefined ? null : await this.kirimanWhere(q.kirimanStatus, base)
+    const needsDone = q.kirimanStatus === 'Processing' || q.kirimanStatus === 'Selesai' || q.source === 'guru'
+    const accepted = needsDone ? await this.acceptedSplit(base) : null
+    const kiriman = q.kirimanStatus === undefined ? null : this.kirimanWhere(q.kirimanStatus, accepted)
     const where: Prisma.IntakeItemWhereInput = kiriman === null ? stateWhere : { AND: [stateWhere, kiriman] }
     const [total, rows, grouped] = await Promise.all([
       this.prisma.client.intakeItem.count({ where }),
@@ -150,7 +154,36 @@ export class IntakeReviewService {
     ])
     const counts = { generated: 0, needs_review: 0, accepted: 0, rejected: 0, duplicate: 0 }
     for (const g of grouped) if (g.reviewState in counts) counts[g.reviewState as IntakeItemState] = g._count._all
-    return { data: await this.views.rows(auth, rows), meta: { ...listMeta(q.page, q.pageSize, total), counts } }
+    const meta = { ...listMeta(q.page, q.pageSize, total), counts }
+    if (q.source !== 'guru' || accepted === null) return { data: await this.views.rows(auth, rows), meta }
+    const kirimanCounts = await this.kirimanCounts(auth, q, counts, accepted.done.length)
+    return { data: await this.views.rows(auth, rows), meta: { ...meta, kirimanCounts } }
+  }
+
+  /**
+   * S1-T08 (FR-ADM-Q12.1, lead ruling 2026-11-05): tile counts of Kiriman Guru, same scope and same mapping as the
+   * `kirimanStatus` filter (each equals the `totalItems` of its filter). In-progress guru batches (`submitted`, `processing`)
+   * without any item yet are "Sedang diproses" (40 OPT-KIRIMAN-STATUS): they add to `processing` and `jumlah`. They are not
+   * counted when a band or duplicate filter is given (those are item properties), and `batchId` narrows them to that batch.
+   */
+  private async kirimanCounts(auth: AuthContext, q: IntakeItemListQuery, c: IntakeItemStateCounts, selesai: number): Promise<IntakeKirimanCounts> {
+    const itemFilter = q.band !== undefined || q.duplicate !== undefined
+    const empty = itemFilter
+      ? 0
+      : await this.prisma.client.intakeBatch.count({
+          where: {
+            ...visibleBatches(auth),
+            source: 'guru',
+            status: { in: ['submitted', 'processing'] },
+            items: { none: {} },
+            ...(q.subject === undefined ? {} : { subject: q.subject.toUpperCase() }),
+            ...(isAdmin(auth) && q.uploaderId !== undefined ? { ownerUserId: parseId(q.uploaderId) ?? -1n } : {}),
+            ...(q.batchId === undefined ? {} : { id: parseId(q.batchId) ?? -1n }),
+          },
+        })
+    const pending = c.generated + c.needs_review + c.duplicate
+    const processing = c.accepted - selesai + empty
+    return { jumlah: pending + c.accepted + c.rejected + empty, pending, processing, selesai, ditolak: c.rejected }
   }
 
   /**
@@ -158,7 +191,7 @@ export class IntakeReviewService {
    * `Selesai` split the accepted items by the LIVE version of the resulting question (D12): `Selesai` = active question with
    * `live_version_no` set and that version `approved`; `Processing` = every other accepted item.
    */
-  private async kirimanWhere(key: IntakeKirimanStatus, base: Prisma.IntakeItemWhereInput): Promise<Prisma.IntakeItemWhereInput | null> {
+  private kirimanWhere(key: IntakeKirimanStatus, accepted: { done: bigint[] } | null): Prisma.IntakeItemWhereInput | null {
     switch (key) {
       case 'Jumlah':
         return null
@@ -166,21 +199,23 @@ export class IntakeReviewService {
         return { reviewState: { in: [...OPEN] } }
       case 'Ditolak':
         return { reviewState: 'rejected' }
-      default: {
-        // Only the accepted items inside the caller scope and the other filters are looked at (never the whole table).
-        const accepted = await this.prisma.client.intakeItem.findMany({ where: { AND: [base, { reviewState: 'accepted' }] }, select: { id: true, questionId: true } })
-        const qids = [...new Set(accepted.flatMap((r) => (r.questionId === null ? [] : [r.questionId])))]
-        const live = qids.length === 0 ? [] : await this.prisma.client.$queryRaw<{ id: bigint }[]>`
-          SELECT q.id
-          FROM questions q
-          WHERE q.id = ANY(${qids}::bigint[]) AND q.is_active AND q.live_version_no IS NOT NULL
-            AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved')`
-        const liveIds = new Set(live.map((r) => r.id))
+      default:
         // An accepted item whose question is gone (FK SET NULL) has no live approved question: it is Processing.
-        const done = accepted.filter((r) => r.questionId !== null && liveIds.has(r.questionId)).map((r) => r.id)
-        return key === 'Selesai' ? { id: { in: done } } : { reviewState: 'accepted', id: { notIn: done } }
-      }
+        return key === 'Selesai' ? { id: { in: accepted?.done ?? [] } } : { reviewState: 'accepted', id: { notIn: accepted?.done ?? [] } }
     }
+  }
+
+  /** The accepted items inside the caller scope and the other filters (never the whole table) that are `Selesai`. */
+  private async acceptedSplit(base: Prisma.IntakeItemWhereInput): Promise<{ done: bigint[] }> {
+    const accepted = await this.prisma.client.intakeItem.findMany({ where: { AND: [base, { reviewState: 'accepted' }] }, select: { id: true, questionId: true } })
+    const qids = [...new Set(accepted.flatMap((r) => (r.questionId === null ? [] : [r.questionId])))]
+    const live = qids.length === 0 ? [] : await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+      SELECT q.id
+      FROM questions q
+      WHERE q.id = ANY(${qids}::bigint[]) AND q.is_active AND q.live_version_no IS NOT NULL
+        AND EXISTS (SELECT 1 FROM question_versions v WHERE v.question_id = q.id AND v.version_no = q.live_version_no AND v.status = 'approved')`
+    const liveIds = new Set(live.map((r) => r.id))
+    return { done: accepted.filter((r) => r.questionId !== null && liveIds.has(r.questionId)).map((r) => r.id) }
   }
 
   async review(auth: AuthContext, idText: string): Promise<IntakeBatchReview> {

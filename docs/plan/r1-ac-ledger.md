@@ -252,6 +252,7 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S6-T10 | AC-GUR-42-7 | CI | Pass | 2026-11-06 | team-dd/S-2 | LaporanPage.test.ts |
 | S3-T07 | AC-PA-32 | CI | Pass | 2026-11-06 | team-dd/S-3 | bijak-papers/generate.spec.ts; bijak-hub-no-jana.test.ts |
 | S3-T07 | AC-MUR-13-29 | CI | Pass | 2026-11-06 | team-dd/S-3 | m06-spm/__tests__/pages/pages.test.ts; spm/hub.spec.ts (six hub entries per FR-MUR-13-1: five cards + Bijak SPM banner, lead ruling) |
+| S1-T08 | AC-ADM-Q12.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | papers-guru-intake.spec.ts::201 with a QuestionSetPaper; the admin sees the guru batch; ?source accepts only guru |
 
 ## Sprint 5
 

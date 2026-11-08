@@ -91,6 +91,51 @@ describe('GET /intake/items: source=guru and kirimanStatus (S1-T08)', () => {
     expect(res.meta.counts).toMatchObject({ accepted: 2, rejected: 1, duplicate: 1 })
   })
 
+  it('meta.kirimanCounts: each count equals the totalItems of its kirimanStatus filter; absent without source=guru', async () => {
+    const res = await list('source=guru&pageSize=1')
+    const c = res.meta.kirimanCounts!
+    expect(c).toBeDefined()
+    expect(c).toEqual({ jumlah: 6, pending: 3, processing: 1, selesai: 1, ditolak: 1 })
+    const keys = { jumlah: 'Jumlah', pending: 'Pending', processing: 'Processing', selesai: 'Selesai', ditolak: 'Ditolak' } as const
+    for (const [field, key] of Object.entries(keys)) {
+      expect(c[field as keyof typeof keys], key).toBe((await list(`source=guru&kirimanStatus=${key}&pageSize=1`)).meta.totalItems)
+    }
+    expect((await list('pageSize=1')).meta.kirimanCounts).toBeUndefined()
+    expect((await list('kirimanStatus=Pending&pageSize=1')).meta.kirimanCounts).toBeUndefined()
+  })
+
+  it('a zero-item in-progress guru batch counts in processing and jumlah; admin batches and finished or failed empty ones never do', async () => {
+    const before = (await list('source=guru&pageSize=1')).meta.kirimanCounts!
+    const owner = (await t.db.query<{ owner_user_id: string }>('select b.owner_user_id::text from intake_batches b join intake_items i on i.batch_id = b.id where i.id = $1::bigint', [guruIds[0]]))[0]!.owner_user_id
+    const mk = async (source: string, status: string) =>
+      (await t.db.query<{ id: string }>(
+        `insert into intake_batches (owner_user_id, status, source, paper_type, subject, kertas, source_text, rights_status)
+         values ($1::bigint, $2, $3, $4, 'BM', ${source === 'guru' ? 'null' : '1'}, 'x', 'own') returning id::text`,
+        [owner, status, source, source === 'guru' ? 'umum' : 'trial'],
+      ))[0]!.id
+    try {
+      const inProgress = await mk('guru', 'processing')
+      await mk('guru', 'submitted')
+      await mk('guru', 'failed')
+      await mk('guru', 'cancelled')
+      await mk('admin', 'processing')
+      const after = (await list('source=guru&pageSize=1')).meta.kirimanCounts!
+      expect(after).toEqual({ ...before, jumlah: before.jumlah + 2, processing: before.processing + 2 })
+      // The batchId filter narrows the empty batches to that one.
+      expect((await list(`source=guru&batchId=${inProgress}&pageSize=1`)).meta.kirimanCounts).toEqual({ jumlah: 1, pending: 0, processing: 1, selesai: 0, ditolak: 0 })
+      // Item filters never match a batch without items: the counts are those of the items alone, with no empty batch added.
+      const banded = (await list('source=guru&band=high&pageSize=1')).meta.kirimanCounts!
+      const bandedTotals = await Promise.all(
+        (['Jumlah', 'Pending', 'Processing', 'Selesai', 'Ditolak'] as const).map(async (k) => (await list(`source=guru&band=high&kirimanStatus=${k}&pageSize=1`)).meta.totalItems),
+      )
+      expect([banded.jumlah, banded.pending, banded.processing, banded.selesai, banded.ditolak]).toEqual(bandedTotals)
+    } finally {
+      await t.db.query(`delete from intake_batches where source = 'guru' and id not in (select batch_id from intake_items) and status in ('processing','submitted','failed','cancelled')`)
+      await t.db.query(`delete from intake_batches where source = 'admin' and id not in (select batch_id from intake_items)`)
+    }
+    expect((await list('source=guru&pageSize=1')).meta.kirimanCounts).toEqual(before)
+  })
+
   it('a teacher sees only their own items through the same filter', async () => {
     const res = await teacher.agent.get('/api/intake/items?source=guru&kirimanStatus=Jumlah&pageSize=100')
     expect(res.status).toBe(200)
