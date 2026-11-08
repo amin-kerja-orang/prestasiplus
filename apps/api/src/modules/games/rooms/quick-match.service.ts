@@ -76,7 +76,7 @@ export class QuickMatchService {
         maxPlayers: 4,
       })
       const room = await this.repo.room(code)
-      if (room) await this.rooms.addBot(room, await this.repo.players(code))
+      if (room) await this.rooms.addRobots(room, await this.repo.players(code))
       await this.repo.updateSearch(s.id, { status: 'matched', polls, roomCode: code })
       return { status: 'matched', room_code: code } as const
     })

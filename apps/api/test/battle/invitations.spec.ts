@@ -55,15 +55,54 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       expect(JSON.stringify(res.body)).not.toMatch(/@|ic_|phone|email/i)
     })
 
-    it('admin and the school admin of the pupil school see full names, sorted by name then id', async () => {
-      for (const email of ['admin@demo.test', 'adminsekolah@demo.test']) {
-        const who = await client(t, email)
-        const { users } = parse(BattleSearchResponseSchema, await who.get('/battle/search-opponent?q=MURID%20demo'))
-        expect(users.length).toBeGreaterThan(1)
-        const names = users.map((u) => u.name)
-        expect(names, email).toEqual([...names].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)))
-        for (const u of users) expect(u.name.toLowerCase()).toContain('murid demo')
-      }
+    it('the school admin of the pupil school sees full names, sorted by name then id; an admin with no school finds nobody (FR-GM-01.6)', async () => {
+      const who = await client(t, 'adminsekolah@demo.test')
+      const { users } = parse(BattleSearchResponseSchema, await who.get('/battle/search-opponent?q=MURID%20demo'))
+      expect(users.length).toBeGreaterThan(1)
+      const names = users.map((u) => u.name)
+      expect(names).toEqual([...names].sort((x, y) => (x < y ? -1 : x > y ? 1 : 0)))
+      for (const u of users) expect(u.name.toLowerCase()).toContain('murid demo')
+      // the admin of the whole system has no school: the search is the caller's own school, so it is empty
+      const admin = await client(t, 'admin@demo.test')
+      expect((await admin.get('/battle/search-opponent?q=MURID%20demo')).body).toEqual({ users: [] })
+    })
+
+    describe('own school only (FR-GM-01.6, AC-GM-01.6)', () => {
+      const OTHER = 'murid.demo001.04@example.test' // Tingkatan 4, school 1 until the fixture moves him
+      let otherId: string
+      let otherSchool: string
+      let sameId: string
+      beforeAll(async () => {
+        otherSchool = (await rows<{ id: string }>(`insert into schools (name, code, type, state) values ('SMK Ujian Sekolah Lain', 'UJISEKOLAHLAIN', 'SMK', 'Selangor') returning id::text`))[0]?.id as string
+        otherId = (await rows<{ id: string }>(`select id::text from users where lower(email) = lower($1)`, [OTHER]))[0]?.id as string
+        sameId = (await rows<{ id: string }>(`select id::text from users where lower(email) = lower('murid.demo001.01@example.test')`))[0]?.id as string
+        await rows(`update users set school_id = $1 where id = $2`, [otherSchool, otherId])
+      })
+      afterAll(async () => rows(`update users set school_id = 1 where id = $1`, [otherId]))
+
+      it('a pupil of another school is never found, whatever the name; the pupil of his own school is', async () => {
+        const found = ((await a.get('/battle/search-opponent?q=Murid%20Contoh')).body.users as { id: string }[]).map((u) => u.id)
+        expect(found).toContain(sameId)
+        expect(found).not.toContain(otherId)
+        const schools = await rows<{ school_id: string }>(`select distinct school_id::text from users where id = any($1::bigint[])`, [found])
+        expect(schools).toEqual([{ school_id: '1' }])
+        // the same pupil is found again as soon as he is in the school of the caller
+        await rows(`update users set school_id = 1 where id = $1`, [otherId])
+        expect(((await a.get('/battle/search-opponent?q=Contoh%20Hitam')).body.users as { id: string }[]).map((u) => u.id)).toContain(otherId)
+        await rows(`update users set school_id = $2 where id = $1`, [otherId, otherSchool])
+        expect((await a.get('/battle/search-opponent?q=Contoh%20Hitam')).body).toEqual({ users: [] })
+      })
+
+      it('invite: a receiver of another school answers "Penerima tidak sah." and stores nothing; one of the same school is stored', async () => {
+        await rows(`delete from battle_invitations`)
+        const res = await a.post('/battle/invite', body({ receiver_id: otherId }))
+        expect(res.status).toBe(422)
+        expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Penerima tidak sah.' })
+        expect((await rows(`select 1 from battle_invitations`)).length).toBe(0)
+        expect((await a.post('/battle/invite', body({ receiver_id: sameId }))).status).toBe(200)
+        expect((await rows(`select 1 from battle_invitations where receiver_id = $1`, [sameId])).length).toBe(1)
+        await rows(`delete from battle_invitations`)
+      })
     })
 
     it('never lists staff, inactive or suspended accounts', async () => {
@@ -177,8 +216,79 @@ describe('search and invitations (M16-07 to M16-11)', () => {
       expect((await b.get('/battle/invitations')).body).toEqual({ invitations: [] })
       const res = await b.post(`/battle/invite/${id}/accept`)
       expect(res.status).toBe(404)
-      expect(parse(BattleRawErrorSchema, res)).toEqual(NOT_FOUND)
+      // FR-GM-01 (48): the receiver of an invitation that ran out is told so; a stranger still gets the plain not-found
+      expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Cabaran tamat tempoh.' })
+      expect(parse(BattleRawErrorSchema, await c.post(`/battle/invite/${id}/accept`))).toEqual(NOT_FOUND)
       expect((await rows(`select 1 from battles where mode = 'challenge'`)).length).toBe(0)
+    })
+
+    it('battle_invitation_hours sets the window (48 h and 1 h), and an expired invitation tells the receiver "Cabaran tamat tempoh."', async () => {
+      const set = (hours: number) => rows(`update gamification_settings set value = $1 where key = 'battle_invitation_hours'`, [hours])
+      const age = (id: string, ms: number) => rows(`update battle_invitations set created_at = $1::timestamptz - ($2 || ' milliseconds')::interval where id = $3`, [t.clock.now().toISOString(), String(ms), id])
+      try {
+        await rows(`delete from battle_invitations`)
+        const id = await newInvite(a, b)
+        await set(48)
+        await age(id, 24 * 3_600_000 + 1) // past the old 24 h, inside 48 h
+        expect((await b.get('/battle/invitations')).body.invitations.length).toBe(1)
+        // a second invite to the same receiver is still the same open one
+        expect((await a.post('/battle/invite', body())).status).toBe(200)
+        expect((await rows(`select 1 from battle_invitations`)).length).toBe(1)
+        await age(id, 48 * 3_600_000 + 1)
+        expect((await b.get('/battle/invitations')).body).toEqual({ invitations: [] })
+        expect(parse(BattleRawErrorSchema, await b.post(`/battle/invite/${id}/accept`))).toEqual({ error: 'Cabaran tamat tempoh.' })
+        // the window is read on each call: 1 h
+        await set(1)
+        await rows(`delete from battle_invitations`)
+        const short = await newInvite(a, b)
+        await age(short, 3_600_000)
+        expect((await b.get('/battle/invitations')).body.invitations.length).toBe(1)
+        await age(short, 3_600_000 + 1)
+        expect((await b.get('/battle/invitations')).body).toEqual({ invitations: [] })
+        const res = await b.post(`/battle/invite/${short}/accept`)
+        expect(res.status).toBe(404)
+        expect(res.body).toEqual({ error: 'Cabaran tamat tempoh.' })
+        // an expired invitation can be sent again: a new row
+        expect((await a.post('/battle/invite', body())).status).toBe(200)
+        expect((await rows(`select 1 from battle_invitations`)).length).toBe(2)
+      } finally {
+        await set(24)
+        await rows(`delete from battle_invitations`)
+      }
+    })
+
+    it('question_count of the invitation reaches the battle and its draw (5 and 10; 15 is more than the 12 questions of the pool)', async () => {
+      await rows(`delete from battle_invitations`)
+      for (const n of [5, 10, 15]) {
+        if (n === 15) {
+          // 12 questions of Tingkatan 4 maths: 15 is refused when sent
+          const res = await a.post('/battle/invite', body({ question_count: n }))
+          expect(res.status).toBe(422)
+          expect(res.body).toEqual({ error: 'Soalan tidak mencukupi.' })
+          continue
+        }
+        expect((await a.post('/battle/invite', body({ question_count: n }))).status).toBe(200)
+        const [inv] = await rows<{ id: string; question_count: number }>(`select id::text, question_count from battle_invitations where status = 'pending'`)
+        expect(inv?.question_count).toBe(n)
+        const accepted = await b.post(`/battle/invite/${inv?.id}/accept`)
+        expect(accepted.status).toBe(200)
+        const uuid = accepted.body.battle_uuid as string
+        expect((await rows<{ question_count: number }>(`select question_count from battles where id = $1`, [uuid]))[0]?.question_count).toBe(n)
+        expect((await rows<{ n: string }>(`select count(*)::text n from battle_questions where battle_id = $1`, [uuid]))[0]?.n).toBe(String(n))
+      }
+      // absent: 10
+      expect((await a.post('/battle/invite', body())).status).toBe(200)
+      const [last] = await rows<{ question_count: number }>(`select question_count from battle_invitations where status = 'pending'`)
+      expect(last?.question_count).toBe(10)
+      await rows(`delete from battle_invitations`)
+    })
+
+    it.each([[7], [0], ['10'], [null], [25]])('an invalid question_count (%j) answers 422 "Nilai di luar julat." and stores nothing', async (bad) => {
+      await rows(`delete from battle_invitations`)
+      const res = await a.post('/battle/invite', body({ question_count: bad }))
+      expect(res.status).toBe(422)
+      expect(parse(BattleRawErrorSchema, res)).toEqual({ error: 'Nilai di luar julat.' })
+      expect((await rows(`select 1 from battle_invitations`)).length).toBe(0)
     })
 
     it('accept: receiver only; the sender is side A; one battle; a second accept is not found', async () => {
@@ -233,7 +343,10 @@ describe('search and invitations (M16-07 to M16-11)', () => {
 
   describe('Mod Pelajar (is_test)', () => {
     it('a test invitation is stored with is_test and is invisible to the real receiver', async () => {
-      const admin = await client(t, 'admin@demo.test', { modPelajar: true })
+      // FR-GM-01.6: Mod Pelajar of a school admin acts inside that school; an admin with no school reaches nobody
+      const noSchool = await client(t, 'admin@demo.test', { modPelajar: true })
+      expect((await noSchool.post('/battle/invite', body({ receiver_id: b.id }))).status).toBe(422)
+      const admin = await client(t, 'adminsekolah@demo.test', { modPelajar: true })
       await rows(`delete from battle_invitations`)
       expect((await admin.post('/battle/invite', body({ receiver_id: b.id }))).status).toBe(200)
       const [inv] = await rows<{ id: string; is_test: boolean }>(`select id::text, is_test from battle_invitations`)
