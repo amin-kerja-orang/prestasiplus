@@ -156,8 +156,10 @@ describe('servability rules (pure)', () => {
 
   it('every reason comes with its BM sentence from the one copy table, and the report counts served activities', () => {
     const report = evaluateAll(facts({ onPublishedPaper: true }))
-    expect(report.total).toBe(SERVABILITY_ACTIVITIES.length)
-    expect(report.servedCount).toBe(report.activities.filter((a) => a.served).length)
+    expect(report.activities).toHaveLength(SERVABILITY_ACTIVITIES.length)
+    // FR-QA-45: jana_kertas is listed for admin use but neither served nor counted: "n daripada 6".
+    expect(report.total).toBe(6)
+    expect(report.servedCount).toBe(report.activities.filter((a) => a.served && a.activity !== 'jana_kertas').length)
     const draft = record({ liveVersionNo: null }, { status: 'draft' })
     const r = evaluate(facts({ live: null, latest: draft }), 'bab').reasons[0]
     expect(r?.message).toBe(SERVABILITY_REASON_MS.not_approved)

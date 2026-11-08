@@ -191,11 +191,12 @@ export class ServabilityReadsService {
     const paperQuestions = run(() => this.evaluatePublishedPaperQuestions())
     // Every read of the overview goes through `run`, the card and the subject list included, so no more than OVERVIEW_PARALLEL hold pool connections at once.
     const paperCardP = paperQuestions.then((evaluated) => run(() => this.paperLaneCard(evaluated.results)))
-    const [onPapers, drawn, bab, kuiz, jana, databankTotal, bank, spmSubjects, paperCard, trackingCard, subjektifCard, kertasTotal] = await Promise.all([
+    const [onPapers, drawn, bab, kuiz, games, jana, databankTotal, bank, spmSubjects, paperCard, trackingCard, subjektifCard, kertasTotal] = await Promise.all([
       paperQuestions,
       run(() => this.spmDraw()),
       run(() => this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })),
       run(() => this.questions.count({ ...filterOf('simulasi_kuiz'), ...live })),
+      run(() => this.questions.count({ ...filterOf('permainan'), ...live })),
       run(() => this.janaEligible()),
       run(() => this.databankLaneTotal()),
       run(() => this.questions.count(live)),
@@ -217,6 +218,7 @@ export class ServabilityReadsService {
       ['simulasi_paper', paperServed, onPapers.ids.length, 'evaluated'],
       ['simulasi_kuiz', kuiz, bank, 'sql'],
       ['jana_kertas', jana, bank, 'pool'],
+      ['permainan', games, bank, 'sql'],
     ]
     // Hub cards (FR-ADM-Q01.1), PRD order. Each counts the ROWS of the lane it opens; Latih Tubi counts the questions of its cells.
     const card = (lane: ServabilityHubLane, total: number, attention: number): ServabilityHubCard => {

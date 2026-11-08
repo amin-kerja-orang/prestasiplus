@@ -89,7 +89,7 @@ export const RegroupWorklistRowSchema = z
     level: z.string(),
     flag: StimulusFlagSchema,
     reference: z.enum(['numbered', 'unnumbered']).nullable(),
-    paper: z.object({ id: IdSchema, paperCode: z.string().nullable(), year: z.number().int().nullable(), examType: z.string().nullable() }).nullable(),
+    paper: z.object({ id: IdSchema, title: z.string().nullable().meta({ description: 'The source paper code, exam type and year, joined by spaces (the source paper has no title column); null when all three are empty.' }), paperCode: z.string().nullable(), year: z.number().int().nullable(), examType: z.string().nullable() }).nullable(),
   })
   .meta({ id: 'RegroupWorklistRow' })
 

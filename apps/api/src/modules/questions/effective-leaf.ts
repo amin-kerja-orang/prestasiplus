@@ -159,7 +159,7 @@ const squash = (s: string): string => s.trim().replace(/\s+/g, ' ')
  *  - `figure_only`: an image on the stem, no group, the stem empty after trimming, no text in any part prompt and no option text (a bare figure
  *    imported as a question; 45 6.6.1 "no question sentence, no options");
  *  - `stimulus_missing`: no group, no stimulus and no image anywhere, and the stem, a part prompt or an option names a figure
- *    (`stimulusReferenceOf`, the keyword code of `figure-links.ts`: "Rajah 14", "Jadual 2", "Graf", whole word, case-insensitive);
+ *    (`stimulusReferenceOf`, the one keyword set of 45 6.6.1 in `figure-links.ts`: a figure word plus a number, or a figure/source word with a positional phrase within 3 words or as subject of menunjukkan/shows; a bare word alone does not flag; case and diacritics normalised);
  *  - `stem_duplicated`: the question has exactly one leaf and its prompt equals the stem after trimming and collapsing spaces.
  */
 export function detectStimulusFlag(input: FlagInput): StimulusFlagResult | null {

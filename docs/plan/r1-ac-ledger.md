@@ -165,6 +165,15 @@ During Slice 0 (plan section 5A) the UAT deploy is made on request. The team lea
 | S1-T05 | AC-ADM-QE6.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a CSV of one group of 3 yields one group with 3 members in group_order and one stimulus, all drafts, in the same import; questions-workflow/imports-csv.spec.ts::[CI] one group of 3 rows is one group with 3 members in group_order and one stimulus |
 | S1-T05 | AC-ADM-QE6.2 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
 | S1-T05 | AC-ADM-Q11.1 | CI | Pass | 2026-11-05 | team-aa/S-3 | questions-workflow/imports.spec.ts::[CI] a row with every DSKP column imports with its unit, SP, TP, aras, chapter and topic and passes the publish gate through the existing approve route |
+| S1-T07 | AC-ADM-G7.1 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] creating "Rajah 14 menunjukkan ..." with no figure stores stimulus_missing, numbered, with a timestamp; stimulus-flags-unit.spec.ts: 45 6.6.1 keyword rule |
+| S1-T07 | AC-ADM-G7.3 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] stimulus_missing excludes the question from the draw and gives its reason on every pupil surface |
+| S1-T07 | AC-MUR-13-19 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags.spec.ts: [CI] stimulus_missing excludes the question from the draw and gives its reason on every pupil surface |
+| S1-T07 | AC-ADM-QE2.5 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-ADM-QE2.5: removing a member that names "Rajah 3" from its group sets stimulus_missing |
+| S1-T07 | AC-QA-12 | CI | Pass | 2026-11-05 | team-aa/S-4 | stimulus-flags-unit.spec.ts: [CI] unnumbered form: a figure or source word with a positional phrase within 3 words; stimulus-flags.spec.ts: [CI] an unnumbered reference is stored with ref unnumbered |
+| S1-T07 | AC-QA-13 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-13 / AC-ADM-QE8.3: figure + 2 served members -> 1 group, 2 members, own image removed, still Diluluskan |
+| S1-T07 | AC-QA-32 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-32 rejected=true or false reads rejection_reason (DM-58) |
+| S1-T07 | AC-QA-47 | CI | Pass | 2026-11-05 | team-aa/S-4 | regroup.spec.ts: [CI] AC-QA-47 q: a question id finds the row, text finds the stem |
+| S1-T07 | AC-QA-45 | CI | Pass | 2026-11-05 | team-aa/S-4 | servability-parity.spec.ts: [CI] AC-QA-45: the indicator reads n of 6 (jana_kertas listed but not counted) and permainan is counted and equals the games draw |
 
 ## Sprint 3
 
