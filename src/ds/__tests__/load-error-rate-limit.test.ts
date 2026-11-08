@@ -61,6 +61,15 @@ describe('DsLoadError rate-limit countdown', () => {
     expect(w.emitted('retry')).toHaveLength(1)
   })
 
+  it('emits countdown with the seconds left at the start, on each tick and a final 0', async () => {
+    vi.useFakeTimers()
+    const w = mount(DsLoadError, { props: { error: rateLimited(3) } })
+    vi.advanceTimersByTime(3000)
+    await w.vm.$nextTick()
+    expect(w.emitted('countdown')?.map((e) => e[0])).toEqual([3, 2, 1, 0])
+    expect(mount(DsLoadError, { props: { message: 'x' } }).emitted('countdown')).toBeUndefined()
+  })
+
   it('keeps the changing countdown out of the live region announcements (aria-live off)', () => {
     vi.useFakeTimers()
     for (const variant of ['alert', 'inline'] as const) {
