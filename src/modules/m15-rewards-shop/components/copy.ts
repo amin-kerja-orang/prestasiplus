@@ -63,12 +63,13 @@ export const MY_REDEMPTIONS_COPY = {
 } as const
 
 /**
- * R1-ADM-P2-07 `/admin/hadiah` (30 P2-07, P07-15; S7-T11 part 1A; the form copy is part 1B). Every
+ * R1-ADM-P2-07 `/admin/hadiah`, `/baharu`, `/:id/edit` (30 P2-07, field list P07-01..15; S7-T11). Every
  * string here is exact BM from the SRS; the strings it does not give are in `HADIAH_ADMIN_PROPOSED`.
  */
 export const HADIAH_ADMIN_COPY = {
   heading: '🎁 Kedai Hadiah Digital',
   sub: 'Urus catalog hadiah + proses tebusan pelajar',
+  addNew: 'Tambah Hadiah',
   queueLink: 'Tebusan Queue',
   tiles: {
     total: 'Total Hadiah',
@@ -93,6 +94,7 @@ export const HADIAH_ADMIN_COPY = {
   unlimited: '∞',
   statusOn: 'On',
   statusOff: 'Off',
+  edit: 'Edit',
   /** Category filters only (FR-ADM-P2-07.2). */
   empty: 'Tiada hadiah dalam kategori ini.',
   selected: (n: number): string => `${String(n)} hadiah dipilih`,
@@ -107,6 +109,33 @@ export const HADIAH_ADMIN_COPY = {
   },
   /** `keptIds` of a bulk delete (P07-15). */
   hasRedemptions: 'Hadiah ini mempunyai tebusan. Nyahaktifkan sahaja.',
+  form: {
+    createTitle: 'Tambah Hadiah',
+    editTitle: 'Edit Hadiah',
+    category: 'Kategori',
+    vendor: 'Vendor',
+    vendorPlaceholder: 'cth: Roblox, Touch n Go, Hotlink',
+    title: 'Tajuk',
+    titlePlaceholder: 'cth: TnG eWallet RM50',
+    description: 'Penerangan',
+    denominationRm: 'Nilai (RM)',
+    tokenCost: 'Kos Token',
+    tokenCostHint: '100 syiling = 1 token = RM1',
+    iconEmoji: 'Emoji Icon',
+    stockQuantity: 'Stok (kosong = tanpa had)',
+    maxPerMonthPerStudent: 'Maks/bulan/pelajar',
+    voucherValidityDays: 'Sah Hari (default 365)',
+    deliveryMethod: 'Delivery',
+    deliveryManual: 'Manual (admin paste)',
+    deliveryInstant: 'Instant',
+    vendorSku: 'Vendor SKU (optional)',
+    displayOrder: 'Display Order',
+    imageUrl: 'Image URL (optional)',
+    termsText: 'Terma Khas',
+    isActive: 'Aktif',
+    create: 'Tambah',
+    save: 'Simpan',
+  },
 } as const
 
 /**
@@ -147,8 +176,8 @@ export const TEBUSAN_ADMIN_COPY = {
 } as const
 
 /**
- * PROPOSED (no source in 10, 30, 40 or 48): the bulk prompts and flashes, the delete confirmation
- * and the delivery code field. Each is a labelled placeholder for the product owner.
+ * PROPOSED (no source in 10, 30, 40 or 48): the bulk prompts and flashes, the delete confirmation, the
+ * save flashes and the delivery code field. Each is a labelled placeholder for the product owner.
  */
 export const HADIAH_ADMIN_PROPOSED = {
   stockPrompt: 'Stok (kosong = tanpa had)',
@@ -161,6 +190,8 @@ export const HADIAH_ADMIN_PROPOSED = {
   deleteGo: 'Ya, Padam',
   bulkDone: (n: number): string => `${String(n)} hadiah dikemas kini.`,
   bulkDeleted: (n: number): string => `${String(n)} hadiah dipadam.`,
+  created: 'Hadiah ditambah.',
+  saved: 'Hadiah disimpan.',
   codeLabel: 'Kod baucar',
   cancelled: 'Tebusan dibatalkan.',
 } as const

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /**
- * R1-ADM-P2-07 `/admin/hadiah` "Kedai Hadiah Digital" (30 P2-07, P07-01..15; S7-T11 part 1A). The new and
- * edit form (`/baharu`, `/:id/edit`) is part 1B: until it lands the page shows no `Tambah Hadiah` or `Edit`
- * action, as those routes do not exist yet.
+ * R1-ADM-P2-07 `/admin/hadiah` "Kedai Hadiah Digital" (30 P2-07, P07-01..15; S7-T11), and the same page in
+ * `mode` create / edit for `/admin/hadiah/baharu` and `/admin/hadiah/:id/edit` (one form, `HadiahAdminForm`).
  * List: four tiles from `meta.cards`, the category pills (a link each, so the filter and the page live in the
  * URL), the table (cards below `md`) at 50 a page, the bulk toolbar "{n} hadiah dipilih" with its seven
  * actions, and the "Tebusan Queue" card (`RedemptionsAdminPage`, decision 4 on #562). A page past the last
@@ -42,12 +41,18 @@ import {
   type BulkAction,
   type HadiahListItem,
 } from '../api/types'
+import HadiahAdminForm from '../components/HadiahAdminForm.vue'
 import {
   COMMON_COPY,
   HADIAH_ADMIN_COPY as COPY,
   HADIAH_ADMIN_PROPOSED as PROPOSED,
 } from '../components/copy'
 import RedemptionsAdminPage from './RedemptionsAdminPage.vue'
+
+const props = withDefaults(
+  defineProps<{ mode?: 'list' | 'create' | 'edit'; id?: string }>(),
+  { mode: 'list', id: undefined },
+)
 
 type Row = HadiahListItem & Record<string, unknown>
 
@@ -57,6 +62,13 @@ const LIST_PATH = '/admin/hadiah'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+
+// --- the form modes --------------------------------------------------------------------------------------
+
+async function onSaved(): Promise<void> {
+  flash.set({ type: 'success', message: props.mode === 'create' ? PROPOSED.created : PROPOSED.saved })
+  await router.push(LIST_PATH)
+}
 
 // --- the list ----------------------------------------------------------------------------------------------
 
@@ -73,7 +85,7 @@ const page = computed(() => {
 const list = useApi(
   (signal) => fetchHadiahList({ cat: cat.value, page: page.value, signal }),
   [cat, page],
-  { immediate: true },
+  { immediate: props.mode === 'list' },
 )
 
 const rows = computed<Row[]>(() => (list.data.value?.data ?? []) as Row[])
@@ -135,6 +147,7 @@ const COLUMNS: TableColumn<Row>[] = [
   { id: 'stock', header: COPY.columns.stock },
   { id: 'redemptions', header: COPY.columns.redemptions },
   { id: 'status', header: COPY.columns.status },
+  { id: 'actions', header: COPY.columns.actions },
 ]
 const CARD_FIELDS = [
   { key: 'vendor', label: COPY.columns.reward },
@@ -147,6 +160,7 @@ const rm = (row: HadiahListItem): string =>
   formatNumber(row.denominationRm, { decimals: 2, dropZeroFraction: true })
 const stock = (row: HadiahListItem): string =>
   row.stockQuantity === null ? COPY.unlimited : formatCount(row.stockQuantity)
+const editTo = (row: HadiahListItem): string => `${LIST_PATH}/${row.id}/edit`
 const statusWord = (row: HadiahListItem): string => (row.isActive ? COPY.statusOn : COPY.statusOff)
 
 // --- the bulk toolbar (P07-15) ---------------------------------------------------------------------------
@@ -266,17 +280,28 @@ const listStatus = computed(() =>
 </script>
 
 <template>
-  <DsPage layout="list" data-testid="hadiah-page">
-    <template #actions>
+  <DsPage
+    layout="list"
+    :back-to="mode === 'list' ? undefined : LIST_PATH"
+    data-testid="hadiah-page"
+  >
+    <template v-if="mode === 'list'" #actions>
       <UButton
         to="/admin/hadiah/tebusan"
         color="neutral"
         :label="COPY.queueLink"
         data-testid="hadiah-queue-link"
       />
+      <UButton
+        to="/admin/hadiah/baharu"
+        :label="COPY.addNew"
+        data-testid="hadiah-add"
+      />
     </template>
 
-    <DsStack gap="section">
+    <HadiahAdminForm v-if="mode !== 'list'" :id="id" :mode="mode" @saved="onSaved" />
+
+    <DsStack v-else gap="section">
       <DsStatRow :items="tiles" prefix="hadiah-tile" density="compact" :loading="listStatus === 'loading'" />
 
       <DsPillNav
@@ -331,6 +356,14 @@ const listStatus = computed(() =>
               :data-testid="`hadiah-status-${row.original.id}`"
             />
           </template>
+          <template #actions-cell="{ row }">
+            <UButton
+              :to="editTo(row.original)"
+              color="neutral"
+              :label="COPY.edit"
+              :data-testid="`hadiah-edit-${row.original.id}`"
+            />
+          </template>
 
           <template #card="{ row }">
             <DsStack gap="xs" :data-testid="`hadiah-card-${String(row.id)}`">
@@ -351,6 +384,14 @@ const listStatus = computed(() =>
                   · {{ COPY.columns.stock }} {{ stock(row as Row) }} · {{ COPY.columns.redemptions }}
                   {{ formatCount((row as Row).redemptionCount) }}
                 </DsText>
+              </DsCluster>
+              <DsCluster gap="sm">
+                <UButton
+                  :to="editTo(row as Row)"
+                  color="neutral"
+                  :label="COPY.edit"
+                  :data-testid="`hadiah-edit-${String(row.id)}`"
+                />
               </DsCluster>
             </DsStack>
           </template>

@@ -702,6 +702,7 @@
       "sector": "S2",
       "component": null,
       "file": "src/modules/m04-question-bank/routes/questions-form.ts",
+      "redirects_to": "(dynamic)",
       "note": "V3 duplicates register M-06 (D113): old flat form redirects to Studio after the field comparison",
       "approved_by_card": null
     },
@@ -809,18 +810,6 @@
       "approved_by_card": null
     },
     {
-      "key": "/admin/studio/questions/:id(\\d+)/edit|",
-      "path": "/admin/studio/questions/:id(\\d+)/edit",
-      "name": null,
-      "status": "redirect-to:/admin/studio/questions/:id/sunting",
-      "sector": "S2",
-      "component": null,
-      "file": "src/modules/m04-question-bank/routes/studio.ts",
-      "redirects_to": "/admin/studio/questions/:id/sunting",
-      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
-      "approved_by_card": "S2-T01"
-    },
-    {
       "key": "/admin/studio/questions/:id(\\d+)/preview|",
       "path": "/admin/studio/questions/:id(\\d+)/preview",
       "name": null,
@@ -830,6 +819,18 @@
       "file": "src/modules/m04-question-bank/routes/studio.ts",
       "redirects_to": "(dynamic)",
       "approved_by_card": "S2-T03"
+    },
+    {
+      "key": "/admin/studio/questions/:id(\\d+)/edit|",
+      "path": "/admin/studio/questions/:id(\\d+)/edit",
+      "name": null,
+      "status": "redirect-to:/admin/studio/questions/:id/sunting",
+      "sector": "S2",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/studio.ts",
+      "redirects_to": "(dynamic)",
+      "note": "V2 path alias of the Studio wizard; FR-ADM-Q04.7",
+      "approved_by_card": "S2-T01"
     },
     {
       "key": "/admin/studio/groups/:id(\\d+)|m04.studio.group",
@@ -2495,12 +2496,32 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/hadiah/baharu|m15.admin-hadiah-new",
+      "path": "/admin/hadiah/baharu",
+      "name": "m15.admin-hadiah-new",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/hadiah/tebusan|m15.admin-redemptions",
       "path": "/admin/hadiah/tebusan",
       "name": "m15.admin-redemptions",
       "status": "canonical",
       "sector": "S7",
       "component": "src/modules/m15-rewards-shop/pages/RedemptionsAdminPage.vue",
+      "file": "src/modules/m15-rewards-shop/routes/admin.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/hadiah/:id(\\d+)/edit|m15.admin-hadiah-edit",
+      "path": "/admin/hadiah/:id(\\d+)/edit",
+      "name": "m15.admin-hadiah-edit",
+      "status": "canonical",
+      "sector": "S7",
+      "component": "src/modules/m15-rewards-shop/pages/HadiahAdminPage.vue",
       "file": "src/modules/m15-rewards-shop/routes/admin.ts",
       "approved_by_card": null
     },
@@ -3356,8 +3377,9 @@
       "name": null,
       "status": "redirect-to:/admin/spm/databank",
       "sector": "S3",
-      "component": "src/modules/m28-bijak-spm/admin/papers/BankPage.vue",
+      "component": null,
       "file": "src/modules/m28-bijak-spm/routes/admin-papers.ts",
+      "redirects_to": "(dynamic)",
       "note": "KS-02 list; docs/prd/r1/30-admin-pusat.md 3.3 (the list redirects; /admin/spm/soalan/:qid/sunting stays as Quick Edit). Register M-01.",
       "approved_by_card": null
     },
@@ -3958,7 +3980,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/admin-nav.ts",
       "note": "register M-11 (D113): second admin menu (F-18 AdminShell); src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7097,7 +7119,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null
@@ -7966,7 +7988,7 @@
         "admin"
       ],
       "status": "retire",
-      "sector": "S0",
+      "sector": "S7",
       "file": "src/shells/nav/user-nav.ts",
       "note": "register M-11 (D113): admin-only entry in an old nav file; src/shells/pentadbiran/menu.ts is the only admin menu",
       "approved_by_card": null

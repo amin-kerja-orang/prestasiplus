@@ -237,6 +237,7 @@
     "src/modules/m11-teacher-analytics/components/monitoring/**",
     "src/modules/m12-kirkpatrick/{pages,components}/**",
     "src/modules/m15-rewards-shop/pages/{HadiahAdminPage,RedemptionsAdminPage}.vue",
+    "src/modules/m15-rewards-shop/components/HadiahAdminForm.vue",
     "src/modules/m15-rewards-shop/components/{copy,format}.ts",
     "src/modules/m17-admin-dashboard/{pages,components}/**",
     "src/modules/m20-marketplace/pages/{AdminProduk,AdminPenjual,ProdukForm,PenjualDetail}Page.vue",

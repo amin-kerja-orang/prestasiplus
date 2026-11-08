@@ -74,9 +74,11 @@ export interface HadiahReward {
 
 /**
  * `HadiahInput` (#3, #4): every writable field of §6.2. Required: `category`, `vendor`, `title`,
- * `denominationRm`, `tokenCost`. An omitted optional field takes the BR-M15-13 default
- * (`voucherValidityDays` 365, `deliveryMethod` 'manual', `displayOrder` 100, `isActive` true,
- * `requiresParentConsent` false, other fields null). Numbers may be sent as numbers or digit strings.
+ * `denominationRm`, `tokenCost`. PUT replaces, so a screen sends every field. An omitted optional
+ * field takes the default (`voucherValidityDays` 365, `deliveryMethod` 'manual', `displayOrder` 100,
+ * `isActive` false (U-OP-09), other fields null). Numbers may be sent as numbers or digit strings.
+ * `deliveryMethod` is `manual` or `instant` (`api` is refused). `requiresParentConsent` is ignored by
+ * the server (FR-GM-21.3) and no screen sends it.
  */
 export interface HadiahInput {
   category: HadiahCategory
@@ -89,7 +91,7 @@ export interface HadiahInput {
   stockQuantity?: number | null
   maxPerMonthPerStudent?: number | null
   voucherValidityDays?: number
-  deliveryMethod?: DeliveryMethod
+  deliveryMethod?: Exclude<DeliveryMethod, 'api'>
   vendorSku?: string | null
   displayOrder?: number
   imageUrl?: string | null

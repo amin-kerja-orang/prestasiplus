@@ -12,11 +12,11 @@ import { coinLedger, draws, wallet } from '@/modules/m14-gamification/mock'
 import type {
   ApproveResult,
   CabutanView,
-  CancelResult,
   DigitalItemsMeta,
   MysteryBoxOpened,
   MysteryBoxesView,
   ParentApprovalsView,
+  ParentRejectResult,
   RedeemResult,
   TicketBought,
 } from '../../api/types'
@@ -352,7 +352,7 @@ describe('#14–#16 parent consent (BR-M15-20)', () => {
   })
 
   it('rejects once: cancelled by the parent, the child gets the tokens back', async () => {
-    const r = await call<{ data: CancelResult }>(
+    const r = await call<{ data: ParentRejectResult }>(
       'POST',
       '/api/parent/hadiah-approvals/15102/reject',
       IBU_BAPA,
