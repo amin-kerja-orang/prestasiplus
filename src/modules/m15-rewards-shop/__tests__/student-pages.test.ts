@@ -3,6 +3,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
@@ -33,70 +34,45 @@ const api = vi.hoisted(() => ({
 }))
 vi.mock('../api', () => api)
 
-const BOXES: MysteryBoxView[] = [
-  {
-    id: 1,
-    name: 'Kotak Gangsa',
-    description: 'Kotak biasa — ganjaran kecil tapi pasti!',
-    icon: '📦',
-    rarity: null,
-    costTokens: 2,
-    coinMin: 1,
-    coinMax: 20,
-    xpMin: 1,
-    xpMax: 10,
-    color1: '#9ca3af',
-    color2: '#6b7280',
-  },
-  {
-    id: 2,
-    name: 'Kotak Perak',
-    description: 'Kotak lebih besar — peluang ganjaran lebih baik',
-    icon: '🎁',
-    rarity: 'rare',
-    costTokens: 5,
-    coinMin: 10,
-    coinMax: 50,
-    xpMin: 5,
-    xpMax: 25,
-    color1: '#3b82f6',
-    color2: '#2563eb',
-  },
-  {
-    id: 3,
-    name: 'Kotak Emas',
-    description: 'Kotak premium — ganjaran besar menanti!',
-    icon: '✨',
-    rarity: 'epic',
-    costTokens: 10,
-    coinMin: 25,
-    coinMax: 150,
-    xpMin: 10,
-    xpMax: 50,
-    color1: '#8b5cf6',
-    color2: '#7c3aed',
-  },
-  {
-    id: 4,
-    name: 'Kotak Legenda',
-    description: 'Kotak terhebat — ganjaran WOW!',
-    icon: '👑',
-    rarity: 'legendary',
-    costTokens: 25,
-    coinMin: 100,
-    coinMax: 500,
-    xpMin: 25,
-    xpMax: 100,
-    color1: '#f59e0b',
-    color2: '#ef4444',
-  },
+const PRIZES: MysteryBoxView['prizes'] = [
+  { label: '10 syiling', kind: 'syiling', amount: 10, chance: 40 },
+  { label: '25 syiling', kind: 'syiling', amount: 25, chance: 25 },
+  { label: '60 syiling', kind: 'syiling', amount: 60, chance: 15 },
+  { label: '1 token', kind: 'token', amount: 1, chance: 10 },
+  { label: '150 syiling', kind: 'syiling', amount: 150, chance: 6 },
+  { label: '3 token', kind: 'token', amount: 3, chance: 3 },
+  { label: '500 syiling — jackpot!', kind: 'syiling', amount: 500, chance: 1 },
 ]
 
-const boxView = (tokenBalance: number, history: MysteryBoxesView['history'] = []) => ({
-  tokenBalance,
-  boxes: BOXES,
-  history,
+const BOX: MysteryBoxView = { id: 5, label: 'Kotak Misteri', costSyiling: 50, prizes: PRIZES }
+
+const boxView = (
+  syilingBalance: number,
+  over: Partial<MysteryBoxesView> = {},
+): MysteryBoxesView => ({
+  box: BOX,
+  available: true,
+  syilingBalance,
+  dailyMax: 5,
+  openedToday: 0,
+  history: [],
+  ...over,
 })
+
+const OPENED: MysteryBoxOpened = {
+  openingId: 9000001,
+  boxId: 5,
+  boxName: 'Kotak Misteri',
+  prize: { label: '25 syiling', kind: 'syiling', amount: 25 },
+  tokenBalance: 0,
+  syilingBalance: 55,
+}
+
+/** A dialog that renders its body and footer inline while open (the real one teleports and traps focus). */
+const DialogStub = {
+  props: ['open', 'title'],
+  template: '<section v-if="open" :data-title="title"><slot /><slot name="footer" /></section>',
+}
 
 const DRAW: OpenDrawView = {
   id: 1,
@@ -199,131 +175,241 @@ describe('S5 RewardsShopPage', () => {
 })
 
 describe('S6 MysteryBoxPage', () => {
-  it('renders four boxes with the live texts and all locked at 0 tokens', async () => {
-    api.fetchMysteryBoxes.mockResolvedValue(boxView(0))
-    const w = await mountPage(MysteryBoxPage)
+  const mountBox = async () => {
+    const stub = { template: '<div />' }
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: stub },
+        { path: '/practice', component: stub },
+      ],
+    })
+    await router.push('/')
+    wrapper = mount(MysteryBoxPage, {
+      global: { plugins: [router], stubs: { teleport: true, DsDialog: DialogStub } },
+      attachTo: document.body,
+    })
+    await flushPromises()
+    return wrapper
+  }
+
+  it('renders one card: cost, balance, the odds table with seven rows and the disclaimer', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80))
+    const w = await mountBox()
     expect(w.get('h1').text()).toBe('📦 Kotak Misteri')
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:0')
-    for (const id of [1, 2, 3, 4]) {
-      const btn = w.get(`[data-testid="box-${String(id)}-btn"]`)
-      expect(btn.text()).toBe('🔒 Token Tidak Cukup')
-      expect(btn.attributes('disabled')).toBeDefined()
-    }
-    expect(w.get('[data-testid="box-1"]').text()).toContain(
-      'Kotak biasa — ganjaran kecil tapi pasti!',
+    expect(w.findAll('[data-testid="box-hero"]')).toHaveLength(1)
+    expect(w.get('[data-testid="box-cost"]').text()).toBe('Kos satu kotak 50 syiling')
+    expect(w.get('[data-testid="box-chip"]').text()).toBe('Baki syiling anda:80')
+    expect(w.get('h2').text()).toBe('Peluang ganjaran')
+    const rows = w.findAll('[data-testid="box-odds-table"] tbody tr')
+    expect(rows).toHaveLength(7)
+    expect(rows[0]?.text()).toBe('10 syiling40%')
+    expect(rows[6]?.text()).toBe('500 syiling — jackpot!1%')
+    expect(w.get('[data-testid="box-disclaimer"]').text()).toBe(
+      'Purata ganjaran lebih rendah daripada kos kotak — main untuk keseronokan, bukan untuk mengumpul syiling.',
     )
-    expect(w.get('[data-testid="box-1"]').text()).toContain('1-20')
-    expect(w.get('[data-testid="box-1"]').text()).toContain('1-10')
-    expect(w.find('[data-testid="box-1-ribbon"]').exists()).toBe(false)
-    expect(w.get('[data-testid="box-2-ribbon"]').text()).toBe('Rare')
-    expect(w.get('[data-testid="box-3-ribbon"]').text()).toBe('Epic')
-    expect(w.get('[data-testid="box-4-ribbon"]').text()).toBe('Legendary')
-    expect(w.find('[data-testid="box-history"]').exists()).toBe(false)
+    expect(w.get('[data-testid="box-btn"]').text()).toBe('Buka Kotak')
+    expect(w.get('[data-testid="box-btn"]').attributes('disabled')).toBeUndefined()
+    // AC-GM-23.7: the table scrolls inside its own container.
+    const scroll = w.get('[data-testid="box-odds-scroll"]')
+    expect(scroll.classes()).toContain('overflow-x-auto')
+    expect(scroll.find('[data-testid="box-odds-table"] thead').text()).toBe('GanjaranPeluang')
   })
 
-  it('enables boxes the balance covers (5 tokens: boxes 1-2) and never sends for a locked one', async () => {
-    api.fetchMysteryBoxes.mockResolvedValue(boxView(5))
-    const w = await mountPage(MysteryBoxPage)
-    expect(w.get('[data-testid="box-1-btn"]').text()).toBe('Buka Kotak')
-    expect(w.get('[data-testid="box-2-btn"]').text()).toBe('Buka Kotak')
-    expect(w.get('[data-testid="box-3-btn"]').text()).toBe('🔒 Token Tidak Cukup')
-    await w.get('[data-testid="box-3"]').trigger('submit')
+  it('AC-GM-23.4: at 40 syiling it says how many more are needed, offers Kumpul syiling and disables the open button', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(40))
+    const w = await mountBox()
+    expect(w.get('[data-testid="box-short"]').text()).toBe(
+      'Anda perlu 10 syiling lagi untuk membuka kotak.',
+    )
+    expect(w.get('[data-testid="box-collect"]').text()).toBe('Kumpul syiling')
+    expect(w.get('[data-testid="box-collect"]').attributes('href')).toBe('/practice')
+    const btn = w.get('[data-testid="box-btn"]')
+    expect(btn.text()).toBe('Syiling Tidak Cukup')
+    expect(btn.attributes('disabled')).toBeDefined()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    expect(w.find('[data-testid="box-confirm-ok"]').exists()).toBe(false)
     expect(api.openMysteryBox).not.toHaveBeenCalled()
   })
 
-  it('opens a box: result modal, chip from the response, history after the reload', async () => {
-    api.fetchMysteryBoxes.mockResolvedValueOnce(boxView(5))
-    api.openMysteryBox.mockResolvedValue({
-      openingId: 9000001,
-      boxId: 1,
-      boxName: 'Kotak Gangsa',
-      icon: '📦',
-      coins: 12,
-      xp: 4,
-      tokenBalance: 3,
-      syilingBalance: 268,
-    })
-    api.fetchMysteryBoxes.mockResolvedValue(
-      boxView(3, [
-        {
-          id: 9000001,
-          boxId: 1,
-          boxName: 'Kotak Gangsa',
-          coins: 12,
-          xp: 4,
-          createdAt: '2026-09-25T15:40:00+08:00',
-        },
-      ]),
+  it('AC-GM-23.3: at the daily limit it shows the limit text and the button is disabled', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(200, { openedToday: 5 }))
+    const w = await mountBox()
+    expect(w.get('[data-testid="box-daily"]').text()).toBe(
+      'Had kotak hari ini telah dicapai. Cuba lagi esok.',
     )
-    const w = await mountPage(MysteryBoxPage)
-    await w.get('[data-testid="box-1"]').trigger('submit')
+    expect(w.get('[data-testid="box-btn"]').attributes('disabled')).toBeDefined()
+    expect(w.find('[data-testid="box-short"]').exists()).toBe(false)
+  })
+
+  it('N5: no prize can be won - the notice shows, the table and disclaimer stay, the button is disabled', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(
+      boxView(80, { available: false, box: { ...BOX, prizes: [] } }),
+    )
+    const w = await mountBox()
+    expect(w.get('[data-testid="box-unavailable"]').text()).toBe(
+      'Kotak tidak tersedia buat masa ini.',
+    )
+    expect(w.get('[data-testid="box-btn"]').attributes('disabled')).toBeDefined()
+    expect(w.get('h2').text()).toBe('Peluang ganjaran')
+    expect(w.find('[data-testid="box-disclaimer"]').exists()).toBe(true)
+  })
+
+  it('N5: no active box (box null) shows the same notice with a disabled button', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80, { box: null, available: false }))
+    const w = await mountBox()
+    expect(w.find('[data-testid="box-unavailable"]').exists()).toBe(true)
+    expect(w.find('[data-testid="box-cost"]').exists()).toBe(false)
+    expect(w.get('[data-testid="box-btn"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('shows the history block with its empty text when nothing was opened', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80))
+    const w = await mountBox()
+    expect(w.get('[data-testid="box-history"] h2').text()).toBe('Kotak yang telah dibuka')
+    expect(w.get('[data-testid="box-history-empty"]').text()).toBe('Anda belum membuka sebarang kotak.')
+    expect(w.find('[data-testid="box-history-row"]').exists()).toBe(false)
+  })
+
+  it('B-056f: the open button asks first; Batal has the focus and sends nothing', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80))
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
     await flushPromises()
-    expect(api.openMysteryBox).toHaveBeenCalledWith(1)
+    await new Promise((r) => setTimeout(r, 10))
+    expect(w.get('[data-testid="box-confirm-body"]').text()).toBe(
+      '50 syiling akan ditolak daripada baki anda (80 syiling).',
+    )
+    expect(w.get('[data-title]').attributes('data-title')).toBe('Buka kotak?')
+    const cancel = w.get('[data-testid="box-confirm-cancel"]')
+    expect(cancel.text()).toBe('Batal')
+    expect(document.activeElement).toBe(cancel.element)
+    expect(w.get('[data-testid="box-confirm-ok"]').text()).toBe('Buka Kotak')
+    await cancel.trigger('click')
+    expect(api.openMysteryBox).not.toHaveBeenCalled()
+    expect(w.find('[data-testid="box-confirm-ok"]').exists()).toBe(false)
+  })
+
+  it('confirming sends {boxId, clientUuid} once, shows the prize and re-reads the history', async () => {
+    api.fetchMysteryBoxes.mockResolvedValueOnce(boxView(80))
+    api.openMysteryBox.mockResolvedValue(OPENED)
+    api.fetchMysteryBoxes.mockResolvedValue(
+      boxView(55, {
+        openedToday: 1,
+        history: [
+          {
+            id: 9000001,
+            boxId: 5,
+            boxName: 'Kotak Misteri',
+            prizeLabel: '25 syiling',
+            prizeKind: 'syiling',
+            prizeAmount: 25,
+            createdAt: '2026-09-25T15:40:00+08:00',
+          },
+        ],
+      }),
+    )
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    await flushPromises()
+    await w.get('[data-testid="box-confirm-ok"]').trigger('click')
+    await flushPromises()
+    expect(api.openMysteryBox).toHaveBeenCalledTimes(1)
+    const [boxId, key] = api.openMysteryBox.mock.calls[0] as [number, string]
+    expect(boxId).toBe(5)
+    expect(key).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
     expect(w.findComponent(MysteryResultModal).props('result')).toMatchObject({
-      boxName: 'Kotak Gangsa',
-      coins: 12,
-      xp: 4,
+      prize: { label: '25 syiling' },
     })
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:3')
+    expect(w.get('[data-testid="box-chip"]').text()).toBe('Baki syiling anda:55')
     const row = w.get('[data-testid="box-history-row"]')
-    expect(row.text()).toContain('Kotak Misteri: Kotak Gangsa')
-    expect(row.text()).toContain('+12 🪙 · +4 XP')
+    expect(row.text()).toContain('Kotak Misteri: 25 syiling')
     expect(row.text()).toContain('25/09 15:40')
     w.findComponent(MysteryResultModal).vm.$emit('close')
     await flushPromises()
     expect(w.findComponent(MysteryResultModal).props('result')).toBeNull()
   })
 
-  it('keeps the boxes, the modal and the returned balance when the re-read after an opening fails', async () => {
-    api.fetchMysteryBoxes.mockResolvedValueOnce(boxView(5))
-    api.openMysteryBox.mockResolvedValue({
-      openingId: 1,
-      boxId: 1,
-      boxName: 'Kotak Gangsa',
-      icon: '📦',
-      coins: 12,
-      xp: 4,
-      tokenBalance: 3,
-      syilingBalance: 268,
-    })
-    api.fetchMysteryBoxes.mockRejectedValue(new Error('x'))
-    const w = await mountPage(MysteryBoxPage)
-    await w.get('[data-testid="box-1"]').trigger('submit')
+  it('AC-MUR-35-5: a second submit while the first request runs sends nothing', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(200))
+    let release: (v: MysteryBoxOpened) => void = () => undefined
+    api.openMysteryBox.mockReturnValue(new Promise<MysteryBoxOpened>((r) => (release = r)))
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
     await flushPromises()
-    expect(w.find('[data-testid="m15-load-error"]').exists()).toBe(false)
-    expect(w.findAll('[data-testid="box-grid"] form')).toHaveLength(4)
-    expect(w.findComponent(MysteryResultModal).props('result')).toMatchObject({ coins: 12 })
-    expect(w.get('[data-testid="box-chip"]').text()).toBe('🎫 Token Anda:3')
+    await w.get('[data-testid="box-confirm-ok"]').trigger('click')
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    await flushPromises()
+    expect(w.find('[data-testid="box-confirm-ok"]').exists()).toBe(false)
+    expect(api.openMysteryBox).toHaveBeenCalledTimes(1)
+    release(OPENED)
+    await flushPromises()
   })
 
-  it('the modal is full-screen below md and 400px from md', async () => {
-    api.fetchMysteryBoxes.mockResolvedValue(boxView(5))
-    api.openMysteryBox.mockResolvedValue({
-      openingId: 1,
-      boxId: 1,
-      boxName: 'Kotak Gangsa',
-      icon: '📦',
-      coins: 1,
-      xp: 1,
-      tokenBalance: 3,
-      syilingBalance: 1,
-    })
-    const w = await mountPage(MysteryBoxPage)
-    await w.get('[data-testid="box-1"]').trigger('submit')
-    await flushPromises()
-    expect(w.findComponent(MysteryResultModal).props('result')).not.toBeNull()
+  it('keeps the same clientUuid for a retry after a network failure, and a new one after the server answered', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(200))
+    api.openMysteryBox
+      .mockRejectedValueOnce(new ApiError({ status: 0, code: 'NETWORK_ERROR', message: 'x' }))
+      .mockRejectedValueOnce(
+        new ApiError({ status: 429, code: 'MYSTERY_DAILY_LIMIT', message: 'Had.' }),
+      )
+      .mockResolvedValue(OPENED)
+    const w = await mountBox()
+    const press = async () => {
+      await w.get('[data-testid="box-card"] form').trigger('submit')
+      await flushPromises()
+      await w.get('[data-testid="box-confirm-ok"]').trigger('click')
+      await flushPromises()
+    }
+    await press()
+    await press()
+    await press()
+    const keys = api.openMysteryBox.mock.calls.map((c) => c[1] as string)
+    expect(keys[1]).toBe(keys[0])
+    expect(keys[2]).not.toBe(keys[1])
   })
 
   it('shows the server message in the flash when the opening is refused', async () => {
-    api.fetchMysteryBoxes.mockResolvedValue(boxView(5))
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80))
     api.openMysteryBox.mockRejectedValue(
-      new ApiError({ status: 409, code: 'INSUFFICIENT_TOKENS', message: 'Token tidak cukup.' }),
+      new ApiError({
+        status: 429,
+        code: 'MYSTERY_DAILY_LIMIT',
+        message: 'Had kotak hari ini telah dicapai. Cuba lagi esok.',
+      }),
     )
-    const w = await mountPage(MysteryBoxPage)
-    await w.get('[data-testid="box-1"]').trigger('submit')
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    await flushPromises()
+    await w.get('[data-testid="box-confirm-ok"]').trigger('click')
+    await flushPromises()
+    expect(useFlashStore().current?.message).toBe('Had kotak hari ini telah dicapai. Cuba lagi esok.')
+    expect(w.findComponent(MysteryResultModal).props('result')).toBeNull()
+  })
+
+  it('shows the generic message for a network failure', async () => {
+    api.fetchMysteryBoxes.mockResolvedValue(boxView(80))
+    api.openMysteryBox.mockRejectedValue(new Error('x'))
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    await flushPromises()
+    await w.get('[data-testid="box-confirm-ok"]').trigger('click')
     await flushPromises()
     expect(useFlashStore().current?.message).toBe('Ralat berlaku. Sila cuba lagi.')
-    expect(w.find('[data-testid="box-result"]').exists()).toBe(false)
+  })
+
+  it('keeps the card and the prize when the re-read after an opening fails', async () => {
+    api.fetchMysteryBoxes.mockResolvedValueOnce(boxView(80))
+    api.openMysteryBox.mockResolvedValue(OPENED)
+    api.fetchMysteryBoxes.mockRejectedValue(new Error('x'))
+    const w = await mountBox()
+    await w.get('[data-testid="box-card"] form').trigger('submit')
+    await flushPromises()
+    await w.get('[data-testid="box-confirm-ok"]').trigger('click')
+    await flushPromises()
+    expect(w.find('[data-testid="m15-load-error"]').exists()).toBe(false)
+    expect(w.find('[data-testid="box-card"]').exists()).toBe(true)
+    expect(w.findComponent(MysteryResultModal).props('result')).toMatchObject({ openingId: 9000001 })
   })
 })
 
@@ -331,10 +417,15 @@ describe('MysteryResultModal', () => {
   // The e2e hook sits in the dialog body, because UModal / UDrawer drop attrs given to DsDialog.
   it('carries data-testid="box-result" in the dialog body, only with a result', () => {
     const stubs = { DsDialog: { template: '<section><slot /></section>' } }
-    const opened = { boxName: 'Kotak Gangsa', coins: 12, xp: 4 } as MysteryBoxOpened
-    const shown = mount(MysteryResultModal, { props: { result: opened }, global: { stubs } })
-    expect(shown.get('[data-testid="box-result"]').text()).toContain('Kotak Gangsa')
+    const shown = mount(MysteryResultModal, { props: { result: OPENED }, global: { stubs } })
+    expect(shown.get('[data-testid="box-result"]').text()).toContain('Tahniah! Anda dapat 25 syiling.')
+    expect(shown.get('[data-testid="box-result-reward"]').text()).toBe('+25 🪙')
     expect(shown.element.getAttribute('data-testid')).toBeNull()
+    const token = mount(MysteryResultModal, {
+      props: { result: { ...OPENED, prize: { label: '3 token', kind: 'token', amount: 3 } } },
+      global: { stubs },
+    })
+    expect(token.get('[data-testid="box-result-reward"]').text()).toBe('+3 token')
     const closed = mount(MysteryResultModal, { props: { result: null }, global: { stubs } })
     expect(closed.find('[data-testid="box-result"]').exists()).toBe(false)
   })

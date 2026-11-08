@@ -10,7 +10,7 @@ import { users } from '@/modules/m01-authentication/mock'
 import { REWARD_SEED } from '../data/rewards-seed'
 import { bindM15Clock } from '../repository/clock'
 import { hadiahRepo } from '../repository/hadiah'
-import { setNextMysteryResult } from '../repository/mystery-box'
+import { resetMysteryBox } from '../repository/mystery-box'
 import type { HadiahRedemption, HadiahReward } from '../repository/types'
 
 /** The snapshot date of the catalogue (SRS §6.7); `createdAt` / `updatedAt` are never displayed. */
@@ -73,7 +73,7 @@ function seedRedemption(
 export function seedRewards(ctx: SeedContext): void {
   bindM15Clock(ctx.clock)
   // The hook-fixed result is module state: a boot / reset never inherits it.
-  setNextMysteryResult(null)
+  resetMysteryBox()
   const rewards: HadiahReward[] = REWARD_SEED.map(
     ([
       id,

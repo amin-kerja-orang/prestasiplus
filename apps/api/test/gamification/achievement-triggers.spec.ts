@@ -66,9 +66,9 @@ describe('achievements: triggers, battle_wins, count (S7-T04 part 16)', () => {
       const u = await userIdOf(t.db, STUDENT_MAJU)
       await setMin('Ahli Kotak Misteri', 1)
       try {
-        await t.wallet.creditTokens({ userId: u, amount: 10, source: 'admin_award', refId: 'achv-box:t', isTest: false })
+        await t.wallet.credit({ userId: u, amount: 400, source: 'admin_award', sourceId: 'achv-box:t', description: 'fixture', isTest: false })
         const api = await signIn(t, STUDENT_MAJU)
-        const res = await api.post('/gamification/mystery-boxes/1/open')
+        const res = await api.post('/gamification/mystery-boxes/5/open', { clientUuid: crypto.randomUUID() })
         expect(res.status, JSON.stringify(res.body)).toBe(200)
         const o = RewardMysteryBoxOpenedSchema.parse(dataOf(res))
         const id = await idOf('Ahli Kotak Misteri')
@@ -77,9 +77,9 @@ describe('achievements: triggers, battle_wins, count (S7-T04 part 16)', () => {
         expect((await unlockRows(u)).map((r) => r.name)).toContain('Ahli Kotak Misteri')
         const rows = (await achievementRows(u)).filter((r) => r.source_id === `achievement:${id}`)
         expect(rows).toHaveLength(1)
-        expect((await ledgerOf(t, u)).filter((r) => r.source === 'mystery_box')).toHaveLength(1)
+        expect((await ledgerOf(t, u)).filter((r) => r.source === 'mystery_box' && r.type === 'spend')).toHaveLength(1) // the box cost; a syiling prize is a separate earn row
         // A second opening unlocks nothing new: no field, no second reward row.
-        const again = RewardMysteryBoxOpenedSchema.parse(dataOf(await api.post('/gamification/mystery-boxes/1/open')))
+        const again = RewardMysteryBoxOpenedSchema.parse(dataOf(await api.post('/gamification/mystery-boxes/5/open', { clientUuid: crypto.randomUUID() })))
         expect(again.achievementsUnlocked).toBeUndefined()
         expect((await achievementRows(u)).filter((r) => r.source_id === `achievement:${id}`)).toHaveLength(1)
       } finally {

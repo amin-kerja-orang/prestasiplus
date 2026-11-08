@@ -14,7 +14,6 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
   moduleTag,
   provisional,
   viewportWidth,
@@ -106,18 +105,22 @@ test.describe('M15 S5 Kedai Hadiah', MODULE, () => {
 })
 
 test.describe('M15 S6 Kotak Misteri', MODULE, () => {
-  const BOXES = [
-    { id: 1, name: 'Kotak Gangsa', cost: 2, coins: '1-20', xp: '1-10', ribbon: null },
-    { id: 2, name: 'Kotak Perak', cost: 5, coins: '10-50', xp: '5-25', ribbon: 'Rare' },
-    { id: 3, name: 'Kotak Emas', cost: 10, coins: '25-150', xp: '10-50', ribbon: 'Epic' },
-    { id: 4, name: 'Kotak Legenda', cost: 25, coins: '100-500', xp: '25-100', ribbon: 'Legendary' },
+  const ODDS = [
+    ['10 syiling', '40%'],
+    ['25 syiling', '25%'],
+    ['60 syiling', '15%'],
+    ['1 token', '10%'],
+    ['150 syiling', '6%'],
+    ['3 token', '3%'],
+    ['500 syiling — jackpot!', '1%'],
   ]
+  const DISCLAIMER =
+    'Purata ganjaran lebih rendah daripada kos kotak — main untuk keseronokan, bukan untuk mengumpul syiling.'
 
-  test('SRS §12 #43 admin: hero, chip, four locked boxes, nothing sent on click @m15', async ({
+  test('SRS §12 #43 admin: one card with cost, balance, the odds table, the disclaimer and the empty history @m15', async ({
     page,
     gotoApp,
     loginAs,
-    mock,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/mystery-box')
@@ -127,92 +130,79 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
     await expect(
       page.getByText('Buka kotak & menang ganjaran rawak — nasib baik menanti!'),
     ).toBeVisible()
-    await expect(page.getByTestId('box-chip')).toContainText('🎫 Token Anda:')
-    await expect(page.getByTestId('box-chip-value')).toHaveText('0')
-    await expect(page.getByTestId('box-grid').locator('form')).toHaveCount(4)
-    for (const b of BOXES) {
-      const card = page.getByTestId(`box-${String(b.id)}`)
-      await expect(card).toContainText(b.name)
-      await expect(card).toContainText(`${String(b.cost)} Token`)
-      await expect(card).toContainText(b.coins)
-      await expect(card).toContainText(`${b.xp} XP`)
-      if (b.ribbon) {
-        // Badges are sentence case, no ALL CAPS (v2-design-language 3.3 rule 4).
-        const ribbon = page.getByTestId(`box-${String(b.id)}-ribbon`)
-        await expect(ribbon).toHaveText(b.ribbon)
-        expect(await ribbon.evaluate((el) => getComputedStyle(el).textTransform)).toBe('none')
-      } else {
-        await expect(page.getByTestId(`box-${String(b.id)}-ribbon`)).toHaveCount(0)
-      }
-      const btn = page.getByTestId(`box-${String(b.id)}-btn`)
-      await expect(btn).toBeDisabled()
-      await expect(btn).toHaveText('🔒 Token Tidak Cukup')
-      expect(await btn.evaluate((el) => getComputedStyle(el).cursor)).toBe('not-allowed')
+    await expect(page.getByTestId('box-hero')).toHaveCount(1)
+    await expect(page.getByTestId('box-cost')).toHaveText('Kos satu kotak 50 syiling')
+    await expect(page.getByTestId('box-chip')).toContainText('Baki syiling anda:')
+    await expect(page.getByRole('heading', { name: 'Peluang ganjaran' })).toBeVisible()
+    const rows = page.getByTestId('box-odds-table').locator('tbody tr')
+    await expect(rows).toHaveCount(7)
+    for (const [i, [prize, chance]] of ODDS.entries()) {
+      await expect(rows.nth(i)).toContainText(prize as string)
+      await expect(rows.nth(i)).toContainText(chance as string)
     }
-    await page.getByTestId('box-1').click({ force: true })
-    expect(await mock.lastRequest('/api/gamification/mystery-boxes/*/open')).toBeNull()
+    await expect(page.getByTestId('box-disclaimer')).toHaveText(DISCLAIMER)
+    await expect(page.getByRole('heading', { name: 'Kotak yang telah dibuka' })).toBeVisible()
+    await expect(page.getByTestId('box-history-empty')).toHaveText(
+      'Anda belum membuka sebarang kotak.',
+    )
     await expectNoHorizontalScroll(page)
+    expect(await minTextSize(page)).toBeGreaterThanOrEqual(12)
   })
 
-  test('SRS §12 #54 S6 grid is 1 / 2 / 4 columns, no horizontal scroll, text >= 12px @m15', async ({
+  test('SRS §12 #54 AC-GM-23.7 the page never scrolls sideways; at 375 the odds table scrolls inside its card @m15', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/gamification/mystery-box')
-    await expect(page.getByTestId('box-1')).toBeVisible()
-    const tops = await page
-      .getByTestId('box-grid')
-      .locator('form')
-      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)))
-    const firstRow = tops.filter((t) => t === tops[0]).length
-    const width = viewportWidth(page)
-    // `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4` (B06, 79b5fa2dc).
-    expect(firstRow).toBe(width < 640 ? 1 : isDesktopShell(page) ? 4 : 2)
+    await expect(page.getByTestId('box-odds-table')).toBeVisible()
     await expectNoHorizontalScroll(page)
-    expect(await minTextSize(page)).toBeGreaterThanOrEqual(12)
+    const scroll = page.getByTestId('box-odds-scroll')
+    const [scrollWidth, clientWidth] = await scroll.evaluate((el) => [el.scrollWidth, el.clientWidth])
+    if (viewportWidth(page) < 640) expect(scrollWidth).toBeGreaterThan(clientWidth)
+    else expect(scrollWidth).toBeLessThanOrEqual(clientWidth)
+    await expectTouchTarget(page.getByTestId('box-btn'))
   })
 
   test(
-    'SRS §12 #44 5 tokens: boxes 1-2 open, 3-4 locked; 25 tokens: all open @m15',
-    provisional('the enabled state and "Buka Kotak" are PROPOSED; needs the M14 hook setWallet'),
+    'SRS §12 #44 AC-GM-23.4 40 syiling: the short text and Kumpul syiling show, the open button is disabled @m15',
+    provisional('needs the M14 hook setWallet'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await mock.hook('setWallet', 1, { syiling: 40 })
       await gotoApp('/gamification/mystery-box')
-      await mock.hook('setWallet', 1, { tokens: 5 })
-      await gotoApp('/gamification/mystery-box')
-      await expect(page.getByTestId('box-1-btn')).toHaveText('Buka Kotak')
-      await expect(page.getByTestId('box-2-btn')).toHaveText('Buka Kotak')
-      await expect(page.getByTestId('box-3-btn')).toHaveText('🔒 Token Tidak Cukup')
-      await expect(page.getByTestId('box-4-btn')).toBeDisabled()
-      await mock.hook('setWallet', 1, { tokens: 25 })
-      await gotoApp('/gamification/mystery-box')
-      for (const id of [1, 2, 3, 4]) {
-        await expect(page.getByTestId(`box-${String(id)}-btn`)).toBeEnabled()
-        await expectTouchTarget(page.getByTestId(`box-${String(id)}-btn`))
-      }
+      await expect(page.getByTestId('box-short')).toHaveText(
+        'Anda perlu 10 syiling lagi untuk membuka kotak.',
+      )
+      const collect = page.getByTestId('box-collect')
+      await expect(collect).toHaveText('Kumpul syiling')
+      await expect(collect).toHaveAttribute('href', '/practice')
+      await expectTouchTarget(collect)
+      await expect(page.getByTestId('box-btn')).toBeDisabled()
+      expect(await mock.lastRequest('/api/gamification/mystery-boxes/*/open')).toBeNull()
+      await expectNoHorizontalScroll(page)
     },
   )
 
   test(
-    'SRS §12 #45 open box 1: result modal, chip 3, wallet and ledger @m15',
-    provisional('the opening flow is PROPOSED; needs M15-T1 handlers and M14 hooks'),
+    'SRS §12 #45 AC-GM-23.1 open at 80 syiling: confirm with Batal focused, then 30 + prize and the history @m15',
+    provisional('needs the M14 hooks setWallet, getWallet and ledger'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await mock.hook('setWallet', 1, { syiling: 80 })
       await gotoApp('/gamification/mystery-box')
-      await mock.hook('setWallet', 1, { tokens: 5 })
-      await gotoApp('/gamification/mystery-box')
-      // The next-result override lives in the page, so it is set after the reload.
-      await mock.hook('m15MysteryNext', { coins: 12, xp: 4 })
-      await page.getByTestId('box-1-btn').click()
-      const result = page.getByTestId('box-result')
-      await expect(result).toBeVisible()
-      await expect(page.getByTestId('box-result-icon')).toHaveAttribute('data-art', 'party')
-      await expect(page.getByTestId('box-result-name')).toHaveText('Kotak Gangsa')
-      await expect(page.getByTestId('box-result-reward')).toHaveText('+12 🪙 · +4 XP')
-      // `DsDialog`: a bottom sheet below `sm`, a 32rem modal from `sm` (B06, 79b5fa2dc).
+      // The next-prize override lives in the page, so it is set after the reload.
+      await mock.hook('m15MysteryNext', { label: '25 syiling' })
+      await page.getByTestId('box-btn').click()
       const dialog = page.getByRole('dialog')
+      await expect(dialog).toContainText('Buka kotak?')
+      await expect(page.getByTestId('box-confirm-body')).toHaveText(
+        '50 syiling akan ditolak daripada baki anda (80 syiling).',
+      )
+      await expect(page.getByTestId('box-confirm-cancel')).toBeFocused()
+      await expectTouchTarget(page.getByTestId('box-confirm-cancel'))
+      // `DsDialog`: a bottom sheet below `sm`, a modal from `sm`.
       const width = viewportWidth(page)
       const height = page.viewportSize()!.height
       if (width < 640) {
@@ -222,44 +212,74 @@ test.describe('M15 S6 Kotak Misteri', MODULE, () => {
             return Math.round(box.width) === width && Math.round(box.y + box.height) === height
           })
           .toBe(true)
-      } else {
-        await expect.poll(async () => Math.round((await dialog.boundingBox())!.width)).toBe(512)
       }
-      await expect(page.getByTestId('box-chip-value')).toHaveText('3')
+      // Batal sends nothing.
+      await page.getByTestId('box-confirm-cancel').click()
+      expect(await mock.lastRequest('/api/gamification/mystery-boxes/*/open')).toBeNull()
+      await page.getByTestId('box-btn').click()
+      await page.getByTestId('box-confirm-ok').click()
+      const result = page.getByTestId('box-result')
+      await expect(result).toBeVisible()
+      await expect(page.getByTestId('box-result-name')).toHaveText('Tahniah! Anda dapat 25 syiling.')
+      await expect(page.getByTestId('box-result-reward')).toHaveText('+25 🪙')
       await expectNoHorizontalScroll(page)
       const wallet = await mock.hook<{ currentSyiling: number; tokenBalance: number; xp: number }>(
         'getWallet',
         1,
       )
-      expect([wallet.currentSyiling, wallet.tokenBalance, wallet.xp]).toEqual([268, 3, 12])
+      expect(wallet.currentSyiling).toBe(55)
       const ledger = await mock.hook<{ description: string; amount: number }[]>('ledger', 1)
-      expect(ledger[0]).toMatchObject({ description: 'Kotak Misteri: Kotak Gangsa', amount: 12 })
+      expect(ledger.map((l) => [l.description, l.amount])).toEqual(
+        expect.arrayContaining([
+          ['Kotak Misteri: Kotak Misteri', -50],
+          ['Kotak Misteri: 25 syiling', 25],
+        ]),
+      )
       await page.getByTestId('box-result-close').click()
       await expect(result).toHaveCount(0)
-      await gotoApp('/cabutan')
-      await expect(page.getByTestId('cabutan-balance')).toHaveText('268')
+      const row = page.getByTestId('box-history-row').first()
+      await expect(row).toContainText('Kotak Misteri: 25 syiling')
+      await expect(row).toContainText('25/09 15:40')
+      await expect(page.getByTestId('box-history-empty')).toHaveCount(0)
+      await expectNoHorizontalScroll(page)
     },
   )
 
   test(
-    'SRS §12 #46 history card after an opening, none without @m15',
-    provisional('the history card is PROPOSED; needs M15-T1 handlers and M14 hooks'),
+    'SRS §12 #46 N5 every prize at stock 0: the notice shows and the open button is disabled @m15',
+    provisional('needs the M15 hook m15SetMysteryBox'),
     async ({ page, gotoApp, loginAs, mock }) => {
       await loginAs(ADMIN)
+      await mock.hook('setWallet', 1, { syiling: 80 })
+      await mock.hook('m15SetMysteryBox', {
+        stocks: Object.fromEntries(ODDS.map(([prize]) => [prize, 0])),
+      })
       await gotoApp('/gamification/mystery-box')
-      await expect(page.getByTestId('box-history')).toHaveCount(0)
-      await mock.hook('setWallet', 1, { tokens: 5 })
+      await expect(page.getByTestId('box-unavailable')).toHaveText(
+        'Kotak tidak tersedia buat masa ini.',
+      )
+      await expect(page.getByTestId('box-btn')).toBeDisabled()
+      await expect(page.getByTestId('box-disclaimer')).toHaveText(DISCLAIMER)
+      expect(await mock.lastRequest('/api/gamification/mystery-boxes/*/open')).toBeNull()
+      await expectNoHorizontalScroll(page)
+    },
+  )
+
+  test(
+    'SRS §12 #47 AC-GM-23.3 the daily limit shows its text and disables the button @m15',
+    provisional('needs the M14 hook setWallet and the M15 hook m15SetMysteryBox'),
+    async ({ page, gotoApp, loginAs, mock }) => {
+      await loginAs(ADMIN)
+      await mock.hook('setWallet', 1, { syiling: 500 })
+      await mock.hook('m15SetMysteryBox', { dailyMax: 1 })
       await gotoApp('/gamification/mystery-box')
-      // The next-result override lives in the page, so it is set after the reload.
-      await mock.hook('m15MysteryNext', { coins: 12, xp: 4 })
-      await page.getByTestId('box-1-btn').click()
+      await page.getByTestId('box-btn').click()
+      await page.getByTestId('box-confirm-ok').click()
       await page.getByTestId('box-result-close').click()
-      await gotoApp('/gamification/mystery-box')
-      await expect(page.getByText('Sejarah Kotak Misteri')).toBeVisible()
-      const row = page.getByTestId('box-history-row').first()
-      await expect(row).toContainText('Kotak Misteri: Kotak Gangsa')
-      await expect(row).toContainText('+12 🪙 · +4 XP')
-      await expect(row).toContainText('25/09 15:40')
+      await expect(page.getByTestId('box-daily')).toHaveText(
+        'Had kotak hari ini telah dicapai. Cuba lagi esok.',
+      )
+      await expect(page.getByTestId('box-btn')).toBeDisabled()
       await expectNoHorizontalScroll(page)
     },
   )

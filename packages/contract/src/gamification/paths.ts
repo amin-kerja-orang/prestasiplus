@@ -7,6 +7,9 @@ import { IdSchema } from '../common/ids'
 import {
   GamificationAdminAwardRequestSchema,
   GamificationAdminAwardResultSchema,
+  GamificationBoxOpeningsDaySchema,
+  GamificationBoxPrizeKindSchema,
+  GamificationBoxPrizeSchema,
   GamificationAdminChallengeInputSchema,
   GamificationAdminChallengeSchema,
   GamificationAdminOverviewSchema,
@@ -26,6 +29,9 @@ import {
   GamificationDrawSchema,
   GamificationDrawStatusSchema,
   GamificationDrawWinnerSchema,
+  GamificationMysteryBoxesAdminSchema,
+  GamificationMysteryBoxSchema,
+  GamificationMysteryBoxUpdateRequestSchema,
   GamificationEconomySettingsSchema,
   GamificationEconomySettingsUpdateSchema,
   GamificationRewardControlSchema,
@@ -59,6 +65,8 @@ import {
   RewardListResponseSchema,
   RewardMysteryBoxHistoryItemSchema,
   RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequestSchema,
+  RewardMysteryBoxPrizeSchema,
   RewardMysteryBoxSchema,
   RewardMysteryBoxesViewSchema,
   RewardRedeemRequestSchema,
@@ -173,6 +181,12 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   GamificationDraw: GamificationDrawSchema,
   GamificationDrawCreateRequest: GamificationDrawCreateRequestSchema,
   GamificationRewardControl: GamificationRewardControlSchema,
+  GamificationBoxPrizeKind: GamificationBoxPrizeKindSchema,
+  GamificationBoxPrize: GamificationBoxPrizeSchema,
+  GamificationMysteryBox: GamificationMysteryBoxSchema,
+  GamificationBoxOpeningsDay: GamificationBoxOpeningsDaySchema,
+  GamificationMysteryBoxesAdmin: GamificationMysteryBoxesAdminSchema,
+  GamificationMysteryBoxUpdateRequest: GamificationMysteryBoxUpdateRequestSchema,
   // M15
   RewardCategory: RewardCategorySchema,
   RewardDeliveryMethod: RewardDeliveryMethodSchema,
@@ -200,6 +214,8 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   RewardMysteryBoxHistoryItem: RewardMysteryBoxHistoryItemSchema,
   RewardMysteryBoxesView: RewardMysteryBoxesViewSchema,
   RewardMysteryBoxOpened: RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequest: RewardMysteryBoxOpenRequestSchema,
+  RewardMysteryBoxPrize: RewardMysteryBoxPrizeSchema,
   RewardCabutanDraw: RewardCabutanDrawSchema,
   RewardCabutanWinner: RewardCabutanWinnerSchema,
   RewardCabutanResult: RewardCabutanResultSchema,
@@ -693,6 +709,32 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     },
   })
 
+  registry.registerPath({
+    method: 'get',
+    path: '/admin/reward-control/mystery-boxes',
+    tags: ['gamification-admin'],
+    summary: 'Kotak Misteri: boxes, daily limit and openings per day',
+    description: 'Every box with its prize rows (prize rows in stored order), dailyMax (mystery_box_daily_max) and the openings of the last 7 Malaysia days.',
+    responses: { 200: json(envelopeOf(GamificationMysteryBoxesAdminSchema), 'Boxes, dailyMax and openingsPerDay.'), 401: UNAUTHORIZED, 403: FORBIDDEN_ADMIN },
+  })
+
+  registry.registerPath({
+    method: 'put',
+    path: '/admin/reward-control/mystery-boxes/{id}',
+    tags: ['gamification-admin'],
+    summary: 'Save a Kotak Misteri box',
+    description:
+      'Replaces the label, cost, active flag and prize rows of the box; dailyMax (optional) saves mystery_box_daily_max. There is no POST: boxes are not created through the API. An active box needs weights that total 100.',
+    request: { params: IdParams, headers: [csrf], body: body(GamificationMysteryBoxUpdateRequestSchema) },
+    responses: {
+      200: json(envelopeOf(GamificationMysteryBoxesAdminSchema), 'The list after the save.'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_ADMIN_WRITE,
+      404: err('NOT_FOUND "Kotak tidak dijumpai."'),
+      422: err(`${VALIDATION_FIELDS} Or VALIDATION_ERROR "Jumlah peluang mesti 100%." with fields.prizes (an active box whose weights do not total 100, or an active box with no prize).`),
+    },
+  })
+
   // -------------------------------------------------------------------------------------------
   // M15 student (7)
   // -------------------------------------------------------------------------------------------
@@ -740,8 +782,9 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/gamification/mystery-boxes',
     tags: ['rewards'],
-    summary: 'Kotak Misteri: boxes, token balance, last 10 openings',
-    responses: { 200: json(envelopeOf(RewardMysteryBoxesViewSchema), 'Boxes and own history.'), 401: UNAUTHORIZED },
+    summary: 'Kotak Misteri: the active box, odds, balance, daily count, last 10 openings',
+    description: 'Never draws. chance is a percent with one decimal, renormalised over the prizes whose stock is null or above 0. box is null and available false only when no box is active. An active box with no prize that can be won is returned with prizes [] and available false (N5).',
+    responses: { 200: json(envelopeOf(RewardMysteryBoxesViewSchema), 'The box, own balance and history.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({
@@ -750,14 +793,16 @@ export function registerGamificationPaths(registry: OpenAPIRegistry): void {
     tags: ['rewards'],
     summary: 'Open a mystery box',
     description:
-      'One transaction: opening row, token debit (costTokens, source mystery_box), syiling credit of coins (ledger earn, source mystery_box, description "Kotak Misteri: {box name}", ref opening:{id}), xp added when above 0. coins and xp are uniform integers inside the box ranges (the RNG is not specified). Success is 200, not 201. No body.',
-    request: { params: IdParams, headers: [csrf] },
+      'One transaction (lock order: user, box FOR SHARE, prizes FOR UPDATE). Checks run in this order: Mod Pelajar (403), a repeat of the same clientUuid (returns the first opening, moves nothing), box exists and is active (404), N5 no prize can be won (409 BOX_UNAVAILABLE), daily limit mystery_box_daily_max per Malaysia day (429 MYSTERY_DAILY_LIMIT), syiling balance (409 INSUFFICIENT_BALANCE). Then the cost (mystery_boxes.cost_syiling) is debited as a spend (source mystery_box, key opening:{id}:cost), one prize is drawn by weight among the prizes whose stock is null or above 0, and credited: syiling as an earn "Kotak Misteri: {prize}" (key opening:{id}:prize) or tokens. A limited stock drops by 1. Success is 200, not 201.',
+    request: { params: IdParams, headers: [csrf], body: body(RewardMysteryBoxOpenRequestSchema) },
     responses: {
       200: json(envelopeOf(RewardMysteryBoxOpenedSchema), 'Opened.'),
       401: UNAUTHORIZED,
-      403: FORBIDDEN_CSRF,
-      404: err('NOT_FOUND "Kotak tidak dijumpai."'),
-      409: err('INSUFFICIENT_TOKENS "Token tidak mencukupi."'),
+      403: err('FORBIDDEN "Tidak dibenarkan dalam Mod Pelajar." (Mod Pelajar), or the CSRF refusal.'),
+      404: err('NOT_FOUND "Kotak tidak dijumpai." (unknown, inactive or malformed id).'),
+      409: err('INSUFFICIENT_BALANCE "Baki syiling tidak mencukupi."; BOX_UNAVAILABLE "Kotak tidak tersedia buat masa ini.".'),
+      422: err('VALIDATION_ERROR fields.clientUuid "The client uuid field must be a valid UUID.".'),
+      429: err('MYSTERY_DAILY_LIMIT "Had kotak hari ini telah dicapai. Cuba lagi esok." (or the write rate limit).'),
     },
   })
 

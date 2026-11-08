@@ -5,6 +5,9 @@ import { buildOpenApiDocument } from '../../openapi'
 import {
   GamificationAdminAwardRequestSchema,
   GamificationAdminAwardResultSchema,
+  GamificationBoxPrizeSchema,
+  GamificationMysteryBoxUpdateRequestSchema,
+  GamificationMysteryBoxesAdminSchema,
   GamificationAdminChallengeInputSchema,
   GamificationAdminChallengeSchema,
   GamificationAdminOverviewSchema,
@@ -529,6 +532,10 @@ describe('openapi registration', () => {
     has('/admin/reward-control/draws', 'post')
     has('/admin/reward-control/draws/{id}/open', 'post')
     has('/admin/reward-control/draws/{id}/close', 'post')
+    has('/admin/reward-control/mystery-boxes', 'get')
+    has('/admin/reward-control/mystery-boxes/{id}', 'put')
+    // R1: boxes are never created through the API.
+    expect(doc.paths['/admin/reward-control/mystery-boxes']).not.toHaveProperty('post')
   })
 
   it('does not register the BE-11 wallet routes, the teacher economy or the parent approvals', () => {
@@ -551,5 +558,38 @@ describe('openapi registration', () => {
       expect((schema as { meta(): { id?: string } }).meta().id, name).toBe(name)
       expect(name, name).toMatch(/^(Gamification|Reward|Shop)[A-Z]/)
     }
+  })
+})
+
+describe('Kotak Misteri admin schemas (S7-T07 P7, DM-37)', () => {
+  const prize = { label: '10 syiling', kind: 'syiling', amount: 10, weight: 100, stock: null }
+  const put = { label: 'Kotak Misteri', costSyiling: 50, isActive: true, prizes: [prize] }
+
+  it('a prize is syiling or token only (no xp), amount >= 1, weight 0..100, stock null or >= 0', () => {
+    expect(GamificationBoxPrizeSchema.safeParse(prize).success).toBe(true)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, kind: 'xp' }).success).toBe(false)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, xp: 5 }).success).toBe(true)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, amount: 0 }).success).toBe(false)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, weight: 101 }).success).toBe(false)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, stock: -1 }).success).toBe(false)
+    expect(GamificationBoxPrizeSchema.safeParse({ ...prize, stock: 0 }).success).toBe(true)
+  })
+
+  it('the PUT body takes an optional stock and dailyMax 1..20, cost 1..500, at most 20 rows', () => {
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse(put).success).toBe(true)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, prizes: [{ label: 'A', kind: 'token', amount: 1, weight: 100 }], dailyMax: 20 }).success).toBe(true)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, dailyMax: 21 }).success).toBe(false)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, costSyiling: 501 }).success).toBe(false)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, costSyiling: 0 }).success).toBe(false)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, prizes: Array.from({ length: 21 }, () => prize) }).success).toBe(false)
+    expect(GamificationMysteryBoxUpdateRequestSchema.safeParse({ ...put, label: '  ' }).success).toBe(false)
+  })
+
+  it('the list answer has dailyMax and openingsPerDay rows of a date and a count', () => {
+    const list = { boxes: [{ id: '5', ...put }], dailyMax: 5, openingsPerDay: [{ day: '2026-11-05', count: 3 }] }
+    expect(GamificationMysteryBoxesAdminSchema.safeParse({ ...list, boxes: [{ id: '5', ...put, prizes: [prize] }] }).success).toBe(true)
+    expect(GamificationMysteryBoxesAdminSchema.safeParse({ ...list, openingsPerDay: [{ day: '2026-11-05T00:00:00Z', count: 3 }] }).success).toBe(false)
+    expect(GamificationMysteryBoxesAdminSchema.safeParse({ ...list, dailyMax: 0 }).success).toBe(false)
+    expect(GAMIFICATION_MESSAGES.boxOddsTotal).toBe('Jumlah peluang mesti 100%.')
   })
 })

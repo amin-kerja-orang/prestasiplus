@@ -25,6 +25,7 @@ export const GAMIFICATION_MESSAGES = {
   rewardNotFound: 'Hadiah tidak dijumpai.',
   prizePoolInvalid: 'Format JSON kolam hadiah tidak sah.',
   closeDateInvalid: 'Tarikh tutup tidak sah.',
+  boxOddsTotal: 'Jumlah peluang mesti 100%.',
   required: 'Medan ini diperlukan.',
   invalid: 'Medan ini tidak sah.',
   summary: 'Sila lengkapkan semua medan wajib.',

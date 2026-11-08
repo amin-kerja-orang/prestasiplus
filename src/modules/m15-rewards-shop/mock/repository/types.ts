@@ -7,7 +7,6 @@
 import type {
   CancelledBy,
   HadiahReward as HadiahRewardBody,
-  MysteryBoxView,
   RedemptionStatus,
 } from '../../api/types'
 
@@ -50,16 +49,32 @@ export interface DrawTicketKey {
   drawId: number
 }
 
-/** DATA-M15-03 (constants). */
-export type MysteryBox = MysteryBoxView
+/** DATA-M15-03: a box (the cost is `costSyiling`; `mystery_boxes` of migration 0222). */
+export interface MysteryBox {
+  id: number
+  label: string
+  costSyiling: number
+  isActive: boolean
+}
 
-/** DATA-M15-04. */
+/** DATA-M15-03: one prize row; `stock` null = unlimited, 0 = out of stock. */
+export interface MysteryBoxPrize {
+  label: string
+  kind: 'syiling' | 'token'
+  amount: number
+  weight: number
+  stock: number | null
+}
+
+/** DATA-M15-04. The prize fields and `clientUuid` are null for an opening made before the 0222 tables. */
 export interface MysteryBoxOpening {
   id: number
   userId: number
   boxId: number
-  coins: number
-  xp: number
+  prizeLabel: string | null
+  prizeKind: 'syiling' | 'token' | null
+  prizeAmount: number | null
+  clientUuid: string | null
   createdAt: string
 }
 
@@ -73,6 +88,9 @@ export type M15ErrorCode =
   | 'DRAW_CLOSED'
   | 'TICKET_LIMIT'
   | 'INSUFFICIENT_BALANCE'
+  | 'BOX_UNAVAILABLE'
+  | 'MYSTERY_DAILY_LIMIT'
+  | 'CLIENT_UUID_REUSED'
 
 export class M15Error extends Error {
   readonly code: M15ErrorCode

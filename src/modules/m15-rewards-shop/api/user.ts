@@ -57,9 +57,14 @@ export function fetchMysteryBoxes(options: Options = {}): Promise<MysteryBoxesVi
   return api.get<MysteryBoxesView>('/api/gamification/mystery-boxes', withSignal(options))
 }
 
-/** #11 `POST /api/gamification/mystery-boxes/:id/open` (404 box; 409 `INSUFFICIENT_TOKENS`). */
-export function openMysteryBox(boxId: number): Promise<MysteryBoxOpened> {
-  return api.post<MysteryBoxOpened>(`/api/gamification/mystery-boxes/${String(boxId)}/open`)
+/**
+ * #11 `POST /api/gamification/mystery-boxes/:id/open` with `{clientUuid}` (404 box; 409 `INSUFFICIENT_BALANCE` |
+ * `BOX_UNAVAILABLE`; 429 `MYSTERY_DAILY_LIMIT`). The same `clientUuid` answers the first opening and moves nothing.
+ */
+export function openMysteryBox(boxId: number, clientUuid: string): Promise<MysteryBoxOpened> {
+  return api.post<MysteryBoxOpened>(`/api/gamification/mystery-boxes/${String(boxId)}/open`, {
+    body: { clientUuid },
+  })
 }
 
 /** #12 `GET /api/cabutan` (S7). */

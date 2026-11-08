@@ -91,38 +91,35 @@ function redeem(req: MockRequest): MockResponse {
 // --- #10, #11 --------------------------------------------------------------------------------------
 
 function listBoxes(req: MockRequest): MockResponse {
-  const userId = sessionUserId(req)
-  const boxes = mysteryBoxRepo.boxes()
-  const data: MysteryBoxesView = {
-    tokenBalance: balanceOf(userId).tokenBalance,
-    boxes: boxes.map((b) => ({ ...b })),
-    history: mysteryBoxRepo.openingsOf(userId, 10).map((o) => ({
-      id: o.id,
-      boxId: o.boxId,
-      boxName: mysteryBoxRepo.box(o.boxId)?.name ?? '',
-      coins: o.coins,
-      xp: o.xp,
-      createdAt: o.createdAt,
-    })),
-  }
+  const data: MysteryBoxesView = mysteryBoxRepo.view(sessionUserId(req))
   return ok(data)
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function openBox(req: MockRequest): MockResponse {
+  const raw =
+    typeof req.body === 'object' && req.body !== null
+      ? (req.body as { clientUuid?: unknown }).clientUuid
+      : undefined
+  if (typeof raw !== 'string' || !UUID.test(raw)) {
+    return validationError({ clientUuid: 'The client uuid field must be a valid UUID.' })
+  }
   try {
-    const r = mysteryBoxRepo.open(sessionUserId(req), idOf(req))
+    const r = mysteryBoxRepo.open(sessionUserId(req), idOf(req), raw.toLowerCase())
     const data: MysteryBoxOpened = {
       openingId: r.opening.id,
-      boxId: r.box.id,
-      boxName: r.box.name,
-      icon: r.box.icon,
-      coins: r.opening.coins,
-      xp: r.opening.xp,
+      boxId: r.opening.boxId,
+      boxName: r.boxName,
+      prize: r.prize,
       tokenBalance: r.tokenBalance,
       syilingBalance: r.syilingBalance,
     }
     return ok(data)
   } catch (e) {
+    if (e instanceof M15Error && e.code === 'CLIENT_UUID_REUSED') {
+      return validationError({ clientUuid: e.message })
+    }
     if (e instanceof M15Error) return refusal(e)
     throw e
   }

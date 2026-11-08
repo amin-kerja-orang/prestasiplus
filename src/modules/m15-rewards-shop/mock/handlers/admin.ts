@@ -16,6 +16,7 @@
 import {
   created,
   conflict,
+  fail,
   int,
   notFound,
   ok,
@@ -56,6 +57,7 @@ const PAGE_SIZE = 50
 /** An M15 refusal → its §7 error response. */
 export function refusal(e: M15Error): MockResponse {
   if (e.code === 'NOT_FOUND') return notFound(e.message)
+  if (e.code === 'MYSTERY_DAILY_LIMIT') return fail(429, e.code, e.message)
   return conflict(e.message, e.code)
 }
 

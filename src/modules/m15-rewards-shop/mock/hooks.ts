@@ -7,7 +7,8 @@
  * | `m15LoadFixture(name)` | `'queue'`: the three §6.9 redemptions (15101–15103, loaded without wallet effects), reward 40 stock 4, wallets student 2 → 20 tokens and student 4 → 15 tokens; `'draw'`: M14 draw "Cabutan Demo" (id 1 on a fresh seed). Loading again changes nothing more. |
  * | `m15Redeem({userId, rewardId})` | runs the #9 rule as that user; `{ok: true, data}` with the #9 body, or `{ok: false, code, message}` on a refusal |
  * | `m15SetReward(id, patch)` | patches a reward directly (e.g. `{isActive: true}`, `{stockQuantity: 0}`); returns the row |
- * | `m15MysteryNext({coins, xp})` | fixes the next successful opening's result (`coins` >= 1, `xp` >= 0) |
+ * | `m15MysteryNext({label})` | fixes the next successful opening's prize (the label of a prize that can be won, e.g. `'25 syiling'`) |
+ * | `m15SetMysteryBox({isActive?, costSyiling?, dailyMax?, stocks?})` | edits the box as the admin save would; `stocks` maps a prize label to its stock (`null` = unlimited, `0` = out of stock) |
  *
  * Input is validated; a bad call throws a `RangeError` (the hook promise rejects).
  */
@@ -17,7 +18,7 @@ import { toIsoMyt } from '@/lib/time'
 import type { RedeemResult } from '../api/types'
 import { hadiahRepo } from './repository/hadiah'
 import { findOrCreateDraw, setTokens } from './repository/m14-seam'
-import { setNextMysteryResult } from './repository/mystery-box'
+import { patchMysteryBox, setNextMysteryPrize } from './repository/mystery-box'
 import { M15Error, type HadiahFields, type HadiahRedemption } from './repository/types'
 
 const base = {
@@ -130,17 +131,33 @@ function m15SetReward(id: number, patch: Partial<HadiahFields>) {
   return row
 }
 
-function m15MysteryNext(result: { coins: number; xp: number }): void {
-  if (
-    !Number.isInteger(result.coins) ||
-    result.coins < 1 ||
-    !Number.isInteger(result.xp) ||
-    result.xp < 0
-  ) {
-    throw new RangeError('m15MysteryNext: coins is an integer >= 1 and xp an integer >= 0')
+function m15MysteryNext(result: { label: string }): void {
+  if (typeof result.label !== 'string' || result.label === '') {
+    throw new RangeError('m15MysteryNext: label is the label of a prize')
   }
-  setNextMysteryResult({ coins: result.coins, xp: result.xp })
+  setNextMysteryPrize(result.label)
+}
+
+function m15SetMysteryBox(patch: {
+  isActive?: boolean
+  costSyiling?: number
+  dailyMax?: number
+  stocks?: Record<string, number | null>
+}): void {
+  if (patch.costSyiling !== undefined && (!Number.isInteger(patch.costSyiling) || patch.costSyiling < 1)) {
+    throw new RangeError('m15SetMysteryBox: costSyiling is an integer >= 1')
+  }
+  if (patch.dailyMax !== undefined && (!Number.isInteger(patch.dailyMax) || patch.dailyMax < 1)) {
+    throw new RangeError('m15SetMysteryBox: dailyMax is an integer >= 1')
+  }
+  patchMysteryBox(patch)
 }
 
 /** The plugin's `hooks` field. */
-export const m15Hooks = { m15LoadFixture, m15Redeem, m15SetReward, m15MysteryNext }
+export const m15Hooks = {
+  m15LoadFixture,
+  m15Redeem,
+  m15SetReward,
+  m15MysteryNext,
+  m15SetMysteryBox,
+}
