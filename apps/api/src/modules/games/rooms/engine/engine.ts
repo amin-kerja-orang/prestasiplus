@@ -52,6 +52,11 @@ const human = (c: Ctx): EnginePlayer =>
   c.players.find((x) => x.userId === c.s.humanId) as EnginePlayer
 const others = (c: Ctx): EnginePlayer[] => c.players.filter((x) => x.userId !== c.s.humanId)
 const nextQ = (c: Ctx): string => {
+  // Ruling 56, FR-GM-02.4 (Papan Bijak only; GAME-05 gives each player their own questions): when the cursor wraps the pool, the pool restarts reshuffled (a named stream per pass).
+  if (c.room.game === 'papan-bijak' && c.s.qIds.length > 0 && c.s.cursor > 0 && c.s.cursor % c.s.qIds.length === 0) {
+    const pass = c.s.cursor / c.s.qIds.length
+    c.s.qIds = shuffle([...c.s.qIds], c.streams(`m16:room:${c.room.code}:${c.s.seed}:pool${String(pass)}`))
+  }
   const id = c.s.qIds[c.s.cursor % c.s.qIds.length] as string
   c.s.cursor += 1
   return id
@@ -60,7 +65,7 @@ const clampSeconds = (v: number): number => Math.min(15, Math.max(0, Math.floor(
 /** Whole seconds since the current turn began, by the injected clock. */
 const ctxSeconds = (c: Ctx): number => (c.nowMs - (c.s.roundStartedMs ?? c.nowMs)) / 1000
 
-const newSeat = (): SeatState => ({ answerCount: 0, answerMs: [], missed: 0, seenMs: null, answeredAt: null })
+const newSeat = (): SeatState => ({ answerCount: 0, answerMs: [], answeredAt: null })
 
 /** The state of a human seat (created on first use). */
 export function seatOf(s: RoomState, id: string): SeatState {
@@ -81,20 +86,16 @@ export function youAnswered(s: RoomState, id: string): boolean {
 }
 
 /**
- * Whether `id` was seen within `windowMs` of `nowMs`. `seenMs` is written at most every `minGapMs` (see `markSeen`), so the
- * caller passes the absence limit plus that gap.
+ * Whether a seat polled or acted within `windowMs` of `nowMs` (DM-90 `last_polled_at`). The column is written at most every
+ * `SEEN_GAP_MS` (see `shouldWritePoll`), so the caller passes the absence limit plus that gap. Present but idle is present.
  */
-export function seatPresent(s: RoomState, id: string, nowMs: number, windowMs: number): boolean {
-  const seen = s.seats?.[id]?.seenMs
-  return seen !== null && seen !== undefined && nowMs - seen <= windowMs
+export function seatPresent(lastPolledMs: number | null | undefined, nowMs: number, windowMs: number): boolean {
+  return lastPolledMs !== null && lastPolledMs !== undefined && nowMs - lastPolledMs <= windowMs
 }
 
-/** The player is polling or acting: presence only (ruling 49.1: a poll never resets the timeout count). Returns whether the state changed. */
-export function markSeen(s: RoomState, id: string, nowMs: number, minGapMs: number): boolean {
-  const seat = seatOf(s, id)
-  if (seat.seenMs !== null && nowMs - seat.seenMs < minGapMs) return false
-  seat.seenMs = nowMs
-  return true
+/** Whether a poll at `nowMs` writes `last_polled_at`: the first one, then at most once per `minGapMs`. */
+export function shouldWritePoll(lastPolledMs: number | null | undefined, nowMs: number, minGapMs: number): boolean {
+  return lastPolledMs === null || lastPolledMs === undefined || nowMs - lastPolledMs >= minGapMs
 }
 
 /** Notes one answer of a human seat for the answer store; `timedOut` is a wrong answer that is no answer for the pace guard. A robot's is never one. */
@@ -106,7 +107,6 @@ function logAnswer(c: Ctx, pl: EnginePlayer, questionId: string, correct: boolea
   seat.answeredAt = markerOf(c.s, questionId)
   if (!timedOut) {
     seat.answerMs.push(c.nowMs)
-    seat.missed = 0
   }
   c.answered.push({ userId: pl.userId, questionId, position, correct, atMs: c.nowMs })
 }
@@ -177,7 +177,7 @@ export function startGame(input: StartInput): EngineOut {
     answered: [],
   }
   c.s.startHumans = c.players.filter((x) => !x.isBot).length
-  for (const pl of c.players) if (!pl.isBot) seatOf(c.s, pl.userId).seenMs = input.nowMs
+  for (const pl of c.players) if (!pl.isBot) seatOf(c.s, pl.userId)
   c.s.qIds = pool.map((q) => q.id)
   for (const q of pool) {
     c.s.qs[q.id] = { text: q.text, options: q.options, keyIndex: q.keyIndex, keyText: q.keyText }
@@ -298,9 +298,7 @@ export function applyAction(input: ActionInput): EngineOut {
     if (room.game !== 'papan-bijak' || c.s.awaiting !== 'roll') {
       throw new EngineRefusal('conflict', 'Bukan giliran anda untuk gulung dadu.')
     }
-    const rolled = stamp(input.state, pbRoll(c), input.nowMs)
-    seatOf(rolled.state, input.state.humanId).missed = 0 // a roll in time is an action: the timeout count restarts
-    return rolled
+    return noteAction(input, stamp(input.state, pbRoll(c), input.nowMs))
   }
   if (c.s.awaiting !== 'answer' || c.s.pendingQ === null) {
     throw new EngineRefusal('conflict', 'Tiada soalan untuk dijawab.')
@@ -329,7 +327,24 @@ export function applyAction(input: ActionInput): EngineOut {
       out = crosswordAnswer(c, action)
       break
   }
-  return stamp(input.state, out, input.nowMs)
+  return noteAction(input, stamp(input.state, out, input.nowMs))
+}
+
+/**
+ * The acting seat acted (ruling 49, lead Q3): any action sets its consecutive timeouts to 0. In Papan Bijak and Kuiz Relay the
+ * client's explicit "time ran out" (an answer with no pick and no value) is the clock speaking, not the pupil: it counts as one
+ * timeout like the server's own. In the own-part games (GAME-03/04/05/07) such an answer neither counts nor resets, as before
+ * (via its GAME-0x part).
+ */
+function noteAction(input: ActionInput, out: EngineOut): EngineOut {
+  const actor = out.players.find((x) => x.userId === input.state.humanId && !x.isBot)
+  if (!actor) return out
+  if (input.action.type === 'answer' && noPick(input.action)) {
+    if (input.room.game === 'papan-bijak' || input.room.game === 'kuiz-relay') actor.consecutiveTimeouts = (actor.consecutiveTimeouts ?? 0) + 1
+    return out
+  }
+  actor.consecutiveTimeouts = 0
+  return out
 }
 
 export interface TimeoutInput {
@@ -349,8 +364,8 @@ export interface TimeoutInput {
 export function applyTimeout(input: TimeoutInput): EngineOut {
   const res = timeoutStep(input)
   // The seat the clock ran out on missed its turn: 3 in a row, polled or not, remove it (FR-GM-R.4, ruling 49).
-  const actor = input.players.find((x) => x.userId === input.state.humanId)
-  if (actor && !actor.isBot) seatOf(res.state, actor.userId).missed += 1
+  const actor = res.players.find((x) => x.userId === input.state.humanId && !x.isBot)
+  if (actor) actor.consecutiveTimeouts = (actor.consecutiveTimeouts ?? 0) + 1
   return res
 }
 
@@ -464,9 +479,20 @@ function pbMove(c: Ctx, pl: EnginePlayer, dice: number): 'quiz' | 'moved' {
   return 'moved'
 }
 
+/** 48 GAME-02 FR-GM-02.5: points = 10 x correct, plus 50 for the winner. */
+export const pbPoints = (correct: number, won: boolean): number => correct * 10 + (won ? 50 : 0)
+
+/**
+ * AC-GM-02.4, FR-GM-02.5: the points of a Papan Bijak game that ends without the engine settling it (the last human wins by
+ * default, 3.6). Same formula as `pbSettle`; the winner gets +50, everyone else 10 x correct. Returns new seats.
+ */
+export function pbSettleDefault(players: EnginePlayer[], winnerId: string | null): EnginePlayer[] {
+  return players.map((pl) => ({ ...pl, points: pbPoints(pl.correct, pl.userId === winnerId) }))
+}
+
 function pbSettle(c: Ctx): EngineOut {
   for (const pl of c.players) {
-    pl.points = pl.correct * 10 + (pl.userId === c.s.winnerId ? 50 : 0)
+    pl.points = pbPoints(pl.correct, pl.userId === c.s.winnerId)
   }
   return finish(c)
 }

@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '@/api'
 
-import type { RoomView } from '../../api'
+import type { RoomReward, RoomView } from '../../api'
 import {
   CUSTOM_GRADE_OPTIONS,
   GRADE_GROUPS,
@@ -28,6 +28,7 @@ import {
   answerSeconds,
   canAct,
   canStart,
+  rewardLine,
   isHost,
   isOpenRoom,
   lastRoll,
@@ -299,5 +300,25 @@ describe('room helpers (FR-M16-68..70)', () => {
     expect(clock(-3)).toBe('0:00')
     expect(teamLabel(1)).toBe('A')
     expect(teamLabel(2)).toBe('B')
+  })
+})
+
+describe('rewardLine (48 section 3.4)', () => {
+  const r = (over: Partial<RoomReward>): RoomReward => ({ xp: 0, syiling: 0, capped: false, reason: null, ...over })
+  it('maps each reward case to the exact BM line', () => {
+    expect(rewardLine(undefined)).toBeNull()
+    expect(rewardLine(r({ xp: 30, syiling: 8 }))).toBe('Anda dapat +30 mata dan +8 syiling.')
+    expect(rewardLine(r({ xp: 25 }))).toBe('Anda dapat +25 mata.')
+    expect(rewardLine(r({ xp: 10, capped: true, reason: 'xp_cap' }))).toBe('Anda dapat +10 mata.')
+    for (const reason of ['xp_cap', 'syiling_cap', 'xp_and_syiling_cap'] as const)
+      expect(rewardLine(r({ capped: true, reason }))).toBe(
+        'Had ganjaran permainan hari ini telah dicapai. Cuba lagi esok.',
+      )
+    // The spec says the result shows the amount: a non-capped zero still reads "+0 mata".
+    expect(rewardLine(r({}))).toBe('Anda dapat +0 mata.')
+    expect(rewardLine(r({ syiling: 4, capped: true, reason: 'xp_cap' }))).toBe(
+      'Anda dapat +0 mata dan +4 syiling.',
+    )
+    expect(rewardLine(r({ reason: 'pace_guard' }))).toBe('Keputusan disimpan tanpa ganjaran.')
   })
 })

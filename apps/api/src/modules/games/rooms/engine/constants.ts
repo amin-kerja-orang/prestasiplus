@@ -34,3 +34,8 @@ export const POOL_SIZE = {
   'kuiz-relay': KR_ROUNDS,
   'teka-silang-kata': CROSSWORD_WORDS,
 } as const
+
+/** FR-GM-R.4, ruling 49: this many consecutive timeouts of a seat's own turns (polled or not) remove the seat. */
+export const ABSENT_TIMEOUTS = 3
+/** A poll refreshes a seat's `last_polled_at` at most this often (one write per seat per 5 s). */
+export const SEEN_GAP_MS = 5_000

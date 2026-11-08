@@ -8,6 +8,10 @@ export interface EnginePlayer {
   points: number
   correct: number
   isBot: boolean
+  /** DM-90 `last_polled_at` (ms) of a human seat; null before the first poll. Absent for a robot and in older callers. */
+  lastPolledMs: number | null
+  /** DM-90 `consecutive_timeouts`: timeouts of the seat's own turns since its last action. The engine updates it; the service stores it. */
+  consecutiveTimeouts: number
 }
 
 export interface EngineRoom {
@@ -54,7 +58,7 @@ export interface RoomState {
   startHumans?: number
   /** User ids of the humans who left the game in play and count for standings: jumlah + 1 at a settled finish, never at an unsettled one (rulings 50.3, 50.4). Absent on a room from before this field. */
   leavers?: string[]
-  /** Per human seat: answers, pace and absence. Robots have none. */
+  /** Per human seat: answers and pace. Robots have none. Presence and the timeout count are columns of the seat (DM-90). */
   seats?: Record<string, SeatState>
   awaiting: 'roll' | 'answer' | null
   pendingQ: string | null
@@ -80,10 +84,6 @@ export interface SeatState {
   answerCount: number
   /** When this human really answered, in order; a timeout is no answer (the pace guard reads it). */
   answerMs: number[]
-  /** Consecutive timeouts of this seat's own turns, polled or not; an in-time action resets it, a poll does not; 3 remove the seat (FR-GM-R.4, ruling 49). */
-  missed: number
-  /** When this human last polled or acted (ms); null before the first. Presence for the default win. */
-  seenMs: number | null
   /** The turn marker `round:turn:question` of the question this human last answered (`youAnswered`). */
   answeredAt: string | null
 }

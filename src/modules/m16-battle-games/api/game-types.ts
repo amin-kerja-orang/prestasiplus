@@ -110,7 +110,17 @@ export interface RoomView {
     winnerName: string | null
     mvpId: number | null
     scores: { userId: number; name: string; points: number; correct: number }[]
+    /** What the game gave the caller (48 section 3.4); absent for a seat that did not play or a forfeit. */
+    reward?: RoomReward
   }
+}
+
+/** Contract `GamesReward`: `reason` says what held the reward back (a daily cap, or the pace guard that credits nothing). */
+export interface RoomReward {
+  xp: number
+  syiling: number
+  capped: boolean
+  reason: 'xp_cap' | 'syiling_cap' | 'xp_and_syiling_cap' | 'pace_guard' | null
 }
 
 export type RoomActionBody =
