@@ -11,8 +11,8 @@ import { count, nonBlank } from './shared'
  * The three parent-approval routes are not in B1 (UD-3) and have no schema.
  *
  * The frontend mock (`src/modules/m15-rewards-shop`) is the wire spec. Ids are opaque strings (`Id`)
- * where the mock uses integers. Money fields keep the mock's shape: `denominationRm` is an integer
- * (RM), `valueSen` an integer in sen. Validation messages of the M15 writes are BM (ERR-RWD-08); see
+ * where the mock uses integers. Money fields keep the mock's shape: `denominationRm` is RM with at most 2
+ * decimals (0.01 min), `valueSen` an integer in sen. Validation messages of the M15 writes are BM (ERR-RWD-08); see
  * `REWARD_VALIDATION_MESSAGES`.
  */
 
@@ -109,7 +109,7 @@ export const REWARD_VALIDATION_MESSAGES = {
   idsRequired: 'Sila pilih hadiah.',
   idsInvalid: 'Format hadiah tidak sah.',
   stockValue: 'Stok tidak sah.',
-  maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 99.',
+  maxPerMonthValue: 'Maks/bulan/pelajar mesti antara 1 dan 100.',
   tokenCostDeltaPct: 'Pelaras Token mesti antara -90 dan 500.',
   codeRequired: 'Kod baucar diperlukan.',
   codeTooLong: 'Kod baucar tidak boleh melebihi 100 aksara.',
@@ -135,7 +135,7 @@ export const RewardItemSchema = z
     vendor: z.string(),
     title: z.string(),
     description: z.string().nullable(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     iconEmoji: z.string().nullable(),
     stockQuantity: count.nullable(),
@@ -163,25 +163,25 @@ export type RewardItem = z.infer<typeof RewardItemSchema>
 export const RewardInputSchema = z
   .object({
     category: RewardCategorySchema,
-    vendor: nonBlank(100),
-    title: nonBlank(200),
-    description: optionalText(1000),
-    denominationRm: z.number().int().min(1).max(10_000),
-    tokenCost: z.number().int().min(1).max(10_000),
-    iconEmoji: optionalText(8),
-    stockQuantity: z.number().int().min(0).max(999_999_999).nullable().optional().meta(FIELD('null or absent = unlimited.')),
-    maxPerMonthPerStudent: z.number().int().min(1).max(99).nullable().optional().meta(FIELD('null or absent = no cap.')),
-    voucherValidityDays: z.number().int().min(1).max(1825).optional(),
-    deliveryMethod: RewardDeliveryMethodSchema.optional(),
-    vendorSku: optionalText(100),
+    vendor: nonBlank(60),
+    title: nonBlank(100),
+    description: optionalText(500),
+    denominationRm: z.number().min(0.01).max(10_000).refine((v) => Number.isInteger(Math.round(v * 1e6) / 1e4), 'at most 2 decimal places'),
+    tokenCost: z.number().int().min(1).max(100_000),
+    iconEmoji: optionalText(16).meta(FIELD('1 to 2 characters as a reader counts them (an emoji may take several code units).')),
+    stockQuantity: z.number().int().min(0).max(999_999_999).nullable().optional().meta(FIELD('null or absent = unlimited')),
+    maxPerMonthPerStudent: z.number().int().min(1).max(100).nullable().optional().meta(FIELD('null or absent = no cap.')),
+    voucherValidityDays: z.number().int().min(1).max(3650).optional(),
+    deliveryMethod: z.enum(['manual', 'instant']).optional().meta(FIELD('`api` is not offered (FR-ADM-P2-07.3); a stored row may still read `api`.')),
+    vendorSku: optionalText(50),
     displayOrder: z.number().int().min(0).max(9999).optional(),
     imageUrl: z
       .string()
       .max(500)
-      .regex(/^[Hh][Tt][Tt][Pp][Ss]?:\/\/\S+$/)
+      .regex(/^[Hh][Tt][Tt][Pp][Ss]:\/\/\S+$/)
       .nullable()
       .optional(),
-    termsText: optionalText(2000),
+    termsText: optionalText(1000),
     isActive: z.boolean().optional(),
     requiresParentConsent: z.boolean().optional().meta(FIELD('Ignored: no consent status exists (FR-GM-21.3); always stored false.')),
   })
@@ -205,7 +205,7 @@ export const RewardListItemSchema = z
     vendor: z.string(),
     title: z.string(),
     iconEmoji: z.string().nullable(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     stockQuantity: count.nullable(),
     redemptionCount: count.meta(FIELD('Non-cancelled redemptions of this reward.')),
@@ -233,8 +233,8 @@ export type RewardListResponse = z.infer<typeof RewardListResponseSchema>
 
 /**
  * `POST /admin/hadiah/bulk` body. The value fields are the raw page strings:
- * `stockValue` empty (= unlimited) or digits <= 999999; `maxPerMonthValue` empty or 0 (= no cap)
- * or digits <= 99; `tokenCostDeltaPct` a non-zero integer text in -90..500 (parseInt semantics).
+ * `stockValue` empty (= unlimited) or digits <= 999999999; `maxPerMonthValue` empty or 0 (= no cap)
+ * or digits <= 100; `tokenCostDeltaPct` a non-zero integer text in -90..500 (parseInt semantics).
  * Only the field of the chosen action is read.
  */
 export const RewardBulkRequestSchema = z
@@ -277,7 +277,7 @@ export const RewardRedemptionListItemSchema = z
     rewardId: IdSchema,
     rewardTitle: z.string(),
     rewardVendor: z.string(),
-    denominationRm: z.number().int().min(1),
+    denominationRm: z.number().min(0.01),
     tokenCost: z.number().int().min(1),
     status: RewardRedemptionStatusSchema,
     createdAt: TimestampSchema,
