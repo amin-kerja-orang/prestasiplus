@@ -299,6 +299,101 @@ describe('pages', () => {
     expect(text('tracking-over')).toBe('Set ini melebihi sasaran 2 soalan. Buang 1 soalan sebelum menyimpan.')
   })
 
+  const editable = (id: string, over: Record<string, unknown> = {}) => ({
+    row: { id, status: 'terbit', subjectName: 'Sains', kind: 'objektif' },
+    question: {
+      id,
+      label: '',
+      type: 'mcq',
+      stem: `Teks soalan ${id} yang panjang`,
+      options: [{ id: 'A', text: 'satu' }, { id: 'B', text: 'dua' }],
+      marks: 1,
+      mode: 'short_text',
+      parts: [],
+      scheme: { kind: 'option', marks: 1, correct: 'A' },
+      explanation: '',
+    },
+    pendingRevision: false,
+    legacyTag: false,
+    quickEdit: { outOfScope: false, gate: [] },
+    ...over,
+  })
+  const field = (id: string): HTMLInputElement | null => document.body.querySelector(`[data-testid="${id}"]`)
+  const select = async (id: string): Promise<void> => {
+    const row = tid(id)
+    ;(row?.matches('button') ? row : row?.querySelector('button'))?.click()
+    await flushPromises()
+  }
+
+  it('the pool line is shown at target too, not only while the set is short', async () => {
+    server.trackingSet.mockResolvedValue(setOf({ targetCount: 1 }))
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    expect(text('tracking-full')).toBe('Set ini lengkap.')
+    expect(text('tracking-available')).toBe('Soalan tersedia untuk Sains: 28,471')
+  })
+
+  it('the pane edits the selected question inline: it loads it, saves it as a revision and refreshes the row, leaving the draft alone', async () => {
+    const admin = bijakAdminServer()
+    const load = vi.spyOn(admin, 'getBankEditable').mockResolvedValue(editable('1') as never)
+    const revise = vi.spyOn(admin, 'reviseQuestionFull').mockResolvedValue({ ok: true, message: 'Versi baharu dihantar untuk semakan.' } as never)
+    server.trackingSet.mockResolvedValue(setOf())
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    expect(tid('tracking-inline')).toBeNull()
+    await select('tracking-select-1')
+    expect(load).toHaveBeenCalledWith('1')
+    expect(field('tracking-inline-stem')?.value).toBe('Teks soalan 1 yang panjang')
+    const stem = field('tracking-inline-stem')
+    if (stem) {
+      stem.value = 'Teks soalan satu yang disunting'
+      stem.dispatchEvent(new Event('input'))
+    }
+    await flushPromises()
+    await click('tracking-inline-save')
+    expect(revise).toHaveBeenCalledTimes(1)
+    expect(revise.mock.calls[0]?.[0]).toBe('1')
+    expect(text('tracking-inline-saved')).toBe('Versi baharu dihantar untuk semakan.')
+    expect(document.body.textContent).toContain('1. Teks soalan satu yang disunting')
+    expect(text('tracking-counter')).toBe('1 / 5')
+    expect(server.saveTrackingSet).not.toHaveBeenCalled()
+    expect(tid('tracking-unsaved')).toBeNull()
+    load.mockRestore()
+    revise.mockRestore()
+  })
+
+  it('inline edit: an invalid question cannot be sent, a server refusal is shown, an out-of-scope or locked one is read-only', async () => {
+    const admin = bijakAdminServer()
+    const bad = editable('1')
+    bad.question.stem = 'kurang'
+    const load = vi.spyOn(admin, 'getBankEditable').mockResolvedValue(bad as never)
+    const revise = vi.spyOn(admin, 'reviseQuestionFull').mockResolvedValue({ ok: false, errors: ['Ditolak pelayan.'] })
+    server.trackingSet.mockResolvedValue(setOf())
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    await select('tracking-select-1')
+    expect(text('tracking-inline-issues')).toContain('Teks soalan mesti sekurang-kurangnya 10 aksara.')
+    await click('tracking-inline-save')
+    expect(revise).not.toHaveBeenCalled()
+    const reopen = async (): Promise<void> => {
+      wrapper?.unmount()
+      document.body.innerHTML = ''
+      await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+      await select('tracking-select-1')
+    }
+    load.mockResolvedValue(editable('1') as never)
+    await reopen()
+    await click('tracking-inline-save')
+    expect(text('tracking-inline-errors')).toBe('Ditolak pelayan.')
+    load.mockResolvedValue(editable('1', { quickEdit: { outOfScope: true, gate: [] } }) as never)
+    await reopen()
+    expect(tid('tracking-inline-scope')).not.toBeNull()
+    expect(tid('tracking-inline-save')).toBeNull()
+    load.mockResolvedValue(editable('1', { pendingRevision: true }) as never)
+    await reopen()
+    expect(tid('tracking-inline-locked')).not.toBeNull()
+    expect(tid('tracking-inline-save')).toBeNull()
+    load.mockRestore()
+    revise.mockRestore()
+  })
+
   it('Tambah Set warns before a dirty draft is lost; a clean draft is not asked about', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     server.trackingLane.mockResolvedValue({ rows: [], page: 1, pageSize: 1, total: 0, count: 0, subjects: [], setSubjects: [{ id: '3', name: 'Sains' }] })
