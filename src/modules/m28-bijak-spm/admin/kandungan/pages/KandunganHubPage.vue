@@ -10,7 +10,7 @@ import { computed, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
-import { DsGrid, DsHeading, DsLink, DsLoadError, DsPage, DsSpacer, DsStack, DsSurface, DsText, formatCount } from '@/ds'
+import { DsCluster, DsGrid, DsHeading, DsLink, DsLoadError, DsPage, DsSpacer, DsStack, DsSurface, DsText, formatCount } from '@/ds'
 
 import { laneRouteOf } from '../api'
 import { kandunganServer } from '../client'
@@ -47,7 +47,10 @@ const linesOf = (c: ServabilityHubCard): string[] =>
     <DsGrid v-else as="ul" :cols="COLS" data-testid="kandungan-cards">
       <DsSurface v-for="c in cards" :key="c.lane" as="li" level="raised" padding="md" :data-testid="`kandungan-card-${keyOf(c)}`">
         <DsStack gap="sm" fill>
-          <DsHeading :level="2" variant="heading">{{ c.title }}</DsHeading>
+          <DsCluster gap="xs" justify="between" align="start">
+            <DsHeading :level="2" variant="heading">{{ c.title }}</DsHeading>
+            <UBadge v-if="c.flagOff" color="warning" variant="outline" size="sm" :data-testid="`kandungan-flag-off-${keyOf(c)}`">{{ hubCopy.flagOff }}</UBadge>
+          </DsCluster>
           <DsText as="p" variant="body" tone="toned">{{ c.description }}</DsText>
           <DsStack v-if="c.failed" gap="xs" align="start" :data-testid="`kandungan-failed-${keyOf(c)}`">
             <DsText as="p" variant="body" tone="error" role="alert">{{ hubCopy.failed }}</DsText>

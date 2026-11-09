@@ -456,6 +456,16 @@ export class ServabilityReadsService {
        ORDER BY sub.sort_order, sub.name, lvl.sort_order`
   }
 
+  /** Hub cards whose Kawalan Ciri key is OFF (V2 "Flag OFF" badge). Read on every hub request, outside the 5-minute overview cache. V3 has a key for Latih Tubi only. */
+  async flaggedOffLanes(): Promise<ServabilityHubLane[]> {
+    try {
+      return (await this.latihTubiSwitch()) ? [] : ['latih-tubi']
+    } catch (e) {
+      this.logger.error(e)
+      return []
+    }
+  }
+
   /** The Kawalan Ciri key `latih-tubi` (API-ADM-09). The table arrives with S0-T10; until then, and for a key with no row, it is ON (FR-ADM-N06.4). */
   private async latihTubiSwitch(): Promise<boolean> {
     const [table] = await this.db.$queryRaw<{ present: boolean }[]>`SELECT to_regclass('feature_flags') IS NOT NULL AS present`

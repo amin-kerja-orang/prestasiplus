@@ -388,6 +388,19 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     }
   })
 
+  it('hub: the Latih Tubi card carries flagOff while its Kawalan Ciri key is OFF (V2 "Flag OFF" badge)', async () => {
+    const [before] = await t.db.query<{ enabled: boolean }>(`select enabled from feature_flags where key = 'latih-tubi'`)
+    const card = async () => parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'latih-tubi')!
+    try {
+      await t.db.query(`update feature_flags set enabled = true where key = 'latih-tubi'`)
+      expect((await card()).flagOff).toBeUndefined()
+      await t.db.query(`update feature_flags set enabled = false where key = 'latih-tubi'`)
+      expect((await card()).flagOff).toBe(true)
+    } finally {
+      await t.db.query(`update feature_flags set enabled = $1 where key = 'latih-tubi'`, [before?.enabled ?? true])
+    }
+  })
+
   it('S3-T03: Tracking A rows and the card use the pupil rule: a set short of its size is incomplete', async () => {
     const lane = await wholeLane<ServabilityLaneRow>('tracking-a', ServabilityLaneRowSchema)
     const full = lane.rows.find((r) => r.id === made.fullSet)!

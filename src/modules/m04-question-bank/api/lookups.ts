@@ -120,3 +120,13 @@ export function fetchDskpSp(skId: number, options: Signal = {}): Promise<SpOptio
     ...withSignal(options),
   })
 }
+
+/** The data-driven values of the Studio selects: `GET /api/questions/filter-options` (Admin Pusat). `tahun` newest first. */
+export interface StudioFilterOptions {
+  negeri: string[]
+  tahun: number[]
+}
+
+export function fetchStudioFilterOptions(options: Signal = {}): Promise<StudioFilterOptions> {
+  return api.get<StudioFilterOptions>('/api/questions/filter-options', withSignal(options))
+}

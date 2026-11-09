@@ -25,7 +25,7 @@ const studio = vi.hoisted(() => ({
   fetchStudioQuestion: vi.fn(),
   fetchGroup: vi.fn(),
 }))
-const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn() }))
+const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn(), fetchStudioFilterOptions: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
 const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn(), bulkQuestionsByFilter: vi.fn() }))
@@ -77,6 +77,7 @@ beforeEach(() => {
   })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
   lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
+  lookups.fetchStudioFilterOptions.mockReset().mockResolvedValue({ negeri: ['Selangor', 'Wilayah Lain'], tahun: [2024, 2023] })
   summaryApi.fetchQuestionSummary.mockReset().mockResolvedValue(null)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
@@ -237,9 +238,20 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: '2024', negeri: 'Selangor', kertas: '2', jenis: 'percubaan' }))
     const text = w.text()
     for (const chip of ['Tahun: 2024', 'Negeri: Selangor', 'Kertas: 2', 'Jenis: Percubaan']) expect(text).toContain(chip)
-    expect(t(w, 'studio-jenis-filter').text()).toContain('Semua jenis')
+    expect(t(w, 'studio-jenis-filter').text()).toContain('Semua Jenis')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 4')
+  })
+
+  it('offers V2 options in Tahun (source paper years), Negeri (V2 boards) and Jenis (Percubaan, Sebenar, Modul), and Set Semula is always shown', async () => {
+    const w = await render('/admin/studio')
+    const opts = (id: string) => t(w, id).findAll('option').map((o) => o.text())
+    expect(opts('studio-tahun-filter')).toEqual(['Semua Tahun', '2024', '2023'])
+    expect(opts('studio-negeri-filter').slice(0, 3)).toEqual(['Semua Negeri', 'Johor', 'Kedah'])
+    expect(opts('studio-negeri-filter')).toContain('SPM(U)')
+    expect(opts('studio-negeri-filter')).toContain('Wilayah Lain')
+    expect(opts('studio-jenis-filter')).toEqual(['Semua Jenis', 'Percubaan', 'Sebenar', 'Modul'])
+    expect(w.text()).toContain('Set Semula')
   })
 
   it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {

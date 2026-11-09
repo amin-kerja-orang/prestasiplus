@@ -60,6 +60,7 @@ function reset(): void {
       :active-count="chips.length"
       :apply-label="laneCopy.apply"
       :reset-label="laneCopy.reset"
+      :show-reset="true"
       data-testid="lane-filter"
       @apply="apply"
       @reset="reset"

@@ -122,6 +122,13 @@ describe('hub SPM (R1-ADM-Q-01)', () => {
     expect(cardNames()).toEqual(['Databank Soalan', 'Tracking A', 'Subjektif', 'Bijak SPM', 'Kertas Subjektif', 'Latih Tubi'])
   })
 
+  it('shows the V2 "Flag OFF" badge only on a card whose Kawalan Ciri key is off', async () => {
+    server.overview.mockResolvedValue({ ...OVERVIEW, cards: OVERVIEW.cards.map((c) => (c.lane === 'latih-tubi' ? { ...c, flagOff: true } : c)) })
+    await mountAt(KandunganHubPage, '/admin/spm')
+    expect(text('[data-testid=kandungan-flag-off-latih-tubi]')).toBe('Flag OFF')
+    expect(q('[data-testid=kandungan-flag-off-databank]')).toBeNull()
+  })
+
   it('shows the item count as a big number and every attention line', async () => {
     await mountAt(KandunganHubPage, '/admin/spm')
     expect(text('[data-testid=kandungan-total-databank]')).toBe('1,234')
@@ -267,11 +274,17 @@ describe('lane Databank Soalan (R1-ADM-Q-02)', () => {
   it('has the V2 filters, buttons and columns, and lists the reasons in Perhatian', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     const body = document.body.textContent ?? ''
-    // "Set Semula" appears once a filter is active (DsFilterBar showReset auto); it is asserted in the apply test below.
+    // "Set Semula" shows even with no filter active, as on V2 (asserted in its own test below).
     for (const s of ['Semua Subjek', 'Semua Status', 'Tapis', 'Senarai', 'Tajuk', 'Perhatian', 'Tindakan']) expect(body, s).toContain(s)
     expect(q('[data-testid=lane-search]')).not.toBeNull()
     expect(text('[data-testid=lane-databank]')).toContain('Belum diluluskan — tekan Terbitkan untuk memaparkannya.')
     expect(q('[data-testid=lane-edit-2]')).not.toBeNull()
+  })
+
+  it('shows Set Semula with no filter active, as V2 does', async () => {
+    await mountAt(LaneDatabankPage, '/admin/spm/databank')
+    const reset = [...document.body.querySelectorAll('button')].filter((b) => b.textContent?.trim() === 'Set Semula')
+    expect(reset.length).toBeGreaterThan(0)
   })
 
   it('offers Pratonton beside Sunting, through the V2 read-only preview page (S2-T03)', async () => {

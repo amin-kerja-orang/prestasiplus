@@ -236,7 +236,7 @@ export const questionFilterShape = {
 export const QuestionListQuerySchema = PageQuerySchema.extend(questionFilterShape).meta({ id: 'QuestionListQuery' })
 
 /** REQ-C-019: the values of the Studio selects that come from data. `negeri` = the distinct `exam_board` of the source papers, sorted. */
-export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()) }).meta({ id: 'QuestionFilterOptions' })
+export const QuestionFilterOptionsSchema = z.object({ negeri: z.array(z.string()), tahun: z.array(z.number().int()).meta({ description: 'Distinct source paper years, newest first (V2 Tahun select).' }) }).meta({ id: 'QuestionFilterOptions' })
 
 export const QuestionSummarySchema = z
   .object({
