@@ -15,7 +15,7 @@
 import { toEpochMs } from '@/lib/time'
 import { forbidden, ok, requireRole, route, type Middleware, type RouteDef } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
-import { schoolSubscriptions, schools } from '@/modules/m02-users-schools/mock'
+import { joinCodeOf, schoolSubscriptions, schools } from '@/modules/m02-users-schools/mock'
 import { schoolPerformance } from '@/modules/m08-student-performance/mock'
 import { perutusan } from '@/modules/m09-content/mock'
 import { classrooms } from '@/modules/m10-teacher-class/mock'
@@ -120,6 +120,7 @@ export function buildSchoolDashboard(
       state: school.state,
       ppd: school.district && school.district !== '' ? school.district : null,
       code: school.code !== '' ? school.code : null,
+      joinCode: joinCodeOf(school.id),
     },
     roleLabel: ROLE_LABEL,
     perutusan: perutusan

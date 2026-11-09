@@ -217,3 +217,4 @@ export {
   type ResetPasswordInput,
 } from './school-admin-writes'
 export { MSG_USER_CREATED, MSG_USER_UPDATED } from './handlers/users-admin'
+export { joinCodeOf } from './handlers/schools-admin'

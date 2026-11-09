@@ -10,7 +10,11 @@ import { useFlashStore } from '@/stores/flash'
 import type { AdminSchool } from '../../api/schools-admin'
 import SchoolListPage from '../../pages/SchoolListPage.vue'
 
-const api = vi.hoisted(() => ({ fetchAdminSchools: vi.fn(), toggleSchool: vi.fn() }))
+const api = vi.hoisted(() => ({
+  fetchAdminSchools: vi.fn(),
+  toggleSchool: vi.fn(),
+  rotateSchoolJoinCode: vi.fn(),
+}))
 vi.mock('../../api/schools-admin', () => api)
 
 function school(id: number, extra: Partial<AdminSchool> = {}): AdminSchool {
@@ -22,6 +26,7 @@ function school(id: number, extra: Partial<AdminSchool> = {}): AdminSchool {
     state: 'Selangor',
     district: 'PPD CONTOH',
     city: null,
+    joinCode: `JOIN${String(1000 + id)}`,
     isActive: true,
     createdAt: '2026-01-01T00:00:00+08:00',
     updatedAt: '2026-01-01T00:00:00+08:00',
@@ -154,12 +159,13 @@ describe('SchoolListPage (M02 S9)', () => {
     expect(tiles.findAll('.truncate')).toHaveLength(0)
   })
 
-  it('renders the nine columns and one row per school', async () => {
+  it('renders the ten columns and one row per school', async () => {
     const w = await render()
     const headers = w.findAll('thead th').map((th) => th.text())
     expect(headers).toEqual([
       'Nama Sekolah',
       'Kod',
+      'Kod Daftar',
       'Jenis',
       'Negeri',
       'Daerah',
@@ -270,6 +276,32 @@ describe('SchoolListPage (M02 S9)', () => {
       type: 'success',
       message: 'Status sekolah berjaya dikemaskini.',
     })
+  })
+
+  it('shows the Kod Daftar column and rotates the code after the V2 confirm', async () => {
+    api.rotateSchoolJoinCode.mockResolvedValue({
+      data: { joinCode: 'NEWCODE2' },
+      status: 'Kod pendaftaran "SK TAMAN CONTOH 1" ditukar kepada NEWCODE2. Kod lama tidak lagi sah.',
+    })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const w = await render()
+    expect(w.text()).toContain('Kod Daftar')
+    expect(w.findAll('[data-testid=school-join-code]')[0]?.text()).toBe('JOIN1001')
+    const calls = api.fetchAdminSchools.mock.calls.length
+    await w.findAll('[data-testid=school-rotate]')[0]?.trigger('click')
+    await flushPromises()
+    expect(confirm).toHaveBeenCalledWith('Tukar kod pendaftaran untuk SK TAMAN CONTOH 1? Kod lama tidak lagi sah.')
+    expect(api.rotateSchoolJoinCode).toHaveBeenCalledWith(1)
+    expect(api.fetchAdminSchools.mock.calls.length).toBe(calls + 1)
+    expect(useFlashStore().current?.message).toContain('NEWCODE2')
+  })
+
+  it('a declined confirm does not rotate', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const w = await render()
+    await w.findAll('[data-testid=school-rotate]')[0]?.trigger('click')
+    await flushPromises()
+    expect(api.rotateSchoolJoinCode).not.toHaveBeenCalled()
   })
 
   it('shows an error flash when the toggle fails', async () => {

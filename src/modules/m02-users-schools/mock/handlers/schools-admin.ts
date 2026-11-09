@@ -16,6 +16,8 @@
  * (case-insensitive), a school is never deleted.
  */
 
+import { schoolJoinCodeRotated } from '@pp/contract'
+
 import { users } from '@/modules/m01-authentication/mock'
 import {
   created,
@@ -57,9 +59,48 @@ export const SCHOOL_TOGGLED = 'Status sekolah berjaya dikemaskini.'
 
 const adminOnly = requireRole('admin')
 
+/** Same alphabet and length as the HTTP backend (no 0/O/1/I/L). */
+const JOIN_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+const JOIN_CODE_LENGTH = 8
+
+/** Rotated codes by school id; a school not in the map has its deterministic seed code. */
+const rotatedJoinCodes = new Map<number, string>()
+
+/** A deterministic 8-character code per school id (the dataset has no stored join codes). */
+function seedJoinCode(id: number): string {
+  let x = (id * 2654435761) >>> 0
+  let out = ''
+  for (let i = 0; i < JOIN_CODE_LENGTH; i++) {
+    x = (Math.imul(x, 1664525) + 1013904223) >>> 0
+    out += JOIN_CODE_ALPHABET[(x >>> 8) % JOIN_CODE_ALPHABET.length]
+  }
+  return out
+}
+
+export function joinCodeOf(id: number): string {
+  return rotatedJoinCodes.get(id) ?? seedJoinCode(id)
+}
+
+function rotateJoinCode(id: number, seed: number): string {
+  const taken = new Set([...rotatedJoinCodes.values()])
+  let x = (seed ^ (id * 40503)) >>> 0
+  for (;;) {
+    let out = ''
+    for (let i = 0; i < JOIN_CODE_LENGTH; i++) {
+      x = (Math.imul(x, 1664525) + 1013904223) >>> 0
+      out += JOIN_CODE_ALPHABET[(x >>> 8) % JOIN_CODE_ALPHABET.length]
+    }
+    if (out !== joinCodeOf(id) && !taken.has(out)) {
+      rotatedJoinCodes.set(id, out)
+      return out
+    }
+  }
+}
+
 /** The S9 row / S11 record: the school plus its derived counts (DATA-M02-03). */
 export function toAdminSchool(s: School): AdminSchool {
   return {
+    joinCode: joinCodeOf(s.id),
     id: s.id,
     name: s.name,
     code: s.code,
@@ -268,6 +309,21 @@ export const schoolAdminRoutes: RouteDef[] = [
       if (schoolsRepo.isHidden(id) || !schoolsRepo.get(id)) return notFound()
       const school = schoolsRepo.toggleActive(id, ctx.clock.now())
       return ok({ isActive: school.isActive }, { status: SCHOOL_TOGGLED })
+    },
+    { params: { id: int() } },
+  ),
+
+  // V2 `POST /sekolah/{school}/join-code`: Admin Pusat only; the old code stops working.
+  route(
+    'POST',
+    '/api/admin/schools/:id/join-code',
+    [adminOnly],
+    (req, ctx) => {
+      const id = idOf(req)
+      const school = schoolsRepo.isHidden(id) ? undefined : schoolsRepo.get(id)
+      if (!school) return notFound()
+      const joinCode = rotateJoinCode(id, ctx.clock.now())
+      return ok({ joinCode }, { status: schoolJoinCodeRotated(school.name, joinCode) })
     },
     { params: { id: int() } },
   ),

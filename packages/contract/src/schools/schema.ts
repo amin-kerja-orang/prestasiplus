@@ -62,6 +62,7 @@ export const SCHOOL_ACCESS = {
   'POST /admin/schools': { roles: ['admin'], scope: ALL },
   'PUT /admin/schools/{id}': { roles: ['admin'], scope: ALL },
   'POST /admin/schools/{id}/toggle': { roles: ['admin'], scope: ALL },
+  'POST /admin/schools/{id}/join-code': { roles: ['admin'], scope: ALL },
   'GET /admin/schools/{id}/students': { roles: ['admin', 'school_admin'], scope: 'admin: any school; school_admin: own school only (another school is 404)' },
   'GET /schools': { roles: ['admin'], scope: ALL },
   'GET /schools/search': { roles: ['public'], scope: 'active schools, no session' },

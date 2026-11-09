@@ -35,6 +35,13 @@ export const SchoolAdminDashboardSchema = z
       state: z.string(),
       ppd: z.string().nullable().meta({ description: 'District (PPD); null when blank.' }),
       code: z.string().nullable(),
+      joinCode: z
+        .string()
+        .nullable()
+        .meta({
+          description:
+            'Registration join code of the caller\'s OWN school (V2 "Kod Daftar"), read-only: the school admin may see it but only Admin Pusat can rotate it. Dashboard responses are no-store.',
+        }),
     }),
     roleLabel: z.string().meta({ description: '"Admin Sekolah".' }),
     perutusan: z

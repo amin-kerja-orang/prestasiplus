@@ -17,6 +17,8 @@ export type SchoolType = 'SK' | 'SMK' | 'SJK(C)' | 'SJK(T)' | 'MRSM' | 'SBP'
 
 /** DATA-M02-03 with the derived counts (S9 "Pelajar" / "Guru"). */
 export interface AdminSchool extends SchoolSummary {
+  /** Code students join with (V2 "Kod Daftar"); null when the school has none. Admin responses only. */
+  joinCode: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -119,6 +121,14 @@ export function updateSchool(
 export function toggleSchool(id: number): Promise<SchoolMutation<{ isActive: boolean }>> {
   return api.post<SchoolMutation<{ isActive: boolean }>>(
     `/api/admin/schools/${String(id)}/toggle`,
+    { raw: true },
+  )
+}
+
+/** V2 `POST /sekolah/{school}/join-code` (Tukar kod pendaftaran): Admin Pusat only; the old code stops working. */
+export function rotateSchoolJoinCode(id: number): Promise<SchoolMutation<{ joinCode: string }>> {
+  return api.post<SchoolMutation<{ joinCode: string }>>(
+    `/api/admin/schools/${String(id)}/join-code`,
     { raw: true },
   )
 }
