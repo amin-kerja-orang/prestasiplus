@@ -102,7 +102,6 @@ const themeLabel = computed(() =>
 )
 
 const accountItems = computed<DsShellAccountItem[][]>(() => [
-  [{ label: name.value || 'Akaun', heading: true }],
   [
     { label: 'Tetapan Peribadi', icon: 'settings', to: '/tetapan' },
     { label: 'Masuk Mod Pelajar', icon: 'student', onSelect: () => void openModPelajar() },

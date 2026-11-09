@@ -30,7 +30,6 @@ import DsBadge from './DsBadge.vue'
 import DsBrandLogo from './DsBrandLogo.vue'
 import DsCallout from './DsCallout.vue'
 import DsConfirmHost from './DsConfirmHost.vue'
-import DsIcon from './DsIcon.vue'
 import DsThemeScope from './DsThemeScope.vue'
 import type {
   DsShellAccountIcon,
@@ -303,31 +302,29 @@ const accountMenu = computed(() =>
                   :content="{ align: 'end', side: 'bottom' }"
                   :ui="adminAccountMenuUi"
                 >
-                  <UButton
-                    color="neutral"
-                    variant="ghost"
-                    size="sm"
-                    class="h-auto gap-2 p-1 text-start"
-                    aria-label="Menu akaun"
+                  <!-- Avatar only (PO 2026-11-09): the name and role head the dropdown. -->
+                  <button
+                    type="button"
+                    class="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on ring-2 ring-transparent ring-offset-2 ring-offset-default transition hover:ring-primary/40 focus-visible:ring-primary focus-visible:outline-none"
+                    :aria-label="`Menu akaun: ${accountName || 'Akaun'}`"
+                    :title="accountName || 'Akaun'"
                     data-testid="pentadbiran-account"
                   >
-                    <span
-                      class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
-                      aria-hidden="true"
-                      >{{ initials }}</span
-                    >
-                    <span class="hidden max-w-48 min-w-0 leading-tight md:block">
+                    <span aria-hidden="true">{{ initials }}</span>
+                  </button>
+                  <template #content-top>
+                    <div class="flex items-center gap-2.5 px-2.5 pt-2.5 pb-1.5" data-testid="pentadbiran-account-head">
                       <span
-                        class="block truncate text-label text-highlighted"
-                        :title="accountName || 'Akaun'"
-                        >{{ accountName || 'Akaun' }}</span
+                        class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
+                        aria-hidden="true"
+                        >{{ initials }}</span
                       >
-                      <span class="block truncate text-caption text-muted" :title="accountCaption">{{
-                        accountCaption
-                      }}</span>
-                    </span>
-                    <DsIcon name="caret-down" class="hidden size-4 shrink-0 text-muted md:block" />
-                  </UButton>
+                      <span class="min-w-0 leading-tight">
+                        <span class="block truncate text-label text-highlighted">{{ accountName || 'Akaun' }}</span>
+                        <span class="block truncate text-caption text-muted">{{ accountCaption }}</span>
+                      </span>
+                    </div>
+                  </template>
                 </UDropdownMenu>
               </template>
             </UDashboardNavbar>
