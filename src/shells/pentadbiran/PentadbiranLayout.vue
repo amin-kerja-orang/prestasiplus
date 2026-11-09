@@ -105,7 +105,6 @@ const accountItems = computed<DsShellAccountItem[][]>(() => [
   [{ label: name.value || 'Akaun', heading: true }],
   [
     { label: 'Tetapan Peribadi', icon: 'settings', to: '/tetapan' },
-    { label: themeLabel.value, icon: 'theme', onSelect: () => theme.toggle() },
     { label: 'Masuk Mod Pelajar', icon: 'student', onSelect: () => void openModPelajar() },
   ],
   [{ label: 'Log Keluar', icon: 'logout', to: '/logout', tone: 'error' }],

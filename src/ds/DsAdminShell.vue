@@ -221,39 +221,6 @@ const accountMenu = computed(() =>
             </UNavigationMenu>
           </template>
 
-          <template #footer="{ collapsed }">
-            <UDropdownMenu
-              :items="accountMenu"
-              :content="{ align: 'start', side: 'top' }"
-              :ui="adminAccountMenuUi"
-            >
-              <UButton
-                color="neutral"
-                variant="ghost"
-                block
-                class="h-auto justify-start gap-2.5 p-1.5 text-start"
-                aria-label="Menu akaun"
-                data-testid="pentadbiran-account"
-              >
-                <span
-                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
-                  aria-hidden="true"
-                  >{{ initials }}</span
-                >
-                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
-                    :title="accountName || 'Akaun'"
-                    >{{ accountName || 'Akaun' }}</span
-                  >
-                  <span class="block truncate text-caption text-muted" :title="accountCaption">{{
-                    accountCaption
-                  }}</span>
-                </span>
-                <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
-              </UButton>
-            </UDropdownMenu>
-          </template>
         </UDashboardSidebar>
 
         <UDashboardPanel
@@ -330,6 +297,38 @@ const accountMenu = computed(() =>
                   data-testid="pentadbiran-theme-toggle"
                   @click="$emit('toggleTheme')"
                 />
+                <!-- Account menu sits in the navbar (PO 2026-11-09), not the sidebar footer. -->
+                <UDropdownMenu
+                  :items="accountMenu"
+                  :content="{ align: 'end', side: 'bottom' }"
+                  :ui="adminAccountMenuUi"
+                >
+                  <UButton
+                    color="neutral"
+                    variant="ghost"
+                    size="sm"
+                    class="h-auto gap-2 p-1 text-start"
+                    aria-label="Menu akaun"
+                    data-testid="pentadbiran-account"
+                  >
+                    <span
+                      class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
+                      aria-hidden="true"
+                      >{{ initials }}</span
+                    >
+                    <span class="hidden max-w-48 min-w-0 leading-tight md:block">
+                      <span
+                        class="block truncate text-label text-highlighted"
+                        :title="accountName || 'Akaun'"
+                        >{{ accountName || 'Akaun' }}</span
+                      >
+                      <span class="block truncate text-caption text-muted" :title="accountCaption">{{
+                        accountCaption
+                      }}</span>
+                    </span>
+                    <DsIcon name="caret-down" class="hidden size-4 shrink-0 text-muted md:block" />
+                  </UButton>
+                </UDropdownMenu>
               </template>
             </UDashboardNavbar>
           </template>
