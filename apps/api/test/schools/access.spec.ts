@@ -44,6 +44,7 @@ describe('schools: roles, scope and CSRF (AC 3, AC 10)', () => {
     ['post', '/api/admin/schools'],
     ['put', `/api/admin/schools/${own}`],
     ['post', `/api/admin/schools/${own}/toggle`],
+    ['post', `/api/admin/schools/${own}/join-code`],
     ['get', '/api/schools?all=1'],
   ]
 
@@ -74,6 +75,9 @@ describe('schools: roles, scope and CSRF (AC 3, AC 10)', () => {
     expectError(await me.agent.get(`/api/admin/schools/${other}`), 'FORBIDDEN')
     expectError(await me.agent.put(`/api/admin/schools/${other}`).set('X-CSRF-Token', me.csrf).send(VALID), 'FORBIDDEN')
     expectError(await me.agent.post(`/api/admin/schools/${other}/toggle`).set('X-CSRF-Token', me.csrf), 'FORBIDDEN')
+    const codeBefore = await t.db.query<{ join_code: string | null }>(`select join_code from schools where id = $1`, [other])
+    expectError(await me.agent.post(`/api/admin/schools/${other}/join-code`).set('X-CSRF-Token', me.csrf), 'FORBIDDEN')
+    expect(await t.db.query(`select join_code from schools where id = $1`, [other])).toEqual(codeBefore)
     const row = await t.db.query<{ is_active: boolean; name: string }>(`select is_active, name from schools where id = $1`, [other])
     expect(row[0]).toEqual({ is_active: true, name: 'SK Demo Dua' })
   })

@@ -162,6 +162,13 @@ export type SchoolInput = z.infer<typeof SchoolInputSchema>
 
 export const SchoolToggleResultSchema = z.object({ isActive: z.boolean() }).meta({ id: 'SchoolToggleResult' })
 
+/** POST /admin/schools/:id/join-code: the new code (the old one stops working at once). */
+export const SchoolJoinCodeResultSchema = z.object({ joinCode: z.string() }).meta({ id: 'SchoolJoinCodeResult' })
+
+/** Flash text of the V2 Panel after a join code rotation (SchoolsController::rotateJoinCode). */
+export const schoolJoinCodeRotated = (schoolName: string, joinCode: string): string =>
+  `Kod pendaftaran "${schoolName}" ditukar kepada ${joinCode}. Kod lama tidak lagi sah.`
+
 /** GET /schools?all=1 (admin). Anything but `1` is 422 `fields.all`. */
 export const SchoolOptionsQuerySchema = z.object({ all: z.literal('1', { error: V.required('all') }) }).meta({ id: 'SchoolOptionsQuery' })
 

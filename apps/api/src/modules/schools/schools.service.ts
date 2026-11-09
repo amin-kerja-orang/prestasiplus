@@ -6,6 +6,7 @@ import {
   type ListMeta,
   SCHOOL_MESSAGES,
   SchoolInputSchema,
+  schoolJoinCodeRotated,
   type SchoolOption,
   type SchoolSummary,
   type SchoolType,
@@ -264,6 +265,38 @@ export class SchoolsService {
       return value
     })
     return { data: { isActive }, status: SCHOOL_MESSAGES.toggled }
+  }
+
+  /**
+   * Admin Pusat only (V2 `POST /sekolah/{school}/join-code`). Draws a new code, retrying on the
+   * (unlikely) unique collision; the old code stops working at once. The audit row never holds the code.
+   */
+  async rotateJoinCode(id: string, auth: AuthContext, meta: RequestMeta): Promise<{ data: { joinCode: string }; status: string }> {
+    const hidden = await this.repo.get(id)
+    if (!hidden || isPrimarySchoolType(hidden.type)) throw ApiError.of('NOT_FOUND')
+    for (let attempt = 0; ; attempt++) {
+      const joinCode = newJoinCode()
+      try {
+        const row = await this.prisma.transaction(async (tx) => {
+          const updated = await this.repo.setJoinCode(id, joinCode, this.clock.now())
+          if (!updated) throw ApiError.of('NOT_FOUND')
+          await this.audit.record({
+            ...this.actor(auth, meta),
+            action: SCHOOL_AUDIT.JOIN_CODE_ROTATED,
+            targetType: 'school',
+            targetId: id,
+            schoolId: id,
+            details: {},
+            tx,
+          })
+          return updated
+        })
+        return { data: { joinCode }, status: schoolJoinCodeRotated(row.name, joinCode) }
+      } catch (e) {
+        if (isPrismaUnique(e) && attempt < 4) continue
+        throw e
+      }
+    }
   }
 
   // ---- public lookups ----
