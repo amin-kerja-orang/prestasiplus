@@ -152,6 +152,34 @@ describe('Semak Kertas Simulasi', () => {
 })
 
 describe('the redirects of the old Pembina Kertas (FR-ADM-Q15.6)', () => {
+  it('Isu import (N): an imported paper lists its placed questions that are not Terbit, collapsed until Lihat; a plain paper has none', async () => {
+    const ed = editor({ sourceBatchId: '77' })
+    ed.questions[0] = { ...ed.questions[0]!, status: 'draf' }
+    const w = await render(ed)
+    const toggle = w.get('[data-testid=import-issues-toggle]')
+    expect(toggle.text()).toContain('Isu import (1)')
+    expect(toggle.text()).toContain('Lihat')
+    expect(w.find('[data-testid=import-issues-list]').exists()).toBe(false)
+    await toggle.trigger('click')
+    expect(w.get('[data-testid=import-issues-list]').text()).toContain('Soalan q1')
+    expect(toggle.text()).toContain('Tutup')
+    await w.unmount()
+    wrapper = null
+    const plain = await render(editor())
+    expect(plain.find('[data-testid=paper-import-issues]').exists()).toBe(false)
+  })
+
+  it('Sunting petikan saves the title of a stimulus group on the paper; Kod kertas (kulit) and Arahan kulit are in the metadata', async () => {
+    const ed = editor()
+    ed.paper.sections[0]!.questionIds = ['q1']
+    ed.questions[0] = { ...ed.questions[0]!, groupId: 'g1' }
+    ed.groups = [{ id: 'g1', questionIds: ['q1'], stimulus: { id: 'st1', kind: 'text', label: 'Petikan A', text: 'Teks' }, stimuli: [{ id: 'st1', kind: 'text', label: 'Petikan A', text: 'Teks' }] } as unknown as PaperEditorData['groups'][number]]
+    const w = await render(ed)
+    expect(w.get('[data-testid=paper-passages]').text()).toContain('Sunting petikan')
+    expect(w.text()).toContain('Kod kertas (kulit)')
+    expect(w.text()).toContain('Arahan kulit kertas')
+  })
+
   it('the list and baharu redirect to the Set Builder, keep their names, and baharu stays before :id', () => {
     const byPath = (p: string) => routes.find((r) => r.path === p)!
     expect(byPath('/admin/spm/kertas').redirect).toBe('/admin/studio/sets')

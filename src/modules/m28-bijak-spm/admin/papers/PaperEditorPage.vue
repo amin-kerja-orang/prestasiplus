@@ -17,6 +17,7 @@ import { checkPaper, unitsOf } from '../../domain/paper-builder'
 import { editorGroupLabel } from '../../lib/stimulus-data'
 import { INTAKE_LIST_PATH } from '../intake/lib/intake-routes'
 import { bijakAdminServer } from '../../server/client'
+import PaperEditBlocks from '../builder/components/PaperEditBlocks.vue'
 import PaperReferenceEditor from '../builder/components/PaperReferenceEditor.vue'
 import PublishOverride from '../builder/components/PublishOverride.vue'
 import PaperMetaForm from '../builder/components/PaperMetaForm.vue'
@@ -208,6 +209,33 @@ async function saveReference(panels: ReferencePanel[]): Promise<void> {
     busy.value = false
   }
 }
+
+/* ------------------------------------------------------------------ Sunting petikan, Isu import */
+async function savePassage(groupId: string, label: string): Promise<void> {
+  busy.value = true
+  try {
+    await builderServer().updateGroupLabel(id.value, groupId, label)
+    flash.show({ type: 'success', message: bt.passageSaved(label) })
+    await reload()
+  } catch (e) {
+    flash.show({ type: 'error', message: builderMessage(e, bt.errPassage) })
+  } finally {
+    busy.value = false
+  }
+}
+/** V2 "Isu import (N)": on an imported paper, the placed questions that are not Terbit yet (the list's import issue count, S1-T10). Collapsed by default. */
+const importIssues = computed<string[]>(() => {
+  if (!data.value?.paper.sourceBatchId) return []
+  const out: string[] = []
+  for (const s of sections.value)
+    for (const qid of s.questionIds) {
+      const q = qMap.value.get(qid)
+      if (q && q.status !== 'terbit') out.push(bt.importIssueLine(`${s.label}: ${q.preview}`, STATUS_TEXT[q.status]))
+    }
+  return out
+})
+const STATUS_TEXT: Record<BuilderQuestion['status'], string> = { draf: 'Draf', semakan: 'Menunggu Semakan', terbit: 'Terbit', ditolak: 'Ditolak' }
+const issuesOpen = ref(false)
 
 /* -------------------------------------------------------------------------- preview */
 const previewOpen = ref(false)
@@ -474,6 +502,26 @@ const previewBlocks = computed(() => {
           :upload="uploadReferenceImage"
           @save="saveReference"
         />
+      </DsPanel>
+
+      <DsPanel v-if="importIssues.length" data-testid="paper-import-issues">
+        <button
+          type="button"
+          class="flex w-full min-h-11 items-center justify-between gap-3 text-start"
+          :aria-expanded="issuesOpen"
+          data-testid="import-issues-toggle"
+          @click="issuesOpen = !issuesOpen"
+        >
+          <h3 class="text-heading text-highlighted">{{ bt.importIssues(importIssues.length) }}</h3>
+          <span class="text-caption text-muted">{{ issuesOpen ? bt.importIssuesClose : bt.importIssuesOpen }}</span>
+        </button>
+        <ul v-if="issuesOpen" class="mt-2 flex list-disc flex-col gap-1 ps-6 text-body text-muted" data-testid="import-issues-list">
+          <li v-for="(i, n) in importIssues" :key="n">{{ i }}</li>
+        </ul>
+      </DsPanel>
+
+      <DsPanel v-if="data.groups.length" data-testid="paper-passages">
+        <PaperEditBlocks :editor="data" :readonly="readonly" :busy="busy" passages-only @passage="savePassage" />
       </DsPanel>
 
       <DsPanel v-for="(s, si) in sections" :key="s.id" :data-testid="`section-${si}`">

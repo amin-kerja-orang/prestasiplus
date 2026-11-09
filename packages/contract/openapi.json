@@ -16993,6 +16993,13 @@
               true
             ],
             "description": "This card could not be computed; the other cards stay (SR-3)."
+          },
+          "flagOff": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The Kawalan Ciri key that gates this lane for pupils is OFF (V2 \"Flag OFF\" badge). Absent when ON or when the lane has no key."
           }
         },
         "required": [
@@ -45278,10 +45285,18 @@
             "items": {
               "type": "string"
             }
+          },
+          "tahun": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "description": "Distinct source paper years, newest first (V2 Tahun select)."
           }
         },
         "required": [
-          "negeri"
+          "negeri",
+          "tahun"
         ]
       },
       "Question": {
@@ -134841,7 +134856,7 @@
           "questions"
         ],
         "summary": "The Negeri options of the Studio filter (exam boards of the source papers)",
-        "description": "Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.",
+        "description": "Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively. `tahun` lists the distinct years of `source_papers`, newest first.",
         "responses": {
           "200": {
             "description": "The options.",

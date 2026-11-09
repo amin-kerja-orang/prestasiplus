@@ -184,6 +184,10 @@ export const builderCopy = {
   sectionSaved: (l: string): string => `Bahagian '${l}' telah dikemas kini.`, // V2
   sectionSave: 'Simpan bahagian', // V2 (R2)
   passagesEdit: 'Sunting petikan', // V2
+  importIssues: (n: number): string => `Isu import (${n})`, // V2 (the count in brackets)
+  importIssuesOpen: 'Lihat', // V2
+  importIssuesClose: 'Tutup', // V2
+  importIssueLine: (q: string, status: string): string => `${q}: ${status}, belum boleh disajikan kepada pelajar.`, // [PROPOSED] V3 lists the placed questions that are not Terbit yet (the import issue count of the list)
   passageTitle: 'Tajuk petikan', // V2
   passageSaved: (l: string): string => `Petikan '${l}' telah dikemas kini.`, // [PROPOSED]
   passageSave: 'Simpan petikan', // V2 (R3)
