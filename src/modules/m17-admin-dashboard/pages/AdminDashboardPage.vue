@@ -148,7 +148,7 @@ const quickLinks = [
       @retry="reload"
     />
     <template v-else>
-      <DsGrid min-item="xs" gap="md" data-testid="adm-tiles" aria-label="Ringkasan">
+      <DsGrid :cols="{ base: 1, sm: 2, lg: 3, xl: 4 }" gap="md" data-testid="adm-tiles" aria-label="Ringkasan">
         <template v-if="!data">
           <DsStatTile v-for="i in 11" :key="i" :value="null" unit="" loading />
         </template>

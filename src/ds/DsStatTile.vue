@@ -6,7 +6,7 @@
  * personality variants and a short `rise` entry that plays once per page load; learner keeps the
  * full `rise`. States: hover (link), focus-visible, active, selected, disabled, loading, error.
  */
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { RouterLink, type RouteLocationRaw } from 'vue-router'
 
 import './states.css'
@@ -115,6 +115,9 @@ const isRoomy = computed(() => size.value === 'roomy')
 const shown = computed(() => formatStat(props.value))
 const numberClass = computed(() => resolveValueClass(props.valueTone, props.valueClass))
 const interactive = computed(() => Boolean(props.to) || props.clickable)
+const slots = useSlots()
+/** The tile carries more than number + label (a sub or delta line). */
+const hasExtra = computed(() => Boolean(props.sub || slots.sub || props.delta))
 /** Ring and pressed / disabled looks shared by the link, button and static forms. */
 const stateClass = computed(() => [
   props.disabled ? 'pointer-events-none opacity-50' : '',
@@ -194,7 +197,12 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
       clickable ? 'cursor-pointer text-start' : '',
       isRoomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
       // Roomy staff tiles stack the chip above the number on a phone (a half-width tile cannot fit both).
-      isRoomy ? 'md:staff:flex-row md:staff:items-center' : 'staff:flex-row staff:items-center',
+      isRoomy ? 'md:staff:flex-row' : 'staff:flex-row',
+      // With a sub or delta line the chip pins to the top beside the number instead of floating
+      // in the middle of a three-line block.
+      hasExtra
+        ? isRoomy ? 'md:staff:items-start' : 'staff:items-start'
+        : isRoomy ? 'md:staff:items-center' : 'staff:items-center',
       riseOff ? 'staff:animate-none' : 'staff:animate-ds-rise-quick',
       stateClass,
     ]"
