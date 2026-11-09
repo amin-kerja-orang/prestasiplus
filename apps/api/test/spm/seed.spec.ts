@@ -93,6 +93,37 @@ describe('SPM seed', () => {
     expect(unordered[0]?.n).toBe('0')
   })
 
+  it('no seeded set holds more than its subject target (the editor header never reads "50 / 34")', async () => {
+    const over = await db.query<{ code: string; n: string; target: number }>(
+      `select s.code, (select count(*)::text from spm_tracking_set_questions q where q.set_id = t.id) n, coalesce(c.target_size, 40) target
+         from spm_tracking_sets t join subjects s on s.id = t.subject_id left join spm_subject_configs c on c.subject_id = t.subject_id
+        where (select count(*) from spm_tracking_set_questions q where q.set_id = t.id) > coalesce(c.target_size, 40)`,
+    )
+    expect(over).toEqual([])
+  })
+
+  it('cuts a set seeded above its target back to it, keeping the first positions', async () => {
+    const [set] = await db.query<{ id: string; subject_id: string; target: number }>(
+      `select t.id::text id, t.subject_id::text subject_id, coalesce(c.target_size, 40) target from spm_tracking_sets t left join spm_subject_configs c on c.subject_id = t.subject_id order by t.id limit 1`,
+    )
+    const extra = await db.query<{ id: string }>(
+      `select q.id::text id from questions q join question_versions v on v.question_id = q.id and v.version_no = q.live_version_no
+        where v.subject_id = $1 and q.id not in (select question_id from spm_tracking_set_questions where set_id = $2) order by q.id limit 3`,
+      [set?.subject_id, set?.id],
+    )
+    const original = Number((await db.query<{ n: string }>(`select count(*)::text n from spm_tracking_set_questions where set_id = $1`, [set?.id]))[0]?.n)
+    // Pad the set past its target with questions of the same subject; the year-unique index needs them free of other sets.
+    for (const [i, e] of extra.entries()) {
+      await db.query(`insert into spm_tracking_set_questions (set_id, question_id, position, subject_id, year) values ($1, $2, $3, $4, 2026)`, [set?.id, e.id, (set?.target ?? 0) + 1 + i, set?.subject_id])
+    }
+    const padded = Number((await db.query<{ n: string }>(`select count(*)::text n from spm_tracking_set_questions where set_id = $1`, [set?.id]))[0]?.n)
+    await runSeeds([spmSubjectConfigsSeed, spmSeed], { prisma: db.prisma })
+    const after = Number((await db.query<{ n: string }>(`select count(*)::text n from spm_tracking_set_questions where set_id = $1`, [set?.id]))[0]?.n)
+    expect(padded).toBe(original + extra.length)
+    expect(extra.length).toBeGreaterThan(0)
+    expect(after).toBe(original)
+  })
+
   it('is idempotent: a second run changes nothing', async () => {
     const before = await snapshot()
     await runSeeds([spmSubjectConfigsSeed, spmSeed], { prisma: db.prisma })

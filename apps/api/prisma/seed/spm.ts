@@ -12,6 +12,7 @@
 import type { PrismaClient } from '../../src/db/client'
 import type { PrismaService } from '../../src/db/prisma.service'
 import { QuestionsRepository } from '../../src/modules/questions/questions.repository'
+import { DEFAULT_SET_SIZE } from '../../src/modules/spm/config'
 import { mcqItemOf } from '../../src/modules/spm/rules'
 import type { SeedModule } from './index'
 
@@ -51,16 +52,26 @@ async function seedDuta(db: PrismaClient, now: Date): Promise<void> {
   }
 }
 
-/** One set (set 1, year 2026) per configured subject with live-published active questions in the seeded bank. */
+/**
+ * One set (set 1, year 2026) per configured subject with live-published active questions in the seeded bank. A set never holds more than its
+ * subject's target (`spm_subject_configs.target_size`, else 40): the editor refuses a save above it, so an over-target set could be neither
+ * filled nor saved (the "50 / 34" of the Tracking A editor).
+ */
 async function seedSets(db: PrismaClient, now: Date): Promise<void> {
   const questions = new QuestionsRepository({ client: db } as unknown as PrismaService)
   const configs = await db.spmSubjectConfig.findMany({ orderBy: { id: 'asc' } })
   for (const c of configs) {
+    const target = c.targetSize ?? DEFAULT_SET_SIZE
     const existing = await db.spmTrackingSet.findUnique({
       where: { subjectId_year_setNo: { subjectId: c.subjectId, year: TRACKING_YEAR, setNo: 1 } },
       select: { id: true },
     })
-    if (existing) continue
+    if (existing) {
+      // A set seeded before the cap existed is cut back to its target.
+      const over = await db.spmTrackingSetQuestion.deleteMany({ where: { setId: existing.id, position: { gt: target } } })
+      if (over.count > 0) await db.spmTrackingSet.update({ where: { id: existing.id }, data: { dskpTagged: Math.min(target, await db.spmTrackingSetQuestion.count({ where: { setId: existing.id } })) } })
+      continue
+    }
     // Other owner's data only through its doorway (ADR-0014): the SPM pool of the subject, in id order.
     // Keyset pages of the SPM pool (live, active, `pool` tag, MCQ), hydrated 200 at a time to keep only single-leaf MCQs.
     const rows: { id: bigint }[] = []
@@ -72,6 +83,7 @@ async function seedSets(db: PrismaClient, now: Date): Promise<void> {
       if (page.length < 200) break
     }
     rows.sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0))
+    rows.length = Math.min(rows.length, target)
     if (rows.length === 0) continue
     await db.spmTrackingSet.create({
       data: {

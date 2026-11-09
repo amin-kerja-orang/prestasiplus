@@ -124,7 +124,7 @@ Generated from the seeded database by `pocTableCounts` + `renderCountsTable` (`a
 | spin_segments | 8 |
 | spin_stats | 8 |
 | spm_subject_configs | 19 |
-| spm_tracking_set_questions | 493 |
+| spm_tracking_set_questions | 370 |
 | spm_tracking_sets | 10 |
 | stimuli | 2 |
 | stimulus_group_options | 4 |
