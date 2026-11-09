@@ -153,7 +153,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     path: '/questions/filter-options',
     tags: admin,
     summary: 'The Negeri options of the Studio filter (exam boards of the source papers)',
-    description: 'Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively.',
+    description: 'Admin Pusat only, no-store. `negeri` lists the distinct, trimmed `exam_board` values of `source_papers`, sorted; the list filter `negeri` matches them case-insensitively. `tahun` lists the distinct years of `source_papers`, newest first.',
     responses: { 200: json(envelopeOf(QuestionFilterOptionsSchema), 'The options.'), 401: unauthorized, 403: forbidden },
   })
   registry.registerPath({

@@ -10,6 +10,8 @@ export const hubCopy = {
   failed: 'Tidak dapat dimuatkan.',
   retry: 'Cuba lagi',
   pupil: 'lihat sisi pelajar',
+  /** V2 hub badge on a lane whose Kawalan Ciri key is OFF. */
+  flagOff: 'Flag OFF',
 } as const
 
 /**

@@ -1147,6 +1147,12 @@ export class QuestionsRepository {
    * case-insensitively on the trimmed text (the Negeri filter matches that way, so two spellings would be one choice); the display form is the
    * most used spelling, then the first in byte order, so the answer is deterministic. Sorted by the lower-case form.
    */
+  /** Distinct source paper years, newest first (V2 `SourcePaper::select('year')->distinct()->orderByDesc('year')`). */
+  async sourceYears(): Promise<number[]> {
+    const rows = await this.db.$queryRaw<{ year: number }[]>`SELECT DISTINCT year FROM source_papers WHERE year IS NOT NULL ORDER BY year DESC`
+    return rows.map((r) => Number(r.year))
+  }
+
   async examBoards(): Promise<string[]> {
     const rows = await this.db.$queryRaw<{ board: string }[]>`
       SELECT board FROM (

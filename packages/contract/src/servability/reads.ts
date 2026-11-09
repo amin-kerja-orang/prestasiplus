@@ -104,6 +104,7 @@ export const ServabilityHubCardSchema = z
     attentionLines: z.array(ServabilityLaneAttentionSchema).optional().meta({ description: 'The attention lines of the card; empty when nothing needs attention.' }),
     attentionOpen: z.literal(true).optional().meta({ description: 'No attention rule is decided for this lane yet: show neither a count nor "Semua elok".' }),
     failed: z.literal(true).optional().meta({ description: 'This card could not be computed; the other cards stay (SR-3).' }),
+    flagOff: z.literal(true).optional().meta({ description: 'The Kawalan Ciri key that gates this lane for pupils is OFF (V2 "Flag OFF" badge). Absent when ON or when the lane has no key.' }),
   })
   .meta({ id: 'ServabilityHubCard' })
 export type ServabilityHubCard = z.infer<typeof ServabilityHubCardSchema>

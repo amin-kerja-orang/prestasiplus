@@ -262,8 +262,9 @@ export class QuestionsService {
   }
 
   /** The values of the Studio selects that come from data (REQ-C-019): the Negeri / exam board options of the source papers. */
-  async filterOptions(): Promise<{ negeri: string[] }> {
-    return { negeri: await this.repo.examBoards() }
+  async filterOptions(): Promise<{ negeri: string[]; tahun: number[] }> {
+    const [negeri, tahun] = await Promise.all([this.repo.examBoards(), this.repo.sourceYears()])
+    return { negeri, tahun }
   }
 
   async getAdmin(id: string): Promise<QuestionDetailView> {
