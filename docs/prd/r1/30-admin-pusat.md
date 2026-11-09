@@ -14,8 +14,8 @@
 
 Status: build-ready, merge pass 2026-11-04 applying TRACKER D100-D113, the field and behaviour register, the wizard-vs-V2 and wizard-vs-exam-format fixes and `45-question-authoring-flow.md`. Branch `docs/r1-prd-devplan`. Language: English; every UI string is quoted in exact BM from V2 (or V1 where stated). Copy and values that have no source in V2, V1, the code or the PRD are R1 decisions, marked "(R1 decision D113)" and built as written; there is no approval list (section 8.4).
 Companion documents: [45-question-authoring-flow](45-question-authoring-flow.md) is the normative end-to-end authoring flow (screens 4.0, 4.A, 4.G keep only their screen-level field blocks here and point to it); [48-game-and-gamification-spec](48-game-and-gamification-spec.md) owns every game and gamification rule (section 4.H keeps only the admin screen fields). Shared rules are in section 0A, option sets in Appendix A1, and what 50 and 60 must add is in Appendix A2.
-Governing principle (user): "berdasarkan V2+V1 untuk betulkan V3". V2 (`/admin` Blade + the Filament Panel at `prestasiplus.cloud/admin-filament`) is primary; V1 is fallback. D79: the Portal Pentadbiran absorbs the Panel and follows .cloud mechanisms and admin UX. D77: no UX change beyond the request. Only the visual theme (Nuxt UI) may differ.
-Names: V1 = prestasiplus.my, V2 = prestasiplus.cloud (its second admin panel is Filament at `/admin-filament`), V3 = this build (repo docs say "v2"). **Fact corrected 2026-11-08 (live check, LIVE-VERIFY section 4 item 11):** there is no separate site `admin.prestasiplus.cloud` (the name does not resolve) and the second panel is not a React app; wherever this file says "the Panel" or "Panel /..." it means the Filament panel at `prestasiplus.cloud/admin-filament`, whose labels are partly English (for example "Lucky Draws", "New lucky draw"). GH = V3 build on branch `feature/v3-bijak-r1` (local 5193). UAT = uat.prestasiplus.cloud.
+Governing principle (user): "berdasarkan V2+V1 untuk betulkan V3". V2 (the Panel at `admin.prestasiplus.cloud`, plus `/admin` Blade for functions the Panel lacks) is primary; V1 is fallback. The section "Panel parity (admin.prestasiplus.cloud)" below is the normative Panel-to-V3 map (D119). D79: the Portal Pentadbiran absorbs the Panel and follows .cloud mechanisms and admin UX. D77: no UX change beyond the request. Only the visual theme (Nuxt UI) may differ.
+Names: V1 = prestasiplus.my, V2 = prestasiplus.cloud (`/admin` Blade) plus the Panel at `admin.prestasiplus.cloud` (Metronic/Inertia React app on the admin subdomain of the same Laravel app; it has its own sidebar and screens). Wherever this file says "the Panel" or "Panel /..." it means that React Panel. V2 also has a Filament admin at `prestasiplus.cloud/admin-filament` (labels partly English, for example "Lucky Draws", "New lucky draw"); it is named "Filament" explicitly. **Correction 2026-11-09 (D119, user: "sila buat pembetulan"):** the 8 Nov note that `admin.prestasiplus.cloud` does not exist was WRONG. Its DNS record was missing about 5-9 Nov (hence `ERR_NAME_NOT_RESOLVED` on 8 Nov); it is back since 9 Nov and was verified live and on the server. GH = V3 build on branch `feature/v3-bijak-r1` (local 5193). UAT = uat.prestasiplus.cloud.
 Privacy: no real person name appears in this document.
 
 Evidence base (read, not guessed): the gap analysis files (GAP-ANALYSIS-FULL, ADMIN-PUSAT, FUNCTIONAL-E2E, MATRIX-EVIDENCE); the live sidebars (V2 90 links, V1 87; item list and order) and the V2 sidebar source `resources/views/admin/layout.blade.php:195-727` (group headings); the V2 reference code (private, outside the repo) (routes, `resources/views/admin/**`, `config/features.php`); `docs/discovery/cloud-student-mechanism.md` section 3 (DISC); `docs/discovery/v2-parity/admin.md` (PAR); `docs/discovery/M02-users-schools.md` (V1 users); V3 code (paths cited per screen); `docs/TRACKER.md` D28-D108.
@@ -37,7 +37,7 @@ FR = functional requirement (one testable statement). AC = acceptance criterion 
 
 `Ditolak` is a sub-state of `Draf` (four stored statuses); tiles `Draf`, `Menunggu Semakan`, `Diluluskan`, `Diarkibkan` count stored values and `Ditolak ({n})` is a chip that sub-counts `Draf`. The rejection reason is cleared when the version is sent for review again. Mapping of retired words: `Draft`/`Draf` to `Draf`; `Reviewed`, `Menunggu`, `Semakan`, `Menunggu Review` to `Menunggu Semakan`; `Approved`, `Diterbitkan` (question) to `Diluluskan`; `Diarkib`, `Archived` to `Diarkibkan`.
 **Terms (D-A5, D-A6).** "Bab" always means the textbook chapter (Kurikulum `chapters`, `chapter_id`); the DSKP level is "Tajuk DSKP" (never "Unit" or "Unit (Bab)"). TP (1 to 6, per leaf) and `Tahap kesukaran` (1 to 5, per question, stored `difficulty_level`) are two separate typed fields; `Tahap kesukaran` defaults to `min(5, TP)` until the admin touches it. "Kesukaran" labels (`Mudah` for 1-2, `Sederhana` for 3, `Sukar` for 4-5) are display-only, used in lists and filters. `Kertas` is the paper code number 1 to 4; the picker that puts a question into an exam paper is named `Set kertas (pilihan)`.
-**V2 reference screens.** Developers and agents never open V1 or V2. Every screen below carries a "Screen specification (from V2)" subsection written from the live desktop pages (`/admin` Blade pages and the Filament Panel at `/admin-filament` (written "admin.prestasiplus.cloud Panel" before 2026-11-08; that site does not exist); in V2 captures a number precedes its label, tiles are read "number then label"). Each screen has a line "Action: Keep | Fix | Complete | Build"; the gap and the V2 contradictions are in the register 4.V.2. In the register, `/admin/...` routes are the V2 Blade pages and "Panel /..." routes are the Panel. Question STRUCTURE follows FR-X1-4, D90 and D105, not V2.
+**V2 reference screens.** Developers and agents never open V1 or V2. Every screen below carries a "Screen specification (from V2)" subsection written from the live desktop pages (`/admin` Blade pages and the Panel at `admin.prestasiplus.cloud` (the 8 Nov rewording to "Filament Panel" was reverted 2026-11-09, D119; Filament `/admin-filament` is a separate third surface); in V2 captures a number precedes its label, tiles are read "number then label"). Each screen has a line "Action: Keep | Fix | Complete | Build"; the gap and the V2 contradictions are in the register 4.V.2. In the register, `/admin/...` routes are the V2 Blade pages and "Panel /..." routes are the Panel. Question STRUCTURE follows FR-X1-4, D90 and D105, not V2.
 **Allowed strings.** Pratonton (admin preview action) is a legitimate admin action in V2 (`Pratonton`, `Pratonton pelajar`) and is allowed; the "no placeholder" rule (FR-ADM-H0.2 is this rule, stated here once; AC-X2-3 is its test and 40 AC-X2-3 holds the one banned-string list and allow-list) forbids only "akan datang", "belum tersedia dalam demo", mock-only paths and a control that does nothing.
 
 ---
@@ -2673,7 +2673,8 @@ Flow rules (D110):
 | Prestasi Sistem, Log Audit viewer, other Tetapan sections | `/admin/performance`, `/audit-logs`, `/admin/settings` | none | no audit endpoint | deferred, hidden |
 | Notifikasi (Push) | `/admin/notifications` | none | none | deferred (D66 OD-21 C: no broadcasts) |
 | Gamifikasi Guru, Lencana Guru | `/admin/gamifikasi/guru` | none | none | deferred; teacher modules outside Guru 1.0 |
-| Tanda Karangan, Ramalan SPM, Set Soalan (Filament) | Panel / Filament | none | none | removed (AI D73; merged D30) |
+| Ramalan SPM, Set Soalan (Filament) | Filament | none | none | removed (AI D73; merged D30) |
+| Tanda Karangan (Panel `/spm/tanda-karangan`) | Panel | none | 8.6 PNL-22 | **built, D119** (reverses the earlier "removed"; teacher confirms marks; AI proposal source stays out of R1, OQ-PNL-1) |
 | Export CSV (pengguna, soalan, sekolah, pembayaran) | `/admin/export/*` | none | none | deferred; pembayaran never; others P2 |
 | Pencapaian, Timeline | not found | none | none | OQ-H3 |
 
@@ -2832,6 +2833,123 @@ Every string, label or value that has no V1/V2/code source and was once marked f
 | 4 | `Tier Config` and `Cabaran` are read-only on the V2 Blade pages and editable on V1. Must V3 build the editing (the PRD says yes) or only the read-only view? | Editing kept (FR-ADM-P2-02.*, P2-03.*) | P2-02, P2-03 |
 | 5 | V1 `Kawalan Ekonomi Reward` has an editable `Sub-had tebus / bulan`; V2 and the PRD (D113 N-8) have one session budget only. Keep it excluded? | Excluded | P2-09 |
 | 6 | `Kotak Misteri`, `Tournament` and `Liga` have no admin screen on V1 or V2; the PRD builds them as V3 additions (D100). Confirm they stay in 1.0? | Kept as V3 additions | P2-11, P2-14 |
+
+### 8.6 Panel parity (admin.prestasiplus.cloud) (D119, 2026-11-09)
+**Rule (owner).** Admin Pusat functions follow the V2 Panel at `admin.prestasiplus.cloud` (D30, D79, D114). The ONLY intentional difference is the question data structure (D90, D105, FR-X1-4): the V3 question editor fields (stimulus group, parts, TP/Aras, Bab, DSKP) may differ from the Panel's single-question form. That is an **accepted deviation** (AD-PNL-1); the functions around the fields (open, edit, save, cancel, preview, image attach and remove, status change) still follow V2. V3 extras that V2 lacks (richer dashboard, more list filters, Tambah Set, Pratonton on lists, Pengguna CRUD) are kept unless they contradict V2. D118 stays in force for everything it decided.
+**Sources.** Panel routes `routes/web.php` (admin-domain group), `Http/Controllers/Panel/*`, sidebar `resources/js/panel/layouts/panel-layout.tsx`, and the screen-by-screen live comparison of 9 Nov in `docs/qa/SKRIP-UJIAN-V3.md` Bahagian 1 (rows cited as "S1-n"; test blocks PNL-xx.x there). Only the Admin Pusat account was seen live; Admin Sekolah behaviour below is from the Panel code, and Set Builder and Studio edit were not openable live (code only).
+**Roles (Panel).** The Panel admits `admin` (Admin Pusat), `admin_sekolah` (own school only) and `pegawai_ppd` (read only; no district scoping exists in V2, see OQ-PNL-3). Every write route is `admin` only. `Kandungan SPM` and `Question Studio` are Pusat-only: other roles see the entry marked and the server answers 403 (V3: `/admin-sekolah` users cannot open `/admin/...`, 403 screen "Akses Ditolak"). Join-code rotate and the school on/off toggle are `admin` only; an `admin_sekolah` sees only their own school and its own join code. `Analitik` and `Sekolah` are hidden from `pegawai_ppd`. `Tanda Karangan` appears in the menu only when the essay-grading feature flag is on, and is open to school staff scoped to their school.
+**Action key.** Keep = V3 already matches V2. Fix = V3 exists but differs. Build = missing in V3.
+
+| ID | Panel screen (Panel URL) | Roles | V3 route | Action | Gap (from S1 rows / Panel code) |
+|---|---|---|---|---|---|
+| PNL-01 | Papan Pemuka (`/`): cards Pelajar, Guru, Sekolah (S1-1) | admin; admin_sekolah own school | `/admin`; `/admin-sekolah` | Keep | V3 is a superset; separate Guru and Sekolah cards absent but their counts are shown elsewhere (V3 extra kept) |
+| PNL-02 | Analitik (`/analitik`) (S1-2) | admin; admin_sekolah own school; not pegawai_ppd | `/admin/analytics`, `/admin/command-center`; `/admin-sekolah/statistik-penggunaan`, `/admin-sekolah/laporan-aktiviti` | Fix | Card `Laporan Soalan` (Baru, Selesai) missing; V3 spreads Analitik over two screens (kept) |
+| PNL-03 | Pengguna (`/pengguna`) (S1-3) | admin all; admin_sekolah own school, roles pelajar/guru/admin_sekolah only | `/admin/users`; `/admin-sekolah/pelajar`, `/admin-sekolah/guru` | Fix | Button `Set Semula` (clear search and role) missing; confirm the pending-approval notice and per-row `Aktifkan` exist; V3 extras kept |
+| PNL-04 | Sekolah (`/sekolah`) (S1-4) | admin all + toggle + rotate; admin_sekolah own row and own code, no write | `/admin/schools`; `/admin-sekolah` (own code) | Fix | Column `Kod Daftar` and button `Tukar kod pendaftaran` missing; own-school code on admin-sekolah is shown only as "Kod: ..." in the header without label |
+| PNL-05 | Kandungan SPM hub (`/spm`) (S1-5) | admin only | `/admin/spm` | Fix | Badge `Flag OFF` on a lane whose feature flag is off (V2: Kertas Subjektif, Latih Tubi) missing; six cards stay (D118-1); "lihat sisi pelajar" link is a V3 extra |
+| PNL-06 | Lorong Databank (`/spm/databank`) (S1-6) | admin | `/admin/spm/databank` | Fix | Button `Set Semula` missing; filters Subjek, Status, Cari teks, `Tapis`; columns Tajuk, Status, Perhatian, Tindakan (Pratonton, Sunting) already match |
+| PNL-07 | Sunting soalan (`/spm/soalan/{q}/sunting`) (S1-7) | admin write | `/admin/spm/soalan/{id}/sunting` | Fix | `Rajah / Gambar` with `Buang gambar` and a Status control (`Diluluskan (dipaparkan kepada pelajar)`) missing; V3 fields differ by AD-PNL-1 (V3 adds Penjelasan, "belum lengkap" warning: kept) |
+| PNL-08 | Pratonton soalan (`/spm/soalan/{q}/pratonton`) (S1-8) | admin | `/admin/studio/questions/{id}/preview` | Fix | V2 is a separate read-only page headed `Pratonton (baca sahaja)`, a tick on each correct answer and a `Maklumat` block; V3 opens the Studio editor on the Pratonton tab |
+| PNL-09 | Lorong Tracking A (`/spm/tracking-a`) (S1-9) | admin | `/admin/spm/tracking-a` | Keep | Warning "Hanya N daripada 40 soalan" matches; `Tambah Set` is a V3 extra, kept |
+| PNL-10 | Sunting set Tracking A (`/spm/tracking-a/{set}/sunting`) (S1-10) | admin write | `/admin/spm/tracking-a/{id}/sunting` | Build | `Isi set`, panel `Soalan tersedia untuk <subjek>`, inline `Sunting Soalan` editor, archived note `Tidak disajikan kepada pelajar`; V3 has tukar, buang, Naik/Turun, Simpan only; header "50 / 34" is inconsistent |
+| PNL-11 | Lorong Subjektif (`/spm/subjektif`) (S1-11) | admin | `/admin/spm/subjektif` | Fix | `Set Semula` missing; rest matches |
+| PNL-12 | Editor `Skema & Rubrik Pemarkahan` (`/spm/subjektif/{q}/sunting`) (S1-12) | admin write | `/admin/spm/subjektif/{id}/sunting` (new); today `/admin/studio/questions/{id}/sunting` | Build | Per-part `Skema (ayat penuh)` and `Poin Rubrik` rows (`Tambah`; blank row removes the point), `Simpan Skema & Rubrik`; V3 shows structured view read only |
+| PNL-13 | Lorong Bijak SPM / Simulasi (`/spm/simulasi`) (S1-13) | admin | `/admin/spm/simulasi` | Keep | Rows "#id · Subjek · N soalan", status, `Salin`, `Sunting`; `Pratonton` is a V3 extra, kept |
+| PNL-14 | Semak kertas simulasi (`/spm/simulasi-paper/{p}/review`) (S1-14) | admin write | `/admin/spm/kertas/{id}` | Fix | Metadata form (Tajuk, Tempoh, Kod kertas kulit, Arahan kulit kertas), `Bahan rujukan kulit kertas`, `Isu import (N)`, "Belum boleh diterbitkan", Bahagian A/B/C with `Sunting bahagian`, `Sunting petikan`, `Tambah bahagian`, `Terbitkan`, `Salin untuk sunting` |
+| PNL-15 | Lorong Kertas (`/spm/kertas`) (S1-15) | admin | `/admin/kertas-subjektif` | Keep | Row actions `Sunting`, `Sembunyikan`, `Padam` not verified (0 papers on demo); verify with one seeded paper |
+| PNL-16 | Lorong Latih Tubi (`/spm/latih-tubi`) (S1-16) | admin | `/admin/spm/latih-tubi` | Fix | `Set Semula` missing; rest matches |
+| PNL-17 | Kontrak Simulasi (`/spm/kontrak`) (S1-17) | admin write | `/admin/spm/kontrak`, `/admin/spm/kontrak/{kod}/{n}` | Keep | Every V2 field is present as separate pages (V3 split kept); verify field parity (Kod Kertas, Tempoh, Jumlah Markah, Sumber, Boleh tanda auto, Nota, Bahagian, `Simpan`, `Padam kontrak`, `Baharu`) |
+| PNL-18 | Question Studio, senarai (`/studio`) (S1-18) | admin | `/admin/studio` | Keep | Status words follow F-19 (BM) instead of Draft/Reviewed/Approved/Archived (D9 fix); extra filters kept |
+| PNL-19 | Studio: Pratonton and Sunting (`/studio/preview/{q}`, `/studio/{q}/edit`) (S1-19) | admin write | `/admin/studio/questions/{id}/preview`, `/sunting` | Keep | Editor fields differ by AD-PNL-1; V2 editor handled single questions only, V3 also handles stimulus groups |
+| PNL-20 | Studio: Arkib / `Sembunyikan` (S1-20) | admin write | `/admin/studio` | Keep | Archive hides the question from pupils (not a delete) |
+| PNL-21 | Set Builder (`/studio/sets/{p}/builder`; bank, documents, add, reorder, remove, section update, attach/detach document, publish) (S1-21) | admin write | `/admin/studio/sets`, `/admin/studio/sets/{id}/builder` | Keep | Not comparable live; V3 has Bank and Set on one page; verify the Panel operations list against V3 once the Panel Set Builder can be opened |
+| PNL-22 | Tanda Karangan (`/spm/tanda-karangan`, `.../{response}/sahkan`) (S1-22) | admin all; admin_sekolah own school; menu only when the essay-grading flag is on | `/admin/spm/tanda-karangan`, `/admin-sekolah/tanda-karangan` (new) | Build | Whole screen: queue, proposal detail, confirm mark |
+
+**Acceptance criteria (Panel parity).** ID format `AC-PNL-<nn>.<k>`; the screen and its fields otherwise follow the cited V2 screen. "Set Semula" is the V2 button label.
+
+*Access and roles (cross-screen)*
+- AC-PNL-00.1 Given an `admin_sekolah` signed in, When they open any `/admin/...` URL, Then the "Akses Ditolak" 403 screen appears and no Pusat data is returned.
+- AC-PNL-00.2 Given an `admin_sekolah`, When they list Pengguna, Sekolah, Analitik or Tanda Karangan, Then every row and figure belongs to their own school only, and a hand-typed `role=admin` or other platform role is ignored.
+- AC-PNL-00.3 Given a Pusat-only screen (Kandungan SPM, Question Studio, any write), When a non-`admin` role calls the write endpoint directly, Then the answer is 403 and nothing changes.
+
+*PNL-01 to PNL-03*
+- AC-PNL-01.1 Given Admin Pusat opens `/admin`, When the page loads, Then the total Pelajar, Guru and Sekolah counts are visible without opening another screen.
+- AC-PNL-02.1 Given Admin Pusat opens Analitik, When the page loads, Then a `Laporan Soalan` block shows the Baru and Selesai counts and links to `/admin/question-reports`.
+- AC-PNL-02.2 Given an `admin_sekolah`, When they open Statistik Penggunaan, Then figures cover their school only.
+- AC-PNL-03.1 Given Pengguna with search text and a role chosen, When the admin presses `Set Semula`, Then search and role clear and the full list shows.
+- AC-PNL-03.2 Given a pending account, When Admin Pusat presses `Aktifkan`, Then the account becomes active and the message `Akaun "<nama>" telah diaktifkan — pengguna kini boleh log masuk.` shows.
+- AC-PNL-03.3 Given an already active account, When the list renders, Then no `Aktifkan` control shows for that row.
+- AC-PNL-03.4 Given accounts awaiting approval exist, When Pengguna opens, Then a notice shows the pending count (scoped to the school for `admin_sekolah`).
+
+*PNL-04 Sekolah*
+- AC-PNL-04.1 Given Admin Pusat opens `/admin/schools`, When the table renders, Then a `Kod Daftar` column shows each school's join code, and three cards show Jumlah, Aktif and Tidak Aktif schools computed from the data.
+- AC-PNL-04.2 Given a school row, When Admin Pusat presses `Tukar kod pendaftaran`, Then a new code is generated and the message `Kod pendaftaran "<sekolah>" ditukar kepada <kod>. Kod lama tidak lagi sah.` shows.
+- AC-PNL-04.3 Given a school's old join code, When a pupil registers with it after rotation, Then registration is refused.
+- AC-PNL-04.4 Given a school row, When Admin Pusat presses Nyahaktifkan or Aktifkan, Then the message `Sekolah "<nama>" telah DINYAHAKTIFKAN.` or `... telah DIAKTIFKAN.` shows and the school's users can or cannot sign in accordingly.
+- AC-PNL-04.5 Given an `admin_sekolah`, When they open their school screen, Then their own join code is shown with the label `Kod Daftar`, and no toggle or rotate control is offered; a direct POST to toggle or rotate returns 403.
+- AC-PNL-04.6 Given a `pegawai_ppd`, When they open Sekolah, Then the answer is 403 (V2: no district scoping).
+
+*PNL-05 to PNL-08 (SPM hub, lanes, soalan)*
+- AC-PNL-05.1 Given a lane whose feature flag is off, When the hub renders, Then its card carries the badge `Flag OFF`; a lane that is on has no badge.
+- AC-PNL-05.2 Given an `admin_sekolah`, When they open `/admin/spm`, Then 403.
+- AC-PNL-06.1 Given Databank with Subjek, Status and Cari teks set and `Tapis` pressed, When `Set Semula` is pressed, Then the filters clear and all rows show.
+- AC-PNL-06.2 Given the lane list, When it renders, Then each row has `Pratonton` and `Sunting` and the columns Tajuk, Status, Perhatian, Tindakan.
+- AC-PNL-07.1 Given a question with a figure, When Admin Pusat opens Sunting, Then the figure is shown under `Rajah / Gambar` with a `Buang gambar` control, and saving after removal detaches the figure.
+- AC-PNL-07.2 Given Sunting, When the admin attaches an image and presses `Simpan`, Then the image shows on the preview and in the pupil view.
+- AC-PNL-07.3 Given Sunting, When the admin changes Status to `Diluluskan (dipaparkan kepada pelajar)` and saves, Then the question is served to pupils; `Batal` leaves without saving.
+- AC-PNL-08.1 Given a question in a lane, When the admin presses `Pratonton`, Then a read-only page `Pratonton (baca sahaja)` opens with no editable control, a tick on each correct answer and a `Maklumat` block, and a link back to the lane.
+- AC-PNL-08.2 Given the read-only preview, When the admin views it, Then nothing is saved or published by opening it.
+
+*PNL-09 to PNL-10 (Tracking A)*
+- AC-PNL-09.1 Given a Tracking A set with fewer than 40 questions, When the lane renders, Then the warning "Hanya N daripada 40 soalan" shows for that row.
+- AC-PNL-10.1 Given a set with a shortfall, When Admin Pusat presses `Isi set`, Then candidate questions fill the shortfall in the on-screen list, are NOT saved yet, and none repeats a question held by a sibling set or already on screen.
+- AC-PNL-10.2 Given a row, When `tukar` is pressed, Then exactly one replacement is proposed unsaved; a replacement request for a row not on screen is refused with 422.
+- AC-PNL-10.3 Given an edited on-screen list, When `Simpan` is pressed, Then the whole membership is saved in one transaction and the message `Set dikemas kini.` shows; an empty list is refused with `Pilih sekurang-kurangnya satu soalan sebelum menyimpan.`
+- AC-PNL-10.4 Given a set with members, When the editor opens, Then it shows a pool panel `Soalan tersedia untuk <subjek>` with the count of available questions and the count excluded because a sibling holds them.
+- AC-PNL-10.5 Given a member row, When the admin opens `Sunting Soalan`, Then the question loads in an inline pane and `Simpan` there updates it without leaving the set editor.
+- AC-PNL-10.6 Given a member that is archived or not servable, When the editor renders, Then it carries the note `Tidak disajikan kepada pelajar`.
+- AC-PNL-10.7 Given a set whose pool is empty, When the editor renders, Then a `Buka soalan` link to the Studio list filtered by the subject shows, on the same host.
+- AC-PNL-10.8 Given the set header, When it renders, Then the saved count and the target count agree with the member list (no "50 / 34" mismatch).
+- AC-PNL-10.9 Given a set that is not a Tracking A (`ramalan`) set, When its editor URL is opened, Then 404.
+
+*PNL-11 to PNL-12 (Subjektif)*
+- AC-PNL-11.1 Given Subjektif, When Subjek and Status filters are applied and `Set Semula` is pressed, Then filters clear.
+- AC-PNL-12.1 Given a subjective question, When Admin Pusat presses `Sunting`, Then `Skema & Rubrik Pemarkahan` opens with each part showing a `Skema (ayat penuh)` text box and a list of `Poin Rubrik` rows (text and marks).
+- AC-PNL-12.2 Given the editor, When the admin presses `Tambah`, Then a new empty rubric row appears; When a row's text is cleared and saved, Then that point is removed.
+- AC-PNL-12.3 Given a rubric point, When marks outside 1 to 20 or text over 500 characters or a scheme over 4000 characters is entered, Then save is refused with a field error and nothing changes.
+- AC-PNL-12.4 Given valid input, When `Simpan Skema & Rubrik` is pressed, Then the rubric points of the question are replaced wholesale, the admin returns to the Subjektif lane and `Skema dan rubrik disimpan.` shows.
+- AC-PNL-12.5 Given a non-`admin` role, When they PUT the editor, Then 403.
+
+*PNL-13 to PNL-17 (simulasi, kertas, latih tubi, kontrak)*
+- AC-PNL-13.1 Given the Bijak SPM lane, When it renders, Then each row shows "#id · Subjek · N soalan", status, `Salin` and `Sunting`.
+- AC-PNL-14.1 Given a paper's review screen, When it opens, Then the metadata form shows Tajuk, Tempoh, Kod kertas kulit and Arahan kulit kertas with a save control, and a block `Bahan rujukan kulit kertas`.
+- AC-PNL-14.2 Given a paper with import problems, When the screen opens, Then `Isu import (N)` lists them and `Belum boleh diterbitkan` shows while any blocks publishing.
+- AC-PNL-14.3 Given Bahagian A/B/C, When the admin presses `Sunting bahagian` or `Sunting petikan`, Then the section's title, instructions or its stimulus passage can be edited and saved.
+- AC-PNL-14.4 Given the screen, When the admin presses `Tambah bahagian`, Then a section is added; When `Terbitkan` is pressed on a publishable paper, Then it is published; When `Salin untuk sunting` is pressed on a published paper, Then an editable draft copy opens.
+- AC-PNL-15.1 Given a seeded paper in Kertas Subjektif, When the admin uses `Sunting`, `Sembunyikan` or `Padam`, Then the paper is edited, hidden from pupils or deleted respectively, each with a confirmation for Padam.
+- AC-PNL-16.1 Given Latih Tubi, When `Set Semula` is pressed, Then filters clear.
+- AC-PNL-17.1 Given Kontrak Simulasi, When the admin opens a contract, Then Kod Kertas, Tempoh, Jumlah Markah, Sumber (`Draf Spec` or `Spec Disahkan`), `Boleh tanda auto`, Nota and Bahagian are editable and `Simpan` stores them.
+- AC-PNL-17.2 Given a contract, When `Padam kontrak` is pressed and confirmed, Then it is removed; `Baharu` creates an empty contract.
+
+*PNL-18 to PNL-21 (Question Studio)*
+- AC-PNL-18.1 Given Studio, When the list renders, Then the status tiles use the F-19 words, filters Subjek, Status, Tahun, Negeri, Kertas and Jenis exist, and each row has `Pratonton`, `Edit` and `Sembunyikan`.
+- AC-PNL-18.2 Given Studio, When the admin presses the create button, Then the question editor opens empty.
+- AC-PNL-20.1 Given a question, When `Sembunyikan` is confirmed, Then it is archived and no longer shown to pupils, but not deleted.
+- AC-PNL-21.1 Given the Set Builder of a paper, When the admin adds, reorders or removes a question in a section, Then the change is saved and the section order is kept after reload; documents can be attached to and detached from a section.
+- AC-PNL-21.2 Given the Set Builder, When `Terbitkan` is pressed on a paper with unresolved blueprint problems, Then publishing is refused with the list of problems.
+
+*PNL-22 Tanda Karangan*
+- AC-PNL-22.1 Given the essay-grading flag is on, When a school admin or Admin Pusat opens the menu, Then `Tanda Karangan` shows; When the flag is off, Then there is no menu entry.
+- AC-PNL-22.2 Given no essay awaits review, When the page opens, Then it shows `Tiada karangan menunggu semakan.`
+- AC-PNL-22.3 Given proposals exist, When the page opens, Then each shows pupil name, question number and stem (plain text), the pupil's essay, the mark scheme points, the proposed mark with its rationale and per-point breakdown, and a mark input with a confirm button; the list pages at 20 and is newest first.
+- AC-PNL-22.4 Given the page, When it renders, Then the note states that the proposed mark counts only after the teacher confirms ("markah hanya dikira setelah cikgu mengesahkan").
+- AC-PNL-22.5 Given a proposal, When the teacher enters an integer mark and confirms, Then the final mark is stored clamped to the part's maximum, the item leaves the queue and `Markah karangan disahkan.` shows.
+- AC-PNL-22.6 Given a mark that is negative or not a whole number, When confirm is pressed, Then it is refused with a field error.
+- AC-PNL-22.7 Given an `admin_sekolah`, When they open the queue or confirm an essay of another school, Then they see their school's items only, and a direct confirm of another school's response returns 403.
+- AC-PNL-22.8 Given essay text from a pupil containing markup, When the page renders, Then it is shown as escaped plain text.
+
+**Accepted deviation AD-PNL-1.** Question data structure (D90, D105, FR-X1-4): the V3 question editor (PNL-07, PNL-19) and the question columns of the lanes may differ from the Panel's single-question form. Everything else above follows V2.
+**Open questions (not blocking):** OQ-PNL-1 Tanda Karangan: V2 reads AI proposals written by a grading batch; V3 has no AI provider in R1 (D73, D102, D112(2)), so the queue shows only proposals that a batch wrote; the screen and the confirm path are built now (D119), the proposal source stays out of R1 unless the owner says otherwise. OQ-PNL-2 which V3 feature flag (Kawalan Ciri key) controls the Tanda Karangan menu entry and the `Flag OFF` badges. OQ-PNL-3 `pegawai_ppd` scope in V3 (V2 has no district scoping and leaves the role read-only; V3 follows V2 until the owner decides).
 
 ---
 

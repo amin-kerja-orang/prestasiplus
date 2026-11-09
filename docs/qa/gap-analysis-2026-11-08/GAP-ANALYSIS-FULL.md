@@ -23,7 +23,7 @@ Mesej utama:
 1. **Tiga portal pengguna sudah di ambang.** Daripada 13 masalah teratas 4 Nov: 4 ditutup, 8 separa, 1 masih (bahagian 2). Tiada jurang Kritikal pada portal Murid, Guru atau Admin Sekolah.
 2. **Admin Pusat ialah jurang sebenar.** Jalur soalan dan kandungan maju (Sumber Kertas, Kertas Subjektif, Video, Marketplace, Kiriman Guru, satu baris gilir semakan, kontrak "Disahkan" boleh dipilih). Tetapi admin masih tidak boleh mengurus apa yang murid nampak: hadiah, tebusan, gamifikasi, permainan. Satu jurang Kritikal: Kedai Hadiah dan Tebusan Queue (tebusan murid tidak boleh dipenuhi).
 3. **Aliran kandungan soalan masih ada kecacatan fungsi sebenar** (Jana set terkunci, CSV tiada lajur DSKP, rangsangan hilang senyap, Topik tidak ditapis mengikut Bab, pengekstrak PDF masih mock) walaupun aliran tamat-ke-tamat F1 kini lulus.
-4. **Semakan langsung membetulkan beberapa andaian laporan kod** (bahagian 3, nota pembetulan): hub SPM V2 ialah 5 kad (bukan 6), Tier Config dan Cabaran V2 baca sahaja, tiada skrin admin "Kotak Misteri" atau "Tournament" pada V2/V1, panel `admin.prestasiplus.cloud` tidak wujud (panel kedua ialah Filament).
+4. **Semakan langsung membetulkan beberapa andaian laporan kod** (bahagian 3, nota pembetulan): hub SPM V2 ialah 5 kad (bukan 6), Tier Config dan Cabaran V2 baca sahaja, tiada skrin admin "Kotak Misteri" atau "Tournament" pada V2/V1, ~~panel `admin.prestasiplus.cloud` tidak wujud~~ (DIBETULKAN 9 Nov, D119: Panel wujud; rekod DNS hilang 5 hingga 9 Nov).
 5. **Had penting:** paparan murid, guru dan admin sekolah V2/V1 tidak dilihat langsung (bahagian 5). Perkataan "setara" untuk tiga portal itu bergantung pada kod V2 dan nota 4 Nov.
 
 ### Papan markah (verdik fungsi sahaja)
@@ -75,7 +75,7 @@ Kelas: **(a)** modul/skrin tiada, **(b)** fungsi rosak atau tidak lengkap, **(c)
 - Tier Config dan Cabaran Harian V2 (Blade) ialah paparan baca sahaja; Kawalan Reward V2 juga baca sahaja, manakala V1 boleh disunting (termasuk sub-had tebus bulanan). Katalog hadiah: V1 ada Tambah/Edit pada skrin yang sama; V2 mengedit di Filament.
 - Tiada skrin admin "Kotak Misteri" atau "Tournament" pada V2/V1; modul #35 ialah Kawalan Reward.
 - Kawalan Ciri wujud pada V2 sahaja (19 ciri Pelajar, 10 ciri Guru); Misi Harian Guru ialah ciri V2 sebenar.
-- Panel `admin.prestasiplus.cloud` tidak wujud; panel kedua ialah Filament di `/admin-filament`.
+- ~~Panel `admin.prestasiplus.cloud` tidak wujud~~ DIBETULKAN 9 Nov (D119): Panel React wujud dan ialah rujukan utama; Filament di `/admin-filament` ialah permukaan lain.
 - Soalan Berstruktur V2: soalan tanpa skema disembunyikan; rubrik poin A1..An dengan peraturan "mana-mana N".
 - Borang Studio V2 tiada medan DSKP (Standard Kandungan/Pembelajaran ialah medan V1); borang V3 sudah melebihi V2.
 - Laporan Eksekutif V2 ialah satu skrin yang mengandungi perbandingan sekolah, Headcount TOV → RS dan GPS Perbandingan.
@@ -218,7 +218,7 @@ Sumber: `MURID.md` §6 (M), `GURU-ADMIN-SEKOLAH.md` §6 (G), `ADMIN-PUSAT.md` §
 | L-8 | LIVE-VERIFY §4.8: Soalan Berstruktur | 30 Q-23 (nota FR-ADM-Q23.3, AC-ADM-Q23.3, Q23.4) | Diselaraskan | Disembunyikan tanpa skema: sudah dalam PRD, ditambah AC. "Mana-mana N" diwakili oleh kumpulan skema "Mana-mana N daripada M" (editor K/N/P, FR-ADM-QE3.9); keperluan editor K/N/P tidak diganti. |
 | L-9 | LIVE-VERIFY §4.9: medan DSKP ialah V1, bukan Studio V2 | 30 QE-03 | Diterapkan | Nota dimasukkan; V3 sudah melebihi V2; tiada kawalan lima radio V1. Pembetulan sampingan: "13" kepada 14 mod jawapan V2. |
 | L-10 | LIVE-VERIFY §4.10: AC Import Pengguna | 30 U-06 (AC-ADM-U06.2) | Diselaraskan | Akaun baharu sahaja, `nama,email`, akaun menunggu kelulusan dengan "Semak & luluskan". Senarai peranan bercanggah (PRD: Guru/Admin Sekolah/Pegawai PPD; LIVE: Guru/Ibu Bapa/Admin), PRD kekal dan soalan dibawa (§8.5 butir 3). |
-| L-11 | LIVE-VERIFY §4.11: panel `admin.prestasiplus.cloud` tidak wujud | 30 pengepala; 40 X1 baris 1 | Diterapkan | Rujukan diganti dengan panel Filament `/admin-filament` (30 baris 17, 18, 40; 40 X1). |
+| L-11 | LIVE-VERIFY §4.11: panel `admin.prestasiplus.cloud` tidak wujud | 30 pengepala; 40 X1 baris 1 | **Dibatalkan 9 Nov (D119)** | Dakwaan salah (rekod DNS hilang 5 hingga 9 Nov). Rujukan dipulihkan kepada Panel React; lihat 30 bahagian "Panel parity". |
 | L-12 | LIVE-VERIFY §4.12: label V2 tepat | 30 §4.H (baris pengesahan label) | Diselaraskan | Label sudah ada dalam PRD; hanya baris pengesahan ditambah. |
 
 ### Bilangan mengikut fail PRD
