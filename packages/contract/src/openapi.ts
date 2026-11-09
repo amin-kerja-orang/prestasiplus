@@ -25,6 +25,7 @@ import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gam
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
+import { ESSAY_REVIEW_COMPONENT_SCHEMAS, registerEssayReviewPaths } from './school-admin/essay-review'
 import { SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, registerSchoolAdminPendingTeacherPaths } from './school-admin/pending-teachers'
 import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { QUESTION_GATE_COMPONENT_SCHEMAS, registerQuestionGatePaths } from './questions/gate'
@@ -113,6 +114,7 @@ export const COMPONENT_SCHEMAS = {
   ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
   ...SCHOOL_ADMIN_PENDING_COMPONENT_SCHEMAS, // BE-21 AC13 (pending teachers)
+  ...ESSAY_REVIEW_COMPONENT_SCHEMAS, // Tanda Karangan
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   ...STIMULI_COMPONENT_SCHEMAS, // R1-T32
   ...REGROUP_COMPONENT_SCHEMAS, // S1-T07
@@ -190,6 +192,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
   registerSchoolAdminPendingTeacherPaths(registry) // BE-21 AC13 (pending teachers)
+  registerEssayReviewPaths(registry) // Tanda Karangan
   registerQuestionsPaths(registry) // BE-09
   registerStimuliPaths(registry) // R1-T32
   registerRegroupPaths(registry) // S1-T07

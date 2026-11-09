@@ -36877,6 +36877,145 @@
           "status"
         ]
       },
+      "EssayReviewRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "student": {
+            "type": "string",
+            "description": "The pupil name, or an em dash."
+          },
+          "questionNo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stem": {
+            "type": "string",
+            "description": "Plain text."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The maximum mark of the part."
+          },
+          "proposed": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "The AI proposal; null when it gave none."
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "number"
+                },
+                "covered": {
+                  "type": "boolean"
+                },
+                "awarded": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "scheme": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "essay": {
+            "type": "string",
+            "description": "The pupil's answer."
+          }
+        },
+        "required": [
+          "id",
+          "student",
+          "questionNo",
+          "stem",
+          "marks",
+          "proposed",
+          "rationale",
+          "points",
+          "scheme",
+          "essay"
+        ]
+      },
+      "EssayReviewListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EssayReviewRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "EssayReviewConfirmRequest": {
+        "type": "object",
+        "properties": {
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          }
+        },
+        "required": [
+          "marks"
+        ]
+      },
+      "EssayReviewConfirmResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "finalMarks": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The mark kept: the request clamped to the part maximum."
+              }
+            },
+            "required": [
+              "id",
+              "finalMarks"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Markah karangan disahkan."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
       "QuestionStatus": {
         "type": "string",
         "enum": [
@@ -134593,6 +134732,358 @@
           },
           "404": {
             "description": "NOT_FOUND \"Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?\" (see the description).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-sekolah/tanda-karangan": {
+      "get": {
+        "tags": [
+          "essay-review"
+        ],
+        "summary": "Essays waiting for a person to confirm the AI mark",
+        "description": "Proposals with status pending of the school of the session, newest first, 20 per page; meta.totalItems is the count waiting. Sent with Cache-Control: no-store. Rate limited (429).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The waiting proposals (empty list when none).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body holds pupils' work).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssayReviewListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is neither school_admin nor admin, or a school admin without a school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin-sekolah/tanda-karangan/{id}/sahkan": {
+      "post": {
+        "tags": [
+          "essay-review"
+        ],
+        "summary": "Confirm or adjust the mark of one essay",
+        "description": "Records the final mark (clamped to the part maximum), who confirmed it and when. Scope: the school of the session; a proposal outside it is indistinguishable from an unknown id (404). A confirmed proposal can be adjusted again. Rate limited (429).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EssayReviewConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmed; status \"Markah karangan disahkan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssayReviewConfirmResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is neither school_admin nor admin, or a school admin without a school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown id or outside the scope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: marks is required, an integer from 0 to 65535.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/spm/tanda-karangan": {
+      "get": {
+        "tags": [
+          "essay-review"
+        ],
+        "summary": "Essays waiting for a person to confirm the AI mark",
+        "description": "Proposals with status pending of every school, newest first, 20 per page; meta.totalItems is the count waiting. Sent with Cache-Control: no-store. Rate limited (429).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The waiting proposals (empty list when none).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body holds pupils' work).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssayReviewListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is neither school_admin nor admin, or a school admin without a school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" with error.retryAfter in seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/spm/tanda-karangan/{id}/sahkan": {
+      "post": {
+        "tags": [
+          "essay-review"
+        ],
+        "summary": "Confirm or adjust the mark of one essay",
+        "description": "Records the final mark (clamped to the part maximum), who confirmed it and when. Scope: every school; a proposal outside it is indistinguishable from an unknown id (404). A confirmed proposal can be adjusted again. Rate limited (429).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EssayReviewConfirmRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmed; status \"Markah karangan disahkan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EssayReviewConfirmResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Sesi anda telah tamat. Sila log masuk semula.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Anda tidak dibenarkan melakukan tindakan ini.\" (role is neither school_admin nor admin, or a school admin without a school), or CSRF_INVALID on the POST.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (unknown id or outside the scope).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: marks is required, an integer from 0 to 65535.",
             "content": {
               "application/json": {
                 "schema": {

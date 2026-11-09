@@ -444,6 +444,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'DSKP Heatmap',
       'Analisa Item',
       'Laporan Aktiviti',
+      'Tanda Karangan',
       'AKADEMIK',
       'Soalan Berstruktur',
       'Kombo Harian',

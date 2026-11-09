@@ -398,6 +398,7 @@ export const USER_NAV: readonly NavEntry[] = [
   { kind: 'item', id: 'sa-dskp-heatmap', label: 'DSKP Heatmap', to: '/admin-sekolah/dskp-heatmap', fa: 'fa-table-cells', color: 'text-emerald-500', roles: SCH },
   { kind: 'item', id: 'sa-analisa-item', label: 'Analisa Item', to: '/analisa-item', fa: 'fa-magnifying-glass-chart', color: 'text-purple-500', roles: SCH },
   { kind: 'item', id: 'sa-laporan-aktiviti', label: 'Laporan Aktiviti', to: '/admin-sekolah/laporan-aktiviti', fa: 'fa-file-lines', color: 'text-orange-500', roles: SCH },
+  { kind: 'item', id: 'sa-tanda-karangan', label: 'Tanda Karangan', to: '/admin-sekolah/tanda-karangan', fa: 'fa-pen-fancy', color: 'text-amber-600', roles: SCH },
   { kind: 'section', id: 'sa-sec-akademik', label: 'AKADEMIK', text: 'text-emerald-700', rule: 'from-emerald-300', roles: SCH },
   // The screenshot crop ends after "Soalan Berstruktur" and resumes at "Kombo Harian": a further
   // AKADEMIK item or heading may be hidden between the two crops (not observable).
