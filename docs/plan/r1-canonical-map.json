@@ -3185,6 +3185,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin-sekolah/tanda-karangan|m27.tanda-karangan",
+      "path": "/admin-sekolah/tanda-karangan",
+      "name": "m27.tanda-karangan",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/TandaKaranganPage.vue",
+      "file": "src/modules/m27-school-admin/routes/karangan.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/tanda-karangan|m27.tanda-karangan.pusat",
+      "path": "/admin/spm/tanda-karangan",
+      "name": "m27.tanda-karangan.pusat",
+      "status": "canonical",
+      "sector": "S6",
+      "component": "src/modules/m27-school-admin/pages/TandaKaranganPage.vue",
+      "file": "src/modules/m27-school-admin/routes/karangan.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin-sekolah/kelas|m27.kelas-sekolah",
       "path": "/admin-sekolah/kelas",
       "name": "m27.kelas-sekolah",
@@ -5136,6 +5156,20 @@
       "id": "sa-laporan-aktiviti",
       "label": "Laporan Aktiviti",
       "route": "/admin-sekolah/laporan-aktiviti",
+      "roles": [
+        "school_admin"
+      ],
+      "status": "canonical",
+      "sector": "S6",
+      "file": "src/shells/nav/user-nav.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "user-nav|sa-tanda-karangan",
+      "source": "user-nav",
+      "id": "sa-tanda-karangan",
+      "label": "Tanda Karangan",
+      "route": "/admin-sekolah/tanda-karangan",
       "roles": [
         "school_admin"
       ],
@@ -8014,6 +8048,14 @@
     {
       "name": "AttemptCheck",
       "table": "attempt_checks",
+      "status": "canonical",
+      "sector": "S3",
+      "file": "apps/api/prisma/schema/bijak-attempts.prisma",
+      "approved_by_card": null
+    },
+    {
+      "name": "EssayReviewProposal",
+      "table": "essay_review_proposals",
       "status": "canonical",
       "sector": "S3",
       "file": "apps/api/prisma/schema/bijak-attempts.prisma",
@@ -15610,6 +15652,46 @@
       "status": "canonical",
       "sector": "S6",
       "file": "apps/api/src/modules/school-admin/amaran/amaran.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin-sekolah/tanda-karangan",
+      "method": "GET",
+      "path": "/api/admin-sekolah/tanda-karangan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin-sekolah/tanda-karangan/:p/sahkan",
+      "method": "POST",
+      "path": "/api/admin-sekolah/tanda-karangan/:id/sahkan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "GET /api/admin/spm/tanda-karangan",
+      "method": "GET",
+      "path": "/api/admin/spm/tanda-karangan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "POST /api/admin/spm/tanda-karangan/:p/sahkan",
+      "method": "POST",
+      "path": "/api/admin/spm/tanda-karangan/:id/sahkan",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/school-admin/essay-review/essay-review.controller.ts",
       "approved_by_card": null
     },
     {

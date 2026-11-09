@@ -475,6 +475,52 @@ async function ensureBankPaper(ctx: SeedContext, subjectId: bigint): Promise<Ban
   return { id: paper.id, title: paper.title, kertas: paper.kertas, paperCode: paper.paperCode, printedDurationMin: paper.printedDurationMin, sectionId: section.id, questions: ordered }
 }
 
+/**
+ * Tanda Karangan demo (V2 `/spm/tanda-karangan`): one fictitious essay of a DEMO001 pupil whose AI mark proposal awaits a person,
+ * so the school admin queue is not empty. Not linked to an attempt (the proposal row carries its own question snapshot).
+ * Idempotent: a row for the same pupil and question label is left alone.
+ */
+const ESSAY_DEMO = {
+  email: 'murid4@demo.test',
+  questionLabel: '2(a)',
+  stem: 'Tulis sebuah karangan tentang kepentingan menjaga kebersihan sekolah. (20 markah)',
+  scheme: ['Pengenalan yang menarik', 'Isi pertama: kebersihan kelas', 'Isi kedua: kesihatan murid', 'Penutup yang sesuai'],
+  essay:
+    'Kebersihan sekolah penting untuk kita semua. Apabila kelas bersih, murid dapat belajar dengan selesa. Selain itu, persekitaran yang bersih menjauhkan kita daripada penyakit. Oleh itu, marilah kita sama-sama menjaga kebersihan sekolah.',
+  maxMarks: 20,
+  proposedMarks: 12,
+  rationale: 'Karangan mempunyai pengenalan dan penutup ringkas serta dua isi yang dihuraikan secara umum. Contoh dan huraian masih terhad.',
+  points: [
+    { id: 1, covered: true, awarded: 3 },
+    { id: 2, covered: true, awarded: 4 },
+    { id: 3, covered: true, awarded: 3 },
+    { id: 4, covered: true, awarded: 2 },
+  ],
+}
+
+async function ensureEssayProposal(prisma: PrismaClient, ctx: SeedContext, pupils: Map<string, bigint>): Promise<void> {
+  const studentId = pupils.get(ESSAY_DEMO.email)
+  const school = await prisma.school.findUnique({ where: { code: SCHOOL_CODE }, select: { id: true } })
+  if (studentId === undefined || !school) throw new Error('Essay review demo needs the demo pupil and school.')
+  const exists = await prisma.essayReviewProposal.findFirst({ where: { studentId, questionLabel: ESSAY_DEMO.questionLabel }, select: { id: true } })
+  if (exists) return
+  await prisma.essayReviewProposal.create({
+    data: {
+      schoolId: school.id,
+      studentId,
+      questionLabel: ESSAY_DEMO.questionLabel,
+      stem: ESSAY_DEMO.stem,
+      scheme: ESSAY_DEMO.scheme,
+      essayText: ESSAY_DEMO.essay,
+      maxMarks: ESSAY_DEMO.maxMarks,
+      proposedMarks: ESSAY_DEMO.proposedMarks,
+      rationale: ESSAY_DEMO.rationale,
+      points: ESSAY_DEMO.points,
+      createdAt: ctx.clock.now(),
+    },
+  })
+}
+
 export const bijakSittingsSeed: SeedModule = {
   name: 'poc-bijak-sittings',
   kind: 'demo',
@@ -519,5 +565,6 @@ export const bijakSittingsSeed: SeedModule = {
     const bankBundles = await bankSource.loadQuestions(bankComposition.flatMap((s) => s.questionIds))
     if (bankBundles.size !== bank.questions.length) throw new Error('Bijak sittings seed: the BE-09 bridge did not serve the bank questions.')
     await writeSittings(ctx, pupils, aggregates, { key: 'bank-mat-demo', paper: bank, subjectName: subjectRow.name, subject, composition: bankComposition, bundles: bankBundles, plans: BIJAK_BANK_SITTINGS, blank: 0, hardness: BANK_HARDNESS })
+    await ensureEssayProposal(prisma, ctx, pupils)
   },
 }

@@ -30,15 +30,34 @@ function actorOf(req: SchoolAdminReq): EssayReviewActor {
   }
 }
 
-/**
- * Tanda Karangan: one controller, two doors. `/admin-sekolah/tanda-karangan` (school admin, own school) and
- * `/admin/spm/tanda-karangan` (Admin Pusat, every school). Every answer is `no-store` (pupils' work).
- */
-@Controller(['admin-sekolah/tanda-karangan', 'admin/spm/tanda-karangan'])
-@Roles('school_admin', 'admin')
+/** Tanda Karangan, school door `/admin-sekolah/tanda-karangan`: the own school (no-store, pupils' work). */
+@Controller('admin-sekolah/tanda-karangan')
+@Roles('school_admin')
 @UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
-export class EssayReviewController {
+export class EssayReviewSchoolController {
+  constructor(@Inject(EssayReviewService) private readonly service: EssayReviewService) {}
+
+  @Get()
+  @RateLimit(SCHOOL_ADMIN_LIMITS.read)
+  async list(@Req() req: SchoolAdminReq, @Query('page') page?: unknown) {
+    return this.service.list(actorOf(req), page)
+  }
+
+  @Post(':id/sahkan')
+  @HttpCode(200)
+  @RateLimit(SCHOOL_ADMIN_LIMITS.write)
+  async confirm(@Req() req: SchoolAdminReq, @Param('id') id: string, @Body() body: unknown) {
+    return this.service.confirm(actorOf(req), id, body)
+  }
+}
+
+/** Tanda Karangan, Admin Pusat door `/admin/spm/tanda-karangan`: every school (no-store, pupils' work). */
+@Controller('admin/spm/tanda-karangan')
+@Roles('admin')
+@UseGuards(RateLimitGuard)
+@UseInterceptors(NoStoreInterceptor)
+export class EssayReviewCentralController {
   constructor(@Inject(EssayReviewService) private readonly service: EssayReviewService) {}
 
   @Get()
