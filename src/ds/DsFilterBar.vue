@@ -91,8 +91,10 @@ function reset(): void {
     @submit.prevent="apply"
   >
     <template v-if="wide">
-      <slot name="search" />
-      <slot />
+      <div data-ds="filter-fields">
+        <slot name="search" />
+        <slot />
+      </div>
       <UPopover v-if="$slots.more" :content="{ align: 'start' }">
         <UChip :show="moreCount > 0" :text="moreCount" color="primary">
           <UButton
@@ -112,7 +114,7 @@ function reset(): void {
           </div>
         </template>
       </UPopover>
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex shrink-0 flex-wrap items-end gap-2" data-ds="filter-actions">
         <UButton type="submit" class="min-h-11" :label="applyLabel" :loading="loading" />
         <UButton
           v-if="resetVisible"

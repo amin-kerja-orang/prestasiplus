@@ -92,7 +92,7 @@ const pupilColumns: TableColumn<PupilItem>[] = [
       <DsEmptyState size="sm" title="Tiada data laporan." icon="file-text" />
     </DsPanel>
     <template v-else-if="data">
-      <DsGrid min-item="xs" gap="md" data-testid="adm-lp-tiles">
+      <DsGrid :cols="{ base: 2, lg: 4 }" gap="md" data-testid="adm-lp-tiles">
         <DsStatTile
           :value="n(data.tiles.schools)"
           unit="Sekolah"

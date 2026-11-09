@@ -200,7 +200,6 @@ async function goto(sectionId: string) {
       </DsFormField>
       <template v-if="wide" #actions>
         <MonitoringTools
-          class="-mt-12 ml-6"
           :query="query"
           :paths="paths"
           :form-id="FORM_ID"
