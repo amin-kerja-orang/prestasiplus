@@ -173,7 +173,10 @@ const themeLabel = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )
 
-/** Account menu (role-access-matrix section A + theme + Log Keluar), shared by sidebar and navbar. */
+/**
+ * Account menu of the navbar avatar (role-access-matrix section A + Log Keluar). No sidebar footer and no
+ * theme row: the navbar sun/moon button is the one theme control, for every role (PO 2026-11-09).
+ */
 const accountMenu = computed(() => [
   [
     { label: name.value || 'Akaun', type: 'label' as const },
@@ -186,11 +189,6 @@ const accountMenu = computed(() => [
     ...(learner.value
       ? [{ label: 'Tukar Rakan Belajar', icon: phClass('smiley', true), onSelect: () => openPicker() }]
       : []),
-    {
-      label: themeLabel.value,
-      icon: phClass('circle-half', learner.value),
-      onSelect: () => theme.toggle(),
-    },
   ],
   [
     {
@@ -292,7 +290,6 @@ const chipClass = (chip: unknown, active: boolean): string =>
             root: modeOn ? 'bg-default min-h-0! h-full!' : 'bg-default',
             header: 'h-16 shrink-0 px-4',
             body: 'px-3 pt-1 pb-3',
-            footer: 'p-2 border-t border-default',
           }"
           data-testid="pembelajaran-sidebar"
         >
@@ -331,40 +328,6 @@ const chipClass = (chip: unknown, active: boolean): string =>
             </UNavigationMenu>
           </template>
 
-          <template #footer="{ collapsed }">
-            <UDropdownMenu
-              :items="accountMenu"
-              :content="{ align: 'start', side: 'top' }"
-              :ui="{ content: 'min-w-60' }"
-            >
-              <button
-                type="button"
-                class="flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-md p-1.5 text-start hover:bg-elevated"
-                aria-label="Menu akaun"
-                data-testid="pembelajaran-account"
-              >
-                <span
-                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
-                  aria-hidden="true"
-                  >{{ initials }}</span
-                >
-                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
-                    :title="name || 'Akaun'"
-                    >{{ name || 'Akaun' }}</span
-                  >
-                  <span
-                    v-if="schoolName"
-                    class="block truncate text-caption text-muted"
-                    :title="schoolName"
-                    >{{ schoolName }}</span
-                  >
-                </span>
-                <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
-              </button>
-            </UDropdownMenu>
-          </template>
         </UDashboardSidebar>
 
         <UDashboardPanel
@@ -450,7 +413,6 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   variant="ghost"
                   size="sm"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
-                  class="hidden sm:inline-flex"
                   :aria-label="themeLabel"
                   data-testid="pembelajaran-theme-toggle"
                   @click="theme.toggle()"
