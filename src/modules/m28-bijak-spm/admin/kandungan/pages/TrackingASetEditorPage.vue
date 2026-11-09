@@ -331,7 +331,7 @@ watch(setParam, () => void load(), { immediate: true })
 
         <DsPanel data-testid="tracking-fill-block">
           <DsStack gap="sm">
-            <DsText as="p" variant="caption" tone="muted" data-testid="tracking-available">{{ COPY.available(set.subject, set.candidates) }}</DsText>
+            <DsText as="p" variant="caption" tone="muted" data-testid="tracking-available">{{ COPY.available(set.subject, set.candidates) }}<span v-if="set.excludedBySibling > 0" data-testid="tracking-excluded">{{ " " + COPY.excludedBySibling(set.excludedBySibling) }}</span></DsText>
             <template v-if="isShort">
               <DsCluster gap="sm">
                 <UButton label="Isi set" color="neutral" variant="outline" data-testid="tracking-fill" @click="fill()" />

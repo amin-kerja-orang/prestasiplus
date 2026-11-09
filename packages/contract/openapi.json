@@ -15934,6 +15934,11 @@
             "type": "integer",
             "minimum": 0
           },
+          "excludedBySibling": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Servable questions of the subject withheld because another set of the same subject and year holds them (V2 TrackingASetPool::excludedBySibling)."
+          },
           "candidateItems": {
             "type": "array",
             "items": {
@@ -15954,6 +15959,7 @@
           "attention",
           "items",
           "candidates",
+          "excludedBySibling",
           "candidateItems"
         ],
         "additionalProperties": false

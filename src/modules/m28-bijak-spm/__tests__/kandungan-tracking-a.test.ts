@@ -38,6 +38,7 @@ const setOf = (over: Partial<SpmAdminTrackingASet> = {}): SpmAdminTrackingASet =
   attention: ['Hanya 1 daripada 5 soalan'],
   items: [{ ...q('1'), position: 1 }],
   candidates: 28471,
+  excludedBySibling: 0,
   candidateItems: [q('1'), q('2'), q('3')],
   ...over,
 })
@@ -324,6 +325,12 @@ describe('pages', () => {
     ;(row?.matches('button') ? row : row?.querySelector('button'))?.click()
     await flushPromises()
   }
+
+  it('the pool line adds the count a sibling set holds, only when there is one (V2 wording)', async () => {
+    server.trackingSet.mockResolvedValue(setOf({ excludedBySibling: 1234 }))
+    await mountAt(TrackingASetEditorPage, '/admin/spm/tracking-a/7/sunting')
+    expect(text('tracking-available')).toBe('Soalan tersedia untuk Sains: 28,471 (1,234 sudah digunakan set lain tahun ini)')
+  })
 
   it('the pool line is shown at target too, not only while the set is short', async () => {
     server.trackingSet.mockResolvedValue(setOf({ targetCount: 1 }))
