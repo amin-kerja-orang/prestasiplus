@@ -10,7 +10,7 @@ When a module section conflicts with this file, the module section wins only if 
 
 | Order | Source | Use |
 |---|---|---|
-| 1 | **V2** — prestasiplus.cloud (`/admin` Blade, pupil/teacher portals) and the Filament admin panel (`prestasiplus.cloud/admin-filament`; a separate site `admin.prestasiplus.cloud` does not exist, live check 2026-11-08) | Primary reference for every flow, screen, field, rule, message (exact BM) and state. |
+| 1 | **V2** — prestasiplus.cloud (`/admin` Blade, pupil/teacher portals) and the Panel (`admin.prestasiplus.cloud`, Metronic/Inertia React; verified live 2026-11-09, the 8 Nov "does not exist" note was a missing DNS record and is reverted, D119; Filament at `/admin-filament` is a separate third surface) | Primary reference for every flow, screen, field, rule, message (exact BM) and state. |
 | 2 | **V1** — prestasiplus.my | Fallback where V2 has no equivalent (for example the school-admin screens, rows 45–53) or where V2 is broken. |
 | 3 | **Principle** (DSKP, SPM exam standard, consistency with other 1.0 modules) | Only when neither V1 nor V2 shows the behaviour. Mark the requirement "specified by principle" so the user can review it. |
 

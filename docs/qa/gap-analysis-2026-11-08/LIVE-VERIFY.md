@@ -1,5 +1,7 @@
 # Pengesahan langsung V2 dan V1 untuk analisis jurang V3 (2026-11-08)
 
+> **PEMBETULAN 2026-11-09 (D119):** dakwaan dalam dokumen ini bahawa `admin.prestasiplus.cloud` "tidak wujud" adalah SALAH. Rekod DNS subdomain itu tiada dari kira-kira 5 hingga 9 Nov, itu sebabnya `ERR_NAME_NOT_RESOLVED` pada 8 Nov; ia pulih pada 9 Nov dan disahkan hidup (pelayar dan pelayan). Panel React (Metronic/Inertia) di `admin.prestasiplus.cloud` wujud dan ialah rujukan utama V2 untuk Portal Pentadbiran (D30, D79, D114). Filament di `/admin-filament` juga wujud sebagai permukaan ketiga. Lihat `docs/prd/r1/30-admin-pusat.md` bahagian "Panel parity" dan `docs/qa/SKRIP-UJIAN-V3.md` Bahagian 1.
+
 Skop (arahan pemilik produk, dikemas kini semasa kerja): hanya MODUL, CIRI dan FUNGSI (menu, medan, tindakan, langkah, peraturan, keadaan, salinan BM) dan sama ada V3 ada fungsi yang sama. Bilangan rekod dan jumlah data TIDAK dibandingkan (pangkalan data UAT mungkin tidak betul); angka yang kebetulan kelihatan pada skrin tidak dicatat sebagai bukti.
 
 Rujukan laporan: `MURID.md`, `GURU-ADMIN-SEKOLAH.md`, `ADMIN-PUSAT.md` (dalam folder ini). `DATA-GAP.md` hanya latar. Baris dirujuk sebagai `ADMIN-PUSAT #n` (jadual modul bahagian 2) atau bahagian laporan.
@@ -11,7 +13,7 @@ Rujukan laporan: `MURID.md`, `GURU-ADMIN-SEKOLAH.md`, `ADMIN-PUSAT.md` (dalam fo
 - V2 dilawat dahulu, kemudian V1. Tidak pernah serentak.
 - **Peristiwa Cloudflare: TIADA** (tiada "Just a moment", Turnstile, 403/429/1020/1015) pada kedua-dua tapak.
 - **Peristiwa kebenaran (permission): TIADA** (tiada panggilan alat ditolak).
-- Ralat dan keanehan: (a) `admin.prestasiplus.cloud` gagal `ERR_NAME_NOT_RESOLVED` (DNS tidak wujud, BUKAN Cloudflare; satu cubaan sahaja, tidak diulang); (b) tinjauan NPS "Maklum Balas Anda Penting" muncul pada admin V2 dan menghalang klik menu; ditutup dengan butang "Nanti dulu" (tiada maklum balas dihantar; tindakan ini mungkin merekod penolakan pada sisi V2). (c) Beberapa panggilan klik sidebar dihantar serentak (tindakan klien sahaja, bukan permintaan pelayan).
+- Ralat dan keanehan: (a) `admin.prestasiplus.cloud` gagal `ERR_NAME_NOT_RESOLVED` (rekod DNS hilang sementara; dibetulkan 9 Nov, ia wujud); (b) tinjauan NPS "Maklum Balas Anda Penting" muncul pada admin V2 dan menghalang klik menu; ditutup dengan butang "Nanti dulu" (tiada maklum balas dihantar; tindakan ini mungkin merekod penolakan pada sisi V2). (c) Beberapa panggilan klik sidebar dihantar serentak (tindakan klien sahaja, bukan permintaan pelayan).
 - Bilangan halaman: V2 29 navigasi (lebih 4 daripada had 25 yang dicadangkan, kerana skrin sidebar/Filament perlu dibuka untuk menyenaraikan menu penuh; tiada satu pun halaman data/kiraan); V1 12 navigasi (had 15). Masa (MYT, UTC+8): V2 11:29 hingga 11:44, V1 11:44 hingga 11:50.
 - Tangkapan skrin: tiada diambil (tidak perlu; bukti ialah teks pokok kebolehcapaian). Senarai pendek ditulis ke folder scratch `...\scratchpad\gap-live\shortlist.md`.
 - Privasi: skrin V2/V1 memaparkan nama sebenar murid, guru dan sekolah (Top 10 Pelajar, kiriman guru). Tiada nama dicatat di sini.
@@ -49,7 +51,7 @@ Rujukan laporan: `MURID.md`, `GURU-ADMIN-SEKOLAH.md`, `ADMIN-PUSAT.md` (dalam fo
 | 25 | `/admin/structured-questions/4061` | 11:42 | penyunting Skema & Rubrik (tidak dihantar) |
 | 26 | `/admin/source-papers` | 11:42 | Sumber Kertas |
 | 27 | `/admin/users/bulk-import` | 11:43 | Import Pengguna Pukal |
-| 28 | `https://admin.prestasiplus.cloud` | 11:43 | `ERR_NAME_NOT_RESOLVED` (domain tidak wujud) |
+| 28 | `https://admin.prestasiplus.cloud` | 11:43 | `ERR_NAME_NOT_RESOLVED` (rekod DNS hilang sementara 5 hingga 9 Nov; domain wujud, dibetulkan 9 Nov) |
 | 29 | `/admin-filament` | 11:43 | panel Filament (menu dibaca) |
 | 30 | `/admin-filament/lucky-draws` | 11:44 | Cabutan (Filament) |
 
@@ -87,7 +89,7 @@ Tajuk bahagian: HARIAN, ANALITIK, PENGURUSAN, SISTEM. Kumpulan boleh kembang. Pe
 
 ### 2.2 "Panel menu" admin.prestasiplus.cloud
 
-**Tidak wujud sebagai tapak langsung**: `https://admin.prestasiplus.cloud` tidak diselesaikan DNS (`ERR_NAME_NOT_RESOLVED`). Panel kedua yang benar-benar hidup ialah **Filament di `prestasiplus.cloud/admin-filament`** (pengguna yang sama, sesi sama). Menunya:
+**DIBETULKAN 2026-11-09:** `https://admin.prestasiplus.cloud` WUJUD (Panel React Metronic/Inertia). Pada 8 Nov ia gagal `ERR_NAME_NOT_RESOLVED` kerana rekod DNS hilang (kira-kira 5 hingga 9 Nov); ia pulih 9 Nov dan disahkan hidup. Menu sisi Panel Admin Pusat: Papan Pemuka, Analitik, Pengguna, Sekolah, Kandungan SPM, Question Studio (senarai penuh: PRD 30 bahagian "Panel parity"). Senarai di bawah ialah menu **Filament di `prestasiplus.cloud/admin-filament`**, permukaan ketiga yang juga wujud (pengguna yang sama, sesi sama):
 
 - Harian/Analitik: Command Center, Aktiviti Harian, Audio KBAT, Dashboard, Laporan Eksekutif, Analitik, Monitoring, Kirkpatrick, Laporan
 - Kurikulum: Kurikulum, Subjek, Tahap Pendidikan, **Bab**
@@ -172,7 +174,7 @@ Kunci keputusan: **SAH** = laporan betul; **UBAH** = verdict/cadangan perlu diub
 8. **Tambah** keperluan Soalan Berstruktur: soalan tanpa skema disembunyikan daripada pelajar; rubrik poin A1..An dengan peraturan "mana-mana N".
 9. **Tambah** borang pengelasan: DSKP (Bidang, Standard Kandungan, Standard Pembelajaran) ialah medan V1, bukan V2 Studio; V3 sudah melebihi V2. Tiada keperluan menambah Aras Kesukaran lima radio V1 kerana V3 ada Aras pemikiran.
 10. **Tambah** AC Import Pengguna: peranan Guru/Ibu Bapa/Admin, CSV `nama,email`, akaun baharu sahaja, akaun menunggu kelulusan sebelum boleh log masuk (pautan Semak & luluskan).
-11. **Pembetulan fakta**: "Panel React admin.prestasiplus.cloud" tidak wujud sebagai tapak langsung (DNS tidak diselesaikan). Panel kedua V2 ialah Filament di `/admin-filament`. Sebarang rujukan PRD kepada panel itu harus mengatakan Filament.
+11. ~~**Pembetulan fakta**: "Panel React admin.prestasiplus.cloud" tidak wujud~~ **DIBATALKAN 2026-11-09 (D119):** Panel wujud (rekod DNS hilang 5 hingga 9 Nov sahaja). Rujukan PRD kepada "Panel" bermaksud Panel React di admin.prestasiplus.cloud; Filament di `/admin-filament` ialah permukaan berasingan.
 12. **Tambah** nama label V2 tepat: "Kawalan Ciri", "Tetapan Permainan", "Kawalan Reward" (V1: "Kawalan Ekonomi Reward"), "Kedai Hadiah Digital", "Tebusan Queue", "Sumber Kertas", "Kertas Diimport", "Semak & Terbit", "Flag OFF".
 
 `GURU-ADMIN-SEKOLAH.md` / `MURID.md`: tiada halaman guru/murid dilawat (skop admin pusat sahaja dalam senarai pendek kerana semua dibenarkan menggunakan akaun admin; "log masuk sebagai" tidak dilakukan kerana menulis `audit_logs`). Satu kesan sampingan relevan: Kawalan Ciri V2 menyenaraikan ciri guru "Misi Harian", "Headcount", "Sumbang Soalan" dan ciri murid "Remedial", "Tiket Bantuan", sebagai ciri boleh togol; ini menyokong cadangan laporan bahawa `/guru/misi-harian` (404 di V3) ialah ciri sebenar V2 (GURU-ADMIN-SEKOLAH #2) dan Tiket Bantuan murid (MURID A5) ialah ciri V2 boleh dimatikan oleh admin pusat, bukan "tersembunyi" tetap.
