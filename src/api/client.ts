@@ -332,9 +332,6 @@ export class ApiClient {
   private sessionAbort = new AbortController()
 
   /** Builds the request, calls the transport, maps network failures, applies the 401 policy. */
-  /** Aborted (and replaced) on a 401, so the other in-flight calls of the expired session stop (FR-ERR-7). */
-  private sessionAbort = new AbortController()
-
   private async send(
     method: HttpMethod,
     url: string,
