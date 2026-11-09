@@ -357,7 +357,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         <span class="text-label text-nowrap text-muted">{{ row.original.code }}</span>
       </template>
       <template #joinCode-cell="{ row }">
-        <div class="flex items-center gap-2">
+        <div class="flex w-fit items-center gap-1">
           <UBadge
             color="primary"
             variant="outline"

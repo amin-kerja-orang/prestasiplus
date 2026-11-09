@@ -10,7 +10,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsPage, DsLoadError } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError, tileLayout } from '@/ds'
 
 import { fetchGamificationAchievements, type AchievementItem } from '../../api'
 import AchievementBadgeCard from '../../components/student-b/AchievementBadgeCard.vue'
@@ -36,6 +36,9 @@ const { data, error, reload } = useApi(
 )
 
 const selected = ref<AchievementItem | null>(null)
+
+// Badge grid: every row is full at every width (no lone card on the last row).
+const gridLayout = computed(() => tileLayout(data.value?.items.length ?? 0))
 
 const progressWidth = computed(() =>
   data.value && data.value.total > 0
@@ -116,12 +119,14 @@ const progressWidth = computed(() =>
       </nav>
 
       <div
-        class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5"
+        class="grid gap-3 md:gap-4"
+        :class="gridLayout.grid"
         data-testid="achievements-grid"
       >
         <AchievementBadgeCard
-          v-for="item in data.items"
+          v-for="(item, i) in data.items"
           :key="item.id"
+          :class="gridLayout.span[i]"
           :item="item"
           @open="selected = $event"
         />

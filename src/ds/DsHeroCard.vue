@@ -45,11 +45,11 @@ const hasRing = () => props.progress !== undefined && !!props.ringLabel
   >
     <template v-if="art">
       <span
-        class="pointer-events-none absolute -top-8 right-2 size-24 rounded-full bg-primary-on/10"
+        class="pointer-events-none absolute right-2 top-0 size-20 sm:right-26 sm:top-4 rounded-full bg-primary-on/10"
         aria-hidden="true"
         data-ds="hero-glow"
       />
-      <DsArt3D :name="art" size="xl" float class="pointer-events-none absolute -top-5 right-4" />
+      <DsArt3D :name="art" size="lg" float class="pointer-events-none absolute right-4 top-2 sm:right-28 sm:top-6" />
     </template>
     <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
       <span class="text-overline">{{ overline }}</span>

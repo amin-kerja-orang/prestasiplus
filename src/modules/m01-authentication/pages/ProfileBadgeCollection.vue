@@ -8,13 +8,14 @@ import { computed } from 'vue'
 
 import type { AccountProfileBadge } from '@pp/contract'
 
-import { DsBadgeTile, DsCluster, DsGrid, DsHeading, DsStack, DsText } from '@/ds'
+import { DsBadgeTile, DsCluster, DsGrid, DsHeading, DsStack, DsText, tileLayout } from '@/ds'
 import { formatDateShortMs } from '@/lib/time'
 
 const props = defineProps<{
   badges: readonly AccountProfileBadge[]
 }>()
 
+const layout = computed(() => tileLayout(props.badges.length))
 const collected = computed(() => props.badges.filter((b) => b.unlocked).length)
 </script>
 
@@ -51,11 +52,12 @@ const collected = computed(() => props.badges.filter((b) => b.unlocked).length)
         >
       </DsStack>
 
-      <DsGrid v-if="badges.length > 0" as="ul" gap="sm" :cols="{ base: 2, sm: 3, md: 4 }">
+      <DsGrid v-if="badges.length > 0" as="ul" gap="sm" :tiles="badges.length">
         <li
-          v-for="badge in badges"
+          v-for="(badge, i) in badges"
           :key="badge.code"
           class="min-w-0"
+          :class="layout.span[i]"
           :data-locked="badge.unlocked ? 'false' : 'true'"
           data-testid="profile-badge"
         >

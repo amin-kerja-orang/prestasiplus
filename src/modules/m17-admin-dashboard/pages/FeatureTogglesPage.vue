@@ -13,6 +13,7 @@ import { useApi, useFlash } from '@/composables'
 import {
   DsCluster,
   DsEmptyState,
+  DsGrid,
   DsHeading,
   DsPage,
   DsPanel,
@@ -123,6 +124,10 @@ async function toggle(row: FeatureToggle, next: boolean): Promise<void> {
 
 <template>
   <DsPage layout="form" data-testid="feature-toggles-page">
+    <!-- The lead sentence is the page's own subtitle line (the shell prints the route subtitle). -->
+    <template #subtitle>
+      <span v-if="rows.length > 0" data-testid="ft-notice">{{ COPY.notice }}</span>
+    </template>
     <DsStateView
       :status="status"
       :error="COPY.loadFailed"
@@ -133,15 +138,15 @@ async function toggle(row: FeatureToggle, next: boolean): Promise<void> {
         <DsEmptyState :title="COPY.empty" icon="toggle-left" />
       </DsPanel>
       <DsStack v-else gap="lg">
-        <DsText variant="body" tone="muted" data-testid="ft-notice">{{ COPY.notice }}</DsText>
         <DsPanel v-for="g in groups" :key="g.audience" as="section" :data-testid="`ft-group-${g.audience}`">
           <DsStack gap="md">
             <DsHeading :level="2">{{ g.label }}</DsHeading>
-            <DsStack gap="sm">
+            <DsGrid :cols="{ base: 1, xl: 2 }" gap="sm" :equal-height="false">
               <DsCluster
                 v-for="row in g.items"
                 :key="row.key"
-                justify="between"
+                justify="start"
+                gap="lg"
                 align="center"
                 :data-testid="`ft-row-${row.key}`"
               >
@@ -164,7 +169,7 @@ async function toggle(row: FeatureToggle, next: boolean): Promise<void> {
                   {{ stateWord(row) }}
                 </DsText>
               </DsCluster>
-            </DsStack>
+            </DsGrid>
           </DsStack>
         </DsPanel>
       </DsStack>

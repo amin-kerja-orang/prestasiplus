@@ -9,7 +9,7 @@ import { computed } from 'vue'
 
 import type { AccountProfileTiles } from '@pp/contract'
 
-import { DsGrid, DsStack, DsText } from '@/ds'
+import { DsGrid, DsStack, DsText, tileLayout } from '@/ds'
 
 const props = defineProps<{
   tiles: AccountProfileTiles
@@ -43,15 +43,18 @@ const items = computed<Tile[]>(() => {
     { key: 'accuracy', label: 'Ketepatan', value: percent(t.accuracy) },
   ]
 })
+
+// One tile grid for both sets: no lone tile on the last row at any width.
+const layout = computed(() => tileLayout(items.value.length))
 </script>
 
 <template>
-  <DsGrid
-    gap="sm"
-    :cols="kind === 'main' ? { base: 2, md: 3, lg: 6 } : { base: 3 }"
-    :data-testid="`profile-tiles-${kind}`"
-  >
-    <UCard v-for="tile in items" :key="tile.key" :data-testid="`profile-tile-${tile.key}`">
+  <DsGrid gap="sm" :tiles="items.length" :data-testid="`profile-tiles-${kind}`">
+    <UCard
+      v-for="(tile, i) in items"
+      :key="tile.key"
+      :class="layout.span[i]"
+      :data-testid="`profile-tile-${tile.key}`">
       <DsStack gap="none">
         <DsText variant="heading" align="center" data-testid="profile-tile-value">{{ tile.value }}</DsText>
         <DsText variant="caption" align="center" wrap="anywhere" data-testid="profile-tile-label">{{ tile.label }}</DsText>

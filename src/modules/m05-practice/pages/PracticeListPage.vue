@@ -13,7 +13,7 @@ import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
+import { DsCharacterCard, DsGrid, DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchPracticeSubjects } from '../api/practice'
@@ -64,7 +64,7 @@ watch(
         </DsCharacterCard>
       </RouterLink>
 
-      <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3" data-testid="subject-grid">
+      <DsGrid as="ul" :balanced="3" gap="md" data-testid="subject-grid">
         <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
           <RouterLink
             :to="`/practice/${s.code}`"
@@ -109,7 +109,7 @@ watch(
             </UCard>
           </RouterLink>
         </li>
-      </ul>
+      </DsGrid>
     </template>
 
     <DsLoadError

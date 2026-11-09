@@ -236,7 +236,7 @@ function goToPage(page: number): void {
       <!-- Subject pills: counts ignore the active subject (OBSERVED). -->
       <nav
         v-if="facets.subjects.length > 0 || applied.subject !== undefined"
-        class="flex flex-wrap gap-2"
+        class="flex flex-nowrap gap-2 overflow-x-auto"
         aria-label="Subjek video"
         data-testid="video-subject-pills"
       >
@@ -247,7 +247,7 @@ function goToPage(page: number): void {
           color="neutral"
           variant="outline"
           size="sm"
-          class="min-h-11"
+          class="min-h-11 shrink-0"
           data-testid="video-subject-pill"
           :data-subject-id="s.id"
           >{{ s.name }} <span class="tabular">({{ s.count }})</span></UButton

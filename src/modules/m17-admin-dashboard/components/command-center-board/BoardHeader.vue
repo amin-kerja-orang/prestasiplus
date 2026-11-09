@@ -12,7 +12,7 @@ defineProps<{ school: boolean }>()
 </script>
 
 <template>
-  <header class="flex min-w-0 flex-col gap-3" data-testid="cc-s2-header">
+  <header class="contents" data-testid="cc-s2-header">
     <DsPageHeader
       :title="S2_COPY.title"
       :subtitle="school ? S2_COPY.schoolSub : undefined"

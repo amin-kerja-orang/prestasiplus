@@ -459,9 +459,11 @@ const HIDE_BELOW = {
   xl: { [META_CLASS]: { th: 'hidden xl:table-cell', td: 'hidden xl:table-cell' } },
   '2xl': { [META_CLASS]: { th: 'hidden 2xl:table-cell', td: 'hidden 2xl:table-cell' } },
 }
+/** The name / e-mail column takes the slack of the row, so the other columns hug their content. */
+const NAME_COL = { [META_CLASS]: { th: 'w-full', td: 'w-full' } }
 const COLUMNS: TableColumn<UserRow>[] = [
   { id: 'select', header: '' },
-  { id: 'name', header: 'Nama' },
+  { id: 'name', header: 'Nama', meta: NAME_COL },
   { id: 'phone', header: 'Telefon', meta: HIDE_BELOW.xl },
   { id: 'role', header: 'Peranan' },
   { id: 'school', header: 'Sekolah' },
@@ -478,28 +480,31 @@ const COLUMNS: TableColumn<UserRow>[] = [
     data-testid="users-page"
   >
     <template #actions>
-      <UButton
-        to="/admin/import-students"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-file-arrow-up"
-        label="Import Pelajar"
-        data-testid="users-import-students"
-      />
-      <UButton
-        to="/admin/users/bulk-import"
-        color="neutral"
-        variant="soft"
-        icon="i-ph-users-three"
-        label="Import Pengguna"
-        data-testid="users-import-users"
-      />
-      <UButton
-        to="/admin/users/create"
-        icon="i-ph-user-plus"
-        label="Tambah"
-        data-testid="users-add"
-      />
+      <!-- One wrapping row of natural-width buttons (the header would stack them full width below sm). -->
+      <DsCluster gap="sm">
+        <UButton
+          to="/admin/import-students"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-file-arrow-up"
+          label="Import Pelajar"
+          data-testid="users-import-students"
+        />
+        <UButton
+          to="/admin/users/bulk-import"
+          color="neutral"
+          variant="soft"
+          icon="i-ph-users-three"
+          label="Import Pengguna"
+          data-testid="users-import-users"
+        />
+        <UButton
+          to="/admin/users/create"
+          icon="i-ph-user-plus"
+          label="Tambah"
+          data-testid="users-add"
+        />
+      </DsCluster>
     </template>
 
     <UserStatCards :counts="counts" :active-role="applied.role" />
@@ -511,7 +516,8 @@ const COLUMNS: TableColumn<UserRow>[] = [
       icon="hourglass"
       data-testid="users-pending-banner"
     >
-      <DsCluster gap="sm">
+      <!-- Text and link share one line box, so the icon, the text and the link sit on one centre line. -->
+      <div>
         <DsText variant="body" as="span" data-testid="users-pending-text"
           ><DsText variant="body" as="strong" data-testid="users-pending-count">{{
             pendingCount
@@ -519,13 +525,14 @@ const COLUMNS: TableColumn<UserRow>[] = [
           akaun menunggu kelulusan — belum boleh log masuk.</DsText
         >
         <UButton
-          :to="pendingLink"
-          color="warning"
-          variant="link"
-          label="Semak & luluskan"
+        :to="pendingLink"
+        color="warning"
+        variant="link"
+        label="Semak & luluskan"
+          class="ms-3 inline-flex min-h-0 p-0"
           data-testid="users-pending-review"
         />
-      </DsCluster>
+      </div>
     </DsCallout>
 
     <DsFilterBar
@@ -679,7 +686,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
           :email="row.original.email"
           :src="row.original.avatarUrl"
           :initials="initialsOf(row.original.name)"
-          class="max-w-44 xl:max-w-60"
+          class="max-w-56 xl:max-w-80"
         />
       </template>
       <template #phone-cell="{ row }">
@@ -694,7 +701,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #school-cell="{ row }">
-        <span class="block max-w-52 whitespace-normal" data-testid="user-school">{{
+        <span class="block max-w-52 min-w-28 whitespace-normal" data-testid="user-school">{{
           row.original.school?.name || '-'
         }}</span>
       </template>

@@ -141,9 +141,9 @@ const trendSeries = computed(() => [
         </DsGridItem>
       </DsGrid>
 
-      <DsGrid :cols="{ base: 1, md: 2, xl: 12 }" gap="md">
+      <DsGrid :cols="{ base: 1, md: 2, xl: 12 }" gap="md" :equal-height="false">
         <DsGridItem :span="{ xl: 3 }">
-          <DsPanel title="Taburan Status Soalan" as="section" stretch data-testid="adm-an-status">
+          <DsPanel title="Taburan Status Soalan" as="section" data-testid="adm-an-status">
             <DsStack as="ul" gap="sm">
               <DsListRow
                 v-for="r in statusRows.rows"
@@ -159,7 +159,7 @@ const trendSeries = computed(() => [
         </DsGridItem>
 
         <DsGridItem :span="{ xl: 3 }">
-          <DsPanel title="Top 10 Subjek Aktif" as="section" stretch data-testid="adm-an-subjects">
+          <DsPanel title="Top 10 Subjek Aktif" as="section" data-testid="adm-an-subjects">
             <DsStack as="ul" gap="sm">
               <DsListRow
                 v-for="(s, i) in topSubjects"
@@ -173,7 +173,7 @@ const trendSeries = computed(() => [
         </DsGridItem>
 
         <DsGridItem :span="{ xl: 3 }">
-          <DsPanel title="Soalan Mengikut Tahap Pendidikan" as="section" stretch data-testid="adm-an-levels">
+          <DsPanel title="Soalan Mengikut Tahap Pendidikan" as="section" data-testid="adm-an-levels">
             <DsStack as="ul" gap="sm">
               <DsListRow
                 v-for="l in data.bank.byLevel"
@@ -186,7 +186,21 @@ const trendSeries = computed(() => [
         </DsGridItem>
 
         <DsGridItem :span="{ xl: 3 }">
-          <DsPanel title="Top Sekolah" as="section" stretch data-testid="adm-an-schools">
+          <DsPanel title="Mood Pelajar" as="section" data-testid="adm-an-mood">
+            <DsStack as="ul" gap="sm">
+              <DsListRow
+                v-for="b in data.mood.breakdown"
+                :key="b.key"
+                :title="b.label"
+                :meta="n(b.count)"
+                :data-testid="`adm-an-mood-${b.key}`"
+              />
+            </DsStack>
+          </DsPanel>
+        </DsGridItem>
+
+        <DsGridItem :span="{ xl: 4 }">
+          <DsPanel title="Top Sekolah" as="section" data-testid="adm-an-schools">
             <DsEmptyState
               v-if="data.topSchools.length === 0"
               size="sm"
@@ -198,14 +212,17 @@ const trendSeries = computed(() => [
                 :key="s.schoolId"
                 :rank="i + 1"
                 :title="s.school"
-                :meta="`${n(s.answered)} soalan dijawab`"
-              />
+              >
+                <template #meta>
+                  <span class="whitespace-nowrap">{{ n(s.answered) }} soalan dijawab</span>
+                </template>
+              </DsListRow>
             </DsStack>
           </DsPanel>
         </DsGridItem>
 
         <DsGridItem :span="{ xl: 4 }">
-          <DsPanel title="Pelajar Teratas" as="section" stretch data-testid="adm-an-students">
+          <DsPanel title="Pelajar Teratas" as="section" data-testid="adm-an-students">
             <DsEmptyState
               v-if="data.topStudents.length === 0"
               size="sm"
@@ -224,22 +241,8 @@ const trendSeries = computed(() => [
           </DsPanel>
         </DsGridItem>
 
-        <DsGridItem :span="{ xl: 4 }">
-          <DsPanel title="Mood Pelajar" as="section" stretch data-testid="adm-an-mood">
-            <DsStack as="ul" gap="sm">
-              <DsListRow
-                v-for="b in data.mood.breakdown"
-                :key="b.key"
-                :title="b.label"
-                :meta="n(b.count)"
-                :data-testid="`adm-an-mood-${b.key}`"
-              />
-            </DsStack>
-          </DsPanel>
-        </DsGridItem>
-
         <DsGridItem :span="{ md: 2, xl: 4 }">
-          <DsPanel title="Laporan Soalan" as="section" stretch data-testid="adm-an-reports">
+          <DsPanel title="Laporan Soalan" as="section" data-testid="adm-an-reports">
             <DsStack as="ul" gap="sm">
               <DsListRow
                 title="Baru"

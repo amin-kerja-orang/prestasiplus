@@ -53,7 +53,7 @@ const recent = computed(() =>
       <S11Hero :wallet="dashboard.data.value.wallet" />
       <WalletTiles :wallet="dashboard.data.value.wallet" />
 
-      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+      <div class="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-5">
         <S11ChallengesCard :challenges="dashboard.data.value.challenges.slice(0, 4)" />
         <S11RecentCard :rows="recent" />
       </div>
@@ -67,8 +67,10 @@ const recent = computed(() =>
         :current-key="dashboard.data.value.wallet.tier.key"
       />
 
+      <div class="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
       <DsCharacterCard
         v-if="dashboard.data.value.wallet.nextTitle"
+        class="h-full"
         accent="win"
         icon="medal"
         title="Gelaran Seterusnya"
@@ -90,14 +92,19 @@ const recent = computed(() =>
         </div>
       </DsCharacterCard>
 
-      <RouterLink to="/gamification/kad-kongsi" class="block min-h-11" data-testid="s11-share-link">
+      <RouterLink
+        to="/gamification/kad-kongsi"
+        class="block min-h-11"
+        :class="dashboard.data.value.wallet.nextTitle ? '' : 'md:col-span-2'" data-testid="s11-share-link">
         <DsCharacterCard
+          class="h-full"
           accent="friend"
           icon="share-network"
           title="Kad Kongsi"
           description="Kongsi pencapaian anda di WhatsApp!"
         />
       </RouterLink>
+      </div>
     </template>
   </DsPage>
 </template>

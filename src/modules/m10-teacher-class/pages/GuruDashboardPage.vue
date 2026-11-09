@@ -14,6 +14,7 @@ import {
   DsPage,
   DsPanel,
   DsStack,
+  DsListRow,
   DsStatRow,
   DsText,
   type DsAccent,
@@ -243,9 +244,13 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
             </p>
             <!-- PROPOSED layout (FN-M10-2.1.7): one line per own class. -->
             <ul v-else class="mt-3 flex flex-col gap-2" data-testid="classes-list">
-              <li v-for="c in data.classes" :key="c.id" class="min-w-0" data-testid="classes-item">
-                {{ c.name }} · {{ c.studentCount }} pelajar
-              </li>
+              <DsListRow
+                v-for="c in data.classes"
+                :key="c.id"
+                :title="`${c.name} · ${c.studentCount} pelajar`"
+                density="tight"
+                data-testid="classes-item"
+              />
             </ul>
           </DsPanel>
         </div>

@@ -233,18 +233,18 @@ async function deleteSet(id: string, status: string): Promise<void> {
     </template>
 
     <DsPanel>
-      <div class="grid gap-6 lg:grid-cols-2">
+      <div class="flex flex-col gap-6">
         <div class="flex flex-col gap-1">
           <p class="text-caption text-muted">{{ t.introKicker }}</p>
           <h2 class="text-heading text-highlighted">{{ t.introTitle }}</h2>
           <p class="text-body text-muted">{{ t.introText }}</p>
         </div>
-        <form class="flex flex-col gap-3" data-testid="blank-form" novalidate @submit.prevent="startBlank">
-          <h3 class="text-subheading text-highlighted">{{ t.blankTitle }}</h3>
-          <UFormField :label="t.blankTitleField" required :error="blankTitleError">
+        <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="blank-form" novalidate @submit.prevent="startBlank">
+          <h3 class="text-subheading text-highlighted sm:col-span-full">{{ t.blankTitle }}</h3>
+          <UFormField :label="t.blankTitleField" required :error="blankTitleError" class="sm:col-span-full">
             <UInput v-model="blankTitle" class="w-full" data-testid="blank-title" @update:model-value="((blankTitleEdited = true), (blankTitleServerError = undefined))" />
           </UFormField>
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div class="contents">
             <UFormField :label="t.subject" required :error="blankSubjectError">
               <DsNativeSelect v-model="blankSubject" :aria-label="t.subject" data-testid="blank-subject">
                 <option value="">{{ t.blankSubjectPlaceholder }}</option>
@@ -265,7 +265,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
             type="submit"
             icon="i-ph-plus"
             :label="t.blankTitle"
-            class="min-h-11 self-start"
+            class="min-h-11 self-start sm:col-span-full sm:justify-self-start"
             :loading="blankBusy"
             :disabled="!!setTitleError(blankTitle)"
             data-testid="blank-submit"
@@ -370,7 +370,7 @@ async function deleteSet(id: string, status: string): Promise<void> {
           </div>
         </form>
 
-        <aside class="flex flex-col gap-2 rounded-lg bg-muted p-4" aria-labelledby="pool-title" data-testid="pool-aside">
+        <aside class="flex flex-col gap-2 self-start rounded-lg bg-muted p-4 sm:p-5" aria-labelledby="pool-title" data-testid="pool-aside">
           <h3 id="pool-title" class="text-subheading text-highlighted">{{ t.poolTitle }}</h3>
           <template v-if="pool">
             <p class="text-body" data-testid="pool-available">{{ pool.groupTotal ? `${t.poolAvailable(pool.eligibleTotal)} · ${t.poolGroups(pool.groupTotal)}` : t.poolAvailable(pool.eligibleTotal) }}</p>

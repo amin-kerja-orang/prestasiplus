@@ -17,6 +17,7 @@ import {
   DsDefinitionList,
   DsDialog,
   DsEmptyState,
+  DsFilterBar,
   DsFormField,
   DsLoadError,
   DsNativeSelect,
@@ -240,14 +241,17 @@ async function changeStatus(value: unknown): Promise<void> {
     data-testid="tq-page"
   >
     <template v-if="data">
-      <DsFormField label="Peranan" name="role">
-        <DsNativeSelect
-          :model-value="role"
-          :items="[...ROLE_FILTER_ITEMS]"
-          data-testid="tq-role"
-          @update:model-value="chooseRole"
-        />
-      </DsFormField>
+      <!-- The role applies on change (as before); "Cari" re-runs the same query. -->
+      <DsFilterBar :show-reset="false" data-testid="tq-filter" @apply="reload">
+        <DsFormField label="Peranan" name="role">
+          <DsNativeSelect
+            :model-value="role"
+            :items="[...ROLE_FILTER_ITEMS]"
+            data-testid="tq-role"
+            @update:model-value="chooseRole"
+          />
+        </DsFormField>
+      </DsFilterBar>
       <div data-testid="tq-chips">
         <DsPillNav
           :items="chipItems"

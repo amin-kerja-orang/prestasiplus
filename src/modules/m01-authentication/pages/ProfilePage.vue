@@ -127,7 +127,7 @@ onMounted(() => {
   <DsStack v-if="user" as="section" gap="section" class="mx-auto w-full max-w-3xl" data-testid="profile-page">
     <UCard data-testid="profile-hero">
       <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
-        <div class="relative shrink-0">
+        <div class="relative mt-1 shrink-0">
           <UAvatar
             :src="user.avatarUrl || undefined"
             :alt="user.avatarUrl ? 'Avatar' : user.name"
@@ -139,7 +139,7 @@ onMounted(() => {
             color="warning"
             variant="solid"
             size="lg"
-            class="absolute -end-1 -bottom-1"
+            class="absolute -end-3 -bottom-2"
             aria-hidden="true"
             data-testid="profile-crown"
           />

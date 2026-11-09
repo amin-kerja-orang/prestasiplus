@@ -660,9 +660,9 @@ function openRow(row: Item): void {
           </DsCluster>
         </template>
         <template #email-cell="{ row }">
-          <span class="block truncate" :title="row.original.email" data-testid="user-email">{{
-            row.original.email
-          }}</span>
+          <span class="block break-words" :title="row.original.email" data-testid="user-email">{{
+            row.original.email.split('@')[0]
+          }}<wbr /><template v-if="row.original.email.includes('@')">@{{ row.original.email.split('@').slice(1).join('@') }}</template></span>
         </template>
         <template #phone-cell="{ row }">
           <span class="text-nowrap" data-testid="user-phone">{{ row.original.phone }}</span>

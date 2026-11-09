@@ -275,7 +275,7 @@ async function submit(): Promise<void> {
         />
       </form>
 
-      <aside class="flex min-w-0 flex-col gap-6">
+      <aside class="flex min-w-0 flex-col gap-6 xl:sticky xl:top-4">
         <DsPanel padding="none" data-testid="student-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <div class="flex items-center gap-4">

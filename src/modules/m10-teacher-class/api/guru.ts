@@ -393,7 +393,8 @@ export async function deleteTeacherMission(id: string): Promise<{ deleted: numbe
 
 /** S6-T19 `GET /api/guru/databank/overview` (R1-GUR-44d): totals and the Teras / Elektif subject tiles. */
 export function fetchDatabankOverview(options: Signal = {}): Promise<DatabankOverview> {
-  return api.get<DatabankOverview>('/api/guru/databank/overview', withSignal(options))
+  // `raw`: the body is `{ data: {...} }` and the page reads `.data`; the client would unwrap the envelope.
+  return api.get<DatabankOverview>('/api/guru/databank/overview', { raw: true, ...withSignal(options) })
 }
 
 /** S6-T19 `GET /api/guru/databank/questions`: 20 units per page, a stimulus group is one unit. */

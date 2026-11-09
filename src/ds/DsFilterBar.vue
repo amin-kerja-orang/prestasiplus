@@ -129,7 +129,7 @@ function reset(): void {
       </div>
     </template>
     <template v-else>
-      <div class="min-w-0 flex-1 basis-40"><slot name="search" /></div>
+      <div v-if="$slots.search" class="min-w-0 flex-1 basis-40"><slot name="search" /></div>
       <UChip :show="count > 0" :text="count" color="primary">
         <UButton
           type="button"
@@ -168,6 +168,10 @@ function reset(): void {
           </div>
         </template>
       </UDrawer>
+      <!-- The caller's actions stay on the page below md too (they are not filters). -->
+      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2" data-ds="filter-actions">
+        <slot name="actions" />
+      </div>
     </template>
     <DsActiveFilters
       v-if="chips && chips.length"

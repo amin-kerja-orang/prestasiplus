@@ -35,10 +35,11 @@ const layout = tileLayout(5)
     data-testid="dash-stats"
   >
     <li class="min-w-0" :class="layout.span[0]" data-testid="dash-stat-coins">
-      <DsStatTile :value="coins" unit="Syiling Kamu" icon="coins" accent="win" />
+      <DsStatTile class="h-full" :value="coins" unit="Syiling Kamu" icon="coins" accent="win" />
     </li>
-    <li class="min-w-0" :class="layout.span[1]" data-testid="dash-stat-points">
+    <li class="relative min-w-0" :class="layout.span[1]" data-testid="dash-stat-points">
       <DsStatTile
+        class="h-full pb-8"
         :value="points"
         :unit="`Mata (Lvl ${wallet.level})`"
         icon="lightning"
@@ -48,16 +49,17 @@ const layout = tileLayout(5)
         :model-value="wallet.levelProgressPct"
         :max="100"
         size="sm"
-        class="mt-2"
+        class="absolute inset-x-4 bottom-3 w-auto!"
         aria-label="Kemajuan tahap"
         data-testid="dash-level-bar"
       />
     </li>
     <li class="min-w-0" :class="layout.span[2]" data-testid="dash-stat-streak">
-      <DsStatTile :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
+      <DsStatTile class="h-full" :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
     </li>
     <li class="min-w-0" :class="layout.span[3]" data-testid="dash-stat-sessions">
       <DsStatTile
+        class="h-full"
         :value="sessions"
         unit="Sesi Minggu Ini"
         icon="books"
@@ -66,6 +68,7 @@ const layout = tileLayout(5)
     </li>
     <li class="min-w-0" :class="layout.span[4]" data-testid="dash-stat-accuracy">
       <DsStatTile
+        class="h-full"
         :value="accuracyText"
         unit="Ketepatan"
         icon="star"

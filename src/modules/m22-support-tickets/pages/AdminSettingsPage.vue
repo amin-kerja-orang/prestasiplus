@@ -69,30 +69,49 @@ async function save(): Promise<void> {
           data-testid="st-flash"
         />
         <DsCallout v-if="formError" tone="error" :title="formError" data-testid="st-error" />
-        <DsFormSection title="Hubungi Sokongan">
+        <DsFormSection title="Hubungi Sokongan" :columns="2">
           <DsFormField label="E-mel sokongan" name="email" :error="fields.email">
-            <UInput v-model="email" type="text" inputmode="email" maxlength="120" data-testid="st-email" />
+            <UInput
+              v-model="email"
+              type="text"
+              inputmode="email"
+              maxlength="120"
+              class="w-full"
+              data-testid="st-email"
+            />
           </DsFormField>
           <DsFormField
             label="Telefon / WhatsApp sokongan"
             name="whatsapp"
             :error="fields.whatsapp"
           >
-            <UInput v-model="whatsapp" type="text" inputmode="tel" data-testid="st-whatsapp" />
+            <UInput
+              v-model="whatsapp"
+              type="text"
+              inputmode="tel"
+              class="w-full"
+              data-testid="st-whatsapp"
+            />
           </DsFormField>
-          <DsFormField label="Waktu perkhidmatan" name="hours" :error="fields.hours">
+          <DsFormField
+            label="Waktu perkhidmatan"
+            name="hours"
+            :error="fields.hours"
+            class="sm:col-span-2"
+          >
             <UInput
               v-model="hours"
               type="text"
               maxlength="120"
+              class="w-full"
               placeholder="Isnin - Jumaat, 9 pagi - 5 petang"
               data-testid="st-hours"
             />
           </DsFormField>
+          <template #footer>
+            <UButton type="submit" label="Simpan Tetapan" :loading="saving" data-testid="st-save" />
+          </template>
         </DsFormSection>
-        <DsStack align="start">
-          <UButton type="submit" label="Simpan Tetapan" :loading="saving" data-testid="st-save" />
-        </DsStack>
       </DsStack>
     </DsStateView>
   </DsPage>

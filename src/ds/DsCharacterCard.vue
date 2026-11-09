@@ -74,6 +74,9 @@ const tint = computed<DsAccent>(
         <slot />
       </div>
     </div>
+    <div v-if="$slots.below" class="relative">
+      <slot name="below" />
+    </div>
     <UButton
       v-if="ctaLabel"
       :color="tint === 'action' ? 'primary' : 'neutral'"

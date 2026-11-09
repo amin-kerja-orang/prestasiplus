@@ -32,7 +32,8 @@ const line = computed(() =>
     description="Jom teruskan latihan hari ini! 🚀"
     data-testid="dash-hero"
   >
-    <div class="mt-2 flex items-end gap-3">
+    <template #below>
+    <div class="flex items-center gap-3">
       <DsFriendAvatar
         :friend="friend"
         mood="encouraging"
@@ -46,5 +47,6 @@ const line = computed(() =>
         {{ line }}
       </DsSpeechBubble>
     </div>
+    </template>
   </DsCharacterCard>
 </template>

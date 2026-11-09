@@ -19,13 +19,14 @@ defineProps<{
 
 <template>
   <DsPanel data-testid="today-panel">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4">
       <div class="min-w-0">
         <p class="text-overline text-muted">{{ DASH_COPY.todayLabel }}</p>
         <h2 class="text-subheading text-highlighted">{{ DASH_COPY.todayTitle }}</h2>
         <p class="mt-1 text-body text-muted">{{ DASH_COPY.todayText }}</p>
       </div>
-      <div class="grid shrink-0 grid-cols-3 gap-2" data-testid="today-counters">
+      <div class="grid grid-cols-3 gap-3" data-testid="today-counters">
         <DsPanel
           v-for="[label, n] in [
             [DASH_COPY.counterStudents, today.students.length],
@@ -34,7 +35,6 @@ defineProps<{
           ]"
           :key="label"
           tone="inset"
-          class="sm:min-w-20"
         >
           <div class="text-center">
             <p class="text-overline text-muted">{{ label }}</p>
@@ -62,7 +62,7 @@ defineProps<{
         </DsPanel>
       </DsGrid>
 
-      <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
         <DsPanel tone="inset" data-testid="today-students">
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-label text-highlighted">{{ DASH_COPY.colStudents }}</h3>
@@ -71,7 +71,7 @@ defineProps<{
           <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyStudents }}</p>
         </DsPanel>
         <DsPanel tone="inset" data-testid="today-topics">
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap items-center justify-between gap-x-3">
             <div class="min-w-0">
               <h3 class="text-label text-highlighted">{{ DASH_COPY.colTopics }}</h3>
               <DsText variant="caption">{{ DASH_COPY.topicsSub }}</DsText>
@@ -80,14 +80,14 @@ defineProps<{
               to="/analitik/kelas"
               variant="link"
               size="sm"
-              class="px-0"
+              class="shrink-0 px-0"
               data-testid="today-analytics"
               >{{ DASH_COPY.analytics }}</UButton
             >
           </div>
           <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyTopics }}</p>
         </DsPanel>
-        <DsPanel tone="inset" data-testid="today-actions">
+        <DsPanel tone="inset" class="md:col-span-2" data-testid="today-actions">
           <div class="flex items-center justify-between gap-2">
             <h3 class="text-label text-highlighted">{{ DASH_COPY.colActions }}</h3>
             <span class="text-caption text-muted">{{ DASH_COPY.ruleBased }}</span>
@@ -110,5 +110,6 @@ defineProps<{
         </DsPanel>
       </div>
     </DsStack>
+    </div>
   </DsPanel>
 </template>
