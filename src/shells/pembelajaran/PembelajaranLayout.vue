@@ -24,6 +24,7 @@ import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
 import {
   DsArt3D,
+  DsBadge,
   DsBrandLogo,
   DsConfirmHost,
   DsFriendPicker,
@@ -134,9 +135,15 @@ const sectionTabs = computed(() =>
 )
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
 useShellTabTitle(title)
+/** Sidebar headings are stored in capitals ("HARIAN"); the crumb reads in sentence case like the admin shell. */
+const sentenceCase = (t: string): string =>
+  t
+    .split(' · ')
+    .map((p) => (p === p.toUpperCase() ? p.charAt(0) + p.slice(1).toLowerCase() : p))
+    .join(' · ')
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
-  return c && c !== title.value ? c : ''
+  return c && c !== title.value ? sentenceCase(c) : ''
 })
 const initials = computed(
   () =>
@@ -232,8 +239,8 @@ const lagiGroups = computed(() => [
 const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
-    ? 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
+    ? 'h-10 pointer-coarse:h-12 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
+    : 'h-10 pointer-coarse:h-12 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
@@ -246,6 +253,8 @@ const slotById = computed(() => {
   for (const e of [...sidebar.value, ...drawer.value]) if (e.kind === 'group') m.set(e.id, chipSlot(e))
   return m
 })
+/** Text of the nav row pill ("LIVE"), when the row has one. */
+const badgeOf = (item: unknown): string | undefined => (item as { dsBadge?: string }).dsBadge
 const slotOf = (id: unknown): number => slotById.value.get(String(id)) ?? 1
 
 const chipClass = (chip: unknown, active: boolean): string =>
@@ -288,8 +297,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
           :collapsed-size="4.5"
           :ui="{
             root: modeOn ? 'bg-default min-h-0! h-full!' : 'bg-default',
-            header: 'h-16 shrink-0 px-4',
-            body: 'px-3 pt-1 pb-3',
+            header: 'h-16 shrink-0 items-center px-4 py-3',
+            body: 'gap-1 px-3 py-3',
           }"
           data-testid="pembelajaran-sidebar"
         >
@@ -297,6 +306,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <RouterLink
               :to="home"
               class="flex min-w-0 items-center gap-2"
+              :class="collapsed ? '' : 'w-full justify-center'"
               aria-label="Laman utama"
             >
               <DsBrandLogo :variant="collapsed ? 'icon' : 'full'" />
@@ -323,7 +333,16 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
+                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span
+                ><DsBadge
+                  v-if="badgeOf(item)"
+                  :label="badgeOf(item)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-1.5 px-1.5"
+                  data-testid="pembelajaran-nav-badge"
+              /></template
               >
             </UNavigationMenu>
           </template>
@@ -339,7 +358,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :toggle="false"
               :as="{ title: 'div' }"
               :ui="{
-                root: 'pt-[env(safe-area-inset-top)]',
+                root: 'px-4 pt-[env(safe-area-inset-top)] sm:px-4',
                 title: 'min-w-0',
                 right: 'gap-2',
               }"
@@ -350,6 +369,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   <UDashboardSidebarCollapse
                     color="neutral"
                     variant="ghost"
+                    size="sm"
                     aria-label="Tukar saiz menu"
                   />
                 </div>
@@ -588,7 +608,16 @@ const chipClass = (chip: unknown, active: boolean): string =>
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
+              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span
+                ><DsBadge
+                  v-if="badgeOf(item)"
+                  :label="badgeOf(item)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-1.5 px-1.5"
+                  data-testid="pembelajaran-nav-badge"
+              /></template
             >
           </UNavigationMenu>
         </template>

@@ -301,7 +301,9 @@ function leaf(item: NavItem, opts: LearnNavOptions, activeId: string | undefined
     target: item.target,
     active: item.id === activeId,
     value: item.id,
-    ...(item.badge ? { badge: item.badge.text } : {}),
+    // Not `badge`: the shell prints it inside the label row (as the admin shell does), so the pill
+    // does not take a second column that cuts "Command Center" short.
+    ...(item.badge ? { dsBadge: item.badge.text } : {}),
   }
 }
 

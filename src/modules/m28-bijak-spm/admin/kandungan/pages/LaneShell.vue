@@ -77,11 +77,11 @@ function reset(): void {
           data-testid="lane-search"
         />
       </template>
-      <DsNativeSelect v-model="draft.subjectId" aria-label="Subjek" class="md:w-44" data-testid="lane-subject">
+      <DsNativeSelect v-model="draft.subjectId" aria-label="Subjek" data-testid="lane-subject">
         <option value="">{{ laneCopy.allSubjects }}</option>
         <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
       </DsNativeSelect>
-      <DsNativeSelect v-if="statuses" v-model="draft.status" aria-label="Status" class="md:w-44" data-testid="lane-status">
+      <DsNativeSelect v-if="statuses" v-model="draft.status" aria-label="Status" data-testid="lane-status">
         <option value="">{{ laneCopy.allStatuses }}</option>
         <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
       </DsNativeSelect>

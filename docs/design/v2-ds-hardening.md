@@ -914,3 +914,16 @@ Deviations from the spec text: the full-`i-ph-*` icon check of R13 is reported b
 | 5 forms, imports, selectors | 70 | 1819 |
 | 6 detail and print | 8 | 698 |
 | 7 shell | 5 | 106 |
+
+## 12. Alignment and focus rules fixed at the source (2026-11-09)
+
+Product-owner approved; one change in the shared theme corrects every screen.
+
+- **One focus indicator on fields.** Input, Textarea, Select, SelectMenu, InputMenu, InputNumber... show only the inset 2px primary ring (`filled` in `ui.config.ts`). The global outline in `ds-extras.css` skips any element carrying `focus-visible:ring-inset`. Menu and listbox rows show focus as the highlighted fill, never an outline.
+- **Menu rows (dropdown, select, select menu, input menu, command palette).** `px-3 py-2`, gap 2.5, `text-label` (14px staff, 15px learner), highlight fill `bg-elevated`; the label/heading row uses the same `px-3`, so headings and icons share a left edge. Nuxt UI applies size variants after slot classes, so these live in `menuVariants` (size and `active`) in `ui/components.ts`, never only in slots. Rule: any slot padding, text or gap override goes in the size variants.
+- **Icon-only buttons are square** (`square: true` compound variants in `ui.config.ts`): 44px, 40px from `md` (staff); learner md 52px, lg 56px. Pager controls and `DsRowActions` use the same footprint.
+- **Modal and slide-over.** Header `px-6 pt-6 pb-0`, body `px-6 py-4`, footer `px-6 pb-6 pt-0`. The close X is centred on the title row and its glyph sits on the 24px content edge.
+- **Filter bar.** From `md` one grid track (`repeat(auto-fill, minmax(11rem, 1fr))`, gap 12px), search spans two tracks, panel padding `p-4 md:p-5`; no per-field widths in pages.
+- **Badge** never spills out of its pill: the label truncates (full text in `title`); a table column holding a badge must be wide enough for its text.
+- **Callout** icon sits in a box as tall as the first text line. **Stat tile**: the chip is pinned to the first line on every staff tile (`items-start`); default density padding is `p-4`.
+- **Doughnut charts** centre their legend. **Shell navbars** use sentence-case crumbs and horizontal padding equal to the page gutter.

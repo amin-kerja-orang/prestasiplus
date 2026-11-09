@@ -14,12 +14,20 @@
  */
 
 import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
-import { componentDefaults, disabledState, focusRing, selectSlots } from './ui/components.ts'
+import {
+  componentDefaults,
+  disabledState,
+  focusRing,
+  menuSizeVariants,
+  menuVariants,
+  selectSlots,
+} from './ui/components.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled = [
   'bg-elevated text-highlighted placeholder:text-dimmed transition-colors duration-fast',
-  'hover:bg-accented focus:bg-elevated focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+  // Focus is exactly one indicator: this inset ring. The global outline in ds-extras.css skips fields.
+  'hover:bg-accented focus:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
   // disabled: one token; invalid: error fill + ring; read-only: flat soft layer, no hover.
   'disabled:cursor-not-allowed disabled:opacity-(--ds-disabled-opacity) disabled:hover:bg-elevated',
   'aria-invalid:bg-error-field aria-invalid:ring-2 aria-invalid:ring-inset aria-invalid:ring-error',
@@ -38,6 +46,15 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 const pagerButton =
   'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
 
+const squareStaff = 'justify-center p-0 size-11 min-h-11 min-w-11 staff:md:size-10 staff:md:min-h-10 staff:md:min-w-10'
+const squareButton = {
+  xs: squareStaff,
+  sm: squareStaff,
+  md: `${squareStaff} learner:size-13 learner:min-h-13 learner:min-w-13`,
+  lg: 'justify-center p-0 size-12 min-h-12 min-w-12 learner:size-14 learner:min-h-14 learner:min-w-14',
+  xl: squareStaff,
+}
+
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
@@ -55,6 +72,17 @@ const fieldConfig = {
 /** Closed field plus its popup list (item states, checked, empty, group labels). */
 const menuField = {
   ...fieldConfig,
+  variants: {
+    ...fieldConfig.variants,
+    ...menuVariants,
+    // Closed-field metrics and the popup row metrics both live in the size variants (they win over stock).
+    size: Object.fromEntries(
+      Object.keys(menuSizeVariants).map((k) => [
+        k,
+        { ...menuSizeVariants[k], ...(k === 'md' || k === 'lg' ? { base: fieldSize } : {}) },
+      ]),
+    ),
+  },
   slots: {
     ...fieldConfig.slots,
     ...selectSlots,
@@ -192,6 +220,13 @@ export const uiConfig = {
       },
     },
     compoundVariants: [
+      // Icon-only buttons are true squares: 44px (40px from md) on staff, the learner height scale for
+      // md/lg. Same footprint as a pager control and DsRowActions.
+      ...(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => ({
+        square: true,
+        size,
+        class: squareButton[size],
+      })),
       { variant: ['outline', 'subtle'], class: 'ring-0' },
       {
         color: ['primary', 'neutral'],
@@ -344,9 +379,12 @@ export const uiConfig = {
     slots: {
       overlay: 'z-50 bg-overlay',
       content: 'z-50 divide-y-0',
-      header: 'p-5',
-      body: 'p-5',
-      footer: 'p-5',
+      // One rhythm: title row 24px from the edges, 16px to the body, footer 24px from the bottom. The
+      // close X is centred on the title row and its glyph sits on the 24px content edge.
+      header: 'min-h-0 px-6 pt-6 pb-0',
+      body: 'px-6 py-4 sm:px-6 sm:py-4',
+      footer: 'px-6 pb-6 pt-0',
+      close: 'top-4 end-3 staff:md:end-3.5',
       title: 'text-heading text-highlighted',
       description: 'text-body text-muted',
     },
@@ -356,7 +394,14 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: {
+      overlay: 'z-50 bg-overlay',
+      content: 'z-50 divide-y-0 shadow-modal ring-0',
+      header: 'min-h-0 px-6 pt-6 pb-0',
+      body: 'px-6 py-4 sm:px-6 sm:py-4',
+      footer: 'px-6 pb-6 pt-0',
+      close: 'top-4 end-3 staff:md:end-3.5',
+    },
   },
   drawer: {
     slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },

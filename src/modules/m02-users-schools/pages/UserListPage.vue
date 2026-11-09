@@ -554,7 +554,6 @@ const COLUMNS: TableColumn<UserRow>[] = [
         v-model="role"
         name="role"
         aria-label="Peranan"
-        class="md:w-44"
         data-testid="users-role"
       >
         <option value="">Semua Peranan</option>
@@ -567,7 +566,6 @@ const COLUMNS: TableColumn<UserRow>[] = [
         v-model="school"
         name="school"
         aria-label="Sekolah"
-        class="md:w-52"
         data-testid="users-school"
       >
         <option value="">Semua Sekolah</option>
@@ -578,7 +576,6 @@ const COLUMNS: TableColumn<UserRow>[] = [
         v-model="status"
         name="is_active"
         aria-label="Status"
-        class="md:w-36"
         data-testid="users-status"
       >
         <option value="">Semua</option>

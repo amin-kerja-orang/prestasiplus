@@ -550,12 +550,12 @@ onBeforeUnmount(() => window.removeEventListener('resize', remeasure))
 const META_CLASS = 'class'
 const cellClass = (th: string, td = th): { meta: Record<string, unknown> } => ({ meta: { [META_CLASS]: { th, td } } })
 const columns: TableColumn<TableRow>[] = [
-  { accessorKey: 'no', header: 'No.', ...cellClass('w-16') },
+  { accessorKey: 'no', header: 'No.', ...cellClass('w-28') },
   { accessorKey: 'stem', header: 'Soalan', ...cellClass('min-w-48') },
   { accessorKey: 'kertas', header: 'Kertas', ...cellClass('hidden lg:table-cell w-40') },
   { accessorKey: 'sumber', header: 'Sumber', ...cellClass('hidden lg:table-cell w-24') },
-  { id: 'status', header: 'Status', ...cellClass('w-36') },
-  { id: 'actions', header: ' ', ...cellClass('w-36 text-end', 'w-36') },
+  { id: 'status', header: 'Status', ...cellClass('w-44') },
+  { id: 'actions', header: ' ', ...cellClass('w-52') },
 ]
 const cardFields: CardField[] = [
   { key: 'kertas', label: 'Kertas' },
@@ -605,7 +605,7 @@ const cardFields: CardField[] = [
             <UInput v-model="draft.search" type="text" name="search" placeholder="Cari soalan..." aria-label="Cari" icon="i-ph-magnifying-glass" class="w-full" data-testid="studio-search" />
           </div>
         </template>
-        <div class="w-full min-w-0 md:w-48">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-subject" v-model="draft.subject_id" name="subject_id" aria-label="Subjek" data-testid="studio-subject-filter">
             <option value="">Semua subjek</option>
             <option v-for="s in subjectOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
@@ -619,31 +619,31 @@ const cardFields: CardField[] = [
           <option value="">Semua</option>
           <option v-for="o in DSKP_TAG_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </DsNativeSelect>
-        <div class="w-full min-w-0 md:w-48">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-status-filter" v-model="draft.status" name="status" aria-label="Status" data-testid="studio-status-filter">
             <option value="">Semua status</option>
             <option v-for="s in STATUS_ORDER" :key="s" :value="s">{{ statusBadge(s) }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-32">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-tahun-filter" v-model="draft.tahun" name="tahun" aria-label="Tahun" data-testid="studio-tahun-filter">
             <option value="">Semua Tahun</option>
             <option v-for="y in tahunOptions" :key="y" :value="y">{{ y }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-48">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-negeri-filter" v-model="draft.negeri" name="negeri" aria-label="Negeri" data-testid="studio-negeri-filter">
             <option value="">Semua Negeri</option>
             <option v-for="n in negeriOptions" :key="n" :value="n">{{ n }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-44">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-kertas-filter" v-model="draft.kertas" name="kertas" aria-label="Kertas" data-testid="studio-kertas-filter">
             <option value="">Semua kertas</option>
             <option v-for="k in KERTAS_OPTIONS" :key="k" :value="k">Kertas {{ k }}</option>
           </DsNativeSelect>
         </div>
-        <div class="w-full min-w-0 md:w-40">
+        <div class="w-full min-w-0">
           <DsNativeSelect id="studio-jenis-filter" v-model="draft.jenis" name="jenis" aria-label="Jenis" data-testid="studio-jenis-filter">
             <option value="">Semua Jenis</option>
             <option v-for="j in JENIS_OPTIONS" :key="j.value" :value="j.value">{{ j.label }}</option>
@@ -706,7 +706,7 @@ const cardFields: CardField[] = [
           </div>
         </template>
         <template #actions-cell="{ row }">
-          <DsRowActions :actions="rowActions(row.original.raw)" :inline="3" testid="studio-row-more" />
+          <DsRowActions :actions="rowActions(row.original.raw)" :inline="3" align="start" testid="studio-row-more" />
         </template>
         <template #card="{ row }">
           <DsStack gap="xs" align="start" data-testid="studio-card">
@@ -737,7 +737,7 @@ const cardFields: CardField[] = [
           </DsStack>
         </template>
         <template #card-actions="{ row }">
-          <DsRowActions :actions="rowActions((row as TableRow).raw)" :inline="3" testid="studio-row-more" />
+          <DsRowActions :actions="rowActions((row as TableRow).raw)" :inline="3" align="start" testid="studio-row-more" />
         </template>
       </DsDataTable>
     </template>

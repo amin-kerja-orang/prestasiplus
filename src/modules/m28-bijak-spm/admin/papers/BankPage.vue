@@ -219,7 +219,6 @@ const {
       <DsNativeSelect
         v-model="draft.subject"
         aria-label="Subjek"
-        class="md:w-44"
         data-testid="bank-subject"
       >
         <option value="">Semua subjek</option>
@@ -229,7 +228,6 @@ const {
         v-if="!WIRE"
         v-model="draft.kertas"
         aria-label="Kertas"
-        class="md:w-36"
         data-testid="bank-kertas"
       >
         <option v-for="o in KERTAS_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -237,7 +235,6 @@ const {
       <DsNativeSelect
         v-model="draft.kind"
         aria-label="Jenis soalan"
-        class="md:w-40"
         data-testid="bank-kind"
       >
         <option v-for="o in KIND_ITEMS" :key="o.value" :value="o.value">{{ o.label }}</option>
@@ -245,7 +242,6 @@ const {
       <DsNativeSelect
         v-model="draft.status"
         aria-label="Status"
-        class="md:w-44"
         data-testid="bank-status"
       >
         <option value="terbit">Diterbitkan</option>

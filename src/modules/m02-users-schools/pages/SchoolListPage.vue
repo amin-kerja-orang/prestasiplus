@@ -297,7 +297,6 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         v-model="state"
         name="state"
         aria-label="Negeri"
-        class="md:w-48"
         data-testid="schools-state"
       >
         <option value="">Semua Negeri</option>
@@ -307,7 +306,6 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         v-model="type"
         name="type"
         aria-label="Jenis"
-        class="md:w-48"
         data-testid="schools-type"
       >
         <option value="">Semua Jenis</option>

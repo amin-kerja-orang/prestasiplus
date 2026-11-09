@@ -55,6 +55,7 @@ const dotClass = computed(() => (props.accent ? accentSolid[props.accent].split(
       aria-hidden="true"
     />
     <DsIcon v-if="icon" :name="icon" weight="bold" class="size-3.5 shrink-0" />
-    <slot>{{ label }}</slot>
+    <!-- Never spills out of the pill: in a column narrower than the text the label truncates (title = full text). -->
+    <span class="min-w-0 truncate" :title="label"><slot>{{ label }}</slot></span>
   </UBadge>
 </template>

@@ -289,7 +289,6 @@ const cardFields: CardField[] = [
           v-model="subject"
           name="subject"
           aria-label="Subjek"
-          class="md:w-48"
           data-testid="admin-notes-subject"
         >
           <option value="all">Semua Subjek</option>
@@ -301,7 +300,6 @@ const cardFields: CardField[] = [
           v-model="noteType"
           name="note_type"
           aria-label="Jenis"
-          class="md:w-44"
           data-testid="admin-notes-type"
         >
           <option v-for="o in NOTE_TYPE_FILTER_OPTIONS" :key="o.value" :value="o.value">

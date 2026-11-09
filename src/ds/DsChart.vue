@@ -289,7 +289,7 @@ function build(): ChartConfiguration {
       // Reduced motion: draw the final state at once (no growing bars).
       animation: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined,
       indexAxis: props.horizontal ? 'y' : 'x',
-      layout: { padding: { top: props.horizontal ? 4 : 18, right: props.horizontal ? 44 : 8 } },
+      layout: { padding: { top: props.horizontal || doughnut ? 4 : 18, right: props.horizontal ? 44 : 8 } },
       plugins: { legend: { display: false } },
       scales: doughnut
         ? {}
@@ -405,7 +405,9 @@ watch(view, async (v) => {
     </div>
     <ul
       v-if="view === 'ready'"
-      class="flex flex-wrap gap-x-4 gap-y-2" data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
+      class="flex flex-wrap gap-x-4 gap-y-2"
+      :class="type === 'doughnut' ? 'justify-center' : ''"
+      data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
       <li v-for="(l, i) in legend" :key="i" class="flex items-center gap-2 text-caption text-muted">
         <span class="size-3 shrink-0" :class="[l.swatch, shape]" aria-hidden="true" />
         {{ l.label }}

@@ -11,7 +11,7 @@
 
 /** `UDashboardSidebar` `ui`. */
 export const adminSidebarUi = {
-  header: 'relative z-10 h-16 shrink-0 justify-center bg-default px-4 shadow-bar',
+  header: 'relative z-10 h-16 shrink-0 items-center justify-center bg-default px-4 py-3 shadow-bar',
   body: 'gap-1 px-3 py-3',
   footer: 'p-2',
 } as const
@@ -20,7 +20,7 @@ export const adminSidebarUi = {
 export const adminNavUi = {
   root: 'gap-0',
   label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
-  link: 'h-10 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
+  link: 'h-10 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:before:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:font-semibold',
   linkLabel: 'truncate',
   linkTrailing: 'shrink-0',
 } as const

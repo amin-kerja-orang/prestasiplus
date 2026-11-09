@@ -243,15 +243,15 @@ function proceed(): void {
             data-testid="kontrak-search"
           />
         </template>
-        <DsNativeSelect v-model="draft.subject" aria-label="Subjek" class="md:w-44" data-testid="kontrak-subject">
+        <DsNativeSelect v-model="draft.subject" aria-label="Subjek" data-testid="kontrak-subject">
           <option value="">Semua Subjek</option>
           <option v-for="s in subjectItems" :key="s.value" :value="s.value">{{ s.label }}</option>
         </DsNativeSelect>
-        <DsNativeSelect v-model="draft.kertas" aria-label="Kertas" class="md:w-36" data-testid="kontrak-kertas">
+        <DsNativeSelect v-model="draft.kertas" aria-label="Kertas" data-testid="kontrak-kertas">
           <option value="">Semua Kertas</option>
           <option v-for="k in KERTAS_OPTIONS" :key="k" :value="String(k)">Kertas {{ k }}</option>
         </DsNativeSelect>
-        <DsNativeSelect v-model="draft.source" aria-label="Status" class="md:w-40" data-testid="kontrak-status">
+        <DsNativeSelect v-model="draft.source" aria-label="Status" data-testid="kontrak-status">
           <option value="">Semua Status</option>
           <option value="Draf">Draf</option>
           <option value="Spec">Spec</option>

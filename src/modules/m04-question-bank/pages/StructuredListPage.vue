@@ -363,7 +363,7 @@ async function resetFilter(): Promise<void> {
       @apply="submitFilter"
       @reset="resetFilter"
     >
-      <div class="w-full min-w-0 sm:w-56">
+      <div class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="structured-subject" label="Subjek">
           <DsNativeSelect
             :id="id"
@@ -378,7 +378,7 @@ async function resetFilter(): Promise<void> {
           </DsNativeSelect>
         </DsFormField>
       </div>
-      <div class="w-full min-w-0 sm:w-56">
+      <div class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="structured-level" label="Tingkatan">
           <DsNativeSelect
             :id="id"
@@ -393,7 +393,7 @@ async function resetFilter(): Promise<void> {
           </DsNativeSelect>
         </DsFormField>
       </div>
-      <div class="w-full min-w-0 sm:w-56">
+      <div class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="structured-kbat" label="KBAT">
           <DsNativeSelect :id="id" v-model="kbat" name="kbat_level" data-testid="structured-kbat">
             <option value="">Semua KBAT</option>

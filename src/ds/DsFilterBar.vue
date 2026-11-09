@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Filter bar (restyle spec 1.3, design language 9.2). From `md` the fields sit inline (staff: inside
- * one raised card; learner: directly on the page) and the `more` slot opens in a "Lagi Penapis"
+ * one raised card, one grid track per field; learner: directly on the page) and the `more` slot opens in a "Lagi Penapis"
  * popover. Below `md` the `search` slot stays inline and the other fields (default and `more`) move
  * into a bottom-sheet `UDrawer` behind a "Penapis" button with an active-count chip. Applied filters
  * can be passed as `chips` and show under the bar. Callers own the fields (and bind them to query
@@ -84,8 +84,8 @@ function reset(): void {
 
 <template>
   <form
-    class="flex flex-wrap items-end gap-x-3 gap-y-3 learner:gap-2"
-    :class="panel ? 'rounded-card bg-default p-3 shadow-card sm:p-4' : ''"
+    class="flex flex-wrap items-end gap-3"
+    :class="panel ? 'rounded-card bg-default p-4 shadow-card md:p-5' : ''"
     role="search"
     data-ds="filter-bar"
     @submit.prevent="apply"
@@ -169,7 +169,7 @@ function reset(): void {
     </template>
     <DsActiveFilters
       v-if="chips && chips.length"
-      class="w-full basis-full max-w-none!"
+      class="col-span-full w-full basis-full"
       :chips="chips"
       :reset-label="resetLabel"
       @remove="(k: string) => emit('remove-chip', k)"

@@ -172,7 +172,7 @@ const accountMenu = computed(() =>
               variant="outline"
               size="md"
               :kbds="adminSearchKbds"
-              class="h-10 w-full"
+              class="mb-2 h-10 w-full"
               :class="collapsed ? 'justify-center' : 'justify-start px-2.5 font-normal text-muted'"
               :ui="adminSearchUi"
               data-testid="pentadbiran-search"
@@ -214,7 +214,7 @@ const accountMenu = computed(() =>
                   tone="error"
                   emphasis="strong"
                   size="sm"
-                  class="ml-2"
+                  class="ml-1.5 px-1.5"
                   data-testid="pentadbiran-nav-badge"
               /></template>
             </UNavigationMenu>
@@ -230,7 +230,7 @@ const accountMenu = computed(() =>
             <UDashboardNavbar
               :toggle="false"
               :as="{ title: 'div' }"
-              :ui="{ title: 'min-w-0', right: 'gap-2' }"
+              :ui="{ root: 'px-4 sm:px-4 md:px-6', title: 'min-w-0', right: 'gap-2' }"
               data-testid="pentadbiran-header"
             >
               <template #leading>
@@ -313,7 +313,7 @@ const accountMenu = computed(() =>
                     <span aria-hidden="true">{{ initials }}</span>
                   </button>
                   <template #content-top>
-                    <div class="flex items-center gap-2.5 px-2.5 pt-2.5 pb-1.5" data-testid="pentadbiran-account-head">
+                    <div class="flex items-center gap-2.5 px-3 pt-3 pb-2" data-testid="pentadbiran-account-head">
                       <span
                         class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
                         aria-hidden="true"

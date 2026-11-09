@@ -137,7 +137,7 @@ const pageRows = computed(() => {
             placeholder="Cari soalan..."
             aria-label="Cari soalan"
             size="lg"
-            class="w-full sm:w-72"
+            class="w-full"
             :color="tooShort ? 'error' : undefined"
             :aria-invalid="tooShort"
             aria-describedby="difficulty-search-hint"
@@ -149,7 +149,7 @@ const pageRows = computed(() => {
           :items="[...SORT_OPTIONS]"
           aria-label="Susunan soalan"
           size="lg"
-          class="w-full sm:w-64"
+          class="w-full"
           data-testid="difficulty-sort"
         />
       </DsFilterBar>

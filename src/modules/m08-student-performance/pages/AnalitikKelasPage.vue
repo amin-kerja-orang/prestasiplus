@@ -227,7 +227,7 @@ const PAGE_SIZE = 25
     <template v-else-if="data">
       <div data-testid="filters">
         <DsFilterBar :active-count="activeCount" @apply="apply" @reset="reset">
-          <UFormField label="Kelas" class="min-w-0 sm:w-56" for="f-kelas">
+          <UFormField label="Kelas" class="min-w-0" for="f-kelas">
             <USelect
               id="f-kelas"
               name="classroom_id"
@@ -239,7 +239,7 @@ const PAGE_SIZE = 25
               @update:model-value="onChange('classroom_id', $event)"
             />
           </UFormField>
-          <UFormField label="Mata Pelajaran" class="min-w-0 sm:w-56" for="f-subjek">
+          <UFormField label="Mata Pelajaran" class="min-w-0" for="f-subjek">
             <USelect
               id="f-subjek"
               name="subject_id"
@@ -251,7 +251,7 @@ const PAGE_SIZE = 25
               @update:model-value="onChange('subject_id', $event)"
             />
           </UFormField>
-          <UFormField label="Risiko" class="min-w-0 sm:w-48" for="f-risiko">
+          <UFormField label="Risiko" class="min-w-0" for="f-risiko">
             <USelect
               id="f-risiko"
               name="risk_level"

@@ -106,14 +106,20 @@
   opacity: var(--ds-disabled-opacity);
 }
 
-/* Filter bar from md: fields cap their width so one select never fills the row. */
+/* Filter bar from md: one grid track per field (DsFilterBar: auto-fill, 11rem min). No width cap and no
+   per-field widths, so every field in every bar has the same width; the search field takes two tracks. */
 @media (min-width: 768px) {
-  [data-ds='filter-bar'] > * {
-    max-width: 28rem;
+  [data-ds='filter-bar'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
   }
 
-  [data-ds='filter-bar'] > [data-ds='active-filters'] {
-    max-width: none;
+  [data-ds='filter-bar'] > * {
+    min-width: 0;
+  }
+
+  [data-ds='filter-bar'] > :has(input[name='search']) {
+    grid-column: span 2;
   }
 }
 
