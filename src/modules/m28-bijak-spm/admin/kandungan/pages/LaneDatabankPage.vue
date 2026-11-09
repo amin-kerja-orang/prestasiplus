@@ -2,7 +2,7 @@
 /**
  * Lane "Databank Soalan" (`/admin/spm/databank`, V2 A2/P2, AC-R1-21.2): one bank question per row. Columns Senarai, Tajuk,
  * Perhatian, Tindakan. `Perhatian` shows the servability reasons (D94 copy, H2), not the V2 phrases. Row actions: Pratonton
- * (the V2 preview path, which redirects to the Studio Pratonton; PRD47 M-01) and Sunting.
+ * (the V2 read-only preview page `/admin/spm/soalan/:id/pratonton`) and Sunting.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
@@ -20,7 +20,7 @@ import type { ServabilityDatabankRow } from '@pp/contract'
 type Row = ServabilityDatabankRow & { no: number } & Record<string, unknown>
 
 const statusText = questionStatusLabel
-const previewPath = (questionId: string): string => `/admin/studio/questions/${questionId}/preview`
+const previewPath = (questionId: string): string => `/admin/spm/soalan/${questionId}/pratonton`
 
 const server = kandunganServer()
 const { filters, page, subjects, count, list, chips, removeChip } = useLane((q) => server.databankLane(q), statusText)

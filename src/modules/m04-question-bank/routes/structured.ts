@@ -37,6 +37,37 @@ const routes: RouteRecordRaw[] = [
       module: 'M04',
     },
   },
+  // V2 Panel Subjektif Sunting (Skema & Rubrik) and the read-only Pratonton of a bank soalan (Admin Pusat only).
+  {
+    path: '/admin/spm/subjektif/:id(\\d+)/sunting',
+    name: 'm04.structured.rubric',
+    component: () => import('../pages/StructuredRubricPage.vue'),
+    props: (route) => ({ id: String(route.params.id) }),
+    meta: {
+      layout: 'admin',
+      v2: true,
+      access: 'auth',
+      roles: ['admin'],
+      title: 'Sunting Subjektif',
+      header: { title: 'Sunting Subjektif' },
+      module: 'M04',
+    },
+  },
+  {
+    path: '/admin/spm/soalan/:id(\\d+)/pratonton',
+    name: 'm04.question.preview',
+    component: () => import('../pages/QuestionPreviewPage.vue'),
+    props: (route) => ({ id: String(route.params.id) }),
+    meta: {
+      layout: 'admin',
+      v2: true,
+      access: 'auth',
+      roles: ['admin'],
+      title: 'Pratonton Soalan',
+      header: { title: 'Pratonton Soalan' },
+      module: 'M04',
+    },
+  },
 ]
 
 export default routes

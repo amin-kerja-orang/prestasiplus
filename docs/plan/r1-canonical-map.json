@@ -779,6 +779,26 @@
       "approved_by_card": null
     },
     {
+      "key": "/admin/spm/subjektif/:id(\\d+)/sunting|m04.structured.rubric",
+      "path": "/admin/spm/subjektif/:id(\\d+)/sunting",
+      "name": "m04.structured.rubric",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/StructuredRubricPage.vue",
+      "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/spm/soalan/:id(\\d+)/pratonton|m04.question.preview",
+      "path": "/admin/spm/soalan/:id(\\d+)/pratonton",
+      "name": "m04.question.preview",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/QuestionPreviewPage.vue",
+      "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "/admin/studio|m04.studio.list",
       "path": "/admin/studio",
       "name": "m04.studio.list",

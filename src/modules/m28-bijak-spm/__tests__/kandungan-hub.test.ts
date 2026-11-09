@@ -274,17 +274,17 @@ describe('lane Databank Soalan (R1-ADM-Q-02)', () => {
     expect(q('[data-testid=lane-edit-2]')).not.toBeNull()
   })
 
-  it('offers Pratonton beside Sunting, through the V2 preview path (S2-T03)', async () => {
+  it('offers Pratonton beside Sunting, through the V2 read-only preview page (S2-T03)', async () => {
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
     const preview = q('[data-testid=lane-preview-2]')
     expect(preview?.textContent?.trim()).toBe('Pratonton')
-    expect(preview?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+    expect(preview?.getAttribute('href')).toBe('/admin/spm/soalan/2/pratonton')
   })
 
   it('offers Pratonton on the phone cards too (S2-T03)', async () => {
     media(false)
     await mountAt(LaneDatabankPage, '/admin/spm/databank')
-    expect(q('[data-testid=lane-preview-2]')?.getAttribute('href')).toBe('/admin/studio/questions/2/preview')
+    expect(q('[data-testid=lane-preview-2]')?.getAttribute('href')).toBe('/admin/spm/soalan/2/pratonton')
   })
 
   it('applies Subjek, Status and Cari with Tapis and clears them with Set Semula', async () => {
@@ -324,7 +324,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     })
   })
 
-  it('lists the reasons, "—" when none, and opens the Studio for Sunting', async () => {
+  it('lists the reasons, "—" when none, and opens the rubric editor for Sunting', async () => {
     await mountAt(LaneSubjektifPage, '/admin/spm/subjektif')
     expect(text('[data-testid=lane-count]')).toBe('2 item ·')
     const reasons = text('[data-testid=attention-41]')
@@ -333,7 +333,7 @@ describe('lane Subjektif (FR-ADM-Q23.3)', () => {
     expect(q('[data-testid=attention-42]')).toBeNull()
     expect(document.body.textContent).toContain('—')
     expect(document.body.textContent).toContain('#41 · Sejarah · Tingkatan 5 · Diluluskan')
-    expect(q('[data-testid=lane-edit-41]')?.getAttribute('href')).toBe('/admin/studio/questions/41/sunting')
+    expect(q('[data-testid=lane-edit-41]')?.getAttribute('href')).toBe('/admin/spm/subjektif/41/sunting')
     expect(q('[data-testid=lane-preview-41]')).toBeNull()
   })
 })
