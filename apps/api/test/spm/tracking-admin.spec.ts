@@ -186,6 +186,10 @@ describe('Tracking A admin', () => {
       const read = parse(await admin.get(`${ROUTE}/${two.id}`))
       expect(read.candidateItems.map((c) => c.id)).not.toContain(ids[0])
       expect(read.candidateItems.map((c) => c.id)).toContain(ids[2])
+      // V2 excludedBySibling: servable questions another set of the same subject and year holds, own members and other years left out.
+      expect(read.excludedBySibling).toBe(2)
+      expect(parse(await admin.get(`${ROUTE}/${one.id}`)).excludedBySibling).toBe(0)
+      expect(parse(await admin.get(`${ROUTE}/${other.id}`)).excludedBySibling).toBe(0)
     })
   })
 

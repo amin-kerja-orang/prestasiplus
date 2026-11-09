@@ -127,6 +127,7 @@ export function createMockKandungan(): KandunganApi {
       attention: filled >= MOCK_TRACKING_TARGET ? [] : [trackingSetAttentionMs(filled, MOCK_TRACKING_TARGET)],
       items,
       candidates: units.length,
+      excludedBySibling: units.filter((u) => held.has(trackingKey(u)) && !set.units.some((o) => trackingKey(o) === trackingKey(u))).reduce((n, u) => n + u.questions, 0),
       candidateItems: units.filter((u) => !held.has(trackingKey(u))).slice(0, 200),
     }
   }

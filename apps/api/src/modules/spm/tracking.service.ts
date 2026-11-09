@@ -256,6 +256,10 @@ export class SpmTrackingService implements PracticeRamalanSource {
     const served = new Set(view?.eligibleIds ?? [])
     const filled = view?.eligibleCount ?? 0
     const targetCount = view?.size ?? DEFAULT_SET_SIZE
+    // V2 `excludedBySibling`: servable questions another set of the subject and year holds, this set's own left out.
+    const own = new Set(row.questionIds)
+    const heldElsewhere = [...(await this.repo.siblingHolders(row.subjectId, row.year, row.id)).keys()].filter((id) => !own.has(id))
+    const excludedBySibling = (await this.questions.eligibleAmong(heldElsewhere, trackingAFilter(row.subjectId))).length
     return {
       id: row.id,
       subjectId: row.subjectId,
@@ -268,6 +272,7 @@ export class SpmTrackingService implements PracticeRamalanSource {
       attention: isStartable(view?.status ?? 'belum_cukup') ? [] : [trackingSetAttentionMs(filled, targetCount)],
       items: await this.itemsOf(row.questionIds, served),
       candidates: await this.questions.eligibleUnitCount(trackingAFilter(row.subjectId)),
+      excludedBySibling,
       candidateItems: await this.candidateItems(row),
     }
   }

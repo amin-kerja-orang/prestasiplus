@@ -343,6 +343,7 @@ export const TRACKING_A_MESSAGES = {
   setExists: (setNo: number): string => `Set ${String(setNo)} sudah wujud untuk subjek dan tahun ini.`,
   needed: (n: number): string => `${String(n)} soalan lagi diperlukan.`,
   available: (subject: string, n: number): string => `Soalan tersedia untuk ${subject}: ${n.toLocaleString('en-US')}`,
+  excludedBySibling: (n: number): string => `(${n.toLocaleString('en-US')} sudah digunakan set lain tahun ini)`,
   siblingClash: (position: number, setNo: number): string =>
     `Soalan No. ${String(position)} sudah ada dalam Set ${String(setNo)} untuk subjek dan tahun ini. Buang atau tukar soalan itu.`,
   groupNoFit: (label: string, questions: number, free: number): string =>
@@ -427,6 +428,7 @@ export const SpmAdminTrackingASetSchema = z
     attention: z.array(z.string()).meta({ description: '"Hanya {a} daripada {b} soalan" while the set is not complete; empty when it is.' }),
     items: z.array(SpmAdminTrackingASetItemSchema),
     candidates: count,
+    excludedBySibling: count.meta({ description: 'Servable questions of the subject withheld because another set of the same subject and year holds them (V2 TrackingASetPool::excludedBySibling).' }),
     candidateItems: z.array(SpmAdminTrackingACandidateSchema).max(TRACKING_A_CANDIDATE_CAP),
   })
   .meta({ id: 'SpmAdminTrackingASet' })

@@ -24,6 +24,7 @@ import { DsBadge, DsCallout, DsCluster, DsDefinitionList, DsFormField, DsHeading
 import { ADMIN_ROUTES } from '../../papers/ui'
 import { KANDUNGAN_ROUTES, TRACKING_NEW_SET, TrackingRefusal, type LaneSubject } from '../api'
 import { kandunganServer } from '../client'
+import TrackingInlineEditor from '../components/TrackingInlineEditor.vue'
 import { fillTrackingSet, moveTrackingUnit, swapTrackingUnit, trackingCount, trackingFree, trackingUnitKey, type TrackingUnit } from '../lanes'
 
 const route = useRoute()
@@ -45,6 +46,8 @@ const saving = ref(false)
 const notice = ref('')
 const selectedKey = ref('')
 const pick = ref('')
+/** The member the pane edits inline: the one of a selected question, or the one chosen out of a selected group. */
+const editingId = ref('')
 
 const target = computed(() => set.value?.targetCount ?? 0)
 const current = computed(() => trackingCount(draft.value))
@@ -54,6 +57,7 @@ const isShort = computed(() => set.value !== null && current.value < target.valu
 const isComplete = computed(() => set.value !== null && current.value === target.value)
 const options = computed(() => trackingFree(draft.value, set.value?.candidateItems ?? []))
 const selected = computed(() => draft.value.find((u) => trackingUnitKey(u) === selectedKey.value) ?? null)
+watch(selected, (u) => (editingId.value = u && u.kind === 'question' ? u.id : ''))
 const fieldItems = computed(() =>
   set.value
     ? [
@@ -81,6 +85,7 @@ function adopt(s: SpmAdminTrackingASet): void {
   draft.value = s.items.map((i) => ({ kind: i.kind, id: i.id, questions: i.questions, label: i.label, members: i.members }))
   dirty.value = false
   selectedKey.value = ''
+  editingId.value = ''
   pick.value = ''
   // D-22: the editor's own title; the tab adds the one brand suffix of the app (`formatTabTitle`).
   pageMeta.setTitle(`${s.subject} · ${String(s.year)} · Set ${String(s.setNo)}`)
@@ -153,6 +158,15 @@ async function swap(unit: TrackingUnit): Promise<void> {
     return
   }
   change(next)
+}
+
+/** A saved inline edit makes a new version: the row shows the new text at once, and the draft stays as it is. */
+function onInlineSaved(qid: string, stem: string): void {
+  draft.value = draft.value.map((u) => ({
+    ...u,
+    label: u.kind === 'question' && u.id === qid ? stem : u.label,
+    members: u.members.map((m) => (m.id === qid ? { ...m, stem } : m)),
+  }))
 }
 
 function remove(unit: TrackingUnit): void {
@@ -317,12 +331,12 @@ watch(setParam, () => void load(), { immediate: true })
 
         <DsPanel data-testid="tracking-fill-block">
           <DsStack gap="sm">
+            <DsText as="p" variant="caption" tone="muted" data-testid="tracking-available">{{ COPY.available(set.subject, set.candidates) }}<span v-if="set.excludedBySibling > 0" data-testid="tracking-excluded">{{ " " + COPY.excludedBySibling(set.excludedBySibling) }}</span></DsText>
             <template v-if="isShort">
               <DsCluster gap="sm">
                 <UButton label="Isi set" color="neutral" variant="outline" data-testid="tracking-fill" @click="fill()" />
                 <DsText variant="body" data-testid="tracking-needed">{{ COPY.needed(needed) }}</DsText>
               </DsCluster>
-              <DsText as="p" variant="caption" tone="muted" data-testid="tracking-available">{{ COPY.available(set.subject, set.candidates) }}</DsText>
               <DsFormField :label="PROPOSED.pickLabel" native>
                 <DsNativeSelect v-model="pick" :aria-label="PROPOSED.pickLabel" data-testid="tracking-pick">
                   <option value="">{{ PROPOSED.pickPlaceholder }}</option>
@@ -351,7 +365,19 @@ watch(setParam, () => void load(), { immediate: true })
             <template v-else>
               <DsStack v-for="m in selected.members" :key="m.id" gap="2xs">
                 <DsText as="p" variant="body" wrap="anywhere">{{ m.stem }}</DsText>
-                <DsLink :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: m.id } }" :data-testid="`tracking-open-${m.id}`">{{ COPY.paneOpen }}</DsLink>
+                <DsCluster gap="sm">
+                  <UButton
+                    v-if="selected.kind === 'group'"
+                    label="Sunting"
+                    size="xs"
+                    color="neutral"
+                    variant="outline"
+                    :data-testid="`tracking-edit-${m.id}`"
+                    @click="editingId = m.id"
+                  />
+                  <DsLink :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: m.id } }" :data-testid="`tracking-open-${m.id}`">{{ COPY.paneOpen }}</DsLink>
+                </DsCluster>
+                <TrackingInlineEditor v-if="editingId === m.id" :qid="m.id" @saved="onInlineSaved" />
               </DsStack>
             </template>
           </DsStack>

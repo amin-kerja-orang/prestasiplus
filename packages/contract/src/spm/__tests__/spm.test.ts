@@ -517,6 +517,7 @@ describe('API-BIJAK-13 Tracking A admin (S3-T05)', () => {
     attention: ['Hanya 8 daripada 40 soalan'],
     items: [{ kind: 'group', id: '5', position: 1, questions: 1, label: 'Rajah 3', members: [member] }],
     candidates: 12,
+    excludedBySibling: 3,
     candidateItems: [{ kind: 'question', id: '11', questions: 1, label: 'Soalan', members: [member] }],
   }
 
