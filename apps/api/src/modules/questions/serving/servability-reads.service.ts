@@ -191,7 +191,7 @@ export class ServabilityReadsService {
     const paperQuestions = run(() => this.evaluatePublishedPaperQuestions())
     // Every read of the overview goes through `run`, the card and the subject list included, so no more than OVERVIEW_PARALLEL hold pool connections at once.
     const paperCardP = paperQuestions.then((evaluated) => run(() => this.paperLaneCard(evaluated.results)))
-    const [onPapers, drawn, bab, kuiz, games, jana, databankTotal, bank, spmSubjects, paperCard, trackingCard, subjektifCard, kertasTotal, latihTubiOn] = await Promise.all([
+    const [onPapers, drawn, bab, kuiz, games, jana, databankTotal, bank, spmSubjects, paperCard, trackingCard, subjektifCard, kertasTotal] = await Promise.all([
       paperQuestions,
       run(() => this.spmDraw()),
       run(() => this.questions.groupCount('chapter', { ...filterOf('bab'), ...live })),
@@ -205,7 +205,6 @@ export class ServabilityReadsService {
       run(() => this.soft(() => this.trackingCard())),
       run(() => this.soft(() => this.subjektifFigures())),
       run(() => this.soft(() => this.kertasSubjektifFigures())),
-      run(() => this.soft(() => this.latihTubiSwitch())),
     ])
     const sumOver = (by: ReadonlyMap<string, number>, only?: ReadonlySet<string>) => [...by].reduce((n, [k, v]) => n + (only === undefined || only.has(k) ? v : 0), 0)
     let paperServed = 0
@@ -241,8 +240,7 @@ export class ServabilityReadsService {
         subjektifCard === null ? failed('subjektif') : subjektif(subjektifCard),
         card('bijak-spm', paperCard.total, paperCard.attention),
         kertasTotal === null ? failed('kertas-subjektif') : card('kertas-subjektif', kertasTotal.total, kertasTotal.empty),
-        // V2 "Flag OFF" badge: only lanes with a Kawalan Ciri key of their own (`latih-tubi`; V3 has no key for Kertas Subjektif).
-        { ...card('latih-tubi', bank, Math.max(0, bank - latihTubiServed)), ...(latihTubiOn === false ? { flagOff: true as const } : {}) },
+        card('latih-tubi', bank, Math.max(0, bank - latihTubiServed)),
       ],
       activities: SERVABILITY_ACTIVITIES.map((a) => {
         const [activity, served, total, basis] = rows.find((r) => r[0] === a)!
@@ -456,6 +454,16 @@ export class ServabilityReadsService {
        WHERE ${scope.where}
        GROUP BY v.subject_id, sub.name, sub.sort_order, v.education_level_id, lvl.name, lvl.sort_order
        ORDER BY sub.sort_order, sub.name, lvl.sort_order`
+  }
+
+  /** Hub cards whose Kawalan Ciri key is OFF (V2 "Flag OFF" badge). Read on every hub request, outside the 5-minute overview cache. V3 has a key for Latih Tubi only. */
+  async flaggedOffLanes(): Promise<ServabilityHubLane[]> {
+    try {
+      return (await this.latihTubiSwitch()) ? [] : ['latih-tubi']
+    } catch (e) {
+      this.logger.error(e)
+      return []
+    }
   }
 
   /** The Kawalan Ciri key `latih-tubi` (API-ADM-09). The table arrives with S0-T10; until then, and for a key with no row, it is ON (FR-ADM-N06.4). */
