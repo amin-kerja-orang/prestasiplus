@@ -25,6 +25,7 @@ const dashboard: AdminDashboard = {
   subjects: { total: 12, active: 11 },
   levels: 5,
   users: { total: 300, students: 250, teachers: 40 },
+  schools: { total: 14, active: 13 },
   battles: { total: 9, active: 2, finished: 7 },
 }
 
@@ -40,6 +41,17 @@ const analytics: AdminAnalytics = {
   },
   trend: [{ date: '2026-09-24', answered: 10 }],
   topSchools: [{ schoolId: '1', school: 'SMK CONTOH', answered: 90 }],
+  topStudents: [{ userId: '7', name: 'MURID CONTOH', school: 'SMK CONTOH', answered: 21 }],
+  mood: {
+    total: 10,
+    breakdown: [
+      { key: 'happy', label: 'Gembira', count: 4 },
+      { key: 'okay', label: 'Okay', count: 3 },
+      { key: 'sad', label: 'Sedih', count: 2 },
+      { key: 'stressed', label: 'Tertekan', count: 1 },
+    ],
+  },
+  reports: { baru: 5, selesai: 8 },
   bank: {
     bySubject: [{ id: '1', name: 'Matematik', total: 50 }],
     byLevel: [{ id: '7', name: 'Tingkatan 1', total: 50 }],
@@ -99,6 +111,9 @@ describe('AdminDashboardPage (M-01)', () => {
     const w = await render(AdminDashboardPage)
     const text = w.text()
     for (const l of [
+      'Pelajar',
+      'Guru',
+      'Sekolah',
       'Soalan Aktif',
       'Diluluskan',
       'Menunggu Semakan',
@@ -110,6 +125,9 @@ describe('AdminDashboardPage (M-01)', () => {
     ]) {
       expect(text).toContain(l)
     }
+    expect(text).toContain('Jumlah pelajar berdaftar')
+    expect(text).toContain('Jumlah guru berdaftar')
+    expect(text).toContain('Jumlah sekolah berdaftar')
     expect(text).toContain('Minggu ini: 4')
     expect(text).toContain('250 Pelajar')
     expect(text).toContain('11 Aktif')
@@ -119,6 +137,7 @@ describe('AdminDashboardPage (M-01)', () => {
     expect(text).toContain('Pautan Pantas')
     const hrefs = w.findAll('a').map((a) => a.attributes('href'))
     expect(hrefs).toContain('/admin/studio?status=review')
+    expect(hrefs).toContain('/admin/schools')
     expect(text).not.toContain('Muat Turun Data')
   })
 
@@ -143,6 +162,26 @@ describe('AdminAnalitikPage (M-05)', () => {
     expect(text).toContain('Jumlah: 4 soalan')
     expect(text).toContain('63%')
     expect(text).toContain('Matematik')
+  })
+
+  it('has every V2 Analitik card on the one page: Pelajar Teratas, Mood Pelajar and Laporan Soalan', async () => {
+    const w = await render(AdminAnalitikPage)
+    expect(w.get('[data-testid="adm-an-students"]').text()).toContain('MURID CONTOH')
+    expect(w.get('[data-testid="adm-an-students"]').text()).toContain('21 soalan minggu ini')
+    for (const [key, label, count] of [
+      ['happy', 'Gembira', '4'],
+      ['okay', 'Okay', '3'],
+      ['sad', 'Sedih', '2'],
+      ['stressed', 'Tertekan', '1'],
+    ]) {
+      const row = w.get(`[data-testid="adm-an-mood-${key}"]`).text()
+      expect(row).toContain(label)
+      expect(row).toContain(count)
+    }
+    const reports = w.get('[data-testid="adm-an-reports"]')
+    expect(reports.text()).toContain('Laporan Soalan')
+    expect(reports.get('[data-testid="adm-an-reports-baru"]').text()).toContain('5')
+    expect(reports.get('[data-testid="adm-an-reports-selesai"]').text()).toContain('8')
   })
 
   it('shows "Tiada data analitik." when there is nothing', async () => {

@@ -21146,6 +21146,24 @@
               "teachers"
             ]
           },
+          "schools": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "active"
+            ],
+            "description": "Registered secondary-stage schools (the Sekolah list figures); V2 Panel \"Sekolah\" card."
+          },
           "battles": {
             "type": "object",
             "properties": {
@@ -21174,6 +21192,7 @@
           "subjects",
           "levels",
           "users",
+          "schools",
           "battles"
         ]
       },
@@ -21287,6 +21306,102 @@
               ]
             },
             "description": "Up to 10 schools by answers in the range."
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "school": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "school",
+                "answered"
+              ]
+            },
+            "maxItems": 8,
+            "description": "V2 \"Pelajar Teratas\": up to 8 pupils by answers since Monday 00:00 (Asia/Kuala_Lumpur) of this week, whatever the range."
+          },
+          "mood": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "breakdown": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "enum": [
+                        "happy",
+                        "okay",
+                        "sad",
+                        "stressed"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "key",
+                    "label",
+                    "count"
+                  ]
+                },
+                "description": "Always the four buckets in this order: Gembira, Okay, Sedih, Tertekan (all-time check-ins, test rows excluded)."
+              }
+            },
+            "required": [
+              "total",
+              "breakdown"
+            ],
+            "description": "V2 \"Mood Pelajar\"."
+          },
+          "reports": {
+            "type": "object",
+            "properties": {
+              "baru": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Question reports still waiting (status pending)."
+              },
+              "selesai": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Question reports no longer waiting (reviewed, fixed or dismissed)."
+              }
+            },
+            "required": [
+              "baru",
+              "selesai"
+            ],
+            "description": "V2 \"Laporan Soalan\" card (test rows excluded)."
           },
           "bank": {
             "type": "object",
@@ -21405,6 +21520,9 @@
           "platform",
           "trend",
           "topSchools",
+          "topStudents",
+          "mood",
+          "reports",
           "bank"
         ]
       },
@@ -30731,6 +30849,17 @@
           "isActive"
         ]
       },
+      "SchoolJoinCodeResult": {
+        "type": "object",
+        "properties": {
+          "joinCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "joinCode"
+        ]
+      },
       "SchoolOptionsQuery": {
         "type": "object",
         "properties": {
@@ -33793,6 +33922,13 @@
                   "string",
                   "null"
                 ]
+              },
+              "joinCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Registration join code of the caller's OWN school (V2 \"Kod Daftar\"), read-only: the school admin may see it but only Admin Pusat can rotate it. Dashboard responses are no-store."
               }
             },
             "required": [
@@ -33800,7 +33936,8 @@
               "name",
               "state",
               "ppd",
-              "code"
+              "code",
+              "joinCode"
             ]
           },
           "roleLabel": {
@@ -128420,6 +128557,125 @@
                   "properties": {
                     "data": {
                       "$ref": "#/components/schemas/SchoolToggleResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (role not allowed for this operation, see Access) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (also for an id outside the caller scope, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/schools/{id}/join-code": {
+      "post": {
+        "tags": [
+          "schools"
+        ],
+        "summary": "Rotate the join code of a school (Admin Pusat only; the old code stops working)",
+        "description": "Access: admin. Scope: all schools. status: \"Kod pendaftaran <school> ditukar kepada <code>. Kod lama tidak lagi sah.\". No-store: a join code is a bearer secret.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New code.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "description": "Always `no-store`.",
+                  "example": "no-store"
+                },
+                "required": true,
+                "description": "Always `no-store`."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolJoinCodeResult"
                     },
                     "status": {
                       "type": "string",

@@ -171,6 +171,14 @@ export class AnalyticsRepository {
     return rows.map((r) => r.id)
   }
 
+  /** Registered secondary-stage schools, all and active: the Sekolah list figures (primary types stay hidden). */
+  async schoolTotals(): Promise<{ total: number; active: number }> {
+    const rows = await this.db.$queryRaw<{ total: number; active: number }[]>`
+      SELECT count(*)::int AS total, (count(*) FILTER (WHERE s.is_active))::int AS active
+      FROM schools s WHERE s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')`
+    return rows[0] ?? { total: 0, active: 0 }
+  }
+
   /** Registered T4/T5 pupils per school (Q-M11-T45). */
   async registeredBySchool(ids: readonly string[] | null): Promise<Map<string, number>> {
     if (ids !== null && ids.length === 0) return new Map()
@@ -757,6 +765,32 @@ export class AnalyticsRepository {
       GROUP BY sc.id, sc.name
       ORDER BY answered DESC, sc.name ASC, sc.id ASC LIMIT ${limit}`
     return rows.map((r) => ({ schoolId: r.school_id, name: r.name, answered: r.answered }))
+  }
+
+  /** Pupils with the most answers in the window (V2 "Pelajar Teratas"). */
+  async topPupilsByAnswers(from: Date, to: Date, limit: number): Promise<{ userId: string; name: string; school: string | null; answered: number }[]> {
+    const rows = await this.db.$queryRaw<{ user_id: string; name: string; school: string | null; answered: number }[]>`
+      SELECT u.id::text AS user_id, u.name, sc.name AS school, count(*)::int AS answered
+      FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id
+      WHERE NOT a.is_test AND ${AnalyticsRepository.PUPIL} AND a.answered_at >= ${from} AND a.answered_at <= ${to}
+      GROUP BY u.id, u.name, sc.name
+      ORDER BY answered DESC, u.name ASC, u.id ASC LIMIT ${limit}`
+    return rows.map((r) => ({ userId: r.user_id, name: r.name, school: r.school, answered: r.answered }))
+  }
+
+  /** All-time mood check-ins per stored mood value (test rows excluded). */
+  async moodTotals(): Promise<Map<string, number>> {
+    const rows = await this.db.$queryRaw<{ mood: string; n: number }[]>`
+      SELECT m.mood, count(*)::int AS n FROM mood_checkins m WHERE NOT m.is_test GROUP BY m.mood`
+    return new Map(rows.map((r) => [r.mood, r.n]))
+  }
+
+  /** Question reports: still waiting (`pending`) and the rest (`reviewed`, `fixed`, `dismissed`); test rows excluded. */
+  async questionReportCounts(): Promise<{ baru: number; selesai: number }> {
+    const rows = await this.db.$queryRaw<{ baru: number; selesai: number }[]>`
+      SELECT (count(*) FILTER (WHERE r.status = 'pending'))::int AS baru, (count(*) FILTER (WHERE r.status <> 'pending'))::int AS selesai
+      FROM question_reports r WHERE NOT r.is_test`
+    return rows[0] ?? { baru: 0, selesai: 0 }
   }
 
   /** Schools with an active subscription on `today` (`YYYY-MM-DD`). */

@@ -25,17 +25,24 @@ import {
   DsPanel,
   DsStatRow,
   DsStatusBadge,
+  useConfirm,
   type StatItem,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
-import { fetchAdminSchools, toggleSchool, type AdminSchool } from '../api/schools-admin'
+import {
+  fetchAdminSchools,
+  rotateSchoolJoinCode,
+  toggleSchool,
+  type AdminSchool,
+} from '../api/schools-admin'
 import { errorLines } from '../lib/school-errors'
 import { SCHOOL_ROUTES, SCHOOLS_LIST_PATH, SCHOOL_STATE_OPTIONS } from '../lib/school-options'
 
 const route = useRoute()
 const router = useRouter()
 const flash = useFlash()
+const confirm = useConfirm()
 
 function queryText(value: LocationQueryValue | LocationQueryValue[] | undefined): string {
   const first = Array.isArray(value) ? value[0] : value
@@ -179,6 +186,29 @@ async function toggle(school: AdminSchool): Promise<void> {
   }
 }
 
+// V2 "Tukar kod pendaftaran": confirm, POST the rotation, reload so the new code shows, flash.
+const rotating = ref<number | null>(null)
+
+async function rotate(school: AdminSchool): Promise<void> {
+  if (rotating.value !== null) return
+  const ok = await confirm({
+    title: 'Tukar kod pendaftaran?',
+    message: `Tukar kod pendaftaran untuk ${school.name}? Kod lama tidak lagi sah.`,
+    confirmLabel: 'Tukar Kod',
+  })
+  if (!ok) return
+  rotating.value = school.id
+  try {
+    const result = await rotateSchoolJoinCode(school.id)
+    await reload()
+    flash.show({ type: 'success', message: result.status })
+  } catch (err) {
+    flash.show({ type: 'error', message: errorLines(err) })
+  } finally {
+    rotating.value = null
+  }
+}
+
 /** Primary types are listed only (U-04): the by-id routes answer 404, so no edit link and no toggle. */
 const PRIMARY_TYPES: readonly string[] = ['SK', 'SJK(C)', 'SJK(T)']
 const isPrimary = (school: { type: string }): boolean => PRIMARY_TYPES.includes(school.type)
@@ -209,6 +239,7 @@ const stats = computed<StatItem[]>(() => {
 const COLUMNS: TableColumn<SchoolRow>[] = [
   { accessorKey: 'name', header: 'Nama Sekolah' },
   { accessorKey: 'code', header: 'Kod' },
+  { id: 'joinCode', header: 'Kod Daftar' },
   { accessorKey: 'type', header: 'Jenis' },
   { accessorKey: 'state', header: 'Negeri' },
   { accessorKey: 'district', header: 'Daerah' },
@@ -327,6 +358,30 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       <template #code-cell="{ row }">
         <span class="text-label text-nowrap text-muted">{{ row.original.code }}</span>
       </template>
+      <template #joinCode-cell="{ row }">
+        <div class="flex items-center gap-2">
+          <UBadge
+            color="primary"
+            variant="outline"
+            class="font-mono"
+            :label="row.original.joinCode || '—'"
+            data-testid="school-join-code"
+          />
+          <UButton
+            v-if="!isPrimary(row.original)"
+            type="button"
+            color="neutral"
+            variant="soft"
+            icon="i-ph-arrows-clockwise"
+            title="Tukar kod pendaftaran"
+            aria-label="Tukar kod pendaftaran"
+            :loading="rotating === row.original.id"
+            :disabled="rotating !== null"
+            data-testid="school-rotate"
+            @click="rotate(row.original)"
+          />
+        </div>
+      </template>
       <template #type-cell="{ row }">
         <UBadge color="neutral" variant="subtle" :label="row.original.type" />
       </template>
@@ -399,6 +454,25 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
           {{ row.name }}
         </p>
         <p class="text-label text-muted">{{ row.code }} · {{ row.type }} · {{ row.state }}</p>
+        <p class="flex items-center gap-2 text-label text-muted">
+          <span>Kod Daftar:</span>
+          <span class="font-mono text-highlighted" data-testid="school-join-code">{{
+            row.joinCode || '—'
+          }}</span>
+          <UButton
+            v-if="!isPrimary(row as unknown as AdminSchool)"
+            type="button"
+            color="neutral"
+            variant="soft"
+            size="xs"
+            icon="i-ph-arrows-clockwise"
+            title="Tukar kod pendaftaran"
+            aria-label="Tukar kod pendaftaran"
+            :disabled="rotating !== null"
+            data-testid="school-rotate"
+            @click="rotate(row as unknown as AdminSchool)"
+          />
+        </p>
         <div class="flex items-center gap-2">
           <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
           <UButton

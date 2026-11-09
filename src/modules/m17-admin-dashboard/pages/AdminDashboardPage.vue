@@ -25,6 +25,31 @@ const tiles = computed(() => {
   if (!d) return []
   const q = d.questions
   return [
+    // V2 Panel Papan Pemuka: the three cards Pelajar, Guru and Sekolah come first.
+    {
+      key: 'pelajar',
+      unit: 'Pelajar',
+      value: d.users.students,
+      sub: 'Jumlah pelajar berdaftar',
+      icon: 'users',
+      to: { path: '/admin/users', query: { role: 'student' } },
+    },
+    {
+      key: 'guru',
+      unit: 'Guru',
+      value: d.users.teachers,
+      sub: 'Jumlah guru berdaftar',
+      icon: 'chalkboard-teacher',
+      to: { path: '/admin/users', query: { role: 'teacher' } },
+    },
+    {
+      key: 'sekolah',
+      unit: 'Sekolah',
+      value: d.schools.total,
+      sub: 'Jumlah sekolah berdaftar',
+      icon: 'buildings',
+      to: '/admin/schools',
+    },
     {
       key: 'aktif',
       unit: 'Soalan Aktif',
@@ -125,7 +150,7 @@ const quickLinks = [
     <template v-else>
       <DsGrid min-item="xs" gap="md" data-testid="adm-tiles" aria-label="Ringkasan">
         <template v-if="!data">
-          <DsStatTile v-for="i in 8" :key="i" :value="null" unit="" loading />
+          <DsStatTile v-for="i in 11" :key="i" :value="null" unit="" loading />
         </template>
         <DsStatTile
           v-for="t in tiles"

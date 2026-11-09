@@ -4,6 +4,7 @@ import {
   SchoolListMetaSchema,
   SchoolOptionSchema,
   statusEnvelopeOf,
+  SchoolJoinCodeResultSchema,
   SchoolToggleResultSchema,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -440,6 +441,45 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expectError(await toggle('99999999'), 'NOT_FOUND')
       expectError(await toggle('abc'), 'NOT_FOUND')
       expect(await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.toggled'`)).toEqual(before)
+    })
+  })
+
+  describe('POST /api/admin/schools/:id/join-code (Tukar kod pendaftaran)', () => {
+    const rotate = (id: string) => admin.agent.post(`/api/admin/schools/${id}/join-code`).set('X-CSRF-Token', admin.csrf)
+    const RotateBody = statusEnvelopeOf(SchoolJoinCodeResultSchema)
+
+    it('draws a new unique code, shows it on the list, says so in the V2 flash text, audits without the code', async () => {
+      const id = await schoolIdOf(t.db, 'DEMO003')
+      const oldCode = OneBody.parse((await admin.agent.get(`/api/admin/schools/${id}`)).body).data.joinCode
+      const res = await rotate(id)
+      expect(res.status).toBe(200)
+      expect(res.headers['cache-control']).toBe('no-store')
+      const body = RotateBody.parse(res.body)
+      const name = OneBody.parse((await admin.agent.get(`/api/admin/schools/${id}`)).body).data.name
+      expect(body.data.joinCode).toMatch(/^[A-HJKMNP-Z2-9]{8}$/)
+      expect(body.data.joinCode).not.toBe(oldCode)
+      expect(body.status).toBe(`Kod pendaftaran "${name}" ditukar kepada ${body.data.joinCode}. Kod lama tidak lagi sah.`)
+      const row = await t.db.query<{ join_code: string }>(`select join_code from schools where id = $1`, [id])
+      expect(row[0]?.join_code).toBe(body.data.joinCode)
+      const shown = ListBody.parse((await list('?search=DEMO003')).body).data.find((s) => s.id === id)
+      expect(shown?.joinCode).toBe(body.data.joinCode)
+      const audit = await t.db.query<{ detail: unknown }>(`select detail from audit_events where action = 'school.join_code_rotated' and target_id = $1`, [id])
+      expect(audit).toHaveLength(1)
+      expect(JSON.stringify(audit[0]?.detail)).not.toContain(body.data.joinCode)
+    })
+
+    it('every rotation leaves all join codes unique', async () => {
+      const id = await schoolIdOf(t.db, 'DEMO003')
+      for (let i = 0; i < 5; i++) expect((await rotate(id)).status).toBe(200)
+      const dup = await t.db.query<{ n: number }>(`select count(*)::int as n from (select join_code from schools where join_code is not null group by join_code having count(*) > 1) d`)
+      expect(dup[0]?.n).toBe(0)
+    })
+
+    it('404 for an unknown or malformed id, and no audit row for it', async () => {
+      const before = await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.join_code_rotated'`)
+      expectError(await rotate('99999999'), 'NOT_FOUND')
+      expectError(await rotate('abc'), 'NOT_FOUND')
+      expect(await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.join_code_rotated'`)).toEqual(before)
     })
   })
 

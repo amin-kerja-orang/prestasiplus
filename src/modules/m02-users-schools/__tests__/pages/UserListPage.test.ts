@@ -254,8 +254,8 @@ describe('UserListPage (M02 S1)', () => {
       expect(link.text()).toBe('Semak & luluskan')
       await link.trigger('click')
       await flushPromises()
-      expect(router.currentRoute.value.query).toEqual({ status: 'pending' })
-      expect(api.fetchAdminUsers.mock.calls.at(-1)?.[0]).toMatchObject({ status: 'pending' })
+      expect(router.currentRoute.value.query).toEqual({ role: 'teacher', status: 'pending' })
+      expect(api.fetchAdminUsers.mock.calls.at(-1)?.[0]).toMatchObject({ role: 'teacher', status: 'pending' })
     })
 
     it('Luluskan toggles only the selected rows that are still pending, then reloads and clears', async () => {
@@ -321,6 +321,27 @@ describe('UserListPage (M02 S1)', () => {
     )
     expect(api.toggleUserActive).toHaveBeenCalledWith(2)
     expect(api.fetchAdminUsers).toHaveBeenCalledTimes(2)
+  })
+
+  it('always shows "Set Semula" (V2), even with no filter applied', async () => {
+    const w = await render()
+    expect(w.findAll('button').some((b) => b.text().includes('Set Semula'))).toBe(true)
+  })
+
+  it('activates an inactive account after the V2 "Aktifkan akaun?" confirm', async () => {
+    api.fetchAdminUsers.mockResolvedValue(
+      listResult([user(ME, { name: 'Admin Contoh', role: 'admin' }), user(4, { isActive: false, isSuspended: false })]),
+    )
+    api.toggleUserActive.mockResolvedValue({ data: { isActive: true }, status: 'Selesai.' })
+    const w = await render()
+    dialogs.confirmNative.mockReturnValueOnce(false)
+    await pickRowMenuItem(w, '[data-user-id="4"]', 'Aktifkan')
+    expect(api.toggleUserActive).not.toHaveBeenCalled()
+    await pickRowMenuItem(w, '[data-user-id="4"]', 'Aktifkan')
+    expect(dialogs.confirmNative).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^Aktifkan akaun .+\? Pengguna ini akan boleh log masuk\.$/),
+    )
+    expect(api.toggleUserActive).toHaveBeenCalledWith(4)
   })
 
   it('deletes through the modal', async () => {

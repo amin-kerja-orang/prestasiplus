@@ -27,6 +27,7 @@ const SCHOOL: AdminSchool = {
   state: 'Selangor',
   district: 'PPD CONTOH',
   city: 'BANDAR CONTOH',
+  joinCode: 'JOIN1042',
   isActive: false,
   createdAt: '2026-01-01T00:00:00+08:00',
   updatedAt: '2026-01-01T00:00:00+08:00',

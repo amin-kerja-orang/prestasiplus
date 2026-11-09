@@ -23,6 +23,7 @@ export const SCHOOL_AUDIT = {
   CREATED: 'school.created',
   UPDATED: 'school.updated',
   TOGGLED: 'school.toggled',
+  JOIN_CODE_ROTATED: 'school.join_code_rotated',
 } as const
 
 /** Join code alphabet: upper-case letters and digits without 0/O/1/I/L. */

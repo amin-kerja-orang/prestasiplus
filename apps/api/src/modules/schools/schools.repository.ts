@@ -356,6 +356,16 @@ export class SchoolsRepository {
     return rows[0] ? rows[0].is_active : null
   }
 
+  /** Replaces the join code of one school; returns the school row (name for the flash text), or null for an unknown school. A duplicate code raises P2002. */
+  async setJoinCode(id: string, joinCode: string, now: Date): Promise<SchoolRow | null> {
+    if (!isIdString(id)) return null
+    const result = await this.prisma.client.school.updateMany({
+      where: { id: idFromString(id) },
+      data: { joinCode, updatedAt: now },
+    })
+    return result.count === 0 ? null : this.get(id)
+  }
+
   /** `GET /api/jpn`: every JPN by id. */
   async jpnList(): Promise<JpnRow[]> {
     const rows = await this.prisma.client.jpn.findMany({ select: { id: true, code: true, name: true }, orderBy: { id: 'asc' } })
