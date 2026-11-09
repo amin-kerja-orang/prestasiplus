@@ -185,10 +185,13 @@ const pagerQuery = computed(() => {
   return out
 })
 
-/** The banner link: the same list narrowed to the accounts waiting for approval. */
+/**
+ * The banner link: V2 "Semak & luluskan" opens the teachers (`/pengguna?role=guru`), the accounts a
+ * national admin approves; here narrowed to the teachers still waiting for approval.
+ */
 const pendingLink = computed(() => ({
   path: USERS_LIST_PATH,
-  query: { ...pagerQuery.value, is_active: undefined, status: 'pending', page: undefined },
+  query: { search: applied.value.search || undefined, role: 'teacher', status: 'pending' },
 }))
 
 /** Removable chips of the applied filters (the URL is the source of truth). */
@@ -282,7 +285,15 @@ async function reloadAfterMutation(): Promise<void> {
 }
 
 async function toggle(user: AdminUserListItem): Promise<void> {
-  if (!(await confirm({ message: 'Pasti untuk menukar status pengguna ini?' }))) return
+  // V2 Pengguna "Aktifkan": title "Aktifkan akaun?", "Aktifkan akaun {name}? Pengguna ini akan boleh log masuk."
+  const approved = user.isActive
+    ? await confirm({ message: 'Pasti untuk menukar status pengguna ini?' })
+    : await confirm({
+        title: 'Aktifkan akaun?',
+        message: `Aktifkan akaun ${user.name}? Pengguna ini akan boleh log masuk.`,
+        confirmLabel: 'Aktifkan',
+      })
+  if (!approved) return
   if (togglingId.value !== null) return
   togglingId.value = user.id
   try {
@@ -520,6 +531,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
     <DsFilterBar
       :chips="chips"
       :active-count="activeCount"
+      :show-reset="true"
       data-testid="users-filter"
       @apply="submitFilter"
       @reset="resetFilter"
