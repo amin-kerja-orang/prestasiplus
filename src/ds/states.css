@@ -125,6 +125,28 @@
   [data-ds='filter-fields'] > :has(input[name='search']) {
     grid-column: span 2;
   }
+
+  /* Every field sits on the row's bottom edge (the buttons beside the grid do too); a label is one line
+     (never pushes the row height); a checkbox field has room for its text (two tracks). */
+  [data-ds='filter-fields'] {
+    align-items: end;
+  }
+
+  [data-ds='filter-fields'] label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-ds='filter-fields'] > :has([role='checkbox'], input[type='checkbox']) {
+    grid-column: span 2;
+  }
+}
+
+/* Buttons of the bar (search, reset, the caller's extra actions) have the height of the fields (44px). */
+[data-ds='filter-actions'] > :is(a, button),
+[data-ds='filter-actions'] > * > :is(a, button) {
+  min-height: 2.75rem;
 }
 
 /* Sticky bars (DsFormBar, DsStickyActions) must not cover the focused field: room under every focusable control (the browser reads the focused element's own margin) (FR-X6-5). */

@@ -160,17 +160,20 @@ const tableUi = computed(() => {
   const sticky = flush.value || bare.value || props.stickyHeader
   const th = [
     'text-th whitespace-nowrap text-muted',
-    cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
+    cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3 sm:px-5',
     sticky ? `sticky top-0 z-10 ${bare.value ? 'bg-elevated' : 'bg-default shadow-bar'}` : '',
   ].join(' ')
   return {
-    root: flush.value ? 'max-w-full overflow-visible rounded-none shadow-none' : 'max-w-full',
+    // Every variant: the cell padding is the card padding (px-4, px-5 from sm), the table surface is the card.
+    root: flush.value ? 'max-w-full overflow-visible rounded-none shadow-none' : bare.value
+        ? 'max-w-full'
+        : 'max-w-full rounded-none shadow-none',
     base: fixed.value ? 'table-fixed w-full' : bare.value ? 'min-w-full' : 'w-full',
     thead: bare.value ? 'bg-elevated' : 'bg-default',
     th,
     td: [
       'tabular align-middle text-body font-normal',
-      cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3',
+      cellPad.value === 'compact' ? 'px-3 py-3' : tight.value ? 'px-3 py-2.5' : 'px-4 py-3 sm:px-5',
       fixed.value ? 'whitespace-normal' : '',
     ].join(' '),
     tr: bare.value
@@ -344,7 +347,13 @@ function cell(row: T, key: string): string {
           </li>
         </ul>
       </div>
-      <div v-else :class="fixed ? 'max-w-full' : 'max-w-full overflow-x-auto'">
+      <div
+        v-else
+        :class="[
+          fixed ? '' : 'overflow-x-auto',
+          kind === 'card' ? '-mx-4 sm:-mx-5' : 'max-w-full',
+        ]"
+      >
         <UTable
           v-model:row-selection="rowSelection"
           :sticky="bare"

@@ -1,12 +1,12 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { rolesOf } from './access'
-import { ALL_MOUNTS } from './mount'
+import { ALL_MOUNTS, GURU_MOUNT } from './mount'
 
 /**
  * M12 route fragment: S6 Rantaian Impak on `/admin/kirkpatrick/chain` and the `/guru` twin, plus the PDF target
  * `{prefix}/export-pdf` of "Muat Turun Laporan" (FR-M12-61, provisional; bare layout, it opens in a new tab). M12-T3.
- * The shell header is "Rantaian Impak" with no subtitle (DV-M12-03).
+ * The shell header is "Rantaian Impak" (guru: "Rantaian Impak T1 → T4") with the V2 subtitle.
  */
 const routes: RouteRecordRaw[] = ALL_MOUNTS.flatMap((mount): RouteRecordRaw[] => [
   {
@@ -20,8 +20,8 @@ const routes: RouteRecordRaw[] = ALL_MOUNTS.flatMap((mount): RouteRecordRaw[] =>
       roles: rolesOf(mount),
       module: 'M12',
       v2: true,
-      title: 'Kirkpatrick Impact Chain',
-      header: { title: 'Rantaian Impak' },
+      title: 'Rantaian Impak',
+      header: { title: mount === GURU_MOUNT ? 'Rantaian Impak T1 → T4' : 'Rantaian Impak', subtitle: 'Rantaian impak Kirkpatrick — 4 tahap keberkesanan' },
     },
   },
   {
@@ -34,7 +34,7 @@ const routes: RouteRecordRaw[] = ALL_MOUNTS.flatMap((mount): RouteRecordRaw[] =>
       roles: rolesOf(mount),
       module: 'M12',
       v2: true,
-      title: 'Kirkpatrick Impact Chain',
+      title: 'Rantaian Impak',
     },
   },
 ])

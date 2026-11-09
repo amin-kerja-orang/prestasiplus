@@ -10,9 +10,9 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: '🎮 Tetapan Permainan - Admin Panel',
+      title: '🎮 Tetapan Permainan',
       header: {
-        title: 'Tetapan Permainan',
+        title: '🎮 Tetapan Permainan',
         subtitle: 'Urus konfigurasi Papan Bijak, Kad Memori & permainan lain',
       },
       module: 'M16',

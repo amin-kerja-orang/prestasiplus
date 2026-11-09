@@ -70,7 +70,7 @@ const isOpen = (w: VueWrapper) =>
   t(w, 'int-form').attributes('style')?.includes('display: none') !== true
 
 describe('S7 KPIs and empty list (AC-M12-28.1, 28.3)', () => {
-  it('shows four zero KPI cards in a 2-column grid below md, 3 from md and 4 from xl', async () => {
+  it('shows four zero KPI cards in a 2-column grid (2 + 2) until xl, 4 from xl (no orphan)', async () => {
     const w = await open()
     expect(tiles(w).map((x) => x.label)).toEqual([
       'Jumlah Intervensi',
@@ -80,7 +80,7 @@ describe('S7 KPIs and empty list (AC-M12-28.1, 28.3)', () => {
     ])
     expect(tiles(w).map((x) => x.value)).toEqual(['0', '0', '0', '0'])
     expect(t(w, 'int-kpis').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3', 'xl:grid-cols-4']),
+      expect.arrayContaining(['grid-cols-2', 'xl:grid-cols-4']),
     )
   })
 

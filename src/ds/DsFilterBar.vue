@@ -129,7 +129,7 @@ function reset(): void {
       </div>
     </template>
     <template v-else>
-      <div class="min-w-0 grow"><slot name="search" /></div>
+      <div class="min-w-0 flex-1 basis-40"><slot name="search" /></div>
       <UChip :show="count > 0" :text="count" color="primary">
         <UButton
           type="button"

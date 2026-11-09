@@ -6,7 +6,6 @@ import type { RouteRecordRaw } from 'vue-router'
  * (FR-M14-04, 05, 06). Header titles follow DV-M14-01 with the live subtitle "Selamat datang
  * kembali" (S14–S16) and S18's own live title and subtitle; tab titles are exact (FN-M14-1.1.6).
  */
-const SUBTITLE = 'Selamat datang kembali'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -18,7 +17,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Papan Pendahulu',
-      header: { title: 'Papan Pendahulu', subtitle: SUBTITLE },
+      header: { title: 'Papan Pendahulu', subtitle: 'Kedudukan pelajar terbaik mengikut syiling' },
       module: 'M14',
       v2: true,
     },
@@ -32,7 +31,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Pencapaian — PRESTASIPLUS',
-      header: { title: 'Pencapaian Anda', subtitle: SUBTITLE },
+      header: { title: 'Pencapaian', subtitle: 'Lencana yang anda telah buka sepanjang perjalanan belajar' },
       module: 'M14',
       v2: true,
     },
@@ -46,7 +45,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Rujuk Kawan — PRESTASIPLUS',
-      header: { title: 'Rujuk Kawan, Dapat Syiling!', subtitle: SUBTITLE },
+      header: { title: 'Rujuk Kawan', subtitle: 'Jemput kawan sertai PrestasiPlus dan dapatkan syiling bonus' },
       module: 'M14',
       v2: true,
     },

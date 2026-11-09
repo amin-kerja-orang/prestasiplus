@@ -103,8 +103,8 @@ describe('route (FR-M27-01, 03, 07, 10)', () => {
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'Dashboard Sekolah - PRESTASIPLUS',
-      header: { title: 'Dashboard Sekolah' },
+      title: 'Dashboard',
+      header: { title: 'Dashboard' },
     })
   })
 

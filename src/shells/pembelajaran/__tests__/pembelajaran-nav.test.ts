@@ -149,7 +149,7 @@ describe('Pembelajaran Nuxt UI menu data', () => {
     expect(row[0]?.active).toBe(true)
     expect(row[0]?.to).toBe('/guru/kirkpatrick')
     const tabs = groupTabs(entries, 't-kirk-rantaian')
-    expect(tabs.map((t) => t.label)).toContain('Rantaian Impak')
+    expect(tabs.map((t) => t.label)).toContain('Rantaian')
     expect(tabs).toHaveLength(7)
     expect(groupTabs(entries, 't-prestasi')).toEqual([])
   })

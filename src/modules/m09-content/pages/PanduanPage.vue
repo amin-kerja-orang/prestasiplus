@@ -15,7 +15,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsCluster, DsIconChip, DsStack } from '@/ds'
+import { DsArt3D, DsCluster, DsIconChip, DsStack, tileLayout } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import { fetchSupportConfig } from '../api/content'
@@ -23,6 +23,9 @@ import WhatsAppIcon from '../components/icons/WhatsAppIcon.vue'
 import PanduanRolePanel from '../components/panduan/PanduanRolePanel.vue'
 import PanduanTopBar from '../components/panduan/PanduanTopBar.vue'
 import { GUIDE_ROLES, resolveGuideRole, type RoleId } from '../lib/panduan-content'
+
+// One tile track for the role buttons: no orphan row at any width (design 13).
+const roleGrid = tileLayout(GUIDE_ROLES.length)
 
 const LOGO_URL = `${import.meta.env.BASE_URL}images/prestasiplus-logo.svg`
 
@@ -83,10 +86,11 @@ function setRole(id: string): void {
         </p>
       </header>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5" data-testid="panduan-tabs">
+      <div class="grid gap-3" :class="roleGrid.grid" data-testid="panduan-tabs">
         <UButton
-          v-for="role in GUIDE_ROLES"
+          v-for="(role, i) in GUIDE_ROLES"
           :key="role.id"
+          :class="roleGrid.span[i]"
           :color="activeRole === role.id ? 'primary' : 'neutral'"
           :variant="activeRole === role.id ? 'solid' : 'soft'"
           block

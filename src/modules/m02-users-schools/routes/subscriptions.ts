@@ -22,10 +22,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/SubscriptionListPage.vue'),
     meta: {
       ...adminMeta,
-      title: 'Langganan Sekolah - Admin PRESTASIPLUS',
+      title: 'Langganan Sekolah',
       header: {
         title: 'Langganan Sekolah',
-        subtitle: 'Urus langganan pakej SPM untuk semua sekolah',
+        subtitle: 'Langganan sekolah',
       },
     },
   },

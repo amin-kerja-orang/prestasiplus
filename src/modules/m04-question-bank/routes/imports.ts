@@ -17,10 +17,10 @@ const routes: RouteRecordRaw[] = [
       v2: true,
       access: 'auth',
       roles: ['admin'],
-      title: 'Import Soalan',
+      title: 'Import CSV',
       header: {
-        title: 'Import Soalan Secara Pukal',
-        subtitle: 'Muat naik fail CSV untuk menambah soalan secara pukal',
+        title: 'Import CSV',
+        subtitle: 'Import soalan secara pukal dari fail CSV',
       },
       module: 'M04',
     },

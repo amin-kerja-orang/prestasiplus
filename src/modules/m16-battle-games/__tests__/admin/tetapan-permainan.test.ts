@@ -74,8 +74,8 @@ describe('route', () => {
     expect(route?.meta).toMatchObject({
       layout: 'admin',
       roles: ['admin'],
-      title: '🎮 Tetapan Permainan - Admin Panel',
-      header: { title: 'Tetapan Permainan' },
+      title: '🎮 Tetapan Permainan',
+      header: { title: '🎮 Tetapan Permainan' },
     })
   })
 })

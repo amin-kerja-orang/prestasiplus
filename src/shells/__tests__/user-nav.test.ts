@@ -90,8 +90,19 @@ const REMOVED_LIVE_HREFS = new Set(['/admin/tiket'])
  * S0-T07): Admin Pusat is framed by the Pentadbiran menu, which lists these screens itself (or, for
  * the gift links, will when the card that builds them lands).
  */
+/** Live label -> the V2 label the nav now uses (V2 `guru/layout.blade.php`, `pelajar/layout.blade.php`). */
+const V2_LABEL_OF_LIVE: Record<string, string> = {
+  Laporan: 'Laporan Statistik',
+  Video: 'Video Pembelajaran',
+  Panduan: 'Panduan Pengguna',
+  PKSK: 'PKSK PRO',
+  'Rantaian Impak': 'Rantaian',
+}
+
 const RETIRED_LIVE_HREFS = new Set([
   '/cikgu/kelulusan-hadiah',
+  // V2 pupil sidebar has one "Kedai Hadiah" (DIGITAL), at /gamification/rewards; the page stays reachable.
+  '/cikgu/hadiah',
   '/admin/hadiah',
   '/admin',
   '/admin/billing',
@@ -161,8 +172,9 @@ describe('USER_NAV data', () => {
     }
     const mismatched = liveMenuLinks.filter((l) => {
       if (REMOVED_LIVE_HREFS.has(l.href)) return false
-      // User decision 2026-10-31 (DV-M12-39): "Tahap N" replaces the live "TN" level labels.
-      const liveText = l.text.replace(/^T([1-4]): /, 'Tahap $1: ')
+      // PO decision 2026-11-10: the learning-portal labels follow V2 (guru/pelajar layouts), so the
+      // live "Laporan", "Video", "Panduan" and "PKSK" read as the V2 label here.
+      const liveText = V2_LABEL_OF_LIVE[l.text] ?? l.text
       const href = REPLACED_LIVE_HREFS[l.href] ?? l.href
       const candidates = byHref.get(href) ?? []
       const ok = candidates.some((c) => liveText === c.label || liveText.startsWith(`${c.label} `))
@@ -279,12 +291,12 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       expect(menu).not.toContain(hidden)
     }
     expect(menu).toContain('Heatmap Topik Lemah')
-    expect(menu).toContain('Kedai Hadiah 🎁')
+    expect(menu).toContain('Kedai Hadiah')
     expect(menu).toContain('Jemput Ibu Bapa')
     expect(menu.slice(-5)).toEqual([
       'Profil Saya',
       'Invois Saya',
-      'Panduan',
+      'Panduan Pengguna',
       'Bantuan',
       'Tiket Bantuan',
     ])
@@ -321,7 +333,7 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Kelas Live',
       'PENILAIAN',
       'Prestasi',
-      'Laporan',
+      'Laporan Statistik',
       'Amaran Awal',
       'ANALITIK',
       'Monitoring',
@@ -362,10 +374,10 @@ describe('navFor (role filter: hidden, not disabled)', () => {
       'Syiling & Ganjaran',
       'LAIN-LAIN',
       'Perutusan',
-      'Video',
+      'Video Pembelajaran',
       'Sumbang Artikel',
       'Profil Saya',
-      'Panduan',
+      'Panduan Pengguna',
       'Analisis Item',
       'Bantuan',
       'Tiket Bantuan',
@@ -373,11 +385,11 @@ describe('navFor (role filter: hidden, not disabled)', () => {
     const kirk = navFor('teacher', 'sidebar', USER_NAV, FULL).find((e) => e.id === 't-kirkpatrick')
     expect(kirk?.kind === 'group' && kirk.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'Tahap 1: Reaksi',
-      'Tahap 2: Pembelajaran',
-      'Tahap 3: Tingkah Laku',
-      'Tahap 4: Hasil',
-      'Rantaian Impak',
+      'T1: Reaksi',
+      'T2: Pembelajaran',
+      'T3: Tingkah Laku',
+      'T4: Hasil',
+      'Rantaian',
       'Intervensi',
     ])
   })
@@ -657,7 +669,7 @@ describe('S0-T06 nav integrity (scope on)', () => {
       'tournament', 'topik', 'peta-belajar', 'kelas-saya', 'set-soalan-guru', 'audio-kbat',
       'syiling-token', 'tukar-token', 'cabaran-harian', 'kedai-hadiah', 'marketplace',
       'papan-pendahulu', 'pencapaian', 'kotak-misteri', 'rujuk-kawan', 'cikgu-alesa',
-      'kedai-hadiah-digital', 'timeline-saya', 'jemput-ibu-bapa', 'profil-saya',
+      'timeline-saya', 'jemput-ibu-bapa', 'profil-saya',
       'tetapan-peribadi', 'panduan', 'tiket-bantuan',
     ],
     teacher: [

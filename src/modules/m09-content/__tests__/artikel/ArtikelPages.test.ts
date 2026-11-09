@@ -206,7 +206,8 @@ describe('ArtikelListPage (S15)', () => {
     const cls = w.get('[data-testid=artikel-pills]').classes()
     expect(cls).toContain('overflow-x-auto')
     expect(cls).toContain('sm:flex-wrap')
-    expect(w.get('[data-testid=artikel-grid]').classes()).toContain('grid-cols-1')
+    // One column below md, 2 from md, 3 from xl, the last row always full (data-ds-fill, ds-extras.css).
+    expect(w.get('[data-testid=artikel-grid]').attributes('data-ds-fill')).toBe('3')
   })
 
   it('empty result shows the empty state without grid and pager', async () => {

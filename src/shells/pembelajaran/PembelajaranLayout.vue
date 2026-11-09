@@ -239,10 +239,11 @@ const lagiGroups = computed(() => [
 const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
-    ? 'h-10 pointer-coarse:h-12 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 pointer-coarse:h-12 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
+    ? 'min-h-10 pointer-coarse:min-h-12 py-1 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
+    : 'min-h-10 pointer-coarse:min-h-12 py-1 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
-  linkLabel: 'truncate',
+  // A long label wraps beside its pill (never an ellipsis); the pill keeps its size.
+  linkLabel: 'min-w-0 whitespace-normal leading-tight',
   linkTrailing: 'shrink-0',
   label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
 }))
@@ -282,7 +283,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
         storage="local"
         storage-key="pembelajaran-dashboard-v3"
         unit="rem"
-        :class="modeOn ? 'top-10!' : ''"
+        :style="modeOn ? { top: 'var(--mod-bar-h, 2.5rem)' } : undefined"
         class="overflow-clip bg-muted"
       >
         <!-- Sidebar (>= lg): full height, collapses to an icon rail -->
@@ -333,14 +334,14 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span
+                ><span class="min-w-0" :title="labelTitle(item.label)">{{ item.label }}</span
                 ><DsBadge
                   v-if="badgeOf(item)"
                   :label="badgeOf(item)"
                   tone="error"
                   emphasis="strong"
                   size="sm"
-                  class="ml-1.5 px-1.5"
+                  class="ml-1.5 shrink-0 px-1.5"
                   data-testid="pembelajaran-nav-badge"
               /></template
               >
@@ -359,6 +360,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :as="{ title: 'div' }"
               :ui="{
                 root: 'px-4 pt-[env(safe-area-inset-top)] sm:px-4',
+                left: 'min-w-0 flex-1',
                 title: 'min-w-0',
                 right: 'gap-2',
               }"
@@ -388,7 +390,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   <component
                     :is="route.meta.ownsH1 ? 'p' : 'h1'"
                     v-if="title"
-                    class="truncate text-subheading text-highlighted"
+                    class="truncate text-body font-semibold text-highlighted sm:text-subheading"
                     :data-testid="route.meta.ownsH1 ? 'shell-title' : undefined"
                   >
                     {{ title }}
@@ -463,7 +465,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:pt-6 lg:pb-12"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 sm:pt-6 lg:pb-12"
+              :class="promptShown ? 'pb-72' : 'pb-32'"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
@@ -530,7 +533,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
           <li v-for="tab in tabs" :key="tab.id" class="min-w-0 flex-1">
             <RouterLink
               :to="tab.to"
-              class="relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption"
+              class="relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption"
               :class="
                 tabActive(tab, route.path)
                   ? learner
@@ -541,9 +544,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :aria-current="tabActive(tab, route.path) ? 'page' : undefined"
               :data-nav-id="`tab-${tab.id}`"
             >
-              <DsIcon :name="tab.icon" class="size-6" />
+              <DsIcon :name="tab.icon" class="size-6 shrink-0" />
               <span
-                class="max-w-full text-center text-caption leading-tight break-normal"
+                class="block w-full truncate text-center text-caption leading-tight"
                 :title="tab.label"
                 >{{ tab.label }}</span
               >
@@ -559,13 +562,13 @@ const chipClass = (chip: unknown, active: boolean): string =>
           <li class="min-w-0 flex-1">
             <button
               type="button"
-              class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-chip px-1 text-caption text-muted"
+              class="flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption text-muted"
               :aria-expanded="lagiOpen"
               data-nav-id="tab-lagi"
               @click="lagiOpen = true"
             >
-              <DsIcon name="dots-three-circle" class="size-6" />
-              <span>Lagi</span>
+              <DsIcon name="dots-three-circle" class="size-6 shrink-0" />
+              <span class="block w-full truncate text-center leading-tight">Lagi</span>
             </button>
           </li>
         </ul>
@@ -608,14 +611,14 @@ const chipClass = (chip: unknown, active: boolean): string =>
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span
+              ><span class="min-w-0" :title="labelTitle(item.label)">{{ item.label }}</span
                 ><DsBadge
                   v-if="badgeOf(item)"
                   :label="badgeOf(item)"
                   tone="error"
                   emphasis="strong"
                   size="sm"
-                  class="ml-1.5 px-1.5"
+                  class="ml-1.5 shrink-0 px-1.5"
                   data-testid="pembelajaran-nav-badge"
               /></template
             >
@@ -638,7 +641,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
       />
       <aside
         v-if="promptShown"
-        class="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-sm flex-col gap-3 rounded-card bg-default p-4 shadow-lg ring ring-default lg:inset-x-auto lg:right-6 lg:bottom-6"
+        class="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-sm flex-col gap-3 rounded-card bg-default p-4 shadow-lg ring ring-default lg:inset-x-auto lg:top-20 lg:right-6 lg:bottom-auto"
         aria-label="Pilih rakan belajar"
         data-testid="friend-prompt"
       >

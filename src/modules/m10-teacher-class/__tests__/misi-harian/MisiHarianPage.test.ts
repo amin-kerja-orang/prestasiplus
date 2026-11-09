@@ -186,9 +186,8 @@ describe('R1-GUR-2b MisiHarianPage', () => {
   it('AC-GUR-2b-4 (R): cards stack on one column at 375 and every control is at least 44px', async () => {
     api.fetchTeacherMissions.mockResolvedValue([mission('own')])
     const w = await mountPage()
-    expect(w.get('[data-testid="misi-list"]').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-1', 'md:grid-cols-2']),
-    )
+    // One column below md, 2 from md, 3 from xl, last row full (data-ds-fill).
+    expect(w.get('[data-testid="misi-list"]').attributes('data-ds-fill')).toBe('3')
     expect(w.get('[data-testid="misi-new"]').classes()).toContain('min-h-11')
     expect(w.get('[data-testid="misi-delete"]').classes()).toEqual(
       expect.arrayContaining(['min-h-11', 'min-w-11']),

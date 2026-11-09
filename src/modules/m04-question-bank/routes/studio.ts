@@ -12,7 +12,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/studio',
     name: 'm04.studio.list',
     component: () => import('../pages/StudioListPage.vue'),
-    meta: { ...adminMeta, title: 'Studio', header: { title: 'Studio', subtitle: 'Bank soalan kanonikal - cipta, semak, terbit' } },
+    meta: { ...adminMeta, title: 'Studio', header: { title: 'Studio', subtitle: 'Bank soalan kanonikal — cipta, semak, terbit' } },
   },
   {
     path: '/admin/studio/questions/create',

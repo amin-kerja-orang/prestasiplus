@@ -35,7 +35,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       ...base,
       title: 'Bijak SPM - PRESTASIPLUS',
-      header: { title: 'Bijak SPM', subtitle: 'Kertas SPM penuh, bermasa, dengan skema' },
+      header: { title: 'Simulasi Peperiksaan', subtitle: 'Duduki kertas SPM dalam format kertas sebenar — jawab, tanda automatik setiap halaman' },
     },
   },
   {

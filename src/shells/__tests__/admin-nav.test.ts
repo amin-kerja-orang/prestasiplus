@@ -91,11 +91,11 @@ describe('adminMenuFor / chromeFor: the menu per role', () => {
     expect(group?.key).toBe('kirkpatrick')
     expect(group?.children.map((c) => c.label)).toEqual([
       'Ringkasan',
-      'Tahap 1: Reaksi',
-      'Tahap 2: Pembelajaran',
-      'Tahap 3: Tingkah Laku',
-      'Tahap 4: Hasil',
-      'Rantaian Impak',
+      'T1: Reaksi',
+      'T2: Pembelajaran',
+      'T3: Tingkah Laku',
+      'T4: Hasil',
+      'Rantaian',
       'Intervensi',
     ])
   })
@@ -121,9 +121,9 @@ describe('active item: single longest match (shells.md §2.8)', () => {
     expect(label('/guru/monitoring')).toBe('Monitoring')
     expect(label('/guru/monitoring/sekolah/3')).toBe('Monitoring')
     expect(label('/guru/kirkpatrick')).toBe('Ringkasan')
-    expect(label('/guru/kirkpatrick/results')).toBe('Tahap 4: Hasil')
+    expect(label('/guru/kirkpatrick/results')).toBe('T4: Hasil')
     expect(label('/guru/kirkpatrick/pelajar/8')).toBeNull()
-    expect(label('/guru/laporan')).toBe('Laporan')
+    expect(label('/guru/laporan')).toBe('Laporan Statistik')
     expect(label('/guru/laporan-mingguan-kelas')).toBe('Laporan Mingguan')
     expect(label('/guru/kelas/4')).toBe('Kelas Saya')
     expect(activeGroupKey(teacherEntries, '/guru/kirkpatrick/pelajar/8')).toBe('kirkpatrick')
@@ -131,7 +131,7 @@ describe('active item: single longest match (shells.md §2.8)', () => {
   })
 
   it('the query string and hash are ignored, and a longer sibling path does not match', () => {
-    expect(label('/guru/laporan?page=2#top')).toBe('Laporan')
+    expect(label('/guru/laporan?page=2#top')).toBe('Laporan Statistik')
     expect(label('/guru/laporan-mingguan-kelas/3')).toBe('Laporan Mingguan')
   })
 })
@@ -181,16 +181,16 @@ describe('"Lagi" popover (shells.md §2.4, §2.7)', () => {
       'Kelas Saya',
       'Monitoring',
       'Ringkasan',
-      'Tahap 1: Reaksi',
+      'T1: Reaksi',
     ]) {
       expect(labels).not.toContain(excluded)
     }
     for (const kept of [
       'Headcount',
-      'Laporan',
+      'Laporan Statistik',
       'Analitik Adaptif',
       'Cikgu Alesa Chat',
-      'Panduan',
+      'Panduan Pengguna',
     ]) {
       expect(labels).toContain(kept)
     }

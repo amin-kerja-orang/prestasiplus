@@ -51,6 +51,11 @@ const title = computed(() => {
   if (header?.title) return header.title
   return current.value?.label ?? 'Pentadbiran'
 })
+// The page description: the route's static header subtitle (the V2 `@section('subtitle')`) wins;
+// a page that sets none lifts its own (`DsPageHeader`, `shellPageSubtitle`).
+const subtitle = computed(
+  () => (pageMeta.state.header ?? route.meta.header)?.subtitle || shellPageSubtitle.value,
+)
 // A detail page may name its entity (useShellEntityTitle): last crumb, and part of the tab title.
 const entity = shellEntityTitle
 useShellTabTitle(computed(() => (entity.value ? `${entity.value} · ${title.value}` : title.value)))
@@ -117,7 +122,7 @@ const accountItems = computed<DsShellAccountItem[][]>(() => [
     :crumbs="crumbs"
     :title="title"
     :entity="entity"
-    :subtitle="shellPageSubtitle"
+    :subtitle="subtitle"
     brand-to="/admin"
     brand-label="Pentadbiran"
     :account-name="name"

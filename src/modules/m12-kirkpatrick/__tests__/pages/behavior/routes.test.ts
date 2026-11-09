@@ -102,29 +102,35 @@ describe('M12-T3/T4 route fragments (FR-M12-05, 06, 08, 13, 16)', () => {
   it('has the exact tab titles and shell headers', () => {
     const m = (p: string) => byPath(`/admin/kirkpatrick/${p}`)?.meta
     expect(m('behavior')).toMatchObject({
-      title: 'Tahap 3: Tingkah Laku — Kirkpatrick',
+      title: 'T3: Tingkah Laku',
       header: {
-        title: 'Tahap 3: Tingkah Laku',
-        subtitle: 'Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar',
+        title: 'T3: Tingkah Laku',
+        subtitle: 'Kirkpatrick Tahap 3 — Konsistensi penggunaan',
       },
     })
     expect(m('results')).toMatchObject({
-      title: 'Tahap 4: Hasil — Kirkpatrick',
+      title: 'T4: Hasil',
       header: {
-        title: 'Tahap 4: Hasil',
-        subtitle: 'Impak terhadap keputusan peperiksaan dan prestasi akademik',
+        title: 'T4: Hasil',
+        subtitle: 'Kirkpatrick Tahap 4 — Keputusan peperiksaan',
       },
     })
     expect(m('chain')).toMatchObject({
-      title: 'Kirkpatrick Impact Chain',
-      header: { title: 'Rantaian Impak' },
-    })
-    expect(m('chain')?.header).not.toHaveProperty('subtitle')
-    expect(m('interventions')).toMatchObject({
-      title: 'Intervensi — Kirkpatrick',
+      title: 'Rantaian Impak',
       header: {
-        title: 'Intervensi Pelajar',
-        subtitle: 'Rekod tindakan intervensi berdasarkan amaran Kirkpatrick',
+        title: 'Rantaian Impak',
+        subtitle: 'Rantaian impak Kirkpatrick — 4 tahap keberkesanan',
+      },
+    })
+    // V2 guru/kirkpatrick: the guru pages carry their own headings
+    expect(byPath('/guru/kirkpatrick/chain')?.meta?.header?.title).toBe('Rantaian Impak T1 → T4')
+    expect(byPath('/guru/kirkpatrick/interventions')?.meta?.header?.title).toBe('Intervensi Pelajar')
+    expect(byPath('/guru/kirkpatrick')?.meta?.header?.title).toBe('Kirkpatrick Evaluation')
+    expect(m('interventions')).toMatchObject({
+      title: 'Intervensi',
+      header: {
+        title: 'Intervensi',
+        subtitle: 'Kirkpatrick — Cadangan & rekod intervensi',
       },
     })
   })

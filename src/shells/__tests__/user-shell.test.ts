@@ -169,7 +169,7 @@ describe('UserShell: menu per role (hidden, not disabled)', () => {
     const w = await open('/dashboard')
     const d = drawer(w)
     const side = navLabels(sidebar(w)).filter(
-      (l) => !['Profil Saya', 'Panduan', 'Target SPM', 'Misi Harian', 'Remedial'].includes(l),
+      (l) => !['Profil Saya', 'Panduan', 'Panduan Pengguna', 'Target SPM', 'Misi Harian', 'Remedial'].includes(l),
     )
     const menu = navLabels(d).slice(0, side.length)
     expect(menu).toEqual(side)

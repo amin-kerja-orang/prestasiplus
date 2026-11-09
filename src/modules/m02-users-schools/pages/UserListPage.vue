@@ -473,7 +473,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
 <template>
   <DsPage
-    title="Pengurusan Pengguna"
+    title="Senarai Pengguna"
     subtitle="Cari, tapis dan urus akaun pelajar, guru dan pentadbir."
     data-testid="users-page"
   >

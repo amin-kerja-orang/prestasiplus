@@ -574,7 +574,7 @@ const cardFields: CardField[] = [
     <DsCallout v-if="!available" tone="info" data-testid="studio-unavailable">{{ STUDIO_UNAVAILABLE }}</DsCallout>
 
     <template v-else>
-      <DsGrid :cols="{ base: 2, md: 4 }" gap="md" data-testid="studio-tiles">
+      <DsGrid :tiles="STATUS_ORDER.length" gap="md" data-testid="studio-tiles">
         <DsStatTile
           v-for="s in STATUS_ORDER"
           :key="s"

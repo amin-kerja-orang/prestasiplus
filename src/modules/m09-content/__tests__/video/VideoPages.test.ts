@@ -224,7 +224,8 @@ describe('VideoListPage (S17)', () => {
     login()
     const w = await mountAt(VideoListPage, '/page')
     const cls = t(w, 'video-grid').classes()
-    expect(cls).toEqual(expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3']))
+    // 1 / 2 / 3 columns (md, xl) with a full last row: data-ds-fill="3" in ds-extras.css.
+    expect(t(w, 'video-grid').attributes('data-ds-fill')).toBe('3')
     expect(cls).not.toContain('xl:grid-cols-4')
   })
 

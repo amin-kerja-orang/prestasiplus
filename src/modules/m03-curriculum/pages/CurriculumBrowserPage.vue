@@ -186,7 +186,7 @@ provide(TREE_ACTIONS, actions)
 <template>
   <DsPage data-testid="curriculum-page">
     <DsPageHeader
-      title="Pengurusan Kurikulum"
+      title="Kurikulum"
       subtitle="Urus bab, topik dan subtopik mengikut subjek dan tahap."
     >
       <template v-if="activeTab === 'bab' && showTree && tree" #actions>

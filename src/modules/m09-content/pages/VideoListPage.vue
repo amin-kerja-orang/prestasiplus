@@ -295,7 +295,7 @@ function goToPage(page: number): void {
 
       <ul
         v-else
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3"
+        class="grid gap-4 md:gap-6" data-ds-fill="3"
         data-testid="video-grid"
       >
         <li v-for="video in videos" :key="video.id" class="min-w-0">

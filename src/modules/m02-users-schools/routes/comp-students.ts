@@ -22,10 +22,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CompStudentListPage.vue'),
     meta: {
       ...adminMeta,
-      title: 'Pelajar Komplimen - Admin Panel',
+      title: 'Pelajar Komplimen',
       header: {
         title: 'Pelajar Komplimen',
-        subtitle: 'Pelajar bantuan QA — pakej penuh percuma, syiling dimatikan',
+        subtitle: 'Pelajar komplimen',
       },
     },
   },
@@ -49,7 +49,7 @@ const routes: RouteRecordRaw[] = [
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
       ...adminMeta,
-      title: 'Pelajar Komplimen - Admin Panel',
+      title: 'Pelajar Komplimen',
       header: { title: 'Pelajar Komplimen', subtitle: 'Detail pelajar komplimen' },
     },
   },

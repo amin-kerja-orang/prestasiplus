@@ -12,8 +12,8 @@ defineProps<{ rows: readonly LedgerEntry[] }>()
   <UCard class="min-w-0" data-testid="s11-recent">
     <div class="flex flex-col gap-3">
       <div class="flex items-center justify-between gap-3">
-        <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
-          <DsIconChip icon="i-ph-clock-counter-clockwise-duotone" size="sm" />Transaksi Terkini
+        <h2 class="flex min-w-0 items-center gap-2 font-display text-subheading font-bold text-highlighted">
+          <DsIconChip icon="i-ph-clock-counter-clockwise-duotone" size="sm" /><span class="truncate">Transaksi Terkini</span>
         </h2>
         <UButton
           to="/gamification/history"

@@ -252,7 +252,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
 
 <template>
   <DsPage
-    title="Urus Sekolah"
+    title="Sekolah"
     subtitle="Senarai sekolah berdaftar, status dan bilangan pelajar serta guru."
     data-testid="schools-page"
   >
@@ -369,7 +369,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             v-if="!isPrimary(row.original)"
             type="button"
             color="neutral"
-            variant="soft"
+            variant="ghost"
             icon="i-ph-arrows-clockwise"
             title="Tukar kod pendaftaran"
             aria-label="Tukar kod pendaftaran"
@@ -411,7 +411,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             v-if="!isPrimary(row.original)"
             :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.original.id } }"
             color="neutral"
-            variant="soft"
+            variant="ghost"
             icon="i-ph-pencil-simple"
             title="Edit"
             aria-label="Edit"
@@ -421,7 +421,8 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             <UButton
               type="submit"
               color="neutral"
-              variant="soft"
+              variant="ghost"
+              square
               :title="row.original.isActive ? 'Nyahaktif' : 'Aktifkan'"
               :aria-label="row.original.isActive ? 'Nyahaktif' : 'Aktifkan'"
               :loading="toggling === row.original.id"

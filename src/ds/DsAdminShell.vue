@@ -230,7 +230,7 @@ const accountMenu = computed(() =>
             <UDashboardNavbar
               :toggle="false"
               :as="{ title: 'div' }"
-              :ui="{ root: 'px-4 sm:px-4 md:px-6', title: 'min-w-0', right: 'gap-2' }"
+              :ui="{ root: 'px-4 sm:px-4 md:px-6', left: 'min-w-0 flex-1', title: 'min-w-0', right: 'gap-2' }"
               data-testid="pentadbiran-header"
             >
               <template #leading>
@@ -305,12 +305,16 @@ const accountMenu = computed(() =>
                   <!-- Avatar only (PO 2026-11-09): the name and role head the dropdown. -->
                   <button
                     type="button"
-                    class="ml-1 grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on ring-2 ring-transparent ring-offset-2 ring-offset-default transition hover:ring-primary/40 focus-visible:ring-primary focus-visible:outline-none"
+                    class="group ml-1 grid size-11 shrink-0 place-items-center rounded-full focus-visible:outline-none md:size-10"
                     :aria-label="`Menu akaun: ${accountName || 'Akaun'}`"
                     :title="accountName || 'Akaun'"
                     data-testid="pentadbiran-account"
                   >
-                    <span aria-hidden="true">{{ initials }}</span>
+                    <span
+                      class="grid size-8 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on ring-2 ring-transparent ring-offset-2 ring-offset-default transition group-hover:ring-primary/40 group-focus-visible:ring-primary"
+                      aria-hidden="true"
+                      >{{ initials }}</span
+                    >
                   </button>
                   <template #content-top>
                     <div class="flex items-center gap-2.5 px-3 pt-3 pb-2" data-testid="pentadbiran-account-head">

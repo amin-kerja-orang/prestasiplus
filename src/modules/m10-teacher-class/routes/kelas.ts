@@ -20,7 +20,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles,
       title: 'Kelas Saya - Portal Guru',
-      header: { title: 'Portal Guru', subtitle: 'Urus kelas dan tugasan anda 🏫' },
+      header: { title: 'Kelas Saya', subtitle: 'Urus kelas dan tugasan anda 🏫' },
       module: 'M10',
       v2: true,
     },

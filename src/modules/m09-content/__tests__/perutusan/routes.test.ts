@@ -43,7 +43,7 @@ describe('M09 perutusan routes (S5-T09)', () => {
 
   it('tab title is the page name (formatTabTitle adds the brand)', () => {
     expect(routes.map((r) => r.meta?.title)).toEqual([
-      'Perutusan Rasmi',
+      'Perutusan',
       'Tulis Perutusan',
       'Perutusan Saya',
       'Perutusan',
@@ -55,7 +55,7 @@ describe('M09 perutusan routes (S5-T09)', () => {
       expect(r.meta).toMatchObject({ layout: 'user', access: 'auth', module: 'M09', v2: true })
     }
     expect(routes[0]?.meta?.header).toEqual({
-      title: 'Perutusan Rasmi',
+      title: 'Perutusan',
       subtitle: 'Maklumat & berita dari pihak pengurusan',
     })
   })

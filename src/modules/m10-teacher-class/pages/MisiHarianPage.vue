@@ -141,7 +141,7 @@ async function remove(m: TeacherMission): Promise<void> {
       </DsEmptyState>
     </DsPanel>
 
-    <DsGrid v-else as="ul" :cols="{ base: 1, md: 2, xl: 3 }" data-testid="misi-list">
+    <DsGrid v-else as="ul" :balanced="3" data-testid="misi-list">
       <DsGridItem v-for="m in data" :key="m.id" as="li" data-testid="misi-card">
         <DsPanel class="h-full">
           <DsStack gap="sm">

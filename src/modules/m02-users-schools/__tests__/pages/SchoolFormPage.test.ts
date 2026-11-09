@@ -166,7 +166,7 @@ describe('SchoolFormPage edit (M02 S11)', () => {
     expect(w.get('[data-testid=school-active]').attributes('aria-checked')).toBe('false')
     expect(w.get('[data-testid=form-submit]').text()).toBe('Kemaskini')
     expect(usePageMeta().state.header).toEqual({
-      title: 'Edit Sekolah',
+      title: 'Sunting Sekolah',
       subtitle: 'SK TAMAN CONTOH',
     })
   })

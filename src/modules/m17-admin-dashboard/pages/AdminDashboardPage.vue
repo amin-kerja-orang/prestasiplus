@@ -10,7 +10,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsChart, DsGrid, DsListRow, DsLoadError, DsPage, DsPanel, DsStack, DsStatTile } from '@/ds'
+import { DsChart, DsGrid, DsGridItem, DsListRow, DsLoadError, DsPage, DsPanel, DsStack, DsStatTile, tileLayout } from '@/ds'
 import { groupAccent } from '@/ds/shellAccent'
 import { formatCount } from '@/lib/number'
 
@@ -129,6 +129,9 @@ const tiles = computed(() => {
     },
   ]
 })
+// Eleven tiles (also while loading): orphan-free rows at every width (design 13).
+const tileCount = computed(() => (tiles.value.length > 0 ? tiles.value.length : 11))
+const tileSpan = computed(() => tileLayout(tileCount.value).spans)
 
 const statusLabels = ['Draf', 'Menunggu Semakan', 'Diluluskan', 'Diarkibkan']
 /** Meaning colours of the four statuses, the same as the status tiles (Draf trial, Menunggu heat, Diluluskan win, Diarkibkan neutral). */
@@ -163,22 +166,24 @@ const quickLinks = [
       @retry="reload"
     />
     <template v-else>
-      <DsGrid :cols="{ base: 1, sm: 2, lg: 3, xl: 4 }" gap="md" data-testid="adm-tiles" aria-label="Ringkasan">
+      <DsGrid :tiles="tileCount" gap="md" data-testid="adm-tiles" aria-label="Ringkasan">
         <template v-if="!data">
-          <DsStatTile v-for="i in 11" :key="i" :value="null" unit="" loading />
+          <DsGridItem v-for="i in tileCount" :key="i" :span="tileSpan[i - 1]">
+            <DsStatTile :value="null" unit="" loading />
+          </DsGridItem>
         </template>
-        <DsStatTile
-          v-for="t in tiles"
-          :key="t.key"
-          :value="t.value"
-          :unit="t.unit"
-          :sub="t.sub"
-          :icon="t.icon"
-          :accent="t.accent"
-          :loading="loading && !data"
-          :part-prefix="`adm-tile-${t.key}`"
-          v-bind="t.to ? { to: t.to } : {}"
-        />
+        <DsGridItem v-for="(t, i) in tiles" :key="t.key" :span="tileSpan[i]">
+          <DsStatTile
+            :value="t.value"
+            :unit="t.unit"
+            :sub="t.sub"
+            :icon="t.icon"
+            :accent="t.accent"
+            :loading="loading && !data"
+            :part-prefix="`adm-tile-${t.key}`"
+            v-bind="t.to ? { to: t.to } : {}"
+          />
+        </DsGridItem>
       </DsGrid>
 
       <DsGrid min-item="md" gap="md">

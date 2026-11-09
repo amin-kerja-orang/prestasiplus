@@ -60,9 +60,13 @@ const fieldConfig = {
   defaultVariants: { variant: 'soft' },
   variants: {
     variant: { soft: filled },
+    // Every size is a 44px control (the size variants win over the slots, so the floor lives here).
     size: {
+      xs: { base: fieldSize },
+      sm: { base: fieldSize },
       md: { base: fieldSize },
       lg: { base: fieldSize },
+      xl: { base: fieldSize },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -79,7 +83,7 @@ const menuField = {
     size: Object.fromEntries(
       Object.keys(menuSizeVariants).map((k) => [
         k,
-        { ...menuSizeVariants[k], ...(k === 'md' || k === 'lg' ? { base: fieldSize } : {}) },
+        { ...menuSizeVariants[k], base: fieldSize },
       ]),
     ),
   },
@@ -206,8 +210,9 @@ export const uiConfig = {
       // Loading: the leading icon spins (stock); the button shows progress and ignores clicks.
       loading: { true: { base: 'cursor-progress' } },
       size: {
-        xs: { base: 'min-h-9 px-2.5 text-label' },
-        sm: { base: 'min-h-10 px-3.5 text-label' },
+        // Touch targets: 44px below md, the compact sizes from md.
+        xs: { base: 'min-h-11 px-2.5 text-label md:min-h-9' },
+        sm: { base: 'min-h-11 px-3.5 text-label md:min-h-10' },
         md: {
           base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },
@@ -242,6 +247,8 @@ export const uiConfig = {
       },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
+      // Link buttons ("Lihat semua →" beside a card title) never wrap or get squeezed by the title.
+      { variant: 'link', class: 'shrink-0 whitespace-nowrap' },
       // Staff: a primary button (the default colour) is the page's main action, so it is solid even
       // when the caller leaves the variant at the tonal default. Secondary actions say `color="neutral"`.
       {
@@ -311,6 +318,14 @@ export const uiConfig = {
       trigger: `text-label transition-colors duration-fast hover:text-highlighted ${disabledState} ${focusRing}`,
     },
     variants: {
+      // Every tab (pill, link...) is a 44px touch target; the size variants come after the slots, so it lives here.
+      size: {
+        xs: { trigger: 'min-h-11' },
+        sm: { trigger: 'min-h-11' },
+        md: { trigger: 'min-h-11' },
+        lg: { trigger: 'min-h-11' },
+        xl: { trigger: 'min-h-11' },
+      },
       variant: {
         pill: {
           list: 'bg-elevated rounded-md p-1 gap-1',
@@ -352,7 +367,7 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Label (+ caption) centred on the 44px control box: box and text share one axis.
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
-      base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      base: "relative transition-colors duration-fast after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
       label: 'text-label',
       description: 'text-caption text-muted',
@@ -360,7 +375,7 @@ export const uiConfig = {
   },
   navigationMenu: {
     slots: {
-      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted data-[state=open]:bg-elevated ${disabledState} ${focusRing}`,
+      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted focus-visible:before:bg-elevated focus-visible:before:outline-0 focus-visible:text-highlighted focus-visible:outline-none data-[state=open]:bg-elevated ${disabledState}`,
       childLink: 'min-h-11 px-3 text-label',
       linkLeadingIcon: 'size-5',
     },
@@ -416,8 +431,8 @@ export const uiConfig = {
         'divide-y-0 [&>tr:nth-child(even)]:bg-soft [&>tr[data-selectable=true]:hover]:bg-elevated [&>tr[data-selected=true]]:bg-primary-soft',
       tr: `transition-colors duration-fast ${focusRing}`,
       empty: 'py-8 text-center text-body text-muted',
-      th: 'px-4 py-3 text-th text-muted',
-      td: 'px-4 py-3 text-body tabular-nums',
+      th: 'px-4 py-3 sm:px-5 text-th text-muted',
+      td: 'px-4 py-3 sm:px-5 text-body tabular-nums',
     },
   },
 

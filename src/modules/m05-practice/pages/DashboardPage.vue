@@ -76,7 +76,7 @@ watch(
         :streak-count="data.streak.count"
       />
       <HomeRewards :data="data" />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2" data-ds-fill="2">
         <HomePakej v-if="data.package" :name="data.package.name" :valid-until="data.package.validUntil" />
         <HomeTrial v-else-if="data.trial.active" :trial="data.trial" />
         <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
@@ -93,7 +93,7 @@ watch(
         :week="data.week"
         :accuracy-pct="data.accuracyPct"
       />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2" data-ds-fill="2">
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
       </div>
