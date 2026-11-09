@@ -246,6 +246,17 @@ Inputs, selects and search buttons have **no border**; they are filled with `bg-
 
 ---
 
+### 3.x Unified accent palette (2026-11-09)
+
+One colour system from the login screen to the whole app. The login brand panel is the A1 gradient (blue to violet) with white 3D art; the app uses the same hues as five meaning accents (`src/ds/accent.ts`): **action** = brand blue, **friend** = violet, **heat** = orange, **win** = lime, **trial** = amber. No other hue is used for chrome. Ruby, sea and green (`cat-3/4/8`) are supporting data hues only (charts beyond five series, subject identity, status), never area colours.
+
+- **Ink slots.** The solid lime and amber fills are too light to carry a glyph, so a tint pairs the accent's AA ink slot: action `cat-1`, win `cat-2`, trial `cat-5`, heat `cat-6`, friend `cat-7` (`--ds-cat-*`, darker in light mode, lifted in dark mode).
+- **Tint strength.** One strength everywhere: chip = 20% tint of the ink + glyph in the ink (sidebar chips in Pentadbiran and Pembelajaran). Measured glyph contrast on the tint (WCAG 3:1 for icons): light on white 4.6 to 5.3, light on muted 4.3 to 4.6, dark on card 3.7 to 7.3, dark on page 4.2 to 8.3.
+- **Group to accent** (single source: `GROUP_ACCENT` in `src/ds/shellAccent.ts`; neighbouring groups always differ): pintasan action, harian heat, analitik trial, kurikulum heat, soalan friend, pengguna action, spm heat, premium trial, kawalan-ciri friend, gamifikasi win, battle-permainan heat, marketplace friend, kandungan action, sistem trial, ditangguh win.
+- **Same accent per area.** Dashboard tiles take `groupAccent(<area>)`: Pelajar and Pengguna = pengguna (action), Guru friend, Sekolah heat (people and organisation tiles differ; the 4-column grid never puts equal accents side by side or stacked); Soalan Aktif = soalan (friend); Subjek, Tahap Pendidikan = kurikulum (heat); Battle Arena = battle-permainan (heat). The three question-status tiles keep a meaning accent: Diluluskan win, Menunggu Semakan heat, Draf trial.
+- **Charts.** `DsChart` (staff) draws series without an explicit slot in accent order: blue, violet, orange, lime, amber, then ruby, sea, green. Explicit slots (subject identity) are unchanged.
+- **Pupil shell.** Sidebar chips keep the subject-slot colours (`cat-*`, set by item colour) at the same 20% tint.
+
 ## 4. Layers, shadows and shape
 
 - **Levels (max 3):** page → raised → elevated. A control sitting on a raised card uses the elevated fill; on the page it uses raised. Never stack a fourth level; use `bg-accented`/hover step instead of nesting cards.

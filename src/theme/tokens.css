@@ -422,7 +422,11 @@
   --ds-r-sheet: var(--ds-r-xl);
   --ds-r-chip: var(--ds-r-sm);
 
-  /* Subject identity dots, slots 1 to 8 (data stores the slot number, never hex). */
+  /* Subject identity dots, slots 1 to 8 (data stores the slot number, never hex).
+     Unified accent palette (2026-11-09): slots 1, 7, 6, 2, 5 are the AA ink of the five meaning accents
+     (action blue, friend violet, heat orange, win lime, trial amber) used by shell chips, dashboard tiles
+     and chart series; slots 3, 4, 8 (ruby, sea, green) are supporting data hues. See src/ds/shellAccent.ts
+     and docs/design/v2-design-system.md "Unified accent palette". */
   --ds-cat-1: var(--color-kobalt-600);
   --ds-cat-2: var(--color-limau-800);
   --ds-cat-3: var(--color-delima-700);

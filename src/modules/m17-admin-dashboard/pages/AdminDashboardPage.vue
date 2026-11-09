@@ -11,6 +11,7 @@ import { computed } from 'vue'
 
 import { useApi } from '@/composables'
 import { DsChart, DsGrid, DsListRow, DsLoadError, DsPage, DsPanel, DsStack, DsStatTile } from '@/ds'
+import { groupAccent } from '@/ds/shellAccent'
 import { formatCount } from '@/lib/number'
 
 import { fetchAdminDashboard } from '../api/command-center'
@@ -25,10 +26,11 @@ const tiles = computed(() => {
   if (!d) return []
   const q = d.questions
   return [
+    // Tile accent = accent of its menu area (shellAccent, one palette); the status tiles keep a meaning accent.
     // V2 Panel Papan Pemuka: the three cards Pelajar, Guru and Sekolah come first.
     {
       key: 'pelajar',
-      accent: 'action' as const,
+      accent: groupAccent('pengguna'),
       unit: 'Pelajar',
       value: d.users.students,
       sub: 'Jumlah pelajar berdaftar',
@@ -55,7 +57,7 @@ const tiles = computed(() => {
     },
     {
       key: 'aktif',
-      accent: 'trial' as const,
+      accent: groupAccent('soalan'),
       unit: 'Soalan Aktif',
       value: q.total,
       sub: `Minggu ini: ${n(q.thisWeek)}`,
@@ -82,7 +84,7 @@ const tiles = computed(() => {
     },
     {
       key: 'draf',
-      accent: 'friend' as const,
+      accent: 'trial' as const,
       unit: 'Draf',
       value: q.byStatus.draft,
       sub: 'Belum siap',
@@ -91,7 +93,7 @@ const tiles = computed(() => {
     },
     {
       key: 'subjek',
-      accent: 'action' as const,
+      accent: groupAccent('kurikulum'),
       unit: 'Subjek',
       value: d.subjects.total,
       sub: `${n(d.subjects.active)} Aktif`,
@@ -100,7 +102,7 @@ const tiles = computed(() => {
     },
     {
       key: 'tahap',
-      accent: 'trial' as const,
+      accent: groupAccent('kurikulum'),
       unit: 'Tahap Pendidikan',
       value: d.levels,
       sub: 'Tingkatan',
@@ -109,7 +111,7 @@ const tiles = computed(() => {
     },
     {
       key: 'pengguna',
-      accent: 'friend' as const,
+      accent: groupAccent('pengguna'),
       unit: 'Pengguna',
       value: d.users.total,
       sub: `${n(d.users.students)} Pelajar`,
@@ -118,7 +120,7 @@ const tiles = computed(() => {
     },
     {
       key: 'battle',
-      accent: 'heat' as const,
+      accent: groupAccent('battle-permainan'),
       unit: 'Battle Arena',
       value: d.battles.total,
       sub: `PvP Quiz Battles · ${n(d.battles.total)} Total · ${n(d.battles.active)} Aktif · ${n(d.battles.finished)} Selesai`,
@@ -129,6 +131,8 @@ const tiles = computed(() => {
 })
 
 const statusLabels = ['Draf', 'Menunggu Semakan', 'Diluluskan', 'Diarkibkan']
+/** Meaning colours of the four statuses, the same as the status tiles (Draf trial, Menunggu heat, Diluluskan win, Diarkibkan neutral). */
+const statusAccents = ['trial', 'heat', 'win', 'neutral'] as const
 const statusEmpty = computed(() => (data.value?.questions.total ?? 0) === 0)
 const statusSeries = computed(() => {
   const s = data.value?.questions.byStatus
@@ -196,6 +200,7 @@ const quickLinks = [
           title="Taburan Status Soalan"
           :labels="statusLabels"
           :series="statusSeries"
+          :point-accents="[...statusAccents]"
           :loading="!data"
           empty-label="Tiada soalan."
           table-label="Taburan Status Soalan"

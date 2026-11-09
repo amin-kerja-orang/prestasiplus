@@ -268,14 +268,14 @@ export function chipSlot(item: Pick<NavItem, 'id' | 'color'>): number {
 
 /** Literal classes (Tailwind scans this file): soft tint chip and glyph colour per slot. */
 export const CHIP_CLASS: Record<number, string> = {
-  1: 'bg-cat-1/15 text-cat-1',
-  2: 'bg-cat-2/15 text-cat-2',
-  3: 'bg-cat-3/15 text-cat-3',
-  4: 'bg-cat-4/15 text-cat-4',
-  5: 'bg-cat-5/15 text-cat-5',
-  6: 'bg-cat-6/15 text-cat-6',
-  7: 'bg-cat-7/15 text-cat-7',
-  8: 'bg-cat-8/15 text-cat-8',
+  1: 'bg-cat-1/20 text-cat-1',
+  2: 'bg-cat-2/20 text-cat-2',
+  3: 'bg-cat-3/20 text-cat-3',
+  4: 'bg-cat-4/20 text-cat-4',
+  5: 'bg-cat-5/20 text-cat-5',
+  6: 'bg-cat-6/20 text-cat-6',
+  7: 'bg-cat-7/20 text-cat-7',
+  8: 'bg-cat-8/20 text-cat-8',
 }
 
 /**
