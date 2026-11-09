@@ -768,7 +768,7 @@ export class AnalyticsRepository {
   }
 
   /** Pupils with the most answers in the window (V2 "Pelajar Teratas"). */
-  async topPupilsByAnswers(from: Date, to: Date, limit: number): Promise<{ userId: string; name: string; school: string | null; answered: number }[]> {
+  async topPupilsAnalitik(from: Date, to: Date, limit: number): Promise<{ userId: string; name: string; school: string | null; answered: number }[]> {
     const rows = await this.db.$queryRaw<{ user_id: string; name: string; school: string | null; answered: number }[]>`
       SELECT u.id::text AS user_id, u.name, sc.name AS school, count(*)::int AS answered
       FROM practice_answers a JOIN users u ON u.id = a.user_id LEFT JOIN schools sc ON sc.id = u.school_id

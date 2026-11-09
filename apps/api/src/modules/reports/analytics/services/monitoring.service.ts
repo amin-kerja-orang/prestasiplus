@@ -452,7 +452,7 @@ export class AdminCentralService {
       this.repo.activeSubscriptionCount(dayKey(now.getTime())),
       this.repo.schoolsWithUsers(null),
       this.cache.get(() => this.bank(), BANK_CACHE_SCOPE),
-      this.repo.topPupilsByAnswers(weekStart, now, 8),
+      this.repo.topPupilsAnalitik(weekStart, now, 8),
       this.repo.moodTotals(),
       this.repo.questionReportCounts(),
     ])

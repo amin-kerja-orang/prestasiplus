@@ -13,7 +13,7 @@ import { ESSAY_REVIEW_COPY } from '@pp/contract'
 
 import { isApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { DsCallout, DsCluster, DsLoadError, DsPage, DsPanel, DsStack, DsText } from '@/ds'
+import { DsCallout, DsCluster, DsHeading, DsLoadError, DsPage, DsPanel, DsStack, DsText } from '@/ds'
 
 import { confirmEssayMark, fetchEssayReview, type EssayReviewRow } from '../api/essay-review'
 
@@ -75,12 +75,12 @@ async function confirm(p: EssayReviewRow): Promise<void> {
         <DsPanel v-for="p in rows" :key="p.id" as="article" data-testid="tk-card" :data-proposal-id="p.id">
           <DsStack gap="md">
             <DsCluster justify="between" align="start" gap="sm">
-              <DsText variant="heading" as="h2" wrap="anywhere" data-testid="tk-student">
+              <DsHeading :level="2" variant="heading" wrap="anywhere" data-testid="tk-student">
                 {{ p.student }}
                 <DsText v-if="p.questionNo" variant="body" tone="muted" as="span" data-testid="tk-question"
                   >· Soalan {{ p.questionNo }}</DsText
                 >
-              </DsText>
+              </DsHeading>
               <UBadge color="info" variant="subtle" data-testid="tk-proposed"
                 >Cadangan AI: {{ p.proposed ?? '—' }} / {{ p.marks }}</UBadge
               >
