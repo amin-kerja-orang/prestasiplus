@@ -46,9 +46,9 @@ describe('Pentadbiran menu data', () => {
       'ditangguh',
     ])
     expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(FULL_ITEMS.length)
-    // removed (KK-03, KS-10..12) or hidden/merged (KS-02, 06, 08, 09, 13..16, BS-04, BS-05) ids are gone
+    // removed (KK-03, KS-10..12) or hidden/merged (KS-02, 06, 08, 09, 13..16) ids are gone
     const gone = ['KK-03', 'KS-10', 'KS-11', 'KS-12', 'KS-02', 'KS-06', 'KS-08', 'KS-09']
-    for (const id of [...gone, 'KS-13', 'KS-14', 'KS-15', 'KS-16', 'BS-04', 'BS-05']) {
+    for (const id of [...gone, 'KS-13', 'KS-14', 'KS-15', 'KS-16', 'BS-01', 'BS-10']) {
       expect(FULL_ITEMS.some((i) => i.id === id), id).toBe(false)
     }
   })
@@ -96,8 +96,9 @@ describe('Pentadbiran menu data', () => {
         'Sumber Kertas',
         'Kertas Subjektif',
         'Audit Rajah',
-        'Senarai Soalan',
-        'Soalan Berstruktur',
+        'Kualiti Soalan',
+        'Laporan Soalan',
+        'Perlu Dikumpulkan Semula',
       ],
       [
         'Senarai Pengguna',
@@ -126,18 +127,15 @@ describe('Pentadbiran menu data', () => {
       'Sumber Kertas',
       'Kertas Subjektif',
       'Audit Rajah',
-      'Senarai Soalan',
-      'Soalan Berstruktur',
+      'Kualiti Soalan',
+      'Laporan Soalan',
+      'Perlu Dikumpulkan Semula',
     ])
     const soalan = PENTADBIRAN_MENU.find((g) => g.key === 'soalan')
     // Sumber Kertas (S2-T09) and Kertas Subjektif (S3-T06) are built in the base
-    expect(soalan?.items).toHaveLength(9)
-    // the sub-group Bank Lama (Legasi) holds the last two
-    const legacy = PENTADBIRAN_FULL_MENU.find((g) => g.key === 'soalan')?.items.filter((i) => i.nested)
-    expect(legacy?.map((i) => [i.label, i.sub])).toEqual([
-      ['Senarai Soalan', 'Bank Lama (Legasi)'],
-      ['Soalan Berstruktur', 'Bank Lama (Legasi)'],
-    ])
+    expect(soalan?.items).toHaveLength(10)
+    // Bank Lama (Legasi) retired 2026-11-09 (PO: one bank, DSKP format): no nested sub-group remains
+    expect(PENTADBIRAN_FULL_MENU.find((g) => g.key === 'soalan')?.items.some((i) => i.nested)).toBe(false)
   })
 
   it('has no duplicate "Bank Soalan" label or group', () => {
@@ -162,7 +160,10 @@ describe('Pentadbiran menu data', () => {
     expect(byId.get('KW-06')?.label).toBe('PKSK Akses')
     expect(byId.get('KS-01')).toMatchObject({ label: 'SPM', to: '/admin/spm' })
     expect(byId.get('BS-08')).toMatchObject({ label: 'Bank Soalan (Studio)', to: '/admin/studio' })
-    expect(byId.get('BS-01')).toMatchObject({ label: 'Senarai Soalan', to: '/admin/questions' })
+    expect(byId.has('BS-01')).toBe(false)
+    expect(byId.get('BS-04')).toMatchObject({ label: 'Kualiti Soalan', to: '/admin/questions/quality' })
+    expect(byId.get('BS-05')).toMatchObject({ label: 'Laporan Soalan', to: '/admin/question-reports' })
+    expect(byId.get('BS-11')).toMatchObject({ label: 'Perlu Dikumpulkan Semula', to: '/admin/questions/regroup' })
     expect(byId.get('BS-09')).toMatchObject({ label: 'Audit Rajah', to: '/admin/soalan-gambar' })
     // S0-T10: Kawalan Ciri is built
     expect(byId.get('SY-02')).toMatchObject({ label: 'Kawalan Ciri', to: '/admin/feature-toggles', built: true })
@@ -206,8 +207,7 @@ describe('Pentadbiran menu data', () => {
   it('activates the longest matching item (drill pages stay on Command Center)', () => {
     expect(activeItem('/admin/command-center/school/3')?.id).toBe('PM-01')
     expect(activeItem('/admin/command-center/daily-activity')?.id).toBe('PM-02')
-    // the CSV import page falls back to Senarai Soalan; Set Builder wins over Studio
-    expect(activeItem('/admin/questions/import')?.id).toBe('BS-01')
+    // Set Builder wins over Studio
     expect(activeItem('/admin/studio/sets')?.id).toBe('KS-17')
     expect(activeItem('/admin/studio')?.id).toBe('BS-08')
     expect(activeItem('/admin/spm/databank')?.id).toBe('KS-18')

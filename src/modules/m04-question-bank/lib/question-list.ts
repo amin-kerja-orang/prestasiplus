@@ -264,6 +264,7 @@ export const AI_DRAFT_NOTICE = 'Penjelasan AI disimpan sebagai draf baharu. Sema
 /* ---- the regroup work-list (R1-ADM-QE-08, PRD45 6.6; API-Q-13 `RegroupWorklistRow` / `RegroupWorklistMeta` of packages/contract/src/questions/regroup.ts). ---- */
 
 export const REGROUP_TAB = 'regroup'
+export const REGROUP_PATH = '/admin/questions/regroup'
 
 export const REGROUP_COPY = {
   empty: 'Tiada soalan perlu dikumpulkan semula.',

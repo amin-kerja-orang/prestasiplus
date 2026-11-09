@@ -191,19 +191,21 @@
           "built": true
         },
         {
-          "id": "BS-01",
-          "label": "Senarai Soalan",
-          "sub": "Bank Lama (Legasi)",
-          "nested": true,
-          "to": "/admin/questions",
+          "id": "BS-04",
+          "label": "Kualiti Soalan",
+          "to": "/admin/questions/quality",
           "built": true
         },
         {
-          "id": "BS-10",
-          "label": "Soalan Berstruktur",
-          "sub": "Bank Lama (Legasi)",
-          "nested": true,
-          "to": "/admin/structured-questions",
+          "id": "BS-05",
+          "label": "Laporan Soalan",
+          "to": "/admin/question-reports",
+          "built": true
+        },
+        {
+          "id": "BS-11",
+          "label": "Perlu Dikumpulkan Semula",
+          "to": "/admin/questions/regroup",
           "built": true
         }
       ]
@@ -879,19 +881,21 @@
           "built": true
         },
         {
-          "id": "BS-01",
-          "label": "Senarai Soalan",
-          "sub": "Bank Lama (Legasi)",
-          "nested": true,
-          "to": "/admin/questions",
+          "id": "BS-04",
+          "label": "Kualiti Soalan",
+          "to": "/admin/questions/quality",
           "built": true
         },
         {
-          "id": "BS-10",
-          "label": "Soalan Berstruktur",
-          "sub": "Bank Lama (Legasi)",
-          "nested": true,
-          "to": "/admin/structured-questions",
+          "id": "BS-05",
+          "label": "Laporan Soalan",
+          "to": "/admin/question-reports",
+          "built": true
+        },
+        {
+          "id": "BS-11",
+          "label": "Perlu Dikumpulkan Semula",
+          "to": "/admin/questions/regroup",
           "built": true
         }
       ]

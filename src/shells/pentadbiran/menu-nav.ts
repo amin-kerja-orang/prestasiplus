@@ -2,7 +2,7 @@
  * Pentadbiran menu as `DsAdminShell` data. Each group is a quiet label followed by its screens
  * (icon + label, one line per row). A second-level heading (Kirkpatrick) is folded into ONE row that
  * opens its first page; the other pages are in-page tabs (`sectionTabs`). A nested sub-group
- * (`Bank Lama (Legasi)`) is a `sub` heading row followed by indented links. Pure data (no class names)
+ * (none today) is a `sub` heading row followed by indented links. Pure data (no class names)
  * so it can be unit-tested and reused by the Ctrl+K palette.
  */
 import type { DsShellNavGroup, DsShellNavLink, DsShellNavSub, DsShellSearchGroup } from '@/ds'

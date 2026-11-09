@@ -28,6 +28,7 @@ const tiles = computed(() => {
     // V2 Panel Papan Pemuka: the three cards Pelajar, Guru and Sekolah come first.
     {
       key: 'pelajar',
+      accent: 'action' as const,
       unit: 'Pelajar',
       value: d.users.students,
       sub: 'Jumlah pelajar berdaftar',
@@ -36,6 +37,7 @@ const tiles = computed(() => {
     },
     {
       key: 'guru',
+      accent: 'friend' as const,
       unit: 'Guru',
       value: d.users.teachers,
       sub: 'Jumlah guru berdaftar',
@@ -44,6 +46,7 @@ const tiles = computed(() => {
     },
     {
       key: 'sekolah',
+      accent: 'heat' as const,
       unit: 'Sekolah',
       value: d.schools.total,
       sub: 'Jumlah sekolah berdaftar',
@@ -52,6 +55,7 @@ const tiles = computed(() => {
     },
     {
       key: 'aktif',
+      accent: 'trial' as const,
       unit: 'Soalan Aktif',
       value: q.total,
       sub: `Minggu ini: ${n(q.thisWeek)}`,
@@ -60,6 +64,7 @@ const tiles = computed(() => {
     },
     {
       key: 'lulus',
+      accent: 'win' as const,
       unit: 'Diluluskan',
       value: q.byStatus.approved,
       sub: `Aktif digunakan: ${n(q.byStatus.approved)}`,
@@ -68,6 +73,7 @@ const tiles = computed(() => {
     },
     {
       key: 'semak',
+      accent: 'heat' as const,
       unit: 'Menunggu Semakan',
       value: q.byStatus.review,
       sub: 'Perlu tindakan',
@@ -76,6 +82,7 @@ const tiles = computed(() => {
     },
     {
       key: 'draf',
+      accent: 'friend' as const,
       unit: 'Draf',
       value: q.byStatus.draft,
       sub: 'Belum siap',
@@ -84,6 +91,7 @@ const tiles = computed(() => {
     },
     {
       key: 'subjek',
+      accent: 'action' as const,
       unit: 'Subjek',
       value: d.subjects.total,
       sub: `${n(d.subjects.active)} Aktif`,
@@ -92,6 +100,7 @@ const tiles = computed(() => {
     },
     {
       key: 'tahap',
+      accent: 'trial' as const,
       unit: 'Tahap Pendidikan',
       value: d.levels,
       sub: 'Tingkatan',
@@ -100,6 +109,7 @@ const tiles = computed(() => {
     },
     {
       key: 'pengguna',
+      accent: 'friend' as const,
       unit: 'Pengguna',
       value: d.users.total,
       sub: `${n(d.users.students)} Pelajar`,
@@ -108,6 +118,7 @@ const tiles = computed(() => {
     },
     {
       key: 'battle',
+      accent: 'heat' as const,
       unit: 'Battle Arena',
       value: d.battles.total,
       sub: `PvP Quiz Battles · ${n(d.battles.total)} Total · ${n(d.battles.active)} Aktif · ${n(d.battles.finished)} Selesai`,
@@ -129,7 +140,7 @@ const statusSeries = computed(() => {
 const quickActions = [
   { title: 'Tambah Soalan Baru', to: `${STUDIO}/questions/create` },
   { title: 'Tambah Subjek Baru', to: '/admin/subjects/create' },
-  { title: 'Import & Semakan Soalan', to: '/admin/questions/import' },
+  { title: 'Import & Semakan Soalan', to: '/admin/spm/soalan/ekstrak' },
 ]
 const quickLinks = [
   { title: 'Kurikulum', to: '/admin/curriculum' },
@@ -159,6 +170,7 @@ const quickLinks = [
           :unit="t.unit"
           :sub="t.sub"
           :icon="t.icon"
+          :accent="t.accent"
           :loading="loading && !data"
           :part-prefix="`adm-tile-${t.key}`"
           v-bind="t.to ? { to: t.to } : {}"

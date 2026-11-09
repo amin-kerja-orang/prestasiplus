@@ -732,7 +732,18 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/QuestionDetailPage.vue",
+      "component": null,
+      "file": "src/modules/m04-question-bank/routes/questions-list.ts",
+      "redirects_to": "(dynamic)",
+      "approved_by_card": null
+    },
+    {
+      "key": "/admin/questions/regroup|m04.questions.regroup",
+      "path": "/admin/questions/regroup",
+      "name": "m04.questions.regroup",
+      "status": "canonical",
+      "sector": "S2",
+      "component": "src/modules/m04-question-bank/pages/RegroupPage.vue",
       "file": "src/modules/m04-question-bank/routes/questions-list.ts",
       "approved_by_card": null
     },
@@ -774,8 +785,9 @@
       "name": null,
       "status": "canonical",
       "sector": "S2",
-      "component": "src/modules/m04-question-bank/pages/StructuredDetailPage.vue",
+      "component": null,
       "file": "src/modules/m04-question-bank/routes/structured.ts",
+      "redirects_to": "(dynamic)",
       "approved_by_card": null
     },
     {
@@ -7410,28 +7422,43 @@
       "approved_by_card": "S0-T07"
     },
     {
-      "key": "pentadbiran|BS-01",
+      "key": "pentadbiran|BS-04",
       "source": "pentadbiran",
-      "id": "BS-01",
-      "label": "Senarai Soalan",
-      "route": "/admin/questions",
+      "id": "BS-04",
+      "label": "Kualiti Soalan",
+      "route": "/admin/questions/quality",
       "roles": [
         "admin"
       ],
-      "status": "canonical",
+      "status": "redirect-to:/admin/questions",
       "sector": "S2",
       "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
-      "note": "MERGE (rename) into Bank Lama; removes the duplicate \"Bank Soalan\" (30 §3.3; register M-01)",
-      "approved_by_card": null,
-      "target_label": "Senarai Soalan"
+      "note": "MERGE: tab \"Kualiti\" of Senarai Soalan, route /admin/questions/quality stays (30 §3.3; register M-07)",
+      "approved_by_card": null
     },
     {
-      "key": "pentadbiran|BS-10",
+      "key": "pentadbiran|BS-05",
       "source": "pentadbiran",
-      "id": "BS-10",
-      "label": "Soalan Berstruktur",
-      "route": "/admin/structured-questions",
+      "id": "BS-05",
+      "label": "Laporan Soalan",
+      "route": "/admin/question-reports",
+      "roles": [
+        "admin"
+      ],
+      "status": "redirect-to:/admin/questions",
+      "sector": "S2",
+      "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
+      "group": "soalan",
+      "note": "MERGE: tab \"Laporan\" of Senarai Soalan, route /admin/question-reports stays (30 §3.3; register M-07)",
+      "approved_by_card": null
+    },
+    {
+      "key": "pentadbiran|BS-11",
+      "source": "pentadbiran",
+      "id": "BS-11",
+      "label": "Perlu Dikumpulkan Semula",
+      "route": "/admin/questions/regroup",
       "roles": [
         "admin"
       ],
@@ -7439,7 +7466,7 @@
       "sector": "S2",
       "file": "src/shells/pentadbiran/menu/fragments/s2.ts",
       "group": "soalan",
-      "approved_by_card": "S0-T07"
+      "approved_by_card": null
     },
     {
       "key": "pentadbiran|KS-01",

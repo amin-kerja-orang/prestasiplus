@@ -6,7 +6,7 @@
  * in `docs/requirements/v2-pentadbiran-backlog.md`.
  *
  * Hidden or merged out of the definition (routes stay reachable by link or button): KS-02, KS-08,
- * KS-13, KS-14, KS-15, KS-16 (hidden); BS-04, BS-05 (tabs of Senarai Soalan); KS-09 (Set Builder);
+ * KS-13, KS-14, KS-15, KS-16 (hidden); BS-01, BS-10 (Bank Lama retired 2026-11-09; PO: one bank, DSKP format); KS-09 (Set Builder);
  * KS-06 (hub lane card). Removed: KK-03, KS-10, KS-11, KS-12.
  *
  * This file is the composer (S0): group structure, order, icons and the id order inside each group.
@@ -33,8 +33,8 @@ export interface PentadbiranItem {
   label: string
   /**
    * Optional second-level heading inside the group. Items that share a folded heading (Kirkpatrick)
-   * are one sidebar row; items of a nested heading (`Bank Lama (Legasi)`) are indented rows under a
-   * heading row.
+   * are one sidebar row; items of a nested heading are indented rows under a
+   * heading row (no group uses one today).
    */
   sub?: string
   /** `true` when `sub` is a visible sub-group heading (not a folded row). */
@@ -58,7 +58,7 @@ export interface PentadbiranGroup {
 /** Internal key of an item that is not built (never rendered, never routed). */
 export const placeholderPath = (id: string): string => `/admin/p/${id.toLowerCase()}`
 
-const NESTED_SUBS: ReadonlySet<string> = new Set(['Bank Lama (Legasi)'])
+const NESTED_SUBS: ReadonlySet<string> = new Set<string>()
 const BADGES: Readonly<Record<string, string>> = { 'PM-01': 'LIVE' }
 
 function toItem([id, label, to, sub]: Row): PentadbiranItem {
@@ -125,7 +125,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     key: 'soalan',
     label: 'Soalan',
     icon: 'books',
-    items: pick('KS-01', 'BS-08', 'BS-02', 'KS-17', 'BS-03', 'KS-07', 'BS-09', 'BS-01', 'BS-10'),
+    items: pick('KS-01', 'BS-08', 'BS-02', 'KS-17', 'BS-03', 'KS-07', 'BS-09', 'BS-04', 'BS-05', 'BS-11'),
   },
   {
     key: 'pengguna',

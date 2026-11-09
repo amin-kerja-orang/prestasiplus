@@ -39,16 +39,23 @@ const TINT: Record<string, string> = {
   'bg-cat-7/15 text-cat-7': 'bg-cat-7/15 text-cat-7',
   'bg-cat-8/15 text-cat-8': 'bg-cat-8/15 text-cat-8',
 }
+/** Current Pentadbiran group keys (menu.ts); neighbouring groups get different hues. */
 const TINT_BY_GROUP: Record<string, string> = {
-  'papan-pemuka': 'bg-cat-1/15 text-cat-1',
-  pemantauan: 'bg-cat-4/15 text-cat-4',
-  'bank-soalan': 'bg-cat-7/15 text-cat-7',
-  'kertas-spm': 'bg-cat-6/15 text-cat-6',
-  'kurikulum-kandungan': 'bg-cat-8/15 text-cat-8',
-  'pengguna-sekolah': 'bg-cat-2/15 text-cat-2',
-  penglibatan: 'bg-cat-5/15 text-cat-5',
-  kewangan: 'bg-cat-3/15 text-cat-3',
-  sistem: 'bg-cat-1/15 text-cat-1',
+  pintasan: 'bg-cat-1/15 text-cat-1',
+  harian: 'bg-cat-4/15 text-cat-4',
+  analitik: 'bg-cat-2/15 text-cat-2',
+  kurikulum: 'bg-cat-8/15 text-cat-8',
+  soalan: 'bg-cat-7/15 text-cat-7',
+  pengguna: 'bg-cat-3/15 text-cat-3',
+  spm: 'bg-cat-6/15 text-cat-6',
+  premium: 'bg-cat-5/15 text-cat-5',
+  'kawalan-ciri': 'bg-cat-1/15 text-cat-1',
+  gamifikasi: 'bg-cat-4/15 text-cat-4',
+  'battle-permainan': 'bg-cat-2/15 text-cat-2',
+  marketplace: 'bg-cat-3/15 text-cat-3',
+  kandungan: 'bg-cat-8/15 text-cat-8',
+  sistem: 'bg-cat-7/15 text-cat-7',
+  ditangguh: 'bg-cat-6/15 text-cat-6',
 }
 
 export function groupTintClass(key: string | undefined): string {

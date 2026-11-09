@@ -25,17 +25,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/structured-questions/:id(\\d+)',
     name: AUDIT_ROUTES.structuredDetail,
-    component: () => import('../pages/StructuredDetailPage.vue'),
-    props: (route) => ({ id: Number(route.params.id) }),
-    meta: {
-      layout: 'admin',
-      v2: true,
-      access: 'auth',
-      roles: ['admin'],
-      title: 'Detail Soalan Berstruktur',
-      header: { title: 'Detail Soalan Berstruktur' },
-      module: 'M04',
-    },
+    // Bank Lama retired 2026-11-09: the Subjektif editor (Skema & Rubrik) is the admin view of a structured question.
+    redirect: (to) => ({ path: `/admin/spm/subjektif/${String(to.params.id)}/sunting` }),
   },
   // V2 Panel Subjektif Sunting (Skema & Rubrik) and the read-only Pratonton of a bank soalan (Admin Pusat only).
   {

@@ -133,14 +133,6 @@ afterEach(() => {
 })
 
 describe('QuestionListPage (M04 S1)', () => {
-  it('the tab Perlu dikumpulkan semula takes over and reads nothing of the list (S2-T04)', async () => {
-    const w = await render('/admin/questions?tab=regroup')
-    expect(w.find('[data-testid="regroup-page"]').exists()).toBe(true)
-    expect(w.find('[data-testid="questions-page"]').exists()).toBe(false)
-    expect(questions.fetchQuestions).not.toHaveBeenCalled()
-    expect(questions.fetchQuestionSummary).not.toHaveBeenCalled()
-  })
-
   it('shows the header, the KPI strip and the collapsible subject breakdown with full names', async () => {
     const w = await render()
     expect(w.text()).toContain('Urus bank soalan untuk platform PRESTASIPLUS')
@@ -393,14 +385,9 @@ describe('QuestionListPage (M04 S1)', () => {
 })
 
 describe('QuestionListPage: Senarai Soalan regions (R1-ADM-Q-20)', () => {
-  it('shows the tabs with Senarai active, the banner with its Studio link and Import CSV', async () => {
+  it('shows the banner with its Studio link and Import CSV', async () => {
     const w = await render()
-    expect(w.findAll('[data-testid^="question-area-tab-"]').map((x) => x.text())).toEqual(['Senarai', 'Kualiti', 'Laporan', 'Perlu dikumpulkan semula'])
-    expect(t(w, 'question-area-tab-senarai').attributes('data-active')).toBe('true')
-    expect(t(w, 'question-area-tab-kualiti').attributes('href')).toBe('/admin/questions/quality')
-    expect(t(w, 'question-area-tab-laporan').attributes('href')).toBe('/admin/question-reports')
-    expect(t(w, 'question-area-tab-regroup').attributes('href')).toBe('/admin/questions?tab=regroup')
-    expect(t(w, 'question-area-tab-regroup').attributes('data-active')).toBe('false')
+    expect(w.find('[data-testid=question-area-tabs]').exists()).toBe(false)
     expect(t(w, 'questions-legacy-banner').text()).toContain('Ini bank soalan lama (model flat). Soalan baharu dicipta dan diterbitkan di bank kanonikal.')
     expect(t(w, 'questions-studio-link').attributes('href')).toBe('/admin/studio')
     expect(t(w, 'questions-import').attributes('href')).toBe('/admin/questions/import')

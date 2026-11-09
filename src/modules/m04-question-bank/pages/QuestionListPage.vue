@@ -51,8 +51,6 @@ import {
   type QuestionRow,
 } from '../api'
 import BulkFilterResult from '../components/BulkFilterResult.vue'
-import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
-import RegroupPage from './RegroupPage.vue'
 import QuestionSummaryCard from '../components/QuestionSummaryCard.vue'
 import { IMPORT_PATH } from '../lib/import-quality'
 import {
@@ -90,7 +88,6 @@ import {
   statusLabel,
   statusOptionsFor,
   type FilterKey,
-  REGROUP_TAB,
 } from '../lib/question-list'
 import { pageOf, queryText } from '../lib/route-query'
 import { listLoadMessage, useDebouncedFilter } from '../lib/list-load'
@@ -140,12 +137,9 @@ watch(
   },
 )
 
-/** The tab `Perlu dikumpulkan semula` shares this route: its page takes over, and nothing of the list is read. */
-const regroup = computed(() => route.query.tab === REGROUP_TAB)
-
 const list = useApi(
   (signal) =>
-    regroup.value ? Promise.resolve(null) : fetchQuestions({
+    fetchQuestions({
       subjectId: applied.value.subject_id || null,
       educationLevelId: applied.value.education_level_id || null,
       difficultyLevel: applied.value.difficulty_level || null,
@@ -162,10 +156,9 @@ const list = useApi(
     ...FILTER_KEYS.map((k) => () => route.query[k]),
     () => route.query.page,
     () => route.query.per_page,
-    regroup,
   ],
 )
-const summary = useApi((signal) => (regroup.value ? Promise.resolve(null) : fetchQuestionSummary({ signal })), [regroup])
+const summary = useApi((signal) => fetchQuestionSummary({ signal }))
 const subjects = useApi((signal) => fetchSubjects({ signal }))
 const levels = useApi((signal) => fetchEducationLevels({ signal }))
 
@@ -571,8 +564,7 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <RegroupPage v-if="regroup" />
-  <DsPage v-else subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
+  <DsPage subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="questions-page">
     <template #actions>
       <div class="flex flex-wrap items-center gap-2" data-testid="questions-header-actions">
         <UButton
@@ -632,8 +624,6 @@ const cardFields: CardField[] = [
       </UButton>
       </div>
     </template>
-
-    <QuestionAreaTabs />
 
     <DsCallout
       description="Ini bank soalan lama (model flat). Soalan baharu dicipta dan diterbitkan di bank kanonikal."

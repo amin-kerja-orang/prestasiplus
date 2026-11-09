@@ -47,7 +47,7 @@ const page = (data: unknown[], counts: Record<string, unknown> = {}) => ({
 
 let wrapper: VueWrapper | null = null
 let router: Router
-async function render(url = '/admin/questions?tab=regroup'): Promise<VueWrapper> {
+async function render(url = '/admin/questions/regroup'): Promise<VueWrapper> {
   router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/:p(.*)', component: { template: '<div />' } }] })
   await router.push(url)
   wrapper = mount(RegroupPage, { global: { plugins: [router] }, attachTo: document.body })
@@ -66,7 +66,7 @@ afterEach(() => {
 })
 
 describe('RegroupPage (R1-ADM-QE-08, frame)', () => {
-  it('shows the header counts and the row columns; the regroup tab is active', async () => {
+  it('shows the header counts and the row columns; the work-list renders', async () => {
     const w = await render()
     expect(t(w, 'regroup-header').text()).toBe('1 perlu tindakan · 3 selesai')
     const r = t(w, 'regroup-row-11')
@@ -76,8 +76,6 @@ describe('RegroupPage (R1-ADM-QE-08, frame)', () => {
     expect(t(w, 'regroup-count-level-7').text()).toBe('Tingkatan 4: 1')
     expect(t(w, 'regroup-flag').text()).toBe('stimulus_missing')
     expect(t(w, 'regroup-reference').text()).toBe('bernombor')
-    expect(t(w, 'question-area-tab-regroup').attributes('data-active')).toBe('true')
-    expect(t(w, 'question-area-tab-senarai').attributes('data-active')).toBe('false')
   })
 
   it('an unnumbered reference reads "tanpa nombor"; a row with no paper reads a dash', async () => {
@@ -98,15 +96,15 @@ describe('RegroupPage (R1-ADM-QE-08, frame)', () => {
     expect(e.find('[data-testid="regroup-retry"]').exists()).toBe(true)
   })
 
-  it('sends the URL filters and keeps the tab when one changes', async () => {
-    await render('/admin/questions?tab=regroup&subject_id=3&flag=figure_only&page=2')
+  it('sends the URL filters and stays on the work-list page when one changes', async () => {
+    await render('/admin/questions/regroup?subject_id=3&flag=figure_only&page=2')
     expect(api.fetchRegroupWorklist).toHaveBeenCalledWith({ subjectId: '3', educationLevelId: '', flag: 'figure_only', page: 2 }, expect.anything())
     const w = wrapper as VueWrapper
     const flag = t(w, 'regroup-flag-filter').element as HTMLSelectElement
     flag.value = 'stimulus_missing'
     flag.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ tab: 'regroup', subject_id: '3', flag: 'stimulus_missing' })
+    expect(router.currentRoute.value.query).toEqual({ subject_id: '3', flag: 'stimulus_missing' })
   })
 })
 
@@ -249,10 +247,10 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
   it('an emptied page after an action goes back one page', async () => {
     api.fetchRegroupWorklist.mockResolvedValueOnce(page([row()])).mockResolvedValueOnce(page([]))
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await render('/admin/questions?tab=regroup&page=2')
+    await render('/admin/questions/regroup?page=2')
     await click(wrapper as VueWrapper, 'regroup-dismiss-11')
     expect(router.currentRoute.value.query.page).toBeUndefined()
-    expect(router.currentRoute.value.query.tab).toBe('regroup')
+    expect(router.currentRoute.value.path).toBe('/admin/questions/regroup')
   })
 
   describe('Kumpulkan and Buat asal', () => {
@@ -308,7 +306,7 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
   })
 
   it('the Sebab filter offers stem_duplicated and sends it to the API', async () => {
-    await render('/admin/questions?tab=regroup&flag=stem_duplicated')
+    await render('/admin/questions/regroup?flag=stem_duplicated')
     expect(api.fetchRegroupWorklist).toHaveBeenCalledWith(expect.objectContaining({ flag: 'stem_duplicated' }), expect.anything())
     const options = (wrapper as VueWrapper)
       .get('[data-testid="regroup-flag-filter"]')
