@@ -507,7 +507,8 @@ export const SEED_ROUTE_DECISIONS = [
   { rx: /^\/admin\/questions\/:id$/, status: 'redirect-to:/admin/studio/questions/:id/sunting', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format): old detail page is the Studio editor' },
   { rx: /^\/admin\/structured-questions\/:id$/, status: 'redirect-to:/admin/spm/subjektif/:id/sunting', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format): old structured detail is the Subjektif editor' },
   { path: '/admin/question-submissions', status: 'canonical', note: `tab "Kiriman Guru" of Import & Semakan; ${PRD30} 3.3` },
-  { path: '/admin/structured-questions', status: 'canonical', note: `read view of the SAME questions store, not a second table (register section 6); list kept for the guru mount and the KBAT work-list; menu row BS-10 removed (Bank Lama retired 2026-11-09)` },
+  { path: '/admin/structured-questions', status: 'redirect-to:/admin/spm/subjektif', note: 'Bank Lama retired (PO: one bank, DSKP format): the Subjektif lane lists structured questions; the page component stays only for the guru mount /guru/soalan-berstruktur' },
+  { path: '/admin/questions', status: 'redirect-to:/admin/studio', note: 'Bank Lama list retired (PO: one bank, DSKP format); ?tab=regroup goes to /admin/questions/regroup' },
   { name: 'dev.preview-hub-admin', status: 'retire', note: 'D113 F-07, delete previewHubRoutes (S0-T05)' },
   { name: 'dev.preview-hub-user', status: 'retire', note: 'D113 F-07, delete previewHubRoutes (S0-T05)' },
   { path: '/prestasi', status: 'canonical', note: 'Today redirects every role to /prestasi/sekolah (defect); target is a role-dependent redirect: a pupil goes to /prestasi/{ownId} (docs/prd/r1/10-murid.md row 3)' },
@@ -520,7 +521,7 @@ export const SEED_ROUTE_DECISIONS = [
 
 /** Menu decisions by source + id (PRD 30 sections 3.3 and 3.4, register). */
 export const SEED_MENU_DECISIONS = {
-  'pentadbiran|BS-01': { status: 'retire', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format); /admin/questions list kept by URL only until the filter gaps are decided (30 §3.3; register M-01)' },
+  'pentadbiran|BS-01': { status: 'retire', note: 'Bank Lama retired 2026-11-09 (PO: one bank, DSKP format); /admin/questions redirects to /admin/studio (30 §3.3; register M-01)' },
   'pentadbiran|BS-02': { status: 'canonical', note: 'KEEP (retab): tabs Kelompok Item, Kertas Diimport, Kiriman Guru (30 §3.3; register M-02)' },
   'pentadbiran|BS-03': { status: 'canonical', note: 'KEEP (build P2) as Sumber Kertas (30 §3.3)' },
   'pentadbiran|BS-04': { status: 'canonical', target_label: 'Kualiti Soalan', note: 'KEEP: own menu row under Bank Soalan (Studio), route /admin/questions/quality (30 §3.3; register M-07; Bank Lama retired 2026-11-09)' },

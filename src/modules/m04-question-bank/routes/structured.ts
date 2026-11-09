@@ -10,17 +10,8 @@ import { AUDIT_ROUTES } from '../lib/audit-routes'
 const routes: RouteRecordRaw[] = [
   {
     path: '/admin/structured-questions',
-    name: AUDIT_ROUTES.structuredList,
-    component: () => import('../pages/StructuredListPage.vue'),
-    meta: {
-      layout: 'admin',
-      v2: true,
-      access: 'auth',
-      roles: ['admin'],
-      title: 'Soalan Berstruktur',
-      header: { title: 'Soalan Berstruktur' },
-      module: 'M04',
-    },
+    // Bank Lama retired (PO: one bank, DSKP format): the Subjektif lane is the admin list of structured questions.
+    redirect: { path: '/admin/spm/subjektif' },
   },
   {
     path: '/admin/structured-questions/:id(\\d+)',
