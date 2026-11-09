@@ -14670,6 +14670,26 @@
       "approved_by_card": null
     },
     {
+      "key": "GET /api/structured-questions/:p/rubric",
+      "method": "GET",
+      "path": "/api/structured-questions/:id/rubric",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/structured.controller.ts",
+      "approved_by_card": null
+    },
+    {
+      "key": "PUT /api/structured-questions/:p/rubric",
+      "method": "PUT",
+      "path": "/api/structured-questions/:id/rubric",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S1",
+      "file": "apps/api/src/modules/questions/http/structured.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/structured-questions/:p",
       "method": "GET",
       "path": "/api/structured-questions/:id",
