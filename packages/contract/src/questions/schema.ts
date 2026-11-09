@@ -708,6 +708,75 @@ export const QuestionStructuredDetailSchema = z
   })
   .meta({ id: 'QuestionStructuredDetail' })
 
+/* ------------------------------------------------------------------ structured (admin rubric editor) */
+
+/** V2 `StructuredRubricEditor` limits, with the point text held to the V3 key (`label` at most 200). */
+export const STRUCTURED_RUBRIC_MESSAGES = {
+  scheme: 'Skema tidak boleh melebihi 4000 aksara.',
+  text: 'Isi poin tidak boleh melebihi 200 aksara.',
+  marks: 'Markah poin mesti antara 1 dan 20.',
+  noPoints: 'Sekurang-kurangnya satu poin rubrik diperlukan.',
+  saved: 'Skema dan rubrik disimpan.',
+} as const
+
+export const StructuredRubricPointSchema = z
+  .object({ id: z.string(), code: z.string(), text: z.string(), marks: z.number().int() })
+  .meta({ id: 'StructuredRubricPoint' })
+
+/** One leaf part (V2 sub-question). `id` is the label path (`(a).(ii)`); only a leaf with a `points` key is `editable`. */
+export const StructuredRubricSubSchema = z
+  .object({
+    id: z.string(),
+    number: z.string(),
+    body: z.string(),
+    marks: z.number().int(),
+    editable: z.boolean(),
+    scheme: z.string().nullable(),
+    points: z.array(StructuredRubricPointSchema),
+  })
+  .meta({ id: 'StructuredRubricSub' })
+
+export const StructuredRubricSchema = z
+  .object({
+    question: z.object({
+      id: IdSchema,
+      stimulus: z.string(),
+      subject: z.string().nullable(),
+      level: z.string().nullable(),
+      status: QuestionStatusSchema,
+      totalMarks: z.number().int(),
+    }),
+    subs: z.array(StructuredRubricSubSchema),
+  })
+  .meta({ id: 'StructuredRubric' })
+
+export const StructuredRubricUpdateRequestSchema = z
+  .object({
+    subs: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          scheme: z.string().max(4000, STRUCTURED_RUBRIC_MESSAGES.scheme).nullable().optional(),
+          points: z
+            .array(
+              z.object({
+                text: z.string().max(200, STRUCTURED_RUBRIC_MESSAGES.text).nullable().optional(),
+                marks: z.coerce
+                  .number({ error: STRUCTURED_RUBRIC_MESSAGES.marks })
+                  .int(STRUCTURED_RUBRIC_MESSAGES.marks)
+                  .min(1, STRUCTURED_RUBRIC_MESSAGES.marks)
+                  .max(20, STRUCTURED_RUBRIC_MESSAGES.marks),
+              }),
+            )
+            .max(50)
+            .optional(),
+        }),
+      )
+      .min(1)
+      .max(200),
+  })
+  .meta({ id: 'StructuredRubricUpdateRequest' })
+
 /* ------------------------------------------------------------------ structured (teacher mount, API-GUR-26) */
 
 export const GURU_STRUCTURED_PAGE_SIZE = 20

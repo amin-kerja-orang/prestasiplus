@@ -39,6 +39,8 @@ import {
   QuestionStimulusGroupSchema,
   QuestionStimulusSchema,
   QuestionStructuredDetailSchema,
+  StructuredRubricSchema,
+  StructuredRubricUpdateRequestSchema,
   QuestionStructuredListQuerySchema,
   QuestionStructuredRowSchema,
   GuruStructuredCreateRequestSchema,
@@ -334,6 +336,31 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: forbidden,
       404: notFound,
+    },
+  })
+
+  registry.registerPath({
+    method: 'get',
+    path: '/structured-questions/{id}/rubric',
+    tags: ['questions'],
+    summary: 'Scheme and rubric points of a structured question (V2 Panel Subjektif Sunting)',
+    description: 'Admin Pusat. Reads the latest version. Each leaf part is a sub-question; \`editable\` is true for a leaf whose key is \`points\` (Skema = \`modelText\`, Poin Rubrik = the points).',
+    request: { params: idParams },
+    responses: { 200: json(envelopeOf(StructuredRubricSchema), 'The editor payload.'), 401: unauthorized, 403: forbidden, 404: notFound },
+  })
+  registry.registerPath({
+    method: 'put',
+    path: '/structured-questions/{id}/rubric',
+    tags: ['questions'],
+    summary: 'Save scheme and rubric points (V2 "Simpan Skema & Rubrik")',
+    description: 'Admin Pusat only. Per sent leaf: replaces the scheme (\`modelText\`) and the rubric points wholesale (a blank-text row removes a point; the other fields of a kept point are preserved by row position). An approved question is saved as the next draft version, like a Studio edit. Flash: "Skema dan rubrik disimpan."',
+    request: { params: idParams, headers: [csrf], body: body(StructuredRubricUpdateRequestSchema) },
+    responses: {
+      200: json(z.object({ data: StructuredRubricSchema, status: z.string() }), 'Saved, with the editor payload of the new version.'),
+      401: unauthorized,
+      403: forbidden,
+      404: notFound,
+      422: invalid,
     },
   })
 

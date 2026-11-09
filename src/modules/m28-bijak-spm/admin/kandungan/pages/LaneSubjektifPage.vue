@@ -2,8 +2,7 @@
 /**
  * Lane "Subjektif" (`/admin/spm/subjektif`, FR-ADM-Q23.3, frame R1-ADM-Q-02): structured and essay questions, one per row. `Perhatian`
  * shows the sentences from the API ("Tiada skema ...", "Tiada kunci jawapan ..."), "—" when nothing is wrong. These questions are edited
- * in the Studio wizard, so `Sunting` opens it, unlike the MCQ form of the Databank lane. No `Pratonton` yet: the wizard has no entry
- * that opens its preview, so the action would only repeat `Sunting`.
+ * in the V2 Panel editor `Skema & Rubrik` (`/admin/spm/subjektif/:id/sunting`), which `Sunting` opens. No `Pratonton` (V2 has none on this lane).
  */
 import type { TableColumn } from '@nuxt/ui'
 import type { ServabilityLaneRow } from '@pp/contract'
@@ -19,7 +18,7 @@ import LaneShell from './LaneShell.vue'
 type Row = ServabilityLaneRow & { no: number } & Record<string, unknown>
 
 const statusText = questionStatusLabel
-const editPath = (id: string): string => `/admin/studio/questions/${id}/sunting`
+const editPath = (id: string): string => `/admin/spm/subjektif/${id}/sunting`
 const actionsOf = (id: string): RowAction[] => [{ label: laneCopy.edit, testid: `lane-edit-${id}`, to: editPath(id) }]
 
 const server = kandunganServer()

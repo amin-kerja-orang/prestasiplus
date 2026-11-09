@@ -46,6 +46,7 @@ import { ServabilityService } from './serving/servability.service'
 import { BANK_ONLY, QuestionsRepository, type NewGroup, type NewStimulus, type VersionDraft } from './questions.repository'
 import { draftsFromParts, MAX_PART_DEPTH, mapOptionImageIds, referencedIds, versionTypeOf } from './tree'
 import { isLeaf, leavesOf } from './grading'
+import { applyRubric, rubricSubs, type RubricSubInput, type StructuredRubricView } from './structured-rubric'
 import { deepestIssue, type UnionLike } from './issue-path'
 import type {
   AdminListFilter,
@@ -114,6 +115,9 @@ const fail = (fields: Record<string, string>): ApiError => ApiError.of('VALIDATI
 
 /** 422 text of a `pksk_choice` leaf sent to the general question routes (no `pksk` tag). */
 export const PKSK_LEAF_REFUSED = 'Jenis soalan PKSK hanya boleh disimpan sebagai soalan PKSK.'
+
+/** The subjective lane holds these types: an edit re-derives the type from the part tree, so a one-leaf essay saved from a structured row is `essay`. */
+const RUBRIC_TYPES: ReadonlySet<string> = new Set(['structured', 'working', 'essay'])
 
 const MAX_TOP_PARTS = 20
 const MAX_TOTAL_PARTS = 200
@@ -719,6 +723,46 @@ export class QuestionsService {
     const record = await this.repo.get(id, 'latest', BANK_ONLY)
     if (!record || record.version.type !== 'structured') throw questionNotFound()
     return this.detail(record)
+  }
+
+  /** V2 Panel Subjektif Sunting: the scheme and rubric points of the latest version, one entry per leaf part. */
+  async getStructuredRubric(id: string): Promise<StructuredRubricView> {
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
+    if (!record || !RUBRIC_TYPES.has(record.version.type)) throw questionNotFound()
+    return this.rubricView(record)
+  }
+
+  /** V2 "Simpan Skema & Rubrik": rewrites the sent leaves through the normal version write (an approved question becomes the next draft). */
+  async saveStructuredRubric(id: string, subs: readonly RubricSubInput[], actor: QuestionActor): Promise<StructuredRubricView> {
+    const record = await this.repo.get(id, 'latest', BANK_ONLY)
+    if (!record || !RUBRIC_TYPES.has(record.version.type)) throw questionNotFound()
+    const v = record.version
+    const { parts, errors } = applyRubric(v.parts, subs)
+    if (Object.keys(errors).length > 0) throw fail(errors)
+    const input = {
+      subjectId: v.subjectId ?? '',
+      educationLevelId: v.educationLevelId ?? '',
+      difficultyLevel: v.difficultyLevel ?? 1,
+      questionText: v.stemMs ?? '',
+      parts,
+    } as unknown as QuestionUpdateInput
+    return this.rubricView(await this.applyUpdate(record, input, actor, { keepSubject: true }))
+  }
+
+  private async rubricView(record: QuestionRecord): Promise<StructuredRubricView> {
+    const view = await this.viewOf(record)
+    const v = record.version
+    return {
+      question: {
+        id: record.id,
+        stimulus: v.stemMs ?? '',
+        subject: view.subject?.name ?? null,
+        level: view.level?.name ?? null,
+        status: v.status,
+        totalMarks: rubricSubs(v.parts).reduce((n, s) => n + s.marks, 0),
+      },
+      subs: rubricSubs(v.parts),
+    }
   }
 
   // --- structured (teacher mount, API-GUR-26) ----------------------------------------------------
