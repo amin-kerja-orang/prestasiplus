@@ -741,7 +741,6 @@
   ):focus-visible {
   outline: none;
 }
-
 /* Option lists (select, select menu, input menu): thin themed scrollbar instead of the browser's
    grey bar with arrow buttons. */
 [data-slot='content'] [data-slot='viewport'] {

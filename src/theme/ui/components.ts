@@ -21,13 +21,17 @@ export const disabledState =
 /** Floating panel (menus, selects, popovers): raised layer, no line, one step below modals. */
 const panel = 'z-50 rounded-lg bg-default p-1.5 shadow-modal ring-0'
 
-/** Menu / listbox row shared by dropdown, select, input menu and command palette. */
+/**
+ * Menu / listbox row shared by dropdown, select, input menu and command palette. Keyboard focus is the
+ * highlighted fill (Reka moves `data-highlighted` with the arrow keys), never an outline: the menu
+ * focuses its first row on open, and an outline there drew a thick off-centre frame (PO 2026-11-09).
+ */
 const item = [
   'min-h-11 gap-2.5 rounded-sm px-3 py-2 text-label transition-colors duration-fast before:inset-0 before:rounded-sm md:min-h-10',
   'data-highlighted:before:bg-elevated data-[state=open]:before:bg-elevated',
   'data-[state=checked]:text-primary-t',
+  'outline-none',
   disabledState,
-  focusInset,
 ].join(' ')
 
 const menuSlots = {
