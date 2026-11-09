@@ -180,6 +180,51 @@ const trendSeries = computed(() => [
             />
           </DsStack>
         </DsPanel>
+
+        <DsPanel title="Pelajar Teratas" as="section" data-testid="adm-an-students">
+          <DsEmptyState
+            v-if="data.topStudents.length === 0"
+            size="sm"
+            title="Tiada data analitik."
+          />
+          <DsStack v-else as="ul" gap="sm">
+            <DsListRow
+              v-for="(s, i) in data.topStudents"
+              :key="s.userId"
+              :rank="i + 1"
+              :title="s.name"
+              :sub="s.school ?? undefined"
+              :meta="`${n(s.answered)} soalan minggu ini`"
+            />
+          </DsStack>
+        </DsPanel>
+
+        <DsPanel title="Mood Pelajar" as="section" data-testid="adm-an-mood">
+          <DsStack as="ul" gap="sm">
+            <DsListRow
+              v-for="b in data.mood.breakdown"
+              :key="b.key"
+              :title="b.label"
+              :meta="n(b.count)"
+              :data-testid="`adm-an-mood-${b.key}`"
+            />
+          </DsStack>
+        </DsPanel>
+
+        <DsPanel title="Laporan Soalan" as="section" data-testid="adm-an-reports">
+          <DsStack as="ul" gap="sm">
+            <DsListRow
+              title="Baru"
+              :meta="n(data.reports.baru)"
+              data-testid="adm-an-reports-baru"
+            />
+            <DsListRow
+              title="Selesai"
+              :meta="n(data.reports.selesai)"
+              data-testid="adm-an-reports-selesai"
+            />
+          </DsStack>
+        </DsPanel>
       </DsGrid>
 
       <DsPanel as="section">

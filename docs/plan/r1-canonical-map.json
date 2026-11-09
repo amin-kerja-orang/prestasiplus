@@ -15913,6 +15913,16 @@
       "approved_by_card": null
     },
     {
+      "key": "POST /api/admin/schools/:p/join-code",
+      "method": "POST",
+      "path": "/api/admin/schools/:id/join-code",
+      "api_id": null,
+      "status": "canonical",
+      "sector": "S6",
+      "file": "apps/api/src/modules/schools/schools.controller.ts",
+      "approved_by_card": null
+    },
+    {
       "key": "GET /api/schools",
       "method": "GET",
       "path": "/api/schools",

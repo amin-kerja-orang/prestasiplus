@@ -13,8 +13,9 @@
 import { DAY_MS, dayRange, formatMyt, toIsoMyt } from '@/lib/time'
 import { ok, queryString, requireRole, route, type MockRequest, type RouteDef } from '@/mock/define'
 import { users } from '@/modules/m01-authentication/mock'
+import { schools } from '@/modules/m02-users-schools/mock'
 import { curriculum } from '@/modules/m03-curriculum/mock'
-import { questions } from '@/modules/m04-question-bank/mock'
+import { questions, reports } from '@/modules/m04-question-bank/mock'
 import { battles } from '@/modules/m16-battle-games/mock'
 
 import type {
@@ -254,6 +255,7 @@ export function buildAdminDashboard(now: number): AdminDashboard {
       students: users.countWhere({ role: 'student' }),
       teachers: users.countWhere({ role: 'teacher' }),
     },
+    schools: (({ total, active }) => ({ total, active }))(schools.counts(false)),
     battles: battles.m17Counts(),
   }
 }
@@ -295,6 +297,30 @@ export function buildAdminAnalytics(rangeRaw: string | undefined, now: number): 
       .sort((a, b) => b[1] - a[1] || a[0] - b[0])
       .slice(0, 10)
       .map(([id, answered]) => ({ schoolId: String(id), school: schoolName(id) ?? '', answered })),
+    // V2 "Pelajar Teratas": the 8 pupils with most answers this week, whatever the range.
+    topStudents: [...tallies(ctx, 'week').entries()]
+      .sort((a, b) => b[1].answers - a[1].answers || a[0] - b[0])
+      .slice(0, 8)
+      .map(([id, t]) => ({
+        userId: String(id),
+        name: users.get(id)?.name ?? '',
+        school: schoolName(schoolOfUser(id)),
+        answered: t.answers,
+      })),
+    mood: (() => {
+      const m = moodCounts(ctx, 'all')
+      const breakdown = [
+        { key: 'happy' as const, label: 'Gembira', count: m.happy },
+        { key: 'okay' as const, label: 'Okay', count: m.okay },
+        { key: 'sad' as const, label: 'Sedih', count: m.sad },
+        { key: 'stressed' as const, label: 'Tertekan', count: m.stressed },
+      ]
+      return { total: breakdown.reduce((a, b) => a + b.count, 0), breakdown }
+    })(),
+    reports: (() => {
+      const baru = reports.list('pending').length
+      return { baru, selesai: reports.list().length - baru }
+    })(),
     bank: {
       total,
       bySubject: curriculum

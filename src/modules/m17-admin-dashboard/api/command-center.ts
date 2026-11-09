@@ -109,6 +109,8 @@ export interface AdminDashboard {
   /** Tingkatan only (5); Darjah is never counted. */
   levels: number
   users: { total: number; students: number; teachers: number }
+  /** Registered secondary-stage schools (V2 Panel "Sekolah" card). */
+  schools: { total: number; active: number }
   battles: { total: number; active: number; finished: number }
 }
 
@@ -128,6 +130,15 @@ export interface AdminAnalytics {
   }
   trend: { date: string; answered: number }[]
   topSchools: { schoolId: string; school: string; answered: number }[]
+  /** V2 "Pelajar Teratas": up to 8 pupils by answers since Monday of this week (whatever the range). */
+  topStudents: { userId: string; name: string; school: string | null; answered: number }[]
+  /** V2 "Mood Pelajar": all-time check-ins in the order Gembira, Okay, Sedih, Tertekan. */
+  mood: {
+    total: number
+    breakdown: { key: 'happy' | 'okay' | 'sad' | 'stressed'; label: string; count: number }[]
+  }
+  /** V2 "Laporan Soalan": question reports waiting (`baru`) and handled (`selesai`). */
+  reports: { baru: number; selesai: number }
   bank: {
     total: number
     bySubject: { id: string; name: string; total: number }[]

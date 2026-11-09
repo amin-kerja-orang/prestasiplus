@@ -415,7 +415,7 @@ export class AdminCentralService {
     const today = mytDayStart(now)
     const sinceMonday = (new Date(today + 8 * 3_600_000).getUTCDay() + 6) % 7
     const weekStart = new Date(today - sinceMonday * DAY_MS)
-    const [summary, subjects, levels, users, pupils, teachers, stats] = await Promise.all([
+    const [summary, subjects, levels, users, pupils, teachers, stats, schools] = await Promise.all([
       this.questionsService.statusSummary(weekStart),
       this.curriculum.subjects(),
       this.curriculum.levels(),
@@ -423,6 +423,7 @@ export class AdminCentralService {
       this.repo.pupilTotals(),
       this.repo.teacherTotals(),
       this.rooms.stats(),
+      this.repo.schoolTotals(),
     ])
     return {
       questions: { total: summary.total, byStatus: summary.byStatus, thisWeek: summary.createdSince },
@@ -431,6 +432,7 @@ export class AdminCentralService {
       levels: levels.length,
       // XS-1 pupils and XS-3 teachers (`school-admin/xs-queries.ts`): the repository totals use the shared S6-T03 predicates.
       users: { total: users.total, students: pupils.pupils, teachers: teachers.teachers },
+      schools,
       battles: { total: stats.rooms, active: stats.playing, finished: stats.finished },
     }
   }
@@ -440,7 +442,9 @@ export class AdminCentralService {
     const { key, days } = analyticsRangeOf(query.range)
     const today = mytDayStart(now.getTime())
     const from = new Date(today - (days - 1) * DAY_MS)
-    const [pupils, totals, byDay, top, subscriptions, schools, bank] = await Promise.all([
+    const sinceMonday = (new Date(today + 8 * 3_600_000).getUTCDay() + 6) % 7
+    const weekStart = new Date(today - sinceMonday * DAY_MS)
+    const [pupils, totals, byDay, top, subscriptions, schools, bank, topStudents, moodRows, reports] = await Promise.all([
       this.repo.pupilTotals(),
       this.repo.answerTotals(from, now),
       this.repo.answersByDay(from, now),
@@ -448,7 +452,17 @@ export class AdminCentralService {
       this.repo.activeSubscriptionCount(dayKey(now.getTime())),
       this.repo.schoolsWithUsers(null),
       this.cache.get(() => this.bank(), BANK_CACHE_SCOPE),
+      this.repo.topPupilsByAnswers(weekStart, now, 8),
+      this.repo.moodTotals(),
+      this.repo.questionReportCounts(),
     ])
+    const moodBuckets = [
+      { key: 'happy', stored: 'gembira', label: 'Gembira' },
+      { key: 'okay', stored: 'okay', label: 'Okay' },
+      { key: 'sad', stored: 'sedih', label: 'Sedih' },
+      { key: 'stressed', stored: 'tertekan', label: 'Tertekan' },
+    ] as const
+    const breakdown = moodBuckets.map((b) => ({ key: b.key, label: b.label, count: moodRows.get(b.stored) ?? 0 }))
     const trend: AdminAnalyticsView['trend'] = []
     for (let d = days - 1; d >= 0; d--) {
       const date = dayKey(today - d * DAY_MS)
@@ -466,6 +480,9 @@ export class AdminCentralService {
       },
       trend,
       topSchools: top.map((t) => ({ schoolId: t.schoolId, school: t.name, answered: t.answered })),
+      topStudents,
+      mood: { total: breakdown.reduce((a, b) => a + b.count, 0), breakdown },
+      reports,
       bank: bank.value,
     }
   }

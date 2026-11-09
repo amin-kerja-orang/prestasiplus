@@ -64,6 +64,9 @@ export const AdminDashboardSchema = z
     subjects: z.object({ total: central.count, active: central.count }),
     levels: central.count.meta({ description: 'Tingkatan 1 to 5 (active, non-primary levels); Darjah is never counted.' }),
     users: z.object({ total: central.count, students: central.count, teachers: central.count }),
+    schools: z
+      .object({ total: central.count, active: central.count })
+      .meta({ description: 'Registered secondary-stage schools (the Sekolah list figures); V2 Panel "Sekolah" card.' }),
     battles: z.object({ total: central.count, active: central.count, finished: central.count }),
   })
   .meta({ id: 'AdminDashboard' })
@@ -96,6 +99,25 @@ export const AdminAnalyticsSchema = z
     topSchools: z
       .array(z.object({ schoolId: IdSchema, school: z.string(), answered: central.count }))
       .meta({ description: 'Up to 10 schools by answers in the range.' }),
+    topStudents: z
+      .array(z.object({ userId: IdSchema, name: z.string(), school: z.string().nullable(), answered: central.count }))
+      .max(8)
+      .meta({ description: 'V2 "Pelajar Teratas": up to 8 pupils by answers since Monday 00:00 (Asia/Kuala_Lumpur) of this week, whatever the range.' }),
+    mood: z
+      .object({
+        total: central.count,
+        breakdown: z
+          .array(z.object({ key: z.enum(['happy', 'okay', 'sad', 'stressed']), label: z.string(), count: central.count }))
+          .length(4)
+          .meta({ description: 'Always the four buckets in this order: Gembira, Okay, Sedih, Tertekan (all-time check-ins, test rows excluded).' }),
+      })
+      .meta({ description: 'V2 "Mood Pelajar".' }),
+    reports: z
+      .object({
+        baru: central.count.meta({ description: 'Question reports still waiting (status pending).' }),
+        selesai: central.count.meta({ description: 'Question reports no longer waiting (reviewed, fixed or dismissed).' }),
+      })
+      .meta({ description: 'V2 "Laporan Soalan" card (test rows excluded).' }),
     bank: z.object({
       total: central.count,
       bySubject: z.array(AdminBankRowSchema),

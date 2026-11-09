@@ -101,6 +101,17 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       expect(d.users.total).toBeGreaterThanOrEqual(d.users.students + d.users.teachers)
     })
 
+    it('the Sekolah card is computed from the schools table (secondary stage only), total and active', async () => {
+      const d = AdminDashboardResponseSchema.parse((await admin.get('/admin/dashboard')).body).data
+      const row = (
+        await t.db.query<{ total: number; active: number }>(
+          `select count(*)::int total, count(*) filter (where is_active)::int active from schools where type is null or type not in ('SK','SJK(C)','SJK(T)')`,
+        )
+      )[0]
+      expect(d.schools).toEqual(row)
+      expect(d.schools.total).toBeGreaterThan(0)
+    })
+
     it('a pending, an inactive or a school-admin teacher is not counted; an inactive pupil is not counted', async () => {
       const before = AdminDashboardResponseSchema.parse((await admin.get('/admin/dashboard')).body).data.users
       const q = t.db.query.bind(t.db)
@@ -188,6 +199,29 @@ describe('Admin Pusat central screens (S6-T11)', () => {
         [w.schoolA, 64],
         [w.schoolB, 5],
       ])
+    })
+
+    it('has the V2 Analitik extras: Pelajar Teratas (this week), Mood Pelajar and Laporan Soalan, computed from the tables', async () => {
+      const q = t.db.query.bind(t.db)
+      const qid = (await q<{ id: string }>(`select id::text from questions order by id limit 1`))[0]?.id as string
+      await q(`insert into question_reports (question_id, question_version_no, reasons, source, status) values ($1, 1, '{typo}', 'latihan', 'pending'), ($1, 1, '{typo}', 'latihan', 'pending'), ($1, 1, '{typo}', 'latihan', 'fixed')`, [qid])
+      for (const [i, mood] of ['gembira', 'gembira', 'sedih', 'tertekan'].entries()) {
+        await q(`insert into mood_checkins (user_id, mood, checked_on) values ($1::bigint, $2, $3::date)`, [w.ids.p1, mood, `2026-10-${String(10 + i)}`])
+      }
+      const a = AdminAnalyticsResponseSchema.parse((await admin.get('/admin/analytics')).body).data
+      const dbReports = (await q<{ baru: number; selesai: number }>(`select count(*) filter (where status = 'pending')::int baru, count(*) filter (where status <> 'pending')::int selesai from question_reports where not is_test`))[0]
+      expect(a.reports).toEqual(dbReports)
+      expect(a.reports.baru).toBeGreaterThanOrEqual(2)
+      expect(a.reports.selesai).toBeGreaterThanOrEqual(1)
+      expect(a.mood.breakdown.map((b) => b.label)).toEqual(['Gembira', 'Okay', 'Sedih', 'Tertekan'])
+      const dbMood = (await q<{ mood: string; n: number }>(`select mood, count(*)::int n from mood_checkins where not is_test group by mood`))
+      for (const [key, stored] of [['happy', 'gembira'], ['okay', 'okay'], ['sad', 'sedih'], ['stressed', 'tertekan']] as const) {
+        expect(a.mood.breakdown.find((b) => b.key === key)?.count).toBe(dbMood.find((r) => r.mood === stored)?.n ?? 0)
+      }
+      expect(a.mood.total).toBe(a.mood.breakdown.reduce((n, b) => n + b.count, 0))
+      // The clock is Monday 2026-10-19: only the in-progress session of 10-18 is before it, so this week has no answers yet or only those of today.
+      expect(a.topStudents.length).toBeLessThanOrEqual(8)
+      for (const [i, s] of a.topStudents.entries()) if (i > 0) expect(a.topStudents[i - 1]?.answered).toBeGreaterThanOrEqual(s.answered)
     })
 
     it('range 7d has only the in-progress answers; 90d adds the September session; an unknown range is 30d', async () => {

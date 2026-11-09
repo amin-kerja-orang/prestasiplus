@@ -82,6 +82,7 @@ describe('AdminDashboard (API-ADM-11)', () => {
     subjects: { total: 14, active: 12 },
     levels: 5,
     users: { total: 1000, students: 900, teachers: 30 },
+    schools: { total: 12, active: 11 },
     battles: { total: 20, active: 2, finished: 15 },
   }
 
