@@ -52,7 +52,7 @@ export type ChartPointAccent = DsAccent | 'neutral'
 const POINT_VAR: Record<ChartPointAccent, string> = {
   action: '--ui-primary',
   win: '--ds-highlight',
-  heat: '--ds-c3',
+  heat: '--ds-heat-fill',
   friend: '--ds-c4',
   trial: '--ds-amber',
   neutral: '--ui-text-dimmed',
@@ -60,7 +60,7 @@ const POINT_VAR: Record<ChartPointAccent, string> = {
 const POINT_SWATCH: Record<ChartPointAccent, string> = {
   action: 'bg-primary',
   win: 'bg-highlight',
-  heat: 'bg-heat',
+  heat: 'bg-heat-fill',
   friend: 'bg-friend',
   trial: 'bg-trial',
   neutral: 'bg-(--ui-text-dimmed)',

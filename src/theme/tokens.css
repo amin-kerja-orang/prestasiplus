@@ -298,6 +298,7 @@
   --color-on-sem: var(--ds-on-sem);
   --color-on-secondary: var(--ds-on-secondary);
   --color-heat: var(--ds-c3);
+  --color-heat-fill: var(--ds-heat-fill);
   --color-friend: var(--ds-c4);
   --color-trial: var(--ds-amber);
   --color-ai: var(--ds-ai);
@@ -381,6 +382,7 @@
 
 /* Shared by both personalities (no colour decisions). */
 [data-personality] {
+  --ds-heat-fill: var(--ds-c3);
   --ui-radius: 0.5rem;
   --ds-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ds-duration-fast: 100ms;
@@ -432,7 +434,7 @@
   --ds-cat-3: var(--color-delima-700);
   --ds-cat-4: var(--color-laut-700);
   --ds-cat-5: var(--color-mentari-800);
-  --ds-cat-6: #a33f05;
+  --ds-cat-6: #d9480f;
   --ds-cat-7: var(--color-ungu-600);
   --ds-cat-8: var(--color-daun-700);
 }
@@ -509,6 +511,8 @@
   --ds-primary-2: #6a4dff;
   --ds-c2: #bceb27;
   --ds-c3: #a33f05;
+  /* Chip and tile FILL of heat: the bright brand orange with ink glyphs (c3 stays dark for orange text). */
+  --ds-heat-fill: #ff7a1a;
   --ds-c4: #7c3aed;
   --ds-amber: #ffb91a;
   --ds-ai: #0e6a85;
@@ -592,6 +596,7 @@
   --ds-c1: #6283ff;
   --ds-primary-2: #a06cff;
   --ds-c3: #ff8a2b;
+  --ds-heat-fill: var(--ds-c3);
   --ds-c4: #a06cff;
   --ds-ai: #2cc4e3;
   --ds-ic-flame: #6283ff;
