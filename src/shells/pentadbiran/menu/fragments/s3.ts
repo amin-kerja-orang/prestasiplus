@@ -8,6 +8,5 @@ export const S3_ROWS: readonly Row[] = [
   ['KS-01', 'SPM', '/admin/spm'],
   ['BS-02', 'Import & Semakan', '/admin/spm/soalan/ekstrak'],
   ['KS-17', 'Set Builder', '/admin/studio/sets'],
-  ['KS-18', 'Databank Soalan', '/admin/spm/databank'],
   ['KS-07', 'Kertas Subjektif', '/admin/kertas-subjektif'],
 ]

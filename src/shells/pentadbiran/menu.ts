@@ -7,7 +7,7 @@
  *
  * Hidden or merged out of the definition (routes stay reachable by link or button): KS-02, KS-08,
  * KS-13, KS-14, KS-15, KS-16 (hidden); BS-01, BS-10 (Bank Lama retired 2026-11-09; PO: one bank, DSKP format); KS-09 (Set Builder);
- * KS-06 (hub lane card). Removed: KK-03, KS-10, KS-11, KS-12.
+ * KS-06 (hub lane card); SPM group KS-18, KS-03, KS-04, KS-05 (2026-11-09: the lanes open from the SOALAN > SPM hub cards). Removed: KK-03, KS-10, KS-11, KS-12.
  *
  * This file is the composer (S0): group structure, order, icons and the id order inside each group.
  * The rows themselves (id, label, target route) live in `menu/fragments/s<n>.ts`, one file per sector
@@ -132,13 +132,6 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     label: 'Pengguna',
     icon: 'users',
     items: pick('PS-01', 'PS-02', 'KW-05', 'PS-04', 'PS-06', 'PS-05', 'PS-03'),
-  },
-  {
-    // The four lane pages open the admin lane page (FD-MENU-2); only the databank is built.
-    key: 'spm',
-    label: 'SPM',
-    icon: 'scroll',
-    items: pick('KS-18', 'KS-03', 'KS-04', 'KS-05'),
   },
   {
     key: 'premium',

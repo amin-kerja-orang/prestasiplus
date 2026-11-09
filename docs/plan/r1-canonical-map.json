@@ -6606,57 +6606,6 @@
       "approved_by_card": null
     },
     {
-      "key": "pentadbiran|KS-03",
-      "source": "pentadbiran",
-      "id": "KS-03",
-      "label": "Latih Tubi",
-      "route": "/admin/p/ks-03",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/latih-tubi",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
-      "group": "spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-04",
-      "source": "pentadbiran",
-      "id": "KS-04",
-      "label": "Tracking A",
-      "route": "/admin/p/ks-04",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/tracking-a",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
-      "group": "spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-05",
-      "source": "pentadbiran",
-      "id": "KS-05",
-      "label": "Subjektif",
-      "route": "/admin/p/ks-05",
-      "roles": [
-        "admin"
-      ],
-      "status": "redirect-to:/admin/spm/subjektif",
-      "sector": "S0",
-      "file": "src/shells/pentadbiran/menu/fragments/s0.ts",
-      "built": false,
-      "group": "spm",
-      "note": "MERGE: hub lane card and group SPM item (30 §3.3; register M-08)",
-      "approved_by_card": null
-    },
-    {
       "key": "pentadbiran|PG-01",
       "source": "pentadbiran",
       "id": "PG-01",
@@ -7517,21 +7466,6 @@
       "group": "soalan",
       "note": "KEEP: Set Builder (30 §3.3)",
       "approved_by_card": null
-    },
-    {
-      "key": "pentadbiran|KS-18",
-      "source": "pentadbiran",
-      "id": "KS-18",
-      "label": "Databank Soalan",
-      "route": "/admin/spm/databank",
-      "roles": [
-        "admin"
-      ],
-      "status": "canonical",
-      "sector": "S3",
-      "file": "src/shells/pentadbiran/menu/fragments/s3.ts",
-      "group": "spm",
-      "approved_by_card": "S0-T07"
     },
     {
       "key": "pentadbiran|KS-07",

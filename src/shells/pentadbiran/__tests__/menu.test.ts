@@ -35,7 +35,6 @@ describe('Pentadbiran menu data', () => {
       'kurikulum',
       'soalan',
       'pengguna',
-      'spm',
       'premium',
       'kawalan-ciri',
       'gamifikasi',
@@ -65,7 +64,6 @@ describe('Pentadbiran menu data', () => {
       'Kurikulum',
       'Soalan',
       'Pengguna',
-      'SPM',
       'Premium',
       'Sistem', // Kawalan Ciri (PRD 30 §3.1 row 8)
       'Marketplace', // Produk, Penjual (S7-T08)
@@ -109,7 +107,6 @@ describe('Pentadbiran menu data', () => {
         'Import Pengguna',
         'Kelas Sekolah',
       ],
-      ['Databank Soalan'],
       ['PKSK Soalan', 'PKSK Akses'],
       ['Kawalan Ciri'],
       ['Produk', 'Penjual'],
@@ -210,7 +207,8 @@ describe('Pentadbiran menu data', () => {
     // Set Builder wins over Studio
     expect(activeItem('/admin/studio/sets')?.id).toBe('KS-17')
     expect(activeItem('/admin/studio')?.id).toBe('BS-08')
-    expect(activeItem('/admin/spm/databank')?.id).toBe('KS-18')
+    // the SPM lanes have no menu row of their own (2026-11-09): they stay on the SPM hub
+    expect(activeItem('/admin/spm/databank')?.id).toBe('KS-01')
     // hidden screens (routes stay) fall back to the SPM hub
     expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-01')
   })
