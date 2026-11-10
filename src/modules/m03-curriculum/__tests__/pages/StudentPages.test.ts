@@ -342,6 +342,14 @@ describe('LearningMapPage (S14)', () => {
     expect(islands[3]?.attributes('href')).toBeUndefined()
     expect(islands[3]?.text()).toContain('Selesaikan topik sebelumnya dulu')
     expect(islands[2]?.text()).toContain('2 sesi · 7 soalan dijawab')
+    // FR-M03-85: from md the islands alternate right (first) and left; only below md are they centred (C-9).
+    expect(nodes.map((n) => n.classes().filter((c) => /^(max-md:mx-auto|md:ms-auto|md:me-auto)$/.test(c)))).toEqual([
+      ['max-md:mx-auto', 'md:ms-auto'],
+      ['max-md:mx-auto', 'md:me-auto'],
+      ['max-md:mx-auto', 'md:ms-auto'],
+      ['max-md:mx-auto', 'md:me-auto'],
+    ])
+    expect(nodes.every((n) => !n.classes().includes('mx-auto'))).toBe(true)
   })
 
   it('draws a subject outside the 7 known ones as a plain pill (name, no emoji) after them, active when selected', async () => {
