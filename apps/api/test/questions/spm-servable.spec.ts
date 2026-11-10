@@ -83,8 +83,8 @@ describe('the shared SPM-servable definition', () => {
   })
 
   it('the overview card counts and the login count equal the draw counts', async () => {
-    // D91: the card and the draw leave out stimulus-group members (the hub / draw rule); the login count keeps counting them.
-    const drawable = await repo.count({ type: 'mcq', spmPool: true, ungrouped: true, status: 'approved', active: true }) // all subjects
+    // D105: the card and the draw (latih_tubi_spm, drillShape wholeGroups) serve ungrouped questions and COMPLETE stimulus groups; the login count also counts members of incomplete groups.
+    const drawable = await repo.count({ type: 'mcq', spmPool: true, wholeGroups: true, status: 'approved', active: true }) // all subjects
     const withGroups = await repo.count({ type: 'mcq', spmPool: true, status: 'approved', active: true })
     const matrix = await t.get(OverviewRepository).bankMatrix()
     const levels = (await t.db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)

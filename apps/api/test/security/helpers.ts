@@ -15,6 +15,7 @@ import { expect } from 'vitest'
 import { runSeeds } from '../../prisma/seed'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { FeatureFlagsService } from '../../src/common/feature-flags'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { MAIL_PORT, type MailPort, type PasswordResetMail } from '../../src/modules/account/ports'
@@ -86,6 +87,9 @@ export async function bootSecurityApp(opts: SecurityBootOptions = {}): Promise<S
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // These suites check the CONTRACT of the routes (CSRF, validation, limits, logs), not the Kawalan Ciri switches: `tiket-bantuan` is seeded OFF (D115) and
+  // `cikgu-alesa` / `keluarga-angkat` are locked OFF (INV-29), so FeatureGuard would answer 404 for those routes. Every key is ON here, as in test/conformance/boot.ts.
+  app.get(FeatureFlagsService).isEnabled = async () => true
   plugPocAttempts(app)
   plugPocPapers(app)
   ;(app.getHttpServer() as { setMaxListeners(n: number): void }).setMaxListeners(0)

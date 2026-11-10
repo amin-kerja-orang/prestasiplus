@@ -9,6 +9,8 @@ describe('THROTTLE_SUPPORT_READ_PER_MINUTE (429 + Retry-After)', () => {
 
   beforeAll(async () => {
     t = await bootPartC({ THROTTLE_SUPPORT_READ_PER_MINUTE: '2' })
+    // Migration 0250 seeds `tiket-bantuan` OFF (D115): /api/tiket is 404 until it is ON. This spec tests the throttle of that feature (as tickets.spec.ts does), before any request: the flag read is cached.
+    await t.db.query(`update feature_flags set enabled = true where key = 'tiket-bantuan'`)
     student = await loginPartC(t, 'pelajar@demo.test')
     admin = await loginPartC(t, 'admin@demo.test')
   })

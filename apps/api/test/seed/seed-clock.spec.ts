@@ -123,7 +123,8 @@ describe('poc seed, fixed versus run-date (database)', () => {
       `select l.created_at as t from coin_ledger l join users u on u.id = l.user_id where u.email = 'pelajar@demo.test' order by l.id`,
     )
     expect(rows.map((r) => r.t.toISOString())).toEqual(wanted.ledger.map(([at]) => new Date(at).toISOString()))
-    expect(fixed.weeks.sort()).toContain('2026-09-21')
+    // S7-T02 (D115): the Sekolah Bersaing weekly snapshots are not seeded any more (the board is live), so there are no week starts to date.
+    expect(fixed.weeks).toEqual([])
     const [b1] = await fixedDb.query<{ t: Date }>(`select created_at as t from battles where id = $1`, [seedUuid(1)])
     expect(b1?.t.getTime()).toBe(Date.parse('2026-07-20T21:58:00+08:00'))
   })

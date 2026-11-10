@@ -11,6 +11,7 @@ import { identitySeed } from '../../prisma/seed/core/identity'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { FeatureFlagsService } from '../../src/common/feature-flags'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { SponsorshipModule } from '../../src/modules/sponsorship'
@@ -67,6 +68,11 @@ export async function bootSponsorshipApp(opts: BootOptions = {}): Promise<Sponso
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // `keluarga-angkat` is locked OFF in R1 (D102, INV-29; migration 0250), so FeatureGuard answers 404 on this route for every caller. These specs keep the dormant
+  // module covered for R2 by switching only that key ON for this test app; every other key keeps the real flag state.
+  const flags = app.get(FeatureFlagsService)
+  const isEnabled = flags.isEnabled.bind(flags)
+  flags.isEnabled = (key: string) => (key === 'keluarga-angkat' ? Promise.resolve(true) : isEnabled(key))
   return {
     app,
     db,

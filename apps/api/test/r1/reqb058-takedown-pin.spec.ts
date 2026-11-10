@@ -281,7 +281,7 @@ describe('REQ-B-058 a taken-down pinned version is not served to new sittings', 
     await advance(members)
     for (const id of members) expect((await admin.put(`/api/admin/section-pools/${id}`, { pools: ['MAT2-A'] })).status).toBe(200)
 
-    const created = await admin.post('/api/admin/papers', { subject: 'MAT', kertas: 2 })
+    const created = await admin.post('/api/admin/papers', { title: 'Set Ujian Kedua', subject: 'MAT', kertas: 2 })
     expect(created.status, JSON.stringify(created.body)).toBe(201)
     const second = created.body.data.id as string
     const sections = ((await admin.get(`/api/admin/papers/${second}`)).body.data.paper.sections as { id: string }[]).map((x) => x.id)

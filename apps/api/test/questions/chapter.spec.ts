@@ -2,7 +2,7 @@ import { QUESTION_MESSAGES, QuestionDetailSchema, QuestionSchema, mutationEnvelo
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { bootQuestionsApp, expectError, loginAs, parseData, type Client, type QuestionsTestApp } from './helpers'
-import { mcqBody, refsOf, tagOf, type Refs } from './http-helpers'
+import { mcqBody, refsOf, tagForChapter, type Refs } from './http-helpers'
 import { chapterIdOf } from '../curriculum/helpers'
 
 /** R1 "Bab field" (D89): the admin picks the Bab of a question; it is stored in `question_versions.chapter_id`. */
@@ -107,10 +107,10 @@ describe('admin question Bab (curriculumChapterId)', () => {
   })
 
   it('editing an approved (live) question keeps the live version (with its chapter) and writes the new chapter on the draft version 2', async () => {
-    const tag = await tagOf(t.db, refs.mathId, refs.t4Id)
+    const tag = await tagForChapter(t.db, c1)
     const q = await create({ status: 'approved', tag, curriculumChapterId: c1 })
     expect(q.status).toBe('approved')
-    expect((await put(q.id, { tag, curriculumChapterId: c2 })).status).toBe(200)
+    expect((await put(q.id, { tag: await tagForChapter(t.db, c2), curriculumChapterId: c2 })).status).toBe(200) // the new Bab needs a Tajuk DSKP that fits it (G-02)
     expect(await storedChapter(q.id, 1)).toBe(c1)
     expect(await storedChapter(q.id, 2)).toBe(c2)
     const admin2 = parseData(await admin.get(`/api/questions/${q.id}`), QuestionDetailSchema)

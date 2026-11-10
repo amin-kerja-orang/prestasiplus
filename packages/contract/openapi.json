@@ -17838,7 +17838,12 @@
           "totalSchools": {
             "type": "integer",
             "minimum": 0,
-            "description": "Platform: subscribed schools outside fixture schools. School view: 1 or 0."
+            "description": "Platform: registered schools (V2 Sekolah Berdaftar, secondary stage). School view: 1."
+          },
+          "activeSubscriptions": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Platform: schools with an active subscription outside fixture schools (V2 \"langganan aktif\"). School view: 1 or 0."
           },
           "totalStudents": {
             "type": "integer",
@@ -17930,6 +17935,7 @@
           "scope",
           "school",
           "totalSchools",
+          "activeSubscriptions",
           "totalStudents",
           "activeStudents",
           "totalAnswered",
@@ -46013,6 +46019,9 @@
               "$ref": "#/components/schemas/StimulusFlag"
             }
           },
+          "imageHeld": {
+            "type": "boolean"
+          },
           "textbookRef": {
             "$ref": "#/components/schemas/QuestionTextbookRef"
           },
@@ -53776,6 +53785,9 @@
             "items": {
               "$ref": "#/components/schemas/StimulusFlag"
             }
+          },
+          "imageHeld": {
+            "type": "boolean"
           },
           "textbookRef": {
             "$ref": "#/components/schemas/QuestionTextbookRef"

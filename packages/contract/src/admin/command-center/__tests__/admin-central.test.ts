@@ -28,6 +28,17 @@ const analytics = {
   platform: { schools: 12, activeSubscriptions: 9, students: 900, activeStudents: 410, answered: 12345, accuracy: 4.6 },
   trend: [{ date: '2026-10-19', answered: 120 }],
   topSchools: [{ schoolId: '9', school: 'SMK Contoh', answered: 4000 }],
+  topStudents: [{ userId: '55', name: 'Murid Contoh', school: 'SMK Contoh', answered: 90 }],
+  mood: {
+    total: 10,
+    breakdown: [
+      { key: 'happy', label: 'Gembira', count: 4 },
+      { key: 'okay', label: 'Okay', count: 3 },
+      { key: 'sad', label: 'Sedih', count: 2 },
+      { key: 'stressed', label: 'Tertekan', count: 1 },
+    ],
+  },
+  reports: { baru: 2, selesai: 5 },
   bank: {
     total: 46,
     bySubject: [{ id: '3', name: 'Matematik', total: 30 }],

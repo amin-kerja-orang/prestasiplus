@@ -76,7 +76,7 @@ const detail = {
 }
 
 const dashboard = {
-  school: { id: '8880', name: 'SMK DEMO', state: 'Negeri Demo', ppd: 'PPD DEMO', code: 'DEMO0001' },
+  school: { id: '8880', name: 'SMK DEMO', state: 'Negeri Demo', ppd: 'PPD DEMO', code: 'DEMO0001', joinCode: 'DEMO12' },
   roleLabel: 'Admin Sekolah',
   perutusan: [{ id: '5', title: 'Perutusan Demo', createdAt: AT, author: { initials: 'AD', roleLabel: 'Admin Pusat' } }],
   pendingTeachers: 2,

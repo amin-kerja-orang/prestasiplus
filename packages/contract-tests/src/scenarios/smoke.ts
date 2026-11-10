@@ -36,6 +36,7 @@ const FORBIDDEN_ROLE: Record<string, ActorRole> = {
   'GET /buku-nota/heatmap': 'teacher', // student and admin only
   'GET /bijak/papers': 'teacher', // student (and admin / school_admin in Mod Pelajar) only
   'GET /bijak/history': 'teacher',
+  'GET /bijak/kertas-dokumen': 'teacher', // student (and admin in Mod Pelajar) only, like /bijak/papers
   'GET /me/parent-invite': 'teacher', // student only
   'GET /me/parent-links': 'teacher', // student and parent only (a student reads own links)
 }

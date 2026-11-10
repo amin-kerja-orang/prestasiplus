@@ -12,6 +12,7 @@ import { Be09PracticeQuestionSource } from '../../src/modules/practice/question-
 import { ELIGIBLE_IDS_MAX, QuestionsRepository } from '../../src/modules/questions'
 import { AUDIT_RUNNING_MESSAGE, QualityService } from '../../src/modules/questions/workflow/quality/quality.service'
 import { SpmTrackingService } from '../../src/modules/spm'
+import { DEFAULT_SET_SIZE } from '../../src/modules/spm/config'
 import { SpmPoolService } from '../../src/modules/spm/pool.service'
 import { bulkMcqs } from '../helpers/bulk-bank'
 import { STUDENT_1, bootMissionsApp, client, loadWorld, type Client, type MissionsTestApp, type World } from '../missions/helpers'
@@ -468,7 +469,8 @@ describe('seed spm no longer loads a whole subject', () => {
       [w.tag.subjectId],
     )
     expect(set).toHaveLength(1)
-    expect(set[0]?.n).toBe(poolSize)
+    // 2a198764c: a seeded set never exceeds the subject target (here no target_size is set, so the default 40), however large the pool is.
+    expect(set[0]?.n).toBe(Math.min(poolSize, DEFAULT_SET_SIZE))
     const ordered = await t.db.query<{ ok: boolean }>(`select bool_and(question_id > prev) ok from (select question_id, lag(question_id, 1, 0) over (order by position) prev from spm_tracking_set_questions where set_id = $1) x`, [set[0]?.id])
     expect(ordered[0]?.ok).toBe(true)
   })

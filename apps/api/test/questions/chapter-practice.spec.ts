@@ -19,7 +19,7 @@ import { OVERVIEW_OPTIONS } from '../../src/modules/practice/reads/overview/over
 import { QuestionsModule } from '../../src/modules/questions'
 import { chapterIdOf, dropDatabase, loginAs, START, type CurriculumTestApp } from '../curriculum/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
-import { mcqBody, refsOf, tagOf } from './http-helpers'
+import { mcqBody, refsOf, tagForChapter, tagOf } from './http-helpers'
 
 /**
  * S1-T02: Terbitkan asks for the Bab wherever the Subjek + Tingkatan has chapters (NO_CHAPTER), so an approved question WITHOUT a Bab can only exist for a
@@ -127,7 +127,7 @@ describe('Bab set by the admin feeds GET /api/practice/chapter-subjects', () => 
       [refs.mathId, refs.t4Id],
     )
     const chapter = free!.id
-    const withBab = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag, curriculumChapterId: chapter }))
+    const withBab = await admin.post('/api/questions', mcqBody(refs, { status: 'approved', tag: await tagForChapter(t.db, chapter), curriculumChapterId: chapter })) // the Tajuk DSKP must fit the Bab (G-02)
     expect(withBab.status, JSON.stringify(withBab.body)).toBe(201)
     expect(await bab(withBab.body.data.id as string)).toMatchObject({ label: 'Latihan Bab', served: true, reasons: [] })
     expect(await inChapterList()).toBe(before + 1) // the chapter list follows the Bab the admin set (a new chapter of MATH)

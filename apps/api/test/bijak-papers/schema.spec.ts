@@ -37,7 +37,8 @@ describe('exam schema (migration 0012_bijak_papers)', () => {
     for (const t of ['blueprints', 'blueprint_sections', 'papers', 'paper_sections', 'paper_placements']) expect(list).not.toContain(t)
     expect([...list]).toEqual([...list].sort())
     const legacy = await db.query(
-      `select 1 from information_schema.columns where table_schema = 'public' and column_name like 'legacy\\_%'
+      // `papers.legacy_untimed` (0266) is a V3 flag for V2 papers without a duration, not a legacy_source/legacy_id row-mapping column, so it is allowed.
+      `select column_name from information_schema.columns where table_schema = 'public' and column_name like 'legacy\\_%' and column_name <> 'legacy_untimed'
          and table_name in ('blueprints', 'blueprint_sections', 'papers', 'paper_sections', 'paper_placements')`,
     )
     expect(legacy).toHaveLength(0)
