@@ -125,10 +125,15 @@ Urutan: **deploy kod dahulu, kemudian data.** ETL mesti dijalankan pada skema te
 | C8 | Kemas kini spec E2E yang masih guna tajuk lama (m02, m03, m04, m09, m12, m07, m27, m15) |
 | C9 | Audit semula penuh selepas Fasa A (qa-engineer, setiap peranan, 375/768/1280) |
 
-## 7. Keputusan yang diperlukan dari PO
+## 7. Keputusan PO
 
-1. Lulus push branch dan tetingkap deploy UAT (A4, A5).
-2. `OCR_ENGINE` dan had muat naik (A4).
-3. Migrasi data: delta di atas UAT atau ganti penuh (B2).
-4. Skop bank soalan: diarkib (43k), subjektif/berstruktur, set SPM V2 (B5, B6).
-5. Nilai hadiah V2 (Q8) untuk memuat `gifts` (B4).
+**Diputuskan 10 Nov:**
+- **Urutan:** capai 100% (Fasa A, B, C) **sebelum** sebarang push atau deploy ke UAT.
+- **Migrasi data: ganti penuh.** DB UAT dibina semula dari kosong (migrasi hingga HEAD) dan diisi dari dump V2 terbaru. Data yang dicipta di UAT sejak 29 Okt (kata laluan ditukar, aktiviti) tidak dibawa. B2 selesai; B7 dan B8 dijalankan sebagai muatan penuh, bukan delta (delta hanya untuk perubahan V2 antara dump dan cutover).
+- **`OCR_ENGINE=tesseract`** di UAT; `OCR_LANG_DIR` perlu ditetapkan (D5).
+- **Had muat naik baharu diterima:** `PP_UPLOAD_FILES_MB=32`, `PP_UPLOAD_BIG_MB=336` (D5).
+
+**Masih terbuka:**
+1. Lulus push branch dan tetingkap deploy UAT (selepas 100%).
+2. Skop bank soalan: diarkib (43k), subjektif/berstruktur, set SPM V2 (B5, B6).
+3. Nilai hadiah V2 (Q8) untuk memuat `gifts` (B4).
