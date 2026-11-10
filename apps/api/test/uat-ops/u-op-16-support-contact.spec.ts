@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseUatArgs } from '../../scripts/uat-ops/lib'
-import { normalizeApiUrl, SPEC, supportLines } from '../../scripts/uat-ops/u-op-16-support-contact'
+import { normalizeApiUrl, SPEC, supportLines, supportRowLines } from '../../scripts/uat-ops/u-op-16-support-contact'
 
 /** S4-T08 U-OP-16: the support contact check (pure; the HTTP call is the script's main). */
 const statuses = (status: number, body: unknown): string[] => supportLines(status, body).map((l) => l.status)
@@ -26,6 +26,26 @@ describe('supportLines', () => {
     expect(statuses(200, { email: 'a@b.invalid' })).toEqual(['PASS', 'FAIL'])
     expect(supportLines(404, null)).toEqual([{ status: 'FAIL', text: expect.stringContaining('not set yet') }])
     expect(statuses(500, null)).toEqual(['FAIL'])
+  })
+})
+
+describe('supportRowLines (database mode, used by the rebuild)', () => {
+  it('reports a missing row as pending PO input, never as a usage error', () => {
+    const lines = supportRowLines(undefined)
+    expect(lines.map((l) => l.status)).toEqual(['FAIL'])
+    expect(lines[0]?.text).toContain('PENDING PO INPUT')
+  })
+
+  it('passes a filled row without printing values; hours is optional', () => {
+    const lines = supportRowLines({ email: 'bantuan@contoh.invalid', whatsapp_number: '+60123456789', hours: null })
+    expect(lines.map((l) => l.status)).toEqual(['PASS', 'PASS', 'PASS', 'INFO'])
+    const text = lines.map((l) => l.text).join('\n')
+    expect(text).not.toContain('contoh.invalid')
+    expect(text).not.toContain('60123456789')
+  })
+
+  it('fails an empty e-mail or number', () => {
+    expect(supportRowLines({ email: '', whatsapp_number: '  ', hours: '8-5' }).map((l) => l.status)).toEqual(['PASS', 'FAIL', 'FAIL', 'INFO'])
   })
 })
 

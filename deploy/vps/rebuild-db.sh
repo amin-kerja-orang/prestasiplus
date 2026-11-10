@@ -471,6 +471,49 @@ uat_op() { # uat_op LABEL SCRIPT-FILE-OR-ALIAS ARGS...  (runs in the migrate ima
   return 0
 }
 
+# intake_env_check: the intake worker's environment, checked inside the API image (compose run, the api service: same image, same
+# api.env, same forced environment as the running API; api is stopped during the ETL so this starts a throwaway container). Plain sh:
+# the runtime image has no npm or tsx. Never prints AI_API_KEY. Mirrors scripts/uat-ops/u-op-02-intake-env-check.ts (kept for manual runs).
+intake_env_check() {
+  local rc=0
+  # shellcheck disable=SC2016  # expands inside the container
+  sub_time "intake-env (api image)" pp_compose run --rm --no-deps -T --entrypoint sh api -c '
+f=0
+ok() { echo "PASS $1"; }
+no() { echo "FAIL $1"; f=1; }
+if [ "${JOBS_WORKER_ENABLED:-}" = true ]; then ok "JOBS_WORKER_ENABLED=true"; else no "JOBS_WORKER_ENABLED is [${JOBS_WORKER_ENABLED:-}], expected true (PP_JOBS_WORKER_ENABLED in prod.env)"; fi
+eng="$(printf %s "${OCR_ENGINE:-}" | tr A-Z a-z)"
+if [ "$eng" = tesseract ]; then ok "OCR_ENGINE=tesseract"; else no "OCR_ENGINE is [${OCR_ENGINE:-}], expected tesseract"; fi
+d="${OCR_LANG_DIR:-}"
+case "$d" in
+  /*) if [ -d "$d" ]; then
+        ok "OCR_LANG_DIR=$d"
+        for l in msa eng; do if [ -r "$d/$l.traineddata" ]; then ok "$l.traineddata readable"; else no "$l.traineddata missing or unreadable in $d"; fi; done
+      else no "OCR_LANG_DIR is not a folder in the api image: $d"; fi ;;
+  *) no "OCR_LANG_DIR is not set or not absolute (expected /opt/tessdata)" ;;
+esac
+ai="$(printf %s "${AI_PROVIDER:-}" | tr A-Z a-z)"
+if [ -z "$ai" ]; then ok "AI_PROVIDER unset (default mock + OCR_ENGINE=tesseract selects the real segmenter, no external call)"; else no "AI_PROVIDER=$ai is set: remove it from api.env (no external AI on UAT, D112)"; fi
+if [ -z "${AI_API_KEY:-}" ]; then ok "AI_API_KEY is empty"; else no "AI_API_KEY is set (value not shown): no external AI provider on UAT"; fi
+exit $f' || rc=$?
+  if [ "$rc" != 0 ]; then CHECK_FAILS+=("intake-env (api image) (exit $rc)"); pp_warn "CHECK FAILED: intake-env (api image) (exit $rc)"; fi
+  return 0
+}
+
+# sql_rows_check LABEL FILE: a read-only SELECT of apps/api/scripts/uat-ops (rows 'id | description | value | expected | ok'); FAIL rows are recorded.
+sql_rows_check() {
+  local label="$1" f="$PP_REPO/apps/api/scripts/uat-ops/$2" out rc=0 n
+  [ -r "$f" ] || { CHECK_FAILS+=("$label: $2 not found in the checkout"); pp_warn "$f not found in the checkout"; return 0; }
+  out="$(mktemp)"
+  su_psql "$db" -At <"$f" >"$out" || rc=$?
+  cat "$out"
+  n="$(awk -F'|' '$NF ~ /FAIL/{c++} END{print c+0}' "$out")"
+  rm -f "$out"
+  pp_log "$label: exit=$rc, FAIL rows: $n"
+  if [ "$rc" != 0 ] || [ "$n" != 0 ]; then CHECK_FAILS+=("$label ($n FAIL rows, exit $rc)"); fi
+  return 0
+}
+
 step_repairs() {
   if is_skipped repairs; then pp_warn "HOOK repairs skipped (--skip repairs)"; return 0; fi
   # 1 verify already ran (step 12). 2 DSKP counts after the seed: 'belum dimuatkan' means run dskp:load (idempotent)
@@ -496,9 +539,13 @@ step_repairs() {
   uat_op "check-levels" uat:check-levels
   uat_op "chapters-t1-t3" uat:chapters-t1-t3
   uat_op "uji-leftovers" uat:uji-leftovers
-  uat_op "support-contact" uat:support-contact
-  uat_op "intake-env" uat:intake-env
-  uat_op "terbit-papers (read-only)" uat:terbit-papers
+  # support-contact reads support_config (V2 has no such values to migrate): FAIL = PENDING PO INPUT (Tetapan > Hubungi Sokongan)
+  uat_op "support-contact (PENDING PO INPUT if FAIL: V2 holds no values)" uat:support-contact
+  # intake-env runs in the API image with the API's own env (the migrate image has no tessdata and no JOBS_WORKER_ENABLED)
+  intake_env_check
+  # Terbit check: only when --terbit ran; the old `terbit-papers` (HTTP pool preview, needs a running API and admin login) is a manual tool
+  if [ "$terbit" = 1 ] && ! is_skipped papers; then sql_rows_check "terbit-published (read-only)" terbit-published.sql
+  else pp_log "terbit-published: SKIPPED, the Terbit pass did not run (no --terbit, or --skip papers): V2-published papers stay draft until migrate:terbit --apply"; fi
   # SQL integrity checks: empty result = clean
   if is_skipped sql-checks; then pp_warn "HOOK sql-checks skipped"; else
     local f

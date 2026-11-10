@@ -1083,7 +1083,7 @@ Card S4-T08. The order, the owners and the approval rule come from the "UAT data
 | 11 | U-OP-15 | `uat:chapters-t1-t3` | read-only | E-03, S4-T07 | available |
 | 12 | U-OP-11 | none yet (flag report) | n/a | S0-T10 | pending, no script built (needs S0-T10, then S4-T08 part C) |
 | 13 | U-OP-14 | `uat:uji-leftovers` | read-only (lists; the admin removes) | none | available |
-| 14 | U-OP-16 | `uat:support-contact -- --api-url <url>` | read-only | S7-T09 (N-07) set by the admin | available |
+| 14 | U-OP-16 | `uat:support-contact -- --api-url <url>` (or without `--api-url` with `DATABASE_URL`: reads `support_config`, as `rebuild-db.sh` does) | read-only | S7-T09 (N-07) set by the admin | available |
 | 15 | U-OP-17 | `uat:regroup-report` (open count); the work-list is ADM work | read-only | 05, S2-T04 | available (aggregator uat-verify pending, S4-T08 part C) |
 | 16 | U-OP-18 | `apps/api/scripts/uat-ops/group-integrity.sql` run with `psql` read-only (not an npm script) | read-only SQL | S1-T01 merged | available (card S1-T01) |
 | 17 | U-OP-19 | `uat:difficulty-level-backfill` | dry run, `--apply` after approval | S1-T02 merged (migration 0128) | available (card S1-T02) |

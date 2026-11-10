@@ -2,11 +2,11 @@ import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { parseUatArgs } from '../../scripts/uat-ops/lib'
-import { chapterLines, COUNTS_SQL, LOWER_LEVELS, SPEC, type ChapterCountRow } from '../../scripts/uat-ops/u-op-15-chapters-t1-t3'
+import { AUTO_PREFIX, chapterLines, COUNTS_SQL, LOWER_LEVELS, SPEC, type ChapterCountRow } from '../../scripts/uat-ops/u-op-15-chapters-t1-t3'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 /** S4-T08 U-OP-15: Tingkatan 1-3 Bab counts per offered subject (pure lines [CI], SQL on a real database [CI]). */
-const row = (subject_code: string, level_code: string, total: number, in_tree: number, active: number): ChapterCountRow => ({ subject_code, level_code, total, in_tree, active })
+const row = (subject_code: string, level_code: string, total: number, in_tree: number, active: number, native = total): ChapterCountRow => ({ subject_code, level_code, total, in_tree, active, native })
 
 describe('chapterLines', () => {
   it('passes a pair with active Bab in the tree and fails one with none', () => {
@@ -14,7 +14,14 @@ describe('chapterLines', () => {
     expect(lines.map((l) => l.status)).toEqual(['PASS', 'FAIL', 'PASS', 'INFO'])
     expect(lines[0]?.text).toBe('MATH T1: 3 Bab (all rows 4, in tree 3)')
     expect(lines[1]?.text).toContain('0 Bab in the tree and active')
-    expect(lines[3]?.text).toBe('3 subject x level pairs for 2 subjects; 2 with Bab, 1 without')
+    expect(lines[3]?.text).toBe('3 subject x level pairs for 2 subjects; 2 with active Bab, 1 without (1 V2-served = FAIL, 0 expected)')
+  })
+
+  it('treats inactive auto-created T1-T3 chapters and pairs with no Bab as expected (INFO) and lists them for the curriculum owner', () => {
+    const lines = chapterLines([row('MATH', 'T1', 4, 4, 4), row('SAINS', 'T1', 7, 7, 0, 0), row('SAINS', 'T2', 0, 0, 0)])
+    expect(lines.map((l) => l.status)).toEqual(['PASS', 'INFO', 'INFO', 'INFO', 'INFO'])
+    expect(lines[1]?.text).toContain('auto-created')
+    expect(lines[4]?.text).toBe('for the curriculum owner, pairs with no active Bab (expected): SAINS T1, SAINS T2')
   })
 
   it('fails when no subject is offered at T1-T3', () => {
@@ -42,6 +49,8 @@ describe('COUNTS_SQL (database)', () => {
     await db.query(`INSERT INTO chapters(subject_id,education_level_id,name,in_tree,is_active) SELECT s.id,l.id,n,t,a FROM subjects s, education_levels l,
       (VALUES ('a',true,true),('b',true,true),('c',true,true),('d',false,true),('e',true,false)) AS v(n,t,a) WHERE s.code='MATH' AND l.code='T1'`)
     await db.query(`INSERT INTO chapters(subject_id,education_level_id,name,in_tree,is_active) SELECT s.id,l.id,'x',false,true FROM subjects s, education_levels l WHERE s.code='SAINS' AND l.code='T2'`)
+    await db.query(`INSERT INTO chapters(subject_id,education_level_id,name,description,is_active) SELECT s.id,l.id,n,'${AUTO_PREFIX} for Tingkatan 1-3 seeding.',false FROM subjects s, education_levels l,
+      (VALUES ('p'),('q')) AS v(n) WHERE s.code='SAINS' AND l.code='T1'`)
     await db.query(`INSERT INTO chapters(subject_id,education_level_id,name) SELECT s.id,l.id,'y' FROM subjects s, education_levels l WHERE s.code='OFF' AND l.code='T1'`)
     client = new pg.Client({ connectionString: db.url })
     await client.connect()
@@ -52,18 +61,18 @@ describe('COUNTS_SQL (database)', () => {
   })
 
   it('counts Bab per offered subject x T1-T3, ignoring T4, Darjah and inactive subjects', async () => {
-    const rows = (await client.query<ChapterCountRow>(COUNTS_SQL, [[...LOWER_LEVELS], null])).rows
+    const rows = (await client.query<ChapterCountRow>(COUNTS_SQL, [[...LOWER_LEVELS], null, AUTO_PREFIX])).rows
     expect(rows).toEqual([
       row('MATH', 'T1', 5, 4, 3),
       row('MATH', 'T2', 0, 0, 0),
-      row('SAINS', 'T1', 0, 0, 0),
+      row('SAINS', 'T1', 2, 2, 0, 0),
       row('SAINS', 'T2', 1, 0, 0),
     ])
-    expect(chapterLines(rows).filter((l) => l.status === 'FAIL')).toHaveLength(3)
+    expect(chapterLines(rows).filter((l) => l.status === 'FAIL')).toHaveLength(1)
   })
 
   it('filters by subject code', async () => {
-    const rows = (await client.query<ChapterCountRow>(COUNTS_SQL, [[...LOWER_LEVELS], 'SAINS'])).rows
+    const rows = (await client.query<ChapterCountRow>(COUNTS_SQL, [[...LOWER_LEVELS], 'SAINS', AUTO_PREFIX])).rows
     expect(rows.map((r) => `${r.subject_code} ${r.level_code}`)).toEqual(['SAINS T1', 'SAINS T2'])
   })
 
