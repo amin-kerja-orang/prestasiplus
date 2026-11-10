@@ -43,7 +43,7 @@ test.describe('M02 QA re-test', { tag: [TAG.smoke, moduleTag(2)] }, () => {
         'href',
         '/admin/comp-students/create',
       )
-      await expect(byId(page, 'comp-row')).toHaveCount(0)
+      await expect(byId(page, 'comp-name')).toHaveCount(0)
       await expect(byId(page, 'comp-summary')).toContainText('0 / 0')
       await expectNoHorizontalScroll(page)
     })
@@ -57,7 +57,7 @@ test.describe('M02 QA re-test', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       'Tiada pelajar komplimen lagi. Daftar baru.',
     )
     await expect(byId(page, 'comp-empty')).toBeVisible()
-    await expect(byId(page, 'comp-pager')).toBeVisible()
+    await expect(page.locator('[data-ds="data-table-pager"]')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 
@@ -85,23 +85,20 @@ test.describe('M02 QA re-test', { tag: [TAG.smoke, moduleTag(2)] }, () => {
   }) => {
     await spaGoto(page, '/admin/schools')
     await expect(byId(page, 'school-row').first()).toBeVisible()
-    const th = page.locator('thead th').first()
-    await expect(th).toHaveText('Nama Sekolah')
-    await expect(th).toHaveCSS('text-transform', 'none')
-    // A zero-count cell is lighter than a non-zero one.
-    const zero = await page
-      .getByTestId('school-row')
-      .nth(1)
-      .locator('td')
-      .nth(5)
-      .evaluate((el) => getComputedStyle(el).color)
-    const name = await page
-      .getByTestId('school-row')
-      .nth(1)
-      .locator('td')
+    // Column headers show from 768 px (cards below).
+    if ((page.viewportSize()?.width ?? 0) >= 768) {
+      const th = page.locator('thead th').first()
+      await expect(th).toHaveText('Nama Sekolah')
+      await expect(th).toHaveCSS('text-transform', 'none')
+    }
+    // A zero-count cell is lighter than a non-zero one (the cells carry text-dimmed / text-highlighted).
+    const table = page.getByTestId('schools-table')
+    const zero = await table.locator('span.text-dimmed').first().evaluate((el) => getComputedStyle(el).color)
+    const nonZero = await table
+      .locator('span.text-highlighted')
       .first()
       .evaluate((el) => getComputedStyle(el).color)
-    expect(zero).not.toBe(name)
+    expect(zero).not.toBe(nonZero)
     await expect(byId(page, 'school-toggle').first()).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
