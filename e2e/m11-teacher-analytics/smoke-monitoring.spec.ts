@@ -34,8 +34,8 @@ test.use({ mockInit: { latency: 0 } })
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
 async function adminHeader(page: Page, title: string, subtitle?: string) {
-  await expect(tid(page, 'shell-admin-title')).toHaveText(title)
-  if (subtitle) await expect(tid(page, 'shell-admin-subtitle')).toHaveText(subtitle)
+  await expect(tid(page, 'pentadbiran-header').locator('h1')).toHaveText(title)
+  if (subtitle) await expect(tid(page, 'pentadbiran-subtitle')).toHaveText(subtitle)
 }
 
 async function openOverview(page: Page, gotoApp: (p: string) => Promise<void>, path: string) {
@@ -60,7 +60,7 @@ test.describe('M11 S2 Monitoring Penglibatan (admin, /admin/monitoring)', MODULE
         'Monitoring Penglibatan',
         'Pantau penglibatan sekolah & pelajar dalam platform',
       )
-      await expect(tid(page, 'shell-admin-header')).toBeVisible()
+      await expect(tid(page, 'pentadbiran-header')).toBeVisible()
       await expectNoHorizontalScroll(page)
     },
   )

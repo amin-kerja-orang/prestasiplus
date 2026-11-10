@@ -51,13 +51,14 @@ async function expectTargetBelowLg(page: Page, locator: Locator): Promise<void> 
 }
 
 async function expectHeader(page: Page, title: string, subtitle: string): Promise<void> {
-  await expect(page.getByTestId('shell-user-title')).toHaveText(title)
-  await expect(page.getByTestId('shell-user-subtitle')).toHaveText(subtitle)
+  await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText(title)
+  // V2 guru layout default subtitle (guru/layout.blade.php:323): "Selamat datang, <name> 👩‍🏫".
+  await expect(page.getByTestId('pembelajaran-subtitle')).toContainText(subtitle)
 }
 
 async function s1Header(page: Page): Promise<void> {
   await expectTabTitle(page, 'Laporan Statistik - Portal Guru')
-  await expectHeader(page, 'Laporan Statistik', 'Pantau penglibatan dan prestasi pelajar')
+  await expectHeader(page, 'Laporan Statistik', 'Selamat datang, ')
 }
 
 async function s6Header(page: Page): Promise<void> {
@@ -65,7 +66,7 @@ async function s6Header(page: Page): Promise<void> {
   await expectHeader(
     page,
     'Analisis Item Soalan',
-    'Kenal pasti soalan yang sukar dan indeks diskriminasi',
+    'Selamat datang, ',
   )
 }
 
@@ -471,7 +472,7 @@ test.describe('M11 S1 Laporan Statistik: teacher', MODULE, () => {
     await loginAs(GURU)
     await gotoApp(S1)
     await s1Header(page)
-    await expect(page.locator('[data-layout="user"]')).toHaveCount(1)
+    await expect(page.locator('[data-layout="pembelajaran"]')).toHaveCount(1)
     await expect(page.getByTestId('card-login')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
