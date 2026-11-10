@@ -187,6 +187,11 @@ printf 'x\n' >"$w/schema-no-marker.ts"; printf 'CLAMAV_SCAN_ENABLED: z.enum([]),
 PP_AV_SCHEMA_FILE="$w/schema-no-marker.ts" av 1 'no upload scan code'
 PP_AV_SCHEMA_FILE="$w/missing.ts" av 1 'no upload scan code'
 PP_AV_SCHEMA_FILE="$w/schema-marker.ts" av 0 ''
+# the override is honoured only on the scratch harness (PP_SCRATCH_HOST=yes): on a real host the real schema decides (it has the marker here)
+mkprod "PP_PROFILES=clamav" "PP_SCRATCH_HOST=no"
+PP_AV_SCHEMA_FILE="$w/schema-no-marker.ts" av 0 ''
+mkprod "PP_PROFILES=clamav"
+grep -q 'scanner":"ok"' "$vps/lib.sh" && ok 'pp_health_checks requires /api/ready scanner ok when teacher intake is on' || bad 'pp_health_checks does not check scanner ok'
 grep -q 'CLAMAV_SCAN_ENABLED' "$vps/../../apps/api/src/common/config/env.schema.ts" && ok 'the real env schema declares the CLAMAV_SCAN_ENABLED marker' || bad 'env.schema.ts lacks the CLAMAV_SCAN_ENABLED marker'
 grep -q 'pp_intake_av_problem' "$vps/deploy.sh" && ok 'deploy.sh preflight (G5) calls pp_intake_av_problem' || bad 'deploy.sh preflight does not call pp_intake_av_problem'
 grep -q 'intake_av_check' "$vps/rebuild-db.sh" && ok 'rebuild-db.sh step 14 runs intake_av_check' || bad 'rebuild-db.sh step 14 does not run intake_av_check'

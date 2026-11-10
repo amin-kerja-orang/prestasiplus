@@ -57,7 +57,9 @@ describe('clamd client (INSTREAM over TCP, fake clamd)', () => {
 
   it('an ERROR reply (for example the size limit), a junk reply and a dropped connection are all failures, never "clean"', async () => {
     clamd.mode = 'error-reply'
-    await expect(clamdScan(target(), Buffer.from('abc'))).rejects.toBeInstanceOf(ScannerUnavailableError)
+    await expect(clamdScan(target(), Buffer.from('abc'))).rejects.toMatchObject({ reason: 'error' })
+    clamd.mode = 'size-limit'
+    await expect(clamdScan(target(), Buffer.from('abc'))).rejects.toMatchObject({ reason: 'size_limit' })
     clamd.mode = 'garbage'
     await expect(clamdScan(target(), Buffer.from('abc'))).rejects.toMatchObject({ reason: 'protocol' })
     clamd.mode = 'drop'
@@ -87,6 +89,15 @@ describe('VirusScanConfig and VirusScanService', () => {
     expect(cfg({ CLAMAV_HOST: '  ' }).host).toBeNull()
     expect(cfg({ CLAMAV_PORT: '99999', CLAMAV_TIMEOUT_MS: '5' })).toMatchObject({ port: 3310, timeoutMs: 30_000 })
     expect(cfg({ CLAMAV_PORT: '4310', CLAMAV_TIMEOUT_MS: '5000' })).toMatchObject({ port: 4310, timeoutMs: 5000 })
+  })
+
+  it('CLAMAV_MAX_STREAM_MB defaults to 32; boot fails when the intake max is above it and scanning is required', () => {
+    expect(cfg({}).maxStreamMb).toBe(32)
+    expect(cfg({ CLAMAV_HOST: 'c', INTAKE_MAX_FILE_MB: '30' }).maxStreamBytes).toBe(32 * 1024 * 1024)
+    expect(() => cfg({ CLAMAV_HOST: 'c', INTAKE_MAX_FILE_MB: '50' })).toThrow(/CLAMAV_MAX_STREAM_MB/)
+    expect(() => cfg({ INTAKE_TEACHER_ENABLED: 'true', INTAKE_MAX_FILE_MB: '200', CLAMAV_MAX_STREAM_MB: '100' })).toThrow(/INTAKE_MAX_FILE_MB/)
+    expect(cfg({ CLAMAV_HOST: 'c', INTAKE_MAX_FILE_MB: '50', CLAMAV_MAX_STREAM_MB: '64' }).maxStreamMb).toBe(64)
+    expect(() => cfg({ INTAKE_MAX_FILE_MB: '200' })).not.toThrow() // scanning not required
   })
 
   it('scan without a host fails closed; health is disabled', async () => {

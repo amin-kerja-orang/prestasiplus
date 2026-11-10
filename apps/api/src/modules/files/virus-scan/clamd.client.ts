@@ -18,7 +18,7 @@ export type ClamdVerdict = { clean: true } | { clean: false; signature: string }
 /** The scanner did not give a trustworthy answer (unreachable, timed out, protocol or size error). Callers fail closed. */
 export class ScannerUnavailableError extends Error {
   constructor(
-    readonly reason: 'unreachable' | 'timeout' | 'protocol' | 'error',
+    readonly reason: 'unreachable' | 'timeout' | 'protocol' | 'error' | 'size_limit',
     detail: string,
   ) {
     super(`virus scanner ${reason}: ${detail}`)
@@ -114,6 +114,7 @@ export function parseScanReply(text: string): ClamdVerdict {
   if (/^stream:\s*OK$/i.test(t)) return { clean: true }
   const found = /^stream:\s*(.+?)\s+FOUND$/i.exec(t)
   if (found) return { clean: false, signature: (found[1] as string).slice(0, 120) }
+  if (/size limit exceeded/i.test(t)) throw new ScannerUnavailableError('size_limit', t.slice(0, 120))
   if (/ERROR$/i.test(t)) throw new ScannerUnavailableError('error', t.slice(0, 120))
   throw new ScannerUnavailableError('protocol', 'unexpected reply')
 }

@@ -5,6 +5,8 @@ import { intakeTeacherEnabled } from '../../intake/intake-teacher.gate'
 
 export const DEFAULT_CLAMAV_PORT = 3310
 export const DEFAULT_CLAMAV_TIMEOUT_MS = 30_000
+/** clamd `StreamMaxLength` of the compose service (CLAMD_CONF_StreamMaxLength=32M). CLAMAV_MAX_STREAM_MB must match it. */
+export const DEFAULT_CLAMAV_MAX_STREAM_MB = 32
 
 function intIn(value: unknown, min: number, max: number, fallback: number): number {
   const n = Number(value)
@@ -21,6 +23,8 @@ export class VirusScanConfig {
   readonly port: number
   readonly timeoutMs: number
   readonly teacherIntake: boolean
+  /** Largest file clamd accepts on a stream (its StreamMaxLength). A bigger file is refused as too large to scan. */
+  readonly maxStreamMb: number
   private readonly log = new Logger(VirusScanConfig.name)
 
   constructor(@Inject(ConfigService) config: ConfigService) {
@@ -29,9 +33,19 @@ export class VirusScanConfig {
     this.port = intIn(config.get<unknown>('CLAMAV_PORT'), 1, 65_535, DEFAULT_CLAMAV_PORT)
     this.timeoutMs = intIn(config.get<unknown>('CLAMAV_TIMEOUT_MS'), 1000, 600_000, DEFAULT_CLAMAV_TIMEOUT_MS)
     this.teacherIntake = intakeTeacherEnabled(config.get<unknown>('INTAKE_TEACHER_ENABLED'))
+    this.maxStreamMb = intIn(config.get<unknown>('CLAMAV_MAX_STREAM_MB'), 1, 4096, DEFAULT_CLAMAV_MAX_STREAM_MB)
+    const intakeMb = intIn(config.get<unknown>('INTAKE_MAX_FILE_MB'), 1, 200, 30)
+    // Boot check: a file the intake accepts but clamd cannot take would be unscannable (so refused) every time.
+    if (this.required && intakeMb > this.maxStreamMb) {
+      throw new Error(`INTAKE_MAX_FILE_MB (${String(intakeMb)}) exceeds the clamd stream limit CLAMAV_MAX_STREAM_MB (${String(this.maxStreamMb)}): lower INTAKE_MAX_FILE_MB or raise the clamd StreamMaxLength (PP_CLAMAV_MAX_STREAM_MB) and CLAMAV_MAX_STREAM_MB together`)
+    }
     if (this.teacherIntake && this.host === null) {
       this.log.error('INTAKE_TEACHER_ENABLED is on but CLAMAV_HOST is not set: every intake upload is refused (fail closed) until a scanner is configured')
     }
+  }
+
+  get maxStreamBytes(): number {
+    return this.maxStreamMb * 1024 * 1024
   }
 
   /** An upload may be accepted only after a clean scan. */

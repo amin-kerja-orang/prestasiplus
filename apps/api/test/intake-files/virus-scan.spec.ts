@@ -152,6 +152,23 @@ describe('intake upload virus scan with a configured scanner', () => {
     await nothingStored(t)
   })
 
+  it('a file the scanner reports as over its size limit is a 422 "too large to scan", not a retry-later 503', async () => {
+    clamd.mode = 'size-limit'
+    const b = await createBatch(admin)
+    expectFilesError(await uploadFiles(admin, b.id, [{ bytes: textPdf(1, 811) }]), INTAKE_SCAN_MESSAGES.tooLarge(32))
+    await nothingStored(t)
+  })
+
+  it('a duplicate is refused before the scan (no clamd call for the repeat)', async () => {
+    const b = await createBatch(admin)
+    const bytes = textPdf(1, 812)
+    await uploadOk(admin, b.id, [{ bytes }])
+    expect(clamd.scans).toBe(1)
+    const again = await uploadFiles(admin, b.id, [{ bytes }])
+    expect(again.status).toBe(422)
+    expect(clamd.scans).toBe(1)
+  })
+
   it('FAIL CLOSED: a stopped scanner (connection refused) refuses a teacher DOCX', async () => {
     const dead = new FakeClamd()
     const port = await dead.start()

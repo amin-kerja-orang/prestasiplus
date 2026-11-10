@@ -83,16 +83,25 @@ pp_norm_domain() {
   printf '%s' "$d"
 }
 
+# pp_intake_flag_off: returns 0 when INTAKE_TEACHER_ENABLED in api.env is unset or false.
+pp_intake_flag_off() {
+  local v; v="$(pp_env_value "$PP_ENV_DIR/api.env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"
+  case "$v" in ''|false|0|no|off) return 0 ;; esac
+  return 1
+}
+
 # pp_intake_av_problem [runtime]: prints the reason (and returns 1) when INTAKE_TEACHER_ENABLED is on in api.env while upload scanning is not in place.
 # Teacher DOCX/XLSX/PDF uploads are accepted only after a clean ClamAV scan (backlog #78, AZ-35), so the flag is safe only when ALL hold: the code
 # being deployed contains the scan (marker CLAMAV_SCAN_ENABLED declared in the API env schema, read from the checked-out source, so no running API
 # is needed), compose profile clamav in PP_PROFILES, CLAMAV_HOST set in api.env, and with "runtime" the clamav container running. Configuration
-# alone is never enough. Nothing printed and return 0 when the flag is off or all of that holds. PP_AV_SCHEMA_FILE overrides the marker file (test hook).
+# alone is never enough (the marker is a static check; after the start pp_health_checks also requires /api/ready scanner "ok"). Nothing printed and
+# return 0 when the flag is off or all of that holds. PP_AV_SCHEMA_FILE overrides the marker file, honoured ONLY when PP_SCRATCH_HOST=yes (test harness).
 pp_intake_av_problem() {
   local mode="${1:-}" api_env="$PP_ENV_DIR/api.env" v profs schema
   v="$(pp_env_value "$api_env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"
   case "$v" in ''|false|0|no|off) return 0 ;; esac
-  schema="${PP_AV_SCHEMA_FILE:-$PP_REPO/apps/api/src/common/config/env.schema.ts}"
+  schema="$PP_REPO/apps/api/src/common/config/env.schema.ts"
+  [ "$(pp_cfg PP_SCRATCH_HOST no)" != yes ] || schema="${PP_AV_SCHEMA_FILE:-$schema}"
   if ! grep -q 'CLAMAV_SCAN_ENABLED' "$schema" 2>/dev/null; then
     printf 'INTAKE_TEACHER_ENABLED=%s in %s but this build has no upload scan code (CLAMAV_SCAN_ENABLED is not in the API env schema): uploads would not be virus-scanned (set it to false, or deploy a build with the scanner)' "$v" "$api_env"; return 1
   fi
@@ -240,6 +249,17 @@ pp_health_checks() {
   [ "${code:-}" = 200 ] || return 1
   code="$(_pp_curl_edge 443 https /api/health -o /dev/null -w '%{http_code}')"; [ "$code" = 200 ] || { pp_warn "/api/health -> $code"; return 1; }
   body="$(_pp_curl_edge 443 https /api/ready)"; grep -q '"status":"ready"' <<<"$body" || { pp_warn "/api/ready body is not ready"; return 1; }
+  # Upload scan proof (#78): with teacher intake on, the running API must report scanner ok (clamd answers PING). clamd needs a few minutes to
+  # load signatures after its first start, so wait up to 6 minutes.
+  if ! pp_intake_flag_off; then
+    pp_log "INTAKE_TEACHER_ENABLED is on: waiting for /api/ready scanner ok (up to 6 minutes)"
+    for _ in $(seq 1 72); do
+      body="$(_pp_curl_edge 443 https /api/ready || true)"
+      grep -q '"scanner":"ok"' <<<"$body" && break
+      sleep 5
+    done
+    grep -q '"scanner":"ok"' <<<"$body" || { pp_warn "INTAKE_TEACHER_ENABLED is on but /api/ready does not report scanner ok (clamav not answering)"; return 1; }
+  fi
   code="$(_pp_curl_edge 443 https / -o /dev/null -w '%{http_code}')"; [ "$code" = 200 ] || { pp_warn "/ -> $code"; return 1; }
   code="$(_pp_curl_edge 443 https /api/metrics -o /dev/null -w '%{http_code}')"; [ "$code" = 404 ] || { pp_warn "/api/metrics -> $code (must be 404 at the edge)"; return 1; }
   code="$(_pp_curl_edge 80 http /x -o /dev/null -w '%{http_code}')"; [ "$code" = 301 ] || { pp_warn "http -> $code (must redirect 301)"; return 1; }

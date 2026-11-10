@@ -6,7 +6,8 @@ import { ApiError } from '../../../common/errors/api-error'
 import { idToString } from '../../../db/ids'
 import { detectOffice, inspectUpload } from '../../files/content-inspect'
 import { FilesConfig } from '../../files/files.config'
-import { IntakeFilesService } from '../../intake/files/intake-files.service'
+import type { AuthContext } from '../../../common/scope/auth-context'
+import { type CallerInfo, IntakeFilesService } from '../../intake/files/intake-files.service'
 import { IntakeUploadService } from '../../intake/files/intake-upload.service'
 import { PDF_ENGINE, type PdfEngine } from '../../ocr'
 import { intakeTeacherEnabled } from '../../intake/intake-teacher.gate'
@@ -45,9 +46,9 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
     // stored unopened and an admin opens them on a desktop; a macro-bearing file passes the content check).
     if (input.auth.active.role === 'teacher' && !intakeTeacherEnabled(this.config.get<unknown>('INTAKE_TEACHER_ENABLED'))) throw ApiError.of('FORBIDDEN')
     // Refusals first, so no batch is created for a file that cannot be accepted.
-    for (const f of input.files) await this.assertAcceptable(f.buffer)
-
     const who = { ip: input.ip, requestId: input.requestId }
+    for (const f of input.files) await this.assertAcceptable(input.auth, who, f)
+
     const author = d.authorCredit.trim()
     const batchId = await this.batches.createGuruBatch(
       input.auth,
@@ -71,13 +72,16 @@ export class GuruPaperIntakeAdapter implements QuestionPaperIntakePort {
   }
 
   /** DOCX/XLSX by content (stored as they are), or a PDF with a text layer on at least one of its first 3 pages. Anything else is refused. */
-  private async assertAcceptable(buffer: Buffer): Promise<void> {
+  private async assertAcceptable(auth: AuthContext, who: CallerInfo, file: { buffer: Buffer; name: string }): Promise<void> {
+    const buffer = file.buffer
     // Size first (cheap), before any parsing of the content.
     if (buffer.length === 0) throw refuse(GURU_PAPER_TYPE_REFUSED)
     if (buffer.length > this.filesConfig.intakeMaxBytes) throw refuse(`Fail melebihi saiz maksimum ${String(Math.floor(this.filesConfig.intakeMaxBytes / (1024 * 1024)))} MB.`)
     if (detectOffice(buffer)) return
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') throw refuse(GURU_PAPER_TYPE_REFUSED)
+    // Scan BEFORE the PDF is parsed for its text layer (backlog #78): a malicious file is never opened. Remembered, so the upload does not repeat it.
+    await this.uploads.scanBeforeParse(auth, who, { buffer, originalname: file.name })
     let pages: number
     try {
       pages = (await this.pdf.inspect(buffer)).pageCount

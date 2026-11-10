@@ -51,6 +51,7 @@ const OPEN = ['submitted', 'processing']
 export const INTAKE_SCAN_UNAVAILABLE_CODE = 'UPLOAD_SCAN_UNAVAILABLE'
 export const INTAKE_SCAN_MESSAGES = {
   infected: 'Fail ini mengandungi perisian berbahaya (virus) dan telah ditolak. Muat naik tidak diterima.',
+  tooLarge: (mb: number) => `Fail terlalu besar untuk diimbas (had ${String(mb)} MB). Kecilkan fail dan cuba lagi.`,
   unavailable: 'Pengimbasan keselamatan fail tidak tersedia buat masa ini. Sila cuba lagi sebentar nanti.',
 } as const
 
@@ -70,6 +71,8 @@ export class IntakeUploadService {
   /** Uploads being checked, stored and written at the same time in this process (the rest wait, F3). */
   private readonly slots: Semaphore
   private readonly log = new Logger(IntakeUploadService.name)
+  /** Buffers that passed the scan in this process (weakly held), so a pre-parse scan is not repeated by the upload. */
+  private readonly scanned = new WeakSet<Buffer>()
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -135,7 +138,7 @@ export class IntakeUploadService {
     const max = this.config.maxFilesPerBatch
     if (parts.length > max) throw invalid(INTAKE_FILE_MESSAGES.tooManyFiles(max))
 
-    const checked = await this.validate(auth, who, parts, signal, opts)
+    const checked = await this.validate(auth, who, batchId, parts, signal, opts)
     await this.admit(this.prisma.client, auth, batchId, checked)
 
     // Store the bytes (outside the transaction), then write the rows and the jobs in one transaction.
@@ -165,12 +168,12 @@ export class IntakeUploadService {
   // ---- validation (no storage) -----------------------------------------------------------------
 
   /** One file after the other, stopping at the first refusal, so a bad request costs at most one worker. */
-  private async validate(auth: AuthContext, who: CallerInfo, parts: UploadedPart[], signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked[]> {
+  private async validate(auth: AuthContext, who: CallerInfo, batchId: bigint, parts: UploadedPart[], signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked[]> {
     const limit = this.filesConfig.intakeMaxBytes
     const checked: Checked[] = []
     const seen = new Set<string>()
     for (const part of parts) {
-      const result = await this.checkOne(auth, who, part, limit, signal, opts)
+      const result = await this.checkOne(auth, who, batchId, seen, part, limit, signal, opts)
       if ('error' in result) throw result.error
       if (seen.has(result.sha256)) throw invalid(INTAKE_FILE_MESSAGES.duplicate)
       seen.add(result.sha256)
@@ -179,12 +182,14 @@ export class IntakeUploadService {
     return checked
   }
 
-  private async checkOne(auth: AuthContext, who: CallerInfo, part: UploadedPart, limit: number, signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked | { error: ApiError }> {
+  private async checkOne(auth: AuthContext, who: CallerInfo, batchId: bigint, seen: ReadonlySet<string>, part: UploadedPart, limit: number, signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked | { error: ApiError }> {
     const buffer = part.buffer
     if (buffer.length > limit) return { error: invalid(INTAKE_FILE_MESSAGES.size(Math.floor(limit / (1024 * 1024)))) }
     if (opts.acceptOffice) {
       const office = detectOffice(buffer)
       if (office) {
+        // Cheap refusals (a duplicate) come before the scan, which is the slow step (backlog #78, Z-5).
+        if (await this.isDuplicate(batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
         const refused = await this.scan(auth, who, part)
         if (refused) return { error: refused }
         return {
@@ -199,6 +204,7 @@ export class IntakeUploadService {
     }
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') return { error: invalid(INTAKE_FILE_MESSAGES.type) }
+    if (await this.isDuplicate(batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
     // Scan before the PDF is opened by the inspection worker: a malicious file is never parsed.
     const refused = await this.scan(auth, who, part)
     if (refused) return { error: refused }
@@ -228,17 +234,42 @@ export class IntakeUploadService {
    * An infected file is refused with an audit event; nothing is stored (this runs before any storage write).
    */
   private async scan(auth: AuthContext, who: CallerInfo, part: UploadedPart): Promise<ApiError | null> {
-    if (!this.scanner.required) return null
+    if (!this.scanner.required || this.scanned.has(part.buffer)) return null
+    // A file over the clamd stream limit can never be scanned: say so (422), a retry would not help.
+    if (part.buffer.length > this.scanner.maxBytes) return invalid(INTAKE_SCAN_MESSAGES.tooLarge(Math.floor(this.scanner.maxBytes / (1024 * 1024))))
     try {
       const outcome = await this.scanner.scan(part.buffer)
-      if (outcome.status === 'clean') return null
+      if (outcome.status === 'clean') {
+        this.scanned.add(part.buffer)
+        return null
+      }
       await this.auditInfected(auth, who, part, outcome.signature)
       return invalid(INTAKE_SCAN_MESSAGES.infected)
     } catch (err) {
+      if (err instanceof ScannerUnavailableError && err.reason === 'size_limit') return invalid(INTAKE_SCAN_MESSAGES.tooLarge(Math.floor(this.scanner.maxBytes / (1024 * 1024))))
       if (!(err instanceof ScannerUnavailableError)) this.log.error(`virus scan failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`)
       else this.log.error(err.message)
       return new ApiError({ code: INTAKE_SCAN_UNAVAILABLE_CODE, status: 503, message: INTAKE_SCAN_MESSAGES.unavailable, fields: { files: INTAKE_SCAN_MESSAGES.unavailable }, retryAfter: 30 })
     }
+  }
+
+  /**
+   * Scans a file BEFORE the caller parses it (the guru adapter opens PDFs to look for a text layer). Throws the refusal (422 infected or too large,
+   * 503 fail closed); a clean buffer is remembered so the later `upload` does not scan it twice. Does nothing when scanning is not required.
+   */
+  async scanBeforeParse(auth: AuthContext, who: CallerInfo, part: UploadedPart): Promise<void> {
+    const refused = await this.scan(auth, who, part)
+    if (refused) throw refused
+  }
+
+  /** Same content already in this request or in another live batch (the cheap check that runs before the scan). */
+  private async isDuplicate(batchId: bigint, seen: ReadonlySet<string>, sha256: string): Promise<boolean> {
+    if (seen.has(sha256)) return true
+    const dup = await this.prisma.client.intakeFile.findFirst({
+      where: { sha256, OR: [{ batchId }, { batch: { status: { notIn: ['failed', 'cancelled'] } } }] },
+      select: { id: true },
+    })
+    return dup !== null
   }
 
   private async auditInfected(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string): Promise<void> {

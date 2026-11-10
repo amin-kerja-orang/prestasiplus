@@ -26,6 +26,11 @@ export class VirusScanService {
     return this.config.required
   }
 
+  /** Largest file the scanner takes (bytes). */
+  get maxBytes(): number {
+    return this.config.maxStreamBytes
+  }
+
   async scan(bytes: Buffer): Promise<ScanOutcome> {
     const target = this.target()
     if (!target) throw new ScannerUnavailableError('unreachable', 'CLAMAV_HOST is not set')

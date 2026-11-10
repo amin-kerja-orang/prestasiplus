@@ -7,7 +7,7 @@ const EICAR_CODES = [
 ]
 export const eicar = (): Buffer => Buffer.from(String.fromCharCode(...EICAR_CODES), 'latin1')
 
-export type FakeClamdMode = 'scan' | 'hang' | 'error-reply' | 'garbage' | 'drop'
+export type FakeClamdMode = 'scan' | 'hang' | 'error-reply' | 'size-limit' | 'garbage' | 'drop'
 
 /**
  * A clamd stand-in speaking the real wire protocol (zINSTREAM framing, zPING). `scan` mode answers FOUND when the streamed
@@ -64,7 +64,8 @@ export class FakeClamd {
       const data = Buffer.concat(parts)
       this.streamed.push(data.length)
       buf = Buffer.alloc(0)
-      if (this.mode === 'error-reply') return void s.end('INSTREAM size limit exceeded. ERROR\0')
+      if (this.mode === 'size-limit') return void s.end('INSTREAM size limit exceeded. ERROR\0')
+      if (this.mode === 'error-reply') return void s.end('lstat() failed: Permission denied. ERROR\0')
       if (this.mode === 'garbage') return void s.end('what is this\0')
       s.end(data.includes(eicar()) ? 'stream: Eicar-Test-Signature FOUND\0' : 'stream: OK\0')
     })

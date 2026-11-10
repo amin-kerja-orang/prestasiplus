@@ -205,6 +205,8 @@ export const EnvSchema = z.object({
   CLAMAV_SCAN_ENABLED: z.string().optional(),
   CLAMAV_HOST: z.string().trim().optional(),
   CLAMAV_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+  /** Must equal clamd StreamMaxLength (compose PP_CLAMAV_MAX_STREAM_MB). Boot fails when INTAKE_MAX_FILE_MB is larger. Default 32. */
+  CLAMAV_MAX_STREAM_MB: z.coerce.number().int().min(1).max(4096).optional(),
   CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
   /** Uploads whose PDFs are inspected at the same time in this process (more wait). Default 2. */
   INTAKE_UPLOAD_CONCURRENCY: z.coerce.number().int().min(1).max(16).optional(),
