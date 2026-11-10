@@ -44,7 +44,8 @@ test.describe('guards', { tag: [TAG.smoke] }, () => {
       await gotoApp(START)
       await expect(page).toHaveURL(START)
       await openProbeRoute(page, { path: '/__e2e/auth-only', layout: 'user', access: 'auth' })
-      await expect(page).toHaveURL('/login')
+      // v2 usability: a guest sent to /login remembers the page asked for (`?redirect=`).
+      await expect(page).toHaveURL('/login?redirect=/__e2e/auth-only')
       await expect(page.locator('[data-layout="user"]')).toHaveCount(0)
     },
   )
@@ -91,7 +92,8 @@ test.describe('guards', { tag: [TAG.smoke] }, () => {
       await expectTabTitle(page, FORBIDDEN_TITLE)
       const main = page.getByRole('main')
       await expect(main.getByText('403', { exact: true })).toBeVisible()
-      await expect(main.getByText('🚫', { exact: true })).toBeVisible()
+      // v2: friend / icon chip instead of the glyph.
+      await expect(main.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
       await expect(main.getByRole('heading', { level: 1, name: 'Akses Ditolak' })).toBeVisible()
       await expect(
         main.getByText(

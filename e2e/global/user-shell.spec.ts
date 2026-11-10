@@ -29,62 +29,42 @@ test.describe('user shell', { tag: [TAG.smoke] }, () => {
       await openProbeRoute(page, SHELL_PROBE)
 
       await expect(page).toHaveURL(SHELL_PROBE.path)
-      const shell = page.locator('[data-layout="user"]')
-      await expect(shell).toBeVisible()
-      await expect(page.getByTestId('shell-user-main')).toBeVisible()
-      await expect(page.getByTestId('shell-user-header')).toBeVisible()
-      // Default header (DV-SH-03) on a route without its own header.
-      await expect(page.getByTestId('shell-user-title').first()).toHaveText('Dashboard')
+      // v2: the student frame is the Pembelajaran layout (D29).
+      const shell = page.locator('[data-layout="pembelajaran"]')
+      await expect(shell).toBeAttached()
+      await expect(page.getByTestId('pembelajaran-main')).toBeVisible()
+      await expect(page.getByTestId('pembelajaran-header')).toBeVisible()
 
       // Fast login: the session came from __MOCK_INIT__.session, not from the login endpoint.
       expect(await mock.requests('POST /api/auth/login')).toHaveLength(0)
 
-      const sidebar = page.getByTestId('shell-user-sidebar')
-      const drawer = page.getByTestId('shell-user-drawer')
-      const bottomNav = page.getByTestId('shell-user-bottom-nav')
-      const hamburger = page.getByTestId('shell-user-hamburger')
+      const sidebar = page.getByTestId('pembelajaran-sidebar')
+      const bottomNav = page.getByTestId('pembelajaran-bottom-nav')
 
       if (isDesktopShell(page)) {
         await expect(sidebar).toBeVisible()
         expect(await isInViewportX(page, sidebar)).toBe(true)
-        await expect(page.getByTestId('shell-user-sidebar-card')).toContainText(account.name)
-        await expect(page.getByTestId('shell-user-sidebar-card')).toContainText(account.email)
-        await expect(page.getByTestId('shell-user-footer')).toBeVisible()
+        await expect(page.getByTestId('pembelajaran-nav')).toBeVisible()
         await expect(bottomNav).toBeHidden()
-        await expect(hamburger).toBeHidden()
-        await expect(page.getByTestId('shell-user-drawer-root')).toBeHidden()
+        await expect(page.getByTestId('pembelajaran-account-top')).toBeVisible()
         await expectNoHorizontalScroll(page)
         return
       }
 
-      // Tablet and mobile: no sidebar; hamburger + bottom nav; the drawer is off-canvas until opened.
+      // Tablet and mobile: no sidebar; bottom tab bar with "Lagi", which opens the full menu sheet.
       await expect(sidebar).toBeHidden()
-      await expect(page.getByTestId('shell-user-footer')).toBeHidden()
       await expect(bottomNav).toBeVisible()
-      await expect(hamburger).toBeVisible()
-      await expect(drawer).not.toHaveClass(/\bopen\b/)
-      expect(await isInViewportX(page, drawer)).toBe(false)
       await expectNoHorizontalScroll(page)
 
-      await hamburger.click()
-      await expect(drawer).toHaveClass(/\bopen\b/)
-      await expect.poll(() => isInViewportX(page, drawer)).toBe(true)
-      await expect(page.getByTestId('shell-user-drawer-card')).toContainText(account.name)
-      await expect(page.getByTestId('shell-user-drawer-logout')).toBeVisible()
+      await bottomNav.locator('[data-nav-id="tab-lagi"]').click()
+      const lagi = page.getByTestId('pembelajaran-lagi-nav')
+      await expect(lagi).toBeVisible()
+      await expect(page.getByRole('dialog')).toContainText(account.name)
+      await expect(page.getByRole('dialog').getByText('Log Keluar')).toBeVisible()
       await expectNoHorizontalScroll(page)
 
-      await page.getByTestId('shell-user-drawer-close').click()
-      await expect(drawer).not.toHaveClass(/\bopen\b/)
-
-      // The bottom nav "Lagi" button opens the same drawer.
-      await bottomNav.locator('[data-nav-id="bottom-lagi"]').click()
-      await expect(drawer).toHaveClass(/\bopen\b/)
-      // Tap the overlay beside the drawer (the drawer is at most 280 px / 85vw wide, on the left).
-      const width = page.viewportSize()!.width
-      await page
-        .getByTestId('shell-user-drawer-overlay')
-        .click({ position: { x: width - 8, y: 300 } })
-      await expect(drawer).not.toHaveClass(/\bopen\b/)
+      await page.keyboard.press('Escape')
+      await expect(lagi).toBeHidden()
       await expectNoHorizontalScroll(page)
     },
   )

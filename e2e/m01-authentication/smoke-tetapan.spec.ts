@@ -36,9 +36,10 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/tetapan')
-    await expectTabTitle(page, 'Tetapan Akaun')
+    await expectTabTitle(page, 'Tetapan Akaun | PRESTASIPLUS')
 
-    await expect(page.getByRole('heading', { name: '⚙️ Tetapan Peribadi' })).toBeVisible()
+    // v2: the shell owns the page title (route meta "Tetapan Akaun"); the content opens with the subtitle.
+    await expect(page.getByRole('heading', { level: 1, name: 'Tetapan Akaun' })).toBeVisible()
     await expect(
       page.getByText('Atur pengalaman PrestasiPlus mengikut keperluan rohani & masa anda.'),
     ).toBeVisible()
@@ -107,7 +108,11 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
     await expectNoHorizontalScroll(page)
   })
 
-  for (const who of ['pelajar@demo.test', 'adminsekolah@demo.test']) {
+  // Save toast by role (#458 ruling): pupil "Tetapan berjaya disimpan.", school admin "Tetapan disimpan.".
+  for (const [who, savedCopy] of [
+    ['pelajar@demo.test', 'Tetapan berjaya disimpan.'],
+    ['adminsekolah@demo.test', 'Tetapan disimpan.'],
+  ] as const) {
     test(
       `E2E-M01-32 save round trip as ${who} keeps the values @m01`,
       provisional('user shell for non-admin (OQ-6), save flash copy UNVERIFIED'),
@@ -119,7 +124,7 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
         await page.getByTestId('tetapan-faith').click()
         await page.getByRole('option', { name: 'Islam', exact: true }).click()
         await page.getByTestId('tetapan-submit').click()
-        await expect(page.getByTestId('tetapan-status')).toContainText('Tetapan berjaya disimpan.')
+        await expect(page.getByTestId('tetapan-status')).toContainText(savedCopy)
         await expect(page.getByTestId('tetapan-spiritual_mode')).toBeChecked()
 
         await gotoApp('/tetapan')

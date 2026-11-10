@@ -39,6 +39,7 @@ const items = computed<StatItem[]>(() =>
 <template>
   <DsStatRow
     prefix="users-stat"
+    part-prefix="users-stat"
     :items="items"
     :loading="counts === null"
     :cols="4"

@@ -56,14 +56,12 @@ test.describe('L45 QA: gradient heading contrast', { tag: [moduleTag(1)] }, () =
   test.use({ mockInit: { latency: 0 } })
   test.slow()
 
-  test('S1 hero H1 is white and readable', async ({ page, loginAs, gotoApp }) => {
+  test('S1 hero H1 is readable', async ({ page, loginAs, gotoApp }) => {
     await loginAs('pelajar2@demo.test')
     await gotoApp('/jemput-ibu-bapa')
     await expect(page.getByTestId('jemput-hero')).toBeVisible()
     await expectReadable(page, '[data-testid=jemput-hero] h1')
-    expect(
-      await page.locator('[data-testid=jemput-hero] h1').evaluate((e) => getComputedStyle(e).color),
-    ).toBe('rgb(255, 255, 255)')
+    // v2 restyle: the heading is dark on the hero, not white; readability (AA-large) is asserted above.
   })
 
   test('S2 invalid page H1 is readable', async ({ page, gotoApp }) => {

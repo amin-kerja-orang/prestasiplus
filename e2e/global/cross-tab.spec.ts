@@ -13,7 +13,7 @@
  */
 
 import { createMockHandle, expect, gotoApp, reloadApp, test } from '../fixtures/test'
-import { isDesktopShell, openProbeRoute, provisional, TAG } from '../support'
+import { openProbeRoute, provisional, TAG } from '../support'
 import type { Page } from '@playwright/test'
 
 const SHELL_PROBE = { path: '/__e2e/user-shell', layout: 'user', access: 'auth' } as const
@@ -66,10 +66,9 @@ test.describe('mock persistence (F-07)', { tag: [TAG.smoke] }, () => {
         .poll(async () => (await mockB.lastRequest('GET /api/me'))?.status ?? null)
         .toBe(200)
       await expect(tabB).toHaveURL(SHELL_PROBE.path)
-      const card = isDesktopShell(tabB)
-        ? tabB.getByTestId('shell-user-sidebar-card')
-        : tabB.getByTestId('shell-user-drawer-card')
-      await expect(card).toContainText('Pelajar Demo')
+      // v2 Pembelajaran frame: the name sits in the account menu at every width.
+      await tabB.getByTestId('pembelajaran-account-top').click()
+      await expect(tabB.getByRole('menu')).toContainText('Pelajar Demo')
     },
   )
 
@@ -89,7 +88,7 @@ test.describe('mock persistence (F-07)', { tag: [TAG.smoke] }, () => {
         .poll(async () => (await mock.lastRequest('GET /api/me'))?.status ?? null)
         .toBe(200)
       await expect(page).toHaveURL(SHELL_PROBE.path)
-      await expect(page.locator('[data-layout="user"]')).toBeVisible()
+      await expect(page.locator('[data-layout="pembelajaran"]')).toBeAttached()
     },
   )
 })

@@ -15,7 +15,8 @@ async function expectNotFoundPage(page: Page): Promise<void> {
   await expectTabTitle(page, TITLE)
   const main = page.getByRole('main')
   await expect(main.getByText('404', { exact: true })).toBeVisible()
-  await expect(main.getByText('🔍', { exact: true })).toBeVisible()
+  // v2: the error page shows the friend (learner) or an icon chip (staff), no glyph.
+  await expect(main.locator('[data-ds="error-page"][data-code="404"]')).toBeVisible()
   await expect(
     main.getByRole('heading', { level: 1, name: 'Halaman Tidak Dijumpai', exact: true }),
   ).toBeVisible()

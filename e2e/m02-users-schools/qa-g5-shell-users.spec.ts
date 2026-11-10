@@ -375,7 +375,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await first.getByTestId('user-delete').click()
     await byId(page, 'users-delete-confirm').click()
     await expect(page.locator(`[data-user-id="${id}"]`)).toHaveCount(0)
-    await expect(byId(page, 'users-stat-parent').getByTestId('users-stat-count')).toHaveText('37')
+    await expect(byId(page, 'users-stat-parent').getByTestId('users-stat-value')).toHaveText('37')
     await expect(byId(page, 'cmp-flash').or(page.getByRole('status')).first()).toBeVisible()
   })
 
@@ -398,7 +398,7 @@ test.describe('M02 QA S1 gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'users-bulk-modal')).toContainText('Ya, Padam Semua')
     await byId(page, 'users-bulk-cancel').click()
     await expect(byId(page, 'users-bulk-modal')).toHaveCount(0)
-    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText(
+    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4533',
     )
 

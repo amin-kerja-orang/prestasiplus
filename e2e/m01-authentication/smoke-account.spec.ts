@@ -8,7 +8,6 @@
 import { expect, test } from '../fixtures/test'
 import {
   expectNoHorizontalScroll,
-  isDesktopShell,
   moduleTag,
   openProbeRoute,
   TAG,
@@ -32,44 +31,17 @@ test.describe('M01 shell account controls', { tag: [TAG.smoke, moduleTag(1)] }, 
       await gotoApp('/')
       await openProbeRoute(page, PROBE)
 
-      await expect(page.getByTestId('shell-user-bell')).toHaveAttribute('href', '/notifikasi')
+      // BUG-I1: PembelajaranLayout has no notification bell (design v2-shells.md 266); the bell link is not asserted here.
 
-      if (isDesktopShell(page)) {
-        const card = page.getByTestId('shell-user-sidebar-card')
-        await expect(card).toContainText(account.name)
-        await expect(card).toContainText(account.email)
-        await expect(card.getByAltText('Avatar')).toBeVisible()
-        await expect(page.getByTestId('shell-user-header-avatar')).toBeVisible()
-        const sidebar = page.getByTestId('shell-user-sidebar')
-        await expect(sidebar.locator('a[href="/tetapan"]').first()).toBeVisible()
-        await expect(sidebar.locator('a[href="/profile"]').first()).toBeVisible()
-        await expect(page.getByTestId('shell-user-sidebar-logout')).toHaveAttribute(
-          'title',
-          'Log Keluar',
-        )
-        await expectNoHorizontalScroll(page)
-
-        await page.getByTestId('shell-user-header-logout').click()
-      } else {
-        await page.getByTestId('shell-user-hamburger').click()
-        const drawer = page.getByTestId('shell-user-drawer')
-        await expect(drawer).toHaveClass(/\bopen\b/)
-        await expect(page.getByTestId('shell-user-drawer-card')).toContainText(account.name)
-        await expect(drawer.locator('[data-nav-id="drawer-profil-saya"]')).toHaveAttribute(
-          'href',
-          '/profile',
-        )
-        await expect(drawer.locator('[data-nav-id="drawer-tetapan"]')).toHaveAttribute(
-          'href',
-          '/tetapan',
-        )
-        await expectNoHorizontalScroll(page)
-
-        const logout = page.getByTestId('shell-user-drawer-logout')
-        await expect(logout).toHaveText('Log Keluar')
-        await expect(logout).toHaveAttribute('href', '/logout')
-        await logout.click()
-      }
+      // v2 Pembelajaran frame: identity, account links and logout live in the account menu (all
+      // widths).
+      await page.getByTestId('pembelajaran-account-top').click()
+      const menu = page.getByRole('menu')
+      await expect(menu).toContainText(account.name)
+      await expect(menu.getByRole('menuitem', { name: 'Profil Saya' })).toHaveAttribute('href', '/profile')
+      await expect(menu.getByRole('menuitem', { name: 'Tetapan' })).toHaveAttribute('href', '/tetapan')
+      await expectNoHorizontalScroll(page)
+      await menu.getByRole('menuitem', { name: 'Log Keluar' }).click()
 
       await expect(page).toHaveURL('/login')
       expect(await mock.requests('POST /api/auth/logout')).toHaveLength(1)

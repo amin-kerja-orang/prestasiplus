@@ -136,6 +136,12 @@ export const dsIconBaseNames = [
   'film-slate',
   // m08 TimelinePage (DsIconChip) and m09 BannerListPage (stat icon), D-09.
   'image',
+  // `diamond`: ContributionSummary (fa-gem, staff Regular) and `flag-checkered`: AdminChallengesPage target badge (Bold); both were fetched at run time (e2e/icons D-09).
+  'diamond',
+  'flag-checkered',
+  // `baby`: AdminParentsTab empty state; `ranking`: RankingPage empty state (icon-offline.test.ts D-09).
+  'baby',
+  'ranking',
 ] as const
 
 export const dsIconWeights = ['regular', 'duotone', 'bold'] as const

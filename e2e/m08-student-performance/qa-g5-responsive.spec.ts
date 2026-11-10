@@ -116,6 +116,7 @@ const CASES: Case[] = [
 async function smallText(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const root =
+      document.querySelector('[data-testid=pembelajaran-main]') ??
       document.querySelector('[data-testid=shell-user-main]') ??
       document.querySelector('[data-testid=shell-admin-main]') ??
       document.body
@@ -182,7 +183,9 @@ for (const c of CASES) {
         await loginAs(c.who)
         await gotoApp(path)
         const main = page
-          .locator('[data-testid=shell-user-main], [data-testid=shell-admin-main], body')
+          .locator(
+            '[data-testid=pembelajaran-main], [data-testid=shell-user-main], [data-testid=shell-admin-main], body',
+          )
           .first()
         await expect
           .poll(async () => (await main.innerText()).trim().length, { timeout: 8000 })

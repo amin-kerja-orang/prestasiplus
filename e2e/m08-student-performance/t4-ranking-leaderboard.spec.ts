@@ -19,182 +19,64 @@ import {
 
 const texts = async (l: Locator) => (await l.allTextContents()).map((t) => t.trim())
 
+// S19 was rebuilt as the V2 Kedudukan (R1-MUR-18, T-C14): rank cards by syiling and "Sekitar anda";
+// the V3-only filters, scope pills and table are gone and the page has no query string (FR-MUR-18-6).
 test.describe('M08 S19 /ranking', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test.beforeEach(async ({ loginAs }) => {
+  test('pupil: title, syiling line, rank cards, Sekitar anda and the board link', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/ranking')
+    await expectTabTitle(page, 'Kedudukan | PRESTASIPLUS')
+    await expect(page.getByRole('heading', { level: 1, name: 'Kedudukan' })).toBeVisible()
+    await expect(page.getByText('Di mana anda berdiri — dalam kelas, sekolah, negeri dan seluruh negara')).toBeVisible()
+    await expect(page.getByTestId('ranking-syiling')).toContainText('Syiling anda')
+    await expect(page.getByTestId('ranking-syiling')).toContainText(
+      'Kedudukan dikira berdasarkan baki syiling.',
+    )
+    await expect(page.getByTestId('ranking-cards')).toBeVisible()
+    await expect(page.getByTestId('ranking-card-kebangsaan')).toContainText('Kebangsaan')
+    await expect(page.getByTestId('ranking-card-sekolah')).toContainText('Dalam sekolah')
+    await expect(page.getByTestId('ranking-nearby')).toContainText('Sekitar anda')
+    // No filters, no pills, no query string.
+    await expect(page.getByTestId('ranking-pills')).toHaveCount(0)
+    await expect(page.getByTestId('ranking-subject')).toHaveCount(0)
+    const board = page.getByTestId('ranking-full-board')
+    await expect(board).toContainText('Lihat papan pendahulu penuh')
+    await expect(board).toHaveAttribute('href', '/leaderboard')
+    expect(new URL(page.url()).search).toBe('')
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('a query string is ignored: the same page, no pill and no filter (FR-MUR-18-6)', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
+    await loginAs('pelajar@demo.test')
+    await gotoApp('/ranking?scope=negeri&subject_id=3')
+    await expect(page.getByTestId('ranking-cards')).toBeVisible()
+    await expect(page.getByTestId('ranking-pills')).toHaveCount(0)
+    await expect(page.getByTestId('ranking-subject')).toHaveCount(0)
+    await expectNoHorizontalScroll(page)
+  })
+
+  test('admin has no class or school: the empty state "Kedudukan belum tersedia"', async ({
+    page,
+    gotoApp,
+    loginAs,
+  }) => {
     await loginAs('admin@demo.test')
-  })
-
-  const hero = (page: import('@playwright/test').Page) => page.getByTestId('ranking-hero')
-  const activePills = (page: import('@playwright/test').Page) =>
-    page.locator('[data-testid=ranking-pills] a[data-active=true]')
-
-  test('national: titles, pills, filters, three rows and footer', async ({ page, gotoApp }) => {
     await gotoApp('/ranking')
-    await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-    await expectTabTitle(page, 'Kedudukan Nasional')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Kedudukan')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    await expect(hero(page).getByRole('heading', { name: 'Kedudukan' })).toBeVisible()
-    await expect(page.getByTestId('ranking-subtitle')).toHaveText('Nasional')
-
-    await expect(page.locator('[data-testid=ranking-pills] a')).toHaveText([
-      'Nasional',
-      'Negeri',
-      'Daerah',
-      'Sekolah',
-    ])
-    await expect(activePills(page)).toHaveText(['Nasional'])
-    await expect(activePills(page)).toHaveClass(/bg-indigo-600/)
-
-    const subjects = page.locator('[data-testid=ranking-subject] option')
-    await expect(subjects).toHaveCount(32)
-    await expect(subjects.first()).toHaveText('Semua Subjek')
-    const names = await subjects.allTextContents()
-    expect(names.slice(1)).toEqual([...names.slice(1)].sort((a, b) => a.localeCompare(b, 'ms')))
-    await expect(page.locator('[data-testid=ranking-tingkatan] option')).toHaveText([
-      'Semua',
-      'Tingkatan 4',
-      'Tingkatan 5',
-    ])
-    await expect(page.getByTestId('ranking-negeri')).toHaveCount(0)
-
-    // SRS §6.10 anchors: all-subject figures in list order (Betul ascending, DV-26).
-    expect(await texts(page.getByTestId('ranking-tahap'))).toEqual(['L8', 'L10', 'L10'])
-    expect(await texts(page.getByTestId('ranking-betul'))).toEqual(['2,223', '5,293', '17,612'])
-    expect(await texts(page.getByTestId('ranking-tepat'))).toEqual(['93.48%', '83.79%', '89.94%'])
-    await expect(page.getByTestId('ranking-rank').first()).toHaveText('🥇')
-    await expect(page.getByTestId('ranking-footer')).toHaveText('Menunjukkan 3 dari 3 pelajar')
-    // Plain names: no link in the list, whatever the user id.
-    await expect(page.locator('[data-testid=ranking-list] a')).toHaveCount(0)
-    await expectNoHorizontalScroll(page)
-  })
-
-  test('subject Matematik keeps subject_id on the pills and colours < 50 red', async ({
-    page,
-    gotoApp,
-  }) => {
-    await gotoApp('/ranking')
-    await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-    const matematik = await page
-      .locator('[data-testid=ranking-subject] option', { hasText: 'Matematik' })
-      .first()
-      .getAttribute('value')
-    expect(matematik).toBe('3')
-    await page.getByTestId('ranking-subject').selectOption('3')
-    await expect.poll(() => new URL(page.url()).searchParams.get('subject_id')).toBe('3')
-    expect(new URL(page.url()).searchParams.get('scope')).toBe('nasional')
-    await expect(page.getByTestId('ranking-betul').first()).toHaveText('128')
-
-    expect(await texts(page.getByTestId('ranking-tahap'))).toEqual(['L4', 'L7', 'L8'])
-    expect(await texts(page.getByTestId('ranking-betul'))).toEqual(['128', '530', '889'])
-    expect(await texts(page.getByTestId('ranking-tepat'))).toEqual(['48.85%', '35.50%', '99.78%'])
-    await expect(page.getByTestId('ranking-tepat').nth(0)).toHaveClass(/text-red-500/)
-    await expect(page.getByTestId('ranking-tepat').nth(1)).toHaveClass(/text-red-500/)
-    await expect(page.getByTestId('ranking-tepat').nth(2)).toHaveClass(/text-green-600/)
-    await expect(page.getByTestId('ranking-footer')).toBeVisible()
-
-    const hrefs = await page.locator('[data-testid=ranking-pills] a').evaluateAll((as) =>
-      as.map((a) => {
-        const u = new URL((a as HTMLAnchorElement).href)
-        return [u.pathname, u.searchParams.get('subject_id'), u.searchParams.get('scope')]
-      }),
-    )
-    expect(hrefs).toEqual([
-      ['/ranking', '3', 'nasional'],
-      ['/ranking', '3', 'negeri'],
-      ['/ranking', '3', 'daerah'],
-      ['/ranking', '3', 'sekolah'],
-    ])
-    await expectNoHorizontalScroll(page)
-  })
-
-  test('negeri scope: select shown, empty until a state is chosen, subtitle follows (DV-22)', async ({
-    page,
-    gotoApp,
-  }) => {
-    await gotoApp('/ranking?scope=negeri')
-    await expect(page.getByTestId('ranking-empty')).toBeVisible()
-    await expectTabTitle(page, 'Kedudukan Negeri')
-    await expect(page.getByTestId('ranking-subtitle')).toHaveText('Negeri')
-    await expect(activePills(page)).toHaveText(['Negeri'])
-    await expect(page.getByTestId('ranking-empty')).toContainText('Tiada data kedudukan')
+    await expect(page.getByTestId('ranking-empty')).toContainText('Kedudukan belum tersedia')
     await expect(page.getByTestId('ranking-empty')).toContainText(
-      'Mula menjawab soalan untuk muncul di papan kedudukan!',
+      'Akaun anda belum dikaitkan dengan sekolah atau kelas.',
     )
-    await expect(page.getByTestId('ranking-start')).toHaveAttribute('href', '/practice')
-    await expect(page.getByTestId('ranking-footer')).toHaveCount(0)
-    await expect(page.locator('[data-testid=ranking-negeri] option')).toHaveText([
-      'Pilih Negeri',
-      'Selangor',
-    ])
-
-    await page.getByTestId('ranking-negeri').selectOption('Selangor')
-    await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-    await expectTabTitle(page, 'Kedudukan Selangor')
-    await expect(page.getByTestId('ranking-subtitle')).toHaveText('Selangor')
-    // Footer only on the nasional scope.
-    await expect(page.getByTestId('ranking-footer')).toHaveCount(0)
-    expect(new URL(page.url()).searchParams.get('negeri')).toBe('Selangor')
-    await expectNoHorizontalScroll(page)
-  })
-
-  test('daerah and sekolah scopes are empty for the admin', async ({ page, gotoApp }) => {
-    test.slow()
-    await gotoApp('/ranking?scope=daerah')
-    await expect(page.getByTestId('ranking-empty')).toBeVisible()
-    await expectTabTitle(page, 'Kedudukan Daerah')
-    await expect(page.getByTestId('ranking-negeri')).toBeVisible()
-    await expect(activePills(page)).toHaveText(['Daerah'])
-
-    await gotoApp('/ranking?scope=daerah&negeri=Selangor')
-    await expect(page.getByTestId('ranking-empty')).toBeVisible()
-    await expect(page.getByTestId('ranking-subtitle')).toHaveText('Daerah')
-
-    await gotoApp('/ranking?scope=sekolah')
-    await expect(page.getByTestId('ranking-empty')).toBeVisible()
-    await expectTabTitle(page, 'Kedudukan Sekolah')
-    await expect(page.getByTestId('ranking-negeri')).toHaveCount(0)
-    await expect(activePills(page)).toHaveText(['Sekolah'])
-    await expectNoHorizontalScroll(page)
-  })
-
-  test('tingkatan T4 is empty; an unknown scope ranks nationally with no pill and no footer', async ({
-    page,
-    gotoApp,
-  }) => {
-    await gotoApp('/ranking?scope=nasional&tingkatan=T4')
-    await expect(page.getByTestId('ranking-empty')).toBeVisible()
-    await expect(page.getByTestId('ranking-tingkatan')).toHaveValue('T4')
-
-    await gotoApp('/ranking?scope=xyz')
-    await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-    await expect(activePills(page)).toHaveCount(0)
-    await expect(page.getByTestId('ranking-footer')).toHaveCount(0)
-    await expectTabTitle(page, 'Kedudukan Nasional')
-    await expect(page.getByTestId('ranking-subtitle')).toHaveText('Nasional')
-  })
-
-  test('layout at the project width: pills scroll inside their row, no page scroll', async ({
-    page,
-    gotoApp,
-  }) => {
-    await gotoApp('/ranking')
-    await expect(page.getByTestId('ranking-row')).toHaveCount(3)
-    const pills = page.getByTestId('ranking-pills')
-    const [scrollWidth, clientWidth] = await pills.evaluate((el) => [
-      el.scrollWidth,
-      el.clientWidth,
-    ])
-    if (viewportWidth(page) < 640) expect(scrollWidth).toBeGreaterThan(clientWidth)
-    else expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 8)
-    // Every pill is a 44px touch target.
-    for (const box of await page
-      .locator('[data-testid=ranking-pills] a')
-      .evaluateAll((as) => as.map((a) => a.getBoundingClientRect().height))) {
-      expect(box).toBeGreaterThanOrEqual(44)
-    }
+    await expect(page.getByTestId('ranking-cards')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 })

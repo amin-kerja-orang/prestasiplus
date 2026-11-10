@@ -89,7 +89,19 @@ async function submit(): Promise<void> {
               size="lg"
               class="w-auto"
               data-testid="picture-input"
-            />
+            >
+              <template #default="{ open }">
+                <UButton
+                  type="button"
+                  color="primary"
+                  size="lg"
+                  icon="i-ph-upload-simple"
+                  class="min-h-11"
+                  @click="open()"
+                  >Pilih Gambar</UButton
+                >
+              </template>
+            </UFileUpload>
             <UButton
               v-if="file"
               type="submit"

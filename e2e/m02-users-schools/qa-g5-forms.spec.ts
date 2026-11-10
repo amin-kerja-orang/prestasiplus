@@ -74,7 +74,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await byId(page, 'user-name').fill('Tidak Disimpan')
     await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL('/admin/users')
-    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-count')).toHaveText(
+    await expect(byId(page, 'users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4534',
     )
     await gotoApp('/admin/users?search=Tidak+Disimpan')

@@ -40,7 +40,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
 
     for (const [role, count] of Object.entries(ROLE_COUNTS)) {
       await expect(
-        page.getByTestId(`users-stat-${role}`).getByTestId('users-stat-count'),
+        page.getByTestId(`users-stat-${role}`).getByTestId('users-stat-value'),
       ).toHaveText(count)
     }
     // Labels are never truncated (DV-M02-02): each card's text is fully inside its box.
@@ -93,7 +93,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(page.getByTestId('users-stat-parent')).toHaveAttribute('data-active', 'true')
     await expect(page.getByTestId('user-role').first()).toHaveText('Ibu Bapa')
     // Cards keep the totals of all users (BR-02).
-    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-count')).toHaveText(
+    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4533',
     )
 
@@ -140,7 +140,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await first.getByTestId('user-delete').click()
     await page.getByTestId('users-delete-confirm').click()
     await expect(page.getByTestId('users-delete-modal')).toHaveCount(0)
-    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-count')).toHaveText(
+    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4532',
     )
   })
@@ -160,7 +160,7 @@ test.describe('M02 S1 user list', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     )
     await page.getByTestId('users-bulk-confirm').click()
     await expect(page.getByTestId('users-bulk-bar')).toHaveCount(0)
-    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-count')).toHaveText(
+    await expect(page.getByTestId('users-stat-student').getByTestId('users-stat-value')).toHaveText(
       '4531',
     )
   })

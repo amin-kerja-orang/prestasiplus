@@ -129,12 +129,12 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  for (const { id, email, role } of [
-    { id: 2, email: 'pelajar@demo.test', role: 'Pelajar' },
-    { id: 5, email: 'guru@demo.test', role: 'Guru' },
-    { id: 8, email: 'adminsekolah@demo.test', role: 'Admin Sekolah' },
+  for (const { id, email, role, home } of [
+    { id: 2, email: 'pelajar@demo.test', role: 'Pelajar', home: '/dashboard' },
+    { id: 5, email: 'guru@demo.test', role: 'Guru', home: '/guru' },
+    { id: 8, email: 'adminsekolah@demo.test', role: 'Admin Sekolah', home: '/admin-sekolah' },
   ]) {
-    test(`account ${String(id)} (${role}) logs in through the form and lands on /dashboard`, async ({
+    test(`account ${String(id)} (${role}) logs in through the form and lands on ${home}`, async ({
       page,
       gotoApp,
     }) => {
@@ -143,7 +143,7 @@ test.describe('M01 auth pages', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       await page.getByTestId('login-password').fill(DEMO_PASSWORD)
       await page.getByTestId('login-submit').click()
 
-      await expect(page).toHaveURL('/dashboard')
+      await expect(page).toHaveURL(home)
       // No flash or toast after a successful login (FR-M01-07).
       const stored = await page.evaluate(() => window.localStorage.getItem('pp.auth'))
       expect(stored).not.toBeNull()

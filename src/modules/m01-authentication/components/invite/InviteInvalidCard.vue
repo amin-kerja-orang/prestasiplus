@@ -60,7 +60,7 @@ useThemeMode('learner')
       variant="link"
       color="neutral"
       icon="i-ph-graduation-cap-duotone"
-      class="mt-4 min-h-11 text-center"
+      class="mt-4 h-auto min-h-11 max-w-full whitespace-normal text-center"
       data-testid="invite-invalid-footer"
       >PRESTASIPLUS — Platform Latih Tubi Interaktif Malaysia</UButton
     >
