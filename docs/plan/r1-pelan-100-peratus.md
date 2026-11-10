@@ -19,6 +19,7 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | K7 | Suite E2E hijau | Log Playwright |
 | K8 | Code review Approve dan semakan keselamatan lulus untuk ETL, skrip deploy dan pengendalian PII | Laporan |
 | K9 | Runbook cutover dikemas kini dan diraptai hujung ke hujung pada tindanan seperti UAT | Log raptai dengan masa setiap langkah |
+| K10 | **Soalan dimigrasi serasi dengan proses tambah soalan V3 (PO 10 Nov):** untuk setiap jenis (MCQ, MCQ 2 pilihan / dilabel semula, soalan rajah berkumpulan, berstruktur, subjektif, diarkib, draf), soalan V2 yang dimigrasi boleh dibuka, disunting, disimpan dan dihantar untuk semakan di Studio melalui HTTP, dengan validasi yang sama seperti soalan baharu (gerbang DSKP, pasangan Bab–Tajuk, kunci jawapan, kumpulan rajah); bentuk data soalan dimigrasi dan soalan baharu tidak berbeza | Spec HTTP Studio atas soalan dimigrasi + semakan di UAT |
 
 ## 2. Keputusan
 

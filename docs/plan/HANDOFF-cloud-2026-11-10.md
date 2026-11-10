@@ -70,3 +70,14 @@ live tracker `docs/plan/r1-pelan-100-peratus.md`.
   school or pupils; `legacy_canonical_map` is empty.
 - Server access, dumps and V2 files are on the PO's PC and the UAT server only; a cloud session needs the PO
   to configure access before it can run anything on UAT.
+
+## 5. PO acceptance rule for migrated questions (10 Nov, mandatory)
+
+Migrated V2 questions must be fully compatible with V3's add-question process. For every type (MCQ,
+2-option/relabelled MCQ, rajah group members, structured, subjective, archived, draft) prove on UAT data that a
+question can be opened, edited, saved and submitted for review in the Studio over HTTP, under the same
+validation as a newly created question (DSKP gate, Bab–Tajuk pair, answer key, stimulus groups), and that a
+migrated question and a newly created one have the same data shape (no migration-only fields the Studio cannot
+edit). So far only a repository read of all loaded questions was checked (no StoredKeyError). Note: V2 had no
+DSKP tags, so a migrated question needs tags before it can be approved again — same rule as a new question.
+Tracker criterion K10.
