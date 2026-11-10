@@ -12,6 +12,7 @@ import { createAppRouter, setRouteOutcome } from '@/app/router'
 import { fakeTransport, logIn, NOW, STUDENT } from '@/app/__tests__/router-fixtures'
 import { clock } from '@/lib/time'
 import { setUnauthorizedRedirect } from '@/stores'
+import { useNotificationBadgeStore } from '@/stores/notification-badge'
 
 const TEACHER = { ...STUDENT, id: 3, role: 'teacher' as const, grade: null, landingPath: '/guru' }
 
@@ -89,5 +90,31 @@ describe('PembelajaranLayout: reward pills (FR-MUR-SH-11)', () => {
     expect(w.find('[data-testid="pembelajaran-chip-coin"]').exists()).toBe(false)
     expect(w.find('[data-testid="pembelajaran-chip-streak"]').exists()).toBe(false)
     expect(w.find('[data-ds="reward-chip"]').exists()).toBe(false)
+  })
+})
+
+describe('PembelajaranLayout: notification bell (BUG-I1, v2-shells 5.1)', () => {
+  it('links to /notifikasi with a 44px target and a count badge that caps at 99+', async () => {
+    vi.stubEnv('VITE_PROTOTYPE_SCOPE', 'off')
+    const w = await open(STUDENT, '/dashboard')
+    const bell = w.get('[data-testid="shell-user-bell"]')
+    expect(bell.element.tagName).toBe('A')
+    expect(bell.attributes('href')).toBe('/notifikasi')
+    expect(bell.classes()).toContain('size-11')
+    await useNotificationBadgeStore().refresh() // settle the router's own refresh first
+    useNotificationBadgeStore().set(12)
+    await vi.waitFor(() =>
+      expect(w.get('[data-testid="shell-user-bell-badge"]').text()).toBe('12'),
+    )
+    expect(bell.attributes('aria-label')).toBe('Notifikasi, 12 belum dibaca')
+    useNotificationBadgeStore().set(150)
+    await vi.waitFor(() =>
+      expect(w.get('[data-testid="shell-user-bell-badge"]').text()).toBe('99+'),
+    )
+  })
+
+  it('is absent while the prototype scope hides /notifikasi', async () => {
+    const w = await open(STUDENT, '/dashboard')
+    expect(w.find('[data-testid="shell-user-bell"]').exists()).toBe(false)
   })
 })

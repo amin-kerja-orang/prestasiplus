@@ -49,8 +49,7 @@ test.describe(
       await expect(page.getByTestId('tetapan-form')).toBeVisible()
     })
 
-    // BUG-I1: PembelajaranLayout has no notification bell (design v2-shells.md 266 shows one); route /notifikasi exists.
-    test.fixme('E2E-M01-49 AC-22.3: the bell refreshes after 60 s without a reload', async ({
+    test('E2E-M01-49 AC-22.3: the bell refreshes after 60 s without a reload', async ({
       page,
       loginAs,
       gotoApp,

@@ -62,6 +62,9 @@ import { FRIEND_OPTIONS, useFriend } from '@/composables/useFriend'
 import { LG_QUERY, useMediaQuery } from '@/shells/admin/useMinWidth'
 import ModPelajarBanner from '@/shells/shared/ModPelajarBanner.vue'
 import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
+import { useIntervalWhileVisible } from '@/composables/useIntervalWhileVisible'
+import { BELL_REFRESH_MS } from '@/shells/user/constants'
+import { useNotificationBadgeStore } from '@/stores/notification-badge'
 import { useSessionStore } from '@/stores/session'
 import { useExclusiveSheets } from './useExclusiveSheets'
 import { useShellUser } from './useShellUser'
@@ -94,6 +97,16 @@ watch(
   },
 )
 const { summary, refresh: refreshSummary } = useGamificationSummary()
+
+// Notification bell: the shared unread-count store (router refreshes on navigation) plus the 60 s refresh.
+const bell = useNotificationBadgeStore()
+const showBell = computed(() => isPathAllowed(role.value, '/notifikasi'))
+const bellLabel = computed(() =>
+  bell.visible ? `Notifikasi, ${bell.count} belum dibaca` : 'Notifikasi',
+)
+useIntervalWhileVisible(() => {
+  void bell.refresh()
+}, BELL_REFRESH_MS)
 
 const lagiOpen = ref(false)
 const sidebarOpen = ref(false)
@@ -430,6 +443,28 @@ const chipClass = (chip: unknown, active: boolean): string =>
                     /></RouterLink>
                   </div>
                 </template>
+                <!-- BUG-I1 / v2-shells 5.1: bell with the unread count (UChip, 99+); same store as UserShell. -->
+                <RouterLink
+                  v-if="showBell"
+                  to="/notifikasi"
+                  class="grid size-11 shrink-0 place-items-center rounded-full text-muted hover:bg-elevated hover:text-highlighted focus-visible:outline-2 focus-visible:outline-primary"
+                  :aria-label="bellLabel"
+                  title="Notifikasi"
+                  data-testid="shell-user-bell"
+                >
+                  <UChip
+                    :show="bell.visible"
+                    :text="bell.label"
+                    color="error"
+                    size="2xl"
+                    :ui="{ base: 'px-1 font-bold' }"
+                  >
+                    <UIcon name="i-ph-bell" class="size-5" aria-hidden="true" />
+                    <template #content>
+                      <span data-testid="shell-user-bell-badge">{{ bell.label }}</span>
+                    </template>
+                  </UChip>
+                </RouterLink>
                 <UButton
                   color="neutral"
                   variant="ghost"
