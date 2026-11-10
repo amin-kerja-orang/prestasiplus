@@ -9,7 +9,6 @@ import {
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
-  isDesktopShell,
   moduleTag,
   provisional,
   viewportWidth,
@@ -50,10 +49,7 @@ test.describe('M06 S5 Tracking A hub', { tag: [moduleTag(6)] }, () => {
     await expect(tid(page, 'lanes')).toBeVisible(SLOW)
     await expectTabTitle(page, 'Tracking A SPM | PRESTASIPLUS')
     await expect(shellTitle(page)).toHaveText('Tracking A SPM')
-    if (isDesktopShell(page)) {
-      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
-      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    }
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Set objektif penuh & bahasa format sebenar')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Tracking A SPM')
@@ -317,7 +313,8 @@ test.describe('M06 S6 Tracking A set list and Q3', { tag: [moduleTag(6)] }, () =
     await expectTabTitle(page, 'Tracking A SPM — Geografi | PRESTASIPLUS')
     // Product bug, left failing (S0, S3-T03 report): PembelajaranLayout ignores `usePageMeta` headers.
     await expect.soft(shellTitle(page)).toHaveText('Tracking A SPM — Geografi')
-    await expect(tid(page, 'pembelajaran-header')).not.toContainText('Selamat datang kembali')
+    // DV-M06-07: the page sets no subtitle of its own (TrackingASubjectPage setHeader), so the pupil layout default applies (C-12).
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Selamat datang kembali')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm/ramalan')
     await expect(tid(page, 'subject-title')).toHaveText('Geografi')
@@ -520,10 +517,7 @@ test.describe('M06 S8 Subjektif', { tag: [moduleTag(6)] }, () => {
     // The tab title equals the title the shell prints (useShellTabTitle), not the page's h1.
     await expectTabTitle(page, 'Subjektif SPM | PRESTASIPLUS')
     await expect(shellTitle(page)).toHaveText('Subjektif SPM')
-    if (isDesktopShell(page)) {
-      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
-      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    }
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Latihan struktur & esei')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Latihan Subjektif SPM')
