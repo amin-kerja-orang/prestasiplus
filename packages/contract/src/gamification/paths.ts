@@ -40,6 +40,7 @@ import {
   GamificationSettingSchema,
   GamificationSettingsListSchema,
   GamificationSettingsUpdateRequestSchema,
+  GamificationGiftSchema,
   GamificationSyilingRewardSchema,
   GamificationToggleResultSchema,
 } from './admin'
@@ -173,6 +174,7 @@ export const GAMIFICATION_COMPONENT_SCHEMAS = {
   GamificationEconomySettings: GamificationEconomySettingsSchema,
   GamificationEconomySettingsUpdate: GamificationEconomySettingsUpdateSchema,
   GamificationSyilingReward: GamificationSyilingRewardSchema,
+  GamificationGift: GamificationGiftSchema,
   GamificationRewardCostRequest: GamificationRewardCostRequestSchema,
   GamificationDrawPrize: GamificationDrawPrizeSchema,
   GamificationDrawPrizeInput: GamificationDrawPrizeInputSchema,

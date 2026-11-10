@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import { Prisma } from '../../../db/generated/client'
 import { idFromString, isIdString } from '../../../db/ids'
 import { PrismaService } from '../../../db/prisma.service'
-import { isXs3Teacher, xsPupilScopeSql } from '../../school-admin/xs-queries'
+import { isXs3Teacher, XS_PUPIL_SQL, xsPupilScopeSql } from '../../school-admin/xs-queries'
 import { BANK_VISIBLE_SQL } from '../../questions/learner-visibility'
 import { M1_START_MS } from './domain/rules'
 
@@ -139,12 +139,15 @@ export class AnalyticsRepository {
     return ids === null ? Prisma.empty : Prisma.sql`AND ${column} = ANY(${toIds(ids)}::bigint[])`
   }
 
-  /** The T4/T5 segment (BR-M11-01): active pupils of grade 10 or 11 with a school, in scope. */
+  /**
+   * The pupil segment of Monitoring: the XS-1 pupils (`XS_PUPIL_SQL`: student role, active, not suspended, Tingkatan 1-5) with a
+   * school, in scope. One definition on every screen (T-C5, AC-XS-1): this was a private "T4/T5" cut (grade 10/11), which showed
+   * 17 pupils where Dashboard, Senarai Pelajar and Command Center showed 20.
+   */
   private segment(schoolIds: readonly string[] | null): Prisma.Sql {
     return Prisma.sql`SELECT u.id AS user_id, u.school_id
       FROM users u
-      WHERE u.is_active AND u.grade IN (10, 11) AND u.school_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'student')
+      WHERE ${XS_PUPIL_SQL('u')} AND u.school_id IS NOT NULL
         ${this.clause(schoolIds, Prisma.sql`u.school_id`)}`
   }
 
@@ -187,14 +190,13 @@ export class AnalyticsRepository {
     return new Map(rows.map((r) => [r.school_id, r.n]))
   }
 
-  /** Teachers and teachers who logged in per school (Q-M11-TEACHERS). */
+  /** XS-3 teachers and those who logged in, per school (Q-M11-TEACHERS). */
   async teachersBySchool(ids: readonly string[] | null): Promise<Map<string, { n: number; logged: number }>> {
     if (ids !== null && ids.length === 0) return new Map()
     const rows = await this.db.$queryRaw<{ school_id: string; n: number; logged: number }[]>`
       SELECT u.school_id::text AS school_id, count(*)::int AS n, count(*) FILTER (WHERE u.last_login_at IS NOT NULL)::int AS logged
       FROM users u
-      WHERE u.is_active AND u.school_id IS NOT NULL
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
+      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}
         ${this.clause(ids, Prisma.sql`u.school_id`)}
       GROUP BY u.school_id`
     return new Map(rows.map((r) => [r.school_id, { n: r.n, logged: r.logged }]))
@@ -250,8 +252,7 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ id: string; name: string; email: string | null; last_login_at: Date | null; created_at: Date }[]>`
       SELECT u.id::text AS id, u.name, u.email, u.last_login_at, u.created_at
       FROM users u
-      WHERE u.is_active AND u.school_id = ${idFromString(schoolId)}
-        AND EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = u.id AND r.role = 'teacher')
+      WHERE u.school_id = ${idFromString(schoolId)} AND ${isXs3Teacher('u')}
       ORDER BY u.id`
     return rows.map((r) => ({ id: r.id, name: r.name, email: r.email ?? '', lastLoginAt: r.last_login_at, createdAt: r.created_at }))
   }

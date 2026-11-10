@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
  * `/admin/reward-control` "Kawalan Reward" (V2 `admin/reward-control.blade.php`; M14 S10), read only like V2: the
- * liability tiles, "Tetapan Kewangan", "Kos Sebenar Hadiah" and "Cabutan Bertuah". The V2 "Status" column of the gift
- * table and the "Harga Token" figure are not in the endpoint (`#40`): the table shows the syiling price instead and has
- * no status (reported as a backend gap). The editing endpoints (`#41` to `#43`) are not on the V2 blade and not used.
+ * liability tiles, "Tetapan Kewangan", "Kos Sebenar Hadiah" and "Cabutan Bertuah". The gift table is V2's: Hadiah,
+ * Kategori, Harga Token (the token price of the Hadiah catalogue, not the syiling price), Kos Sebenar and Status (`gifts`,
+ * T-C12). Without `gifts` (the mock) the syiling rewards fill it with "—" for the token price. The editing endpoints
+ * (`#41` to `#43`) are not on the V2 blade and not used.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
@@ -26,7 +27,7 @@ import {
 } from '@/ds'
 
 import { fetchRewardControl } from '../../api/admin'
-import type { Draw, SyilingReward } from '../../api/types'
+import type { Draw, RewardGift } from '../../api/types'
 import { ADMIN_COMMON, REWARD_CONTROL_COPY as COPY } from '../../lib/admin/copy'
 import { formatRm } from '../../lib/admin/format'
 
@@ -60,16 +61,31 @@ const settings = computed<DefinitionItem[] | null>(() => {
   ]
 })
 
-type GiftRow = SyilingReward & Record<string, unknown>
+/** A gift row; `tokenPrice` is null when only the syiling catalogue is known (the mock). */
+type GiftRow = Omit<RewardGift, 'tokenPrice'> & { tokenPrice: number | null } & Record<string, unknown>
 type DrawRow = Draw & Record<string, unknown>
-const gifts = computed(() => (data.value?.rewards ?? []) as GiftRow[])
+const gifts = computed<GiftRow[]>(() => {
+  const d = data.value
+  if (!d) return []
+  if (d.gifts) return d.gifts as GiftRow[]
+  return d.rewards.map((r) => ({
+    id: r.id,
+    name: r.name,
+    category: r.type,
+    tokenPrice: null,
+    costValueSen: r.costValueSen,
+    costRm: r.costRm,
+    status: 'aktif' as const,
+  }))
+})
 const draws = computed(() => (data.value?.draws ?? []) as DrawRow[])
 
 const GIFT_COLUMNS: TableColumn<GiftRow>[] = [
   { accessorKey: 'name', header: COPY.giftColumns.gift },
-  { accessorKey: 'type', header: COPY.giftColumns.category },
-  { accessorKey: 'priceSyiling', header: COPY.giftColumns.price },
+  { accessorKey: 'category', header: COPY.giftColumns.category },
+  { accessorKey: 'tokenPrice', header: COPY.giftColumns.price },
   { accessorKey: 'costRm', header: COPY.giftColumns.cost },
+  { accessorKey: 'status', header: COPY.giftColumns.status },
 ]
 const DRAW_COLUMNS: TableColumn<DrawRow>[] = [
   { accessorKey: 'id', header: COPY.drawColumns.id },
@@ -115,16 +131,26 @@ const winners = (draw: Draw): string => {
             :page-size="Math.max(gifts.length, 1)"
             :empty-title="COPY.giftsEmpty"
           >
-            <template #type-cell="{ row }">
-              <DsBadge :label="row.original.type" tone="neutral" size="sm" />
+            <template #category-cell="{ row }">
+              <DsBadge :label="row.original.category ? row.original.category.toUpperCase() : '—'" tone="neutral" size="sm" />
             </template>
-            <template #priceSyiling-cell="{ row }">
-              <DsText variant="body-strong" tone="success" tabular>{{ formatCount(row.original.priceSyiling) }}</DsText>
+            <template #tokenPrice-cell="{ row }">
+              <DsText v-if="row.original.tokenPrice !== null" variant="body-strong" tone="success" tabular>
+                {{ formatCount(row.original.tokenPrice) }}
+              </DsText>
+              <DsText v-else variant="body" tone="muted">—</DsText>
             </template>
             <template #costRm-cell="{ row }">
               <DsText variant="body-strong" :tone="row.original.costValueSen === 0 ? 'muted' : 'error'" tabular>
                 {{ formatRm(row.original.costRm) }}
               </DsText>
+            </template>
+            <template #status-cell="{ row }">
+              <DsBadge
+                :label="row.original.status === 'aktif' ? COPY.giftActive : capital(row.original.status)"
+                :tone="row.original.status === 'aktif' ? 'success' : 'neutral'"
+                size="sm"
+              />
             </template>
           </DsDataTable>
         </DsPanel>

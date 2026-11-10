@@ -1,5 +1,6 @@
 /**
- * M14 API types (SRS M14 v1.8 §7, §6). JSON is camelCase; ids are integers; datetimes are ISO 8601
+ * M14 API types (SRS M14 v1.8 §7, §6). JSON is camelCase; ids are integers (the admin screens, T-C12: opaque strings,
+ * as the API sends them and as `@pp/contract` `IdSchema` says); datetimes are ISO 8601
  * with the fixed `+08:00` offset; local dates are `YYYY-MM-DD`. The screens (S1–S22) read this file
  * and do not change it (build-plan §S.3 rule 5).
  */
@@ -386,20 +387,34 @@ export interface AdminOverview {
     completedToday: number
   }
   /** By tier key ascending. `pct` is the rounded integer label, `widthPct` the bar width (2 decimals). */
-  tierDistribution: { key: TierKey; count: number; pct: number; widthPct: number; color: string }[]
+  tierDistribution: {
+    key: TierKey
+    count: number
+    pct: number
+    widthPct: number
+    color: string
+    /** The API sends the tier id, label and icon too; the mock does not. */
+    id?: string
+    labelMs?: string
+    icon?: string
+  }[]
   top10: {
     rank: number
     name: string
     tierKey: TierKey
     level: number
     totalSyilingEarned: number
+    /** Tier label, icon and colour (#rrggbb, mapped to a design-system tone by the page); the mock does not send them. */
+    tierLabel?: string
+    tierIcon?: string
+    tierColor?: string
   }[]
   recent: { name: string; type: LedgerType; amount: number; source: string; createdAt: string }[]
 }
 
 /** #19, #20, #22 `data`. */
 export interface Tier {
-  id: number
+  id: string
   tierName: TierKey
   labelMs: string
   icon: string
@@ -446,7 +461,7 @@ export interface TierCreate extends TierUpdate {
 
 /** #23, #24, #27 `data`. */
 export interface DailyChallenge {
-  id: number
+  id: string
   title: string
   description: string
   icon: string
@@ -457,6 +472,10 @@ export interface DailyChallenge {
   difficulty: Difficulty
   sortOrder: number
   isActive: boolean
+  /** V2 "N sertai": pupils with a real completion. Sent by the API, not by the mock. */
+  enrolled?: number
+  /** V2 "N siap": real completions. Sent by the API, not by the mock. */
+  completed?: number
 }
 
 /** #24, #27 body (every field required). */
@@ -484,7 +503,7 @@ export interface AdminStudentsQuery {
 
 /** #28 `data[]`. */
 export interface AdminStudentRow {
-  userId: number
+  userId: string
   name: string
   email: string
   tierKey: TierKey
@@ -494,21 +513,23 @@ export interface AdminStudentRow {
   tokenBalance: number
   totalSyilingEarned: number
   xp: number
+  /** Current streak in days (V2 "Streak"). Sent by the API, not by the mock. */
+  streak?: number
 }
 
 /** #29 body. */
 export interface AwardRequest {
   /** 1 ≤ amount ≤ 10,000. */
-  userId: number
+  userId: string
   amount: number
   reason: string
 }
 
 /** #29 `data`. */
 export interface AwardResult {
-  userId: number
+  userId: string
   currentSyiling: number
-  transactionId: number
+  transactionId: string
 }
 
 export interface AdminTransactionsQuery {
@@ -521,8 +542,9 @@ export interface AdminTransactionsQuery {
 }
 
 /** #30 `data[]`. */
-export interface AdminTransactionRow extends LedgerEntry {
-  userId: number
+export interface AdminTransactionRow extends Omit<LedgerEntry, 'id'> {
+  id: string
+  userId: string
   name: string
 }
 
@@ -612,7 +634,7 @@ export interface EconomySettings {
 }
 
 export interface SyilingReward {
-  id: number
+  id: string
   name: string
   type: SyilingRewardType
   priceSyiling: number
@@ -629,7 +651,7 @@ export interface PrizeLine {
 
 /** #40 `data.draws[]`, #43 `data`. */
 export interface Draw {
-  id: number
+  id: string
   title: string
   description: string
   ticketCostSyiling: number
@@ -640,14 +662,27 @@ export interface Draw {
   createdAt: string
   ticketsSold: number
   /** Drawn winners (the V2 "Pemenang" column); absent on a draw that has none yet. */
-  winners?: { id: number | string; prizeLabel: string; name: string }[]
+  winners?: { id: string; prizeLabel: string; name: string }[]
 }
 
 /** #40 `data`. */
+/** A gift of the Hadiah catalogue as V2 "Kos Sebenar Hadiah" lists it (V2 `gifts`). `tokenPrice` is the token cost, not the syiling price. */
+export interface RewardGift {
+  id: string
+  name: string
+  category: string
+  tokenPrice: number
+  costValueSen: number
+  costRm: number
+  status: 'aktif' | 'nyahaktif'
+}
+
 export interface RewardControl {
   tiles: { sessionYear: number; liabilityRm: number; students: number; claims: number }
   settings: EconomySettings
   rewards: SyilingReward[]
+  /** The V2 gift cost table. Sent by the API, not by the mock (the page falls back to `rewards`). */
+  gifts?: RewardGift[]
   draws: Draw[]
 }
 

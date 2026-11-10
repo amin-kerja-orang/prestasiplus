@@ -15,7 +15,7 @@ beforeEach(() => {
   api.fetchAdminTransactions
     .mockReset()
     .mockResolvedValue(
-      listOf([txnRow(), txnRow({ id: 67, type: 'spend', amount: -250, description: '' })], { pageSize: 25 }),
+      listOf([txnRow(), txnRow({ id: '67', type: 'spend', amount: -250, description: '' })], { pageSize: 25 }),
     )
 })
 

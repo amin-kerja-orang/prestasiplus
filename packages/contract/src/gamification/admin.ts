@@ -45,6 +45,9 @@ export const GamificationAdminOverviewSchema = z
           pct: count.meta(FIELD('Rounded integer label.')),
           widthPct: z.number().min(0).meta(FIELD('Bar width, 2 decimals.')),
           color: z.string(),
+          id: IdSchema.optional().meta(FIELD('Tier id (the value of the Pelajar tier filter).')),
+          labelMs: z.string().optional().meta(FIELD('Tier label, so the screen needs no second call.')),
+          icon: z.string().optional(),
         }),
       )
       .meta(FIELD('By tier key ascending.')),
@@ -55,6 +58,9 @@ export const GamificationAdminOverviewSchema = z
         tierKey: z.string(),
         level: z.number().int().min(1),
         totalSyilingEarned: count,
+        tierLabel: z.string().optional(),
+        tierIcon: z.string().optional(),
+        tierColor: z.string().optional().meta(FIELD('#rrggbb of the tier; the screen maps it to a design-system tone, never an inline style.')),
       }),
     ),
     recent: z
@@ -161,6 +167,8 @@ export const GamificationAdminChallengeSchema = z
     difficulty: GamificationDifficultySchema,
     sortOrder: count,
     isActive: z.boolean(),
+    enrolled: count.optional().meta(FIELD('V2 "N sertai": pupils with at least one real completion of this challenge.')),
+    completed: count.optional().meta(FIELD('V2 "N siap": real completions of this challenge (one per pupil per Malaysia day).')),
   })
   .meta({ id: 'GamificationAdminChallenge' })
 export type GamificationAdminChallenge = z.infer<typeof GamificationAdminChallengeSchema>
@@ -197,7 +205,7 @@ export const GAMIFICATION_STUDENT_SORTS = ['total_syiling_earned', 'current_syil
 export const GamificationAdminStudentsQuerySchema = z
   .object({
     search: z.string().optional().meta(FIELD('Name or e-mail contains.')),
-    tier: z.string().optional().meta(FIELD('Tier key.')),
+    tier: z.string().optional().meta(FIELD('Tier key (tier_name) or tier id; the V2 filter posts the id.')),
     sort: z.string().optional().meta(FIELD(`One of ${GAMIFICATION_STUDENT_SORTS.join(', ')}; any other value is ignored.`)),
     page: z.coerce.number().int().min(1).optional().meta(FIELD('An invalid page reads as 1; an out-of-range page is an empty list.')),
   })
@@ -216,7 +224,7 @@ export const GamificationAdminStudentRowSchema = z
     tokenBalance: count,
     totalSyilingEarned: count,
     xp: count,
-    streak: count.optional().meta({ description: 'Current streak in days (FR-ADM-P2-04.1). Absent until the route serves it.' }),
+    streak: count.optional().meta({ description: 'Current streak in days (FR-ADM-P2-04.1); 0 for a pupil without a streak row. The mock does not send it.' }),
   })
   .meta({ id: 'GamificationAdminStudentRow' })
 export type GamificationAdminStudentRow = z.infer<typeof GamificationAdminStudentRowSchema>
@@ -369,6 +377,23 @@ export const GamificationSyilingRewardSchema = z
   .meta({ id: 'GamificationSyilingReward' })
 export type GamificationSyilingReward = z.infer<typeof GamificationSyilingRewardSchema>
 
+/**
+ * A gift of the Hadiah catalogue as V2 "Kos Sebenar Hadiah" lists it (V2 `gifts`, here `rewards`): `tokenPrice` is the token
+ * cost ("Harga Token"), not the syiling price of the M14 pair; `status` is `aktif` or `nyahaktif`.
+ */
+export const GamificationGiftSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string(),
+    category: z.string(),
+    tokenPrice: count,
+    costValueSen: count.meta(FIELD('Integer sen; 0 = digital, never uses the budget.')),
+    costRm: z.number().min(0),
+    status: z.enum(['aktif', 'nyahaktif']),
+  })
+  .meta({ id: 'GamificationGift' })
+export type GamificationGift = z.infer<typeof GamificationGiftSchema>
+
 /** `PUT /admin/reward-control/rewards/{id}/cost` body. */
 export const GamificationRewardCostRequestSchema = z
   .object({ costValueSen: count })
@@ -495,6 +520,7 @@ export const GamificationRewardControlSchema = z
     }),
     settings: GamificationEconomySettingsSchema,
     rewards: z.array(GamificationSyilingRewardSchema),
+    gifts: z.array(GamificationGiftSchema).optional().meta(FIELD('V2 gift cost table: the Hadiah catalogue by category then name. The mock does not send it.')),
     draws: z.array(GamificationDrawSchema),
   })
   .meta({ id: 'GamificationRewardControl' })

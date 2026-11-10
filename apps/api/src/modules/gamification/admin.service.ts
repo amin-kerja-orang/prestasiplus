@@ -9,6 +9,7 @@ import type {
   GamificationDraw,
   GamificationDrawWinner,
   GamificationEconomySettings,
+  GamificationGift,
   GamificationRewardControl,
   GamificationSetting,
   GamificationSyilingReward,
@@ -20,7 +21,8 @@ import { ApiError } from '../../common/errors/api-error'
 import { toMytTimestamp } from '../../common/time/myt'
 import type { TxClient } from '../../db/client'
 import { CLOCK, type Clock, mytDay } from '../../db/clock'
-import { Prisma } from '../../db/generated/client'
+import { Prisma, type Reward } from '../../db/generated/client'
+import { idToString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { DrawWinnersService, isRewardSettingKey, mytYearRange, rewardSettingError, rewardSettingsByKey, RewardSettingsService, ShopRepository, type DrawWinnerRecord } from '../shop'
 import { drawStillOpen } from '../shop/shop.time'
@@ -110,7 +112,7 @@ function perksOf(raw: unknown): string[] | undefined {
   return [text]
 }
 
-const challengeView = (c: ChallengeRecord): GamificationAdminChallenge => ({
+const challengeView = (c: ChallengeRecord, stats?: { enrolled: number; completed: number }): GamificationAdminChallenge => ({
   id: c.id,
   title: c.title,
   description: c.description,
@@ -122,6 +124,8 @@ const challengeView = (c: ChallengeRecord): GamificationAdminChallenge => ({
   difficulty: c.difficulty as 'easy',
   sortOrder: c.sortOrder,
   isActive: c.isActive,
+  enrolled: stats?.enrolled ?? 0,
+  completed: stats?.completed ?? 0,
 })
 
 const tierView = (t: TierRecord): GamificationAdminTier => ({ ...t })
@@ -133,6 +137,17 @@ const rewardView = (r: SyilingRewardRecord): GamificationSyilingReward => ({
   priceSyiling: r.priceSyiling,
   costValueSen: r.costValueSen,
   costRm: r.costValueSen / 100,
+})
+
+/** V2 `gifts` row of the cost table: the token price is `rewards.token_cost`; status is `aktif` or `nyahaktif`. */
+const giftView = (r: Reward): GamificationGift => ({
+  id: idToString(r.id),
+  name: r.title,
+  category: r.category,
+  tokenPrice: r.tokenCost,
+  costValueSen: r.costValueSen,
+  costRm: r.costValueSen / 100,
+  status: r.isActive ? 'aktif' : 'nyahaktif',
 })
 
 /** The state the admin reads: an `open` draw whose closing day (Malaysia time) has passed is `closed` (48 GAME-22); nothing is written for it. */
@@ -259,9 +274,18 @@ export class GamificationAdminService {
         .sort((a, b) => a.tierName.localeCompare(b.tierName))
         .map((t) => {
           const count = figures.byTier.get(t.id) ?? 0
-          return { key: t.tierName, count, pct: total > 0 ? Math.round((count / total) * 100) : 0, widthPct: total > 0 ? Math.round((count / total) * 10000) / 100 : 0, color: t.color }
+          return {
+            key: t.tierName,
+            count,
+            pct: total > 0 ? Math.round((count / total) * 100) : 0,
+            widthPct: total > 0 ? Math.round((count / total) * 10000) / 100 : 0,
+            color: t.color,
+            id: t.id,
+            labelMs: t.labelMs,
+            icon: t.icon,
+          }
         }),
-      top10: top.map((w, i) => ({ rank: i + 1, name: w.name, tierKey: w.tierKey, level: w.level, totalSyilingEarned: w.total })),
+      top10: top.map((w, i) => ({ rank: i + 1, name: w.name, tierKey: w.tierKey, level: w.level, totalSyilingEarned: w.total, tierLabel: w.tierLabel, tierIcon: w.tierIcon, tierColor: w.tierColor })),
       recent: recent.map((r) => ({ name: r.name, type: r.type as 'earn', amount: r.amount, source: r.source, createdAt: toMytTimestamp(r.createdAt) })),
     }
   }
@@ -317,7 +341,9 @@ export class GamificationAdminService {
   // --- S3 challenges -------------------------------------------------------------------------------
 
   async challenges(): Promise<GamificationAdminChallenge[]> {
-    return (await this.repo.challenges(this.repo.handle(), false)).map(challengeView)
+    const db = this.repo.handle()
+    const [list, stats] = await Promise.all([this.repo.challenges(db, false), this.repo.challengeStats(db)])
+    return list.map((c) => challengeView(c, stats.get(c.id)))
   }
 
   async createChallenge(actor: AuditActor, body: unknown): Promise<GamificationAdminChallenge> {
@@ -336,7 +362,8 @@ export class GamificationAdminService {
       const cur = await this.repo.challenge(tx, id)
       if (!cur) throw notFoundError(MSG.challengeNotFound)
       const metric = input.challengeType === cur.challengeType ? cur.metric : DEFAULT_METRIC_BY_TYPE[input.challengeType as keyof typeof DEFAULT_METRIC_BY_TYPE]
-      return challengeView(await this.repo.updateChallenge(tx, id, { ...input, metric }, this.clock.now()))
+      const stats = (await this.repo.challengeStats(tx)).get(cur.id)
+      return challengeView(await this.repo.updateChallenge(tx, id, { ...input, metric }, this.clock.now()), stats)
     })
   }
 
@@ -526,13 +553,14 @@ export class GamificationAdminService {
     // FR-ADM-P2-09.1: the same sum the budget check of a redeem uses, over `reward_redemptions`.
     const range = mytYearRange(year)
     const tiles = valid ? await this.shop.redemptionTotals(range.from, range.to) : { redemptions: 0, students: 0, costSen: 0 }
-    const [rewards, draws] = await Promise.all([this.repo.syilingRewards(db), this.repo.draws(db)])
+    const [rewards, draws, gifts] = await Promise.all([this.repo.syilingRewards(db), this.repo.draws(db), this.shop.rewardCatalogue()])
     const now = this.clock.now()
     const winners = await this.winners.winnersOf(draws.map((d) => d.id))
     return {
       tiles: { sessionYear: year, liabilityRm: tiles.costSen / 100, students: tiles.students, claims: tiles.redemptions },
       settings,
       rewards: rewards.map(rewardView),
+      gifts: gifts.map(giftView),
       draws: draws.map((d) => drawView(d, now, winners.get(d.id))),
     }
   }

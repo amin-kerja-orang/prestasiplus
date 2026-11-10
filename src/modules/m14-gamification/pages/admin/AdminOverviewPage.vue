@@ -28,7 +28,7 @@ import {
 
 import { fetchAdminOverview, fetchAdminTiers } from '../../api/admin'
 import { ADMIN_COMMON, OVERVIEW_COPY as COPY } from '../../lib/admin/copy'
-import { amountTone, LEDGER_TONE, relativeTime, signedAmount, tierText } from '../../lib/admin/format'
+import { amountTone, LEDGER_TONE, relativeTime, signedAmount, tierText, tierTone, type TierTone } from '../../lib/admin/format'
 
 const overview = useApi((signal) => fetchAdminOverview({ signal }))
 const tiers = useApi((signal) => fetchAdminTiers({ signal }))
@@ -39,6 +39,16 @@ const data = computed(() => overview.data.value)
 function reload(): void {
   void overview.reload()
   void tiers.reload()
+}
+
+/** The tier of a distribution row: the API sends its icon and label, else the tier list supplies them. */
+const distributionLabel = (row: { key: string; icon?: string; labelMs?: string }): string =>
+  row.labelMs ? `${row.icon ?? ''} ${row.labelMs}`.trim() : tierText(tierList.value, row.key)
+
+/** `DsProgress` has four tones: the tier colour's tone, with the neutral and info ones read as primary. */
+const barTone = (color: string): 'primary' | 'success' | 'warning' | 'error' => {
+  const tone: TierTone = tierTone(color)
+  return tone === 'success' || tone === 'warning' || tone === 'error' ? tone : 'primary'
 }
 
 const stats = computed<StatItem[]>(() => {
@@ -97,8 +107,9 @@ const COLUMNS: TableColumn<Row>[] = [
               <DsProgress
                 v-for="row in data.tierDistribution"
                 :key="row.key"
-                :label="tierText(tierList, row.key)"
+                :label="distributionLabel(row)"
                 :value="row.widthPct"
+                :tone="barTone(row.color)"
                 :value-text="`${formatCount(row.count)} · ${String(row.pct)}%`"
                 :data-testid="`gam-overview-tier-${row.key}`"
               />
@@ -116,7 +127,7 @@ const COLUMNS: TableColumn<Row>[] = [
                 :key="s.rank"
                 :rank="s.rank"
                 :title="s.name"
-                :sub="`${tierText(tierList, s.tierKey)} · Level ${String(s.level)}`"
+                :sub="`${s.tierLabel ? `${s.tierIcon ?? ''} ${s.tierLabel}`.trim() : tierText(tierList, s.tierKey)} · Level ${String(s.level)}`"
                 :meta="`${formatCount(s.totalSyilingEarned)} ${COPY.syiling}`"
                 :data-testid="`gam-overview-top-${String(s.rank)}`"
               />

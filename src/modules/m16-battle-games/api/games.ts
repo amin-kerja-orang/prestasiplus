@@ -8,6 +8,7 @@
  */
 
 import { api, wireId, type EntityId, type RawResponse } from '@/api'
+import { isHttpMode } from '@/api/mode'
 
 import type {
   AdminGame,
@@ -45,6 +46,10 @@ interface Signal {
 }
 
 const withSignal = (o: Signal) => (o.signal ? { signal: o.signal } : {})
+
+/** A route R1 does not build (backlog): refused without a request in http mode, where it would only be a 404. */
+const deferredRejection = <T>(): Promise<T> =>
+  Promise.reject(new Error('Fungsi ini belum tersedia dalam mod API sebenar.'))
 
 /** #22 `GET /api/games/hub`. */
 export function fetchGamesHub(options: Signal = {}): Promise<GamesHub> {
@@ -206,11 +211,13 @@ export function lifelineJutawan(sessionId: string): Promise<JutawanLifelineResul
 
 /** #40 `GET /api/games/pertandingan` (`?week=` is ignored, as live). */
 export function fetchWeeklyCompetition(options: Signal = {}): Promise<WeeklyCompetition> {
+  if (isHttpMode()) return deferredRejection()
   return api.get<WeeklyCompetition>('/api/games/pertandingan', withSignal(options))
 }
 
 /** #41 `GET /api/games/uji-minda`. */
 export function fetchUjiMinda(options: Signal = {}): Promise<{ challenge: null }> {
+  if (isHttpMode()) return deferredRejection()
   return api.get<{ challenge: null }>('/api/games/uji-minda', withSignal(options))
 }
 

@@ -62,6 +62,8 @@ export const CHALLENGES_COPY = {
   inactive: 'Nyahaktif',
   target: (n: string) => `Sasaran: ${n}`,
   empty: 'Tiada cabaran dikonfigurasi lagi.',
+  enrolled: (n: string) => `${n} sertai`,
+  completed: (n: string) => `${n} siap`,
   noDescription: '—',
   difficulty: { easy: 'Mudah', medium: 'Sederhana', hard: 'Susah' },
 } as const
@@ -81,6 +83,7 @@ export const STUDENTS_COPY = {
     token: 'Token',
     lifetime: 'Jumlah Syiling',
     xp: 'XP',
+    streak: 'Streak',
   },
 } as const
 
@@ -125,7 +128,8 @@ export const REWARD_CONTROL_COPY = {
   gamesNo: 'Tidak (XP sahaja)',
   giftsTitle: '🎁 Kos Sebenar Hadiah — digital = RM0, tidak makan bajet',
   giftsEmpty: 'Tiada hadiah dalam katalog.',
-  giftColumns: { gift: 'Hadiah', category: 'Kategori', price: 'Harga Syiling', cost: 'Kos Sebenar' },
+  giftColumns: { gift: 'Hadiah', category: 'Kategori', price: 'Harga Token', cost: 'Kos Sebenar', status: 'Status' },
+  giftActive: 'Aktif',
   drawsTitle: '🎟️ Cabutan Bertuah',
   drawsEmpty: 'Tiada cabutan lagi.',
   drawColumns: { id: '#', title: 'Tajuk', status: 'Status', ticket: 'Harga Tiket', winner: 'Pemenang' },

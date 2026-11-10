@@ -6,6 +6,7 @@
 
 import { api, type ListResult } from '@/api'
 
+import { deferredInHttp, deferredRejection } from './deferred'
 import type {
   AdminCashList,
   AdminCashRow,
@@ -60,12 +61,12 @@ export function fetchAdminTiers(options: Options = {}): Promise<Tier[]> {
 }
 
 /** #20 `PUT …/tiers/:id` (422 with `fields`; 404). */
-export function updateAdminTier(id: number, body: TierUpdate): Promise<Tier> {
+export function updateAdminTier(id: string, body: TierUpdate): Promise<Tier> {
   return api.put<Tier>(`${A}/tiers/${String(id)}`, { body })
 }
 
 /** #21 `POST …/tiers/:id/toggle`. */
-export function toggleAdminTier(id: number): Promise<{ isActive: boolean }> {
+export function toggleAdminTier(id: string): Promise<{ isActive: boolean }> {
   return api.post<{ isActive: boolean }>(`${A}/tiers/${String(id)}/toggle`)
 }
 
@@ -83,19 +84,19 @@ export function fetchAdminChallenges(options: Options = {}): Promise<DailyChalle
 
 /** #24 `PUT …/challenges/:id`. */
 export function updateAdminChallenge(
-  id: number,
+  id: string,
   body: DailyChallengeInput,
 ): Promise<DailyChallenge> {
   return api.put<DailyChallenge>(`${A}/challenges/${String(id)}`, { body })
 }
 
 /** #25 `POST …/challenges/:id/toggle`. */
-export function toggleAdminChallenge(id: number): Promise<{ isActive: boolean }> {
+export function toggleAdminChallenge(id: string): Promise<{ isActive: boolean }> {
   return api.post<{ isActive: boolean }>(`${A}/challenges/${String(id)}/toggle`)
 }
 
 /** #26 `DELETE …/challenges/:id`. */
-export function deleteAdminChallenge(id: number): Promise<{ deleted: number }> {
+export function deleteAdminChallenge(id: string): Promise<{ deleted: number }> {
   return api.delete<{ deleted: number }>(`${A}/challenges/${String(id)}`)
 }
 
@@ -147,16 +148,19 @@ export function fetchAdminTransactions(
 export function fetchAdminTeacherGamification(
   options: Options = {},
 ): Promise<AdminTeacherGamification> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<AdminTeacherGamification>(`${A}/guru`, withSignal(options))
 }
 
 /** #32 `PUT …/guru/badges/:id` (an earned badge is never revoked by a threshold change). */
 export function updateTeacherBadge(id: number, body: TeacherBadgeUpdate): Promise<TeacherBadge> {
+  if (deferredInHttp()) return deferredRejection()
   return api.put<TeacherBadge>(`${A}/guru/badges/${String(id)}`, { body })
 }
 
 /** #33 `POST …/guru/rewards` (S6, multipart; the image is only referenced by the mock). */
 export function createTeacherReward(input: TeacherRewardCreate): Promise<TeacherReward> {
+  if (deferredInHttp()) return deferredRejection()
   const form = new FormData()
   form.set('name', input.name)
   form.set('category', input.category)
@@ -176,6 +180,7 @@ export function fetchTeacherRedemptions(
   status: RedemptionStatusFilter = 'PENDING',
   options: Options = {},
 ): Promise<TeacherRedemption[]> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<TeacherRedemption[]>(`${A}/guru/redemptions`, {
     query: { status },
     ...withSignal(options),
@@ -187,6 +192,7 @@ export function updateTeacherRedemption(
   id: number,
   status: RedemptionStatus,
 ): Promise<TeacherRedemption> {
+  if (deferredInHttp()) return deferredRejection()
   return api.patch<TeacherRedemption>(`${A}/guru/redemptions/${String(id)}`, { body: { status } })
 }
 
@@ -195,11 +201,13 @@ export function fetchTeacherCashRequests(
   status: CashStatusFilter = 'PENDING',
   options: Options = {},
 ): Promise<AdminCashList> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<AdminCashList>(`${A}/guru/cash`, { query: { status }, ...withSignal(options) })
 }
 
 /** #37 `PATCH …/guru/cash/:id` (S8): any status; entering PAID debits once, leaving PAID credits back. */
 export function updateTeacherCashRequest(id: number, body: AdminCashUpdate): Promise<AdminCashRow> {
+  if (deferredInHttp()) return deferredRejection()
   return api.patch<AdminCashRow>(`${A}/guru/cash/${String(id)}`, { body })
 }
 
@@ -228,7 +236,7 @@ export function saveRewardControlSettings(
 }
 
 /** #42 `PUT /api/admin/reward-control/rewards/:id/cost`. */
-export function saveRewardCost(id: number, costValueSen: number): Promise<SyilingReward> {
+export function saveRewardCost(id: string, costValueSen: number): Promise<SyilingReward> {
   return api.put<SyilingReward>(`/api/admin/reward-control/rewards/${String(id)}/cost`, {
     body: { costValueSen },
   })

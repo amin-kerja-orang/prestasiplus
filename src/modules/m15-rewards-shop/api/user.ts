@@ -7,6 +7,7 @@
  */
 
 import { api } from '@/api'
+import { isHttpMode } from '@/api/mode'
 import type { ListResult } from '@/api/envelope'
 
 import type {
@@ -26,6 +27,10 @@ import type {
 
 type Options = { signal?: AbortSignal }
 const withSignal = (o: Options) => (o.signal ? { signal: o.signal } : {})
+
+/** A route R1 does not build (backlog): refused without a request in http mode, where it would only be a 404. */
+const deferredRejection = <T>(): Promise<T> =>
+  Promise.reject(new Error('Fungsi ini belum tersedia dalam mod API sebenar.'))
 
 /**
  * #19 `GET /api/hadiah-digital/items` (`?cat=`; S10): `data` is always `[]`; `meta.activeCat` says which
@@ -82,15 +87,18 @@ export function buyCabutanTicket(drawId: number, clientUuid: string): Promise<Ti
 
 /** #14 `GET /api/parent/hadiah-approvals` (S8; scoped to the viewer's linked children). */
 export function fetchParentApprovals(options: Options = {}): Promise<ParentApprovalsView> {
+  if (isHttpMode()) return deferredRejection()
   return api.get<ParentApprovalsView>('/api/parent/hadiah-approvals', withSignal(options))
 }
 
 /** #15 `POST /api/parent/hadiah-approvals/:id/approve` (404 not a child's; 409 not pending consent). */
 export function approveParentRequest(id: number): Promise<ApproveResult> {
+  if (isHttpMode()) return deferredRejection()
   return api.post<ApproveResult>(`/api/parent/hadiah-approvals/${String(id)}/approve`)
 }
 
 /** #16 `POST /api/parent/hadiah-approvals/:id/reject` (404; 409). */
 export function rejectParentRequest(id: number): Promise<CancelResult> {
+  if (isHttpMode()) return deferredRejection()
   return api.post<CancelResult>(`/api/parent/hadiah-approvals/${String(id)}/reject`)
 }

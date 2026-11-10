@@ -5876,6 +5876,20 @@
                 },
                 "color": {
                   "type": "string"
+                },
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Tier id (the value of the Pelajar tier filter).",
+                  "example": "1042"
+                },
+                "labelMs": {
+                  "type": "string",
+                  "description": "Tier label, so the screen needs no second call."
+                },
+                "icon": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -5911,6 +5925,16 @@
                 "totalSyilingEarned": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "tierLabel": {
+                  "type": "string"
+                },
+                "tierIcon": {
+                  "type": "string"
+                },
+                "tierColor": {
+                  "type": "string",
+                  "description": "#rrggbb of the tier; the screen maps it to a design-system tone, never an inline style."
                 }
               },
               "required": [
@@ -6299,6 +6323,16 @@
           },
           "isActive": {
             "type": "boolean"
+          },
+          "enrolled": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "V2 \"N sertai\": pupils with at least one real completion of this challenge."
+          },
+          "completed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "V2 \"N siap\": real completions of this challenge (one per pupil per Malaysia day)."
           }
         },
         "required": [
@@ -6391,7 +6425,7 @@
           },
           "tier": {
             "type": "string",
-            "description": "Tier key."
+            "description": "Tier key (tier_name) or tier id; the V2 filter posts the id."
           },
           "sort": {
             "type": "string",
@@ -6445,7 +6479,7 @@
           "streak": {
             "type": "integer",
             "minimum": 0,
-            "description": "Current streak in days (FR-ADM-P2-04.1). Absent until the route serves it."
+            "description": "Current streak in days (FR-ADM-P2-04.1); 0 for a pupil without a streak row. The mock does not send it."
           }
         },
         "required": [
@@ -6828,6 +6862,49 @@
           "costRm"
         ]
       },
+      "GamificationGift": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "tokenPrice": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costValueSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Integer sen; 0 = digital, never uses the budget."
+          },
+          "costRm": {
+            "type": "number",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "aktif",
+              "nyahaktif"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "tokenPrice",
+          "costValueSen",
+          "costRm",
+          "status"
+        ]
+      },
       "GamificationRewardCostRequest": {
         "type": "object",
         "properties": {
@@ -7114,6 +7191,13 @@
             "items": {
               "$ref": "#/components/schemas/GamificationSyilingReward"
             }
+          },
+          "gifts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationGift"
+            },
+            "description": "V2 gift cost table: the Hadiah catalogue by category then name. The mock does not send it."
           },
           "draws": {
             "type": "array",
@@ -83573,6 +83657,9 @@
       "AnalyticsLevel": {
         "type": "string",
         "enum": [
+          "T1",
+          "T2",
+          "T3",
           "T4",
           "T5"
         ]
@@ -105123,10 +105210,10 @@
           {
             "schema": {
               "type": "string",
-              "description": "Tier key."
+              "description": "Tier key (tier_name) or tier id; the V2 filter posts the id."
             },
             "required": false,
-            "description": "Tier key.",
+            "description": "Tier key (tier_name) or tier id; the V2 filter posts the id.",
             "name": "tier",
             "in": "query"
           },

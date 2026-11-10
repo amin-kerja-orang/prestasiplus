@@ -23,6 +23,7 @@ import { marketplaceCategoriesSeed } from '../../prisma/seed/core/marketplace-ca
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
+import { FeatureFlagsService } from '../../src/common/feature-flags'
 import { featureModules } from '../../src/modules'
 import { QuestionBankBuilderSource } from '../../src/modules/exam/builder'
 import { plugPocAttempts, plugPocPapers } from '../support/poc/plug'
@@ -176,6 +177,10 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
+  // The suite checks the CONTRACT of every route, not the product switches of Kawalan Ciri: `tiket-bantuan` is seeded OFF (Delivery B, D115)
+  // and `cikgu-alesa` / `keluarga-angkat` are locked OFF for ever (INV-29), so FeatureGuard would answer 404 for those routes. The guard
+  // reads `isEnabled`; here every key is ON. The switches themselves are covered by test/feature-flags/*.
+  app.get(FeatureFlagsService).isEnabled = async () => true
   // R1-B07: the PoC fixture is a test double now (the API serves the bank only); the shared scenarios use the seeded PoC papers.
   plugPocAttempts(app)
   plugPocPapers(app)

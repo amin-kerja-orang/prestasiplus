@@ -51,9 +51,37 @@ describe('AdminRewardControlPage', () => {
     const text = tid(w, 'gam-reward-gifts').text()
     expect(text).toContain('🎁 Kos Sebenar Hadiah — digital = RM0, tidak makan bajet')
     expect(text).toContain('Baucar Buku RM10')
-    expect(text).toContain('VOUCHER')
+    expect(text).toContain('ECOMMERCE')
     expect(text).toContain('RM10.00')
     expect(text).toContain('RM0.00')
+  })
+
+  it('has the V2 gift columns: Hadiah, Kategori, Harga Token, Kos Sebenar, Status', async () => {
+    const { w } = await open(AdminRewardControlPage, '/admin/reward-control')
+    const head = tid(w, 'gam-reward-gifts')
+      .findAll('th')
+      .map((th) => th.text())
+    expect(head).toEqual(['Hadiah', 'Kategori', 'Harga Token', 'Kos Sebenar', 'Status'])
+  })
+
+  it('shows the token price and the status of each gift', async () => {
+    const { w } = await open(AdminRewardControlPage, '/admin/reward-control')
+    const rows = tid(w, 'gam-reward-gifts')
+      .findAll('tbody tr')
+      .map((tr) => tr.findAll('td').map((td) => td.text()))
+    expect(rows[0]).toEqual(['Baucar Buku RM10', 'ECOMMERCE', '120', 'RM10.00', 'Aktif'])
+    expect(rows[1]).toEqual(['Lencana Eksklusif', 'GAMING', '0', 'RM0.00', 'Nyahaktif'])
+  })
+
+  it('falls back to the syiling catalogue with a dash for the token price when the endpoint sends no gifts', async () => {
+    const without = rewardControl()
+    delete without.gifts
+    api.fetchRewardControl.mockResolvedValue(without)
+    const { w } = await open(AdminRewardControlPage, '/admin/reward-control')
+    const rows = tid(w, 'gam-reward-gifts')
+      .findAll('tbody tr')
+      .map((tr) => tr.findAll('td').map((td) => td.text()))
+    expect(rows[0]).toEqual(['Baucar Buku RM10', 'VOUCHER', '—', 'RM10.00', 'Aktif'])
   })
 
   it('shows the lucky draws with the winners', async () => {
@@ -67,7 +95,7 @@ describe('AdminRewardControlPage', () => {
   })
 
   it('shows the V2 empty copy for gifts and draws', async () => {
-    api.fetchRewardControl.mockResolvedValue(rewardControl({ rewards: [], draws: [] }))
+    api.fetchRewardControl.mockResolvedValue(rewardControl({ rewards: [], gifts: [], draws: [] }))
     const { w } = await open(AdminRewardControlPage, '/admin/reward-control')
     expect(w.text()).toContain('Tiada hadiah dalam katalog.')
     expect(w.text()).toContain('Tiada cabutan lagi.')

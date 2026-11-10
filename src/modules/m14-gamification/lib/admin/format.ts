@@ -58,9 +58,35 @@ export function amountTone(amount: number): 'success' | 'error' {
   return amount >= 0 ? 'success' : 'error'
 }
 
-/** The tier of a key with its icon and label ("🥉 Gangsa"); the key itself when the tier is unknown. */
+/** The tier of a key (or id, as the V2 filter posts it) with its icon and label ("🥉 Gangsa"); the key itself when unknown. */
 export function tierText(tiers: readonly Tier[], key: string): string {
-  const tier = tiers.find((t) => t.tierName === key)
+  const tier = tiers.find((t) => t.tierName === key) ?? tiers.find((t) => t.id === key)
   if (!tier) return key === '' ? '—' : key
   return `${tier.icon} ${tier.labelMs}`.trim()
+}
+
+export type TierTone = 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'info'
+
+/**
+ * The design-system tone of a tier colour (`#rrggbb`, as the API sends it): V2 paints the pill with the colour itself, here
+ * the hue picks the nearest tone (red, orange or yellow, green, blue, violet) and a grey is neutral. No inline style.
+ */
+export function tierTone(color: string | undefined | null): TierTone {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(color ?? '')
+  if (!m) return 'neutral'
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h ?? '0', 16) / 255) as [number, number, number]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const delta = max - min
+  if (delta < 0.12) return 'neutral'
+  let hue: number
+  if (max === r) hue = ((g - b) / delta + 6) % 6
+  else if (max === g) hue = (b - r) / delta + 2
+  else hue = (r - g) / delta + 4
+  hue *= 60
+  if (hue < 15 || hue >= 330) return 'error'
+  if (hue < 70) return 'warning'
+  if (hue < 170) return 'success'
+  if (hue < 250) return 'info'
+  return 'primary'
 }

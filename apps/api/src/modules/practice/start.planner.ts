@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { PracticeMode, StartSessionRequest } from '@pp/contract'
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
-import { type Prng, prngStream } from '../../db/prng'
+import { fnv1a32, mulberry32, type Prng, prngStream } from '../../db/prng'
 import { CurriculumRepository, type SubjectWithLevels } from '../curriculum'
 import { SubscriptionService } from '../subscriptions'
 import {
@@ -72,6 +72,8 @@ const blank = (mode: PracticeMode): StartPlan => ({
 export const REMEDIAL_MIN_TOPIC_ATTEMPTS = 2
 /** How many candidate ids the top-up reads before the servable filter. */
 const TOPUP_CANDIDATES = 400
+/** How many weak chapters the bank fallback reads (T-C6). */
+const FALLBACK_CHAPTERS = 5
 
 export interface RemedialDrill {
   /** The questions to serve, in order: the servable wrong questions first, then the top-up. At most `REVISION_LENGTH`. */
@@ -85,6 +87,12 @@ export interface RemedialDrill {
  * remedial suggestions list a subject only when it yields at least one question (FD-MUR-36), so a card and its drill agree.
  * Rule: the pupil's servable wrong questions first (BR-14 order of the revision queue), then, while fewer than 20, a top-up
  * from the subject's weakest topics (never-correct questions first, then the oldest last answer), no duplicates.
+ *
+ * T-C6 fallback for history with no question link (a migrated V2 snapshot row has `question_id = NULL`; so does the demo seed):
+ * those answers say WHERE the pupil is weak (subject, chapter, level copied onto the row) but not WHICH question, so while the
+ * drill is still short it is filled from the bank itself: servable questions of the pupil's weakest chapters (by the copied
+ * chapter, id ascending, never one already chosen), then of the subject at the levels the pupil answered it at (a seeded,
+ * per pupil and subject draw, so a card and its drill agree). An empty bank still gives an empty drill (FD-MUR-36).
  */
 @Injectable()
 export class RemedialSelector {
@@ -116,7 +124,34 @@ export class RemedialSelector {
         }
       }
     }
+    if (served.length < REVISION_LENGTH) await this.fillFromBank(userId, subjectId, served)
     return { served, totalWrong: wrong.length }
+  }
+
+  /** T-C6: tops `served` up from the bank by the dimensions copied onto the pupil's (possibly unlinked) answer rows. */
+  private async fillFromBank(userId: string, subjectId: string, served: PracticeQuestion[]): Promise<void> {
+    const dims = await this.repo.weakDimensions(userId, subjectId, REMEDIAL_MIN_TOPIC_ATTEMPTS, FALLBACK_CHAPTERS)
+    const taken = new Set(served.map((q) => q.id))
+    const take = async (ids: readonly string[]): Promise<void> => {
+      const fresh = ids.filter((id) => !taken.has(id))
+      if (fresh.length === 0) return
+      const live = await this.ports.questions.live(fresh)
+      for (const id of fresh) {
+        if (served.length >= REVISION_LENGTH) return
+        const q = live.get(id)
+        if (q && !taken.has(id)) {
+          taken.add(id)
+          served.push(q)
+        }
+      }
+    }
+    for (const chapterId of dims.chapterIds) {
+      if (served.length >= REVISION_LENGTH) return
+      await take(await this.ports.questions.chapterPage(chapterId, [...taken], REVISION_LENGTH - served.length))
+    }
+    if (served.length >= REVISION_LENGTH || dims.answered === 0) return
+    const filter = { subjectId, ...(dims.levelIds.length > 0 ? { educationLevelIds: dims.levelIds } : {}) }
+    await take(await this.ports.questions.sample(filter, REVISION_LENGTH - served.length + taken.size, mulberry32(fnv1a32(`remedial-bank:${userId}:${subjectId}`))))
   }
 }
 

@@ -70,6 +70,11 @@ export class ShopRepository {
     return this.db.reward.findMany({ where: category ? { category } : {}, orderBy: [{ displayOrder: 'asc' }, { id: 'asc' }], skip, take })
   }
 
+  /** The whole Hadiah catalogue by category then title (the V2 "Kos Sebenar Hadiah" order), active or not. */
+  rewardCatalogue(): Promise<Reward[]> {
+    return this.db.reward.findMany({ orderBy: [{ category: 'asc' }, { title: 'asc' }, { id: 'asc' }] })
+  }
+
   countRewards(where: { category?: string; isActive?: boolean } = {}): Promise<number> {
     return this.db.reward.count({ where })
   }

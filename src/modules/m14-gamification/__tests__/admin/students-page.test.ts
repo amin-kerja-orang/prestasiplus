@@ -16,7 +16,7 @@ beforeEach(() => {
   api.fetchAdminStudents
     .mockReset()
     .mockResolvedValue(
-      listOf([studentRow(), studentRow({ userId: 2, name: 'Murid Demo Maju', tierKey: 'silver' })]),
+      listOf([studentRow(), studentRow({ userId: '2', name: 'Murid Demo Maju', tierKey: 'silver' })]),
     )
 })
 
@@ -30,12 +30,28 @@ describe('AdminStudentsPage', () => {
   it('shows the V2 columns and a row per pupil', async () => {
     const { w } = await open(AdminStudentsPage, '/admin/gamification/students')
     const head = w.findAll('th').map((th) => th.text())
-    expect(head).toEqual(['Pelajar', 'Tier', 'Level', 'Baki Syiling', 'Token', 'Jumlah Syiling', 'XP'])
+    expect(head).toEqual(['Pelajar', 'Tier', 'Level', 'Baki Syiling', 'Token', 'Jumlah Syiling', 'XP', 'Streak'])
     const text = tid(w, 'gam-students-table').text()
     expect(text).toContain('Murid Demo Maju')
     expect(text).toContain('pelajar@demo.test · ID: 1')
     expect(text).toContain('🥈 Perak')
     expect(text).toContain('1,386')
+  })
+
+  it('shows the streak of each pupil (0 when the endpoint sends none)', async () => {
+    api.fetchAdminStudents.mockResolvedValue(
+      listOf([studentRow({ streak: 7 }), studentRow({ userId: '2', streak: undefined })]),
+    )
+    const { w } = await open(AdminStudentsPage, '/admin/gamification/students')
+    const cells = w.findAll('tbody tr').map((tr) => tr.findAll('td').at(-1)?.text())
+    expect(cells).toEqual(['7', '0'])
+  })
+
+  it('colours the tier pill by a design-system tone, never an inline style', async () => {
+    const { w } = await open(AdminStudentsPage, '/admin/gamification/students')
+    const pill = w.find('tbody tr [data-ds="badge"]')
+    expect(pill.attributes('data-tone')).toBe('warning')
+    expect(pill.attributes('style')).toBeUndefined()
   })
 
   it('fetches page 1 with no filter first', async () => {
@@ -53,15 +69,23 @@ describe('AdminStudentsPage', () => {
     expect(options).toEqual(['Semua Tier', '🥉 Gangsa', '🥈 Perak'])
   })
 
+  it('posts the tier id as the option value, as the V2 form does', async () => {
+    const { w } = await open(AdminStudentsPage, '/admin/gamification/students')
+    const values = tid(w, 'gam-students-tier')
+      .findAll('option')
+      .map((o) => o.attributes('value'))
+    expect(values).toEqual(['', '1', '2'])
+  })
+
   it('puts the search and tier into the query string on Cari and fetches with them', async () => {
     const { w, router } = await open(AdminStudentsPage, '/admin/gamification/students')
     await w.get('input[name="q"]').setValue('maju')
-    await tid(w, 'gam-students-tier').setValue('silver')
+    await tid(w, 'gam-students-tier').setValue('2')
     await w.get('form').trigger('submit')
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ tier: 'silver', q: 'maju' })
+    expect(router.currentRoute.value.query).toEqual({ tier: '2', q: 'maju' })
     expect(api.fetchAdminStudents).toHaveBeenLastCalledWith(
-      expect.objectContaining({ tier: 'silver', search: 'maju' }),
+      expect.objectContaining({ tier: '2', search: 'maju' }),
     )
   })
 
@@ -71,6 +95,12 @@ describe('AdminStudentsPage', () => {
       expect.objectContaining({ tier: 'bronze', search: 'demo' }),
     )
     expect(w.text()).toContain('🥉 Gangsa')
+  })
+
+  it('opens on a tier id of the query string and names the tier in its chip', async () => {
+    const { w } = await open(AdminStudentsPage, '/admin/gamification/students?tier=2')
+    expect(api.fetchAdminStudents).toHaveBeenCalledWith(expect.objectContaining({ tier: '2' }))
+    expect(w.text()).toContain('🥈 Perak')
   })
 
   it('shows the V2 empty copy', async () => {

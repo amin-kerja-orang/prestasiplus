@@ -2,8 +2,8 @@
 /**
  * `/admin/gamification/students` "Pelajar Gamifikasi" (V2 `admin/gamification/students.blade.php`; M14 S4), read only:
  * filter bar (Tier, "Cari (nama / emel)") over the wallet table, 20 a page. The query string holds the filter, as on the
- * V2 GET form. V2's "Streak" column is not in the endpoint (`#28`) and is left out (reported as a backend gap); the
- * "Beri syiling" award (`#29`) is not on the V2 blade and is not built here.
+ * V2 GET form. The tier select posts the tier id, as V2 does (the API also takes the key); the "Streak" column (`streak`,
+ * T-C12; 0 when the mock sends none) is the last one. The "Beri syiling" award (`#29`) is not on the V2 blade and is not built here.
  */
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
@@ -12,8 +12,10 @@ import { useRoute, useRouter, type LocationQueryValue } from 'vue-router'
 import { useApi } from '@/composables'
 import {
   DsBadge,
+  DsCluster,
   DsDataTable,
   DsFilterBar,
+  DsIcon,
   DsNativeSelect,
   DsPage,
   DsStack,
@@ -24,7 +26,7 @@ import {
 import { fetchAdminStudents, fetchAdminTiers } from '../../api/admin'
 import type { AdminStudentRow } from '../../api/types'
 import { ADMIN_COMMON, STUDENTS_COPY as COPY } from '../../lib/admin/copy'
-import { tierText } from '../../lib/admin/format'
+import { tierText, tierTone } from '../../lib/admin/format'
 
 const PAGE_SIZE = 20
 const PATH = '/admin/gamification/students'
@@ -96,6 +98,7 @@ const COLUMNS: TableColumn<Row>[] = [
   { accessorKey: 'tokenBalance', header: COPY.columns.token },
   { accessorKey: 'totalSyilingEarned', header: COPY.columns.lifetime },
   { accessorKey: 'xp', header: COPY.columns.xp },
+  { accessorKey: 'streak', header: COPY.columns.streak },
 ]
 </script>
 
@@ -122,7 +125,7 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <DsNativeSelect v-model="tier" name="tier" :aria-label="COPY.tierLabel" data-testid="gam-students-tier">
         <option value="">{{ COPY.allTiers }}</option>
-        <option v-for="t in tierList" :key="t.tierName" :value="t.tierName">{{ t.icon }} {{ t.labelMs }}</option>
+        <option v-for="t in tierList" :key="t.id" :value="t.id">{{ t.icon }} {{ t.labelMs }}</option>
       </DsNativeSelect>
     </DsFilterBar>
 
@@ -152,7 +155,12 @@ const COLUMNS: TableColumn<Row>[] = [
         </DsStack>
       </template>
       <template #tierKey-cell="{ row }">
-        <DsBadge v-if="row.original.tierKey" :label="tierText(tierList, row.original.tierKey)" tone="neutral" size="sm" />
+        <DsBadge
+          v-if="row.original.tierKey"
+          :label="tierText(tierList, row.original.tierKey)"
+          :tone="tierTone(row.original.tierColor)"
+          size="sm"
+        />
         <DsText v-else variant="caption" tone="muted">—</DsText>
       </template>
       <template #level-cell="{ row }">{{ row.original.level }}</template>
@@ -164,6 +172,12 @@ const COLUMNS: TableColumn<Row>[] = [
       </template>
       <template #totalSyilingEarned-cell="{ row }">{{ formatCount(row.original.totalSyilingEarned) }}</template>
       <template #xp-cell="{ row }">{{ formatCount(row.original.xp) }}</template>
+      <template #streak-cell="{ row }">
+        <DsCluster gap="xs" as="span" justify="end" :wrap="false">
+          <DsIcon name="fire" />
+          <DsText variant="body" tone="muted" as="span" tabular>{{ row.original.streak ?? 0 }}</DsText>
+        </DsCluster>
+      </template>
     </DsDataTable>
   </DsPage>
 </template>

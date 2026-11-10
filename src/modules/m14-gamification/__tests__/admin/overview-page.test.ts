@@ -49,6 +49,19 @@ describe('AdminOverviewPage', () => {
     expect(tid(w, 'gam-overview-notier').text()).toBe('1 pelajar belum ditetapkan tier.')
   })
 
+  it('names the tiers from the overview itself when the tier list is empty', async () => {
+    api.fetchAdminTiers.mockResolvedValue([])
+    const { w } = await open(AdminOverviewPage, '/admin/gamification')
+    expect(tid(w, 'gam-overview-tier-silver').text()).toContain('🥈 Perak')
+    expect(tid(w, 'gam-overview-top-1').text()).toContain('🥉 Gangsa · Level 1')
+  })
+
+  it('tints each tier bar by a design-system tone from the tier colour', async () => {
+    const { w } = await open(AdminOverviewPage, '/admin/gamification')
+    expect(tid(w, 'gam-overview-tier-bronze').attributes('data-tone')).toBe('warning')
+    expect(tid(w, 'gam-overview-tier-silver').attributes('data-tone')).toBe('primary')
+  })
+
   it('lists the top pupils with rank, tier, level and syiling', async () => {
     const { w } = await open(AdminOverviewPage, '/admin/gamification')
     const first = tid(w, 'gam-overview-top-1').text()

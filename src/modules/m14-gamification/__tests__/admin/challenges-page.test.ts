@@ -15,7 +15,7 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue([
       challenge(),
-      challenge({ id: 2, title: 'Kilat Matematik', difficulty: 'hard', isActive: false, description: '' }),
+      challenge({ id: '2', title: 'Kilat Matematik', difficulty: 'hard', isActive: false, description: '' }),
     ])
 })
 
@@ -47,6 +47,31 @@ describe('AdminChallengesPage', () => {
     expect(two).toContain('Susah')
     expect(tid(w, 'gam-challenge-2-status').text()).toBe('Nyahaktif')
     expect(two).toContain('—')
+  })
+
+  it('shows the V2 "N sertai / N siap" line of each challenge', async () => {
+    const { w } = await open(AdminChallengesPage, '/admin/gamification/challenges')
+    for (const id of ['1', '2']) {
+      const line = tid(w, `gam-challenge-${id}-stats`).text()
+      expect(line).toContain('5 sertai')
+      expect(line).toContain('12 siap')
+    }
+  })
+
+  it('counts 0 sertai / 0 siap when the endpoint sends no counts (the mock)', async () => {
+    api.fetchAdminChallenges.mockResolvedValue([challenge({ enrolled: undefined, completed: undefined })])
+    const { w } = await open(AdminChallengesPage, '/admin/gamification/challenges')
+    const line = tid(w, 'gam-challenge-1-stats').text()
+    expect(line).toContain('0 sertai')
+    expect(line).toContain('0 siap')
+  })
+
+  it('formats large counts with thousands separators', async () => {
+    api.fetchAdminChallenges.mockResolvedValue([challenge({ enrolled: 1234, completed: 20500 })])
+    const { w } = await open(AdminChallengesPage, '/admin/gamification/challenges')
+    const line = tid(w, 'gam-challenge-1-stats').text()
+    expect(line).toContain('1,234 sertai')
+    expect(line).toContain('20,500 siap')
   })
 
   it('is read only: no button or input', async () => {

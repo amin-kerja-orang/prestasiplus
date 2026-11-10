@@ -972,6 +972,31 @@ export class PracticeRepository {
     return rows.map((r) => idToString(r.question_id))
   }
 
+  /**
+   * T-C6 (migrated history): where the pupil is weak in one subject by the dimensions COPIED onto the answer rows, with no need
+   * for a question link: ONLY rows with `question_id IS NULL` (a migrated V2 snapshot row, or a seeded one) are read; a row that
+   * links a question is served by `queue` and `weakTopicQuestionIds`. `answered` counts those unlinked rows. Chapters (non-test rows of every mode, at least
+   * `minAttempts` answers) weakest first (accuracy ascending, more answers first, id), and the education levels the pupil
+   * answered the subject at (most answers first). The caller serves BANK questions of these chapters and levels.
+   */
+  async weakDimensions(userId: string, subjectId: string, minAttempts: number, limit: number): Promise<{ answered: number; chapterIds: string[]; levelIds: string[] }> {
+    const uid = idFromString(userId)
+    const sid = idFromString(subjectId)
+    const chapters = await this.db.$queryRaw<{ chapter_id: bigint }[]>`
+      SELECT chapter_id FROM practice_answers
+       WHERE user_id = ${uid}::bigint AND subject_id = ${sid}::bigint AND NOT is_test AND question_id IS NULL AND chapter_id IS NOT NULL
+       GROUP BY chapter_id HAVING count(*) >= ${minAttempts}::bigint
+       ORDER BY count(*) FILTER (WHERE is_correct)::numeric / count(*) ASC, count(*) DESC, chapter_id ASC
+       LIMIT ${limit}::bigint`
+    const levels = await this.db.$queryRaw<{ education_level_id: bigint }[]>`
+      SELECT education_level_id FROM practice_answers
+       WHERE user_id = ${uid}::bigint AND subject_id = ${sid}::bigint AND NOT is_test AND question_id IS NULL AND education_level_id IS NOT NULL
+       GROUP BY education_level_id ORDER BY count(*) DESC, education_level_id ASC`
+    const answered = await this.db.$queryRaw<{ n: bigint }[]>`
+      SELECT count(*) AS n FROM practice_answers WHERE user_id = ${uid}::bigint AND subject_id = ${sid}::bigint AND NOT is_test AND question_id IS NULL`
+    return { answered: Number(answered[0]?.n ?? 0), chapterIds: chapters.map((r) => idToString(r.chapter_id)), levelIds: levels.map((r) => idToString(r.education_level_id)) }
+  }
+
   /** The stored mastery counters of a user, by subject id. */
   async mastery(userId: string): Promise<MasteryRecord[]> {
     const rows = await this.db.mastery.findMany({ where: { userId: idFromString(userId) }, orderBy: { subjectId: 'asc' } })

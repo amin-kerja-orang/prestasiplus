@@ -61,6 +61,9 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
     t = await bootAnalyticsApp()
     await treatDemoAsSecondary(t.db, false)
     w = await buildWorld(t)
+    // XS-1 (T-C5): Monitoring and Kirkpatrick count the same pupils as every screen, so a suspended account is NOT one of them. This fixture keeps its four
+    // named pupils (the figures below are written for four), so the seeded suspended pupil is a normal one here; the exclusion itself is pinned in admin-central.spec.ts.
+    await t.db.query(`update users set is_suspended = false where email = 'digantung@demo.test'`)
     // buildWorld: p1 8/6 (2026-09-10, subject 0) + 10/5 (2026-10-05, subject 1) + a test and an in-progress session;
     // maju 50/40 (2026-10-10); pupil B 5/5 (2026-10-12). Flags: p1 review, maju excluded. States for the state filter.
     await t.db.query(`update schools set state = 'Negeri Ujian Satu' where id = $1`, [w.schoolA])
@@ -127,11 +130,13 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       expect(body.kpi.answers).toBeGreaterThanOrEqual(73)
     })
 
-    it('teacher table: teachers and logged-in teachers per school come from users.last_login_at', async () => {
+    it('teacher table: XS-3 teachers (approved, active, not school admins) and those logged in per school come from users.last_login_at', async () => {
       const body = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview')).body.data)
       const expected = await t.db.query<{ school_id: string; n: number; logged: number }>(
         `select u.school_id::text, count(*)::int n, count(*) filter (where u.last_login_at is not null)::int logged
-         from users u where u.is_active and u.school_id is not null and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'teacher') group by 1`,
+         from users u where u.is_active and not u.is_suspended and u.pending_school_id is null and u.school_id is not null
+           and exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'teacher')
+           and not exists (select 1 from user_roles r where r.user_id = u.id and r.role = 'school_admin') group by 1`,
       )
       for (const e of expected) {
         expect(rowOf(body.teacherRows, e.school_id), e.school_id).toMatchObject({ registered: e.n, loggedIn: e.logged })
@@ -484,11 +489,11 @@ describe('M11 monitoring S2 to S5 and export (AC 1 to 3, 5)', () => {
       errorIs(await admin.get(`/monitoring/schools/987654321/students/${ids.susp}`), 404, 'NOT_FOUND')
     })
 
-    it('unknown, non-numeric, non-pupil and not-T4/T5 users are 404 for the admin too', async () => {
+    it('unknown, non-numeric, non-pupil and not-Tingkatan-1-5 users are 404 for the admin too', async () => {
       for (const id of ['987654321', '0', 'abc', ids.teacherB, ids.adminA]) {
         errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/students/${id}`), 404, 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
       }
-      await t.db.query(`update users set grade = 8 where id = $1`, [ids.p2])
+      await t.db.query(`update users set grade = 5 where id = $1`, [ids.p2])
       errorIs(await admin.get(`/monitoring/schools/${w.schoolA}/students/${ids.p2}`), 404, 'NOT_FOUND')
       await t.db.query(`update users set grade = 10 where id = $1`, [ids.p2])
     })

@@ -110,6 +110,20 @@ describe('M14 admin operations: settings, reward control, lucky draws (BE-23, AC
       expect(d.draws[0]).toMatchObject({ title: 'Cabutan Demo', status: 'open', ticketCostSyiling: 50, maxTicketsPerStudent: 10, ticketsSold: 0, prizePool: [{ label: 'Hadiah Demo', valueSen: 1000, qty: 1 }, { label: 'Baucar RM5', valueSen: 500, qty: 10 }] })
     })
 
+    it('T-C12: gifts is the V2 cost table of the Hadiah catalogue: name, category, token price (rewards.token_cost, not the syiling price), real cost and status (aktif / nyahaktif), by category then name', async () => {
+      await t.db.query(`insert into rewards (category, vendor, title, denomination_rm, token_cost, cost_value_sen, is_active) values ('ewallet', 'Vendor Uji', 'Baucar Aktif Uji', 10, 120, 1000, true), ('ewallet', 'Vendor Uji', 'Baucar Tidak Aktif Uji', 5, 60, 0, false)`)
+      const d = GamificationRewardControlSchema.parse(dataOf(await admin.get('/admin/reward-control')))
+      const stored = await t.db.query<{ id: string; title: string; category: string; token_cost: number; cost_value_sen: number; is_active: boolean }>(`select id::text, title, category, token_cost, cost_value_sen, is_active from rewards order by category, title, id`)
+      expect(d.gifts).toHaveLength(stored.length)
+      expect(d.gifts!.map((g) => g.id)).toEqual(stored.map((r) => r.id))
+      const active = d.gifts!.find((g) => g.name === 'Baucar Aktif Uji')!
+      expect(active).toEqual({ id: expect.any(String), name: 'Baucar Aktif Uji', category: 'ewallet', tokenPrice: 120, costValueSen: 1000, costRm: 10, status: 'aktif' })
+      expect(d.gifts!.find((g) => g.name === 'Baucar Tidak Aktif Uji')).toMatchObject({ tokenPrice: 60, costRm: 0, status: 'nyahaktif' })
+      // the syiling catalogue stays beside it, with its own price
+      expect(d.rewards).toHaveLength(11)
+      await t.db.query(`delete from rewards where vendor = 'Vendor Uji'`)
+    })
+
     it('the tiles sum the redemptions of the session year (cost snapshot, MYT calendar year, pending and delivered only, distinct pupils) and follow the session year', async () => {
       const a = await bareUser(t, 'Tebus Satu')
       const b = await bareUser(t, 'Tebus Dua')

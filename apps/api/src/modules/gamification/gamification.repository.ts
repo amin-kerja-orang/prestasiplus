@@ -160,6 +160,8 @@ export interface AdminStudentRow {
   tokenBalance: number
   totalSyilingEarned: number
   xp: number
+  /** The stored current streak (reads never decay it); 0 without a streak row. */
+  streak: number
 }
 
 export interface LockedWallet {
@@ -389,6 +391,18 @@ export class GamificationRepository {
 
   async setChallengeActive(db: Db, id: bigint, isActive: boolean, at: Date): Promise<void> {
     await db.challenge.update({ where: { id }, data: { isActive, updatedAt: at } })
+  }
+
+  /**
+   * V2 "N sertai / N siap" per challenge, over real rows only (`is_test` excluded): `enrolled` = distinct pupils with at least one
+   * completion, `completed` = completions (one per pupil per Malaysia day). V3 stores no row for a pupil who started and did not
+   * finish, so "sertai" counts the pupils who finished at least once. A challenge with no completion is absent from the map.
+   */
+  async challengeStats(db: Db): Promise<Map<string, { enrolled: number; completed: number }>> {
+    const rows = await db.$queryRaw<{ challengeId: bigint; enrolled: bigint; completed: bigint }[]>`
+      SELECT challenge_id AS "challengeId", count(DISTINCT user_id)::bigint AS enrolled, count(*)::bigint AS completed
+        FROM challenge_completions WHERE NOT is_test GROUP BY challenge_id`
+    return new Map(rows.map((r) => [idToString(r.challengeId), { enrolled: num(r.enrolled), completed: num(r.completed) }]))
   }
 
   /** Completions cascade with the challenge (foreign key `ON DELETE CASCADE`, migration 0019). */
@@ -766,7 +780,8 @@ export class GamificationRepository {
 
   async adminStudents(db: Db, filter: { search: string; tier: string; sort: StudentSort; page: number; pageSize: number }): Promise<{ rows: AdminStudentRow[]; total: number }> {
     const conds: Prisma.Sql[] = []
-    if (filter.tier) conds.push(Prisma.sql`t.tier_name = ${filter.tier}`)
+    // The V2 filter posts the tier id; the key (tier_name) keeps working.
+    if (filter.tier) conds.push(Prisma.sql`(t.tier_name = ${filter.tier} OR t.id::text = ${filter.tier})`)
     const term = filter.search.trim()
     if (term !== '') {
       const like = `%${escapeLike(term)}%`
@@ -775,12 +790,13 @@ export class GamificationRepository {
     const where = conds.length > 0 ? Prisma.sql`WHERE ${Prisma.join(conds, ' AND ')}` : Prisma.empty
     const column = SORT_COLUMN[filter.sort]
     const second = filter.sort === 'total_syiling_earned' ? Prisma.empty : Prisma.sql`w.total_syiling_earned DESC,`
-    const from = Prisma.sql`FROM wallets w JOIN users u ON u.id = w.user_id LEFT JOIN tiers t ON t.id = w.tier_id ${where}`
+    const from = Prisma.sql`FROM wallets w JOIN users u ON u.id = w.user_id LEFT JOIN tiers t ON t.id = w.tier_id LEFT JOIN streaks st ON st.user_id = w.user_id ${where}`
     const totalRows = await db.$queryRaw<{ n: bigint }[]>`SELECT count(*)::bigint AS n ${from}`
     const rows = await db.$queryRaw<
-      { userId: bigint; name: string; email: string | null; tierKey: string | null; tierColor: string | null; level: number; currentSyiling: number; tokenBalance: number; totalSyilingEarned: number; xp: number }[]
+      { userId: bigint; name: string; email: string | null; tierKey: string | null; tierColor: string | null; level: number; currentSyiling: number; tokenBalance: number; totalSyilingEarned: number; xp: number; streak: number }[]
     >`SELECT w.user_id AS "userId", u.name, u.email, t.tier_name AS "tierKey", t.color AS "tierColor", w.level::int AS level,
-             w.current_syiling AS "currentSyiling", w.token_balance AS "tokenBalance", w.total_syiling_earned AS "totalSyilingEarned", w.xp
+             w.current_syiling AS "currentSyiling", w.token_balance AS "tokenBalance", w.total_syiling_earned AS "totalSyilingEarned", w.xp,
+             COALESCE(st.current, 0)::int AS streak
         ${from}
        ORDER BY ${Prisma.raw(column)} DESC, ${second} w.created_at ASC, w.id ASC
        LIMIT ${filter.pageSize} OFFSET ${(filter.page - 1) * filter.pageSize}`
@@ -797,6 +813,7 @@ export class GamificationRepository {
         tokenBalance: r.tokenBalance,
         totalSyilingEarned: r.totalSyilingEarned,
         xp: r.xp,
+        streak: r.streak,
       })),
     }
   }

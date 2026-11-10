@@ -41,7 +41,8 @@ export const AnalyticsTahapSchema = z.enum(ANALYTICS_TAHAP).meta({
   id: 'AnalyticsTahap',
   description: 'Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 0 < p < 20; Tiada p = 0. Kritikal and Tiada Langsung are legacy keys, still accepted but no longer produced.',
 })
-export const AnalyticsLevelSchema = z.enum(['T4', 'T5']).meta({ id: 'AnalyticsLevel' })
+/** Tingkatan 1 to 5 (XS-1, T-C5): Monitoring counts the same pupils as every other screen, not only Tingkatan 4 and 5. */
+export const AnalyticsLevelSchema = z.enum(['T1', 'T2', 'T3', 'T4', 'T5']).meta({ id: 'AnalyticsLevel' })
 export const AnalyticsStudentStatusSchema = z.enum(['aktif', 'login', 'never']).meta({ id: 'AnalyticsStudentStatus' })
 export const AnalyticsFlagLevelSchema = z.enum(['review', 'excluded']).meta({ id: 'AnalyticsFlagLevel' })
 const optionLabel = z.enum(['A', 'B', 'C', 'D'])

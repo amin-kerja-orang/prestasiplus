@@ -2,8 +2,8 @@
 /**
  * `/admin/gamification/challenges` "Cabaran Harian" (V2 `admin/gamification/challenges.blade.php`; M14 S3), read only
  * (decision D118-3): the heading "Senarai Cabaran (N)" with the active count, then one card per challenge (icon, title,
- * difficulty, status, description, type, target, rewards). V2 also prints "N sertai / N siap" per challenge; the
- * endpoint (`#23`) carries no enrolment counts, so that line is left out (reported as a backend gap).
+ * difficulty, status, description, type, target, rewards) and the V2 footer line "N sertai / N siap" (`enrolled`,
+ * `completed`; T-C12: 0 when the endpoint does not send them, as the mock does not).
  */
 import { computed } from 'vue'
 
@@ -14,6 +14,7 @@ import {
   DsEmptyState,
   DsGrid,
   DsHeading,
+  DsIcon,
   DsLoadError,
   DsPage,
   DsPanel,
@@ -77,6 +78,16 @@ const DIFFICULTY_TONE: Record<Difficulty, 'success' | 'warning' | 'error'> = {
                 <DsBadge tone="neutral" icon="flag-checkered" :label="COPY.target(formatCount(c.targetValue))" size="sm" />
                 <DsBadge tone="warning" icon="coins" :label="`+${formatCount(c.rewardSyiling)}`" size="sm" />
                 <DsBadge tone="info" icon="lightning" :label="`+${formatCount(c.rewardXp)} XP`" size="sm" />
+              </DsCluster>
+              <DsCluster gap="md" :data-testid="`gam-challenge-${String(c.id)}-stats`">
+                <DsCluster gap="xs" as="span">
+                  <DsIcon name="users" />
+                  <DsText variant="caption" tone="muted" as="span">{{ COPY.enrolled(formatCount(c.enrolled ?? 0)) }}</DsText>
+                </DsCluster>
+                <DsCluster gap="xs" as="span">
+                  <DsIcon name="check-circle" />
+                  <DsText variant="caption" tone="muted" as="span">{{ COPY.completed(formatCount(c.completed ?? 0)) }}</DsText>
+                </DsCluster>
               </DsCluster>
             </DsStack>
           </DsCluster>

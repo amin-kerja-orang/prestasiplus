@@ -31,7 +31,7 @@ export async function open(page: Component, at: string): Promise<{ w: VueWrapper
 export const tid = (w: VueWrapper, id: string) => w.find(`[data-testid="${id}"]`)
 
 export const tier = (over: Partial<Tier> = {}): Tier => ({
-  id: 1,
+  id: '1',
   tierName: 'bronze',
   labelMs: 'Gangsa',
   icon: '🥉',
@@ -54,7 +54,7 @@ export const tier = (over: Partial<Tier> = {}): Tier => ({
 
 export const TIERS: Tier[] = [
   tier(),
-  tier({ id: 2, tierName: 'silver', labelMs: 'Perak', icon: '🥈', minSyiling: 500, conversionRate: 40, sortOrder: 2, perks: [] }),
+  tier({ id: '2', tierName: 'silver', labelMs: 'Perak', icon: '🥈', minSyiling: 500, conversionRate: 40, sortOrder: 2, perks: [] }),
 ]
 
 export const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
@@ -67,11 +67,11 @@ export const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
     completedToday: 2,
   },
   tierDistribution: [
-    { key: 'bronze', count: 7, pct: 78, widthPct: 77.78, color: '#cd7f32' },
-    { key: 'silver', count: 1, pct: 11, widthPct: 11.11, color: '#c0c0c0' },
+    { key: 'bronze', count: 7, pct: 78, widthPct: 77.78, color: '#cd7f32', id: '1', labelMs: 'Gangsa', icon: '🥉' },
+    { key: 'silver', count: 1, pct: 11, widthPct: 11.11, color: '#c0c0c0', id: '2', labelMs: 'Perak', icon: '🥈' },
   ],
   top10: [
-    { rank: 1, name: 'Murid Demo', tierKey: 'bronze', level: 1, totalSyilingEarned: 1386 },
+    { rank: 1, name: 'Murid Demo', tierKey: 'bronze', level: 1, totalSyilingEarned: 1386, tierLabel: 'Gangsa', tierIcon: '🥉', tierColor: '#cd7f32' },
     { rank: 2, name: 'Murid Demo Maju', tierKey: 'silver', level: 3, totalSyilingEarned: 270 },
   ],
   recent: [
@@ -82,7 +82,7 @@ export const overview = (over: Partial<AdminOverview> = {}): AdminOverview => ({
 })
 
 export const challenge = (over: Partial<DailyChallenge> = {}): DailyChallenge => ({
-  id: 1,
+  id: '1',
   title: 'Rajin Berlatih',
   description: 'Selesaikan 3 kuiz hari ini',
   icon: '📝',
@@ -93,11 +93,13 @@ export const challenge = (over: Partial<DailyChallenge> = {}): DailyChallenge =>
   difficulty: 'easy',
   sortOrder: 0,
   isActive: true,
+  enrolled: 5,
+  completed: 12,
   ...over,
 })
 
 export const studentRow = (over: Partial<AdminStudentRow> = {}): AdminStudentRow => ({
-  userId: 1,
+  userId: '1',
   name: 'Murid Demo',
   email: 'pelajar@demo.test',
   tierKey: 'bronze',
@@ -107,12 +109,13 @@ export const studentRow = (over: Partial<AdminStudentRow> = {}): AdminStudentRow
   tokenBalance: 4,
   totalSyilingEarned: 2000,
   xp: 921,
+  streak: 4,
   ...over,
 })
 
 export const txnRow = (over: Partial<AdminTransactionRow> = {}): AdminTransactionRow => ({
-  id: 68,
-  userId: 3,
+  id: '68',
+  userId: '3',
   name: 'Murid Demo Kosong',
   type: 'earn',
   amount: 2,
@@ -145,12 +148,16 @@ export const rewardControl = (over: Partial<RewardControl> = {}): RewardControl 
     gamesAwardSyiling: 0,
   },
   rewards: [
-    { id: 1, name: 'Baucar Buku RM10', type: 'VOUCHER', priceSyiling: 500, costValueSen: 1000, costRm: 10 },
-    { id: 7, name: 'Lencana Eksklusif', type: 'DIGITAL', priceSyiling: 100, costValueSen: 0, costRm: 0 },
+    { id: '1', name: 'Baucar Buku RM10', type: 'VOUCHER', priceSyiling: 500, costValueSen: 1000, costRm: 10 },
+    { id: '7', name: 'Lencana Eksklusif', type: 'DIGITAL', priceSyiling: 100, costValueSen: 0, costRm: 0 },
+  ],
+  gifts: [
+    { id: '3', name: 'Baucar Buku RM10', category: 'ecommerce', tokenPrice: 120, costValueSen: 1000, costRm: 10, status: 'aktif' },
+    { id: '9', name: 'Lencana Eksklusif', category: 'gaming', tokenPrice: 0, costValueSen: 0, costRm: 0, status: 'nyahaktif' },
   ],
   draws: [
     {
-      id: 1,
+      id: '1',
       title: 'Cabutan Demo',
       description: '',
       ticketCostSyiling: 50,
@@ -160,7 +167,7 @@ export const rewardControl = (over: Partial<RewardControl> = {}): RewardControl 
       status: 'open',
       createdAt: '2026-09-25T15:40:00.000+08:00',
       ticketsSold: 0,
-      winners: [{ id: 1, prizeLabel: 'Hadiah Demo', name: 'Murid Demo' }],
+      winners: [{ id: '1', prizeLabel: 'Hadiah Demo', name: 'Murid Demo' }],
     },
   ],
   ...over,

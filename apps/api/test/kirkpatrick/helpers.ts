@@ -198,8 +198,8 @@ export async function buildWorld(t: KirkpatrickTestApp): Promise<World> {
   const q = t.db.query.bind(t.db)
   const schoolA = await schoolOfCode(t, 'DEMO001')
   const schoolB = await schoolOfCode(t, 'DEMO002')
-  // Only the named pupils are T4/T5; every generated pupil is moved out of the segment.
-  await q(`update users set grade = 8 where grade in (10, 11) and email like 'murid.demo001.%'`)
+  // Only the named pupils are XS-1 pupils (Tingkatan 1-5, active, not suspended); every generated pupil is moved out (no Tingkatan is not counted).
+  await q(`update users set grade = null where email like 'murid.demo001.%'`)
   await q(`update users set grade = 10 where email = $1`, [STUDENT_B])
   await q(`update users set last_login_at = $1::timestamptz where email in ($2, $3)`, ['2026-10-18T08:00:00+08:00', STUDENT_1, TEACHER_A])
   const subjects = (await q<{ id: string }>(`select id::text from subjects order by id limit 2`)).map((r) => r.id) as [string, string]
