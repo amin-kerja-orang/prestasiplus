@@ -143,8 +143,14 @@ export function resetRiskCache(): void {
   schoolMemo.clear()
 }
 
-const levelNumber = (slug: string): Tingkatan | null =>
-  slug === 'tingkatan-4' ? 4 : slug === 'tingkatan-5' ? 5 : null
+const levelNumber = (slug: string): Tingkatan | null => {
+  const m = /^tingkatan-([1-5])$/.exec(slug)
+  return m ? (Number(m[1]) as Tingkatan) : null
+}
+
+/** The Tingkatan (1-5) of a pupil's grade (7-11), or null for Darjah / no grade. */
+export const gradeTingkatan = (grade: number | null): Tingkatan | null =>
+  grade !== null && grade >= 7 && grade <= 11 ? ((grade - 6) as Tingkatan) : null
 
 function classesOf(userId: number): PupilClassRef[] {
   const out: PupilClassRef[] = []
@@ -271,7 +277,21 @@ function tally(rows: readonly PupilRiskRow[]): RiskTally {
 }
 
 const filterLevel = (rows: PupilRiskRow[], t: Tingkatan | undefined): PupilRiskRow[] =>
-  t === undefined ? rows : rows.filter((r) => r.classTingkatan.includes(t))
+  t === undefined
+    ? rows
+    : rows.filter((r) =>
+        // Class based (FN-M18-4.6.1). Tingkatan 1-3 (D101) have no class levels in the dataset, so a pupil in
+        // no Tingkatan class there is placed by the grade; T4 / T5 stay strictly class based.
+        r.classTingkatan.includes(t) ||
+        (t <= 3 && r.classTingkatan.length === 0 && gradeTingkatan(r.grade) === t),
+      )
+
+/** The Tingkatan numbers that have pupils in a school (the S4 pills), ascending. */
+export function levelsOfSchool(schoolId: number, options?: RiskOptions): Tingkatan[] {
+  const rows = schoolPupils(schoolId, nowOf(options))
+  // A pill is listed only when its filter keeps at least one pupil, so a pill never opens an empty list.
+  return ([1, 2, 3, 4, 5] as const).filter((t) => filterLevel(rows, t).length > 0)
+}
 
 /** Schools of a scope that hold pupils (fixtures excluded, BR-M18-02). */
 export function schoolIdsOfScope(scope: RiskScope): number[] {
@@ -343,6 +363,9 @@ export const risk = {
 
   forScope: (scope: RiskScope, options?: RiskOptions): RiskTally =>
     tally(pupilsForScope(scope, options)),
+
+  /** The Tingkatan numbers with pupils in a school (all levels, unfiltered). */
+  levelsOfSchool,
 
   /** Drops the memos (after tests edit owner data). */
   resetCache: resetRiskCache,

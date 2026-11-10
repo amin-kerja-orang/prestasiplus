@@ -157,11 +157,13 @@ describe('read-model helpers', () => {
     })
   })
 
-  it('parseTingkatan accepts T4 / T5 / 4 / 5 and ignores anything else', () => {
+  it('parseTingkatan accepts T1-T5 / 1-5 (D101) and ignores anything else', () => {
     expect(parseTingkatan('T4')).toBe(4)
     expect(parseTingkatan('t5')).toBe(5)
     expect(parseTingkatan('4')).toBe(4)
-    expect(parseTingkatan('T3')).toBeUndefined()
+    expect(parseTingkatan('T3')).toBe(3)
+    expect(parseTingkatan('T6')).toBeUndefined()
+    expect(parseTingkatan('T0')).toBeUndefined()
     expect(parseTingkatan(undefined)).toBeUndefined()
   })
 

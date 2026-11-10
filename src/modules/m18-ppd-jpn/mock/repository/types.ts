@@ -52,8 +52,8 @@ export interface CorrectionSubjectRow {
 /** BR-M18-14 statuses: Hijau "On Track", Kuning "Perlu Perhatian", Merah "Berisiko Tinggi". */
 export type RiskStatus = 'on_track' | 'watch' | 'high'
 
-/** The tingkatan filter of the S22 / S28 pills (`T4` / `T5`). */
-export type Tingkatan = 4 | 5
+/** The tingkatan filter of the S22 / S28 / M27 S4 pills (`T1` to `T5`, D101). */
+export type Tingkatan = 1 | 2 | 3 | 4 | 5
 
 /** The consumer contract XR-M27-08: `onTrack` = Hijau, `watch` = Kuning, `high` = Merah. */
 export interface RiskTally {

@@ -123,6 +123,32 @@ describe('#21 GET /api/amaran/schools/:id', () => {
     }
   })
 
+  it('populated school 8078 (423 pupils, M27 S4): levels are present and the pupil rows equal the tally (D11)', async () => {
+    const d = await dataAs<SchoolRiskData & { levels: number[] }>(
+      runtime,
+      admin.id,
+      '/api/amaran/schools/8078',
+    )
+    expect(d.levels.length).toBeGreaterThan(0)
+    expect(d.levels.every((n) => Number.isInteger(n) && n >= 1 && n <= 5)).toBe(true)
+    expect(d.levels).toEqual([...d.levels].sort((a, b) => a - b))
+    // The list agrees with the tally, which agrees with the dataset headcount.
+    expect(d.tally.total).toBe(423)
+    expect(d.pupils).toHaveLength(d.tally.total)
+    expect(d.pupils.map((p) => p.rank)).toEqual(d.pupils.map((_, i) => i + 1))
+    // Every level pill filters to a list that equals its own tally.
+    for (const n of d.levels) {
+      const f = await dataAs<SchoolRiskData>(
+        runtime,
+        admin.id,
+        `/api/amaran/schools/8078?tingkatan=T${String(n)}`,
+      )
+      expect(f.levelFilter).toBe(`T${String(n)}`)
+      expect(f.pupils).toHaveLength(f.tally.total)
+      expect(f.pupils.length).toBeGreaterThan(0)
+    }
+  }, 600_000)
+
   it('7780: 17 pupils, 15 x 100 then 2 x 80, with the FN-M18-4.1.3 cell texts', async () => {
     const d = await dataAs<SchoolRiskData>(runtime, admin.id, '/api/amaran/schools/7780')
     expect(d.pupils.map((p) => p.score)).toEqual([...Array(15).fill(100), 80, 80])

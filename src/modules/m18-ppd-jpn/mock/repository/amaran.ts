@@ -56,7 +56,7 @@ const pctInt = (part: number, whole: number): number =>
 /** `T4` / `T5` / `4` / `5` -> 4 / 5; anything else -> undefined (no filter). */
 export function parseTingkatan(value: string | undefined): Tingkatan | undefined {
   const v = value?.trim().toUpperCase().replace(/^T/, '')
-  return v === '4' ? 4 : v === '5' ? 5 : undefined
+  return v !== undefined && /^[1-5]$/.test(v) ? (Number(v) as Tingkatan) : undefined
 }
 
 /** The tally in the §6.7 `RiskTally` shape (Hijau / Kuning / Merah and integer percentages). */
@@ -147,7 +147,9 @@ export function atRiskList(schoolId: number, options?: RiskOptions): PupilRiskVi
 
 export interface SchoolRiskData {
   school: { id: number; name: string; code: string; district: string | null; state: string }
-  levelFilter: 'T4' | 'T5' | null
+  levelFilter: 'T1' | 'T2' | 'T3' | 'T4' | 'T5' | null
+  /** The Tingkatan numbers that have pupils in the school (the S4 pills list only these). */
+  levels: number[]
   levelSuffix: string
   tally: RiskTallyView
   weakness: SubjectRiskRow[]
@@ -167,7 +169,8 @@ export function schoolRisk(schoolId: number, options?: RiskOptions): SchoolRiskD
       district: school.district,
       state: school.state,
     },
-    levelFilter: t === undefined ? null : t === 4 ? 'T4' : 'T5',
+    levelFilter: t === undefined ? null : (`T${String(t)}` as SchoolRiskData['levelFilter']),
+    levels: risk.levelsOfSchool(schoolId, options),
     levelSuffix: t === undefined ? '' : ` — Tingkatan ${String(t)}`,
     tally: tallyView(risk.forSchool(schoolId, options)),
     weakness: subjectRisk(schoolId),
