@@ -69,7 +69,17 @@ test.describe('Soalan Berstruktur submit form', { tag: [moduleTag(10)] }, () => 
 
     await expect(page).toHaveURL(new RegExp(`${LIST}$`))
     await expect(page.getByText('Soalan berstruktur dihantar untuk semakan.')).toBeVisible()
-    await gotoApp(`${LIST}?status=review`)
+    // Client-side navigation: a full reload would reset the in-page mock store and lose the new submission.
+    await page.evaluate(async (to) => {
+      const app = document.querySelector('#app') as
+        | (Element & {
+            __vue_app__?: {
+              config: { globalProperties: { $router: { push: (p: string) => Promise<unknown> } } }
+            }
+          })
+        | null
+      await app!.__vue_app__!.config.globalProperties.$router.push(to)
+    }, `${LIST}?status=review`)
     // Two seeded own submissions plus the new one; the newest is first.
     await expect(page.getByTestId('structured-status-chip')).toHaveCount(3)
     await expect(page.getByTestId('structured-status-chip').first()).toHaveText('Menunggu Semakan')
