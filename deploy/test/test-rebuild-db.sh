@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Behaviour test of deploy/vps/rebuild-db.sh (guards G1 to G3 and G6, the C-2 stale files archive, the pass-2 gate), of the S-3 intake/ClamAV
-# check (lib.sh pp_intake_av_problem) and of the verify allowlist pass-through of deploy/vps/migration/slot.sh etl (C-5).
+# check (lib.sh pp_intake_av_problem), of the G3 positive allowlist (X-2) and of the verify allowlist pass-through of deploy/vps/migration/slot.sh etl (C-5, X-3).
 # Plain bash with stub `docker` (and `hostname`) on PATH: no Docker daemon, no database, nothing on a real host is touched. Runs on Linux
 # (flock, GNU coreutils); on Windows run it in the test container:
 #   docker compose -p pp-ops -f deploy/test/compose.be-test.yaml run --rm --entrypoint bash runner /src/deploy/test/test-rebuild-db.sh
@@ -33,11 +33,29 @@ case "$1" in
       *" run "*) exit 0 ;;
     esac
     exit 0 ;;
+  run) [ "${STUB_IMG_SCANNER:-1}" = 1 ] || exit 1; exit 0 ;;
   volume) exit 0 ;;
   *) exit 0 ;;
 esac
 STUB
 chmod +x "$w/bin/docker"
+
+# stub curl (health gate): every edge URL answers 200/ready; /api/ready carries "scanner":"$STUB_SCANNER" (ok|down|disabled); /api/metrics 404; http 301.
+cat >"$w/bin/curl" <<'STUB'
+#!/bin/sh
+for a in "$@"; do url="$a"; done
+case "$*" in *" -w "*) code=1 ;; *) code=0 ;; esac
+path="${url#*://*/}"; path="/${path}"
+case "$url" in http://*) [ "$code" = 1 ] && printf 301; exit 0 ;; esac
+case "$path" in
+  /api/metrics) [ "$code" = 1 ] && printf 404 ;;
+  /api/ready) if [ "$code" = 1 ]; then printf 200; else printf '{"status":"ready","scanner":"%s"}' "${STUB_SCANNER:-ok}"; fi ;;
+  *) [ "$code" = 1 ] && printf 200 ;;
+esac
+exit 0
+STUB
+printf '#!/bin/sh\nexit 0\n' >"$w/bin/sleep"
+chmod +x "$w/bin/curl" "$w/bin/sleep"
 
 pass=0; fail=0
 ok()  { pass=$((pass + 1)); echo "ok   $1"; }
@@ -48,7 +66,7 @@ mkprod() {
   {
     printf '%s\n' "PP_DOMAIN=uat.example.test" "PP_ALLOW_DB_REBUILD=yes" "PP_SCRATCH_HOST=yes" "PP_STATE_DIR=$w/state" "PP_BACKUP_DIR=$w/backup" \
       "PP_MIGRATION_OUT=$w/out" "PP_RELEASE_SHA=$SHA" "PP_STAGE_EXPECT=archive_cloud:1 staging_cloud:1" "PP_REBUILD_MIN_FREE_GB=0" \
-      "PP_LOCK_FILE=$w/lock" "PP_STAGE_DIR=$w/stage" "PP_MIGRATE_UID=$(id -u)"
+      "PP_LOCK_FILE=$w/lock" "PP_STAGE_DIR=$w/stage" "PP_MIGRATE_UID=$(id -u)" "PP_REBUILD_ALLOWED_DB=pp_uat" "PP_REBUILD_ALLOWED_DOMAIN=uat.example.test"
     [ $# -eq 0 ] || printf '%s\n' "$@"
   } >"$w/env/prod.env"
 }
@@ -103,6 +121,34 @@ echo "-- G3: database names"
 mkprod
 for n in prestasiplus_prod prestasi_plus pios_my postgres template1; do mkdb "$n"; rb 2 "refusing to touch the database '$n'" -- "${dry[@]}"; done
 mkprod "PP_REBUILD_DENY_DBS=pp_uat"; mkdb pp_uat; rb 2 'PP_REBUILD_DENY_DBS' -- "${dry[@]}"
+mkprod; mkdb pp_uat
+
+echo "-- G3 (X-2): positive allowlist PP_REBUILD_ALLOWED_DB / PP_REBUILD_ALLOWED_DOMAIN, from the prod.env FILE only, fails closed"
+mkdb pp_uat
+mkprod; sed -i '/^PP_REBUILD_ALLOWED_/d' "$w/env/prod.env"; rb 3 'allowlist fails closed' -- "${dry[@]}"
+mkprod; sed -i '/^PP_REBUILD_ALLOWED_DB=/d' "$w/env/prod.env"; rb 3 'allowlist fails closed' -- "${dry[@]}"
+mkprod; sed -i '/^PP_REBUILD_ALLOWED_DOMAIN=/d' "$w/env/prod.env"; rb 3 'allowlist fails closed' -- "${dry[@]}"
+mkprod; sed -i '/^PP_REBUILD_ALLOWED_/d' "$w/env/prod.env"
+EXTRA_ENV="PP_REBUILD_ALLOWED_DB=pp_uat PP_REBUILD_ALLOWED_DOMAIN=uat.example.test" rb 3 'allowlist fails closed' -- "${dry[@]}"   # the shell environment never counts
+mkprod "PP_REBUILD_ALLOWED_DB=pp_other"; rb 3 "is not PP_REBUILD_ALLOWED_DB ('pp_other')" -- "${dry[@]}"
+mkprod "PP_REBUILD_ALLOWED_DOMAIN=other.example.test"; rb 3 "is not PP_REBUILD_ALLOWED_DOMAIN ('other.example.test')" -- "${dry[@]}"
+mkprod "PP_REBUILD_ALLOWED_DOMAIN=UAT.Example.Test."; rb 0 'DRY-RUN: all checks passed' -- "${dry[@]}"   # the allowlist value is normalised like the domain
+echo "-- G3 (X-2): trailing dots, ports, hosts below the production domains; UAT passes only by the exact allowlist match"
+for d in 'prestasiplus.cloud..' 'PrestasiPlus.My...' 'www.prestasiplus.cloud.' 'prestasiplus.cloud:443' 'uat.example.test:8443' 'uat.example.test/x' 'a b.example.test'; do
+  mkprod "PP_DOMAIN=$d"; rb 3 'G3)' -- "${dry[@]}"
+done
+for d in staging.prestasiplus.cloud demo.prestasiplus.my 'x.y.prestasiplus.cloud.'; do
+  # even with the allowlist naming that very host: only uat.prestasiplus.cloud is exempt from the wildcard
+  mkprod "PP_DOMAIN=$d" "PP_REBUILD_ALLOWED_DOMAIN=$d"; rb 3 'below a production domain' -- "${dry[@]}"
+done
+mkprod "PP_DOMAIN=uat.prestasiplus.cloud" "PP_REBUILD_ALLOWED_DOMAIN=other.example.test"; rb 3 'below a production domain' -- "${dry[@]}"
+mkprod "PP_DOMAIN=uat.prestasiplus.cloud" "PP_REBUILD_ALLOWED_DOMAIN="; rb 3 'allowlist fails closed' -- "${dry[@]}"
+mkprod "PP_DOMAIN=uat.prestasiplus.cloud" "PP_REBUILD_ALLOWED_DOMAIN=uat.prestasiplus.cloud"; rb 0 'DRY-RUN: all checks passed' -- "${dry[@]}"
+mkprod "PP_DOMAIN=UAT.PrestasiPlus.Cloud.." "PP_REBUILD_ALLOWED_DOMAIN=uat.prestasiplus.cloud"; rb 0 'DRY-RUN: all checks passed' -- "${dry[@]}"
+echo "-- G3 (X-2): the deny lists are never globbed"
+mkdir -p "$w/glob"; : >"$w/glob/uat.example.test"; : >"$w/glob/pp_uat"
+mkprod "PP_REBUILD_DENY_DOMAINS=*" "PP_REBUILD_DENY_DBS=*"
+pushd "$w/glob" >/dev/null; rb 0 'DRY-RUN: all checks passed' -- "${dry[@]}"; popd >/dev/null
 mkprod; mkdb pp_uat
 
 echo "-- G6: a dump manifest that is anonymised or synthetic is refused (anonymised accounts all get the password Demo1234)"
@@ -191,14 +237,38 @@ PP_AV_SCHEMA_FILE="$w/schema-marker.ts" av 0 ''
 mkprod "PP_PROFILES=clamav" "PP_SCRATCH_HOST=no"
 PP_AV_SCHEMA_FILE="$w/schema-no-marker.ts" av 0 ''
 mkprod "PP_PROFILES=clamav"
-grep -q 'scanner":"ok"' "$vps/lib.sh" && ok 'pp_health_checks requires /api/ready scanner ok when teacher intake is on' || bad 'pp_health_checks does not check scanner ok'
+hc() { # hc EXPECTED_RC TEXT SCANNER FLAG : pp_health_checks with the stub curl (scanner state) and api.env (INTAKE_TEACHER_ENABLED=FLAG)
+  local want="$1" text="$2" scanner="$3" flag="$4" out rc=0
+  printf 'INTAKE_TEACHER_ENABLED=%s\nCLAMAV_HOST=clamav\n' "$flag" >"$w/env/api.env"
+  out="$(env STUB_SCANNER="$scanner" PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash -c ". '$vps/lib.sh'; pp_health_checks" 2>&1)" || rc=$?
+  if [ "$rc" = "$want" ] && [[ "$out" == *"$text"* ]]; then ok "health gate rc $rc (scanner $scanner, intake $flag): ${text:-passed}"; else bad "health gate want rc $want + '$text', got rc $rc (scanner $scanner, intake $flag): $out"; fi
+}
+mkprod "PP_PROFILES=clamav"
+hc 0 'health checks passed' ok true
+hc 1 'does not report scanner ok' down true
+hc 1 'does not report scanner ok' disabled true
+hc 0 'health checks passed' down false      # intake off: the scanner state is not part of the gate
+hc 0 'health checks passed' disabled false
+echo "-- rollback.sh (m2): with teacher intake on, a target build without the scanner is refused before anything changes"
+mkdir -p "$w/state"; printf 'newtag\n' >"$w/state/current.tag"
+rbk() { # rbk EXPECTED_RC TEXT FLAG SCANNER_IN_IMAGE
+  local want="$1" text="$2" flag="$3" img="$4" rc=0
+  printf 'INTAKE_TEACHER_ENABLED=%s\nCLAMAV_HOST=clamav\n' "$flag" >"$w/env/api.env"
+  : >"$DOCKER_LOG"
+  env STUB_IMG_SCANNER="$img" PATH="$w/bin:$PATH" PP_ENV_DIR="$w/env" bash "$vps/rollback.sh" --dry-run oldtag </dev/null >"$w/log" 2>&1 || rc=$?
+  if [ "$rc" = "$want" ] && grep -qF -- "$text" "$w/log"; then ok "rollback exit $rc (intake $flag, scanner in image $img): $text"; else bad "rollback want exit $want + '$text', got exit $rc" "$w/log"; fi
+}
+rbk 3 'has no upload scan code' true 0
+rbk 0 'DRY-RUN would run' true 1
+rbk 0 'DRY-RUN would run' false 0
+printf 'x\n' >"$w/env/api.env"; mkprod
 grep -q 'CLAMAV_SCAN_ENABLED' "$vps/../../apps/api/src/common/config/env.schema.ts" && ok 'the real env schema declares the CLAMAV_SCAN_ENABLED marker' || bad 'env.schema.ts lacks the CLAMAV_SCAN_ENABLED marker'
 grep -q 'pp_intake_av_problem' "$vps/deploy.sh" && ok 'deploy.sh preflight (G5) calls pp_intake_av_problem' || bad 'deploy.sh preflight does not call pp_intake_av_problem'
 grep -q 'intake_av_check' "$vps/rebuild-db.sh" && ok 'rebuild-db.sh step 14 runs intake_av_check' || bad 'rebuild-db.sh step 14 does not run intake_av_check'
 mkprod; printf 'x\n' >"$w/env/api.env"
 
-echo "-- slot.sh etl: verify allowlist pass-through, apply refuses without staging_cloud"
-printf '# comment\nquestions|INVALID_VALUE|options\n' >"$w/accept.txt"
+echo "-- slot.sh etl: verify allowlist (process environment ONLY, =maxN form), apply refuses without staging_cloud"
+printf '# comment\nquestions|INVALID_VALUE|options=2\n' >"$w/accept.txt"
 slot() { # slot EXPECTED_EXIT TEXT ARGS...
   local want="$1" text="$2" rc=0; shift 2
   : >"$DOCKER_LOG"
@@ -208,18 +278,26 @@ slot() { # slot EXPECTED_EXIT TEXT ARGS...
 }
 mkprod; mkdb pp_uat
 slot 0 'ETL STEP migrate:verify exit=0' etl migrate:verify
-if grep -q 'PP_VERIFY_ACCEPT_REJECTS' "$DOCKER_LOG"; then bad 'verify without an allowlist got the variable anyway'; else ok 'no allowlist configured: nothing passed to the container'; fi
-EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS=exam_questions|INVALID_VALUE|stem"
-slot 0 'ETL STEP migrate:verify exit=0' etl migrate:verify
-if grep -qF -e '-e PP_VERIFY_ACCEPT_REJECTS=exam_questions|INVALID_VALUE|stem' "$DOCKER_LOG"; then ok 'PP_VERIFY_ACCEPT_REJECTS reaches the migrate container'; else bad 'PP_VERIFY_ACCEPT_REJECTS not passed' "$DOCKER_LOG"; fi
+if grep -q 'PP_VERIFY_ACCEPT_REJECTS' "$DOCKER_LOG" || grep -q 'WARNING' "$w/log"; then bad 'verify without an allowlist got the variable or a warning anyway'; else ok 'no allowlist configured: nothing passed to the container, no warning'; fi
+EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS=exam_questions|INVALID_VALUE|stem=3"
+slot 0 'WARNING: PP_VERIFY_ACCEPT_REJECTS is set for this run' etl migrate:verify
+if grep -qF -e '-e PP_VERIFY_ACCEPT_REJECTS=exam_questions|INVALID_VALUE|stem=3' "$DOCKER_LOG"; then ok 'PP_VERIFY_ACCEPT_REJECTS (=maxN form) reaches the migrate container'; else bad 'PP_VERIFY_ACCEPT_REJECTS not passed' "$DOCKER_LOG"; fi
 EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS_FILE=$w/accept.txt"
-slot 0 'ETL STEP migrate:verify exit=0' etl migrate:verify
+slot 0 'WARNING: PP_VERIFY_ACCEPT_REJECTS_FILE is set for this run' etl migrate:verify
 if grep -qF -e "-v $w/accept.txt:/accept-rejects.txt:ro" "$DOCKER_LOG" && grep -qF -e '-e PP_VERIFY_ACCEPT_REJECTS_FILE=/accept-rejects.txt' "$DOCKER_LOG"; then ok 'PP_VERIFY_ACCEPT_REJECTS_FILE is mounted read-only and named'; else bad 'allowlist file not mounted' "$DOCKER_LOG"; fi
 EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS_FILE=$w/missing.txt"; slot 2 'is not a file' etl migrate:verify
-EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS=a|b|c"
+EXTRA_ENV="PP_VERIFY_ACCEPT_REJECTS=a|b|c=1"
 slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan
 if grep -q 'PP_VERIFY_ACCEPT_REJECTS' "$DOCKER_LOG"; then bad 'the allowlist leaked into another command'; else ok 'the allowlist is passed to migrate:verify only'; fi
 EXTRA_ENV=""
+# M-1 / X-3: a persisted allowlist in prod.env is refused (never read as a fallback), for either key, even with nothing in the shell
+mkprod "PP_VERIFY_ACCEPT_REJECTS=questions|INVALID_VALUE|options=5"
+slot 2 'PP_VERIFY_ACCEPT_REJECTS is set in' etl migrate:verify
+if grep -q 'migrate:verify' "$DOCKER_LOG" && grep -q 'compose.* run ' "$DOCKER_LOG"; then bad 'a prod.env allowlist still started the verify container'; else ok 'a prod.env allowlist starts nothing'; fi
+mkprod "PP_VERIFY_ACCEPT_REJECTS_FILE=$w/accept.txt"; slot 2 'PP_VERIFY_ACCEPT_REJECTS_FILE is set in' etl migrate:verify
+mkprod "PP_VERIFY_ACCEPT_REJECTS=questions|INVALID_VALUE|options=5"
+slot 0 'ETL STEP migrate:questions exit=0' etl migrate:questions --plan   # only verify refuses; other commands never read the key
+mkprod
 STUB_PSQL=0 slot 3 'no staging_cloud in the target' etl migrate:all --apply --as-of=2026-11-10
 slot 2 'etl COMMAND' etl migrate:nothing
 

@@ -274,6 +274,12 @@ services:
       # Largest file clamd scans. Must be >= INTAKE_MAX_FILE_MB and equal to CLAMAV_MAX_STREAM_MB in api.env (the API refuses to boot otherwise).
       CLAMD_CONF_MaxFileSize: ${PP_CLAMAV_MAX_STREAM_MB:-32}M
       CLAMD_CONF_StreamMaxLength: ${PP_CLAMAV_MAX_STREAM_MB:-32}M
+      # Without these, clamd answers 'stream: OK' for password-protected, over-limit or too deeply nested files (it skips what it cannot open).
+      # With them it answers FOUND (Heuristics.Encrypted.*, Heuristics.Limits.Exceeded), so the API refuses the upload.
+      CLAMD_CONF_AlertExceedsMax: 'yes'
+      CLAMD_CONF_AlertEncrypted: 'yes'
+      CLAMD_CONF_AlertEncryptedArchive: 'yes'
+      CLAMD_CONF_AlertEncryptedDoc: 'yes'
     expose:
       - '3310'
     networks:

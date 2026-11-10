@@ -398,16 +398,21 @@ cmd_etl() {
     fi
   fi
   # migrate:verify reads the optional per-run allowlist of accepted reject reasons (bank-checks.ts acceptedRejectKeys): PP_VERIFY_ACCEPT_REJECTS
-  # (comma list of entity|reason|column=maxN) and PP_VERIFY_ACCEPT_REJECTS_FILE (a HOST file, mounted read-only at /accept-rejects.txt). One-run
-  # waivers: set them in the shell for that run, never in prod.env; the verify report lists what was waved through.
+  # (comma list of entity|reason|column=maxN, for example "exam_questions|NO_STEM|stem=3") and PP_VERIFY_ACCEPT_REJECTS_FILE (a HOST file, mounted
+  # read-only at /accept-rejects.txt). A ONE-RUN waiver: read from the process environment of this command ONLY, never from prod.env or any file
+  # (pp_cfg is not used on purpose), and a prod.env that carries either key is refused. Every run that uses it prints a WARNING; the verify report
+  # lists what was waved through.
   if [ "$c" = migrate:verify ]; then
-    local ar arf
-    ar="$(pp_cfg PP_VERIFY_ACCEPT_REJECTS '')"; [ -z "$ar" ] || envs+=("PP_VERIFY_ACCEPT_REJECTS=$ar")
-    arf="$(pp_cfg PP_VERIFY_ACCEPT_REJECTS_FILE '')"
+    local ar="${PP_VERIFY_ACCEPT_REJECTS:-}" arf="${PP_VERIFY_ACCEPT_REJECTS_FILE:-}" k
+    for k in PP_VERIFY_ACCEPT_REJECTS PP_VERIFY_ACCEPT_REJECTS_FILE; do
+      [ -z "$(pp_env_value "$PP_PROD_ENV" "$k")" ] || pp_die "$k is set in $PP_PROD_ENV: the reject allowlist is a one-run waiver for the shell, never a persisted setting. Remove it from the file" 2
+    done
+    [ -z "$ar" ] || { envs+=("PP_VERIFY_ACCEPT_REJECTS=$ar"); pp_log "WARNING: PP_VERIFY_ACCEPT_REJECTS is set for this run: the listed rejects (up to their =maxN) count as explained" >&2; }
     if [ -n "$arf" ]; then
       [ -f "$arf" ] || pp_die "PP_VERIFY_ACCEPT_REJECTS_FILE $arf is not a file" 2
       pp_assert_outside_repo "$arf"
       RUN_EXTRA+=(-v "$(readlink -f "$arf"):/accept-rejects.txt:ro"); envs+=(PP_VERIFY_ACCEPT_REJECTS_FILE=/accept-rejects.txt)
+      pp_log "WARNING: PP_VERIFY_ACCEPT_REJECTS_FILE is set for this run ($arf): the rejects it lists (up to their =maxN) count as explained" >&2
     fi
   fi
   # P3 (F7): the migration role pp_etl comes from etl.env in migrate_run (DB-ROLES #227), so there is no optional file here.

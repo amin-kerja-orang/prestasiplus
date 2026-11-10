@@ -75,6 +75,16 @@ if [ "$(pp_cfg PP_BUILD_MODE local)" != pull ]; then
       || pp_die "image ${prefix}${img}:${tag} is not on this server (it was pruned?). Rebuild it: git checkout the release commit and run deploy.sh --tag $tag"
   done
 fi
+# #78: with teacher intake on, an older build without the upload scanner would accept unscanned teacher uploads, and pp_health_checks (which
+# waits for scanner ok) would fail after the images were already switched, leaving current.tag/previous.tag stale. Refuse BEFORE anything changes.
+# (Skipping the scanner proof instead would leave a no-scanner build serving teacher uploads: the less safe choice.)
+if ! pp_intake_flag_off; then
+  img="${prefix}pretasiplus-api:${tag}"
+  if [ "$(pp_cfg PP_BUILD_MODE local)" != pull ] || docker image inspect "$img" >/dev/null 2>&1; then
+    pp_image_has_scanner "$img" \
+      || pp_die "INTAKE_TEACHER_ENABLED is on in $PP_ENV_DIR/api.env but release $tag has no upload scan code: teacher uploads would not be virus-scanned. Set INTAKE_TEACHER_ENABLED=false in api.env first, then run the rollback again. Nothing was changed" 3
+  fi
+fi
 pp_log "rolling back: current=${cur:-unknown} -> $tag"
 pp_compose config -q
 

@@ -75,11 +75,11 @@ pp_cfg() {
   printf '%s' "$v"
 }
 
-# pp_norm_domain TEXT -> the host name lower-cased, trimmed, without a trailing dot (a deny list must not be dodged by case or blanks)
+# pp_norm_domain TEXT -> the host name lower-cased, trimmed, without any trailing dots (a deny list must not be dodged by case or blanks)
 pp_norm_domain() {
   local d="${1,,}"
   d="${d#"${d%%[![:space:]]*}"}"; d="${d%"${d##*[![:space:]]}"}"
-  d="${d%.}"
+  while [[ "$d" == *. ]]; do d="${d%.}"; done
   printf '%s' "$d"
 }
 
@@ -101,7 +101,7 @@ pp_intake_av_problem() {
   v="$(pp_env_value "$api_env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"
   case "$v" in ''|false|0|no|off) return 0 ;; esac
   schema="$PP_REPO/apps/api/src/common/config/env.schema.ts"
-  [ "$(pp_cfg PP_SCRATCH_HOST no)" != yes ] || schema="${PP_AV_SCHEMA_FILE:-$schema}"
+  [ "$(pp_env_value "$PP_PROD_ENV" PP_SCRATCH_HOST)" != yes ] || schema="${PP_AV_SCHEMA_FILE:-$schema}"   # the prod.env FILE only, like is_scratch_host
   if ! grep -q 'CLAMAV_SCAN_ENABLED' "$schema" 2>/dev/null; then
     printf 'INTAKE_TEACHER_ENABLED=%s in %s but this build has no upload scan code (CLAMAV_SCAN_ENABLED is not in the API env schema): uploads would not be virus-scanned (set it to false, or deploy a build with the scanner)' "$v" "$api_env"; return 1
   fi
@@ -116,6 +116,12 @@ pp_intake_av_problem() {
     printf 'INTAKE_TEACHER_ENABLED=%s but the clamav container is not running: uploads are not virus-scanned' "$v"; return 1
   fi
   return 0
+}
+
+# pp_image_has_scanner IMAGE: the api image carries the upload scan code (the CLAMAV_SCAN_ENABLED marker in its bundled dist/main.js).
+# Unreadable or unknown = no (fail closed).
+pp_image_has_scanner() {
+  docker run --rm --no-deps --entrypoint sh "$1" -c 'grep -q CLAMAV_SCAN_ENABLED /app/apps/api/dist/main.js' >/dev/null 2>&1
 }
 
 # pp_compose ARGS... -> docker compose with the production overlay, prod.env and the configured profiles.

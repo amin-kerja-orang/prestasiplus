@@ -24,7 +24,9 @@
 #   G1 --rebuild-db on the command line.
 #   G2 PP_ALLOW_DB_REBUILD=yes in the prod.env FILE (not the process environment). Production never carries it.
 #   G3 PP_DOMAIN (read from the prod.env FILE only, an inherited PP_DOMAIN is ignored and unset; lower-cased and trimmed) is not on the deny
-#      list (prestasiplus.cloud, www., admin., prestasiplus.my, the example host, PP_REBUILD_DENY_DOMAINS in the file) and the database
+#      list (prestasiplus.cloud, www., admin., prestasiplus.my, the example host, PP_REBUILD_DENY_DOMAINS in the file), is a plain host name
+#      (no port), is not below prestasiplus.cloud / prestasiplus.my (only uat.prestasiplus.cloud, and only when PP_REBUILD_ALLOWED_DOMAIN is exactly that),
+#      equals PP_REBUILD_ALLOWED_DOMAIN, and the database name equals PP_REBUILD_ALLOWED_DB (both allowlist keys: prod.env FILE only, unset = refused); the database
 #      name is not postgres, a template, a V2/production name (prestasiplus_prod, prestasiplus_production, prestasiplus_cloud,
 #      prestasiplus_live, prestasi_plus, pios_my) or listed in PP_REBUILD_DENY_DBS (file).
 #   G4 typed confirmation of the exact database name AND the exact domain, in a terminal (a pipe is accepted only on a host
@@ -79,7 +81,7 @@ while [ $# -gt 0 ]; do
     --keep-staging) keep_staging=1; shift ;;
     --terbit) terbit=1; shift ;;
     --files-archive) files_policy="${2:?--files-archive needs keep|archive|wipe}"; shift 2 ;;
-    -h|--help) sed -n '2,52p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,54p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) pp_die "unknown argument: $1" 2 ;;
   esac
 done
@@ -166,9 +168,9 @@ su_psql() {
 }
 su_scalar() { su_psql "$1" -At -c "$2" </dev/null; }
 
-deny_list() { # deny_list KEY: the comma list KEY from the prod.env FILE, lower-cased, one item per line (the shell environment never counts)
+deny_list() { # deny_list KEY: DENY_ITEMS = the comma list KEY from the prod.env FILE, lower-cased (the shell environment never counts); never globbed
   local v; v="$(pp_env_value "$PP_PROD_ENV" "$1")"; v="${v,,}"; v="${v//,/ }"
-  printf '%s\n' $v
+  DENY_ITEMS=(); read -r -a DENY_ITEMS <<<"$v" || true
 }
 
 assert_target_db() { # the one place that decides which database may be dropped
@@ -176,11 +178,28 @@ assert_target_db() { # the one place that decides which database may be dropped
   case "$db" in postgres|template0|template1|prestasiplus_prod|prestasiplus_production|prestasiplus_cloud|prestasiplus_live|prestasi_plus|pios_my)
     pp_die "refusing to touch the database '$db' (system or production name, G3)" 2 ;; esac
   local x
-  for x in $(deny_list PP_REBUILD_DENY_DBS); do [ "$db" != "$x" ] || pp_die "refusing to touch the database '$db' (PP_REBUILD_DENY_DBS, G3)" 2; done
+  deny_list PP_REBUILD_DENY_DBS
+  for x in ${DENY_ITEMS[@]+"${DENY_ITEMS[@]}"}; do [ "$db" != "$x" ] || pp_die "refusing to touch the database '$db' (PP_REBUILD_DENY_DBS, G3)" 2; done
   [ "$(pp_env_value "$PP_PROD_ENV" PP_ALLOW_DB_REBUILD)" = yes ] || pp_die "refused: PP_ALLOW_DB_REBUILD=yes is not in $PP_PROD_ENV (G2)" 3
+  # Deny list (the exact production names, then every host below the production domains, then anything with a port or other odd character).
   case "$domain" in prestasiplus.cloud|www.prestasiplus.cloud|admin.prestasiplus.cloud|prestasiplus.my|www.prestasiplus.my|app.example.my|'')
     pp_die "refused: PP_DOMAIN '$domain' is on the deny list or unset (G3)" 3 ;; esac
-  for x in $(deny_list PP_REBUILD_DENY_DOMAINS); do [ "$domain" != "$(pp_norm_domain "$x")" ] || pp_die "refused: PP_DOMAIN '$domain' is in PP_REBUILD_DENY_DOMAINS (G3)" 3; done
+  [[ "$domain" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$ ]] || pp_die "refused: PP_DOMAIN '$domain' is not a plain host name (a ':' port or any other character is refused) (G3)" 3
+  deny_list PP_REBUILD_DENY_DOMAINS
+  for x in ${DENY_ITEMS[@]+"${DENY_ITEMS[@]}"}; do [ "$domain" != "$(pp_norm_domain "$x")" ] || pp_die "refused: PP_DOMAIN '$domain' is in PP_REBUILD_DENY_DOMAINS (G3)" 3; done
+  # Positive allowlist, from the prod.env FILE only; unset = refused (fails closed). Both must equal the target. UAT (uat.prestasiplus.cloud) sits
+  # below a production domain, so the wildcard deny below lets it through ONLY when PP_REBUILD_ALLOWED_DOMAIN is exactly that name and equals PP_DOMAIN.
+  local a_db a_dom
+  a_db="$(pp_env_value "$PP_PROD_ENV" PP_REBUILD_ALLOWED_DB)"
+  a_dom="$(pp_norm_domain "$(pp_env_value "$PP_PROD_ENV" PP_REBUILD_ALLOWED_DOMAIN)")"
+  [ -n "$a_db" ] && [ -n "$a_dom" ] || pp_die "refused: PP_REBUILD_ALLOWED_DB and PP_REBUILD_ALLOWED_DOMAIN are not both set in $PP_PROD_ENV (the allowlist fails closed, G3)" 3
+  case "$domain" in
+    *.prestasiplus.cloud|*.prestasiplus.my)
+      [ "$domain" = uat.prestasiplus.cloud ] && [ "$a_dom" = uat.prestasiplus.cloud ] \
+        || pp_die "refused: PP_DOMAIN '$domain' is below a production domain; only uat.prestasiplus.cloud may be rebuilt, and only with PP_REBUILD_ALLOWED_DOMAIN=uat.prestasiplus.cloud (G3)" 3 ;;
+  esac
+  [ "$db" = "$a_db" ] || pp_die "refused: database '$db' is not PP_REBUILD_ALLOWED_DB ('$a_db') in $PP_PROD_ENV (G3)" 3
+  [ "$domain" = "$a_dom" ] || pp_die "refused: PP_DOMAIN '$domain' is not PP_REBUILD_ALLOWED_DOMAIN ('$a_dom') in $PP_PROD_ENV (G3)" 3
 }
 
 confirm_typed() { # G4: the exact database name, then the exact domain
