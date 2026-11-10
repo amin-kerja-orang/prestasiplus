@@ -306,7 +306,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       'e.g: Mathematics',
     )
     const code = page.getByTestId('subject-code')
-    await expect(code).toHaveAttribute('placeholder', 'cth: MATH01')
+    await expect.soft(code).toHaveAttribute('placeholder', 'cth: MATE') // V2 reference backend/resources/views/admin/subjects/create.blade.php:43
     await expect(code).toHaveAttribute('maxlength', '20')
     expect.soft(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase') // V2 subjects/create.blade.php: input class uppercase
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
