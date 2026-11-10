@@ -26,8 +26,8 @@ import { PAPERS_RULES_VERSION } from './plan'
 export { finaliseDocuments, type FinaliseDocumentsResult } from './documents-step'
 export { LEGACY_PUBLISH_BODY, LEGACY_PUBLISH_REASON, runTerbitPass, terbitCsv, terbitCandidates, type PaperPublisher, type TerbitReport } from './terbit-pass'
 
-export function buildPapersSteps(q: QuestionsContext, files?: MigrationFiles): AnyEntityStep[] {
-  return [spmSetsStep(q), blueprintsStep(q), papersStep(q), documentsStep(q), documentPagesStep(q, files)]
+export function buildPapersSteps(q: QuestionsContext, files?: MigrationFiles, recompute = false): AnyEntityStep[] {
+  return [spmSetsStep(q), blueprintsStep(q), papersStep(q, { recompute }), documentsStep(q), documentPagesStep(q, files)]
 }
 
 const NEEDED: Record<string, readonly string[]> = {
@@ -62,17 +62,19 @@ export interface PapersRunOptions extends Omit<QuestionsOptions, 'pool'> {
   coreAsOf?: string
   /** `--files-dir`: the read-only export of the V2 storage (outside the repo, with a SHA256SUMS). Without it the document pages are skipped. */
   filesDir?: string
+  /** Re-run the plan over existing papers (default OFF, see `papersStep`). */
+  recompute?: boolean
 }
 
 export async function runPapers(options: PapersRunOptions): Promise<{ report: RunReport; questions: QuestionsContext; documents?: FinaliseDocumentsResult }> {
-  const { mode, batchSize, gitSha, coreAsOf, filesDir, ...rest } = options
+  const { mode, batchSize, gitSha, coreAsOf, filesDir, recompute, ...rest } = options
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
   await assertNotSyntheticInProduction(options.pool, options.env)
   await assertPapersPreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
   const questions = new QuestionsContext({ ...rest, pageSize: rest.pageSize ?? batchSize })
   // The directory, its manifest and the storage are checked before any row is read (nothing is copied here).
   const files = filesDir === undefined ? undefined : await openMigrationFiles({ dir: filesDir, env: options.env, mode, source: options.source })
-  const steps = buildPapersSteps(questions, files)
+  const steps = buildPapersSteps(questions, files, recompute === true)
   const inputHash = hashInput([
     ...(await tableFingerprints(options.pool, [
       'archive_cloud.spm_sets', 'archive_cloud.spm_set_question', 'archive_cloud.paper_blueprints', 'archive_cloud.blueprint_sections',
@@ -84,6 +86,7 @@ export async function runPapers(options: PapersRunOptions): Promise<{ report: Ru
     `core-map=${await coreMapCounts(options.pool, options.source)}`,
     `curriculum-map=${await curriculumMapHash(options.pool, options.source)}`,
     `rules=${PAPERS_RULES_VERSION}`,
+    `recompute=${recompute === true ? 'on' : 'off'}`,
     `files=${files?.manifestHash ?? 'none'}`,
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })

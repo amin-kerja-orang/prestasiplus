@@ -20,9 +20,9 @@ const base = () => ({ pool: h.pool, env: h.runEnv, source: 'cloud' as const, asO
 const t4 = { subject: 2, level: 2, chapter: 3, topic: 3 }
 
 let lastRepoints: string[] = []
-async function papersRun(): Promise<{ inserted: number; updated: number; unchanged: number }> {
-  expect((await runPapers({ ...base(), mode: 'dry-run' })).report.status).toBe('succeeded')
-  const r = await runPapers({ ...base(), mode: 'apply' })
+async function papersRun(recompute = true): Promise<{ inserted: number; updated: number; unchanged: number }> {
+  expect((await runPapers({ ...base(), mode: 'dry-run', recompute })).report.status).toBe('succeeded')
+  const r = await runPapers({ ...base(), mode: 'apply', recompute })
   expect(r.report.status).toBe('succeeded')
   lastRepoints = r.questions.notes.ids.get('papers.repointed') ?? []
   return (r.report.counters as unknown as Record<string, { inserted: number; updated: number; unchanged: number }>)['exam_papers'] as { inserted: number; updated: number; unchanged: number }
@@ -237,4 +237,17 @@ describe('papers recompute (M-A)', () => {
     }
     expect(await placed('887')).toEqual([await v3Of('972')])
   }, 120_000)
+
+  it('the flag is OFF by default: existing papers are counted unchanged (nothing is repaired) until --recompute is given', async () => {
+    const id = await paperOf('881')
+    const victim = (await sql(`select pl.id::text as id from paper_placements pl join paper_sections s on s.id = pl.paper_section_id where s.paper_id = $1::bigint order by pl.position desc limit 1`, [id])).rows[0].id as string
+    const before = await placed('881')
+    await sql(`delete from paper_placements where id = $1::bigint`, [victim])
+    const off = await papersRun(false)
+    expect(off).toMatchObject({ inserted: 0, updated: 0 })
+    expect(await placed('881')).toHaveLength(before.length - 1)
+    const on = await papersRun(true)
+    expect(on.updated).toBeGreaterThanOrEqual(1)
+    expect(await placed('881')).toEqual(before)
+  })
 })

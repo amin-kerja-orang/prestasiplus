@@ -20,7 +20,7 @@ import { resolveGitSha } from '../git-sha'
 import { runPapers } from './index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir', 'files-dir'])
+const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir', 'files-dir', 'recompute'])
 
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
@@ -40,9 +40,11 @@ export interface PapersArgs {
   batchSize?: number
   outDir: string
   filesDir?: string
+  /** `--recompute` or `PP_MIGRATE_PAPERS_RECOMPUTE=1`: re-run the plan over existing papers (default OFF). */
+  recompute: boolean
 }
 
-export function parsePapersArgs(args: CommandArgs, prepare: (dir: string) => string = prepareOutputDir): PapersArgs {
+export function parsePapersArgs(args: CommandArgs, prepare: (dir: string) => string = prepareOutputDir, env: Readonly<Record<string, string | undefined>> = process.env): PapersArgs {
   if (args.flags.has('terbit')) throw new ApplyGuardError('--terbit moved: run migrate:terbit (node dist/migrate-terbit.js) after migrate:papers --apply.')
   for (const name of args.flags.keys()) if (!KNOWN_FLAGS.has(name)) throw new ApplyGuardError(`unknown flag --${name}.`)
   if (args.positional.length > 0) throw new ApplyGuardError('unexpected argument: this command takes flags only (--name=value).')
@@ -59,16 +61,16 @@ export function parsePapersArgs(args: CommandArgs, prepare: (dir: string) => str
     if (e instanceof ProfileOutputError) throw new ApplyGuardError(`--out-dir: ${e.message}`)
     throw e
   }
-  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, filesDir }
+  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, filesDir, recompute: args.flags.has('recompute') || env.PP_MIGRATE_PAPERS_RECOMPUTE === '1' }
 }
 
 export const migratePapers: MigrateCommand = {
   name: 'migrate:papers',
   summary: 'loads the V2 SPM sets, blueprints and papers from archive_cloud (after migrate:questions and migrate:structured; the Terbit pass is migrate:terbit; dry-run by default)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
-    const { asOf, coreAsOf, batchSize, outDir, filesDir } = parsePapersArgs(args)
+    const { asOf, coreAsOf, batchSize, outDir, filesDir, recompute } = parsePapersArgs(args, undefined, ctx.env)
     const { report, questions } = await withSourceLock(ctx.pool, 'cloud', () =>
-      runPapers({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, filesDir, gitSha: resolveGitSha(ctx.env), progress: ctx.out }),
+      runPapers({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, filesDir, recompute, gitSha: resolveGitSha(ctx.env), progress: ctx.out }),
     )
     ctx.out(`migrate:papers ${report.mode}: run ${report.runId} ${report.status}`)
     ctx.out('entity | source | eligible | loaded | rejected | status')

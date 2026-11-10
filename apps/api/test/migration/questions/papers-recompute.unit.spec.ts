@@ -1,6 +1,9 @@
 /** M-A: the pure parts of the papers recompute: merging V2 placements into the stored ones (add, repoint, never remove or reorder) and completing split groups. */
 import { describe, expect, it } from 'vitest'
 
+import { parseArgs } from '../../../src/migration/cli'
+import { parsePapersArgs } from '../../../src/migration/load/papers/command'
+
 import { completeGroups, mergeSection, type CurrentPlacement } from '../../../src/migration/load/papers/papers-recompute'
 import type { PlacementPlan, SectionPlan } from '../../../src/migration/load/papers/papers-step'
 
@@ -48,5 +51,15 @@ describe('completeGroups', () => {
   it('leaves a paper without a group untouched', () => {
     const s = section('7', '8')
     expect(completeGroups([s], facts)[0]).toBe(s)
+  })
+})
+
+describe('migrate:papers --recompute', () => {
+  const parse = (argv: string[], env: Record<string, string | undefined> = {}) => parsePapersArgs(parseArgs(['migrate:papers', ...argv]).args, (d) => d, env).recompute
+  it('is OFF by default, ON with --recompute or PP_MIGRATE_PAPERS_RECOMPUTE=1', () => {
+    expect(parse(['--apply'])).toBe(false)
+    expect(parse(['--apply', '--recompute'])).toBe(true)
+    expect(parse(['--apply'], { PP_MIGRATE_PAPERS_RECOMPUTE: '1' })).toBe(true)
+    expect(parse(['--apply'], { PP_MIGRATE_PAPERS_RECOMPUTE: '0' })).toBe(false)
   })
 })

@@ -87,7 +87,13 @@ interface V3Question {
   marks: number
 }
 
-export function papersStep(c: QuestionsContext): AnyEntityStep {
+/**
+ * `recompute` (OFF by default; CLI `--recompute` or env `PP_MIGRATE_PAPERS_RECOMPUTE=1`): re-run the plan over papers that exist already (`papers-recompute.ts`: add missing
+ * placements, repoint wrong-dedupe placements, complete split groups, re-evaluate holds, for unedited migration papers only). OFF = a paper that exists is counted
+ * `unchanged` exactly as before M-A; a fresh clone into an empty database does not need it. New papers load the same either way.
+ */
+export function papersStep(c: QuestionsContext, options: { recompute?: boolean } = {}): AnyEntityStep {
+  const recompute = options.recompute === true
   const entity = 'exam_papers'
   let statuses: Map<string, string> | undefined
   let rules: Map<string, string> | undefined
@@ -200,6 +206,10 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
         assertSurrogateLegacyId(legacyId, 'migrate:papers')
         const have = await ctx.db.query<{ id: string }>(`SELECT p.id::text AS id FROM etl_id_map m JOIN papers p ON p.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = $2 AND m.legacy_id = $3`, [ctx.source, entity, legacyId])
         const existingId = have.rows[0]?.id ?? null
+        if (existingId !== null && !recompute) {
+          unchanged += 1
+          continue
+        }
         if (existingId === null) await ctx.db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1 AND entity = $2 AND legacy_id = $3`, [ctx.source, entity, legacyId])
         const title = text(row.title)
         if (existingId === null && title === null) {
