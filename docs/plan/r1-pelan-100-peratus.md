@@ -55,22 +55,22 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 | ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
 |---|---|---|---|---|---|---|
-| T-A1 | Larian berasingan `test/support/tickets.spec.ts` dan `test/conformance/run.spec.ts`; baiki regresi sebenar (tiket, `/rph`, semakan esei) | backend-developer | — | 0.5 | ⬜ | |
-| T-A2 | Larian penuh ujian backend dalam bekas Linux (elak artifak Windows pada `test/migration/*`, `answer-store-writers`); senaraikan setiap kegagalan tinggal dengan punca | devops-engineer | — | 0.5 | ⬜ | |
-| T-A3 | Laluan DB kosong: Postgres 16 baharu → `prisma migrate deploy` 0001 hingga HEAD → `be:db:seed` rujukan (tanpa demo); sahkan kurikulum/DSKP (2,844 nod, 1,394 deskriptor TP), subjek, pakej sekolah tepat dan tiada kandungan demo/ujian | devops-engineer | — | 0.5 | ⬜ | |
+| T-A1 | Larian berasingan `test/support/tickets.spec.ts` dan `test/conformance/run.spec.ts`; baiki regresi sebenar (tiket, `/rph`, semakan esei) | backend-developer | — | 0.5 | 🔄 | |
+| T-A2 | Larian penuh ujian backend dalam bekas Linux (elak artifak Windows pada `test/migration/*`, `answer-store-writers`); senaraikan setiap kegagalan tinggal dengan punca | devops-engineer | — | 0.5 | 🔄 | |
+| T-A3 | Laluan DB kosong: Postgres 16 baharu → `prisma migrate deploy` 0001 hingga HEAD → `be:db:seed` rujukan (tanpa demo); sahkan kurikulum/DSKP (2,844 nod, 1,394 deskriptor TP), subjek, pakej sekolah tepat dan tiada kandungan demo/ujian | devops-engineer | — | 0.5 | 🔄 | |
 | T-A4 | Prosedur "bina semula DB" berpengawal untuk UAT (backup → henti api → drop/create DB → migrate → seed rujukan → ETL → mula api), dengan pengesahan nama DB dan bendera eksplisit; raptai lokal | devops-engineer | T-A3 | 1 | ⬜ | |
-| T-A5 | OCR: imej api dengan tessdata, `OCR_ENGINE=tesseract`, `OCR_LANG_DIR`; ujian pengekstrakan satu PDF contoh dalam bekas | devops-engineer | — | 0.5 | ⬜ | |
-| T-A6 | Env UAT: senarai nilai baharu (had muat naik 32/336, OCR, `PP_RELEASE_SHA`); tiada rahsia dalam repo | devops-engineer | T-A5 | 0.25 | ⬜ | |
+| T-A5 | OCR: imej api dengan tessdata, `OCR_ENGINE=tesseract`, `OCR_LANG_DIR`; ujian pengekstrakan satu PDF contoh dalam bekas | devops-engineer | — | 0.5 | 🔄 | |
+| T-A6 | Env UAT: senarai nilai baharu (had muat naik 32/336, OCR, `PP_RELEASE_SHA`); tiada rahsia dalam repo | devops-engineer | T-A5 | 0.25 | 🔄 | |
 | T-A7 | Kemas kini `docs/ops/r1-uat-deploy.md` dan tulis runsheet cutover ganti penuh (langkah, masa, titik undur, semakan) | devops-engineer | T-A4, T-B11 | 0.5 | ⬜ | |
-| T-A8 | Semak drill pemulihan UAT (baca sahaja: log terakhir, pemasa); jika tiada bukti terkini, minta kelulusan PO untuk larian drill | devops-engineer | — | 0.25 | ⬜ | |
+| T-A8 | Semak drill pemulihan UAT (baca sahaja: log terakhir, pemasa); jika tiada bukti terkini, minta kelulusan PO untuk larian drill | devops-engineer | — | 0.25 | 🔄 | |
 | T-A9 | Fail UAT (gambar, muat naik): tentukan apa dibawa ke DB baharu; sahkan laluan storan fail sepadan selepas bina semula | devops-engineer | T-B6 | 0.25 | ⬜ | |
 
 ### Aliran B — Data V2 (ganti penuh)
 
 | ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
 |---|---|---|---|---|---|---|
-| T-B1 | Rebase ETL ke skema HEAD: `be:lint:migration`, `test/migration/*` hijau (dalam Linux), kemas kini langkah battle/permainan dan model yang berubah sejak `cb7332d0b`; raptai sintetik saiz `medium` | backend-developer | T-A2 | 1.5 | ⬜ | |
-| T-B2 | Tambah ~10 jadual produksi V2 yang tiada dalam spec staging (senarai dari skema produksi, baca sahaja) | backend-developer | T-B1 | 0.5 | ⬜ | |
+| T-B1 | Rebase ETL ke skema HEAD: `be:lint:migration`, `test/migration/*` hijau (dalam Linux), kemas kini langkah battle/permainan dan model yang berubah sejak `cb7332d0b`; raptai sintetik saiz `medium` | backend-developer | T-A2 | 1.5 | 🔄 | |
+| T-B2 | Tambah ~10 jadual produksi V2 yang tiada dalam spec staging (senarai dari skema produksi, baca sahaja) | backend-developer | T-B1 | 0.5 | ✅ | spec staging 134 jadual (89+45), +7 jadual (6 Laravel runtime + school_battle_rankings); staging_cloud.sql dan fixture tiny dijana semula |
 | T-B3 | Dump V2 baharu (baca sahaja, ikut `docs/ops/cloud-dump-procedure.md`, data sebenar tanpa anonimisasi); simpan di luar repo, disulitkan/berhad, padam selepas cutover | devops-engineer | T-B2 | 0.5 | ⬜ | |
 | T-B4 | `staging:load` + `staging:profile` lokal; luaskan peta enum, senarai yatim dan pendua; laporan profil | backend-developer | T-B3 | 0.5 | ⬜ | |
 | T-B5 | Pengguna: peranan `agent` dan `jpn_officer`; terbit `grade` dari teks `kelas` V2 (aturan dipersetujui); pengendalian hash roster (KP-7); pendua e-mel | backend-developer | T-B4, KP-7 | 1 | ⬜ | |
@@ -86,16 +86,18 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 | ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
 |---|---|---|---|---|---|---|
-| T-C1 | Pautan menu Hadiah/Tebusan dan Permainan (PG-06, PG-11) ke laluan yang sudah wujud | frontend-developer | — | 0.25 | ⬜ | |
-| T-C2 | UI admin Gamifikasi: Overview, Tier Config (baca sahaja), Cabaran (baca sahaja), Pelajar, Transaksi, Kawalan Reward; atas endpoint sedia ada (`admin/gamification`, `reward-control`); tajuk dan label ikut V2 | frontend-developer | — | 2 | ⬜ | |
-| T-C3 | Bijak SPM G-01 hingga G-05: sahkan semula, baiki yang masih gagal (Jana set terkunci, lajur DSKP CSV, stimulus hilang semasa simpan draf, Topik tidak ditapis ikut Bab) | backend-developer + frontend-developer | — | 1 | ⬜ | |
+| T-C1 | Pautan menu Hadiah/Tebusan dan Permainan (PG-06, PG-11) ke laluan yang sudah wujud | frontend-developer | — | 0.25 | ✅ | cab9d1a88: PG-01..06, PG-10, PG-11 berpautan; peta kanonik --check lulus |
+| T-C2 | UI admin Gamifikasi: Overview, Tier Config (baca sahaja), Cabaran (baca sahaja), Pelajar, Transaksi, Kawalan Reward; atas endpoint sedia ada (`admin/gamification`, `reward-control`); tajuk dan label ikut V2 | frontend-developer | — | 2 | ✅ | cab9d1a88: 6 skrin baca sahaja ikut V2; 39 ujian + shell 37 lulus; 375/768/1536 tiada skrol mendatar |
+| T-C3 | Bijak SPM G-01 hingga G-05: sahkan semula, baiki yang masih gagal (Jana set terkunci, lajur DSKP CSV, stimulus hilang semasa simpan draf, Topik tidak ditapis ikut Bab) | backend-developer + frontend-developer | — | 1 | 🔄 | |
 | T-C4 | Pengekstrak PDF sebenar dengan tesseract (bukan `heuristik-1`): pecah pilihan A–D, ujian atas kertas contoh | backend-developer | T-A5 | 1.5 | ⬜ | |
-| T-C5 | Kiraan bercanggah admin sekolah (murid 20 lawan 17, guru 3 lawan 4) dan dua jumlah Amaran Awal: satu sumber kiraan | backend-developer | — | 0.5 | ⬜ | |
-| T-C6 | Remedial tidak menjana, Heatmap kosong, kad "Pakej SPM Aktif", Kedudukan: sahkan semula dan baiki | backend-developer + frontend-developer | — | 1 | ⬜ | |
-| T-C7 | 14 laluan frontend tanpa backend (`/api/guru/gamification*`, `/api/parent/hadiah-approvals`, `/api/spm-mocks`, `/api/games/pertandingan`, `/api/games/uji-minda`, `/api/gamification/leaderboard`, `/api/battle/:id`, `/api/admin/config/defaults` dan lain-lain): buang jika skrin ditangguhkan, bina jika dalam skop | frontend-developer + backend-developer | — | 1 | ⬜ | |
+| T-C5 | Kiraan bercanggah admin sekolah (murid 20 lawan 17, guru 3 lawan 4) dan dua jumlah Amaran Awal: satu sumber kiraan | backend-developer | — | 0.5 | 🔄 | |
+| T-C6 | Remedial tidak menjana, Heatmap kosong, kad "Pakej SPM Aktif", Kedudukan: sahkan semula dan baiki | backend-developer + frontend-developer | — | 1 | 🔄 | |
+| T-C7 | 14 laluan frontend tanpa backend (`/api/guru/gamification*`, `/api/parent/hadiah-approvals`, `/api/spm-mocks`, `/api/games/pertandingan`, `/api/games/uji-minda`, `/api/gamification/leaderboard`, `/api/battle/:id`, `/api/admin/config/defaults` dan lain-lain): buang jika skrin ditangguhkan, bina jika dalam skop | frontend-developer + backend-developer | — | 1 | 🔄 | |
 | T-C8 | Seed rujukan bersih: tiada "QA-GAP", "E2E fixture", "Contoh:", "Demo" dalam data rujukan produksi (data UAT lama hilang dengan ganti penuh) | backend-developer | T-A3 | 0.25 | ⬜ | |
-| T-C9 | Kemas kini spec E2E yang masih guna tajuk/label lama (m02, m03, m04, m07, m09, m12, m15, m27) | qa-engineer | — | 0.5 | ⬜ | |
+| T-C9 | Kemas kini spec E2E yang masih guna tajuk/label lama (m02, m03, m04, m07, m09, m12, m15, m27) | qa-engineer | — | 0.5 | ⛔ | 17 spec dikemas kini (teks); belum disahkan: CPU 100%, larian ditahan |
 | T-C10 | Baki susun atur: Mod Pelajar pada 375 (semakan visual), lencana mahkota Profil 375 | frontend-developer | — | 0.25 | ⬜ | |
+| T-C11 | Tulis semula spec E2E mock untuk shell Pembelajaran (id `shell-user-*` tiada sejak 17 Okt: m01, m07, m27 dan lain-lain) dan triage drift data seed (m02 smoke-users: kiraan, `users-stat-count`, baris admin sendiri); heading "⚙️ Tetapan Peribadi" pada /tetapan | qa-engineer | T-C9 | 1 | ⬜ | |
+| T-C12 | Medan backend untuk pariti admin Gamifikasi V2: kiraan "sertai / siap" Cabaran, Streak pelajar, Status dan Harga Token hadiah (Kawalan Reward), warna tier, penapis tier ikut id; jenis `id` (string lawan number) | backend-developer | T-C2 | 0.5 | 🔄 | |
 
 ### Gerbang G-100 (Fasa 4)
 
@@ -135,3 +137,9 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | Tarikh | Perubahan |
 |---|---|
 | 2026-11-10 | Pelan dan tracker dicipta. Kesediaan permulaan ~60% (ciri ~70%, deploy ~60%, data ~50%). |
+| 2026-11-10 | Gelombang 1 bermula: T-A1, T-A2, T-A3, T-A5, T-A6, T-A8, T-B1, T-B2, T-C1, T-C2, T-C5, T-C6 (4 ejen selari). Prinsip PO: data V2 mesti berfungsi dalam V3, bukan sekadar disalin. |
+| 2026-11-10 | Ditambah selari (tidak bertindih): T-C3 (Bijak SPM G-01..G-05), T-C9 (spec E2E). T-C4 menunggu T-A5 (OCR); T-C7 menunggu T-C2 (laluan gamifikasi). |
+| 2026-11-10 | T-C9: 17 spec E2E dikemas kini ikut tajuk/label V2 tetapi belum disahkan (CPU 100%; 2 larian Playwright + vite preview 4173 masih hidup, tidak dapat dihentikan oleh sesi — perlu tindakan PO). Ditemui drift lama: spec mock shell-user-* sejak 17 Okt, data seed m02 → tugas baharu T-C11. |
+| 2026-11-10 | T-B2 ✅. T-B1 diteruskan oleh ejen baharu (ejen pertama kehabisan ruang; prosesnya, bekas tb1-pg dan folder .migration-out dibersihkan oleh Lead). Penemuan: seed produksi tidak memuat kurikulum/DSKP (diserah ke T-A3); MCQ dimuat tanpa medan DSKP/kognitif/kesukaran → skrip uat-ops selepas ETL (T-A7, T-B9). |
+| 2026-11-10 | T-C1 ✅, T-C2 ✅ (cab9d1a88). Jurang backend untuk pariti penuh → T-C12. DsDataTable: slot sel dalam paparan kad bawah md dibaiki. |
+| 2026-11-10 | T-C7 dan T-C12 bermula (satu ejen backend). |
