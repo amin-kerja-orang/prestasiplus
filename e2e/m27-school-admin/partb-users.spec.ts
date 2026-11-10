@@ -16,13 +16,23 @@ import type { Page } from '@playwright/test'
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import {
-  acceptNextDialog,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   isDesktopShell,
   viewportWidth,
 } from '../support'
+import {
+  acceptConfirm,
+  applyUserFilter,
+  dismissConfirm,
+  expectUserCount,
+  logoutViaAccountMenu,
+  selectUserFilter,
+  userCountCard,
+  userCountValue,
+  userRow,
+  userRows,
+} from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const WRITES = MODULE
@@ -39,7 +49,7 @@ async function signIn(page: Page, who: string | number): Promise<void> {
   await createMockHandle(page).setUser(who)
 }
 
-const rows = (page: Page) => page.getByTestId('user-row')
+const rows = userRows
 
 async function openList(page: Page, gotoApp: (p: string) => Promise<void>, path: string) {
   await gotoApp(path)
@@ -56,15 +66,15 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     await expectTabTitle(page, 'Senarai Pelajar | PRESTASIPLUS')
     await expect(page.getByTestId('user-count-card').locator('> div')).toHaveCount(1)
-    await expect(page.getByTestId('user-count-label')).toHaveText('Pelajar')
+    await expect(userCountCard(page)).toContainText('Pelajar')
     await expect(page.locator('thead th')).toHaveText([
       '#', 'Nama', 'Emel', 'Telefon', 'Tingkatan', 'Kelas', 'Aktif?', 'Tarikh', 'Tindakan',
     ])
     for (let id = 3001; id <= 3008; id++) {
-      await expect(page.locator(`[data-testid="user-row"][data-user-id="${id}"]`)).toBeVisible()
+      await expect(userRow(page, id)).toBeVisible()
     }
     // the count card is the unfiltered total of the school; "{n} pengguna dijumpai" equals it without a filter
-    const card = (await page.getByTestId('user-count').innerText()).trim()
+    const card = await userCountValue(page)
     await expect(page.getByTestId('user-found')).toHaveText(`${card} pengguna dijumpai`)
     await expect(rows(page).first().getByTestId('user-date')).toHaveText(/^\d{2}\/\d{2}\/\d{4}$/)
     await expect(page.getByTestId('user-impersonate')).toHaveCount(await rows(page).count())
@@ -78,8 +88,8 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     await expect(page.getByTestId('user-empty')).toContainText('Tiada pengguna dijumpai')
     await expect(page.getByTestId('user-empty')).toContainText('Cuba ubah kriteria carian anda')
-    await expect(page.getByTestId('user-count')).toHaveText('0')
-    await expect(page.getByTestId('user-pager')).toBeEmpty()
+    await expectUserCount(page, '0')
+    await expect(page.getByTestId('user-table')).toHaveCount(0)
     await createMockHandle(page).setUser(P2)
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     await expect(page.getByTestId('user-export')).toHaveText('Eksport CSV')
@@ -88,12 +98,14 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
       'Muat turun senarai mengikut tapisan di atas',
     )
     await expect(page.getByTestId('user-add')).toHaveText('Tambah Pelajar')
-    const first = page.locator('[data-testid="user-row"][data-user-id="3001"]')
+    const first = userRow(page, 3001)
     await expect(first.getByTestId('user-name')).toHaveAttribute('href', '/admin-sekolah/pelajar/3001')
     await expect(first.getByTestId('user-edit')).toHaveAttribute('title', 'Edit')
     await expect(first.getByTestId('user-status')).toHaveText('Aktif')
     await expect(page.locator('input[type="checkbox"]')).toHaveCount(0)
-    await expect(page.getByTestId('sp-page').getByText(/Import|Padam|Login As/)).toHaveCount(0)
+    // S6 carries the "Import Pelajar" link to S12-import (part C); no delete and no "Login As".
+    await expect(page.getByTestId('user-import')).toHaveAttribute('href', '/admin-sekolah/pelajar/import')
+    await expect(page.getByTestId('sp-page').getByText(/Padam|Login As/)).toHaveCount(0)
   })
 
   test('E2E-M27-85 status filter and search narrow the list and the count', async ({
@@ -105,15 +117,15 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     const all = await rows(page).count()
     await page.getByTestId('user-search').fill('zzz-tiada-padanan')
-    await page.getByTestId('user-search-submit').click()
+    await applyUserFilter(page)
     await expect(page).toHaveURL(/search=zzz-tiada-padanan/)
     await expect(page.getByTestId('user-found')).toHaveText('0 pengguna dijumpai')
     await expect(page.getByTestId('user-empty')).toBeVisible()
     // the card ignores the filters
-    await expect(page.getByTestId('user-count')).not.toHaveText('0')
+    await expectUserCount(page, '0', true)
     await page.getByTestId('user-search').fill('')
-    await page.getByTestId('user-status-filter').selectOption('1')
-    await page.getByTestId('user-search-submit').click()
+    await selectUserFilter(page, 'user-status-filter', '1')
+    await applyUserFilter(page)
     await expect(page).toHaveURL(/is_active=1/)
     await expect.poll(() => rows(page).count()).toBeGreaterThan(0)
     expect(await rows(page).count()).toBeLessThanOrEqual(all)
@@ -132,15 +144,15 @@ test.describe('S6 Senarai Pelajar', MODULE, () => {
     await expect(page.locator('main h1, h1').first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Senarai Pelajar' }).first()).toBeVisible()
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-pelajar"]')).toHaveClass(/\bactive\b/)
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/pelajar"]')).toHaveAttribute('aria-current', 'page')
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
     }
     await page.getByTestId('user-add').click()
     await expect(page).toHaveURL(/\/admin-sekolah\/pelajar\/baru$/)
     await expectTabTitle(page, 'Tambah Pelajar | PRESTASIPLUS')
     await expect(page.getByText('Cipta satu akaun pelajar').first()).toBeVisible()
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-pelajar"]')).toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/pelajar"]')).toHaveAttribute('aria-current', 'page')
     }
   })
 
@@ -171,14 +183,14 @@ test.describe('S7 Senarai Guru', MODULE, () => {
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/guru')
     await expectTabTitle(page, 'Senarai Guru | PRESTASIPLUS')
-    await expect(page.getByTestId('user-count-label')).toHaveText('Guru')
+    await expect(userCountCard(page)).toContainText('Guru')
     await expect(page.getByTestId('user-export')).toHaveText('Eksport CSV')
     await expect(page.getByTestId('user-add')).toHaveText('Cipta Pengguna')
     await expect(page.getByTestId('user-add')).toHaveAttribute('href', '/admin-sekolah/guru/baru')
     await expect(page.locator('thead th')).toHaveText([
       '#', 'Nama', 'Emel', 'Telefon', 'Kelas', 'Login Terakhir', 'Aktif?', 'Tarikh', 'Tindakan',
     ])
-    const t5 = page.locator('[data-testid="user-row"][data-user-id="5"]')
+    const t5 = userRow(page, 5)
     await expect(t5.getByTestId('user-classes')).toHaveText('2 kelas')
     await expect(t5.getByTestId('user-toggle')).toContainText('Aktif')
     await expect(t5.getByTestId('user-name')).toHaveAttribute('href', '/admin-sekolah/guru/5')
@@ -192,7 +204,7 @@ test.describe('S7 Senarai Guru', MODULE, () => {
     await openList(page, gotoApp, '/admin-sekolah/guru')
     await expect(page.getByTestId('user-empty')).toContainText('Tiada pengguna dijumpai')
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-guru"]')).toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/guru"]')).toHaveAttribute('aria-current', 'page')
     }
   })
 })
@@ -212,7 +224,9 @@ test.describe('S9, S10 edit pages (read part)', MODULE, () => {
     await expect(page.getByTestId('user-profile-updated')).toContainText('Kemaskini: ')
     await expect(page.getByTestId('user-name')).not.toHaveValue('')
     await expect(page.getByTestId('user-status-line')).toContainText('Aktif')
-    await expect(page.getByTestId('user-password-toggle')).toContainText('Reset Kata Laluan')
+    // v2: the bar is titled "Reset Kata Laluan" and its button reads "Buka" ("Tutup" once open).
+    await expect(page.getByText('Reset Kata Laluan').first()).toBeVisible()
+    await expect(page.getByTestId('user-password-toggle')).toContainText('Buka')
     await expect(page.getByTestId('user-password-panel')).toBeHidden()
     await page.getByTestId('user-password-toggle').click()
     await expect(page.getByTestId('user-new-password')).toBeVisible()
@@ -223,7 +237,7 @@ test.describe('S9, S10 edit pages (read part)', MODULE, () => {
     await expect(page.getByText(/Nota Keselamatan|Kad Pengenalan/)).toHaveCount(0)
     await expectNoHorizontalScroll(page)
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-pelajar"]')).toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/pelajar"]')).toHaveAttribute('aria-current', 'page')
     }
   })
 
@@ -302,12 +316,12 @@ test.describe('S11 and S12 forms (read part)', MODULE, () => {
     await expect(page.getByText('Borang Pendaftaran Pengguna')).toBeVisible()
     await expect(page.getByTestId('user-role')).toHaveText('Guru')
     await expect(page.getByTestId('user-school-name')).not.toBeEmpty()
-    await expect(page.getByTestId('user-password')).toHaveAttribute('placeholder', 'Minimum 6 aksara')
+    await expect(page.getByTestId('user-password')).toHaveAttribute('placeholder', 'Minimum 8 aksara')
     await expect(page.getByTestId('form-submit')).toHaveText('Daftar Pengguna')
     await expect(page.locator('select')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
     if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-senarai-guru"]')).toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/guru"]')).toHaveAttribute('aria-current', 'page')
     }
   })
 
@@ -346,7 +360,7 @@ test.describe('"Eksport CSV"', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-102 runs at 1280 only')
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
-    await page.getByTestId('user-status-filter').selectOption('1')
+    await selectUserFilter(page, 'user-status-filter', '1')
     // "Cari" is not pressed: the export still uses the values in the form
     const pupils = page.waitForEvent('download')
     await page.getByTestId('user-export').click()
@@ -395,7 +409,7 @@ test.describe('write flows', WRITES, () => {
     await expect(page).toHaveURL(/\/admin-sekolah\/pelajar$/)
     await expect(page.getByText('Pengguna berjaya dikemaskini.')).toBeVisible()
     await expect(
-      page.locator('[data-testid="user-row"][data-user-id="3001"]').getByTestId('user-name'),
+      userRow(page, 3001).getByTestId('user-name'),
     ).toHaveText('Murid Ujian Disunting')
   })
 
@@ -419,7 +433,7 @@ test.describe('write flows', WRITES, () => {
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL(/\/admin-sekolah\/pelajar$/)
     // sign in as the pupil with the new password
-    await page.getByTestId('shell-user-header-logout').click()
+    await logoutViaAccountMenu(page)
     await expect(page).toHaveURL('/login')
     await page.getByTestId('login-email').fill(email)
     await page.getByTestId('login-password').fill('KataBaharu-123')
@@ -446,26 +460,23 @@ test.describe('write flows', WRITES, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-94 runs at 1280 only')
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/guru')
-    const toggle = page.locator('[data-testid="user-row"][data-user-id="5"]').getByTestId('user-toggle')
-    const cancelled = dismissNextDialog(page, {
-      type: 'confirm',
-      message: 'Pasti untuk menukar status pengguna ini?',
-    })
+    const toggle = userRow(page, 5).getByTestId('user-toggle')
+    const cancelled = dismissConfirm(page, 'Pasti untuk menukar status pengguna ini?')
     await toggle.click()
     await cancelled
     await expect(toggle).toContainText('Aktif')
-    const accepted = acceptNextDialog(page, { type: 'confirm' })
+    const accepted = acceptConfirm(page)
     await toggle.click()
     await accepted
     await expect(page.getByText('Status pengguna berjaya dikemaskini.')).toBeVisible()
     await expect(toggle).toContainText('Tidak')
-    const row = page.locator('[data-testid="user-row"][data-user-id="5"]')
+    const row = userRow(page, 5)
     await expect(row.getByTestId('user-edit')).toHaveCount(0)
     await expect(row.getByTestId('user-name')).not.toHaveAttribute('href', /.+/)
     await gotoApp('/admin-sekolah/guru/5')
     await expect(page.locator('[data-page=forbidden]')).toBeVisible()
     await openList(page, gotoApp, '/admin-sekolah/guru')
-    const back = acceptNextDialog(page, { type: 'confirm' })
+    const back = acceptConfirm(page)
     await toggle.click()
     await back
     await expect(toggle).toContainText('Aktif')
