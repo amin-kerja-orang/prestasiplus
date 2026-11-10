@@ -52,8 +52,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
     await expectTabTitle(page, 'Soalan Perlu Gambar Rajah - Admin')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Soalan Perlu Gambar Rajah')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Soalan Perlu Gambar Rajah')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Audit soalan yang memerlukan gambar rajah dilengkapkan',
     )
 
