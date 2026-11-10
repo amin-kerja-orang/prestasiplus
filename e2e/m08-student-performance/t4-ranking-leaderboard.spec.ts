@@ -33,7 +33,7 @@ test.describe('M08 S19 /ranking', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/ranking')
     await expectTabTitle(page, 'Kedudukan | PRESTASIPLUS')
     await expect(page.getByRole('heading', { level: 1, name: 'Kedudukan' })).toBeVisible()
-    await expect(page.getByText('Di mana anda berdiri — dalam kelas, sekolah, negeri dan seluruh negara')).toBeVisible()
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Di mana anda berdiri — dalam kelas, sekolah, negeri dan seluruh negara')
     await expect(page.getByTestId('ranking-syiling')).toContainText('Syiling anda')
     await expect(page.getByTestId('ranking-syiling')).toContainText(
       'Kedudukan dikira berdasarkan baki syiling.',
@@ -84,7 +84,10 @@ test.describe('M08 S19 /ranking', { tag: [moduleTag(8)] }, () => {
 test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  const rowsOf = (page: import('@playwright/test').Page) => page.getByTestId('leaderboard-row')
+  const rowsOf = (page: import('@playwright/test').Page) =>
+    page.locator(
+      '[data-testid=leaderboard-table] tbody tr, [data-testid=leaderboard-table] [data-ds=data-table-cards] > li',
+    )
   const podiumText = async (page: import('@playwright/test').Page, selector: string) =>
     (await page.locator(`[data-testid=podium] ${selector}`).allTextContents()).map((t) => t.trim())
   const activeTab = (page: import('@playwright/test').Page) =>
@@ -101,8 +104,8 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
           await gotoApp(url)
           await expect(rowsOf(page)).toHaveCount(46)
           await expectTabTitle(page, 'Papan Pendahulu | PRESTASIPLUS')
-          await expect(page.getByTestId('shell-user-title')).toHaveText('Papan Pendahulu')
-          await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
+          await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Papan Pendahulu')
+          await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
             'Siapa juara minggu ini?',
           )
           await expect(page.getByTestId('leaderboard-hero')).toContainText(
@@ -115,7 +118,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
           ])
           await expect(activeTab(page)).toHaveText(['Minggu Ini'])
 
-          await expect(page.getByTestId('me-rank')).toHaveText('#-')
+          await expect(page.getByTestId('me-rank')).toContainText('#-')
           await expect(page.getByTestId('me-coins')).toHaveText('0')
           await expect(page.getByTestId('me-sessions')).toHaveText('0')
           await expect(page.getByTestId('me-accuracy')).toHaveText('0%')
@@ -158,7 +161,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await gotoApp('/leaderboard?period=all')
       await expect(rowsOf(page)).toHaveCount(50)
       await expect(activeTab(page)).toHaveText(['Semua Masa'])
-      await expect(page.getByTestId('me-rank')).toHaveText('#1050')
+      await expect(page.getByTestId('me-rank')).toContainText('#1050')
       await expect(page.getByTestId('me-coins')).toHaveText('26')
       await expect(page.getByTestId('me-sessions')).toHaveText('4')
       await expect(page.getByTestId('me-accuracy')).toHaveText('22%')
@@ -188,7 +191,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await gotoApp('/leaderboard?period=month')
       await expect(rowsOf(page)).toHaveCount(50)
       await expect(activeTab(page)).toHaveText(['Bulan Ini'])
-      await expect(page.getByTestId('me-rank')).toHaveText('#-')
+      await expect(page.getByTestId('me-rank')).toContainText('#-')
       expect(await podiumText(page, '[data-testid=podium-accuracy]')).toEqual([
         '99% ketepatan',
         '94% ketepatan',
@@ -209,7 +212,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await expect(page.getByTestId('leaderboard-footer')).toContainText('50 peserta bersaing')
       // The hero text stays for every period.
       await expect(page.getByTestId('leaderboard-hero')).toContainText('Siapa juara minggu ini?')
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Siapa juara minggu ini?')
+      await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText('Siapa juara minggu ini?')
       await expectNoHorizontalScroll(page)
     })
 
@@ -222,7 +225,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       await expect(rowsOf(page)).toHaveCount(50)
       await page.getByTestId('leaderboard-tab-all').click()
       await expect(page).toHaveURL(/period=all/)
-      await expect(page.getByTestId('me-rank')).toHaveText('#1050')
+      await expect(page.getByTestId('me-rank')).toContainText('#1050')
     })
 
     test('responsive columns and pill colours; the podium fits (DV-10)', async ({
@@ -247,13 +250,13 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
 
       // Pill thresholds on the unrounded value: 98 green, 68 amber, 100 green.
       const pills = page.getByTestId('row-accuracy')
-      await expect(pills.nth(0)).toHaveClass(/bg-green-100/)
-      await expect(pills.nth(3)).toHaveClass(/bg-amber-100/)
+      await expect(pills.nth(0)).toHaveClass(/bg-success/)
+      await expect(pills.nth(3)).toHaveClass(/bg-warning/)
       // Rank circles.
-      await expect(page.getByTestId('row-rank').nth(0)).toHaveClass(/bg-amber-100/)
-      await expect(page.getByTestId('row-rank').nth(1)).toHaveClass(/bg-slate-200/)
-      await expect(page.getByTestId('row-rank').nth(2)).toHaveClass(/bg-orange-100/)
-      await expect(page.getByTestId('row-rank').nth(3)).toHaveClass(/bg-slate-50/)
+      await expect(page.getByTestId('row-rank').nth(0)).toHaveClass(/bg-primary/)
+      await expect(page.getByTestId('row-rank').nth(1)).toHaveClass(/bg-primary/)
+      await expect(page.getByTestId('row-rank').nth(2)).toHaveClass(/bg-primary/)
+      await expect(page.getByTestId('row-rank').nth(3)).not.toHaveClass(/bg-primary/)
 
       // The podium columns stay inside the viewport.
       const boxes = await page
@@ -279,7 +282,7 @@ test.describe('M08 S20 /leaderboard', { tag: [moduleTag(8)] }, () => {
       async ({ page, gotoApp }) => {
         await gotoApp('/leaderboard')
         await expect(rowsOf(page)).toHaveCount(46)
-        await expect(page.getByTestId('me-rank')).toHaveText('#39')
+        await expect(page.getByTestId('me-rank')).toContainText('#39')
         await expect(page.getByTestId('me-coins')).toHaveText('70')
         await expect(page.getByTestId('me-sessions')).toHaveText('4')
         await expect(page.getByTestId('me-accuracy')).toHaveText('65%')

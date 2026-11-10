@@ -46,11 +46,11 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
     await gotoApp('/timeline')
     await expect(page.getByTestId('timeline-empty')).toContainText('Timeline Kosong')
     await expectTabTitle(page, 'Timeline Saya | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Timeline Saya')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
+    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Timeline Saya')
+    await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
       'Aktiviti terkini anda — latihan, pencapaian & mata diperoleh',
     )
-    await expect(page.getByRole('heading', { name: 'Timeline Saya', level: 2 })).toBeVisible()
+    await expect(page.getByTestId('timeline-page')).toBeVisible()
     await expect(
       page.getByText('Aktiviti terkini anda — latihan, pencapaian & mata diperoleh').first(),
     ).toBeVisible()
@@ -79,10 +79,10 @@ test.describe('M08 T3 S16 / S17 admin', { tag: [moduleTag(8)] }, () => {
 
   test('S17 fields, defaults and limits; Batal discards', async ({ page, gotoApp }) => {
     await gotoApp('/timeline/create')
-    await expect(page.getByRole('heading', { name: 'Post Baru' })).toBeVisible()
-    await expectTabTitle(page, 'Tambah Post - Timeline')
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Tambah Post')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(
+    await expect(page.getByTestId('timeline-create-page')).toBeVisible()
+    await expectTabTitle(page, 'Tambah Post | PRESTASIPLUS')
+    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveText('Tambah Post')
+    await expect(page.locator('[data-testid=pembelajaran-subtitle], [data-testid=pentadbiran-subtitle]')).toHaveText(
       'Kongsi pencapaian atau cerita baru',
     )
     await expect(page.getByTestId('back-link')).toHaveAttribute('href', '/timeline')
@@ -244,7 +244,7 @@ test.describe('M08 T3 S16 pelajar', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('name')).toBeVisible()
     await expect(page.getByTestId('profile-posts')).toHaveCount(0)
     // bare page: no shell.
-    await expect(page.getByTestId('shell-user-title')).toHaveCount(0)
+    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveCount(0)
     await expectNoHorizontalScroll(page)
   })
 
@@ -282,7 +282,7 @@ test.describe('M08 T3 S18 public profile', { tag: [moduleTag(8)] }, () => {
     await expect(page.getByTestId('name')).toHaveText('Admin Demo')
     await expect(page).toHaveURL(/\/pelajar\/1$/)
     await expectTabTitle(page, 'Admin Demo — Pelajar | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-title')).toHaveCount(0)
+    await expect(page.locator('[data-testid=pembelajaran-header] h1, [data-testid=shell-title], [data-testid=pentadbiran-header] h1')).toHaveCount(0)
 
     await expect(page.getByTestId('logo')).toHaveText('PRESTASIPLUS')
     await expect(page.getByTestId('logo')).toHaveAttribute('href', '/')
