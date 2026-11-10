@@ -60,8 +60,8 @@ const options = computed(() =>
 )
 const questionLink = computed(() =>
   isStructured.value
-    ? { to: `/admin/structured-questions/${String(r.value.questionId)}`, icon: 'i-ph-eye' }
-    : { to: `/admin/questions/${String(r.value.questionId)}/edit`, icon: 'i-ph-pencil-simple' },
+    ? { to: `/admin/spm/subjektif/${String(r.value.questionId)}/sunting`, icon: 'i-ph-eye' }
+    : { to: `/admin/studio/questions/${String(r.value.questionId)}/sunting`, icon: 'i-ph-pencil-simple' },
 )
 const practiceHref = computed(() => {
   const url = q.value.practiceUrl

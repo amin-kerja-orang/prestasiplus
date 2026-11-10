@@ -86,9 +86,9 @@ describe('the sanitiser can be the run-configured one', () => {
     expect(o.ok && o.value.content).toBe('FIXED')
   })
 
-  it('a blank content is still INVALID_VALUE content', () => {
+  it('a blank content loads as an empty page (T-B6: the real V2 articles have no text)', () => {
     const o = transformArticle(article('  '), { authorId: '9' })
-    expect(o.ok).toBe(false)
+    expect(o.ok && o.value.content).toBe('')
   })
 })
 

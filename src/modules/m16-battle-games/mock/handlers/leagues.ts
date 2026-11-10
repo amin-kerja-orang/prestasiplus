@@ -1,6 +1,6 @@
 /**
  * SRS M16 v1.6 §7 #46-#49: the leagues (S25-S27), logged in (U). R1: create and school enrolment are Admin Pusat
- * only (API-ADM-25), join is closed (403, API-GAME-05). API-AS-14: the live Sekolah Bersaing board, school admin and admin only.
+ * only (API-ADM-25), join is closed (403, API-GAME-05). API-GAME-13: `standings` and `me`, pupils (role M) only. API-AS-14: the live Sekolah Bersaing board, school admin and admin only.
  */
 
 import {
@@ -62,6 +62,35 @@ export const leagueRoutes: RouteDef[] = [
     (req) => {
       const detail = leaguesRepo.get(req.params.id as number)
       return detail ? ok(detail) : notFound('Liga tidak dijumpai.')
+    },
+    { params: { id: int() } },
+  ),
+
+  // API-GAME-13: the stored standings of one Tingkatan (`?level=` 1..5, default the lowest level). Role M only.
+  route(
+    'GET',
+    '/api/leagues/:id/standings',
+    [requireRole('student')],
+    (req) => {
+      try {
+        const view = leaguesRepo.standingsOf(req.params.id as number, Array.isArray(req.query.level) ? req.query.level[0] : req.query.level)
+        return view ? ok(view) : notFound('Liga tidak dijumpai.')
+      } catch (e) {
+        return refusal(e, 'level')
+      }
+    },
+    { params: { id: int() } },
+  ),
+
+  // API-GAME-13: the pupil's school position, own points and top contributors. Role M only.
+  route(
+    'GET',
+    '/api/leagues/:id/me',
+    [requireRole('student')],
+    (req) => {
+      const viewer = viewerOf(req)
+      const view = leaguesRepo.meOf(req.params.id as number, viewer.schoolId, viewer.grade)
+      return view ? ok(view) : notFound('Liga tidak dijumpai.')
     },
     { params: { id: int() } },
   ),

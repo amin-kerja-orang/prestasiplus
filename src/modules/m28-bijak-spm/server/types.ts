@@ -77,6 +77,8 @@ export interface BijakApi extends BijakKuizApi {
   ): Promise<{ attemptId: string }>
   getAttemptView(userId: number, attemptId: string): Promise<AttemptPaperView>
   saveAnswers(userId: number, attemptId: string, payload: SavePayload): Promise<SaveResult>
+  /** Http only: the same `PUT .../answers` as a keepalive `fetch` for `pagehide`; false when nothing was sent (over 64 KB, or no CSRF token yet). */
+  saveAnswersKeepalive?(userId: number, attemptId: string, payload: SavePayload): boolean
   submit(userId: number, attemptId: string, payload: SubmitPayload): Promise<SubmitResult>
   abandon(userId: number, attemptId: string): Promise<void>
   checkQuestion(

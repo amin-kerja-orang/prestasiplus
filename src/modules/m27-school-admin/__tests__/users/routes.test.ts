@@ -18,6 +18,7 @@ describe('S6, S9, S12 routes (FR-M27-38, 40, 44)', () => {
   it.each([
     ['/admin-sekolah/pelajar', 'Senarai Pelajar', undefined],
     ['/admin-sekolah/pelajar/baru', 'Tambah Pelajar', 'Cipta satu akaun pelajar'],
+    ['/admin-sekolah/pelajar/import', 'Import Pelajar', undefined],
     ['/admin-sekolah/pelajar/:id(\\d+)', 'Edit Pengguna', 'Kemaskini maklumat pengguna'],
   ])('%s is a school_admin user-shell route with the exact titles', (path, title, subtitle) => {
     const route = byPath(pelajar, path)
@@ -26,6 +27,13 @@ describe('S6, S9, S12 routes (FR-M27-38, 40, 44)', () => {
       title: `${title} - PRESTASIPLUS`,
       header: subtitle ? { title, subtitle } : { title },
     })
+  })
+
+  it('registers /pelajar/import before :id', () => {
+    const paths = pelajar.map((r) => r.path)
+    expect(paths.indexOf('/admin-sekolah/pelajar/import')).toBeLessThan(
+      paths.indexOf('/admin-sekolah/pelajar/:id(\\d+)'),
+    )
   })
 
   it('registers /pelajar/baru before :id', () => {

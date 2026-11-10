@@ -31,7 +31,39 @@ export const DEFAULT_METRIC_BY_TYPE = {
   topic_variety: 'chapters',
   streak: 'streak',
   time_spent: 'minutes',
+  /** S7-T04 part 14 (R 4): selectable only now that the evaluator exists (FR-ADM-P2-03.3). */
+  combo: 'best_combo',
 } as const
+
+/**
+ * S7-T04 part 15 (ruling 18): the metric of the 15 migrated platform challenges, by exact title (48 GAME-19). ONE source for the ETL
+ * (`migration/transform/gamification.ts`) and the UAT script (`scripts/uat-ops/challenge-metrics.ts`). A title not listed here takes
+ * `DEFAULT_METRIC_BY_TYPE` of its type (BR-M14-12) in the ETL; the script never touches it.
+ */
+export const MIGRATED_CHALLENGE_METRICS = {
+  'Rajin Berlatih': 'sessions',
+  'Si Tepat': 'best_accuracy',
+  'Penjelajah Topik': 'chapters',
+  'Kilat Matematik': 'correct',
+  'Selesai 5 Kuiz': 'sessions',
+  'Ketepatan 80%': 'best_accuracy',
+  '3 Topik Berbeza': 'chapters',
+  'Kombo 10': 'best_combo',
+  'Belajar 15 Minit': 'minutes',
+  'Mula Hari Ini': 'sessions',
+  'Jawab 5 Betul': 'correct',
+  'Latihan 10 Minit': 'minutes',
+  'Kombo 2 Hari': 'streak',
+  'Ketepatan 90%': 'best_accuracy',
+  'Cabaran Kilat': 'best_correct_in_session',
+} as const satisfies Readonly<Record<string, string>>
+
+/**
+ * FR-GM-19.4: sessions of these modes are game sessions and never count toward a challenge. Practice sessions never
+ * carry them (the session check has no game value); this is the guard on the port's `mode`. Same codes as
+ * `GAME_ANSWER_MODES` of the practice module (AnswerLogPort registry), which cannot be imported from here.
+ */
+export const GAME_SESSION_MODES: readonly string[] = ['game', 'battle']
 
 export const RARITY_LABELS = { common: 'Biasa', rare: 'Jarang', epic: 'Epik', legendary: 'Legenda' } as const
 export const RARITY_COLORS = { common: '#9ca3af', rare: '#3b82f6', epic: '#8b5cf6', legendary: '#f59e0b' } as const
@@ -81,4 +113,6 @@ export const MOD_PELAJAR_REFUSAL = 'Tidak dibenarkan dalam Mod Pelajar.'
 /** API-GAME-11 notices (ruling 21 on #500), built server-side. */
 export const CLAIM_NOTICES = {
   tierUp: (label: string): string => `Tahniah! Anda naik ke tier ${label}.`,
+  /** 48 GAME-25 "Notice on unlock". */
+  badge: (name: string): string => `Lencana baru: ${name}!`,
 } as const

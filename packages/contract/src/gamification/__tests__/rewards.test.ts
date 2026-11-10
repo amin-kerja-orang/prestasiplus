@@ -21,6 +21,7 @@ import {
   RewardListQuerySchema,
   RewardListResponseSchema,
   RewardMysteryBoxOpenedSchema,
+  RewardMysteryBoxOpenRequestSchema,
   RewardMysteryBoxesViewSchema,
   RewardRedeemRequestSchema,
   RewardRedeemResultSchema,
@@ -101,21 +102,28 @@ describe('admin catalogue', () => {
     const bad = (patch: Record<string, unknown>) => RewardInputSchema.safeParse({ ...input, ...patch }).success
     expect(bad({ category: 'crypto' })).toBe(false)
     expect(bad({ vendor: '' })).toBe(false)
-    expect(bad({ vendor: 'x'.repeat(101) })).toBe(false)
+    expect(bad({ vendor: 'x'.repeat(61) })).toBe(false)
     expect(bad({ title: '   ' })).toBe(false)
-    expect(bad({ title: 'x'.repeat(201) })).toBe(false)
+    expect(bad({ title: 'x'.repeat(101) })).toBe(false)
     expect(bad({ denominationRm: 0 })).toBe(false)
     expect(bad({ denominationRm: 10_001 })).toBe(false)
+    expect(bad({ denominationRm: 1.234 })).toBe(false)
+    expect(bad({ denominationRm: 0.01 })).toBe(true)
+    expect(bad({ denominationRm: 19.99 })).toBe(true)
+    expect(bad({ tokenCost: 100_001 })).toBe(false)
+    expect(bad({ deliveryMethod: 'api' })).toBe(false)
+    expect(bad({ imageUrl: 'http://x.test/a.png' })).toBe(false)
     expect(bad({ tokenCost: 0 })).toBe(false)
     expect(bad({ stockQuantity: -1 })).toBe(false)
     expect(bad({ maxPerMonthPerStudent: 0 })).toBe(false)
-    expect(bad({ maxPerMonthPerStudent: 100 })).toBe(false)
-    expect(bad({ voucherValidityDays: 1826 })).toBe(false)
+    expect(bad({ maxPerMonthPerStudent: 100 })).toBe(true)
+    expect(bad({ maxPerMonthPerStudent: 101 })).toBe(false)
+    expect(bad({ voucherValidityDays: 3651 })).toBe(false)
     expect(bad({ displayOrder: 10_000 })).toBe(false)
     expect(bad({ deliveryMethod: 'post' })).toBe(false)
     expect(bad({ imageUrl: 'ftp://x.test/a.png' })).toBe(false)
     expect(bad({ imageUrl: 'https://x.test/a b.png' })).toBe(false)
-    expect(bad({ iconEmoji: 'x'.repeat(9) })).toBe(false)
+    expect(bad({ iconEmoji: 'x'.repeat(17) })).toBe(false)
     expect(bad({ isActive: 'yes' })).toBe(false)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { tokenCost: _t, ...missing } = input
@@ -206,30 +214,40 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
 
   it('parses the mystery box view and an opening', () => {
     const box = {
-      id: '1',
-      name: 'Kotak Gangsa',
-      description: 'Kotak biasa',
-      icon: '📦',
-      rarity: null,
-      costTokens: 2,
-      coinMin: 1,
-      coinMax: 20,
-      xpMin: 1,
-      xpMax: 10,
-      color1: '#9ca3af',
-      color2: '#6b7280',
+      id: '5',
+      label: 'Kotak Misteri',
+      costSyiling: 50,
+      prizes: [
+        { label: '10 syiling', kind: 'syiling', amount: 10, chance: 40 },
+        { label: '1 token', kind: 'token', amount: 1, chance: 10.5 },
+      ],
     }
     const view = {
-      tokenBalance: 5,
-      boxes: [box, { ...box, id: '2', rarity: 'rare' }],
-      history: [{ id: '1', boxId: '1', boxName: 'Kotak Gangsa', coins: 7, xp: 3, createdAt: AT }],
+      box,
+      available: true,
+      syilingBalance: 80,
+      dailyMax: 5,
+      openedToday: 1,
+      history: [
+        { id: '1', boxId: '5', boxName: 'Kotak Misteri', prizeLabel: '10 syiling', prizeKind: 'syiling', prizeAmount: 10, createdAt: AT },
+        { id: '2', boxId: '1', boxName: 'Kotak Gangsa', prizeLabel: null, prizeKind: null, prizeAmount: null, createdAt: AT },
+      ],
     }
     expect(RewardMysteryBoxesViewSchema.safeParse(view).success).toBe(true)
-    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, boxes: [{ ...box, rarity: 'common' }] }).success).toBe(false)
+    // N5 / no active box: box null, available false.
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: null, available: false, history: [] }).success).toBe(true)
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: { ...box, prizes: [{ ...box.prizes[0], kind: 'xp' }] } }).success).toBe(false)
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, box: { ...box, costSyiling: 0 } }).success).toBe(false)
     expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, history: Array(11).fill(view.history[0]) }).success).toBe(false)
-    const opened = { openingId: '2', boxId: '1', boxName: 'Kotak Gangsa', icon: '📦', coins: 7, xp: 3, tokenBalance: 3, syilingBalance: 127 }
+    // The old token shape is gone.
+    expect(RewardMysteryBoxesViewSchema.safeParse({ ...view, available: undefined }).success).toBe(false)
+    const opened = { openingId: '2', boxId: '5', boxName: 'Kotak Misteri', prize: { label: '10 syiling', kind: 'syiling', amount: 10 }, tokenBalance: 3, syilingBalance: 40 }
     expect(RewardMysteryBoxOpenedSchema.safeParse(opened).success).toBe(true)
     expect(RewardMysteryBoxOpenedSchema.safeParse({ ...opened, syilingBalance: undefined }).success).toBe(false)
+    expect(RewardMysteryBoxOpenedSchema.safeParse({ ...opened, prize: undefined }).success).toBe(false)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({ clientUuid: '8f14e45f-ceea-467a-9575-0c1f6a2c5b3a' }).success).toBe(true)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({}).success).toBe(false)
+    expect(RewardMysteryBoxOpenRequestSchema.safeParse({ clientUuid: 'nope' }).success).toBe(false)
   })
 
   it('parses open draws and a bought ticket', () => {
@@ -243,13 +261,20 @@ describe('student redeem, Kotak Misteri, Cabutan', () => {
           ticketCostSyiling: 50,
           maxTicketsPerStudent: 10,
           ticketsOwned: 1,
+          ticketsSold: 6,
           closesAt: '2026-12-31',
           prizePool: [{ label: 'Baucar Buku RM10', valueSen: 1000, qty: 3 }],
         },
-        { id: '5', title: 'Tanpa tarikh', description: '', ticketCostSyiling: 10, maxTicketsPerStudent: 1, ticketsOwned: 0, closesAt: null, prizePool: [] },
+        { id: '5', title: 'Tanpa tarikh', description: '', ticketCostSyiling: 10, maxTicketsPerStudent: 1, ticketsOwned: 0, ticketsSold: 0, closesAt: null, prizePool: [] },
       ],
+      results: [{ id: '3', title: 'Cabutan Merdeka', winners: [{ prize: 'Hadiah Utama', name: 'Zahra', isYou: false }] }],
     }
     expect(RewardCabutanViewSchema.safeParse(draws).success).toBe(true)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: [] }).success).toBe(true)
+    // ticketsSold and results are part of the view; a winner carries a name and the isYou flag.
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: undefined }).success).toBe(false)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, draws: [{ ...draws.draws[0], ticketsSold: undefined }] }).success).toBe(false)
+    expect(RewardCabutanViewSchema.safeParse({ ...draws, results: [{ id: '3', title: 'X', winners: [{ prize: 'P', name: 'Z' }] }] }).success).toBe(false)
     expect(RewardCabutanViewSchema.safeParse({ ...draws, draws: [{ ...draws.draws[0], closesAt: '31-12-2026' }] }).success).toBe(false)
     expect(RewardTicketBoughtSchema.safeParse({ drawId: '4', ticketsOwned: 2, syilingBalance: 70 }).success).toBe(true)
     expect(RewardTicketBoughtSchema.safeParse({ drawId: 4, ticketsOwned: 2, syilingBalance: 70 }).success).toBe(false)
@@ -279,8 +304,10 @@ describe('errors', () => {
     expect(REWARD_ERRORS.DRAW_CLOSED.messages).toEqual(['Cabutan ditutup.'])
     expect(REWARD_ERRORS.TICKET_LIMIT.messages).toEqual(['Had tiket dicapai.'])
     expect(REWARD_ERRORS.INSUFFICIENT_BALANCE.messages).toEqual(['Baki syiling tidak mencukupi.'])
+    expect(REWARD_ERRORS.MYSTERY_DAILY_LIMIT).toEqual({ status: 429, messages: ['Had kotak hari ini telah dicapai. Cuba lagi esok.'] })
+    expect(REWARD_ERRORS.BOX_UNAVAILABLE).toEqual({ status: 409, messages: ['Kotak tidak tersedia buat masa ini.'] })
     for (const code of REWARD_ERROR_CODES) {
-      expect(REWARD_ERRORS[code].status).toBe(409)
+      expect(REWARD_ERRORS[code].status).toBe(code === 'MYSTERY_DAILY_LIMIT' ? 429 : 409)
       for (const message of REWARD_ERRORS[code].messages) {
         expect(ErrorBodySchema.safeParse({ error: { code, message } }).success).toBe(true)
       }
@@ -323,12 +350,12 @@ describe('openapi registration', () => {
     has('/admin/hadiah/{id}', 'put')
   })
 
-  it('registers exactly 43 operations: the 42 of BE-23 and the claim of API-GAME-11', () => {
+  it('registers exactly 50 operations: the 42 of BE-23, the claim of API-GAME-11, the draw list, Buka, Tutup, Cabut pemenang and Tandakan Dihantar of S7-T07, and the 2 Kotak Misteri admin routes of API-GAME-09', () => {
     // Count by BE-23 tags, not by path prefix: BE-11 adds /gamification/wallet and /gamification/transactions (tag 'wallet').
     const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
     const count = Object.values(doc.paths)
       .flatMap((ops) => Object.values(ops as Record<string, { tags?: string[] }>))
       .filter((op) => op.tags?.some((t) => be23Tags.includes(t))).length
-    expect(count).toBe(43)
+    expect(count).toBe(50)
   })
 })

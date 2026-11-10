@@ -1,7 +1,7 @@
 /**
  * The `leagues` repository (owner M16; SRS M16 v1.6 DATA-M16-12, BR-M16-33/34, §5 V-M16-13…15, §7
- * #46-#49). Standings are the stored hourly-job output and are never recomputed (OQ-M16-09); the
- * status is stored and never changed by dates (DV-M16-11).
+ * #46-#49, API-GAME-13). Standings are the stored hourly-job output and are never recomputed in the mock (OQ-M16-09);
+ * the mock status is stored and never changed by dates (DV-M16-11; the API derives it, S7-T06 part 3).
  */
 
 import { gamesLevelIdToClassLevel } from '@pp/contract'
@@ -26,9 +26,23 @@ import { leagueSchoolsTable, leaguesTable, leagueStandingsTable } from '../table
 import type { LeagueGameMode, LeagueRow, LeagueScope, LeagueScoring, LeagueType } from '../types'
 import { M16Error, nowIso } from './common'
 
+/** API-GAME-13 `standings` body (stored rows only: the mock has no job, so `recomputedAt` is null). */
+export interface LeagueStandingsView {
+  rows: { rank: number; schoolName: string; score: number; participants: number; avgAccuracy: number }[]
+  recomputedAt: string | null
+  frozen: boolean
+}
+
+/** API-GAME-13 `me` body. */
+export interface LeagueMeView {
+  school: { rank: number; score: number; participants: number } | null
+  mine: { points: number }
+  contributors: { name: string; points: number }[]
+}
+
 export const leagueQueries = defineNamedQueries(leaguesTable, {
   'Q-LEAGUE-OPEN': {
-    where: { status: ['upcoming', 'ongoing'] },
+    where: { status: ['upcoming', 'active'] },
     expected: 1,
     source: 'M16 §6.10 (S25 "Liga Terbuka")',
   },
@@ -154,6 +168,10 @@ export function parseLeagueBody(body: unknown): LeagueInput {
   }
 }
 
+/** `1`..`5` to `T1`..`T5`; anything else is null. */
+const levelOfQuery = (raw: unknown): string | null =>
+  typeof raw === 'string' && /^[1-5]$/.test(raw) ? gamesLevelIdToClassLevel(Number(raw)) : null
+
 const subjectNameOf = (id: number | null): string | null =>
   id === null ? null : (curriculum.subject(id)?.name ?? null)
 
@@ -237,6 +255,47 @@ export const leaguesRepo = defineRepository({
           classLevels: l.classLevels,
           schools: ids.map((sid) => ({ id: sid, name: schools.get(sid)?.name ?? '' })),
           standings: byLevel,
+        }
+      },
+
+      /**
+       * API-GAME-13 `GET /leagues/:id/standings?level=`: `level` 1..5 = T1..T5 (default the lowest level of the league).
+       * Undefined for an unknown league; a bad level, or one the league does not have, is a 422 on `level`.
+       */
+      standingsOf(id: number, rawLevel: unknown): LeagueStandingsView | undefined {
+        const l = store.get(id)
+        if (!l) return undefined
+        const level = rawLevel === undefined || rawLevel === '' ? ([...l.classLevels].sort()[0] ?? null) : levelOfQuery(rawLevel)
+        if (level === null || !l.classLevels.includes(level)) {
+          throw new M16Error('VALIDATION_ERROR', 'Tingkatan tidak sah.', 'level')
+        }
+        const rows = standings.query({ where: { leagueId: id, level }, sort: 'order' }).rows
+        return {
+          rows: rows.map((r, i) => ({
+            rank: i + 1,
+            schoolName: schools.get(r.schoolId)?.name ?? '',
+            score: r.skor,
+            participants: r.peserta,
+            avgAccuracy: r.purata,
+          })),
+          recomputedAt: null,
+          frozen: l.status === 'ended',
+        }
+      },
+
+      /** API-GAME-13 `GET /leagues/:id/me`: the viewer's school at the viewer's Tingkatan; no contributions are stored in the mock. */
+      meOf(id: number, viewerSchoolId: number | null, viewerGrade: number | null): LeagueMeView | undefined {
+        const l = store.get(id)
+        if (!l) return undefined
+        const level = viewerGrade !== null && viewerGrade >= 7 && viewerGrade <= 11 ? `T${String(viewerGrade - 6)}` : null
+        const enrolled = viewerSchoolId !== null && leagueSchools.count({ leagueId: id, schoolId: viewerSchoolId }) > 0
+        const rows = level === null ? [] : standings.query({ where: { leagueId: id, level }, sort: 'order' }).rows
+        const at = enrolled ? rows.findIndex((r) => r.schoolId === viewerSchoolId) : -1
+        const own = at < 0 ? undefined : rows[at]
+        return {
+          school: own ? { rank: at + 1, score: own.skor, participants: own.peserta } : null,
+          mine: { points: 0 },
+          contributors: [],
         }
       },
 

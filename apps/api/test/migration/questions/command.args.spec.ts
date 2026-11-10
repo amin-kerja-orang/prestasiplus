@@ -36,6 +36,13 @@ describe('migrate:questions argv as slot.sh passes it', () => {
     expect(() => parseQuestionsArgs({ mode: 'dry-run', flags: new Map([['out-dir', true]]) as never, positional: [] }, (d) => d)).toThrow(/--out-dir needs a value/)
   })
 
+  it('takes --files-dir for a dry-run or an apply (the picture pass), never for --plan', () => {
+    expect(parse(['--as-of=2026-10-29', '--out-dir', SLOT_OUT, '--files-dir', '/srv/v2-files']).out.filesDir).toBe('/srv/v2-files')
+    expect(parse(['--as-of=2026-10-29', '--out-dir', SLOT_OUT]).out.filesDir).toBeUndefined()
+    expect(() => parse(['--plan', '--out-dir', SLOT_OUT, '--files-dir', '/srv/v2-files'])).toThrow(/--files-dir belongs to/)
+    expect(() => parse(['--out-dir', SLOT_OUT, '--files-dir'])).toThrow(/--files-dir needs a value/)
+  })
+
   it('refuses an out-dir outside a .migration-out folder (the real check)', () => {
     expect(() => parseQuestionsArgs(parseArgs(['migrate:questions', '--out-dir', '/tmp/elsewhere']).args)).toThrow(/--out-dir: .*\.migration-out/)
   })

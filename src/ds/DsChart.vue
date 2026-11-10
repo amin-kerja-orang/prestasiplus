@@ -3,7 +3,7 @@
  * Chart wrapper (restyle spec 1.5): Chart.js reading the DS colour tokens at mount and whenever
  * the colour mode or personality changes. No grid lines, rounded bars, value labels, a legend that
  * uses shape + label, fixed heights (220 / 280 / 320) and a visually hidden data table alternative.
- * Staff series use `--ds-cat-<slot>` (slot defaults to the series order, single series = kobalt);
+ * Staff series use `--ds-cat-<slot>` (slot defaults to the accent order: blue, violet, orange, lime, amber, then ruby, sea, green);
  * learner series use A1, A4, A2, A3 in that order.
  */
 import {
@@ -30,7 +30,7 @@ import { warnDeprecated } from './deprecate'
 import DsEmptyState from './DsEmptyState.vue'
 import DsLoadError from './DsLoadError.vue'
 import { usePersonality } from './personality'
-import type { DsHeadingLevel } from './types'
+import type { DsAccent, DsHeadingLevel } from './types'
 
 Chart.register(
   BarController,
@@ -46,6 +46,26 @@ Chart.register(
   Tooltip,
 )
 
+/** Meaning colour of one doughnut point (same hues as the stat tiles); neutral = dimmed text grey. */
+export type ChartPointAccent = DsAccent | 'neutral'
+
+const POINT_VAR: Record<ChartPointAccent, string> = {
+  action: '--ui-primary',
+  win: '--ds-highlight',
+  heat: '--ds-heat-fill',
+  friend: '--ds-c4',
+  trial: '--ds-amber',
+  neutral: '--ui-text-dimmed',
+}
+const POINT_SWATCH: Record<ChartPointAccent, string> = {
+  action: 'bg-primary',
+  win: 'bg-highlight',
+  heat: 'bg-heat-fill',
+  friend: 'bg-friend',
+  trial: 'bg-trial',
+  neutral: 'bg-(--ui-text-dimmed)',
+}
+
 export interface ChartSeries {
   label: string
   data: number[]
@@ -60,6 +80,8 @@ const props = withDefaults(
     title: string
     labels: string[]
     series: ChartSeries[]
+    /** Doughnut only: meaning colour per point (legend swatch follows); default = accent order. */
+    pointAccents?: ChartPointAccent[]
     /** Appended to value labels and tooltips, e.g. "%". */
     unit?: string
     /** Horizontal bars. */
@@ -85,6 +107,7 @@ const props = withDefaults(
   }>(),
   {
     type: 'bar',
+    pointAccents: undefined,
     unit: '',
     horizontal: false,
     tableLabel: undefined,
@@ -136,6 +159,12 @@ const CAT_FALLBACK = [
   '--color-ungu-600',
   '--color-daun-700',
 ]
+/**
+ * Palette order of the staff pool when a series carries no explicit slot: the five meaning accents first
+ * (blue, violet, orange, lime, amber = cat 1, 7, 6, 2, 5, the same hues as the shell chips and tiles), then
+ * the three supporting data hues (ruby, sea, green). Explicit slots (subject identity) are unchanged.
+ */
+const ACCENT_ORDER = [1, 7, 6, 2, 5, 3, 4, 8]
 const LEARNER_VARS = ['--ds-c1', '--ds-c4', '--ds-c2', '--ds-c3']
 const colours = ref<string[]>([])
 const dimmed = ref('')
@@ -146,12 +175,16 @@ const swatch = computed(() =>
     ? ['bg-primary', 'bg-friend', 'bg-highlight', 'bg-heat']
     : ['bg-cat-1', 'bg-cat-2', 'bg-cat-3', 'bg-cat-4', 'bg-cat-5', 'bg-cat-6', 'bg-cat-7', 'bg-cat-8'],
 )
+const pointAccent = (i: number): ChartPointAccent | undefined => props.pointAccents?.[i]
 const legend = computed(() =>
   props.type === 'doughnut'
-    ? props.labels.map((label, i) => ({ label, swatch: swatch.value[i % swatch.value.length] }))
+    ? props.labels.map((label, i) => ({
+        label,
+        swatch: pointAccent(i) ? POINT_SWATCH[pointAccent(i) as ChartPointAccent] : swatch.value[personality.value === 'learner' ? i % swatch.value.length : (ACCENT_ORDER[i % 8] ?? 1) - 1],
+      }))
     : props.series.map((s, i) => ({
         label: s.label,
-        swatch: swatch.value[(personality.value === 'learner' ? i : (s.slot ?? i + 1) - 1) % swatch.value.length],
+        swatch: swatch.value[(personality.value === 'learner' ? i : (s.slot ?? ACCENT_ORDER[i % 8] ?? 1) - 1) % swatch.value.length],
       })),
 )
 const shape = computed(() =>
@@ -170,16 +203,25 @@ function readTokens(): void {
           (n) => get(`--ds-cat-${n}`) || get(CAT_FALLBACK[n - 1] ?? '') || get('--ui-primary'),
         )
   colours.value = pool
+  pointVars.value = (props.pointAccents ?? []).map((a) => get(POINT_VAR[a]))
   dimmed.value = get('--ui-text-dimmed')
   muted.value = get('--ui-text-muted') || dimmed.value
   fontFamily.value = cs.fontFamily
+}
+
+const pointVars = ref<string[]>([])
+function pointColour(n: number): string {
+  const a = pointAccent(n)
+  if (a && pointVars.value[n]) return pointVars.value[n]
+  const pool = personality.value === 'learner' ? colours.value : ACCENT_ORDER.map((k) => colours.value[k - 1] ?? '')
+  return pool[n % (pool.length || 1)] ?? ''
 }
 
 function seriesColour(i: number): string {
   const pool = colours.value
   if (!pool.length) return ''
   const s = props.series[i]
-  const idx = personality.value === 'learner' ? i : (s?.slot ?? i + 1) - 1
+  const idx = personality.value === 'learner' ? i : (s?.slot ?? ACCENT_ORDER[i % 8] ?? 1) - 1
   return pool[idx % pool.length] ?? ''
 }
 
@@ -227,7 +269,7 @@ function build(): ChartConfiguration {
     label: s.label,
     data: s.data,
     backgroundColor: doughnut
-      ? colours.value.slice(0, s.data.length)
+      ? s.data.map((_, n) => pointColour(n))
       : bars && props.highlightIndex !== undefined
         ? s.data.map((_, n) => (n === props.highlightIndex ? seriesColour(i) : dimmed.value || seriesColour(i)))
         : seriesColour(i),
@@ -247,7 +289,7 @@ function build(): ChartConfiguration {
       // Reduced motion: draw the final state at once (no growing bars).
       animation: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches ? false : undefined,
       indexAxis: props.horizontal ? 'y' : 'x',
-      layout: { padding: { top: props.horizontal ? 4 : 18, right: props.horizontal ? 44 : 8 } },
+      layout: { padding: { top: props.horizontal || doughnut ? 4 : 18, right: props.horizontal ? 44 : 8 } },
       plugins: { legend: { display: false } },
       scales: doughnut
         ? {}
@@ -363,7 +405,9 @@ watch(view, async (v) => {
     </div>
     <ul
       v-if="view === 'ready'"
-      class="flex flex-wrap gap-x-4 gap-y-2" data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
+      class="flex flex-wrap gap-x-4 gap-y-2"
+      :class="type === 'doughnut' ? 'justify-center' : ''"
+      data-ds="chart-legend" :aria-label="fillCopy(dsCopy.chartLegend, { title })">
       <li v-for="(l, i) in legend" :key="i" class="flex items-center gap-2 text-caption text-muted">
         <span class="size-3 shrink-0" :class="[l.swatch, shape]" aria-hidden="true" />
         {{ l.label }}

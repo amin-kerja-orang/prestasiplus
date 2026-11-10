@@ -28,7 +28,7 @@ import {
 const ADMIN = 'admin@demo.test'
 const MATH_T4 = '/admin/curriculum?subject_id=3&education_level_id=10'
 const BM_D1 = '/admin/curriculum?subject_id=1&education_level_id=1'
-const TREE_TAB = 'Pengurusan Kurikulum | PRESTASIPLUS'
+const TREE_TAB = 'Kurikulum | PRESTASIPLUS'
 
 const chapters = (page: Page) => page.getByTestId('chapter')
 const flash = (page: Page) => page.getByTestId('cmp-flash')

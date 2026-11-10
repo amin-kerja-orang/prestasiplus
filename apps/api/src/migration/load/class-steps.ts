@@ -108,6 +108,22 @@ export async function classesWithAbsentTeacher(pool: Pick<pg.Pool, 'query'>, cla
   return new Set(res.rows.map((r) => r.id))
 }
 
+/**
+ * T-B7: the ids (of the given source schools) that have NO row in the source `schools` table (a school deleted at the source). A class whose
+ * own school is such an id is not an orphan: it is a class of its teacher and takes the teacher's school (`withTeacherSchool`), like a class
+ * with no school at all. A school that IS in the source but was not loaded stays an ORPHAN_PARENT reject. Counts and surrogate ids only.
+ */
+export async function schoolsAbsentFromSource(pool: Pick<pg.Pool, 'query'>, schoolIds: readonly string[]): Promise<Set<string>> {
+  const ids = schoolIds.map((s) => s.trim()).filter((id) => /^\d{1,18}$/.test(id))
+  if (ids.length === 0) return new Set()
+  const res = await pool.query<{ id: string }>(
+    `SELECT v.id::text AS id FROM unnest($1::bigint[]) AS v(id)
+     WHERE NOT EXISTS (SELECT 1 FROM "${STAGING_SCHEMA}"."schools" s WHERE s.id = v.id)`,
+    [ids],
+  )
+  return new Set(res.rows.map((r) => r.id))
+}
+
 /** The index form of a class name: `lower(btrim(name))` (0203, `uq_classrooms_teacher_year_name`). */
 export const classNameKey = (name: string): string => name.replace(/^ +| +$/g, '').toLowerCase()
 
@@ -178,8 +194,16 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       const teachers = await ctx.idMap.resolveMany('users', distinctValues(rows, 'teacher_id'))
       const schools = await ctx.idMap.resolveMany('schools', distinctValues(rows, 'school_id'))
       const subjects = await ctx.idMap.resolveMany('subjects', distinctValues(rows, 'subject_id'))
+      const absentSchool = await schoolsAbsentFromSource(
+        core.pool,
+        rows.filter((r) => resolveFk(r.school_id, schools) === undefined).map((r) => r.school_id ?? ''),
+      )
+      const schoolOf = (r: StagedRow): string | null | undefined =>
+        absentSchool.has((r.school_id ?? '').trim()) ? null : resolveFk(r.school_id, schools)
       const grades = await pupilGrades(core, rows.map((r) => idOf(r)))
       const levels = await levelsByGrade(ctx)
+      // T-B7: the real source class carries its own level; it decides when it resolves, the pupil/name derivation is the fallback.
+      const sourceLevels = await ctx.idMap.resolveMany('education_levels', distinctValues(rows, 'education_level_id'))
       // Only the classes without any pupil in staging can keep their level, so look up the loaded rows for those alone.
       const loaded = await loadedLevels(ctx, rows.map((r) => idOf(r)).filter((id) => (grades.get(id) ?? []).length === 0))
 
@@ -188,7 +212,7 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       const teacherSchoolOf = await teacherSchools(ctx, [...new Set(
         rows.flatMap((r) => {
           const teacher = resolveFk(r.teacher_id, teachers)
-          return resolveFk(r.school_id, schools) === null && teacher ? [teacher] : []
+          return schoolOf(r) === null && teacher ? [teacher] : []
         }),
       )])
 
@@ -198,6 +222,7 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
         rows.filter((r) => resolveFk(r.teacher_id, teachers) === undefined).map((r) => idOf(r)),
       )
 
+      let schoolAbsent = 0
       const kept = new Set<string>()
       const fromTeacher = new Set<string>()
       let excluded = 0
@@ -209,15 +234,18 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
           continue
         }
         const grade = deriveClassGrade(squash(row.name), grades.get(legacyId) ?? [])
-        const level = resolveClassLevel({
-          grade,
-          pupilCount: (grades.get(legacyId) ?? []).length,
-          levelByGrade: levels,
-          loadedLevelId: loaded.get(legacyId),
-        })
+        const sourceLevel = resolveFk(row.education_level_id, sourceLevels)
+        const level = typeof sourceLevel === 'string'
+          ? { levelId: sourceLevel, kept: false }
+          : resolveClassLevel({
+            grade,
+            pupilCount: (grades.get(legacyId) ?? []).length,
+            levelByGrade: levels,
+            loadedLevelId: loaded.get(legacyId),
+          })
         const out = transformClassroom(row, {
           teacherId: resolveFk(row.teacher_id, teachers),
-          schoolId: resolveFk(row.school_id, schools),
+          schoolId: schoolOf(row),
           subjectId: resolveFk(row.subject_id, subjects),
           levelId: level.levelId,
         })
@@ -225,6 +253,7 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
         else {
           const values = withTeacherSchool(out.value, out.value.teacher_id === null ? null : teacherSchoolOf.get(out.value.teacher_id))
           if (values !== out.value) fromTeacher.add(legacyId)
+          if (absentSchool.has((row.school_id ?? '').trim())) schoolAbsent += 1
           items.push({ legacyId, values })
           if (level.kept) kept.add(legacyId)
         }
@@ -242,6 +271,7 @@ export function classroomsStep(core: CoreContext): AnyEntityStep {
       if (keptCount > 0) core.notes.count('classrooms.level_kept_no_pupils', keptCount)
       const fromTeacherCount = items.filter((i) => fromTeacher.has(i.legacyId)).length
       if (fromTeacherCount > 0) core.notes.count('classrooms.school_from_teacher', fromTeacherCount)
+      if (schoolAbsent > 0) core.notes.count('classrooms.school_absent_from_source', schoolAbsent)
       if (excluded > 0) core.notes.count('classrooms.excluded.teacher_absent_from_source', excluded)
       const written = await upsertAndMap(ctx, entity, 'classrooms', CLASSROOM_COLUMNS, items.map((i) => ({
         legacyId: i.legacyId,

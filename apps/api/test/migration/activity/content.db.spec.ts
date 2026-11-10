@@ -108,10 +108,14 @@ beforeAll(async () => {
 
   r1 = await runApply()
   r2 = await runApply({ contentOwnerUserId: ownerV2 })
+  // R2 loaded the articles as empty pages (T-B6); R3 starts them afresh so the injected content is what gets stored.
+  await q(`delete from articles`)
+  await q(`delete from etl_id_map where entity = 'articles'`)
   r3 = await runApply({
     contentOwnerUserId: ownerV2,
     transformSteps: inject({
-      articles: { '1': { content: '<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
+      // R2 already loaded the articles (empty); a changed source `updated_at` is what makes the re-run update them (T-B6).
+      articles: { '1': { updated_at: '2030-01-01T00:00:00Z', content: '<p>Isi <b>tebal</b></p><script>alert(1)</script><a href="javascript:alert(1)">klik</a>' }, '2': { content: '<p>Isi</p>' }, '3': { content: '<p>Isi</p>' }, '4': { content: '<p>Isi</p>' } },
       notes: { '1': { subject: 'matematik', grade: 'Tingkatan 4' }, '2': { subject: 'matematik', grade: 'Tingkatan 4' } },
       videos: Object.fromEntries(['1', '2', '3', '4', '5', '6'].map((id) => [id, { category: 'tutorial' }])),
       audio_kbat_sets: { '1': { education_level_id: level, subject_id: subject }, '2': { education_level_id: level, subject_id: subject } },
@@ -132,8 +136,9 @@ describe('R1: no content owner', () => {
 
   it('an owner id that is not a v2 user is the same as no owner', async () => {
     // The owner is part of the input hash, so this apply needs its own dry-run.
-    await h.run('dry-run', { groups, contentOwnerUserId: '987654321' })
-    const bad = await h.run('apply', { groups, contentOwnerUserId: '987654321' })
+    // Only the notes step: a full content run without the injected columns would overwrite the loaded articles with empty pages (T-B6).
+    await h.run('dry-run', { groups, only: ['notes'], contentOwnerUserId: '987654321' })
+    const bad = await h.run('apply', { groups, only: ['notes'], contentOwnerUserId: '987654321' })
     const rows = await h.q<{ n: number }>(`select count(*)::int n from etl_rejects where run_id = $1 and entity = 'notes' and reason = 'ORPHAN_PARENT'`, [bad.report.runId])
     expect(rows[0]?.n).toBe(2)
   })
@@ -142,7 +147,8 @@ describe('R1: no content owner', () => {
 describe('R2: owner, staging spec as it is', () => {
   it('rejects INVALID_VALUE naming the column that has no staged source', () => {
     expect(r2.status).toBe('succeeded')
-    expect(n(r2, 'articles', 'INVALID_VALUE', 'content')).toBe(2) // ids 1 and 2
+    // T-B6: the real V2 article has no text at all, so a missing content is an empty page, not a reject.
+    expect(n(r2, 'articles', 'INVALID_VALUE', 'content')).toBe(0)
     expect(n(r2, 'notes', 'INVALID_VALUE', 'subject')).toBe(1) // id 1; id 2 has an unknown type
     expect(n(r2, 'notes', 'UNKNOWN_ENUM', 'note_type')).toBe(1)
     expect(n(r2, 'videos', 'INVALID_VALUE', 'category')).toBe(2) // ids 1 and 2 (no category staged); the rest fail the url check first

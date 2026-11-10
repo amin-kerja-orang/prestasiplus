@@ -59,7 +59,8 @@ describe('servability reads on a large single-subject bank (R1-T30)', () => {
 
   it('one question', async () => {
     const { value, ms } = await timed('single report (service)', () => servability.report(ids[2500] as string))
-    expect(value?.activities).toHaveLength(6)
+    expect(value?.activities).toHaveLength(7)
+    expect(value?.total).toBe(6)
     expect(ms).toBeLessThan(15_000)
     const http = await timed('single report (HTTP)', () => admin.get(`/api/admin/servability/questions/${ids[10]}`))
     expect(http.value.status).toBe(200)

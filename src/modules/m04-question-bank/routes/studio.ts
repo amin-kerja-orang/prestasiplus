@@ -12,7 +12,7 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/studio',
     name: 'm04.studio.list',
     component: () => import('../pages/StudioListPage.vue'),
-    meta: { ...adminMeta, title: 'Studio', header: { title: 'Studio', subtitle: 'Bank soalan kanonikal - cipta, semak, terbit' } },
+    meta: { ...adminMeta, title: 'Studio', header: { title: 'Studio', subtitle: 'Bank soalan kanonikal — cipta, semak, terbit' } },
   },
   {
     path: '/admin/studio/questions/create',
@@ -31,6 +31,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin/studio/questions/:id(\\d+)/preview',
     redirect: (to) => ({ path: `/admin/studio/questions/${String(to.params.id)}/sunting`, query: { pratonton: '1' } }),
+  },
+  {
+    path: '/admin/studio/questions/:id(\\d+)/edit',
+    redirect: (to) => ({ path: `/admin/studio/questions/${String(to.params.id)}/sunting` }),
   },
   {
     path: '/admin/studio/groups/:id(\\d+)',

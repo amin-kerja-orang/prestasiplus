@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter, type Router } from 'vue-router'
 
+import { ApiError } from '@/api'
 import { useFlashStore } from '@/stores/flash'
 
 import StudioListPage from '../../pages/StudioListPage.vue'
@@ -12,6 +13,9 @@ const studio = vi.hoisted(() => ({
   studioAvailable: vi.fn(() => true),
   STUDIO_UNAVAILABLE: 'Studio hanya tersedia apabila sistem disambungkan ke pelayan sebenar.',
   fetchStudioList: vi.fn(),
+  createStimulus: vi.fn(),
+  createGroup: vi.fn(),
+  bulkStudioAction: vi.fn(),
   fetchServabilityBatch: vi.fn(),
   moveQuestionStatus: vi.fn(),
   editAsDraft: vi.fn(),
@@ -21,9 +25,11 @@ const studio = vi.hoisted(() => ({
   fetchStudioQuestion: vi.fn(),
   fetchGroup: vi.fn(),
 }))
-const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn() }))
+const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchEducationLevels: vi.fn(), fetchStudioFilterOptions: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
+const summaryApi = vi.hoisted(() => ({ fetchQuestionSummary: vi.fn(), bulkQuestionsByFilter: vi.fn() }))
+vi.mock('../../api/questions', () => summaryApi)
 
 const row = (id: string, status: string, extra: Record<string, unknown> = {}) => ({
   id,
@@ -70,6 +76,9 @@ beforeEach(() => {
     notFound: [],
   })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [{ id: 3, name: 'Matematik' }], meta: {} })
+  lookups.fetchEducationLevels.mockReset().mockResolvedValue({ data: [{ id: 7, name: 'Tingkatan 4' }], meta: {} })
+  lookups.fetchStudioFilterOptions.mockReset().mockResolvedValue({ negeri: ['Selangor', 'Wilayah Lain'], tahun: [2024, 2023] })
+  summaryApi.fetchQuestionSummary.mockReset().mockResolvedValue(null)
   vi.spyOn(window, 'confirm').mockReturnValue(true)
 })
 afterEach(() => {
@@ -80,13 +89,134 @@ afterEach(() => {
 })
 
 describe('StudioListPage (S1 to S6)', () => {
+  it('shows the KPI strip by Subjek from /summary, without an empty subject (plan S2-T01)', async () => {
+    summaryApi.fetchQuestionSummary.mockResolvedValue({ total: 10, subjects: [{ id: '3', name: 'Matematik', icon: null, group: 'teras', total: 7, approved: 4 }, { id: '5', name: 'Fizik', icon: null, group: 'elektif', total: 0, approved: 0 }] })
+    const w = await render()
+    const strip = w.get('[data-testid="studio-kpis"]').text()
+    expect(strip).toContain('Jumlah soalan')
+    expect(strip).toContain('Matematik')
+    expect(strip).toContain('4Matematik')
+    expect(strip).not.toContain('Fizik')
+  })
+
   it('shows the V2 subtitle, the four status tiles with counts and "Cipta baharu"', async () => {
     const w = await render()
     expect(w.text()).toContain('Bank soalan kanonikal - cipta, semak, terbit')
     const tiles = t(w, 'studio-tiles').text().replace(/\s+/g, ' ')
     for (const word of ['Draf', 'Menunggu Semakan', 'Diterbitkan', 'Diarkibkan']) expect(tiles).toContain(word)
     expect(tiles).toContain('20')
-    expect(t(w, 'studio-create').attributes('href')).toBe('/admin/studio/questions/create')
+    expect(t(w, 'studio-create').text()).toContain('Cipta baharu')
+  })
+
+  describe('bulk bar (FR-ADM-Q03.5, field 03-15)', () => {
+    const tick = async (w: VueWrapper, n = 0): Promise<void> => {
+      await w.findAll('[role="checkbox"]')[n + 1]?.trigger('click')
+      await flushPromises()
+    }
+
+    it('selected rows take the three actions and read "{ok} berjaya, {gagal} dilangkau"', async () => {
+      studio.bulkStudioAction.mockResolvedValue({ data: { affected: 1, failed: [{ id: '2', code: 'X', message: 'Sila pilih Bab.' }] }, status: 'ok' })
+      const w = await render()
+      expect(w.find('[data-testid="studio-bulk"]').exists()).toBe(false)
+      await tick(w)
+      expect(t(w, 'studio-bulk-count').text()).toBe('1 soalan dipilih')
+      expect(t(w, 'studio-bulk-review').text()).toBe('Hantar untuk semakan')
+      await t(w, 'studio-bulk-approved').trigger('click')
+      await flushPromises()
+      expect(studio.bulkStudioAction.mock.calls[0]?.[0]).toBe('approved')
+      expect(t(w, 'studio-bulk-result').text()).toContain('1 berjaya, 1 dilangkau')
+      expect(t(w, 'studio-bulk-result').text()).toContain('Soalan #2 — Sila pilih Bab.')
+    })
+
+    it('a refused part of a group shows the server text', async () => {
+      studio.bulkStudioAction.mockRejectedValue(new ApiError({ status: 422, code: 'VALIDATION_ERROR', message: 'Soalan dalam kumpulan rangsangan mesti dipilih bersama.' }))
+      const w = await render()
+      await tick(w)
+      await t(w, 'studio-bulk-review').trigger('click')
+      await flushPromises()
+      expect(t(w, 'studio-bulk-problems').text()).toContain('mesti dipilih bersama')
+    })
+
+    it('all results needs a filter, offers Terbitkan and Arkib only, and counts first', async () => {
+      summaryApi.bulkQuestionsByFilter.mockResolvedValueOnce({ data: { matched: 5, eligible: 5, skipped: 0, cap: 1000, processed: 0, affected: 0, failed: [], remaining: 0, capped: false, dryRun: true }, status: 'ok' })
+      summaryApi.bulkQuestionsByFilter.mockResolvedValueOnce({ data: { matched: 5, eligible: 5, skipped: 0, cap: 1000, processed: 5, affected: 5, failed: [], remaining: 0, capped: false, dryRun: false }, status: 'ok' })
+      const w = await render('/admin/studio?subject_id=3')
+      await w.get('[data-testid="studio-bulk-all"] [role="checkbox"], [data-testid="studio-bulk-all"]').trigger('click')
+      await flushPromises()
+      expect(w.find('[data-testid="studio-bulk-review"]').exists()).toBe(false)
+      await t(w, 'studio-bulk-approved').trigger('click')
+      await flushPromises()
+      expect(summaryApi.bulkQuestionsByFilter).toHaveBeenNthCalledWith(1, 'approved', { subjectId: '3' }, { dryRun: true })
+      expect(summaryApi.bulkQuestionsByFilter).toHaveBeenNthCalledWith(2, 'approved', { subjectId: '3' }, { expectedCount: 5 })
+    })
+  })
+
+  describe('Cipta baharu (FR-ADM-QE2.1)', () => {
+    const body = (id: string): HTMLElement => document.querySelector(`[data-testid="${id}"]`) as HTMLElement
+    const set = async (id: string, v: string): Promise<void> => {
+      const el = body(id) as HTMLInputElement
+      el.value = v
+      el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }))
+      await flushPromises()
+    }
+
+    it('offers Soalan tunggal and Kumpulan rangsangan', async () => {
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      expect(body('studio-start-single').getAttribute('href')).toBe('/admin/studio/questions/create')
+      expect(body('studio-start-group').textContent).toContain('Kumpulan rangsangan')
+    })
+
+    it('a group asks Subjek and Tingkatan first, then creates with its first stimulus and opens its page', async () => {
+      studio.createStimulus.mockResolvedValue({ data: { id: '70' }, status: 'ok' })
+      studio.createGroup.mockResolvedValue({ data: { id: '9' }, status: 'ok' })
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      body('studio-start-group').click()
+      await flushPromises()
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(document.body.textContent).toContain('Sila pilih subjek.')
+      expect(document.body.textContent).toContain('Sila pilih tahap pendidikan.')
+      expect(studio.createGroup).not.toHaveBeenCalled()
+      await set('studio-start-subject', '3')
+      await set('studio-start-level', '7')
+      await set('studio-start-stimulus-label', 'Petikan 1')
+      await set('studio-start-stimulus-body', 'Teks petikan.')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(studio.createGroup).toHaveBeenCalledWith({ label: 'Petikan 1', stimulusIds: ['70'], subjectId: '3', educationLevelId: '7', kertas: null })
+      expect(router.currentRoute.value.path).toBe('/admin/studio/groups/9')
+    })
+
+    it('Bank pilihan needs at least 2 filled rows, and goes with the group (G-09)', async () => {
+      studio.createStimulus.mockResolvedValue({ data: { id: '70' }, status: 'ok' })
+      studio.createGroup.mockResolvedValue({ data: { id: '9' }, status: 'ok' })
+      const w = await render()
+      await t(w, 'studio-create').trigger('click')
+      await flushPromises()
+      body('studio-start-group').click()
+      await flushPromises()
+      await set('studio-start-subject', '3')
+      await set('studio-start-level', '7')
+      await set('studio-start-stimulus-label', 'Petikan 1')
+      await set('studio-start-stimulus-body', 'Teks petikan.')
+      body('studio-start-bank-add').click()
+      await flushPromises()
+      await set('studio-start-bank-0', 'Satu')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(document.body.textContent).toContain('Bank pilihan mesti ada sekurang-kurangnya 2 pilihan.')
+      expect(studio.createGroup).not.toHaveBeenCalled()
+      body('studio-start-bank-add').click()
+      await flushPromises()
+      await set('studio-start-bank-1', 'Dua')
+      body('studio-start-create').click()
+      await flushPromises()
+      expect(studio.createGroup).toHaveBeenCalledWith(expect.objectContaining({ optionBank: [{ label: 'A', body: { ms: 'Satu' } }, { label: 'B', body: { ms: 'Dua' } }] }))
+    })
   })
 
   it('the Menunggu Semakan tile equals the rows of ?status=review (AC-ADM-Q03.1, gap F3)', async () => {
@@ -108,9 +238,88 @@ describe('StudioListPage (S1 to S6)', () => {
     expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ tahun: '2024', negeri: 'Selangor', kertas: '2', jenis: 'percubaan' }))
     const text = w.text()
     for (const chip of ['Tahun: 2024', 'Negeri: Selangor', 'Kertas: 2', 'Jenis: Percubaan']) expect(text).toContain(chip)
-    expect(t(w, 'studio-jenis-filter').text()).toContain('Semua jenis')
+    expect(t(w, 'studio-jenis-filter').text()).toContain('Semua Jenis')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 3')
     expect(t(w, 'studio-kertas-filter').text()).toContain('Kertas 4')
+  })
+
+  it('offers V2 options in Tahun (source paper years), Negeri (V2 boards) and Jenis (Percubaan, Sebenar, Modul), and Set Semula is always shown', async () => {
+    const w = await render('/admin/studio')
+    const opts = (id: string) => t(w, id).findAll('option').map((o) => o.text())
+    expect(opts('studio-tahun-filter')).toEqual(['Semua Tahun', '2024', '2023'])
+    expect(opts('studio-negeri-filter').slice(0, 3)).toEqual(['Semua Negeri', 'Johor', 'Kedah'])
+    expect(opts('studio-negeri-filter')).toContain('SPM(U)')
+    expect(opts('studio-negeri-filter')).toContain('Wilayah Lain')
+    expect(opts('studio-jenis-filter')).toEqual(['Semua Jenis', 'Percubaan', 'Sebenar', 'Modul'])
+    expect(w.text()).toContain('Set Semula')
+  })
+
+  it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {
+    const w = await render('/admin/studio?tingkatan=7&dskp=belum')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ educationLevelId: '7', dskpFilter: 'untagged' }),
+    )
+    expect(w.text()).toContain('Tingkatan: Tingkatan 4')
+    expect(w.text()).toContain('Penandaan DSKP: Belum Ditag')
+    expect(t(w, 'studio-level-filter').text()).toContain('Semua tingkatan')
+    expect(t(w, 'studio-dskp-filter').findAll('option').map((o) => o.text())).toEqual([
+      'Semua',
+      'Ada DSKP Tag',
+      'Belum Ditag',
+    ])
+  })
+
+  it('clears the selection when a filter changes, not when the page does', async () => {
+    const w = await render('/admin/studio')
+    const table = w.getComponent({ name: 'DsDataTable' })
+    table.vm.$emit('update:selection', [{ id: '1' }])
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?page=2')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?status=draft')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual([])
+  })
+
+  it('drops a Penandaan DSKP value the API has no meaning for', async () => {
+    await render('/admin/studio?dskp=lain')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
+  })
+
+  it('filters by Tingkatan and Penandaan DSKP (FR-ADM-Q03.4), through the URL and the chips', async () => {
+    const w = await render('/admin/studio?tingkatan=7&dskp=belum')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(
+      expect.objectContaining({ educationLevelId: '7', dskpFilter: 'untagged' }),
+    )
+    expect(w.text()).toContain('Tingkatan: Tingkatan 4')
+    expect(w.text()).toContain('Penandaan DSKP: Belum Ditag')
+    expect(t(w, 'studio-level-filter').text()).toContain('Semua tingkatan')
+    expect(t(w, 'studio-dskp-filter').findAll('option').map((o) => o.text())).toEqual([
+      'Semua',
+      'Ada DSKP Tag',
+      'Belum Ditag',
+    ])
+  })
+
+  it('clears the selection when a filter changes, not when the page does', async () => {
+    const w = await render('/admin/studio')
+    const table = w.getComponent({ name: 'DsDataTable' })
+    table.vm.$emit('update:selection', [{ id: '1' }])
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?page=2')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual(['1'])
+    await router.push('/admin/studio?status=draft')
+    await flushPromises()
+    expect(w.getComponent({ name: 'StudioBulkBar' }).props('selectedIds')).toEqual([])
+  })
+
+  it('drops a Penandaan DSKP value the API has no meaning for', async () => {
+    await render('/admin/studio?dskp=lain')
+    expect(studio.fetchStudioList).toHaveBeenLastCalledWith(expect.objectContaining({ dskpFilter: null }))
   })
 
   it('drops a filter value the API would refuse instead of sending it', async () => {

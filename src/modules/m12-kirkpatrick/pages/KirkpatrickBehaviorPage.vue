@@ -104,7 +104,7 @@ function apply(value: { schoolId: string }) {
       @remove-chip="filters.removeChip"
       @reset="router.push(paths.behavior)"
     >
-      <DsFormField v-slot="{ id }" native label="Sekolah" class="w-full md:w-64">
+      <DsFormField v-slot="{ id }" native label="Sekolah" class="w-full">
         <DsNativeSelect
           :id="id"
           v-model="filters.school.value"

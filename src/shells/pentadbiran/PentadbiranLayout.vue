@@ -24,7 +24,8 @@ import { enterModPelajar } from '@/shells/shared/mod-pelajar'
 import { useShellTabTitle } from '@/shells/shared/useShellTabTitle'
 import { useThemeMode } from '@/theme/color-mode'
 
-import { PENTADBIRAN_MENU, activeItem, groupOf } from './menu'
+import { PENTADBIRAN_FULL_MENU, activeItem, groupOf } from './menu'
+import { redirectsFrom, renderMenu } from './menu/render'
 import { buildNavGroups, buildSearchGroups, sectionTabs } from './menu-nav'
 
 const route = useRoute()
@@ -38,6 +39,9 @@ const flashApi = useFlash()
 const theme = useThemeMode('staff')
 
 const isLegacy = computed(() => route.meta.v2 !== true)
+const router = useRouter()
+// The rendered menu: a router redirect to a page an earlier entry shows is not listed twice.
+const menu = renderMenu(PENTADBIRAN_FULL_MENU, redirectsFrom(router.getRoutes()))
 const current = computed(() => activeItem(route.path))
 const activeGroupDef = computed(() => (current.value ? groupOf(current.value.id) : undefined))
 const pageMeta = usePageMeta()
@@ -47,13 +51,18 @@ const title = computed(() => {
   if (header?.title) return header.title
   return current.value?.label ?? 'Pentadbiran'
 })
+// The page description: the route's static header subtitle (the V2 `@section('subtitle')`) wins;
+// a page that sets none lifts its own (`DsPageHeader`, `shellPageSubtitle`).
+const subtitle = computed(
+  () => (pageMeta.state.header ?? route.meta.header)?.subtitle || shellPageSubtitle.value,
+)
 // A detail page may name its entity (useShellEntityTitle): last crumb, and part of the tab title.
 const entity = shellEntityTitle
 useShellTabTitle(computed(() => (entity.value ? `${entity.value} · ${title.value}` : title.value)))
 // Crumbs = the sidebar group of the active screen, generated from menu.ts.
 const crumbs = computed(() => {
   const g = activeGroupDef.value
-  if (!g || g.label === title.value) return []
+  if (!g?.label || g.label === title.value) return []
   return [g.label]
 })
 const initials = computed(
@@ -69,18 +78,17 @@ const initials = computed(
 const SCOPE_CHIP = 'Admin Pusat · Seluruh Negara'
 
 const groups = computed(() =>
-  buildNavGroups(PENTADBIRAN_MENU, { activeId: current.value?.id, activeSub: current.value?.sub }),
+  buildNavGroups(menu, { activeId: current.value?.id, activeSub: current.value?.sub }),
 )
 // A folded section (Kirkpatrick) is one sidebar row; its pages are tabs above the content.
 const tabs = computed(() => {
-  const sub = current.value?.sub
+  const sub = current.value?.nested ? undefined : current.value?.sub
   return sub
-    ? sectionTabs(PENTADBIRAN_MENU, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
+    ? sectionTabs(menu, sub).map((t) => ({ key: t.to, label: t.label, to: t.to }))
     : []
 })
-const searchGroups = buildSearchGroups(PENTADBIRAN_MENU)
+const searchGroups = buildSearchGroups(menu)
 
-const router = useRouter()
 const switching = ref(false)
 async function openModPelajar(): Promise<void> {
   if (switching.value) return
@@ -99,10 +107,8 @@ const themeLabel = computed(() =>
 )
 
 const accountItems = computed<DsShellAccountItem[][]>(() => [
-  [{ label: name.value || 'Akaun', heading: true }],
   [
     { label: 'Tetapan Peribadi', icon: 'settings', to: '/tetapan' },
-    { label: themeLabel.value, icon: 'theme', onSelect: () => theme.toggle() },
     { label: 'Masuk Mod Pelajar', icon: 'student', onSelect: () => void openModPelajar() },
   ],
   [{ label: 'Log Keluar', icon: 'logout', to: '/logout', tone: 'error' }],
@@ -116,7 +122,7 @@ const accountItems = computed<DsShellAccountItem[][]>(() => [
     :crumbs="crumbs"
     :title="title"
     :entity="entity"
-    :subtitle="shellPageSubtitle"
+    :subtitle="subtitle"
     brand-to="/admin"
     brand-label="Pentadbiran"
     :account-name="name"

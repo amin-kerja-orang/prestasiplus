@@ -1,20 +1,27 @@
 /**
- * Pure side of `migrate:questions` (QLOAD, LEAD decision A): turns one archived .cloud question (status `diluluskan`, type
- * `mcq`) and its options into the plan of one published, live, single-part MCQ of the v2 bank. No I/O.
+ * Pure side of `migrate:questions` (QLOAD, T-B9-2): turns one archived .cloud MCQ and its options into the plan of one single-part
+ * question of the v2 bank, in ANY V2 status (PO KP-5: everything that is not deleted comes over with its status). No I/O.
  *
- * Rules (docs/architecture/v2-data-migration.md 3.3, design in the QLOAD card):
- *  - a question that is not `diluluskan` or not an MCQ is EXCLUDED (counted, not a reject);
- *  - the leaf must satisfy the contract `QuestionLeafPartSchema` (2 to 8 options since S1-T09a; this ETL keeps its own floor of 3,
- *    `MIN_OPTIONS` below, an S0 rule this card does not change; labels A to H, non-empty texts, the key
- *    names an option): the v2 reader fails closed on a stored leaf that does not, so nothing is inserted that it would refuse;
+ * Rules (docs/architecture/v2-question-bank-migration.md sections 4 and 5):
+ *  - status: `diluluskan` loads approved and live; `diarkib` archived; `draf` and `ditolak` draft (`ditolak` carries the reason
+ *    "Ditolak di V2."); `menunggu` review; any other status is a reject (UNKNOWN_ENUM, never silently dropped). A question of another
+ *    TYPE that another loader owns (`subjektif`, T-B9-6) is EXCLUDED (counted); any other type is an UNKNOWN_ENUM reject;
+ *  - the leaf must satisfy the contract READ schema the v2 reader uses (`QuestionLeafPartReadV3Schema`: 2 to 8 options, labels A to H,
+ *    non-empty option texts, the key names an option): the reader fails closed on a stored leaf that does not, so nothing is inserted
+ *    that it would refuse. A question with two or more correct options is `mcq_multi` (key `options`, `modeConfig.multi`);
+ *  - rejects of the first load that are repaired, never copied: 2 options load (V3 allows 2 to 8); labels that are not A to H and unique
+ *    are re-assigned positionally in option id order (the key follows `is_correct`, never the label); an empty stem with a question
+ *    image loads with an empty stem (the image is the stem stimulus). Still quarantined (a reject, kept with its cause): no correct
+ *    option (an answer is never guessed), an option with no text, more than 8 options or fewer than 2, a body over the cap, an empty
+ *    stem with no image;
  *  - curriculum ids come from the `migrate:core` id maps; subject and level are required, chapter and topic are optional;
  *  - `difficulty_tp` is the raw 1 to 5 (as `practice_answers.difficulty`); `cognitive_level` stays empty;
- *  - a question or option image is NOT copied: the path is kept in `import_issues` and the question is held inactive (so is one whose
+ *  - a question or option image is NOT copied here: the path is kept in `import_issues` and the question is held inactive (so is one whose
  *    text still holds an image, maths or script markup after the HTML conversion, or looks like it holds personal data);
  *  - the SPM pool tag is written for Tingkatan 4 and 5 only; no DSKP unit or SP exists in .cloud.
  * Reject reasons are the kit's five; the cause is the `column`. Text never goes into a reject or a counter.
  */
-import { QuestionLeafPartSchema } from '@pp/contract'
+import { QuestionLeafPartReadV3Schema } from '@pp/contract'
 
 import { scanViews } from '../anonymise/normalise'
 import { LANDLINE } from '../anonymise/patterns'
@@ -22,11 +29,29 @@ import { REDACTED_TOKEN } from '../anonymise/redacted-token'
 import { mapQuestionType, parseDifficulty } from '../snapshot-dims/dims'
 import { enumKey, flag, ok, reject, stamps, text, type Outcome, type Staged } from './common'
 
-/** The only status that is loaded (BM code of .cloud `questions.status`). */
+/** BM code of .cloud `questions.status` that is live and served (the others are loaded but never served). */
 export const APPROVED_STATUS = 'diluluskan'
-export const MIN_OPTIONS = 3
+/** The V3 version statuses a legacy question can take (section 4.1). */
+export type LoadedStatus = 'approved' | 'archived' | 'draft' | 'review'
+/** BM code of .cloud `questions.status` -> V3 version status. */
+export const STATUS_MAP: Readonly<Record<string, LoadedStatus>> = {
+  diluluskan: 'approved',
+  diarkib: 'archived',
+  draf: 'draft',
+  ditolak: 'draft',
+  menunggu: 'review',
+}
+/** The reason stored with a V2 `ditolak` question (the 5 to 500 characters rule of `rejection_reason`). */
+export const V2_REJECTED_REASON = 'Ditolak di V2.'
+/** Types that another loader of the same migration owns: counted as excluded here, never a reject. */
+export const OTHER_OWNER_TYPES: ReadonlySet<string> = new Set(['subjektif', 'subjective'])
+export const MIN_OPTIONS = 2
 export const MAX_OPTIONS = 8
 const LABELS = 'ABCDEFGH'
+
+/** The lifecycle class of a status, for rajah groups (a group retires and revives as one unit): OC-2. */
+export type LifecycleClass = 'approved' | 'pending' | 'archived'
+export const lifecycleOf = (status: LoadedStatus): LifecycleClass => (status === 'approved' ? 'approved' : status === 'archived' ? 'archived' : 'pending')
 
 export interface LegacyOption {
   id: string | null
@@ -62,18 +87,55 @@ const codeOf = (raw: string | null | undefined): string => {
   return k !== null && /^[a-z0-9_]{1,32}$/.test(k) ? k : k === null ? 'null' : 'other'
 }
 
-/** null when the row is in scope; else why not (status is checked first). */
+/**
+ * null when the row is in scope of THIS loader; else the type another loader owns (counted, not a reject). An unknown status or type is
+ * not an exclusion: `transformQuestion` rejects it (UNKNOWN_ENUM), so nothing is dropped without a trace.
+ */
 export function exclusionOf(row: Staged): Exclusion | null {
-  if (enumKey(row.status) !== APPROVED_STATUS) return { by: 'status', code: codeOf(row.status) }
-  if (mapQuestionType(row.type) !== 'mcq') return { by: 'type', code: codeOf(row.type) }
+  const type = enumKey(row.type)
+  if (type !== null && OTHER_OWNER_TYPES.has(type)) return { by: 'type', code: codeOf(row.type) }
   return null
 }
+
+/** The V3 status of a V2 status code, or null when it is not a known one. */
+export function statusOf(raw: string | null | undefined): LoadedStatus | null {
+  const k = enumKey(raw)
+  return k !== null && Object.prototype.hasOwnProperty.call(STATUS_MAP, k) ? (STATUS_MAP[k] ?? null) : null
+}
+
+/** One entry of `question_versions.import_issues`. */
+export interface ImportIssue {
+  code: string
+  target: 'question' | 'stem' | 'option' | 'explanation'
+  label?: string
+  path?: string
+  kind?: string
+  /** `rajah_group_auto` only: the confidence tier and the signals that made the group (no text). */
+  ref?: string
+  signals?: string[]
+}
+
+/** The codes that hold a question inactive (the Studio releases them when the cause is fixed). The others only describe the load. */
+export const HOLD_CODES: ReadonlySet<string> = new Set(['legacy_image_unresolved', 'html_image', 'html_math', 'html_residual', 'pii_suspect'])
 
 export interface QuestionPlan {
   legacyId: string
   created_at: string
   updated_at: string
-  published_at: string
+  /** `updated_at` for an approved question, else null (only an approved version is published). */
+  published_at: string | null
+  status: LoadedStatus
+  /** The live version pointer is set (approved only). */
+  live: boolean
+  /** `rejection_reason` of a draft that V2 had rejected, else null. */
+  rejection_reason: string | null
+  /** `mcq`, or `mcq_multi` when two or more options are correct. */
+  qtype: 'mcq' | 'mcq_multi'
+  /** V2 `created_by` / `approved_by` ids (users), mapped by the writer when they were migrated. */
+  created_by: string | null
+  approved_by: string | null
+  /** The question image path (the stem stimulus, or the stimulus of its rajah group), else null. */
+  image_path: string | null
   is_active: boolean
   subject_id: string
   education_level_id: string
@@ -83,10 +145,11 @@ export interface QuestionPlan {
   difficulty_tp: number | null
   stem: string
   explanation: string | null
-  /** `import_issues` of the version (structured list) or null. */
-  import_issues: { code: string; target: 'question' | 'stem' | 'option' | 'explanation'; label?: string; path?: string; kind?: string }[] | null
+  /** `import_issues` of the version (structured list) or null. Only the codes of `HOLD_CODES` hold the question inactive. */
+  import_issues: ImportIssue[] | null
   options: { label: string; body: string; position: number }[]
-  correct: string
+  /** The correct label(s): one for `mcq`, two or more for `mcq_multi`. */
+  correct: string[]
   /** SPM pool tag (`pool` / `spm`): Tingkatan 4 and 5. */
   spm_pool: boolean
   /** Counter names (no values) to add to the report. */
@@ -214,26 +277,41 @@ function rawPiiKindsOf(value: string): PiiKind[] {
   return kinds
 }
 
-/** Plan of one in-scope question, or the reject. `row` must not be excluded (`exclusionOf` is null). */
+/** Label of the option at index `i` after a positional re-assignment. */
+const positional = (i: number): string => LABELS.charAt(i)
+
+/** Plan of one question of this loader's scope (an in-scope type: `exclusionOf` is null), or the reject that quarantines it. */
 export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome<QuestionPlan> {
   const notes: string[] = []
+  const status = statusOf(row.status)
+  if (status === null) {
+    const k = codeOf(row.status)
+    return reject('UNKNOWN_ENUM', 'status', { enumValue: k, allowedCodes: Object.keys(STATUS_MAP) })
+  }
+  if (mapQuestionType(row.type) !== 'mcq') return reject('UNKNOWN_ENUM', 'type', { enumValue: codeOf(row.type), allowedCodes: ['mcq', 'objektif', 'pilihan_berganda', ...OTHER_OWNER_TYPES] })
   const subject = text(row.subject_id) === null ? undefined : cur.subjects.get((row.subject_id as string).trim())
   if (subject === undefined) return reject('ORPHAN_PARENT', 'subject_id')
   const level = text(row.education_level_id) === null ? undefined : cur.levels.get((row.education_level_id as string).trim())
   if (level === undefined) return reject('ORPHAN_PARENT', 'education_level_id')
 
+  const qImage = text(row.image_path)
   const rawStem = text(row.body)
-  if (rawStem === null) return reject('INVALID_VALUE', 'body')
-  if (rawStem.length > MAX_BODY_CHARS) return reject('INVALID_VALUE', 'body')
-  const stemPlain = plainFromHtml(rawStem)
+  if (rawStem !== null && rawStem.length > MAX_BODY_CHARS) return reject('INVALID_VALUE', 'body')
+  const stemPlain = rawStem === null ? { text: '', tags: false, entities: false } : plainFromHtml(rawStem)
   const stem = stemPlain.text
-  if (stem === '') return reject('INVALID_VALUE', 'body')
+  // An empty stem is a picture question only when the picture exists; the options are checked below, the same as for any question.
+  if (stem === '') {
+    if (qImage === null) return reject('INVALID_VALUE', 'body')
+    notes.push('empty_stem_image')
+  }
   let htmlStripped = stemPlain.tags
   let entityDecoded = stemPlain.entities
 
   const opts = row.options
   if (opts.length < MIN_OPTIONS || opts.length > MAX_OPTIONS) return reject('INVALID_VALUE', 'options')
+  if (opts.length === 2) notes.push('two_options')
   const rawBodies = opts.map((o) => text(o.body))
+  // An option with no text is quarantined (an image-only option too): the contract needs `body.ms` on every option, so the strict reader would fail on it.
   if (rawBodies.some((b) => b === null)) return reject('INVALID_VALUE', 'options.body')
   if (rawBodies.some((b) => (b as string).length > MAX_BODY_CHARS)) return reject('INVALID_VALUE', 'options.body')
   const bodies = rawBodies.map((raw) => {
@@ -244,34 +322,41 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   })
   if (bodies.some((b) => b === '')) return reject('INVALID_VALUE', 'options.body')
 
-  const labels = normaliseLabels(opts.map((o) => o.label))
-  if (labels === null || labels.some((l) => l === null)) return reject('INVALID_VALUE', 'label')
-  if (new Set(labels).size !== labels.length) return reject('DUPLICATE_KEY', 'label')
-  if (opts.every((o) => /^[1-8]$/.test((text(o.label) ?? '').replace(/[.)]$/, '')))) notes.push('label_renumbered')
-
-  let correct: string | null = null
-  for (const [i, o] of opts.entries()) {
-    const f = flag(o.is_correct, false)
-    if (f === 'invalid') return reject('INVALID_VALUE', 'is_correct')
-    if (f) {
-      if (correct !== null) return reject('INVALID_VALUE', 'is_correct')
-      correct = labels[i] as string
-    }
+  // Labels: normalised as before; when they are still not A to H and unique, positional A..H in option id order (the key follows is_correct).
+  const normalised = normaliseLabels(opts.map((o) => o.label))
+  const labelsOk = normalised !== null && normalised.every((l) => l !== null) && new Set(normalised).size === normalised.length
+  let labels: string[]
+  if (labelsOk) {
+    labels = normalised as string[]
+    if (opts.every((o) => /^[1-8]$/.test((text(o.label) ?? '').replace(/[.)]$/, '')))) notes.push('label_renumbered')
+  } else {
+    labels = opts.map((_, i) => positional(i))
+    notes.push('label_relabelled')
   }
-  if (correct === null) return reject('INVALID_VALUE', 'is_correct')
+
+  const flags = opts.map((o) => flag(o.is_correct, false))
+  if (flags.some((f) => f === 'invalid')) return reject('INVALID_VALUE', 'is_correct')
+  const correct = labels.filter((_, i) => flags[i] === true)
+  // No correct option: quarantine, an answer is never guessed (OC-7). Every option correct is not a question either.
+  if (correct.length === 0) return reject('INVALID_VALUE', 'is_correct')
+  if (correct.length > 1 && correct.length > opts.length - 1) return reject('INVALID_VALUE', 'is_correct')
+  const multi = correct.length > 1
+  if (multi) notes.push('mcq_multi')
 
   const ordered = opts
     .map((_, i) => ({ label: labels[i] as string, body: bodies[i] as string, image: text(opts[i]?.image_path) }))
     .sort((a, b) => (a.label < b.label ? -1 : 1))
     .map((o, i) => ({ ...o, position: i + 1 }))
 
-  const parsed = QuestionLeafPartSchema.safeParse({
+  // The contract leaf the v2 reader parses on every read (an empty stem is validated with a placeholder, as `leafFromRow` does for a trimmed prompt).
+  const parsed = QuestionLeafPartReadV3Schema.safeParse({
     label: '1',
-    prompt: { ms: stem },
+    prompt: { ms: stem === '' ? '-' : stem },
     marks: 1,
     mode: 'mcq',
     options: ordered.map((o) => ({ label: o.label, body: { ms: o.body } })),
-    key: { kind: 'option', correct },
+    key: multi ? { kind: 'options', correctOptionIds: correct } : { kind: 'option', correct: correct[0] },
+    ...(multi ? { modeConfig: { multi: true } } : {}),
   })
   if (!parsed.success) return reject('INVALID_VALUE', 'tree')
 
@@ -306,8 +391,7 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   if (HTML.test(stem) || ordered.some((o) => HTML.test(o.body))) notes.push('body_has_html')
 
   // Held (loaded, but not active): a question image that is not copied, markup that must not be served, suspected personal data.
-  const issues: NonNullable<QuestionPlan['import_issues']> = []
-  const qImage = text(row.image_path)
+  const issues: ImportIssue[] = []
   if (qImage !== null) {
     issues.push({ code: 'legacy_image_unresolved', target: 'question', path: qImage })
     notes.push('question_image')
@@ -318,7 +402,7 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
       notes.push('option_image')
     }
   }
-  if (issues.length > 0) notes.push('held_image')
+  if (issues.some((i) => i.code === 'legacy_image_unresolved')) notes.push('held_image')
   const texts: { target: 'stem' | 'option' | 'explanation'; label?: string; value: string }[] = [
     { target: 'stem', value: stem },
     ...ordered.map((o) => ({ target: 'option' as const, label: o.label, value: o.body })),
@@ -341,15 +425,28 @@ export function transformQuestion(row: LegacyQuestion, cur: Curriculum): Outcome
   }
   for (const c of holdCodes) notes.push(`held_${c}`)
   if (piiKinds.size > 0) notes.push('held_pii_suspect')
+  // Informative only (no hold): the V2 `dskp_tagged` flag is the one fact V2 holds about the DSKP; no unit or SP exists in V2.
+  if (flag(row.dskp_tagged, false) === true) {
+    issues.push({ code: 'v2_dskp_tagged', target: 'question' })
+    notes.push('v2_dskp_tagged')
+  }
 
   const code = cur.levelCodes.get(level)
   const t = stamps(row)
+  notes.push(`status.${status}`)
   return ok({
     legacyId: (row.id ?? '').trim(),
     created_at: t.created_at,
     updated_at: t.updated_at,
-    published_at: t.updated_at,
-    is_active: issues.length === 0,
+    published_at: status === 'approved' ? t.updated_at : null,
+    status,
+    live: status === 'approved',
+    rejection_reason: enumKey(row.status) === 'ditolak' ? V2_REJECTED_REASON : null,
+    qtype: multi ? 'mcq_multi' : 'mcq',
+    created_by: text(row.created_by),
+    approved_by: text(row.approved_by),
+    image_path: qImage,
+    is_active: !issues.some((i) => HOLD_CODES.has(i.code)),
     subject_id: subject,
     education_level_id: level,
     chapter_id: chapter,

@@ -83,6 +83,15 @@ describe('admin question list: Tahun, Negeri, Kertas, Jenis', () => {
     expect(archive.body.error.fields.filter).toBe(QUESTION_MESSAGES.filterBlank)
   })
 
+  it('filter-options lists the distinct source paper years, newest first, beside the Negeri values', async () => {
+    const res = await admin.get('/api/questions/filter-options')
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    const years = res.body.data.tahun as number[]
+    expect(years).toEqual([...new Set(years)].sort((x, y) => y - x))
+    expect(years).toEqual(expect.arrayContaining([2024, 2023]))
+    expect(res.body.data.negeri).toEqual(expect.arrayContaining(['Selangor', 'Johor']))
+  })
+
   it('Kertas: 1, 2 or 3 (the trailing digit of the paper code)', async () => {
     expect(await listed('kertas=1')).toEqual(keys('a'))
     expect(await listed('kertas=2')).toEqual(keys('b', 'c'))

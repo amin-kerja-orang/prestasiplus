@@ -19,13 +19,13 @@ import { join } from 'node:path'
 
 import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
-import { SessionSchema } from '@pp/contract'
+import { SessionSchema, unitsOfChapter } from '@pp/contract'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
-import { GROUP_SURFACES, ServabilityService } from '../../src/modules/questions'
+import { ServabilityService } from '../../src/modules/questions'
 import { identitySeed } from '../../prisma/seed/core/identity'
 import { walletTiersSeed } from '../../prisma/seed/core/wallet-tiers'
 import { curriculumSeed } from '../../prisma/seed/curriculum'
@@ -593,23 +593,23 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       const result = (await pupil.get(`/api/bijak/attempts/${retry}/result`)).body.data.result as { score: number; questions: { questionId: string; parts: { partId: string }[] }[] }
       expect(result.score).toBe(4)
       const essayPartId = result.questions.find((q) => q.questionId === fx.essay)!.parts[0]!.partId
-      // the submit paid the automatic score under the bare attempt id: 4 marks = 8 syiling
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId]])
+      // the submit paid the automatic score under the bare attempt id: 4 marks = 4 syiling (1 per mark, the default rate)
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId]])
       const xpAtSubmit = await xp()
       const mark = async (n: number) => expect((await pupil.post(`/api/bijak/attempts/${retry}/self-mark`, { partId: essayPartId, mark: n })).status).toBe(200)
-      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 2 syiling, 10 XP, one row keyed <attempt>:score:5
+      // 1 mark: level 5, a gain of 1 over the automatic 4 -> 1 syiling, 10 XP, one row keyed <attempt>:score:5
       await mark(1)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 10)
       // 2 marks: level 6, a gain of 1 over the highest paid level (5) -> one more row, keyed :score:6
       await mark(2)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId], [`${retry}:score:6`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 20)
       // a replay of the same mark, and a lower one: no row, no XP, nothing taken back
       await mark(2)
       await mark(1)
       await mark(2)
-      expect(await ledger()).toEqual([[retry, 8, pupil.userId], [`${retry}:score:5`, 2, pupil.userId], [`${retry}:score:6`, 2, pupil.userId]])
+      expect(await ledger()).toEqual([[retry, 4, pupil.userId], [`${retry}:score:5`, 1, pupil.userId], [`${retry}:score:6`, 1, pupil.userId]])
       expect(await xp()).toBe(xpAtSubmit + 20)
     })
   })
@@ -657,44 +657,65 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
     })
   })
 
-  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; grouped members do not (R1 U2)', () => {
+  describe('5. the approved MCQs reach Databank and Latih Tubi SPM; complete groups too, whole and with their rajah (D105, T-C13)', () => {
     const solos = () => [fx.soloA, fx.soloB, fx.soloC]
+    const members = () => [...fx.imageMembers, ...fx.passageMembers]
+    type Served = { id: string; stimuli?: { kind: string; image?: { url: string }; text?: string }[]; group?: { id: string; index: number; size: number } | null }
 
-    it('Databank and Latih Tubi SPM count exactly the solo MCQs (grouped members and the essay are not counted)', async () => {
+    /** Every member of a group carries the rajah and its place; the members are contiguous. */
+    const expectWholeGroups = (qs: Served[]): void => {
+      for (const memberId of members()) {
+        const q = qs.find((x) => x.id === memberId)
+        expect(q, `member ${memberId} is served`).toBeDefined()
+        expect(q?.stimuli?.length, `member ${memberId} carries the rajah`).toBeGreaterThan(0)
+        expect(q?.group?.id).toBeTruthy()
+      }
+      const byGroup = new Map<string, number[]>()
+      qs.forEach((q, i) => {
+        if (q.group) byGroup.set(q.group.id, [...(byGroup.get(q.group.id) ?? []), i])
+      })
+      expect(byGroup.size).toBe(2)
+      for (const [gid, at] of byGroup) {
+        expect(at.at(-1)! - at[0]! + 1, `group ${gid} is contiguous`).toBe(at.length)
+        const placed = at.map((i) => qs[i]!.group!)
+        expect(placed.map((g) => g.index), `group ${gid} is in order`).toEqual(placed.map((_, i) => i + 1))
+        expect(placed.every((g) => g.size === at.length)).toBe(true)
+      }
+    }
+
+    it('Databank and Latih Tubi SPM count the solo MCQs plus each complete group once (the essay is not counted)', async () => {
       const databank = await pupil.get('/api/spm/databank')
       expect(databank.status, JSON.stringify(databank.body)).toBe(200)
-      expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length)
+      expect((databank.body.data as { code: string; databankCount: number }[]).find((d) => d.code === 'MATH')?.databankCount).toBe(solos().length + 2)
       const lt = await pupil.get('/api/spm/latih-tubi/MATH')
       expect(lt.status, JSON.stringify(lt.body)).toBe(200)
-      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each when the surface serves groups (GROUP_SURFACES).
-      expect(lt.body.data.total).toBe(solos().length + (GROUP_SURFACES.includes('latih_tubi_spm') ? 2 : 0))
+      // Latih Tubi counts what its draw serves (D91): solos, plus the two complete groups once each.
+      expect(lt.body.data.total).toBe(solos().length + 2)
     })
 
-    it('a Latih Tubi SPM session draws the solo MCQs and NONE of the D90 group members (explicit refusal)', async () => {
+    it('a Latih Tubi SPM session serves the solo MCQs and the WHOLE groups, each member with its rajah, in order; never the essay', async () => {
       const res = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 40 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id).sort()
-      expect(served).toEqual(solos().sort())
-      for (const member of [...fx.imageMembers, ...fx.passageMembers]) expect(served).not.toContain(member)
-      expect(served).not.toContain(fx.essay)
+      const qs = res.body.data.questions as Served[]
+      expect(qs.map((q) => q.id).sort()).toEqual([...solos(), ...members()].sort())
+      expect(qs.map((q) => q.id)).not.toContain(fx.essay)
+      expectWholeGroups(qs)
     })
 
-    it('a Databank (Tahun Lepas) session draws the same set', async () => {
+    it('a Databank (Tahun Lepas) session serves the same set', async () => {
       const res = await pupil.post('/api/practice/sessions', { mode: 'past_year', subjectCode: 'MATH', count: 10 })
       expect(res.status, JSON.stringify(res.body)).toBe(201)
-      const served = (res.body.data.questions as { id: string }[]).map((q) => q.id).sort()
-      expect(served).toEqual(solos().sort())
+      const qs = res.body.data.questions as Served[]
+      expect(qs.map((q) => q.id).sort()).toEqual([...solos(), ...members()].sort())
+      expectWholeGroups(qs)
     })
 
-    it('"Buka Soalan Sama" on a grouped member is refused (422), on a solo MCQ it opens', async () => {
+    it('"Buka Soalan Sama" on a grouped member is refused (422: a group is never served split), on a solo MCQ it opens', async () => {
       const refused = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 1, targetQuestionId: fx.passageMembers[0] })
       expect(refused.status, JSON.stringify(refused.body)).toBe(422)
       const opened = await pupil.post('/api/practice/sessions', { mode: 'latih_tubi', subjectCode: 'MATH', count: 1, targetQuestionId: fx.soloA })
       expect(opened.status, JSON.stringify(opened.body)).toBe(201)
     })
-
-    // R1 U2 / R2: serving group members together with their stimulus in Databank / Latih Tubi is R2 (D90 in the practice family).
-    it.todo('R2: grouped members appear in Databank / Latih Tubi SPM WITH their stimulus (today they are refused: ungrouped filter)')
   })
 
   // R1-20.4 / AC-18.1 / AC-18.3 / AC-18.4 (T51): each applicable activity serves exactly what its rule says, and the admin reason for an exclusion
@@ -711,13 +732,12 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       for (const a of ['databank', 'latih_tubi_spm', 'simulasi_kuiz', 'simulasi_paper']) expect(v[a], a).toMatchObject({ served: true, reasons: [] })
     })
 
-    it('a stimulus-group member is served in Simulasi only: Databank / Latih Tubi SPM refuse it with the reason has_stimulus (AC-18.3, D87 U2)', async () => {
+    it('a stimulus-group member is served in Simulasi AND in Databank / Latih Tubi SPM (D105, T-C13: whole groups in the drills; the old has_stimulus refusal is gone)', async () => {
       const v = await activities(fx.passageMembers[0]!)
       expect(v.simulasi_paper).toMatchObject({ served: true })
       for (const a of ['databank', 'latih_tubi_spm']) {
-        expect(v[a]!.served, a).toBe(false)
-        expect(v[a]!.reasons.map((r) => r.code), a).toContain('has_stimulus')
-        expect(v[a]!.reasons[0]!.message.length, a).toBeGreaterThan(10)
+        expect(v[a]!.reasons.map((r) => r.code), a).not.toContain('has_stimulus')
+        expect(v[a]!.reasons.map((r) => r.code), a).not.toContain('has_option_image')
       }
     })
 
@@ -762,8 +782,35 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
      * The Studio path: the admin edits the question and sets its Bab (PUT /api/questions/:id with curriculumChapterId), then sends the new version
      * through Semakan and Terbit again (the real bulk route). On an approved question the edit makes a new version; it is live once re-approved.
      */
+    /**
+     * The Tajuk DSKP that belongs with a Bab (G-02, `unitsOfChapter`, the same rule the API enforces: a mismatched pair is refused with 422), read
+     * from the curriculum seed; where the link is not known (`null`) any unit is accepted and the chain's own unit stays.
+     */
+    const unitFor = async (chapterId: string): Promise<string> => {
+      const chapters = await db.query<{ id: string; chapterNumber: number | null; dskpCode: string | null }>(
+        `select id::text id, chapter_number as "chapterNumber", dskp_code as "dskpCode" from chapters where subject_id = $1 and education_level_id = $2 and is_active order by id`,
+        [fx.subject, fx.level],
+      )
+      const units = await db.query<{ id: string; code: string }>(
+        `select id::text id, code from curriculum_nodes where kind = 'unit' and subject_id = $1 and education_level_id = $2 order by sort_order, id`,
+        [fx.subject, fx.level],
+      )
+      const chapter = chapters.find((c) => c.id === chapterId)!
+      const allowed = unitsOfChapter(chapter, chapters, units)
+      return allowed === null || allowed.some((u) => u.id === fx.unit) ? fx.unit : allowed[0]!.id
+    }
+    /** The first SP under a unit (the tag must name an SP of its own unit). */
+    const spOf = async (unitId: string): Promise<string> =>
+      unitId === fx.unit
+        ? fx.sp
+        : one(
+            `with recursive d as (select id, kind, sort_order from curriculum_nodes where parent_id = $1 union all select n.id, n.kind, n.sort_order from curriculum_nodes n join d on n.parent_id = d.id)
+             select id::text id from d where kind = 'sp' order by sort_order, id limit 1`,
+            [unitId],
+          )
     const setBab = async (id: string, text: string, chapterId: string): Promise<void> => {
-      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId }))
+      const unitId = await unitFor(chapterId)
+      const put = await admin.put(`/api/questions/${id}`, mcqBody(text, { curriculumChapterId: chapterId, tag: { unitId, spIds: [await spOf(unitId)], tp: 3 } }))
       expect(put.status, JSON.stringify(put.body)).toBe(200)
       await advance([id])
       expect(await babOf(id)).toBe(chapterId)
@@ -806,6 +853,10 @@ describe('R1 pipeline chain: admin enters -> pupil sees', () => {
       expect(b).toContain(fx.soloB)
       expect(b, 'a question of ANOTHER chapter is never drawn').not.toContain(fx.soloA)
       for (const id of b) expect(await babOf(id), id).toBe(chapterB)
+
+      // The Bab and the Tajuk DSKP must belong together (G-02), so soloB carried the unit of chapter B for the checks above. Step 6 draws Jana
+      // Kertas from the chain's own unit bucket, so soloB goes back to chapter A (which belongs with that unit) before the chain goes on.
+      await setBab(fx.soloB, SOLO_B_TEXT, chapterA)
     })
   })
 

@@ -22,10 +22,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CurriculumBrowserPage.vue'),
     meta: {
       ...adminMeta,
-      title: 'Pengurusan Kurikulum - Admin PRESTASIPLUS',
+      title: 'Kurikulum',
       header: {
-        title: 'Pengurusan Kurikulum',
-        subtitle: 'Urus struktur kurikulum (Bab → Topik → Subtopik)',
+        title: 'Kurikulum',
+        subtitle: 'Struktur kurikulum',
       },
     },
   },

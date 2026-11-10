@@ -7,8 +7,9 @@ import { NoStoreInterceptor, ok } from '../../../../common/http'
 import type { RequestWithAuth } from '../../../../common/scope'
 import { RateLimit, RateLimitGuard } from '../../../../common/throttle'
 import { ANALYTICS_LIMITS } from '../analytics.constants'
+import { callerOf } from '../../../users/caller'
 import { ItemAnalysisService } from '../services/item-analysis.service'
-import { MonitoringService } from '../services/monitoring.service'
+import { AdminCentralService, MonitoringService } from '../services/monitoring.service'
 import { ReportService } from '../services/report.service'
 import { StudentDetailService } from '../services/student-detail.service'
 import { FieldsZodPipe, PathIdPipe, TolerantQueryPipe, ctxOf, overloadTo429 } from './request'
@@ -19,6 +20,7 @@ const filterQuery = new TolerantQueryPipe(['period', 'state', 'tahap'])
 const exportQuery = [new TolerantQueryPipe(['period', 'state', 'tahap', 'format']), new FieldsZodPipe(AnalyticsExportQuerySchema)] as const
 const reportQuery = new TolerantQueryPipe(['range', 'classroomId'])
 const itemQuery = new TolerantQueryPipe(['subjectId', 'classroomId'])
+const rangeQuery = new TolerantQueryPipe(['range'])
 
 interface FilterQuery {
   period?: string
@@ -93,5 +95,37 @@ export class TeacherReportsController {
   @Get('item-analysis')
   async itemAnalysis(@Query(itemQuery) query: { subjectId?: string; classroomId?: string }, @Req() req: Req) {
     return ok(await overloadTo429(() => this.items.analyse(ctxOf(req), query)))
+  }
+}
+
+/**
+ * Admin Pusat central screens (S6-T11): dashboard tiles (API-ADM-11), analytics (API-ADM-12) and the Laporan (API-ADM-13, laporan part).
+ * Role admin only: every other role is 403 from `@Roles`, no session is 401. Pupil names travel in the Laporan body, so every response
+ * is `no-store`; the routes are rate limited per user like the other M11 reads. `range` is tolerant (an unknown value is the default).
+ */
+@Controller('admin')
+@Roles('admin')
+@UseGuards(RateLimitGuard)
+@RateLimit(ANALYTICS_LIMITS.read)
+@UseInterceptors(NoStoreInterceptor)
+export class AdminCentralController {
+  constructor(
+    @Inject(AdminCentralService) private readonly central: AdminCentralService,
+    @Inject(ReportService) private readonly report: ReportService,
+  ) {}
+
+  @Get('dashboard')
+  async dashboard(@Req() req: Req) {
+    return ok(await overloadTo429(() => this.central.dashboard(callerOf(req))))
+  }
+
+  @Get('analytics')
+  async analytics(@Query(rangeQuery) query: { range?: string }) {
+    return ok(await overloadTo429(() => this.central.analytics(query)))
+  }
+
+  @Get('reports/laporan')
+  async laporan(@Query(rangeQuery) query: { range?: string }) {
+    return ok(await overloadTo429(() => this.report.adminLaporan(query)))
   }
 }

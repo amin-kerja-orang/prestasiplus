@@ -49,6 +49,8 @@ import type {
 } from './quiz-types'
 import QuizLoading from './QuizLoading.vue'
 import QuizResults from './QuizResults.vue'
+import { StimulusGroup } from '../../lib/question-display'
+import { toStimuliData } from './stimulus-adapter'
 import { useQuizRun } from './useQuizRun'
 
 const DEFAULT_API: QuizApi = {
@@ -275,6 +277,37 @@ const combo = computed(() => comboOf(answers.value))
 function jawi(q: { textDirection?: string; scriptType?: string }): boolean {
   return q.textDirection === 'rtl' || q.scriptType === 'mixed'
 }
+// --- T-C13 (D105, D90): the rajah of every question of a group, not only the first.
+const stimuli = computed(() => toStimuliData(current.value?.stimuli))
+/** The current question is a member of a stimulus group: its rajah sits beside (wide) or one tap away (below 1024 px) on EVERY member. */
+const grouped = computed(() => !!current.value?.group && stimuli.value.length > 0)
+/** A figure or passage linked to this question alone: shown inline above the question. */
+const ownStimuli = computed(() => (current.value?.group ? [] : stimuli.value))
+const groupBind = computed(() =>
+  grouped.value && current.value?.group
+    ? {
+        stimuli: stimuli.value,
+        // Open the first time the group appears in THIS session, then whatever the pupil left (FR-X6-6).
+        groupId: `${active.value?.sessionId ?? ''}:${current.value.group.id}`,
+        split: 'half' as const,
+        onError: onStimError,
+        onLoaded: onStimLoaded,
+      }
+    : { class: 'flex min-w-0 flex-col gap-4' },
+)
+/** A picture that failed to load blocks "Semak Jawapan" until "Cuba lagi" succeeds (AC-07.4): never answer blind. */
+const failedStimuli = ref<string[]>([])
+const stimulusBlocked = computed(() => failedStimuli.value.length > 0)
+function onStimError(id: string): void {
+  if (!failedStimuli.value.includes(id)) failedStimuli.value = [...failedStimuli.value, id]
+}
+function onStimLoaded(id: string): void {
+  failedStimuli.value = failedStimuli.value.filter((x) => x !== id)
+}
+watch(
+  () => current.value?.id,
+  () => (failedStimuli.value = []),
+)
 const exitOpen = ref(false)
 function leave(): void {
   if (props.confirmExit) {
@@ -306,7 +339,11 @@ const feedbackExplanation = computed(() =>
       data-testid="quiz-runner"
       :data-phase="phase"
     >
-      <div class="mx-auto flex min-h-full w-full max-w-xl flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6">
+      <div
+        class="mx-auto flex min-h-full w-full flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6"
+        :class="phase === 'quiz' && grouped ? 'max-w-5xl' : 'max-w-xl'"
+        data-testid="quiz-column"
+      >
         <!-- Trial used up at the session start (no redirect to a dead /pricing) -->
         <template v-if="phase === 'loading' && startTrialExhausted">
           <UAlert
@@ -410,7 +447,8 @@ const feedbackExplanation = computed(() =>
             </div>
           </div>
 
-          <UCard v-if="current" data-testid="quiz-question">
+          <component :is="grouped ? StimulusGroup : 'div'" v-if="current" v-bind="groupBind">
+          <UCard data-testid="quiz-question">
             <div class="flex flex-col gap-4">
               <div class="flex flex-wrap items-center gap-2">
                 <UBadge color="primary" variant="solid" size="lg" icon="i-ph-question-bold"
@@ -444,6 +482,14 @@ const feedbackExplanation = computed(() =>
                   >Latihan Tambahan</UBadge
                 >
               </div>
+
+              <StimulusGroup
+                v-if="ownStimuli.length > 0"
+                :stimuli="ownStimuli"
+                :hint="false"
+                @error="onStimError"
+                @loaded="onStimLoaded"
+              />
 
               <h2
                 class="text-heading break-words text-highlighted"
@@ -498,7 +544,14 @@ const feedbackExplanation = computed(() =>
                   :dir="current.textDirection || 'ltr'"
                   :data-testid="`option-${option.label}`"
                   @select="run.select(option.id)"
-                  >{{ option.text }}</DsQuizOption
+                  ><img
+                    v-if="option.imageUrl"
+                    :src="option.imageUrl"
+                    :alt="option.text || `Pilihan ${option.label}`"
+                    loading="lazy"
+                    class="mb-1 max-h-40 max-w-full rounded-md object-contain"
+                    data-testid="option-image"
+                  />{{ option.text }}</DsQuizOption
                 >
               </div>
 
@@ -517,6 +570,7 @@ const feedbackExplanation = computed(() =>
 
               <UButton
                 v-if="!result && selected !== null"
+                :disabled="stimulusBlocked"
                 variant="solid"
                 size="lg"
                 block
@@ -565,6 +619,7 @@ const feedbackExplanation = computed(() =>
               >Lapor Soalan</UButton
             >
           </div>
+          </component>
         </template>
 
         <!-- Results -->

@@ -17,6 +17,8 @@ export type SchoolType = 'SK' | 'SMK' | 'SJK(C)' | 'SJK(T)' | 'MRSM' | 'SBP'
 
 /** DATA-M02-03 with the derived counts (S9 "Pelajar" / "Guru"). */
 export interface AdminSchool extends SchoolSummary {
+  /** Code students join with (V2 "Kod Daftar"); null when the school has none. Admin responses only. */
+  joinCode: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -43,6 +45,8 @@ export interface SchoolListQuery {
   search?: string | null
   state?: string | null
   type?: string | null
+  /** U-04 (OQ-U1): `true` also lists the primary types SK, SJK(C), SJK(T); hidden by default. */
+  includePrimary?: boolean
   page?: number
   signal?: AbortSignal
 }
@@ -79,6 +83,7 @@ export function fetchAdminSchools(
       search: query.search ?? null,
       state: query.state ?? null,
       type: query.type ?? null,
+      includePrimary: query.includePrimary === true ? 'true' : null,
       page: query.page ?? null,
     },
     ...(query.signal ? { signal: query.signal } : {}),
@@ -120,6 +125,14 @@ export function toggleSchool(id: number): Promise<SchoolMutation<{ isActive: boo
   )
 }
 
+/** V2 `POST /sekolah/{school}/join-code` (Tukar kod pendaftaran): Admin Pusat only; the old code stops working. */
+export function rotateSchoolJoinCode(id: number): Promise<SchoolMutation<{ joinCode: string }>> {
+  return api.post<SchoolMutation<{ joinCode: string }>>(
+    `/api/admin/schools/${String(id)}/join-code`,
+    { raw: true },
+  )
+}
+
 /**
  * #43 `GET /api/schools?all=1` (consumer M04 #31): every school of the register, active and
  * inactive, name A→Z, no paging. `GET /api/admin/schools/options` (XL-13) answers the same.
@@ -130,5 +143,44 @@ export function fetchSchoolOptions(
   return api.get<SchoolOption[]>('/api/schools', {
     query: { all: 1 },
     ...(options.signal ? { signal: options.signal } : {}),
+  })
+}
+
+/** API-ADM-05 row: a class with its teacher, school and pupil count (pupils = XS-1 for that class). */
+export interface AdminClass {
+  id: string
+  name: string
+  /** Display label, e.g. "Tingkatan 4". */
+  level: string
+  teacher: { id: string; name: string } | null
+  school: { id: string; name: string } | null
+  pupils: number
+  joinCode: string | null
+  isActive: boolean
+}
+
+export interface AdminClassQuery {
+  schoolId?: string | number | null
+  /** Slug `tingkatan-1` to `tingkatan-5`. */
+  level?: string | null
+  teacherId?: string | number | null
+  search?: string | null
+  page?: number | null
+  signal?: AbortSignal
+}
+
+/** API-ADM-05 `GET /api/admin/classes`: classes of all schools (admin only), name A to Z, 20 per page. */
+export function fetchAdminClasses(
+  query: AdminClassQuery = {},
+): Promise<ListResult<AdminClass, Record<never, never>>> {
+  return api.list<AdminClass, Record<never, never>>('/api/admin/classes', {
+    query: {
+      schoolId: query.schoolId ?? null,
+      level: query.level || null,
+      teacherId: query.teacherId ?? null,
+      search: query.search || null,
+      page: query.page ?? null,
+    },
+    ...(query.signal ? { signal: query.signal } : {}),
   })
 }

@@ -214,12 +214,12 @@ export const walletSeed: SeedModule = {
       if (tierId === undefined) throw new Error(`Wallet seed: unknown tier ${w.tierName}.`)
       await prisma.$transaction(async (tx) => {
         if (await tx.wallet.findUnique({ where: { userId: user.id } })) return
-        const created = new Date(w.createdAt)
+        const created = ctx.date(w.createdAt)
         let balance = 0
         let lastAt = created
         for (const [at, source, amount, description, sourceId] of w.ledger) {
           balance += amount
-          lastAt = new Date(at)
+          lastAt = ctx.date(at)
           await tx.coinLedger.create({
             data: { userId: user.id, type: 'earn', source, sourceId, amount, balanceAfter: balance, description, createdAt: lastAt },
           })
@@ -243,7 +243,7 @@ export const walletSeed: SeedModule = {
             userId: user.id,
             current: w.streak.current,
             best: w.streak.best,
-            lastActivityDate: new Date(`${w.streak.lastActivityDate}T00:00:00Z`),
+            lastActivityDate: ctx.date(`${w.streak.lastActivityDate}T00:00:00Z`),
             totalDays: w.streak.totalDays,
             createdAt: created,
             updatedAt: lastAt,

@@ -8,7 +8,7 @@
  *
  * - latih_tubi_spm, databank: what `Be09PracticeQuestionSource.sample({ spmPool: true })` and the SPM pool read.
  * - bab:                      what `chapterPage` / `chapterCounts` read.
- * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, one MCQ leaf; groups allowed, D90).
+ * - simulasi_kuiz:            the random draw of the kuiz (`type mcq`, or an ungrouped `mcq_multi`; one MCQ leaf; groups allowed for `mcq`, D90).
  * - simulasi_paper, jana_kertas: the bank scope only; the bridge, the paper and the pool facts are per-record checks.
  */
 import { PRACTICE_SHAPE } from '../../practice/question-bridge/be09-practice-mapping'
@@ -43,12 +43,24 @@ export function filterOf(activity: ServabilityActivity, scope: ActivityScope = {
     case 'bab':
       return { ...subject, ...(scope.chapterId === undefined ? {} : { chapterId: scope.chapterId }), ...drillShape(activity, surfaces) }
     case 'simulasi_kuiz':
-      return { ...subject, type: 'mcq', singleMcqLeaf: true }
+      return { ...subject, servesMcqMulti: true, singleMcqLeaf: true }
+    case 'permainan':
+      // The games draw (`GameQuestions`, `battle.deps` BATTLE_POOL): plain text MCQ of 2 to 4 options, ungrouped.
+      return { ...subject, type: 'mcq', ungrouped: true, mcqShape: { minOptions: 2, maxOptions: 4 } }
     case 'simulasi_paper':
     case 'jana_kertas':
       return { ...subject }
   }
 }
+
+/**
+ * D-10: what a Tracking A set can hold, the ONE definition of its candidates, its `filled` and "tersedia", on the admin lane and editor and on the
+ * pupil's counts. It is the pupil start rule for a set (T-C16, D105): a live, active MCQ the practice bridge accepts, figure questions and WHOLE
+ * stimulus groups included (a rajah is a group stimulus; every member shows it; the group is served whole and in order, never split). The shape is
+ * the Databank drill shape (`drillShape('databank')`): Tracking A is an SPM surface, and the pupil start (`start.planner.ts` `ramalan`) serves it
+ * through the same `live(ids, 'databank')` path as the drills, so a set counted complete serves its size.
+ */
+export const trackingAFilter = (subjectId: string, surfaces: readonly ServabilityActivity[] = GROUP_SURFACES): QuestionFilter => ({ subjectId, ...drillShape('databank', surfaces) })
 
 /**
  * The ONE scope of the Databank lane (R1-B11): the questions the lane lists AND the questions the hub card counts, so the card's

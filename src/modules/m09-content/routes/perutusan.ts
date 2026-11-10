@@ -28,7 +28,7 @@ const routes: RouteRecordRaw[] = [
     name: 'perutusan-list',
     component: () => import('../pages/PerutusanListPage.vue'),
     meta: meta(READERS, {
-      title: 'Perutusan Rasmi',
+      title: 'Perutusan',
       subtitle: 'Maklumat & berita dari pihak pengurusan',
     }),
   },

@@ -10,6 +10,8 @@ export interface DsShellNavLink {
   active: boolean
   /** Indented under a sub-group label. */
   nested?: boolean
+  /** Small pill after the label (for example `LIVE`). */
+  badge?: string
 }
 
 export interface DsShellNavSub {
@@ -19,7 +21,8 @@ export interface DsShellNavSub {
 
 export interface DsShellNavGroup {
   key: string
-  label: string
+  /** Quiet heading above the rows; omitted = no heading (for example the top shortcuts). */
+  label?: string
   rows: readonly (DsShellNavLink | DsShellNavSub)[]
 }
 
@@ -37,7 +40,8 @@ export interface DsShellAccountItem {
 
 export interface DsShellSearchGroup {
   id: string
-  label: string
+  /** Omitted = no heading in the palette. */
+  label?: string
   items: readonly {
     id: string
     label: string

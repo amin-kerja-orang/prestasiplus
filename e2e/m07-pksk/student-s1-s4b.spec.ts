@@ -87,8 +87,8 @@ test.describe('M07 student screens', { tag: [moduleTag(7)] }, () => {
     await gotoApp('/pksk')
     await expect(page.getByRole('heading', { name: 'Persediaan Kemasukan', level: 1 })).toBeVisible()
     await expectTabTitle(page, TAB)
-    await expect(title(page)).toHaveText('PKSK')
-    await expect(subtitle(page)).toHaveText('Persediaan Kemasukan SBP / MRSM / SMKA')
+    await expect(title(page)).toHaveText('PKSK PRO')
+    await expect(subtitle(page)).toHaveText('Bank soalan Pentaksiran Kompetensi & Sijil Kemahiran')
     await expect(page.getByTestId('hub-title')).toHaveCSS('color', 'rgb(255, 255, 255)')
     await expect(page.getByTestId('pksk-banner')).toContainText('SBP / MRSM / SMKA')
     await expect(page.getByTestId('pksk-banner')).toContainText(

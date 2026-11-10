@@ -11,7 +11,7 @@ import { IdSchema } from '../common/ids'
  * attribute name `file` (BE-06 keeps `profilePicture` for `POST /me/picture`).
  */
 
-export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot', 'timeline_photo', 'marketplace_image'] as const
+export const FILE_PURPOSES = ['avatar', 'bijak_photo', 'question_image', 'cms_image', 'audio_kbat', 'cms_screenshot', 'timeline_photo', 'marketplace_image', 'kertas_page'] as const
 export const FilePurposeSchema = z.enum(FILE_PURPOSES).meta({ id: 'FilePurpose' })
 export type FilePurpose = z.infer<typeof FilePurposeSchema>
 
@@ -63,6 +63,14 @@ export const FILE_PURPOSE_RULES: Readonly<
     maxBytes: 2 * 1024 * 1024,
     typeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
     sizeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.',
+  },
+  // 0265: a page image of a Kertas Subjektif document (V2 `paper_document_pages`). Written only by the V2 migration (no role uploads it:
+  // UPLOAD_ROLES is empty); read through GET /files/{id} while the owning document is published. 8 MB: the V2 page renders reach 4.3 MB.
+  kertas_page: {
+    mimes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxBytes: 8 * 1024 * 1024,
+    typeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 8MB.',
+    sizeMessage: 'Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 8MB.',
   },
 }
 

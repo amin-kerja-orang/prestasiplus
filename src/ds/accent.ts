@@ -2,7 +2,7 @@
  * Class maps per meaning colour (design system 3.3). Solid fills take the accent's own "on" colour:
  * ink on lime, orange and amber, white on blue and violet. Written as full literals so the class
  * allowlist and Tailwind both see them. The `staff:` variant keeps the solid, meaning-coloured chip
- * (staff action chip uses the A1 gradient; heat takes the on-primary glyph on the darker staff orange).
+ * (staff action chip uses the A1 gradient; heat chips use the bright --ds-heat-fill with ink glyphs in every personality).
  */
 import type { DsAccent } from './types'
 
@@ -19,7 +19,7 @@ export const accentSolid: Record<DsAccent, string> = {
 export const accentChip: Record<DsAccent, string> = {
   action: 'bg-primary text-primary-on staff:bg-gradient-primary',
   win: 'bg-highlight text-on-highlight',
-  heat: 'bg-heat text-on-highlight staff:text-primary-on',
+  heat: 'bg-heat-fill text-on-highlight',
   friend: 'bg-friend text-primary-on',
   trial: 'bg-trial text-on-highlight',
 }

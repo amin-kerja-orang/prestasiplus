@@ -24,6 +24,7 @@ import { useFlash } from '@/composables/useFlash'
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
 import {
   DsArt3D,
+  DsBadge,
   DsBrandLogo,
   DsConfirmHost,
   DsFriendPicker,
@@ -134,9 +135,15 @@ const sectionTabs = computed(() =>
 )
 const title = computed(() => route.meta.header?.title ?? current.value?.label ?? '')
 useShellTabTitle(title)
+/** Sidebar headings are stored in capitals ("HARIAN"); the crumb reads in sentence case like the admin shell. */
+const sentenceCase = (t: string): string =>
+  t
+    .split(' · ')
+    .map((p) => (p === p.toUpperCase() ? p.charAt(0) + p.slice(1).toLowerCase() : p))
+    .join(' · ')
 const crumb = computed(() => {
   const c = current.value ? sectionOf(sidebar.value, current.value.id) : ''
-  return c && c !== title.value ? c : ''
+  return c && c !== title.value ? sentenceCase(c) : ''
 })
 const initials = computed(
   () =>
@@ -173,7 +180,10 @@ const themeLabel = computed(() =>
   theme.scheme.value === 'dark' ? 'Tukar ke tema cerah' : 'Tukar ke tema gelap',
 )
 
-/** Account menu (role-access-matrix section A + theme + Log Keluar), shared by sidebar and navbar. */
+/**
+ * Account menu of the navbar avatar (role-access-matrix section A + Log Keluar). No sidebar footer and no
+ * theme row: the navbar sun/moon button is the one theme control, for every role (PO 2026-11-09).
+ */
 const accountMenu = computed(() => [
   [
     { label: name.value || 'Akaun', type: 'label' as const },
@@ -186,11 +196,6 @@ const accountMenu = computed(() => [
     ...(learner.value
       ? [{ label: 'Tukar Rakan Belajar', icon: phClass('smiley', true), onSelect: () => openPicker() }]
       : []),
-    {
-      label: themeLabel.value,
-      icon: phClass('circle-half', learner.value),
-      onSelect: () => theme.toggle(),
-    },
   ],
   [
     {
@@ -234,10 +239,11 @@ const lagiGroups = computed(() => [
 const navUi = computed(() => ({
   root: 'gap-0',
   link: learner.value
-    ? 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
-    : 'h-10 pointer-coarse:h-12 gap-2.5 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
+    ? 'min-h-10 pointer-coarse:min-h-12 py-1 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-gradient-primary aria-[current=page]:before:bg-gradient-primary aria-[current=page]:text-primary-on aria-[current=page]:hover:text-primary-on aria-[current=page]:font-semibold'
+    : 'min-h-10 pointer-coarse:min-h-12 py-1 gap-2 px-2.5 rounded-md hover:before:bg-elevated aria-[current=page]:bg-primary-soft aria-[current=page]:hover:bg-primary-soft aria-[current=page]:text-primary-t aria-[current=page]:hover:text-primary-t aria-[current=page]:font-semibold',
   linkLeadingIcon: 'size-4',
-  linkLabel: 'truncate',
+  // A long label wraps beside its pill (never an ellipsis); the pill keeps its size.
+  linkLabel: 'min-w-0 whitespace-normal leading-tight',
   linkTrailing: 'shrink-0',
   label: 'px-2.5 pt-5 pb-1.5 text-overline font-semibold text-muted uppercase',
 }))
@@ -248,6 +254,8 @@ const slotById = computed(() => {
   for (const e of [...sidebar.value, ...drawer.value]) if (e.kind === 'group') m.set(e.id, chipSlot(e))
   return m
 })
+/** Text of the nav row pill ("LIVE"), when the row has one. */
+const badgeOf = (item: unknown): string | undefined => (item as { dsBadge?: string }).dsBadge
 const slotOf = (id: unknown): number => slotById.value.get(String(id)) ?? 1
 
 const chipClass = (chip: unknown, active: boolean): string =>
@@ -275,7 +283,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
         storage="local"
         storage-key="pembelajaran-dashboard-v3"
         unit="rem"
-        :class="modeOn ? 'top-10!' : ''"
+        :style="modeOn ? { top: 'var(--mod-bar-h, 2.5rem)' } : undefined"
         class="overflow-clip bg-muted"
       >
         <!-- Sidebar (>= lg): full height, collapses to an icon rail -->
@@ -290,9 +298,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
           :collapsed-size="4.5"
           :ui="{
             root: modeOn ? 'bg-default min-h-0! h-full!' : 'bg-default',
-            header: 'h-16 shrink-0 px-4',
-            body: 'px-3 pt-1 pb-3',
-            footer: 'p-2 border-t border-default',
+            header: 'h-16 shrink-0 items-center px-4 py-3',
+            body: 'gap-1 px-3 py-3',
           }"
           data-testid="pembelajaran-sidebar"
         >
@@ -300,6 +307,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <RouterLink
               :to="home"
               class="flex min-w-0 items-center gap-2"
+              :class="collapsed ? '' : 'w-full justify-center'"
               aria-label="Laman utama"
             >
               <DsBrandLogo :variant="collapsed ? 'icon' : 'full'" />
@@ -326,45 +334,20 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></span>
               </template>
               <template #item-label="{ item }"
-                ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
+                ><span class="min-w-0" :title="labelTitle(item.label)">{{ item.label }}</span
+                ><DsBadge
+                  v-if="badgeOf(item)"
+                  :label="badgeOf(item)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-1.5 shrink-0 px-1.5"
+                  data-testid="pembelajaran-nav-badge"
+              /></template
               >
             </UNavigationMenu>
           </template>
 
-          <template #footer="{ collapsed }">
-            <UDropdownMenu
-              :items="accountMenu"
-              :content="{ align: 'start', side: 'top' }"
-              :ui="{ content: 'min-w-60' }"
-            >
-              <button
-                type="button"
-                class="flex min-h-11 w-full min-w-0 items-center gap-2.5 rounded-md p-1.5 text-start hover:bg-elevated"
-                aria-label="Menu akaun"
-                data-testid="pembelajaran-account"
-              >
-                <span
-                  class="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-primary text-caption font-bold text-primary-on"
-                  aria-hidden="true"
-                  >{{ initials }}</span
-                >
-                <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
-                    :title="name || 'Akaun'"
-                    >{{ name || 'Akaun' }}</span
-                  >
-                  <span
-                    v-if="schoolName"
-                    class="block truncate text-caption text-muted"
-                    :title="schoolName"
-                    >{{ schoolName }}</span
-                  >
-                </span>
-                <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
-              </button>
-            </UDropdownMenu>
-          </template>
         </UDashboardSidebar>
 
         <UDashboardPanel
@@ -376,7 +359,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :toggle="false"
               :as="{ title: 'div' }"
               :ui="{
-                root: 'pt-[env(safe-area-inset-top)]',
+                root: 'px-4 pt-[env(safe-area-inset-top)] sm:px-4',
+                left: 'min-w-0 flex-1',
                 title: 'min-w-0',
                 right: 'gap-2',
               }"
@@ -387,6 +371,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   <UDashboardSidebarCollapse
                     color="neutral"
                     variant="ghost"
+                    size="sm"
                     aria-label="Tukar saiz menu"
                   />
                 </div>
@@ -405,7 +390,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   <component
                     :is="route.meta.ownsH1 ? 'p' : 'h1'"
                     v-if="title"
-                    class="truncate text-subheading text-highlighted"
+                    class="truncate text-body font-semibold text-highlighted sm:text-subheading"
                     :data-testid="route.meta.ownsH1 ? 'shell-title' : undefined"
                   >
                     {{ title }}
@@ -450,7 +435,6 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   variant="ghost"
                   size="sm"
                   :icon="theme.scheme.value === 'dark' ? 'i-ph-sun' : 'i-ph-moon'"
-                  class="hidden sm:inline-flex"
                   :aria-label="themeLabel"
                   data-testid="pembelajaran-theme-toggle"
                   @click="theme.toggle()"
@@ -481,7 +465,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
             <main
               id="kandungan"
               :key="route.path"
-              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 pb-32 sm:pt-6 lg:pb-12"
+              class="mx-auto flex w-full max-w-6xl min-w-0 flex-1 flex-col px-4 py-4 sm:pt-6 lg:pb-12"
+              :class="promptShown ? 'pb-72' : 'pb-32'"
               data-testid="pembelajaran-main"
               tabindex="-1"
             >
@@ -548,7 +533,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
           <li v-for="tab in tabs" :key="tab.id" class="min-w-0 flex-1">
             <RouterLink
               :to="tab.to"
-              class="relative flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption"
+              class="relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption"
               :class="
                 tabActive(tab, route.path)
                   ? learner
@@ -559,9 +544,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
               :aria-current="tabActive(tab, route.path) ? 'page' : undefined"
               :data-nav-id="`tab-${tab.id}`"
             >
-              <DsIcon :name="tab.icon" class="size-6" />
+              <DsIcon :name="tab.icon" class="size-6 shrink-0" />
               <span
-                class="max-w-full text-center text-caption leading-tight break-normal"
+                class="block w-full truncate text-center text-caption leading-tight"
                 :title="tab.label"
                 >{{ tab.label }}</span
               >
@@ -577,13 +562,13 @@ const chipClass = (chip: unknown, active: boolean): string =>
           <li class="min-w-0 flex-1">
             <button
               type="button"
-              class="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-chip px-1 text-caption text-muted"
+              class="flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-chip px-0.5 text-caption text-muted"
               :aria-expanded="lagiOpen"
               data-nav-id="tab-lagi"
               @click="lagiOpen = true"
             >
-              <DsIcon name="dots-three-circle" class="size-6" />
-              <span>Lagi</span>
+              <DsIcon name="dots-three-circle" class="size-6 shrink-0" />
+              <span class="block w-full truncate text-center leading-tight">Lagi</span>
             </button>
           </li>
         </ul>
@@ -626,7 +611,16 @@ const chipClass = (chip: unknown, active: boolean): string =>
               /></span>
             </template>
             <template #item-label="{ item }"
-              ><span class="truncate" :title="labelTitle(item.label)">{{ item.label }}</span></template
+              ><span class="min-w-0" :title="labelTitle(item.label)">{{ item.label }}</span
+                ><DsBadge
+                  v-if="badgeOf(item)"
+                  :label="badgeOf(item)"
+                  tone="error"
+                  emphasis="strong"
+                  size="sm"
+                  class="ml-1.5 shrink-0 px-1.5"
+                  data-testid="pembelajaran-nav-badge"
+              /></template
             >
           </UNavigationMenu>
         </template>
@@ -647,7 +641,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
       />
       <aside
         v-if="promptShown"
-        class="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-sm flex-col gap-3 rounded-card bg-default p-4 shadow-lg ring ring-default lg:inset-x-auto lg:right-6 lg:bottom-6"
+        class="fixed inset-x-3 bottom-20 z-40 mx-auto flex max-w-sm flex-col gap-3 rounded-card bg-default p-4 shadow-lg ring ring-default lg:inset-x-auto lg:top-20 lg:right-6 lg:bottom-auto"
         aria-label="Pilih rakan belajar"
         data-testid="friend-prompt"
       >

@@ -46,7 +46,7 @@ const alesaOn = isAlesaAiOn()
         <BoardKpis :data="data" :school="alias" />
 
         <!-- Row 1: the day at a glance (today, correction, Kirkpatrick; ALESA when on). -->
-        <DsGrid min-item="md" gap="md" data-testid="cc-row-1">
+        <DsGrid :balanced="3" gap="md" data-testid="cc-row-1">
           <AlesaPanel v-if="alesaOn" :data="data" />
           <TodayPanel :data="data" />
           <CorrectionPanel :correction="data ? data.correction : null" />
@@ -54,7 +54,7 @@ const alesaOn = isAlesaAiOn()
         </DsGrid>
 
         <!-- Row 2: who is doing well (top schools, top pupils) and how they feel. -->
-        <DsGrid min-item="md" gap="md" data-testid="cc-row-2">
+        <DsGrid :balanced="3" gap="md" data-testid="cc-row-2">
           <TopSchoolsPanel
             v-if="!alias"
             :rows="data ? data.topSchools : null"

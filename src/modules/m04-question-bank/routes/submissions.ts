@@ -17,7 +17,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['admin'],
       title: 'Kertas Soalan Guru - Admin Panel',
-      header: { title: 'Kertas Soalan Guru' },
+      header: { title: 'Kertas Soalan Guru', subtitle: 'Kiriman kertas soalan daripada guru' },
       module: 'M04',
     },
   },

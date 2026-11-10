@@ -1,4 +1,4 @@
-# DSKP KSSM Tingkatan 4–5 (structured extracts)
+# DSKP KSSM Tingkatan 1–5 (structured extracts)
 
 Structured curriculum data extracted from the official KPM DSKP PDFs the user provided (kept outside the repo in `D:\prestasiplus`; the PDFs are not committed). It is used for question-bank tagging in v2 (`docs/requirements/v2-question-bank.md` §8 D9; TRACKER D40(e)).
 
@@ -24,6 +24,30 @@ Each `<subject>.json` holds `units` (with `level` T4/T5), and each unit holds St
 - Maths and physics formulas printed as images are missing from some Matematik, Matematik Tambahan and Fizik SPs. These SPs are kept as printed text, and tagging must not rely on exact wording for them.
 - Pendidikan Islam: image-only Jawi words in about 110 SPs are not yet independently verified. Verify them before using the text as seed content.
 - Sains T4 4.3.1 is a reconstruction.
+
+**Tingkatan 1-3 (S4-T09, decisions D109/D115):** T1-T3 have no official DSKP extract here. Their structure is built from the V3 chapter data (`apps/api/prisma/seed/curriculum-data/chapters.json`, in-tree chapters of each active subject linked to that Tingkatan) as **Bab-level nodes only**: one unit per chapter with `level` T1/T2/T3, `code` `<chapterNumber>.0`, `title` the chapter name and `titlePrinted` the name in upper case. There is no Bidang grouping, no SK, no SP and no TP for T1-T3 (nothing is invented), so SP/TP stay optional for T1-T3 questions. The `edition` of these levels says so (one `edition` per level). 808 units in total:
+
+| Subject | File | T1 | T2 | T3 | Note |
+|---|---|---|---|---|---|
+| Bahasa Melayu | bahasa-melayu.json | 23 | 18 | 15 | added to the T4-T5 extract |
+| Bahasa Inggeris | bahasa-inggeris.json | 17 | 5 | - | added to the T4-T5 extract |
+| Matematik | matematik.json | 13 | 13 | 25 | added to the T4-T5 extract |
+| Sains | sains.json | 9 | 13 | 42 | added to the T4-T5 extract |
+| Sejarah | sejarah.json | 8 | 10 | 8 | added to the T4-T5 extract |
+| Pendidikan Islam | pendidikan-islam.json | 15 | 15 | 15 | added to the T4-T5 extract |
+| Pendidikan Moral | pendidikan-moral.json | 13 | 15 | 19 | added to the T4-T5 extract |
+| Pendidikan Seni Visual | pendidikan-seni-visual.json | 17 | 66 | 64 | added to the T4-T5 extract |
+| Geografi | geografi.json | 13 | 11 | 12 | new file, T1-T3 only |
+| Pendidikan Jasmani & Kesihatan | pendidikan-jasmani-dan-kesihatan.json | 16 | 24 | 8 | new file, T1-T3 only |
+| Reka Bentuk & Teknologi | reka-bentuk-dan-teknologi.json | - | 48 | - | new file, T1-T3 only |
+| Sains Komputer | sains-komputer.json | 4 | 57 | 61 | new file, T1-T3 only |
+| Bahasa Arab | bahasa-arab.json | 6 | 5 | 5 | new file, T1-T3 only |
+| Bahasa Cina | bahasa-cina.json | - | - | 1 | new file, T1-T3 only |
+| Bahasa Tamil | bahasa-tamil.json | 29 | 29 | 21 | new file, T1-T3 only |
+
+Counts are the V3 chapter rows, so some subjects list sub-topic style rows as chapters (for example Pendidikan Seni Visual T2/T3, Sains Komputer T2/T3 and Bahasa Tamil); they are loaded as they are in V3. Subjects with no T1-T3 chapters (Kimia, Biologi, Ekonomi and the others) stay `belum dimuatkan` for T1-T3. The seven new files have `subject` equal to the name in `subjects.json` and are mapped in `DSKP_FILES`.
+
+**Not covered:** official T1-T3 DSKP text (SK, SP, TP and printed codes), and Darjah.
 
 **Not covered by any DSKP:** the SPM exam paper format. DSKPs describe classroom assessment (TP1–6) only. The paper structure needs the LPM assessment formats or JSU, or the user's own exam schema.
 

@@ -2,12 +2,21 @@
  "subject": "Pendidikan Islam",
  "subjectCode": null,
  "levels": [
+  "T1",
+  "T2",
+  "T3",
   "T4",
   "T5"
  ],
  "source": "DSKP PENDIDIKAN ISLAM TINGKATAN 4 DAN 5.pdf",
- "edition": "KSSM Pendidikan Islam Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)",
- "structureNote": "Printed hierarchy: Bidang (1 Al-Quran, 2 Hadis, 3 Akidah, 4 Fiqah, 5 Sirah dan Tamadun Islam, 6 Akhlak Islamiah) > Standard Kandungan (SK, numbered continuously across Tingkatan 1-5 within each bidang, e.g. T4 Al-Quran = 1.26-1.32, T5 = 1.33-1.38) > Standard Pembelajaran (SP, e.g. 1.26.1, each introduced by 'Murid dapat:') and Standard Prestasi (6 Tahap Penguasaan with a tafsiran per SK; 'tahapPenguasaan' therefore sits inside each standard, not at unit level; a descriptor may hold several bullet statements separated by newline). The DSKP content pages are written in Jawi (Malay in Arabic script) with Arabic Quran/Hadith text; text is preserved as printed (logical RTL order). Part of the Arabic/Jawi text is embedded as small images in the PDF (surah names, Hadith lines, Jawi word fragments); these were transcribed by reading the images, so minor diacritic/spelling deviations from print are possible. Some Jawi words are printed with unusual spelling (e.g. word-final ه for ة, 'اهلل' without shadda, 'إسالم'); kept as printed/extracted. Bidang titles on page headers are images; names taken from the contents page (Latin). Organisation: 96 jam minimum setahun (menengah atas). Symbol-font glyphs that extract as Latin letters are normalised: H/U after 'رسول الله' = ﷺ (SAW) and W after a Companion name = رضي الله عنه (RA).",
+ "edition": {
+  "T1": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+  "T2": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+  "T3": "V3 chapter data (chapters.json), Bab-level only; no printed DSKP edition (D109/D115)",
+  "T4": "KSSM Pendidikan Islam Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)",
+  "T5": "KSSM Pendidikan Islam Tingkatan 4 dan 5, Bahagian Pembangunan Kurikulum, September 2018 (Terbitan 2018)"
+ },
+ "structureNote": "Printed hierarchy: Bidang (1 Al-Quran, 2 Hadis, 3 Akidah, 4 Fiqah, 5 Sirah dan Tamadun Islam, 6 Akhlak Islamiah) > Standard Kandungan (SK, numbered continuously across Tingkatan 1-5 within each bidang, e.g. T4 Al-Quran = 1.26-1.32, T5 = 1.33-1.38) > Standard Pembelajaran (SP, e.g. 1.26.1, each introduced by 'Murid dapat:') and Standard Prestasi (6 Tahap Penguasaan with a tafsiran per SK; 'tahapPenguasaan' therefore sits inside each standard, not at unit level; a descriptor may hold several bullet statements separated by newline). The DSKP content pages are written in Jawi (Malay in Arabic script) with Arabic Quran/Hadith text; text is preserved as printed (logical RTL order). Part of the Arabic/Jawi text is embedded as small images in the PDF (surah names, Hadith lines, Jawi word fragments); these were transcribed by reading the images, so minor diacritic/spelling deviations from print are possible. Some Jawi words are printed with unusual spelling (e.g. word-final ه for ة, 'اهلل' without shadda, 'إسالم'); kept as printed/extracted. Bidang titles on page headers are images; names taken from the contents page (Latin). Organisation: 96 jam minimum setahun (menengah atas). Symbol-font glyphs that extract as Latin letters are normalised: H/U after 'رسول الله' = ﷺ (SAW) and W after a Companion name = رضي الله عنه (RA). T1-T3: Bab-level nodes only, built from the V3 chapter data (curriculum-data/chapters.json, in-tree chapters of this subject and Tingkatan; decisions D109/D115). Code is \"<chapterNumber>.0\"; titlePrinted is the chapter name in upper case; no Bidang grouping, no SK/SP and no TP are available, so none are invented.",
  "generalTP": {
   "note": "Jadual 3 Penyataan Tahap Penguasaan Umum (general interpretation, paraphrased order TP1-TP6)",
   "descriptors": [
@@ -20,6 +29,321 @@
   ]
  },
  "units": [
+  {
+   "level": "T1",
+   "code": "1.0",
+   "title": "Akidah dan Ketakwaan",
+   "titlePrinted": "AKIDAH DAN KETAKWAAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "2.0",
+   "title": "Asmaul Husna dan Iman",
+   "titlePrinted": "ASMAUL HUSNA DAN IMAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "3.0",
+   "title": "Al-Quran dan Hadis",
+   "titlePrinted": "AL-QURAN DAN HADIS",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "4.0",
+   "title": "Akhlak dan Kehidupan",
+   "titlePrinted": "AKHLAK DAN KEHIDUPAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "5.0",
+   "title": "Ibadah Asas",
+   "titlePrinted": "IBADAH ASAS",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "6.0",
+   "title": "Solat Fardu Asas",
+   "titlePrinted": "SOLAT FARDU ASAS",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "7.0",
+   "title": "Wuduk dan Kebersihan",
+   "titlePrinted": "WUDUK DAN KEBERSIHAN",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "8.0",
+   "title": "Puasa dan Disiplin Diri",
+   "titlePrinted": "PUASA DAN DISIPLIN DIRI",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "9.0",
+   "title": "Zakat dan Sedekah",
+   "titlePrinted": "ZAKAT DAN SEDEKAH",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "10.0",
+   "title": "Sirah Nabi Muhammad SAW",
+   "titlePrinted": "SIRAH NABI MUHAMMAD SAW",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "11.0",
+   "title": "Adab Terhadap Ibu Bapa",
+   "titlePrinted": "ADAB TERHADAP IBU BAPA",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "12.0",
+   "title": "Adab Menuntut Ilmu",
+   "titlePrinted": "ADAB MENUNTUT ILMU",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "13.0",
+   "title": "Makanan Halal dan Haram",
+   "titlePrinted": "MAKANAN HALAL DAN HARAM",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "14.0",
+   "title": "Jawi: Huruf dan Suku Kata",
+   "titlePrinted": "JAWI: HURUF DAN SUKU KATA",
+   "standards": []
+  },
+  {
+   "level": "T1",
+   "code": "15.0",
+   "title": "Jawi: Bacaan dan Kefahaman",
+   "titlePrinted": "JAWI: BACAAN DAN KEFAHAMAN",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "1.0",
+   "title": "Al-Quran: Bacaan dan Tajwid",
+   "titlePrinted": "AL-QURAN: BACAAN DAN TAJWID",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "2.0",
+   "title": "Hadis: Tuntutan Ilmu",
+   "titlePrinted": "HADIS: TUNTUTAN ILMU",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "3.0",
+   "title": "Akidah: Iman kepada Allah",
+   "titlePrinted": "AKIDAH: IMAN KEPADA ALLAH",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "4.0",
+   "title": "Ibadah: Solat Berjemaah",
+   "titlePrinted": "IBADAH: SOLAT BERJEMAAH",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "5.0",
+   "title": "Ibadah: Puasa Ramadan",
+   "titlePrinted": "IBADAH: PUASA RAMADAN",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "6.0",
+   "title": "Ibadah: Zakat dan Sedekah",
+   "titlePrinted": "IBADAH: ZAKAT DAN SEDEKAH",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "7.0",
+   "title": "Sirah: Hijrah Rasulullah SAW",
+   "titlePrinted": "SIRAH: HIJRAH RASULULLAH SAW",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "8.0",
+   "title": "Sirah: Kepimpinan Rasulullah SAW",
+   "titlePrinted": "SIRAH: KEPIMPINAN RASULULLAH SAW",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "9.0",
+   "title": "Akhlak: Amanah dan Jujur",
+   "titlePrinted": "AKHLAK: AMANAH DAN JUJUR",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "10.0",
+   "title": "Akhlak: Hormat dan Kasih Sayang",
+   "titlePrinted": "AKHLAK: HORMAT DAN KASIH SAYANG",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "11.0",
+   "title": "Adab: Menjaga Maruah Diri",
+   "titlePrinted": "ADAB: MENJAGA MARUAH DIRI",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "12.0",
+   "title": "Adab: Hubungan Sesama Manusia",
+   "titlePrinted": "ADAB: HUBUNGAN SESAMA MANUSIA",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "13.0",
+   "title": "Jawi: Ejaan dan Imbuhan",
+   "titlePrinted": "JAWI: EJAAN DAN IMBUHAN",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "14.0",
+   "title": "Jawi: Bacaan Petikan",
+   "titlePrinted": "JAWI: BACAAN PETIKAN",
+   "standards": []
+  },
+  {
+   "level": "T2",
+   "code": "15.0",
+   "title": "Jawi: Penulisan Ayat",
+   "titlePrinted": "JAWI: PENULISAN AYAT",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "1.0",
+   "title": "Al-Quran: Tilawah dan Kefahaman",
+   "titlePrinted": "AL-QURAN: TILAWAH DAN KEFAHAMAN",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "2.0",
+   "title": "Hadis: Akhlak Terpuji",
+   "titlePrinted": "HADIS: AKHLAK TERPUJI",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "3.0",
+   "title": "Akidah: Iman dan Taqwa",
+   "titlePrinted": "AKIDAH: IMAN DAN TAQWA",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "4.0",
+   "title": "Akidah: Qada dan Qadar",
+   "titlePrinted": "AKIDAH: QADA DAN QADAR",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "5.0",
+   "title": "Ibadah: Solat Sunat",
+   "titlePrinted": "IBADAH: SOLAT SUNAT",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "6.0",
+   "title": "Ibadah: Pengurusan Jenazah Asas",
+   "titlePrinted": "IBADAH: PENGURUSAN JENAZAH ASAS",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "7.0",
+   "title": "Ibadah: Muamalat Islam",
+   "titlePrinted": "IBADAH: MUAMALAT ISLAM",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "8.0",
+   "title": "Sirah: Perjuangan Rasulullah SAW",
+   "titlePrinted": "SIRAH: PERJUANGAN RASULULLAH SAW",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "9.0",
+   "title": "Sirah: Khulafa al-Rasyidin",
+   "titlePrinted": "SIRAH: KHULAFA AL-RASYIDIN",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "10.0",
+   "title": "Akhlak: Istiqamah",
+   "titlePrinted": "AKHLAK: ISTIQAMAH",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "11.0",
+   "title": "Akhlak: Bersyukur dan Qanaah",
+   "titlePrinted": "AKHLAK: BERSYUKUR DAN QANAAH",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "12.0",
+   "title": "Adab: Menjaga Alam Sekitar",
+   "titlePrinted": "ADAB: MENJAGA ALAM SEKITAR",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "13.0",
+   "title": "Jawi: Khat dan Penulisan",
+   "titlePrinted": "JAWI: KHAT DAN PENULISAN",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "14.0",
+   "title": "Jawi: Kefahaman Petikan",
+   "titlePrinted": "JAWI: KEFAHAMAN PETIKAN",
+   "standards": []
+  },
+  {
+   "level": "T3",
+   "code": "15.0",
+   "title": "Jawi: Aplikasi Ejaan",
+   "titlePrinted": "JAWI: APLIKASI EJAAN",
+   "standards": []
+  },
   {
    "level": "T4",
    "code": "1",

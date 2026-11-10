@@ -95,3 +95,94 @@ export const fetchCcSession = (sessionId: string, o: Signal = {}) =>
 /** #13 `GET /api/command-center/headcount/{configId}` (headcount modal). */
 export const fetchCcHeadcount = (configId: number | string, o: Signal = {}) =>
   api.get<CcHeadcountDetail>(`/api/command-center/headcount/${String(configId)}`, withSignal(o))
+
+// --- Admin Pusat central pages (S6-T11: API-ADM-11, API-ADM-12, API-ADM-13 laporan) ---------------------------
+
+/** API-ADM-11 `GET /api/admin/dashboard` (`AdminDashboard`, PRD-60 2.17.3). Admin only. */
+export interface AdminDashboard {
+  questions: {
+    total: number
+    byStatus: { draft: number; review: number; approved: number; archived: number }
+    thisWeek: number
+  }
+  subjects: { total: number; active: number }
+  /** Tingkatan only (5); Darjah is never counted. */
+  levels: number
+  users: { total: number; students: number; teachers: number }
+  /** Registered secondary-stage schools (V2 Panel "Sekolah" card). */
+  schools: { total: number; active: number }
+  battles: { total: number; active: number; finished: number }
+}
+
+export type AdminRange = '7d' | '30d' | '90d'
+
+/** API-ADM-12 `GET /api/admin/analytics?range` (`AdminAnalytics`). Bank figures are computed, never stored. */
+export interface AdminAnalytics {
+  range: AdminRange
+  platform: {
+    schools: number
+    activeSubscriptions: number
+    students: number
+    activeStudents: number
+    answered: number
+    /** Pooled accuracy, one decimal; `null` when nothing was answered. Shown as a whole number, rounded half up. */
+    accuracy: number | null
+  }
+  trend: { date: string; answered: number }[]
+  topSchools: { schoolId: string; school: string; answered: number }[]
+  /** V2 "Pelajar Teratas": up to 8 pupils by answers since Monday of this week (whatever the range). */
+  topStudents: { userId: string; name: string; school: string | null; answered: number }[]
+  /** V2 "Mood Pelajar": all-time check-ins in the order Gembira, Okay, Sedih, Tertekan. */
+  mood: {
+    total: number
+    breakdown: { key: 'happy' | 'okay' | 'sad' | 'stressed'; label: string; count: number }[]
+  }
+  /** V2 "Laporan Soalan": question reports waiting (`baru`) and handled (`selesai`). */
+  reports: { baru: number; selesai: number }
+  bank: {
+    total: number
+    bySubject: { id: string; name: string; total: number }[]
+    byLevel: { id: string; name: string; total: number }[]
+    byStatus: { draft: number; review: number; approved: number; archived: number }
+    /** Percent (0 to 100) of the questions that carry a DSKP tag. */
+    dskpTaggedShare: number
+    chapterCoverage: number
+    servability: Record<string, number>
+  }
+}
+
+export type AdminLaporanRange = '7' | '30' | '90'
+
+/** API-ADM-13 `GET /api/admin/reports/laporan?range=7|30|90` (`AdminLaporan`). */
+export interface AdminLaporan {
+  range: number
+  tiles: {
+    schools: number
+    teachers: number
+    pupils: number
+    pupilsAccessed: number
+    teachersAccessed: number
+    pupilsPractised: number
+    activities: number
+    /** Average session accuracy, one decimal; `null` when unknown. */
+    averageScore: number | null
+  }
+  /** 14 days, oldest first; `date` is `dd/mm`. */
+  trend: { date: string; count: number }[]
+  breakdown: {
+    type: 'kuiz' | 'struktur' | 'latihTubi' | 'trackingA' | 'battle' | 'permainan'
+    label: string
+    count: number
+  }[]
+  mostActive: { id: string; name: string; school: { id: string; name: string } | null; activities: number }[]
+  schoolActivity: { schoolId: string; name: string; activities: number; activePupils: number }[]
+}
+
+export const fetchAdminDashboard = (o: Signal = {}) =>
+  api.get<AdminDashboard>('/api/admin/dashboard', withSignal(o))
+
+export const fetchAdminAnalytics = (range: AdminRange = '30d', o: Signal = {}) =>
+  api.get<AdminAnalytics>('/api/admin/analytics', { query: { range }, ...withSignal(o) })
+
+export const fetchAdminLaporan = (range: AdminLaporanRange = '30', o: Signal = {}) =>
+  api.get<AdminLaporan>('/api/admin/reports/laporan', { query: { range }, ...withSignal(o) })

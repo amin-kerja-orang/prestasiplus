@@ -177,6 +177,19 @@ describe('Jana set (FR-ADM-Q13.2, API-BIJAK-11)', () => {
     expect(w.get('[data-testid="pool-aside"]').text()).toContain('Kurangkan bilangan soalan atau longgarkan penapis.')
   })
 
+  it('G-04: the reason under a locked button names the short unit with its DSKP code, not "Pratonton kolam" or a bare node id', async () => {
+    const firstFailure = { section: 'Bahagian A', kind: 'unit', basis: 'marks', need: 6, have: 2, unit: { kind: 'unit', nodeId: '489', code: '2.0', level: 'T4', title: 'Fungsi' } }
+    const { api } = stub({ poolPreview: vi.fn().mockResolvedValue(preview({ eligibleTotal: 63, verdict: 'tidak_boleh', firstFailure } as never)) })
+    const { w } = await render(api)
+    await pick(w, 'gen-subject', 'SEJ')
+    await pick(w, 'gen-kertas', '1')
+    expect(w.get('[data-testid="gen-submit"]').attributes('disabled')).toBeDefined()
+    const reason = w.get('[data-testid="gen-reason"]').text()
+    expect(reason).toContain('Bahagian A: perlu 6 markah T4 2.0 Fungsi, hanya 2 tersedia')
+    expect(reason).toContain('Kurangkan bilangan soalan atau longgarkan penapis.')
+    expect(reason).not.toContain('Pratonton')
+  })
+
   it('Tahun and Negeri stay hidden while their column holds no data', async () => {
     const { api } = stub({ poolPreview: vi.fn().mockResolvedValue(preview({ filters: { years: [], negeri: [] } })) })
     const { w } = await render(api)

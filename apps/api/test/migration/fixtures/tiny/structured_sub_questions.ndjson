@@ -1,0 +1,16 @@
+{"id":10,"structured_question_id":1,"number":"(a)","body":"Sub soalan (a) bagi 1.","marks":1,"scheme":"Skema (a) bagi 1.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":11,"structured_question_id":1,"number":"(b)","body":"Sub soalan (b) bagi 1.","marks":2,"scheme":"Skema (b) bagi 1.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":20,"structured_question_id":2,"number":"(a)","body":"Sub soalan (a) bagi 2.","marks":1,"scheme":"Skema (a) bagi 2.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":21,"structured_question_id":2,"number":"(b)","body":"Sub soalan (b) bagi 2.","marks":2,"scheme":"Skema (b) bagi 2.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":30,"structured_question_id":3,"number":"(a)","body":"Sub soalan (a) bagi 3.","marks":1,"scheme":"Skema (a) bagi 3.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":31,"structured_question_id":3,"number":"(b)","body":"Sub soalan (b) bagi 3.","marks":2,"scheme":"Skema (b) bagi 3.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":40,"structured_question_id":4,"number":"(a)","body":"Sub soalan (a) bagi 4.","marks":1,"scheme":"Skema (a) bagi 4.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":41,"structured_question_id":4,"number":"(b)","body":"Sub soalan (b) bagi 4.","marks":2,"scheme":"Skema (b) bagi 4.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":50,"structured_question_id":5,"number":"(a)","body":"Sub soalan (a) bagi 5.","marks":1,"scheme":"Skema (a) bagi 5.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":51,"structured_question_id":5,"number":"(b)","body":"Sub soalan (b) bagi 5.","marks":2,"scheme":"Skema (b) bagi 5.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":60,"structured_question_id":6,"number":"(a)","body":"Sub soalan (a) bagi 6.","marks":1,"scheme":"Skema (a) bagi 6.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":61,"structured_question_id":6,"number":"(b)","body":"Sub soalan (b) bagi 6.","marks":2,"scheme":"Skema (b) bagi 6.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":70,"structured_question_id":7,"number":"(a)","body":"Sub soalan (a) bagi 7.","marks":1,"scheme":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":71,"structured_question_id":7,"number":"(b)","body":"Sub soalan (b) bagi 7.","marks":2,"scheme":null,"created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":80,"structured_question_id":8,"number":"(a)","body":"Sub soalan (a) bagi 8.","marks":1,"scheme":"Skema (a) bagi 8.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}
+{"id":81,"structured_question_id":8,"number":"(b)","body":"Sub soalan (b) bagi 8.","marks":2,"scheme":"Skema (b) bagi 8.","created_at":"2025-03-01T08:00:00Z","updated_at":"2025-03-01T08:00:00Z"}

@@ -1,0 +1,40 @@
+# Backend tests (apps/api, vitest) in Linux, on any host (Windows included).
+#   docker compose -p pp-betest -f deploy/test/compose.be-test.yaml run --rm --build runner [vitest args]
+#   docker compose -p pp-betest -f deploy/test/compose.be-test.yaml down -v
+# Own project name, no published ports: never touches the local stack (project pp-v3). See docs/ops/be-tests-linux.md.
+name: pp-betest
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: postgres
+      # Password auth on loopback too (the image defaults to trust there): the migration specs that expect a wrong password or a
+      # missing role to be refused (staging/security, anonymise/pg-source) would otherwise connect.
+      POSTGRES_INITDB_ARGS: '--auth-host=scram-sha-256 --auth-local=scram-sha-256'
+    command: ['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off', '-c', 'max_connections=400']
+    tmpfs: [/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test']
+      interval: 2s
+      retries: 30
+  runner:
+    image: node:22.22.2-bookworm
+    network_mode: service:db   # share the database network namespace so it is reachable on 127.0.0.1
+    depends_on:
+      db: { condition: service_healthy }
+    working_dir: /work
+    environment:
+      TEST_DATABASE_URL: postgresql://test:test@127.0.0.1:5432/postgres   # loopback: specs treat a remote host as a cloud source
+      CI: 'true'
+    volumes:
+      - ../..:/src:ro          # the working tree, read-only (nothing is written back)
+      - work:/work             # Linux copy + Linux node_modules (kept between runs; `down -v` clears it)
+      - npmcache:/root/.npm
+      - ${PP_BETEST_OUT:-out}:/out   # vitest JSON report (default a named volume; set a host folder to read it directly)
+    entrypoint: ['bash', '/src/deploy/test/run-be-tests.sh']
+volumes:
+  work:
+  npmcache:
+  out:

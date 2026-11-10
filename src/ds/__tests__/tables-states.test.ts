@@ -320,7 +320,9 @@ describe('DsStatRow', () => {
     })
     expect(w.findAll('[data-ds="stat-tile"]')).toHaveLength(6)
     expect(w.find('[data-testid="kpi-c"]').exists()).toBe(true)
-    expect(w.classes()).toContain('xl:grid-cols-5')
+    // Six tiles: 2 + 2 + 2 below md, 3 + 3 from md (no orphan row, no 6-across track).
+    expect(w.classes()).toEqual(expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3']))
+    expect(w.classes()).not.toContain('xl:grid-cols-5')
     const two = mount(DsStatRow, {
       props: { items: [{ key: 'a', label: 'A', value: 1 }] },
     })

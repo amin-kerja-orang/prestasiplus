@@ -427,7 +427,7 @@ test.describe('M01 profile S7 / S8', { tag: [TAG.smoke, moduleTag(1)] }, () => {
       'autocomplete',
       'new-password',
     )
-    await expect(form.getByText('Sekurang-kurangnya 6 aksara')).toBeVisible()
+    await expect(form.getByText('Sekurang-kurangnya 8 aksara')).toBeVisible()
     await expect(form.locator('input[required]')).toHaveCount(0)
     await expect(form.locator('button')).toHaveCount(1)
     await expectTouchTarget(page.getByTestId('password-submit'))

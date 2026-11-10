@@ -5,8 +5,11 @@
 import type pg from 'pg'
 
 import type { LegacySource } from '../../kit/types'
+import type { MigrationFiles } from '../activity/files'
 import type { Curriculum } from '../../transform/question-bank'
 import { CoreNotes } from '../context'
+import type { PlannedGroup } from './plan'
+import { buildPlan, type BuiltPlan } from './plan-source'
 
 export interface QuestionsOptions {
   pool: pg.Pool
@@ -20,9 +23,21 @@ export interface QuestionsOptions {
   progress?: (line: string) => void
 }
 
+/** A picture the pass could not use: the V2 path (never logged), the fixed cause word, and how many V2 question rows carry it. */
+export interface FileFailure {
+  path: string
+  cause: string
+  questions: number
+}
+
 export class QuestionsContext {
   readonly notes = new CoreNotes()
+  /** The checked `--files-dir` (T-B9-5); undefined = no picture pass (pictures stay held, `legacy_image_unresolved`). */
+  files: MigrationFiles | undefined
+  readonly fileFailures: FileFailure[] = []
   private cache: Promise<Curriculum> | null = null
+  private planCache: Promise<BuiltPlan> | null = null
+  private groupCache: { plan: BuiltPlan['plan']; index: Map<string, PlannedGroup> } | null = null
 
   constructor(readonly options: QuestionsOptions) {}
 
@@ -36,6 +51,18 @@ export class QuestionsContext {
 
   get pageSize(): number {
     return this.options.pageSize ?? 1000
+  }
+
+  /** The rajah plan of the staged archive, built once per run (pure and deterministic: a dry-run and its apply get the same plan). */
+  plan(): Promise<BuiltPlan> {
+    this.planCache ??= this.curriculum().then((cur) => buildPlan(this.pool, cur, this.pageSize))
+    return this.planCache
+  }
+
+  /** The planned groups by key. */
+  groupIndex(plan: BuiltPlan['plan']): Map<string, PlannedGroup> {
+    if (this.groupCache?.plan !== plan) this.groupCache = { plan, index: new Map(plan.groups.map((g) => [g.key, g])) }
+    return this.groupCache.index
   }
 
   /** Id maps of `migrate:core` (subjects, levels, chapters, topics), level codes and the topic -> chapter link. */

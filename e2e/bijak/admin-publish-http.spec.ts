@@ -42,11 +42,9 @@ async function login(page: Page, user: string, pass: string): Promise<void> {
   await page.waitForURL((u) => !u.pathname.startsWith('/login'))
 }
 
-/** Pentadbiran menu (drawer below 1024 px) -> the old Pembina Kertas entry -> the Set Builder it redirects to (FR-ADM-Q15.6). */
+/** The old Pembina Kertas URL (S0-T07: no sidebar entry any more) -> the Set Builder it redirects to (FR-ADM-Q15.6). */
 async function openPaperBuilder(page: Page): Promise<void> {
-  if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
-  const nav = page.locator('[data-testid=pentadbiran-nav]:visible')
-  await nav.getByRole('link', { name: 'Pembina Kertas' }).click()
+  await page.goto('/admin/spm/kertas')
   await expect(page).toHaveURL(/\/admin\/studio\/sets$/)
 }
 
@@ -117,7 +115,7 @@ async function studentSees(browser: Browser, info: TestInfo, title: string): Pro
 
 test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () => {
   // Works today: the real login, the Pentadbiran shell and the menu entry (no Bijak admin API call).
-  test('admin logs in and the Pentadbiran menu offers Pembina Kertas at /admin/spm/kertas @bijak', async ({
+  test('admin logs in and the Pentadbiran menu offers Set Builder at /admin/studio/sets @bijak', async ({
     page,
   }) => {
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
@@ -127,8 +125,8 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
     const link = page
       .locator('[data-testid=pentadbiran-nav]:visible')
-      .getByRole('link', { name: 'Pembina Kertas' })
-    await expect(link).toHaveAttribute('href', '/admin/spm/kertas')
+      .getByRole('link', { name: 'Set Builder' })
+    await expect(link).toHaveAttribute('href', '/admin/studio/sets')
   })
 
   // Real (B3): GET /api/admin/papers behind the one list (SetBuilderLandingPage.vue); the old menu entry redirects to it.
@@ -169,7 +167,7 @@ test.describe('Bijak SPM Admin Pusat terbit kertas, http mode @bijak @api', () =
     page.on('pageerror', (e) => errors.push(e.message))
     await login(page, ADMIN_USER ?? '', ADMIN_PASS ?? '')
     const loaded = [
-      ['/admin/spm/soalan', 'bank-page'],
+      ['/admin/spm/soalan', 'lane-databank'], // the list redirects to the Databank lane (S2-T03)
       ['/admin/spm/semakan', 'studio-list-page'], // the list redirects to /admin/studio?status=review (S2-T03)
       ['/admin/spm/soalan/ekstrak', 'intake-list-page'],
     ] as const

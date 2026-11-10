@@ -124,6 +124,27 @@ async function answerConfirm(yes: boolean) {
   return seen
 }
 
+/** Opens the "..." menu of table row `index` (`DsRowActions`) and returns the item with test id `id` (null when absent). */
+async function menuItem(w: VueWrapper, index: number, id: string): Promise<HTMLElement | null> {
+  // A menu left open by the previous call would be toggled shut by the next Enter: close it first.
+  const open = document.body.querySelector('[role="menu"]')
+  if (open) {
+    open.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+  }
+  await w.findAll(t('admin-product-menu'))[index]!.trigger('keydown', { key: 'Enter' })
+  await flushPromises()
+  const menus = Array.from(document.body.querySelectorAll('[role="menu"]'))
+  return menus.at(-1)?.querySelector<HTMLElement>(t(id)) ?? null
+}
+/** Picks the item and lets the menu close. */
+async function pickMenuItem(w: VueWrapper, index: number, id: string): Promise<void> {
+  const item = await menuItem(w, index, id)
+  expect(item).not.toBeNull()
+  item!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushPromises()
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
@@ -184,10 +205,13 @@ describe('AdminProdukPage (P2-12)', () => {
     expect(w.text()).not.toMatch(/\d+ stok/)
     const rows = w.findAll(t('admin-product-row'))
     expect(rows).toHaveLength(2)
-    const toggles = w.findAll(t('admin-product-toggle')).map((b) => b.text())
-    expect(toggles).toEqual(['Nyahaktif', 'Aktifkan'])
+    // Open and edit are icon buttons in the row; the toggle and delete sit in the "..." menu (DsRowActions).
     expect(w.findAll(t('admin-product-edit'))).toHaveLength(2)
-    expect(w.findAll(t('admin-product-delete'))).toHaveLength(2)
+    expect(w.findAll(t('admin-product-open'))).toHaveLength(1)
+    expect((await menuItem(w, 0, 'admin-product-toggle'))?.textContent).toContain('Nyahaktif')
+    expect((await menuItem(w, 0, 'admin-product-delete'))).not.toBeNull()
+    expect((await menuItem(w, 1, 'admin-product-toggle'))?.textContent).toContain('Aktifkan')
+    expect((await menuItem(w, 1, 'admin-product-delete'))).not.toBeNull()
   })
 
   it('Tapis puts the filters in the URL and asks for them; Reset clears them', async () => {
@@ -228,12 +252,9 @@ describe('AdminProdukPage (P2-12)', () => {
   it('Nyahaktif sends status draft; Aktifkan sends active; both reload', async () => {
     api.updateAdminProduct.mockResolvedValue({})
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
-    const toggles = w.findAll(t('admin-product-toggle'))
-    await toggles[0]!.trigger('click')
-    await flushPromises()
+    await pickMenuItem(w, 0, 'admin-product-toggle')
     expect(api.updateAdminProduct).toHaveBeenLastCalledWith('1', { status: 'draft' })
-    await w.findAll(t('admin-product-toggle'))[1]!.trigger('click')
-    await flushPromises()
+    await pickMenuItem(w, 1, 'admin-product-toggle')
     expect(api.updateAdminProduct).toHaveBeenLastCalledWith('2', { status: 'active' })
     expect(api.fetchAdminProducts.mock.calls.length).toBeGreaterThanOrEqual(3)
   })
@@ -242,15 +263,12 @@ describe('AdminProdukPage (P2-12)', () => {
     api.updateAdminProduct.mockResolvedValue({})
     api.fetchAdminProducts.mockResolvedValue(productList([product(3, { status: 'rejected' })]))
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
-    const toggle = () => w.get(t('admin-product-toggle'))
-    expect(toggle().text()).toBe('Aktifkan')
-    await toggle().trigger('click')
-    await flushPromises()
+    expect((await menuItem(w, 0, 'admin-product-toggle'))?.textContent).toContain('Aktifkan')
+    await pickMenuItem(w, 0, 'admin-product-toggle')
     let seen = await answerConfirm(false)
     expect(seen).toEqual({ message: 'Aktifkan produk ini?', confirmLabel: 'Ya, Aktifkan', cancelLabel: 'Batal' })
     expect(api.updateAdminProduct).not.toHaveBeenCalled()
-    await toggle().trigger('click')
-    await flushPromises()
+    await pickMenuItem(w, 0, 'admin-product-toggle')
     seen = await answerConfirm(true)
     expect(seen.confirmLabel).toBe('Ya, Aktifkan')
     expect(api.updateAdminProduct).toHaveBeenCalledWith('3', { status: 'active' })
@@ -259,8 +277,7 @@ describe('AdminProdukPage (P2-12)', () => {
   it('Aktifkan on a draft product needs no confirm', async () => {
     api.updateAdminProduct.mockResolvedValue({})
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
-    await w.findAll(t('admin-product-toggle'))[1]!.trigger('click')
-    await flushPromises()
+    await pickMenuItem(w, 1, 'admin-product-toggle')
     expect(confirmState.open).toBe(false)
     expect(api.updateAdminProduct).toHaveBeenCalledWith('2', { status: 'active' })
   })
@@ -289,11 +306,11 @@ describe('AdminProdukPage (P2-12)', () => {
   it('delete asks "Padam produk ini?" with Batal / Ya, Padam; Batal keeps the product, Ya deletes and reloads', async () => {
     api.deleteAdminProduct.mockResolvedValue({ id: '1' })
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
-    await w.findAll(t('admin-product-delete'))[0]!.trigger('click')
+    await pickMenuItem(w, 0, 'admin-product-delete')
     const seen = await answerConfirm(false)
     expect(seen).toEqual({ message: 'Padam produk ini?', confirmLabel: 'Ya, Padam', cancelLabel: 'Batal' })
     expect(api.deleteAdminProduct).not.toHaveBeenCalled()
-    await w.findAll(t('admin-product-delete'))[0]!.trigger('click')
+    await pickMenuItem(w, 0, 'admin-product-delete')
     await answerConfirm(true)
     expect(api.deleteAdminProduct).toHaveBeenCalledWith('1')
     expect(flashText()).toBe('Produk berjaya dipadam.')
@@ -304,7 +321,7 @@ describe('AdminProdukPage (P2-12)', () => {
   it('a failed delete shows the API message', async () => {
     api.deleteAdminProduct.mockRejectedValue(new ApiError({ status: 404, code: 'NOT_FOUND', message: 'Rekod tidak dijumpai.' }))
     const w = await mountAt(AdminProdukPage, '/admin/marketplace/products', '/admin/marketplace/products')
-    await w.findAll(t('admin-product-delete'))[0]!.trigger('click')
+    await pickMenuItem(w, 0, 'admin-product-delete')
     await answerConfirm(true)
     expect(flashText()).toBe('Rekod tidak dijumpai.')
   })

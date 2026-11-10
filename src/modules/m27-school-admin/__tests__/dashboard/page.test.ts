@@ -34,6 +34,7 @@ function dashboard(over: Partial<SchoolDashboard> = {}): SchoolDashboard {
       state: 'Selangor',
       ppd: 'PPD CONTOH',
       code: 'UJI0001',
+      joinCode: 'KODDAFT2',
     },
     roleLabel: 'Admin Sekolah',
     perutusan: [
@@ -102,8 +103,8 @@ describe('route (FR-M27-01, 03, 07, 10)', () => {
       access: 'auth',
       roles: ['school_admin'],
       onForbidden: '403',
-      title: 'Dashboard Sekolah - PRESTASIPLUS',
-      header: { title: 'Dashboard Sekolah' },
+      title: 'Dashboard',
+      header: { title: 'Dashboard' },
     })
   })
 
@@ -163,18 +164,20 @@ describe('banner (FR-M27-18…21, FR-AS-2-4)', () => {
     expect(text(w, 'sd-chip-state')).toBe('Selangor')
     expect(text(w, 'sd-chip-ppd')).toBe('PPD CONTOH')
     expect(text(w, 'sd-chip-code')).toBe('# Kod: UJI0001')
+    expect(text(w, 'sd-chip-join-code')).toBe('Kod Daftar: KODDAFT2')
     expect(w.find('[data-testid="sd-banner"] a').exists()).toBe(false)
   })
 
   it('omits the PPD and code chips when empty, with no placeholder', async () => {
     const w = await mountPage(
       dashboard({
-        school: { id: 2, name: 'SK Contoh', state: 'Johor', ppd: null, code: null },
+        school: { id: 2, name: 'SK Contoh', state: 'Johor', ppd: null, code: null, joinCode: null },
       }),
     )
     expect(text(w, 'sd-chips')).toBe('Johor')
     expect(has(w, 'sd-chip-ppd')).toBe(false)
     expect(has(w, 'sd-chip-code')).toBe(false)
+    expect(has(w, 'sd-chip-join-code')).toBe(false)
   })
 })
 

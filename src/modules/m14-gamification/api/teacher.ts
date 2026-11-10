@@ -5,6 +5,7 @@
 
 import { api } from '@/api'
 
+import { deferredInHttp, deferredRejection } from './deferred'
 import type {
   TeacherCashCreated,
   TeacherCashRequest,
@@ -23,11 +24,13 @@ const withSignal = (o: Options) => (o.signal ? { signal: o.signal } : {})
 
 /** #12 `GET /api/guru/gamification` (S19). */
 export function fetchTeacherDashboard(options: Options = {}): Promise<TeacherDashboard> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<TeacherDashboard>('/api/guru/gamification', withSignal(options))
 }
 
 /** #13 `GET /api/guru/gamification/cash` (S20). */
 export function fetchTeacherCash(options: Options = {}): Promise<TeacherCashView> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<TeacherCashView>('/api/guru/gamification/cash', withSignal(options))
 }
 
@@ -36,11 +39,13 @@ export function fetchTeacherCash(options: Options = {}): Promise<TeacherCashView
  * outside [min, available], missing bank field), `403 CASH_DISABLED`.
  */
 export function requestTeacherCash(request: TeacherCashRequest): Promise<TeacherCashCreated> {
+  if (deferredInHttp()) return deferredRejection()
   return api.post<TeacherCashCreated>('/api/guru/gamification/cash', { body: request })
 }
 
 /** #15 `GET /api/guru/gamification/shop` (S21). */
 export function fetchTeacherShop(options: Options = {}): Promise<TeacherShop> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<TeacherShop>('/api/guru/gamification/shop', withSignal(options))
 }
 
@@ -49,6 +54,7 @@ export function fetchTeacherShop(options: Options = {}): Promise<TeacherShop> {
  * redemption; `404`, `409 OUT_OF_STOCK | LIMIT_REACHED | INSUFFICIENT_BALANCE`.
  */
 export function redeemTeacherReward(rewardId: number): Promise<TeacherRedemption> {
+  if (deferredInHttp()) return deferredRejection()
   return api.post<TeacherRedemption>(`/api/guru/gamification/shop/${String(rewardId)}/redeem`)
 }
 
@@ -57,6 +63,7 @@ export function fetchTeacherLeaderboard(
   tab = 'sekolah',
   options: Options = {},
 ): Promise<TeacherLeaderboard> {
+  if (deferredInHttp()) return deferredRejection()
   return api.get<TeacherLeaderboard>('/api/guru/gamification/leaderboard', {
     query: { tab },
     ...withSignal(options),

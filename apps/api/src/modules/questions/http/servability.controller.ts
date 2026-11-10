@@ -76,7 +76,10 @@ export class ServabilityController {
     const { value, computedAt } = await this.overviewCache.get(() => this.reads.overview())
     // A card that failed must not sit in the cache: dropped, so the very next read (`Cuba lagi`) is a fresh compute and not this card again.
     if (value.cards.some((c) => c.failed)) this.overviewCache.evict()
-    return ok({ ...value, computedAt: toMytTimestamp(computedAt) })
+    // The Kawalan Ciri badge is read live: a switch must show at once, not after the cache expires.
+    const off = new Set(await this.reads.flaggedOffLanes())
+    const cards = off.size === 0 ? value.cards : value.cards.map((c) => (off.has(c.lane) ? { ...c, flagOff: true as const } : c))
+    return ok({ ...value, cards, computedAt: toMytTimestamp(computedAt) })
   }
 
   @Get('lanes/databank')
@@ -94,7 +97,8 @@ export class ServabilityController {
   @Get('lanes/tracking-a')
   @RateLimit(SERVABILITY_READ_LIMIT)
   async trackingA(@Query() query: unknown) {
-    return this.lane('tracking-a', this.reads.trackingLane(this.laneQuery(query)))
+    const [lane, setSubjects] = await Promise.all([this.lane('tracking-a', this.reads.trackingLane(this.laneQuery(query))), this.reads.trackingSubjects()])
+    return { ...lane, setSubjects }
   }
 
   @Get('lanes/subjektif')

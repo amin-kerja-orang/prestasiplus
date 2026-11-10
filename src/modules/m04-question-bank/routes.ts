@@ -54,7 +54,7 @@ const routes: RouteRecordRaw[] = [
       access: 'auth',
       roles: ['admin'],
       title: 'Butiran Sumber Kertas - Admin Panel',
-      header: { title: 'Butiran Sumber Kertas' },
+      header: { title: 'Butiran Sumber Kertas', subtitle: 'Provenance + soalan yang diimport (draf)' },
       module: 'M04',
     },
   },

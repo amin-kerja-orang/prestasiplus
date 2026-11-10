@@ -82,10 +82,10 @@ describe('S2 T1 Reaksi (AC-M12-10.1, 10.2, 01.3)', () => {
     expect(api.fetchKirkpatrickReaction).toHaveBeenCalledWith({ signal: expect.anything() })
   })
 
-  it('grid is 2 columns, 3 from md and 4 from xl', async () => {
+  it('grid is 2 columns (2 + 2) until xl, 4 from xl (no orphan)', async () => {
     const w = await open()
     expect(t(w, 'kirk-reaction-cards').classes()).toEqual(
-      expect.arrayContaining(['grid-cols-2', 'md:grid-cols-3', 'xl:grid-cols-4']),
+      expect.arrayContaining(['grid-cols-2', 'xl:grid-cols-4']),
     )
   })
 })

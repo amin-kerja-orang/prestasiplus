@@ -206,7 +206,7 @@ const cards = computed<Card[]>(() => [
             <p class="truncate text-label text-highlighted" data-testid="la-never-name">
               {{ t.name }}
             </p>
-            <p class="truncate text-caption text-muted" data-testid="la-never-email">
+            <p class="break-words text-caption text-muted" data-testid="la-never-email">
               {{ t.email }}
             </p>
           </li>

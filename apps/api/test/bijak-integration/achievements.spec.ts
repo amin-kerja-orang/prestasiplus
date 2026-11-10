@@ -3,6 +3,7 @@ import { GamificationAchievementsSchema } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { gamificationSeed } from '../../prisma/seed/gamification'
+import { AuthPorts } from '../../src/modules/auth/ports'
 import { GamificationService } from '../../src/modules/gamification'
 import { PracticePorts } from '../../src/modules/practice/ports'
 import { fillBank, FakeBank, loadWorld, type World } from '../practice/helpers'
@@ -25,6 +26,8 @@ beforeAll(async () => {
   bank = new FakeBank()
   fillBank(bank, w, { perChapter: 6, random: 30, spm: 8 })
   t.app.get(PracticePorts).provideQuestions(bank)
+  // These tests are about the practice trigger: the daily-login trigger (part 16b) would unlock the seeded pupil's syiling badge at sign-in.
+  t.app.get(AuthPorts).overrideLoginHook(null)
   student = await loginAs(t, STUDENT)
   admin = await loginAs(t, ADMIN, true)
   maju = await loginAs(t, 'pelajarmaju@demo.test')

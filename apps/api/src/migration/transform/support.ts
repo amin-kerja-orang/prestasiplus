@@ -112,11 +112,12 @@ export interface FeedbackValues {
   role: string
   school_id: string | null
   month: string
-  nps: null
+  nps: number | null
   satisfaction: number
   usability: number | null
   relevance: number | null
-  score: number | null
+  /** Always null: the V2 `score` is on a 0 to 10 scale and goes to `nps` (T-B8 recheck). */
+  score: null
   comment: string | null
   is_test: boolean
   created_at: string
@@ -124,6 +125,13 @@ export interface FeedbackValues {
 }
 
 const SCORE = /^[1-5]$/
+const NPS = /^(?:10|[0-9])$/
+
+function npsScore(value: string | null | undefined): Outcome<number | null> {
+  const t = text(value)
+  if (t === null) return ok(null)
+  return NPS.test(t) ? ok(Number(t)) : invalid('score')
+}
 
 /** The v2 role code of the answering user's staged role (T-01). */
 export function feedbackRole(role: string | null | undefined): Outcome<string> {
@@ -151,7 +159,7 @@ export interface FeedbackContext {
 }
 
 /**
- * The four scores are kept, `nps` is null (the source has none). Every score must be 1 to 5 (the v2 checks), the
+ * The satisfaction, usability and relevance scores are kept; the V2 `score` (0 to 10) is the `nps`. Every score must be 1 to 5 (the v2 checks), the
  * satisfaction is required. More than one row per (user, month): the newest stays, the rest are DUPLICATE_KEY.
  */
 export function transformFeedback(row: Staged, c: FeedbackContext): Outcome<FeedbackValues> {
@@ -165,19 +173,20 @@ export function transformFeedback(row: Staged, c: FeedbackContext): Outcome<Feed
   if (!usability.ok) return usability
   const relevance = score(row.relevance, 'relevance', false)
   if (!relevance.ok) return relevance
-  const overall = score(row.score, 'score', false)
-  if (!overall.ok) return overall
+  // T-B8 recheck: the real V2 `score` is 3, 8 or 10 (a 0-10 scale), outside the 1-5 `score` column of v3; it fits `nps` (0 to 10) exactly.
+  const nps = npsScore(row.score)
+  if (!nps.ok) return nps
   if (!c.newest) return duplicate('month')
   return ok({
     user_id: c.userId,
     role: role.value,
     school_id: c.schoolId,
     month: c.month,
-    nps: null,
+    nps: nps.value,
     satisfaction: satisfaction.value as number,
     usability: usability.value,
     relevance: relevance.value,
-    score: overall.value,
+    score: null,
     comment: text(row.comment),
     is_test: false,
     ...stamps(row),

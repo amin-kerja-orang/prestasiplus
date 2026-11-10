@@ -17,14 +17,14 @@ describe('Pembelajaran shell a11y (S8-T07)', () => {
     expect(m?.[1]).not.toContain('size-10')
   })
 
-  it('D07 nav link rows are h-10 on fine and pointer-coarse:h-12 on touch', () => {
-    const rows = src.match(/'h-10 [^']*'/g) ?? []
+  it('D07 nav link rows are min-h-10 on fine and pointer-coarse:min-h-12 on touch (a long label wraps)', () => {
+    const rows = src.match(/'min-h-10 [^']*'/g) ?? []
     expect(rows).toHaveLength(2)
-    for (const r of rows) expect(r).toContain('pointer-coarse:h-12')
+    for (const r of rows) expect(r).toContain('pointer-coarse:min-h-12')
   })
 
   it('D08 bottom-nav labels use the 13px caption role (at least 12px)', () => {
-    expect(src).toMatch(/max-w-full text-center text-caption leading-tight/)
+    expect(src).toMatch(/block w-full truncate text-center text-caption leading-tight/)
     expect(src).not.toContain('text-[0.6875rem]')
   })
 

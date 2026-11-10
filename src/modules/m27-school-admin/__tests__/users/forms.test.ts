@@ -155,7 +155,7 @@ describe('S9 Edit Pelajar (FR-M27-94 to 98)', () => {
     await toggle.trigger('click')
     expect(panel.attributes('style') ?? '').not.toContain('display: none')
     expect(w.get('[data-testid="user-new-password"]').attributes('placeholder')).toBe(
-      'Minimum 6 aksara',
+      'Minimum 8 aksara',
     )
     expect(w.get('[data-testid="user-new-password-confirm"]').attributes('placeholder')).toBe(
       'Taip semula kata laluan baru',
@@ -348,7 +348,7 @@ describe('S11 Cipta Pengguna (FR-M27-108 to 110)', () => {
       'Sahkan Kata Laluan',
     ])
     expect(w.get('[data-testid="user-password"]').attributes('placeholder')).toBe(
-      'Minimum 6 aksara',
+      'Minimum 8 aksara',
     )
     expect(w.get('[data-testid="user-password-confirm"]').attributes('placeholder')).toBe(
       'Taip semula kata laluan',

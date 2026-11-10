@@ -42,9 +42,20 @@ export interface UserListFilter {
   role?: RoleCode
   schoolId?: string
   isActive?: boolean
+  /** Account state filter of the admin list; wins over `isActive`. */
+  status?: UserStatusFilter
   search?: string
   page: number
   pageSize: number
+}
+
+/** pending: not yet approved (inactive, not suspended); active; suspended. */
+export type UserStatusFilter = 'pending' | 'active' | 'suspended'
+
+const STATUS_WHERE: Record<UserStatusFilter, Prisma.UserWhereInput> = {
+  pending: { isActive: false, isSuspended: false },
+  active: { isActive: true, isSuspended: false },
+  suspended: { isSuspended: true },
 }
 
 export interface UserSearchInput {
@@ -442,7 +453,8 @@ export class UsersRepository {
       if (!caller.isAdmin && filter.schoolId !== caller.schoolId) return { rows: [], total: 0 }
       and.push({ schoolId: idFromString(filter.schoolId) })
     }
-    if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
+    if (filter.status !== undefined) and.push(STATUS_WHERE[filter.status])
+    else if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
     if (filter.search) and.push(textSearch(filter.search))
     const where: Prisma.UserWhereInput = { AND: and }
     const [rows, total] = await Promise.all([
@@ -458,6 +470,11 @@ export class UsersRepository {
     return { rows: rows.map(toRecord), total }
   }
 
+  /** Accounts waiting for approval among the users the caller can see (scope only, no list filter). */
+  pendingCount(caller: Caller): Promise<number> {
+    return this.prisma.client.user.count({ where: { AND: [this.visibleWhere(caller), STATUS_WHERE.pending] } })
+  }
+
   /** Users per role over everything the caller can see, ignoring the list filters (the 7 stat cards). */
   async roleCounts(caller: Caller): Promise<RoleCounts> {
     const groups = await this.prisma.client.userRole.groupBy({
@@ -468,6 +485,14 @@ export class UsersRepository {
     const out = Object.fromEntries(ROLE_CODES.map((r) => [r, 0])) as RoleCounts
     for (const g of groups) if (g.role in out) out[g.role as RoleCode] = g._count._all
     return out
+  }
+
+  /**
+   * Total accounts the caller can see (Admin Pusat dashboard, S6-T11). Students and teachers come from the analytics pupil/teacher
+   * definition (`AnalyticsRepository.pupilTotals` / `teacherTotals`, which use XS-1 / XS-3 of `school-admin/xs-queries.ts`) so the dashboard, Analitik and Laporan agree.
+   */
+  async centralCounts(caller: Caller): Promise<{ total: number }> {
+    return { total: await this.prisma.client.user.count({ where: this.visibleWhere(caller) }) }
   }
 
   /** Distinct schools of the users the caller can see (filter options). */

@@ -43,16 +43,29 @@ export function ticketsStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows, 'user_id'))
+      // T-B6: the ticket page of the admin groups by the creator's role and school (DM-32), so the snapshot is taken from the migrated user.
+      const owners = new Map<string, { role: string | null; school: string | null }>()
+      if (users.size > 0) {
+        const res = await ctx.db.query<{ id: string; role: string | null; school: string | null }>(
+          `SELECT u.id::text AS id, u.school_id::text AS school, (SELECT r.role FROM user_roles r WHERE r.user_id = u.id ORDER BY r.role LIMIT 1) AS role FROM users u WHERE u.id = ANY($1::bigint[])`,
+          [[...users.values()]],
+        )
+        for (const r of res.rows) owners.set(r.id, { role: r.role, school: r.school })
+      }
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
-        const out = transformTicket(row, { userId: lookup(users, row.user_id) })
+        const userId = lookup(users, row.user_id)
+        const out = transformTicket(row, { userId })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
-        else items.push(toRow(legacyId, out.value))
+        else {
+          const o = userId === undefined ? undefined : owners.get(userId)
+          items.push(toRow(legacyId, { ...out.value, created_role: o?.role ?? null, school_id: o?.school ?? null }))
+        }
       }
       return upsertAndMap(
         ctx, entity, 'support_tickets',
-        ['user_id', 'subject', 'body', 'status', 'admin_reply', 'is_test', 'created_at', 'updated_at'],
+        ['user_id', 'subject', 'body', 'status', 'admin_reply', 'is_test', 'created_role', 'school_id', 'created_at', 'updated_at'],
         items, { register: false },
       )
     },

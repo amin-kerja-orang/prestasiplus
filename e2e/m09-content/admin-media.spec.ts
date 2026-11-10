@@ -78,8 +78,8 @@ test.describe('M09 S9 banner list', MODULE, () => {
   }) => {
     await gotoApp('/admin/banners')
     await expect(page.getByTestId('banner-row').first()).toBeVisible()
-    await expectTabTitle(page, 'Pengurusan Banner | PRESTASIPLUS')
-    await expectHeader(page, 'Pengurusan Banner', 'Urus banner promosi dan pengumuman')
+    await expectTabTitle(page, 'Banner | PRESTASIPLUS')
+    await expectHeader(page, 'Banner', 'Pengurusan banner')
     await expect(page.getByText('Senarai Banner')).toBeVisible()
     await expect(page.getByTestId('banners-count')).toHaveText('Jumlah: 5 banner')
     await expect(page.getByTestId('banners-add')).toHaveAttribute('href', '/admin/banners/create')
@@ -413,8 +413,8 @@ test.describe('M09 S12 Audio KBAT set list', MODULE, () => {
   }) => {
     await gotoApp('/admin/audio-kbat')
     await expect(page.getByTestId('audio-list-page')).toBeVisible()
-    await expectTabTitle(page, 'Set Audio KBAT')
-    await expectHeader(page, 'Set Audio KBAT')
+    await expectTabTitle(page, 'Audio KBAT')
+    await expectHeader(page, 'Audio KBAT', 'Pustaka audio KBAT')
     await expect(page.getByText('Dashboard', { exact: true })).toHaveCount(0)
     await expect(page.getByText('Selamat datang, Admin')).toHaveCount(0)
     const list = page.getByTestId('audio-list-page')
@@ -738,8 +738,8 @@ test.describe('M09 S14 screenshot upload', MODULE, () => {
   }) => {
     await gotoApp('/admin/tools/screenshots')
     await expect(page.getByTestId('screenshots-page')).toBeVisible()
-    await expectTabTitle(page, 'Upload Screenshot | PRESTASIPLUS')
-    await expectHeader(page, 'Upload Screenshot', 'Tool admin untuk upload & urus gambar (private)')
+    await expectTabTitle(page, 'Alat — Tangkap Skrin | PRESTASIPLUS')
+    await expectHeader(page, 'Alat — Tangkap Skrin', 'Muat naik & urus fail gambar')
     await expect(page.getByText('Upload Gambar')).toBeVisible()
     await expect(
       page.getByText('Format: JPG, PNG, GIF, WebP, BMP. Maks 10MB setiap fail.'),

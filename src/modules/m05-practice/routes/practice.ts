@@ -15,7 +15,7 @@ const routes: RouteRecordRaw[] = [
       layout: 'user',
       access: 'auth',
       title: 'Latih Tubi - PRESTASIPLUS',
-      header: { title: 'Latih Tubi', subtitle: 'Pilih subjek dan mula berlatih' },
+      header: { title: 'Latih Tubi SPM', subtitle: 'Pilih subjek untuk mula berlatih' },
       module: 'M05',
       v2: true,
     },

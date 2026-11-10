@@ -169,6 +169,8 @@ export interface NewSet {
   teacherId: string
   /** Null only for a migrated header (AZ-31): needs `legacySource` and `needsRebuild` (check constraint). */
   classroomId: string | null
+  /** DM-46: the classes of `question_set_classrooms` (default: `classroomId` when set). Pass `[]` for a legacy-only row. */
+  classroomIds?: string[]
   title?: string
   status?: 'draft' | 'scheduled' | 'published'
   scheduledAt?: string | null
@@ -203,6 +205,10 @@ export async function insertSet(t: QsTestApp, s: NewSet): Promise<string> {
     ],
   )
   const id = (rows[0] as { id: string }).id
+  // S6-T14 (DM-46): the pupil feed reads `question_set_classrooms`, not `question_sets.classroom_id`.
+  for (const classroomId of s.classroomIds ?? (s.classroomId === null ? [] : [s.classroomId])) {
+    await t.db.query(`insert into question_set_classrooms (question_set_id, classroom_id, assigned_by) values ($1, $2, $3)`, [id, classroomId, s.teacherId])
+  }
   let position = 0
   for (const q of s.questionIds ?? []) {
     await t.db.query(`insert into question_set_items (question_set_id, position, question_id, question_version_no) values ($1, $2, $3, 1)`, [id, position++, q])

@@ -13,7 +13,6 @@ import { useRouter } from 'vue-router'
 import {
   DsCluster,
   DsDataTable,
-  DsDefinitionList,
   DsEmptyState,
   DsLink,
   DsPanel,
@@ -147,11 +146,17 @@ function open(row: Item): void {
     <template #card="{ row }">
       <DsLink v-if="row.link !== null" :to="row.link">{{ row.name }}</DsLink>
       <DsText v-else as="span" variant="label">{{ row.name }}</DsText>
-      <DsDefinitionList :items="cardItems(row)">
-        <template #value-members="{ item }">
-          <DsLink :to="row.membersLink" data-testid="kl-members" @click.stop>{{ item.value }}</DsLink>
-        </template>
-      </DsDefinitionList>
+      <dl class="grid grid-cols-2 gap-x-3 gap-y-2">
+        <div v-for="item in cardItems(row)" :key="item.key" class="min-w-0">
+          <dt class="text-caption text-muted">{{ item.label }}</dt>
+          <dd class="tabular text-body break-words">
+            <DsLink v-if="item.key === 'members'" :to="row.membersLink" data-testid="kl-members" @click.stop>{{
+              item.value
+            }}</DsLink>
+            <template v-else>{{ item.value }}</template>
+          </dd>
+        </div>
+      </dl>
     </template>
   </DsDataTable>
 </template>

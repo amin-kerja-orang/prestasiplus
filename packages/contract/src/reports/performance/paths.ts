@@ -42,7 +42,6 @@ import {
   PerformanceLevelCodeSchema,
   PerformanceLevelDetailSchema,
   PerformancePublicProfileSchema,
-  PerformanceRankingQuerySchema,
   PerformanceRankingSchema,
   PerformanceRiskLevelSchema,
   PerformanceSchoolItemAnalysisSchema,
@@ -91,7 +90,6 @@ export const PERFORMANCE_COMPONENT_SCHEMAS = {
   PerformanceTimelineDeleteResult: PerformanceTimelineDeleteResultSchema,
   PerformanceTimelineCreateRequest: PerformanceTimelineCreateRequestSchema,
   PerformancePublicProfile: PerformancePublicProfileSchema,
-  PerformanceRankingQuery: PerformanceRankingQuerySchema,
   PerformanceRanking: PerformanceRankingSchema,
   PerformanceLeaderboardQuery: PerformanceLeaderboardQuerySchema,
   PerformanceLeaderboard: PerformanceLeaderboardSchema,
@@ -266,10 +264,9 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
   // Rankings and social
   get(
     '/rankings',
-    'Ranking table (S19)',
+    'Kedudukan: own rank per scope and "Sekitar anda" (R1-MUR-18, API-RPT-13)',
     PerformanceRankingSchema,
     {},
-    { query: PerformanceRankingQuerySchema },
   )
   get(
     '/leaderboard',

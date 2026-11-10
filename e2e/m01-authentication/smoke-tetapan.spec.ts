@@ -36,7 +36,7 @@ test.describe('M01 /tetapan (user shell)', { tag: [TAG.smoke, moduleTag(1)] }, (
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/tetapan')
-    await expectTabTitle(page, 'Tetapan Peribadi')
+    await expectTabTitle(page, 'Tetapan Akaun')
 
     await expect(page.getByRole('heading', { name: '⚙️ Tetapan Peribadi' })).toBeVisible()
     await expect(

@@ -192,9 +192,12 @@ const deltaWord = { up: dsCopy.deltaUp, down: dsCopy.deltaDown, flat: dsCopy.del
     class="flex min-w-0 animate-ds-rise flex-col items-start rounded-card bg-default shadow-ds-xs motion-reduce:animate-none learner:shadow-lift staff:gap-4 staff:p-4 md:staff:p-5"
     :class="[
       clickable ? 'cursor-pointer text-start' : '',
-      isRoomy ? 'gap-3 p-6' : 'gap-2 px-2.5 pt-3.5 pb-3',
+      isRoomy ? 'gap-3 p-6' : 'gap-2 p-4',
       // Roomy staff tiles stack the chip above the number on a phone (a half-width tile cannot fit both).
-      isRoomy ? 'md:staff:flex-row md:staff:items-center' : 'staff:flex-row staff:items-center',
+      isRoomy ? 'md:staff:flex-row' : 'staff:flex-row',
+      // One rule for every tile: the chip pins to the first line, so chips in one row never jump
+      // between centred (no sub line) and top (with a sub line).
+      isRoomy ? 'md:staff:items-start' : 'staff:items-start',
       riseOff ? 'staff:animate-none' : 'staff:animate-ds-rise-quick',
       stateClass,
     ]"

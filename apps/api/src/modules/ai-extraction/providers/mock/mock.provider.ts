@@ -12,7 +12,7 @@ import { candidateUnits, emptyTag, guessUnit, tagWithUnit } from './mock-units'
  */
 export class MockProvider implements ExtractionProvider {
   readonly id: AiProviderId = 'mock'
-  readonly model = MOCK_MODEL_ID
+  readonly model: string = MOCK_MODEL_ID
   readonly capabilities: AiCapabilities = { vision: false, jsonMode: true, maxPagesPerCall: 200 }
 
   isConfigured(): boolean {

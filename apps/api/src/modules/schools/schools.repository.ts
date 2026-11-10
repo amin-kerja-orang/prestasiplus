@@ -69,6 +69,8 @@ export interface SchoolListFilter {
   search?: string
   state?: string
   type?: string
+  /** When true the primary types (SK, SJK(C), SJK(T)) are part of the list (R1-ADM-U-04, OQ-U1); default hides them. */
+  includePrimary?: boolean
   page: number
   pageSize: number
 }
@@ -216,7 +218,8 @@ export class SchoolsRepository {
 
   /** A page of the admin list with the number of rows matching the filters. */
   async list(filter: SchoolListFilter): Promise<{ rows: SchoolRow[]; total: number }> {
-    const conds: Prisma.Sql[] = [Prisma.sql`(type IS NULL OR type NOT IN (${Prisma.join([...PRIMARY_SCHOOL_TYPES])}))`] // secondary-only (2026-10-29)
+    // Secondary-only (2026-10-29) unless the caller asked for the primary types too (includePrimary / a primary type filter).
+    const conds: Prisma.Sql[] = filter.includePrimary ? [] : [Prisma.sql`(type IS NULL OR type NOT IN (${Prisma.join([...PRIMARY_SCHOOL_TYPES])}))`]
     if (filter.state) conds.push(Prisma.sql`state = ${filter.state}`)
     if (filter.type) conds.push(Prisma.sql`type = ${filter.type}`)
     if (filter.search) conds.push(textCond(filter.search))
@@ -241,19 +244,20 @@ export class SchoolsRepository {
     })
   }
 
-  /** Stat cards: all schools, ignoring every filter. */
-  async counts(): Promise<{ total: number; active: number; inactive: number }> {
+  /** Stat cards: all visible schools (secondary only, or primary too with `includePrimary`), ignoring every filter. */
+  async counts(includePrimary = false): Promise<{ total: number; active: number; inactive: number }> {
+    const base: Prisma.SchoolWhereInput = includePrimary ? {} : NON_PRIMARY
     const [total, active] = await Promise.all([
-      this.prisma.client.school.count({ where: NON_PRIMARY }),
-      this.prisma.client.school.count({ where: { isActive: true, ...NON_PRIMARY } }),
+      this.prisma.client.school.count({ where: base }),
+      this.prisma.client.school.count({ where: { isActive: true, ...base } }),
     ])
     return { total, active, inactive: total - active }
   }
 
   /** The distinct types present, in code-unit order like the mock (`['MRSM', 'SBP', 'SJK(C)', ...]`). */
-  async types(): Promise<string[]> {
+  async types(includePrimary = false): Promise<string[]> {
     const rows = await this.prisma.client.school.findMany({
-      where: { type: { not: null, notIn: [...PRIMARY_SCHOOL_TYPES] } },
+      where: { type: includePrimary ? { not: null } : { not: null, notIn: [...PRIMARY_SCHOOL_TYPES] } },
       select: { type: true },
       distinct: ['type'],
     })
@@ -350,6 +354,16 @@ export class SchoolsRepository {
       UPDATE schools SET is_active = NOT is_active, updated_at = ${now}
        WHERE id = ${idFromString(id)} RETURNING is_active`
     return rows[0] ? rows[0].is_active : null
+  }
+
+  /** Replaces the join code of one school; returns the school row (name for the flash text), or null for an unknown school. A duplicate code raises P2002. */
+  async setJoinCode(id: string, joinCode: string, now: Date): Promise<SchoolRow | null> {
+    if (!isIdString(id)) return null
+    const result = await this.prisma.client.school.updateMany({
+      where: { id: idFromString(id) },
+      data: { joinCode, updatedAt: now },
+    })
+    return result.count === 0 ? null : this.get(id)
   }
 
   /** `GET /api/jpn`: every JPN by id. */

@@ -41,7 +41,10 @@ describe('session endpoints', () => {
       const me = await login('adminsekolah@demo.test')
       const res = await me.agent.get('/api/session')
       expect(res.status).toBe(200)
-      expect(SessionSchema.parse(res.body.data)).toEqual(me.session)
+      // S0-T10 (API-AUTH-03): GET /session alone also carries the feature map.
+      const { features, ...rest } = SessionSchema.parse(res.body.data)
+      expect(rest).toEqual(me.session)
+      expect(features).toEqual(expect.any(Object))
       expect(res.headers['cache-control']).toBe('no-store')
     })
 

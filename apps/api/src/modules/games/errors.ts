@@ -18,6 +18,8 @@ export const gameNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: 
 export const roomNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.roomNotFound })
 export const jutawanSessionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.jutawanSessionNotFound })
 export const jutawanQuestionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.jutawanQuestionNotFound })
+/** ERR-ACC-04: an action on a game that is not in the list. */
+export const gameRecordNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.gameRecordNotFound })
 export const leagueNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.leagueNotFound })
 /** [PROPOSED] check/reveal 404s (standard envelope; copy reused from Jutawan). */
 export const soloSessionNotFound = (): ApiError => ApiError.of('NOT_FOUND', { message: M.soloSessionNotFound })
@@ -25,9 +27,15 @@ export const soloItemNotFound = (): ApiError => ApiError.of('NOT_FOUND', { messa
 
 // 403
 export const startHostOnly = (): ApiError => ApiError.of('FORBIDDEN', { message: M.startHostOnly })
+/** AC-GM-R.6, ruling on DOC DEFECT 48: the Tingkatan does not fit the room's match mode. */
+export const roomGradeRefused = (): ApiError => ApiError.of('FORBIDDEN', { message: M.actionType })
 export const actionNotYourTurn = (): ApiError => ApiError.of('FORBIDDEN', { message: M.actionNotYourTurn })
 
 // 409
+/** ERR-GAME-08: a join with no free seat. */
+export const roomFull = (): ApiError => ApiError.of('CONFLICT', { message: M.roomFull })
+/** ERR-GAME-09: a join of a room that already started (same text as the start refusal). */
+export const roomStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.startAlreadyStarted })
 export const startAlreadyStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.startAlreadyStarted })
 export const startNotEnoughPlayers = (): ApiError => ApiError.of('CONFLICT', { message: M.startNotEnoughPlayers })
 export const actionNotStarted = (): ApiError => ApiError.of('CONFLICT', { message: M.actionNotStarted })
@@ -62,7 +70,9 @@ export const jutawanNotEnoughQuestions = (): ApiError => fieldError('subject', M
 export const jutawanQuestionMismatch = (): ApiError => fieldError('questionId', M.jutawanQuestionMismatch)
 export const jutawanOptionInvalid = (): ApiError => fieldError('optionId', M.jutawanOption)
 export const jutawanLifelineInvalid = (): ApiError => fieldError('type', M.jutawanLifelineType)
-export const quizTilesInvalid = (): ApiError => fieldError('boardgame_quiz_tiles', M.quizTiles)
+/** Admin settings: `fields` from the strict parse; the top-level message is the first BM field message, else the default. */
+export const adminSettingsInvalid = (fields: Record<string, string>, message?: string): ApiError =>
+  ApiError.of('VALIDATION_ERROR', { ...(message === undefined ? {} : { message }), fields })
 /** Leagues: the top-level message is the first field message. */
 export const leagueInvalid = (field: string, message: string): ApiError => fieldError(field, message)
 export const leagueEnded = (): ApiError => fieldError('schoolIds', M.leagueEnded)

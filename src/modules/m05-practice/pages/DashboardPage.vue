@@ -76,11 +76,25 @@ watch(
         :streak-count="data.streak.count"
       />
       <HomeRewards :data="data" />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
-        <HomePakej v-if="data.package" :name="data.package.name" :valid-until="data.package.validUntil" />
-        <HomeTrial v-else-if="data.trial.active" :trial="data.trial" />
-        <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
+      <div class="grid grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+        <HomePakej
+          v-if="data.package"
+          :name="data.package.name"
+          :valid-until="data.package.validUntil"
+          :class="data.banners.length > 0 ? 'md:col-start-1' : ''"
+        />
+        <HomeTrial
+          v-else-if="data.trial.active"
+          :trial="data.trial"
+          :class="data.banners.length > 0 ? 'md:col-start-1' : ''"
+        />
+        <HomeCarousel
+          v-if="data.banners.length > 0"
+          :banners="data.banners"
+          class="md:col-start-2 md:row-span-2 md:row-start-1"
+        />
         <HomeKombo
+          :class="data.banners.length > 0 ? 'md:col-start-1' : ''"
           :count="data.streak.count"
           :at-risk="kombo"
           :practised-today="data.streak.practisedToday"
@@ -93,7 +107,7 @@ watch(
         :week="data.week"
         :accuracy-pct="data.accuracyPct"
       />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+      <div class="flex min-w-0 flex-col gap-4">
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
       </div>

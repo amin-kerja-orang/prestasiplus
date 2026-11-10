@@ -281,7 +281,7 @@ describe('SPM pool and tracking (S1, S2, S5)', () => {
   it('tracking sets check only their own ids, and an ineligible id leaves the count', async () => {
     const own = form4.filter((_, i) => i % 7 === 0).slice(0, 40)
     const setId = (await t.db.query<{ id: string }>(`insert into spm_tracking_sets (subject_id, year, set_no, dskp_tagged) values ($1, 2090, 1, 0) returning id::text`, [w.tag.subjectId]))[0]?.id as string
-    await t.db.query(`insert into spm_tracking_set_questions (set_id, question_id, position) select $1, q, row_number() over () from unnest($2::bigint[]) q`, [setId, own])
+    await t.db.query(`insert into spm_tracking_set_questions (set_id, question_id, position, subject_id, year) select $1, q, row_number() over (), $3::bigint, 2090 from unnest($2::bigint[]) q`, [setId, own, w.tag.subjectId])
     const among = vi.spyOn(QuestionsRepository.prototype, 'eligibleAmong')
     const tracking = t.get(SpmTrackingService)
     const before = (await tracking.setsOf(w.tag.subjectId, 2090))[0]
@@ -574,6 +574,8 @@ describe('re-G4 minors', () => {
       { subjects: async () => [{ id: 1n, code: 'MATH', name: 'Matematik' }, { id: 2n, code: 'BI', name: 'English' }] } as never,
       {} as never,
       clock,
+      {} as never,
+      {} as never,
     )
     const caller = { userId: '1' } as never
     const pages = await Promise.all([svc.page(caller, '10'), svc.page(caller, '10'), svc.page(caller, '10')])

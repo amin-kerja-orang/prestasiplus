@@ -56,6 +56,67 @@ describe('admin question CRUD (AC 1, AC 2)', () => {
     expect(detail.parts?.[0]).toMatchObject({ mode: 'mcq', key: { kind: 'option', correct: 'B' } })
   })
 
+  it('PO decision 3: explanationEn saves and reads back next to explanation; omitted keeps it, null clears it', async () => {
+    const { data } = await created({ explanation: 'Sebab.', explanationEn: 'Reason.' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    expect(await read()).toMatchObject({ explanation: 'Sebab.', explanationEn: 'Reason.' })
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, explanation: 'Sebab 2.' })).status).toBe(200)
+    expect(await read()).toMatchObject({ explanation: 'Sebab 2.', explanationEn: 'Reason.' })
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, explanationEn: null })).status).toBe(200)
+    expect((await read()).explanationEn).toBeNull()
+  })
+
+  it('PO decision 4: scriptType mixed is stored as ms_en and reads back mixed; omitted keeps it', async () => {
+    const { data } = await created({ scriptType: 'mixed' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    expect((await read()).scriptType).toBe('mixed')
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, base)).status).toBe(200)
+    expect((await read()).scriptType).toBe('mixed')
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'jawi' })).status).toBe(200)
+    expect((await read()).scriptType).toBe('jawi')
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'rumi' })).status).toBe(200)
+    expect((await read()).scriptType).toBe('rumi')
+  })
+
+  it('PO decision 4: scriptType rumi leaves an English question English', async () => {
+    const { data } = await created({ language: 'en' })
+    const read = async () => parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+    const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+    expect((await admin.put(`/api/questions/${data.id}`, { ...base, scriptType: 'rumi' })).status).toBe(200)
+    expect(await read()).toMatchObject({ language: 'en', scriptType: 'rumi' })
+  })
+
+  describe('bilingual language and script (S1-T09b ruling 3: bilingual is Rumi only)', () => {
+    const rows = async () => countOf(t.db, `select count(*) n from questions`)
+
+    it.each(['jawi', 'arab'])('create: language ms+en with scriptType %s is 422 on language and creates no row', async (scriptType) => {
+      const before = await rows()
+      const error = expectError(await admin.post('/api/questions', mcqBody(refs, { language: 'ms+en', scriptType })), 'VALIDATION_ERROR')
+      expect(error.fields?.language).toBe(QUESTION_MESSAGES.language)
+      expect(await rows()).toBe(before)
+    })
+
+    it.each(['rumi', 'mixed'])('create: language ms+en with scriptType %s is created and stored as ms_en', async (scriptType) => {
+      const { data } = await created({ language: 'ms+en', scriptType })
+      const stored = await t.db.query<{ language: string }>(`select language from question_versions where question_id = $1::bigint`, [data.id])
+      expect(stored.map((r) => r.language)).toEqual(['ms_en'])
+      const detail = parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+      expect(detail.language).toBe('ms+en')
+      expect(detail.scriptType).toBe('mixed')
+    })
+
+    it('update: a stored Rumi question given language ms+en and scriptType jawi is 422 on language and stays Rumi', async () => {
+      const { data } = await created({ scriptType: 'rumi' })
+      const base = { subjectId: refs.mathId, educationLevelId: refs.t4Id, difficultyLevel: 3, questionText: data.questionText }
+      const error = expectError(await admin.put(`/api/questions/${data.id}`, { ...base, language: 'ms+en', scriptType: 'jawi' }), 'VALIDATION_ERROR')
+      expect(error.fields?.language).toBe(QUESTION_MESSAGES.language)
+      const detail = parseData(await admin.get(`/api/questions/${data.id}`), QuestionDetailSchema)
+      expect(detail.scriptType).toBe('rumi')
+    })
+  })
+
   it('round-trips a 3-level tree ((a)(i)(A)) with marks only on the leaves', async () => {
     const parts = [{ label: 'a', prompt: { ms: 'Bahagian (a).' }, children: [{ label: 'i', prompt: { ms: 'Bahagian (i).' }, children: [leaf('A'), leaf('B')] }] }]
     const res = await admin.post('/api/questions', mcqBody(refs, { questionType: 'essay', questionText: 'Soalan berstruktur tiga peringkat.', options: undefined, correctAnswer: undefined, parts }))

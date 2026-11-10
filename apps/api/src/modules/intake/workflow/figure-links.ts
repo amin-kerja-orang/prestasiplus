@@ -39,26 +39,68 @@ export function figureKeys(text: string): string[] {
 }
 
 /**
- * S1-T07 (D115, 45 section 6.6.1): the figure words that count as a reference even without a number ("Graf", "Rajah di atas").
- * Whole word only: "Rajahnya" or "petakan" is not a reference. The numbered form uses the same six words (`NUMBERED_REF`).
+ * THE one canonical stimulus-reference keyword set (45 section 6.6.1, D113-continued; PO decision 2026-11-05 supersedes the D115 default).
+ * A change in 45 6.6.1 is a change here only. `figure` words take a number (the numbered form); `source` words only flag in the unnumbered
+ * form. The frontend twin (`src/modules/m28-bijak-spm/admin/intake/domain/figure-links.ts`) is outside S1 and does not cite this set yet: it should (45 6.6.1); owners S2/S3, follow-up on #503.
  */
-/** The numbered form of the card's six words only ("Rajah 14"); the English twins of `REF` are not stimulus references for the flag (decision 55, D115). */
-const NUMBERED_REF = /(?<![\p{L}\p{N}])(rajah|jadual|graf|petikan|peta|carta)\s*(\d{1,3}(?:\.\d{1,2})?)(?![\p{N}])/iu
-const BARE_REF = /(?<![\p{L}\p{N}])(rajah|jadual|graf|petikan|peta|carta)(?![\p{L}\p{N}])/iu
+export const STIMULUS_REFERENCE_WORDS = {
+  figure: ['rajah', 'figure', 'diagram', 'gambar rajah', 'gambar', 'jadual', 'table', 'graf', 'graph', 'carta', 'chart', 'peta', 'map', 'petikan', 'passage'],
+  source: ['sumber', 'teks', 'text', 'maklumat', 'pernyataan', 'situasi', 'bahan'],
+  /** A positional phrase within `STIMULUS_REFERENCE_WINDOW` words of a figure or source word. */
+  positional: ['di atas', 'di bawah', 'berikut', 'above', 'below', 'following'],
+  /** A figure or source word used as the subject of one of these. */
+  subjectVerbs: ['menunjukkan', 'shows'],
+} as const
+
+/** "within 3 words" (45 6.6.1 b). */
+export const STIMULUS_REFERENCE_WINDOW = 3
+
+/** Lower case, diacritics removed, runs of whitespace collapsed to one space (45 6.6.1 "normalised text"). */
+export function normaliseReferenceText(text: string): string {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').replace(/\s+/g, ' ')
+}
+
+const alt = (list: readonly string[]): string => list.map((w) => w.replace(' ', '\\s+')).join('|')
+const NUMBERED_REF = new RegExp(`(?<![\\p{L}\\p{N}])(?:${alt(STIMULUS_REFERENCE_WORDS.figure)})\\s*\\d{1,3}(?:\\.\\d{1,2})?(?![\\p{N}])`, 'iu')
+const WORD_SET: ReadonlySet<string> = new Set([...STIMULUS_REFERENCE_WORDS.figure, ...STIMULUS_REFERENCE_WORDS.source].flatMap((w) => w.split(' ')))
+const POSITIONAL = STIMULUS_REFERENCE_WORDS.positional.map((p) => p.split(' '))
+const VERBS: ReadonlySet<string> = new Set(STIMULUS_REFERENCE_WORDS.subjectVerbs)
 
 export interface StimulusReference {
-  /** `numbered` = "Rajah 14" (a figure word followed by a number); `unnumbered` = the bare word (DM-53 `stimulus_flag_ref`). */
+  /** `numbered` = "Rajah 14" (a figure word followed by a number); `unnumbered` = a word with a positional phrase or as subject (DM-53 `stimulus_flag_ref`). */
   kind: 'numbered' | 'unnumbered'
-  /** The text as written, e.g. "Rajah 14" or "Graf". */
+  /** The text as written (normalised), e.g. "Rajah 14" or "Graf". */
   text: string
 }
 
-/** The first reference to a figure in `text` (the numbered form wins over a bare word), or null. Pure; case-insensitive. */
+/** The first unnumbered reference in the text (words only, no sentence barrier: 45 6.6.1 states just the window), or null: a keyword with a positional phrase within the window, or as subject of the verb. */
+function unnumberedIn(sentence: string): string | null {
+  const tokens = sentence.match(/[\p{L}\p{N}]+/gu) ?? []
+  const lower = tokens.map((t) => t.toLowerCase())
+  const phraseAt = (i: number): number => POSITIONAL.find((ph) => ph.every((w, k) => lower[i + k] === w))?.length ?? 0
+  for (let i = 0; i < lower.length; i += 1) {
+    if (!WORD_SET.has(lower[i] as string)) continue
+    for (let d = 1; d <= STIMULUS_REFERENCE_WINDOW; d += 1) {
+      const after = i + d
+      if (after < lower.length && (VERBS.has(lower[after] as string) || phraseAt(after) > 0)) return tokens[i] as string
+      // A phrase before the word: the phrase's last word is `d` words before it.
+      for (const ph of POSITIONAL) {
+        const start = i - d - ph.length + 1
+        if (start >= 0 && ph.every((w, k) => lower[start + k] === w)) return tokens[i] as string
+      }
+    }
+  }
+  return null
+}
+
+/** The first reference to a figure in `text` (the numbered form wins), or null. Pure; case-insensitive on normalised text (45 6.6.1). */
 export function stimulusReferenceOf(text: string): StimulusReference | null {
-  const numbered = NUMBERED_REF.exec(text)
+  const norm = normaliseReferenceText(text)
+  const numbered = NUMBERED_REF.exec(norm)
   if (numbered !== null) return { kind: 'numbered', text: numbered[0] }
-  const bare = BARE_REF.exec(text)
-  return bare === null ? null : { kind: 'unnumbered', text: bare[0] }
+  const found = unnumberedIn(norm)
+  if (found !== null) return { kind: 'unnumbered', text: found }
+  return null
 }
 
 /** The key a stimulus label stands for ("Rajah 1" gives "rajah1"); null when the label names no numbered figure. */

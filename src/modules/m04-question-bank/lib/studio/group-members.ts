@@ -3,11 +3,14 @@
  * removed and reordered here and saved together. Pure functions over an ordered list; the page owns the state.
  */
 
-/** D90: a stimulus with fewer members than this is not a group yet. */
-export const MIN_GROUP_MEMBERS = 2
+/** DM-01 (S1-T01): a group holds 1..n questions; 0 members is a draft group. */
+export const MIN_GROUP_MEMBERS = 1
 /** The stimulus API takes at most 40 member questions per group (`STIMULUS_LIMITS.groupQuestions`). */
 export const MAX_GROUP_MEMBERS = 40
 
+import { onBeforeUnmount, ref } from 'vue'
+
+import { listGroups, type GroupListRow } from '../../api/studio'
 import type { WireStimulus } from './stimulus'
 
 /** A group as the Studio shows it: stimuli, ordered members (stem, number) and whether a member is being served. */
@@ -15,8 +18,16 @@ export interface GroupView {
   id: string
   stimuli: WireStimulus[]
   members: GroupMember[]
-  /** D93: the server's BM warning while the group has fewer than 2 questions. */
+  /** D93: the server's BM warning while the group has no question. */
   warning: string | null
+  /** FR-QA-51: the group's own scope, read-only on the group screen. */
+  subjectId?: string | null
+  educationLevelId?: string | null
+  kertas?: string | null
+  /** Set on a draft copy (FR-QA-04): the served group this copy will replace. */
+  draftOfGroupId?: string | null
+  /** DM-52: `Bank pilihan (A-H)`. */
+  optionBank?: { label: string; text: string }[]
 }
 
 export interface GroupMember {
@@ -25,10 +36,14 @@ export interface GroupMember {
   numberLabel: string
   /** A short preview of the stem. */
   stem: string
+  /** The member's own state, from the group read; absent on a question just picked. */
+  status?: 'draft' | 'review' | 'approved' | 'archived'
+  /** Shown to pupils now. */
+  servable?: boolean
 }
 
 export const GROUP_MEMBER_MESSAGES = {
-  needsTwo: 'Kumpulan perlu sekurang-kurangnya 2 soalan.',
+  needsOne: 'Kumpulan belum mempunyai soalan.',
   duplicate: 'Soalan ini sudah ada dalam kumpulan.',
   full: 'Satu kumpulan boleh mempunyai paling banyak 40 soalan.',
 } as const
@@ -37,9 +52,36 @@ export function isComplete(members: readonly GroupMember[]): boolean {
   return members.length >= MIN_GROUP_MEMBERS
 }
 
+/** The R1 copy of the group screen (PRD45 3.1, FR-QA-04, 05, 07, 50). */
+export const GROUP_COPY = {
+  servedBanner:
+    'Kumpulan ini sedang dipaparkan kepada murid. Tekan `Sunting kumpulan` untuk menyunting salinan draf; yang asal kekal diterbitkan sehingga draf ini diterbitkan.',
+  submitted: 'Kumpulan dihantar untuk semakan.',
+  publishNotReady: 'Semua soalan dalam kumpulan mesti dihantar untuk semakan dahulu.',
+  dissolveTitle: 'Bubarkan kumpulan ini?',
+  dissolveBody: 'Soalan ahli kekal, tanpa rangsangan bersama.',
+  removeTitle: 'Keluarkan soalan daripada kumpulan?',
+  removeConfirm: 'Ya, Keluarkan',
+  retireTitle: 'Arkibkan kumpulan ini?',
+} as const
+
+/** What the group's action bar offers, from its members (FR-QA-04, 50). */
+export function groupState(members: readonly GroupMember[]): { served: boolean; canSubmit: boolean; canPublish: boolean } {
+  return {
+    served: members.some((m) => m.servable === true),
+    canSubmit: members.some((m) => m.status === 'draft'),
+    canPublish: members.length > 0 && members.every((m) => m.status === 'review' || m.status === 'approved'),
+  }
+}
+
+/** The figure a stem names ("Rajah 3"), for the confirm before it leaves its group (FR-ADM-QE2.7). */
+export function figureNamed(stem: string): string | null {
+  return /\b(?:Rajah|Gambar|Jadual|Graf|Peta|Bahan|Sumber)\s+\d+/.exec(stem)?.[0] ?? null
+}
+
 /** Messages that stop the group counting as complete; empty when it is fine. */
 export function memberIssues(members: readonly GroupMember[]): string[] {
-  return isComplete(members) ? [] : [GROUP_MEMBER_MESSAGES.needsTwo]
+  return isComplete(members) ? [] : [GROUP_MEMBER_MESSAGES.needsOne]
 }
 
 export type AddResult = { ok: true; members: GroupMember[] } | { ok: false; message: string }
@@ -91,4 +133,46 @@ export function planMembers(saved: readonly GroupMember[], edited: readonly Grou
   const had = new Set(saved.map((m) => m.id))
   const want = new Set(edited.map((m) => m.id))
   return { remove: saved.filter((m) => !want.has(m.id)).map((m) => m.id), add: edited.filter((m) => !had.has(m.id)).map((m) => m.id), order: edited.map((m) => m.id) }
+}
+
+const GROUP_PAGE_SIZE = 10
+
+/**
+ * Browses the existing groups (T49): newest first, filtered by the search text over the group label and its stimuli,
+ * within the question's subject (a group of another subject cannot take it). The join list and the move picker share it.
+ */
+export function useGroupBrowse(subjectId: () => string | null) {
+  const search = ref('')
+  const rows = ref<GroupListRow[]>([])
+  const page = ref(1)
+  const pages = ref(1)
+  const loading = ref(false)
+  const failed = ref(false)
+  let seq = 0
+  async function load(next = 1): Promise<void> {
+    const token = ++seq
+    loading.value = true
+    failed.value = false
+    try {
+      const res = await listGroups({ q: search.value.trim() || null, subjectId: subjectId(), page: next, pageSize: GROUP_PAGE_SIZE })
+      if (token !== seq) return
+      rows.value = res.data
+      page.value = res.meta.page
+      pages.value = Math.max(1, Math.ceil(res.meta.totalItems / res.meta.pageSize))
+    } catch {
+      if (token === seq) {
+        rows.value = []
+        failed.value = true
+      }
+    } finally {
+      if (token === seq) loading.value = false
+    }
+  }
+  let timer: ReturnType<typeof setTimeout> | undefined
+  function onSearch(): void {
+    clearTimeout(timer)
+    timer = setTimeout(() => void load(1), 300)
+  }
+  onBeforeUnmount(() => clearTimeout(timer))
+  return { search, rows, page, pages, loading, failed, load, onSearch }
 }

@@ -69,6 +69,7 @@ import {
   lastLoginText,
   phoneText,
   PUPIL_CREATE_PATH,
+  PUPIL_IMPORT_PATH,
   PUPIL_LIST_PATH,
   ROLE_CONFIG,
   TINGKATAN_OPTIONS,
@@ -499,6 +500,17 @@ function openRow(row: Item): void {
           >Eksport CSV</UButton
         >
         <UButton
+          v-if="isPupil"
+          :to="PUPIL_IMPORT_PATH"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          icon="i-ph-upload-simple"
+          class="min-h-11 justify-center"
+          data-testid="user-import"
+          >Import Pelajar</UButton
+        >
+        <UButton
           :to="isPupil ? PUPIL_CREATE_PATH : TEACHER_CREATE_PATH"
           size="lg"
           icon="i-ph-user-plus"
@@ -648,9 +660,9 @@ function openRow(row: Item): void {
           </DsCluster>
         </template>
         <template #email-cell="{ row }">
-          <span class="block truncate" :title="row.original.email" data-testid="user-email">{{
-            row.original.email
-          }}</span>
+          <span class="block break-words" :title="row.original.email" data-testid="user-email">{{
+            row.original.email.split('@')[0]
+          }}<wbr /><template v-if="row.original.email.includes('@')">@{{ row.original.email.split('@').slice(1).join('@') }}</template></span>
         </template>
         <template #phone-cell="{ row }">
           <span class="text-nowrap" data-testid="user-phone">{{ row.original.phone }}</span>

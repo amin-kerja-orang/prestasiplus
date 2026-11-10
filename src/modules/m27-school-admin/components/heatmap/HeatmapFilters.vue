@@ -48,7 +48,7 @@ function onChange(value: unknown) {
 <template>
   <DsPanel data-testid="dh-filters">
     <form class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between" @submit.prevent>
-      <UFormField label="Subjek" name="subjectId" class="min-w-0 sm:w-80">
+      <UFormField label="Subjek" name="subjectId" class="min-w-0">
         <USelect
           id="dh-subject"
           :model-value="subjectId === '' ? undefined : subjectId"

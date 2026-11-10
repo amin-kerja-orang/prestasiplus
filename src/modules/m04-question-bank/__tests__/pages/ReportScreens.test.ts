@@ -130,7 +130,6 @@ describe('QuestionReportsPage (M04 S7)', () => {
       'Semua (11)',
     ])
     expect(w.findAll('[data-testid=reports-tabs] [data-active=true]').map((t) => t.text())).toEqual(['Menunggu (2)'])
-    expect(w.get('[data-testid=question-area-tab-laporan]').attributes('data-active')).toBe('true')
     expect(api.fetchQuestionReports).toHaveBeenCalledWith(expect.objectContaining({ status: null }))
   })
 
@@ -160,7 +159,7 @@ describe('QuestionReportsPage (M04 S7)', () => {
       'Lihat Soalan Struktur #3698',
     )
     expect(card.get('[data-testid=report-question-link]').attributes('href')).toBe(
-      '/admin/structured-questions/3698',
+      '/admin/spm/subjektif/3698/sunting',
     )
     expect(card.get('[data-testid=report-open]').attributes('target')).toBe('_blank')
     expect(card.get('[data-testid=report-deactivate]').text()).toBe('Nyahaktif Segera')
@@ -180,7 +179,7 @@ describe('QuestionReportsPage (M04 S7)', () => {
     )
     expect(card.get('[data-testid=report-question-link]').text()).toBe('Edit Soalan #136891')
     expect(card.get('[data-testid=report-question-link]').attributes('href')).toBe(
-      '/admin/questions/136891/edit',
+      '/admin/studio/questions/136891/sunting',
     )
     expect(card.find('[data-testid=report-deactivate]').exists()).toBe(false)
   })

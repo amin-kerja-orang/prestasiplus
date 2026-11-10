@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
 import type { Request } from 'express'
 
 import { NoStoreInterceptor } from '../../../common/http/no-store.interceptor'
@@ -14,7 +14,7 @@ import { LeaguesService } from './leagues.service'
 type Req = Request & RequestWithAuth
 
 /**
- * Leagues (M16-46, M16-47, M16-49; API-GAME-05 reads and API-ADM-25 writes). Reads: any signed-in role (default-deny
+ * Leagues (M16-46, M16-47, M16-49; API-GAME-05 reads and API-ADM-25 writes). Reads: any signed-in role, except `:id/standings` and `:id/me` (role M only; default-deny
  * auth and CSRF are global). Create and school enrolment: Admin Pusat only (FR-GM-15.1). `join` is declared before
  * `:id` and answers 403 for every role (AC-GM-15.2). A non-numeric `:id` is a 404 from the service.
  */
@@ -50,6 +50,24 @@ export class LeaguesController {
   @RateLimit(GAMES_LIMITS.write)
   async enrol(@Param('id') id: string, @Body() body: unknown, @Req() req: Req) {
     return ok(await this.leagues.enrolSchools(callerOf(req), id, body))
+  }
+
+  /** API-GAME-13: stored standings of one Tingkatan. Role M (pupil) only; declared before `:id` (two segments, no clash). */
+  @Get(':id/standings')
+  @Roles('student')
+  @UseInterceptors(NoStoreInterceptor)
+  @RateLimit(GAMES_LIMITS.read)
+  async standings(@Param('id') id: string, @Query() query: Record<string, unknown>, @Req() req: Req) {
+    return ok(await this.leagues.standings(callerOf(req), id, query.level))
+  }
+
+  /** API-GAME-13: the pupil's school position, own points and the school's top contributors. Role M only. */
+  @Get(':id/me')
+  @Roles('student')
+  @UseInterceptors(NoStoreInterceptor)
+  @RateLimit(GAMES_LIMITS.read)
+  async me(@Param('id') id: string, @Req() req: Req) {
+    return ok(await this.leagues.me(callerOf(req), id))
   }
 
   /** The detail is read per viewer and kept out of shared caches. */

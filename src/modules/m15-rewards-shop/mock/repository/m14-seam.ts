@@ -9,6 +9,7 @@
 
 import { draws, M14Error, wallet, type Draw } from '@/modules/m14-gamification/mock'
 
+import { ticketKeysTable } from './tables'
 import { M15Error } from './types'
 
 export interface BalanceView {
@@ -47,8 +48,13 @@ export function creditSyiling(
   return wallet.creditSyiling(userId, n, meta).currentSyiling
 }
 
-export function addXp(userId: number, n: number, source: string): void {
-  wallet.addXp(userId, n, { source })
+/** XR-M15-02: a `spend` row; the caller has checked the balance first. */
+export function debitSyiling(
+  userId: number,
+  n: number,
+  meta: { source: string; description: string; refId: string },
+): number {
+  return wallet.debitSyiling(userId, n, meta).currentSyiling
 }
 
 /** Test hook support (`setWallet`, XR-M15-08): the M14 repository owns it. */
@@ -68,10 +74,28 @@ export function ticketsOwned(drawId: number, userId: number): number {
   return draws.ticketsOf(drawId, userId).length
 }
 
+/** Tickets sold to all pupils in a draw ("Jumlah tiket terjual"). */
+export function ticketsSold(drawId: number): number {
+  return draws.ticketCount(drawId)
+}
+
+/** DM-78: the key was already used for another draw (the API answers 422 `fields.clientUuid`). */
+export function ticketKeyUsedElsewhere(drawId: number, userId: number, clientUuid: string): boolean {
+  const served = ticketKeysTable.query({ where: { userId, clientUuid } }).rows[0]
+  return served !== undefined && served.drawId !== drawId
+}
+
 /** M14 `draws.buyTicket` debits the syiling itself; its refusals map to the §7 #13 codes. */
-export function buyTicket(drawId: number, userId: number): number {
+export function buyTicket(drawId: number, userId: number, clientUuid?: string): number {
   try {
-    return draws.buyTicket(drawId, userId).currentSyiling
+    if (clientUuid !== undefined) {
+      // DM-78: a repeat of a key already served on this draw buys nothing and answers with the balance.
+      const served = ticketKeysTable.query({ where: { userId, clientUuid } }).rows[0]
+      if (served?.drawId === drawId) return balanceOf(userId).syilingBalance
+    }
+    const syilingBalance = draws.buyTicket(drawId, userId).currentSyiling
+    if (clientUuid !== undefined) ticketKeysTable.insert({ userId, clientUuid, drawId })
+    return syilingBalance
   } catch (e) {
     if (
       e instanceof M14Error &&

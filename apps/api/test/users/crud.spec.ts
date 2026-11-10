@@ -478,6 +478,44 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expectError(await api.post('/admin/users/987654321/toggle-active'), 'NOT_FOUND', 'Maaf, halaman yang anda cari tidak wujud atau telah dipindahkan. Mungkin URL salah taip?')
     })
 
+    it('status filter and pendingCount: pending, active and suspended are told apart (R1-ADM-U-01)', async () => {
+      const pending = await make('menunggu@ujian.test')
+      const suspended = await make('gantung@ujian.test')
+      await api.post(`/admin/users/${pending.id}/toggle-active`) // inactive, not suspended = pending
+      await t.db.query(`update users set is_suspended = true where id = $1`, [suspended.id])
+      const [want] = await t.db.query<{ n: number }>(`select count(*)::int n from users where is_active = false and is_suspended = false`)
+
+      const pend = await api.get('/admin/users?status=pending')
+      expect(pend.status).toBe(200)
+      const ids = (pend.body.data as { id: string }[]).map((u) => u.id)
+      expect(ids).toContain(pending.id)
+      expect(ids).not.toContain(suspended.id)
+      for (const u of pend.body.data) expect([u.isActive, u.isSuspended]).toEqual([false, false])
+
+      const sus = await api.get('/admin/users?status=suspended')
+      expect((sus.body.data as { id: string }[]).map((u) => u.id)).toContain(suspended.id)
+      for (const u of sus.body.data) expect(u.isSuspended).toBe(true)
+
+      const act = await api.get('/admin/users?status=active')
+      for (const u of act.body.data) expect([u.isActive, u.isSuspended]).toEqual([true, false])
+
+      // pendingCount ignores the other filters and is the same on every page / filter
+      const meta = UserListMetaSchema.parse(pend.body.meta)
+      expect(meta.pendingCount).toBeGreaterThanOrEqual(1)
+      expect(meta.pendingCount).toBeLessThanOrEqual(want?.n ?? 0)
+      expect(pend.body.meta.totalItems).toBe(meta.pendingCount)
+      expect(UserListMetaSchema.parse((await api.get('/admin/users?role=student')).body.meta).pendingCount).toBe(meta.pendingCount)
+      expect(UserListMetaSchema.parse((await api.get('/admin/users?role=nonsense')).body.meta).pendingCount).toBe(meta.pendingCount)
+
+      // an unknown status is no filter; isActive keeps working
+      expect((await api.get('/admin/users?status=bogus')).body.meta.totalItems).toBe((await api.get('/admin/users')).body.meta.totalItems)
+      for (const u of (await api.get('/admin/users?isActive=0')).body.data) expect(u.isActive).toBe(false)
+
+      // approving (toggle-active) removes the row from the pending count
+      await api.post(`/admin/users/${pending.id}/toggle-active`)
+      expect(UserListMetaSchema.parse((await api.get('/admin/users?status=pending')).body.meta).pendingCount).toBe(meta.pendingCount - 1)
+    })
+
     it('the inactive filter total moves by one (computed, not stored)', async () => {
       const u = await make('togol2@ujian.test')
       const before = (await api.get('/admin/users?isActive=0')).body.meta.totalItems as number

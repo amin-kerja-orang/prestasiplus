@@ -49,7 +49,8 @@ const props = withDefaults(
 
 const isInline = computed(() => (props.variant ?? (props.inline ? 'inline' : 'alert')) === 'inline')
 
-const emit = defineEmits<{ retry: [] }>()
+/** `countdown` carries the seconds left (at the start, on every tick, and a final 0) so a parent can lock its own control. */
+const emit = defineEmits<{ retry: []; countdown: [seconds: number] }>()
 
 /** The rate-limited error, or `null` for every other case (then the render is unchanged). */
 const rateLimited = computed(() =>
@@ -71,6 +72,7 @@ function start() {
   stop()
   const err = rateLimited.value
   if (err === null) {
+    if (remaining.value > 0) emit('countdown', 0)
     remaining.value = 0
     return
   }
@@ -79,8 +81,10 @@ function start() {
   // Deadline based, so a throttled background tab shows the right value when its timer finally fires.
   const deadline = Date.now() + seconds * 1000
   remaining.value = seconds
+  emit('countdown', seconds)
   timer = setInterval(() => {
     remaining.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+    emit('countdown', remaining.value)
     if (remaining.value <= 0) stop()
   }, 1000)
 }

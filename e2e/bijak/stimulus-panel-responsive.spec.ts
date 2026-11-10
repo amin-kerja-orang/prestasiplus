@@ -41,8 +41,14 @@ test.describe('Stimulus panel responsive @bijak', () => {
     await startPaper(page)
     await toGroup(page)
 
-    const wide = (page.viewportSize()?.width ?? 0) >= 1024
+    const width = page.viewportSize()?.width ?? 0
+    const wide = width >= 1024
     const group = page.getByTestId('stimulus-group')
+
+    // AC-PA-03: the counter counts questions, not the figure: 4 singles + the 4 members of "Rajah 1" + 2 singles = 10
+    const map = page.getByTestId('navigator').first()
+    await expect(map.locator('[data-state]')).toHaveCount(10)
+    await expect(map.getByTestId('nav-counts')).toContainText('Belum 10')
     await expect(group).toBeVisible()
     await expect(group).toHaveAttribute('data-layout', wide ? 'split' : 'stacked')
     const visibleFigures = page.locator('[data-testid="stimulus"]:visible')
@@ -65,6 +71,12 @@ test.describe('Stimulus panel responsive @bijak', () => {
       expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44)
       await expect(page.getByTestId('group-stimuli')).toBeVisible()
       await expect(visibleFigures).toHaveCount(1)
+      if (width >= 768) {
+        // AC-PA-03 at 768: the figure takes the full width of the panel
+        const fig = (await visibleFigures.first().boundingBox())!
+        const panel = (await page.getByTestId('group-stimuli').boundingBox())!
+        expect(fig.width).toBeGreaterThanOrEqual(panel.width * 0.9)
+      }
     }
     await expectNoHorizontalScroll(page)
 
@@ -104,5 +116,15 @@ test.describe('Stimulus panel responsive @bijak', () => {
       await expect(visibleFigures).toHaveCount(1)
     }
     await expectNoHorizontalScroll(page)
+
+    // AC-PA-03: the group is 4 questions (5 to 8): members 3 and 4 still show the panel, question 9 does not
+    for (let member = 3; member <= 4; member += 1) {
+      if (await page.getByTestId('group-stimuli').isVisible()) await page.keyboard.press('Escape')
+      await page.getByTestId('next').click()
+      await expect(group, `member ${member}`).toBeVisible()
+    }
+    if (await page.getByTestId('group-stimuli').isVisible()) await page.keyboard.press('Escape')
+    await page.getByTestId('next').click()
+    await expect(group).toHaveCount(0)
   })
 })

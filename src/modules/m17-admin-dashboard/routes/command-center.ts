@@ -104,7 +104,14 @@ function boardRoutes(alias: boolean): RouteRecordRaw[] {
       name: `${name}.board`,
       component: () => import('../pages/CommandCenterBoardPage.vue'),
       props: () => ({ alias }),
-      meta: { ...meta, title: 'PRESTASIPLUS COMMAND CENTER' },
+      meta: {
+        ...meta,
+        title: 'PRESTASIPLUS COMMAND CENTER',
+        header: {
+          title: 'Command Center',
+          subtitle: alias ? 'Pemantauan langsung sekolah anda' : 'Pemantauan langsung platform',
+        },
+      },
     },
     {
       path: `${prefix}/daily-activity`,
@@ -114,6 +121,11 @@ function boardRoutes(alias: boolean): RouteRecordRaw[] {
       meta: {
         ...meta,
         title: alias ? 'AKTIVITI SEKOLAH — PRESTASIPLUS' : 'AKTIVITI PLATFORM — PRESTASIPLUS',
+        // V2 `command-center-daily`; the page sets the period in the subtitle (usePageMeta).
+        header: {
+          title: alias ? 'Aktiviti Sekolah' : 'Aktiviti Platform',
+          subtitle: 'Ringkasan aktiviti — Hari Ini',
+        },
       },
     },
   ]

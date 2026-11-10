@@ -20,7 +20,7 @@ const props = withDefaults(
 
 const CLAMP = { 1: 'line-clamp-1', 2: 'line-clamp-2', 3: 'line-clamp-3' } as const
 const classes = computed(() => [
-  'min-w-0 max-w-full break-words text-label hover:underline focus-visible:rounded-xs focus-visible:outline-2 focus-visible:outline-primary pointer-coarse:py-2',
+  'min-w-0 max-w-full break-words text-label hover:underline focus-visible:rounded-xs focus-visible:outline-2 focus-visible:outline-primary max-md:py-3 pointer-coarse:py-3',
   CLAMP[props.clamp],
   props.muted ? 'text-muted' : 'text-primary-t',
 ])

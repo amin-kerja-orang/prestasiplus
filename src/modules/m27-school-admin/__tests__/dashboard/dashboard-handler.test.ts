@@ -12,7 +12,12 @@ import { CLOCK_ANCHOR_ISO, createClock } from '@/lib/time'
 import { setUser } from '@/mock/core-data/set-user'
 import { bootMock, type MockRuntime } from '@/mock/index'
 import m01, { users } from '@/modules/m01-authentication/mock'
-import m02, { schoolPackages, schools, schoolSubscriptions } from '@/modules/m02-users-schools/mock'
+import m02, {
+  joinCodeOf,
+  schoolPackages,
+  schools,
+  schoolSubscriptions,
+} from '@/modules/m02-users-schools/mock'
 import m03 from '@/modules/m03-curriculum/mock'
 import m04 from '@/modules/m04-question-bank/mock'
 import m05 from '@/modules/m05-practice/mock'
@@ -124,6 +129,7 @@ describe('banner (FR-M27-19…21, BR-M27-03)', () => {
       name: s?.name,
       state: s?.state,
       ppd: s?.district,
+      joinCode: joinCodeOf(900003),
       code: s?.code,
     })
     expect(d.school.ppd).toMatch(/^PPD /)

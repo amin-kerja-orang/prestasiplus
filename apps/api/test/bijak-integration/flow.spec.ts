@@ -174,7 +174,7 @@ describe('exam flow (student)', () => {
 })
 
 describe('latihan (practice mode)', () => {
-  it('5. writes an aggregate row but no ledger credit', async () => {
+  it('5. writes an aggregate row and credits the never-revealed marks (FR-PA-16: no Semak was used, so the whole score)', async () => {
     const paper = await paperId(student, '1449/1', 1)
     const before = await balance(student.userId)
     const xp0 = await xpOf(student.userId)
@@ -190,7 +190,24 @@ describe('latihan (practice mode)', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ mode: 'latihan', start_type: 'pilihan', is_test: false })
     expect(Number(rows[0]!.units_awarded)).toBe(r.result.score)
-    expect(await t.db.query('select 1 from coin_ledger where source_id = $1', [s.attemptId])).toHaveLength(0)
+    expect(await ledgerRows(s.attemptId)).toHaveLength(1)
+    expect(await balance(student.userId)).toBe(before + r.result.score)
+    expect(await xpOf(student.userId)).toBe(xp0 + r.result.score * 10)
+  })
+})
+
+describe('a sitting that earns 0 marks still touches the streak (PRD 48:755) and writes no coin or XP', () => {
+  it.each(['latihan', 'exam'] as const)('7. %s with no answers: streak row appears, no ledger row, balance and XP unchanged', async (mode) => {
+    const paper = await paperId(student, '1449/1', 1)
+    await t.db.query('delete from streaks where user_id = $1', [student.userId])
+    const before = await balance(student.userId)
+    const xp0 = await xpOf(student.userId)
+    const s = await start(student, paper.id, mode)
+    const res = await submit(student, s.attemptId, `integ-zero-${mode}`)
+    expect(res.status, JSON.stringify(res.body)).toBe(200)
+    expect((await result(student, s.attemptId)).result.score).toBe(0)
+    expect((await t.db.query<{ current: number }>('select current from streaks where user_id = $1', [student.userId]))[0]?.current).toBeGreaterThanOrEqual(1)
+    expect(await ledgerRows(s.attemptId)).toHaveLength(0)
     expect(await balance(student.userId)).toBe(before)
     expect(await xpOf(student.userId)).toBe(xp0)
   })

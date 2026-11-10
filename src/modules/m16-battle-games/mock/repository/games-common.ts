@@ -6,7 +6,7 @@
 
 import { formatDateKey } from '@/lib/time'
 import type { Prng, PrngRegistry } from '@/mock/determinism'
-import { gamification, tiers, wallet } from '@/modules/m14-gamification/mock'
+import { gamification } from '@/modules/m14-gamification/mock'
 import { questions } from '@/modules/m04-question-bank/mock'
 
 import { m16Now } from './common'
@@ -77,34 +77,36 @@ export const todayMyt = (): string => formatDateKey(m16Now())
 /** M14 `canEarnSyiling` (the setting ∧ the user's `coinsEnabled`). */
 export const canEarn = (userId: number): boolean => gamification.canEarnSyiling(userId)
 
-/** The Papan Bijak rates of the user's tier (`board_game_reward_correct`, `board_game_reward_win`). */
-export function boardRates(userId: number): { correct: number; win: number } {
-  const key = wallet.get(userId)?.tierKey
-  const tier = tiers.list().find((t) => t.tierName === key)
-  return { correct: tier?.boardGameRewardCorrect ?? 0, win: tier?.boardGameRewardWin ?? 0 }
-}
-
 export interface GameReport {
   game: string
   event: string
   coins: number
+  /** XP of the result (the room games' one formula, 48 section 3.4); the older games pay none (BR-M16-28). */
+  xp?: number
   correct?: number
   total?: number
   detail?: Record<string, unknown>
 }
 
-/** Calls M14 `onGameResult` once (xp 0, BR-M16-28) and returns the syiling actually credited. */
+/** Calls M14 `onGameResult` once (xp 0 unless given, BR-M16-28) and returns the syiling actually credited. */
 export function reportGame(userId: number, r: GameReport): number {
-  const out = gamification.onGameResult(userId, {
+  return reportGameResult(userId, r).coinsCredited
+}
+
+/** Like `reportGame`, but returns what M14 credited of both the syiling and the XP. */
+export function reportGameResult(
+  userId: number,
+  r: GameReport,
+): { coinsCredited: number; xpAdded: number } {
+  return gamification.onGameResult(userId, {
     game: r.game,
     event: r.event,
     coins: r.coins,
-    xp: 0,
+    xp: r.xp ?? 0,
     ...(r.correct === undefined ? {} : { correct: r.correct }),
     ...(r.total === undefined ? {} : { total: r.total }),
     ...(r.detail === undefined ? {} : { detail: r.detail }),
   })
-  return out.coinsCredited
 }
 
 // --- questions (keyless views, BR-M16-25) -----------------------------------------------------------------

@@ -14,10 +14,11 @@ const meta = (mount: KirkpatrickMount) => ({
   roles: mount.roles,
   module: 'M12' as const,
   v2: true,
-  title: 'Kirkpatrick Evaluation Dashboard',
+  title: 'Kirkpatrick',
   header: {
-    title: 'Kirkpatrick Evaluation',
-    subtitle: 'Analisis Keberkesanan Platform — Model Penilaian 4 Tahap',
+    // V2: the guru page is headed "Kirkpatrick Evaluation", the admin page "Kirkpatrick".
+    title: mount === GURU_MOUNT ? 'Kirkpatrick Evaluation' : 'Kirkpatrick',
+    subtitle: 'Model penilaian Kirkpatrick — 4 tahap keberkesanan',
   },
 })
 

@@ -45,6 +45,10 @@ describe('GET /admin-sekolah/dashboard with no BE-19 / BE-17 provider (fail-clos
     expect(res.headers['cache-control']).toBe('no-store')
     const d = SchoolAdminDashboardSchema.parse(res.body.data)
     expect(d.school).toMatchObject({ id: s1, name: 'SMK Demo Satu', code: 'DEMO001', ppd: 'Petaling', state: 'Selangor' })
+    // V2 "Kod Daftar": the school admin sees the real join code of the OWN school (read-only).
+    const own = await t.db.query<{ join_code: string }>(`select join_code from schools where id = $1`, [s1])
+    expect(d.school.joinCode).toBe(own[0]?.join_code)
+    expect(d.school.joinCode).toMatch(/^[A-Z0-9]{8}$/)
     expect(d.roleLabel).toBe('Admin Sekolah')
     expect(d.cards.pupils).toBeGreaterThan(0)
     expect(d.cards.teachers).toBeGreaterThan(0)

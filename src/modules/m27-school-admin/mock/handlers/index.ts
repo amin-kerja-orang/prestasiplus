@@ -4,9 +4,11 @@ import { activityRoutes } from './activity'
 import { classRoutes } from './classes'
 import { dashboardRoutes } from './dashboard'
 import { dskpHeatmapRoutes } from './dskp-heatmap'
+import { essayReviewRoutes } from './essay-review'
 import { impersonateRoutes } from './impersonate'
 import { monthlyRoutes } from './monthly'
 import { pendingTeacherRoutes } from './pending-teachers'
+import { pupilImportRoutes } from './pupil-import'
 import { usageRoutes } from './usage'
 import { userReadRoutes } from './users-read'
 import { userWriteRoutes } from './users-write'
@@ -17,10 +19,12 @@ export const m27Routes: readonly RouteDef[] = [
   ...usageRoutes,
   ...activityRoutes,
   ...dskpHeatmapRoutes,
+  ...essayReviewRoutes,
   ...monthlyRoutes,
   ...pendingTeacherRoutes,
   ...userReadRoutes,
   ...userWriteRoutes,
+  ...pupilImportRoutes,
   ...classRoutes,
   ...impersonateRoutes,
 ]

@@ -64,7 +64,7 @@ describe('servability overview cache (H-A21)', () => {
     const first = await read()
     expect(spy).toHaveBeenCalledTimes(1)
     expect(first.computedAt).toBe('2026-10-19T09:00:00.000+08:00')
-    expect(first.activities).toHaveLength(6)
+    expect(first.activities).toHaveLength(7) // the enum: jana_kertas (admin use) and permainan (R1) join the six
   })
 
   it('warm reads are served from the cache: no compute, same computedAt, p95 well under 500 ms', async () => {

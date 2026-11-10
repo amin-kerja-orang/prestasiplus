@@ -5,12 +5,15 @@
  * Rules
  *  - A wallet balance is NEVER corrected: `current_syiling` is the .cloud `syiling_balance` as it is. A negative or
  *    non-numeric balance is rejected (INVALID_VALUE), not clamped.
- *  - Only pupils carry a wallet in v2 (D28c): the wallet or ledger row of another role is UNSUPPORTED.
+ *  - T-B5b (PO): V2 non-pupil wallets (teachers, school admins, officers, parents, sponsors) and their ledger rows are KEPT in the same
+ *    `wallets` / `coin_ledger` tables (no check or FK ties them to the student role) so the future teacher economy (D53) finds them. Every pupil
+ *    feature selects pupils by role (leaderboard, Kedudukan, national figures), so these rows never show there. A row of a user that was not
+ *    loaded (agent) is still ORPHAN_PARENT.
  *  - A ledger row keeps its `balance_after`; its amount must have the sign its type needs
  *    (`ck_coin_ledger_amount_sign`): a wrong sign is INVALID_VALUE and is never flipped.
  *  - The type and source are mapped explicitly; a value outside the map is UNKNOWN_ENUM.
  */
-import { enumMapper, invalid, nonNegativeInt, orphan, unsupported } from './activity-common'
+import { enumMapper, invalid, nonNegativeInt, orphan } from './activity-common'
 import { integer, ok, stamps, type Outcome, type Staged } from './common'
 
 const INT_MAX = 2_147_483_647
@@ -34,8 +37,6 @@ function signedInt(value: string | null | undefined): number | null | 'invalid' 
 export interface WalletRefs {
   /** The v2 user id, or undefined when the user was not loaded. */
   userId: string | undefined
-  /** The v2 user holds the student role. */
-  isStudent: boolean
   /**
    * The v2 tier id; null = the wallet has no tier; undefined = a tier is set but was not adopted (no seeded match).
    * Both load the wallet with a null tier (`wallets.tier_id` is nullable; credits work without a tier).
@@ -66,7 +67,6 @@ export const WALLET_COLUMNS = [
  */
 export function transformWallet(row: Staged, refs: WalletRefs): Outcome<WalletValues> {
   if (refs.userId === undefined) return orphan('user_id')
-  if (!refs.isStudent) return unsupported('user_id')
   const balance = boundedCount(row.syiling_balance)
   if (balance === null || balance === 'invalid') return invalid('syiling_balance')
   const lifetime = boundedCount(row.syiling_lifetime)
@@ -177,7 +177,6 @@ const mapLedgerSource = enumMapper('source', LEDGER_SOURCE_MAP)
 
 export interface LedgerRefs {
   userId: string | undefined
-  isStudent: boolean
 }
 
 export interface LedgerValues {
@@ -212,7 +211,6 @@ export function ledgerSourceSignOk(source: string, type: string, amount: number)
 
 export function transformLedger(row: Staged, refs: LedgerRefs): Outcome<LedgerValues> {
   if (refs.userId === undefined) return orphan('user_id')
-  if (!refs.isStudent) return unsupported('user_id')
   const type = mapLedgerType(row.type)
   if (!type.ok) return type
   const source = mapLedgerSource(row.source)

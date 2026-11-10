@@ -106,8 +106,11 @@ export const byName = (a: { name: string }, b: { name: string }): number =>
 /** Numeric order of two decimal-string ids. */
 export const compareIds = (a: string, b: string): number => (BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0)
 
-/** "T{n}" label: T4 = grade 10, T5 = grade 11. */
-export const levelLabelOf = (grade: number | null): 'T4' | 'T5' => (grade === 10 ? 'T4' : 'T5')
+/** "T{n}" label of a Tingkatan 1-5 pupil (XS-1): T1 = grade 7 ... T5 = grade 11. */
+export const levelLabelOf = (grade: number | null): 'T1' | 'T2' | 'T3' | 'T4' | 'T5' => {
+  const n = grade === null ? 5 : Math.min(5, Math.max(1, grade - 6))
+  return `T${n}` as 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+}
 
 /** The S3 / S5 pupil status (BR-M11-18). */
 export function statusOf(answers: number, lastLoginAt: Date | null): 'aktif' | 'login' | 'never' {

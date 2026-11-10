@@ -15,6 +15,7 @@ import {
   QuestionPartSchema,
   QuestionWritePartSchema,
   QuestionPartV3Schema,
+  QuestionPartReadV3Schema,
   QuestionSchemeRulesSchema,
   QuestionTrueFalseLeafSchema,
   questionTypeFromDb,
@@ -290,8 +291,10 @@ describe('scheme v2 (D1, D2)', () => {
         }).success,
       ).toBe(true)
     })
-    it('the v1 write schema rejects scheme_v 2 keys (reads stay lenient)', () => {
-      expect(QuestionWritePartSchema.safeParse(p71[1]).success).toBe(false)
+    it('the write schema accepts scheme_v 2 keys (S1-T09a part 5) and the lenient read keeps every v2 field', () => {
+      expect(QuestionWritePartSchema.safeParse(p71[1]).success).toBe(true)
+      const read = QuestionPartReadV3Schema.parse(p71[1]) as unknown
+      expect(read).toEqual(p71[1])
     })
   })
 })
@@ -310,7 +313,7 @@ describe('read path never tightens; write path applies the new rules', () => {
     expect(QuestionWritePartSchema.safeParse(leaf).success).toBe(false)
   })
   it('a v1 key carrying scheme_v parses on read, SCHEME_VERSION_MISMATCH on write', () => {
-    const leaf = { label: '', prompt: rt('?'), marks: 1, mode: 'working', key: { kind: 'points', scheme_v: 2, marks: 1, points: [{ id: 'a', code: 'K', label: 'x', marks: 1 }] } }
+    const leaf = { label: '', prompt: rt('?'), marks: 1, mode: 'working', key: { kind: 'points', scheme_v: 3, marks: 1, points: [{ id: 'a', code: 'K', label: 'x', marks: 1 }] } }
     expect(QuestionLeafPartSchema.safeParse(leaf).success).toBe(true)
     expect(msgs(QuestionWriteLeafPartSchema.safeParse(leaf))).toContain('SCHEME_VERSION_MISMATCH')
   })

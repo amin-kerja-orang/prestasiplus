@@ -66,6 +66,7 @@ function passingGate(id: string): QuestionGateData {
     unitId: '1',
     spIds: ['1'],
     tp: 3,
+    difficultyLevel: 3, // Kesukaran is required on its own (row 9, team-dd ruling on #503)
     unconfirmedLowConfidenceFields: [],
     hasOpenDuplicateFlag: false,
     mediaResolved: true,

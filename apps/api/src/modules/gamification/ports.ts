@@ -1,5 +1,3 @@
-import { randomInt } from 'node:crypto'
-
 import { Injectable } from '@nestjs/common'
 
 /**
@@ -33,6 +31,11 @@ export interface PracticeMasteryFact {
 
 export interface PracticeFactsProvider {
   dayFacts(userId: string, date: string): Promise<PracticeDayFacts>
+  /**
+   * `best_combo` (R 4): the longest run of consecutive correct answers inside ONE practice session of the Malaysia
+   * day `date` (decimal `YYYY-MM-DD`); runs of different sessions are never summed. Game answers are not counted.
+   */
+  bestCombo(userId: string, date: string): Promise<number>
   /** Per subject answer counters of the user (all time). */
   mastery(userId: string): Promise<readonly PracticeMasteryFact[]>
   /** Completed sessions, all modes (`all`, share cards) and the practice modes only (`practice`, achievement progress). */
@@ -44,6 +47,9 @@ export interface PracticeFactsProvider {
 export class NoPracticeFacts implements PracticeFactsProvider {
   async dayFacts(): Promise<PracticeDayFacts> {
     return { sessions: [], chapterIds: [] }
+  }
+  async bestCombo(): Promise<number> {
+    return 0
   }
   async mastery(): Promise<readonly PracticeMasteryFact[]> {
     return []
@@ -64,28 +70,8 @@ export class NoPracticeFacts implements PracticeFactsProvider {
  * onModuleInit() { this.ports.providePracticeFacts(this.adapter) }
  * ```
  */
-/**
- * Where lucky draw randomness comes from: `(drawId) => (maxInclusive) => integer in [0, maxInclusive]`. Production
- * uses the operating system CSPRNG (`crypto.randomInt`) so winners are neither predictable nor choosable by an admin.
- * Only tests replace it (seeded `prngStream`, for the AC5 determinism); no request input ever reaches it.
- */
-export type DrawRandomSource = (drawId: string) => (maxInclusive: number) => number
-
-export const cryptoDrawRandom: DrawRandomSource = () => (maxInclusive) => randomInt(0, maxInclusive + 1)
-
 @Injectable()
 export class GamificationPorts {
-  private draw: DrawRandomSource = cryptoDrawRandom
-
-  get drawRandom(): DrawRandomSource {
-    return this.draw
-  }
-
-  /** Test seam: replaces the CSPRNG source of the lucky draw. Never called by application code. */
-  overrideDrawRandom(source: DrawRandomSource): void {
-    this.draw = source
-  }
-
   private practice: PracticeFactsProvider = new NoPracticeFacts()
   private set = false
 

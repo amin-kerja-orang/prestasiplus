@@ -58,7 +58,9 @@ export function streaksStep(a: ActivityContext): AnyEntityStep {
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const users = await ctx.idMap.resolveMany('users', distinctValues(rows, 'user_id'))
       const migrated = await ctx.db.query<{ legacy_id: string }>(
-        `SELECT legacy_id FROM wallets WHERE legacy_source = $1 AND legacy_id = ANY($2::text[])`,
+        // T-B5b: a kept non-pupil wallet (teacher...) has no streak: streaks stay a pupil feature.
+        `SELECT w.legacy_id FROM wallets w WHERE w.legacy_source = $1 AND w.legacy_id = ANY($2::text[])
+         AND EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = w.user_id AND ur.role = 'student')`,
         [ctx.source, rows.map((r) => idOf(r))],
       )
       const hasWallet = new Set(migrated.rows.map((r) => r.legacy_id))

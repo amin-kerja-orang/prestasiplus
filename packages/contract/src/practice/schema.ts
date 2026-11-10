@@ -135,14 +135,56 @@ export type StartSessionRequest = z.infer<typeof StartSessionRequestSchema>
 export const PracticeTextDirectionSchema = z.enum(['ltr', 'rtl']).meta({ id: 'PracticeTextDirection' })
 export const PracticeScriptTypeSchema = z.enum(['rumi', 'arab', 'jawi', 'mixed']).meta({ id: 'PracticeScriptType' })
 
-/** One answer option as served: the key is never part of it. */
+/** One answer option as served: the key is never part of it. `imageUrl` is a file token URL (D105: an option with a picture). */
 export const PracticeQuizOptionSchema = z
   .strictObject({
     id: z.number().int().min(0).meta({ description: 'Zero-based option index; sent back as selectedOptionId.' }),
     label: z.string().min(1).max(4),
     text: z.string(),
+    imageUrl: z
+      .string()
+      .max(300)
+      .regex(/^\/api\/files\/[A-Za-z0-9_-]+$/, 'A picture is always a file token URL')
+      .optional()
+      .meta({ description: 'Picture of the option (T-C13, D105); only on a drill surface that serves figures.' }),
   })
   .meta({ id: 'PracticeQuizOption' })
+
+/** The seven stimulus kinds a drill can show (46 section 2.4); the same list as the Bijak sitting. */
+export const PRACTICE_STIMULUS_KINDS = ['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'] as const
+
+/**
+ * A rajah, petikan or jadual served with a drill question (T-C13, D105, D90): the same shape as the Bijak sitting stimulus so the one
+ * display component draws both. A picture is only a file token URL, never markup. `id` is unique inside the question.
+ */
+export const PracticeQuizStimulusSchema = z
+  .strictObject({
+    id: z.string().min(1),
+    kind: z.enum(PRACTICE_STIMULUS_KINDS),
+    label: z.string().meta({ example: 'Rajah 1' }),
+    title: z.string().optional(),
+    caption: z.string().optional(),
+    alt: z.string().meta({ description: 'Accessible description of the picture.' }),
+    text: z.string().optional(),
+    source: z.string().optional().meta({ description: 'Source line ("Sumber: ...").' }),
+    table: z.strictObject({ head: z.array(z.string()), rows: z.array(z.array(z.string())) }).optional(),
+    image: z
+      .strictObject({
+        url: z
+          .string()
+          .max(300)
+          .regex(/^\/api\/files\/[A-Za-z0-9_-]+$/, 'A picture is always a file token URL'),
+      })
+      .optional(),
+  })
+  .meta({ id: 'PracticeQuizStimulus' })
+export type PracticeQuizStimulus = z.infer<typeof PracticeQuizStimulusSchema>
+
+/**
+ * Where a served question sits in its stimulus group (T-C13): `index` is its 1-based place among the members SERVED in this session
+ * (group order, D90), `size` how many members were served. Members of one group are contiguous in `questions` and carry the same `id`.
+ */
+export const PracticeQuizGroupSchema = z.strictObject({ id: z.string().min(1), index: z.number().int().min(1), size: z.number().int().min(1) }).meta({ id: 'PracticeQuizGroup' })
 
 /** Served question. Strict on purpose: `correctAnswer`/`explanation` must never appear before a check. */
 export const PracticeQuizQuestionSchema = z
@@ -165,6 +207,14 @@ export const PracticeQuizQuestionSchema = z
       .optional()
       .meta({ description: 'The teacher\'s "Rujukan" link (http or https); only on a personal question served in a mission (FR-GUR-44a-9).' }),
     options: z.array(PracticeQuizOptionSchema),
+    stimuli: z
+      .array(PracticeQuizStimulusSchema)
+      .max(6)
+      .optional()
+      .meta({ description: 'Rajah, petikan or jadual shown with the question: its group stimuli first, then its own (D105). Absent or empty = none.' }),
+    group: PracticeQuizGroupSchema.nullable().optional().meta({
+      description: 'Set when the question is a member of a stimulus group (T-C13); the group is served whole and in order (D90, D105).',
+    }),
   })
   .meta({ id: 'PracticeQuizQuestion' })
 export type PracticeQuizQuestion = z.infer<typeof PracticeQuizQuestionSchema>

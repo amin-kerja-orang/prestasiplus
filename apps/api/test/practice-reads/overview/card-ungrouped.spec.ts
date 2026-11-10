@@ -10,7 +10,10 @@ import { createTestDatabase, type TestDatabase } from '../../support/db'
  * R1-B01 / D91: the practice card (`OverviewRepository.bankMatrix`) counts UNGROUPED servable questions only, the hub / draw rule, so
  * card = details = drawable. The login count (`QUESTION_COUNT_SQL`) keeps counting stimulus-group members.
  * Full demo seed: the BM card was 53 when it counted the 3 SEED-GRP-PASAR group MCQs, which practice never draws; it is 50 now.
+ * T-C13 (D105): the shipped surface list now serves groups in the drills, so the DEFAULT card counts the members (53, last test);
+ * a surface list without the drills (`TEXT_ONLY`) keeps the ungrouped rule these tests cover.
  */
+const TEXT_ONLY = ['simulasi_paper', 'jana_kertas'] as const
 let db: TestDatabase
 let bank: BankFacts
 let offeredIds: string[]
@@ -20,7 +23,7 @@ const subjectId = async (code: string): Promise<string> => (await db.query<{ id:
 beforeAll(async () => {
   db = await createTestDatabase()
   await runSeeds(seedModules, { prisma: db.prisma })
-  bank = new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix())
+  bank = new BankFacts(await new OverviewRepository({ client: db.prisma } as never, TEXT_ONLY).bankMatrix())
   offeredIds = (await db.query<{ id: string }>(`select id::text id from education_levels where stage <> 'primary' and is_active`)).map((r) => r.id)
 }, 600_000)
 
@@ -29,6 +32,11 @@ afterAll(async () => {
 })
 
 describe('practice card counts ungrouped servable questions only (D91)', () => {
+  it('T-C13 (D105): with the shipped surface list the BM card counts the 3 group members too (53)', async () => {
+    const shipped = new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix())
+    expect(shipped.practice(await subjectId('BM'), offeredIds)).toBe(53)
+  })
+
   it('BM practice card is 50: the 3 stimulus-group MCQs are not counted', async () => {
     const bm = await subjectId('BM')
     expect(bank.practice(bm, offeredIds)).toBe(50)
@@ -56,7 +64,7 @@ describe('a flagged question is not counted on the practice card (S1-T07)', () =
           and v.education_level_id = any($2::bigint[]) order by q.id limit 1`, [bm, offeredIds]))[0]
     expect(target).toBeDefined()
     const where = [target?.question_id, target?.version_no]
-    const count = async () => new BankFacts(await new OverviewRepository({ client: db.prisma } as never).bankMatrix()).practice(bm, offeredIds)
+    const count = async () => new BankFacts(await new OverviewRepository({ client: db.prisma } as never, TEXT_ONLY).bankMatrix()).practice(bm, offeredIds)
     try {
       await db.query(`update question_versions set stimulus_flag = 'stimulus_missing', stimulus_flag_ref = 'numbered', stimulus_flag_at = now() where question_id = $1::bigint and version_no = $2`, where)
       expect(await count()).toBe(before - 1)
@@ -89,7 +97,7 @@ describe('Bab card and Soalan by Chapter tile count what the chapter draw can se
     expect(chapters.length).toBeGreaterThan(0)
     const chapterId = (chapters[0] as { id: string }).id
     chaptered = chapterId
-    const repo = new OverviewRepository({ client: db.prisma } as never)
+    const repo = new OverviewRepository({ client: db.prisma } as never, TEXT_ONLY)
     expect((await repo.chapterQuestionCounts([chapterId])).get(chapterId)).toBeUndefined() // the demo seed has no chaptered question
 
     // Chapter the 3 SEED-GRP-PASAR members (grouped) and 2 ungrouped approved BM MCQs of the same level.

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { api, ApiError } from '@/api'
+import { DRAFT_NOTICE_BM, loadDraft, saveDraft } from '@/lib/draft'
 import { useFlashStore } from '@/stores/flash'
 import { useSessionStore } from '@/stores/session'
 
@@ -270,8 +271,77 @@ describe('S8 /profile/edit personal card (FR-M01-39, 40, 44)', () => {
   })
 })
 
+describe('S8 save lock and draft keep (FR-ERR-10, FR-ERR-8, AC-ERR-5)', () => {
+  const ROUTE = 'm01.profile.edit'
+  const save = (w: VueWrapper) => w.get('[data-testid=profile-save]')
+
+  beforeEach(() => {
+    sessionStorage.clear()
+  })
+
+  it('sends one request for two presses and shows Menyimpan... disabled with aria-busy until it settles', async () => {
+    let finish: (v: unknown) => void = () => undefined
+    apiMocks.updateProfile.mockReturnValue(new Promise((r) => (finish = r)))
+    const w = await render(ProfileEditPage)
+    void w.get('[data-testid=profile-form]').trigger('submit')
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    expect(apiMocks.updateProfile).toHaveBeenCalledTimes(1)
+    expect(save(w).attributes('disabled')).toBeDefined()
+    expect(save(w).attributes('aria-busy')).toBe('true')
+    expect(save(w).text()).toContain('Menyimpan...')
+    finish({ data: USER, status: 'ok' })
+    await flushPromises()
+    expect(save(w).attributes('disabled')).toBeUndefined()
+    expect(save(w).text()).toBe('Simpan Profil')
+  })
+
+  it('saves the text fields as a draft after the debounce, never the picture or a password', async () => {
+    vi.useFakeTimers()
+    try {
+      const w = await render(ProfileEditPage)
+      await w.get('[data-testid=profile-name-input]').setValue('Nama Suntingan')
+      expect(loadDraft(ROUTE)).toBeNull()
+      vi.advanceTimersByTime(500)
+      expect(loadDraft(ROUTE)).toEqual({
+        name: 'Nama Suntingan',
+        phone: '0123456789',
+        bio: 'Suka belajar',
+      })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('restores a stored draft with the exact notice, and a successful save clears it', async () => {
+    useSessionStore().setSession({
+      token: 't',
+      remember: false,
+      expiresAt: '2099-01-01T00:00:00+08:00',
+      user: USER,
+    })
+    saveDraft(ROUTE, null, { name: 'Dari Draf', phone: '', bio: 'Bio draf' })
+    apiMocks.updateProfile.mockResolvedValue({ data: USER, status: 'ok' })
+    const w = await render(ProfileEditPage, USER, Promise.resolve({ ...USER, name: 'Dari Server' }))
+    expect(w.get('[data-testid=draft-restored-notice]').text()).toBe(DRAFT_NOTICE_BM)
+    expect(DRAFT_NOTICE_BM).toBe('Terdapat kerja yang belum disimpan daripada sesi sebelum ini.')
+    expect((w.get('[data-testid=profile-name-input]').element as HTMLInputElement).value).toBe(
+      'Dari Draf',
+    )
+    expect((w.get('[data-testid=profile-bio-input]').element as HTMLTextAreaElement).value).toBe(
+      'Bio draf',
+    )
+    expect(loadDraft(ROUTE)).not.toBeNull() // kept until the profile is saved
+    await w.get('[data-testid=profile-form]').trigger('submit')
+    await flushPromises()
+    expect(loadDraft(ROUTE)).toBeNull()
+    expect(w.find('[data-testid=draft-restored-notice]').exists()).toBe(false)
+  })
+})
+
 describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS-A1-4, AC-AS-A1-1, AC-AS-A1-4)', () => {
   const ADMIN: UserMe = { ...USER, name: 'Admin Contoh', email: 'admin.sekolah@demo.test', role: 'school_admin', grade: null }
+  // Two presses of Simpan Profil less than 200 ms apart are one press (FR-ERR-10 submit lock): a real correction takes longer.
+  const pastLockWindow = () => new Promise((r) => setTimeout(r, 210))
 
   it('Telefon "12345": "Format telefon tidak sah." shows and nothing is saved', async () => {
     const w = await render(ProfileEditPage, ADMIN)
@@ -286,6 +356,7 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     apiMocks.updateProfile.mockResolvedValue({ data: { ...ADMIN, phone: phone || null }, status: 'Profil berjaya dikemaskini.' })
     const w = await render(ProfileEditPage, ADMIN)
     await w.get('[data-testid=profile-phone-input]').setValue(phone)
+    await pastLockWindow()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.updateProfile).toHaveBeenCalledWith({ name: 'Admin Contoh', phone: phone === '' ? null : phone, bio: 'Suka belajar' })
@@ -304,6 +375,7 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     apiMocks.updateProfile.mockResolvedValue({ data: ADMIN, status: 'x' })
     const w = await render(ProfileEditPage, ADMIN)
     await w.get('[data-testid=profile-phone-input]').setValue(value)
+    await pastLockWindow()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(apiMocks.updateProfile).toHaveBeenCalledTimes(ok ? 1 : 0)
@@ -319,6 +391,7 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     expect(apiMocks.updateProfile).toHaveBeenCalledWith(expect.objectContaining({ name: 'A'.repeat(255) }))
     await w.get('[data-testid=profile-name-input]').setValue('')
     await w.get('[data-testid=profile-phone-input]').setValue('123')
+    await pastLockWindow()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.', 'Format telefon tidak sah.'] })
@@ -331,6 +404,7 @@ describe('S5-T14 school admin "Kemaskini Profil" (20 R1-AS-A1: FR-AS-A1-2, FR-AS
     await flushPromises()
     expect(useFlashStore().current).toEqual({ type: 'error', message: ['Sila isi nama.'] })
     await w.get('[data-testid=profile-name-input]').setValue('A'.repeat(256))
+    await pastLockWindow()
     await w.get('[data-testid=profile-form]').trigger('submit')
     await flushPromises()
     expect(useFlashStore().current).toEqual({ type: 'error', message: ['Nama tidak boleh melebihi 255 aksara.'] })
@@ -456,7 +530,7 @@ describe('S8 password card (FR-M01-45)', () => {
     expect(form.text()).toContain('Kata Laluan Semasa')
     expect(form.text()).toContain('Kata Laluan Baharu')
     expect(form.text()).toContain('Sahkan Kata Laluan Baharu')
-    expect(form.text()).toContain('Sekurang-kurangnya 6 aksara')
+    expect(form.text()).toContain('Sekurang-kurangnya 8 aksara')
     for (const input of form.findAll('input')) {
       expect(input.attributes('required')).toBeUndefined()
       expect(input.attributes('type')).toBe('password')

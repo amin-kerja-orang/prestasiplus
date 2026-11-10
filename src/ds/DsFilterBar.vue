@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Filter bar (restyle spec 1.3, design language 9.2). From `md` the fields sit inline (staff: inside
- * one raised card; learner: directly on the page) and the `more` slot opens in a "Lagi Penapis"
+ * one raised card, one grid track per field; learner: directly on the page) and the `more` slot opens in a "Lagi Penapis"
  * popover. Below `md` the `search` slot stays inline and the other fields (default and `more`) move
  * into a bottom-sheet `UDrawer` behind a "Penapis" button with an active-count chip. Applied filters
  * can be passed as `chips` and show under the bar. Callers own the fields (and bind them to query
@@ -84,15 +84,17 @@ function reset(): void {
 
 <template>
   <form
-    class="flex flex-wrap items-end gap-x-3 gap-y-3 learner:gap-2"
-    :class="panel ? 'rounded-card bg-default p-3 shadow-card sm:p-4' : ''"
+    class="flex flex-wrap items-end gap-3"
+    :class="panel ? 'rounded-card bg-default p-4 shadow-card md:p-5' : ''"
     role="search"
     data-ds="filter-bar"
     @submit.prevent="apply"
   >
     <template v-if="wide">
-      <slot name="search" />
-      <slot />
+      <div data-ds="filter-fields">
+        <slot name="search" />
+        <slot />
+      </div>
       <UPopover v-if="$slots.more" :content="{ align: 'start' }">
         <UChip :show="moreCount > 0" :text="moreCount" color="primary">
           <UButton
@@ -112,7 +114,7 @@ function reset(): void {
           </div>
         </template>
       </UPopover>
-      <div class="flex shrink-0 items-center gap-2">
+      <div class="flex shrink-0 flex-wrap items-end gap-2" data-ds="filter-actions">
         <UButton type="submit" class="min-h-11" :label="applyLabel" :loading="loading" />
         <UButton
           v-if="resetVisible"
@@ -127,7 +129,7 @@ function reset(): void {
       </div>
     </template>
     <template v-else>
-      <div class="min-w-0 grow"><slot name="search" /></div>
+      <div v-if="$slots.search" class="min-w-0 flex-1 basis-40"><slot name="search" /></div>
       <UChip :show="count > 0" :text="count" color="primary">
         <UButton
           type="button"
@@ -166,10 +168,14 @@ function reset(): void {
           </div>
         </template>
       </UDrawer>
+      <!-- The caller's actions stay on the page below md too (they are not filters). -->
+      <div v-if="$slots.actions" class="flex flex-wrap items-center gap-2" data-ds="filter-actions">
+        <slot name="actions" />
+      </div>
     </template>
     <DsActiveFilters
       v-if="chips && chips.length"
-      class="w-full basis-full max-w-none!"
+      class="col-span-full w-full basis-full"
       :chips="chips"
       :reset-label="resetLabel"
       @remove="(k: string) => emit('remove-chip', k)"

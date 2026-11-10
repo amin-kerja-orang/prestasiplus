@@ -3,7 +3,6 @@ import { SUPPORT_QUEUE_PER_PAGE, SUPPORT_TICKET_STATUSES, type SupportTicketStat
 
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
-import { UsersRepository } from '../users'
 import { SUPPORT_CONFIG_ID } from './support.constants'
 
 export interface TicketRow {
@@ -64,15 +63,7 @@ export const isTicketStatus = (value: unknown): value is SupportTicketStatus =>
  */
 @Injectable()
 export class SupportRepository {
-  constructor(
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(UsersRepository) private readonly users: UsersRepository,
-  ) {}
-
-  /** Ids of the active admins (the new-ticket notice recipients), through the users doorway. */
-  activeAdminIds(): Promise<string[]> {
-    return this.users.activeAdminIds()
-  }
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   /** `role` is the active role at creation and the school is a snapshot of the user's school (DM-32). */
   async create(input: { userId: string; role: string; subject: string; body: string; isTest: boolean; now: Date }): Promise<TicketRow> {
@@ -94,18 +85,20 @@ export class SupportRepository {
     return toTicket(row)
   }
 
-  /** The caller's tickets, newest id first; `total` counts all of them whatever the status filter. */
-  async listOfUser(userId: string, status: SupportTicketStatus | null): Promise<{ rows: TicketRow[]; total: number }> {
-    if (!isIdString(userId)) return { rows: [], total: 0 }
+  /** The caller's tickets, newest id first; `total` and `counts` (all five statuses) cover all of them whatever the status filter. */
+  async listOfUser(userId: string, status: SupportTicketStatus | null): Promise<{ rows: TicketRow[]; total: number; counts: { status: SupportTicketStatus; count: number }[] }> {
+    if (!isIdString(userId)) return { rows: [], total: 0, counts: SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: 0 })) }
     const owner = idFromString(userId)
-    const [rows, total] = await Promise.all([
+    const [rows, grouped] = await Promise.all([
       this.prisma.client.supportTicket.findMany({
         where: { userId: owner, ...(status ? { status } : {}) },
         orderBy: { id: 'desc' },
       }),
-      this.prisma.client.supportTicket.count({ where: { userId: owner } }),
+      this.prisma.client.supportTicket.groupBy({ by: ['status'], where: { userId: owner }, _count: { _all: true } }),
     ])
-    return { rows: rows.map(toTicket), total }
+    const byStatus = new Map(grouped.map((g) => [g.status, g._count._all]))
+    const counts = SUPPORT_TICKET_STATUSES.map((s) => ({ status: s, count: byStatus.get(s) ?? 0 }))
+    return { rows: rows.map(toTicket), total: counts.reduce((n, c) => n + c.count, 0), counts }
   }
 
   /**
@@ -177,8 +170,8 @@ export class SupportRepository {
   }
 
   /** The singleton row: created on the first save (DM-33). */
-  async saveConfig(input: { email: string; whatsappNumber: string; now: Date }): Promise<void> {
-    const values = { email: input.email, whatsappNumber: input.whatsappNumber, updatedAt: input.now }
+  async saveConfig(input: { email: string; whatsappNumber: string; hours: string; now: Date }): Promise<void> {
+    const values = { email: input.email, whatsappNumber: input.whatsappNumber, hours: input.hours === '' ? null : input.hours, updatedAt: input.now }
     await this.prisma.client.supportConfig.upsert({
       where: { id: SUPPORT_CONFIG_ID },
       create: { id: SUPPORT_CONFIG_ID, createdAt: input.now, ...values },
@@ -186,8 +179,8 @@ export class SupportRepository {
     })
   }
 
-  async config(): Promise<{ email: string; whatsappNumber: string } | null> {
+  async config(): Promise<{ email: string; whatsappNumber: string; hours: string } | null> {
     const row = await this.prisma.client.supportConfig.findUnique({ where: { id: SUPPORT_CONFIG_ID } })
-    return row ? { email: row.email, whatsappNumber: row.whatsappNumber } : null
+    return row ? { email: row.email, whatsappNumber: row.whatsappNumber, hours: row.hours ?? '' } : null
   }
 }

@@ -128,13 +128,13 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.badges).toEqual([])
   })
 
-  it('account 4 (pelajarmaju): streak 3, week 4 sessions / 70 %, quests 4 of 10, revision badge 4, subscribed', async () => {
+  it('account 4 (pelajarmaju): streak 3, week 4 sessions / 70 %, quests 4 of 14, revision badge 4, subscribed', async () => {
     const d = await dash(MAJU)
     expect(d.wallet).toEqual({ coins: 267, points: 432, level: 3, levelProgressPct: 100 })
     expect(d.streak.count).toBe(3)
     expect(d.week).toEqual({ sessions: 4, accuracyPct: 70 })
     expect(d.questsCompleted).toBe(4)
-    expect(d.quests).toHaveLength(10)
+    expect(d.quests).toHaveLength(15) // 10 + the 4 V2 rows of part 6 + Kombo 10 of part 14
     expect(d.revisionTotal).toBe(4)
     expect(d.trial.active).toBe(false)
   })
@@ -172,13 +172,18 @@ describe('#1 GET /api/dashboard (S1)', () => {
     expect(d.badges).toEqual([])
   })
 
-  it('the 10 quests of the M14 catalogue, in order, with the chip label and the syiling reward', async () => {
+  it('the 15 quests of the M14 catalogue, in order, with the chip label and the syiling reward', async () => {
     const d = await dash(PELAJAR2)
     expect(d.quests.map((q) => q.title)).toEqual([
       'Rajin Berlatih',
       'Si Tepat',
       'Penjelajah Topik',
       'Kilat Matematik',
+      'Selesai 5 Kuiz',
+      'Ketepatan 80%',
+      '3 Topik Berbeza',
+      'Kombo 10',
+      'Belajar 15 Minit',
       'Mula Hari Ini',
       'Jawab 5 Betul',
       'Latihan 10 Minit',
@@ -186,7 +191,7 @@ describe('#1 GET /api/dashboard (S1)', () => {
       'Ketepatan 90%',
       'Cabaran Kilat',
     ])
-    expect(d.quests.map((q) => q.reward)).toEqual([15, 20, 25, 30, 10, 12, 20, 25, 35, 40])
+    expect(d.quests.map((q) => q.reward)).toEqual([15, 20, 25, 30, 50, 80, 60, 120, 40, 10, 12, 20, 25, 35, 40])
     expect(d.quests[0]).toMatchObject({
       key: '1',
       emoji: '📝',

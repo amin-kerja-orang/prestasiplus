@@ -226,6 +226,7 @@ export type SpmTrackingAHub = z.infer<typeof SpmTrackingAHubSchema>
 /** One set of a Tracking A subject. */
 export const SpmTrackingASetSchema = z
   .strictObject({
+    year: z.number().int().meta({ description: 'Year of the set: a subject lists its complete sets of every year (D-14).' }),
     setNo: z.number().int().min(1),
     status: SpmSetStatusSchema,
     readyCount: count,
@@ -237,9 +238,9 @@ export const SpmTrackingASetSchema = z
 export type SpmTrackingASet = z.infer<typeof SpmTrackingASetSchema>
 
 /**
- * `GET /spm/tracking-a/{code}` data for a subject other than BM and BI: the sets of the Tracking
- * year (2026 in the mock), startable sets first, then locked, each by set number.
- * `summary.readyQuestions` sums ALL sets (unlike `SpmOpenSubjectCard.readyQuestions`).
+ * `GET /spm/tracking-a/{code}` data for a subject other than BM and BI: the complete sets of every
+ * year, year descending then set number (D-14). A set that is not complete is not listed
+ * (FR-MUR-13-18, AC-MUR-13-11). `summary` counts ALL the subject's sets (unlike `SpmOpenSubjectCard.readyQuestions`).
  */
 export const SpmTrackingASubjectSchema = z
   .strictObject({
@@ -334,13 +335,15 @@ export const TRACKING_A_MESSAGES = {
   swapFailed: 'Tukar gagal.',
   swapGone: 'Soalan yang ditukar telah dibuang; tukaran diabaikan.',
   notServed: 'Tidak disajikan kepada pelajar',
+  loading: 'Memuatkan…',
+  paneHeading: 'Sunting Soalan',
   paneEmpty: 'Pilih soalan untuk menyunting.',
-  paneLoading: 'Memuatkan…',
-  paneRetry: 'Cuba lagi',
   paneOpen: 'Buka di laman berasingan',
+  sectionHeading: 'Soalan dalam set',
   setExists: (setNo: number): string => `Set ${String(setNo)} sudah wujud untuk subjek dan tahun ini.`,
   needed: (n: number): string => `${String(n)} soalan lagi diperlukan.`,
   available: (subject: string, n: number): string => `Soalan tersedia untuk ${subject}: ${n.toLocaleString('en-US')}`,
+  excludedBySibling: (n: number): string => `(${n.toLocaleString('en-US')} sudah digunakan set lain tahun ini)`,
   siblingClash: (position: number, setNo: number): string =>
     `Soalan No. ${String(position)} sudah ada dalam Set ${String(setNo)} untuk subjek dan tahun ini. Buang atau tukar soalan itu.`,
   groupNoFit: (label: string, questions: number, free: number): string =>
@@ -358,10 +361,11 @@ export const TRACKING_A_PROPOSED_COPY = {
   groupMember: (position: number): string => `Soalan No. ${String(position)} ialah ahli kumpulan. Tambah kumpulan itu sepenuhnya.`,
   repeated: (position: number): string => `Soalan No. ${String(position)} berulang dalam set ini. Buang salah satu.`,
   overTarget: (target: number, excess: number): string => `Set ini melebihi sasaran ${String(target)} soalan. Buang ${String(excess)} soalan sebelum menyimpan.`,
-  targetLabel: (target: number): string => `Sasaran: ${String(target)} soalan`,
+  targetFieldLabel: 'Sasaran soalan',
   groupRow: (label: string, questions: number): string => `Kumpulan \u201C${label}\u201D (${String(questions)} soalan)`,
   pickLabel: 'Pilih soalan atau kumpulan',
   pickPlaceholder: 'Pilih daripada calon',
+  subjectPlaceholder: 'Pilih subjek',
   pickAdd: 'Tambah',
   unsaved: 'Perubahan belum disimpan.',
   discardDraft: 'Perubahan pada set ini belum disimpan dan akan hilang. Teruskan?',
@@ -424,6 +428,7 @@ export const SpmAdminTrackingASetSchema = z
     attention: z.array(z.string()).meta({ description: '"Hanya {a} daripada {b} soalan" while the set is not complete; empty when it is.' }),
     items: z.array(SpmAdminTrackingASetItemSchema),
     candidates: count,
+    excludedBySibling: count.meta({ description: 'Servable questions of the subject withheld because another set of the same subject and year holds them (V2 TrackingASetPool::excludedBySibling).' }),
     candidateItems: z.array(SpmAdminTrackingACandidateSchema).max(TRACKING_A_CANDIDATE_CAP),
   })
   .meta({ id: 'SpmAdminTrackingASet' })

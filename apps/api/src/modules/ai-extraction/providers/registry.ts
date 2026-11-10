@@ -3,6 +3,7 @@ import { aiUnknownProviderMessage, type AiProviderId } from '@pp/contract'
 import { AiConfig } from '../ai.config'
 import type { AiFetch, AiResolver, ExtractionProvider } from '../ai.types'
 import { MockProvider } from './mock/mock.provider'
+import { SegmenterProvider } from './segmenter.provider'
 import { ProviderHttp } from './provider-http'
 import { AnthropicProvider, GeminiProvider, OpenAiCompatibleProvider, OpenAiProvider } from './vendors'
 
@@ -15,7 +16,8 @@ export function createProvider(config: AiConfig, fetchImpl: AiFetch, resolver: A
   const http = new ProviderHttp(fetchImpl, resolver, id)
   switch (id) {
     case 'mock':
-      return new MockProvider()
+      // Real OCR deployed (KP-3): real page text needs the real-paper segmenter; the prototype-layout mock stays for tests and dev.
+      return config.realOcr ? new SegmenterProvider() : new MockProvider()
     case 'anthropic':
       return new AnthropicProvider(config, http)
     case 'openai':

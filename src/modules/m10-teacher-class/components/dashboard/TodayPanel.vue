@@ -4,23 +4,29 @@
  * so the counters are 0, the empty texts and the single live action card always show (FR-M10-11;
  * populated rows UNVERIFIED, L-M10-01).
  */
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsGrid, DsIconChip, DsPanel, DsStack, DsText } from '@/ds'
 
 import type { GuruDashboard } from '../../api/types'
 import { DASH_COPY } from './copy'
 
-defineProps<{ today: GuruDashboard['today'] }>()
+defineProps<{
+  today: GuruDashboard['today']
+  /** Pupils with accuracy of 55% or more / below 55% (AC-GUR-2-7); `null` while unknown ("—"). */
+  onTrack?: number | null
+  offTrack?: number | null
+}>()
 </script>
 
 <template>
   <DsPanel data-testid="today-panel">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div class="flex flex-col gap-4">
+    <div class="flex flex-col gap-4">
       <div class="min-w-0">
         <p class="text-overline text-muted">{{ DASH_COPY.todayLabel }}</p>
         <h2 class="text-subheading text-highlighted">{{ DASH_COPY.todayTitle }}</h2>
         <p class="mt-1 text-body text-muted">{{ DASH_COPY.todayText }}</p>
       </div>
-      <div class="grid shrink-0 grid-cols-3 gap-2" data-testid="today-counters">
+      <div class="grid grid-cols-3 gap-3" data-testid="today-counters">
         <DsPanel
           v-for="[label, n] in [
             [DASH_COPY.counterStudents, today.students.length],
@@ -29,7 +35,6 @@ defineProps<{ today: GuruDashboard['today'] }>()
           ]"
           :key="label"
           tone="inset"
-          class="sm:min-w-20"
         >
           <div class="text-center">
             <p class="text-overline text-muted">{{ label }}</p>
@@ -39,45 +44,72 @@ defineProps<{ today: GuruDashboard['today'] }>()
       </div>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
-      <DsPanel tone="inset" data-testid="today-students">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="text-label text-highlighted">{{ DASH_COPY.colStudents }}</h3>
-          <span class="text-caption text-muted">{{ DASH_COPY.top3 }}</span>
-        </div>
-        <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyStudents }}</p>
-      </DsPanel>
-      <DsPanel tone="inset" data-testid="today-topics">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="text-label text-highlighted">{{ DASH_COPY.colTopics }}</h3>
-          <UButton
-            to="/analitik/kelas"
-            variant="link"
-            size="sm"
-            class="px-0"
-            data-testid="today-analytics"
-            >{{ DASH_COPY.analytics }}</UButton
-          >
-        </div>
-        <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyTopics }}</p>
-      </DsPanel>
-      <DsPanel tone="inset" data-testid="today-actions">
-        <div class="flex items-center justify-between gap-2">
-          <h3 class="text-label text-highlighted">{{ DASH_COPY.colActions }}</h3>
-          <span class="text-caption text-muted">{{ DASH_COPY.ruleBased }}</span>
-        </div>
-        <div class="mt-3 flex gap-3" data-testid="today-action">
-          <DsIconChip icon="laptop" accent="win" />
-          <div class="flex min-w-0 flex-col items-start gap-1">
-            <p class="text-label text-highlighted">{{ DASH_COPY.actionTitle }}</p>
-            <UBadge color="neutral" variant="subtle">{{ DASH_COPY.actionBadge }}</UBadge>
-            <p class="text-body text-muted">{{ DASH_COPY.actionText }}</p>
-            <UButton to="/guru/kelas" variant="link" class="px-0" data-testid="today-action-link">{{
-              DASH_COPY.actionLink
-            }}</UButton>
+    <DsStack gap="md">
+      <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm" data-testid="track-tiles">
+        <DsPanel tone="inset" data-testid="track-on">
+          <DsStack gap="2xs">
+            <DsText variant="kpi" data-testid="track-on-n">{{ onTrack ?? '—' }}</DsText>
+            <DsText variant="label" tone="highlighted">{{ DASH_COPY.onTrack }}</DsText>
+            <DsText variant="caption">{{ DASH_COPY.onTrackCaption }}</DsText>
+          </DsStack>
+        </DsPanel>
+        <DsPanel tone="inset" data-testid="track-off">
+          <DsStack gap="2xs">
+            <DsText variant="kpi" data-testid="track-off-n">{{ offTrack ?? '—' }}</DsText>
+            <DsText variant="label" tone="highlighted">{{ DASH_COPY.offTrack }}</DsText>
+            <DsText variant="caption">{{ DASH_COPY.offTrackCaption }}</DsText>
+          </DsStack>
+        </DsPanel>
+      </DsGrid>
+
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <DsPanel tone="inset" data-testid="today-students">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-label text-highlighted">{{ DASH_COPY.colStudents }}</h3>
+            <span class="text-caption text-muted">{{ DASH_COPY.top5 }}</span>
           </div>
-        </div>
-      </DsPanel>
+          <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyStudents }}</p>
+        </DsPanel>
+        <DsPanel tone="inset" data-testid="today-topics">
+          <div class="flex flex-wrap items-center justify-between gap-x-3">
+            <div class="min-w-0">
+              <h3 class="text-label text-highlighted">{{ DASH_COPY.colTopics }}</h3>
+              <DsText variant="caption">{{ DASH_COPY.topicsSub }}</DsText>
+            </div>
+            <UButton
+              to="/analitik/kelas"
+              variant="link"
+              size="sm"
+              class="shrink-0 px-0"
+              data-testid="today-analytics"
+              >{{ DASH_COPY.analytics }}</UButton
+            >
+          </div>
+          <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyTopics }}</p>
+        </DsPanel>
+        <DsPanel tone="inset" class="md:col-span-2" data-testid="today-actions">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-label text-highlighted">{{ DASH_COPY.colActions }}</h3>
+            <span class="text-caption text-muted">{{ DASH_COPY.ruleBased }}</span>
+          </div>
+          <div class="mt-3 flex gap-3" data-testid="today-action">
+            <DsIconChip icon="laptop" accent="win" />
+            <div class="flex min-w-0 flex-col items-start gap-1">
+              <p class="text-label text-highlighted">{{ DASH_COPY.actionTitle }}</p>
+              <UBadge color="neutral" variant="subtle">{{ DASH_COPY.actionBadge }}</UBadge>
+              <p class="text-body text-muted">{{ DASH_COPY.actionText }}</p>
+              <UButton
+                to="/guru/kelas"
+                variant="link"
+                class="px-0"
+                data-testid="today-action-link"
+                >{{ DASH_COPY.actionLink }}</UButton
+              >
+            </div>
+          </div>
+        </DsPanel>
+      </div>
+    </DsStack>
     </div>
   </DsPanel>
 </template>

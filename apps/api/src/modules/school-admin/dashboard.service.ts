@@ -115,6 +115,7 @@ export class DashboardService {
         state: school.state ?? '',
         ppd: school.district && school.district !== '' ? school.district : null,
         code: school.code && school.code !== '' ? school.code : null,
+        joinCode: school.joinCode && school.joinCode !== '' ? school.joinCode : null,
       },
       roleLabel: SCHOOL_ADMIN_ROLE_LABEL,
       perutusan: shown.map((p) => {

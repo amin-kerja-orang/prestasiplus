@@ -25,7 +25,9 @@ const items = computed(() =>
 </script>
 
 <template>
-  <section class="min-w-0 sm:px-12" aria-label="Pengumuman" data-testid="dash-carousel">
+  <section class="min-w-0" aria-label="Pengumuman"
+    data-testid="dash-carousel"
+  >
     <DsCarousel :items="items" label="Pengumuman" arrows>
       <template #item="{ item }">
         <UCard

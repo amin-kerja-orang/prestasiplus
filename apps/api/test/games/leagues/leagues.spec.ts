@@ -89,9 +89,10 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       expect(res.status).toBe(200)
       const list = parseData(res, GamesLeagueListSchema)
       expect(list.mine.map((l) => l.name)).toEqual(['Liga Sejarah 2026 5ST', 'Liga Matematik Sprint Test'])
-      expect(list.open.map((l) => l.name)).toEqual(['Liga Sejarah 2026 5ST'])
+      // The status is derived by date: at the test clock (19 October 2026) both seeded leagues are past their end date.
+      expect(list.open.map((l) => l.name)).toEqual([])
       const sejarah = list.mine[0]!
-      expect(sejarah).toMatchObject({ status: 'upcoming', statusLabel: 'Akan Datang', scopeLabel: 'Sekolah', typeLabel: 'Persahabatan', subjectName: expect.any(String), startDate: '2026-03-31', endDate: '2026-04-01', schools: 3 })
+      expect(sejarah).toMatchObject({ status: 'ended', statusLabel: 'Tamat', scopeLabel: 'Sekolah', typeLabel: 'Persahabatan', subjectName: expect.any(String), startDate: '2026-03-31', endDate: '2026-04-01', schools: 3 })
       expect(list.mine[1]).toMatchObject({ status: 'ended', statusLabel: 'Tamat', schools: 2 })
     })
 
@@ -123,7 +124,7 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
       ])
       expect(d.standings.T4![0]!.ppdState).toContain('Selangor')
       // League 1 has no stored standing rows, as live.
-      const sejarah = list.open[0]!
+      const sejarah = list.mine[0]! // demo003 is in league 1 only
       const d1 = parseData(await s.get(`/api/leagues/${sejarah.id}`), GamesLeagueDetailSchema)
       expect(d1.standings).toEqual({})
     })
@@ -452,10 +453,19 @@ describe('leagues and Sekolah Bersaing (BE-45, M16-46 to M16-50)', () => {
 
     afterEach(clear)
 
-    it('AC-AS-45-2: no sessions: an empty array and 200, even with the stored weekly rows present (DM-31)', async () => {
-      const weekly = await t.db.query<{ n: string }>(`select count(*)::text as n from sekolah_bersaing_weeks`)
-      expect(Number(weekly[0]!.n)).toBeGreaterThan(0)
-      expect(await board()).toEqual([])
+    it('AC-AS-45-2: no sessions: an empty array and 200, even with a stored weekly row present (DM-31)', async () => {
+      // The seed no longer writes weekly rows (S7-T02); one legacy row is stored here to prove the board ignores it.
+      await t.db.query(
+        `insert into sekolah_bersaing_weeks (week_start, rank, school_id, aktif_pct, streak_avg, nota_per_10, is_anonymous)
+         select '2026-09-21', 1, id, 0, 9.3, 0, false from schools where code = 'DEMO001'`,
+      )
+      try {
+        const weekly = await t.db.query<{ n: string }>(`select count(*)::text as n from sekolah_bersaing_weeks`)
+        expect(weekly[0]!.n).toBe('1')
+        expect(await board()).toEqual([])
+      } finally {
+        await t.db.query(`delete from sekolah_bersaing_weeks`)
+      }
     })
 
     it('AC-AS-45-1: the mean of session accuracy per school, in order, with the register name and state', async () => {

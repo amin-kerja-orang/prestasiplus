@@ -29,12 +29,29 @@ export interface RoomRow {
 
 export interface PlayerRow {
   id: bigint
-  userId: string
+  /** What the engine state is keyed by: the user id, or `robot-<n>` for a seat with no user (DM-67). */
+  seat: string
+  /** Null for a robot seat. */
+  userId: string | null
+  /** The number of a robot among the robots of the room, from 1; null for a pupil. */
+  robot: number | null
   team: number | null
   points: number
   correct: number
   isBot: boolean
   isTest: boolean
+  /** DM-90: when the seat last polled or acted in a playing room; null before the first and for a robot. */
+  lastPolledAt: Date | null
+  /** DM-90: timeouts of the seat's own turns since its last action; 3 remove the seat. */
+  consecutiveTimeouts: number
+}
+
+export interface SpinSegmentRow {
+  position: number
+  label: string
+  syiling: number
+  weight: number
+  active: boolean
 }
 
 export interface NewRoom {
@@ -108,22 +125,31 @@ const toRoom = (r: {
   createdAt: r.createdAt,
 })
 
-const toPlayer = (p: {
-  id: bigint
-  userId: bigint
-  team: number | null
-  points: number
-  correct: number
-  isBot: boolean
-  isTest: boolean
-}): PlayerRow => ({
+const toPlayer = (
+  p: {
+    id: bigint
+    userId: bigint | null
+    team: number | null
+    points: number
+    correct: number
+    isBot: boolean
+    isTest: boolean
+    lastPolledAt: Date | null
+    consecutiveTimeouts: number
+  },
+  robot: number | null,
+): PlayerRow => ({
   id: p.id,
-  userId: idToString(p.userId),
+  seat: p.userId === null ? `robot-${String(robot)}` : idToString(p.userId),
+  userId: p.userId === null ? null : idToString(p.userId),
+  robot,
   team: p.team,
   points: p.points,
   correct: p.correct,
   isBot: p.isBot,
   isTest: p.isTest,
+  lastPolledAt: p.lastPolledAt,
+  consecutiveTimeouts: p.consecutiveTimeouts,
 })
 
 /** Data access of the room games (tables `game_rooms`, `game_room_players`, `game_standings`, `pb_searches`, `game_settings`). */
@@ -148,13 +174,25 @@ export class RoomsRepository {
     return rows.length > 0
   }
 
-  /** The human seats, in seat order. Robot seats (null `user_id`) are written and read by part GAME-R, which keys the engine by seat. */
+  /** FR-GM-00.7: playing rooms that have not moved since `before`, oldest first (a shorter idle cannot be on a clock's end). */
+  async playingIdleSince(before: Date, limit: number): Promise<string[]> {
+    const rows = await this.db.gameRoom.findMany({
+      where: { status: 'playing', updatedAt: { lte: before } },
+      orderBy: { updatedAt: 'asc' },
+      take: limit,
+      select: { code: true },
+    })
+    return rows.map((r) => r.code)
+  }
+
+  /** Every seat, in seat order; a robot seat has no user (48 section 3.6). */
   async players(code: string): Promise<PlayerRow[]> {
     const rows = await this.db.gameRoomPlayer.findMany({
       where: { roomCode: code },
       orderBy: { id: 'asc' },
     })
-    return rows.flatMap((r) => (r.userId === null ? [] : [toPlayer({ ...r, userId: r.userId })]))
+    let robots = 0
+    return rows.map((r) => toPlayer(r, r.isBot ? ++robots : null))
   }
 
   /** Inserts a waiting room with `code`; false when the code is taken (the caller draws the next code). */
@@ -166,16 +204,42 @@ export class RoomsRepository {
     return n === 1
   }
 
-  async addPlayer(
-    code: string,
-    userId: string,
-    isBot: boolean,
-    isTest: boolean,
-    joinedAt: Date,
-  ): Promise<void> {
+  async addPlayer(code: string, userId: string, isTest: boolean, joinedAt: Date): Promise<void> {
     await this.db.gameRoomPlayer.create({
-      data: { roomCode: code, userId: idFromString(userId), isBot, isTest, joinedAt },
+      data: { roomCode: code, userId: idFromString(userId), isBot: false, isTest, joinedAt },
     })
+  }
+
+  /** A robot seat: `is_bot` and no user (FR-GM-00.4). */
+  async addRobot(code: string, isTest: boolean, joinedAt: Date): Promise<void> {
+    await this.db.gameRoomPlayer.create({
+      data: { roomCode: code, userId: null, isBot: true, isTest, joinedAt },
+    })
+  }
+
+  /** A human who left a game in play: a robot takes the seat (the row keeps its place, points and correct count). */
+  async seatToRobot(id: bigint): Promise<void> {
+    await this.db.gameRoomPlayer.update({
+      where: { id },
+      data: { userId: null, isBot: true, lastPolledAt: null, consecutiveTimeouts: 0 },
+    })
+  }
+
+  /** DM-90: the seat polled or acted at `at`. */
+  async touchSeat(id: bigint, at: Date): Promise<void> {
+    await this.db.gameRoomPlayer.update({ where: { id }, data: { lastPolledAt: at } })
+  }
+
+  /** DM-90: a room starts playing: every human seat is present now with no timeouts. */
+  async startPresence(code: string, at: Date): Promise<void> {
+    await this.db.gameRoomPlayer.updateMany({
+      where: { roomCode: code, isBot: false },
+      data: { lastPolledAt: at, consecutiveTimeouts: 0 },
+    })
+  }
+
+  async removeSeat(id: bigint): Promise<void> {
+    await this.db.gameRoomPlayer.delete({ where: { id } })
   }
 
   async updateRoom(code: string, patch: RoomPatch, at: Date): Promise<void> {
@@ -198,11 +262,16 @@ export class RoomsRepository {
 
   async updatePlayer(
     id: bigint,
-    p: { team: number | null; points: number; correct: number },
+    p: { team: number | null; points: number; correct: number; consecutiveTimeouts?: number },
   ): Promise<void> {
     await this.db.gameRoomPlayer.update({
       where: { id },
-      data: { team: p.team, points: p.points, correct: p.correct },
+      data: {
+        team: p.team,
+        points: p.points,
+        correct: p.correct,
+        ...(p.consecutiveTimeouts === undefined ? {} : { consecutiveTimeouts: p.consecutiveTimeouts }),
+      },
     })
   }
 
@@ -226,18 +295,29 @@ export class RoomsRepository {
 
   // --- reads ----------------------------------------------------------------------------------------------
 
-  /** Up to `limit` newest waiting rooms with a free seat whose host is not a test actor. */
+  /**
+   * FR-GM-R.7, ruling 52: up to `limit` newest waiting rooms with a seat free for a pupil (a robot gives its seat up), created
+   * after `notBefore` (older ones are due to close), whose host is not a test actor and whose match mode fits `grade`
+   * (the SQL form of `gradeFits`; a viewer without a grade sees all). Any school: a room code joins from every school.
+   */
   async openRooms(
     limit: number,
+    grade: number | null,
+    notBefore: Date,
   ): Promise<{ code: string; game: string; hostId: string; players: number; max: number }[]> {
     const rows = await this.db.$queryRaw<
       { code: string; game: string; host_id: bigint; n: number; max_players: number }[]
     >`
       SELECT r.code, r.game, r.host_id, r.max_players,
-             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code) AS n
+             (SELECT count(*)::int FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) AS n
         FROM game_rooms r
-       WHERE r.status = 'waiting' AND NOT r.is_test
-         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code) < r.max_players
+       WHERE r.status = 'waiting' AND NOT r.is_test AND r.created_at > ${notBefore}
+         AND (SELECT count(*) FROM game_room_players p WHERE p.room_code = r.code AND NOT p.is_bot) < r.max_players
+         AND (${grade}::int IS NULL OR CASE r.match_mode
+               WHEN 'same_grade' THEN array_position(ARRAY['DARJAH_1','DARJAH_2','DARJAH_3','DARJAH_4','DARJAH_5','DARJAH_6','TINGKATAN_1','TINGKATAN_2','TINGKATAN_3','TINGKATAN_4','TINGKATAN_5']::text[], r.grade_level) = ${grade}::int
+               WHEN 'same_level' THEN (${grade}::int <= 6) = (array_position(ARRAY['DARJAH_1','DARJAH_2','DARJAH_3','DARJAH_4','DARJAH_5','DARJAH_6','TINGKATAN_1','TINGKATAN_2','TINGKATAN_3','TINGKATAN_4','TINGKATAN_5']::text[], r.grade_level) <= 6)
+               ELSE ${grade}::int BETWEEN COALESCE(r.grade_min, 1) AND COALESCE(r.grade_max, 11)
+             END)
        ORDER BY r.created_at DESC, r.code ASC
        LIMIT ${limit}`
     return rows.map((r) => ({
@@ -249,6 +329,17 @@ export class RoomsRepository {
     }))
   }
 
+  /** FR-GM-R.5: waiting rooms created at or before `before`, oldest first (they are due to close). */
+  async waitingCreatedBefore(before: Date, limit: number): Promise<string[]> {
+    const rows = await this.db.gameRoom.findMany({
+      where: { status: 'waiting', createdAt: { lte: before } },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { code: true },
+    })
+    return rows.map((r) => r.code)
+  }
+
   async hasPlayed(game: string, userId: string): Promise<boolean> {
     const s = await this.db.gameStanding.findUnique({
       where: { game_userId: { game, userId: idFromString(userId) } },
@@ -256,11 +347,11 @@ export class RoomsRepository {
     return (s?.jumlah ?? 0) > 0 && !s?.isTest
   }
 
-  /** Papan Bijak top 10 (jumlah > 0): wins desc, skor desc, creation order. Test actors never appear. */
+  /** Papan Bijak top 10 (jumlah > 0): wins desc, skor desc, jumlah asc, user id asc (48 GAME-R). Test actors never appear. */
   async papanBijakTop(limit: number): Promise<StandingRow[]> {
     const rows = await this.db.gameStanding.findMany({
       where: { game: 'papan-bijak', jumlah: { gt: 0 }, isTest: false },
-      orderBy: [{ wins: 'desc' }, { skor: 'desc' }, { id: 'asc' }],
+      orderBy: [{ wins: 'desc' }, { skor: 'desc' }, { jumlah: 'asc' }, { userId: 'asc' }],
       take: limit,
     })
     return rows.map((r) => ({
@@ -299,6 +390,29 @@ export class RoomsRepository {
       ON CONFLICT (id) DO UPDATE SET boardgame_quiz_tiles = EXCLUDED.boardgame_quiz_tiles, updated_at = EXCLUDED.updated_at`
   }
 
+  /** One admin save of the game settings at a time, so the before of its audit row is exact. Inside a transaction only. */
+  async lockAdminSettings(key: 'settings' | 'spin-segments'): Promise<void> {
+    await this.db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`games.admin:${key}`}))`
+  }
+
+  /** The Roda Nasib segments by position (DM-64). */
+  async spinSegments(): Promise<SpinSegmentRow[]> {
+    return this.db.spinSegment.findMany({
+      orderBy: { position: 'asc' },
+      select: { position: true, label: true, syiling: true, weight: true, active: true },
+    })
+  }
+
+  async saveSpinSegments(rows: readonly SpinSegmentRow[]): Promise<void> {
+    for (const { position, label, syiling, weight, active } of rows) {
+      await this.db.spinSegment.upsert({
+        where: { position },
+        update: { label, syiling, weight, active },
+        create: { position, label, syiling, weight, active },
+      })
+    }
+  }
+
   /** Room statistics of the admin page; test rooms are excluded. */
   async stats(): Promise<{ rooms: number; playing: number; finished: number; players: number }> {
     const rows = await this.db.$queryRaw<
@@ -323,6 +437,32 @@ export class RoomsRepository {
 
   async lockSearch(id: bigint): Promise<SearchRow | null> {
     await this.db.$queryRaw`SELECT id FROM pb_searches WHERE id = ${id} FOR UPDATE`
+    const s = await this.db.pbSearch.findUnique({ where: { id } })
+    return s ? toSearch(s) : null
+  }
+
+  /** FR-GM-R, ruling 16: the oldest other searches of the same subject and match mode that are still searching and not expired. */
+  async pairCandidates(s: SearchRow, notBefore: Date, limit: number): Promise<SearchRow[]> {
+    const rows = await this.db.pbSearch.findMany({
+      where: {
+        id: { not: s.id },
+        userId: { not: idFromString(s.userId) },
+        status: 'searching',
+        subject: s.subject,
+        matchMode: s.matchMode,
+        isTest: s.isTest,
+        createdAt: { gt: notBefore },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: limit,
+    })
+    return rows.map(toSearch)
+  }
+
+  /** Locks another pupil's search without waiting; null when that row is locked by its own poll (it simply tries again next poll). */
+  async lockSearchSkipLocked(id: bigint): Promise<SearchRow | null> {
+    const locked = await this.db.$queryRaw<{ id: bigint }[]>`SELECT id FROM pb_searches WHERE id = ${id} FOR UPDATE SKIP LOCKED`
+    if (locked.length === 0) return null
     const s = await this.db.pbSearch.findUnique({ where: { id } })
     return s ? toSearch(s) : null
   }
@@ -363,6 +503,7 @@ export interface SearchRow {
   status: string
   polls: number
   roomCode: string | null
+  isTest: boolean
   createdAt: Date
 }
 
@@ -374,6 +515,7 @@ const toSearch = (s: {
   status: string
   polls: number
   roomCode: string | null
+  isTest: boolean
   createdAt: Date
 }): SearchRow => ({
   id: s.id,
@@ -383,5 +525,6 @@ const toSearch = (s: {
   status: s.status,
   polls: s.polls,
   roomCode: s.roomCode,
+  isTest: s.isTest,
   createdAt: s.createdAt,
 })

@@ -6,6 +6,7 @@ import { listMeta, NoStoreInterceptor, ok, okList } from '../../common/http'
 import { Roles } from '../../common/guards'
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { Actor, type AuditActor } from './actor'
+import { MysteryBoxesService } from '../shop'
 import { GamificationAdminService } from './admin.service'
 import { GAMIFICATION_LIMITS, IDEMPOTENCY_HEADER, IDEMPOTENCY_KEY_PATTERN, STUDENTS_PAGE_SIZE, TRANSACTIONS_PAGE_SIZE } from './gamification.constants'
 import { validationFailure } from './validation'
@@ -121,7 +122,10 @@ export class GamificationAdminController {
 @RateLimit(GAMIFICATION_LIMITS.adminRead)
 @Controller('admin/reward-control')
 export class RewardControlController {
-  constructor(private readonly admin: GamificationAdminService) {}
+  constructor(
+    private readonly admin: GamificationAdminService,
+    private readonly boxes: MysteryBoxesService,
+  ) {}
 
   @Get()
   async control() {
@@ -140,9 +144,54 @@ export class RewardControlController {
     return ok(await this.admin.setRewardCost(actor, id, body))
   }
 
+  @Get('draws')
+  async draws() {
+    return ok(await this.admin.draws())
+  }
+
   @Post('draws')
   @RateLimit(GAMIFICATION_LIMITS.adminWrite)
   async createDraw(@Actor() actor: AuditActor, @Body() body: unknown) {
     return ok(await this.admin.createDraw(actor, body))
+  }
+
+  @Post('draws/:id/open')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async openDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.openDraw(actor, id))
+  }
+
+  @Post('draws/:id/close')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async closeDraw(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.closeDraw(actor, id))
+  }
+
+  @Post('draws/:id/winners')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async drawWinners(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return ok(await this.admin.drawWinners(actor, id))
+  }
+
+  @Post('draws/:id/winners/:winnerId/deliver')
+  @HttpCode(200)
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async deliverWinner(@Actor() actor: AuditActor, @Param('id') id: string, @Param('winnerId') winnerId: string) {
+    return ok(await this.admin.deliverWinner(actor, id, winnerId))
+  }
+
+  /** Kotak Misteri (S7-T07 P7, API-GAME-09): boxes, daily limit, openings per day. No POST: boxes are never created (R1). */
+  @Get('mystery-boxes')
+  async mysteryBoxes() {
+    return ok(await this.boxes.adminView())
+  }
+
+  @Put('mystery-boxes/:id')
+  @RateLimit(GAMIFICATION_LIMITS.adminWrite)
+  async saveMysteryBox(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.boxes.adminUpdate(actor, id, body))
   }
 }

@@ -49,6 +49,7 @@ const record = computed(() => bestStreakText(props.best, props.count))
     <DsBadge
       :tone="practisedToday ? 'success' : 'neutral'"
       :label="practisedToday ? 'Selesai' : 'Belum'"
+      class="self-start"
       data-testid="dash-kombo-pill"
     />
     <DsText v-if="record" variant="label" tone="muted" data-testid="dash-kombo-best">{{ record }}</DsText>

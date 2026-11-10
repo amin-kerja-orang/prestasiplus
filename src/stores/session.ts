@@ -32,6 +32,7 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { api, type Transport, type TransportRequest } from '@/api'
+import { clearAllDrafts, setDraftUserProvider } from '@/lib/draft'
 import { clock, MINUTE_MS, toIsoMyt } from '@/lib/time'
 
 import {
@@ -46,9 +47,11 @@ import {
 export const SESSION_LIFETIME_MS = 120 * MINUTE_MS
 
 /** What the store does after clearing the session on a 401 (F-13 registers `replace('/login')`). */
-export type UnauthorizedRedirect = () => unknown
+export type UnauthorizedRedirect = (returnTo?: string) => unknown
 
 let unauthorizedRedirect: UnauthorizedRedirect | null = null
+type UnauthorizedDefer = (proceed: (returnTo?: string) => void) => void
+let unauthorizedDefer: UnauthorizedDefer | null = null
 
 /**
  * Registers the redirect run after a 401 has cleared the session (FR-M01-14). F-13 calls it once
@@ -58,6 +61,21 @@ export function setUnauthorizedRedirect(redirect: UnauthorizedRedirect | null): 
   unauthorizedRedirect = redirect
   return () => {
     if (unauthorizedRedirect === redirect) unauthorizedRedirect = null
+  }
+}
+
+/**
+ * ERR-AUTH-01, timed Bijak sitting: the session is still cleared, but the redirect waits until the pupil confirms a dialog. The page registers
+ * this while it is mounted; `proceed` runs the normal redirect, and `returnTo` is the path to come back to after login. Returns a function that removes the registration.
+ *
+ * There is a single slot: one registration at a time. A later call replaces the earlier one (the last registration wins), and `null` clears the slot.
+ * The returned remover clears the slot only if it still holds this registration, so an earlier page unmounting
+ * cannot remove a later page's registration. Call it on unmount.
+ */
+export function deferUnauthorizedRedirect(defer: UnauthorizedDefer | null): () => void {
+  unauthorizedDefer = defer
+  return () => {
+    if (unauthorizedDefer === defer) unauthorizedDefer = null
   }
 }
 
@@ -194,6 +212,24 @@ function dropPrefixed(store: Storage | null, prefixes: readonly string[]): void 
   }
 }
 
+/** Id of the user the browser's `pp:draft:*` / `pp.draft.*` drafts belong to (kept across a 401 and an expiry, so a different user never sees them). */
+const DRAFT_OWNER_KEY = 'pp:draft-owner'
+function draftOwner(): string | null {
+  try {
+    return storage()?.getItem(DRAFT_OWNER_KEY) ?? null
+  } catch {
+    return null
+  }
+}
+function setDraftOwner(id: string | null): void {
+  try {
+    if (id === null) storage()?.removeItem(DRAFT_OWNER_KEY)
+    else storage()?.setItem(DRAFT_OWNER_KEY, id)
+  } catch {
+    // Storage blocked: the drafts cannot be kept either.
+  }
+}
+
 function dropLocalDrafts(): void {
   dropPrefixed(storage(), [LOCAL_DRAFT_PREFIX, BIJAK_LOCAL_PREFIX, SESSION_DRAFT_PREFIX])
   let session: Storage | null = null
@@ -232,6 +268,8 @@ export const useSessionStore = defineStore('session', () => {
   const auth = shallowRef<ClientSession | null>(null)
 
   const isLoggedIn = computed(() => auth.value !== null)
+  /** Set when a 401 ended the session (FR-ERR-7); read once by the router guard so its login redirect also says `kembali`. */
+  let endedByUnauthorized = false
   const token = computed<string | null>(() => auth.value?.token ?? null)
   const user = computed<UserMe | null>(() => auth.value?.user ?? null)
   const role = computed<Role | null>(() => auth.value?.user.role ?? null)
@@ -244,6 +282,8 @@ export const useSessionStore = defineStore('session', () => {
   const impersonator = computed(() => auth.value?.impersonator ?? null)
 
   /** Mod Pelajar (admin viewing as the demo student); `null` otherwise. The shell banner reads it. */
+  /** Server feature flags (S0-T10); empty until the session carries them (every key then counts as ON). */
+  const features = computed<Record<string, boolean>>(() => auth.value?.features ?? {})
   const mode = computed<ModPelajarMode | null>(() => auth.value?.mode ?? null)
 
   function commit(next: ClientSession | null): void {
@@ -271,9 +311,15 @@ export const useSessionStore = defineStore('session', () => {
 
   /** Stores a new session (login, register, token reset, M02 "Login As"). */
   function setSession(session: ClientSession): void {
+    endedByUnauthorized = false
     // A different user signing in on this browser never sees the previous user's unsaved drafts (a 401 of the same user keeps them).
-    const previous = auth.value
-    if (previous && String(previous.user.id) !== String(session.user.id)) dropLocalDrafts()
+    // The owner is recorded at sign-in, so it survives a 401 or an expiry that left no previous session. Drafts of an unknown owner go too.
+    const id = String(session.user.id)
+    if (draftOwner() !== id) {
+      dropLocalDrafts()
+      clearAllDrafts()
+    }
+    setDraftOwner(id)
     commit({ ...session })
   }
 
@@ -346,8 +392,30 @@ export const useSessionStore = defineStore('session', () => {
 
   /** 401 policy (FR-M01-14): clear the session, then run the registered redirect. */
   async function handleUnauthorized(): Promise<void> {
+    // Only a session that existed can "end": a 401 with no session (a guest, or storage already cleared) keeps the plain
+    // `/login?redirect=` of the guard.
+    const hadSession = auth.value !== null
     clear()
+    endedByUnauthorized = hadSession
+    // A guest (no session) is already handled by the route guard; redirecting again would race with it and could drop
+    // the guard's `?redirect=` (for example a 401 that lands while /login?redirect=... is open).
+    if (!hadSession) return
+    // A page with an unsent answer (S3-T04) defers the redirect so it can save first and name where to return.
+    if (unauthorizedDefer) {
+      unauthorizedDefer((returnTo) => void unauthorizedRedirect?.(returnTo))
+      return
+    }
     await unauthorizedRedirect?.()
+  }
+
+  /**
+   * Whether the session was just ended by a 401, then forgets it (one-shot). A navigation that runs into the guard after the 401
+   * cleared the session (a race with the 401 redirect) still lands on `/login?kembali=` with the expired-session banner (AC-ERR-2).
+   */
+  function takeEndedByUnauthorized(): boolean {
+    const was = endedByUnauthorized
+    endedByUnauthorized = false
+    return was
   }
 
   /**
@@ -378,8 +446,13 @@ export const useSessionStore = defineStore('session', () => {
       }
     }
     clear()
+    endedByUnauthorized = false
     dropLocalDrafts()
+    clearAllDrafts() // pp.draft.* (FR-ERR-8): removed on logout, kept on a 401
+    setDraftOwner(null)
   }
+
+  setDraftUserProvider(() => auth.value?.user.id ?? null)
 
   // Wiring: the API client reads the token from this store and reports 401s to it.
   api.configure({
@@ -403,6 +476,7 @@ export const useSessionStore = defineStore('session', () => {
     remember,
     expiresAt,
     impersonator,
+    features,
     mode,
     enterModPelajar,
     leaveModPelajar,
@@ -412,6 +486,7 @@ export const useSessionStore = defineStore('session', () => {
     slide,
     clear,
     handleUnauthorized,
+    takeEndedByUnauthorized,
     refreshUser,
     logout,
   }

@@ -28,7 +28,7 @@
 import { expect, test } from '@playwright/test'
 import type { Page, Response } from '@playwright/test'
 
-import { expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
+import { clickNext, expectNoHorizontalScrollHttp, HTTP_MODE } from './bijak-flow'
 import { demoCreds, NEEDS_PASSWORD } from './http-creds'
 
 const { user: USER, pass: PASS } = demoCreds('student')
@@ -158,7 +158,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
 
       // Q2 when there is one.
       if (await page.getByTestId('next').isVisible()) {
-        await page.getByTestId('next').click()
+        await clickNext(page)
         const saved2 = page.waitForResponse(answersPut)
         await page.locator('[data-testid^=option-]').first().click()
         expect(is2xx(await saved2)).toBe(true)
@@ -172,7 +172,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
       const savedPos = page.waitForResponse(answersPut)
       let moves = 0
       while (moves < 2 && (await page.getByTestId('next').isVisible())) {
-        await page.getByTestId('next').click()
+        await clickNext(page)
         moves++
       }
       if (moves > 0) expect(is2xx(await savedPos)).toBe(true)
@@ -187,7 +187,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
       if (positionBefore > 1) {
         const savedBack = page.waitForResponse(answersPut)
         while ((await questionNumber(page)) < positionBefore) {
-          await page.getByTestId('next').click()
+          await clickNext(page)
         }
         expect(is2xx(await savedBack)).toBe(true)
         await expect(page.getByTestId('save-status')).toHaveText('disimpan')
@@ -226,7 +226,7 @@ test.describe('Bijak SPM Murid over HTTP @bijak @api', () => {
     })
 
     await test.step('5 Hantar + confirm: POST submit 2xx, result screen with per-section scores', async () => {
-      while (await page.getByTestId('next').isVisible()) await page.getByTestId('next').click()
+      while (await page.getByTestId('next').isVisible()) await clickNext(page)
       await page.getByTestId('submit').click()
       await expect(page.getByTestId('submit-summary')).toBeVisible()
       const submitted = page.waitForResponse(

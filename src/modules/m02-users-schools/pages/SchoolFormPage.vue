@@ -87,7 +87,7 @@ watch(
     form.district = school.district ?? ''
     form.city = school.city ?? ''
     form.isActive = school.isActive
-    pageMeta.setHeader({ title: 'Edit Sekolah', subtitle: school.name })
+    pageMeta.setHeader({ title: 'Sunting Sekolah', subtitle: school.name })
   },
   { immediate: true },
 )
@@ -140,7 +140,7 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage
-    :title="editing ? 'Edit Sekolah' : 'Tambah Sekolah'"
+    :title="editing ? 'Sunting Sekolah' : 'Tambah Sekolah'"
     back-label="Kembali ke Senarai Sekolah"
     :subtitle="
       editing ? 'Kemaskini maklumat sekolah.' : 'Daftarkan sekolah baharu ke dalam sistem.'

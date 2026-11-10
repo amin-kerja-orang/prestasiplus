@@ -199,10 +199,12 @@ async function seedQuestions(prisma: PrismaClient, adminId: bigint, now: Date): 
         const tag = await resolveTag(tx, subject.id, levelId, spec.unit)
         const parts = partsOf(spec)
         const tp = Math.max(...spec.tps)
+        // Kesukaran is required on its own (team-dd ruling, #917); the fixture uses the documented default min(5, TP).
+        const difficultyLevel = Math.min(5, tp)
         // The real approve gate (tag, keys, marks, DSKP leaf rules of R1-B05) on the exact data that is written.
         const failed = GATES.approve({
           id: label, parts, marks: totalMarks(spec), subjectId: subject.id.toString(), educationLevelId: levelId.toString(), chapterId: '1',
-          unitId: tag.unitNodeId.toString(), spIds: [tag.spNodeId.toString()], tp,
+          unitId: tag.unitNodeId.toString(), spIds: [tag.spNodeId.toString()], tp, difficultyLevel,
           unconfirmedLowConfidenceFields: [], hasOpenDuplicateFlag: false, mediaResolved: true, missingRequiredFields: [], lastEditedByAi: false,
           paperCode: E2E_K2_BLUEPRINT, spmBound: true,
         })
@@ -215,7 +217,7 @@ async function seedQuestions(prisma: PrismaClient, adminId: bigint, now: Date): 
           data: {
             questionId: question.id, versionNo: 1, status: 'approved', publishedAt: now, type: 'structured', stemMs: spec.stem, numberLabel: label, language: 'ms',
             subjectId: subject.id, educationLevelId: levelId, unitNodeId: tag.unitNodeId, formOrigin: spec.level === 'T5' ? 't5' : 't4',
-            cognitiveLevel: 3, difficultyTp: tp, paperCode: E2E_K2_BLUEPRINT,
+            cognitiveLevel: 3, difficultyTp: tp, difficultyLevel, paperCode: E2E_K2_BLUEPRINT,
             // Labelled as a fixture in the source fields.
             sourceKind: 'publisher', rightsStatus: 'own', examType: 'latihan', examBoard: E2E_K2_FIXTURE_NOTE, setLabel: E2E_K2_FIXTURE_NOTE, createdAt: now, updatedAt: now,
           },

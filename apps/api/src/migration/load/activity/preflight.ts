@@ -35,7 +35,7 @@ export const ACTIVITY_READ_TABLES: readonly string[] = [
   'student_wallets', 'coin_transactions',
   'practice_sessions', 'question_attempts', 'exam_attempts', 'attempt_statuses',
   'banners', 'articles', 'notes', 'videos', 'audio_kbat', 'question_sets',
-  'support_tickets', 'timeline_entries', 'feedback',
+  'support_tickets', 'timeline_entries', 'feedback', 'gifts', 'gift_redemptions', 'headcounts',
   'archive_cloud.question_set_items',
   'archive_cloud.questions', 'archive_cloud.question_options', 'archive_cloud.legacy_canonical_map',
   'archive_cloud.exam_questions', 'archive_cloud.source_papers', 'archive_cloud.exam_papers',

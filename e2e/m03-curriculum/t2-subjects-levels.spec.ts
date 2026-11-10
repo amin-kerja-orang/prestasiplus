@@ -96,7 +96,7 @@ test.describe('M03 S6 subject list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openSubjects(page, gotoApp)
-    await expectTabTitle(page, 'Pengurusan Subjek | PRESTASIPLUS')
+    await expectTabTitle(page, 'Subjek | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Senarai Subjek' })).toBeVisible()
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     const add = page.getByTestId('subjects-add')
@@ -465,7 +465,7 @@ test.describe('M03 S9 level list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openLevels(page, gotoApp)
-    await expectTabTitle(page, 'Pengurusan Tahap Pendidikan | PRESTASIPLUS')
+    await expectTabTitle(page, 'Tahap Pendidikan | PRESTASIPLUS')
     await expect(page.getByRole('heading', { name: 'Senarai Tahap Pendidikan' })).toBeVisible()
     await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
     const add = page.getByTestId('levels-add')

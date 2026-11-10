@@ -271,17 +271,15 @@ describe('test hooks (§6.11)', () => {
   })
 })
 
-describe('S19 access', () => {
-  it('any role may view the ranking (INFERRED for the roles other than the admin)', async () => {
-    for (const id of [ADMIN, GURU, PELAJAR, ADMIN_SEKOLAH, PARENT]) {
-      const r = await dataAs<Ranking>(runtime, id, '/api/rankings')
-      expect(r.total).toBe(3)
+describe('S19 access (R1-MUR-18)', () => {
+  it('only a pupil has a standing; every other role gets no scopes', async () => {
+    for (const id of [ADMIN, GURU, ADMIN_SEKOLAH, PARENT]) {
+      expect(await dataAs<Ranking>(runtime, id, '/api/rankings')).toEqual({ syiling: 0, scopes: [] })
     }
-    // Scope sekolah / daerah use the viewer's school; the ranked students are SMK DEMO (INFERRED).
-    const sekolah = await dataAs<Ranking>(runtime, PELAJAR, '/api/rankings?scope=sekolah')
-    expect(sekolah.total).toBe(3)
-    const other = await dataAs<Ranking>(runtime, ADMIN, '/api/rankings?scope=sekolah')
-    expect(other.total).toBe(0)
+    const mine = await dataAs<Ranking>(runtime, PELAJAR, '/api/rankings')
+    expect(mine.scopes.map((x) => x.scope)).toEqual(['sekolah', 'negeri', 'kebangsaan'])
+    // the query string is ignored (no Skop / Subjek / Tingkatan)
+    expect(await dataAs<Ranking>(runtime, PELAJAR, '/api/rankings?scope=negeri&tingkatan=T4')).toEqual(mine)
   })
 })
 

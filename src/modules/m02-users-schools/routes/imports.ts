@@ -15,11 +15,11 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: 'Import Pengguna Pukal - Admin PRESTASIPLUS',
+      title: 'Import Pengguna',
       header: {
-        title: 'Import Pengguna Pukal',
+        title: 'Import Pengguna',
         subtitle:
-          'Daftarkan guru, ibu bapa, atau admin sekolah secara pukal melalui CSV atau paste',
+          'Import pengguna pukal',
       },
       module: 'M02',
       v2: true,
@@ -33,10 +33,10 @@ const routes: RouteRecordRaw[] = [
       layout: 'admin',
       access: 'auth',
       roles: ['admin'],
-      title: 'Import Pelajar (ID Delima) - Admin PRESTASIPLUS',
+      title: 'Import Pelajar',
       header: {
-        title: 'Import Pelajar (ID Delima)',
-        subtitle: 'Daftarkan pelajar sekolah secara pukal menggunakan ID Delima KPM',
+        title: 'Import Pelajar',
+        subtitle: 'Import pelajar',
       },
       module: 'M02',
       v2: true,

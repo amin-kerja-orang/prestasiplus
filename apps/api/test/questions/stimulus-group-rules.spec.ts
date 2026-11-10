@@ -193,9 +193,9 @@ describe('stimulus group rules (admin, real database)', () => {
       const up = await admin.post('/api/files?purpose=question_image').attach('file', makePng(), { filename: 'rajah.png', contentType: 'image/png' })
       expect(up.status, JSON.stringify(up.body)).toBe(201)
       const token = (up.body.data as { id: string }).id
-      expect((await admin.post('/api/stimuli', { kind: 'image', imageFileId: token })).status).toBe(201)
+      expect((await admin.post('/api/stimuli', { kind: 'image', label: 'Rajah 1', alt: 'Gambar', imageFileId: token })).status).toBe(201)
       const file = (await t.db.query<{ id: string }>(`select id::text id from files where public_id = $1`, [token]))[0]!.id
-      const res = await admin.post('/api/stimuli', { kind: 'image', imageFileId: file })
+      const res = await admin.post('/api/stimuli', { kind: 'image', label: 'Rajah 1', alt: 'Gambar', imageFileId: file })
       expect(res.status).toBe(422)
       expect(res.body.error.fields.imageFileId).toBe(STIMULUS_MESSAGES.image)
     })

@@ -14,12 +14,20 @@
  */
 
 import { dsIconClasses, learnIconClasses } from './ds-icons.ts'
-import { componentDefaults, disabledState, focusRing, selectSlots } from './ui/components.ts'
+import {
+  componentDefaults,
+  disabledState,
+  focusRing,
+  menuSizeVariants,
+  menuVariants,
+  selectSlots,
+} from './ui/components.ts'
 
 /** Filled, borderless field with a 2px primary focus ring (D34). */
 const filled = [
   'bg-elevated text-highlighted placeholder:text-dimmed transition-colors duration-fast',
-  'hover:bg-accented focus:bg-elevated focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
+  // Focus is exactly one indicator: this inset ring. The global outline in ds-extras.css skips fields.
+  'hover:bg-accented focus:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
   // disabled: one token; invalid: error fill + ring; read-only: flat soft layer, no hover.
   'disabled:cursor-not-allowed disabled:opacity-(--ds-disabled-opacity) disabled:hover:bg-elevated',
   'aria-invalid:bg-error-field aria-invalid:ring-2 aria-invalid:ring-inset aria-invalid:ring-error',
@@ -38,14 +46,27 @@ const fieldSize = 'min-h-11 learner:min-h-13 rounded-sm px-3.5 text-base md:staf
 const pagerButton =
   'size-11 min-h-11 min-w-11 justify-center rounded-sm p-0 font-medium text-default shadow-none md:size-10 md:min-h-10 md:min-w-10 hover:bg-elevated hover:text-highlighted'
 
+const squareStaff = 'justify-center p-0 size-11 min-h-11 min-w-11 staff:md:size-10 staff:md:min-h-10 staff:md:min-w-10'
+const squareButton = {
+  xs: squareStaff,
+  sm: squareStaff,
+  md: `${squareStaff} learner:size-13 learner:min-h-13 learner:min-w-13`,
+  lg: 'justify-center p-0 size-12 min-h-12 min-w-12 learner:size-14 learner:min-h-14 learner:min-w-14',
+  xl: squareStaff,
+}
+
 const fieldConfig = {
   slots: { leadingIcon: 'text-muted', trailingIcon: 'text-muted' },
   defaultVariants: { variant: 'soft' },
   variants: {
     variant: { soft: filled },
+    // Every size is a 44px control (the size variants win over the slots, so the floor lives here).
     size: {
+      xs: { base: fieldSize },
+      sm: { base: fieldSize },
       md: { base: fieldSize },
       lg: { base: fieldSize },
+      xl: { base: fieldSize },
     },
   },
   // Error / highlight state: 2px inset ring (the theme default is 1px).
@@ -55,6 +76,17 @@ const fieldConfig = {
 /** Closed field plus its popup list (item states, checked, empty, group labels). */
 const menuField = {
   ...fieldConfig,
+  variants: {
+    ...fieldConfig.variants,
+    ...menuVariants,
+    // Closed-field metrics and the popup row metrics both live in the size variants (they win over stock).
+    size: Object.fromEntries(
+      Object.keys(menuSizeVariants).map((k) => [
+        k,
+        { ...menuSizeVariants[k], base: fieldSize },
+      ]),
+    ),
+  },
   slots: {
     ...fieldConfig.slots,
     ...selectSlots,
@@ -178,8 +210,9 @@ export const uiConfig = {
       // Loading: the leading icon spins (stock); the button shows progress and ignores clicks.
       loading: { true: { base: 'cursor-progress' } },
       size: {
-        xs: { base: 'min-h-9 px-2.5 text-label' },
-        sm: { base: 'min-h-10 px-3.5 text-label' },
+        // Touch targets: 44px below md, the compact sizes from md.
+        xs: { base: 'min-h-11 px-2.5 text-label md:min-h-9' },
+        sm: { base: 'min-h-11 px-3.5 text-label md:min-h-10' },
         md: {
           base: 'min-h-11 gap-2 px-4 text-label learner:min-h-13 learner:rounded-md learner:px-5 learner:text-base',
         },
@@ -192,6 +225,13 @@ export const uiConfig = {
       },
     },
     compoundVariants: [
+      // Icon-only buttons are true squares: 44px (40px from md) on staff, the learner height scale for
+      // md/lg. Same footprint as a pager control and DsRowActions.
+      ...(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((size) => ({
+        square: true,
+        size,
+        class: squareButton[size],
+      })),
       { variant: ['outline', 'subtle'], class: 'ring-0' },
       {
         color: ['primary', 'neutral'],
@@ -207,6 +247,8 @@ export const uiConfig = {
       },
       { color: 'secondary', variant: 'solid', class: 'bg-highlight text-on-highlight' },
       { color: ['error', 'success', 'info', 'warning'], variant: 'solid', class: 'text-on-sem' },
+      // Link buttons ("Lihat semua →" beside a card title) never wrap or get squeezed by the title.
+      { variant: 'link', class: 'shrink-0 whitespace-nowrap' },
       // Staff: a primary button (the default colour) is the page's main action, so it is solid even
       // when the caller leaves the variant at the tonal default. Secondary actions say `color="neutral"`.
       {
@@ -276,6 +318,14 @@ export const uiConfig = {
       trigger: `text-label transition-colors duration-fast hover:text-highlighted ${disabledState} ${focusRing}`,
     },
     variants: {
+      // Every tab (pill, link...) is a 44px touch target; the size variants come after the slots, so it lives here.
+      size: {
+        xs: { trigger: 'min-h-11' },
+        sm: { trigger: 'min-h-11' },
+        md: { trigger: 'min-h-11' },
+        lg: { trigger: 'min-h-11' },
+        xl: { trigger: 'min-h-11' },
+      },
       variant: {
         pill: {
           list: 'bg-elevated rounded-md p-1 gap-1',
@@ -317,7 +367,7 @@ export const uiConfig = {
       container: 'min-h-11 min-w-11 justify-center',
       // Label (+ caption) centred on the 44px control box: box and text share one axis.
       wrapper: 'ms-1 flex min-h-11 min-w-0 flex-col justify-center has-data-[slot=description]:justify-start has-data-[slot=description]:pt-3',
-      base: "relative transition-colors duration-fast after:absolute after:-inset-2 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
+      base: "relative transition-colors duration-fast after:absolute after:-inset-x-2 after:-inset-y-3 after:content-[''] hover:brightness-95 aria-invalid:ring-2 aria-invalid:ring-error",
       thumb: 'shadow-ds-xs',
       label: 'text-label',
       description: 'text-caption text-muted',
@@ -325,7 +375,7 @@ export const uiConfig = {
   },
   navigationMenu: {
     slots: {
-      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted data-[state=open]:bg-elevated ${disabledState} ${focusRing}`,
+      link: `min-h-11 gap-3 rounded-md px-3 text-label transition-colors duration-fast hover:bg-elevated hover:text-highlighted focus-visible:before:bg-elevated focus-visible:before:outline-0 focus-visible:text-highlighted focus-visible:outline-none data-[state=open]:bg-elevated ${disabledState}`,
       childLink: 'min-h-11 px-3 text-label',
       linkLeadingIcon: 'size-5',
     },
@@ -344,9 +394,12 @@ export const uiConfig = {
     slots: {
       overlay: 'z-50 bg-overlay',
       content: 'z-50 divide-y-0',
-      header: 'p-5',
-      body: 'p-5',
-      footer: 'p-5',
+      // One rhythm: title row 24px from the edges, 16px to the body, footer 24px from the bottom. The
+      // close X is centred on the title row and its glyph sits on the 24px content edge.
+      header: 'min-h-0 px-6 pt-6 pb-0',
+      body: 'px-6 py-4 sm:px-6 sm:py-4',
+      footer: 'px-6 pb-6 pt-0',
+      close: 'top-4 end-3 staff:md:end-3.5',
       title: 'text-heading text-highlighted',
       description: 'text-body text-muted',
     },
@@ -356,7 +409,14 @@ export const uiConfig = {
   },
   // Overlays sit above the shell chrome (sidebar and bars are z-30): modal surfaces never hide behind it.
   slideover: {
-    slots: { overlay: 'z-50 bg-overlay', content: 'z-50 divide-y-0 shadow-modal ring-0' },
+    slots: {
+      overlay: 'z-50 bg-overlay',
+      content: 'z-50 divide-y-0 shadow-modal ring-0',
+      header: 'min-h-0 px-6 pt-6 pb-0',
+      body: 'px-6 py-4 sm:px-6 sm:py-4',
+      footer: 'px-6 pb-6 pt-0',
+      close: 'top-4 end-3 staff:md:end-3.5',
+    },
   },
   drawer: {
     slots: { overlay: 'z-50 bg-overlay', content: 'z-50 bg-elevated shadow-modal ring-0' },
@@ -371,8 +431,8 @@ export const uiConfig = {
         'divide-y-0 [&>tr:nth-child(even)]:bg-soft [&>tr[data-selectable=true]:hover]:bg-elevated [&>tr[data-selected=true]]:bg-primary-soft',
       tr: `transition-colors duration-fast ${focusRing}`,
       empty: 'py-8 text-center text-body text-muted',
-      th: 'px-4 py-3 text-th text-muted',
-      td: 'px-4 py-3 text-body tabular-nums',
+      th: 'px-4 py-3 sm:px-5 text-th text-muted',
+      td: 'px-4 py-3 sm:px-5 text-body tabular-nums',
     },
   },
 

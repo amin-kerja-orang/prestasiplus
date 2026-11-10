@@ -17,7 +17,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { QuestionsService } from '../../src/modules/questions'
+import { QuestionsRepository, QuestionsService, trackingAFilter } from '../../src/modules/questions'
 import { ServabilityReadsService } from '../../src/modules/questions/serving'
 import { OverviewCache, SwrSlot } from '../../src/modules/questions/serving/overview-cache'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
@@ -374,17 +374,41 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     for (const c of res.body.data as ServabilityLatihTubiCell[]) expect(c.status).toBe('open')
   })
 
-  it('FR-ADM-Q02.4: the switch follows the flag store once it exists; a key with no row is ON', async () => {
-    await t.db.query(`create table feature_flags (key text primary key, enabled boolean not null)`)
+  it('FR-ADM-Q02.4: the switch follows the flag store; a key with no row is ON', async () => {
+    // The table is created by migration 0250; the test only moves the latih-tubi row and restores it.
+    type Row = { label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }
+    const [before] = await t.db.query<Row>(
+      `select label_ms, audience, enabled, locked, sort_order from feature_flags where key = 'latih-tubi'`,
+    )
+    const put = (r: Row) =>
+      t.db.query(
+        `insert into feature_flags (key, label_ms, audience, enabled, locked, sort_order) values ('latih-tubi', $1, $2, $3, $4, $5)`,
+        [r.label_ms, r.audience, r.enabled, r.locked, r.sort_order],
+      )
     try {
       const read = async () => (await admin.get('/api/admin/servability/lanes/latih-tubi?pageSize=5')).body as { meta: { switchEnabled: boolean }; data: ServabilityLatihTubiCell[] }
+      await t.db.query(`delete from feature_flags where key = 'latih-tubi'`)
       expect((await read()).meta.switchEnabled).toBe(true)
-      await t.db.query(`insert into feature_flags (key, enabled) values ('latih-tubi', false)`)
+      await put({ label_ms: before?.label_ms ?? 'Latih Tubi', audience: before?.audience ?? 'pelajar', enabled: false, locked: false, sort_order: before?.sort_order ?? 0 })
       const closed = await read()
       expect(closed.meta.switchEnabled).toBe(false)
       for (const c of closed.data) expect(c.status).toBe('closed')
     } finally {
-      await t.db.query(`drop table feature_flags`)
+      await t.db.query(`delete from feature_flags where key = 'latih-tubi'`)
+      if (before) await put(before)
+    }
+  })
+
+  it('hub: the Latih Tubi card carries flagOff while its Kawalan Ciri key is OFF (V2 "Flag OFF" badge)', async () => {
+    const [before] = await t.db.query<{ enabled: boolean }>(`select enabled from feature_flags where key = 'latih-tubi'`)
+    const card = async () => parseData(await admin.get('/api/admin/servability/overview'), ServabilityOverviewSchema).cards.find((c) => c.lane === 'latih-tubi')!
+    try {
+      await t.db.query(`update feature_flags set enabled = true where key = 'latih-tubi'`)
+      expect((await card()).flagOff).toBeUndefined()
+      await t.db.query(`update feature_flags set enabled = false where key = 'latih-tubi'`)
+      expect((await card()).flagOff).toBe(true)
+    } finally {
+      await t.db.query(`update feature_flags set enabled = $1 where key = 'latih-tubi'`, [before?.enabled ?? true])
     }
   })
 
@@ -396,7 +420,7 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     expect(full.title).toMatch(/ · 2026 Set 1$/)
     expect(full.meta).toBe(`#${made.fullSet} · ramalan · 2 soalan`)
     expect(short.attention).toHaveLength(1)
-    expect(short.attention[0]).toMatch(/^Hanya 1 daripada 2 soalan — \d+ tersedia untuk diisi$/)
+    expect(short.attention).toEqual(['Hanya 1 daripada 2 soalan'])
     const drafted = lane.rows.find((r) => r.id === made.draftSet)!
     expect(drafted.meta).toBe(`#${made.draftSet} · ramalan · 1 soalan`)
     expect(drafted.attention[0]).toMatch(/^Hanya 1 daripada 2 soalan/)
@@ -524,15 +548,15 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
   })
 
   it('D90: what could fill a set counts a stimulus group once', async () => {
-    const available = async (): Promise<number> => {
-      const lane = await wholeLane<ServabilityLaneRow>('tracking-a', ServabilityLaneRowSchema)
-      return Number(/— (\d+) tersedia/.exec(lane.rows.find((r) => r.id === made.shortSet)!.attention[0]!)![1])
-    }
+    const available = (): Promise<number> => t.app.get(QuestionsRepository).eligibleUnitCount(trackingAFilter(tag.subjectId))
     const before = await available()
     const first = await approve('groupOne', 'Soalan pertama kumpulan untuk unit D90.')
     const second = await approve('groupTwo', 'Soalan kedua kumpulan untuk unit D90.')
     expect(await available()).toBe(before + 2)
     const [group] = await q(`insert into stimulus_groups (label) values ('Kumpulan D90') returning id::text id`)
+    // A group with no stimulus is incomplete, and an incomplete group is no candidate (D-10).
+    const [stimulus] = await q(`insert into stimuli (kind, label, body_ms) values ('passage', 'Kumpulan D90', 'Petikan') returning id::text id`)
+    await q(`insert into stimulus_group_stimuli (group_id, stimulus_id, position) values ($1, $2, 1)`, [group!.id, stimulus!.id])
     for (const [i, id] of [first, second].entries()) await q(`update questions set group_id = $1, group_position = $2 where id = $3`, [group!.id, i + 1, id])
     expect(await available()).toBe(before + 1)
   })

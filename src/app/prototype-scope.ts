@@ -198,7 +198,8 @@ export const STUDENT_ITEMS: readonly MatrixItem[] = [
 export const TEACHER_ITEMS: readonly MatrixItem[] = [
   // [S6 begin]
   item(1, 'Command Center', p('/guru/command-center'), p('/guru/remedial-progress')),
-  item(2, 'Dashboard Guru', p('/guru', true)),
+  // /guru/misi-harian and /guru/set-soalan: child pages of the Dashboard checklist / tile "Set Soalan" ("Urus set →", R1-GUR-8b); no sidebar item.
+  item(2, 'Dashboard Guru', p('/guru', true), p('/guru/misi-harian'), p('/guru/set-soalan')),
   // [S6 end]
   // [S10 begin]
   item(3, 'Headcount', p('/headcount')),
@@ -221,7 +222,7 @@ export const TEACHER_ITEMS: readonly MatrixItem[] = [
   item(41, 'Pelajar Saya', p('/guru/pelajar')),
   item(42, 'Laporan', p('/guru/laporan')),
   item(43, 'Laporan Mingguan', p('/guru/laporan-mingguan-kelas'), p('/laporan-mingguan')),
-  item(44, 'Sumbang Soalan', p('/guru/soalan'), p('/guru/soalan-guru'), p('/guru/soalan-berstruktur'), p('/admin/soalan-gambar')),
+  item(44, 'Sumbang Soalan', p('/guru/soalan'), p('/guru/soalan-guru'), p('/guru/soalan-berstruktur'), p('/guru/databank'), p('/admin/soalan-gambar')),
   // [S6 end]
 ]
 
@@ -363,7 +364,7 @@ export function shellHomePath(role: Role | null): string {
 export function scopeHomePath(role: Role | null): string {
   if (role === 'teacher') return '/guru'
   if (role === 'school_admin') return '/admin-sekolah'
-  // M17 has no '/admin' dashboard page yet; the admin Command Center is the monitoring home.
+  // '/admin' is now a role-aware fallback in guards.ts and the old redirect is gone; the admin Command Center is still the monitoring home.
   if (role === 'admin') return '/admin/command-center'
   if (role === null) return '/login'
   // A role outside the prototype (e.g. restored from storage) has no dashboard: sign out. `/logout`

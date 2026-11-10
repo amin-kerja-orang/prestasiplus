@@ -300,7 +300,6 @@ const cardFields: CardField[] = [
           v-model="category"
           name="category"
           aria-label="Kategori"
-          class="md:w-48"
           data-testid="admin-articles-category"
         >
           <option value="all">Semua Kategori</option>
@@ -312,7 +311,6 @@ const cardFields: CardField[] = [
           v-model="published"
           name="published"
           aria-label="Status"
-          class="md:w-44"
           data-testid="admin-articles-published"
         >
           <option v-for="o in PUBLISHED_FILTER_OPTIONS" :key="o.value" :value="o.value">

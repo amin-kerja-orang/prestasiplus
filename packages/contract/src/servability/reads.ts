@@ -104,6 +104,7 @@ export const ServabilityHubCardSchema = z
     attentionLines: z.array(ServabilityLaneAttentionSchema).optional().meta({ description: 'The attention lines of the card; empty when nothing needs attention.' }),
     attentionOpen: z.literal(true).optional().meta({ description: 'No attention rule is decided for this lane yet: show neither a count nor "Semua elok".' }),
     failed: z.literal(true).optional().meta({ description: 'This card could not be computed; the other cards stay (SR-3).' }),
+    flagOff: z.literal(true).optional().meta({ description: 'The Kawalan Ciri key that gates this lane for pupils is OFF (V2 "Flag OFF" badge). Absent when ON or when the lane has no key.' }),
   })
   .meta({ id: 'ServabilityHubCard' })
 export type ServabilityHubCard = z.infer<typeof ServabilityHubCardSchema>
@@ -215,9 +216,16 @@ export type ServabilityLaneRow = z.infer<typeof ServabilityLaneRowSchema>
 /** The switch state of a Latih Tubi cell, shown as a badge (`Dibuka`, `Ditutup`); it is edited in Kawalan Ciri only. */
 export const SERVABILITY_LATIH_TUBI_SWITCH_LABELS = { open: 'Dibuka', closed: 'Ditutup' } as const
 
-/** The Perhatian sentence of an incomplete Tracking A set. `available` counts servable questions and groups (D90). */
-export const trackingSetAttentionMs = (filled: number, size: number, available: number): string =>
-  `Hanya ${String(filled)} daripada ${String(size)} soalan — ${String(available)} tersedia untuk diisi`
+/**
+ * The Tracking A lane page. `subjects` filter the rows (field 02-01, every active subject); `setSubjects` are the options of `Subjek` in the editor (field
+ * 17-01): the configured SPM subjects without BM and BI, which have no objective sets (D-11).
+ */
+export const ServabilityTrackingLaneSchema = servabilityLaneListOf(ServabilityLaneRowSchema).extend({
+  setSubjects: z.array(ServabilityLaneSubjectSchema),
+})
+
+/** The Perhatian sentence of an incomplete Tracking A set (30 Q-17, D-9). */
+export const trackingSetAttentionMs = (filled: number, size: number): string => `Hanya ${String(filled)} daripada ${String(size)} soalan`
 
 /** The Perhatian text of a Latih Tubi cell. */
 export const latihTubiCellAttentionMs = (n: number): string => `${n.toLocaleString('en-US')} tidak boleh ditanda`

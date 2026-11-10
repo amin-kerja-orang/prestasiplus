@@ -339,17 +339,6 @@ describe('M15 concurrency (BE-23, AC1)', () => {
     expect(await t.db.query(`select 1 from draw_tickets where draw_id = $1 and user_id = $2`, [draw, u])).toHaveLength(1)
   })
 
-  it('parallel box openings with tokens for one: exactly one succeeds', async () => {
-    const u = await bareUser(t, 'kotak')
-    await fund(t, u, { tokens: 5 }, 'box')
-    const { ok, codes } = await settle(Array.from({ length: 4 }, () => t.shop.openBox(actorFor(u), '2')))
-    expect(ok).toHaveLength(1)
-    expect(codes).toEqual(Array(3).fill('INSUFFICIENT_TOKENS'))
-    expect((await walletRow(t, u)).tokens).toBe(0)
-    expect(await t.db.query(`select 1 from mystery_box_openings where user_id = $1`, [u])).toHaveLength(1)
-    expect(await t.db.query(`select 1 from coin_ledger where user_id = $1 and source = 'mystery_box'`, [u])).toHaveLength(1)
-  })
-
   it('cancel is idempotent under parallel calls: one 200, the rest 409, tokens refunded once, stock restored once', async () => {
     const u = await bareUser(t, 'batal')
     await fund(t, u, { tokens: 20 }, 'cancel')

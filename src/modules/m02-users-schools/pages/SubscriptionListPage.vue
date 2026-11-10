@@ -225,7 +225,6 @@ const COLUMNS: TableColumn<SubRow>[] = [
         v-model="status"
         name="status"
         aria-label="Status"
-        class="md:w-48"
         data-testid="subs-status"
       >
         <option value="">Semua Status</option>
@@ -237,7 +236,6 @@ const COLUMNS: TableColumn<SubRow>[] = [
         v-model="formLevel"
         name="form_level"
         aria-label="Tingkatan"
-        class="md:w-48"
         data-testid="subs-level"
       >
         <option value="">Semua Tingkatan</option>

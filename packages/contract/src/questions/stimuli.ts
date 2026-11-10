@@ -57,6 +57,10 @@ export const STIMULUS_MESSAGES = {
   stimulusServed: 'Rangsangan ini sedang dipaparkan kepada murid melalui soalan yang diterbitkan. Cipta rangsangan baharu dan gunakan pada draf soalan, atau arkibkan soalan itu dahulu.',
   membersInvalid: 'Soalan tidak sah, berulang atau tidak boleh dikumpulkan.',
   memberTaken: 'Soalan ini sudah berada dalam kumpulan rangsangan lain.',
+  /** G-01 (PRD 30:660, 45:416): the label is required on the API request. */
+  labelRequired: 'Sila isi label rangsangan.',
+  /** G-06 / ALT_REQUIRED (PRD 30:660, 45:421, 45:676): an image kind needs alt text. */
+  altRequired: 'Sila isi teks alternatif untuk imej ini.',
   memberExists: 'Soalan ini sudah berada dalam kumpulan ini.',
   memberMissing: 'Soalan ini bukan ahli kumpulan ini.',
   orderInvalid: 'Susunan mesti menyenaraikan semua soalan kumpulan tepat sekali.',
@@ -103,33 +107,47 @@ const Table = z.object({
 
 const imageFile = z.string().min(1).max(64).meta({ description: 'Public token (or id) of a file uploaded with `POST /files?purpose=question_image`.' })
 
-/** `POST /stimuli`. Strict: an unknown key (for example `svg`) is a 422. */
+const createShape = {
+  kind: z.enum(QUESTION_STIMULUS_KINDS, { error: STIMULUS_MESSAGES.kind }).meta({ description: 'V2 `Jenis rangsangan` (default passage in the Studio).' }),
+  label: Label.nullish().meta({ description: 'G-01: required on `POST /stimuli` (a missing, empty or blank label is a 422 on `label`, checked with the other rules so every missing field is reported at once).' }),
+  caption: Caption.nullish().meta({ description: 'V2 `Kapsyen (pilihan)`.' }),
+  captionEn: Caption.nullish().meta({ description: 'English twin of the caption (DM-50 `caption_en`).' }),
+  body: Body.nullish(),
+  alt: Alt.nullish(),
+  sourceCitation: Source.nullish(),
+  style: Style.nullish(),
+  tableData: Table.nullish(),
+  imageFileId: imageFile.nullish(),
+}
+type CreateShape = z.infer<z.ZodObject<typeof createShape>>
+/** The content rules of each kind (shared by the create request and the regroup stimulus). */
+const kindRules = (v: CreateShape, bad: (path: string, message: string) => void): void => {
+  if (v.kind === 'passage' && !v.body) bad('body', STIMULUS_MESSAGES.bodyRequired)
+  if (v.kind === 'table' && !v.tableData && !v.imageFileId) bad('tableData', STIMULUS_MESSAGES.tableRequired)
+  if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(v.kind) && !v.imageFileId) bad('imageFileId', STIMULUS_MESSAGES.imageRequired)
+}
+
+/** `POST /stimuli`. Strict: an unknown key (for example `svg`) is a 422. G-01 label and G-06 alt (image kinds) are required here. */
 export const StimulusCreateRequestSchema = z
-  .strictObject({
-    kind: z.enum(QUESTION_STIMULUS_KINDS, { error: STIMULUS_MESSAGES.kind }).meta({ description: 'V2 `Jenis rangsangan` (default passage in the Studio).' }),
-    label: Label.nullish(),
-    caption: Caption.nullish().meta({ description: 'V2 `Kapsyen (pilihan)`.' }),
-    captionEn: Caption.nullish().meta({ description: 'English twin of the caption (DM-50 `caption_en`).' }),
-    body: Body.nullish(),
-    alt: Alt.nullish(),
-    sourceCitation: Source.nullish(),
-    style: Style.nullish(),
-    tableData: Table.nullish(),
-    imageFileId: imageFile.nullish(),
-  })
+  .strictObject(createShape)
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
-    if (v.kind === 'passage' && !v.body) bad('body', STIMULUS_MESSAGES.bodyRequired)
-    if (v.kind === 'table' && !v.tableData && !v.imageFileId) bad('tableData', STIMULUS_MESSAGES.tableRequired)
-    if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(v.kind) && !v.imageFileId) bad('imageFileId', STIMULUS_MESSAGES.imageRequired)
+    if (!v.label) bad('label', STIMULUS_MESSAGES.labelRequired)
+    kindRules(v, bad)
+    if ((IMAGE_STIMULUS_KINDS as readonly string[]).includes(v.kind) && !v.alt) bad('alt', STIMULUS_MESSAGES.altRequired)
   })
   .meta({ id: 'StimulusCreateRequest' })
+/**
+ * The same body without the G-01 label and G-06 alt rules: what `POST /admin/questions/regroup` has always accepted for a new `stimulus`
+ * (no PRD line requires the label or alt on that path). Not an API shape of its own: the service parses with it.
+ */
+export const StimulusCreateLegacySchema = z.strictObject(createShape).superRefine((v, ctx) => kindRules(v, (path, message) => ctx.addIssue({ code: 'custom', path: [path], message })))
 export type StimulusCreateRequest = z.infer<typeof StimulusCreateRequestSchema>
 
 /** `PUT /stimuli/{id}`: only the keys sent change; `null` clears an optional field. The kind never changes. */
 export const StimulusUpdateRequestSchema = z
   .strictObject({
-    label: Label.nullable().optional(),
+    label: Label.nullable().optional().refine((v) => v === undefined || (v !== null && v.length > 0), { message: STIMULUS_MESSAGES.labelRequired }).meta({ description: 'G-01: cannot be cleared (null or blank is a 422 on `label`).' }),
     caption: Caption.nullable().optional(),
     captionEn: Caption.nullable().optional(),
     body: Body.nullable().optional().meta({ description: 'Replaces the whole text (ms and en): send both languages to keep both; null clears (only allowed when the kind does not need it).' }),

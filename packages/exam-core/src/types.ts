@@ -635,6 +635,8 @@ export interface HistoryRow {
   durationSeconds: number
   score?: number
   max?: number
+  /** Syiling credited for the attempt, as the server reports it. */
+  coins?: number
 }
 
 export interface QuestionCheck {

@@ -285,3 +285,56 @@ describe('the revision drill: wrong first, then a top-up from the weakest topics
     expect((await pelajar.post('/api/practice/sessions', { mode: 'revision', subjectCode: 'MATH' })).status).toBe(422)
   })
 })
+
+/**
+ * T-C6: history with no question link. A migrated V2 answer is a snapshot (`question_id` null, subject / chapter / level copied
+ * at answer time, `historical`), and the demo seed writes the same shape. Such a pupil is still weak in a subject and must
+ * still get a card and a drill: the drill is filled from the bank by the copied dimensions.
+ */
+describe('history without a question link (migrated V2 snapshots)', () => {
+  /** `n` migrated-shape answers: no question, subject MATH, the level and chapter copied, `correct` of them right. */
+  async function historical(n: number, correct: number, chapter: string | null): Promise<void> {
+    await t.db.query(
+      `insert into practice_answers (user_id, question_id, subject_id, education_level_id, chapter_id, is_correct, answered_at, mode, historical)
+       select $1, null, $2, $3, $4, g <= $5, '2026-10-01T10:00:00+08:00'::timestamptz + (g || ' seconds')::interval, 'latih_tubi', true from generate_series(1, $6::int) g`,
+      [me, w.subject.math, w.level.d1, chapter, correct, n],
+    )
+  }
+
+  it('a weak chapter of the snapshots is a card and its drill is the bank questions of that chapter', async () => {
+    const inChapter = Array.from({ length: 5 }, () => t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1, chapterId: w.chapter.c1 }))
+    const elsewhere = t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1, chapterId: w.chapter.c2 })
+    await historical(10, 4, w.chapter.c1)
+    expect((await get()).needed).toEqual([{ subjectCode: 'MATH', subjectName: expect.any(String), answered: 10, accuracy: 40, target: 60 }])
+    const started = await startSession(pelajar, { mode: 'revision', subjectCode: 'MATH' })
+    const ids = started.questions.map((q) => q.id)
+    // The weak chapter first (id ascending), then the subject at the pupil's level fills the rest; no duplicates.
+    expect(ids.slice(0, 5)).toEqual(inChapter)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toContain(elsewhere)
+  })
+
+  it('snapshots with no chapter at all: the drill is a stable draw of the subject at the pupil level', async () => {
+    const bank = Array.from({ length: 6 }, () => t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1 }))
+    await historical(10, 3, null)
+    expect((await get()).needed).toHaveLength(1)
+    const first = (await startSession(pelajar, { mode: 'revision', subjectCode: 'MATH' })).questions.map((q) => q.id)
+    expect(first).toHaveLength(6)
+    expect(new Set(first)).toEqual(new Set(bank))
+    expect(first).toEqual((await startSession(pelajar, { mode: 'revision', subjectCode: 'MATH' })).questions.map((q) => q.id))
+  })
+
+  it('a strong subject is not a card, and a bank question is never invented for a subject the pupil never answered', async () => {
+    t.bank.add({ subjectId: w.subject.math, levelId: w.level.d1 })
+    await historical(10, 8, null)
+    expect((await get()).needed).toEqual([])
+    const res = await pelajar.post('/api/practice/sessions', { mode: 'revision', subjectCode: 'BM' })
+    expect(res.status).toBe(422)
+  })
+
+  it('an empty bank still gives no card and a 422 (a card and its drill agree)', async () => {
+    await historical(10, 2, w.chapter.c1)
+    expect((await get()).needed).toEqual([])
+    expect((await pelajar.post('/api/practice/sessions', { mode: 'revision', subjectCode: 'MATH' })).status).toBe(422)
+  })
+})

@@ -17,12 +17,12 @@ import {
   DsCluster,
   DsDefinitionList,
   DsDialog,
-  DsFilterBar,
   DsFormField,
   DsGrid,
   DsLoadError,
   DsNativeSelect,
   DsPage,
+  DsPillNav,
   DsRowActions,
   DsStack,
   DsStatRow,
@@ -41,6 +41,8 @@ import StudentViewDrawer from '../builder/components/StudentViewDrawer.vue'
 import { builderMessage, BuilderError, type SubjektifQuery } from '../builder/server/api'
 import { builderServer } from '../builder/server/client'
 import { kontrakServer } from '../kontrak/server/client'
+import SubjektifDokumenList from './SubjektifDokumenList.vue'
+import SubjektifFilterBar from './SubjektifFilterBar.vue'
 import { SUBJEKTIF_ROUTES } from './ui'
 
 type Row = AdminPaperSummary & Record<string, unknown>
@@ -53,6 +55,14 @@ const personality = usePersonality()
 const ph = (name: string) => resolveIcon(name, personality.value)
 const flash = useFlash()
 const fill = (text: string, title: string): string => text.replace('{title}', title)
+
+/* ------------------------------------------------------------------- one list, two kinds */
+// The question-based papers (V3) and the V2 page-image documents (migration 0265) share this screen, its menu entry and its filters.
+const kind = ref<'soalan' | 'dokumen'>('soalan')
+const KINDS = [
+  { key: 'soalan', label: 'Kertas Soalan' },
+  { key: 'dokumen', label: 'Kertas Imbasan' },
+] as const
 
 /* --------------------------------------------------------------------------------- list */
 const filters = reactive({ subject: '', kertas: '', status: '' })
@@ -307,26 +317,21 @@ async function save(): Promise<void> {
 <template>
   <DsPage layout="list" data-testid="sj-list-page">
     <template #actions>
-      <UButton :icon="ph('file-plus')" label="Baharu" data-testid="sj-new" @click="openCreate" />
+      <UButton v-if="kind === 'soalan'" :icon="ph('file-plus')" label="Baharu" data-testid="sj-new" @click="openCreate" />
     </template>
 
+    <DsPillNav :items="KINDS" :active="kind" label="Jenis kertas" testid-prefix="sj-kind" @select="kind = $event" />
+
+    <SubjektifDokumenList v-if="kind === 'dokumen'" :subject="applied.subject" :kertas="applied.kertas" :status="applied.status">
+      <template #filters>
+        <SubjektifFilterBar v-model:subject="filters.subject" v-model:kertas="filters.kertas" v-model:status="filters.status" :subjects="subjectItems" @apply="applyFilters" @reset="resetFilters" />
+      </template>
+    </SubjektifDokumenList>
+
+    <template v-else>
     <DsStatRow :items="stats" density="compact" :cols="3" aria-label="Ringkasan kertas subjektif" />
 
-    <DsFilterBar :show-reset="false" apply-label="Tapis" data-testid="sj-filters" @apply="applyFilters" @reset="resetFilters">
-      <DsNativeSelect v-model="filters.subject" aria-label="Subjek" data-testid="sj-filter-subject">
-        <option value="">Semua Subjek</option>
-        <option v-for="s in subjectItems" :key="s.code" :value="s.code">{{ s.name }}</option>
-      </DsNativeSelect>
-      <DsNativeSelect v-model="filters.kertas" aria-label="Kertas" data-testid="sj-filter-kertas">
-        <option value="">Semua Kertas</option>
-        <option v-for="k in KERTAS" :key="k" :value="String(k)">Kertas {{ k }}</option>
-      </DsNativeSelect>
-      <DsNativeSelect v-model="filters.status" aria-label="Status" data-testid="sj-filter-status">
-        <option value="">Semua Status</option>
-        <option value="terbit">Terbit</option>
-        <option value="draf">Draf</option>
-      </DsNativeSelect>
-    </DsFilterBar>
+    <SubjektifFilterBar v-model:subject="filters.subject" v-model:kertas="filters.kertas" v-model:status="filters.status" :subjects="subjectItems" @apply="applyFilters" @reset="resetFilters" />
 
     <DsLoadError v-if="list.error.value" message="Tidak dapat memuatkan senarai kertas." @retry="list.reload()" />
     <DsDataTable
@@ -389,6 +394,7 @@ async function save(): Promise<void> {
         <DsRowActions :actions="actionsOf(row as Row)" :testid="`sj-menu-${String(row.id)}`" />
       </template>
     </DsDataTable>
+    </template>
 
     <DsDialog v-model:open="formOpen" :title="editing ? 'Sunting' : 'Baharu'" :loading="saving" data-testid="sj-form-dialog">
       <DsStack as="form" gap="md" data-testid="sj-form" @submit.prevent="save">

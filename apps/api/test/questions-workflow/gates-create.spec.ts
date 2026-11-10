@@ -15,6 +15,7 @@ const passing = (status: CreateGateInput['status'], over: Partial<CreateGateInpu
   unitId: '1',
   spIds: ['1'],
   tp: 3,
+  difficultyLevel: 3, // Kesukaran is required on its own (row 9)
   unconfirmedLowConfidenceFields: [],
   hasOpenDuplicateFlag: false,
   mediaResolved: true,

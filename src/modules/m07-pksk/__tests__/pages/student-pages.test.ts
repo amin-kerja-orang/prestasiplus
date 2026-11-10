@@ -102,8 +102,8 @@ describe('routes', () => {
       expect(r.meta?.layout).toBe('user')
     }
     expect(studentRoutes[0]?.meta?.header).toEqual({
-      title: 'PKSK',
-      subtitle: 'Persediaan Kemasukan SBP / MRSM / SMKA',
+      title: 'PKSK PRO',
+      subtitle: 'Bank soalan Pentaksiran Kompetensi & Sijil Kemahiran',
     })
   })
 })

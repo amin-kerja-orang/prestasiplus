@@ -35,19 +35,25 @@ const S3 = '/admin/kirkpatrick/learning'
 
 const TITLES = {
   s1: [
-    'Kirkpatrick Evaluation Dashboard',
+    'Kirkpatrick',
+    'Kirkpatrick',
+    'Model penilaian Kirkpatrick — 4 tahap keberkesanan',
+  ],
+  // /guru mount: the page is headed "Kirkpatrick Evaluation" (route overview.ts).
+  s1Guru: [
+    'Kirkpatrick',
     'Kirkpatrick Evaluation',
-    'Analisis Keberkesanan Platform — Model Penilaian 4 Tahap',
+    'Model penilaian Kirkpatrick — 4 tahap keberkesanan',
   ],
   s2: [
-    'Tahap 1: Reaksi — Kirkpatrick',
-    'Tahap 1: Reaksi',
-    'Kepuasan dan persepsi pengguna terhadap platform',
+    'T1: Reaksi',
+    'T1: Reaksi',
+    'Kirkpatrick Tahap 1 — Kepuasan pengguna',
   ],
   s3: [
-    'Tahap 2: Pembelajaran — Kirkpatrick',
-    'Tahap 2: Pembelajaran',
-    'Peningkatan pengetahuan, kemahiran, dan kefahaman pelajar',
+    'T2: Pembelajaran',
+    'T2: Pembelajaran',
+    'Kirkpatrick Tahap 2 — Peningkatan kemahiran',
   ],
 } as const
 
@@ -749,7 +755,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/guru/kirkpatrick')
-    await header(page, TITLES.s1)
+    await header(page, TITLES.s1Guru)
     await expectLevels(page, S1_PLATFORM)
     await expect(page.getByTestId('kirk-level-t2')).toHaveAttribute(
       'href',
@@ -774,7 +780,7 @@ test.describe('M12 S1-S3: admin', MODULE, () => {
     if (isDesktopShell(page)) {
       // FR-M12-04 / DV-M12-12: the item of the current view is active in the sidebar on the twin too.
       await expect(page.getByTestId('shell-admin-sidebar').locator('a.active')).toContainText(
-        'Tahap 1: Reaksi',
+        'T1: Reaksi',
       )
     }
   })
@@ -853,7 +859,7 @@ test.describe('M12 S1-S3: guru (provisional, SRS §9 Q-M12-1)', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(GURU)
       await gotoApp('/guru/kirkpatrick')
-      await header(page, TITLES.s1)
+      await header(page, TITLES.s1Guru)
       await expect(page.getByTestId('shell-admin-header')).toBeVisible()
       await expectLevels(page, S1_PLATFORM)
       await expect(page.getByTestId('kirk-level-t3')).toHaveAttribute(

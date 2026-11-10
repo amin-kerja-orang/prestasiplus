@@ -82,10 +82,10 @@ describe('entry points other modules call (AC2, card open question 3)', () => {
       const u = await bareUser(t, 'Selesai')
       t.facts.day = { sessions: [{ sessionId: 's1', mode: 'random', correct: 12, total: 12, timeSpent: 660 }], chapterIds: ['1', '2', '3'] }
       const first = await t.gamification.settleChallenges(u, { isTest: false })
-      // sessions 1, correct 12, best_accuracy 100, best correct 12, chapters 3, minutes 11 -> Mula Hari Ini, Rajin? (needs 3 sessions: no)
+      // sessions 1, correct 12, best_accuracy 100, best correct 12, chapters 3, minutes 11 -> Mula Hari Ini, Rajin? (needs 3 sessions: no); the S7-T04 rows add Ketepatan 80% and 3 Topik Berbeza (Selesai 5 Kuiz needs 5 sessions, Belajar 15 Minit 15 minutes: no)
       const titles = (await t.db.query<{ title: string }>(`select c.title from challenge_completions cc join challenges c on c.id = cc.challenge_id where cc.user_id = $1 order by cc.id`, [u])).map((r) => r.title)
-      expect(titles).toEqual(['Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Mula Hari Ini', 'Jawab 5 Betul', 'Latihan 10 Minit', 'Ketepatan 90%'])
-      expect(first.completedIds).toHaveLength(7)
+      expect(titles).toEqual(['Si Tepat', 'Penjelajah Topik', 'Kilat Matematik', 'Ketepatan 80%', '3 Topik Berbeza', 'Mula Hari Ini', 'Jawab 5 Betul', 'Latihan 10 Minit', 'Ketepatan 90%'])
+      expect(first.completedIds).toHaveLength(9)
       const again = await t.gamification.settleChallenges(u, { isTest: false })
       expect(again).toEqual({ completedIds: [] })
       expect(await ledgerOf(t, u)).toEqual([])

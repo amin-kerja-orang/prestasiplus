@@ -14,10 +14,9 @@ import { DsCluster, DsEmptyState, DsFormField, DsLoadError, DsNativeSelect, DsPa
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { dismissQuestionFlag, fetchRegroupWorklist, regroupQuestions, undoRegroup } from '../api/questions'
-import QuestionAreaTabs from '../components/QuestionAreaTabs.vue'
 import RegroupRow from '../components/RegroupRow.vue'
 import { listLoadMessage } from '../lib/list-load'
-import { isConsecutiveRun, QUESTIONS_LIST_PATH, REGROUP_COPY, REGROUP_FLAGS, REGROUP_TAB, regroupHeader, type RegroupWorkRow } from '../lib/question-list'
+import { isConsecutiveRun, REGROUP_COPY, REGROUP_FLAGS, REGROUP_PATH, regroupHeader, type RegroupWorkRow } from '../lib/question-list'
 import { errorLines } from '../lib/ui-errors'
 
 const route = useRoute()
@@ -134,7 +133,7 @@ async function undo(): Promise<void> {
 
 function go(next: { subject_id?: string; education_level_id?: string; flag?: string; page?: number }): void {
   const f = filters.value
-  const query: Record<string, string> = { tab: REGROUP_TAB }
+  const query: Record<string, string> = {}
   const subject = next.subject_id ?? f.subjectId
   const level = next.education_level_id ?? f.educationLevelId
   const flag = next.flag ?? f.flag
@@ -142,13 +141,12 @@ function go(next: { subject_id?: string; education_level_id?: string; flag?: str
   if (level !== '') query.education_level_id = level
   if (flag !== '') query.flag = flag
   if (next.page !== undefined && next.page > 1) query.page = String(next.page)
-  void router.push({ path: QUESTIONS_LIST_PATH, query })
+  void router.push({ path: REGROUP_PATH, query })
 }
 </script>
 
 <template>
   <DsPage layout="list" subtitle="Urus bank soalan untuk platform PRESTASIPLUS" data-testid="regroup-page">
-    <QuestionAreaTabs />
     <DsText v-if="counts" variant="label" tabular data-testid="regroup-header">{{ regroupHeader(counts.open, counts.done) }}</DsText>
     <DsCluster v-if="counts" gap="sm" data-testid="regroup-counts">
       <DsText v-for="c in subjectCounts" :key="`s${c.id}`" variant="caption" tone="muted" tabular :data-testid="`regroup-count-subject-${c.id}`">{{ c.name }}: {{ c.n }}</DsText>

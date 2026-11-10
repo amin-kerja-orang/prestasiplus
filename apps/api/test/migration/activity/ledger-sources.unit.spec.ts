@@ -9,7 +9,7 @@ import { ledgerSourceSignOk, transformLedger } from '../../../src/migration/tran
 const tx = (over: Record<string, string | null> = {}) => ({
   id: '1', user_id: '1', type: 'earn', source: 'quiz_spm', amount: '5', balance_after: '5', created_at: '2026-01-01 00:00:00+00', ...over,
 })
-const refs = { userId: '9', isStudent: true }
+const refs = { userId: '9' }
 
 /** [.cloud source, v2 source, type, a valid signed amount]. */
 const OBSERVED: ReadonlyArray<readonly [string, string, string, string]> = [

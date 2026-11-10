@@ -19,7 +19,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Kualiti Soalan - Admin',
       header: {
         title: 'Dashboard Kualiti Soalan',
-        subtitle: 'Analisa kualiti keseluruhan bank soalan',
+        subtitle: 'Metrik kualiti berdasarkan status pematuhan & DSKP',
       },
       module: 'M04',
     },

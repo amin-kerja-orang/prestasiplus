@@ -69,7 +69,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
 
   // ── Portal Guru, bukan baris matriks 1.0
   { to: '/amaran', module: 'M27 Amaran Awal (Guru)', reason: 'Amaran Awal hanya baris Admin Sekolah (L54, /amaran/sekolah)' },
-  { to: '/guru/misi-harian', ...GURU_TOOLS },
   { to: '/guru/verify-soalan-struktur', ...GURU_TOOLS },
   { to: '/guru/verify-soalan-mcq', ...GURU_TOOLS },
   { to: '/guru/kehadiran-digital', ...GURU_TOOLS },
@@ -77,8 +76,6 @@ export const OUT_OF_SCOPE_ROUTES: readonly OutOfScopeRoute[] = [
   { to: '/guru/broadcast', ...GURU_TOOLS },
   { to: '/guru/live-kelas', ...GURU_TOOLS },
   { to: '/guru/perbandingan-kelas', module: 'M11 Analitik Guru (S7)', reason: 'M11-T4 belum dibina; bukan baris 1.0' },
-  { to: '/guru/databank', ...GURU_TOOLS },
-  { to: '/guru/set-soalan', ...GURU_TOOLS },
   { to: '/guru/kertas-peperiksaan', ...GURU_TOOLS },
   { to: '/guru/penjana-peperiksaan', ...GURU_TOOLS },
   { to: '/guru/gamifikasi', ...GURU_TOOLS },

@@ -129,6 +129,23 @@ describe('a private question never reaches a bank read (DM-42)', () => {
     expect(shown).toBeLessThanOrEqual(rows[0]!.n)
   })
 
+  it('[CI] the Admin Pusat dashboard totals (statusSummary, subjectTotals) do not count a private question (team-dd ruling on #503)', async () => {
+    const privateRow = () => q(`update question_versions set visibility = 'teacher_private', owner_user_id = $1 where question_id = $2`, [ownerId, privateId])
+    const bankRow = () => q(`update question_versions set visibility = 'bank', owner_user_id = null where question_id = $1`, [privateId])
+    const withPrivate = { summary: await repo.statusSummary(new Date(0)), subjects: await repo.subjectTotals() }
+    await bankRow()
+    try {
+      const asBank = { summary: await repo.statusSummary(new Date(0)), subjects: await repo.subjectTotals() }
+      expect(asBank.summary.total).toBe(withPrivate.summary.total + 1)
+      expect(asBank.summary.byStatus.approved).toBe(withPrivate.summary.byStatus.approved + 1)
+      expect(asBank.summary.createdSince).toBe(withPrivate.summary.createdSince + 1)
+      expect(asBank.subjects.total).toBe(withPrivate.subjects.total + 1)
+      expect(withPrivate.summary.total).toBe(withPrivate.subjects.total)
+    } finally {
+      await privateRow()
+    }
+  })
+
   it('a read by id still finds it (the mission path), with the reference link', async () => {
     const record = await repo.get(privateId, 'live')
     expect(record?.version.visibility).toBe('teacher_private')

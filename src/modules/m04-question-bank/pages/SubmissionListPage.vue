@@ -212,7 +212,7 @@ const asRow = (row: Record<string, unknown>): SubmissionTableRow => row as Submi
       @apply="submitFilter"
       @reset="resetFilter"
     >
-      <div class="w-full min-w-0 sm:w-56">
+      <div class="w-full min-w-0">
         <DsFormField v-slot="{ id }" native for="submissions-status" label="Status">
           <DsNativeSelect
             :id="id"

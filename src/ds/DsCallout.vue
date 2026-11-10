@@ -52,6 +52,14 @@ const TONE_ICON: Record<CalloutTone, string> = {
   error: 'warning-circle',
 }
 
+/** Height of the first text line, to centre the icon on it (type-role size x line-height). */
+const firstLine = computed(() => {
+  if (props.collapsible) return 'h-10'
+  return props.title
+    ? 'h-[calc(var(--text-label)*var(--text-label--line-height))]'
+    : 'h-[calc(var(--text-body)*var(--text-body--line-height))]'
+})
+
 const bodyId = useId()
 const root = ref<{ $el: HTMLElement } | null>(null)
 const open = ref(props.defaultOpen)
@@ -115,9 +123,10 @@ defineExpose({ focus })
     data-ds="callout"
     @update:open="dismiss"
   >
-    <template v-if="icon || collapsible" #leading>
-      <!-- Collapsible: the icon sits in a row as tall as the toggle, so it centres on the title line. -->
-      <span class="flex shrink-0 items-center" :class="collapsible ? 'h-10' : ''">
+    <template #leading>
+      <!-- The icon sits in a box as tall as the first text line (toggle row / title line / body line),
+           so its centre is the centre of that line however many actions or lines follow. -->
+      <span class="flex shrink-0 items-center" :class="firstLine">
         <DsIcon v-if="icon" :name="icon" class="size-5 shrink-0" />
         <UIcon v-else :name="`i-ph-${TONE_ICON[tone]}`" class="size-5 shrink-0" />
       </span>
@@ -147,7 +156,7 @@ defineExpose({ focus })
         v-show="!collapsible || open"
         :id="bodyId"
         class="flex flex-col gap-2"
-        :class="collapsible ? 'max-w-prose pb-1 text-body leading-relaxed' : ''"
+        :class="collapsible ? 'max-w-prose text-body leading-relaxed' : ''"
         data-ds="callout-body"
       >
         <span v-if="description">{{ description }}</span>

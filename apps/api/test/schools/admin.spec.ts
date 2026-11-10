@@ -4,6 +4,7 @@ import {
   SchoolListMetaSchema,
   SchoolOptionSchema,
   statusEnvelopeOf,
+  SchoolJoinCodeResultSchema,
   SchoolToggleResultSchema,
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -119,6 +120,43 @@ describe('admin school routes (AC 1, AC 8)', () => {
       // LIKE wildcards in the search text are literal
       expect(ListBody.parse((await list('?search=%25')).body).data).toEqual([])
       expect(ListBody.parse((await list('?search=_')).body).data).toEqual([])
+    })
+
+    it('hides primary types by default; includePrimary=true or a primary type filter shows them, and meta follows', async () => {
+      await t.db.query(
+        `insert into schools (name, code, type, state, is_active) values
+           ('SK Primary Satu', 'PRIM001', 'SK', 'Perak', true),
+           ('SJK(C) Primary Dua', 'PRIM002', 'SJK(C)', 'Perak', false),
+           ('SJK(T) Primary Tiga', 'PRIM003', 'SJK(T)', 'Perak', true)`,
+      )
+      try {
+        const base = ListBody.parse((await list()).body)
+        expect(base.data.some((s) => s.code?.startsWith('PRIM'))).toBe(false)
+        expect(base.meta.types.some((x) => ['SK', 'SJK(C)', 'SJK(T)'].includes(x))).toBe(false)
+
+        const all = ListBody.parse((await list('?includePrimary=true')).body)
+        expect(all.meta.totalItems).toBe(base.meta.totalItems + 3)
+        expect(all.meta.counts).toEqual({
+          total: base.meta.counts.total + 3,
+          active: base.meta.counts.active + 2,
+          inactive: base.meta.counts.inactive + 1,
+        })
+        expect(all.meta.types).toEqual(expect.arrayContaining(['SK', 'SJK(C)', 'SJK(T)']))
+
+        // the flag is only 'true'; any other value keeps the default
+        expect(ListBody.parse((await list('?includePrimary=1')).body).meta.totalItems).toBe(base.meta.totalItems)
+
+        // picking a primary type shows its rows without the flag
+        const sk = ListBody.parse((await list('?type=SK')).body)
+        expect(sk.data.map((s) => s.code)).toEqual(['PRIM001'])
+        expect(sk.meta.counts.total).toBe(base.meta.counts.total + 3)
+
+        // the options picker stays secondary-only
+        const options = await admin.agent.get('/api/admin/schools/options?all=1')
+        expect(JSON.stringify(options.body)).not.toContain(' Primary ')
+      } finally {
+        await t.db.query(`delete from schools where code like 'PRIM00%'`)
+      }
     })
 
     it('studentCount and teacherCount are derived from the users of the school', async () => {
@@ -403,6 +441,45 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expectError(await toggle('99999999'), 'NOT_FOUND')
       expectError(await toggle('abc'), 'NOT_FOUND')
       expect(await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.toggled'`)).toEqual(before)
+    })
+  })
+
+  describe('POST /api/admin/schools/:id/join-code (Tukar kod pendaftaran)', () => {
+    const rotate = (id: string) => admin.agent.post(`/api/admin/schools/${id}/join-code`).set('X-CSRF-Token', admin.csrf)
+    const RotateBody = statusEnvelopeOf(SchoolJoinCodeResultSchema)
+
+    it('draws a new unique code, shows it on the list, says so in the V2 flash text, audits without the code', async () => {
+      const id = await schoolIdOf(t.db, 'DEMO003')
+      const oldCode = OneBody.parse((await admin.agent.get(`/api/admin/schools/${id}`)).body).data.joinCode
+      const res = await rotate(id)
+      expect(res.status).toBe(200)
+      expect(res.headers['cache-control']).toBe('no-store')
+      const body = RotateBody.parse(res.body)
+      const name = OneBody.parse((await admin.agent.get(`/api/admin/schools/${id}`)).body).data.name
+      expect(body.data.joinCode).toMatch(/^[A-HJKMNP-Z2-9]{8}$/)
+      expect(body.data.joinCode).not.toBe(oldCode)
+      expect(body.status).toBe(`Kod pendaftaran "${name}" ditukar kepada ${body.data.joinCode}. Kod lama tidak lagi sah.`)
+      const row = await t.db.query<{ join_code: string }>(`select join_code from schools where id = $1`, [id])
+      expect(row[0]?.join_code).toBe(body.data.joinCode)
+      const shown = ListBody.parse((await list('?search=DEMO003')).body).data.find((s) => s.id === id)
+      expect(shown?.joinCode).toBe(body.data.joinCode)
+      const audit = await t.db.query<{ detail: unknown }>(`select detail from audit_events where action = 'school.join_code_rotated' and target_id = $1`, [id])
+      expect(audit).toHaveLength(1)
+      expect(JSON.stringify(audit[0]?.detail)).not.toContain(body.data.joinCode)
+    })
+
+    it('every rotation leaves all join codes unique', async () => {
+      const id = await schoolIdOf(t.db, 'DEMO003')
+      for (let i = 0; i < 5; i++) expect((await rotate(id)).status).toBe(200)
+      const dup = await t.db.query<{ n: number }>(`select count(*)::int as n from (select join_code from schools where join_code is not null group by join_code having count(*) > 1) d`)
+      expect(dup[0]?.n).toBe(0)
+    })
+
+    it('404 for an unknown or malformed id, and no audit row for it', async () => {
+      const before = await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.join_code_rotated'`)
+      expectError(await rotate('99999999'), 'NOT_FOUND')
+      expectError(await rotate('abc'), 'NOT_FOUND')
+      expect(await t.db.query<{ n: number }>(`select count(*)::int as n from audit_events where action = 'school.join_code_rotated'`)).toEqual(before)
     })
   })
 

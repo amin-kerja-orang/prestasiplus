@@ -7,13 +7,16 @@ describe('stimulus form (rules of POST /api/stimuli, T32)', () => {
     expect(STIMULUS_KINDS.map((k) => k.value)).toEqual(['passage', 'image', 'diagram', 'table', 'map', 'infographic', 'graph'])
   })
 
-  it('applies the kind rules before the server does', () => {
-    expect(stimulusIssue({ ...blankStimulus('passage') })).toBe('Petikan mesti mempunyai teks.')
-    expect(stimulusIssue({ ...blankStimulus('passage'), body: 'Teks.' })).toBeNull()
-    for (const k of ['image', 'diagram', 'map', 'infographic', 'graph'] as const) expect(stimulusIssue(blankStimulus(k))).toBe('Sila muat naik imej untuk rangsangan ini.')
-    expect(stimulusIssue({ ...blankStimulus('diagram'), imageToken: 'abc' })).toBeNull()
-    expect(stimulusIssue(blankStimulus('table'))).toContain('Jadual mesti mempunyai kepala')
-    expect(stimulusIssue({ ...blankStimulus('table'), tableText: 'Hari | Suhu\nIsnin | 30' })).toBeNull()
+  it('applies the label, alt text and kind rules before the server does (FR-QA-10, AC-QA-10)', () => {
+    expect(stimulusIssue(blankStimulus('passage'))).toBe('Sila isi label rangsangan.')
+    const form = (k: Parameters<typeof blankStimulus>[0]) => ({ ...blankStimulus(k), label: 'Rajah 1' })
+    expect(stimulusIssue(form('passage'))).toBe('Petikan mesti mempunyai teks.')
+    expect(stimulusIssue({ ...form('passage'), body: 'Teks.' })).toBeNull()
+    for (const k of ['image', 'diagram', 'map', 'infographic', 'graph'] as const) expect(stimulusIssue(form(k))).toBe('Sila muat naik imej untuk rangsangan ini.')
+    expect(stimulusIssue({ ...form('diagram'), imageToken: 'abc' })).toBe('Sila isi teks alternatif untuk imej ini.')
+    expect(stimulusIssue({ ...form('diagram'), imageToken: 'abc', alt: 'Segi tiga' })).toBeNull()
+    expect(stimulusIssue(form('table'))).toContain('Jadual mesti mempunyai kepala')
+    expect(stimulusIssue({ ...form('table'), tableText: 'Hari | Suhu\nIsnin | 30' })).toBeNull()
   })
 
   it('reads and writes the table text', () => {

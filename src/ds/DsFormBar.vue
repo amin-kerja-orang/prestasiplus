@@ -43,7 +43,7 @@ const emit = defineEmits<{ cancel: [] }>()
 </script>
 
 <template>
-  <DsPanel tone="bar" :sticky="sticky" data-ds="form-bar">
+  <DsPanel tone="bar" padding="sm" :sticky="sticky" data-ds="form-bar">
     <div class="flex flex-wrap items-center justify-end gap-3">
       <div v-if="$slots.status" class="mr-auto min-w-0 text-caption text-muted">
         <slot name="status" />

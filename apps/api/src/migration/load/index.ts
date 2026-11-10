@@ -181,14 +181,15 @@ async function recountFromCommitted(pool: Pick<pg.Pool, 'query'>, core: CoreCont
             OR lower(btrim(s.email, E' \\t\\r\\n\\f\\v')) !~ '^[^\\s@]+@[^\\s@]+$')`,
     [core.source],
   )
-  core.notes.counters.set('must_reset.roster_account', Number(roster.rows[0]?.n ?? 0))
+  // KP-7: only an opted-in reset (PP_MIGRATE_ROSTER_FORCE_RESET=1) flags roster accounts, so only then do they count as flagged.
+  core.notes.counters.set('must_reset.roster_account', process.env.PP_MIGRATE_ROSTER_FORCE_RESET === '1' ? Number(roster.rows[0]?.n ?? 0) : 0)
   // `must_reset.non_bcrypt` and `must_reset.shared_default` are NOT rebuilt (the second needs the secret list): after a resume
   // they only cover the batches of this process, which `countsFromCommittedRows` says.
   core.notes.counters.set('countsFromCommittedRows', 1)
 }
 
 /** Counters copied into `etl_runs.counters -> 'notes'` (numbers only; the night SQL checks read them). Never ids or hashes. */
-const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows|classrooms\.excluded\..+|enrolments\.excluded\..+)$/
+const LEDGER_NOTES = /^(must_reset\..+|users\.role_rejected\..+|nullHashAccounts|flaggedWithoutLoginId|rosterDefaultHashes|rosterDefaultHashesWarning|countsFromCommittedRows|users\.loaded_inactive_role\..+|users\.grade_from_sibling_class|classrooms\.school_absent_from_source|classrooms\.excluded\..+|enrolments\.excluded\..+)$/
 
 /**
  * Merges the report counters into the apply run's `counters` JSON under `notes` (`jsonb_set`, so the runner's per-entity
@@ -319,6 +320,15 @@ export async function rebuildCoreNotes(pool: Pick<pg.Pool, 'query'>, core: CoreC
     [runId],
   )
   for (const r of res.rows) core.notes.count(`${prefix}.${roleRejectLabel(r.role)}`)
+  // T-B5: the agents loaded as inactive students are recounted from the loaded users (set, not added, so the rebuild is idempotent).
+  core.notes.counters.delete('users.loaded_inactive_role.agent')
+  const agents = await pool.query<{ n: string }>(
+    `SELECT count(*)::text AS n FROM users u JOIN "${STAGING_SCHEMA}"."users" s ON s.id::text = u.legacy_id
+      WHERE u.legacy_source = $1 AND lower(btrim(s.role)) = 'agent'`,
+    [core.source],
+  )
+  const agentCount = Number(agents.rows[0]?.n ?? 0)
+  if (agentCount > 0) core.notes.count('users.loaded_inactive_role.agent', agentCount)
   await rebuildExclusionNotes(pool, core, runId)
 }
 

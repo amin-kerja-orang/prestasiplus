@@ -2,14 +2,13 @@
 /**
  * Lane "Subjektif" (`/admin/spm/subjektif`, FR-ADM-Q23.3, frame R1-ADM-Q-02): structured and essay questions, one per row. `Perhatian`
  * shows the sentences from the API ("Tiada skema ...", "Tiada kunci jawapan ..."), "—" when nothing is wrong. These questions are edited
- * in the Studio wizard, so `Sunting` opens it, unlike the MCQ form of the Databank lane. No `Pratonton` yet: the wizard has no entry
- * that opens its preview, so the action would only repeat `Sunting`.
+ * in the V2 Panel editor `Skema & Rubrik` (`/admin/spm/subjektif/:id/sunting`), which `Sunting` opens. No `Pratonton` (V2 has none on this lane).
  */
 import type { TableColumn } from '@nuxt/ui'
 import type { ServabilityLaneRow } from '@pp/contract'
 import { computed } from 'vue'
 
-import { DsDataTable, DsLoadError, DsPage, DsRowActions, DsStack, DsText, type RowAction } from '@/ds'
+import { DsBadge, DsDataTable, DsLoadError, DsPage, DsRowActions, DsStack, DsText, type RowAction } from '@/ds'
 
 import { kandunganServer } from '../client'
 import { laneCopy, QUESTION_STATUS_OPTIONS, questionStatusLabel } from '../lanes'
@@ -19,7 +18,7 @@ import LaneShell from './LaneShell.vue'
 type Row = ServabilityLaneRow & { no: number } & Record<string, unknown>
 
 const statusText = questionStatusLabel
-const editPath = (id: string): string => `/admin/studio/questions/${id}/sunting`
+const editPath = (id: string): string => `/admin/spm/subjektif/${id}/sunting`
 const actionsOf = (id: string): RowAction[] => [{ label: laneCopy.edit, testid: `lane-edit-${id}`, to: editPath(id) }]
 
 const server = kandunganServer()
@@ -31,6 +30,7 @@ const rows = computed<Row[]>(() =>
 const columns: TableColumn<Row>[] = [
   { accessorKey: 'no', header: laneCopy.colList },
   { accessorKey: 'title', header: laneCopy.colTitle },
+  { accessorKey: 'status', header: laneCopy.colStatus },
   { accessorKey: 'attention', header: laneCopy.colAttention },
   { id: 'actions', header: laneCopy.colActions },
 ]
@@ -67,8 +67,11 @@ const columns: TableColumn<Row>[] = [
       <template #title-cell="{ row }">
         <DsStack gap="2xs">
           <DsText as="p" variant="body" wrap="anywhere">{{ row.original.title }}</DsText>
-          <DsText as="p" variant="caption" tone="muted">{{ row.original.meta }} · {{ statusText(row.original.status) }}</DsText>
+          <DsText as="p" variant="caption" tone="muted">{{ row.original.meta }}</DsText>
         </DsStack>
+      </template>
+      <template #status-cell="{ row }">
+        <DsBadge :label="statusText(row.original.status)" :data-testid="`status-${row.original.id}`" />
       </template>
       <template #attention-cell="{ row }">
         <DsStack v-if="row.original.attention.length" gap="2xs" :data-testid="`attention-${row.original.id}`">

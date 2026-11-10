@@ -137,15 +137,9 @@ describe('classes whose teacher is absent from the source', () => {
     expect(await h.count('enrolments', `t.legacy_source = 'cloud' and t.legacy_id like '5001:%'`)).toBe(0)
   })
 
-  it('keeps the class whose teacher is in the source but not loaded as an ORPHAN_PARENT reject, with its enrolment', async () => {
-    expect(await h.count('classrooms', `t.legacy_source = 'cloud' and t.legacy_id = '5002'`)).toBe(0)
-    const rejects = await h.q<{ entity: string; legacy_id: string; reason: string; column_name: string }>(
-      `select distinct entity, legacy_id, reason, column_name from etl_rejects where legacy_id in ('5002', '5002:1') and entity in ('classrooms', 'enrolments') order by entity`,
-    )
-    expect(rejects).toEqual([
-      { entity: 'classrooms', legacy_id: '5002', reason: 'ORPHAN_PARENT', column_name: 'teacher_id' },
-      { entity: 'enrolments', legacy_id: '5002:1', reason: 'ORPHAN_PARENT', column_name: 'classroom_id' },
-    ])
+  it('loads the class whose teacher is an agent (T-B5: agents are carried as inactive users), with its enrolment', async () => {
+    expect(await h.count('classrooms', `t.legacy_source = 'cloud' and t.legacy_id = '5002'`)).toBe(1)
+    expect(await h.count('etl_rejects', `legacy_id in ('5002', '5002:1') and entity in ('classrooms', 'enrolments')`)).toBe(0)
   })
 
   it('leaves the pupils of the dropped class migrated', async () => {

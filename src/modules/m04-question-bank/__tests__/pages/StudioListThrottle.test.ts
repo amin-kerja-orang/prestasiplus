@@ -21,7 +21,7 @@ const studio = vi.hoisted(() => ({
   fetchStudioQuestion: vi.fn(),
   fetchGroup: vi.fn(),
 }))
-const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn() }))
+const lookups = vi.hoisted(() => ({ fetchSubjects: vi.fn(), fetchStudioFilterOptions: vi.fn() }))
 vi.mock('../../api/studio', () => studio)
 vi.mock('../../api/lookups', () => lookups)
 
@@ -57,6 +57,7 @@ beforeEach(() => {
   studio.fetchStudioList.mockReset().mockResolvedValue(page([row('1')]))
   studio.fetchServabilityBatch.mockReset().mockResolvedValue({ reports: [], notFound: [] })
   lookups.fetchSubjects.mockReset().mockResolvedValue({ data: [], meta: {} })
+  lookups.fetchStudioFilterOptions.mockReset().mockResolvedValue({ negeri: [], tahun: [] })
 })
 afterEach(() => {
   wrapper?.unmount()

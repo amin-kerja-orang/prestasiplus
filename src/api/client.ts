@@ -37,6 +37,7 @@ import {
   errorFromResponse,
   parseRetryAfterHeader,
 } from './errors'
+import { reportNetworkError, reportNetworkOk } from './offline'
 import type {
   HttpMethod,
   ResponseType,
@@ -327,6 +328,9 @@ export class ApiClient {
     return unwrap(res.body) as T
   }
 
+  /** Aborted (and replaced) on a 401, so the other in-flight calls of the expired session stop (FR-ERR-7). */
+  private sessionAbort = new AbortController()
+
   /** Builds the request, calls the transport, maps network failures, applies the 401 policy. */
   private async send(
     method: HttpMethod,
@@ -395,6 +399,9 @@ export class ApiClient {
       body: res.body ?? null,
     }
     if (normalised.status === 401 && !isAuthPath(path)) {
+      const expired = this.sessionAbort
+      this.sessionAbort = new AbortController()
+      expired.abort()
       this.notifyUnauthorized({ method, url: path, status: normalised.status })
     }
     return normalised
@@ -414,15 +421,22 @@ export class ApiClient {
     const onCallerAbort = () => controller.abort()
     if (callerSignal?.aborted) controller.abort()
     else callerSignal?.addEventListener('abort', onCallerAbort, { once: true })
+    // A 401 on another call aborts this one too, except for the auth endpoints (login, logout, ...).
+    const sessionSignal = isAuthPath(path) ? undefined : this.sessionAbort.signal
+    if (sessionSignal?.aborted) controller.abort()
+    else sessionSignal?.addEventListener('abort', onCallerAbort, { once: true })
     const timer = setTimeout(() => {
       timedOut = true
       controller.abort()
     }, timeoutMs)
     try {
-      return await transport.request(req, controller.signal)
+      const response = await transport.request(req, controller.signal)
+      reportNetworkOk()
+      return response
     } catch (err) {
-      if (callerSignal?.aborted) throw err
+      if (callerSignal?.aborted || sessionSignal?.aborted) throw err
       if (timedOut) {
+        reportNetworkError()
         throw new ApiError({
           status: 0,
           code: API_ERROR_CODES.NETWORK_ERROR,
@@ -434,6 +448,7 @@ export class ApiClient {
         })
       }
       if (isAbort(err, undefined)) throw err
+      reportNetworkError()
       throw new ApiError({
         status: 0,
         code: API_ERROR_CODES.NETWORK_ERROR,
@@ -445,6 +460,7 @@ export class ApiClient {
     } finally {
       clearTimeout(timer)
       callerSignal?.removeEventListener('abort', onCallerAbort)
+      sessionSignal?.removeEventListener('abort', onCallerAbort)
     }
   }
 

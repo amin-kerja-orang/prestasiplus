@@ -143,7 +143,7 @@ describe('catalogue', () => {
     const rows = await h.q<{ legacy_id: string; metric: string | null; target_value: number }>(
       `select legacy_id, metric, target_value from challenges where legacy_id in ('1', '2', '3', '4') order by legacy_id`,
     )
-    expect(rows).toEqual([{ legacy_id: '1', metric: null, target_value: 3 }])
+    expect(rows).toEqual([{ legacy_id: '1', metric: 'sessions', target_value: 3 }])
     expect(recon.challenges).toEqual({ source: 12, eligible: 11, loaded: 8, rejected: 3 })
     expect(reject('challenges', 'UNKNOWN_ENUM', 'challenge_type')).toBe(1)
     expect(reject('challenges', 'INVALID_VALUE', 'target_value')).toBe(1)
@@ -169,7 +169,7 @@ describe('catalogue', () => {
       { legacy_id: '8', challenge_type: 'quiz_count', target_value: 3 },
       { legacy_id: '9', challenge_type: 'accuracy', target_value: 80 },
       { legacy_id: '10', challenge_type: 'topic_variety', target_value: 4 },
-      { legacy_id: '11', challenge_type: 'streak', target_value: 2 },
+      { legacy_id: '11', challenge_type: 'combo', target_value: 2 },
       { legacy_id: '12', challenge_type: 'time_spent', target_value: 10 },
     ])
   })
@@ -223,7 +223,7 @@ describe('completions and unlocks', () => {
       { legacy_id: `8:${u[0]}:1`, challenge_type: 'quiz_count', completion_date: '2026-01-10' },
       { legacy_id: `9:${u[0]}:1`, challenge_type: 'accuracy', completion_date: '2026-01-10' },
       { legacy_id: `10:${u[0]}:1`, challenge_type: 'topic_variety', completion_date: '2026-01-10' },
-      { legacy_id: `11:${u[0]}:1`, challenge_type: 'streak', completion_date: '2026-01-10' },
+      { legacy_id: `11:${u[0]}:1`, challenge_type: 'combo', completion_date: '2026-01-10' },
       { legacy_id: `12:${u[0]}:1`, challenge_type: 'time_spent', completion_date: '2026-01-10' },
     ])
   })

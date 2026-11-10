@@ -45,6 +45,10 @@ export const MINIMISE_PLAN: readonly { table: string; columns: readonly string[]
   { table: 'question_imports', columns: ['imported_by'] },
   { table: 'teacher_reference_documents', columns: ['teacher_id'] },
   { table: 'teacher_reference_papers', columns: ['teacher_id'] },
+  // T-B9 (spec columns added 10 Nov 2026): the authors and approvers of the archived bank, person columns like the rest.
+  { table: 'questions', columns: ['created_by', 'approved_by'] },
+  { table: 'structured_questions', columns: ['created_by'] },
+  { table: 'exam_papers', columns: ['created_by'] },
 ]
 
 export interface MinimiseOptions {

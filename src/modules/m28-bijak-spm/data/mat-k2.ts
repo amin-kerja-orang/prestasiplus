@@ -265,6 +265,31 @@ function garisLurus(bank: Bank, v: number): string {
           leaf(`${id}-c1`, '(i)', `nilai y apabila $x = ${d.x1}$,`, 2, 'working'),
           leaf(`${id}-c2`, '(ii)', `nilai x apabila $y = ${d.y2}$.`, 2, 'working'),
         ]),
+        // Papan Lukisan fixture (S8-T03): 0 marks so the paper totals stay as observed; self-marked.
+        ...(v === 0
+          ? [
+              leaf(
+                `${id}-d`,
+                '(d)',
+                'Lukis graf garis lurus itu pada kertas graf.',
+                0,
+                'drawing',
+                undefined,
+                {
+                  answerTemplate: {
+                    grid: {
+                      xMin: -2,
+                      xMax: 8,
+                      yMin: -2,
+                      yMax: 8,
+                      step: 1,
+                      scale: '1 petak = 1 unit',
+                    },
+                  },
+                },
+              ),
+            ]
+          : []),
       ],
     },
     POOL_B,
@@ -306,6 +331,21 @@ function garisLurus(bank: Bank, v: number): string {
     ]),
     final: { accept: [String(x2)], display: `x = ${x2}` },
   })
+  if (v === 0) {
+    bank.schemes.set(`${id}-d`, {
+      kind: 'rubric',
+      marks: 0,
+      criteria: [{ id: 'lukisan', name: 'Lukisan' }],
+      bands: [
+        {
+          name: 'Disemak sendiri',
+          range: [0, 0],
+          descriptor: 'Semak lukisan anda dengan senarai semak.',
+        },
+      ],
+      notes: ['Lukisan disemak sendiri; markah tidak diberi secara automatik.'],
+    })
+  }
   return id
 }
 

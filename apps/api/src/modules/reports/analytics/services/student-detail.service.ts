@@ -32,7 +32,7 @@ export class StudentDetailService {
 
   /**
    * A forced role must own the school and the pupil; the admin's school segment is not validated against the pupil
-   * (BR-M11-29). Unknown ids, a user who is not a T4/T5 pupil and (for a forced role) a pupil of another school are 404.
+   * (BR-M11-29). Unknown ids, a user who is not a Tingkatan 1-5 pupil (XS-1) and (for a forced role) a pupil of another school are 404.
    * A pupil without answers returns the empty state, never a 404.
    */
   async detail(ctx: Ctx, schoolId: string, userId: string): Promise<StudentDetail> {
@@ -40,7 +40,7 @@ export class StudentDetailService {
     const fact = await this.repo.school(schoolId)
     if (!fact) return notFound()
     const user = await this.repo.user(userId)
-    if (!user || !user.isStudent || (user.grade !== 10 && user.grade !== 11)) return notFound()
+    if (!user || !user.isStudent || (user.grade === null || user.grade < 7 || user.grade > 11)) return notFound()
     if (isSchoolForced(ctx.role) && user.schoolId !== ctx.schoolId) return notFound()
     // R1-GUR-10: a teacher opens any pupil of the own school, like the school admin (the school check above).
 

@@ -8,6 +8,9 @@
 
 // --- shared ----------------------------------------------------------------------------------
 
+/** Tingkatan of a pupil (T1..T5, D101); Monitoring lists every level, not only T4 and T5. */
+export type Tingkatan = 'T1' | 'T2' | 'T3' | 'T4' | 'T5'
+
 export type TahapKey = 'Cemerlang' | 'Sederhana' | 'Rendah' | 'Tiada' | 'Kritikal' | 'Tiada Langsung'
 
 /** BR-M11-10 periods; '' = all time. Any other value is treated as '' (INFERRED). */
@@ -152,7 +155,7 @@ export interface SchoolDetailStudent {
   id: number
   name: string
   email: string
-  level: 'T4' | 'T5'
+  level: Tingkatan
   answers: number
   status: StudentStatus
   /** S3 definition: ≥ 1 answer and not `excluded` (BR-M11-09, DV-M11-21). */
@@ -224,7 +227,7 @@ export interface StudentDetail {
     id: number
     name: string
     email: string
-    level: 'T4' | 'T5'
+    level: Tingkatan
     lastActivityAt: string | null
   }
   cards: { answered: number; correct: number; wrong: number; accuracy: number }
@@ -275,7 +278,7 @@ export interface TeacherDetail {
   students: {
     id: number
     name: string
-    level: 'T4' | 'T5'
+    level: Tingkatan
     answers: number
     accuracy: number | null
     status: StudentStatus

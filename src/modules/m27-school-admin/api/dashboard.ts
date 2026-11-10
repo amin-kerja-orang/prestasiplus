@@ -35,7 +35,15 @@ export interface DashboardGrade {
 }
 
 export interface SchoolDashboard {
-  school: { id: number; name: string; state: string; ppd: string | null; code: string | null }
+  school: {
+    id: number
+    name: string
+    state: string
+    ppd: string | null
+    code: string | null
+    /** Own school's registration join code (V2 "Kod Daftar"), read-only. */
+    joinCode: string | null
+  }
   roleLabel: string
   perutusan: DashboardPerutusan[]
   /** Teachers waiting for approval ("Guru Menunggu"); the callout shows only when above 0. */

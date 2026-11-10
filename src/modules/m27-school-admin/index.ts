@@ -5,6 +5,7 @@ import type { ModuleManifest } from '@/app/modules'
 import routes from './routes'
 
 export * from './api/dashboard'
+export * from './api/essay-review'
 export * from './api/pending-teachers'
 export * from './api/school-admin'
 

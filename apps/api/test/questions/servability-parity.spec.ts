@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { describeQuestion } from '@pp/exam-core'
 import { SERVABILITY_ACTIVITIES, type ServabilityActivity, type ServabilityReport } from '@pp/contract'
 
+import { GameQuestions } from '../../src/modules/games/core/game-questions.service'
 import { mulberry32 } from '../../src/db/prng'
 import { Be09BijakQuestionSource } from '../../src/modules/bijak/question-bridge/be09-question-source'
 import { markableLeaf, leavesOf, resolveStimuli } from '../../src/modules/bijak/kuiz/kuiz.mapper'
@@ -13,6 +14,7 @@ import { QuestionsBijakPoolSource } from '../../src/modules/questions/bijak-pool
 import { QuestionsRepository, QuestionsService } from '../../src/modules/questions'
 import { ALL_GROUP_SURFACES, GROUP_SURFACES, ServabilityService, evaluateAll, filterOf } from '../../src/modules/questions/serving'
 import { adminActor, mcqInput, tagBody, tagOf, type Tag } from './fixtures'
+import { filesOf } from '../support/files-stub'
 import { bootQuestionsApp, type QuestionsTestApp } from './helpers'
 
 /**
@@ -63,7 +65,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     repo = t.app.get(QuestionsRepository)
     servability = t.app.get(ServabilityService)
     pool = t.app.get(QuestionsBijakPoolSource)
-    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository)
+    practice = new Be09PracticeQuestionSource(repo, {} as UsersRepository, undefined, filesOf(t.db) as never)
     bijak = new Be09BijakQuestionSource(repo, t.app.get(CurriculumRepository), {
       publicIdsOf: async (ids: readonly string[]) => {
         const rows = ids.length === 0 ? [] : await q(`select id::text id, public_id from files where id = any($1::bigint[])`, [ids])
@@ -257,11 +259,11 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     q(`update question_versions set education_level_id = $3, subject_id = $4 where question_id = $1 and version_no = $2`, [id, versionNo, levelId, subjectId])
   const sorted = (s: Iterable<string>) => [...s].sort((a, b) => Number(BigInt(a) - BigInt(b)))
 
-  it('reports every known question once, with all six activities in contract order', () => {
+  it('reports every known question once, with every activity in contract order (the count is of six: jana_kertas is not counted)', () => {
     expect(reports.size).toBeGreaterThan(20)
     for (const r of reports.values()) {
       expect(r.activities.map((a) => a.activity)).toEqual([...SERVABILITY_ACTIVITIES])
-      expect(r.servedCount).toBe(r.activities.filter((a) => a.served).length)
+      expect(r.servedCount).toBe(r.activities.filter((a) => a.served && a.activity !== 'jana_kertas').length)
       for (const a of r.activities) expect(a.served).toBe(a.reasons.length === 0)
     }
   })
@@ -288,10 +290,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(databank.has(made.plain!)).toBe(true)
   })
 
-  it('latih_tubi_spm (GROUP_SURFACES without the drills, until S5-T03 renders groups) gives the text-only practice reason and the SQL scope filter agrees', async () => {
-    expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual(['has_stimulus'])
-    expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual(['has_option_image'])
-    expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual(['has_stimulus'])
+  it('latih_tubi_spm (default GROUP_SURFACES, T-C13) serves figure questions and the group; the other reasons stand and the SQL scope filter agrees', async () => {
+    expect(reasonsOf('stemImage', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('optionImage', 'latih_tubi_spm')).toEqual([])
+    expect(reasonsOf('groupA', 'latih_tubi_spm')).toEqual([])
     expect(reasonsOf('structured', 'latih_tubi_spm')).toEqual(['shape_unsupported'])
     expect(reasonsOf('draft', 'latih_tubi_spm')).toEqual(['not_approved'])
     expect(reasonsOf('archivedLive', 'latih_tubi_spm')).toEqual(['archived'])
@@ -305,8 +307,9 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     for (const id of servedBy('latih_tubi_spm')) expect(inScope.has(id), id).toBe(true)
   })
 
-  it('S1-T06: GROUP_SURFACES starts as Bijak papers and the Jana set; the drills and games are not in it', () => {
-    expect([...GROUP_SURFACES].sort()).toEqual(['jana_kertas', 'simulasi_paper'])
+  it('T-C13 (D105): GROUP_SURFACES holds the three drills, Bijak papers and the Jana set; games and the quiz are not in it', () => {
+    expect([...GROUP_SURFACES].sort()).toEqual(['bab', 'databank', 'jana_kertas', 'latih_tubi_spm', 'simulasi_paper'])
+    expect(GROUP_SURFACES).not.toContain('permainan')
     expect(ALL_GROUP_SURFACES).toEqual(expect.arrayContaining(['latih_tubi_spm', 'databank', 'bab']))
   })
 
@@ -380,7 +383,7 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     expect(sorted(drawn)).toEqual(sorted([...servedBy('bab')].filter((id) => withChapter.has(id))))
     expect(servedBy('bab').has(made.plain!)).toBe(true)
     expect(reasonsOf('noChapter', 'bab')).toEqual(['no_chapter'])
-    expect(reasonsOf('groupA', 'bab')).toContain('has_stimulus')
+    expect(reasonsOf('groupA', 'bab')).not.toContain('has_stimulus') // T-C13: a complete group is served in Bab
   })
 
   it('simulasi_kuiz: the bank SQL draw plus the kuiz mapper keep exactly the served set (groups and pictures allowed, D90)', async () => {
@@ -468,6 +471,41 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
     }
   })
 
+  it('[CI] AC-QA-45: the indicator reads n of 6 (jana_kertas listed but not counted) and permainan is counted and equals the games draw', async () => {
+    for (const r of reports.values()) {
+      expect(r.total).toBe(6)
+      const counted = r.activities.filter((a) => a.activity !== 'jana_kertas')
+      expect(counted.map((a) => a.activity)).toEqual(['databank', 'latih_tubi_spm', 'bab', 'simulasi_paper', 'simulasi_kuiz', 'permainan'])
+      expect(r.servedCount).toBe(counted.filter((a) => a.served).length)
+      expect(r.servedCount).toBeLessThanOrEqual(6)
+    }
+    // The games draw: the SQL scope of `GameQuestions` (filterOf('permainan') = GAME_SHAPE, learner visible, live, active) and its `toServed` mapper.
+    const games = new GameQuestions(repo, { client: {} } as never, { now: () => new Date() } as never)
+    const inScope = new Set(await repo.eligibleAmong(allIds, filterOf('permainan')))
+    const mapped = new Set((await games.byIds(allIds)).map((x) => x.question.id))
+    const drawn = new Set([...inScope].filter((id) => mapped.has(id)))
+    expect(drawn.size).toBeGreaterThan(0)
+    expect(sorted(servedBy('permainan'))).toEqual(sorted(drawn))
+    expect(servedBy('permainan').has(made.plain!)).toBe(true)
+  })
+
+  it('[CI] AC-QA-45 permainan parity on the two picture cases: an ungrouped MCQ with a stimulus and one with an option image', async () => {
+    // `toServed` alone accepts both (it reads text only); the draw's SQL scope (GAME_SHAPE has no allowStimulus, so `shapeArraySql` drops a stem stimulus
+    // and an option image) is what refuses them. The indicator is the scope AND the mapper, so it agrees with the draw and names the cause.
+    const games = new GameQuestions(repo, { client: {} } as never, { now: () => new Date() } as never)
+    const ids = [made.stemImage!, made.optionImage!]
+    const mapped = new Set((await games.byIds(ids)).map((x) => x.question.id))
+    const inScope = new Set(await repo.eligibleAmong(ids, filterOf('permainan')))
+    for (const id of ids) {
+      const drawn = inScope.has(id) && mapped.has(id)
+      expect(servedBy('permainan').has(id), `indicator equals the draw for ${id}`).toBe(drawn)
+    }
+    expect(inScope.size, 'the SQL scope refuses a stimulus and an option image').toBe(0)
+    expect(mapped.size, 'toServed alone does not refuse them').toBe(2)
+    expect(reasonsOf('stemImage', 'permainan')).toEqual(['image_games'])
+    expect(reasonsOf('optionImage', 'permainan')).toEqual(['image_games'])
+  })
+
   it('jana_kertas: pool facts eligible by exam-core and served by the bridge', async () => {
     const subjects = await q(`select distinct subject_id::text id from question_versions where subject_id is not null`)
     const eligible = new Set<string>()
@@ -550,9 +588,10 @@ describe('servability evaluate vs the real readers (R1-T29)', () => {
       for (const k of ['groupA', 'groupB', 'stemImage', 'optionImage', 'plain']) expect(inScope.has(made[k]!), `${k} in ${activity} scope`).toBe(true)
       expect(inScope.has(made.structured!), `structured in ${activity} scope`).toBe(false)
     }
-    // Games stay out: the default (shipped) filter keeps the text-only ungrouped shape.
-    expect(filterOf('latih_tubi_spm').ungrouped).toBe(true)
-    expect(filterOf('latih_tubi_spm', {}, all).ungrouped).toBeUndefined()
+    // T-C13: the shipped default now lists the drills (QuizRunner shows the rajah); a list without them keeps the text-only ungrouped shape; games always do.
+    expect(filterOf('latih_tubi_spm').ungrouped).toBeUndefined()
+    expect(filterOf('latih_tubi_spm', {}, ['simulasi_paper', 'jana_kertas']).ungrouped).toBe(true)
+    expect(filterOf('permainan').ungrouped).toBe(true)
 
     // AC-QP-7: a group whose second member is only a draft is excluded whole, in the indicator and in the draw.
     const passage = await svc.createStimulus({ kind: 'passage', label: 'Petikan B', bodyMs: 'Teks petikan B.', bodyEn: null, altText: null, assetFileId: null })

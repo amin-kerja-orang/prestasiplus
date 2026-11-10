@@ -519,6 +519,8 @@ Sections 1 to 7 describe the anonymised rehearsal dump. The cutover (MIG-08, pla
 
 **What is exported.** Only the files the staged rows point to, and today `migrate:activity` copies only `banners.image_path`. So the operator **exports the banner image files only**, i.e. the files named by `image_path` in the raw `banners` export (`<work>/raw`). Article images and note and video files are not staged, so they are not migrated and are **not exported**; `audio_kbat.audio_path` is counted, not copied, so it is not exported either. **Support-ticket attachments are never exported** (LEAD decision 22 Oct). A wider export needs a spec change first.
 
+**Added 10 Nov (T-B9, `docs/architecture/v2-question-bank-migration.md` sections 2 and 8.2): question-bank images.** The staged `archive_cloud` spec now also carries the image path columns of the question bank, so the same export (and the same `SHA256SUMS` rules below) takes the union of three sets, read from the raw export: `questions.image_path`, `question_options.image_path`, and `media_assets.path` where `kind = 'image'` (these are also what `stimuli.asset_id` points to). Run the profile queries P-4 and P-5 of the design on the staged dump first: they give the number of files and the number of distinct paths, so the operator knows the size before copying. Format rules: the loader accepts only JPEG, PNG and WebP (magic bytes decide, not the extension); a GIF or SVG is converted to PNG by the operator at export time and listed in `SHA256SUMS` under the **original** path text; the stored copy is sanitised by the loader, so its sha256 can differ from the manifest line (the report keeps both). A missing or unusable file never drops a question: the question (or its whole rajah group) is loaded held (inactive, `legacy_image_unresolved`) and repaired by a later run once the file arrives. `paper_document_pages.path` is not exported (open choice OC-3). **Grants:** the column-level grants are generated from `apps/api/src/migration/ddl/spec.ts` by `dump:grants`, so the new columns (`questions.compliance_status`, `source`, `dskp_tagged`, `external_ref`, `source_pdf_path`, `created_by`, `approved_by`; the stimulus, media, canonical part, paper and blueprint columns listed in section 2 of the design) are in the grants only if `dump:grants` is run again from the current spec: **a grants script generated before 10 Nov is out of date and must be regenerated before the dump is taken.**
+
 **Access (Perlu pengesahan: confirm with the data owner/LEAD).** The operator uses read-only access to the .cloud storage, which is **more than the MySQL account**: it needs read-only shell access to the storage. The method, the host and who provides the access are not decided, and this document assumes none. No command that writes to the .cloud server is ever used. Shell access to the storage can see more than the banner files (ticket attachments, server configuration), so **before the sitting** the access is scoped to the banner directory (for example an rsync-only or forced-command SSH key, or a chroot) and is removed after the sitting. Files are copied without following symbolic links (`rsync -r --no-links`, or `tar --no-dereference`; never `scp -r`, which follows them).
 
 **`SHA256SUMS`.**
@@ -827,3 +829,45 @@ The readings and the counter files are aggregates. They live in `apps/api/.migra
 - [ ] **9. Clean-up is dated.** The owner drops the account after the last use (`DROP USER 'pp_dump_ro'@'<host>';`) on a date that is agreed (**Perlu pengesahan**: the date; section 4 says after the last rehearsal or at go-live, whichever comes first).
 
 **Confirmation.** This is a human step; nothing here is automated. When the owner has ticked every box, the operator posts one line on #109 with **no names, no host names and no credentials**, for example: `pp_dump_ro checklist (section 11) items 1 to 9 confirmed by the .cloud owner on <date>; open: <item numbers or none>`. Boxes the owner cannot tick stay open and are named by number only; a missing item 1 to 8 on the day of a sitting is a no-go for that sitting.
+
+## 12. Local raw-data rehearsal (V3 migration, T-B3 / T-B3b, 10 Nov 2026)
+
+This section records the procedure actually used on 10 Nov 2026 to rehearse the V3 migration against real .cloud data on one developer machine. It differs from sections 2 to 8 (operator PC, `pp_dump_ro`, anonymiser, encrypted hand-over): the dump is raw, never leaves the local machine, is loaded into a local container and is wiped after the rehearsal. No secrets, host names or IP addresses are written here. The V2 production server is strictly read-only throughout (it serves real users and also hosts another site; never touch that site or its database).
+
+### 12.1 Database dump (read-only on the server)
+
+1. From the local machine run one `plink` session to the V2 server (host key pinned with `-hostkey`, password from a file outside the repo, `-batch`). The remote command reads the app's DB settings from its `.env` on the server side (the values are never printed, never copied, never passed on a command line) and runs, under `nice -n 15 ionice -c3`, `mysqldump --single-transaction --quick --skip-lock-tables --no-tablespaces --default-character-set=utf8mb4 --max-allowed-packet=268435456 --skip-comments <db>` piped to `gzip -3`.
+2. The output is streamed over the plink session into a local file in the scratchpad (`t-b3/raw/<db>.sql.gz`). Nothing is written to the server disk; no temp files, no writes. `--single-transaction` gives a consistent InnoDB snapshot without table locks.
+3. Record the sha256 of the `.sql.gz` next to it and the exact row counts from the source (read-only `select count(*)` per table over the same channel) for the comparison in 12.3.
+4. Keep server load modest: check `uptime` before and after (4 cores; pause if the load average exceeds about 2).
+
+### 12.2 Local restore and the migration tooling
+
+1. Start a throwaway local MariaDB container (name it `tb3-*`; credentials generated locally, kept in the scratchpad only), create the database, and load the dump: `gzip -dc <db>.sql.gz | docker exec -i <container> mariadb ... <db>` with a large `--max-allowed-packet`.
+2. Create a read-only local user (SELECT only, on the restored database) and put its settings in a mode-600 option file in the scratchpad. The migration tools run as this user, so they cannot change the restored data.
+3. Point `CLOUD_MYSQL_DEFAULTS_FILE` at that option file and run, from the repo, with outputs in the scratchpad (a `.migration-out` folder outside the repo):
+   - `npm run dump:check -w @pp/api` (schema and counts; must exit 0, section 9);
+   - `npm run dump:cloud -w @pp/api -- --raw ...` (raw ndjson directory; the raw flow of section 8, no anonymiser) with `--datetime-offset +00:00` (section 2, item 9);
+   - `npm run staging:load -w @pp/api` into a `_staging` database (a second local database; the loader refuses anything else), then `npm run staging:profile -w @pp/api` for the profile report.
+4. Compare the local row counts per table with the source counts from 12.1 (they must match, within rows written between the counts and the snapshot).
+
+### 12.3 File copy (banners, paper documents, question and exam images)
+
+The image files live outside the database, under the app's `storage/app/public` on the server. The database only references them by path. The set needed by the V3 migration is the folders `stimuli`, `exam-media`, `questions` and `paper-docs` (10,316 files, about 2.47 GB, jpg/png/jpeg only on 10 Nov 2026).
+
+1. A file manifest (`files.sha256`, paths relative to the storage root, sha256 per file) is produced on the server read-only (`find ... | sha256sum` under `nice -n 19 ionice -c3`, output streamed to the local machine, nothing written on the server). Also check that every path referenced by the database exists (the check on 10 Nov 2026 found 0 missing).
+2. Copy one folder at a time, smallest first (`stimuli`, `exam-media`, `questions`, `paper-docs`), by streaming `tar` over the same plink channel, with no server temp files:
+   ```bash
+   plink -ssh -batch -hostkey <pinned> -pwfile <pw file> <user>@<host> \
+     "nice -n 19 ionice -c3 tar -C <storage root> -cf - <folder>" | tar -C <local files dir> -xf -
+   ```
+   Check `uptime` on the server between folders and pause if the load average is above about 2.
+3. Verify locally: compute sha256 of every copied file and compare with the manifest (`sha256sum -c`-style, run from the local files dir). Report matches, mismatches and missing files; retry a mismatching folder or file once; do not proceed with the migration rehearsal on unverified files.
+4. The local files dir keeps the storage-relative layout (for example `<scratchpad>/t-b3/files/questions/...`).
+
+### 12.4 PII handling and clean-up
+
+- The raw dump, the restored database, the raw ndjson, the staging database, the profile and the copied files hold real personal data of minors. They live only in the session scratchpad and the local container (an encrypted disk, outside the repo, outside `D:\Dev Projects`, outside any cloud-synced folder). Nothing goes to GitHub, an issue, a chat or any AI session transcript: reports quote aggregates only (counts, sizes, hashes).
+- Delete everything after the rehearsal, at the latest at the end of the same day: run `npm run dump:wipe -w @pp/api -- --dir <raw dir>`, delete the `.sql.gz`, the ndjson, the `files` folder, the option files and password files in the scratchpad, drop the `_staging` and restored databases, then stop and remove the `tb3-*` container and its volume.
+- The server side needs no clean-up (nothing was written there). Credentials used are unchanged; if any password was ever printed or pasted into a transcript, rotate it (section 5, Incident).
+- Note for a repeat run: T-B3 used the application's own database account on the server (read from its `.env` on the server side), because no dedicated read-only account existed. Section 2, item 5 (`pp_dump_ro`) remains the preferred path; ask the data owner for it before a real cutover sitting.

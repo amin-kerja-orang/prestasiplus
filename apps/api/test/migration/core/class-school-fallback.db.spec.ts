@@ -5,7 +5,9 @@
  *   - teacher class, no source school, teacher without a school -> NULL, not counted;
  *   - school class (no teacher), no school -> NULL;
  *   - class with a source school -> keeps its own, even when the teacher's differs;
- *   - a source school that is set but not loaded stays an ORPHAN_PARENT reject (no fallback);
+ *   - T-B7: a source school id that has NO row in the source `schools` (deleted at the source) is a class of its teacher: it takes the
+ *     teacher's school like a class with no school (counted in `classrooms.school_absent_from_source`); a school that is in the source
+ *     but was not loaded would still be an ORPHAN_PARENT reject;
  *   - a second apply changes nothing and the note stays at the same count.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -68,14 +70,16 @@ describe('SW7-01 classrooms: teacher school fallback', () => {
       { legacy_id: '102', kind: 'classroom', school_legacy: null, teacher_legacy: '8' },
       { legacy_id: '103', kind: 'school_class', school_legacy: null, teacher_legacy: null },
       { legacy_id: '104', kind: 'classroom', school_legacy: '2', teacher_legacy: '7' },
+      { legacy_id: '105', kind: 'classroom', school_legacy: '1', teacher_legacy: '7' },
     ])
-    expect(core.notes.counters.get(NOTE)).toBe(1)
-    // The class whose source school was never loaded is still an orphan: no fallback.
+    expect(core.notes.counters.get(NOTE)).toBe(2)
+    // T-B7: the class whose source school does not exist at the source (999) is not an orphan: it took its teacher's school.
+    expect(core.notes.counters.get('classrooms.school_absent_from_source')).toBe(1)
     const rejects = await q<{ legacy_id: string; column_name: string; reason: string }>(
       `select legacy_id, column_name, reason from etl_rejects where run_id = $1 and entity = 'classrooms'`,
       [report.runId],
     )
-    expect(rejects).toEqual([expect.objectContaining({ legacy_id: '105', column_name: 'school_id', reason: 'ORPHAN_PARENT' })])
+    expect(rejects).toEqual([])
   }, 120_000)
 
   it('a second apply on the same input changes nothing', async () => {
@@ -83,6 +87,6 @@ describe('SW7-01 classrooms: teacher school fallback', () => {
     const { report, core } = await apply()
     expect(report.counters.classrooms).toMatchObject({ inserted: 0, updated: 0 })
     expect(await planted()).toEqual(before)
-    expect(core.notes.counters.get(NOTE)).toBe(1)
+    expect(core.notes.counters.get(NOTE)).toBe(2)
   }, 120_000)
 })

@@ -91,7 +91,7 @@ function fixtureSecrets(): FixtureSecret[] {
 const plugin = defineMockModule({
   id: 'M02',
   dependsOn: ['core', 'M01'],
-  version: 6,
+  version: 7,
   overrides: M02_OVERRIDES,
   tables: {
     jpn: jpnTable,
@@ -217,3 +217,4 @@ export {
   type ResetPasswordInput,
 } from './school-admin-writes'
 export { MSG_USER_CREATED, MSG_USER_UPDATED } from './handlers/users-admin'
+export { joinCodeOf } from './handlers/schools-admin'

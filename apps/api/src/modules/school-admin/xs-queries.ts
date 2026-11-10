@@ -216,6 +216,23 @@ export class XsQueries {
     return num(r?.c)
   }
 
+  /**
+   * XS-1 pupils per classroom: the pupils with an active, non-test enrolment in the class (a class without members is 0). Not limited
+   * to a school scope: the class list of Admin Pusat shows classes of every school.
+   */
+  async pupilCountsByClass(classIds: readonly string[]): Promise<Map<string, number>> {
+    const out = new Map<string, number>(classIds.map((id) => [id, 0]))
+    const keys = classIds.flatMap((id) => idOrNull(id) ?? [])
+    if (keys.length === 0) return out
+    const rows = await this.q(Prisma.sql`
+      SELECT e.classroom_id::text AS classroom_id, count(*)::int AS n
+        FROM enrolments e JOIN users u ON u.id = e.student_id
+       WHERE e.classroom_id = ANY(${keys}::bigint[]) AND e.status = 'active' AND e.is_test = false AND ${XS_PUPIL_SQL('u')}
+       GROUP BY e.classroom_id`)
+    for (const r of rows) out.set(String(r.classroom_id), num(r.n))
+    return out
+  }
+
   /** XS-2: the distinct XS-1 pupils with at least one answer row in the window. */
   async activePupils(scope: XsScope, window: XsWindow = XS_ALL_TIME): Promise<XsPupils> {
     const rows = await this.q(Prisma.sql`SELECT DISTINCT u.id::text AS id, u.id AS sort_id ${answerRows(scope, window)} ORDER BY sort_id`)

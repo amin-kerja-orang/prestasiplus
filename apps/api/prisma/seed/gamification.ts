@@ -5,14 +5,14 @@
  * Source of every value: the mock (`src/modules/m14-gamification/mock/data/catalogue.ts`,
  * `src/modules/m15-rewards-shop/mock/data/rewards-seed.ts`), copied into `gamification-data.ts`; nothing is
  * invented and no total is tuned:
- *  - 10 daily challenges, 25 achievements, 10 gamification settings, 11 Syiling rewards, 3 learner badges;
+ *  - 10 daily challenges, 26 achievements, 10 gamification settings, 11 Syiling rewards, 3 learner badges;
  *  - the 59 observed Hadiah (all inactive, as on live) with their observed stock and monthly limits;
  *  - one sample lucky draw, `Cabutan Demo` (the mock hook `m14-draw-open`: 50 syiling a ticket, 10 tickets a
  *    student), with an ordered prize pool of two lines (`Hadiah Demo` 1000 sen x1 from the hook, `Baucar RM5`
  *    500 sen x10 from the mock draw tests), closing 90 days after the seed clock.
  * Not seeded: wallets and ledger (BE-11), tier rows (BE-11), claims, redemptions, tickets, completions and unlocks
  * (they need users and runtime activity), learner badge holdings (the mock holdings belong to a mock user id with no
- * seeded account), mystery boxes (constants in code, no table), teacher economy (D53/OWN-10).
+ * seeded account), mystery boxes (rows of migration 0222, DM-37: not seeded here), teacher economy (D53/OWN-10).
  *
  * Idempotent: settings are upserted by their unique `key`; every other row is found by its natural key (challenge
  * title, achievement name, badge name, Syiling reward name, Hadiah vendor + title, draw title) and created only when

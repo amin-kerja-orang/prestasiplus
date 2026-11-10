@@ -9,7 +9,7 @@
  *   W3002 P2  balance 50,  ledger +30 (bal 30), -10 (bal 20)         wallet differs from the ledger sum AND last balance
  *   W3003 P3  balance -5                                              rejected INVALID_VALUE
  *   W3004 P4  balance 7,   ledger: a spend with a positive amount     ledger row rejected; wallet has no ledger at all
- *   W3005 T   a teacher                                               rejected UNSUPPORTED
+ *   W3005 T   a teacher, balance 1, ledger +1 (bal 1)                 KEPT (T-B5b), no streak, consistent
  *   sessions  P1 at 2026-05-20 05:00Z, 2026-05-31 01:00Z, 2026-05-30 23:30Z (= 31 May in Malaysia), 2026-05-31 23:30Z
  *             (= 1 June in Malaysia); P2 at 10, 11 and 12 May 05:00Z. The as-of day is 2026-06-01.
  */
@@ -56,6 +56,9 @@ beforeAll(async () => {
   if (teacher) {
     await h.q(`insert into staging_cloud.student_wallets (id, user_id, syiling_balance, syiling_lifetime, streak_days, gamification_tier_id, created_at) values (3005, $1, 1, 1, 0, null, '2026-04-01T00:00:00Z')`, [teacher])
   }
+  if (teacher) {
+    await h.q(`insert into staging_cloud.coin_transactions (id, user_id, type, source, amount, balance_after, created_at) values (4006, $1, 'earn', 'admin_award', 1, 1, '2026-05-01T01:00:00Z')`, [teacher])
+  }
   await h.q(
     `insert into staging_cloud.coin_transactions (id, user_id, type, source, amount, balance_after, created_at) values
        (4001, $1, 'earn', 'practice', 60, 60, '2026-05-01T01:00:00Z'),
@@ -99,7 +102,7 @@ describe('wallets and ledger (AC3)', () => {
       `select legacy_id, current_syiling, total_syiling_earned, token_balance, xp, level, tier_id::text from wallets
        where legacy_source = 'cloud' and legacy_id in ('3001','3002','3003','3004','3005') order by legacy_id`,
     )
-    expect(rows.map((r) => [r.legacy_id, r.current_syiling])).toEqual([['3001', 100], ['3002', 50], ['3004', 7]])
+    expect(rows.map((r) => [r.legacy_id, r.current_syiling])).toEqual([['3001', 100], ['3002', 50], ['3004', 7], ...(teacher ? [['3005', 1]] : [])])
     expect(rows[1]).toMatchObject({ total_syiling_earned: 80, token_balance: 0, xp: 0, level: 1, tier_id: null })
     // The ledger of that user is exactly what .cloud holds: sum 20, last balance 20 (the wallet is not "fixed" to match).
     const ledger = await h.q<{ sum: string; last: string }>(
@@ -130,13 +133,13 @@ describe('wallets and ledger (AC3)', () => {
     expect(lines).toContain('drift wallet_ledger_mismatch: 2')
   })
 
-  it('rejects a negative balance, a teacher wallet and a ledger row with a wrong sign, with reason codes', async () => {
+  it('rejects a negative balance and a ledger row with a wrong sign, with reason codes', async () => {
     const run = applied.report.runId
     const wallet = await h.q<{ legacy_id: string; reason: string; column_name: string }>(
       `select legacy_id, reason, column_name from etl_rejects where run_id = $1 and entity = 'wallets' order by legacy_id`, [run],
     )
     expect(wallet.find((r) => r.legacy_id === '3003')).toEqual({ legacy_id: '3003', reason: 'INVALID_VALUE', column_name: 'syiling_balance' })
-    if (teacher) expect(wallet.find((r) => r.legacy_id === '3005')).toMatchObject({ reason: 'UNSUPPORTED' })
+    expect(wallet.find((r) => r.legacy_id === '3005')).toBeUndefined() // T-B5b: the teacher wallet is kept, not rejected
     expect(await h.count('wallets', `t.legacy_source = 'cloud' and t.legacy_id = '3003'`)).toBe(0)
     const ledger = await h.q<{ legacy_id: string; reason: string; column_name: string }>(
       `select legacy_id, reason, column_name from etl_rejects where run_id = $1 and entity = 'coin_ledger' and legacy_id = '4005'`, [run],

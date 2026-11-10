@@ -1,4 +1,7 @@
 import type {
+  AdminAnalyticsSchema,
+  AdminDashboardSchema,
+  AdminLaporanSchema,
   AnalyticsItemAnalysisSchema,
   AnalyticsMonitoringExportSchema,
   AnalyticsMonitoringOverviewSchema,
@@ -24,3 +27,8 @@ export type WeeklyRow = MonitoringOverview['weekly'][number]
 export type Signal = MonitoringOverview['signals']['best'][number]
 export type StudentLite = TeacherReport['notLoggedIn'][number]
 export type StudentAnswerRow = StudentDetail['answers']['rows'][number]
+
+/** Admin Pusat central screens (S6-T11). */
+export type AdminDashboardView = z.infer<typeof AdminDashboardSchema>
+export type AdminAnalyticsView = z.infer<typeof AdminAnalyticsSchema>
+export type AdminLaporanView = z.infer<typeof AdminLaporanSchema>

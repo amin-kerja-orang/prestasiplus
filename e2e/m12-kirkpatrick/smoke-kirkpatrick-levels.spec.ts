@@ -40,19 +40,25 @@ const S8 = (id: number | string) => `${BASE}/pelajar/${String(id)}`
 
 const TITLES = {
   s4: [
-    'Tahap 3: Tingkah Laku — Kirkpatrick',
-    'Tahap 3: Tingkah Laku',
-    'Konsistensi penggunaan, engagement score, dan corak tingkah laku pelajar',
+    'T3: Tingkah Laku',
+    'T3: Tingkah Laku',
+    'Kirkpatrick Tahap 3 — Konsistensi penggunaan',
   ],
   s5: [
-    'Tahap 4: Hasil — Kirkpatrick',
-    'Tahap 4: Hasil',
-    'Impak terhadap keputusan peperiksaan dan prestasi akademik',
+    'T4: Hasil',
+    'T4: Hasil',
+    'Kirkpatrick Tahap 4 — Keputusan peperiksaan',
   ],
   s7: [
-    'Intervensi — Kirkpatrick',
+    'Intervensi',
+    'Intervensi',
+    'Kirkpatrick — Cadangan & rekod intervensi',
+  ],
+  // /guru mount: the page is headed "Intervensi Pelajar" (route intervensions.ts).
+  s7Guru: [
+    'Intervensi',
     'Intervensi Pelajar',
-    'Rekod tindakan intervensi berdasarkan amaran Kirkpatrick',
+    'Kirkpatrick — Cadangan & rekod intervensi',
   ],
 } as const
 
@@ -866,9 +872,11 @@ test.describe('M12 S6 Rantaian Impak (admin)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(`${S6}?school_id=8080`)
-    await expectTabTitle(page, 'Kirkpatrick Impact Chain')
+    await expectTabTitle(page, 'Rantaian Impak')
     await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak')
-    await expect(page.getByTestId('shell-admin-subtitle')).toHaveCount(0)
+    await expect(page.getByTestId('shell-admin-subtitle')).toHaveText(
+      'Rantaian impak Kirkpatrick — 4 tahap keberkesanan',
+    )
     await expect(page.getByTestId('kirk-tabs')).toHaveCount(0)
     await expect(page.getByTestId('kirk-chain').locator('h1')).toHaveText(
       'Model Kirkpatrick — Rantaian Impak',
@@ -1385,16 +1393,16 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await header(page, TITLES.s5)
     await expect(stats(page)).toHaveText(['4.30', '96.7%', '52', '82.8%', '946', '4378'])
     await spaGo(page, '/guru/kirkpatrick/chain')
-    await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak')
+    await expect(page.getByTestId('shell-admin-title')).toHaveText('Rantaian Impak T1 → T4')
     await expect(page.getByTestId('chain-back')).toHaveAttribute('href', '/guru/kirkpatrick')
     await spaGo(page, '/guru/kirkpatrick/interventions')
-    await header(page, TITLES.s7)
+    await header(page, TITLES.s7Guru)
     await spaGo(page, '/guru/kirkpatrick/pelajar/4664')
     await expect(page.getByTestId('pel-name')).toHaveText('Pelajar Demo 004664')
     await expect(page.getByTestId('pel-back')).toHaveAttribute('href', '/guru/kirkpatrick/behavior')
   })
 
-  test('E2E-M12-08 /guru/kirkpatrick/behavior marks "Tahap 3: Tingkah Laku" active in the sidebar @m12', async ({
+  test('E2E-M12-08 /guru/kirkpatrick/behavior marks "T3: Tingkah Laku" active in the sidebar @m12', async ({
     page,
     gotoApp,
     loginAs,
@@ -1404,7 +1412,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
     await gotoApp('/guru/kirkpatrick/behavior')
     await expect(page.getByTestId('beh-school-row').first()).toBeVisible()
     await expect(page.getByTestId('shell-admin-nav').locator('.active')).toHaveText(
-      'Tahap 3: Tingkah Laku',
+      'T3: Tingkah Laku',
     )
   })
 
@@ -1432,7 +1440,7 @@ test.describe('M12 S4-S8: the /guru twins', MODULE, () => {
       ])
 
       await spaGo(page, '/guru/kirkpatrick/interventions')
-      await header(page, TITLES.s7)
+      await header(page, TITLES.s7Guru)
       await expect(stats(page)).toHaveText(['0', '0', '0', '0'])
 
       await spaGo(page, '/guru/kirkpatrick/pelajar/4664')

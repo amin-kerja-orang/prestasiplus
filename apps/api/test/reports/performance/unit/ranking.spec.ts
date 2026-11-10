@@ -1,101 +1,165 @@
 import { PerformanceRankingSchema } from '@pp/contract'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { levelCodeOf, parseScope, rankingAccuracy, shortName } from '../../../../src/modules/reports/performance/domain'
+import { ApiError } from '../../../../src/common/errors/api-error'
+import { compareCandidates, percentileOf } from '../../../../src/modules/reports/performance/domain/kedudukan'
+import { shortName } from '../../../../src/modules/reports/performance/domain'
 import { ctxOf } from '../fakes/fixtures'
-import { addPupil, socialWorld, type SocialWorld } from '../fakes/social-world'
+import { socialWorld, type SocialWorld } from '../fakes/social-world'
 
+/** Kedudukan (R1-MUR-18, API-RPT-13): rank by the current wallet balance, fictitious pupils only. */
 let w: SocialWorld
-const teacher = ctxOf('teacher', 't1')
+const me = (id: string) => ctxOf('student', id)
 
+/** School s1 in Negeri A: pupils 1..8 (syiling 80, 70, ... 10); class c1 holds 1, 2, 3 and 4. Pupil 20: school s3 in Negeri B. */
 beforeEach(() => {
   w = socialWorld()
-  addPupil(w, '1', 'Aina Binti Hassan', 's1')
-  addPupil(w, '2', 'Bakar Bin Ismail', 's1')
-  addPupil(w, '3', 'Chong Wei Ming', 's1')
-  addPupil(w, '4', 'Devi Nair', 's2')
-  addPupil(w, '5', 'Emir Danial', 's2')
-  addPupil(w, '6', 'Farah Lee', 's2')
-  w.directory.addPupil({ id: 't1', name: 'Cikgu Ujian', schoolId: 's1', isStudent: false })
-  // Ids are only shown inside the canSeeName scope: t1 teaches every pupil here (the scope matrix is in names-privacy.spec.ts).
-  w.classes.add({ id: 'c1', schoolId: 's1', teacherId: 't1' }, ['1', '2', '3', '4', '5', '6'])
-  // correct / answered: 1 = 9/10, 2 = 9/12, 3 = 8/8, 4 = 5/5, 5 = 5/6, 6 = 2/2 (below the 3-answer floor)
-  w.practice.addAnswers('1', 10, 9).addAnswers('2', 12, 9).addAnswers('3', 8, 8).addAnswers('4', 5, 5).addAnswers('5', 6, 5).addAnswers('6', 2, 2)
-  w.gamification.add('1', { level: 4 }).add('3', { level: 2 })
+  const names = ['Aina Binti Hassan', 'Bakar Bin Ismail', 'Chong Wei Ming', 'Devi Nair', 'Emir Danial', 'Farah Lee', 'Gopal Raj', 'Hana Yusof']
+  names.forEach((name, i) =>
+    w.kedudukan.add({
+      userId: String(i + 1),
+      name,
+      syiling: (8 - i) * 10,
+      schoolId: 's1',
+      state: 'Negeri A',
+      classIds: i < 4 ? ['c1'] : [],
+    }),
+  )
+  w.kedudukan.add({ userId: '20', name: 'Ilham Tan', syiling: 500, schoolId: 's3', state: 'Negeri B' })
 })
 
-describe('Rankings: rules', () => {
-  it('orders by correct DESC, then accuracy DESC, then id; pupils below 3 answers are not ranked', async () => {
-    const r = await w.ranking.rankings(teacher, {})
-    expect(r.rows.map((x) => [x.rank, x.userId, x.correct])).toEqual([
-      [1, '1', 9],
-      [2, '2', 9],
-      [3, '3', 8],
-      [4, '4', 5],
-      [5, '5', 5],
-    ])
-    expect(r.total).toBe(5)
+const scopeOf = (r: Awaited<ReturnType<SocialWorld['ranking']['rankings']>>, s: string) => r.scopes.find((x) => x.scope === s)
+
+describe('Kedudukan: ranks and cards', () => {
+  it('one card per applicable scope with rank, total and percentile (round half up) and the own syiling', async () => {
+    const r = await w.ranking.rankings(me('3'))
     PerformanceRankingSchema.parse(r)
+    expect(r.syiling).toBe(60)
+    expect(r.scopes.map((s) => s.scope)).toEqual(['kelas', 'sekolah', 'negeri', 'kebangsaan'])
+    expect(scopeOf(r, 'kelas')).toMatchObject({ rank: 3, total: 4, percentile: 75 })
+    expect(scopeOf(r, 'sekolah')).toMatchObject({ rank: 3, total: 8, percentile: 38 }) // 37.5 rounds up
+    expect(scopeOf(r, 'negeri')).toMatchObject({ rank: 3, total: 8 })
+    expect(scopeOf(r, 'kebangsaan')).toMatchObject({ rank: 4, total: 9, percentile: 44 }) // pupil 20 (500) is ahead
   })
 
-  it('accuracy has 2 decimals and tahap is the wallet level (1 when there is no wallet)', async () => {
-    const r = await w.ranking.rankings(teacher, {})
-    expect(r.rows[1]).toMatchObject({ accuracy: 75, tahap: 1 })
-    expect(r.rows[4]).toMatchObject({ accuracy: 83.33 })
-    expect(r.rows[0]?.tahap).toBe(4)
-    expect(rankingAccuracy(1, 3)).toBe(33.33)
-    expect(rankingAccuracy(0, 0)).toBe(0)
+  it('no class: no kelas card; no school: no sekolah card and negeri is all null ("Belum tersedia")', async () => {
+    expect((await w.ranking.rankings(me('6'))).scopes.map((s) => s.scope)).toEqual(['sekolah', 'negeri', 'kebangsaan'])
+    w.kedudukan.add({ userId: '30', name: 'Zulaikha Omar', syiling: 15 })
+    const r = await w.ranking.rankings(me('30'))
+    expect(r.scopes.map((s) => s.scope)).toEqual(['negeri', 'kebangsaan'])
+    expect(scopeOf(r, 'negeri')).toEqual({ scope: 'negeri', rank: null, total: null, percentile: null, nearby: [] })
+    expect(scopeOf(r, 'kebangsaan')).toMatchObject({ rank: 9, total: 10 })
   })
 
-  it('scope: default nasional with footer and title; negeri needs a state; unknown scope is null and unfiltered', async () => {
-    const nas = await w.ranking.rankings(teacher, {})
-    expect(nas).toMatchObject({ scope: 'nasional', title: 'Kedudukan Nasional', showFooter: true })
-    const none = await w.ranking.rankings(teacher, { scope: 'negeri' })
-    expect(none).toMatchObject({ scope: 'negeri', title: 'Kedudukan Negeri', showFooter: false, rows: [], total: 0 })
-    const neg = await w.ranking.rankings(teacher, { scope: 'negeri', negeri: 'Negeri A' })
-    expect(neg.title).toBe('Kedudukan Negeri A')
-    expect(neg.total).toBe(5)
-    const odd = await w.ranking.rankings(teacher, { scope: 'dunia' })
-    expect(odd).toMatchObject({ scope: null, title: 'Kedudukan Nasional', total: 5 })
+  it('a lone pupil is #1 of 1 and the percentile is 100 ("Kumpulan 100% teratas")', async () => {
+    const lone = socialWorld()
+    lone.kedudukan.add({ userId: '1', name: 'Seorang Murid', syiling: 374, schoolId: 's1', state: 'Negeri A' })
+    const r = await lone.ranking.rankings(me('1'))
+    expect(scopeOf(r, 'sekolah')).toMatchObject({ rank: 1, total: 1, percentile: 100 })
   })
 
-  it('sekolah and daerah use the viewer school and show the school name', async () => {
-    w.directory.addPupil({ id: 'v', name: 'Viewer Ujian', schoolId: 's2' })
-    const sek = await w.ranking.rankings(ctxOf('student', 'v'), { scope: 'sekolah' })
-    expect(sek.rows).toEqual([])
-    w.classes.add({ id: 'c2', schoolId: 's2', teacherId: 'v' }, ['4', '5', '6'])
-    const asTeacher = await w.ranking.rankings({ ...teacher, userId: 'v' }, { scope: 'sekolah' })
-    expect(asTeacher.rows.map((x) => x.userId)).toEqual(['4', '5'])
-    expect(asTeacher.rows[0]?.schoolName).toBe('Sekolah Dua')
-    const dae = await w.ranking.rankings({ ...teacher, userId: 'v' }, { scope: 'daerah' })
-    expect(dae.rows.map((x) => x.userId)).toEqual(['4', '5'])
-    const nobody = await w.ranking.rankings({ ...teacher, userId: 'unknown' }, { scope: 'sekolah' })
-    expect(nobody.rows).toEqual([])
+  it('the last pupil of a school is ranked last with percentile 100', async () => {
+    const r = await w.ranking.rankings(me('8'))
+    expect(r.syiling).toBe(10)
+    expect(scopeOf(r, 'sekolah')).toMatchObject({ rank: 8, total: 8, percentile: 100 })
   })
 
-  it('subject and tingkatan filters narrow the rows; rows are capped at 100 while total is not', async () => {
-    w.practice.addAnswers('4', 4, 4, { subjectId: '2', levelCode: 't5' })
-    expect((await w.ranking.rankings(teacher, { subjectId: '2' })).rows.map((x) => x.userId)).toEqual(['4'])
-    expect((await w.ranking.rankings(teacher, { tingkatan: 'T5' })).total).toBe(1)
-    expect((await w.ranking.rankings(teacher, { tingkatan: 'T9' })).total).toBe(5)
-    for (let i = 0; i < 110; i++) {
-      addPupil(w, `9${i}`, `Murid Ramai ${i}`, 's1')
-      w.practice.addAnswers(`9${i}`, 3, 3)
-    }
-    const big = await w.ranking.rankings(teacher, {})
-    expect(big.rows).toHaveLength(100)
-    expect(big.total).toBe(115)
-    expect(big.rows[99]?.rank).toBe(100)
+  it('only a pupil has a standing: other roles and unknown users get no scopes', async () => {
+    for (const role of ['teacher', 'school_admin', 'admin', 'ppd_officer', 'parent'] as const)
+      expect(await w.ranking.rankings(ctxOf(role, '3'))).toEqual({ syiling: 0, scopes: [] })
+    expect(await w.ranking.rankings(me('999'))).toEqual({ syiling: 0, scopes: [] })
+  })
+})
+
+describe('Kedudukan: Sekitar anda', () => {
+  it('up to 2 above, the own row marked me, up to 2 below, ranks consecutive', async () => {
+    const s = scopeOf(await w.ranking.rankings(me('4')), 'sekolah')
+    expect(s?.nearby.map((n) => [n.rank, n.me, n.syiling])).toEqual([
+      [2, false, 70],
+      [3, false, 60],
+      [4, true, 50],
+      [5, false, 40],
+      [6, false, 30],
+    ])
   })
 
-  it('pure helpers', () => {
-    expect(parseScope(undefined)).toBe('nasional')
-    expect(parseScope('daerah')).toBe('daerah')
-    expect(parseScope('x')).toBeNull()
-    expect(levelCodeOf('T4')).toBe('t4')
-    expect(levelCodeOf('t4')).toBeUndefined()
+  it('rank 1 shows the own row and 2 below (3 rows); the last rank shows 2 above and the own row', async () => {
+    const top = scopeOf(await w.ranking.rankings(me('1')), 'kelas')
+    expect(top?.nearby.map((n) => [n.rank, n.me])).toEqual([
+      [1, true],
+      [2, false],
+      [3, false],
+    ])
+    const last = scopeOf(await w.ranking.rankings(me('8')), 'sekolah')
+    expect(last?.nearby.map((n) => [n.rank, n.me])).toEqual([
+      [6, false],
+      [7, false],
+      [8, true],
+    ])
+  })
+
+  it('other pupils by first name only, no id and no school; the viewer by the stored name', async () => {
+    const r = await w.ranking.rankings(me('2'))
+    const s = scopeOf(r, 'sekolah')
+    expect(s?.nearby.map((n) => n.name)).toEqual(['Aina', 'Bakar Bin Ismail', 'Chong', 'Devi'])
+    const wire = JSON.stringify(r)
+    expect(wire).not.toContain('Hassan')
+    expect(wire).not.toContain('userId')
+    expect(wire).not.toContain('schoolName')
+  })
+})
+
+describe('Kedudukan: order chain (48 GAME-16)', () => {
+  const c = (over: Partial<Parameters<typeof compareCandidates>[0]>) => ({ userId: '1', name: 'A', syiling: 10, answered: 0, correct: 0, bestStreak: 0, ...over })
+
+  it('syiling desc, accuracy desc (unrounded, no answers last), streak desc, name asc, id asc', () => {
+    expect(compareCandidates(c({ syiling: 11 }), c({}))).toBeLessThan(0)
+    expect(compareCandidates(c({ answered: 3, correct: 2 }), c({ answered: 4, correct: 2 }))).toBeLessThan(0)
+    expect(compareCandidates(c({ answered: 6, correct: 3 }), c({ answered: 2, correct: 1 }))).toBe(0)
+    expect(compareCandidates(c({ answered: 0 }), c({ answered: 1, correct: 0 }))).toBeGreaterThan(0)
+    expect(compareCandidates(c({ bestStreak: 5 }), c({ bestStreak: 4 }))).toBeLessThan(0)
+    expect(compareCandidates(c({ name: 'Aina' }), c({ name: 'Bakar' }))).toBeLessThan(0)
+    expect(compareCandidates(c({ userId: '2' }), c({ userId: '10' }))).toBeLessThan(0)
+  })
+
+  it('equal syiling is broken by accuracy, streak, name and id so positions are distinct', async () => {
+    const t = socialWorld()
+    const base = { syiling: 100, schoolId: 's1', state: 'Negeri A' }
+    t.kedudukan
+      .add({ userId: '1', name: 'Dina', ...base, answered: 10, correct: 5 })
+      .add({ userId: '2', name: 'Cahaya', ...base, answered: 10, correct: 9 })
+      .add({ userId: '3', name: 'Bakar', ...base, answered: 10, correct: 5, bestStreak: 4 })
+      .add({ userId: '4', name: 'Amir', ...base, answered: 10, correct: 5, bestStreak: 4 })
+      .add({ userId: '5', name: 'Amir', ...base, answered: 10, correct: 5, bestStreak: 4 })
+      .add({ userId: '6', name: 'Eman', ...base })
+    const ranks = await Promise.all(
+      ['1', '2', '3', '4', '5', '6'].map(async (id) => [id, scopeOf(await t.ranking.rankings(me(id)), 'sekolah')?.rank] as const),
+    )
+    expect(Object.fromEntries(ranks)).toEqual({ '2': 1, '4': 2, '5': 3, '3': 4, '1': 5, '6': 6 })
+  })
+
+  it('percentile: round half up, at least 1', () => {
+    expect(percentileOf(1, 8)).toBe(13) // 12.5
+    expect(percentileOf(175, 342)).toBe(51)
+    expect(percentileOf(406, 864)).toBe(47)
+    expect(percentileOf(1, 4806)).toBe(1)
+    expect(percentileOf(5, 5)).toBe(100)
+  })
+})
+
+describe('Pure helpers and the weekly report', () => {
+  it('shortName', () => {
     expect(shortName('Aina Binti Hassan')).toBe('Aina H.')
     expect(shortName('Devi')).toBe('Devi')
     expect(shortName('  ')).toBe('')
+  })
+
+  it('weekly report (AC6) is 403 for every role', () => {
+    expect.assertions(1)
+    try {
+      w.weekly.report()
+    } catch (e) {
+      expect((e as ApiError).getStatus()).toBe(403)
+    }
   })
 })

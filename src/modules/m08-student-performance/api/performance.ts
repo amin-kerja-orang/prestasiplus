@@ -124,10 +124,7 @@ export const fetchPublicProfile = (id: number | string, o: Signal = {}) =>
   api.get<PublicProfile>(`/api/public/students/${String(id)}`, withSignal(o))
 
 /** #21 `GET /api/rankings` (S19). */
-export const fetchRankings = (
-  query: { scope?: string; subjectId?: number | string; tingkatan?: string; negeri?: string } = {},
-  o: Signal = {},
-) => api.get<Ranking>('/api/rankings', { ...withSignal(o), query })
+export const fetchRankings = (o: Signal = {}) => api.get<Ranking>('/api/rankings', withSignal(o))
 
 /** #22 `GET /api/leaderboard` (S20). */
 export const fetchLeaderboard = (period: LeaderboardPeriod = 'week', o: Signal = {}) =>

@@ -92,6 +92,8 @@ export const STAGING_KEYS: Readonly<Record<string, StagingKey>> = {
   referrals: byId('users', 's.referred_by IS NOT NULL'),
   // `user:subject-ref`: gone when the user is gone (an entry removed from the user's JSON is not detected).
   spm_targets: parents({ table: 'users', part: 1 }),
+  rewards: byId('gifts'),
+  reward_redemptions: byId('gift_redemptions'),
   articles: byId('articles'),
   banners: byId('banners'),
   notes: byId('notes'),
@@ -100,6 +102,7 @@ export const STAGING_KEYS: Readonly<Record<string, StagingKey>> = {
   support_tickets: byId('support_tickets'),
   timeline_posts: byId('timeline_entries'),
   // A feedback row also counts as deleted at the source when its user is gone (staging has no cascade, BE-29 rejects it as an orphan).
+  headcount_configs: byId('headcounts'),
   feedback: {
     tables: ['feedback', 'users'],
     exists: (alias) =>

@@ -109,7 +109,8 @@ function bank(total: number, servable: (i: number) => boolean): Bank {
     },
   })
   const users = { getMany: async () => [] } as unknown as UsersRepository
-  return { source: new Be09PracticeQuestionSource(repo, users), sampleLimits, getManySizes }
+  return { // A surface list without the drills: this spec covers the bounded text-only window (the group path has its own, group-ready.spec).
+    source: new Be09PracticeQuestionSource(repo, users, ['simulasi_paper', 'jana_kertas']), sampleLimits, getManySizes }
 }
 
 /** The whole eligible list in the order a window draws it (same child seed as `sample` derives). */

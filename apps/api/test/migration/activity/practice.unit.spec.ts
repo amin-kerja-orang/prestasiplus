@@ -202,17 +202,16 @@ describe('transformWallet', () => {
     id: '1', user_id: '1', syiling_balance: '10', syiling_lifetime: '20', streak_days: '1', gamification_tier_id: '1',
     created_at: '2026-01-01 00:00:00+00', updated_at: null, ...over,
   })
-  const refs = { userId: '9', isStudent: true, tierId: '3' as string | null | undefined }
+  const refs = { userId: '9', tierId: '3' as string | null | undefined }
 
   it('keeps the .cloud balance and lifetime as they are', () => {
     const out = transformWallet(wallet({ syiling_balance: '999', syiling_lifetime: '5' }), refs)
     expect(out.ok && out.value).toMatchObject({ current_syiling: 999, total_syiling_earned: 5, token_balance: 0, xp: 0, level: 1, tier_id: '3' })
   })
 
-  it('rejects a negative or blank balance, a non-student and an unloaded tier or user', () => {
+  it('rejects a negative or blank balance, and an unloaded tier or user', () => {
     expect(transformWallet(wallet({ syiling_balance: '-1' }), refs)).toMatchObject({ ok: false, reject: { reason: 'INVALID_VALUE', column: 'syiling_balance' } })
     expect(transformWallet(wallet({ syiling_balance: null }), refs)).toMatchObject({ ok: false, reject: { column: 'syiling_balance' } })
-    expect(transformWallet(wallet(), { ...refs, isStudent: false })).toMatchObject({ ok: false, reject: { reason: 'UNSUPPORTED' } })
     expect(transformWallet(wallet(), { ...refs, userId: undefined })).toMatchObject({ ok: false, reject: { reason: 'ORPHAN_PARENT', column: 'user_id' } })
   })
 
@@ -229,7 +228,7 @@ describe('transformLedger', () => {
   const tx = (over: Record<string, string | null> = {}) => ({
     id: '1', user_id: '1', type: 'earn', source: 'practice', amount: '5', balance_after: '5', created_at: '2026-01-01 00:00:00+00', ...over,
   })
-  const refs = { userId: '9', isStudent: true }
+  const refs = { userId: '9' }
 
   it('maps type and source, keeps balance_after and leaves source_id and description empty', () => {
     const out = transformLedger(tx(), refs)
@@ -250,10 +249,9 @@ describe('transformLedger', () => {
     expect(ledgerSignOk('convert', 1)).toBe(false)
   })
 
-  it('rejects an unknown type or source and a non-student', () => {
+  it('rejects an unknown type or source', () => {
     expect(transformLedger(tx({ type: 'mystery' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'type' } })
     expect(transformLedger(tx({ source: 'lucky' }), refs)).toMatchObject({ ok: false, reject: { reason: 'UNKNOWN_ENUM', column: 'source' } })
-    expect(transformLedger(tx(), { userId: '9', isStudent: false })).toMatchObject({ ok: false, reject: { reason: 'UNSUPPORTED' } })
   })
 })
 

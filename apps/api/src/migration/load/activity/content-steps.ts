@@ -20,8 +20,12 @@ import type pg from 'pg'
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
 import { assertSurrogateLegacyId } from '../../kit/sql'
 import type { LegacyRow } from '../../kit/upsert'
+import { STAGING_SCHEMA } from '../../ddl/spec'
 import { klDateSql } from '../../transform/activity-common'
 import {
+  articleGradeOfLevel,
+  noteGradeOfLevel,
+  NOTE_SUBJECT_BY_CODE,
   transformArticle,
   transformAudioSet,
   transformBanner,
@@ -86,6 +90,12 @@ async function klDates(db: Pick<pg.PoolClient, 'query'>, values: readonly (strin
   return out
 }
 
+/** A staged lookup `id -> text` (T-B6: a level name or a subject code the content row refers to). */
+async function stagedLookup(pool: Pick<pg.Pool, 'query'>, table: 'education_levels' | 'subjects', column: 'name_bm' | 'code'): Promise<Map<string, string | null>> {
+  const res = await pool.query<{ id: string; v: string | null }>(`SELECT id::text AS id, ${column}::text AS v FROM "${STAGING_SCHEMA}"."${table}"`)
+  return new Map(res.rows.map((r) => [r.id, r.v]))
+}
+
 const toRow = (legacyId: string, values: object): LegacyRow => ({ legacyId, values: values as unknown as Record<string, unknown> })
 
 // ---------------------------------------------------------------- articles
@@ -100,14 +110,21 @@ export function articlesStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const authors = await ctx.idMap.resolveMany('users', distinctValues(rows, 'author_id'))
+      const ownerId = await contentOwner(a, ctx.db)
+      const levels = await stagedLookup(a.pool, 'education_levels', 'name_bm')
       let items: { legacyId: string; values: ArticleValues }[] = []
+      let ownerAuthored = 0
       for (const row of rows) {
         const legacyId = idOf(row)
-        const authorId = lookup(authors, row.author_id)
-        const out = transformArticle(row, { authorId, sanitizer })
+        // T-B6: most real articles have no author (NULL): they belong to the configured content owner, as the author column is NOT NULL.
+        const blank = (row.author_id ?? '').trim() === ''
+        const authorId = blank ? ownerId : lookup(authors, row.author_id)
+        const out = transformArticle(row, { authorId, gradeLevel: articleGradeOfLevel(levels.get((row.education_level_id ?? '').trim())), sanitizer })
+        if (out.ok && blank) ownerAuthored += 1
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push({ legacyId, values: out.value })
       }
+      a.notes.count('articles.author_is_content_owner', ownerAuthored)
       items = await dropConflicts(ctx.db, items, {
         entity, table: 'articles', column: 'slug', expr: 'slug', source: ctx.source, rejects: ctx.rejects,
         legacyIdOf: (i) => i.legacyId, valueOf: (i) => i.values.slug,
@@ -164,7 +181,7 @@ export function bannersStep(a: ActivityContext): AnyEntityStep {
       a.notes.count('banners.target_not_a_link', dropped)
       return upsertAndMap(
         ctx, entity, 'banners',
-        ['title', 'description', 'image_file_id', 'banner_type', 'link_type', 'external_url', 'display_order', 'start_date', 'end_date', 'is_active', 'created_at', 'updated_at'],
+        ['title', 'description', 'image_file_id', 'banner_type', 'link_type', 'external_url', 'target_audience', 'display_order', 'start_date', 'end_date', 'is_active', 'created_at', 'updated_at'],
         items,
       )
     },
@@ -183,10 +200,19 @@ export function notesStep(a: ActivityContext): AnyEntityStep {
     keyOf: idOf,
     async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
       const ownerId = await contentOwner(a, ctx.db)
+      const subjects = await stagedLookup(a.pool, 'subjects', 'code')
+      const levels = await stagedLookup(a.pool, 'education_levels', 'name_bm')
       const items: LegacyRow[] = []
       for (const row of rows) {
         const legacyId = idOf(row)
-        const out = transformNote(row, { ownerId, sanitizer })
+        const code = subjects.get((row.subject_id ?? '').trim())
+        const out = transformNote(row, {
+          ownerId,
+          // A source row that carries no `subject_id` / `education_level_id` falls back to its own `subject` / `grade` columns.
+          subject: code === undefined || code === null ? undefined : (NOTE_SUBJECT_BY_CODE[code.toUpperCase()] ?? null),
+          grade: noteGradeOfLevel(levels.get((row.education_level_id ?? '').trim())) ?? undefined,
+          sanitizer,
+        })
         if (!out.ok) rejectRow(ctx, entity, legacyId, out.reject)
         else items.push(toRow(legacyId, out.value))
       }

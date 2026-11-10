@@ -23,9 +23,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/subjects',
     name: SUBJECT_ROUTES.list,
     component: () => import('../pages/SubjectListPage.vue'),
-    meta: meta('Pengurusan Subjek - Admin PRESTASIPLUS', {
-      title: 'Pengurusan Subjek',
-      subtitle: 'Urus subjek pembelajaran dalam sistem',
+    meta: meta('Subjek', {
+      title: 'Subjek',
+      subtitle: 'Pengurusan subjek',
     }),
   },
   {
@@ -33,9 +33,9 @@ const routes: RouteRecordRaw[] = [
     name: SUBJECT_ROUTES.create,
     component: () => import('../pages/SubjectFormPage.vue'),
     props: { mode: 'create' },
-    meta: meta('Tambah Subjek - Admin PRESTASIPLUS', {
-      title: 'Tambah Subjek Baru',
-      subtitle: 'Cipta subjek pembelajaran baharu',
+    meta: meta('Tambah Subjek', {
+      title: 'Tambah Subjek',
+      subtitle: 'Cipta subjek baharu',
     }),
   },
   {
@@ -52,9 +52,9 @@ const routes: RouteRecordRaw[] = [
     path: '/admin/education-levels',
     name: LEVEL_ROUTES.list,
     component: () => import('../pages/LevelListPage.vue'),
-    meta: meta('Pengurusan Tahap Pendidikan - Admin PRESTASIPLUS', {
-      title: 'Pengurusan Tahap Pendidikan',
-      subtitle: 'Urus tahap pendidikan dalam sistem',
+    meta: meta('Tahap Pendidikan', {
+      title: 'Tahap Pendidikan',
+      subtitle: 'Darjah & tingkatan',
     }),
   },
   {

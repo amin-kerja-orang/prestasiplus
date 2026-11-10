@@ -196,9 +196,9 @@ export class ShopAdminService {
             await this.repo.patchReward(row.id, { maxPerMonthPerStudent: change.value }, at)
             break
           case 'set_token_cost': {
-            // Half up, clamped to 1..10000; denominationRm is unchanged.
+            // Half up, clamped to 1..100000 (P07-07); denominationRm is unchanged.
             const next = Math.floor(row.tokenCost * (1 + change.pct / 100) + 0.5)
-            await this.repo.patchReward(row.id, { tokenCost: Math.max(1, Math.min(10000, next)) }, at)
+            await this.repo.patchReward(row.id, { tokenCost: Math.max(1, Math.min(100_000, next)) }, at)
             break
           }
           case 'delete':

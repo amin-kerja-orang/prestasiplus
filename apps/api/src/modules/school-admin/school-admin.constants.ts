@@ -13,6 +13,7 @@ export const SCHOOL_ADMIN_AUDIT = {
   PUPIL_TOGGLED: 'school_admin.pupil.toggled',
   PUPIL_PASSWORD_RESET: 'school_admin.pupil.password_reset',
   PUPIL_EXPORTED: 'school_admin.pupil.exported',
+  PUPILS_IMPORTED: 'school_admin.pupil.imported',
   AMARAN_EXPORTED: 'school_admin.amaran.exported',
 } as const
 
@@ -28,6 +29,7 @@ export const SCHOOL_ADMIN_LIMITS = {
   export: { bucket: 'school-admin.export', env: 'THROTTLE_SCHOOL_ADMIN_EXPORT_PER_MINUTE', default: 5, per: 'user' },
 } as const satisfies Record<string, RateLimitSpec>
 
+export const IMPORT_TX = { maxWait: 20_000, timeout: 60_000 } as const
 export const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 
 /** The dashboard shows at most this many Perutusan posts (mock `PERUTUSAN_LIMIT`). */

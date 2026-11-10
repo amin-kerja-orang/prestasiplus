@@ -82,11 +82,16 @@ export const AUDIT_ACTIONS = {
   GAMIFICATION_REWARD_COST_UPDATED: 'gamification.reward_cost.updated',
   GAMIFICATION_DRAW_CREATED: 'gamification.draw.created',
   GAMIFICATION_DRAW_DRAWN: 'gamification.draw.drawn',
+  GAMIFICATION_DRAW_OPENED: 'gamification.draw.opened',
+  GAMIFICATION_DRAW_CLOSED: 'gamification.draw.closed',
+  GAMIFICATION_DRAW_WINNER_DELIVERED: 'gamification.draw.winner_delivered',
   SHOP_REWARD_CREATED: 'shop.reward.created',
   SHOP_REWARD_UPDATED: 'shop.reward.updated',
   SHOP_REWARD_BULK_ACTION: 'shop.reward.bulk_action',
   SHOP_REDEMPTION_DELIVERED: 'shop.redemption.delivered',
   SHOP_REDEMPTION_CANCELLED: 'shop.redemption.cancelled',
+  // S7-T07 P7: an admin saved a Kotak Misteri box (label, cost, active flag, prize rows, daily limit).
+  SHOP_MYSTERY_BOX_UPDATED: 'shop.mystery_box.updated',
   INTAKE_BATCH_CREATED: 'intake.batch_created',
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
@@ -109,5 +114,10 @@ export const AUDIT_ACTIONS = {
   MARKETPLACE_SELLER_BANNED: 'marketplace.seller.banned',
   // S10-T02: Bilangan OTR changed in Tetapan (CF-05 deletes the marks above the new count in the same transaction).
   HEADCOUNT_CONFIG_OTRS_CHANGED: 'headcount.config.otrs_changed',
+  // S0-T10 Kawalan Ciri: detail { key, old, new }.
+  FEATURE_FLAG_TOGGLED: 'feature_flag.toggled',
+  // 0265: Kertas Subjektif page-image documents (V2 `POST /admin/kertas-subjektif/{paper}/terbit`).
+  KERTAS_DOKUMEN_PUBLISHED: 'kertas_dokumen.published',
+  KERTAS_DOKUMEN_HIDDEN: 'kertas_dokumen.hidden',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

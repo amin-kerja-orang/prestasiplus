@@ -120,7 +120,7 @@ describe('bilingual questions, schema and round trip (S1-T09b part A)', () => {
   })
 
   it('a stimulus round-trips caption, English caption and the bilingual body; null clears the English caption', async () => {
-    const res = await admin.post('/api/stimuli', { kind: 'passage', caption: 'Rajah 1', captionEn: 'Figure 1', body: { ms: 'Teks petikan.', en: 'Passage text.' } })
+    const res = await admin.post('/api/stimuli', { kind: 'passage', label: 'Petikan', caption: 'Rajah 1', captionEn: 'Figure 1', body: { ms: 'Teks petikan.', en: 'Passage text.' } })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const s = mutationEnvelopeOf(StimulusSchema).parse(res.body).data
     expect(s).toMatchObject({ caption: 'Rajah 1', captionEn: 'Figure 1', body: { ms: 'Teks petikan.', en: 'Passage text.' } })

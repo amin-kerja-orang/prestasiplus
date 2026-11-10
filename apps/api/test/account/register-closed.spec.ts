@@ -13,8 +13,8 @@ describe.each([['false'], ['0']])('REG-CLOSE: REGISTRATION_OPEN=%s closes POST /
   let schoolId: string
   const app = (): AccountTestApp => t as AccountTestApp
   const student = (n: number) => ({ ...REGISTER_STUDENT, email: `murid.tutup${n}@ujian.test`, schoolId })
-  const teacher = { name: 'Cikgu Tutup', email: 'cikgu.tutup@ujian.test', phone: '0191234567', role: 'teacher', password: 'rahsia1', passwordConfirmation: 'rahsia1' }
-  const parent = { name: 'Penjaga Tutup', email: 'penjaga.tutup@ujian.test', phone: '0191234567', role: 'parent', password: 'rahsia1', passwordConfirmation: 'rahsia1' }
+  const teacher = { name: 'Cikgu Tutup', email: 'cikgu.tutup@ujian.test', phone: '0191234567', role: 'teacher', password: 'rahsia111', passwordConfirmation: 'rahsia111' }
+  const parent = { name: 'Penjaga Tutup', email: 'penjaga.tutup@ujian.test', phone: '0191234567', role: 'parent', password: 'rahsia111', passwordConfirmation: 'rahsia111' }
 
   const boot = async () => {
     if (t) return

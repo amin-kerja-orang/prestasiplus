@@ -158,7 +158,9 @@ describe('Kertas Subjektif sitting (paper surface subjektif)', () => {
     expect(check.status, JSON.stringify(check.body)).toBe(200)
     const res = await me.post(`/api/bijak/attempts/${id}/submit`, { idempotencyKey: `k-${id}`, changes: [] })
     expect(res.status).toBe(200)
-    expect(t.reward.calls).toHaveLength(0)
+    // Not paid: the only question was checked (revealed), so the port is still called for the streak with nothing to credit.
+    expect(t.reward.calls).toHaveLength(1)
+    expect(t.reward.calls[0]).toMatchObject({ coins: 0, points: 0 })
     const result = await me.get(`/api/bijak/attempts/${id}/result`)
     expect(partsOf(result.body.data).every((p) => p.scheme !== undefined)).toBe(true)
   })

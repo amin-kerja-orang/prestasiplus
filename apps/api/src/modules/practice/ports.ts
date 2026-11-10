@@ -21,7 +21,7 @@ import type { AuthContext } from '../../common/scope/auth-context'
 import type { TxClient } from '../../db/client'
 import type { Prng } from '../../db/prng'
 import type { StimulusGroupRecord } from '../questions/types'
-import type { PracticeMode } from '@pp/contract'
+import type { PracticeMode, PracticeQuizStimulus } from '@pp/contract'
 
 /* --------------------------------------------------------------------------------- BE-09: questions */
 
@@ -52,7 +52,7 @@ export interface PracticeQuestion {
   /** The teacher's "Rujukan" link (FR-GUR-44a-9): set only for a private (personal) question served in a mission; a bank question has none. */
   referenceUrl?: string | null
   /** Options in served order; the zero-based index is the wire `selectedOptionId`. Labels `A`..`H`. */
-  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string }[]
+  options: { label: string; text: string; /** Only on a surface that allows figures (S1-T06). */ imageId?: string; /** T-C13: the file token URL of `imageId`. */ imageUrl?: string }[]
   /** Flat stem figure file id; set only on a surface that allows figures (S1-T06). */
   stemImageId?: string
   /**
@@ -62,6 +62,8 @@ export interface PracticeQuestion {
   groupId?: string
   groupPosition?: number | null
   stimulusGroup?: StimulusGroupRecord
+  /** T-C13 (D105): what the question is shown with (group stimuli first, then its own), as the wire carries it. Set only on a surface that serves figures. */
+  stimuli?: PracticeQuizStimulus[]
   /** SERVER ONLY: the key label. Never put it in a start response (AC 4). */
   correctLabel: string | null
   /** SERVER ONLY until the check. */
@@ -166,6 +168,11 @@ export interface PracticeAssignmentSource {
   resolve(kind: AssignmentKind, input: { userId: string; id: string; at: Date }): Promise<AssignmentResolution>
   /** Runs inside the submit transaction when a remedial session completes (mock `seams().remedialComplete`). */
   remedialCompleted(input: { remedialTestId: string; userId: string; afterAccuracy: number; completedAt: Date; isTest: boolean }, tx: TxClient): Promise<void>
+  /**
+   * Runs inside the submit transaction AFTER the reward port when a session with a `mission_id` completes (S6-T07): pays the once-only target
+   * reward of that mission and credits the wallet in the same transaction. Returns the coins credited by THIS call (0 = not met or already paid).
+   */
+  payTargetReward(input: { userId: string; missionId: string; sessionId: string; isTest: boolean; at: Date }, tx: TxClient): Promise<{ paid: number }>
 }
 
 export class NoAssignments implements PracticeAssignmentSource {
@@ -173,6 +180,9 @@ export class NoAssignments implements PracticeAssignmentSource {
     return { status: 'not_ready' }
   }
   async remedialCompleted(): Promise<void> {}
+  async payTargetReward(): Promise<{ paid: number }> {
+    return { paid: 0 }
+  }
 }
 
 /* ------------------------------------------------------------------------------ BE-41: ramalan */
