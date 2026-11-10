@@ -46,8 +46,8 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/admin/questions/564159/edit')
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Edit Soalan')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveCount(0)
+    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Edit Soalan')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveCount(0)
     for (const i of [0, 1, 2, 3])
       await expect(byId(page, `q-option-${String(i)}`)).toHaveAttribute('required', '')
     await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
@@ -107,8 +107,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-30 shell title/subtitle, file hints, defaults, format card suffixes (AC-13.1, 13.2, 13.3, 13.4)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Import CSV')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
+    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Import CSV')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
       'Import soalan secara pukal dari fail CSV',
     )
     await expect(page.getByText('Saiz maksimum: 5MB. Format: CSV atau TXT')).toBeVisible()
@@ -222,9 +222,9 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
   test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles upper case, legacy backticks (AC-15.1, 15.2)', async ({
     page,
   }) => {
-    await expect(byId(page, 'shell-admin-title')).toHaveText('Dashboard Kualiti Soalan')
-    await expect(byId(page, 'shell-admin-subtitle')).toHaveText(
-      'Analisa kualiti keseluruhan bank soalan',
+    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Dashboard Kualiti Soalan')
+    await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
+      'Metrik kualiti berdasarkan status pematuhan & DSKP',
     )
     await expect(byId(page, 'kpi-total')).toContainText('Jumlah Soalan')
     await expect(byId(page, 'kpi-average')).toContainText('Purata Skor')
