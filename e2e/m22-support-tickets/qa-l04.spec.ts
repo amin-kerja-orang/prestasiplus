@@ -197,9 +197,10 @@ test.describe('L04 access and badge', MODULE, () => {
       await loginAs(who)
       await openS1(page, gotoApp)
       if (viewportWidth(page) >= 1024) {
-        await expect(
-          page.getByTestId('shell-user-sidebar').locator('[data-nav-id="urus-tiket"]'),
-        ).toHaveCount(0)
+        const sidebar = page.getByTestId('pembelajaran-sidebar')
+        await expect(sidebar).toBeVisible()
+        await expect(sidebar.locator('a[href="/admin/tiket"]')).toHaveCount(0)
+        await expect(sidebar.getByRole('link', { name: 'Urus Tiket' })).toHaveCount(0)
       }
       expect(await mock.requests('/api/admin/tiket/open-count')).toHaveLength(0)
       expect(await mock.requests('/api/admin/tiket')).toHaveLength(0)
