@@ -24,6 +24,10 @@ const NOT_FOUND = 'Halaman Tidak Dijumpai | PRESTASIPLUS'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 // Several full page loads per test: give the shared build server room when workers compete.
 test.describe.configure({ timeout: 120_000 })
 
@@ -40,7 +44,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     await gotoApp('/latihan-berstruktur')
     await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
     // DV-M05-01: no subtitle in the shell header.
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
+    await expect(shellTitle(page)).toHaveText('Soalan Berstruktur')
     await expect(tid(page, 'structured-h1')).toHaveText('Soalan Berstruktur')
     await expect(tid(page, 'structured-sub')).toHaveText(
       'Latih tubi format Kertas 2 — jawab & semak secara automatik',
@@ -151,7 +155,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
       await loginAs(PELAJAR)
       await gotoApp('/latihan-berstruktur?scope=spm')
       await expectTabTitle(page, 'Soalan Berstruktur | PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Subjektif SPM')
+      await expect(shellTitle(page)).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-h1')).toHaveText('Subjektif SPM')
       await expect(tid(page, 'structured-sub')).toHaveText(
         'Pilih set struktur dan esei Tingkatan 4 atau 5 mengikut subjek semasa',
@@ -184,7 +188,7 @@ test.describe('M05 S10 structured list', { tag: [moduleTag(5)] }, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(PELAJAR)
       await gotoApp('/latihan-berstruktur?scope=spm&track=bahasa')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Tracking A Bahasa')
+      await expect(shellTitle(page)).toHaveText('Tracking A Bahasa')
       await expect(tid(page, 'structured-h1')).toHaveText('Tracking A Bahasa')
       await expect(tid(page, 'structured-pill')).toHaveText('Tracking A Bahasa')
       await expect(tid(page, 'structured-back')).toHaveText('Kembali ke Tracking A SPM')
@@ -237,9 +241,7 @@ test.describe('M05 Q3 structured answer', { tag: [moduleTag(5)] }, () => {
         .click()
       await expect(page).toHaveURL(/\/latihan-berstruktur\/\d+\/jawab$/)
       await expectTabTitle(page, 'Soalan Berstruktur — Jawab | PRESTASIPLUS')
-      // Pre-existing gap, not part of S5-T11: no `shell-user-title` testid is rendered in src (the list
-      // page fails the same way). The shell owner must fix it; kept soft so the rest of this test runs.
-      await expect.soft(tid(page, 'shell-user-title')).toHaveText('Soalan Berstruktur')
+      await expect(shellTitle(page)).toHaveText('Soalan Berstruktur')
       await expect(tid(page, 'answer-h1')).toHaveText('Soalan Berstruktur — Jawab')
       await expect(tid(page, 'stimulus-group')).not.toBeEmpty()
       expect(await page.getByTestId('sub-answer').count()).toBeGreaterThan(0)
