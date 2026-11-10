@@ -299,8 +299,8 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
     expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.status).toBe('mismatch')
     expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.detail).toContain('UNEXPLAINED')
     // This fixture has several unexplained reasons (an unknown subject, level, status, a duplicate set); the run accepts each explicitly.
-    const rejectKey = ((await sql(`select distinct entity || '|' || reason || '|' || coalesce(column_name, '') as k from etl_rejects order by 1`)).rows.map((r) => r.k as string)).join(',')
-    expect(rejectKey).toContain('questions|ORPHAN_PARENT|subject_id')
+    const rejectKey = ((await sql(`select distinct entity || '|' || reason || '|' || coalesce(column_name, '') || '=999' as k from etl_rejects order by 1`)).rows.map((r) => r.k as string)).join(',')
+    expect(rejectKey).toContain('questions|ORPHAN_PARENT|subject_id=999')
     process.env.PP_VERIFY_ACCEPT_REJECTS = rejectKey
     try {
       const accepted = Object.fromEntries((await verify()).checks.map((c) => [c.name, c]))
@@ -308,6 +308,14 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
       expect(c?.status, JSON.stringify(c)).toBe('ok')
       expect(c?.detail).toContain('ACCEPTED by the run allowlist')
       expect(c?.detail).toContain('allowlist in force: ')
+      // a count above the item's N is unexplained again (a new defect cannot hide behind an old waiver), and the allowlist is still printed
+      process.env.PP_VERIFY_ACCEPT_REJECTS = rejectKey.replace('questions|ORPHAN_PARENT|subject_id=999', 'questions|ORPHAN_PARENT|subject_id=0')
+      const over = Object.fromEntries((await verify()).checks.map((x) => [x.name, x]))['rejects of the question and paper loaders (latest apply run of each)']
+      expect(over?.status).toBe('mismatch')
+      expect(over?.detail).toContain('allowlist in force: ')
+      // the old wildcard and a missing max are refused
+      process.env.PP_VERIFY_ACCEPT_REJECTS = 'questions|ORPHAN_PARENT|'
+      await expect(verify()).rejects.toThrow(/entity|reason|column=maxN/)
     } finally {
       delete process.env.PP_VERIFY_ACCEPT_REJECTS
     }

@@ -37,13 +37,14 @@ describe('C-1: a member loaded by a later run joins the existing rajah group', (
       { id: 301002, body: 'Berdasarkan Rajah 1, hitung luas kawasan berlorek.', options: four() },
       { id: 301003, body: 'Berdasarkan Rajah 1, nyatakan jenis sudut.', status: 'xyz', options: four() }, // unknown status: quarantined
       { id: 301004, body: 'Berdasarkan Rajah 1, hitung perimeter.', options: four() },
+      { id: 301005, body: 'Berdasarkan Rajah 1, hitung isipadu.', status: 'xyz', options: four() }, // a second late member
     ])
     const run = async () => {
       const dry = await runQuestions({ ...opts, pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode: 'dry-run', batchSize: 2 })
       expect(dry.report.status).toBe('succeeded')
       const apply = await runQuestions({ ...opts, pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode: 'apply', batchSize: 2 })
       expect(apply.report.status).toBe('succeeded')
-      return apply as unknown as Parameters<typeof groupCounters>[0]
+      return { report: apply.report, notes: apply.questions.notes.counters as ReadonlyMap<string, number> }
     }
 
     const first = await run()
@@ -52,14 +53,17 @@ describe('C-1: a member loaded by a later run joins the existing rajah group', (
     expect(r1.map((r) => r.legacy_id)).toEqual(['301002', '301004'])
     expect(r1.map((r) => r.group_position)).toEqual([1, 2])
 
-    await sql(`update archive_cloud.questions set status = 'diluluskan' where id = 301003`)
+    await sql(`update archive_cloud.questions set status = 'diluluskan' where id in (301003, 301005)`)
     const second = await run()
-    expect(groupCounters(second)).toMatchObject({ inserted: 0, updated: 1 })
+    // one GROUP row changed (two members were attached: the member count is the note, not the counter), and the reconciliation still balances
+    expect(groupCounters(second)).toMatchObject({ inserted: 0, updated: 1, unchanged: 0 })
+    expect(second.report.recon.find((x) => x.entity === 'stimulus_groups')?.status).toBe('ok')
+    expect(second.notes.get('groups.late_attached')).toBe(2)
     const r2 = await rows()
-    expect(r2.map((r) => r.legacy_id)).toEqual(['301002', '301003', '301004'])
+    expect(r2.map((r) => r.legacy_id)).toEqual(['301002', '301003', '301004', '301005'])
     expect(new Set(r2.map((r) => r.group_id)).size).toBe(1)
     expect(r2[0]?.group_id).not.toBeNull()
-    expect(r2.map((r) => r.group_position)).toEqual([1, 2, 3]) // V2 order
+    expect(r2.map((r) => r.group_position)).toEqual([1, 2, 3, 4]) // V2 order
     expect(r2[1]).toMatchObject({ is_active: false, held: true }) // the picture is still not copied: the late member joins the hold
 
     const before = JSON.stringify(await rows())

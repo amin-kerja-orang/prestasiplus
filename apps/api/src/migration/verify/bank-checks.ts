@@ -221,15 +221,33 @@ const JUDGED_ELSEWHERE: ReadonlySet<string> = new Set(['exam_questions|INVALID_V
 const judgedElsewhere = (key: string): boolean => JUDGED_ELSEWHERE.has(key) || key.startsWith('question_files|')
 
 /**
- * The per-run allowlist of reject reasons the operator accepts as explained: `entity|reason|column` (column may be empty to accept every column
- * of that reason). From `PP_VERIFY_ACCEPT_REJECTS` (comma separated) and/or the file named by `PP_VERIFY_ACCEPT_REJECTS_FILE` (one per line,
- * `#` comments). Accepted keys are listed in the check detail, so the report records what was waved through.
+ * Every reject key (`entity|reason|column`) that verify explains: the computed expectations plus the keys judged by the text or the file (`question_files|*`
+ * stands for every reason of the picture pass). The single source for the checks above and for the list that `docs/ops/sql/smoke-readonly.sql` X3 mirrors.
  */
-export function acceptedRejectKeys(env: NodeJS.ProcessEnv): Set<string> {
+export const EXPLAINED_REJECT_KEYS: readonly string[] = [
+  ...[...questionExpectations, ...examExpectations, ...blueprintExpectations].map((e) => `${e.entity}|${e.reason}|${e.column}`),
+  ...JUDGED_ELSEWHERE,
+  'question_files|*',
+].sort()
+
+/**
+ * The per-run allowlist of reject reasons the operator accepts as explained, one item per reason: `entity|reason|column=maxN` (column may be
+ * empty only when the reject has none; there is no wildcard). The item accepts at most N rejects of that kind: more than N is unexplained again,
+ * so a new defect of the same kind cannot hide behind an old waiver. From `PP_VERIFY_ACCEPT_REJECTS` (comma separated) and/or the file named by
+ * `PP_VERIFY_ACCEPT_REJECTS_FILE` (one per line, `#` comments). This is a ONE-RUN waiver for the operator's shell: never put it in a persisted
+ * env file (prod.env, .env), or it silently applies to every later verify. The report prints every item outside the capped detail list.
+ */
+export function acceptedRejectKeys(env: NodeJS.ProcessEnv): Map<string, number> {
   const items: string[] = (env.PP_VERIFY_ACCEPT_REJECTS ?? '').split(',')
   const file = env.PP_VERIFY_ACCEPT_REJECTS_FILE
   if (file !== undefined && file.trim() !== '') items.push(...readFileSync(file, 'utf8').split(/\r?\n/).map((l) => l.replace(/#.*$/, '')))
-  return new Set(items.map((s) => s.trim()).filter((s) => s !== ''))
+  const out = new Map<string, number>()
+  for (const raw of items.map((x) => x.trim()).filter((x) => x !== '')) {
+    const m = /^([a-z_]+)\|([A-Z_]+)\|([A-Za-z_.]*)=(\d+)$/.exec(raw)
+    if (m === null) throw new RangeError(`PP_VERIFY_ACCEPT_REJECTS: "${raw}" is not entity|reason|column=maxN`)
+    out.set(`${m[1]}|${m[2]}|${m[3]}`, Number(m[4]))
+  }
+  return out
 }
 
 export const STANDALONE_ENTITIES = [
@@ -278,7 +296,6 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
   let unexplained = 0
   const rest: string[] = []
   const accepted = acceptedRejectKeys(process.env)
-  if (accepted.size > 0) rest.push(`allowlist in force: ${[...accepted].sort().join(', ')}`)
   for (const [key, n] of [...counts].sort(([a], [b]) => (a < b ? -1 : 1))) {
     if (computed.has(key)) continue
     const [entity, reason, column] = key.split('|')
@@ -286,9 +303,9 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
     if (judgedElsewhere(key)) {
       counted += n
       rest.push(`${label} (judged by the text or the file, counted as is)`)
-    } else if (accepted.has(key) || accepted.has(`${entity}|${reason}|`)) {
+    } else if ((accepted.get(key) ?? -1) >= n) {
       counted += n
-      rest.push(`${label} (ACCEPTED by the run allowlist)`)
+      rest.push(`${label} (ACCEPTED by the run allowlist, max ${accepted.get(key)})`)
     } else {
       unexplained += n
       rest.push(`${label} (UNEXPLAINED)`)
@@ -303,7 +320,8 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
     actual: total,
     // An unexplained reject reason fails the verify unless the run explicitly accepts it (PP_VERIFY_ACCEPT_REJECTS / _FILE).
     status: unexplained === 0 && expected === total ? 'ok' : 'mismatch',
-    detail: total === 0 ? 'no reject' : capped([...all.map((e) => `${e.entity} ${e.reason}/${e.column}: ${counts.get(`${e.entity}|${e.reason}|${e.column}`) ?? 0}`), ...rest]),
+    detail: (total === 0 ? 'no reject' : capped([...all.map((e) => `${e.entity} ${e.reason}/${e.column}: ${counts.get(`${e.entity}|${e.reason}|${e.column}`) ?? 0}`), ...rest])) +
+      (accepted.size > 0 ? ` | allowlist in force: ${[...accepted].map(([k, v]) => `${k}=${v}`).sort().join(', ')}` : ''),
   })
   return out
 }

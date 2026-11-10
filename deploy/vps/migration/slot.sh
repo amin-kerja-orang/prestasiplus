@@ -398,8 +398,8 @@ cmd_etl() {
     fi
   fi
   # migrate:verify reads the optional per-run allowlist of accepted reject reasons (bank-checks.ts acceptedRejectKeys): PP_VERIFY_ACCEPT_REJECTS
-  # (comma list of entity|reason|column) and PP_VERIFY_ACCEPT_REJECTS_FILE (a HOST file, mounted read-only at /accept-rejects.txt). Set in prod.env or
-  # the shell; the verify report lists what was waved through.
+  # (comma list of entity|reason|column=maxN) and PP_VERIFY_ACCEPT_REJECTS_FILE (a HOST file, mounted read-only at /accept-rejects.txt). One-run
+  # waivers: set them in the shell for that run, never in prod.env; the verify report lists what was waved through.
   if [ "$c" = migrate:verify ]; then
     local ar arf
     ar="$(pp_cfg PP_VERIFY_ACCEPT_REJECTS '')"; [ -z "$ar" ] || envs+=("PP_VERIFY_ACCEPT_REJECTS=$ar")

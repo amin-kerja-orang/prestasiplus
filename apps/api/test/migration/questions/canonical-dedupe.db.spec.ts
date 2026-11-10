@@ -68,6 +68,7 @@ beforeAll(async () => {
     { id: 4, body: 'Pilih jawapan yang betul.', options: legacyOpts(['Satu', 'Dua', 'Tiga', 'Empat'], 0) },
     { id: 5, body: 'Rajah menunjukkan sebuah segi tiga. Hitung luas.', options: legacyOpts(['1', '2', '3', '4'], 0) },
     { id: 6, body: 'Berapakah jisim kotak?', options: legacyOpts(['1.5', '2', '3', '4'], 0) },
+    { id: 7, body: 'Pilih huruf yang betul.', options: legacyOpts(['A', 'B', 'C', 'D'], 0) },
   ])
   for (const mode of ['dry-run', 'apply'] as const) {
     const r = await runQuestions({ ...opts, pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode, batchSize: 2 })
@@ -81,6 +82,7 @@ beforeAll(async () => {
   await sql(`insert into staging_cloud.stimulus_kinds (id, slug) values (91, 'diagram') on conflict (id) do update set slug = excluded.slug`)
   await sql(`insert into archive_cloud.stimuli (id, stimulus_kind_id, body, caption) values (5001, 91, null, 'Rajah 1')`)
   await sql(`insert into archive_cloud.question_stimulus (id, exam_question_id, stimulus_id, position) values (1, 9005, 5001, 1)`) // its own picture
+  await canonical(9007, 'Pilih huruf yang betul.', ['A', 'B', 'C', 'D'], 0) // options that are only their labels prove nothing: never a copy
   // 9006 differs from legacy 6 by digits only; an earlier run (the old rule) mapped it to legacy 6.
   await canonical(9006, 'Berapakah jisim kotak?', ['15', '2', '3', '4'], 0)
 }, 300_000)
@@ -115,7 +117,7 @@ describe('canonical rows that look like legacy questions', () => {
     const notes = await both()
     expect(notes.get('canonical.deduped_to_legacy')).toBe(1)
     expect(await mapOf('9001')).toBe(await legacyId('1'))
-    for (const id of ['9002', '9003', '9004', '9005', '9006']) {
+    for (const id of ['9002', '9003', '9004', '9005', '9006', '9007']) {
       const target = await mapOf(id)
       expect(target, id).toBeDefined()
       const q = (await sql(`select legacy_id from questions where id = $1::bigint`, [target])).rows[0]
@@ -128,7 +130,7 @@ describe('canonical rows that look like legacy questions', () => {
     const after = JSON.stringify((await sql(`select q.*, v.stem_ms, v.updated_at as vu from questions q join question_versions v on v.question_id = q.id where q.id = $1::bigint`, [wrongTarget])).rows)
     expect(after).toBe(legacySixBefore)
     // no canonical question was loaded for the true duplicate
-    expect((await sql(`select count(*)::int as n from questions where legacy_id is null`)).rows[0]?.n).toBe(5)
+    expect((await sql(`select count(*)::int as n from questions where legacy_id is null`)).rows[0]?.n).toBe(6)
   })
 
   it('a third run changes nothing', async () => {

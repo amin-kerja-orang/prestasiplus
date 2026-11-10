@@ -283,7 +283,7 @@ export function groupsStep(q: QuestionsContext): AnyEntityStep {
         if (u.group !== null) {
           const w = await writeGroup(ctx, plan, u.group, q)
           if (w.inserted) inserted += 1
-          else if (w.updated > 0) updated += w.updated
+          else if (w.updated > 0) updated += 1 // one changed GROUP row; the member count is the note groups.late_attached
           else unchanged += 1
         } else if (await writeOwnerLink(ctx, plan, u.owner as NonNullable<GroupUnit['owner']>)) inserted += 1
         else unchanged += 1

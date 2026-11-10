@@ -99,8 +99,8 @@ function correctTextOf(leaf: { options?: { label: string; body: string | null }[
 /**
  * V2 canonical id to the V3 id of the legacy question it copies (lowest legacy id on several matches). A copy needs the same subject, the same
  * stem and options (case and whitespace aside), the same correct option text AND the same stimulus set (V3 stimulus ids, so a canonical question
- * with a stimulus of its own is never a copy of a legacy question that has a different picture). Options with no text (images) cannot be compared:
- * such a question is never deduped.
+ * with a stimulus of its own is never a copy of a legacy question that has a different picture). Questions with no options, options with no text (images) or
+ * whose text is only their label cannot be compared: such a question is never deduped.
  */
 async function legacyCopiesOf(ctx: BatchContext, plans: readonly QuestionTreePlan[], links: ReadonlyMap<string, readonly string[]>): Promise<Map<string, string>> {
   const allSids = [...new Set(plans.flatMap((p) => links.get(p.idKey) ?? []))]
@@ -109,14 +109,13 @@ async function legacyCopiesOf(ctx: BatchContext, plans: readonly QuestionTreePla
     if (p.subject_id === null || p.stem.trim() === '') return []
     const only = p.tree.length === 1 ? p.tree[0] : undefined
     if (only?.kind !== 'leaf') return []
-    const bodies = (only.options ?? []).map((o) => normText(o.body))
-    if (bodies.some((b) => b === '')) return []
-    let correct = ''
-    if (bodies.length > 0) {
-      const c = correctTextOf(only)
-      if (c === null) return []
-      correct = c
-    }
+    // No options (an essay): the stem alone cannot prove a copy, so it is never deduped. An option whose text is only its own label ('A') says nothing.
+    const options = only.options ?? []
+    if (options.length === 0) return []
+    const bodies = options.map((o) => normText(o.body))
+    if (bodies.some((b, i) => b === '' || b === normText(options[i]?.label))) return []
+    const correct = correctTextOf(only)
+    if (correct === null) return []
     const sids = [...new Set(links.get(p.idKey) ?? [])]
     const v3 = sids.map((s) => stimulusOf.get(s))
     if (v3.some((s) => s === undefined)) return [] // its stimulus does not exist in V3 yet, so no legacy question can already carry it
