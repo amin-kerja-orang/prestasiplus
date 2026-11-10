@@ -42,7 +42,7 @@ async function latency(mock: MockHandle, ms: number): Promise<void> {
 }
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
-const h1 = (page: Page) => page.getByTestId('shell-user-main').locator('h1')
+const h1 = (page: Page) => page.getByTestId('pembelajaran-main').locator('h1')
 
 async function expectNotFound(page: Page): Promise<void> {
   await expect(page.locator('[data-page="not-found"]')).toBeVisible({ timeout: 30_000 * TIMEOUT_FACTOR })
@@ -57,10 +57,11 @@ async function headerCase(th: Locator): Promise<string> {
 
 /** The nav entries of the shell for the current viewport (sidebar at 1280, drawer below). */
 async function navScope(page: Page): Promise<Locator> {
-  if (isDesktopShell(page)) return tid(page, 'shell-user-sidebar')
-  await tid(page, 'shell-user-hamburger').click()
-  const drawer = tid(page, 'shell-user-drawer')
-  await expect(drawer).toHaveClass(/\bopen\b/)
+  if (isDesktopShell(page)) return tid(page, 'pembelajaran-sidebar')
+  // Below lg the complete menu is the "Lagi" slide-over of the bottom tab bar.
+  await tid(page, 'pembelajaran-bottom-nav').locator('[data-nav-id="tab-lagi"]').click()
+  const drawer = tid(page, 'pembelajaran-lagi-nav')
+  await expect(drawer).toBeVisible()
   return drawer
 }
 
@@ -100,33 +101,37 @@ test.describe('M13 shell, 404 and routing', MODULE, () => {
     await expect(nav.locator('a[href="/cikgu"]').first()).toHaveClass(/\bactive\b/)
   })
 
-  test('E2E-M13-04 bottom nav below 1024px: six entries, "Chat" opens the shell chatbot; hidden at 1280 @m13', async ({
+  test('E2E-M13-04 teacher bottom nav below 1024px: four tabs and Lagi, Cikgu Alesa reached from the floating button; hidden at 1280 @m13', async ({
     page,
     gotoApp,
     loginAs,
   }) => {
-    await loginAs(ADMIN)
+    // v2 (D29/D33): the Portal Pembelajaran bottom bar has the teacher's 4 tabs plus "Lagi" (no "Chat" tab);
+    // Cikgu Alesa is the floating button. Admin Pusat has the Pentadbiran shell, which has no bottom bar.
+    await loginAs(GURU)
     await gotoApp('/cikgu/rph')
-    const bottom = tid(page, 'shell-user-bottom-nav')
+    const bottom = tid(page, 'pembelajaran-bottom-nav')
     if (isDesktopShell(page)) {
       await expect(bottom).toBeHidden()
       return
     }
-    for (const label of ['Home', 'SPM', 'Game', 'Topik', 'Chat', 'Lagi']) {
-      await expect(bottom).toContainText(label)
+    const tabs = [
+      ['t-dashboard-guru', 'Dashboard', '/guru'],
+      ['t-kelas-saya', 'Kelas', '/guru/kelas'],
+      ['t-command-center', 'Command Center', '/guru/command-center'],
+      ['t-prestasi', 'Penilaian', '/prestasi/kelas'],
+    ] as const
+    for (const [id, label, href] of tabs) {
+      const tab = bottom.locator(`[data-nav-id="tab-${id}"]`)
+      await expect(tab).toContainText(label)
+      await expect(tab).toHaveAttribute('href', href)
     }
-    await page.evaluate(() => {
-      const w = window as unknown as { __chatToggled: number }
-      w.__chatToggled = 0
-      window.addEventListener('toggle-chatbot', () => {
-        w.__chatToggled += 1
-      })
-    })
-    await bottom.locator('[data-nav-id="bottom-chat"]').click()
-    await expect(page).toHaveURL(/\/cikgu\/rph$/)
-    expect(
-      await page.evaluate(() => (window as unknown as { __chatToggled: number }).__chatToggled),
-    ).toBe(1)
+    await expect(bottom.locator('[data-nav-id="tab-lagi"]')).toContainText('Lagi')
+    await expect(bottom.locator('a, button')).toHaveCount(5)
+    const alesa = tid(page, 'pembelajaran-alesa')
+    await expect(alesa).toHaveAttribute('href', '/cikgu')
+    await alesa.click()
+    await expect(page).toHaveURL(//cikgu$/)
   })
 
   test('E2E-M13-06 admin: unknown M13 paths and /cikgu-alesa show the 404 page @m13', async ({

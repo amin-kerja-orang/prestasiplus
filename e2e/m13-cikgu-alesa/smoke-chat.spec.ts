@@ -103,8 +103,8 @@ test.describe('M13 S1 chat', MODULE, () => {
     ] as const
     for (const [path, header, tab] of screens) {
       await gotoApp(path)
-      await expect(page.getByTestId('shell-user-title').first()).toHaveText(header)
-      await expect(page.getByTestId('shell-user-subtitle').first()).toHaveText(
+      await expect(page.getByTestId('pembelajaran-header').locator('h1').first()).toHaveText(header)
+      await expect(page.getByTestId('pembelajaran-subtitle').first()).toHaveText(
         'Selamat datang kembali',
       )
       await expectTabTitle(page, tab)
