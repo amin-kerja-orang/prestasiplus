@@ -30,6 +30,6 @@ describe('Pembelajaran shell a11y (S8-T07)', () => {
 
   it('D09 live tab has sr-only text, not colour alone', () => {
     expect(dsCopy.statusLive).toBe('LIVE')
-    expect(src).toMatch(/class="sr-only"[^>]*>\{\{ dsCopy\.statusLive \}\}/)
+    expect(src).toMatch(/class="sr-only"[^>]*>\{\{\s*dsCopy\.statusLive\s*\}\}/)
   })
 })

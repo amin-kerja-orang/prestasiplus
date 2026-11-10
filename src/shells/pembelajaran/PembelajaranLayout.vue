@@ -164,8 +164,18 @@ const sectionTabs = computed(() =>
 const pageMeta = usePageMeta()
 const header = computed(() => pageMeta.state.header ?? route.meta.header)
 const title = computed(() => header.value?.title ?? current.value?.label ?? '')
-/** Page description under the title (school-name line, "Tingkatan N"): set by the page or the route. */
-const subtitle = computed(() => header.value?.subtitle || '')
+/**
+ * Default description of a page that sets none, as the V2 layouts print it: the pupil "Selamat datang kembali"
+ * (pelajar/layout.blade.php:462), the teacher "Selamat datang, {name} 👩‍🏫" (guru/layout.blade.php:323). The
+ * other roles of this shell have no V2 default.
+ */
+const roleDefaultSubtitle = computed(() => {
+  if (role.value === 'student') return 'Selamat datang kembali'
+  if (role.value === 'teacher' && name.value) return `Selamat datang, ${name.value} 👩‍🏫`
+  return ''
+})
+/** Page description under the title (school-name line, "Tingkatan N"): set by the page or the route, else the role default. */
+const subtitle = computed(() => header.value?.subtitle || roleDefaultSubtitle.value)
 useShellTabTitle(title)
 /** Sidebar headings are stored in capitals ("HARIAN"); the crumb reads in sentence case like the admin shell. */
 const sentenceCase = (t: string): string =>

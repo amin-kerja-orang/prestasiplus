@@ -187,7 +187,10 @@ describe('Log Keluar touch target (AC-MUR-A5-4)', () => {
   it('the layout applies it to both the account dropdown and the Lagi panel Log Keluar rows', async () => {
     const { readFileSync } = await import('node:fs')
     const src = readFileSync(`${process.cwd()}/src/shells/pembelajaran/PembelajaranLayout.vue`, 'utf8')
-    const rows = [...src.matchAll(/label: 'Log Keluar',\n[\s\S]*?\n\s*\},/g)].map((m) => m[0])
+    // The Ctrl+K search row (also "Log Keluar") has no row class; the two menu rows do.
+    const rows = [...src.matchAll(/label: 'Log Keluar',\n[\s\S]*?\n\s*\},/g)]
+      .map((m) => m[0])
+      .filter((row) => row.includes('class:'))
     expect(rows).toHaveLength(2)
     for (const row of rows) expect(row).toContain('LOGOUT_ROW_MIN_HEIGHT_CLASS')
   })

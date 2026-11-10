@@ -29,6 +29,11 @@ const REGISTRY: readonly ModuleManifest[] = [
     id: 'M99',
     slug: 'm99-header',
     routes: [
+      ...['/dashboard', '/guru', '/admin-sekolah'].map((path) => ({
+        path,
+        component: Page,
+        meta: { layout: 'user' as const, v2: true, header: { title: 'Tanpa Sub' } },
+      })),
       {
         path: '/peta-belajar',
         component: Page,
@@ -53,8 +58,9 @@ let wrapper: VueWrapper | null = null
 async function open(
   path: string,
   session: Parameters<typeof logIn>[1] = {},
+  who: typeof STUDENT = STUDENT,
 ): Promise<VueWrapper> {
-  logIn(STUDENT, session)
+  logIn(who, session)
   const router = createAppRouter({ history: createMemoryHistory(), registry: REGISTRY })
   await router.push(path)
   wrapper = mount(LayoutHost, { global: { plugins: [pinia, router] }, attachTo: document.body })
@@ -147,5 +153,31 @@ describe('PembelajaranLayout impersonation banner (C-10)', () => {
     )
     await w.get('[data-testid="impersonation-leave"]').trigger('click')
     expect(leave).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('PembelajaranLayout role default subtitle (C-12)', () => {
+  const sub = (w: VueWrapper) => w.find('[data-testid="pembelajaran-subtitle"]')
+
+  it('a pupil page without its own subtitle shows "Selamat datang kembali"', async () => {
+    const w = await open('/dashboard')
+    expect(sub(w).text()).toBe('Selamat datang kembali')
+  })
+
+  it('a teacher page without its own subtitle shows the greeting with the name', async () => {
+    const teacher = { ...STUDENT, id: 3, role: 'teacher' as const, grade: null, name: 'Cikgu Contoh', landingPath: '/guru' }
+    const w = await open('/guru', {}, teacher)
+    expect(sub(w).text()).toBe('Selamat datang, Cikgu Contoh 👩‍🏫')
+  })
+
+  it('a role without a V2 default shows no subtitle', async () => {
+    const schoolAdmin = { ...STUDENT, id: 8, role: 'school_admin' as const, grade: null, landingPath: '/admin-sekolah' }
+    const w = await open('/admin-sekolah', {}, schoolAdmin)
+    expect(sub(w).exists()).toBe(false)
+  })
+
+  it("a page's own subtitle wins over the default", async () => {
+    const w = await open('/peta-belajar')
+    expect(sub(w).text()).toBe('Sub Laluan')
   })
 })
