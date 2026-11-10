@@ -73,6 +73,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-B1 | Rebase ETL ke skema HEAD: `be:lint:migration`, `test/migration/*` hijau (dalam Linux), kemas kini langkah battle/permainan dan model yang berubah sejak `cb7332d0b`; raptai sintetik saiz `medium` | backend-developer | T-A2 | 1.5 | 🔄 | |
 | T-B2 | Tambah ~10 jadual produksi V2 yang tiada dalam spec staging (senarai dari skema produksi, baca sahaja) | backend-developer | T-B1 | 0.5 | ✅ | spec staging 134 jadual (89+45), +7 jadual (6 Laravel runtime + school_battle_rankings); staging_cloud.sql dan fixture tiny dijana semula |
 | T-B3 | Dump V2 baharu (baca sahaja, ikut `docs/ops/cloud-dump-procedure.md`, data sebenar tanpa anonimisasi); simpan di luar repo, disulitkan/berhad, padam selepas cutover | devops-engineer | T-B2 | 0.5 | ✅ | Dump penuh baca sahaja (137 jadual, 2,412,828 baris, kiraan sepadan prod); staging:load 134 jadual OK; profil: 0 pendua e-mel, semua 7,026 hash bcrypt, yatim kecil disenaraikan; fail 10,316 / 2.47 GB, 0 rujukan hilang |
+| T-B3b | Salin fail gambar V2 (baca sahaja) ke scratchpad dan sahkan sha256 | devops-engineer | T-B3 | 0.25 | ✅ | 10,316 fail / 2.35 GiB dalam 3.3 minit; 10,316 sha256 sepadan, 0 hilang; beban server puncak 0.86 |
 | T-B4 | `staging:load` + `staging:profile` lokal; luaskan peta enum, senarai yatim dan pendua; laporan profil | backend-developer | T-B3 | 0.5 | ⬜ | |
 | T-B5 | Pengguna: peranan `agent` dan `jpn_officer`; terbit `grade` dari teks `kelas` V2 (aturan dipersetujui); pengendalian hash roster (KP-7); pendua e-mel | backend-developer | T-B4 | 1 | ⬜ | |
 | T-B6 | Kandungan: baiki tolakan artikel (92), nota (10), tiket (3); salin fail kandungan (banner, artikel, nota, audio) dengan manifest `SHA256SUMS` | backend-developer | T-B4 | 1 | ⬜ | |
@@ -157,3 +158,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | T-C4 ✅ (pengekstrak PDF sebenar dengan tesseract). |
 | 2026-11-10 | T-C14 ✅, T-C15 ✅. Spec E2E Kedudukan lama ditambah ke T-C11. |
 | 2026-11-10 | T-B3 ✅ (dump V2 penuh, baca sahaja; disimpan di scratchpad sahaja). T-B3b dimulakan: salin 2.47 GB fail gambar V2 (baca sahaja, semakan sha256). T-B9a pertama kehabisan ruang (kod belum diuji); bekas tb9a dibersihkan oleh Lead; T-B9a disambung oleh ejen baharu yang terus menguji pada data V2 sebenar. |
+| 2026-11-10 | T-B3b ✅: semua fail gambar V2 disalin dan disahkan. Prosedur didokumenkan di docs/ops/cloud-dump-procedure.md §12. |
