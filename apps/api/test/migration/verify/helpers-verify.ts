@@ -8,6 +8,7 @@ import { join } from 'node:path'
 
 import { runCore } from '../../../src/migration/load'
 import { ACTIVITY_GROUPS } from '../../../src/migration/load/activity'
+import { ENTITY_MATRIX } from '../../../src/migration/verify'
 import { AS_OF, bootActivity, PROBE_GROUP, type ActivityHarness } from '../activity/helpers'
 import { REPO_ROOT, testOutDir } from '../staging/helpers'
 
@@ -52,5 +53,6 @@ export async function legacyTableCounts(h: ActivityHarness): Promise<Record<stri
 
 export { bootActivity }
 
-/** `migrate:questions` is standalone (not part of `migrate:all`), so its `required: false` row is `not-run` after a full run. */
-export const STANDALONE_NOT_RUN = (e: { entity: string; status: string }): boolean => e.entity === 'questions' && e.status === 'not-run'
+/** The question, structured and papers loaders are standalone (not part of `migrate:all`), so their `required: false` rows are `not-run` after a full run. */
+export const STANDALONE_NOT_RUN = (e: { entity: string; status: string }): boolean =>
+  e.status === 'not-run' && ENTITY_MATRIX.some((m) => m.entity === e.entity && !m.required)

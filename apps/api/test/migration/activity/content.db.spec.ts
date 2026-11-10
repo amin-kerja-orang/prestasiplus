@@ -13,6 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { SanitizeHtmlSanitizer } from '../../../src/modules/content/shared/sanitize-html.sanitizer'
 import type { AnyEntityStep } from '../../../src/migration/kit/runner'
+import { firstActiveAdmin } from '../../../src/migration/load/activity'
 import { contentGroup } from '../../../src/migration/load/activity/part-b'
 import { bootActivity, type ActivityHarness } from './helpers'
 
@@ -106,7 +107,11 @@ beforeAll(async () => {
   await q(`insert into staging_cloud.audio_kbat (id, title, audio_path, status) values
     (1, 'Audio A', 'audio/a.mp3', 'draft'), (2, 'Audio B', null, 'tidak_dikenali')`)
 
+  // R1 means "no admin to own the content": every active admin is suspended for this one run (an unset --content-owner otherwise resolves to the first admin).
+  const admins = (await h.q<{ id: string }>(`select u.id::text id from users u join user_roles r on r.user_id = u.id and r.role = 'admin' where u.is_active and not u.is_suspended`)).map((x) => x.id)
+  await h.q(`update users set is_suspended = true where id = any($1::bigint[])`, [admins])
   r1 = await runApply()
+  await h.q(`update users set is_suspended = false where id = any($1::bigint[])`, [admins])
   r2 = await runApply({ contentOwnerUserId: ownerV2 })
   // R2 loaded the articles as empty pages (T-B6); R3 starts them afresh so the injected content is what gets stored.
   await q(`delete from articles`)
@@ -141,6 +146,18 @@ describe('R1: no content owner', () => {
     const bad = await h.run('apply', { groups, only: ['notes'], contentOwnerUserId: '987654321' })
     const rows = await h.q<{ n: number }>(`select count(*)::int n from etl_rejects where run_id = $1 and entity = 'notes' and reason = 'ORPHAN_PARENT'`, [bad.report.runId])
     expect(rows[0]?.n).toBe(2)
+  })
+})
+
+describe('automatic content owner', () => {
+  it('without --content-owner the owner is the lowest active admin, logged in the notes; the flag overrides it', async () => {
+    const lowest = (await h.q<{ id: string }>(`select u.id::text id from users u join user_roles r on r.user_id = u.id and r.role = 'admin' where u.is_active and not u.is_suspended order by u.id limit 1`))[0]?.id
+    expect(lowest).toBeTruthy()
+    expect(await firstActiveAdmin(h.env.pool)).toBe(lowest)
+    const auto = await h.run('dry-run', { groups, only: ['notes'] })
+    expect([...auto.activity.notes.counters.keys()]).toContain(`content_owner.auto_resolved.user_${lowest}`)
+    const given = await h.run('dry-run', { groups, only: ['notes'], contentOwnerUserId: ownerV2 })
+    expect([...given.activity.notes.counters.keys()].some((k) => k.startsWith('content_owner.auto_resolved'))).toBe(false)
   })
 })
 
@@ -285,3 +302,18 @@ describe('banners', () => {
 async function v2User(legacyId: string): Promise<string> {
   return (await h.q<{ new_id: string }>(`select new_id from etl_id_map where legacy_source = 'cloud' and entity = 'users' and legacy_id = $1`, [legacyId]))[0]?.new_id ?? ''
 }
+
+describe('automatic content owner: articles without an author (V2 has 60+)', () => {
+  it('load under the first active admin when no --content-owner is given', async () => {
+    await h.q(`insert into staging_cloud.articles (id, slug, category, title, views, is_published, author_id) values
+      (50, 'artikel-tanpa-penulis-a', 'umum', 'Artikel tanpa penulis A', 0, '1', null), (51, 'artikel-tanpa-penulis-b', 'umum', 'Artikel tanpa penulis B', 0, '0', null)`)
+    const body = { content: '<p>Isi</p>' }
+    const r = await runApply({ only: ['articles'], transformSteps: inject({ articles: { '1': body, '2': body, '3': body, '4': body, '50': body, '51': body } }) })
+    expect(r.status).toBe('succeeded')
+    expect(n(r, 'articles', 'ORPHAN_PARENT', 'author_id')).toBe(1) // article 4 names an author that does not exist; the two without an author are not rejected
+    const lowest = await firstActiveAdmin(h.env.pool)
+    const rows = await h.q<{ legacy_id: string; author_id: string }>(`select legacy_id, author_id::text from articles where legacy_id in ('50', '51') order by legacy_id`)
+    expect(rows).toEqual([{ legacy_id: '50', author_id: lowest }, { legacy_id: '51', author_id: lowest }])
+    expect(r.notes.get('articles.author_is_content_owner')).toBe(2)
+  })
+})

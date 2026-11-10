@@ -73,6 +73,8 @@ export interface QuestionTreePlan {
   import_issues: IssuePlan[] | null
   created_by_id: string | null
   spm_pool: boolean
+  /** Extra tags of the question (`question_tags`), e.g. the PKSK domain and level; the SPM pool tag is `spm_pool`. */
+  tags?: { kind: string; code: string }[]
   tree: NodePlan[]
   /** Own stimuli of the version (`question_version_stimuli`), by `stimuli.id`, position 1..n. */
   stimulusIds?: string[]
@@ -246,6 +248,14 @@ export async function insertQuestionTrees(
       `INSERT INTO question_tags (question_id, kind, code) SELECT x.question_id, 'pool', 'spm' FROM jsonb_to_recordset($1::jsonb) AS x(question_id bigint)
        ON CONFLICT DO NOTHING`,
       [toJson(pooled.map((p) => ({ question_id: qid(p) })))],
+    )
+  }
+  const tagRows = fresh.flatMap((p) => (p.tags ?? []).map((t) => ({ question_id: qid(p), kind: t.kind, code: t.code })))
+  if (tagRows.length > 0) {
+    await db.query(
+      `INSERT INTO question_tags (question_id, kind, code) SELECT x.question_id, x.kind, x.code FROM jsonb_to_recordset($1::jsonb) AS x(question_id bigint, kind text, code text)
+       ON CONFLICT DO NOTHING`,
+      [toJson(tagRows)],
     )
   }
   const links = fresh.flatMap((p) => (p.stimulusIds ?? []).map((sid, i) => ({ version_id: vid(p), stimulus_id: sid, position: i + 1 })))

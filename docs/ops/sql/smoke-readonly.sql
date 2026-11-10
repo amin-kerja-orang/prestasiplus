@@ -40,6 +40,8 @@
 --   say countsFromCommittedRows = 1 (a resumed apply: non_bcrypt and shared_default only saw the resumed part; the
 --   roster count is rebuilt from the committed rows and stays exact) F4 and F5 are 'info' too.
 --
+-- KP-7 (PO, 10 Nov): the shared roster default password stays; no forced change. F3, F6 and F10 report 'accepted (KP-7)' instead of FAIL when
+-- the note rosterDefaultHashesWarning = 1 (the default hashes were deliberately not supplied).
 -- STAGING-DEPENDENT CHECKS (blocks B, D1/D2 and F3 to F7)
 --   They read staging_cloud (kept in the target from the stage copy B5 until migrate:archive-minimise). When
 --   staging_cloud.* is absent (an empty migrated DB, or after minimise) the row says ok = 'info' and value 'n/a:
@@ -174,10 +176,10 @@ d AS (
   SELECT (xpath('/row/jpns/text()', (SELECT x FROM d_xml)))[1]::text::bigint AS st_jpns,
          (xpath('/row/ppds/text()', (SELECT x FROM d_xml)))[1]::text::bigint AS st_ppds
 ),
--- Block C: wallet balance against the sum of the user's migrated ledger rows (verify/checks.ts, ledger()).
+-- Block C: wallet balance against the sum of the user's migrated ledger rows, opening-balance rows included (verify/checks.ts, ledger()); differing must be 0.
 c AS (
   SELECT count(l.user_id) AS with_ledger,
-         count(l.user_id) FILTER (WHERE w.current_syiling <> l.s) AS differing,
+         count(*) FILTER (WHERE w.current_syiling <> coalesce(l.s, 0)) AS differing,
          count(*) FILTER (WHERE l.user_id IS NULL) AS without_ledger
   FROM wallets w
   LEFT JOIN (SELECT user_id, sum(amount) AS s FROM coin_ledger WHERE legacy_source = 'cloud' GROUP BY user_id) l ON l.user_id = w.user_id
@@ -275,9 +277,27 @@ uname AS (
 ),
 -- Block X: rejects of the run that produced each entity's latest recon row (a dry-run or an earlier apply is not counted twice).
 rej AS (
-  SELECT j.reason, j.entity, count(*) AS n
+  SELECT j.reason, j.entity, j.column_name AS col, count(*) AS n
   FROM etl_rejects j JOIN recon ON recon.run_id = j.run_id AND recon.entity = j.entity
-  GROUP BY j.reason, j.entity
+  GROUP BY j.reason, j.entity, j.column_name
+),
+-- Rejects that are explained by design (never a loader defect), so X3 can judge the rest on its own:
+--  * ORPHAN_PARENT on a person column: the row belongs to a user deleted in V2 (V2 does not enforce the foreign key; practice, exam, wallet,
+--    ledger, feedback and class rows of deleted users). Users and schools are excluded: X2 requires zero there.
+--  * DUPLICATE_KEY: V2 allows what a V3 unique key refuses (a second wallet of one user, a repeated article slug, a repeated e-mail).
+--  * coin_ledger INVALID_VALUE on amount: a ledger row whose sign contradicts its type is never flipped (BE-29 AC3).
+rej_explained AS (
+  SELECT entity, sum(n) AS n FROM rej
+  WHERE entity NOT IN ('users', 'schools')
+    AND (reason = 'DUPLICATE_KEY'
+         OR (reason = 'ORPHAN_PARENT' AND col IN ('user_id', 'student_id', 'parent_id', 'teacher_id', 'author_id', 'created_by', 'created_by_id', 'uploader_id'))
+         OR (entity = 'coin_ledger' AND reason = 'INVALID_VALUE' AND col = 'amount'))
+  GROUP BY entity
+),
+shares AS (
+  SELECT r.entity, r.source_count, r.rejected, coalesce(e.n, 0) AS explained, r.rejected - coalesce(e.n, 0) AS unexplained,
+         CASE WHEN r.entity IN ('users', 'schools') THEN 0.1 ELSE 0.5 END AS threshold
+  FROM recon r LEFT JOIN rej_explained e ON e.entity = r.entity
 ),
 -- Run ledger.
 runs AS (
@@ -361,7 +381,8 @@ checks AS (
          CASE WHEN fs.has_f THEN fs.roster::text ELSE 'n/a: staging_cloud.users not present' END,
          CASE WHEN nt.has_roster THEN nt.roster::text
               ELSE '= note must_reset.roster_account in the B7 output (counter not persisted in this build)' END,
-         CASE WHEN NOT fs.has_f OR NOT nt.has_roster THEN 'info' WHEN fs.roster = nt.roster THEN 'ok' ELSE 'FAIL' END FROM fs, nt
+         CASE WHEN NOT fs.has_f OR NOT nt.has_roster THEN 'info' WHEN fs.roster = nt.roster THEN 'ok'
+              WHEN nt.has_warn AND nt.warn = 1 THEN 'accepted (KP-7)' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F4', 'non-bcrypt accounts by the staged hash (includes argon2id and NULL) against note must_reset.non_bcrypt',
          CASE WHEN fs.has_f THEN fs.non_bcrypt::text ELSE 'n/a: staging_cloud.users not present' END,
          CASE WHEN nt.has_non_bcrypt THEN nt.non_bcrypt::text || CASE WHEN nt.partial THEN ' (partial: countsFromCommittedRows = 1)' ELSE '' END
@@ -374,7 +395,8 @@ checks AS (
          CASE WHEN NOT fs.has_f OR NOT nt.has_shared OR nt.partial THEN 'info' WHEN fs.remainder <= nt.shared THEN 'ok' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F6', 'accounts the ETL flags (roster or non-bcrypt/NULL hash by the staged row) but that are NOT flagged in v2 (dropped duplicate e-mails are not counted)',
          CASE WHEN fs.has_f THEN fs.derivable::text ELSE 'n/a: staging_cloud.users not present' END, '0',
-         CASE WHEN NOT fs.has_f THEN 'info' WHEN fs.derivable = 0 THEN 'ok' ELSE 'FAIL' END FROM fs
+         CASE WHEN NOT fs.has_f THEN 'info' WHEN fs.derivable = 0 THEN 'ok'
+              WHEN nt.has_warn AND nt.warn = 1 THEN 'accepted (KP-7)' ELSE 'FAIL' END FROM fs, nt
   UNION ALL SELECT 'F', 'F7', 'accounts with a NULL password_hash in v2 against the staged non-bcrypt, non-argon2id accounts (#226 F2)',
          CASE WHEN fs.has_f THEN fs.null_v2::text ELSE 'n/a: staging_cloud.users not present' END,
          CASE WHEN fs.has_f THEN fs.null_expected::text ELSE 'n/a' END,
@@ -390,7 +412,7 @@ checks AS (
   UNION ALL SELECT 'F', 'F10', 'note rosterDefaultHashesWarning: 1 = the shared roster default hashes were not supplied, so those accounts are NOT flagged (added, not in plan)',
          CASE WHEN nt.has_warn THEN nt.warn::text || ' (default hashes known: ' || coalesce(nt.hashes::text, '?') || ')' ELSE 'not persisted in this build' END,
          CASE WHEN nt.has_warn THEN '0' ELSE '= no warning line in the B7 output' END,
-         CASE WHEN NOT nt.has_warn THEN 'info' WHEN nt.warn = 0 THEN 'ok' ELSE 'FAIL' END FROM nt
+         CASE WHEN NOT nt.has_warn THEN 'info' WHEN nt.warn = 0 THEN 'ok' ELSE 'accepted (KP-7)' END FROM nt
 
   -- ---------------------------------------------------------------- U. username clashes across schools (#226 F1; added, not in plan)
   UNION ALL SELECT 'U', 'U1', 'lower-case usernames used by more than one cloud account (added, not in plan; #226 F1)', dup_names::text, 'reported; compare with the rehearsal', 'info' FROM uname
@@ -404,9 +426,15 @@ checks AS (
   UNION ALL SELECT 'X', 'X2', 'ORPHAN_PARENT rejects on users and schools (criterion 3)',
          coalesce((SELECT sum(n) FROM rej WHERE reason = 'ORPHAN_PARENT' AND entity IN ('users', 'schools')), 0)::text, '0',
          CASE WHEN coalesce((SELECT sum(n) FROM rej WHERE reason = 'ORPHAN_PARENT' AND entity IN ('users', 'schools')), 0) = 0 THEN 'ok' ELSE 'FAIL' END
-  UNION ALL SELECT 'X', 'X3', 'entities with reject share above 0.1 % (users, schools) or 0.5 % (others) (criterion 2)',
-         (SELECT count(*) FROM recon WHERE source_count > 0 AND 100.0 * rejected / source_count > CASE WHEN entity IN ('users', 'schools') THEN 0.1 ELSE 0.5 END)::text, '0',
-         CASE WHEN (SELECT count(*) FROM recon WHERE source_count > 0 AND 100.0 * rejected / source_count > CASE WHEN entity IN ('users', 'schools') THEN 0.1 ELSE 0.5 END) = 0 THEN 'ok' ELSE 'FAIL' END
+  UNION ALL SELECT 'X', 'X3', 'entities whose UNEXPLAINED reject share is above 0.1 % (users, schools) or 0.5 % (others) (criterion 2); explained rejects are counted apart in X3a',
+         (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * unexplained / source_count > threshold)::text, '0',
+         CASE WHEN (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * unexplained / source_count > threshold) = 0 THEN 'ok' ELSE 'FAIL' END
+  UNION ALL SELECT 'X', 'X3a', 'entities above the threshold before explaining / rejects explained by design (deleted-user orphans, V3 unique keys, ledger sign)',
+         (SELECT count(*) FROM shares WHERE source_count > 0 AND 100.0 * rejected / source_count > threshold)::text || ' / ' || (SELECT coalesce(sum(explained), 0) FROM shares)::text,
+         'reported; explained one by one', 'info'
+  UNION ALL SELECT 'X', 'X3b', 'unexplained rejects per entity above the threshold (entity:count; fix these in the loader)',
+         coalesce((SELECT string_agg(entity || ':' || unexplained::text, ', ' ORDER BY entity) FROM shares WHERE source_count > 0 AND 100.0 * unexplained / source_count > threshold), 'none'),
+         'none', 'info'
 
   -- ---------------------------------------------------------------- E. per-entity legacy-keyed counts against the recon report (added, not in plan; B8 "SQL counts equal the verify report")
   UNION ALL SELECT 'E', 'E.0', 'entities whose v2 count differs from etl_recon.loaded or has no recon row (added, not in plan)',

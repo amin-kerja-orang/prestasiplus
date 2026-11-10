@@ -28,7 +28,7 @@ export const NOT_MIGRATED_ACTIVITY: readonly NotMigrated[] = [
   // Shop / draws skipped per Q8 (no fixed values for the catalogue fields v2 requires).
   { table: 'lucky_draws', reason: 'Q8: no ticket rows and no fixed values for v2 draws; skipped' },
   // Targets that are not merged yet.
-  { table: 'pksk_packages / pksk_accesses / pksk_questions', reason: 'target owned by BE-42, not merged; PKSK questions are not migrated (D29a)' },
+  { table: 'pksk_packages / pksk_accesses', reason: 'not loaded by this run (V3 holds the 3 reference packages, migration 0028). PKSK questions are loaded by migrate:structured as drafts (OC-4)' },
   { table: 'battles / battle_participants / battle_queue / battle_invites', reason: 'V3 targets exist (battle module) but V2 holds 3 empty battles and nothing of value; queue and invites are transient. Not loaded (T-B1)' },
   { table: 'games / game_sessions / game_rooms / game_room_players', reason: 'V3 targets exist (games module) but V2 holds 0 sessions and no data worth loading (T-B1)' },
   { table: 'leagues / league_members', reason: 'V3 target exists (leagues) but V2 holds 0 leagues; nothing to load (T-B1; OD-10 Q13 A kept both kinds for when data exists)' },

@@ -98,6 +98,15 @@ export interface ActivityPlan {
  * Everything before the first row is read: the apply guard, the synthetic-data guard, the BE-28 preflight, the
  * steps and the input hash. Throws `ApplyGuardError` (guards, preflight) or `NoActivityStepsError`.
  */
+/** The lowest user id that is an active, unsuspended admin (a migrated or seeded Admin Pusat), or undefined when none exists. */
+export async function firstActiveAdmin(pool: pg.Pool): Promise<string | undefined> {
+  const res = await pool.query<{ id: string }>(
+    `SELECT u.id::text AS id FROM users u JOIN user_roles r ON r.user_id = u.id AND r.role = 'admin'
+      WHERE u.is_active AND NOT u.is_suspended ORDER BY u.id LIMIT 1`,
+  )
+  return res.rows[0]?.id
+}
+
 export async function planActivity(options: ActivityRunOptions): Promise<ActivityPlan> {
   const { mode, batchSize: _batchSize, gitSha: _gitSha, groups, groupNames, only, coreAsOf, transformSteps, ...activityOptions } = options
   void _batchSize
@@ -108,9 +117,15 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
   await assertCorePreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
   // Child safety: migrated videos are `global`, so a configured content owner must be an active admin. Checked once,
   // before any group runs (dry-run and apply), so a refused owner writes nothing at all.
-  await assertContentOwner(options.pool, options.contentOwnerUserId)
+  // No `--content-owner`: the owner is the first active Admin Pusat (lowest user id with role admin) after migrate:core, so a rebuild needs no
+  // manual second pass; the flag stays as an override. The id is a surrogate id and is printed in the notes of the run.
+  const resolvedOwner = options.contentOwnerUserId?.trim() ? undefined : await firstActiveAdmin(options.pool)
+  const ownerId = options.contentOwnerUserId?.trim() ? options.contentOwnerUserId : resolvedOwner
+  await assertContentOwner(options.pool, ownerId)
+  activityOptions.contentOwnerUserId = ownerId
 
   const activity = new ActivityContext(activityOptions)
+  if (resolvedOwner !== undefined) activity.notes.count(`content_owner.auto_resolved.user_${resolvedOwner}`)
   // `--files-dir`: the directory, its SHA256SUMS and the storage are checked before any group runs (nothing is copied here).
   if (options.filesDir !== undefined) {
     activity.files = await openMigrationFiles({ dir: options.filesDir, env: options.env, mode, source: options.source })
@@ -133,7 +148,7 @@ export async function planActivity(options: ActivityRunOptions): Promise<Activit
     asOf: options.asOf,
     stepNames: steps.map((s) => s.entity),
     extraTables,
-    contentOwnerUserId: options.contentOwnerUserId,
+    contentOwnerUserId: ownerId,
     publicOrigins: options.env.PUBLIC_ORIGINS,
     filesManifestHash: activity.files?.manifestHash,
   })

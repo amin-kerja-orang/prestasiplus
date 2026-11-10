@@ -188,9 +188,9 @@ describe('catalogue', () => {
     expect(recon.gamification_settings).toEqual({ source: 1, eligible: 1, loaded: 1, rejected: 0 })
   })
 
-  it('writes the DM-48 values to the reward_settings singleton; an invalid value is rejected and keeps what was there', async () => {
+  it('writes the DM-48 values to the reward_settings singleton (the redeem budget is lifted to the top of its range: V2 never enforces it, T-B5b); an invalid value is rejected and keeps what was there', async () => {
     const rows = await h.q(`select id, coins_per_correct, session_year, mini_games_give_coins, redeem_budget_sen, updated_by from reward_settings`)
-    expect(rows).toEqual([{ id: 1, coins_per_correct: 2, session_year: 2026, mini_games_give_coins: false, redeem_budget_sen: 300, updated_by: null }])
+    expect(rows).toEqual([{ id: 1, coins_per_correct: 2, session_year: 2026, mini_games_give_coins: false, redeem_budget_sen: 100000, updated_by: null }])
     expect(reject('reward_settings', 'INVALID_VALUE', 'games_award_syiling')).toBe(1)
     expect(recon.reward_settings).toEqual({ source: 3, eligible: 3, loaded: 2, rejected: 1 })
     const ids = await h.q<{ legacy_id: string; new_id: string }>(`select legacy_id, new_id from etl_id_map where entity = 'reward_settings' order by legacy_id`)

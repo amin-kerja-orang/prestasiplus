@@ -18,8 +18,12 @@ const env = { NODE_ENV: 'test', IC_HASH_KEY: 'x'.repeat(24) }
 describe('entity matrix', () => {
   const core = buildCoreSteps(new CoreContext({ pool, env, source: 'cloud', asOf: '2026-06-01' }))
   const activity = buildActivitySteps(new ActivityContext({ pool, env, source: 'cloud', asOf: '2026-06-01' }), ACTIVITY_GROUPS)
-  // `questions` is loaded by the standalone `migrate:questions` (QLOAD), after `migrate:all`: a matrix row, never registered here.
-  const STANDALONE = ['questions']
+  // The question bank and papers are loaded by the standalone `migrate:questions`, `migrate:structured` and `migrate:papers`, after `migrate:all`:
+  // matrix rows (never required), never registered here.
+  const STANDALONE = [
+    'questions', 'question_stimuli', 'stimulus_groups', 'question_files', 'structured_questions', 'subjective_questions', 'exam_questions', 'pksk_questions',
+    'spm_sets', 'paper_blueprints', 'exam_papers', 'paper_documents', 'paper_document_pages',
+  ]
   const registered = [...core, ...activity].map((s) => s.entity).filter((n) => n !== PROBE_ENTITY)
   const matrix = ENTITY_MATRIX.map((m) => m.entity)
 
@@ -35,7 +39,7 @@ describe('entity matrix', () => {
   it('requires every registered entity and gives each a counting mode', () => {
     for (const m of ENTITY_MATRIX) {
       expect(m.required, m.entity).toBe(!STANDALONE.includes(m.entity))
-      expect(['legacy', 'idmap', 'none']).toContain(m.count)
+      expect(['legacy', 'idmap', 'shared', 'none']).toContain(m.count)
     }
     expect(ENTITY_MATRIX.filter((m) => m.count === 'none').map((m) => m.entity)).toEqual(['wallet_ledger_drift'])
   })

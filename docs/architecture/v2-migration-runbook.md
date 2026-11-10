@@ -331,7 +331,10 @@ Exit codes (all commands): 0 ok, 1 failed or reconciliation mismatch, 2 usage or
 |---|---|
 | Users per role per school | Counts equal the eligible users. |
 | Answers per subject | The distribution of the migrated answers per subject. |
-| Ledger sums | `coin_transactions` sums against wallet balances. **Reported, never corrected** (data-migration section 5, "Ledger integrity"). The lead reads and accepts each difference. |
+| Ledger sums | Wallet balance against the sum of the user's ledger rows. V3 keeps a wallet equal to its ledger; V2 kept two independent counters (balance credited with no ledger row, as for the non-pupil wallets kept for the teacher economy; rows rejected on load; V2's own drift). The `wallet_opening` step writes ONE `legacy_opening` ledger row (`legacy_id = opening:<wallet id>`, dated just before the user's first ledger row, `earn` for a positive difference, `spend` for a negative one) per wallet the V2 ledger does not explain; the wallet and the V2 ledger rows are never changed. After the run every wallet equals its ledger, so a remaining difference **fails** verify. The check detail counts the opening rows and the wallets of non-pupil users; the step counters `wallet_opening.no_ledger`, `.ledger_short`, `.ledger_over` give the cause of each row. |
+| Questions accounting | V2 `questions` total = loaded + absorbed rajah carriers + quarantined + subjective rows (the other loader). The `questions` target also holds the subjective rows, so its row count is compared with the loaded rows of both steps. Fails only on an unexplained difference. |
+| Stimulus groups, PKSK, pictures | Every loaded group exists, has its stimulus and at least one member; every loaded PKSK question carries its domain and level tags and none is live without options (drafts still to complete are counted); the distinct picture paths walked equal the V2 distinct paths (held questions are reported, not failed). |
+| Loader rejects | Rejects of the question and paper loaders by entity, reason and column (reported; the reject CSVs hold the ids). |
 | Practice correct-sum | `practice_sessions.correct` against the count of correct answer rows. Reported. |
 | JPN/PPD distinct pairs | Distinct (state, district) pairs against the derived JPN/PPD rows. |
 | Orphan scan | A v2-side foreign key scan. The expected value is 0. |

@@ -18,14 +18,15 @@ import { canonicalStep } from './canonical-steps'
 import { QuestionsContext, type QuestionsOptions } from './context'
 import { curriculumMapHash } from './index'
 import { assertQuestionsPreflight } from './preflight'
-import { structuredStep, subjectiveStep } from './structured-steps'
+import { pkskStep, structuredStep, subjectiveStep } from './structured-steps'
+import { PKSK_RULES_VERSION } from './pksk-plan'
 import { STRUCTURED_RULES_VERSION } from './structured-plan'
 import { CANONICAL_RULES_VERSION } from './canonical-plan'
 
-export const STRUCTURED_RUN_RULES = `${STRUCTURED_RULES_VERSION}+${CANONICAL_RULES_VERSION}`
+export const STRUCTURED_RUN_RULES = `${STRUCTURED_RULES_VERSION}+${CANONICAL_RULES_VERSION}+${PKSK_RULES_VERSION}`
 
 export function buildStructuredSteps(q: QuestionsContext): AnyEntityStep[] {
-  return [structuredStep(q), subjectiveStep(q), canonicalStep(q)]
+  return [structuredStep(q), subjectiveStep(q), canonicalStep(q), pkskStep(q)]
 }
 
 const NEEDED: Record<string, readonly string[]> = {
@@ -37,6 +38,7 @@ const NEEDED: Record<string, readonly string[]> = {
   part_options: ['id', 'question_part_id', 'label', 'body', 'is_correct', 'position'],
   part_answer_keys: ['id', 'question_part_id', 'answer_key_kind_id', 'content'],
   legacy_canonical_map: ['canonical_type', 'canonical_id'],
+  pksk_questions: ['id', 'bahagian', 'domain', 'body', 'status', 'education_level_id'],
 }
 
 /** The core preflight plus the columns the structured loaders read (a dump staged before the spec extension is refused, naming the column). */
@@ -74,7 +76,7 @@ export async function runStructured(options: StructuredRunOptions): Promise<{ re
     ...(await tableFingerprints(options.pool, [
       'archive_cloud.structured_questions', 'archive_cloud.structured_sub_questions', 'archive_cloud.structured_rubric_points',
       'archive_cloud.questions', 'archive_cloud.exam_questions', 'archive_cloud.question_parts', 'archive_cloud.part_options',
-      'archive_cloud.part_answer_keys', 'archive_cloud.question_stimulus', 'archive_cloud.legacy_canonical_map',
+      'archive_cloud.part_answer_keys', 'archive_cloud.question_stimulus', 'archive_cloud.legacy_canonical_map', 'archive_cloud.pksk_questions',
     ])),
     `source=${options.source}`,
     `steps=${steps.map((s) => s.entity).join(',')}`,

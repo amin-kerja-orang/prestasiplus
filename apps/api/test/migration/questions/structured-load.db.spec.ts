@@ -216,12 +216,11 @@ describe('PKSK (OC-4): body-only V2 questions become draft PKSK questions', () =
          from etl_id_map m join questions q on q.id = m.new_id::bigint join question_versions v on v.question_id = q.id
         where m.entity = 'pksk_questions' order by m.legacy_id::int`,
     )
-    expect(rows.rows.map((x) => [x.legacy_id, x.pair, x.live_version_no, x.status, x.type, x.stem_ms, x.domain, x.parts, x.options])).toEqual([
-      ['501', null, null, 'draft', 'mcq', 'Soalan PKSK satu.', 'PKSK_MATH', 1, 0],
-      ['502', null, null, 'draft', 'mcq', 'Soalan PKSK dua.', 'PKSK_INSANIAH', 1, 0],
-      ['503', null, null, 'draft', 'mcq', 'Soalan PKSK tiga.', 'PKSK_SUKAN', 1, 0],
+    expect(rows.rows.map((x) => [x.legacy_id, x.pair, x.live_version_no, x.status, x.type, x.stem_ms, x.domain, x.level, x.parts, x.options])).toEqual([
+      ['501', null, null, 'draft', 'mcq', 'Soalan PKSK satu.', 'PKSK_MATH', 'T1', 1, 0],
+      ['502', null, null, 'draft', 'mcq', 'Soalan PKSK dua.', 'PKSK_INSANIAH', 'T1', 1, 0],
+      ['503', null, null, 'draft', 'mcq', 'Soalan PKSK tiga.', 'PKSK_SUKAN', 'T4', 1, 0],
     ])
-    expect(rows.rows.every((x) => x.level === 'T1' || x.level === 'T4')).toBe(true)
     // The shape of "Soalan PKSK" (PkskQuestionsService): one pksk_choice leaf, empty correct list, parsed by V3's own strict reader.
     const qid = (await sql(`select new_id from etl_id_map where entity = 'pksk_questions' and legacy_id = '501'`)).rows[0]?.new_id as string
     const parts = (await sql(`select p.* from question_parts p join question_versions v on v.id = p.question_version_id where v.question_id = $1::bigint`, [qid])).rows

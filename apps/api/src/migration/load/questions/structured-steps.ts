@@ -13,6 +13,7 @@ import { enumKey, type Staged } from '../../transform/common'
 import { rejectRow } from '../helpers'
 import { insertQuestionTrees, type QuestionTreePlan } from './bank-writer'
 import type { QuestionsContext } from './context'
+import { transformPksk } from './pksk-plan'
 import { transformStructured, transformSubjective, type LegacyRubricPoint, type LegacyStructured, type LegacySubQuestion } from './structured-plan'
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
@@ -127,6 +128,46 @@ export function subjectiveStep(q: QuestionsContext): AnyEntityStep {
       const { fresh } = await insertQuestionTrees(ctx, plans)
       for (const p of fresh) for (const n of p.notes) q.notes.count(`subjective.${n}`)
       for (const p of fresh) q.notes.count(`subjective.status.${p.status}`)
+      return { inserted: fresh.length, unchanged: plans.length - fresh.length }
+    },
+  }
+}
+
+// ---------- PKSK (OC-4) ----------
+
+async function* readPksk(pool: pg.Pool, afterKey: string | null, pageSize: number): AsyncGenerator<Staged> {
+  const sql = `SELECT ${selectList('pksk_questions', 'q')} FROM ${A}."pksk_questions" q WHERE ($1::bigint IS NULL OR q."id" > $1::bigint) ORDER BY q."id" LIMIT $2`
+  let after = afterKey
+  for (;;) {
+    const page = await pool.query<Record<string, string | null>>(sql, [after, pageSize])
+    for (const row of page.rows) yield row
+    if (page.rows.length < pageSize) return
+    after = page.rows[page.rows.length - 1]?.id ?? null
+  }
+}
+
+/**
+ * `pksk_questions` (body only in V2) become DRAFT PKSK questions an admin completes in "Soalan PKSK" (see `pksk-plan.ts`). They have no
+ * `questions.legacy_id` (the V2 ids would clash with the MCQ ids): the id-map entity `pksk_questions` is the link.
+ */
+export function pkskStep(q: QuestionsContext): AnyEntityStep {
+  const entity = 'pksk_questions'
+  return {
+    entity,
+    source: q.source,
+    extract: (after) => readPksk(q.pool, after, q.pageSize),
+    keyOf: (r: Staged) => r.id ?? '',
+    async load(rows: Staged[], ctx: BatchContext): Promise<BatchResult> {
+      const cur = await q.curriculum()
+      const plans: QuestionTreePlan[] = []
+      for (const row of rows) {
+        assertSurrogateLegacyId(row.id ?? '', 'migrate:structured')
+        const out = transformPksk(row, cur)
+        if (!out.ok) rejectRow(ctx, entity, row.id ?? '', out.reject)
+        else plans.push(out.value)
+      }
+      const { fresh } = await insertQuestionTrees(ctx, plans)
+      for (const p of fresh) for (const n of p.notes) q.notes.count(`pksk.${n}`)
       return { inserted: fresh.length, unchanged: plans.length - fresh.length }
     },
   }

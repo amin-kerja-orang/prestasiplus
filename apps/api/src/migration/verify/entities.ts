@@ -31,7 +31,7 @@ export interface MatrixEntry {
   stagingTable: string | null
   /** v2 table the step writes. */
   targetTable: string
-  count: 'legacy' | 'idmap' | 'none'
+  count: 'legacy' | 'idmap' | 'shared' | 'none'
   /** A required entity that did not run fails the gate (`not-run`). True for everything BE-28 and BE-29 register. */
   required: boolean
   /** One line for the report: the choice made for this row, when it is not the plain 1:1 copy. */
@@ -41,6 +41,20 @@ export interface MatrixEntry {
    * False for derived and filtered reads (distinct pairs, pivots, users with a referral code, ...).
    */
   plainRead: boolean
+  /**
+   * `archive_cloud` table the step reads whole (every row once): `etl_recon.source_count` must equal its row count now (the same "staging
+   * changed since the run" guard as `plainRead`, for the loaders that read the archive).
+   */
+  archiveTable?: string
+  /** `legacy` counting: SQL condition (a constant, never data) that narrows the target rows to this entity when two entities share a table. */
+  targetWhere?: string
+  /** `idmap` counting: SQL condition on `legacy_id` that narrows the id-map rows to this entity (a step that also writes other keys). */
+  idmapWhere?: string
+  /**
+   * Entities that write rows of the SAME target table under their own legacy pair: the target holds `loaded` of this entity plus theirs
+   * (the question bank: a subjective question is a `questions` row of the `subjective_questions` step).
+   */
+  sharedWith?: readonly string[]
 }
 
 /** Entities whose read is NOT "every row of the staging table once". */
@@ -56,6 +70,10 @@ const e = (
   note?: string,
   count: MatrixEntry['count'] = 'legacy',
 ): MatrixEntry => ({ entity, stagingTable, targetTable, count, required: true, plainRead: !NOT_PLAIN_READ.has(entity), ...(note ? { note } : {}) })
+
+/** `coin_ledger` rows of the V2 ledger and the opening-balance rows (`load/activity/wallet-steps.ts` OPENING_ID_PREFIX). */
+export const OPENING_NOT = `legacy_id NOT LIKE 'opening:%'`
+export const OPENING_ONLY = `legacy_id LIKE 'opening:%'`
 
 /** In load order: BE-28 (`migrate:core`), then BE-29 (`migrate:activity`, groups catalogue, wallet, activity, content, ops). */
 export const ENTITY_MATRIX: readonly MatrixEntry[] = [
@@ -82,7 +100,12 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   e('rewards', 'gifts', 'rewards', 'T-B8: the V2 gift catalogue with its own token price (KP-6)'),
   // ---- BE-29 wallet
   e('wallets', 'student_wallets', 'wallets'),
-  e('coin_ledger', 'coin_transactions', 'coin_ledger'),
+  { ...e('coin_ledger', 'coin_transactions', 'coin_ledger', 'the V2 ledger rows (the opening-balance rows of wallet_opening are counted apart)'), targetWhere: OPENING_NOT },
+  {
+    ...e('wallet_opening', 'student_wallets', 'coin_ledger', 'one legacy_opening ledger row per wallet its V2 ledger does not explain, so SUM(ledger) = balance (T-B5b follow-up)'),
+    targetWhere: OPENING_ONLY,
+    plainRead: true,
+  },
   e('wallet_ledger_drift', 'student_wallets', '(report only)', 'loads nothing; the drift is shown as a check', 'none'),
   // ---- BE-29 activity
   e('practice_sessions', 'practice_sessions', 'practice_sessions'),
@@ -110,10 +133,37 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   // ---- QLOAD: standalone `migrate:questions`, run AFTER `migrate:all`. Not required (migrate:all --apply verifies before it
   // exists, so a missing run must not fail the gate); once it has a succeeded apply run it is verified like any other row.
   {
-    ...e('questions', null, 'questions', 'archive_cloud approved MCQs loaded by migrate:questions; versions, parts, options, keys and tags share the legacy id'),
+    ...e('questions', null, 'questions', 'archive_cloud MCQs of every status loaded by migrate:questions; versions, parts, options, keys and tags share the legacy id; the target also holds the subjective questions'),
     required: false,
+    archiveTable: 'questions',
+    sharedWith: ['subjective_questions'],
   },
+  ...standalone([
+    ['question_stimuli', 'stimuli', 'stimuli', 'idmap', 'stimuli of the rajah plan (carriers, owners, shared images, canonical stimuli); the stem stimulus of a plain question is not an entry of this step', { idmapWhere: `legacy_id NOT LIKE 'i:%'` }],
+    ['stimulus_groups', null, 'stimulus_groups', 'shared', 'rajah groups (all members show the rajah, V2 order) and the stem links of image owners; checked by the group checks, not by a row count'],
+    ['question_files', null, 'files', 'shared', 'question pictures by distinct V2 path; a picture that cannot be used keeps its questions held (never dropped), see the file checks'],
+    ['structured_questions', 'structured_questions', 'questions', 'idmap', 'structured questions with sub-questions and rubric points (no legacy pair: the id map links them)', { archiveTable: 'structured_questions' }],
+    ['subjective_questions', 'questions', 'questions', 'shared', 'subjective questions: rows of questions with their own legacy id (counted with the questions entity); the type migrate:questions leaves to this loader'],
+    ['exam_questions', 'exam_questions', 'questions', 'idmap', 'canonical-only questions (no legacy_canonical_map row; no legacy pair: the id map links them)'],
+    ['pksk_questions', 'pksk_questions', 'questions', 'idmap', 'V2 PKSK questions (body only): loaded as DRAFTS for the admin to complete (OC-4)', { archiveTable: 'pksk_questions' }],
+    ['spm_sets', 'spm_sets', 'spm_tracking_sets', 'idmap', 'SPM tracking sets (kinds the loader does not own are excluded)', { archiveTable: 'spm_sets' }],
+    ['paper_blueprints', 'paper_blueprints', 'blueprints', 'idmap', 'blueprints (a subject and kertas that already has an active Kontrak is excluded)', { archiveTable: 'paper_blueprints' }],
+    ['exam_papers', 'exam_papers', 'papers', 'idmap', 'papers with sections and placements, loaded as drafts (the Terbit pass publishes)', { archiveTable: 'exam_papers' }],
+    ['paper_documents', 'paper_documents', 'paper_documents', 'legacy', 'Kertas Subjektif page-image documents', { archiveTable: 'paper_documents' }],
+    ['paper_document_pages', 'paper_document_pages', 'paper_document_pages', 'legacy', 'pages of the documents (needs --files-dir; without it every page is excluded)', { archiveTable: 'paper_document_pages' }],
+  ]),
 ]
+
+type Extra = Partial<Pick<MatrixEntry, 'archiveTable' | 'targetWhere' | 'idmapWhere' | 'sharedWith'>>
+
+/**
+ * Entities of the standalone loaders (`migrate:questions`, `migrate:structured`, `migrate:papers`): run after `migrate:all`, so never
+ * required (migrate:all --apply verifies before they exist); once an entity has a succeeded apply run it is verified like any other row.
+ * `stagingTable` names the source table for the report only (their reads are checked through `archiveTable`).
+ */
+function standalone(rows: readonly (readonly [string, string | null, string, MatrixEntry['count'], string, Extra?])[]): MatrixEntry[] {
+  return rows.map(([entity, source, target, count, note, extra]) => ({ entity, stagingTable: source, targetTable: target, count, required: false, plainRead: false, note, ...extra }))
+}
 
 const BY_ENTITY = new Map(ENTITY_MATRIX.map((m) => [m.entity, m]))
 

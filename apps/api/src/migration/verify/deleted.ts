@@ -81,6 +81,11 @@ export const STAGING_KEYS: Readonly<Record<string, StagingKey>> = {
   gamification_settings: parents({ table: 'reward_settings', part: 1 }),
   wallets: byId('student_wallets'),
   coin_ledger: byId('coin_transactions'),
+  // `opening:<wallet id>`: the opening-balance row of a wallet; gone when its staged wallet is gone.
+  wallet_opening: {
+    tables: ['student_wallets'],
+    exists: (alias) => `EXISTS (SELECT 1 FROM ${from('student_wallets')} s WHERE 'opening:' || s.id::text = ${alias}.legacy_id)`,
+  },
   practice_sessions: byId('practice_sessions'),
   practice_answers: byId('question_attempts'),
   streaks: byId('student_wallets'),
@@ -142,7 +147,7 @@ export async function deletedAtSource(pool: pg.Pool, source: LegacySource, entry
   const k = STAGING_KEYS[entry.entity]
   if (!k || entry.count !== 'legacy' || !(await stagingTablesExist(pool, k.tables))) return null
   const target = quoteIdent(entry.targetTable)
-  const gone = `t.legacy_source = $1 AND NOT (${k.exists('t')})`
+  const gone = `t.legacy_source = $1${entry.targetWhere ? ` AND ${entry.targetWhere}` : ''} AND NOT (${k.exists('t')})`
   const n = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${target} t WHERE ${gone}`, [source])
   const count = Number(n.rows[0]?.n ?? 0)
   if (count === 0) return { count, ids: [] }

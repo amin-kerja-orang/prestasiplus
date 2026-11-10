@@ -164,3 +164,79 @@ export function walletLedgerDriftStep(a: ActivityContext): AnyEntityStep {
     },
   }
 }
+
+// ---------------------------------------------------------------- opening balance
+
+/** Ledger source and legacy id prefix of the opening-balance row (one per wallet that its own ledger does not explain). */
+export const OPENING_SOURCE = 'legacy_opening'
+export const OPENING_ID_PREFIX = 'opening:'
+const OPENING_DESCRIPTION = 'Baki bawaan dari sistem lama'
+
+interface OpeningRow {
+  wallet_legacy_id: string
+  user_id: string
+  balance: string
+  ledger_sum: string
+  ledger_rows: string
+  has_opening: boolean
+  created_text: string
+}
+
+/**
+ * Opening balance (T-B5b follow-up, PO): V3 keeps `wallets.current_syiling` equal to the sum of the user's ledger rows (WalletService: the
+ * wallet is a stored balance kept in step with the ledger). V2 kept two independent counters, so a migrated wallet can hold syiling that its
+ * migrated ledger does not explain: balance credited without a ledger row (the V2 teacher and other non-pupil wallets, whose rewards are
+ * written to the wallet only), ledger rows that V2 rejected here, or V2's own drift. For each such wallet ONE ledger row (`source =
+ * legacy_opening`, `legacy_id = opening:<wallet id>`) carries the difference, dated just before the user's first ledger row, so
+ * SUM(ledger) = balance again and every later V3 movement chains from the true balance. The wallet and the V2 ledger rows are never touched.
+ * A positive difference is an `earn`, a negative one a `spend` (the sign rule of `ck_coin_ledger_amount_sign`). Re-runs recompute the row
+ * (the migrated-row UPDATE door of the append-only trigger); a wallet that needs none is `excluded`.
+ */
+export function walletOpeningStep(a: ActivityContext): AnyEntityStep {
+  const entity = 'wallet_opening'
+  return {
+    entity,
+    source: a.source,
+    extract: (after) => readById(a.pool, 'student_wallets', after, a.pageSize),
+    keyOf: idOf,
+    async load(rows: StagedRow[], ctx: BatchContext): Promise<BatchResult> {
+      const ids = rows.map(idOf)
+      const res = await ctx.db.query<OpeningRow>(
+        `SELECT w.legacy_id AS wallet_legacy_id, w.user_id::text AS user_id, w.current_syiling::text AS balance,
+                coalesce(l.s, 0)::text AS ledger_sum, coalesce(l.n, 0)::text AS ledger_rows,
+                EXISTS (SELECT 1 FROM coin_ledger o WHERE o.legacy_source = $2 AND o.legacy_id = $3::text || w.legacy_id) AS has_opening,
+                to_char((coalesce(l.first_at - interval '1 second', w.created_at)) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_text
+           FROM wallets w
+           LEFT JOIN LATERAL (SELECT sum(x.amount) AS s, count(*) AS n, min(x.created_at) AS first_at FROM coin_ledger x
+                               WHERE x.user_id = w.user_id AND x.legacy_source = $2 AND x.legacy_id NOT LIKE $3::text || '%') l ON true
+          WHERE w.legacy_source = $2::text AND w.legacy_id = ANY($1::text[]) ORDER BY w.legacy_id`,
+        [ids, ctx.source, OPENING_ID_PREFIX],
+      )
+      const items: LegacyRow[] = []
+      let excluded = rows.length - res.rows.length
+      for (const r of res.rows) {
+        const diff = Number(r.balance) - Number(r.ledger_sum)
+        if (diff === 0 && !r.has_opening) {
+          excluded += 1
+          continue
+        }
+        if (diff !== 0) a.notes.count(Number(r.ledger_rows) === 0 ? 'wallet_opening.no_ledger' : diff > 0 ? 'wallet_opening.ledger_short' : 'wallet_opening.ledger_over')
+        items.push({
+          legacyId: `${OPENING_ID_PREFIX}${r.wallet_legacy_id}`,
+          values: {
+            user_id: r.user_id,
+            type: diff >= 0 ? 'earn' : 'spend',
+            source: OPENING_SOURCE,
+            source_id: null,
+            amount: diff,
+            balance_after: diff,
+            description: OPENING_DESCRIPTION,
+            created_at: r.created_text,
+          },
+        })
+      }
+      const out = await upsertAndMap(ctx, entity, 'coin_ledger', LEDGER_COLUMNS, items, { register: false })
+      return { ...out, excluded }
+    },
+  }
+}

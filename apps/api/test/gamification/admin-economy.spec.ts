@@ -9,7 +9,7 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ADMIN, STUDENT, STUDENT_MAJU, TEACHER, bareUser, bootGamificationApp, dataOf, fail, ledgerOf, signIn, userIdOf, walletOf, type Client, type GamificationTestApp } from './helpers'
+import { ADMIN, STUDENT, STUDENT_MAJU, TEACHER, bareStudent, bareUser, bootGamificationApp, dataOf, fail, ledgerOf, signIn, userIdOf, walletOf, type Client, type GamificationTestApp } from './helpers'
 
 const TIER_BODY = { labelMs: 'Perak Baru', icon: '🥈', color: '#c0c0c0', minSyiling: 500, conversionRate: 40, sortOrder: 2, quizRewardL1: 1, quizRewardL2: 2, quizRewardL3: 3, quizRewardL4: 4, quizRewardL5: 5, pkskRewardCorrect: 5, boardGameRewardCorrect: 5, boardGameRewardWin: 25 }
 const CHALLENGE_BODY = { title: 'Cabaran Uji', description: 'Selesaikan 2 kuiz', icon: '📝', challengeType: 'quiz_count', targetValue: 2, rewardSyiling: 10, rewardXp: 5, difficulty: 'easy', sortOrder: 10 }
@@ -88,8 +88,8 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
   describe('GET /overview (S1)', () => {
     it('cards, tier distribution (by tier key), top 10 and the latest 10 rows, from the seeded wallets', async () => {
       const d = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
-      const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
-      const sum = Number((await t.db.query<{ n: string }>(`select sum(total_syiling_earned)::text n from wallets`))[0]!.n)
+      const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets w where exists (select 1 from user_roles r where r.user_id = w.user_id and r.role = 'student')`))[0]!.n)
+      const sum = Number((await t.db.query<{ n: string }>(`select sum(total_syiling_earned)::text n from wallets w where exists (select 1 from user_roles r where r.user_id = w.user_id and r.role = 'student')`))[0]!.n)
       expect(d.cards).toMatchObject({ activeStudents: wallets, syilingGenerated: sum, tokensConverted: 0, conversions: 0, activeChallenges: 15, completedToday: 0 })
       expect(d.tierDistribution.map((x) => x.key)).toEqual(['bronze', 'gold', 'platinum', 'silver'])
       expect(d.tierDistribution.reduce((a, x) => a + x.count, 0)).toBe(wallets)
@@ -112,16 +112,16 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
     })
 
     it('conversions and completions are counted; test rows and test-only wallets are left out', async () => {
-      const u = await bareUser(t, 'Tukar Statistik')
+      const u = await bareStudent(t, 'Tukar Statistik')
       await t.wallet.credit({ userId: u, amount: 200, source: 'quiz_practice', sourceId: 'ov-1', description: 'Latih Tubi: 20 betul', isTest: false })
       await t.gamification.convert({ userId: u, isTest: false }, 100, null)
       await t.gamification.convert({ userId: u, isTest: true }, 50, null) // a Mod Pelajar conversion is not counted
-      const testOnly = await bareUser(t, 'Hanya Ujian')
+      const testOnly = await bareStudent(t, 'Hanya Ujian')
       await t.wallet.credit({ userId: testOnly, amount: 900, source: 'admin_award', sourceId: 'ov-2', description: 'Ujian', isTest: true })
       const before = GamificationAdminOverviewSchema.parse(dataOf(await admin.get('/admin/gamification/overview')))
       expect(before.cards.conversions).toBe(1)
       expect(before.cards.tokensConverted).toBe(2)
-      const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
+      const wallets = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets w where exists (select 1 from user_roles r where r.user_id = w.user_id and r.role = 'student')`))[0]!.n)
       expect(before.cards.activeStudents).toBe(wallets - 1) // the test-only wallet is not counted
       expect(before.top10.find((x) => x.name === 'Pengguna Hanya Ujian')).toBeUndefined()
       expect(before.recent.every((r) => r.source !== 'admin_award' || r.amount !== 900)).toBe(true)
@@ -302,7 +302,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       const res = await admin.get('/admin/gamification/students')
       const body = GamificationAdminStudentsResponseSchema.parse(res.body)
       expect(body.meta).toMatchObject({ page: 1, pageSize: 20 })
-      const total = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets`))[0]!.n)
+      const total = Number((await t.db.query<{ n: string }>(`select count(*)::text n from wallets w where exists (select 1 from user_roles r where r.user_id = w.user_id and r.role = 'student')`))[0]!.n)
       expect(body.meta.totalItems).toBe(total)
       const totals = body.data.map((r) => r.totalSyilingEarned)
       expect(totals).toEqual([...totals].sort((a, b) => b - a))
@@ -315,7 +315,7 @@ describe('M14 admin economy (BE-23, AC4, AC8)', () => {
       await t.db.query(`insert into streaks (user_id, current, best, total_days) values ($1, 6, 9, 20) on conflict (user_id) do update set current = 6, best = 9`, [demoId])
       const rows = (await get('?search=pelajar@demo.test')).data
       expect(rows.find((r) => r.userId === demoId)).toMatchObject({ streak: 6 })
-      const none = await bareUser(t, 'Tanpa Streak')
+      const none = await bareStudent(t, 'Tanpa Streak')
       await t.wallet.credit({ userId: none, amount: 5, source: 'quiz_practice', sourceId: 'tc12-streak', description: 'Latih Tubi: 5 betul', isTest: false })
       expect((await get('?search=Tanpa%20Streak')).data).toEqual([expect.objectContaining({ userId: none, streak: 0 })])
       const bronzeId = await tierId('bronze')

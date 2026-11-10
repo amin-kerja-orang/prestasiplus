@@ -154,28 +154,38 @@ async function answersPerSubject({ pool, source }: CheckContext): Promise<StatCh
 
 // ---------------------------------------------------------------- (c) ledger
 
-async function ledger({ pool, source }: CheckContext): Promise<StatCheck[]> {
+async function ledger({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
   const out: StatCheck[] = []
 
-  // Wallet balance versus the sum of the user's migrated ledger rows: .cloud keeps two independent counters, so a
-  // difference is REPORTED (risk "Ledger integrity"); nothing is corrected and this never fails the run.
-  const drift = await pool.query<{ with_ledger: number; differing: number; without_ledger: number }>(
-    `SELECT count(l.user_id)::int AS with_ledger,
-            count(l.user_id) FILTER (WHERE w.current_syiling <> l.s)::int AS differing,
-            count(*) FILTER (WHERE l.user_id IS NULL)::int AS without_ledger
+  // Wallet balance versus the sum of the user's migrated ledger rows. V3 keeps a wallet equal to its ledger; .cloud kept two independent
+  // counters (a balance credited with no ledger row, as for the non-pupil wallets, rows rejected here, its own drift). The `wallet_opening`
+  // step writes one `legacy_opening` ledger row per wallet its V2 ledger does not explain, so after a run EVERY wallet equals its ledger:
+  // a difference is a failure (the step did not run, or a ledger row changed after it).
+  const drift = await pool.query<{ wallets: number; differing: number; no_ledger: number; non_pupil: number; opening: number; opening_no_ledger: number }>(
+    `SELECT count(*)::int AS wallets,
+            count(*) FILTER (WHERE w.current_syiling <> coalesce(l.s, 0))::int AS differing,
+            count(*) FILTER (WHERE coalesce(l.n, 0) = 0)::int AS no_ledger,
+            count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM user_roles r WHERE r.user_id = w.user_id AND r.role = 'student'))::int AS non_pupil,
+            count(*) FILTER (WHERE coalesce(l.o, 0) > 0)::int AS opening,
+            count(*) FILTER (WHERE coalesce(l.o, 0) > 0 AND l.n = l.o)::int AS opening_no_ledger
      FROM wallets w
-     LEFT JOIN (SELECT user_id, sum(amount) AS s FROM coin_ledger WHERE legacy_source = $1 GROUP BY user_id) l ON l.user_id = w.user_id
+     LEFT JOIN (SELECT user_id, sum(amount) AS s, count(*) AS n, count(*) FILTER (WHERE legacy_id LIKE 'opening:%') AS o
+                  FROM coin_ledger WHERE legacy_source = $1 GROUP BY user_id) l ON l.user_id = w.user_id
      WHERE w.legacy_source = $1`,
     [source],
   )
-  const d = drift.rows[0] ?? { with_ledger: 0, differing: 0, without_ledger: 0 }
+  const d = drift.rows[0] ?? { wallets: 0, differing: 0, no_ledger: 0, non_pupil: 0, opening: 0, opening_no_ledger: 0 }
+  const ran = entities.find((e) => e.entity === 'wallet_opening')?.status !== 'not-run'
   out.push({
     name: 'wallet balance versus ledger sum (users with a difference)',
     kind: 'sums',
     expected: 0,
     actual: d.differing,
-    status: 'reported',
-    detail: `${d.with_ledger} wallets have migrated ledger rows, ${d.differing} of them differ from SUM(amount); ${d.without_ledger} wallets have no ledger rows. Reported, never corrected.`,
+    status: d.differing === 0 ? 'ok' : ran ? 'mismatch' : 'reported',
+    detail:
+      `${d.wallets} migrated wallets (${d.non_pupil} of non-pupil users, kept for the teacher economy), ${d.differing} differ from SUM(amount); ` +
+      `${d.opening} carry an opening-balance row (legacy_opening), ${d.opening_no_ledger} of them with no other ledger row; ${d.no_ledger} wallets have no ledger row at all. ` +
+      (ran ? 'Opening rows are the only correction: the wallet and the V2 ledger rows are never changed.' : 'The wallet_opening step has not run: the differences are only reported.'),
   })
 
   // Staging sum versus v2 sum of the ledger amount over the loaded rows.
@@ -439,6 +449,172 @@ async function acceptedDrift({ pool, source }: CheckContext): Promise<StatCheck[
   return out
 }
 
+// ---------------------------------------------------------------- (h) question bank, papers: the standalone loaders
+
+const entityOf = (entities: readonly EntityCheck[], name: string): EntityCheck | undefined => {
+  const e = entities.find((x) => x.entity === name)
+  return e === undefined || e.status === 'not-run' ? undefined : e
+}
+
+/**
+ * "V2 total = loaded + absorbed + quarantined + the type another loader owns" (design 5.1, V-2): every archive question row is accounted
+ * for. The rows `migrate:questions` leaves out are rajah carriers (one `c:` stimulus each in the id map) and the subjective type (the rows
+ * `subjective_questions` reads); the difference between that and what the step excluded must be zero.
+ */
+async function questionsAccounting({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
+  const name = 'questions: V2 total = loaded + absorbed + quarantined + other loader'
+  const q = entityOf(entities, 'questions')
+  if (q === undefined) return [reported(name, 'counts', 'migrate:questions has no succeeded apply run; not compared')]
+  const subj = entityOf(entities, 'subjective_questions')
+  const stim = entityOf(entities, 'question_stimuli')
+  if (subj === undefined || stim === undefined) {
+    return [
+      reported(
+        name,
+        'counts',
+        `${q.sourceCount} V2 rows, ${q.loaded} loaded, ${q.rejected} quarantined; ${q.sourceCount - q.eligibleCount} excluded (carriers and subjective): the subjective or stimulus step has no succeeded apply run, so the split is not compared`,
+      ),
+    ]
+  }
+  const carriers = await pool.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM etl_id_map WHERE legacy_source = $1 AND entity = 'question_stimuli' AND legacy_id LIKE 'c:%'`,
+    [source],
+  )
+  const absorbed = carriers.rows[0]?.n ?? 0
+  const otherLoader = subj.sourceCount
+  const unexplained = q.sourceCount - (q.loaded + absorbed + q.rejected + otherLoader)
+  return [
+    {
+      name,
+      kind: 'counts',
+      expected: q.sourceCount,
+      actual: q.loaded + absorbed + q.rejected + otherLoader,
+      status: unexplained === 0 ? 'ok' : 'mismatch',
+      detail: `V2 ${q.sourceCount} = loaded ${q.loaded} + absorbed carriers ${absorbed} + quarantined ${q.rejected} + subjective (other loader) ${otherLoader}; unexplained ${unexplained}`,
+    },
+  ]
+}
+
+/** Stimulus groups: every group of the id map still exists, has its stimulus and at least one member (a group is never split or left empty). */
+async function stimulusGroupChecks({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
+  const name = 'stimulus groups: groups with a stimulus and members'
+  if (entityOf(entities, 'stimulus_groups') === undefined) return [reported(name, 'orphans', 'migrate:questions has no succeeded apply run; not compared')]
+  const res = await pool.query<{ groups: number; dangling: number; no_stimulus: number; no_member: number; held: number }>(
+    `SELECT count(*)::int AS groups,
+            count(*) FILTER (WHERE sg.id IS NULL)::int AS dangling,
+            count(*) FILTER (WHERE sg.id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM stimulus_group_stimuli x WHERE x.group_id = sg.id))::int AS no_stimulus,
+            count(*) FILTER (WHERE sg.id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = sg.id))::int AS no_member,
+            count(*) FILTER (WHERE sg.id IS NOT NULL AND EXISTS (SELECT 1 FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = 1
+                                                               WHERE q.group_id = sg.id AND NOT q.is_active
+                                                                 AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb))::int AS held
+     FROM etl_id_map m LEFT JOIN stimulus_groups sg ON sg.id = m.new_id::bigint
+     WHERE m.legacy_source = $1 AND m.entity = 'stimulus_groups'`,
+    [source],
+  )
+  const r = res.rows[0] ?? { groups: 0, dangling: 0, no_stimulus: 0, no_member: 0, held: 0 }
+  const bad = r.dangling + r.no_stimulus + r.no_member
+  return [
+    {
+      name,
+      kind: 'orphans',
+      expected: 0,
+      actual: bad,
+      status: bad === 0 ? 'ok' : 'mismatch',
+      detail: `${r.groups} groups: ${r.dangling} deleted, ${r.no_stimulus} without a stimulus, ${r.no_member} without a member; ${r.held} held as a whole until their picture is copied`,
+    },
+  ]
+}
+
+/** Question pictures: the paths the step walked are the distinct V2 paths; a held question is reported (never a failure: the files step repairs it). */
+async function questionFileChecks({ pool, entities }: CheckContext): Promise<StatCheck[]> {
+  const f = entityOf(entities, 'question_files')
+  if (f === undefined) {
+    return [reported('question pictures: distinct V2 paths and held questions', 'counts', 'the files step has not run (migrate:questions without --files-dir, or no apply run); not compared')]
+  }
+  const out: StatCheck[] = []
+  if (await exists(pool, ARCHIVE_SCHEMA, 'questions')) {
+    const paths = await pool.query<{ n: number }>(`SELECT count(DISTINCT image_path)::int AS n FROM ${A}."questions" WHERE image_path IS NOT NULL AND btrim(image_path) <> ''`)
+    const n = paths.rows[0]?.n ?? 0
+    out.push({ name: 'question pictures: distinct V2 paths walked', kind: 'counts', expected: n, actual: f.sourceCount, status: n === f.sourceCount ? 'ok' : 'mismatch' })
+  }
+  const held = await pool.query<{ questions: number; inactive: number }>(
+    `SELECT count(*)::int AS questions, count(*) FILTER (WHERE NOT q.is_active)::int AS inactive
+       FROM question_versions v JOIN questions q ON q.id = v.question_id
+      WHERE v.version_no = 1 AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb`,
+  )
+  const h = held.rows[0] ?? { questions: 0, inactive: 0 }
+  out.push({
+    name: 'question pictures: questions held for a missing or unusable picture',
+    kind: 'counts',
+    expected: 0,
+    actual: h.questions,
+    status: 'reported',
+    detail: `${h.questions} questions wait for their picture (${h.inactive} inactive, never served until it is copied); the files step lists each cause (files-missing CSV)`,
+  })
+  return out
+}
+
+/** PKSK (OC-4): every loaded V2 question carries its domain and level tags, and none is live (served) without options. */
+async function pkskChecks({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
+  const name = 'PKSK questions: tags and draft state'
+  if (entityOf(entities, 'pksk_questions') === undefined) return [reported(name, 'counts', 'the pksk_questions step has not run (migrate:structured); not compared')]
+  const res = await pool.query<{ loaded: number; untagged: number; served_empty: number; drafts_to_complete: number }>(
+    `SELECT count(*)::int AS loaded,
+            count(*) FILTER (WHERE NOT EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pksk_domain')
+                              OR NOT EXISTS (SELECT 1 FROM question_tags t WHERE t.question_id = q.id AND t.kind = 'pksk_level'))::int AS untagged,
+            count(*) FILTER (WHERE q.live_version_no IS NOT NULL AND NOT EXISTS (
+                SELECT 1 FROM question_versions v JOIN question_parts pt ON pt.question_version_id = v.id JOIN part_options o ON o.part_id = pt.id
+                 WHERE v.question_id = q.id AND v.version_no = q.live_version_no))::int AS served_empty,
+            count(*) FILTER (WHERE q.live_version_no IS NULL AND NOT EXISTS (
+                SELECT 1 FROM question_versions v JOIN question_parts pt ON pt.question_version_id = v.id JOIN part_options o ON o.part_id = pt.id
+                 WHERE v.question_id = q.id AND v.version_no = q.latest_version_no))::int AS drafts_to_complete
+     FROM etl_id_map m JOIN questions q ON q.id = m.new_id::bigint
+     WHERE m.legacy_source = $1 AND m.entity = 'pksk_questions'`,
+    [source],
+  )
+  const r = res.rows[0] ?? { loaded: 0, untagged: 0, served_empty: 0, drafts_to_complete: 0 }
+  const bad = r.untagged + r.served_empty
+  return [
+    {
+      name,
+      kind: 'counts',
+      expected: 0,
+      actual: bad,
+      status: bad === 0 ? 'ok' : 'mismatch',
+      detail: `${r.loaded} loaded V2 PKSK questions: ${r.untagged} without a domain or level tag, ${r.served_empty} live with no options; ${r.drafts_to_complete} still have no options and wait for an admin in "Soalan PKSK" (never served)`,
+    },
+  ]
+}
+
+const STANDALONE_ENTITIES = [
+  'questions', 'question_stimuli', 'stimulus_groups', 'structured_questions', 'subjective_questions', 'exam_questions', 'pksk_questions',
+  'spm_sets', 'paper_blueprints', 'exam_papers', 'paper_documents', 'paper_document_pages',
+]
+
+/** Rejects of the standalone loaders by entity, reason and column (the reject CSVs hold the ids). Reported: a reject has a reason, never a silent loss. */
+async function standaloneRejects({ pool, source }: CheckContext): Promise<StatCheck[]> {
+  const res = await pool.query<{ entity: string; reason: string; column_name: string | null; n: number }>(
+    `SELECT r.entity, r.reason, r.column_name, count(*)::int AS n
+       FROM etl_rejects r
+      WHERE r.entity = ANY($2::text[])
+        AND r.run_id = (SELECT max(c.run_id) FROM etl_recon c JOIN etl_runs u ON u.id = c.run_id
+                         WHERE c.entity = r.entity AND u.mode = 'apply' AND u.status = 'succeeded' AND $1 = ANY(u.sources))
+      GROUP BY 1, 2, 3 ORDER BY 1, 2, 3`,
+    [source, STANDALONE_ENTITIES],
+  )
+  const total = res.rows.reduce((n, r) => n + r.n, 0)
+  return [
+    {
+      name: 'rejects of the question and paper loaders (latest apply run of each)',
+      kind: 'counts',
+      expected: null,
+      actual: total,
+      status: 'reported',
+      detail: res.rows.length === 0 ? 'no reject' : capped(res.rows.map((r) => `${r.entity} ${r.reason}${r.column_name ? `/${r.column_name}` : ''}: ${r.n}`)),
+    },
+  ]
+}
+
 const CHECKS: readonly [string, (ctx: CheckContext) => Promise<StatCheck[]>][] = [
   ['users per role per school', usersPerRolePerSchool],
   ['answers per subject', answersPerSubject],
@@ -448,6 +624,11 @@ const CHECKS: readonly [string, (ctx: CheckContext) => Promise<StatCheck[]>][] =
   ['orphans', orphans],
   ['derived counts', derivedCounts],
   ['accepted drift', acceptedDrift],
+  ['questions accounting', questionsAccounting],
+  ['stimulus groups', stimulusGroupChecks],
+  ['question pictures', questionFileChecks],
+  ['PKSK questions', pkskChecks],
+  ['loader rejects', standaloneRejects],
 ]
 
 /** Runs every check. A check that cannot run is a `mismatch` (it must not pass silently); the cause is sanitised. */

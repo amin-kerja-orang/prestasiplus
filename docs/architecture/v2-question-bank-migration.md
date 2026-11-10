@@ -513,6 +513,19 @@ With every question now loaded, the link-later backfill of `v2-data-migration.md
 
 This needs PO confirmation that the earlier Q4 and Q5 decisions (items dropped; free-text answers not kept) still stand except for the id link; the design assumes **yes**.
 
+### 12.1 K10: a migrated question is a normal V3 question (proved over HTTP)
+
+PO rule K10: every migrated class (MCQ, 2-option, relabelled, mcq_multi, rajah and passage group members, archived, draft, rejected, empty stem with picture, structured, subjective) must open, edit, save, take DSKP tags, go to Semakan and be approved in the Admin Studio under the same validation as a new question, with the same stored shape. `apps/api/test/migration/questions/studio-roundtrip.db.spec.ts` loads the synthetic rajah cases, the structured and the subjective rows through the real loaders, boots the whole application and walks each class through the Studio endpoints (`GET/PUT /api/questions/:id`, `POST /api/questions/:id/status`, `gate-check`, `bulk-action`, group routes, `regroup`, the rubric panel) and then a pupil Latih Tubi session. It compares each answer with a question made from scratch through the same API. Incompatibilities found and fixed (all on the Studio side, none in the loader):
+
+| # | Symptom | Cause | Fix |
+|---|---|---|---|
+| 1 | `GET /api/questions/:id` (the call that opens the Studio) answered 500 for every migrated MCQ | the loader and `uat-ops/trim-duplicate-stem` leave `prompt_ms` empty (S4-T04), but the response part schema demanded `prompt.ms` min 1 | `QuestionPartReadV3Schema` (the read and lenient schema) takes an empty prompt (`QuestionRichTextRead`); the WRITE schemas keep min 1 |
+| 2 | Tagging a migrated MCQ in the Studio (the aras of the leaf changes the part) or "Edit sebagai draf" of an edited one answered 422 `parts.0.prompt.ms` | a changed part is held to the strict write rule | `carried-prompt.ts`: an empty prompt that the stored part (same position and label) already has is carried over; a new part or a typed instruction is unchanged under the strict rule |
+| 3 | A V2 picture-only question (empty stem) could not be saved, not even "Edit sebagai draf" (422 `questionText`) | `questionText` min 10 on the update body | the update body accepts an empty stem; the service accepts it only when the stored stem is empty (a stem that had text cannot be emptied); a new question still needs 10 characters |
+| 4 | The Skema & Rubrik panel could not save a rubric point text of 201 to 500 characters (422) | V3 allowed 200, V2 stores varchar(500) and validates `max:500` | request limit 500 (V2 parity, D9); a scheme v2 point keeps its label at 200 characters and the full text in `text.ms` |
+
+Left as Studio (frontend) limits, the same for a V3-made question of that shape, so not migration defects: the Studio form is read-only for an `mcq_multi` leaf and for any leaf with a `points` key (structured and essay): they are edited through the Skema & Rubrik panel and the API, and tagged over the API; the `StructuredRubricPage.vue` textarea still has `maxlength="200"` (needs 500 to type beyond what V2 held). A migrated MCQ carries the TP that the loader derived from the V2 Kesukaran (so the gate does not ask for TP), and needs Bab, Tajuk, SP, aras and kertas like a new one; its leaf instruction stays empty until the admin types one.
+
 ## 13. Open PO choices (with recommendation)
 
 KP-5 (archive and draft load) is **decided** and is the plan. These remain:

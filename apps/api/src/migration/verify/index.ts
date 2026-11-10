@@ -8,7 +8,7 @@
  */
 import type pg from 'pg'
 
-import { STAGING_SCHEMA } from '../ddl/spec'
+import { ARCHIVE_SCHEMA, STAGING_SCHEMA } from '../ddl/spec'
 import { sanitizeDbError } from '../kit/errors'
 import { quoteIdent } from '../kit/sql'
 import { assertLegacySource, type LegacySource } from '../kit/types'
@@ -56,19 +56,19 @@ async function latestRecon(pool: pg.Pool, source: LegacySource, runIds: readonly
 }
 
 /** Rows of `table` with `legacy_source = source`; null when the table or its legacy column does not exist. */
-async function legacyCount(pool: pg.Pool, table: string, source: LegacySource): Promise<number | null> {
+async function legacyCount(pool: pg.Pool, table: string, source: LegacySource, where?: string): Promise<number | null> {
   const has = await pool.query(
     `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = 'legacy_source'`,
     [table],
   )
   if (has.rowCount === 0) return null
-  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${quoteIdent(table)} WHERE legacy_source = $1`, [source])
+  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${quoteIdent(table)} WHERE legacy_source = $1${where ? ` AND ${where}` : ''}`, [source])
   return Number(res.rows[0]?.n ?? 0)
 }
 
 /** Rows of `etl_id_map` for the entity (the count of a derived table that has no legacy columns). */
-async function idMapCount(pool: pg.Pool, entity: string, source: LegacySource): Promise<number> {
-  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM etl_id_map WHERE legacy_source = $1 AND entity = $2`, [source, entity])
+async function idMapCount(pool: pg.Pool, entity: string, source: LegacySource, where?: string): Promise<number> {
+  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM etl_id_map WHERE legacy_source = $1 AND entity = $2${where ? ` AND ${where}` : ''}`, [source, entity])
   return Number(res.rows[0]?.n ?? 0)
 }
 
@@ -81,12 +81,22 @@ async function stagingCount(pool: pg.Pool, table: string): Promise<number | null
   return Number(res.rows[0]?.n ?? 0)
 }
 
+/** Rows of an `archive_cloud` table now; null when the table is not there. */
+async function archiveCount(pool: pg.Pool, table: string): Promise<number | null> {
+  const name = `${quoteIdent(ARCHIVE_SCHEMA)}.${quoteIdent(table)}`
+  const has = await pool.query<{ ok: boolean }>(`SELECT to_regclass($1) IS NOT NULL AS ok`, [name])
+  if (has.rows[0]?.ok !== true) return null
+  const res = await pool.query<{ n: string }>(`SELECT count(*)::text AS n FROM ${name}`)
+  return Number(res.rows[0]?.n ?? 0)
+}
+
 async function entityCheck(
   pool: pg.Pool,
   source: LegacySource,
   entry: MatrixEntry,
   recon: ReconRow | undefined,
   deleted: DeletedAtSource | null,
+  recons: ReadonlyMap<string, ReconRow>,
 ): Promise<EntityCheck> {
   const base = {
     entity: entry.entity,
@@ -114,24 +124,36 @@ async function entityCheck(
       problems.push(`staging changed since the run (the run read ${recon.source_count} rows, ${entry.stagingTable} holds ${live} now)`)
     }
   }
+  if (entry.archiveTable !== undefined) {
+    const live = await archiveCount(pool, entry.archiveTable)
+    if (live !== null && live !== recon.source_count) {
+      problems.push(`archive changed since the run (the run read ${recon.source_count} rows, ${entry.archiveTable} holds ${live} now)`)
+    }
+  }
   if (recon.status !== 'ok') problems.push('reconciliation row is not ok (eligible - loaded - rejected differs from expected_delta)')
 
   let targetCount: number | null = null
   if (entry.count === 'legacy') {
-    targetCount = await legacyCount(pool, entry.targetTable, source)
+    targetCount = await legacyCount(pool, entry.targetTable, source, entry.targetWhere)
+    // Entities that share the target table write rows of their own: the target holds the loaded rows of all of them.
+    const shared = (entry.sharedWith ?? []).reduce((n, other) => n + (recons.get(other)?.loaded ?? 0), 0)
+    const expected = recon.loaded + shared
     if (targetCount === null) problems.push(`target table ${entry.targetTable} has no legacy_source column`)
     // A step upserts by (legacy_source, legacy_id): every loaded row is exactly one target row. The delta never deletes, so
     // the rows whose source row is gone are extra, and reported apart (`deleted_at_source:<entity>`).
-    else if (targetCount - (deleted?.count ?? 0) !== recon.loaded) {
+    else if (targetCount - (deleted?.count ?? 0) !== expected) {
+      const sharedNote = shared > 0 ? ` (${recon.loaded} of this step plus ${shared} of ${(entry.sharedWith ?? []).join(', ')})` : ''
       problems.push(
         deleted && deleted.count > 0
-          ? `target holds ${targetCount} rows of this source (${deleted.count} deleted at the source), the run loaded ${recon.loaded}`
-          : `target holds ${targetCount} rows of this source, the run loaded ${recon.loaded}`,
+          ? `target holds ${targetCount} rows of this source (${deleted.count} deleted at the source), the run loaded ${expected}${sharedNote}`
+          : `target holds ${targetCount} rows of this source, the run loaded ${expected}${sharedNote}`,
       )
     }
   } else if (entry.count === 'idmap') {
-    targetCount = await idMapCount(pool, entry.entity, source)
+    targetCount = await idMapCount(pool, entry.entity, source, entry.idmapWhere)
     if (targetCount !== recon.loaded) problems.push(`etl_id_map holds ${targetCount} ids, the run loaded ${recon.loaded}`)
+  } else if (entry.count === 'shared') {
+    // Rows live in a table that other entities share (or in no table of their own): the dedicated checks in `checks.ts` count them.
   } else if (recon.loaded !== 0) {
     problems.push(`a report-only step loaded ${recon.loaded} rows`)
   }
@@ -168,7 +190,7 @@ export async function runVerify(options: VerifyOptions): Promise<VerifyReport> {
       const recon1 = byEntity.get(entry.entity)
       // Only an entity that ran has a loaded count to compare; the others keep their own status.
       const deleted = recon1 ? await deletedAtSource(pool, source, entry) : null
-      entities.push(await entityCheck(pool, source, entry, recon1, deleted))
+      entities.push(await entityCheck(pool, source, entry, recon1, deleted, byEntity))
       if (deleted && deleted.count > 0) {
         const target = entities[entities.length - 1]?.targetCount ?? 0
         const maxRatio = options.maxDeletedRatio ?? DEFAULT_MAX_DELETED_RATIO
