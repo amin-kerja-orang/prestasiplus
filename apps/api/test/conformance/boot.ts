@@ -22,6 +22,7 @@ import { marketplaceSeed } from '../../prisma/seed/marketplace'
 import { marketplaceCategoriesSeed } from '../../prisma/seed/core/marketplace-categories'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { FeatureFlagsService } from '../../src/common/feature-flags'
 import { featureModules } from '../../src/modules'
@@ -173,6 +174,8 @@ export async function bootConformanceApp(opts: BootOptions = {}): Promise<Confor
     // test/exam-builder/wired-bank.spec.ts.
     .overrideProvider(QuestionBankBuilderSource)
     .useValue(new PocBuilderQuestionSource())
+    .overrideProvider(VirusScanService)
+    .useValue(NO_SCAN)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

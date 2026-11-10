@@ -94,6 +94,8 @@ export const AUDIT_ACTIONS = {
   SHOP_MYSTERY_BOX_UPDATED: 'shop.mystery_box.updated',
   INTAKE_BATCH_CREATED: 'intake.batch_created',
   INTAKE_FILES_UPLOADED: 'intake.files_uploaded',
+  // Backlog #78: an intake upload was refused because the virus scan found malware (details: signature, sha256, name; no bytes are stored).
+  INTAKE_FILE_INFECTED: 'intake.file_infected',
   INTAKE_BATCH_CANCELLED: 'intake.batch_cancelled',
   KIRKPATRICK_INTERVENTION_CREATED: 'kirkpatrick.intervention.created',
   KIRKPATRICK_INTERVENTION_REVIEWED: 'kirkpatrick.intervention.reviewed',

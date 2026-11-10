@@ -22,6 +22,7 @@ import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export const FULL_APP_START = '2026-10-19T09:00:00+08:00'
@@ -66,6 +67,8 @@ export async function bootFullApp(env: Record<string, string> = {}): Promise<Ful
   const moduleRef = await Test.createTestingModule({ imports: [defineAppModule(featureModules)] })
     .overrideProvider(CLOCK)
     .useValue(clock)
+    .overrideProvider(VirusScanService)
+    .useValue(NO_SCAN)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

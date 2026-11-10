@@ -182,6 +182,12 @@ mkprod "PP_PROFILES=monitoring,clamav";                                av 1 'CLA
 printf 'INTAKE_TEACHER_ENABLED=true\nCLAMAV_HOST=clamav\n' >"$w/env/api.env"; av 0 ''
 STUB_CLAMAV=0 av 1 'clamav container is not running' runtime
 STUB_CLAMAV=1 av 0 '' runtime
+# the marker: configuration complete but the build has no scan code (marker absent) must fail; present must pass
+printf 'x\n' >"$w/schema-no-marker.ts"; printf 'CLAMAV_SCAN_ENABLED: z.enum([]),\n' >"$w/schema-marker.ts"
+PP_AV_SCHEMA_FILE="$w/schema-no-marker.ts" av 1 'no upload scan code'
+PP_AV_SCHEMA_FILE="$w/missing.ts" av 1 'no upload scan code'
+PP_AV_SCHEMA_FILE="$w/schema-marker.ts" av 0 ''
+grep -q 'CLAMAV_SCAN_ENABLED' "$vps/../../apps/api/src/common/config/env.schema.ts" && ok 'the real env schema declares the CLAMAV_SCAN_ENABLED marker' || bad 'env.schema.ts lacks the CLAMAV_SCAN_ENABLED marker'
 grep -q 'pp_intake_av_problem' "$vps/deploy.sh" && ok 'deploy.sh preflight (G5) calls pp_intake_av_problem' || bad 'deploy.sh preflight does not call pp_intake_av_problem'
 grep -q 'intake_av_check' "$vps/rebuild-db.sh" && ok 'rebuild-db.sh step 14 runs intake_av_check' || bad 'rebuild-db.sh step 14 does not run intake_av_check'
 mkprod; printf 'x\n' >"$w/env/api.env"

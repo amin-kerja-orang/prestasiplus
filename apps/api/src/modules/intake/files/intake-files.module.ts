@@ -4,6 +4,7 @@ import { AuditModule } from '../../../common/audit/audit.module'
 import { ThrottleModule } from '../../../common/throttle'
 import { FilesModule } from '../../files'
 import { FilesConfig } from '../../files/files.config'
+import { VirusScanModule } from '../../files/virus-scan'
 import { JobsModule } from '../../jobs'
 import { AiExtractionModule, AiExtractorAdapter } from '../../ai-extraction'
 import { OcrModule } from '../../ocr'
@@ -28,7 +29,7 @@ import { IntakeUploadService } from './intake-upload.service'
  * module that registers a real adapter) and `IntakeFiguresService.enqueueCrop`.
  */
 @Module({
-  imports: [AiExtractionModule, AuditModule, FilesModule, JobsModule, OcrModule, ThrottleModule],
+  imports: [AiExtractionModule, AuditModule, FilesModule, VirusScanModule, JobsModule, OcrModule, ThrottleModule],
   controllers: [IntakeFilesController, SourcePapersController],
   providers: [
     FilesConfig, // pure settings reader (INTAKE_MAX_FILE_MB); FilesModule does not export its instance

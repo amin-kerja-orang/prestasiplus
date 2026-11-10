@@ -512,7 +512,7 @@ support_contact_check() {
 intake_av_check() {
   local msg rc=0
   msg="$(pp_intake_av_problem runtime)" || rc=$?
-  if [ "$rc" != 0 ]; then CHECK_FAILS+=("intake-av: $msg"); pp_warn "CHECK FAILED: intake-av: $msg"; else pp_log "intake-av: ok (teacher intake is off, or ClamAV is live)"; fi
+  if [ "$rc" != 0 ]; then CHECK_FAILS+=("intake-av: $msg"); pp_warn "CHECK FAILED: intake-av: $msg"; else pp_log "intake-av: ok (teacher intake is off, or configured with scan code present)"; fi
   return 0
 }
 

@@ -196,6 +196,16 @@ export const EnvSchema = z.object({
   OCR_WORKER_RSS_LIMIT_MB: z.coerce.number().int().min(64).max(16_384).optional(),
   /** AZ-35 (AZ-29 item 7): intake files and workflow routes for the teacher role; off (unset) = Admin Pusat only. */
   INTAKE_TEACHER_ENABLED: z.enum(['true', 'false']).optional(),
+  /**
+   * Backlog #78 upload virus scan (ClamAV clamd over TCP). CLAMAV_HOST unset = no scanner. Scanning is REQUIRED (an unreachable or
+   * silent scanner refuses the upload, fail closed) when INTAKE_TEACHER_ENABLED is on or a host is set.
+   * CLAMAV_SCAN_ENABLED is a MARKER, not a switch: its presence in this schema tells deploy/vps/lib.sh pp_intake_av_problem that
+   * the build contains the scan code. It is never read at runtime and cannot turn scanning off.
+   */
+  CLAMAV_SCAN_ENABLED: z.string().optional(),
+  CLAMAV_HOST: z.string().trim().optional(),
+  CLAMAV_PORT: z.coerce.number().int().min(1).max(65_535).optional(),
+  CLAMAV_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600_000).optional(),
   /** Uploads whose PDFs are inspected at the same time in this process (more wait). Default 2. */
   INTAKE_UPLOAD_CONCURRENCY: z.coerce.number().int().min(1).max(16).optional(),
   INTAKE_MAX_FILES_PER_BATCH: z.coerce.number().int().min(1).max(50).optional(),

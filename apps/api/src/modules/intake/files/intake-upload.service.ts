@@ -15,6 +15,7 @@ import { FILE_STORAGE, type FileStorage } from '../../files'
 import { detectOffice, inspectUpload, type OfficeMime } from '../../files/content-inspect'
 import { FilesConfig } from '../../files/files.config'
 import { FilesService, type StoredFile } from '../../files'
+import { ScannerUnavailableError, VirusScanService } from '../../files/virus-scan'
 import { JobsService } from '../../jobs'
 import { OcrConfig, OcrError, PDF_ENGINE, type PdfEngine } from '../../ocr'
 import { Semaphore } from '../../ocr/semaphore'
@@ -46,6 +47,13 @@ export interface UploadOptions {
 
 const OPEN = ['submitted', 'processing']
 
+/** Backlog #78. Local on purpose (the contract package is shared with the frontend). */
+export const INTAKE_SCAN_UNAVAILABLE_CODE = 'UPLOAD_SCAN_UNAVAILABLE'
+export const INTAKE_SCAN_MESSAGES = {
+  infected: 'Fail ini mengandungi perisian berbahaya (virus) dan telah ditolak. Muat naik tidak diterima.',
+  unavailable: 'Pengimbasan keselamatan fail tidak tersedia buat masa ini. Sila cuba lagi sebentar nanti.',
+} as const
+
 function invalid(message: string): ApiError {
   return ApiError.of('VALIDATION_ERROR', { fields: { files: message } })
 }
@@ -75,6 +83,7 @@ export class IntakeUploadService {
     @Inject(PDF_ENGINE) private readonly pdf: PdfEngine,
     @Inject(IntakeFilesService) private readonly batches: IntakeFilesService,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(VirusScanService) private readonly scanner: VirusScanService,
   ) {
     this.slots = new Semaphore(config.uploadConcurrency)
   }
@@ -126,7 +135,7 @@ export class IntakeUploadService {
     const max = this.config.maxFilesPerBatch
     if (parts.length > max) throw invalid(INTAKE_FILE_MESSAGES.tooManyFiles(max))
 
-    const checked = await this.validate(parts, signal, opts)
+    const checked = await this.validate(auth, who, parts, signal, opts)
     await this.admit(this.prisma.client, auth, batchId, checked)
 
     // Store the bytes (outside the transaction), then write the rows and the jobs in one transaction.
@@ -156,12 +165,12 @@ export class IntakeUploadService {
   // ---- validation (no storage) -----------------------------------------------------------------
 
   /** One file after the other, stopping at the first refusal, so a bad request costs at most one worker. */
-  private async validate(parts: UploadedPart[], signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked[]> {
+  private async validate(auth: AuthContext, who: CallerInfo, parts: UploadedPart[], signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked[]> {
     const limit = this.filesConfig.intakeMaxBytes
     const checked: Checked[] = []
     const seen = new Set<string>()
     for (const part of parts) {
-      const result = await this.checkOne(part, limit, signal, opts)
+      const result = await this.checkOne(auth, who, part, limit, signal, opts)
       if ('error' in result) throw result.error
       if (seen.has(result.sha256)) throw invalid(INTAKE_FILE_MESSAGES.duplicate)
       seen.add(result.sha256)
@@ -170,12 +179,14 @@ export class IntakeUploadService {
     return checked
   }
 
-  private async checkOne(part: UploadedPart, limit: number, signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked | { error: ApiError }> {
+  private async checkOne(auth: AuthContext, who: CallerInfo, part: UploadedPart, limit: number, signal: AbortSignal | undefined, opts: UploadOptions): Promise<Checked | { error: ApiError }> {
     const buffer = part.buffer
     if (buffer.length > limit) return { error: invalid(INTAKE_FILE_MESSAGES.size(Math.floor(limit / (1024 * 1024)))) }
     if (opts.acceptOffice) {
       const office = detectOffice(buffer)
       if (office) {
+        const refused = await this.scan(auth, who, part)
+        if (refused) return { error: refused }
         return {
           part,
           bytes: buffer,
@@ -188,6 +199,9 @@ export class IntakeUploadService {
     }
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') return { error: invalid(INTAKE_FILE_MESSAGES.type) }
+    // Scan before the PDF is opened by the inspection worker: a malicious file is never parsed.
+    const refused = await this.scan(auth, who, part)
+    if (refused) return { error: refused }
     let pages: number
     try {
       const info = await this.pdf.inspect(buffer, signal)
@@ -205,6 +219,45 @@ export class IntakeUploadService {
       name: sanitizeOriginalName(decodeUploadName(part.originalname)),
       sha256: createHash('sha256').update(inspected.bytes).digest('hex'),
       pages,
+    }
+  }
+
+  /**
+   * Backlog #78: the virus scan of one accepted-type file. Returns the refusal, or null when the file is clean or scanning is not required.
+   * FAIL CLOSED: when scanning is required and the scanner is unset, unreachable, slow or answers badly, the upload is refused.
+   * An infected file is refused with an audit event; nothing is stored (this runs before any storage write).
+   */
+  private async scan(auth: AuthContext, who: CallerInfo, part: UploadedPart): Promise<ApiError | null> {
+    if (!this.scanner.required) return null
+    try {
+      const outcome = await this.scanner.scan(part.buffer)
+      if (outcome.status === 'clean') return null
+      await this.auditInfected(auth, who, part, outcome.signature)
+      return invalid(INTAKE_SCAN_MESSAGES.infected)
+    } catch (err) {
+      if (!(err instanceof ScannerUnavailableError)) this.log.error(`virus scan failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`)
+      else this.log.error(err.message)
+      return new ApiError({ code: INTAKE_SCAN_UNAVAILABLE_CODE, status: 503, message: INTAKE_SCAN_MESSAGES.unavailable, fields: { files: INTAKE_SCAN_MESSAGES.unavailable }, retryAfter: 30 })
+    }
+  }
+
+  private async auditInfected(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string): Promise<void> {
+    try {
+      await this.audit.record({
+        action: AUDIT_ACTIONS.INTAKE_FILE_INFECTED,
+        actorUserId: auth.userId,
+        actorRole: auth.active.role,
+        scopeLevel: auth.active.scope.level,
+        schoolId: auth.active.scope.schoolId ?? null,
+        targetType: 'intake_batch',
+        targetId: null,
+        requestId: who.requestId,
+        ip: who.ip,
+        isTest: auth.mode !== null,
+        details: { signature, sha256: createHash('sha256').update(part.buffer).digest('hex'), name: sanitizeOriginalName(decodeUploadName(part.originalname)), bytes: part.buffer.length },
+      })
+    } catch (e) {
+      this.log.error(`infected-file audit event could not be written: ${e instanceof Error ? e.message : String(e)}`)
     }
   }
 

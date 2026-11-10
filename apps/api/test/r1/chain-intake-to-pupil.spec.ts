@@ -17,6 +17,7 @@ import { spmSubjectConfigsSeed } from '../../prisma/seed/spm-subject-configs'
 import { walletSeed } from '../../prisma/seed/wallet'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { featureModules } from '../../src/modules'
 import { AI_EXTRACTOR } from '../../src/modules/intake/files'
@@ -95,6 +96,8 @@ async function boot(): Promise<WorkflowTestApp> {
     .useValue(new FakeOcrEngine())
     .overrideProvider(AI_EXTRACTOR)
     .useValue(ai)
+    .overrideProvider(VirusScanService)
+    .useValue(NO_SCAN)
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)

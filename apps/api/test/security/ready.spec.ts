@@ -49,7 +49,7 @@ describe('GET /api/ready (BE-33)', () => {
   it('is 200 with the documented shape, no session needed, when the DB answers and every migration is applied', async () => {
     const res = await request(app.getHttpServer()).get('/api/ready')
     expect(res.status).toBe(200)
-    expect(res.body).toEqual({ data: { status: 'ready', db: 'up', migrations: 'applied', worker: 'disabled', time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*\+08:00$/) } })
+    expect(res.body).toEqual({ data: { status: 'ready', db: 'up', migrations: 'applied', worker: 'disabled', scanner: 'disabled', time: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T.*\+08:00$/) } })
     expect(res.headers['cache-control']).toBe('no-store')
   })
 

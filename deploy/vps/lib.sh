@@ -83,14 +83,19 @@ pp_norm_domain() {
   printf '%s' "$d"
 }
 
-# pp_intake_av_problem [runtime]: prints the reason (and returns 1) when INTAKE_TEACHER_ENABLED is on in api.env while ClamAV is not live.
-# Teacher DOCX/XLSX uploads (intake-teacher.gate.ts, intake-upload.service.ts acceptOffice) are NOT virus-scanned by the API, so the flag is
-# safe only while it is off (AZ-35, backlog #78). "Live" = compose profile clamav in PP_PROFILES, CLAMAV_HOST set in api.env, and with
-# "runtime" the clamav container running. Nothing printed and return 0 when the flag is off or ClamAV is live.
+# pp_intake_av_problem [runtime]: prints the reason (and returns 1) when INTAKE_TEACHER_ENABLED is on in api.env while upload scanning is not in place.
+# Teacher DOCX/XLSX/PDF uploads are accepted only after a clean ClamAV scan (backlog #78, AZ-35), so the flag is safe only when ALL hold: the code
+# being deployed contains the scan (marker CLAMAV_SCAN_ENABLED declared in the API env schema, read from the checked-out source, so no running API
+# is needed), compose profile clamav in PP_PROFILES, CLAMAV_HOST set in api.env, and with "runtime" the clamav container running. Configuration
+# alone is never enough. Nothing printed and return 0 when the flag is off or all of that holds. PP_AV_SCHEMA_FILE overrides the marker file (test hook).
 pp_intake_av_problem() {
-  local mode="${1:-}" api_env="$PP_ENV_DIR/api.env" v profs
+  local mode="${1:-}" api_env="$PP_ENV_DIR/api.env" v profs schema
   v="$(pp_env_value "$api_env" INTAKE_TEACHER_ENABLED)"; v="${v,,}"
   case "$v" in ''|false|0|no|off) return 0 ;; esac
+  schema="${PP_AV_SCHEMA_FILE:-$PP_REPO/apps/api/src/common/config/env.schema.ts}"
+  if ! grep -q 'CLAMAV_SCAN_ENABLED' "$schema" 2>/dev/null; then
+    printf 'INTAKE_TEACHER_ENABLED=%s in %s but this build has no upload scan code (CLAMAV_SCAN_ENABLED is not in the API env schema): uploads would not be virus-scanned (set it to false, or deploy a build with the scanner)' "$v" "$api_env"; return 1
+  fi
   profs=",$(pp_cfg PP_PROFILES ''),"
   if [[ "$profs" != *,clamav,* ]]; then
     printf 'INTAKE_TEACHER_ENABLED=%s in %s but the clamav compose profile is not in PP_PROFILES: teacher DOCX/XLSX uploads would not be virus-scanned (set it to false, or run ClamAV first)' "$v" "$api_env"; return 1

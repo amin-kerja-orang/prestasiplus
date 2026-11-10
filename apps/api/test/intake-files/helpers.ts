@@ -30,6 +30,7 @@ import { FilesModule } from '../../src/modules/files'
 import { IntakeFilesModule } from '../../src/modules/intake/files'
 import { JobsService } from '../../src/modules/jobs'
 import { OCR_ENGINE, OcrError, type OcrEngine, type OcrResult } from '../../src/modules/ocr'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { type AuthTestApp, START } from '../auth/helpers'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
@@ -75,6 +76,8 @@ export async function bootIntakeApp(
   env: Record<string, string | undefined> = {},
   reuse?: { db: TestDatabase; dir: string },
   ocr: FakeOcrEngine = new FakeOcrEngine(),
+  /** `real`: keep the real VirusScanService (test/intake-files/virus-scan.spec.ts); default: scanning is not required (NO_SCAN). */
+  scanner: 'none' | 'real' = 'none',
 ): Promise<IntakeTestApp> {
   const db: TestDatabase = reuse?.db ?? (await createTestDatabase())
   if (!reuse) await runSeeds([identitySeed], { prisma: db.prisma })
@@ -119,12 +122,13 @@ export async function bootIntakeApp(
   }
 
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule, IntakeFilesModule])] })
+  let builder = Test.createTestingModule({ imports: [defineAppModule([AuthModule, FilesModule, IntakeFilesModule])] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .overrideProvider(OCR_ENGINE)
     .useValue(ocr)
-    .compile()
+  if (scanner === 'none') builder = builder.overrideProvider(VirusScanService).useValue(NO_SCAN)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()

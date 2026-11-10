@@ -22,6 +22,7 @@ import { curriculumSeed } from '../../prisma/seed/curriculum'
 import { questionsSeed } from '../../prisma/seed/questions'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
+import { NO_SCAN, VirusScanService } from '../support/no-scan'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
 import { ClassesModule } from '../../src/modules/classes'
@@ -108,6 +109,8 @@ export async function bootQsApp(opts: BootOptions = {}): Promise<QsTestApp> {
     .useValue(clock)
     .overrideProvider(OCR_ENGINE)
     .useValue(new FakeOcrEngine())
+    .overrideProvider(VirusScanService)
+    .useValue(NO_SCAN)
   if (!opts.realIntake) builder = builder.overrideProvider(GuruPaperIntakeAdapter).useValue({ submit: (s: PaperSubmission) => intake.handler(s) })
   const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
