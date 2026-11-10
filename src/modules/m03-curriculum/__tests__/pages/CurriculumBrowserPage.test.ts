@@ -136,7 +136,7 @@ describe('CurriculumBrowserPage (M03 S1)', () => {
     api.fetchCurriculumTree.mockResolvedValue(tree([]))
     const { w } = await render()
     expect(w.get('[data-testid=tree-empty]').text()).toContain(
-      'Tiada bab dijumpai untuk subjek dan tahap ini.',
+      'Tiada bab direkodkan untuk pasangan ini',
     )
     expect(w.get('[data-testid=chapter-add-first]').text()).toBe('Tambah Bab Pertama')
     expect(w.get('[data-testid=chapter-add-first]').attributes('href')).toBe(

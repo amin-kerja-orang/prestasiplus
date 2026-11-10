@@ -20,7 +20,7 @@ import {
   type DsAccent,
   type StatItem,
 } from '@/ds'
-import { roundHalfUp } from '@/lib/number'
+import { formatCount, roundHalfUp } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchCommandCenterDrill } from '../api/command-center'
@@ -83,7 +83,7 @@ const stats = computed<StatItem[]>(() => {
       key: 'questions',
       label: DASH_COPY.statQuestions,
       value: s.questions,
-      sub: `✅ ${String(s.questionsApproved)} diluluskan`,
+      sub: `✅ ${formatCount(s.questionsApproved)} diluluskan`,
       icon: 'clipboard-text',
       accent: 'heat',
     },

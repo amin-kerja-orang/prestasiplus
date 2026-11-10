@@ -283,7 +283,7 @@ provide(TREE_ACTIONS, actions)
         <div class="flex flex-col gap-4" data-testid="curriculum-tree">
           <DsPanel v-if="tree.chapters.length === 0" padding="none" data-testid="tree-empty">
             <div class="p-6">
-              <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="tray">
+              <DsEmptyState title="Tiada bab direkodkan untuk pasangan ini" icon="tray">
                 <template #actions>
                   <UButton
                     :to="chapterCreateTo(subjectParam, levelParam)"
