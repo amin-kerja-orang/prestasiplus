@@ -35,7 +35,7 @@ test.describe('M06 S10 history', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm/history')
     await expectTabTitle(page, 'Sejarah Kuiz SPM | PRESTASIPLUS')
     await expect(shellTitle(page)).toHaveText('Sejarah Kuiz SPM')
-    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Rekod percubaan SPM anda')
+    await expect(tid(page, 'pentadbiran-subtitle')).toHaveText('Rekod percubaan SPM anda')
     await expect(tid(page, 'spm-back')).toHaveText('Kembali ke Mod SPM')
     await expect(tid(page, 'spm-back')).toHaveAttribute('href', '/spm')
     await expect(tid(page, 'spm-heading')).toHaveText('Sejarah Kuiz SPM')
