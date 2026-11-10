@@ -90,7 +90,10 @@ live AS (
     UNION ALL SELECT 'challenges' AS entity, count(*) AS n FROM challenges WHERE legacy_source = 'cloud'
     UNION ALL SELECT 'gamification_settings' AS entity, count(*) AS n FROM gamification_settings WHERE legacy_source = 'cloud'
     UNION ALL SELECT 'wallets' AS entity, count(*) AS n FROM wallets WHERE legacy_source = 'cloud'
-    UNION ALL SELECT 'coin_ledger' AS entity, count(*) AS n FROM coin_ledger WHERE legacy_source = 'cloud'
+    -- The V2 ledger rows only: the opening-balance rows (legacy_id 'opening:<wallet>', one per wallet its ledger does not explain) are
+    -- counted apart as 'wallet_opening', exactly as verify/entities.ts does (targetWhere OPENING_NOT).
+    UNION ALL SELECT 'coin_ledger' AS entity, count(*) AS n FROM coin_ledger WHERE legacy_source = 'cloud' AND legacy_id NOT LIKE 'opening:%'
+    UNION ALL SELECT 'wallet_opening' AS entity, count(*) AS n FROM coin_ledger WHERE legacy_source = 'cloud' AND legacy_id LIKE 'opening:%'
     UNION ALL SELECT 'practice_sessions' AS entity, count(*) AS n FROM practice_sessions WHERE legacy_source = 'cloud'
     UNION ALL SELECT 'practice_answers' AS entity, count(*) AS n FROM practice_answers WHERE legacy_source = 'cloud'
     UNION ALL SELECT 'streaks' AS entity, count(*) AS n FROM streaks WHERE legacy_source = 'cloud'
