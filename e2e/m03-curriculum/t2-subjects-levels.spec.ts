@@ -10,8 +10,18 @@ import type { Page } from '@playwright/test'
 
 import { expect, reloadApp, test } from '../fixtures/test'
 import {
+  chooseDelete,
+  confirmDialog,
+  expectSwitch,
+  listRows,
+  listTable,
+  rowById,
+  rowEdit,
+  rowSwitch,
+  expectListLoaded,
+} from './admin-table'
+import {
   acceptNextDialog,
-  dismissNextDialog,
   expectNoHorizontalScroll,
   expectTabTitle,
   expectTouchTarget,
@@ -38,21 +48,21 @@ const SUBJECT_UPPER_HEADERS = [
 ]
 
 function subjectRow(page: Page, id: number) {
-  return page.locator(`[data-testid="subject-row"][data-subject-id="${String(id)}"]`)
+  return rowById(page, 'subjects', id)
 }
 
 function levelRow(page: Page, id: number) {
-  return page.locator(`[data-testid="level-row"][data-level-id="${String(id)}"]`)
+  return rowById(page, 'levels', id)
 }
 
 async function openSubjects(page: Page, gotoApp: (path: string) => Promise<void>): Promise<void> {
   await gotoApp('/admin/subjects')
-  await expect(page.getByTestId('subject-row').first()).toBeVisible()
+  await expectListLoaded(page, 'subjects')
 }
 
 async function openLevels(page: Page, gotoApp: (path: string) => Promise<void>): Promise<void> {
   await gotoApp('/admin/education-levels')
-  await expect(page.getByTestId('level-row').first()).toBeVisible()
+  await expectListLoaded(page, 'levels')
 }
 
 /** The smallest font size (px) of any visible text-bearing element inside `main` (0 when none). */
@@ -97,24 +107,26 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await loginAs(ADMIN)
     await openSubjects(page, gotoApp)
     await expectTabTitle(page, 'Subjek | PRESTASIPLUS')
-    await expect(page.getByRole('heading', { name: 'Senarai Subjek' })).toBeVisible()
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Subjek')
     await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 31 subjek')
     const add = page.getByTestId('subjects-add')
     await expect(add).toHaveText('Tambah')
     await expect(add).toHaveAttribute('href', '/admin/subjects/create')
 
-    // Headers display upper-case (CSS transform of the source labels).
-    const headers = page.getByTestId('subjects-th')
+    // Headers (the DsTable header cells; the label text is the source label, case aside).
+    const headers = listTable(page, 'subjects').locator('thead th')
     await expect(headers).toHaveCount(10)
     expect(
-      await headers.evaluateAll((els) => els.map((el) => (el as HTMLElement).innerText)),
+      (await headers.evaluateAll((els) => els.map((el) => (el as HTMLElement).innerText))).map(
+        (text) => text.trim().toUpperCase(),
+      ),
     ).toEqual(SUBJECT_UPPER_HEADERS)
 
     // 31 rows by id; level line, Teras / Elektif, code pill, colour and question count.
-    const rows = page.getByTestId('subject-row')
+    const rows = listRows(page, 'subjects')
     await expect(rows).toHaveCount(31)
-    await expect(rows.nth(0)).toHaveAttribute('data-subject-id', '1')
-    await expect(rows.nth(30)).toHaveAttribute('data-subject-id', '31')
+    await expect(rows.nth(0).locator('td').first()).toHaveText('1')
+    await expect(rows.nth(30).locator('td').first()).toHaveText('31')
     await expect(subjectRow(page, 8).getByTestId('subject-levels')).toHaveText(
       'Tingkatan 4, Tingkatan 5',
     )
@@ -122,20 +134,18 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await expect(subjectRow(page, 3).getByTestId('subject-code')).toHaveText('MATH')
     await expect(subjectRow(page, 3).getByTestId('subject-core')).toHaveText('Teras')
     await expect(subjectRow(page, 8).getByTestId('subject-core')).toHaveText('Elektif')
-    await expect(subjectRow(page, 3).getByTestId('subject-edit')).toHaveAttribute(
-      'href',
-      '/admin/subjects/3/edit',
-    )
-    await expect(subjectRow(page, 3).getByTestId('subject-edit')).toHaveAttribute('title', 'Edit')
-    await expect(subjectRow(page, 3).getByTestId('subject-delete')).toHaveAttribute(
-      'title',
-      'Padam',
-    )
+    // Edit is an icon link named "Edit"; "Padam" sits in the row's "Tindakan" menu (D-staff DsRowActions).
+    await expect(rowEdit(subjectRow(page, 3))).toHaveAttribute('href', '/admin/subjects/3/edit')
+    await expect(rowEdit(subjectRow(page, 3))).toHaveAttribute('title', 'Edit')
+    await subjectRow(page, 3).getByRole('button', { name: 'Tindakan', exact: true }).click()
+    await expect(page.getByRole('menuitem', { name: 'Padam', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
 
-    // Below sm: swatch only and the question number only (as live); from sm both texts.
+    // The colour hex shows from 2xl (v2 restyle: swatch only below it) and the "soalan" word after the
+    // question number too; the "Soalan" column header names the figure at every width.
     const hex = subjectRow(page, 27).getByTestId('subject-color-hex')
     const questions = subjectRow(page, 3).getByTestId('subject-questions')
-    if (isMobileWidth(page)) {
+    if (viewportWidth(page) < 1536) {
       await expect(hex).toBeHidden()
       await expect
         .poll(() => questions.evaluate((el) => (el as HTMLElement).innerText.trim()))
@@ -147,11 +157,11 @@ test.describe('M03 S6 subject list', MODULE, () => {
     }
 
     // The table fits its card from 1280 and scrolls inside the card below it (DV-M03-03).
-    const scroller = page.getByTestId('subjects-table').locator('xpath=../..')
+    const scroller = listTable(page, 'subjects').locator('div.overflow-x-auto').first()
     const overflow = await scroller.evaluate((el) => el.scrollWidth - el.clientWidth)
     if (viewportWidth(page) >= 1280) {
       expect(overflow).toBeLessThanOrEqual(0)
-      const card = await scroller.locator('xpath=..').boundingBox()
+      const card = await listTable(page, 'subjects').boundingBox()
       const last = await headers.nth(9).boundingBox()
       expect(last!.x + last!.width).toBeLessThanOrEqual(card!.x + card!.width + 1)
     } else {
@@ -202,14 +212,14 @@ test.describe('M03 S6 subject list', MODULE, () => {
       dialogs += 1
       void dialog.dismiss()
     })
-    const track = subjectRow(page, 12).getByTestId('switch-track')
-    await expect(track).toHaveClass(/bg-emerald-500/)
-    await subjectRow(page, 12).getByTestId('subject-switch').click()
-    await expect(track).toHaveClass(/bg-slate-300/)
+    await expectSwitch(subjectRow(page, 12), true)
+    await rowSwitch(subjectRow(page, 12)).click()
+    await expectSwitch(subjectRow(page, 12), false)
     expect(dialogs).toBe(0)
 
     await reloadApp(page)
-    await expect(subjectRow(page, 12).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await expectListLoaded(page, 'subjects')
+    await expectSwitch(subjectRow(page, 12), false)
     await expectNoHorizontalScroll(page)
   })
 
@@ -221,19 +231,18 @@ test.describe('M03 S6 subject list', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await openSubjects(page, gotoApp)
-    const track = subjectRow(page, 12).getByTestId('switch-track')
 
     await mock.failNext('PATCH /api/admin/subjects/12/active', 500)
     const failed = acceptNextDialog(page, { type: 'alert', message: 'Gagal kemaskini status' })
-    await subjectRow(page, 12).getByTestId('subject-switch').click()
+    await rowSwitch(subjectRow(page, 12)).click()
     await failed
-    await expect(track).toHaveClass(/bg-emerald-500/)
+    await expectSwitch(subjectRow(page, 12), true)
 
     await mock.networkErrorNext('PATCH /api/admin/subjects/12/active')
     const offline = acceptNextDialog(page, { type: 'alert', message: 'Ralat rangkaian' })
-    await subjectRow(page, 12).getByTestId('subject-switch').click()
+    await rowSwitch(subjectRow(page, 12)).click()
     await offline
-    await expect(track).toHaveClass(/bg-emerald-500/)
+    await expectSwitch(subjectRow(page, 12), true)
   })
 
   test(
@@ -242,17 +251,16 @@ test.describe('M03 S6 subject list', MODULE, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openSubjects(page, gotoApp)
-      const dismissed = dismissNextDialog(page, {
-        type: 'confirm',
-        message: 'Adakah anda pasti mahu padam subjek ini?',
-      })
-      await subjectRow(page, 31).getByTestId('subject-delete').click()
-      await dismissed
-      await expect(page.getByTestId('subject-row')).toHaveCount(31)
+      // The confirmation is the DS dialog (useConfirm), not a native confirm.
+      const dialog = confirmDialog(page)
+      await chooseDelete(page, subjectRow(page, 31))
+      await expect(dialog.message).toHaveText('Adakah anda pasti mahu padam subjek ini?')
+      await dialog.cancel.click()
+      await expect(dialog.message).toBeHidden()
+      await expect(listRows(page, 'subjects')).toHaveCount(31)
 
-      const accepted = acceptNextDialog(page, { type: 'confirm' })
-      await subjectRow(page, 31).getByTestId('subject-delete').click()
-      await accepted
+      await chooseDelete(page, subjectRow(page, 31))
+      await dialog.ok.click()
       await expect(subjectRow(page, 31)).toHaveCount(0)
       await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 30 subjek')
       await expect(page.getByText('Subjek berjaya dipadam.')).toBeVisible()
@@ -265,9 +273,9 @@ test.describe('M03 S6 subject list', MODULE, () => {
     await openSubjects(page, gotoApp)
     if (viewportWidth(page) >= 1024) return
     const row = subjectRow(page, 1)
-    await expectTouchTarget(row.getByTestId('subject-edit'))
-    await expectTouchTarget(row.getByTestId('subject-delete'))
-    await expectTouchTarget(row.getByTestId('subject-switch'))
+    await expectTouchTarget(rowEdit(row))
+    await expectTouchTarget(row.getByRole('button', { name: 'Tindakan', exact: true }))
+    await expectTouchTarget(rowSwitch(row))
     await expectTouchTarget(page.getByTestId('subjects-add'))
   })
 })
@@ -299,7 +307,7 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
     const code = page.getByTestId('subject-code')
     await expect(code).toHaveAttribute('placeholder', 'cth: MATH01')
     await expect(code).toHaveAttribute('maxlength', '20')
-    expect(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+    // v2 restyle: the code input no longer shows the text upper-cased (CSS); the upper-case conversion is checked on save.
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
     await expect(page.getByTestId('subject-icon-input')).toHaveValue('fas fa-book')
     await expect(page.getByTestId('subject-icon-input')).toHaveAttribute(
@@ -320,27 +328,34 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
 
     // Typing displays upper-case; the picker mirrors into the read-only text.
     await code.fill('math02')
-    expect(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+    await expect(code).toHaveValue('math02')
     await page.getByTestId('subject-color').fill('#00ff00')
     await expect(page.getByTestId('subject-color-text')).toHaveValue('#00ff00')
 
-    // 11 unticked levels in one column, in a box of at most 256 px that scrolls inside itself.
+    // 5 unticked levels (the Tingkatan levels; the Darjah levels are hidden, D72), in a box of at most
+    // 320 px (max-h-80) that scrolls inside itself when it overflows: one column below md, two from md.
     const options = page.getByTestId('subject-level-option')
-    await expect(options).toHaveCount(11)
+    await expect(options).toHaveCount(5)
     for (const option of await options.all()) await expect(option).not.toBeChecked()
-    await expect(page.getByText('Darjah 1 (Year 1)')).toBeVisible()
+    await expect(page.getByText('Tingkatan 1 (Form 1)')).toBeVisible()
+    await expect(page.getByText('Darjah 1 (Year 1)')).toHaveCount(0)
     const box = page.getByTestId('subject-levels-box')
     const metrics = await box.evaluate((el) => ({
       client: el.clientHeight,
       scroll: el.scrollHeight,
       maxHeight: getComputedStyle(el).maxHeight,
+      overflowY: getComputedStyle(el).overflowY,
     }))
-    expect(metrics.scroll).toBeGreaterThan(metrics.client)
-    expect(metrics.client).toBeLessThanOrEqual(260)
-    expect(metrics.maxHeight).toBe('256px')
+    expect(metrics.client).toBeLessThanOrEqual(320)
+    expect(metrics.maxHeight).toBe('320px')
+    expect(metrics.overflowY).toBe('auto')
     const first = await options.nth(0).boundingBox()
     const second = await options.nth(1).boundingBox()
-    expect(second!.y).toBeGreaterThan(first!.y)
+    if (viewportWidth(page) >= 768) {
+      expect(second!.x).toBeGreaterThan(first!.x)
+    } else {
+      expect(second!.y).toBeGreaterThan(first!.y)
+    }
 
     await expectButtonRow(page)
     expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
@@ -368,17 +383,17 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       await page.getByLabel('Nama Subjek (Bahasa Melayu)').fill('Sains Demo')
       await page.getByLabel('Nama Subjek (English)').fill('Demo Science')
       await page.getByTestId('subject-code').fill('demo01')
-      await page.getByText('Darjah 1 (Year 1)').click()
-      await page.getByText('Darjah 2 (Year 2)').click()
+      await page.getByText('Tingkatan 1 (Form 1)').click()
+      await page.getByText('Tingkatan 2 (Form 2)').click()
       await page.getByTestId('form-submit').click()
 
       await expect(page).toHaveURL('/admin/subjects')
       await expect(page.getByText('Subjek berjaya ditambah.')).toBeVisible()
       await expect(page.getByTestId('subjects-count')).toHaveText('Jumlah: 32 subjek')
-      const created = page.getByTestId('subject-row').filter({ hasText: 'Sains Demo' })
+      const created = listRows(page, 'subjects').filter({ hasText: 'Sains Demo' })
       await expect(created.getByTestId('subject-code')).toHaveText('DEMO01')
-      await expect(created.getByTestId('subject-levels')).toHaveText('Darjah 1, Darjah 2')
-      await expect(created.getByTestId('switch-track')).toHaveClass(/bg-emerald-500/)
+      await expect(created.getByTestId('subject-levels')).toHaveText('Tingkatan 1, Tingkatan 2')
+      await expectSwitch(created, true)
       await expectNoHorizontalScroll(page)
     },
   )
@@ -409,8 +424,12 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
     async ({ page, loginAs, gotoApp }) => {
       test.slow()
       await loginAs(ADMIN)
+      await openLevels(page, gotoApp)
+      const t1Text = await levelRow(page, 7).getByTestId('level-subjects').innerText()
+      const t1Subjects = Number.parseInt(t1Text, 10)
+      expect(t1Subjects).toBeGreaterThan(0)
       await openSubjects(page, gotoApp)
-      await subjectRow(page, 3).getByTestId('subject-edit').click()
+      await rowEdit(subjectRow(page, 3)).click()
       await expect(page).toHaveURL('/admin/subjects/3/edit')
       await expectTabTitle(page, 'Edit Subjek | PRESTASIPLUS')
       await expect(page.getByTestId('subject-name')).toHaveValue('Matematik')
@@ -421,21 +440,23 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
       await expect(page.getByTestId('subject-core')).toBeChecked()
       await expect(page.getByTestId('subject-order')).toHaveValue('3')
       const options = page.getByTestId('subject-level-option')
-      await expect(options).toHaveCount(11)
+      await expect(options).toHaveCount(5)
       for (const option of await options.all()) await expect(option).toBeChecked()
       await expect(page.getByTestId('form-submit')).toHaveText('Kemaskini Subjek')
       await expect(page.getByText('Aktif', { exact: true })).toHaveCount(0)
       await expectButtonRow(page)
       await expectNoHorizontalScroll(page)
 
-      await page.getByText('Darjah 1 (Year 1)').click()
+      await page.getByText('Tingkatan 1 (Form 1)').click()
       await page.getByTestId('form-submit').click()
       await expect(page).toHaveURL('/admin/subjects')
       await expect(page.getByText('Subjek berjaya dikemaskini.')).toBeVisible()
-      await expect(subjectRow(page, 3).getByTestId('subject-levels')).not.toContainText('Darjah 1,')
+      await expect(subjectRow(page, 3).getByTestId('subject-levels')).not.toContainText('Tingkatan 1,')
 
       await openLevels(page, gotoApp)
-      await expect(levelRow(page, 1).getByTestId('level-subjects')).toHaveText('15 subjek')
+      await expect(levelRow(page, 7).getByTestId('level-subjects')).toHaveText(
+        `${String(t1Subjects - 1)} subjek`,
+      )
     },
   )
 
@@ -448,9 +469,9 @@ test.describe('M03 S7 / S8 subject form', MODULE, () => {
     await gotoApp('/admin/subjects/999/edit')
     await expect(page).toHaveURL('/admin/subjects')
     await expect(page.getByText('Subjek tidak dijumpai.')).toBeVisible()
-    await expect(page.getByTestId('subject-row').first()).toBeVisible()
+    await expectListLoaded(page, 'subjects')
     await reloadApp(page)
-    await expect(page.getByTestId('subject-row').first()).toBeVisible()
+    await expectListLoaded(page, 'subjects')
     await expect(page.getByText('Subjek tidak dijumpai.')).toHaveCount(0)
   })
 })
@@ -466,16 +487,18 @@ test.describe('M03 S9 level list', MODULE, () => {
     await loginAs(ADMIN)
     await openLevels(page, gotoApp)
     await expectTabTitle(page, 'Tahap Pendidikan | PRESTASIPLUS')
-    await expect(page.getByRole('heading', { name: 'Senarai Tahap Pendidikan' })).toBeVisible()
-    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 11 tahap')
+    await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Tahap Pendidikan')
+    // 5 levels: the Tingkatan levels only; the 6 Darjah levels are hidden (D72).
+    await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 5 tahap')
     const add = page.getByTestId('levels-add')
     await expect(add).toHaveText('Tambah Tahap')
     await expect(add).toHaveAttribute('href', '/admin/education-levels/create')
-    await expect(add).toHaveClass(/from-pink-500/)
 
-    const headers = page.locator('thead th')
+    const headers = listTable(page, 'levels').locator('thead th')
     expect(
-      await headers.evaluateAll((els) => els.map((el) => (el as HTMLElement).innerText)),
+      (await headers.evaluateAll((els) => els.map((el) => (el as HTMLElement).innerText))).map(
+        (text) => text.trim().toUpperCase(),
+      ),
     ).toEqual([
       '#',
       'NAMA (BM)',
@@ -489,26 +512,26 @@ test.describe('M03 S9 level list', MODULE, () => {
       'TINDAKAN',
     ])
 
-    await expect(page.getByTestId('level-row')).toHaveCount(11)
-    const d1 = levelRow(page, 1)
-    await expect(d1).toContainText('Darjah 1')
-    await expect(d1).toContainText('Year 1')
-    await expect(d1).toContainText('D1')
-    await expect(d1.getByTestId('level-stage')).toHaveText('Rendah')
-    await expect(d1).toContainText('KSSR')
-    await expect(d1.getByTestId('level-questions')).toHaveText('11396 soalan')
-    await expect(d1.getByTestId('level-subjects')).toHaveText('16 subjek')
-    await expect(levelRow(page, 7).getByTestId('level-stage')).toHaveText('Menengah Rendah')
+    await expect(listRows(page, 'levels')).toHaveCount(5)
+    await expect(listRows(page, 'levels').nth(0).locator('td').first()).toHaveText('7')
+    await expect(listRows(page, 'levels').nth(4).locator('td').first()).toHaveText('11')
+    const t1 = levelRow(page, 7)
+    await expect(t1).toContainText('Tingkatan 1')
+    await expect(t1).toContainText('Form 1')
+    await expect(t1).toContainText('T1')
+    await expect(t1.getByTestId('level-stage')).toHaveText('Menengah Rendah')
+    await expect(t1).toContainText('KSSM')
+    await expect(t1.getByTestId('level-questions')).toHaveText('@@T1Q@@ soalan')
+    await expect(t1.getByTestId('level-subjects')).toHaveText('15 subjek')
     await expect(levelRow(page, 10).getByTestId('level-stage')).toHaveText('Menengah Atas')
-    await expect(d1.getByTestId('level-edit')).toHaveAttribute(
-      'href',
-      '/admin/education-levels/1/edit',
-    )
-    await expect(d1.getByTestId('level-edit')).toHaveAttribute('title', 'Edit')
-    await expect(d1.getByTestId('level-delete')).toHaveAttribute('title', 'Padam')
+    await expect(rowEdit(t1)).toHaveAttribute('href', '/admin/education-levels/7/edit')
+    await expect(rowEdit(t1)).toHaveAttribute('title', 'Edit')
+    await t1.getByRole('button', { name: 'Tindakan', exact: true }).click()
+    await expect(page.getByRole('menuitem', { name: 'Padam', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
 
     // Counts read in full at every width (unlike S6); the table scrolls inside its card below 1280.
-    const scroller = page.getByTestId('levels-table').locator('xpath=../..')
+    const scroller = listTable(page, 'levels').locator('div.overflow-x-auto').first()
     const overflow = await scroller.evaluate((el) => el.scrollWidth - el.clientWidth)
     if (viewportWidth(page) >= 1280) expect(overflow).toBeLessThanOrEqual(0)
     else expect(overflow).toBeGreaterThan(0)
@@ -529,25 +552,26 @@ test.describe('M03 S9 level list', MODULE, () => {
       dialogs += 1
     }
     page.on('dialog', counter)
-    const track = levelRow(page, 11).getByTestId('switch-track')
-    await levelRow(page, 11).getByTestId('level-switch').click()
-    await expect(track).toHaveClass(/bg-slate-300/)
+    await expectSwitch(levelRow(page, 11), true)
+    await rowSwitch(levelRow(page, 11)).click()
+    await expectSwitch(levelRow(page, 11), false)
     expect(dialogs).toBe(0)
     await reloadApp(page)
-    await expect(levelRow(page, 11).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await expectListLoaded(page, 'levels')
+    await expectSwitch(levelRow(page, 11), false)
     page.off('dialog', counter)
 
     await mock.failNext('PATCH /api/admin/education-levels/11/active', 500)
     const failed = acceptNextDialog(page, { type: 'alert', message: 'Gagal kemaskini status' })
-    await levelRow(page, 11).getByTestId('level-switch').click()
+    await rowSwitch(levelRow(page, 11)).click()
     await failed
-    await expect(levelRow(page, 11).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await expectSwitch(levelRow(page, 11), false)
 
     await mock.networkErrorNext('PATCH /api/admin/education-levels/11/active')
     const offline = acceptNextDialog(page, { type: 'alert', message: 'Ralat rangkaian' })
-    await levelRow(page, 11).getByTestId('level-switch').click()
+    await rowSwitch(levelRow(page, 11)).click()
     await offline
-    await expect(levelRow(page, 11).getByTestId('switch-track')).toHaveClass(/bg-slate-300/)
+    await expectSwitch(levelRow(page, 11), false)
   })
 
   test(
@@ -556,23 +580,21 @@ test.describe('M03 S9 level list', MODULE, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openLevels(page, gotoApp)
-      const dismissed = dismissNextDialog(page, {
-        type: 'confirm',
-        message: 'Adakah anda pasti mahu padam tahap pendidikan ini?',
-      })
-      await levelRow(page, 11).getByTestId('level-delete').click()
-      await dismissed
-      await expect(page.getByTestId('level-row')).toHaveCount(11)
+      const dialog = confirmDialog(page)
+      await chooseDelete(page, levelRow(page, 11))
+      await expect(dialog.message).toHaveText('Adakah anda pasti mahu padam tahap pendidikan ini?')
+      await dialog.cancel.click()
+      await expect(dialog.message).toBeHidden()
+      await expect(listRows(page, 'levels')).toHaveCount(5)
 
-      const accepted = acceptNextDialog(page, { type: 'confirm' })
-      await levelRow(page, 11).getByTestId('level-delete').click()
-      await accepted
+      await chooseDelete(page, levelRow(page, 11))
+      await dialog.ok.click()
       await expect(levelRow(page, 11)).toHaveCount(0)
-      await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 10 tahap')
+      await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 4 tahap')
       await expect(page.getByText('Tahap Pendidikan berjaya dipadam.')).toBeVisible()
 
       await gotoApp('/admin/subjects')
-      await expect(page.getByTestId('subject-row').first()).toBeVisible()
+      await expectListLoaded(page, 'subjects')
       await expect(subjectRow(page, 8).getByTestId('subject-levels')).toHaveText('Tingkatan 4')
       await expectNoHorizontalScroll(page)
     },
@@ -582,10 +604,10 @@ test.describe('M03 S9 level list', MODULE, () => {
     await loginAs(ADMIN)
     await openLevels(page, gotoApp)
     if (viewportWidth(page) >= 1024) return
-    const row = levelRow(page, 1)
-    await expectTouchTarget(row.getByTestId('level-edit'))
-    await expectTouchTarget(row.getByTestId('level-delete'))
-    await expectTouchTarget(row.getByTestId('level-switch'))
+    const row = levelRow(page, 7)
+    await expectTouchTarget(rowEdit(row))
+    await expectTouchTarget(row.getByRole('button', { name: 'Tindakan', exact: true }))
+    await expectTouchTarget(rowSwitch(row))
     await expectTouchTarget(page.getByTestId('levels-add'))
   })
 })
@@ -611,7 +633,7 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     const code = page.getByTestId('level-code')
     await expect(code).toHaveAttribute('placeholder', 'cth: T1')
     await expect(code).toHaveAttribute('maxlength', '10')
-    expect(await code.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+    // v2 restyle: the code input no longer shows the text upper-cased (CSS); the upper-case conversion is checked on save.
     await expect(page.getByText('Kod akan ditukar ke huruf besar automatik')).toBeVisible()
     await expect(page.locator('[data-testid=level-stage] option')).toHaveText([
       '-- Pilih Peringkat --',
@@ -626,7 +648,7 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     await expect(page.getByTestId('level-order')).toHaveValue('0')
     await expect(page.getByText('Nombor lebih kecil akan dipaparkan dahulu')).toBeVisible()
     await expect(page.getByTestId('form-submit')).toHaveText('Simpan Tahap')
-    await expect(page.getByTestId('form-submit')).toHaveClass(/from-pink-500/)
+    
     await expect(page.getByText('Aktif', { exact: true })).toHaveCount(0)
     await expectButtonRow(page)
     expect(await smallestTextInMain(page)).toBeGreaterThanOrEqual(12)
@@ -653,14 +675,14 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
       await page.getByTestId('level-name').fill('Tahun Demo')
       await page.getByTestId('level-name-en').fill('Demo Year')
       await page.getByTestId('level-code').fill('yd')
-      await page.getByTestId('level-stage').selectOption('primary')
-      await page.getByTestId('level-curriculum').fill('KSSR')
+      await page.getByTestId('level-stage').selectOption('lower_secondary')
+      await page.getByTestId('level-curriculum').fill('KSSM')
       await page.getByTestId('form-submit').click()
 
       await expect(page).toHaveURL('/admin/education-levels')
       await expect(page.getByText('Tahap Pendidikan berjaya ditambah.')).toBeVisible()
-      await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 12 tahap')
-      const created = page.getByTestId('level-row').filter({ hasText: 'Tahun Demo' })
+      await expect(page.getByTestId('levels-count')).toHaveText('Jumlah: 6 tahap')
+      const created = listRows(page, 'levels').filter({ hasText: 'Tahun Demo' })
       await expect(created).toContainText('YD')
       await expect(created.getByTestId('level-questions')).toHaveText('0 soalan')
       await expect(created.getByTestId('level-subjects')).toHaveText('0 subjek')
@@ -674,7 +696,7 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     async ({ page, loginAs, gotoApp }) => {
       await loginAs(ADMIN)
       await openLevels(page, gotoApp)
-      await levelRow(page, 10).getByTestId('level-edit').click()
+      await rowEdit(levelRow(page, 10)).click()
       await expect(page).toHaveURL('/admin/education-levels/10/edit')
       await expectTabTitle(page, 'Edit Tahap Pendidikan | PRESTASIPLUS')
       await expect(page.getByTestId('level-name')).toHaveValue('Tingkatan 4')
@@ -705,9 +727,9 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
     await gotoApp('/admin/education-levels/999/edit')
     await expect(page).toHaveURL('/admin/education-levels')
     await expect(page.getByText('Tahap Pendidikan tidak dijumpai.')).toBeVisible()
-    await expect(page.getByTestId('level-row').first()).toBeVisible()
+    await expectListLoaded(page, 'levels')
     await reloadApp(page)
-    await expect(page.getByTestId('level-row').first()).toBeVisible()
+    await expectListLoaded(page, 'levels')
     await expect(page.getByText('Tahap Pendidikan tidak dijumpai.')).toHaveCount(0)
   })
 })
@@ -715,12 +737,20 @@ test.describe('M03 S10 / S11 level form', MODULE, () => {
 test.describe('M03 S6-S11 access', MODULE, () => {
   test.use({ mockInit: { latency: 0 } })
 
-  test('a pelajar is sent away from the admin screens', async ({ page, loginAs, gotoApp }) => {
+  test('a pelajar is refused on the admin screens (in-place 403 page)', async ({
+    page,
+    loginAs,
+    gotoApp,
+  }) => {
     await loginAs('pelajar@demo.test')
-    await gotoApp('/admin/subjects')
-    await expect(page).not.toHaveURL(/\/admin\/subjects/)
-    await gotoApp('/admin/education-levels')
-    await expect(page).not.toHaveURL(/\/admin\/education-levels/)
+    for (const path of ['/admin/subjects', '/admin/education-levels']) {
+      await gotoApp(path)
+      // Route guard default onForbidden '403': the error page renders in place, the URL is kept.
+      await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
+      await expect(page).toHaveURL(path)
+      await expect(page.getByTestId('subjects-table')).toHaveCount(0)
+      await expect(page.getByTestId('levels-table')).toHaveCount(0)
+    }
   })
 
   test('a guest is sent to the login page', async ({ page, gotoApp }) => {
