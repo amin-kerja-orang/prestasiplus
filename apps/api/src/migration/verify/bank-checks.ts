@@ -216,18 +216,27 @@ const blueprintExpectations: readonly Expectation[] = [
   },
 ]
 
-/** Reject reasons that only the text (a stem that parses to nothing) or the file system (a page image the content check refuses) can judge. */
-const JUDGED_ELSEWHERE: ReadonlySet<string> = new Set(['exam_questions|INVALID_VALUE|stem', 'paper_document_pages|INVALID_VALUE|path'])
-const judgedElsewhere = (key: string): boolean => JUDGED_ELSEWHERE.has(key) || key.startsWith('question_files|')
+/**
+ * Reject keys (`entity|reason|column`) that only the text (a stem that parses to nothing) or the file system can judge: a page image the content check
+ * refuses, and the picture pass (`files-step.ts` writes `question_files` rejects with reason INVALID_VALUE and column `<v2 table>.<v2 column>`; the
+ * cause word missing, unlisted, checksum, type or size is the offending value, not part of the key).
+ */
+const JUDGED_ELSEWHERE: ReadonlySet<string> = new Set([
+  'exam_questions|INVALID_VALUE|stem',
+  'paper_document_pages|INVALID_VALUE|path',
+  'question_files|INVALID_VALUE|questions.image_path',
+  'question_files|INVALID_VALUE|media_assets.path',
+])
+const judgedElsewhere = (key: string): boolean => JUDGED_ELSEWHERE.has(key)
 
 /**
- * Every reject key (`entity|reason|column`) that verify explains: the computed expectations plus the keys judged by the text or the file (`question_files|*`
- * stands for every reason of the picture pass). The single source for the checks above and for the list that `docs/ops/sql/smoke-readonly.sql` X3 mirrors.
+ * Every reject key (`entity|reason|column`) that verify explains: the computed expectations plus the keys judged by the text or the file.
+ * The single source for the checks below and for the list that `docs/ops/sql/smoke-readonly.sql` X3 mirrors.
  */
+const ALL_EXPECTATIONS: readonly Expectation[] = [...questionExpectations, ...examExpectations, ...blueprintExpectations]
 export const EXPLAINED_REJECT_KEYS: readonly string[] = [
-  ...[...questionExpectations, ...examExpectations, ...blueprintExpectations].map((e) => `${e.entity}|${e.reason}|${e.column}`),
+  ...ALL_EXPECTATIONS.map((e) => `${e.entity}|${e.reason}|${e.column}`),
   ...JUDGED_ELSEWHERE,
-  'question_files|*',
 ].sort()
 
 /**
@@ -268,7 +277,7 @@ export async function standaloneRejects({ pool, source, entities }: CheckContext
   let expectedTotal = 0
   const computed = new Set<string>()
   // An expectation is about a loader that has a succeeded apply run: the archive holds rows the others have not loaded yet.
-  const all = [...questionExpectations, ...examExpectations, ...blueprintExpectations].filter((e) => entityOf(entities, e.entity) !== undefined)
+  const all = ALL_EXPECTATIONS.filter((e) => entityOf(entities, e.entity) !== undefined)
   if (all.length === 0 && counts.size === 0) {
     return [reported('rejects of the question and paper loaders (latest apply run of each)', 'counts', 'no question or paper loader has a succeeded apply run; not compared')]
   }
