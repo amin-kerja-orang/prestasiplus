@@ -110,10 +110,9 @@ test.describe('M21 S6 Mohon Keluarga Angkat', MODULE, () => {
     await gotoApp(PATH)
     await expectShellTitle(page, 'Mohon Keluarga Angkat')
     await expect(page.getByTestId('shell-title')).not.toHaveText('Dashboard')
-    // The Pembelajaran navbar prints the title only: the `meta.header.subtitle` is not shown.
-    await expect(page.getByTestId('pembelajaran-header')).not.toContainText(
-      'Selamat datang kembali',
-    )
+    // C-7: the Pembelajaran navbar prints `meta.header.subtitle` (from md up) under its own testid, not in the title.
+    await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma')
+    await expect(page.getByTestId('shell-title')).not.toContainText('Isi borang ini untuk memohon tajaan akses PrestasiPlus secara percuma')
     await expectTabTitle(page, TAB_TITLE)
   })
 
