@@ -30,6 +30,8 @@ export type SoloGame =
 export interface GamesHub {
   openRooms: { game: RoomGame; code: string; host: string; players: number; max: number }[]
   chips: { papanBijakPlayed: boolean; battled: boolean }
+  /** Game keys switched on (`game_enabled_*`); optional so older fixtures stay valid. */
+  enabledGames?: string[]
 }
 
 /** #23 lobby: `leaders` for the five lobbies, `top10` for Papan Bijak. */

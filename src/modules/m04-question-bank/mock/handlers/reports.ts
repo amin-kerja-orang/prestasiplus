@@ -151,6 +151,7 @@ function toView(r: QuestionReport, full: boolean): ReportView {
     updatedAt: r.updatedAt,
     question,
     reporter: { id: r.reporterId, name: users.get(r.reporterId)?.name ?? null },
+    reporterRole: users.get(r.reporterId)?.role === 'student' ? 'murid' : 'guru',
   }
 }
 

@@ -5,7 +5,16 @@
  * constants (DV-M06-01).
  */
 
-import { notFound, ok, requireAuth, route, type MockRequest, type RouteDef } from '@/mock/define'
+import {
+  notFound,
+  ok,
+  requireAuth,
+  requireRole,
+  route,
+  validationError,
+  type MockRequest,
+  type RouteDef,
+} from '@/mock/define'
 import { curriculum } from '@/modules/m03-curriculum/mock'
 import { structured } from '@/modules/m04-question-bank/mock'
 import { practice } from '@/modules/m05-practice/mock'
@@ -320,4 +329,12 @@ export const spmReadRoutes: RouteDef[] = [
     return r ? ok(r) : notFound()
   }),
   route('GET', '/api/spm/subjektif', [auth], (req) => ok(subjektif(req))),
+  /**
+   * Admin Pusat set creation (contract `POST /admin/spm/tracking-a`): registered so the guard runs before the
+   * router's 404 (401 anonymous, 403 other roles). The mock does not create sets (M28 keeps its own local
+   * server), so an admin gets the documented 422.
+   */
+  route('POST', '/api/admin/spm/tracking-a', [requireRole('admin')], () =>
+    validationError({ subjectId: 'Penciptaan set tidak disokong dalam mock.' }),
+  ),
 ]

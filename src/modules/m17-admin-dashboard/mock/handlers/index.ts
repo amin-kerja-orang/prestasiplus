@@ -2,6 +2,7 @@ import type { RouteDef } from '@/mock/define'
 
 import { commandCenterDailyRoutes } from './command-center-daily'
 import { commandCenterDrillRoutes } from './command-center-drill'
+import { featureToggleRoutes } from './feature-toggles'
 import { adminCentralRoutes, commandCenterLiveRoutes } from './command-center-live'
 
 /**
@@ -14,4 +15,5 @@ export const m17Routes: readonly RouteDef[] = [
   ...adminCentralRoutes,
   ...commandCenterDailyRoutes,
   ...commandCenterDrillRoutes,
+  ...featureToggleRoutes,
 ]

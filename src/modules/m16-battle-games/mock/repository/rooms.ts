@@ -1062,6 +1062,10 @@ export const roomsRepo = defineRepository({
         return {
           openRooms: open,
           chips: { papanBijakPlayed: (pb?.jumlah ?? 0) > 0, battled },
+          /** Keys switched on in Senarai Permainan (`game_enabled_*`); the mock has no per-grade pool check. */
+          enabledGames: GAMES_ADMIN_GAMES.filter(
+            (g) => (settings.get(1)?.gamesActive ?? ADMIN_GAMES_DEFAULT())[g.key],
+          ).map((g) => g.key as string),
         }
       },
 
