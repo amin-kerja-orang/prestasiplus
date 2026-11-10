@@ -140,7 +140,7 @@ export class ReportService {
     const [people, teachers, schools, rows, top, bySchool] = await Promise.all([
       this.repo.pupilTotals(),
       this.repo.teacherTotals(),
-      this.repo.schoolsWithUsers(null),
+      this.repo.schoolTotals(),
       this.repo.platformAnswersByModeDay(new Date(Math.min(rangeFrom, trendFrom)), to),
       this.repo.topPupilsByAnswers(new Date(rangeFrom), to, 10),
       this.repo.answersBySchool(new Date(rangeFrom), to, 20),
@@ -159,7 +159,7 @@ export class ReportService {
     return {
       range,
       tiles: {
-        schools: schools.length,
+        schools: schools.total,
         teachers: teachers.teachers,
         pupils: people.pupils,
         pupilsAccessed: people.accessed,

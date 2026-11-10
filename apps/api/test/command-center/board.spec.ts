@@ -90,6 +90,10 @@ describe('GET /admin/command-center/live-data', () => {
       [w.school1, 4, 40],
       [w.school2, 1, 6],
     ])
+    // V2 parity: "Sekolah Berdaftar" is every registered (secondary) school; the active subscriptions are the sub-line.
+    const [reg] = await t.db.query<{ n: number }>(`select count(*)::int n from schools where type is null or type not in ('SK','SJK(C)','SJK(T)')`)
+    expect(d.totalSchools).toBe(reg?.n)
+    expect(d.activeSubscriptions).toBeLessThanOrEqual(d.totalSchools)
     const school = await live(schoolAdmin)
     expect(school.totalAnswered).toBe(40)
     expect(school.dailyTrend.reduce((n, p) => n + p.count, 0)).toBe(40)
@@ -102,6 +106,7 @@ describe('GET /admin/command-center/live-data', () => {
       const school = await live(schoolAdmin)
       expect(school.scope).toBe('school')
       expect(school.totalSchools).toBe(1)
+      expect(school.activeSubscriptions).toBe(0)
     } finally {
       await t.db.query(`insert into school_subscriptions overriding system value select * from s6t07_subs`)
       await t.db.query(`drop table s6t07_subs`)

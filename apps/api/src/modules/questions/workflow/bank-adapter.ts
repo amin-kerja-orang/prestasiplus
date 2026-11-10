@@ -8,12 +8,13 @@
  * Backed by BE-09: getStatus, getForGates (parts, tags, chapter), setStatus, deactivate, reactivate,
  * create (admin and Guru imports), describe, listForQuality, getExplanationSource.
  * The gate facts (rights, open duplicate, low-confidence fields, media, AI editor, declared marks) come from
- * `QuestionsRepository.gateFacts` through `gateDataOf` (R1-H-A18). Defaulted (BE-09 holds no such field):
- * `listDiagramCandidates` (no needs-diagram flag in the bank) and `attachDiagram` (no method to attach a figure).
+ * `QuestionsRepository.gateFacts` through `gateDataOf` (R1-H-A18).
+ * Nothing is defaulted any more: `listDiagramCandidates` and `attachDiagram` read and write the bank (flags, held pictures, empty image stimuli).
  */
 import { Inject, Injectable } from '@nestjs/common'
-import type { QuestionPart, QuestionWorkflowStatus } from '@pp/contract'
+import { IMAGE_STIMULUS_KINDS, type QuestionPart, type QuestionWorkflowStatus } from '@pp/contract'
 
+import { Prisma } from '../../../db/generated/client'
 import { PrismaService } from '../../../db/prisma.service'
 import { CurriculumRepository } from '../../curriculum'
 import {
@@ -26,7 +27,9 @@ import {
   type QuestionCreateInput,
   type QuestionRecord,
 } from '../index'
+import { refreshStimulusFlagsOf } from '../effective-leaf'
 import { gateDataOf } from '../gate-data'
+import { BANK_VISIBLE_SQL, NOT_PKSK_SQL, NOT_PRIMARY_LEVEL_SQL } from '../learner-visibility'
 import { partsFromFlat } from '../projection'
 import type {
   DiagramCandidate,
@@ -316,14 +319,98 @@ export class QuestionBankAdapter implements QuestionBankPort {
     return out
   }
 
-  /** Defaulted: the bank has no "needs a diagram" flag, so nothing is flagged. */
-  async listDiagramCandidates(): Promise<DiagramCandidate[]> {
-    return []
+  /**
+   * The questions that need a picture (Audit Rajah, V2 `soalan-gambar`): the live (else latest) version of a bank question, not archived, that
+   *  - carries an OPEN `stimulus_missing` / `figure_only` flag (the rajah the stem refers to was never stored: the Regroup work-list rows), or
+   *  - is held for a V2 picture that could not be copied (`legacy_image_unresolved` in `import_issues`), or
+   *  - shows an image-kind stimulus (own or group) that has no file yet.
+   * `mcq` = a single-choice question, `structured` = any other type. Text is cut for the list; the page size and filters are the service's.
+   */
+  async listDiagramCandidates(kind: 'mcq' | 'structured'): Promise<DiagramCandidate[]> {
+    const type = kind === 'mcq' ? Prisma.sql`v.type = 'mcq'` : Prisma.sql`v.type <> 'mcq'`
+    const images = Prisma.join([...IMAGE_STIMULUS_KINDS])
+    const rows = await this.prisma.client.$queryRaw<
+      { id: bigint; text: string | null; subject_id: bigint | null; subject_name: string | null; creator_id: bigint | null; creator_name: string | null; creator_school: bigint | null; page: number | null }[]
+    >`SELECT q.id, left(coalesce(v.stem_ms, v.stem_en, ''), 600) AS text, v.subject_id, sj.name AS subject_name,
+             q.created_by_id AS creator_id, cu.name AS creator_name, cu.school_id AS creator_school, v.source_page AS page
+        FROM questions q
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = coalesce(q.live_version_no, q.latest_version_no)
+        LEFT JOIN subjects sj ON sj.id = v.subject_id
+        LEFT JOIN users cu ON cu.id = q.created_by_id
+       WHERE ${NOT_PKSK_SQL} AND ${NOT_PRIMARY_LEVEL_SQL} AND ${BANK_VISIBLE_SQL} AND v.status <> 'archived' AND ${type}
+         AND (
+           (v.stimulus_flag IN ('stimulus_missing', 'figure_only') AND v.flag_dismissed_at IS NULL)
+           OR coalesce(v.import_issues, '[]'::jsonb) @> '[{"code": "legacy_image_unresolved"}]'::jsonb
+           OR EXISTS (SELECT 1 FROM question_version_stimuli qvs JOIN stimuli s ON s.id = qvs.stimulus_id
+                       WHERE qvs.question_version_id = v.id AND s.asset_file_id IS NULL AND s.kind IN (${images}))
+           OR EXISTS (SELECT 1 FROM stimulus_group_stimuli gs JOIN stimuli s ON s.id = gs.stimulus_id
+                       WHERE gs.group_id = q.group_id AND s.asset_file_id IS NULL AND s.kind IN (${images}))
+         )
+       ORDER BY q.id DESC`
+    return rows.map((r) => ({
+      id: r.id.toString(),
+      kind,
+      text: r.text ?? '',
+      subjectId: r.subject_id === null ? null : r.subject_id.toString(),
+      subjectName: r.subject_name,
+      createdBy: { id: (r.creator_id ?? 0n).toString(), name: r.creator_name, schoolId: r.creator_school === null ? null : r.creator_school.toString() },
+      sourceFile: null,
+      sourcePage: r.page,
+    }))
   }
 
-  /** Defaulted: BE-09 has no method to attach a figure to a version; unreachable while no candidate is flagged. */
-  async attachDiagram(): Promise<boolean> {
-    return false
+  /**
+   * Attaches an uploaded picture to the question's rajah. An image-kind stimulus of the question or its group that has no file yet takes it
+   * (a held V2 picture, an empty group image); otherwise a new `diagram` stimulus is made: on the GROUP when the question is in one (every
+   * member shows it, D90/D105), else on the live and latest version. The `legacy_image_unresolved` hold is lifted (the question is re-activated
+   * when no other hold remains) and the stimulus flags of the question or of its whole group are decided again. False when the question is gone.
+   */
+  async attachDiagram(id: string, fileId: string): Promise<boolean> {
+    const key = bi(id)
+    const file = bi(fileId)
+    if (key === null || file === null) return false
+    const db = this.prisma.client
+    const q = await db.question.findUnique({ where: { id: key }, select: { latestVersionNo: true, liveVersionNo: true, groupId: true } })
+    if (q === null) return false
+    const numbers = [...new Set([q.latestVersionNo, ...(q.liveVersionNo === null ? [] : [q.liveVersionNo])])]
+    const images = Prisma.join([...IMAGE_STIMULUS_KINDS])
+    const open = await db.$queryRaw<{ id: bigint }[]>`
+      SELECT s.id FROM stimuli s
+       WHERE s.asset_file_id IS NULL AND s.kind IN (${images}) AND s.id IN (
+         SELECT qvs.stimulus_id FROM question_version_stimuli qvs JOIN question_versions v ON v.id = qvs.question_version_id
+          WHERE v.question_id = ${key} AND v.version_no = ANY(${numbers}::int[])
+         UNION
+         SELECT gs.stimulus_id FROM stimulus_group_stimuli gs WHERE gs.group_id = ${q.groupId}::bigint)
+       ORDER BY s.id LIMIT 1`
+    const first = open[0]
+    if (first !== undefined) {
+      await db.stimulus.update({ where: { id: first.id }, data: { assetFileId: file } })
+    } else {
+      const made = await db.stimulus.create({ data: { kind: 'diagram', label: 'Rajah', altText: 'Rajah', assetFileId: file }, select: { id: true } })
+      if (q.groupId !== null) {
+        const last = await db.stimulusGroupStimulus.aggregate({ where: { groupId: q.groupId }, _max: { position: true } })
+        await db.stimulusGroupStimulus.create({ data: { groupId: q.groupId, stimulusId: made.id, position: (last._max.position ?? 0) + 1 } })
+      } else {
+        const versions = await db.questionVersion.findMany({ where: { questionId: key, versionNo: { in: numbers } }, select: { id: true } })
+        for (const v of versions) {
+          const last = await db.questionVersionStimulus.aggregate({ where: { questionVersionId: v.id }, _max: { position: true } })
+          await db.questionVersionStimulus.create({ data: { questionVersionId: v.id, stimulusId: made.id, position: (last._max.position ?? 0) + 1 } })
+        }
+      }
+    }
+    // The hold is lifted; the question comes back when nothing else holds it (markup, personal data, another picture).
+    await db.$executeRaw`
+      UPDATE question_versions v SET import_issues = NULLIF(coalesce((
+          SELECT jsonb_agg(i) FROM jsonb_array_elements(v.import_issues) i WHERE i->>'code' <> 'legacy_image_unresolved'), '[]'::jsonb), '[]'::jsonb)
+       WHERE v.question_id = ${key} AND v.version_no = ANY(${numbers}::int[]) AND jsonb_typeof(v.import_issues) = 'array'`
+    await db.$executeRaw`
+      UPDATE questions qq SET is_active = true
+       WHERE qq.id = ${key} AND NOT EXISTS (
+         SELECT 1 FROM question_versions v, jsonb_array_elements(CASE WHEN jsonb_typeof(v.import_issues) = 'array' THEN v.import_issues ELSE '[]'::jsonb END) i
+          WHERE v.question_id = qq.id AND i->>'code' IN ('legacy_image_unresolved', 'html_image', 'html_math', 'html_residual', 'pii_suspect'))`
+    const members = q.groupId === null ? [key] : (await db.question.findMany({ where: { groupId: q.groupId }, select: { id: true } })).map((m) => m.id)
+    await refreshStimulusFlagsOf(db, members, new Date())
+    return true
   }
 
   async getExplanationSource(id: string): Promise<ExplanationSource | null> {

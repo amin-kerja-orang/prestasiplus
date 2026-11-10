@@ -28,6 +28,9 @@ interface PathUnit {
   firstId: string
   /** How many V2 question rows carry the path. */
   count: number
+  /** The V2 table and column the path is read from (the key of the `files` row). */
+  table: string
+  column: string
 }
 
 /** ETL-only cap for question pictures: V2 diagrams exceed the 2 MB upload rule (design 8.2, OC-5). */
@@ -51,7 +54,18 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
         `SELECT image_path AS path, min(id)::text AS first_id, count(*)::int AS n
            FROM archive_cloud.questions WHERE image_path IS NOT NULL AND btrim(image_path) <> '' GROUP BY image_path`,
       )
-      list = res.rows.map((r) => ({ key: createHash('sha256').update(r.path).digest('hex').slice(0, 24), path: r.path, firstId: r.first_id, count: r.n })).sort((a, b) => byKey(a.key, b.key))
+      // The pictures of the canonical stimuli (media_assets behind `stimuli.asset_id`, T-B9-7): the questions that show them were loaded held with
+      // the same `legacy_image_unresolved` path (canonical-stimuli.ts), so the held pass below releases them. A path that a question row also
+      // names is one unit (the file is the same).
+      const hasMedia = (await q.pool.query<{ ok: boolean }>(`SELECT to_regclass('archive_cloud.media_assets') IS NOT NULL AND to_regclass('archive_cloud.stimuli') IS NOT NULL AS ok`)).rows[0]?.ok === true
+      const media = !hasMedia ? { rows: [] as { path: string; first_id: string; n: number }[] } : await q.pool.query<{ path: string; first_id: string; n: number }>(
+        `SELECT ma.path AS path, min(ma.id)::text AS first_id, count(DISTINCT s.id)::int AS n
+           FROM archive_cloud.media_assets ma JOIN archive_cloud.stimuli s ON s.asset_id = ma.id
+          WHERE ma.path IS NOT NULL AND btrim(ma.path) <> '' GROUP BY ma.path`,
+      )
+      const have = new Set(res.rows.map((r) => r.path))
+      const units = [...res.rows.map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'questions', column: 'image_path' })), ...media.rows.filter((r) => !have.has(r.path)).map((r) => ({ path: r.path, firstId: r.first_id, count: r.n, table: 'media_assets', column: 'path' }))]
+      list = units.map((r) => ({ key: createHash('sha256').update(r.path).digest('hex').slice(0, 24), path: r.path, firstId: r.firstId, count: r.count, table: r.table, column: r.column })).sort((a, b) => byKey(a.key, b.key))
     }
     return list
   }
@@ -67,7 +81,7 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
       let copied = 0
       let unchanged = 0
       for (const u of rows) {
-        const out = await files.migrate(ctx, { table: 'questions', column: 'image_path', legacyId: u.firstId, rawPath: u.path, purpose: 'question_image' })
+        const out = await files.migrate(ctx, { table: u.table, column: u.column, legacyId: u.firstId, rawPath: u.path, purpose: 'question_image' })
         if (!out.ok) {
           q.fileFailures.push({ path: u.path, cause: out.cause, questions: u.count })
           q.notes.count(`files.cause.${out.cause}`)

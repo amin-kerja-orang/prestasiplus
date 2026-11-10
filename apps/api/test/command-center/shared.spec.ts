@@ -151,7 +151,7 @@ describe('repository and scope on a seeded world (is_test never counted)', () =>
     expect((await repo.studentsOfSchool(w.school1)).length).toBe(expected)
     expect((await repo.teachersOfSchool(w.school1)).map((x) => x.id)).toContain(w.teacherId)
     expect(await repo.subscribedSchoolCount(NOW)).toBeGreaterThanOrEqual(0)
-    expect(await repo.schoolsWithStudents()).toBeGreaterThanOrEqual(2)
+    expect(await repo.registeredSchoolCount()).toBeGreaterThanOrEqual(2)
     await t.db.query(`update users set last_login_at = $2::timestamptz where id = $1::bigint`, [w.pupils[0], '2026-10-19T08:45:00+08:00'])
     const win = { from: TODAY, to: NOW }
     expect(await repo.loginCountsByRole(win)).toEqual([{ role: 'student', count: 1 }])

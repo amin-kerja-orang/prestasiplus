@@ -1,4 +1,4 @@
-import { AdminAnalyticsResponseSchema, AdminDashboardResponseSchema, AdminLaporanResponseSchema } from '@pp/contract'
+import { AdminAnalyticsResponseSchema, AdminDashboardResponseSchema, AdminLaporanResponseSchema, AnalyticsMonitoringOverviewSchema } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
@@ -99,6 +99,14 @@ describe('Admin Pusat central screens (S6-T11)', () => {
       expect(d.users.students).toBe(laporan.tiles.pupils)
       expect(d.users.teachers).toBe(laporan.tiles.teachers)
       expect(d.users.total).toBeGreaterThanOrEqual(d.users.students + d.users.teachers)
+      // "Jumlah Sekolah" / "Sekolah Berdaftar" is one number on every admin card (V2 counts the schools table; primary types are hidden, D72):
+      // the Dashboard, the Analitik platform card and the Laporan tile agree with the Sekolah list, with or without users.
+      expect(analytics.platform.schools).toBe(d.schools.total)
+      expect(laporan.tiles.schools).toBe(d.schools.total)
+      // Teachers: the same XS-3 teachers of secondary schools on the Dashboard and the Monitoring teacher table.
+      const monitoring = AnalyticsMonitoringOverviewSchema.parse((await admin.get('/monitoring/overview')).body.data)
+      expect(monitoring.kpi.schools).toBe(d.schools.total)
+      expect(monitoring.teacherRows.reduce((n, r) => n + r.registered, 0)).toBe(d.users.teachers)
     })
 
     it('the Sekolah card is computed from the schools table (secondary stage only), total and active', async () => {

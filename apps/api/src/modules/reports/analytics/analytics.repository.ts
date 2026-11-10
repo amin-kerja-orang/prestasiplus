@@ -165,16 +165,11 @@ export class AnalyticsRepository {
     return (await this.schools([id]))[0] ?? null
   }
 
-  /** Schools with at least one user of any role (BR-M11-08 "Jumlah Sekolah"). */
-  async schoolsWithUsers(ids: readonly string[] | null): Promise<string[]> {
-    if (ids !== null && ids.length === 0) return []
-    const rows = await this.db.$queryRaw<{ id: string }[]>`
-      SELECT s.id::text AS id FROM schools s
-      WHERE (s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')) AND EXISTS (SELECT 1 FROM users u WHERE u.school_id = s.id) ${this.clause(ids, Prisma.sql`s.id`)}`
-    return rows.map((r) => r.id)
-  }
-
-  /** Registered secondary-stage schools, all and active: the Sekolah list figures (primary types stay hidden). */
+  /**
+   * "Jumlah Sekolah" / "Sekolah Berdaftar" on every admin card (Dashboard, Monitoring, Analitik/Command Center, Laporan): the registered
+   * schools, all and active. V2 counts the whole `schools` table; V3 hides primary types (D72), so this is the same number as the
+   * default Sekolah list.
+   */
   async schoolTotals(): Promise<{ total: number; active: number }> {
     const rows = await this.db.$queryRaw<{ total: number; active: number }[]>`
       SELECT count(*)::int AS total, (count(*) FILTER (WHERE s.is_active))::int AS active
@@ -697,7 +692,8 @@ export class AnalyticsRepository {
     const rows = await this.db.$queryRaw<{ teachers: number; accessed: number }[]>`
       SELECT count(*)::int AS teachers, (count(*) FILTER (WHERE u.last_login_at IS NOT NULL))::int AS accessed
       FROM users u
-      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}`
+      WHERE u.school_id IS NOT NULL AND ${isXs3Teacher('u')}
+        AND EXISTS (SELECT 1 FROM schools s WHERE s.id = u.school_id AND (s.type IS NULL OR s.type NOT IN ('SK', 'SJK(C)', 'SJK(T)')))`
     return rows[0] ?? { teachers: 0, accessed: 0 }
   }
 

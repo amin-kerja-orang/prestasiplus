@@ -339,6 +339,17 @@ The canonical bank is where V2's real stimulus model lives. It also **overlaps**
 | `question_stimulus` (pivot, position) | `question_version_stimuli` (own) when one stimulus has a single question; **a group** (section 7, S1) when two or more questions share it | max 3 stimuli per version / group; more are cut to the first 3 by position, counter |
 | `source_papers` | V3 `source_papers` (owned by the intake module) | open dependency: V3 `source_papers` is written by intake; if no loader exists, set `source_paper_id` NULL and keep provenance as `year/exam_board/paper_code/set_label` on the version (these V3 provenance columns exist), counter `source_paper_not_linked` |
 
+### 9.4a Real V2 shapes and the canonical-only load (rules `canonical-2`, 10 Nov 2026)
+
+The UAT rehearsal rejected all 5,704 `exam_questions`: V2 stores every json text as `{"html": "..."}` (stem, part prompt, option body; written by the importers and the Studio), and the extractor only knew `ms`/`text`/blocks, so the stem was "unreadable" for every row. Fixed rules (all counted in the report notes, never silent):
+- text of a json value: `ms`, `html`, `text`, `en`, `value`, `body` in that order; a double-encoded json string is read twice; HTML becomes plain text;
+- MCQ answer: the `is_correct` flags; when none is set, the `single_key` row (`{"option_id": <part_options.id>}`) names it (`key_from_single_key`); an empty option body (a picture option) keeps its label as text (`option_body_empty`);
+- mark scheme: `{points: [{point|text|label, marks}]}` or strings, `{text}` model answer, any other rubric shape (band rubric) becomes the model text; a leaf with no key at all gets the visible placeholder scheme (`scheme_placeholder` issue, same as the structured loader): a draft stays a draft, an approved question goes to `review` (`approved_to_review_no_scheme`);
+- `short_text`/`numeric` without accepted values becomes a `working` leaf (the pupil marks against the scheme); modes with no V3 twin are approximated (`numbered_list`, `essay_choice`, `code` to `essay`; `table_fill`, `sequence_order`, `gapped_text_match`, `cloze` to `working`; counter `mode_approximated`);
+- an empty stem takes the first part prompt (`stem_from_part`); a single leaf without a prompt shows only the stem;
+- stimuli (`canonical-stimuli.ts`, linked right after the question insert, id maps `canonical_stimuli` and `canonical_stimulus_groups`): one V3 stimulus per V2 stimulus; a stimulus linked by two or more canonical-only questions (`question_stimulus` or a part's `stimulus_id`) is a group stimulus, every member shows it, V2 order (`exam_questions.position`, id), at most 40 members; one question: its own stimulus. A stimulus with a picture (`media_assets.path`) holds its questions as `legacy_image_unresolved` until `migrate:questions --files-dir` (the files step now also copies the media paths) releases them.
+- papers (`papers-step.ts`): the section's pivot rows first (`sort_order`), then the section's own questions the pivot does not list (`position`); questions with `exam_paper_id` and no section are placed in a last section (`papers.sectionless_questions`); a paper whose `subject_id` is empty takes the subject of its placed questions (their subject comes from `exam_papers.subject_id`, else `source_papers.subject_id`).
+
 ## 10. T-B10: SPM sets, papers, blueprints
 
 ### 10.1 What V3 can serve after the load (answer to the servability question)

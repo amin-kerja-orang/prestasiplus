@@ -163,6 +163,7 @@ export function buildLiveData(scope: BoardScope, now: number): CcLiveData {
     scope: school ? 'school' : 'platform',
     school: boardSchool(ctx),
     totalSchools: subscribedCount(ctx),
+    activeSubscriptions: subscribedCount(ctx),
     totalStudents: pupilCount(ctx),
     activeStudents: all.size,
     totalAnswered: total.answers,

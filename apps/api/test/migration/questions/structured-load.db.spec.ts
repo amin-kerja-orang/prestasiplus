@@ -57,6 +57,14 @@ async function seedArchive() {
     (41, 4, '1', 'Sub x.', 1, 'x')`)
   await sql(`insert into archive_cloud.structured_rubric_points (id, structured_sub_question_id, code, text, marks, position) values
     (1, 13, 'A1', 'Titik satu', 1, 0), (2, 13, 'A2', 'Titik dua', 2, 1)`)
+  // The canonical projection of structured question 1 owns its rajah: a picture stimulus and a copy of the stem (PO rule D90/D105).
+  await sql(`insert into staging_cloud.stimulus_kinds (id, slug) values (91, 'diagram'), (92, 'passage') on conflict (id) do update set slug = excluded.slug`)
+  await sql(`insert into archive_cloud.media_assets (id, path, kind) values (91, 'rajah/litar.png', 'image')`)
+  await sql(`insert into archive_cloud.stimuli (id, stimulus_kind_id, body, asset_id, caption) values
+    (5001, 91, null, 91, 'Rajah 1.1: litar'), (5002, 92, '{"ms":"Petikan struktur contoh."}', null, null)`)
+  await sql(`insert into archive_cloud.exam_questions (id, number_label, position, stem) values (7100, '1', 1, '{"ms":"Petikan struktur contoh."}')`)
+  await sql(`insert into archive_cloud.legacy_canonical_map (id, source, legacy_id, canonical_type, canonical_id) values (9100, 'structured', '1', 'exam_question', 7100)`)
+  await sql(`insert into archive_cloud.question_stimulus (id, exam_question_id, stimulus_id, position) values (1, 7100, 5001, 1), (2, 7100, 5002, 2)`)
 }
 
 describe('structured and subjective', () => {
@@ -96,6 +104,19 @@ describe('structured and subjective', () => {
     expect(leafB.key).toMatchObject({ kind: 'points', marks: 3, modelText: 'Skema tiga.' })
     expect(leafB.key.points.map((p) => p.marks)).toEqual([1, 2])
 
+    // The rajah of the canonical projection is the question's stimulus: the picture is linked (held until the file is copied), the copy of the stem is not.
+    const rajah = await sql(
+      `select s.kind, s.alt_text, s.caption, qvs.position, v.import_issues, q.is_active
+         from question_version_stimuli qvs join stimuli s on s.id = qvs.stimulus_id join question_versions v on v.id = qvs.question_version_id join questions q on q.id = v.question_id
+        where v.question_id = $1::bigint order by qvs.position`,
+      [qid],
+    )
+    expect(rajah.rows.map((x) => [x.kind, x.caption, x.position])).toEqual([['diagram', 'Rajah 1.1: litar', 1]])
+    expect(rajah.rows[0]?.is_active).toBe(false)
+    expect(rajah.rows[0]?.import_issues).toEqual([{ code: 'legacy_image_unresolved', path: 'rajah/litar.png', target: 'question' }])
+    expect(r.questions.notes.counters.get('structured.stimuli.own')).toBe(1)
+    expect(r.questions.notes.counters.get('structured.stimuli.empty')).toBe(1)
+
     const second = await runBank('dry-run')
     expect(second.report.recon.every((x) => x.status === 'ok')).toBe(true)
     const before = await h.count('questions')
@@ -122,7 +143,7 @@ describe('canonical-only bank', () => {
     expect(eq).toMatchObject({ sourceCount: 2, loaded: 2, rejected: 0, status: 'ok' })
     expect(r.questions.notes.counters.get('canonical.mapped_to_legacy')).toBeGreaterThanOrEqual(1)
     const rows = await sql(`select m.legacy_id, v.type, v.status, v.education_level_id from etl_id_map m join questions q on q.id = m.new_id::bigint join question_versions v on v.question_id = q.id where m.entity = 'exam_questions' order by m.legacy_id`)
-    expect(rows.rows.map((x) => [x.legacy_id, x.type, x.status, x.education_level_id])).toEqual([['7001', 'mcq', 'approved', null], ['7002', 'essay', 'approved', null]])
+    expect(rows.rows.map((x) => [x.legacy_id, x.type, x.status, x.education_level_id])).toEqual([['7001', 'mcq', 'approved', '11'], ['7002', 'essay', 'approved', '11']])
   })
 })
 

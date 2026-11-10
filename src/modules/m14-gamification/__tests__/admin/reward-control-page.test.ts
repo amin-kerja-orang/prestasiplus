@@ -50,6 +50,9 @@ describe('AdminRewardControlPage', () => {
     const { w } = await open(AdminRewardControlPage, '/admin/reward-control')
     const text = tid(w, 'gam-reward-gifts').text()
     expect(text).toContain('🎁 Kos Sebenar Hadiah — digital = RM0, tidak makan bajet')
+    // The heading is shown once: the table caption (hidden text) is not the same words again.
+    expect(text.split('Kos Sebenar Hadiah')).toHaveLength(2)
+    expect(tid(w, 'gam-reward-draws').text().split('Cabutan Bertuah')).toHaveLength(2)
     expect(text).toContain('Baucar Buku RM10')
     expect(text).toContain('ECOMMERCE')
     expect(text).toContain('RM10.00')

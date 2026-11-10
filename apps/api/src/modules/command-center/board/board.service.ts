@@ -101,12 +101,14 @@ export class BoardService {
     const sid = await this.studentIds(schoolId)
     const monthDay = new Date(`${dateKey(now)}T00:00:00Z`)
 
-    const [schoolRef, tallies, totalStudents, totalSchools, topSchools, topStudents, feed, trend, mood, t1, gps, platformEngagement] = await Promise.all([
+    const [schoolRef, tallies, totalStudents, totalSchools, activeSubscriptions, topSchools, topStudents, feed, trend, mood, t1, gps, platformEngagement] = await Promise.all([
       schoolId === undefined ? Promise.resolve(null) : this.repo.schoolRef(schoolId),
       this.reads.liveTallies({ now, schoolId, todayFrom: w.today.from, weekFrom: w.week.from, lastWeekFrom: w.lastWeek.from, d30From: w.last30d.from }),
       this.repo.studentCount({ schoolId }),
-      // API-AS-02 (S6-T07): the school admin's scope is one school, so its tile counts that school, subscribed or not.
-      school ? Promise.resolve(1) : this.repo.subscribedSchoolCount(monthDay),
+      // V2 `PlatformMetrics::kpis`: the figure is every registered school; the school view's scope is the one school.
+      school ? Promise.resolve(1) : this.repo.registeredSchoolCount(),
+      // The sub-line "N langganan aktif" (API-AS-02, S6-T07): subscribed schools; on the school view that school, 1 or 0.
+      this.repo.subscribedSchoolCount(monthDay, schoolId),
       school ? Promise.resolve([]) : this.reads.topSchools(now, TOP_LIMIT),
       this.reads.topUsers({ from: w.week.from, to: now, schoolId }, TOP_LIMIT),
       this.repo.latestAnswers({ to: now, schoolId }, FEED_LIMIT),
@@ -130,6 +132,7 @@ export class BoardService {
       generatedAt: toMytTimestamp(now),
       scope: school ? 'school' : 'platform',
       school: schoolRef ? { id: schoolRef.id, name: schoolRef.name } : null,
+      activeSubscriptions,
       totalSchools,
       totalStudents,
       activeStudents: tallies.students,
@@ -179,7 +182,7 @@ export class BoardService {
       this.badges.awards(sid, { from: window.from, to: window.to }),
       this.quizSets.createdCount(schoolId ?? null, window),
       this.repo.studentCount({ schoolId }),
-      school ? Promise.resolve(0) : this.repo.schoolsWithStudents(),
+      school ? Promise.resolve(0) : this.repo.registeredSchoolCount(),
       school ? Promise.resolve([]) : this.reads.schoolActivity(span),
       this.reads.topUsers(span, TOP_LIMIT),
       this.repo.subjectTally(span),

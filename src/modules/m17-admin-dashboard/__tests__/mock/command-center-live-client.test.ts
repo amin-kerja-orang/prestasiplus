@@ -35,6 +35,7 @@ function live(patch: Partial<CcLiveData> = {}): CcLiveData {
     scope: 'platform',
     school: null,
     totalSchools: 9,
+    activeSubscriptions: 9,
     totalStudents: 3152,
     activeStudents: 1563,
     totalAnswered: 477_743,
@@ -157,6 +158,7 @@ describe('ALESA AI sentence (FN-M17-3.3.3, DV-M17-09)', () => {
         activeStudents: 100,
         engagement: { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 },
         totalSchools: 1,
+        activeSubscriptions: 1,
         gpsOverall: 0,
       }),
     )

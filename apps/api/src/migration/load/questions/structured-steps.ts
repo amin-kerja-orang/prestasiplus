@@ -14,6 +14,7 @@ import { rejectRow } from '../helpers'
 import { insertQuestionTrees, type QuestionTreePlan } from './bank-writer'
 import type { QuestionsContext } from './context'
 import { transformPksk } from './pksk-plan'
+import { linkProjectedStimuli } from './projected-stimuli'
 import { transformStructured, transformSubjective, type LegacyRubricPoint, type LegacyStructured, type LegacySubQuestion } from './structured-plan'
 
 const A = quoteIdent(ARCHIVE_SCHEMA)
@@ -83,7 +84,9 @@ export function structuredStep(q: QuestionsContext): AnyEntityStep {
         if (!out.ok) rejectRow(ctx, entity, row.id ?? '', out.reject)
         else plans.push(out.value)
       }
-      const { fresh } = await insertQuestionTrees(ctx, plans)
+      const { fresh, questionIds } = await insertQuestionTrees(ctx, plans)
+      // The rajah of the canonical projection (V2 `question_stimulus`) is the question's stimulus (D90/D105).
+      for (const [k, n] of Object.entries(await linkProjectedStimuli(ctx, 'structured', fresh, questionIds))) if (n > 0) q.notes.count(`structured.stimuli.${k}`, n)
       for (const p of fresh) for (const n of p.notes) q.notes.count(`structured.${n}`)
       for (const p of fresh) q.notes.count(`structured.status.${p.status}`)
       return { inserted: fresh.length, unchanged: plans.length - fresh.length }
@@ -125,7 +128,8 @@ export function subjectiveStep(q: QuestionsContext): AnyEntityStep {
         if (!out.ok) rejectRow(ctx, entity, row.id ?? '', out.reject)
         else plans.push(out.value)
       }
-      const { fresh } = await insertQuestionTrees(ctx, plans)
+      const { fresh, questionIds } = await insertQuestionTrees(ctx, plans)
+      for (const [k, n] of Object.entries(await linkProjectedStimuli(ctx, 'questions', fresh, questionIds))) if (n > 0) q.notes.count(`subjective.stimuli.${k}`, n)
       for (const p of fresh) for (const n of p.notes) q.notes.count(`subjective.${n}`)
       for (const p of fresh) q.notes.count(`subjective.status.${p.status}`)
       return { inserted: fresh.length, unchanged: plans.length - fresh.length }

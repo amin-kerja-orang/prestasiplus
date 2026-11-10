@@ -59,7 +59,8 @@ const tiles = computed(() => {
       key: 'aktif',
       accent: groupAccent('soalan'),
       unit: 'Soalan Aktif',
-      value: q.total,
+      // V2 `DashboardController`: "Aktif" = every question not archived (total minus Diarkib).
+      value: q.total - q.byStatus.archived,
       sub: `Minggu ini: ${n(q.thisWeek)}`,
       icon: 'question',
       to: STUDIO,

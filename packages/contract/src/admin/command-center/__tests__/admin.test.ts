@@ -31,6 +31,7 @@ const live = {
   scope: 'platform',
   school: null,
   totalSchools: 57,
+  activeSubscriptions: 40,
   totalStudents: 1200,
   activeStudents: 640,
   totalAnswered: 25000,
@@ -61,6 +62,7 @@ const schoolLive = {
   scope: 'school',
   school: { id: '1001', name: 'SK Contoh Satu' },
   totalSchools: 1,
+  activeSubscriptions: 1,
   topSchools: [],
   engagement: { champion: 0, consistent: 0, developing: 0, minimum: 0, disengaged: 0 },
   dailyTrend: [

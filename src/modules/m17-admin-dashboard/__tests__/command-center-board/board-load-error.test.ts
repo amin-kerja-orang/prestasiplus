@@ -34,6 +34,7 @@ const LIVE = {
   scope: 'platform',
   school: null,
   totalSchools: 1,
+  activeSubscriptions: 1,
   totalStudents: 1,
   activeStudents: 1,
   totalAnswered: 1,

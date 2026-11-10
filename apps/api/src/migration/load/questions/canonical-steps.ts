@@ -8,10 +8,11 @@ import type pg from 'pg'
 
 import { ARCHIVE_SCHEMA, columnNames, findTable, STAGING_SCHEMA } from '../../ddl/spec'
 import type { AnyEntityStep, BatchContext, BatchResult } from '../../kit/runner'
-import { assertSurrogateLegacyId, quoteIdent } from '../../kit/sql'
+import { assertSurrogateLegacyId, quoteIdent, toJson } from '../../kit/sql'
 import type { Staged } from '../../transform/common'
 import { rejectRow } from '../helpers'
 import { insertQuestionTrees, type QuestionTreePlan } from './bank-writer'
+import { linkCanonicalStimuli } from './canonical-stimuli'
 import { transformCanonical, type CanonicalPart, type CanonicalQuestion } from './canonical-plan'
 import type { QuestionsContext } from './context'
 
@@ -41,8 +42,11 @@ async function* readCanonical(pool: pg.Pool, afterKey: string | null, pageSize: 
   const keysSql = `SELECT DISTINCT ON (k."question_part_id") k."question_part_id"::text AS question_part_id, kk."slug"::text AS key_kind, k."content"::text AS key_content
     FROM ${A}."part_answer_keys" k LEFT JOIN ${S}."answer_key_kinds" kk ON kk."id" = k."answer_key_kind_id"
     WHERE k."question_part_id" = ANY($1::bigint[]) ORDER BY k."question_part_id", k."id"`
-  const stimuliSql = `SELECT "exam_question_id"::text AS exam_question_id, "stimulus_id"::text AS stimulus_id FROM ${A}."question_stimulus"
-    WHERE "exam_question_id" = ANY($1::bigint[]) ORDER BY "exam_question_id", "position", "id"`
+  // The stimulus of the question (`question_stimulus`, V2 order) and, after them, the stimulus of one of its parts.
+  const stimuliSql = `SELECT u.exam_question_id::text AS exam_question_id, u.stimulus_id::text AS stimulus_id FROM (
+      SELECT "exam_question_id", "stimulus_id", "position" AS pos, "id" AS ord FROM ${A}."question_stimulus"
+      UNION ALL SELECT "exam_question_id", "stimulus_id", 1000 + "position", 1000000000 + "id" FROM ${A}."question_parts" WHERE "stimulus_id" IS NOT NULL) u
+    WHERE u.exam_question_id = ANY($1::bigint[]) ORDER BY u.exam_question_id, u.pos, u.ord`
   let after = afterKey
   for (;;) {
     const page = await pool.query<Record<string, string | null>>(questionsSql, [after, pageSize])
@@ -78,6 +82,33 @@ async function* readCanonical(pool: pg.Pool, afterKey: string | null, pageSize: 
   }
 }
 
+const NORM = (e: string): string => `lower(regexp_replace(coalesce(${e}, ''), '[^[:alnum:]]+', '', 'g'))`
+
+/** V2 canonical id to the V3 id of the legacy question it copies (lowest legacy id on several matches). */
+async function legacyCopiesOf(ctx: BatchContext, plans: readonly QuestionTreePlan[]): Promise<Map<string, string>> {
+  const input = plans.flatMap((p) => {
+    if (p.subject_id === null || p.stem.trim() === '') return []
+    const only = p.tree.length === 1 ? p.tree[0] : undefined
+    const opts = only?.kind === 'leaf' && only.options !== undefined ? only.options.map((o) => o.body ?? '') : []
+    return [{ id: p.idKey, subject: p.subject_id, stem: p.stem, opts }]
+  })
+  const out = new Map<string, string>()
+  if (input.length === 0) return out
+  const res = await ctx.db.query<{ id: string; legacy: string }>(
+    `SELECT DISTINCT ON (x.id) x.id, q.id::text AS legacy
+       FROM jsonb_to_recordset($1::jsonb) AS x(id text, subject bigint, stem text, opts jsonb)
+       JOIN question_versions v ON v.subject_id = x.subject AND ${NORM('v.stem_ms')} = ${NORM('x.stem')}
+       JOIN questions q ON q.id = v.question_id AND v.version_no = q.latest_version_no
+      WHERE q.legacy_source = $2 AND q.legacy_id IS NOT NULL
+        AND coalesce((SELECT string_agg(${NORM('o.body_ms')}, '|' ORDER BY ${NORM('o.body_ms')}) FROM question_parts p JOIN part_options o ON o.part_id = p.id WHERE p.question_version_id = v.id), '')
+          = coalesce((SELECT string_agg(${NORM('b')}, '|' ORDER BY ${NORM('b')}) FROM jsonb_array_elements_text(x.opts) b), '')
+      ORDER BY x.id, q.id`,
+    [toJson(input), ctx.source],
+  )
+  for (const r of res.rows) out.set(r.id, r.legacy)
+  return out
+}
+
 export function canonicalStep(q: QuestionsContext): AnyEntityStep {
   const entity = 'exam_questions'
   let counted = false
@@ -95,17 +126,27 @@ export function canonicalStep(q: QuestionsContext): AnyEntityStep {
         q.notes.count('canonical.mapped_to_legacy', Number(res.rows[0]?.n ?? 0))
       }
       const cur = await q.curriculum()
-      const stimulusIds = rows.flatMap((r) => r.stimulus_ids.map((id) => `s:${id}`))
-      const stimulusMap = await ctx.idMap.resolveMany('question_stimuli', stimulusIds)
-      const stimulusOf = new Map([...stimulusMap].map(([k, v]) => [k.slice(2), v]))
+      // Stimuli are linked after the insert (own stimulus or group stimulus, canonical-stimuli.ts), never through the transform.
+      const noStimulus = new Map<string, string>()
+      const linksOf = new Map(rows.map((r) => [(r.id ?? '').trim(), r.stimulus_ids] as const))
       const plans: QuestionTreePlan[] = []
       for (const row of rows) {
         assertSurrogateLegacyId(row.id ?? '', 'migrate:structured')
-        const out = transformCanonical(row, cur, stimulusOf)
+        const out = transformCanonical({ ...row, stimulus_ids: [] } as unknown as CanonicalQuestion, cur, noStimulus)
         if (!out.ok) rejectRow(ctx, entity, row.id ?? '', out.reject)
         else plans.push(out.value)
       }
-      const { fresh } = await insertQuestionTrees(ctx, plans)
+      // A canonical row that is a copy of a legacy question without a `legacy_canonical_map` row (same subject, same stem, same options once
+      // letters, case and punctuation are ignored) is not loaded twice: it maps to the legacy question, so placements point to that one.
+      const copies = await legacyCopiesOf(ctx, plans)
+      if (copies.size > 0) {
+        await ctx.idMap.registerMany('exam_questions', [...copies].map(([id, legacy]) => [id, legacy] as const))
+        q.notes.count('canonical.deduped_to_legacy', copies.size)
+      }
+      const toLoad = plans.filter((p) => !copies.has(p.idKey))
+      const { fresh, questionIds } = await insertQuestionTrees(ctx, toLoad)
+      const linked = await linkCanonicalStimuli(ctx, fresh, questionIds, linksOf)
+      for (const [k, n] of Object.entries(linked)) if (n > 0) q.notes.count(`canonical.stimuli.${k}`, n)
       for (const p of fresh) for (const n of p.notes) q.notes.count(`canonical.${n}`)
       for (const p of fresh) q.notes.count(`canonical.status.${p.status}`)
       return { inserted: fresh.length, unchanged: plans.length - fresh.length }

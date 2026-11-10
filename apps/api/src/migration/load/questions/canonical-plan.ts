@@ -19,7 +19,7 @@ import { parseDifficulty } from '../../snapshot-dims/dims'
 import type { IssuePlan, NodePlan, QuestionTreePlan, VersionStatus } from './bank-writer'
 import { treeParses } from './structured-plan'
 
-export const CANONICAL_RULES_VERSION = 'canonical-1'
+export const CANONICAL_RULES_VERSION = 'canonical-2'
 const MAX_DEPTH = 3
 
 export type CanonicalPart = Staged & {
@@ -75,9 +75,16 @@ export function leafModeOf(slug: string | null | undefined): string | null {
     case 'essay':
     case 'long':
     case 'extended_essay':
+    case 'essay_choice':
+    case 'numbered_list':
+    case 'code':
       return 'essay'
     case 'working':
     case 'working_shown':
+    case 'table_fill':
+    case 'sequence_order':
+    case 'gapped_text_match':
+    case 'cloze':
       return 'working'
     case 'draw_on_diagram':
     case 'graph_plot':
@@ -96,6 +103,8 @@ export function textOfJson(raw: string | null | undefined): string | null {
   if (/^[[{"]/.test(t)) {
     try {
       value = JSON.parse(t)
+      // A json column that holds a json-encoded string (double encoding): read it once more.
+      if (typeof value === 'string' && /^[[{]/.test(value.trim())) value = JSON.parse(value)
     } catch {
       return plainFromHtml(t).text || null
     }
@@ -114,7 +123,7 @@ function extractText(v: unknown, depth: number): string | null {
   }
   if (v !== null && typeof v === 'object') {
     const o = v as Record<string, unknown>
-    for (const k of ['ms', 'text', 'en', 'value', 'body']) {
+    for (const k of ['ms', 'html', 'text', 'en', 'value', 'body']) {
       if (typeof o[k] === 'string' && (o[k] as string).trim() !== '') return o[k] as string
     }
     for (const k of ['content', 'children', 'blocks']) if (Array.isArray(o[k])) return extractText(o[k], depth + 1)
@@ -148,6 +157,16 @@ function acceptedOf(content: unknown): string[] | null {
 const POINT_LABEL_MAX = 120
 const truncate = (v: string): string => ([...v].length <= POINT_LABEL_MAX ? v : [...v].slice(0, POINT_LABEL_MAX).join('').trimEnd())
 
+/** Every non-empty string of a json value, in document order (the fallback text of a key whose shape this loader does not know). */
+function allStrings(v: unknown, depth = 0): string[] {
+  if (depth > 6 || v === null || v === undefined) return []
+  if (typeof v === 'string') return v.trim() === '' ? [] : [plainFromHtml(v).text.trim()].filter((x) => x !== '')
+  if (typeof v === 'number') return []
+  if (Array.isArray(v)) return v.flatMap((x) => allStrings(x, depth + 1))
+  if (typeof v === 'object') return Object.values(v as Record<string, unknown>).flatMap((x) => allStrings(x, depth + 1))
+  return []
+}
+
 /** The `points` key of a leaf from a mark-scheme or model-answer content, or null when nothing usable is in it. */
 function pointsKeyOf(content: unknown, marks: number): Record<string, unknown> | null {
   let model: string | null = null
@@ -155,16 +174,17 @@ function pointsKeyOf(content: unknown, marks: number): Record<string, unknown> |
   const list = Array.isArray(content) ? content : content !== null && typeof content === 'object' ? ((content as Record<string, unknown>).points ?? null) : null
   if (content !== null && typeof content === 'object' && !Array.isArray(content)) {
     const o = content as Record<string, unknown>
-    model = textOfJson(JSON.stringify(o.model ?? o.answer ?? o.text ?? o.modelText ?? null)) ?? null
+    const m = o.model ?? o.answer ?? o.text ?? o.modelText ?? o.html
+    model = m === undefined || m === null ? null : textOfJson(JSON.stringify(m))
   } else if (typeof content === 'string') model = text(content)
   if (Array.isArray(list)) {
     rows = list
       .map((p) => {
-        if (typeof p === 'string') return { text: p.trim(), marks: 1 }
+        if (typeof p === 'string') return { text: plainFromHtml(p).text.trim(), marks: 1 }
         const o = (p ?? {}) as Record<string, unknown>
-        const t = typeof o.text === 'string' ? o.text : typeof o.label === 'string' ? o.label : typeof o.description === 'string' ? o.description : ''
+        const raw = [o.text, o.point, o.label, o.description, o.html].find((x) => typeof x === 'string') as string | undefined
         const m = typeof o.marks === 'number' ? o.marks : typeof o.mark === 'number' ? o.mark : 1
-        return { text: t.trim(), marks: Math.max(0, Math.trunc(m)) }
+        return { text: plainFromHtml(raw ?? '').text.trim(), marks: Math.max(0, Math.trunc(m)) }
       })
       .filter((r) => r.text !== '')
   }
@@ -176,20 +196,28 @@ function pointsKeyOf(content: unknown, marks: number): Record<string, unknown> |
       ...(model === null ? {} : { modelText: model }),
     }
   }
-  const body = model ?? (rows.length > 0 ? rows.map((r) => r.text).join('\n') : null)
+  // A rubric of an unknown shape (a band rubric, a table): its text, in order, is the model answer.
+  const body = model ?? (rows.length > 0 ? rows.map((r) => r.text).join('\n') : null) ?? (allStrings(content).join('\n') || null)
   if (body === null) return null
   return { kind: 'points', marks, points: [{ id: 'p1', code: 'P', label: rows.length > 0 ? 'Mengikut skema' : 'Jawapan model', marks, text: { ms: body } }], modelText: body }
+}
+
+/** A key that says no scheme was authored: kept as a visible placeholder (the admin completes it), and the question is never approved. */
+function placeholderKey(marks: number): Record<string, unknown> {
+  return { kind: 'points', marks, points: [{ id: 'p1', code: 'P', label: 'Skema belum disediakan', marks }] }
 }
 
 interface Ctx {
   notes: string[]
   issues: IssuePlan[]
   texts: { target: string; label?: string; value: string }[]
+  placeholder: boolean
 }
 
 function buildLeaf(p: CanonicalPart, label: string, ctx: Ctx): Outcome<NodePlan> {
   const mode = leafModeOf(p.mode_slug)
   if (mode === null) return reject('INVALID_VALUE', 'answer_mode')
+  if (!['mcq', 'short_text', 'numeric', 'essay', 'working', 'drawing'].includes((text(p.mode_slug) ?? '').toLowerCase())) ctx.notes.push('mode_approximated')
   let marks = asInt(p.marks) ?? 0
   if (marks < 1) {
     marks = 1
@@ -202,6 +230,15 @@ function buildLeaf(p: CanonicalPart, label: string, ctx: Ctx): Outcome<NodePlan>
   ctx.texts.push({ target: 'part', label, value: prompt })
   const content = jsonOf(p.key_content)
   const wordMax = asInt(p.word_limit)
+  const withPoints = (m: string): Outcome<NodePlan> => {
+    const key = pointsKeyOf(content, marks)
+    if (key === null) {
+      ctx.placeholder = true
+      ctx.issues.push({ code: 'scheme_placeholder', target: 'part', label })
+      ctx.notes.push('scheme_placeholder')
+    }
+    return ok({ kind: 'leaf', label, prompt, marks, mode: m, key: key ?? placeholderKey(marks), ...(m === 'essay' && wordMax !== null ? { wordMax } : {}) })
+  }
   if (mode === 'mcq') {
     const opts = [...p.options].sort((a, b) => (asInt(a.position) ?? 0) - (asInt(b.position) ?? 0) || Number(a.id) - Number(b.id))
     if (opts.length < 2 || opts.length > 8) return reject('INVALID_VALUE', 'options')
@@ -209,16 +246,29 @@ function buildLeaf(p: CanonicalPart, label: string, ctx: Ctx): Outcome<NodePlan>
     const positional = labels.length !== opts.length || labels.some((l) => l === null) || new Set(labels).size !== labels.length
     const finalLabels = positional ? opts.map((_, i) => 'ABCDEFGH'.charAt(i)) : (labels as string[])
     if (positional) ctx.notes.push('label_relabelled')
-    const bodies = opts.map((o) => textOfJson(o.body as string | null))
-    if (bodies.some((b) => b === null)) return reject('INVALID_VALUE', 'options.body')
+    // An option with no text (V2 kept a picture option as an empty body) keeps its label as its text.
+    const bodies = opts.map((o, i) => {
+      const b = textOfJson(o.body as string | null)
+      if (b === null) ctx.notes.push('option_body_empty')
+      return b ?? (finalLabels[i] as string)
+    })
     const correct: string[] = []
     for (const [i, o] of opts.entries()) {
       const v = (text(o.is_correct as string | null) ?? '0').toLowerCase()
       if (['1', 'true', 't', 'ya', 'yes'].includes(v)) correct.push(finalLabels[i] as string)
       else if (!['0', 'false', 'f', 'tidak', 'no', 'n'].includes(v)) return reject('INVALID_VALUE', 'is_correct')
     }
+    if (correct.length === 0) {
+      // V2 also keeps the answer in the single_key row (`{option_id}`); a flag-less option list falls back to it.
+      const optionId = content !== null && typeof content === 'object' && !Array.isArray(content) ? String((content as Record<string, unknown>).option_id ?? '') : ''
+      const at = optionId === '' ? -1 : opts.findIndex((o) => (o.id ?? '').trim() === optionId)
+      if (at >= 0) {
+        correct.push(finalLabels[at] as string)
+        ctx.notes.push('key_from_single_key')
+      }
+    }
     if (correct.length !== 1) return reject('INVALID_VALUE', 'is_correct')
-    for (const [i, b] of bodies.entries()) ctx.texts.push({ target: 'option', label: finalLabels[i], value: b as string })
+    for (const [i, b] of bodies.entries()) ctx.texts.push({ target: 'option', label: finalLabels[i], value: b })
     return ok({
       kind: 'leaf', label, prompt, marks, mode,
       options: opts.map((_, i) => ({ label: finalLabels[i] as string, body: bodies[i] as string })),
@@ -227,18 +277,23 @@ function buildLeaf(p: CanonicalPart, label: string, ctx: Ctx): Outcome<NodePlan>
   }
   if (mode === 'short_text') {
     const values = acceptedOf(content)
-    if (values === null) return reject('INVALID_VALUE', 'key')
+    if (values === null) {
+      // No accepted answers (a model answer or nothing): a working leaf the pupil marks against the scheme.
+      ctx.notes.push('accepted_missing_to_working')
+      return withPoints('working')
+    }
     return ok({ kind: 'leaf', label, prompt, marks, mode, key: { kind: 'accepted', values } })
   }
   if (mode === 'numeric') {
     const values = acceptedOf(content)
     const nums = values === null ? null : values.map((v) => Number(v.replace(',', '.')))
-    if (nums === null || nums.some((n) => !Number.isFinite(n))) return reject('INVALID_VALUE', 'key')
+    if (nums === null || nums.some((n) => !Number.isFinite(n))) {
+      ctx.notes.push('accepted_missing_to_working')
+      return withPoints('working')
+    }
     return ok({ kind: 'leaf', label, prompt, marks, mode, key: { kind: 'accepted', values: nums.map((v) => ({ v })) } })
   }
-  const key = pointsKeyOf(content, marks)
-  if (key === null) return reject('INVALID_VALUE', 'key')
-  return ok({ kind: 'leaf', label, prompt, marks, mode, key, ...(mode === 'essay' && wordMax !== null ? { wordMax } : {}) })
+  return withPoints(mode)
 }
 
 function buildTree(parts: readonly CanonicalPart[], ctx: Ctx): Outcome<NodePlan[]> {
@@ -313,12 +368,23 @@ export function transformCanonical(
   const subjectRef = text(row.subject_ref)
   const subject = subjectRef === null ? undefined : cur.subjects.get(subjectRef)
   if (subject === undefined) return reject('ORPHAN_PARENT', 'subject_id')
-  const rawStem = textOfJson(row.stem)
-  if (rawStem === null || rawStem.length > MAX_BODY_CHARS) return reject('INVALID_VALUE', 'stem')
+  let rawStem = textOfJson(row.stem)
+  const stemNotes: string[] = []
+  if (rawStem === null) {
+    // V2 keeps an empty stem on a question whose text sits in its first part (a structured paper question): that prompt is the stem.
+    const first = [...row.parts].sort((a, b) => (asInt(a.position) ?? 0) - (asInt(b.position) ?? 0) || Number(a.id) - Number(b.id)).map((x) => textOfJson(x.prompt)).find((x) => x !== null) ?? null
+    if (first === null) return reject('INVALID_VALUE', 'stem')
+    rawStem = first
+    stemNotes.push('stem_from_part')
+  }
+  if (rawStem.length > MAX_BODY_CHARS) return reject('INVALID_VALUE', 'stem')
 
-  const ctx: Ctx = { notes: [], issues: [], texts: [{ target: 'stem', value: rawStem }] }
+  const ctx: Ctx = { notes: [...stemNotes], issues: [], texts: [{ target: 'stem', value: rawStem }], placeholder: false }
   const tree = buildTree(row.parts, ctx)
   if (!tree.ok) return tree
+  // A single leaf that has no prompt of its own shows only the stem (the label would be appended to it), like a question made in the Studio.
+  const only = tree.value.length === 1 ? tree.value[0] : undefined
+  if (only?.kind === 'leaf' && row.parts.length === 1 && textOfJson(row.parts[0]?.prompt) === null) only.prompt = ''
   if (!treeParses(tree.value)) return reject('INVALID_VALUE', 'tree')
 
   const seen = new Set<string>()
@@ -353,22 +419,30 @@ export function transformCanonical(
   const chapter = chapterRaw === null ? null : (cur.chapters.get(chapterRaw) ?? null)
   if (chapterRaw !== null && chapter === null) ctx.notes.push('chapter_unmapped')
   const difficulty = parseDifficulty(row.difficulty)
-  ctx.notes.push('source_paper_not_linked', 'level_missing')
+  // V2 canonical questions carry no level; every one comes from an SPM (percubaan) paper, so it is a Tingkatan 5 question (form_origin t5,
+  // the exam year). Without a T5 level in the curriculum the question stays level-less (it cannot be served until the Studio tags it).
+  const t5 = [...cur.levelCodes].find(([, code]) => code === 'T5')?.[0] ?? null
+  ctx.notes.push('source_paper_not_linked', t5 === null ? 'level_missing' : 'level_from_spm_paper')
+  let finalStatus = status
+  if (status === 'approved' && ctx.placeholder) {
+    finalStatus = 'review'
+    ctx.notes.push('approved_to_review_no_scheme')
+  }
   const t = stamps(row)
   return ok({
     idEntity: 'exam_questions',
     idKey: (row.id ?? '').trim(),
     legacyId: null,
     type: questionTypeOf(tree.value),
-    status,
-    is_active: ctx.issues.length === 0,
+    status: finalStatus,
+    is_active: ctx.issues.filter((i) => i.code !== 'scheme_placeholder').length === 0,
     created_at: t.created_at,
     updated_at: t.updated_at,
     subject_id: subject,
-    education_level_id: null,
+    education_level_id: t5,
     chapter_id: chapter,
     topic_id: null,
-    form_origin: 't4',
+    form_origin: t5 === null ? 't4' : 't5',
     difficulty_tp: difficulty,
     kbat: null,
     number_label: text(row.number_label),

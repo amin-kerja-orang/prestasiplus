@@ -83,7 +83,7 @@ describe('S2 admin board', () => {
 
     expect(texts(w, 'cc-kpi-value')).toEqual(['9', '3,152', '477,743', '83%'])
     expect(texts(w, 'cc-kpi-sub')).toEqual([
-      'langganan aktif',
+      '9 langganan aktif',
       '1,563 aktif menjawab',
       'sepanjang masa',
       'keseluruhan platform',

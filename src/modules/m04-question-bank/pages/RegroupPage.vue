@@ -16,7 +16,7 @@ import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { dismissQuestionFlag, fetchRegroupWorklist, regroupQuestions, undoRegroup } from '../api/questions'
 import RegroupRow from '../components/RegroupRow.vue'
 import { listLoadMessage } from '../lib/list-load'
-import { isConsecutiveRun, REGROUP_COPY, REGROUP_FLAGS, REGROUP_PATH, regroupHeader, type RegroupWorkRow } from '../lib/question-list'
+import { isConsecutiveRun, REGROUP_COPY, REGROUP_FLAGS, REGROUP_PATH, regroupFlagLabel, regroupHeader, type RegroupWorkRow } from '../lib/question-list'
 import { errorLines } from '../lib/ui-errors'
 
 const route = useRoute()
@@ -168,7 +168,7 @@ function go(next: { subject_id?: string; education_level_id?: string; flag?: str
       <DsFormField v-slot="{ id }" native :label="REGROUP_COPY.flag" for="regroup-flag">
         <DsNativeSelect :id="id" :model-value="filters.flag" data-testid="regroup-flag-filter" @update:model-value="go({ flag: String($event), page: 1 })">
           <option value="">Semua</option>
-          <option v-for="f in REGROUP_FLAGS" :key="f" :value="f">{{ f }}</option>
+          <option v-for="f in REGROUP_FLAGS" :key="f" :value="f">{{ regroupFlagLabel(f) }}</option>
         </DsNativeSelect>
       </DsFormField>
     </DsCluster>

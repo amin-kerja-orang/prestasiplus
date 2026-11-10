@@ -124,7 +124,7 @@ const winners = (draw: Draw): string => {
           <DsDataTable
             :data="gifts"
             :columns="GIFT_COLUMNS"
-            :caption="COPY.giftsTitle"
+            :caption="COPY.giftColumns.gift"
             variant="bare"
             density="tight"
             pager="none"
@@ -159,7 +159,7 @@ const winners = (draw: Draw): string => {
           <DsDataTable
             :data="draws"
             :columns="DRAW_COLUMNS"
-            :caption="COPY.drawsTitle"
+            caption="Cabutan"
             variant="bare"
             density="tight"
             pager="none"

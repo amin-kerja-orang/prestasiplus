@@ -350,12 +350,12 @@ async function run(db: pg.PoolClient, source: string, database: string, dryRun: 
   // by now; a group or stimulus that a v2 admin has since used for another question is kept.
   if (inSet.has('questions')) {
     await db.query(
-      `DELETE FROM stimulus_groups g WHERE g.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity = 'stimulus_groups')
+      `DELETE FROM stimulus_groups g WHERE g.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity IN ('stimulus_groups', 'canonical_stimulus_groups'))
           AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.group_id = g.id)`,
       [source],
     )
     await db.query(
-      `DELETE FROM stimuli s WHERE s.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity = 'question_stimuli')
+      `DELETE FROM stimuli s WHERE s.id IN (SELECT new_id::bigint FROM etl_id_map WHERE legacy_source = $1 AND entity IN ('question_stimuli', 'canonical_stimuli'))
           AND NOT EXISTS (SELECT 1 FROM stimulus_group_stimuli x WHERE x.stimulus_id = s.id)
           AND NOT EXISTS (SELECT 1 FROM question_version_stimuli x WHERE x.stimulus_id = s.id)
           AND NOT EXISTS (SELECT 1 FROM question_parts x WHERE x.stimulus_id = s.id)`,

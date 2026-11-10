@@ -516,6 +516,20 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
       expect(UserListMetaSchema.parse((await api.get('/admin/users?status=pending')).body.meta).pendingCount).toBe(meta.pendingCount - 1)
     })
 
+    it('V2 parity: a switched-off staff account is not "menunggu kelulusan"; a switched-off teacher is (UserDirectory::pendingApprovalCount)', async () => {
+      const staff = await make('staf-mati@ujian.test', ['school_admin'])
+      const teacher = await make('guru-mati@ujian.test')
+      const before = UserListMetaSchema.parse((await api.get('/admin/users')).body.meta).pendingCount
+      await api.post(`/admin/users/${staff.id}/toggle-active`)
+      const afterStaff = UserListMetaSchema.parse((await api.get('/admin/users')).body.meta).pendingCount
+      expect(afterStaff).toBe(before)
+      const pendingIds = ((await api.get('/admin/users?status=pending')).body.data as { id: string }[]).map((u) => u.id)
+      expect(pendingIds).not.toContain(staff.id)
+      expect(((await api.get('/admin/users?isActive=0')).body.data as { id: string }[]).map((u) => u.id)).toContain(staff.id)
+      await api.post(`/admin/users/${teacher.id}/toggle-active`)
+      expect(UserListMetaSchema.parse((await api.get('/admin/users')).body.meta).pendingCount).toBe(before + 1)
+    })
+
     it('the inactive filter total moves by one (computed, not stored)', async () => {
       const u = await make('togol2@ujian.test')
       const before = (await api.get('/admin/users?isActive=0')).body.meta.totalItems as number

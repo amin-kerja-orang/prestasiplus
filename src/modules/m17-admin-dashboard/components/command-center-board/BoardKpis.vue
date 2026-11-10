@@ -16,6 +16,7 @@ import { useCountUp } from './composables'
 const props = defineProps<{ data: CcLiveData | null; school: boolean }>()
 
 const schools = useCountUp(computed(() => props.data?.totalSchools ?? null))
+const subscribed = computed(() => (props.data ? formatCount(props.data.activeSubscriptions) : '--'))
 const students = useCountUp(computed(() => props.data?.totalStudents ?? null))
 const answered = useCountUp(computed(() => props.data?.totalAnswered ?? null))
 
@@ -30,7 +31,7 @@ const tiles = computed<{ id: string; label: string; value: string; sub: string; 
       id: 'schools',
       label: 'Sekolah Berdaftar',
       value: schools.value,
-      sub: 'langganan aktif',
+      sub: `${subscribed.value} langganan aktif`,
       icon: 'buildings',
     },
     {

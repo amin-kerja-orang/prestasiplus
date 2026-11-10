@@ -93,7 +93,7 @@ export function ccAlesaSentence(d: CcLiveData): CcAlesaSentence {
   const before = d.scope === 'school' ? 'Sekolah anda menunjukkan ' : 'Platform menunjukkan '
   const after =
     ` ${String(Math.abs(d.weekChange))}% minggu ini. ${ratio.toFixed(1)}% pelajar terlibat aktif. ` +
-    `Ketepatan purata ${accuracyText(d.accuracy)} dengan ${String(d.totalSchools)} sekolah aktif. ` +
+    `Ketepatan purata ${accuracyText(d.accuracy)} dengan ${String(d.activeSubscriptions)} sekolah aktif. ` +
     `GPS keseluruhan: ${d.gpsOverall.toFixed(2)}.`
   return { before, trend, after, text: `${before}${trend}${after}` }
 }

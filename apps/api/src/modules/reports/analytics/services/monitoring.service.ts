@@ -55,7 +55,7 @@ interface Universe {
   /** Student-table schools within the state / scope (registered at least 1), any tahap, table order. */
   rows: SchoolEngagementRow[]
   teacherRows: TeacherEngagementRow[]
-  /** "Jumlah Sekolah": schools with at least one user of any role. */
+  /** "Jumlah Sekolah": the registered schools of the scope (secondary stage, D72) and state filter; V2 counts the schools table, not schools with users. */
   schools: number
   loggedBySchool: Map<string, number>
   answersBySchool: Map<string, number>
@@ -86,13 +86,12 @@ export class MonitoringService {
     const rawTahap = filters.tahap ?? ''
     const tahap = rawTahap === 'Kritikal' ? 'Rendah' : rawTahap === 'Tiada Langsung' ? 'Tiada' : rawTahap
     const from = periodFromMs(period, now.getTime())
-    const [facts, registered, teachers, engagement, withUsers] = await Promise.all([
+    const [facts, registered, teachers, engagement] = await Promise.all([
       this.repo.schools(scope),
       this.repo.registeredBySchool(scope),
       // R1-GUR-10: a teacher sees the whole own school, like the school admin.
       this.repo.teachersBySchool(scope),
       this.repo.engagement(scope, from === null ? null : new Date(from)),
-      this.repo.schoolsWithUsers(scope),
     ])
     const factOf = new Map<string, SchoolFact>(facts.map((f) => [f.id, f]))
     const stateOk = (f: SchoolFact): boolean => state === '' || f.state === state
@@ -125,10 +124,7 @@ export class MonitoringService {
     }
     teacherRows.sort((a, b) => b.raw - a.raw || compareIds(a.row.schoolId, b.row.schoolId))
 
-    const schools = withUsers.filter((id) => {
-      const f = factOf.get(id)
-      return f !== undefined && stateOk(f)
-    }).length
+    const schools = facts.filter(stateOk).length
     return {
       period,
       state,
@@ -450,7 +446,7 @@ export class AdminCentralService {
       this.repo.answersByDay(from, now),
       this.repo.topSchoolsByAnswers(from, now, 10),
       this.repo.activeSubscriptionCount(dayKey(now.getTime())),
-      this.repo.schoolsWithUsers(null),
+      this.repo.schoolTotals(),
       this.cache.get(() => this.bank(), BANK_CACHE_SCOPE),
       this.repo.topPupilsAnalitik(weekStart, now, 8),
       this.repo.moodTotals(),
@@ -471,7 +467,7 @@ export class AdminCentralService {
     return {
       range: key,
       platform: {
-        schools: schools.length,
+        schools: schools.total,
         activeSubscriptions: subscriptions,
         students: pupils.pupils,
         activeStudents: totals.pupils,

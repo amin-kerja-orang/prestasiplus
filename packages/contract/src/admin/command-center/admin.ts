@@ -151,7 +151,8 @@ export const CommandCenterLiveDataSchema = z
       .object({ id: IdSchema, name: z.string() })
       .nullable()
       .meta(FIELD('The viewer school on the school view, else null.')),
-    totalSchools: count.meta(FIELD('Platform: subscribed schools outside fixture schools. School view: 1 or 0.')),
+    totalSchools: count.meta(FIELD('Platform: registered schools (V2 Sekolah Berdaftar, secondary stage). School view: 1.')),
+    activeSubscriptions: count.meta(FIELD('Platform: schools with an active subscription outside fixture schools (V2 "langganan aktif"). School view: 1 or 0.')),
     totalStudents: count,
     activeStudents: count.meta(FIELD('Pupils with at least one answer ever.')),
     totalAnswered: count,

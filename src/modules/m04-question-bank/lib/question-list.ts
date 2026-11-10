@@ -283,6 +283,19 @@ export const REGROUP_COPY = {
 export const REGROUP_FLAGS = ['stimulus_missing', 'figure_only', 'stem_duplicated'] as const
 export type RegroupFlag = (typeof REGROUP_FLAGS)[number]
 
+/**
+ * `Sebab` of a work-list row and the options of its filter: BM words taken from the existing reason sentences of the contract
+ * (`SERVABILITY_REASON_MS`: `stimulus_missing` "Rangsangan tiada...", `figure_only` "...hanya mengandungi rangsangan"); V2 has no regroup list.
+ */
+export const REGROUP_FLAG_LABELS: Readonly<Record<RegroupFlag, string>> = {
+  stimulus_missing: 'Rangsangan tiada',
+  figure_only: 'Hanya rangsangan',
+  stem_duplicated: 'Teks soalan berulang',
+}
+
+/** The BM `Sebab` of a flag; an unknown code is shown as it is. */
+export const regroupFlagLabel = (flag: string): string => (REGROUP_FLAG_LABELS as Record<string, string>)[flag] ?? flag
+
 export interface RegroupWorkRow {
   questionId: string
   numberLabel: string | null

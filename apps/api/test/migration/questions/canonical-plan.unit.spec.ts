@@ -34,7 +34,8 @@ const cq = (over: Record<string, unknown> = {}, parts: CanonicalPart[] = [mcqPar
 describe('canonical helpers', () => {
   it('maps status slugs and answer modes', () => {
     expect(['approved', 'published', 'draft', 'reviewed', 'archived', 'zzz'].map(canonicalStatus)).toEqual(['approved', 'approved', 'draft', 'review', 'archived', null])
-    expect(['mcq', 'extended_essay', 'working_shown', 'draw_on_diagram', 'cloze'].map(leafModeOf)).toEqual(['mcq', 'essay', 'working', 'drawing', null])
+    expect(['mcq', 'extended_essay', 'working_shown', 'draw_on_diagram', 'cloze'].map(leafModeOf)).toEqual(['mcq', 'essay', 'working', 'drawing', 'working'])
+    expect(['numbered_list', 'essay_choice', 'table_fill', 'zzz'].map(leafModeOf)).toEqual(['essay', 'essay', 'working', null])
   })
 
   it('reads the text of a JSON value of every known shape', () => {
@@ -42,6 +43,8 @@ describe('canonical helpers', () => {
     expect(textOfJson('"Terus"')).toBe('Terus')
     expect(textOfJson('[{"type":"p","text":"Baris 1"},{"type":"p","text":"Baris 2"}]')).toBe('Baris 1\nBaris 2')
     expect(textOfJson('{"type":"doc","content":[{"type":"p","content":[{"text":"Dalam"}]}]}')).toBe('Dalam')
+    expect(textOfJson('{"html":"<p>Satu <b>dua</b></p>"}')).toBe('Satu dua')
+    expect(textOfJson(JSON.stringify(JSON.stringify({ html: 'Dua kali' })))).toBe('Dua kali')
     expect(textOfJson('{"x":1}')).toBeNull()
     expect(textOfJson(null)).toBeNull()
   })
@@ -60,6 +63,13 @@ describe('transformCanonical', () => {
     expect(out.value).toMatchObject({ idEntity: 'exam_questions', idKey: '500', legacyId: null, type: 'mcq', status: 'approved', education_level_id: null, number_label: '3', subject_id: '11' })
     expect(out.value.tree[0]).toMatchObject({ kind: 'leaf', mode: 'mcq', key: { kind: 'option', correct: 'A' } })
     expect(out.value.notes).toContain('level_missing')
+  })
+
+  it('an SPM canonical question is a Tingkatan 5 question when the curriculum has that level', () => {
+    const withT5: Curriculum = { ...cur, levelCodes: new Map([['21', 'T4'], ['22', 'T5']]) }
+    const out = transformCanonical(cq(), withT5, new Map())
+    expect(out.ok && out.value).toMatchObject({ education_level_id: '22', form_origin: 't5' })
+    expect(out.ok && out.value.notes).toContain('level_from_spm_paper')
   })
 
   it('links only the stimuli the stimulus pass mapped (max 3)', () => {
@@ -94,12 +104,57 @@ describe('transformCanonical', () => {
       return out.ok ? null : `${out.reject.reason}:${out.reject.column}`
     }
     expect(reason(cq({}, [none]))).toBe('INVALID_VALUE:is_correct')
-    expect(reason(cq({}, [mcqPart({ mode_slug: 'short_text', options: [] })]))).toBe('INVALID_VALUE:key')
-    expect(reason(cq({}, [mcqPart({ mode_slug: 'cloze', options: [] })]))).toBe('INVALID_VALUE:answer_mode')
+    expect(reason(cq({}, [mcqPart({ mode_slug: 'zzz', options: [] })]))).toBe('INVALID_VALUE:answer_mode')
     expect(reason(cq({ status_slug: 'zzz' }))).toBe('UNKNOWN_ENUM:status_id')
     expect(reason(cq({ subject_ref: null }))).toBe('ORPHAN_PARENT:subject_id')
-    expect(reason(cq({ stem: '{"x":1}' }))).toBe('INVALID_VALUE:stem')
+    expect(reason(cq({ stem: '{"x":1}' }, [mcqPart({ prompt: null })]))).toBe('INVALID_VALUE:stem')
     expect(reason(cq({}, []))).toBe('INVALID_VALUE:parts')
+  })
+})
+
+describe('transformCanonical on the real V2 shapes', () => {
+  const html = (v: string): string => JSON.stringify({ html: v })
+  const part = (over: Record<string, unknown> = {}): CanonicalPart => mcqPart({ prompt: null, options: [], ...over })
+
+  it('reads {html} stems, prompts and option bodies, and takes the answer from the single_key row when no option carries the flag', () => {
+    const opts = [
+      { id: '71', label: 'A', body: html('<p>Satu</p>'), is_correct: '0', position: '1' },
+      { id: '72', label: 'B', body: html('Dua'), is_correct: '0', position: '2' },
+      { id: '73', label: 'C', body: html(''), is_correct: '0', position: '3' },
+    ]
+    const out = transformCanonical(cq({ stem: html('<p>Berapakah <b>isi</b> padu?</p>') }, [mcqPart({ prompt: html('Pilih.'), options: opts, key_content: JSON.stringify({ option_id: 72 }) })]), cur, new Map())
+    expect(out.ok).toBe(true)
+    if (!out.ok) return
+    expect(out.value.stem).toBe('Berapakah isi padu?')
+    expect(out.value.tree[0]).toMatchObject({ kind: 'leaf', mode: 'mcq', key: { kind: 'option', correct: 'B' }, options: [{ label: 'A', body: 'Satu' }, { label: 'B', body: 'Dua' }, { label: 'C', body: 'C' }] })
+    expect(out.value.notes).toEqual(expect.arrayContaining(['key_from_single_key', 'option_body_empty']))
+  })
+
+  it('reads the mark-scheme shape of V2 ({point, marks}), a model answer ({text}) and a rubric of an unknown shape', () => {
+    const pts = part({ id: '2', mode_slug: 'extended_essay', marks: '2', key_content: JSON.stringify({ points: [{ point: 'Isi satu', marks: 1 }, { point: 'Isi dua', marks: 1 }] }) })
+    const model = part({ id: '3', position: '2', label: '2', mode_slug: 'extended_essay', marks: '3', key_content: JSON.stringify({ text: 'Jawapan model.' }) })
+    const rubric = part({ id: '4', position: '3', label: '3', mode_slug: 'extended_essay', marks: '4', key_content: JSON.stringify({ bands: [{ band: 'Cemerlang', desc: 'Huraian lengkap' }] }) })
+    const out = transformCanonical(cq({}, [pts, model, rubric]), cur, new Map())
+    expect(out.ok).toBe(true)
+    if (!out.ok) return
+    expect(out.value.tree[0]).toMatchObject({ key: { kind: 'points', marks: 2, points: [{ marks: 1 }, { marks: 1 }] } })
+    expect(out.value.tree[1]).toMatchObject({ key: { kind: 'points', modelText: 'Jawapan model.' } })
+    expect(out.value.tree[2]).toMatchObject({ key: { kind: 'points', modelText: expect.stringContaining('Huraian lengkap') } })
+  })
+
+  it('a leaf with no key is a placeholder scheme: a draft stays a draft, an approved question goes to review, and no short answer is rejected for it', () => {
+    const draft = transformCanonical(cq({ status_slug: 'draft' }, [part({ mode_slug: 'short_text' })]), cur, new Map())
+    expect(draft.ok && draft.value).toMatchObject({ status: 'draft', is_active: true, tree: [{ mode: 'working', key: { kind: 'points' } }] })
+    expect(draft.ok && draft.value.import_issues).toEqual([{ code: 'scheme_placeholder', target: 'part', label: '1' }])
+    const approved = transformCanonical(cq({}, [part({ mode_slug: 'extended_essay' })]), cur, new Map())
+    expect(approved.ok && approved.value.status).toBe('review')
+    expect(approved.ok && approved.value.notes).toContain('approved_to_review_no_scheme')
+  })
+
+  it('an empty stem takes the first part prompt; no text anywhere is a reject', () => {
+    const ok = transformCanonical(cq({ stem: html('') }, [mcqPart({ prompt: html('Isi petak kosong.') })]), cur, new Map())
+    expect(ok.ok && ok.value.stem).toBe('Isi petak kosong.')
+    expect(ok.ok && ok.value.notes).toContain('stem_from_part')
   })
 })
 

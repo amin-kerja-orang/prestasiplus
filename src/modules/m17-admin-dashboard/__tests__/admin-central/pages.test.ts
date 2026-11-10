@@ -129,6 +129,9 @@ describe('AdminDashboardPage (M-01)', () => {
     expect(text).toContain('Jumlah guru berdaftar')
     expect(text).toContain('Jumlah sekolah berdaftar')
     expect(text).toContain('Minggu ini: 4')
+    // V2: "Soalan Aktif" = every question not archived (120 total - 7 Diarkib).
+    const aktif = w.findAll('a').find((a) => a.text().includes('Soalan Aktif'))
+    expect(aktif?.text()).toContain('113')
     expect(text).toContain('250 Pelajar')
     expect(text).toContain('11 Aktif')
     expect(text).toContain('PvP Quiz Battles')

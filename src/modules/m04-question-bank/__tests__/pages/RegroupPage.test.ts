@@ -74,7 +74,7 @@ describe('RegroupPage (R1-ADM-QE-08, frame)', () => {
     expect(t(w, 'regroup-source').text()).toBe('1449/1 SPM (2023) · No. 14')
     expect(t(w, 'regroup-count-subject-3').text()).toBe('Sains: 1')
     expect(t(w, 'regroup-count-level-7').text()).toBe('Tingkatan 4: 1')
-    expect(t(w, 'regroup-flag').text()).toBe('stimulus_missing')
+    expect(t(w, 'regroup-flag').text()).toBe('Rangsangan tiada')
     expect(t(w, 'regroup-reference').text()).toBe('bernombor')
   })
 
@@ -312,6 +312,6 @@ describe('RegroupPage row actions (API-Q-12, API-Q-24, API-Q-36)', () => {
       .get('[data-testid="regroup-flag-filter"]')
       .findAll('option')
       .map((o) => o.text())
-    expect(options).toEqual(['Semua', 'stimulus_missing', 'figure_only', 'stem_duplicated'])
+    expect(options).toEqual(['Semua', 'Rangsangan tiada', 'Hanya rangsangan', 'Teks soalan berulang'])
   })
 })

@@ -9,7 +9,7 @@ import { CurriculumLearnerService } from '../../src/modules/curriculum/learner.s
 import { DEFAULT_MAP_GRADE } from '../../src/modules/curriculum/rules'
 import { BankFacts } from '../../src/modules/practice/reads/overview/bank-facts'
 import { QuestionsRepository } from '../../src/modules/questions'
-import { OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
+import { NEWEST_WINDOWS, OverviewRepository } from '../../src/modules/practice/reads/overview/overview.repository'
 import { subjectView } from '../../src/modules/practice/reads/overview/overview.service'
 
 /**
@@ -102,7 +102,8 @@ describe('B-HTTP-03: every question count shown to users leaves out primary leve
     // FR-MUR-2-8: the newest-list SQL is the shared servable scope (`scopeSql`, learner-visible) over this repo's ordered read.
     await repo.newestIdsOf(new QuestionsRepository({ client: rawClient([]) } as never).scopeSql({ status: 'approved', active: true }, true), 60)
     await repo.chapterQuestionCounts(['1', '2'])
-    expect(queries).toHaveLength(3)
+    // The newest-list read goes through one statement per id window (an empty stub never fills the 60, so it reads them all).
+    expect(queries).toHaveLength(2 + NEWEST_WINDOWS.length)
     for (const q of queries) {
       expect(q).toContain(PRIMARY)
       expect(q).toContain('pksk_domain') // the PKSK scope of the practice draws
@@ -129,14 +130,15 @@ describe('B-HTTP-05: Command Center counts leave out hidden schools and Darjah p
     await repo.studentCount({})
     await repo.studentCount({ schoolId: '3' })
     await repo.studentsOfSchool('3')
-    await repo.schoolsWithStudents()
+    await repo.registeredSchoolCount()
     await repo.answerTally({ to: new Date('2026-10-30T00:00:00Z') })
     await repo.answerDays({ from: new Date('2026-10-01T00:00:00Z'), to: new Date('2026-10-30T00:00:00Z') })
     await repo.sessionTally({ from: new Date('2026-10-01T00:00:00Z'), to: new Date('2026-10-30T00:00:00Z') })
     await repo.subscribedSchoolCount(new Date('2026-10-30T00:00:00Z'))
     expect(queries).toHaveLength(8)
-    for (const q of queries.slice(0, 7)) {
-      expect(q).toContain(HIDDEN_PUPIL)
+    for (const [i, q] of queries.slice(0, 7).entries()) {
+      // queries[3] is "registered schools": it has no pupil, only the hidden primary school types.
+      if (i !== 3) expect(q).toContain(HIDDEN_PUPIL)
       expect(q).toContain(`"SK","SJK(C)","SJK(T)"`) // PRIMARY_SCHOOL_TYPES, bound
     }
     // "Sekolah Berdaftar" = schools with an active subscription: that count is unchanged (owner decision).

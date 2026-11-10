@@ -30,7 +30,7 @@ import { UsersRepository } from '../../users'
 import { SCHOOL_DRILL_ROW_LIMIT } from '../command-center.constants'
 
 import { dateKey } from './windows'
-import { VISIBLE_USER_SQL } from './visibility'
+import { VISIBLE_SCHOOL_SQL, VISIBLE_USER_SQL } from './visibility'
 
 const TZ = 'Asia/Kuala_Lumpur'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -491,11 +491,12 @@ export class CommandCenterRepository {
     return n(r?.c)
   }
 
-  /** Schools that have at least one XS-1 pupil (platform "total schools" of the daily board). */
-  async schoolsWithStudents(): Promise<number> {
-    const [r] = await this.q(Prisma.sql`
-      SELECT count(DISTINCT u.school_id)::int AS c FROM users u
-       WHERE u.school_id IS NOT NULL AND ${XS_PUPIL_SQL('u')} AND ${VISIBLE_USER_SQL}`)
+  /**
+   * Registered schools (platform "total schools" of the daily board, V2 `CommandCenterController::daily`): the same number as the Sekolah list, the Dashboard
+   * "Jumlah Sekolah". V2 counts the whole `schools` table; primary types are hidden (D72). (The live board tile "Sekolah Berdaftar" counts subscribed schools: owner decision, see `subscribedSchoolCount`.)
+   */
+  async registeredSchoolCount(): Promise<number> {
+    const [r] = await this.q(Prisma.sql`SELECT count(*)::int AS c FROM schools sc WHERE ${VISIBLE_SCHOOL_SQL}`)
     return n(r?.c)
   }
 

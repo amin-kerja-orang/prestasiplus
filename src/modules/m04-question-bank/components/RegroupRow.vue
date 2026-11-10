@@ -10,7 +10,7 @@ import { DsCluster, DsNativeSelect, DsStack, DsSurface, DsText } from '@/ds'
 
 import { listStimuliToAttach, type StimulusPick } from '../api/questions'
 import { DIAGRAMS_PATH } from '../lib/audit-routes'
-import { regroupReference, regroupSource, type RegroupWorkRow } from '../lib/question-list'
+import { regroupFlagLabel, regroupReference, regroupSource, type RegroupWorkRow } from '../lib/question-list'
 
 const props = defineProps<{ row: RegroupWorkRow; selected?: boolean; busy?: boolean }>()
 const emit = defineEmits<{ toggle: [id: string]; dismiss: [row: RegroupWorkRow]; attach: [row: RegroupWorkRow, stimulusId: string] }>()
@@ -56,7 +56,7 @@ const pickable = (f: string): boolean => f === 'stimulus_missing' || f === 'figu
         <DsText variant="caption" tone="muted">{{ row.subject }}</DsText>
         <DsText variant="caption" tone="muted">{{ row.level }}</DsText>
         <DsText variant="caption" tone="muted" data-testid="regroup-source">{{ regroupSource(row) }}</DsText>
-        <DsText variant="caption" tone="warning" data-testid="regroup-flag">{{ row.flag }}</DsText>
+        <DsText variant="caption" tone="warning" data-testid="regroup-flag">{{ regroupFlagLabel(row.flag) }}</DsText>
         <DsText variant="caption" tone="muted" data-testid="regroup-reference">{{ regroupReference(row) }}</DsText>
       </DsCluster>
       <DsCluster gap="sm">

@@ -6,6 +6,7 @@ import {
   complianceColor,
   isConsecutiveRun,
   regroupHeader,
+  regroupFlagLabel,
   regroupReference,
   regroupSource,
   bulkOptionsFor,
@@ -196,5 +197,14 @@ describe('regroup work-list helpers (R1-ADM-QE-08)', () => {
     expect(regroupReference({ reference: 'unnumbered' })).toBe('tanpa nombor')
     expect(regroupReference({ reference: null })).toBe('—')
     expect(regroupHeader(2, 5)).toBe('2 perlu tindakan · 5 selesai')
+  })
+})
+
+describe('regroupFlagLabel (Sebab in BM)', () => {
+  it('shows BM words for the three stored codes and an unknown code as it is', () => {
+    expect(regroupFlagLabel('stimulus_missing')).toBe('Rangsangan tiada')
+    expect(regroupFlagLabel('figure_only')).toBe('Hanya rangsangan')
+    expect(regroupFlagLabel('stem_duplicated')).toBe('Teks soalan berulang')
+    expect(regroupFlagLabel('lain')).toBe('lain')
   })
 })

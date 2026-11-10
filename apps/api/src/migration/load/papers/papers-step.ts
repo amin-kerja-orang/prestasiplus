@@ -102,7 +102,14 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
       const sectionIds = [...sectionsBy.values()].flatMap((l) => l.map((s) => s.id as string))
       const pivotBy = await childrenOf(c.pool, 'exam_paper_questions', 'paper_section_id', sectionIds, 't."sort_order", t."id"')
       const bareBy = await childrenOf(c.pool, 'exam_questions', 'paper_section_id', sectionIds, 't."position", t."id"')
-      const eqIds = [...new Set([...pivotBy.values(), ...bareBy.values()].flatMap((l) => l.map((x) => (x.exam_question_id ?? x.id) as string)))]
+      // Questions of the paper that sit in no section (exam_paper_id set, paper_section_id empty): placed in a last section, never dropped.
+      const ownBy = await childrenOf(c.pool, 'exam_questions', 'exam_paper_id', ids, 't."position", t."id"')
+      const sectionless = new Map<string, ArchiveRow[]>()
+      for (const [paperId, list] of ownBy) {
+        const free = list.filter((x) => text(x.paper_section_id) === null)
+        if (free.length > 0) sectionless.set(paperId, free)
+      }
+      const eqIds = [...new Set([...pivotBy.values(), ...bareBy.values(), ...sectionless.values()].flatMap((l) => l.map((x) => (x.exam_question_id ?? x.id) as string)))]
       const eqLabel = new Map<string, string | null>()
       if (eqIds.length > 0) {
         const res = await c.pool.query<{ id: string; number_label: string | null }>(`SELECT id::text AS id, number_label FROM archive_cloud.exam_questions WHERE id = ANY($1::bigint[])`, [eqIds])
@@ -185,10 +192,10 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
           const sid = s.id as string
           if (text(s.paper_document_id) !== null) hasDocumentSection = true
           const links = pivotBy.get(sid)
-          const entries: { eq: string; label: string | null; override: number | null }[] =
-            links !== undefined && links.length > 0
-              ? links.map((l) => ({ eq: l.exam_question_id as string, label: text(l.number_label) ?? eqLabel.get(l.exam_question_id as string) ?? null, override: intOf(l.marks_override, 1) }))
-              : (bareBy.get(sid) ?? []).map((l) => ({ eq: l.id as string, label: eqLabel.get(l.id as string) ?? null, override: null }))
+          // The pivot rows (V2 sort order) first, then the section's own questions that the pivot does not list (V2 position order).
+          const pivoted: { eq: string; label: string | null; override: number | null }[] = (links ?? []).map((l) => ({ eq: l.exam_question_id as string, label: text(l.number_label) ?? eqLabel.get(l.exam_question_id as string) ?? null, override: intOf(l.marks_override, 1) }))
+          const listed = new Set(pivoted.map((e) => e.eq))
+          const entries = [...pivoted, ...(bareBy.get(sid) ?? []).filter((l) => !listed.has(l.id as string)).map((l) => ({ eq: l.id as string, label: eqLabel.get(l.id as string) ?? null, override: null }))]
           for (const e of entries) paperEqs.add(e.eq)
           const seen = new Set<string>()
           const placements: PlacementPlan[] = []
@@ -210,6 +217,26 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
             c.notes.count('papers.rule_n_missing')
           }
           sections.push({ label: text(s.label) ?? `Bahagian ${sections.length + 1}`, instruction: text(s.instruction_text), rule_type: rule, rule_n: rule === 'choose' ? n : null, mark_budget: intOf(s.mark_budget, 0), placements })
+        }
+        const free = sectionless.get(legacyId)
+        if (free !== undefined) {
+          const placements: PlacementPlan[] = []
+          const seen = new Set<string>(sections.flatMap((s) => s.placements.map((p) => p.question_id)))
+          for (const l of free) {
+            paperEqs.add(l.id as string)
+            const q = resolved.get(l.id as string)
+            if (q === undefined) {
+              dropped += 1
+              continue
+            }
+            if (seen.has(q)) continue
+            seen.add(q)
+            placements.push({ question_id: q, number_label: eqLabel.get(l.id as string) ?? null, marks_override: null })
+          }
+          if (placements.length > 0) {
+            sections.push({ label: sections.length === 0 ? 'Bahagian A' : 'Soalan lain', instruction: null, rule_type: 'all', rule_n: null, mark_budget: null, placements })
+            c.notes.count('papers.sectionless_questions', placements.length)
+          }
         }
         if (dropped > 0) c.notes.count('papers.placement_dropped', dropped)
         const grouped = normaliseGroups(sections, groupFacts)

@@ -53,7 +53,9 @@ export interface UserListFilter {
 export type UserStatusFilter = 'pending' | 'active' | 'suspended'
 
 const STATUS_WHERE: Record<UserStatusFilter, Prisma.UserWhereInput> = {
-  pending: { isActive: false, isSuspended: false },
+  // V2 parity (`UserDirectory::pendingApprovalCount`): only pupil and teacher accounts wait for approval; a switched-off staff
+  // account (admin, school admin, PPD/JPN officer) is a deactivation, not an application, and is found with `isActive=0`.
+  pending: { isActive: false, isSuspended: false, roles: { some: { role: { in: ['student', 'teacher'] } } } },
   active: { isActive: true, isSuspended: false },
   suspended: { isSuspended: true },
 }
@@ -470,7 +472,7 @@ export class UsersRepository {
     return { rows: rows.map(toRecord), total }
   }
 
-  /** Accounts waiting for approval among the users the caller can see (scope only, no list filter). */
+  /** Accounts waiting for approval among the users the caller can see (scope only, no list filter); same rows as `status=pending`. */
   pendingCount(caller: Caller): Promise<number> {
     return this.prisma.client.user.count({ where: { AND: [this.visibleWhere(caller), STATUS_WHERE.pending] } })
   }

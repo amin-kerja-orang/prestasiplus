@@ -103,8 +103,10 @@ export interface CcLiveData {
   scope: CcBoardScope
   /** The viewer's school on the school view, else `null`. */
   school: CcBoardSchool | null
-  /** Q-M17-SUBSCRIBED (platform) / 1 or 0 (school). */
+  /** Registered schools (platform) / 1 (school). */
   totalSchools: number
+  /** Schools with an active subscription ("langganan aktif"). */
+  activeSubscriptions: number
   /** Q-M17-PUPILS. */
   totalStudents: number
   /** Q-M17-ENGAGED(all) ("{n} aktif menjawab"). */

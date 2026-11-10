@@ -76,7 +76,7 @@ export function questionsStep(q: QuestionsContext): AnyEntityStep {
 const readQuestionsOf = (q: QuestionsContext, after: string | null): AsyncGenerator<LegacyQuestion> => readQuestions(q.pool, after, q.pageSize)
 
 /** Pre-allocated ids of an identity table (the insert then names them, so rows are joined by key and never by order). */
-async function allocIds(db: SqlExecutor, table: string, n: number): Promise<string[]> {
+export async function allocIds(db: SqlExecutor, table: string, n: number): Promise<string[]> {
   if (n === 0) return []
   const res = await db.query<{ id: string }>(`SELECT nextval(pg_get_serial_sequence('${table}', 'id'))::text AS id FROM generate_series(1, $1::int)`, [n])
   return res.rows.map((r) => r.id)
