@@ -61,15 +61,18 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     async ({ page, gotoApp, loginAs }) => {
       await loginAs(PELAJARMAJU)
       await gotoApp(PATH)
-      const menu = isDesktopShell(page)
-        ? page.getByTestId('shell-user-sidebar')
-        : page.getByTestId('shell-user-drawer')
-      if (!isDesktopShell(page)) await page.getByTestId('shell-user-hamburger').click()
+      // Pembelajaran shell: sidebar from lg, the "Lagi" sheet below it.
+      if (!isDesktopShell(page)) {
+        await page.getByTestId('pembelajaran-bottom-nav').locator('[data-nav-id="tab-lagi"]').click()
+      }
+      const menu = page.getByTestId(
+        isDesktopShell(page) ? 'pembelajaran-nav' : 'pembelajaran-lagi-nav',
+      )
       const item = menu.getByRole('link', { name: 'Heatmap Topik Lemah' })
       await expect(item).toHaveAttribute('href', '/buku-nota/heatmap')
       await expect(item).not.toHaveAttribute('href', '/heatmap-topik-lemah')
       // AC-M25-01.5: the entry is the highlighted item while S1 is open.
-      await expect(item).toHaveClass(/\bactive\b/)
+      await expect(item).toHaveAttribute('aria-current', 'page')
     },
   )
 
@@ -80,17 +83,12 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
-    if (isDesktopShell(page)) {
-      await expect(
-        page.getByTestId('shell-user-sidebar').getByRole('link', { name: 'Heatmap Topik Lemah' }),
-      ).toHaveCount(0)
-    } else {
-      await page.getByTestId('shell-user-hamburger').click()
-      await expect(page.getByTestId('shell-user-drawer')).toBeVisible()
-      await expect(
-        page.getByTestId('shell-user-drawer').getByRole('link', { name: 'Heatmap Topik Lemah' }),
-      ).toHaveCount(0)
-    }
+    // Portal Pentadbiran: sidebar from lg, the same menu in the drawer below it.
+    if (!isDesktopShell(page)) await page.getByTestId('pentadbiran-menu-button').click()
+    const nav = page.getByTestId('pentadbiran-nav')
+    await expect(nav).toBeVisible()
+    await expect(nav.getByRole('link').first()).toBeVisible()
+    await expect(nav.getByRole('link', { name: 'Heatmap Topik Lemah' })).toHaveCount(0)
   })
 
   test('E2E-M25-02 header, tab title, user shell, no hidden partial text, no tab bar, filter, form or back link @m25', async ({
@@ -101,13 +99,13 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp(PATH)
     await expect(page.getByTestId('heatmap-hero')).toBeVisible()
-    await expectTabTitle(page, 'Heatmap Topik Lemah')
-    await expect(page.getByTestId('shell-user-title').first()).toHaveText('Heatmap Topik Lemah')
-    await expect(page.getByTestId('shell-user-title').first()).not.toHaveText('Dashboard')
-    if (isDesktopShell(page)) {
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    }
-    await expect(page.getByTestId('shell-user-header')).toBeVisible()
+    await expectTabTitle(page, 'Heatmap Topik Lemah | PRESTASIPLUS')
+    // Admin Pusat sits in the Portal Pentadbiran (D30): the navbar prints the page title as the h1.
+    const header = page.getByTestId('pentadbiran-header')
+    await expect(header).toBeVisible()
+    await expect(header.getByRole('heading', { level: 1 })).toHaveText('Heatmap Topik Lemah')
+    await expect(header.getByRole('heading', { level: 1 })).not.toHaveText('Dashboard')
+    await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText('Topik mana anda kuat, mana lemah — dalam satu paparan')
     for (const t of ['LIVE:', 'MAIN', 'DAFTAR']) {
       await expect(page.getByText(t, { exact: true })).toHaveCount(0)
     }
@@ -150,14 +148,15 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     'jpn@demo.test',
   ]) {
     test(
-      `E2E-M25-04 ${who.split('@')[0]!} is redirected to its home (the API 403 is covered by heatmap.test.ts) @m25`,
+      `E2E-M25-04 ${who.split('@')[0]!} gets the 403 page in place (the API 403 is covered by heatmap.test.ts) @m25`,
       provisional(
-        'the redirect target and the API 403 are the rebuild contract (SERVER gate, INFERRED)',
+        'the 403 page and the API 403 are the rebuild contract (SERVER gate, INFERRED)',
       ),
       async ({ page, gotoApp, loginAs }) => {
         await loginAs(who)
         await gotoApp(PATH)
-        await expect.poll(() => new URL(page.url()).pathname).not.toBe(PATH)
+        await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
+        await expect(page.getByRole('heading', { level: 1, name: 'Akses Ditolak' })).toBeVisible()
         await expect(page.getByTestId('heatmap-page')).toHaveCount(0)
         await expect(page.getByTestId('heatmap-hero')).toHaveCount(0)
       },
@@ -172,7 +171,7 @@ test.describe('M25 S1 Heatmap Topik Lemah', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/heatmap-topik-lemah')
     await expect(page.getByText('404', { exact: true })).toBeVisible()
-    await expect(page.getByText('🔍')).toBeVisible()
+    await expect(page.locator('[data-ds="error-page"][data-code="404"]')).toBeVisible()
     await expect(page.getByText('Halaman Tidak Dijumpai')).toBeVisible()
     await expect(
       page.getByText(
