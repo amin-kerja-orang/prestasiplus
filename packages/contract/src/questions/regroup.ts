@@ -64,7 +64,11 @@ export type RegroupRequest = z.infer<typeof RegroupRequestSchema>
 
 /** 200 of the regroup: the new group and, in `meta`, the audit id the undo route takes. */
 export const RegroupResultSchema = z
-  .object({ data: StimulusGroupDetailSchema, meta: z.object({ auditId: IdSchema }) })
+  .object({
+    data: StimulusGroupDetailSchema,
+    // KP-14: a member a published paper places may be regrouped (Audit Rajah repair); the papers are listed here, as `retireGroup` does.
+    meta: z.object({ auditId: IdSchema, affectedPapers: z.array(z.object({ id: IdSchema, title: z.string() })).optional() }),
+  })
   .meta({ id: 'RegroupResult' })
 export const RegroupUndoResultSchema = z.object({ restored: z.number().int().min(0) }).meta({ id: 'RegroupUndoResult' })
 

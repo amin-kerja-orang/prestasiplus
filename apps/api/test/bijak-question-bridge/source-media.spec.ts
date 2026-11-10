@@ -117,3 +117,29 @@ describe('Be09BijakQuestionSource media', () => {
     })
   })
 })
+
+describe('KP-15: a pinned question of a published paper whose picture file is missing stays, with a placeholder', () => {
+  const pinnedSource = (records: QuestionRecord[]) =>
+    new Be09BijakQuestionSource(
+      {
+        getMany: () => Promise.resolve([]),
+        getVersions: () => Promise.resolve(records),
+        groupOf: () => Promise.resolve(group),
+        stimulusAssets: () => Promise.resolve([]),
+        unservableAmong: () => Promise.resolve(new Set<string>()),
+      } as never,
+      { subject: () => Promise.resolve(null), nodeById: () => Promise.resolve(null) } as never,
+      { publicIdsOf: (ids: string[]) => Promise.resolve(new Map(ids.filter((i) => i !== '502').map((i) => [i, `tok${i}`]))) },
+    )
+
+  it('an option picture with no file: served (not refused) with the placeholder; marks unchanged; an unpinned read still refuses', async () => {
+    const record = rec('1', true)
+    const src = pinnedSource([record])
+    const bundles = await src.loadQuestions(['1'], new Map([['1', 1]]))
+    expect([...bundles.keys()]).toEqual(['1'])
+    expect(JSON.stringify(bundles.get('1'))).toContain('Gambar tiada')
+    expect((await src.getMany(['1'])).size).toBe(0) // the unpinned eligibility read is unchanged (getMany stub returns none)
+    const plain = source([rec('1', true)])
+    expect((await plain.loadQuestions(['1'])).size).toBe(0)
+  })
+})

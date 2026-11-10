@@ -39,6 +39,12 @@ beforeAll(async () => {
   await q(`update question_versions set stimulus_flag = 'stimulus_missing' where question_id = $1`, [made.flagged])
   await publish('held')
   await q(`update question_versions set import_issues = '[{"code":"legacy_image_unresolved"}]'::jsonb where question_id = $1`, [made.held])
+  // P-1: the migration holds such a question as is_active = false together with the hold; a fixed set must keep it all the same.
+  await q(`update questions set is_active = false where id = $1`, [made.held])
+  // P-3: archived in V2 (no live version) and held: the paper still serves its PINNED version.
+  await publish('archivedHeld')
+  await q(`update question_versions set import_issues = '[{"code":"legacy_image_unresolved"}]'::jsonb, status = 'archived' where question_id = $1`, [made.archivedHeld])
+  await q(`update questions set live_version_no = null, is_active = false where id = $1`, [made.archivedHeld])
   source = new Be09PracticeQuestionSource(t.app.get(QuestionsRepository), { getMany: () => Promise.resolve([]) } as unknown as UsersRepository, undefined, filesOf(t.db) as never)
 }, 180_000)
 
@@ -86,5 +92,12 @@ describe('published paper (Bijak bridge, pinned version): KP-15', () => {
     expect(text(made.held as string)).toContain('Gambar tiada')
     expect(text(made.ok as string)).not.toContain('Gambar tiada')
     expect(text(made.flagged as string)).not.toContain('Gambar tiada')
+  })
+
+  it('P-3: a pinned question with NO live version (archived in V2) and a held picture gets the placeholder, judged at the pinned version', async () => {
+    const bridge = new Be09BijakQuestionSource(t.app.get(QuestionsRepository), t.app.get(CurriculumRepository), filesOf(t.db) as never)
+    const got = await bridge.loadQuestions([made.archivedHeld as string], new Map([[made.archivedHeld as string, 1]]))
+    expect(got.size).toBe(1)
+    expect(JSON.stringify(got.get(made.archivedHeld as string))).toContain('Gambar tiada')
   })
 })

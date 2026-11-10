@@ -101,6 +101,7 @@ import {
 } from './exam-core.adapter'
 import { checkPaperDetailed, normalizeUnits, reorderUnits, unitMarksOf, unitsOf, addUnit, removeUnit, type CheckIssue, type PaperCheck } from './paper-check'
 import { PaperImportBlockedError, PaperImportGroupSplitError, PaperImportPublishedError, PaperImportQuestionError, PaperImportSectionLimitError } from './import-errors'
+import { isMigrationOwnedUneditedPaper } from './migration-ownership'
 import { PLACEMENT_BLOCK_TEXT, placementBlockers } from './placement-blockers'
 import { unservableReasonsOf } from '../../questions/questions.repository'
 import { blockerView, toBlockers, type BlockerDraft } from './blockers'
@@ -988,8 +989,12 @@ export class BuilderService {
       const all = this.collectBlockers(paper, ev, structural, reports, unreadable, await this.referenceImageBlockers(paper), await this.unschemedOf(paper))
       // KP-14: a V2-published paper drops the lines caused by the status / is_active / held picture of its questions (see `publishLegacyV2`).
       const dropped: string[] = []
+      const droppedCodes: Record<string, number> = {}
       let blockers = all
       if (legacy) {
+        // P-6: only a migration-owned, unedited paper may take this path (the one shared rule of `isMigrationOwnedUneditedPaper`).
+        const ownership = await isMigrationOwnedUneditedPaper(this.prisma.client, paper.id.toString())
+        if (!ownership.owned) throw invalid(`${MESSAGES.paperNotFound} (${ownership.reason ?? 'not_owned'})`)
         const reasons = await unservableReasonsOf(this.prisma.client, placedNow)
         const cause = new Set(
           placedNow.filter((qid) => {
@@ -1001,7 +1006,10 @@ export class BuilderService {
         const byCause = (b: (typeof all)[number]): boolean =>
           b.code === 'NOT_PUBLISHED' || (['NOT_SERVABLE', 'UNKNOWN_QUESTION', 'INELIGIBLE'].includes(b.code) && b.questionId !== undefined && cause.has(b.questionId))
         blockers = all.filter((b) => !byCause(b))
-        dropped.push(...all.filter(byCause).map((b) => b.message))
+        for (const b of all.filter(byCause)) {
+          dropped.push(b.message)
+          droppedCodes[b.code] = (droppedCodes[b.code] ?? 0) + 1
+        }
       }
       const errors = blockers.map((b) => b.message)
       const overridable = blockers.filter((b) => b.overridable).map((b) => b.message)
@@ -1050,7 +1058,8 @@ export class BuilderService {
           reason: legacy ? LEGACY_V2_PUBLISH_REASON : request.reason,
           overridden: (legacy ? lifted : overridable).slice(0, 50),
           count: (legacy ? lifted : overridable).length,
-          ...(legacy ? { legacyV2: true } : {}),
+          // P-7: exactly which blockers were lifted: the count per code, the lines and the question ids they name.
+          ...(legacy ? { legacyV2: true, liftedByCode: droppedCodes, liftedQuestionIds: [...new Set(all.filter((b) => dropped.includes(b.message) && b.questionId !== undefined).map((b) => b.questionId))].slice(0, 200) } : {}),
         })
         return { ok: true, errors: [], overridden: legacy ? lifted : overridable, ...review }
       }

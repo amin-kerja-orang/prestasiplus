@@ -178,7 +178,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       const { records, groups, media, placeholders } = await this.servableRecords(wanted, allowPrivate, fixedSet)
       return this.mapServable([...records.values()], (r) => r.id, true, groups, media, placeholders)
     }
-    const loaded = (await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r)))
+    const loaded = await this.keepEligible(await this.questions.getMany(wanted, 'live', 'exclude', { lenientKeys: true }), fixedSet, allowPrivate)
     // M1: a by-id read applies no flag / import-hold / media rule; the draw does, so a flagged question (history, Ulang Kaji, remedial) is not served here either.
     const blocked = await this.questions.unservableAmong(loaded.map((r) => r.id))
     if (fixedSet) return this.mapAll(loaded, (r) => r.id, false, new Map(), blocked)
@@ -232,7 +232,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
     const records = new Map<string, QuestionRecord>()
     const groups = new Map<string, GroupUnit>()
     const loaded: QuestionRecord[] = []
-    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter((r) => eligible(r) && (allowPrivate || notPrivate(r))))
+    for (let i = 0; i < ids.length; i += HYDRATE_MAX) loaded.push(...(await this.keepEligible(await this.questions.getMany(ids.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true }), fixedSet, allowPrivate)))
     const groupIds = [...new Set(loaded.flatMap((r) => (r.groupId === null ? [] : [r.groupId])))]
     // M1: the ungrouped ids the by-id read loaded but the draw would refuse (flag, import hold, source takedown, unresolved media).
     let blocked = groupIds.length === 0 ? await this.questions.unservableAmong(loaded.map((r) => r.id)) : new Set<string>()
@@ -241,7 +241,7 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       const defs = await this.questions.groupsByIds(groupIds)
       const missing = [...new Set(defs.flatMap((g) => g.questionIds).filter((id) => !have.has(id)))]
       for (let i = 0; i < missing.length; i += HYDRATE_MAX) {
-        for (const r of (await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true })).filter(eligible)) have.set(r.id, r)
+        for (const r of await this.keepEligible(await this.questions.getMany(missing.slice(i, i + HYDRATE_MAX), 'live', 'exclude', { lenientKeys: true }), fixedSet, true, false)) have.set(r.id, r)
       }
       // M1 / m-4: a flagged, held or taken-down member (the draw's `groupCompleteSql` counts it as a gap) drops its whole group.
       blocked = await this.questions.unservableAmong([...have.keys()])
@@ -310,6 +310,19 @@ export class Be09PracticeQuestionSource implements PracticeQuestionSource {
       for (const r of records) if (eligible(r) && this.check(r)) out.add(r.id)
     }
     return out
+  }
+
+  /**
+   * The live records a read may serve: approved and active. In a FIXED set (KP-15) also a question whose picture is held: the migration holds such a question as
+   * `is_active = false` together with the `legacy_image_unresolved` hold, and it must stay in the set (placeholder), not drop silently.
+   * `checkPrivate` false skips the personal-question rule (group completion reads).
+   */
+  private async keepEligible(records: QuestionRecord[], fixedSet: boolean, allowPrivate: boolean, checkPrivate = true): Promise<QuestionRecord[]> {
+    const held = fixedSet ? await this.questions.heldAmong(records.filter((r) => !r.isActive).map((r) => r.id)) : new Set<string>()
+    return records.filter((r) => {
+      const live = r.version.status === 'approved' && (r.isActive || held.has(r.id))
+      return live && (!checkPrivate || allowPrivate || notPrivate(r))
+    })
   }
 
   /** `servableMcq`, logging a refusal once per version with the id and reason only (never content or the key). */

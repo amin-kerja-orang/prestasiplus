@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import type { BijakQuestionSource } from '../../src/modules/bijak/papers'
 import { BuilderService, PaperImportBlockedError } from '../../src/modules/exam/builder'
-import { PLACEMENT_BLOCK_TEXT, placementBlockers } from '../../src/modules/exam/builder/placement-blockers'
+import { PLACEMENT_BLOCK_TEXT, placementBlockers, placementVerdict } from '../../src/modules/exam/builder/placement-blockers'
 import { PrismaService } from '../../src/db/prisma.service'
 import { serveSeededBlueprints } from '../support/serve-blueprints'
 import { ACCOUNTS, bootBuilderApp, expectError, loginAs, type BuilderTestApp, type Client } from './helpers'
@@ -99,13 +99,25 @@ describe('M2: placement blockers', () => {
     await t.close()
   })
 
-  it('placementBlockers: held and unresolved are refused always; inactive only when no published paper pins it; clean is absent', async () => {
+  it('placementBlockers: only held and unresolved pictures are refused (decision 56: not flags, not a withdrawn question); clean is absent', async () => {
     const blocked = await placementBlockers(t.app.get(PrismaService).client, Object.values(ids))
     expect(blocked.get(ids.held)).toBe('held')
     expect(blocked.get(ids.heldPinned)).toBe('held')
-    expect(blocked.get(ids.inactive)).toBe('inactive')
+    expect(blocked.has(ids.inactive)).toBe(false)
     expect(blocked.has(ids.inactivePinned)).toBe(false)
     expect(blocked.has(ids.ok)).toBe(false)
+  })
+
+  it('placementVerdict: mode new refuses held and inactive; mode fixedSet refuses nothing and reports the held ones as placeholder', async () => {
+    const db = t.app.get(PrismaService).client
+    const list = [ids.ok, ids.held, ids.inactive, ids.heldPinned]
+    const fresh = await placementVerdict(db, list, 'new')
+    expect([...fresh.refused.keys()].sort()).toEqual([ids.held, ids.heldPinned].sort())
+    expect(fresh.placeholder.size).toBe(0)
+    const fixed = await placementVerdict(db, list, 'fixedSet')
+    expect(fixed.refused.size).toBe(0)
+    expect([...fixed.placeholder.keys()].sort()).toEqual([ids.held, ids.heldPinned].sort())
+    expect(fixed.placeholder.get(ids.held)).toBe('held')
   })
 
   it('addPlacement by id: a held question and a withdrawn one are refused (422, nothing written); a clean one is placed', async () => {
@@ -130,13 +142,12 @@ describe('M2: placement blockers', () => {
     expect((await q(`select question_id::text qid from paper_placements where paper_section_id = $1 order by position`, [old.sectionId])).map((r) => r.qid)).toEqual([ids.ok, ids.heldKept])
   })
 
-  it('paper import: a held or withdrawn question refuses the import before anything is written', async () => {
+  it('paper import: a held question refuses the import before anything is written', async () => {
     const subjectId = BigInt(subjects.mat)
     const batch = async (n: string) =>
       BigInt(String((await q(`insert into intake_batches (paper_type, subject, kertas, year, source_text, rights_status) values ('trial', 'MAT', 2, 2025, $1, 'own') returning id::text id`, [n]))[0]!.id))
     const input = (sourceBatchId: bigint, questionId: string) => ({ subjectId, kertas: 2, year: 2025, paperCode: 'K2', sourceBatchId, sections: [{ label: 'Bahagian A', placements: [{ questionId: BigInt(questionId), versionNo: 1, numberLabel: '1' }] }] })
     await expect(svc.importDraftPaper(input(await batch('m2-held'), ids.held))).rejects.toBeInstanceOf(PaperImportBlockedError)
-    await expect(svc.importDraftPaper(input(await batch('m2-inactive'), ids.inactive))).rejects.toBeInstanceOf(PaperImportBlockedError)
     const ok = await svc.importDraftPaper(input(await batch('m2-ok'), ids.ok))
     expect(ok).toMatchObject({ created: true, added: 1 })
   })

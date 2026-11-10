@@ -161,7 +161,7 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
     ])
     const media = await this.mediaOf(records, groups)
     // KP-15: a pinned (published paper) question whose picture is held or unresolved is served with a placeholder, never dropped (flags stay as decision 56 says).
-    const placeholders = pinned.length > 0 ? await this.questions.unservableAmong(pinned, { flags: false }) : new Set<string>()
+    const placeholders = pinned.length > 0 ? await this.questions.unservableAmong(pinned, { flags: false, versions: pins }) : new Set<string>()
     for (const record of records) {
       try {
         const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
@@ -175,6 +175,17 @@ export class Be09BijakQuestionSource implements AttemptQuestionSource {
         out.set(record.id, { bundle, groupId: bundle.question.groupId ?? null })
       } catch (e) {
         if (!(e instanceof UnsupportedQuestionError)) throw e
+        // KP-15: a pinned question of a published paper whose picture FILE is missing stays in its place with the placeholder (never refused).
+        if (e.reasonCode === 'file_missing' && pinned.includes(record.id)) {
+          try {
+            const group = record.groupId ? (groups.get(record.groupId) ?? null) : null
+            const bundle = mapBe09Question(record, group, labels.get(labelKey(record)) as CurriculumLabels, { ...media, tolerateMissingFiles: true }, true)
+            out.set(record.id, { bundle, groupId: bundle.question.groupId ?? null })
+            continue
+          } catch (again) {
+            if (!(again instanceof UnsupportedQuestionError)) throw again
+          }
+        }
         this.logger.error(`BE-09 question not served to Bijak (${e.reasonCode}): ${e.message}`)
         refused?.set(record.id, {
           questionId: e.questionId,

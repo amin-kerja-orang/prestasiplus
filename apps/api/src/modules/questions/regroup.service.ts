@@ -226,13 +226,13 @@ export class RegroupService {
 
   // --- API-Q-24 regroup -----------------------------------------------------------------------------------------------------------
 
-  async regroup(input: RegroupRequest, actor: HttpActor): Promise<{ group: StimulusGroupDetail; auditId: string }> {
+  async regroup(input: RegroupRequest, actor: HttpActor): Promise<{ group: StimulusGroupDetail; auditId: string; affectedPapers: { id: string; title: string }[] }> {
     const out = await this.prisma.transaction(async () => this.regroupInTx(input, actor), TX)
     this.questions.invalidateOverview()
     return out
   }
 
-  private async regroupInTx(input: RegroupRequest, actor: HttpActor): Promise<{ group: StimulusGroupDetail; auditId: string }> {
+  private async regroupInTx(input: RegroupRequest, actor: HttpActor): Promise<{ group: StimulusGroupDetail; auditId: string; affectedPapers: { id: string; title: string }[] }> {
     const memberIds = input.memberQuestionIds
     const figureId = input.figureQuestionId
     if (figureId !== undefined && memberIds.includes(figureId)) throw fail({ figureQuestionId: M.membersInvalid })
@@ -241,9 +241,18 @@ export class RegroupService {
     for (const id of wanted) if (!facts.has(id)) throw ApiError.of('NOT_FOUND')
     for (const id of wanted) if (facts.get(id)?.pksk === true) throw fail({ [id === figureId ? 'figureQuestionId' : 'memberQuestionIds']: M.membersInvalid })
     for (const id of memberIds) if (facts.get(id)?.groupId != null) throw conflict(M.memberTaken)
-    // m-6: a member that a published paper places cannot be moved into a group: the paper would carry one member of a group whose others are not on it (groups are
-    // never split, D90), the same refusal as the figure question below and the same list `retireGroup` reports.
-    if ((await this.repo.publishedPapersPlacing(memberIds)).length > 0) throw conflict(M.conflict)
+    // m-6 (PO ruling P-5, KP-14): a member that a published paper places MAY be regrouped (Audit Rajah repair); the papers are returned as `affectedPapers`, as
+    // `retireGroup` does. What is refused is a move that would leave a PARTIAL group on any paper, draft or published (a group is never split, D90): a paper that
+    // places some of the members but not all of them.
+    const affectedPapers = await this.repo.publishedPapersPlacing(memberIds)
+    if (memberIds.length > 1) {
+      const rows = await this.db.$queryRaw<{ n: bigint }[]>`
+        SELECT count(DISTINCT pl.question_id) AS n
+          FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id
+         WHERE pl.question_id = ANY(${memberIds.map((m) => BigInt(m))}::bigint[])
+         GROUP BY s.paper_id`
+      if (rows.some((r) => Number(r.n) > 0 && Number(r.n) < new Set(memberIds).size)) throw conflict(M.conflict)
+    }
     const memberSubjects = new Set(memberIds.map((id) => facts.get(id)?.subjectId ?? ''))
     if (memberSubjects.size > 1) throw fail({ memberQuestionIds: M.memberMixed })
     if (figureId !== undefined && !memberSubjects.has(facts.get(figureId)?.subjectId ?? '')) throw fail({ figureQuestionId: M.memberMixed })
@@ -352,7 +361,7 @@ export class RegroupService {
       stamps: await this.stampsOf([...memberState, ...(figureState === null ? [] : [figureState])]),
     }
     const auditId = await this.write(actor, AUDIT_ACTIONS.QUESTIONS_REGROUPED, 'stimulus_group', groupId, payload as unknown as Record<string, unknown>)
-    return { group: await this.stimuli.getGroup(groupId), auditId }
+    return { group: await this.stimuli.getGroup(groupId), auditId, affectedPapers }
   }
 
   /** The figure-only question as the stimulus source: its stem stimuli (1 to 3), completed with the label, alt and caption of the request. */

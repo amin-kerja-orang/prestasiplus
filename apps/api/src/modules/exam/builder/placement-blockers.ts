@@ -32,19 +32,9 @@ export const PLACEMENT_BLOCK_TEXT: Readonly<Record<PlacementBlockCode, string>> 
 export async function placementBlockers(db: UnservableDb, ids: readonly string[]): Promise<Map<string, PlacementBlockCode>> {
   const out = new Map<string, PlacementBlockCode>()
   for (const [id, r] of await unservableReasonsOf(db, ids)) {
-    const code: PlacementBlockCode | null = r.held
-      ? 'held'
-      : r.mediaUnresolved
-        ? 'media_unresolved'
-        : r.pinned
-          ? null
-          : r.inactive
-            ? 'inactive'
-            : r.takenDown
-              ? 'taken_down'
-              : r.flagged
-                ? 'flagged'
-                : null
+    // Decision 56 (PO ruling P-4): only a picture that cannot be shown refuses a placement. A flag, a taken-down source or a withdrawn question does not (a published
+    // paper keeps serving its pinned version); the builder's own status check still decides what an admin may pick by id.
+    const code: PlacementBlockCode | null = r.held ? 'held' : r.mediaUnresolved ? 'media_unresolved' : null
     if (code !== null) out.set(id, code)
   }
   return out

@@ -38,7 +38,7 @@ export class RegroupController {
   @RateLimit(QUESTIONS_WRITE_LIMIT)
   async regroupQuestions(@Actor() actor: HttpActor, @Body() body: unknown) {
     const res = await this.regroup.regroup(parseBody(RegroupRequestSchema, body), actor)
-    return { data: res.group, meta: { auditId: res.auditId } }
+    return { data: res.group, meta: { auditId: res.auditId, ...(res.affectedPapers.length > 0 ? { affectedPapers: res.affectedPapers } : {}) } }
   }
 
   @Post('regroup/:auditId/undo')

@@ -114,6 +114,8 @@ export interface OutsideStimulus {
 export interface BridgeMedia {
   tokens: ReadonlyMap<string, string>
   outside: ReadonlyMap<string, OutsideStimulus>
+  /** KP-15: a file with no token is left out (the question is served with the placeholder) instead of refusing the question. Set only for a pinned question of a published paper. */
+  tolerateMissingFiles?: boolean
 }
 
 export const NO_MEDIA: BridgeMedia = { tokens: new Map(), outside: new Map() }
@@ -245,6 +247,7 @@ export function mapBe09Question(
     const options = only.options.map((o): McqOption => {
       if (o.imageId == null) return { id: o.label, text: o.body.ms }
       const token = media.tokens.get(o.imageId)
+      if (token === undefined && media.tolerateMissingFiles === true) return { id: o.label, text: o.body.ms || 'Gambar tiada.' }
       if (token === undefined)
         throw new UnsupportedQuestionError(
           qid,
@@ -355,18 +358,19 @@ function stimulusDefOf(qid: string, s: WideStimulus, media: BridgeMedia): Stimul
   let image: StimulusDef['image']
   if (s.assetFileId !== null) {
     const token = media.tokens.get(s.assetFileId)
-    if (token === undefined)
+    if (token === undefined && media.tolerateMissingFiles !== true)
       throw new UnsupportedQuestionError(
         qid,
         '',
         `the file ${s.assetFileId} of stimulus ${s.id} was not found`,
         'file_missing',
       )
-    image = { url: fileUrlOf(token) }
+    if (token !== undefined) image = { url: fileUrlOf(token) }
   }
   // A table parsed from the body replaces the body text (also beside an unreadable grid); a stored grid never hides it (H-A16).
   const { table, bodyIsTable } = stimulusTableParts(s.kind, s.tableData, s.bodyMs)
-  const text = bodyIsTable ? undefined : s.bodyMs
+  // KP-15: a picture whose file is gone, in a question that stays (placeholder): the stimulus keeps its label and says so in words.
+  const text = bodyIsTable ? undefined : s.bodyMs || (s.assetFileId !== null && image === undefined ? 'Gambar tiada.' : s.bodyMs)
   if (!text && !table && !image)
     throw new UnsupportedQuestionError(
       qid,

@@ -243,11 +243,13 @@ export interface UnservableReasons {
  * by-id readers, the fixed sets and the paper builder never keep a second definition. A plain function over a database handle (no Nest DI): the
  * migration calls it too. Ids with no row or no live version are absent from the result (the callers' own status checks decide those).
  */
-export async function unservableReasonsOf(db: UnservableDb, ids: readonly string[]): Promise<Map<string, UnservableReasons>> {
+export async function unservableReasonsOf(db: UnservableDb, ids: readonly string[], versions?: ReadonlyMap<string, number>): Promise<Map<string, UnservableReasons>> {
   const keys = [...new Set(ids)].flatMap((id) => {
     const k = bi(id)
     return k === null ? [] : [k]
   })
+  // KP-15: a published paper serves the PINNED version, so the verdict is read at that version (0 = the live one).
+  const vnos = keys.map((k) => versions?.get(idToString(k)) ?? 0)
   const out = new Map<string, UnservableReasons>()
   for (let i = 0; i < keys.length; i += AMONG_CHUNK) {
     const rows = await db.$queryRaw<{ id: bigint; held: boolean; media_bad: boolean; flagged: boolean; taken_down: boolean; inactive: boolean; pinned: boolean }[]>(Prisma.sql`
@@ -261,8 +263,9 @@ export async function unservableReasonsOf(db: UnservableDb, ids: readonly string
                        JOIN paper_sections ps ON ps.id = pl.paper_section_id
                        JOIN papers p ON p.id = ps.paper_id
                       WHERE pl.question_id = q.id AND p.status = 'published' AND p.kind <> 'jana') AS pinned
-        FROM questions q JOIN question_versions v ON v.question_id = q.id AND v.version_no = q.live_version_no
-       WHERE q.id = ANY(${keys.slice(i, i + AMONG_CHUNK)}::bigint[])`)
+        FROM unnest(${keys.slice(i, i + AMONG_CHUNK)}::bigint[], ${vnos.slice(i, i + AMONG_CHUNK)}::int[]) AS pin(qid, vno)
+        JOIN questions q ON q.id = pin.qid
+        JOIN question_versions v ON v.question_id = q.id AND v.version_no = CASE WHEN pin.vno > 0 THEN pin.vno ELSE q.live_version_no END`)
     for (const r of rows) out.set(idToString(r.id), { held: r.held, mediaUnresolved: r.media_bad, flagged: r.flagged, takenDown: r.taken_down, inactive: r.inactive, pinned: r.pinned })
   }
   return out
@@ -706,10 +709,10 @@ export class QuestionsRepository {
    * paper pins it. The caller of a FIXED set (a teacher's mission, assigned remedial, a question set, a published paper) uses the same answer to show a
    * placeholder instead of dropping the question; an automatic draw drops it.
    */
-  async unservableAmong(ids: readonly string[], opts: { flags?: boolean; inactive?: boolean } = {}): Promise<Set<string>> {
+  async unservableAmong(ids: readonly string[], opts: { flags?: boolean; inactive?: boolean; versions?: ReadonlyMap<string, number> } = {}): Promise<Set<string>> {
     const flags = opts.flags !== false
     const out = new Set<string>()
-    for (const [id, r] of await unservableReasonsOf(this.db, ids)) {
+    for (const [id, r] of await unservableReasonsOf(this.db, ids, opts.versions)) {
       if (r.mediaUnresolved || (flags && (r.flagged || r.takenDown)) || (opts.inactive === true && r.inactive && !r.pinned)) out.add(id)
     }
     return out

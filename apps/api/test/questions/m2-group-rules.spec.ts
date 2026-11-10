@@ -58,20 +58,30 @@ describe('M2 group rules (real database)', () => {
     expect(refused.body.error.fields.media).toBe(GROUP_WITHOUT_STIMULUS_MESSAGE)
   })
 
-  it('m-6: regroup refuses (409) a member that a published paper places, and nothing is written; an unplaced member is grouped', async () => {
+  it('m-6 (KP-14, ruling P-5): regroup of a member a published paper places is allowed with affectedPapers; a move that would leave a PARTIAL group on a paper is refused (409, nothing written)', async () => {
     const placed = await served('Soalan yang ada pada kertas Terbit. Satu.')
     const free = await served('Soalan yang tiada pada kertas Terbit. Dua.')
+    const both1 = await served('Soalan pasangan pada kertas Terbit. Tiga.')
+    const both2 = await served('Soalan pasangan pada kertas Terbit. Empat.')
     const paper = (await q<{ id: string }>(`insert into papers (kind, title, subject_id, kertas, printed_duration_min, status, published_at) values ('pilihan', 'Kertas m6', $1, 2, 60, 'published', now()) returning id::text id`, [refs.mathId]))[0]!
     const section = (await q<{ id: string }>(`insert into paper_sections (paper_id, position, label, question_count, mark_budget) values ($1, 1, 'A', 1, 1) returning id::text id`, [paper.id]))[0]!
-    await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, 1)`, [section.id, placed])
+    for (const [i, id] of [placed, both1, both2].entries()) await q(`insert into paper_placements (paper_section_id, question_id, pinned_version_no, position) values ($1, $2, 1, $3)`, [section.id, id, i + 1])
     const stimulus = { kind: 'passage', label: 'Petikan 6', body: { ms: 'Isi petikan.' } }
 
+    // one member on the paper and one not: the paper would hold a partial group
     const refused = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [placed, free] })
     expect(refused.status, JSON.stringify(refused.body)).toBe(409)
     expect(refused.body.error.message).toBe(STIMULUS_MESSAGES.conflict)
     expect(await q(`select 1 from questions where id = any($1::bigint[]) and group_id is not null`, [[placed, free]])).toHaveLength(0)
 
+    // every member on the same paper: allowed, the paper is reported
+    const whole = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [both1, both2] })
+    expect(whole.status, JSON.stringify(whole.body)).toBe(200)
+    expect(whole.body.meta.affectedPapers).toEqual([{ id: paper.id, title: 'Kertas m6' }])
+
+    // an unplaced member: grouped, no warning
     const ok = await admin.post('/api/admin/questions/regroup', { stimulus, memberQuestionIds: [free] })
     expect(ok.status, JSON.stringify(ok.body)).toBe(200)
+    expect(ok.body.meta.affectedPapers).toBeUndefined()
   })
 })

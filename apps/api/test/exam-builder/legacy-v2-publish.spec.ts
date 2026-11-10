@@ -50,10 +50,13 @@ describe('KP-14: publishLegacyV2', () => {
     return id
   }
   /** A paper in the shape V2 left it: placements written straight into the table (a new placement through the builder refuses these questions). */
-  async function legacyPaper(): Promise<string> {
+  async function legacyPaper(migrated = true): Promise<string> {
     const res = await admin.post('/api/admin/papers', { title: 'Set V2', subject: 'MAT', kertas: 2 })
     expect(res.status, JSON.stringify(res.body)).toBe(201)
     const id = Created.parse(res.body).data.id
+    if (migrated) await q(`insert into etl_id_map (legacy_source, entity, legacy_id, new_id) values ('v2', 'exam_papers', $1, $2)`, [`legacy-${id}`, id])
+    // the API created it, which wrote Studio audit rows; a migration-loaded paper has none
+    await q(`delete from audit_events where target_type = 'bijak_paper' and target_id = $1`, [id])
     const e = Editor.parse((await admin.get(`/api/admin/papers/${id}`)).body).data
     const [sa, sb, sc] = e.paper.sections.map((s) => s.id) as [string, string, string]
     const put = async (section: string, list: string[]) => {
@@ -114,8 +117,16 @@ describe('KP-14: publishLegacyV2', () => {
     const audit = await q(`select detail from audit_events where action = 'bijak.paper.published_override' and target_id = $1`, [id])
     expect(audit).toHaveLength(1)
     expect(JSON.stringify(audit[0]!.detail)).toContain(LEGACY_V2_PUBLISH_REASON)
+    // P-7: the row names exactly what was lifted
+    expect(audit[0]!.detail).toMatchObject({ legacyV2: true, liftedByCode: expect.objectContaining({ NOT_PUBLISHED: expect.any(Number) }) })
     // a second call is a no-op
     expect(await svc.publishLegacyV2({ userId: admin.userId, role: 'admin', requestId: null, ip: null, isTest: false }, id)).toMatchObject({ ok: true })
+  })
+
+  it('P-6: a paper the migration did not create (no etl_id_map exam_papers entry) is refused', async () => {
+    const id = await legacyPaper(false)
+    await expect(svc.publishLegacyV2({ userId: admin.userId, role: 'admin', requestId: null, ip: null, isTest: false }, id)).rejects.toThrow()
+    expect((await q('select status from papers where id = $1', [id]))[0]?.status).toBe('draft')
   })
 
   it('every other blocker still refuses: a duplicated question is not lifted', async () => {
