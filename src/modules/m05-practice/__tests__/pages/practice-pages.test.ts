@@ -401,6 +401,7 @@ describe('Q1 PracticeQuizPage', () => {
       count: 15,
     })
     expect(t(w, 'quiz-title').text()).toBe('Matematik')
+    expect(document.title).toBe('Kuiz Matematik | PRESTASIPLUS')
     expect(t(w, 'quiz-progress-text').text()).toBe('Soalan 1 daripada 1')
     // No revision chips on Q1 (FR-M05-52).
     expect(w.find('[data-testid=chip-revision]').exists()).toBe(false)

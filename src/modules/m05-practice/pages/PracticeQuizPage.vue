@@ -5,7 +5,7 @@
  * (mode `latih_tubi`, S5-T03) and gives it the Q1 labels (§8.3 PROPOSED COPY):
  *
  * - 402 `TRIAL_EXHAUSTED` → `/pricing` without a message; an unknown code → the global 404 page;
- * - header card title "{subject name}", tab title "{subject name} - Latihan" (UNVERIFIED);
+ * - header card title "{subject name}", tab title "Kuiz {subject name}" (V2 latih-tubi/quiz.blade.php:2);
  * - results "Keputusan Latihan", "Ulang Lagi" (a new session with the same parameters), "Kembali" → S3;
  * - "Lapor Soalan" posts the M04 report with `source: 'latihan'` (INFERRED).
  */
@@ -35,7 +35,7 @@ const start = computed<StartSessionRequest>(() => ({
 const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
 
 function onLoaded(e: { session: StartSessionResponse }): void {
-  if (e.session.subject) pageMeta.setTitle(`${e.session.subject.name} - Latihan`)
+  if (e.session.subject) pageMeta.setTitle(`Kuiz ${e.session.subject.name}`)
 }
 </script>
 
