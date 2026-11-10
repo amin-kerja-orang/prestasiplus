@@ -292,8 +292,8 @@ rej AS (
 --  * The question and paper loaders' rejects that migrate:verify (apps/api/src/migration/verify/bank-checks.ts) PROVES against computed V2
 --    expectations, one (entity, reason, column) at a time: questions options / options.body / is_correct, exam_questions is_correct / options,
 --    paper_blueprints duration_minutes (V2 data defects the loader must refuse), plus the ones verify counts as judged by the text or the
---    file (exam_questions stem, paper_document_pages path, every question_files reject). This list mirrors the keys of verify's
---    `questionExpectations`, `examExpectations`, `blueprintExpectations` and `JUDGED_ELSEWHERE`: when verify gains a key, add it here. Any other
+--    file (exam_questions stem, paper_document_pages path, the two question_files picture-pass keys). The tuples between the EXPLAINED-KEYS-BEGIN and EXPLAINED-KEYS-END markers mirror the keys of verify's
+--    `EXPLAINED_REJECT_KEYS` (bank-checks.ts), one tuple each, and apps/api/test/migration/verify/smoke-explained-keys.spec.ts fails when they differ: when verify gains a key, add it here. Any other
 --    reason or column on these entities (an unknown subject, level, status) stays UNEXPLAINED, as it does in verify. The counts themselves are
 --    checked by migrate:verify (step 12, hard mode), not here: X3 only says which reject kinds are legitimate by design. A run that accepted more
 --    through PP_VERIFY_ACCEPT_REJECTS shows them as UNEXPLAINED here on purpose (a per-run waiver is not a design rule).
@@ -305,10 +305,19 @@ rej_explained AS (
          OR (reason = 'ORPHAN_PARENT' AND col IN ('user_id', 'student_id', 'parent_id', 'teacher_id', 'author_id', 'created_by', 'created_by_id', 'uploader_id'))
          OR (entity = 'coin_ledger' AND reason = 'INVALID_VALUE' AND col = 'amount')
          OR (entity, reason, col) IN (
-              ('questions', 'INVALID_VALUE', 'options'), ('questions', 'INVALID_VALUE', 'options.body'), ('questions', 'INVALID_VALUE', 'is_correct'),
-              ('exam_questions', 'INVALID_VALUE', 'is_correct'), ('exam_questions', 'INVALID_VALUE', 'options'), ('exam_questions', 'INVALID_VALUE', 'stem'),
-              ('paper_blueprints', 'INVALID_VALUE', 'duration_minutes'), ('paper_document_pages', 'INVALID_VALUE', 'path'))
-         OR entity = 'question_files')
+              -- EXPLAINED-KEYS-BEGIN
+              ('exam_questions', 'INVALID_VALUE', 'is_correct'),
+              ('exam_questions', 'INVALID_VALUE', 'options'),
+              ('exam_questions', 'INVALID_VALUE', 'stem'),
+              ('paper_blueprints', 'INVALID_VALUE', 'duration_minutes'),
+              ('paper_document_pages', 'INVALID_VALUE', 'path'),
+              ('question_files', 'INVALID_VALUE', 'media_assets.path'),
+              ('question_files', 'INVALID_VALUE', 'questions.image_path'),
+              ('questions', 'INVALID_VALUE', 'is_correct'),
+              ('questions', 'INVALID_VALUE', 'options'),
+              ('questions', 'INVALID_VALUE', 'options.body')
+              -- EXPLAINED-KEYS-END
+              ))
   GROUP BY entity
 ),
 shares AS (
