@@ -7,7 +7,6 @@ import { expect, test } from './fixtures'
 import {
   expectNoHorizontalScroll,
   expectTabTitle,
-  isDesktopShell,
   moduleTag,
   viewportWidth,
 } from '../support'
@@ -36,10 +35,7 @@ test.describe('M06 S1 hub', { tag: [moduleTag(6)] }, () => {
     await gotoApp('/spm')
     await expectTabTitle(page, 'Mod SPM | PRESTASIPLUS')
     await expect(shellTitle(page)).toHaveText('Mod SPM')
-    if (isDesktopShell(page)) {
-      // Fact gone in v2, left failing (S3-T03 report): neither v2 shell prints this subtitle.
-      await expect.soft(tid(page, 'shell-user-subtitle')).toHaveText('Selamat datang kembali')
-    }
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Persediaan SPM anda')
     await expect(tid(page, 'spm-pill')).toHaveText('MOD SPM')
     await expect(tid(page, 'spm-title')).toHaveText('Persediaan SPM')
     await expect(tid(page, 'spm-lead')).toHaveText(
