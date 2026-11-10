@@ -236,7 +236,7 @@ test.describe('M03 S1 curriculum browser', { tag: [TAG.smoke, moduleTag(3)] }, (
     await loginAs(ADMIN)
     await gotoApp('/admin/curriculum?subject_id=2&education_level_id=9')
     await expect(page.getByTestId('tree-empty')).toContainText(
-      'Tiada bab dijumpai untuk subjek dan tahap ini.',
+      'Tiada bab direkodkan untuk pasangan ini', // V2 backend/resources/views/admin/curriculum.blade.php:101
     )
     await expect(page.getByTestId('stat-chapters')).toContainText('0')
     await expect(page.getByTestId('stat-topics')).toContainText('0 / 0')
