@@ -17,7 +17,7 @@ import type { Locator, Page } from '@playwright/test'
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, provisional, viewportWidth } from '../support'
-import { expectSchoolName, navbarTitle } from './shell'
+import { expectSchoolName, navHref, navbarTitle } from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const S2 = '/admin-sekolah/dskp-heatmap'
@@ -121,7 +121,7 @@ const SCREENS = {
   s8: {
     path: S8,
     root: 'kl-page',
-    ready: 'kl-table',
+    ready: 'kl-displayed', // the table is replaced by kl-empty for a school without classes
     title: 'Kelas Sekolah',
     nav: 'sa-kelas-sekolah',
   },
@@ -191,7 +191,7 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
       await signIn(page, AZLAN)
       await open(page, gotoApp, s.path, s.ready)
       const sidebar = page.getByTestId('pembelajaran-nav')
-      await expect(sidebar.locator(`[data-nav-id="${s.nav}"]`)).toHaveAttribute('aria-current', 'page')
+      await expect(sidebar.locator(`a[href="${navHref(s.nav)}"]`)).toHaveAttribute('aria-current', 'page')
       await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
     })
 
