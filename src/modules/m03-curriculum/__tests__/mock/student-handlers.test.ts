@@ -64,16 +64,19 @@ describe('GET /api/topics (#25, S12)', () => {
     }
   })
 
-  it('lists the 29 Tingkatan 4 + 5 topics (T4 then T5, sequence order), unpaged, with the card shape (D54)', async () => {
+  it('lists the Tingkatan 1 to 5 topics (T1 first, then by form), unpaged, with the card shape (D54, D101)', async () => {
     const res = await get<{ data: TopicCard[]; meta: Record<string, number> }>('/api/topics')
-    expect(res.body.data).toHaveLength(29)
-    expect(res.body.meta).toMatchObject({ totalItems: 29, page: 1, pageSize: 29, totalPages: 1 })
+    // The total is computed from the dataset (T1 34 + T4 19 + T5 10; T2/T3 have none), never hard-coded.
+    const total = res.body.data.length
+    expect(total).toBe(63)
+    expect(res.body.meta).toMatchObject({ totalItems: total, page: 1, pageSize: total, totalPages: 1 })
+    expect(res.body.data.filter((t) => t.gradeLevel === 'TINGKATAN_1')).toHaveLength(34)
     expect(res.body.data.filter((t) => t.gradeLevel === 'TINGKATAN_4')).toHaveLength(19)
     expect(res.body.data.filter((t) => t.gradeLevel === 'TINGKATAN_5')).toHaveLength(10)
-    expect(res.body.data.every((t) => /^TINGKATAN_[45]$/.test(t.gradeLevel))).toBe(true)
-    // T4 first (19 rows), then T5.
-    expect(res.body.data.slice(0, 19).every((t) => t.gradeLevel === 'TINGKATAN_4')).toBe(true)
-    expect(res.body.data[0]).toEqual({
+    expect(res.body.data.every((t) => /^TINGKATAN_[1-5]$/.test(t.gradeLevel))).toBe(true)
+    // Grades are grouped in form order: T1 rows first, then T4, then T5.
+    expect(res.body.data.slice(0, 34).every((t) => t.gradeLevel === 'TINGKATAN_1')).toBe(true)
+    expect(res.body.data.find((t) => t.id === 67)).toEqual({
       id: 67,
       gradeLevel: 'TINGKATAN_4',
       subject: 'BAHASA_MELAYU',
@@ -86,6 +89,11 @@ describe('GET /api/topics (#25, S12)', () => {
   })
 
   it('filters by gradeLevel (T4/T5 only) and subject, AND, case-insensitive (BR-13, D54)', async () => {
+    const t1 = await get<{ data: TopicCard[] }>('/api/topics', 'student', {
+      gradeLevel: 'TINGKATAN_1',
+    })
+    expect(t1.body.data).toHaveLength(34)
+    expect(t1.body.data.every((t) => t.gradeLevel === 'TINGKATAN_1')).toBe(true)
     const t4 = await get<{ data: TopicCard[] }>('/api/topics', 'student', {
       gradeLevel: 'TINGKATAN_4',
     })
@@ -103,42 +111,48 @@ describe('GET /api/topics (#25, S12)', () => {
       subject: 'SAINS',
     })
     expect(both.body.data).toHaveLength(12)
-    // Subject only = Tingkatan 4 + 5 (no Darjah rows).
-    const counts: [string, number][] = [
-      ['MATEMATIK', 3],
-      ['SAINS', 21],
-      ['BAHASA_MELAYU', 2],
-      ['PENDIDIKAN_MORAL', 1],
-      ['SEJARAH', 1],
-      ['PENDIDIKAN_ISLAM', 0],
-      ['BAHASA_INGGERIS', 0],
-      ['GEOGRAFI', 1],
-    ]
-    for (const [subject, n] of counts) {
-      const r = await get<{ data: TopicCard[] }>('/api/topics', 'student', { subject })
-      expect(r.body.data, subject).toHaveLength(n)
+    // Subject only = Tingkatan 1 to 5 (no Darjah rows): the sum of the per-grade answers.
+    for (const subject of [
+      'MATEMATIK',
+      'SAINS',
+      'BAHASA_MELAYU',
+      'PENDIDIKAN_MORAL',
+      'SEJARAH',
+      'PENDIDIKAN_ISLAM',
+      'BAHASA_INGGERIS',
+      'GEOGRAFI',
+    ]) {
+      let sum = 0
+      for (const g of ['1', '2', '3', '4', '5']) {
+        const r = await get<{ data: TopicCard[] }>('/api/topics', 'student', {
+          gradeLevel: `TINGKATAN_${g}`,
+          subject,
+        })
+        sum += r.body.data.length
+      }
+      const all = await get<{ data: TopicCard[] }>('/api/topics', 'student', { subject })
+      expect(all.body.data, subject).toHaveLength(sum)
     }
     const geo = await get<{ data: TopicCard[] }>('/api/topics', 'student', { subject: 'geografi' })
-    expect(geo.body.data).toHaveLength(1)
+    // 4 Tingkatan 1 topics + the 1 Tingkatan 4 topic (D101).
+    expect(geo.body.data).toHaveLength(5)
   })
 
-  it('serves no Darjah or other out-of-scope grade (empty list) and unknown subjects (D54)', async () => {
+  it('serves no Darjah or other out-of-scope grade (empty list) and unknown subjects (D54, D101)', async () => {
     for (const gradeLevel of [
       'DARJAH_1',
       'DARJAH_4',
       'DARJAH_6',
       'darjah_1',
-      'TINGKATAN_1',
-      'TINGKATAN_2',
-      'TINGKATAN_3',
+      'TINGKATAN_6',
       'xyz',
     ]) {
       const r = await get<{ data: TopicCard[] }>('/api/topics', 'student', { gradeLevel })
       expect(r.body.data, gradeLevel).toEqual([])
     }
-    // An empty grade is no filter: Tingkatan 4 + 5.
+    // An empty grade is no filter: Tingkatan 1 to 5.
     const empty = await get<{ data: TopicCard[] }>('/api/topics', 'student', { gradeLevel: '' })
-    expect(empty.body.data).toHaveLength(29)
+    expect(empty.body.data).toHaveLength(63)
     const zzz = await get<{ data: TopicCard[]; meta: { totalItems: number } }>(
       '/api/topics',
       'student',
@@ -153,7 +167,8 @@ describe('GET /api/topics (#25, S12)', () => {
     const res = await get<{ data: TopicCard[] }>('/api/topics', 'student', {
       subject: 'BAHASA_MELAYU',
     })
-    expect(res.body.data).toHaveLength(2)
+    // 4 Tingkatan 1 + 2 Tingkatan 4/5 topics (D101).
+    expect(res.body.data).toHaveLength(6)
     expect(res.body.data.every((t) => t.subjectLabel === 'BAHASA MELAYU')).toBe(true)
     const all = (await get<{ data: TopicCard[] }>('/api/topics')).body.data
     const t103 = all.find((t) => t.id === 103)
@@ -268,7 +283,13 @@ describe('GET /api/learning-map (#27, S14)', () => {
     expect(d.subject).toBe('MATEMATIK')
     expect(d.subjectLabel).toBe('Matematik')
     expect(d.grade).toBe('TINGKATAN_4')
-    expect(d.gradeOptions).toEqual(['TINGKATAN_4', 'TINGKATAN_5'])
+    expect(d.gradeOptions).toEqual([
+      'TINGKATAN_1',
+      'TINGKATAN_2',
+      'TINGKATAN_3',
+      'TINGKATAN_4',
+      'TINGKATAN_5',
+    ])
     expect(d.topics.map((t) => t.name)).toEqual([
       'Fungsi dan Persamaan Kuadratik',
       'Sistem Persamaan',
@@ -308,17 +329,26 @@ describe('GET /api/learning-map (#27, S14)', () => {
     ])
   })
 
-  it('accepts only TINGKATAN_4/5; anything else (Darjah included) is served as TINGKATAN_4 (BR-15, D54)', async () => {
-    for (const grade of ['DARJAH_1', 'DARJAH_4', 'DARJAH_6', 'TINGKATAN_1', 'darjah_2', 'xyz', '']) {
+  it('accepts TINGKATAN_1 to 5; anything else (Darjah included) is served as TINGKATAN_4 (BR-15, D54, D101)', async () => {
+    for (const grade of ['DARJAH_1', 'DARJAH_4', 'DARJAH_6', 'TINGKATAN_6', 'darjah_2', 'xyz', '']) {
       const d = (await get<{ data: LearningMap }>('/api/learning-map', 'student', { grade })).body
         .data
       expect(d.grade, grade).toBe('TINGKATAN_4')
     }
-    for (const grade of ['TINGKATAN_4', 'TINGKATAN_5']) {
+    for (const grade of ['TINGKATAN_1', 'TINGKATAN_2', 'TINGKATAN_3', 'TINGKATAN_4', 'TINGKATAN_5']) {
       const d = (await get<{ data: LearningMap }>('/api/learning-map', 'student', { grade })).body
         .data
       expect(d.grade).toBe(grade)
     }
+    // A T1 pupil's map is the Tingkatan 1 one, not a Tingkatan 4 fallback.
+    const t1 = (
+      await get<{ data: LearningMap }>('/api/learning-map', 'student', {
+        grade: 'TINGKATAN_1',
+        subject: 'SAINS',
+      })
+    ).body.data
+    expect(t1.grade).toBe('TINGKATAN_1')
+    expect(t1.topics.length).toBeGreaterThan(0)
   })
 
   it('subject labels: pills, GEOGRAFI, unknown code title-cased (FR-81)', async () => {

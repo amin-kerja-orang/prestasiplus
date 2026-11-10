@@ -64,8 +64,14 @@ export function mapSubjectPills(active: readonly { code: string; name: string }[
   return [...MAP_SUBJECTS.filter((s) => codes.has(s.code)).map((s) => ({ ...s })), ...others]
 }
 
-/** D54 (supersedes DV-M03-02): secondary school only; no Darjah on S12/S14. */
-export const MAP_GRADES = Object.freeze(['TINGKATAN_4', 'TINGKATAN_5'] as const)
+/** D54 (supersedes DV-M03-02), widened by D101: secondary school only, Tingkatan 1 to 5; no Darjah on S12/S14. */
+export const MAP_GRADES = Object.freeze([
+  'TINGKATAN_1',
+  'TINGKATAN_2',
+  'TINGKATAN_3',
+  'TINGKATAN_4',
+  'TINGKATAN_5',
+] as const)
 export const DEFAULT_MAP_SUBJECT = 'MATEMATIK'
 export const DEFAULT_MAP_GRADE = 'TINGKATAN_4'
 
@@ -130,7 +136,7 @@ const asCard = (t: LegacyTopicRow): TopicCard => {
 
 export const studentCurriculumRoutes: RouteDef[] = [
   route('GET', '/api/topics', [requireAuth()], (req) => {
-    // D54: no grade (or an empty one) = Tingkatan 4 + 5; a grade outside the scope matches nothing.
+    // D54 / D101: no grade (or an empty one) = Tingkatan 1 to 5; a grade outside the scope matches nothing.
     const gradeLevel = queryString(req.query, 'gradeLevel') || null
     const subject = queryString(req.query, 'subject') ?? null
     const grades = gradeLevel === null ? MAP_GRADES : inScope(gradeLevel)
