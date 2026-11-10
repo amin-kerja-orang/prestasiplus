@@ -69,13 +69,33 @@ export async function terbitCandidates(pool: Pick<pg.Pool, 'query'>, source: Leg
   return res.rows.map((r) => ({ v2Id: r.v2_id, paperId: r.paper_id, holds: r.holds === null ? [] : r.holds.split(',') }))
 }
 
+/**
+ * What blocks a held paper, for the report (ids and counts only): for `group_split` every stimulus group of the paper that the paper does not place whole
+ * (placed members out of the group's members, and the number of Bahagian it sits in). The group rule is not changed here; this only explains the hold.
+ */
+export async function heldDetail(pool: Pick<pg.Pool, 'query'>, paperId: string, holds: readonly string[]): Promise<string[]> {
+  if (!holds.includes('group_split')) return [...holds]
+  const res = await pool.query<{ g: string; placed: number; total: number; sections: number }>(
+    `SELECT q.group_id::text AS g, count(DISTINCT pl.question_id)::int AS placed,
+            (SELECT count(*) FROM questions m WHERE m.group_id = q.group_id)::int AS total, count(DISTINCT s.id)::int AS sections
+       FROM paper_placements pl JOIN paper_sections s ON s.id = pl.paper_section_id JOIN questions q ON q.id = pl.question_id
+      WHERE s.paper_id = $1::bigint AND q.group_id IS NOT NULL
+      GROUP BY q.group_id
+     HAVING count(DISTINCT pl.question_id) < (SELECT count(*) FROM questions m WHERE m.group_id = q.group_id) OR count(DISTINCT s.id) > 1
+      ORDER BY q.group_id::bigint`,
+    [paperId],
+  )
+  const detail = res.rows.map((r) => `group_split: group ${r.g} has ${r.placed} of ${r.total} members placed, in ${r.sections} Bahagian`)
+  return [...holds, ...detail]
+}
+
 export async function runTerbitPass(pool: Pick<pg.Pool, 'query'>, source: LegacySource, publish: PaperPublisher): Promise<TerbitReport> {
   const candidates = await terbitCandidates(pool, source)
   const report: TerbitReport = { considered: candidates.length, published: 0, legacy: 0, failed: 0, held: 0, rows: [] }
   for (const c of candidates) {
     if (c.holds.length > 0) {
       report.held += 1
-      report.rows.push({ v2Id: c.v2Id, paperId: c.paperId, outcome: 'held', legacy: false, lines: c.holds })
+      report.rows.push({ v2Id: c.v2Id, paperId: c.paperId, outcome: 'held', legacy: false, lines: await heldDetail(pool, c.paperId, c.holds) })
       continue
     }
     try {

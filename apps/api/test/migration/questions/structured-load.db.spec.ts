@@ -214,7 +214,8 @@ describe('SPM sets, blueprints and papers', () => {
     await sql(`insert into archive_cloud.exam_paper_questions (id, exam_question_id, paper_section_id, sort_order) values (3, 7020, 2, 1)`)
     const r = await both(runPaperSteps)
     expect(r.questions.notes.counters.get('papers.group_split')).toBe(1)
-    const hold = await sql(`select new_id from etl_id_map where entity = 'exam_paper_holds'`)
+    // papers loaded earlier are re-evaluated on a re-run (M-A): the group made above may split them too, so the hold of THIS paper is checked
+    const hold = await sql(`select new_id from etl_id_map where entity = 'exam_paper_holds' and legacy_id = '803'`)
     expect(hold.rows.map((x) => x.new_id)).toEqual(['group_split'])
   })
 })

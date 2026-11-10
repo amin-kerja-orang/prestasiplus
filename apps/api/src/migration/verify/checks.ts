@@ -18,6 +18,7 @@ import { buildGeo } from '../transform/reference'
 import { survivorSql } from './deleted'
 import { questionFileChecks, standaloneRejects } from './bank-checks'
 import { capped, entityOf, exists, reported, type CheckContext } from './check-kit'
+import { findingsDetail, findingsTotal, positionGapGroups, readGroupFindings } from './group-checks'
 import { existingLegacyTables, loadForeignKeys, readMigratableList, type ForeignKey } from './fk-graph'
 import type { StatCheck } from './types'
 
@@ -544,6 +545,29 @@ async function stimulusGroupChecks({ pool, source, entities }: CheckContext): Pr
   ]
 }
 
+/**
+ * Stimulus groups versus V2 (M-D): member count, `group_position` 1..n in V2 order with no gap, every planned member in its group, no split. The
+ * expectation is the rajah plan recomputed from the V2 archive (see `group-checks.ts`). Any difference is a `mismatch`, never only reported.
+ */
+async function stimulusGroupPlanChecks({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
+  const name = 'stimulus groups: members, order and completeness versus the V2 plan'
+  if (entityOf(entities, 'stimulus_groups') === undefined) return [reported(name, 'orphans', 'migrate:questions has no succeeded apply run; not compared')]
+  if (!(await exists(pool, ARCHIVE_SCHEMA, 'questions'))) return [reported(name, 'orphans', 'archive_cloud.questions is not available; the plan cannot be recomputed, not compared')]
+  const findings = await readGroupFindings(pool, source)
+  const gaps = await positionGapGroups(pool, source)
+  const bad = findingsTotal(findings) + gaps.gaps
+  return [
+    {
+      name,
+      kind: 'orphans',
+      expected: 0,
+      actual: bad,
+      status: bad === 0 ? 'ok' : 'mismatch',
+      detail: `${findingsDetail(findings)}; group_position 1..n without a gap in ${gaps.groups - gaps.gaps} of ${gaps.groups} groups of the id maps`,
+    },
+  ]
+}
+
 /** PKSK (OC-4): every loaded V2 question carries its domain and level tags, and none is live (served) without options. */
 async function pkskChecks({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
   const name = 'PKSK questions: tags and draft state'
@@ -587,6 +611,7 @@ const CHECKS: readonly [string, (ctx: CheckContext) => Promise<StatCheck[]>][] =
   ['accepted drift', acceptedDrift],
   ['questions accounting', questionsAccounting],
   ['stimulus groups', stimulusGroupChecks],
+  ['stimulus groups versus V2', stimulusGroupPlanChecks],
   ['question pictures', questionFileChecks],
   ['PKSK questions', pkskChecks],
   ['loader rejects', standaloneRejects],

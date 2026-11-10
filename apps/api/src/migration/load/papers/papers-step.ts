@@ -21,11 +21,14 @@ import { text } from '../../transform/common'
 import { rejectRow } from '../helpers'
 import type { QuestionsContext } from '../questions/context'
 import { childrenOf, lookupSlugs, readArchiveById, type ArchiveRow } from './archive-source'
+import { insertSections, recomputePaper } from './papers-recompute'
 import { inferKertas, instructionsOf, intOf, referenceSheetsOf, ruleTypeOf, type KertasEvidence } from './plan'
 
 export interface PlacementPlan {
   question_id: string
   number_label: string | null
+  /** The question the V2 placement resolved to before the canonical question was loaded on its own (the wrong dedupe target), when it differs. */
+  was?: string | null
   marks_override: number | null
 }
 export interface SectionPlan {
@@ -129,10 +132,21 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
       const structured = await ctx.idMap.resolveMany('structured_questions', [...mapped.values()].filter((m) => m.source === 'structured').map((m) => m.legacy_id))
       const canonical = await ctx.idMap.resolveMany('exam_questions', eqIds)
       const resolveQuestion = (eq: string): string | undefined => {
+        // A canonical question loaded as its OWN question (an id-map entry of `exam_questions`) is the right one; the legacy projection is only the
+        // fallback. So a question first deduped to a legacy one and loaded on its own later is re-pointed by the next run (M-A).
+        const own = canonical.get(eq)
+        if (own !== undefined) return own
         const m = mapped.get(eq)
-        if (m?.source === 'questions') return legacyQuestions.get(m.legacy_id) ?? canonical.get(eq)
-        if (m?.source === 'structured') return structured.get(m.legacy_id) ?? canonical.get(eq)
-        return canonical.get(eq)
+        if (m?.source === 'questions') return legacyQuestions.get(m.legacy_id)
+        if (m?.source === 'structured') return structured.get(m.legacy_id)
+        return undefined
+      }
+      /** The legacy projection of a canonical question that is now loaded on its own: the placement an earlier run made (the wrong dedupe target). */
+      const wasOf = (eq: string): string | null => {
+        if (canonical.get(eq) === undefined) return null
+        const m = mapped.get(eq)
+        const old = m?.source === 'questions' ? legacyQuestions.get(m.legacy_id) : m?.source === 'structured' ? structured.get(m.legacy_id) : undefined
+        return old !== undefined && old !== canonical.get(eq) ? old : null
       }
       // V3 facts of every resolved question: subject, group and leaf marks.
       const v3Ids = new Set<string>()
@@ -169,17 +183,15 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
 
       let inserted = 0
       let unchanged = 0
+      let updated = 0
       for (const row of rows) {
         const legacyId = row.id ?? ''
         assertSurrogateLegacyId(legacyId, 'migrate:papers')
-        const have = await ctx.db.query(`SELECT 1 FROM etl_id_map m JOIN papers p ON p.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = $2 AND m.legacy_id = $3`, [ctx.source, entity, legacyId])
-        if (have.rows.length > 0) {
-          unchanged += 1
-          continue
-        }
-        await ctx.db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1 AND entity = $2 AND legacy_id = $3`, [ctx.source, entity, legacyId])
+        const have = await ctx.db.query<{ id: string }>(`SELECT p.id::text AS id FROM etl_id_map m JOIN papers p ON p.id = m.new_id::bigint WHERE m.legacy_source = $1 AND m.entity = $2 AND m.legacy_id = $3`, [ctx.source, entity, legacyId])
+        const existingId = have.rows[0]?.id ?? null
+        if (existingId === null) await ctx.db.query(`DELETE FROM etl_id_map WHERE legacy_source = $1 AND entity = $2 AND legacy_id = $3`, [ctx.source, entity, legacyId])
         const title = text(row.title)
-        if (title === null) {
+        if (existingId === null && title === null) {
           rejectRow(ctx, entity, legacyId, { reason: 'INVALID_VALUE', column: 'title' })
           continue
         }
@@ -207,7 +219,7 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
             }
             if (seen.has(q)) continue
             seen.add(q)
-            placements.push({ question_id: q, number_label: e.label, marks_override: e.override })
+            placements.push({ question_id: q, number_label: e.label, marks_override: e.override, was: wasOf(e.eq) })
           }
           const slug = rules.get(text(s.selection_rule_id) ?? '')
           let rule = ruleTypeOf(slug) ?? 'all'
@@ -231,7 +243,7 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
             }
             if (seen.has(q)) continue
             seen.add(q)
-            placements.push({ question_id: q, number_label: eqLabel.get(l.id as string) ?? null, marks_override: null })
+            placements.push({ question_id: q, number_label: eqLabel.get(l.id as string) ?? null, marks_override: null, was: wasOf(l.id as string) })
           }
           if (placements.length > 0) {
             sections.push({ label: sections.length === 0 ? 'Bahagian A' : 'Soalan lain', instruction: null, rule_type: 'all', rule_n: null, mark_budget: null, placements })
@@ -243,8 +255,24 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
         const hold: string[] = []
         if (grouped.split) {
           hold.push('group_split')
-          c.notes.count('papers.group_split')
+          if (existingId === null) c.notes.count('papers.group_split')
         }
+        if (existingId !== null) {
+          // M-A: a paper loaded by an earlier run is recomputed when it is still an unedited migration paper (see papers-recompute.ts).
+          const outcome = await recomputePaper(ctx, {
+            paperId: existingId,
+            legacyId,
+            sections: grouped.sections,
+            split: grouped.split,
+            marksOf: (q) => facts.get(q)?.marks ?? 0,
+            count: (k, n) => c.notes.count(k, n),
+            report: (k, line) => c.notes.addId(k, line),
+          })
+          if (outcome === 'updated') updated += 1
+          else unchanged += 1
+          continue
+        }
+        if (title === null) continue
 
         // Subject: V2's, else the one subject of the placed questions.
         let subject = text(row.subject_id) === null ? undefined : cur.subjects.get((row.subject_id as string).trim())
@@ -308,40 +336,16 @@ export function papersStep(c: QuestionsContext): AnyEntityStep {
           [title, subject, kertas, code, printed, surface, durationMinutes, instructionsOf(row.instructions), toJson(referenceSheetsOf(row.reference_assets)), creator === null ? null : (users.get(creator) ?? null), text(row.created_at), text(row.updated_at), legacyUntimed],
         )
         const paperId = (paper.rows[0] as { id: string }).id
-        const secRows = grouped.sections.map((s, i) => {
-          const marks = s.placements.reduce((sum, p) => sum + (p.marks_override ?? facts.get(p.question_id)?.marks ?? 0), 0)
-          const budget = s.mark_budget ?? (s.rule_type === 'choose' && s.rule_n !== null && s.placements.length > 0 ? Math.round((marks * s.rule_n) / s.placements.length) : marks)
-          return { position: i + 1, label: s.label, instruction: s.instruction, rule_type: s.rule_type, rule_n: s.rule_n, question_count: s.placements.length, mark_budget: budget }
-        })
-        if (secRows.length > 0) {
-          const made = await ctx.db.query<{ id: string; position: number }>(
-            `INSERT INTO paper_sections (paper_id, position, label, instruction, rule_type, rule_n, question_count, mark_budget, compulsory, allowed_modes, admin_created)
-             SELECT $1::bigint, x.position, x.label, x.instruction, x.rule_type, x.rule_n, x.question_count, x.mark_budget, false, '{}', false
-             FROM jsonb_to_recordset($2::jsonb) AS x(position smallint, label text, instruction text, rule_type text, rule_n smallint, question_count int, mark_budget int)
-             RETURNING id::text AS id, position::int AS position`,
-            [paperId, toJson(secRows)],
-          )
-          const sectionOf = new Map(made.rows.map((r) => [r.position, r.id]))
-          const placementRows = grouped.sections.flatMap((s, i) =>
-            s.placements.map((p, j) => ({ section_id: sectionOf.get(i + 1), question_id: p.question_id, position: j + 1, number_label: p.number_label, marks_override: p.marks_override })),
-          )
-          if (placementRows.length > 0) {
-            await ctx.db.query(
-              `INSERT INTO paper_placements (paper_section_id, question_id, pinned_version_no, position, number_label, marks_override)
-               SELECT x.section_id, x.question_id, 1, x.position, x.number_label, x.marks_override
-               FROM jsonb_to_recordset($1::jsonb) AS x(section_id bigint, question_id bigint, position smallint, number_label text, marks_override smallint)`,
-              [toJson(placementRows)],
-            )
-            c.notes.count('papers.placements_loaded', placementRows.length)
-          }
-        } else c.notes.count('papers.no_sections')
+        const placed = await insertSections(ctx, paperId, grouped.sections, (q) => facts.get(q)?.marks ?? 0)
+        if (placed > 0) c.notes.count('papers.placements_loaded', placed)
+        if (grouped.sections.length === 0) c.notes.count('papers.no_sections')
         await ctx.idMap.register(entity, legacyId, paperId)
         if (hold.length > 0) await ctx.idMap.register('exam_paper_holds', legacyId, hold.join(','))
         inserted += 1
         c.notes.count(`papers.surface.${surface}`)
         for (const h of hold) c.notes.count(`papers.hold.${h}`)
       }
-      return { inserted, unchanged }
+      return { inserted, updated, unchanged }
     },
   }
 }

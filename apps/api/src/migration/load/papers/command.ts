@@ -79,7 +79,7 @@ export const migratePapers: MigrateCommand = {
     const file = join(outDir, `papers-${report.mode}-${stamp}.json`)
     writeFileSync(
       file,
-      `${JSON.stringify({ command: 'migrate:papers', runId: report.runId, mode: report.mode, status: report.status, asOf, recon: report.recon, counters: report.counters, notes: Object.fromEntries(notes) }, null, 2)}\n`,
+      `${JSON.stringify({ command: 'migrate:papers', runId: report.runId, mode: report.mode, status: report.status, asOf, recon: report.recon, counters: report.counters, notes: Object.fromEntries(notes), repointed: questions.notes.ids.get('papers.repointed') ?? [] }, null, 2)}\n`,
       { encoding: 'utf8', mode: 0o600, flag: 'wx' },
     )
     ctx.out(`report: ${file}`)
