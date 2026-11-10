@@ -27,6 +27,11 @@ const PNG = Buffer.from(
   'base64',
 )
 
+/** DsStatRow tile value (the tile carries the testid; its value span has the .tabular class). */
+function statValue(page: Page, key: 'mcq' | 'structured' | 'total') {
+  return page.getByTestId(`diagrams-stat-${key}`).locator('.tabular')
+}
+
 function mcqCards(page: Page) {
   return page.locator('[data-testid="diagrams-mcq"] [data-testid="diagram-card"]')
 }
@@ -38,7 +43,7 @@ function strCards(page: Page) {
 async function openAudit(page: Page, gotoApp: (path: string) => Promise<void>, path = PATH) {
   await gotoApp(path)
   await expect(page.getByTestId('diagrams-stat-mcq')).toContainText('MCQ Perlu Gambar')
-  await expect(page.getByTestId('diagrams-stat-mcq-value')).toBeVisible()
+  await expect(statValue(page, 'mcq')).toBeVisible()
 }
 
 test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () => {
@@ -51,17 +56,17 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
   }) => {
     await loginAs(ADMIN)
     await openAudit(page, gotoApp)
-    await expectTabTitle(page, 'Soalan Perlu Gambar Rajah - Admin')
+    await expectTabTitle(page, 'Soalan Perlu Gambar Rajah | PRESTASIPLUS')
     await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Soalan Perlu Gambar Rajah')
     await expect(page.getByTestId('pentadbiran-subtitle')).toHaveText(
       'Audit soalan yang memerlukan gambar rajah dilengkapkan',
     )
 
-    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
-    await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('522')
-    await expect(page.getByTestId('diagrams-stat-total-value')).toHaveText('6,666')
+    await expect(statValue(page, 'mcq')).toHaveText('6,144')
+    await expect(statValue(page, 'structured')).toHaveText('522')
+    await expect(statValue(page, 'total')).toHaveText('6,666')
     // Labels are upper case by CSS.
-    const label = page.getByTestId('diagrams-stat-mcq').locator('p')
+    const label = page.getByTestId('diagrams-stat-mcq').getByText('MCQ Perlu Gambar')
     expect(await label.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
 
     const pills = page.getByTestId('diagrams-pill')
@@ -131,16 +136,16 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await page.getByTestId('diagrams-subject').selectOption({ label: 'Fizik' })
     await page.getByTestId('diagrams-filter-submit').click()
     await expect(page).toHaveURL(/subject_id=9/)
-    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('718')
+    await expect(statValue(page, 'mcq')).toHaveText('718')
     // DV-M04-11: the cards follow the filter, "Jumlah" is their sum.
     const mcq = Number(
-      (await page.getByTestId('diagrams-stat-mcq-value').innerText()).replace(/,/g, ''),
+      (await statValue(page, 'mcq').innerText()).replace(/,/g, ''),
     )
     const str = Number(
-      (await page.getByTestId('diagrams-stat-structured-value').innerText()).replace(/,/g, ''),
+      (await statValue(page, 'structured').innerText()).replace(/,/g, ''),
     )
     const total = Number(
-      (await page.getByTestId('diagrams-stat-total-value').innerText()).replace(/,/g, ''),
+      (await statValue(page, 'total').innerText()).replace(/,/g, ''),
     )
     expect(total).toBe(mcq + str)
     // The pills are global (as live).
@@ -157,7 +162,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       )
       await link.click()
       await expect(page).toHaveURL(/subject_id=9&mcq_page=2$/)
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('718')
+      await expect(statValue(page, 'mcq')).toHaveText('718')
     }
     await expectNoHorizontalScroll(page)
   })
@@ -199,8 +204,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       const id = await card.getAttribute('data-question-id')
       await card.getByTestId('diagram-dismiss').click()
       await expect(page.getByText('Soalan telah dikeluarkan daripada senarai audit.')).toBeVisible()
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,143')
-      await expect(page.getByTestId('diagrams-stat-total-value')).toHaveText('6,665')
+      await expect(statValue(page, 'mcq')).toHaveText('6,143')
+      await expect(statValue(page, 'total')).toHaveText('6,665')
       await expect(page.getByTestId('diagrams-mcq').locator('h2')).toHaveText('MCQ (6143)')
       await expect(page.locator(`[data-question-id="${id}"][data-kind="mcq"]`)).toHaveCount(0)
       await expectNoHorizontalScroll(page)
@@ -218,7 +223,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
 
       // Without a file the native required check stops the submit.
       await card.getByTestId('diagram-upload').click()
-      await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('522')
+      await expect(statValue(page, 'structured')).toHaveText('522')
       expect(
         await card
           .getByTestId('diagram-file')
@@ -232,8 +237,8 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
       })
       await card.getByTestId('diagram-upload').click()
       await expect(page.getByText('Gambar rajah berjaya dimuat naik.')).toBeVisible()
-      await expect(page.getByTestId('diagrams-stat-structured-value')).toHaveText('521')
-      await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
+      await expect(statValue(page, 'structured')).toHaveText('521')
+      await expect(statValue(page, 'mcq')).toHaveText('6,144')
       await expect(page.getByTestId('diagrams-structured').locator('h2')).toHaveText(
         'Struktur (521)',
       )
@@ -264,7 +269,7 @@ test.describe('M04 S11 diagram audit', { tag: [TAG.smoke, moduleTag(4)] }, () =>
     await expect(same).toHaveCount(1)
     await expect(same.getByTestId('diagram-pending')).toHaveText('Menunggu Semakan')
     await expect(same.getByTestId('diagram-upload')).toHaveCount(0)
-    await expect(page.getByTestId('diagrams-stat-mcq-value')).toHaveText('6,144')
+    await expect(statValue(page, 'mcq')).toHaveText('6,144')
     await expectNoHorizontalScroll(page)
   })
 })
