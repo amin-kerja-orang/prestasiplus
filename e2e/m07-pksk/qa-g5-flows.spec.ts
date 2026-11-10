@@ -227,7 +227,7 @@ test.describe('QA-G5 M07 admin question lifecycle', MODULE, () => {
     // Edit: prefill, then pending (student count drops back).
     await gotoApp(`${LIST}/9000001/edit`)
     await expect(tid(page, 'pksk-question-form')).toBeVisible()
-    await expect(tid(page, 'shell-admin-subtitle')).toHaveText('Kemaskini soalan #9000001')
+    await expect(tid(page, 'pentadbiran-subtitle')).toHaveText('Kemaskini soalan #9000001')
     await expect(tid(page, 'q-text')).toHaveValue(TEXT)
     await expect(tid(page, 'q-domain').locator('option:checked')).toHaveText('[A] Kecerdasan Insaniah')
     await expect(tid(page, 'q-level')).toHaveValue('T4')
