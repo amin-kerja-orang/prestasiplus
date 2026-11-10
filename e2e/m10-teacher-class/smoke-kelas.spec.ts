@@ -33,7 +33,7 @@ test.describe('M10 Kelas Saya (list)', MODULE, () => {
   }) => {
     await loginAs(ADMIN)
     await gotoApp('/guru/kelas')
-    await expectTabTitle(page, 'Portal Guru | PRESTASIPLUS')
+    await expectTabTitle(page, 'Kelas Saya | PRESTASIPLUS')
     await expect(page.getByTestId('kelas-active-count')).toHaveText(/^0 kelas(?: · 0 pelajar)?$/)
     await expect(page.getByTestId('kelas-create')).toHaveAttribute('href', '/guru/kelas/cipta')
     await expect(page.getByTestId('kelas-create')).toHaveText('Cipta Kelas')
@@ -205,7 +205,8 @@ test.describe('M10 S35 and role access', MODULE, () => {
       await expect(page).toHaveURL(/\/login\?redirect=(%2F|\/)guru(%2F|\/)kelas$/)
       await loginAs(PELAJAR)
       await gotoApp('/guru/kelas/cipta')
-      await expect(page).not.toHaveURL(/\/guru\//)
+      // v2: a forbidden role gets the 403 page in place (no redirect).
+      await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     },
   )
 })
