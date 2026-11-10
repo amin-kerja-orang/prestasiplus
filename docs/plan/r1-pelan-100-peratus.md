@@ -34,7 +34,7 @@ Setiap baris mesti lulus dengan bukti sebenar (output ujian, laporan recon, tang
 | KP-8 | V2 selepas cutover: dibekukan, diubah hala, atau terus hidup (perubahan selepas dump hilang) | **Terbuka** (perlu sebelum Fasa 5) |
 | KP-9 | Notis downtime kepada pengguna UAT dan tetingkap deploy | **Terbuka** (Fasa 5) |
 | KP-10 | Lulus push branch ke origin | **Terbuka** (Fasa 5) |
-| KP-11 | Soalan rajah/berstimulus dalam latihan murid ikut Bab (T-C13): bina sekarang atau tangguh | **Terbuka** |
+| KP-11 | Soalan rajah/berstimulus dalam latihan murid ikut Bab (T-C13): bina sekarang atau tangguh | Bina: V2 papar gambar soalan dalam latihan murid (latih-tubi/quiz.blade.php), jadi ini pariti V2 |
 
 ## 3. Fasa dan jadual
 
@@ -56,7 +56,7 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 
 | ID | Tugas | Pemilik | Bergantung | Anggaran (hari) | Status | Bukti |
 |---|---|---|---|---|---|---|
-| T-A1 | Larian berasingan `test/support/tickets.spec.ts` dan `test/conformance/run.spec.ts`; baiki regresi sebenar (tiket, `/rph`, semakan esei) | backend-developer | — | 0.5 | 🔄 | |
+| T-A1 | Larian berasingan `test/support/tickets.spec.ts` dan `test/conformance/run.spec.ts`; baiki regresi sebenar (tiket, `/rph`, semakan esei) | backend-developer | — | 0.5 | ✅ | dae94516f: tickets 34/34, conformance 430/430 (bendera ciri + peranan smoke) |
 | T-A2 | Larian penuh ujian backend dalam bekas Linux (elak artifak Windows pada `test/migration/*`, `answer-store-writers`); senaraikan setiap kegagalan tinggal dengan punca | devops-engineer | — | 0.5 | 🔄 | |
 | T-A3 | Laluan DB kosong: Postgres 16 baharu → `prisma migrate deploy` 0001 hingga HEAD → `be:db:seed` rujukan (tanpa demo); sahkan kurikulum/DSKP (2,844 nod, 1,394 deskriptor TP), subjek, pakej sekolah tepat dan tiada kandungan demo/ujian | devops-engineer | — | 0.5 | 🔄 | |
 | T-A4 | Prosedur "bina semula DB" berpengawal untuk UAT (backup → henti api → drop/create DB → migrate → seed rujukan → ETL → mula api), dengan pengesahan nama DB dan bendera eksplisit; raptai lokal | devops-engineer | T-A3 | 1 | ⬜ | |
@@ -91,15 +91,17 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | T-C2 | UI admin Gamifikasi: Overview, Tier Config (baca sahaja), Cabaran (baca sahaja), Pelajar, Transaksi, Kawalan Reward; atas endpoint sedia ada (`admin/gamification`, `reward-control`); tajuk dan label ikut V2 | frontend-developer | — | 2 | ✅ | cab9d1a88: 6 skrin baca sahaja ikut V2; 39 ujian + shell 37 lulus; 375/768/1536 tiada skrol mendatar |
 | T-C3 | Bijak SPM G-01 hingga G-05: sahkan semula, baiki yang masih gagal (Jana set terkunci, lajur DSKP CSV, stimulus hilang semasa simpan draf, Topik tidak ditapis ikut Bab) | backend-developer + frontend-developer | — | 1 | ✅ | G-01, G-02, G-04 dibaiki; G-05 sudah siap; G-03 → T-C13 |
 | T-C4 | Pengekstrak PDF sebenar dengan tesseract (bukan `heuristik-1`): pecah pilihan A–D, ujian atas kertas contoh | backend-developer | T-A5 | 1.5 | ⬜ | |
-| T-C5 | Kiraan bercanggah admin sekolah (murid 20 lawan 17, guru 3 lawan 4) dan dua jumlah Amaran Awal: satu sumber kiraan | backend-developer | — | 0.5 | 🔄 | |
-| T-C6 | Remedial tidak menjana, Heatmap kosong, kad "Pakej SPM Aktif", Kedudukan: sahkan semula dan baiki | backend-developer + frontend-developer | — | 1 | 🔄 | |
-| T-C7 | 14 laluan frontend tanpa backend (`/api/guru/gamification*`, `/api/parent/hadiah-approvals`, `/api/spm-mocks`, `/api/games/pertandingan`, `/api/games/uji-minda`, `/api/gamification/leaderboard`, `/api/battle/:id`, `/api/admin/config/defaults` dan lain-lain): buang jika skrin ditangguhkan, bina jika dalam skop | frontend-developer + backend-developer | — | 1 | 🔄 | |
+| T-C5 | Kiraan bercanggah admin sekolah (murid 20 lawan 17, guru 3 lawan 4) dan dua jumlah Amaran Awal: satu sumber kiraan | backend-developer | — | 0.5 | ✅ | dae94516f: XS-1/XS-3 di Monitoring + Kirkpatrick; spec xs-consistency 3/3; Amaran sama 0/2/5 |
+| T-C6 | Remedial tidak menjana, Heatmap kosong, kad "Pakej SPM Aktif", Kedudukan: sahkan semula dan baiki | backend-developer + frontend-developer | — | 1 | ✅ | dae94516f: Remedial dibaiki (juga baris V2); Heatmap dan kad Pakej betul; Kedudukan → T-C14 |
+| T-C7 | 14 laluan frontend tanpa backend (`/api/guru/gamification*`, `/api/parent/hadiah-approvals`, `/api/spm-mocks`, `/api/games/pertandingan`, `/api/games/uji-minda`, `/api/gamification/leaderboard`, `/api/battle/:id`, `/api/admin/config/defaults` dan lain-lain): buang jika skrin ditangguhkan, bina jika dalam skop | frontend-developer + backend-developer | — | 1 | ✅ | dae94516f: 26 laluan disemak; yang ditangguh tidak dipanggil dalam mod http |
 | T-C8 | Seed rujukan bersih: tiada "QA-GAP", "E2E fixture", "Contoh:", "Demo" dalam data rujukan produksi (data UAT lama hilang dengan ganti penuh) | backend-developer | T-A3 | 0.25 | ⬜ | |
 | T-C9 | Kemas kini spec E2E yang masih guna tajuk/label lama (m02, m03, m04, m07, m09, m12, m15, m27) | qa-engineer | — | 0.5 | ⛔ | 17 spec dikemas kini (teks); belum disahkan: CPU 100%, larian ditahan |
 | T-C10 | Baki susun atur: Mod Pelajar pada 375 (semakan visual), lencana mahkota Profil 375 | frontend-developer | — | 0.25 | ⬜ | |
 | T-C11 | Tulis semula spec E2E mock untuk shell Pembelajaran (id `shell-user-*` tiada sejak 17 Okt: m01, m07, m27 dan lain-lain) dan triage drift data seed (m02 smoke-users: kiraan, `users-stat-count`, baris admin sendiri); heading "⚙️ Tetapan Peribadi" pada /tetapan | qa-engineer | T-C9 | 1 | ⬜ | |
-| T-C12 | Medan backend untuk pariti admin Gamifikasi V2: kiraan "sertai / siap" Cabaran, Streak pelajar, Status dan Harga Token hadiah (Kawalan Reward), warna tier, penapis tier ikut id; jenis `id` (string lawan number) | backend-developer | T-C2 | 0.5 | 🔄 | |
-| T-C13 | Soalan berkumpulan / berstimulus (rajah) dalam Latihan Bab dan latihan murid (D105 / S5-T03 Part B): kontrak latihan, mula sesi, `QuizRunner.vue`, bendera `GROUP_SURFACES`. Wajib jika soalan rajah V2 (T-B9) mahu boleh dilatih murid | backend-developer + frontend-developer | KP-11 | 2 | ⬜ | |
+| T-C12 | Medan backend untuk pariti admin Gamifikasi V2: kiraan "sertai / siap" Cabaran, Streak pelajar, Status dan Harga Token hadiah (Kawalan Reward), warna tier, penapis tier ikut id; jenis `id` (string lawan number) | backend-developer | T-C2 | 0.5 | ✅ | dae94516f: sertai/siap, Streak, Harga Token + Status, data tier, id string |
+| T-C13 | Soalan berkumpulan / berstimulus (rajah) dalam Latihan Bab dan latihan murid (D105 / S5-T03 Part B): kontrak latihan, mula sesi, `QuizRunner.vue`, bendera `GROUP_SURFACES`. Wajib jika soalan rajah V2 (T-B9) mahu boleh dilatih murid | backend-developer + frontend-developer | — | 2 | 🔄 | |
+| T-C14 | Kedudukan murid ikut R1-MUR-18 (kad "Dalam sekolah / Dalam negeri / Kebangsaan", "Sekitar anda", susunan ikut syiling dompet; penapis V3 dibuang) — kad S7-T06 | backend-developer + frontend-developer | — | 1 | 🔄 | |
+| T-C15 | Jenis frontend tahap T1..T5 (m11 `api/types.ts`); label "Pelajar Berdaftar (T4/T5)" di komponen M12 dibuang "(T4/T5)" ikut PRD | frontend-developer | T-C5 | 0.25 | 🔄 | |
 
 ### Gerbang G-100 (Fasa 4)
 
@@ -146,3 +148,4 @@ Status: ⬜ belum · 🔄 sedang · ✅ siap (dengan bukti) · ⛔ tersekat.
 | 2026-11-10 | T-C1 ✅, T-C2 ✅ (cab9d1a88). Jurang backend untuk pariti penuh → T-C12. DsDataTable: slot sel dalam paparan kad bawah md dibaiki. |
 | 2026-11-10 | T-C7 dan T-C12 bermula (satu ejen backend). |
 | 2026-11-10 | T-C3 ✅ (G-01, G-02, G-04 dibaiki; G-05 sudah siap). G-03 ialah ciri tertangguh D105 Part B → T-C13, perlu keputusan PO (KP-11). imports.spec 2 kegagalan timeout perlu larian semula di mesin lapang (G-100). |
+| 2026-11-10 | T-A1, T-C5, T-C6, T-C7, T-C12 ✅ (dae94516f). Ditambah T-C14 (Kedudukan R1-MUR-18) dan T-C15 (label/jenis T1..T5). T-C13 (rajah dalam latihan murid) diputuskan bina kerana V2 memaparkan gambar soalan dalam latihan (pariti). |
