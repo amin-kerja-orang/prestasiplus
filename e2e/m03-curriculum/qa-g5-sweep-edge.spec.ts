@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import { TIMEOUT_FACTOR } from './timeout-factor'
 import { expectNoHorizontalScroll, moduleTag, viewportWidth } from '../support'
+import { listRows } from './admin-table'
 
 const ADMIN = 'admin@demo.test'
 const MODULE = { tag: [moduleTag(3), '@qa'] }
@@ -16,7 +17,7 @@ const MODULE = { tag: [moduleTag(3), '@qa'] }
 const ROUTES: Array<[string, string]> = [
   ['S1 prompt', '/admin/curriculum'],
   ['S1 tree (Matematik T4)', '/admin/curriculum?subject_id=3&education_level_id=10'],
-  ['S1 tree (BM D1, subtopics)', '/admin/curriculum?subject_id=1&education_level_id=1'],
+  ['S1 tree (Matematik T1, 13 chapters)', '/admin/curriculum?subject_id=3&education_level_id=7'],
   ['S1 empty tree', '/admin/curriculum?subject_id=2&education_level_id=9'],
   ['S2', '/admin/curriculum/chapters/create?subject_id=3&education_level_id=10'],
   ['S3', '/admin/curriculum/chapters/91/edit'],
@@ -93,7 +94,7 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
     }) => {
       await loginAs(ADMIN)
       await gotoApp(path)
-      await expect(page.getByTestId('shell-admin-title')).toBeVisible()
+      await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 })).toBeVisible()
       await page.waitForTimeout(1200)
       await expectNoHorizontalScroll(page)
       const m = await page.evaluate(() => ({
@@ -103,9 +104,9 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
       expect(m.sw).toBeLessThanOrEqual(m.iw)
       expect(await clippedOutsideScrollers(page), 'elements past the viewport edge').toEqual([])
       expect(await smallText(page), 'text nodes under 12px in main').toEqual([])
-      // Navigation reachable: sidebar from 1024, bottom nav below it.
-      if (viewportWidth(page) >= 1024) await expect(page.getByTestId('shell-admin-sidebar')).toBeVisible()
-      else await expect(page.getByTestId('shell-admin-bottom-nav')).toBeVisible()
+      // Navigation reachable: sidebar from 1024, the menu button (drawer) below it.
+      if (viewportWidth(page) >= 1024) await expect(page.getByTestId('pentadbiran-sidebar')).toBeVisible()
+      else await expect(page.getByTestId('pentadbiran-menu-button')).toBeVisible()
     })
   }
 
@@ -121,7 +122,8 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
     ] as const) {
       await gotoApp(path)
       await expect(page.getByTestId(table)).toBeVisible()
-      const scroller = page.getByTestId(table).locator('xpath=../..')
+      // DsDataTable: the table sits in its own overflow-x container inside the card.
+      const scroller = page.getByTestId(table).locator('div.overflow-x-auto').first()
       const info = await scroller.evaluate((el) => ({
         over: el.scrollWidth - el.clientWidth,
         ox: getComputedStyle(el).overflowX,
@@ -132,7 +134,7 @@ test.describe('QA G5 responsive sweep of the admin routes', MODULE, () => {
         expect(['auto', 'scroll']).toContain(info.ox)
         // Scroll the card to the end: the last header becomes visible inside the viewport.
         await scroller.evaluate((el) => (el.scrollLeft = el.scrollWidth))
-        const lastTh = page.locator('thead th').last()
+        const lastTh = page.getByTestId(table).locator('thead th').last()
         await expect(lastTh).toHaveText(new RegExp(last, 'i'))
         const box = await lastTh.boundingBox()
         expect(box!.x + box!.width).toBeLessThanOrEqual(viewportWidth(page) + 1)
@@ -168,19 +170,43 @@ test.describe('QA G5 seed checks (ordering, inactive demo)', MODULE, () => {
     }
   })
 
-  test.describe('with curriculumInactiveDemo', () => {
-    test.use({ mockInit: { latency: 0, overrides: { curriculumInactiveDemo: true } } })
-
-    test('E2E-M03-06 inactive chapter and topic are listed without a marker and counted (Sejarah + Darjah 1)', async ({
+  test.describe('inactive records', () => {
+    // The SRS demo records of the curriculumInactiveDemo override sit on Darjah 1, which is hidden (D72), so the
+    // same scenario is built in the UI on Sejarah + Tingkatan 4 (1 chapter, 14 topics): add a chapter and a
+    // topic, then untick "Aktif" on both.
+    test('E2E-M03-06 inactive chapter and topic are listed without a marker and counted (Sejarah + Tingkatan 4)', async ({
       page,
       loginAs,
       gotoApp,
     }) => {
+      test.slow()
       await loginAs(ADMIN)
-      await gotoApp('/admin/curriculum?subject_id=5&education_level_id=1')
+      const pair = 'subject_id=5&education_level_id=10'
+      await gotoApp(`/admin/curriculum/chapters/create?${pair}`)
+      await page.getByTestId('chapter-name').fill('Bab Tidak Aktif Demo')
+      await page.getByTestId('chapter-number').fill('3')
+      await page.getByTestId('form-submit').click()
+      await expect(page).toHaveURL(new RegExp(`${pair}$`))
+      const created = page.getByTestId('chapter').filter({ hasText: 'Bab Tidak Aktif Demo' })
+      await expect(created).toHaveCount(1)
+      await created.getByTestId('topic-add').click()
+      await page.getByTestId('topic-name').fill('Topik Tidak Aktif Demo')
+      await page.getByTestId('topic-number').fill('1')
+      await page.getByTestId('form-submit').click()
+      await expect(page).toHaveURL(new RegExp(`${pair}$`))
+      // Untick "Aktif" on the topic, then on the chapter.
+      await page.getByTestId('chapter').filter({ hasText: 'Bab Tidak Aktif Demo' }).getByTestId('topic-edit').click()
+      await page.getByTestId('topic-active').uncheck()
+      await page.getByTestId('form-submit').click()
+      await expect(page).toHaveURL(new RegExp(`${pair}$`))
+      await page.getByTestId('chapter').filter({ hasText: 'Bab Tidak Aktif Demo' }).getByTestId('chapter-edit').click()
+      await page.getByTestId('chapter-active').uncheck()
+      await page.getByTestId('form-submit').click()
+      await expect(page).toHaveURL(new RegExp(`${pair}$`))
+
       await expect(page.getByTestId('chapter').first()).toBeVisible()
-      await expect(page.getByTestId('stat-chapters')).toContainText('3')
-      await expect(page.getByTestId('stat-topics')).toContainText('3 / 0')
+      await expect(page.getByTestId('stat-chapters')).toContainText('2')
+      await expect(page.getByTestId('stat-topics')).toContainText('15 / 0')
       const demo = page.getByTestId('chapter').filter({ hasText: 'Bab Tidak Aktif Demo' })
       await expect(demo).toHaveCount(1)
       await expect(demo.getByTestId('chapter-heading')).toHaveText('Bab 3: Bab Tidak Aktif Demo')
@@ -236,7 +262,7 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/education-levels/create')
     expect(await page.getByTestId('level-stage').evaluate((e) => (e as HTMLSelectElement).validity.valueMissing)).toBe(true)
-    await page.getByTestId('level-stage').selectOption('primary')
+    await page.getByTestId('level-stage').selectOption('lower_secondary')
     await page.getByTestId('level-order').fill('-1')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/education-levels/create')
@@ -260,7 +286,7 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     await page.getByTestId('level-name').fill('Salinan')
     await page.getByTestId('level-name-en').fill('Copy')
     await page.getByTestId('level-code').fill('d1')
-    await page.getByTestId('level-stage').selectOption('primary')
+    await page.getByTestId('level-stage').selectOption('lower_secondary')
     await page.getByTestId('level-curriculum').fill('KSSR')
     await page.getByTestId('form-submit').click()
     await expect(page.getByTestId('level-form-alert')).toContainText('The code has already been taken.')
@@ -313,7 +339,7 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     await page.getByTestId('subject-code').fill('LONG1')
     await page.getByTestId('form-submit').click()
     await expect(page).toHaveURL('/admin/subjects')
-    await expect(page.getByTestId('subject-row').filter({ hasText: long.slice(0, 40) })).toHaveCount(1)
+    await expect(listRows(page, 'subjects').filter({ hasText: long.slice(0, 40) })).toHaveCount(1)
     await expectNoHorizontalScroll(page)
     expect(await page.locator('main b').count()).toBe(0)
   })
@@ -332,7 +358,7 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     ]) {
       await gotoApp(`/admin/curriculum?${q}`)
       await expect(page.getByTestId('curriculum-filter'), q).toBeVisible()
-      await expect(page.getByTestId('shell-admin-title'), q).toHaveText('Kurikulum')
+      await expect(page.getByTestId('pentadbiran-header').getByRole('heading', { level: 1 }), q).toHaveText('Kurikulum')
       await expectNoHorizontalScroll(page)
       // No raw error / blank page: either the prompt, an empty tree or a red message box.
       const visible = await page
@@ -371,9 +397,10 @@ test.describe('QA G5 validation and edge cases', MODULE, () => {
     await loginAs(ADMIN)
     await gotoApp('/admin/education-levels')
     const badges = page.getByTestId('level-stage')
-    await expect(badges).toHaveCount(11)
+    // 5 Tingkatan levels; the "Rendah" label belongs to the 6 hidden Darjah levels (D72) and is not listed.
+    await expect(badges).toHaveCount(5)
     for (const b of await badges.all()) await expect(b.locator('svg, i').first()).toBeVisible()
     const labels = new Set((await badges.allInnerTexts()).map((s) => s.trim()))
-    expect([...labels].sort()).toEqual(['Menengah Atas', 'Menengah Rendah', 'Rendah'])
+    expect([...labels].sort()).toEqual(['Menengah Atas', 'Menengah Rendah'])
   })
 })
