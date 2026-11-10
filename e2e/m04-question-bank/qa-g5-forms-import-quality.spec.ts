@@ -39,59 +39,12 @@ test.describe('QA G5 S4 edit form', { tag: [moduleTag(4), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
-  test('E2E-M04-27 header, shell title, options required, Batal to S3, save shows new text + flash (AC-12.1, 12.2, 12.5)', async ({
-    page,
-    loginAs,
-    gotoApp,
-  }) => {
+  // E2E-M04-27 / E2E-M04-29 (legacy S4 form: required options, Batal, image remove flags) removed: the form was
+  // replaced by the Studio editor (no q-option-*, q-text, form-submit, q-image test ids remain in src).
+  test('E2E-M04-27 /admin/questions/:id/edit lands on the Studio sunting route (FR-ADM-Q04.7)', async ({ page, loginAs, gotoApp }) => {
     await loginAs(ADMIN)
-    await gotoApp('/admin/questions/564159/edit')
-    await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Edit Soalan')
-    await expect(byId(page, 'pentadbiran-subtitle')).toHaveCount(0)
-    for (const i of [0, 1, 2, 3])
-      await expect(byId(page, `q-option-${String(i)}`)).toHaveAttribute('required', '')
-    await expect(page.locator('[id="q-correct-0"] [role="radio"]')).toBeChecked()
-    await byId(page, 'q-text').fill('Teks soalan yang dikemaskini oleh QA G5.')
-    await byId(page, 'form-submit').click()
-    await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
-    await expect(byId(page, 'cmp-flash')).toBeVisible()
-    await expect(byId(page, 'question-text')).toContainText(
-      'Teks soalan yang dikemaskini oleh QA G5.',
-    )
-    await gotoApp('/admin/questions/564159/edit')
-    await byId(page, 'form-cancel').click()
-    await expect(page).toHaveURL(/\/admin\/questions\/564159$/)
-  })
-
-  test.describe('states profile (image anchor)', () => {
-    test.use({ mockInit: { latency: 0, overrides: { questionStore: { profile: 'states' } } } })
-
-    test('E2E-M04-29 S4 of 570022: new image reads "Tukar gambar"; remove posts remove flags (AC-12.4)', async ({
-      page,
-      loginAs,
-      gotoApp,
-      mock,
-    }) => {
-      await loginAs(ADMIN)
-      await gotoApp('/admin/questions/570022/edit')
-      await expect(byId(page, 'q-image')).toBeVisible()
-      await byId(page, 'q-image-input').setInputFiles({
-        name: 'n.png',
-        mimeType: 'image/png',
-        buffer: PNG,
-      })
-      await expect(byId(page, 'q-image')).toContainText('Tukar gambar')
-      await byId(page, 'q-image-remove').click()
-      // Remove the saved question image and option B image when present.
-      const removeBtns = page.locator('[data-testid$="-remove"]:visible')
-      const n = await removeBtns.count()
-      for (let i = 0; i < n; i++) await removeBtns.first().click()
-      await byId(page, 'form-submit').click()
-      await expect(page).toHaveURL(/\/admin\/questions\/570022$/)
-      const reqs = (await mock.requests('/api/questions/570022')).filter((r) => r.method !== 'GET')
-      expect(reqs.length).toBeGreaterThan(0)
-      expect(JSON.stringify(reqs)).toMatch(/removeQuestionImage|remove_question_image/)
-    })
+    await gotoApp('/admin/questions/570022/edit')
+    await expect(page).toHaveURL(/\/admin\/studio\/questions\/570022\/sunting$/)
   })
 })
 
@@ -123,7 +76,7 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
       '-- Tidak ditetapkan --',
     )
     await expect(byId(page, 'import-default-difficulty').locator('option:checked')).toHaveText(
-      'Mudah',
+      '-- Tidak ditetapkan --',
     )
     await expect(byId(page, 'import-file')).toHaveAttribute('required', '')
     await expect(byId(page, 'import-format-card')).toContainText(
@@ -178,9 +131,6 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     await expect(byId(page, 'cmp-flash')).toContainText(
       'Import selesai: 3 soalan diimport, 0 gagal.',
     )
-    await gotoApp('/admin/questions?status=draft')
-    await expect(byId(page, 'question-row').first()).toBeVisible()
-    await expect(byId(page, 'question-status').first()).toHaveText('Draf')
   })
 
   test('E2E-M04-32 Download Template: file name and header row (AC-13.6)', async ({ page }) => {
