@@ -17,6 +17,7 @@ import type { Locator, Page } from '@playwright/test'
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, provisional, viewportWidth } from '../support'
+import { expectSchoolName, navbarTitle } from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const S2 = '/admin-sekolah/dskp-heatmap'
@@ -163,8 +164,8 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
     }) => {
       await signIn(page, AZLAN)
       await open(page, gotoApp, s.path, s.ready)
-      await expect(page.getByTestId('shell-user-title')).toHaveText(s.title)
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
+      await expect(navbarTitle(page)).toHaveText(s.title)
+      await expectSchoolName(page, SCHOOL_P1)
       await expectTabTitle(page, `${s.title} | PRESTASIPLUS`)
       const prefix = { s2: 'dh', s5: 'lb', s8: 'kl' }[key]
       const back =
@@ -189,9 +190,9 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
       test.skip(viewportWidth(page) < 1280, 'E2E-M27-42 runs at 1280 only')
       await signIn(page, AZLAN)
       await open(page, gotoApp, s.path, s.ready)
-      const sidebar = page.getByTestId('shell-user-sidebar')
-      await expect(sidebar.locator(`[data-nav-id="${s.nav}"]`)).toHaveClass(/\bactive\b/)
-      await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
+      const sidebar = page.getByTestId('pembelajaran-nav')
+      await expect(sidebar.locator(`[data-nav-id="${s.nav}"]`)).toHaveAttribute('aria-current', 'page')
+      await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
     })
 
     test(`E2E-M27-43 ${s.title}: P1 and P4 no horizontal scroll, text at least 12 px`, async ({

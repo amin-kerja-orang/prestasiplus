@@ -21,6 +21,7 @@ import {
   provisional,
   viewportWidth,
 } from '../support'
+import { expectSchoolName, navbarSubtitle, navbarTitle, openAccountMenu, openMenu } from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const PAGE = '/admin-sekolah'
@@ -171,13 +172,13 @@ test.describe('shell, header', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-01 runs at 1280 only')
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    const sidebar = page.getByTestId('shell-user-sidebar')
+    const sidebar = page.getByTestId('pembelajaran-nav')
     await expect(sidebar).toBeVisible()
-    await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).toHaveClass(/\bactive\b/)
-    await expect(sidebar.locator('a.active')).toHaveCount(1)
+    await expect(sidebar.locator('a[href="/admin-sekolah"]')).toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1)
     await gotoApp('/admin-sekolah/monitoring')
-    await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).toBeVisible()
-    await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
+    await expect(sidebar.locator('a[href="/admin-sekolah"]')).toBeVisible()
+    await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
   })
 
   test(
@@ -187,11 +188,10 @@ test.describe('shell, header', MODULE, () => {
       test.skip(isDesktopShell(page), 'E2E-M27-02 runs at 375 and 768 only')
       await signIn(page, AZLAN)
       await open(page, gotoApp)
-      await expect(page.getByTestId('shell-user-sidebar')).toBeHidden()
-      await page.getByTestId('shell-user-hamburger').click()
-      const drawer = page.getByTestId('shell-user-drawer')
+      await expect(page.getByTestId('pembelajaran-nav')).toBeHidden()
+      const drawer = await openMenu(page)
       await expect(drawer).toHaveClass(/\bopen\b/)
-      await expect(drawer.locator('[data-nav-id="sa-dashboard"]')).toHaveClass(/\bactive\b/)
+      await expect(drawer.locator('a[href="/admin-sekolah"]')).toHaveAttribute('aria-current', 'page')
       await expectNoHorizontalScroll(page)
     },
   )
@@ -205,20 +205,17 @@ test.describe('shell, header', MODULE, () => {
     async ({ page, gotoApp }) => {
       await signIn(page, AZLAN)
       await open(page, gotoApp)
-      await expect(page.getByTestId('shell-user-title')).toHaveText('Dashboard Sekolah')
-      await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
+      await expect(navbarTitle(page)).toHaveText('Dashboard Sekolah')
+      await expectSchoolName(page, 'SMK Demo Seri Putra')
       await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
-      expect(
-        decodeURIComponent(
-          (await page.getByTestId('shell-user-header-avatar').getAttribute('src')) ?? '',
-        ),
-      ).toContain('>AD<')
+      // v2 shell: the avatar is a button with the initials, the bell links to /notifikasi, Log Keluar sits in its menu.
+      await expect(page.getByTestId('pembelajaran-account-top')).toContainText('AD')
       await expect(page.getByTestId('shell-user-bell')).toBeVisible()
-      // the header logout icon is the shell's own responsive choice: hidden below lg (the drawer holds "Log Keluar")
-      if (isDesktopShell(page)) {
-        await expect(page.getByTestId('shell-user-header-logout')).toBeVisible()
-      }
-      await expect(page.getByTestId('shell-user-chips')).toHaveCount(0)
+      const accountMenu = await openAccountMenu(page)
+      await expect(accountMenu.getByRole('menuitem', { name: 'Log Keluar' })).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(page.getByTestId('pembelajaran-chip-streak')).toHaveCount(0)
+      await expect(page.getByTestId('pembelajaran-chip-coin')).toHaveCount(0)
     },
   )
 })
@@ -279,7 +276,7 @@ test.describe('banner', MODULE, () => {
       }
       return clone.textContent ?? ''
     })
-    const subtitle = (await page.getByTestId('shell-user-subtitle').textContent()) ?? ''
+    const subtitle = (await navbarSubtitle(page).textContent()) ?? ''
     expect(subtitle).toBe('SMK Demo Seri Putra')
     expect(remaining).not.toContain('SMK DEMO')
     expect(remaining).not.toContain('SK Demo')
@@ -659,12 +656,11 @@ test.describe('navigation', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await gotoApp('/admin-sekolah/monitoring')
-    await expect(page.getByTestId('shell-user-header')).toBeVisible()
+    await expect(page.getByTestId('pembelajaran-header')).toBeVisible()
     if (isDesktopShell(page)) {
-      await page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-dashboard"]').click()
+      await page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah"]').click()
     } else {
-      await page.getByTestId('shell-user-hamburger').click()
-      await page.getByTestId('shell-user-drawer').locator('[data-nav-id="sa-dashboard"]').click()
+      await (await openMenu(page)).locator('a[href="/admin-sekolah"]').click()
     }
     await expect(page).toHaveURL(new RegExp(`${PAGE}$`))
     await expect(page.getByTestId('sd-banner')).toBeVisible()

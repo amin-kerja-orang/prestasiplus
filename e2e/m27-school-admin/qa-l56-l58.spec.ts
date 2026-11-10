@@ -12,7 +12,17 @@ import type { Page } from '@playwright/test'
 
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
-import { acceptNextDialog, expectNoHorizontalScroll, isDesktopShell, viewportWidth } from '../support'
+import { expectNoHorizontalScroll, isDesktopShell, viewportWidth } from '../support'
+import {
+  acceptConfirm,
+  applyUserFilter,
+  expectUserCount,
+  logoutViaAccountMenu,
+  selectUserFilter,
+  userCountCard,
+  userRow,
+  userRows,
+} from './shell'
 
 const TAG = { tag: ['@m27', '@qa-l56'] }
 const P1 = 'azlan@demo.test' // school 900003, no pupil / teacher / class
@@ -26,7 +36,7 @@ async function signIn(page: Page, who: string): Promise<void> {
   await createMockHandle(page).setUser(who)
 }
 
-const rows = (page: Page) => page.getByTestId('user-row')
+const rows = userRows
 
 async function openList(page: Page, gotoApp: (p: string) => Promise<void>, path: string) {
   await gotoApp(path)
@@ -94,12 +104,12 @@ test.describe('QA access and scope', TAG, () => {
     test.skip(viewportWidth(page) < 1280, 'runs at 1280 only')
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/pelajar?school_id=900003&schoolId=900003&role=guru&kelas=1')
-    await expect(page.locator('[data-testid="user-row"][data-user-id="3001"]')).toBeVisible()
-    await expect(page.getByTestId('user-count-label')).toHaveText('Pelajar')
+    await expect(userRow(page, 3001)).toBeVisible()
+    await expect(userCountCard(page)).toContainText('Pelajar')
     await expect(page.getByText('guru@demo.test')).toHaveCount(0)
     await openList(page, gotoApp, '/admin-sekolah/guru?school_id=900003&role=pelajar')
-    await expect(page.getByTestId('user-count-label')).toHaveText('Guru')
-    await expect(page.locator('[data-testid="user-row"][data-user-id="3001"]')).toHaveCount(0)
+    await expect(userCountCard(page)).toContainText('Guru')
+    await expect(userRow(page, 3001)).toHaveCount(0)
   })
 
   test('QA-ACC-4 P1 (school 900003) sees an empty S6 and S7 even when the query names school 900001', async ({
@@ -138,14 +148,14 @@ test.describe('QA S6 and S7 lists', TAG, () => {
     expect(ids.length).toBeGreaterThanOrEqual(9)
     expect(ids).toEqual([...ids].sort((a, b) => b - a))
     await page.getByTestId('user-search').fill('MURID3001@DEMO')
-    await page.getByTestId('user-search-submit').click()
+    await applyUserFilter(page)
     await expect(page.getByTestId('user-found')).toHaveText('1 pengguna dijumpai')
     await page.getByTestId('user-search').fill('murid demo 0')
-    await page.getByTestId('user-search-submit').click()
+    await applyUserFilter(page)
     await expect(page.getByTestId('user-found')).toHaveText('8 pengguna dijumpai')
     await page.getByTestId('user-search').fill('')
-    await page.getByTestId('user-status-filter').selectOption('0')
-    await page.getByTestId('user-search-submit').click()
+    await selectUserFilter(page, 'user-status-filter', '0')
+    await applyUserFilter(page)
     await expect(page.getByTestId('user-found')).toHaveText('0 pengguna dijumpai')
     await expect(page.getByTestId('user-empty')).toBeVisible()
   })
@@ -191,7 +201,7 @@ test.describe('QA S6 and S7 lists', TAG, () => {
       await openList(page, gotoApp, path)
       await expect(page.getByTestId('user-empty')).toContainText('Tiada pengguna dijumpai')
       await expect(page.getByTestId('user-empty')).toContainText('Cuba ubah kriteria carian anda')
-      await expect(page.getByTestId('user-count')).toHaveText('0')
+      await expectUserCount(page, '0')
       await expectNoHorizontalScroll(page)
     }
   })
@@ -208,7 +218,7 @@ test.describe('QA S6 and S7 lists', TAG, () => {
     await expect(page.getByTestId('user-found')).toContainText('pengguna dijumpai', { timeout: 60_000 })
     await mock.failNext('/api/admin-sekolah/pelajar', 500)
     await page.getByTestId('user-search').fill('murid')
-    await page.getByTestId('user-search-submit').click()
+    await applyUserFilter(page)
     // either the inline error block or the global error page must be visible (FR-M27-48 asks for the M01 error page)
     await expect(page.locator('[data-testid=user-error], [data-page=server-error], [data-page=error]').first()).toBeVisible({
       timeout: 30_000,
@@ -225,7 +235,7 @@ test.describe('QA S6 and S7 lists', TAG, () => {
     const body = await page.getByTestId('user-table').innerText()
     expect(body).not.toContain('murid3001@demo.test')
     expect(body).not.toContain('adminsekolah@demo.test')
-    await expect(page.locator('[data-testid="user-row"][data-user-id="5"]').getByTestId('user-classes')).toHaveText('2 kelas')
+    await expect(userRow(page, 5).getByTestId('user-classes')).toHaveText('2 kelas')
   })
 })
 
@@ -259,7 +269,7 @@ test.describe('QA CSV', TAG, () => {
     expect(one.body.trim().split(/\r?\n/).length).toBe(2)
     // inactive status yields a header-only file
     await page.getByTestId('user-search').fill('')
-    await page.getByTestId('user-status-filter').selectOption('0')
+    await selectUserFilter(page, 'user-status-filter', '0')
     const none = await downloadCsv(page)
     expect(none.body.slice(1).trim().split(/\r?\n/)).toEqual(['id,name,email,role,sekolah,kelas,is_active,created_at'])
   })
@@ -356,7 +366,7 @@ test.describe('QA forms', TAG, () => {
     await expect(row).toHaveCount(1)
     await expect(row.getByTestId('user-status')).toHaveText('Aktif')
     await expect(row).toContainText('5 MARIKH')
-    await page.getByTestId('shell-user-header-logout').click()
+    await logoutViaAccountMenu(page)
     await expect(page).toHaveURL('/login')
     await page.getByTestId('login-email').fill('murid.tiga@demo.test')
     await page.getByTestId('login-password').fill(pw)
@@ -380,7 +390,7 @@ test.describe('QA forms', TAG, () => {
     await expect(page.getByTestId('credential-password')).toHaveText('KataLaluan-8')
     await openList(page, gotoApp, '/admin-sekolah/pelajar')
     await expect(rows(page)).toHaveCount(1)
-    await expect(page.getByTestId('user-count')).toHaveText('1')
+    await expectUserCount(page, '1')
     await expect(page.getByTestId('user-found')).toHaveText('1 pengguna dijumpai')
   })
 
@@ -487,17 +497,17 @@ test.describe('QA forms', TAG, () => {
     await loginAs(P2)
     await openList(page, gotoApp, '/admin-sekolah/guru')
     const row = rows(page).filter({ hasText: 'guru@demo.test' })
-    const accepted = acceptNextDialog(page, { type: 'confirm' })
+    const accepted = acceptConfirm(page)
     await row.getByTestId('user-toggle').click()
     await accepted
     await expect(page.getByText('Status pengguna berjaya dikemaskini.')).toBeVisible()
     await expect(row.getByTestId('user-impersonate')).toBeDisabled()
     await expect(row.getByTestId('user-impersonate')).toHaveAttribute('title', 'Akaun ini tidak aktif')
-    await page.getByTestId('user-status-filter').selectOption('1')
-    await page.getByTestId('user-search-submit').click()
+    await selectUserFilter(page, 'user-status-filter', '1')
+    await applyUserFilter(page)
     await expect(page.getByTestId('user-empty')).toBeVisible()
-    await page.getByTestId('user-status-filter').selectOption('0')
-    await page.getByTestId('user-search-submit').click()
+    await selectUserFilter(page, 'user-status-filter', '0')
+    await applyUserFilter(page)
     await expect(rows(page)).toHaveCount(1)
     const csv = await downloadCsv(page)
     expect(csv.body).toContain(',0,')
@@ -549,8 +559,8 @@ test.describe('QA forms', TAG, () => {
 
 const WIDTHS = [320, 375, 768, 1280]
 const SCREENS: { id: string; path: string; ready: string; controls: string[]; table?: boolean }[] = [
-  { id: 'S6', path: '/admin-sekolah/pelajar', ready: 'user-table', table: true, controls: ['user-export', 'user-add', 'user-search', 'user-search-submit', 'user-status-filter'] },
-  { id: 'S7', path: '/admin-sekolah/guru', ready: 'user-table', table: true, controls: ['user-export', 'user-add', 'user-search', 'user-search-submit', 'user-status-filter'] },
+  { id: 'S6', path: '/admin-sekolah/pelajar', ready: 'user-table', table: true, controls: ['user-export', 'user-add', 'user-search', 'wide:user-status-filter', 'wide:css:[data-ds="filter-bar"] button[type="submit"]'] },
+  { id: 'S7', path: '/admin-sekolah/guru', ready: 'user-table', table: true, controls: ['user-export', 'user-add', 'user-search', 'wide:user-status-filter', 'wide:css:[data-ds="filter-bar"] button[type="submit"]'] },
   { id: 'S9', path: '/admin-sekolah/pelajar/3001', ready: 'user-form', controls: ['user-name', 'user-email', 'user-password-toggle', 'form-cancel', 'form-submit'] },
   { id: 'S10', path: '/admin-sekolah/guru/5', ready: 'user-form', controls: ['user-name', 'user-email', 'user-password-toggle', 'form-cancel', 'form-submit'] },
   { id: 'S11', path: '/admin-sekolah/guru/baru', ready: 'user-form', controls: ['user-name', 'user-email', 'user-password', 'user-password-confirm', 'form-cancel', 'form-submit'] },
@@ -573,8 +583,11 @@ test.describe('QA responsive S6 to S12', TAG, () => {
         await page.setViewportSize({ width: w, height: 812 })
         await page.waitForTimeout(600) // let the layout settle after the resize
         await expectNoHorizontalScroll(page)
-        for (const id of s.controls) {
-          const el = page.getByTestId(id).first()
+        // v2 `DsFilterBar`: the selects and the apply button sit in a sheet below md (`wide:` controls), "css:" is a selector.
+        const controls = s.controls.filter((id) => !id.startsWith('wide:') || w >= 768).map((id) => id.replace(/^wide:/, ''))
+        const locOf = (id: string) => (id.startsWith('css:') ? page.locator(id.slice(4)) : page.getByTestId(id)).first()
+        for (const id of controls) {
+          const el = locOf(id)
           await el.scrollIntoViewIfNeeded()
           await expect(el, `${s.id}@${w} ${id} visible`).toBeVisible()
           const b = await el.boundingBox()
@@ -588,8 +601,8 @@ test.describe('QA responsive S6 to S12', TAG, () => {
         }
         // no two controls overlap (compare the area after scrolling, so use page coordinates)
         const pageBoxes = await Promise.all(
-          s.controls.map(async (id) =>
-            page.getByTestId(id).first().evaluate((e) => {
+          controls.map(async (id) =>
+            locOf(id).evaluate((e) => {
               const r = e.getBoundingClientRect()
               return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }
             }),
@@ -601,7 +614,7 @@ test.describe('QA responsive S6 to S12', TAG, () => {
             const b = pageBoxes[j]!
             const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
             const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
-            expect(ox > 2 && oy > 2, `${s.id}@${w} ${s.controls[i]} overlaps ${s.controls[j]}`).toBe(false)
+            expect(ox > 2 && oy > 2, `${s.id}@${w} ${controls[i]} overlaps ${controls[j]}`).toBe(false)
           }
         }
         expect(await smallestFont(page, 'main'), `${s.id}@${w} min font`).toBeGreaterThanOrEqual(12)
@@ -682,9 +695,9 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     await expect(page.getByTestId('kl-displayed')).toHaveText(/^\d+ kelas dipaparkan\s*$/)
     await expect(page.getByText('SMK DEMO').first()).toBeVisible()
     if (isDesktopShell(page)) {
-      const side = page.getByTestId('shell-user-sidebar')
-      await expect(side.locator('[data-nav-id="sa-kelas-sekolah"]')).toHaveClass(/\bactive\b/)
-      await expect(side.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
+      const side = page.getByTestId('pembelajaran-nav')
+      await expect(side.locator('a[href="/admin-sekolah/kelas"]')).toHaveAttribute('aria-current', 'page')
+      await expect(side.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
     }
   })
 
@@ -788,9 +801,9 @@ test.describe('QA S8 Kelas Sekolah', TAG, () => {
     test.skip(viewportWidth(page) < 1280, 'runs at 1280 only')
     await loginAs(P2)
     await gotoApp('/admin-sekolah')
-    await expect(page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-kelas-sekolah"]')).toBeVisible({ timeout: 90_000 })
+    await expect(page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/kelas"]')).toBeVisible({ timeout: 90_000 })
     await mock.setLatency(2500, '/api/admin-sekolah/kelas')
-    await page.getByTestId('shell-user-sidebar').locator('[data-nav-id="sa-kelas-sekolah"]').click() // in-app navigation keeps the mock alive
+    await page.getByTestId('pembelajaran-nav').locator('a[href="/admin-sekolah/kelas"]').click() // in-app navigation keeps the mock alive
     await expect(page.getByTestId('kl-loading')).toBeVisible({ timeout: 60_000 })
     await expect(page.getByTestId('kl-table')).toBeVisible({ timeout: 60_000 })
     await mock.clearLatency('/api/admin-sekolah/kelas')

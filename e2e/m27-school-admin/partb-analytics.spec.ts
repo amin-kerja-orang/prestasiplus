@@ -23,6 +23,7 @@ import {
   provisional,
   viewportWidth,
 } from '../support'
+import { expectSchoolName, navbarTitle, openMenu } from './shell'
 
 const MODULE = { tag: ['@m27'] }
 const S1 = '/admin-sekolah/statistik-penggunaan'
@@ -138,8 +139,8 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Statistik Penggunaan')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
+    await expect(navbarTitle(page)).toHaveText('Statistik Penggunaan')
+    await expectSchoolName(page, SCHOOL_P1)
     await expectTabTitle(page, 'Statistik Penggunaan | PRESTASIPLUS')
     const back = page.locator('[data-testid="su-breadcrumb"] a')
     await expect(back).toHaveText('Dashboard Sekolah')
@@ -168,11 +169,11 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'E2E-M27-42 runs at 1280 only')
     await signIn(page, AZLAN)
     await open(page, gotoApp, '?period=7days')
-    const sidebar = page.getByTestId('shell-user-sidebar')
+    const sidebar = page.getByTestId('pembelajaran-nav')
     await expect(sidebar).toBeVisible()
-    await expect(sidebar.locator('[data-nav-id="sa-statistik-penggunaan"]')).toHaveClass(/\bactive\b/)
-    await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
-    await expect(sidebar.locator('a.active')).toHaveCount(1)
+    await expect(sidebar.locator('a[href="/admin-sekolah/statistik-penggunaan"]')).toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
+    await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1)
   })
 
   test(
@@ -182,11 +183,10 @@ test.describe('S1 header, breadcrumb, sidebar (E2E-M27-41, 42)', MODULE, () => {
       test.skip(isDesktopShell(page), 'runs at 375 and 768 only')
       await signIn(page, AZLAN)
       await open(page, gotoApp)
-      await expect(page.getByTestId('shell-user-sidebar')).toBeHidden()
-      await page.getByTestId('shell-user-hamburger').click()
-      const drawer = page.getByTestId('shell-user-drawer')
-      await expect(drawer.locator('[data-nav-id="sa-statistik-penggunaan"]')).toHaveClass(/\bactive\b/)
-      await expect(drawer.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
+      await expect(page.getByTestId('pembelajaran-nav')).toBeHidden()
+      const drawer = await openMenu(page)
+      await expect(drawer.locator('a[href="/admin-sekolah/statistik-penggunaan"]')).toHaveAttribute('aria-current', 'page')
+      await expect(drawer.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
     },
   )
 })
@@ -402,7 +402,7 @@ test.describe('S1 empty school (E2E-M27-51, 53, 54, 55)', MODULE, () => {
     test.skip(viewportWidth(page) < 1280, 'runs at 1280 only')
     await signIn(page, AZLAN)
     await open(page, gotoApp, '?school_id=900001&school=900001&period=7days')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
+    await expectSchoolName(page, SCHOOL_P1)
     await expect(page.getByTestId('su-tile-pupils').getByTestId('su-tile-value')).toHaveText('0')
     const calls = await mock.requests('/api/admin-sekolah/usage')
     expect(calls.length).toBeGreaterThan(0)
@@ -544,8 +544,8 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
   }) => {
     await signIn(page, AZLAN)
     await openS3(page, gotoApp)
-    await expect(page.getByTestId('shell-user-title')).toHaveText('Laporan Aktiviti')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText(SCHOOL_P1)
+    await expect(navbarTitle(page)).toHaveText('Laporan Aktiviti')
+    await expectSchoolName(page, SCHOOL_P1)
     await expectTabTitle(page, 'Laporan Aktiviti | PRESTASIPLUS')
     const back = page.locator('[data-testid="la-breadcrumb"] a')
     await expect(back).toHaveText('Dashboard Sekolah')
@@ -557,10 +557,10 @@ test.describe('S3 header, tabs, range (E2E-M27-41, 42, 63)', MODULE, () => {
       Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
     ).toBeGreaterThanOrEqual(700)
     if (viewportWidth(page) >= 1280) {
-      const sidebar = page.getByTestId('shell-user-sidebar')
-      await expect(sidebar.locator('[data-nav-id="sa-laporan-aktiviti"]')).toHaveClass(/\bactive\b/)
-      await expect(sidebar.locator('[data-nav-id="sa-dashboard"]')).not.toHaveClass(/\bactive\b/)
-      await expect(sidebar.locator('a.active')).toHaveCount(1)
+      const sidebar = page.getByTestId('pembelajaran-nav')
+      await expect(sidebar.locator('a[href="/admin-sekolah/laporan-aktiviti"]')).toHaveAttribute('aria-current', 'page')
+      await expect(sidebar.locator('a[href="/admin-sekolah"]')).not.toHaveAttribute('aria-current', 'page')
+      await expect(sidebar.locator('a[aria-current="page"]')).toHaveCount(1)
     }
     await page.locator('[data-testid="la-breadcrumb"] a').click()
     await expect(page).toHaveURL(/\/admin-sekolah$/)

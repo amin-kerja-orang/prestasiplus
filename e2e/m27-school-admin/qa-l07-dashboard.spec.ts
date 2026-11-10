@@ -11,6 +11,7 @@ import type { Page } from '@playwright/test'
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, expectTabTitle, isDesktopShell, viewportWidth } from '../support'
+import { expectSchoolName } from './shell'
 
 const MODULE = { tag: ['@m27', '@qa-l07'] }
 const PAGE = '/admin-sekolah'
@@ -396,7 +397,7 @@ test.describe('presentation (QA extras)', MODULE, () => {
     await page.goBack()
     await expect(page.getByTestId('sd-page')).toBeVisible({ timeout: 60_000 })
     await expectTabTitle(page, 'Dashboard Sekolah | PRESTASIPLUS')
-    await expect(page.getByTestId('shell-user-subtitle')).toHaveText('SMK Demo Seri Putra')
+    await expectSchoolName(page, 'SMK Demo Seri Putra')
   })
 
   test('sidebar "Dashboard" is active only on /admin-sekolah (desktop): not on monitoring', async ({
@@ -406,10 +407,10 @@ test.describe('presentation (QA extras)', MODULE, () => {
     test.skip(!isDesktopShell(page), 'sidebar is desktop only')
     await signIn(page, AZLAN)
     await open(page, gotoApp)
-    const item = page.locator('[data-testid="shell-user-sidebar"] [data-nav-id="sa-dashboard"]')
-    await expect(item).toHaveClass(/\bactive\b/)
+    const item = page.locator('[data-testid="pembelajaran-nav"] a[href="/admin-sekolah"]')
+    await expect(item).toHaveAttribute('aria-current', 'page')
     await gotoApp('/admin-sekolah/monitoring')
     await expect(item).toBeVisible()
-    await expect(item).not.toHaveClass(/\bactive\b/)
+    await expect(item).not.toHaveAttribute('aria-current', 'page')
   })
 })

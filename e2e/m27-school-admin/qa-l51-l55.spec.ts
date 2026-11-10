@@ -18,6 +18,7 @@ import type { Page } from '@playwright/test'
 import { createMockHandle, gotoApp as gotoAppOn } from '../fixtures/mock-handle'
 import { expect, test } from '../fixtures/test'
 import { expectNoHorizontalScroll, isDesktopShell, viewportWidth } from '../support'
+import { expectSchoolName, navHref, navbarTitle, openMenu } from './shell'
 
 const TAG = { tag: ['@m27', '@qa-l51'] }
 const P1 = 'azlan@demo.test' // school 900003, no pupil / teacher / class
@@ -223,7 +224,7 @@ test.describe('QA role guards on S1 to S5', TAG, () => {
     const forged = '?school=900001&school_id=900001&schoolId=900001&role=teacher&sekolah=900001'
     for (const s of SCREENS) {
       await open(page, gotoApp, s, forged)
-      await expect(page.getByTestId('shell-user-subtitle'), `${s.key} sub-line`).toHaveText(SCHOOL_P1)
+      await expectSchoolName(page, SCHOOL_P1)
     }
     // S1: P1 has no pupil, so the first tile stays 0 under a forged school
     await open(page, gotoApp, SCREENS[0]!, forged)
@@ -436,11 +437,10 @@ test.describe('QA navigation reachable from S1 to S5', TAG, () => {
     await open(page, gotoApp, SCREENS[0]!)
     for (const s of SCREENS.slice(1)) {
       if (isDesktopShell(page)) {
-        await expect(page.getByTestId('shell-user-sidebar')).toBeVisible()
-        await page.getByTestId('shell-user-sidebar').locator(`[data-nav-id="${s.nav}"]`).click()
+        await expect(page.getByTestId('pembelajaran-nav')).toBeVisible()
+        await page.getByTestId('pembelajaran-nav').locator(`[data-nav-id="${s.nav}"]`).click()
       } else {
-        await page.getByTestId('shell-user-hamburger').click()
-        const item = page.getByTestId('shell-user-drawer').locator(`[data-nav-id="${s.nav}"]`)
+        const item = (await openMenu(page)).locator(`a[href="${navHref(s.nav)}"]`)
         await expect(item).toBeVisible()
         await item.scrollIntoViewIfNeeded() // the drawer list scrolls inside itself
         await expect(item).toBeInViewport({ ratio: 0.9 })
@@ -448,7 +448,7 @@ test.describe('QA navigation reachable from S1 to S5', TAG, () => {
       }
       await expect(page).toHaveURL(new RegExp(s.path.replace(/[/]/g, '\\/')))
       await expect(page.getByTestId(s.ready)).toBeVisible({ timeout: 120_000 })
-      await expect(page.getByTestId('shell-user-title')).toHaveText(s.title)
+      await expect(navbarTitle(page)).toHaveText(s.title)
       await expectNoHorizontalScroll(page)
     }
   })
