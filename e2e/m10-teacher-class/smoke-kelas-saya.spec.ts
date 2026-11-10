@@ -20,7 +20,7 @@ test.describe('M10 S33 Kelas Saya (student)', MODULE, () => {
     await loginAs(PELAJAR2)
     await gotoApp('/kelas-saya')
     await expect(page.getByTestId('kelas-saya-page')).toBeVisible({ timeout: 15_000 })
-    await expectTabTitle(page, 'Kelas Saya')
+    await expectTabTitle(page, 'Kelas Saya | PRESTASIPLUS')
     await expect(page.getByTestId('pembelajaran-header').locator('h1')).toHaveText('Kelas Saya')
     await expect(page.getByTestId('pembelajaran-subtitle')).toHaveText('Kelas yang anda sertai, guru dan rakan sekelas anda')
 
@@ -51,7 +51,8 @@ test.describe('M10 S33 Kelas Saya (student)', MODULE, () => {
   }) => {
     await loginAs('guru@demo.test')
     await gotoApp('/kelas-saya')
-    await expect(page).not.toHaveURL(/\/kelas-saya/)
+    // v2: a forbidden role gets the 403 page in place (no redirect).
+    await expect(page.locator('[data-ds="error-page"][data-code="403"]')).toBeVisible()
     await expect(page.getByTestId('kelas-saya-page')).toHaveCount(0)
   })
 
