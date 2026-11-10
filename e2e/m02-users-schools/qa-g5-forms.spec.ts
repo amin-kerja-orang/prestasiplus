@@ -62,8 +62,8 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await pickRole(page, 'student')
     await expect(byId(page, 'user-ic')).toHaveAttribute('maxlength', '14')
     await fillIdentity(page, 'Murid Ujian QA', 'murid.qa@contoh.test')
-    await page.locator('label:has([data-testid=grade-10])').click()
-    await expect(page.locator('label:has([data-testid=grade-10])')).toContainText('Ting. 4')
+    await byId(page, 'grade-cards').locator('label', { hasText: 'Ting. 4' }).click()
+    await expect(page.getByRole('radio', { name: 'Ting. 4' })).toBeChecked()
     await byId(page, 'form-submit').click()
     await expect(page).toHaveURL('/admin/users')
     const posts = (await writes(mock)).filter((r) => r.method === 'POST')
@@ -75,7 +75,7 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await byId(page, 'form-cancel').click()
     await expect(page).toHaveURL('/admin/users')
     await expect(byId(page, 'users-stat-student').getByTestId('users-stat-value')).toHaveText(
-      '4534',
+      '4,534',
     )
     await gotoApp('/admin/users?search=Tidak+Disimpan')
     await expect(byId(page, 'users-empty')).toBeVisible()
@@ -88,12 +88,12 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await pickRole(page, 'student')
     await byId(page, 'user-name').fill('Nama Kekal')
     await byId(page, 'user-ic').fill('111')
-    await page.locator('label:has([data-testid=grade-10])').click()
+    await byId(page, 'grade-cards').locator('label', { hasText: 'Ting. 4' }).click()
     await pickRole(page, 'teacher')
     await pickRole(page, 'student')
     await expect(byId(page, 'user-name')).toHaveValue('Nama Kekal')
     await expect(byId(page, 'user-ic')).toHaveValue('111')
-    await expect(byId(page, 'grade-10')).toBeChecked()
+    await expect(page.getByRole('radio', { name: 'Ting. 4' })).toBeChecked()
 
     // School admin generator resets when the role changes away and back.
     await pickRole(page, 'school_admin')
@@ -140,8 +140,13 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
   }) => {
     // Deactivate the first "bangi" school on S9, then search for it on S2.
     await gotoApp('/admin/schools?search=bangi')
-    const row = byId(page, 'school-row').first()
-    const name = (await row.locator('td').first().innerText()).trim()
+    // v2 DsDataTable: table rows from 768 px, cards below; `school-row` is the name inside the row.
+    const row = page
+      .locator(
+        '[data-testid=schools-table] tbody tr, [data-testid=schools-table] [data-ds=data-table-cards] > li',
+      )
+      .first()
+    const name = (await row.getByTestId('school-row').innerText()).trim()
     await row.getByTestId('school-toggle').click()
     await expect(row.getByTestId('school-status')).toHaveText('Tidak Aktif')
 
@@ -179,12 +184,14 @@ test.describe('M02 QA S2 create gaps', { tag: [TAG.smoke, moduleTag(2)] }, () =>
     await expect(byId(page, 'linker-result').first()).toBeVisible()
     await byId(page, 'linker-result').first().click()
     await byId(page, 'linker-search').fill('pelajar ')
-    await expect(byId(page, 'linker-result').nth(1)).toBeVisible()
-    await byId(page, 'linker-result').nth(1).click()
+    // v2: an already linked student stays in the list but is disabled; pick the next enabled one.
+    const enabled = page.locator('[data-testid=linker-result]:not([disabled])')
+    await expect(enabled.first()).toBeVisible()
+    await enabled.first().click()
     await expect(byId(page, 'linker-chip')).toHaveCount(2)
     await byId(page, 'linker-search').fill('pelajar')
-    await expect(byId(page, 'linker-result').first()).toBeVisible()
-    await byId(page, 'linker-result').first().click()
+    const linkedRow = page.locator('[data-testid=linker-result][disabled]')
+    await expect(linkedRow.first()).toBeDisabled()
     await expect(byId(page, 'linker-chip')).toHaveCount(2)
     await byId(page, 'linker-search').fill('')
     await byId(page, 'linker-remove').first().click()
@@ -364,35 +371,35 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expectNoHorizontalScroll(page)
   })
 
-  test('E2E-M02-24: parent 5401 has no linked children; leaving with Batal changes nothing', async ({
+  test('E2E-M02-24: parent 5401 has no linked children; a child added in the "Ibu Bapa" tab is saved at once and survives a reopen', async ({
     page,
     gotoApp,
   }) => {
+    // v2: the parent links are their own tab and are saved immediately (no "Batal" to leave unsaved).
     await gotoApp('/admin/users/5401/edit')
-    await expect(byId(page, 'linker-none')).toHaveText('Tiada pelajar dipautkan lagi')
-    await byId(page, 'linker-search').fill('pelajar')
-    await byId(page, 'linker-result').first().click()
-    await expect(byId(page, 'linker-chip')).toHaveCount(1)
-    await byId(page, 'form-cancel').click()
-    await expect(page).toHaveURL('/admin/users')
+    await byId(page, 'user-tab-parent').click()
+    await expect(byId(page, 'parents-none')).toHaveText('Tiada pelajar dipautkan lagi')
+    await byId(page, 'parents-search').fill('pelajar')
+    await byId(page, 'parents-result').first().click()
+    await expect(byId(page, 'parents-row')).toHaveCount(1)
     await gotoApp('/admin/users/5401/edit')
-    await expect(byId(page, 'linker-none')).toHaveText('Tiada pelajar dipautkan lagi')
+    await byId(page, 'user-tab-parent').click()
+    await expect(byId(page, 'parents-row')).toHaveCount(1)
   })
 
-  test('E2E-M02-24: an already linked child is dimmed in the search results and adds nothing', async ({
+  test('E2E-M02-24: an already linked child is not offered again in the tab search and adds nothing', async ({
     page,
     gotoApp,
   }) => {
     await gotoApp('/admin/users/6/edit')
-    await expect(byId(page, 'linker-chip')).toHaveCount(2)
-    const chipText = (await byId(page, 'linker-chip').nth(1).innerText()).trim().split('\n')[0]!
-    await byId(page, 'linker-search').fill(chipText)
-    const rows = byId(page, 'linker-result')
-    await expect(rows.first()).toBeVisible()
-    const dimmed = rows.and(page.locator('.opacity-40'))
-    await expect(dimmed.first()).toBeVisible()
-    await dimmed.first().click()
-    await expect(byId(page, 'linker-chip')).toHaveCount(2)
+    await byId(page, 'user-tab-parent').click()
+    await expect(byId(page, 'parents-row')).toHaveCount(2)
+    const linkedName = (await byId(page, 'parents-row').nth(1).innerText()).trim().split(/\r?\n/)[0]!
+    await byId(page, 'parents-search').fill(linkedName)
+    await expect(byId(page, 'parents-dropdown')).toBeVisible()
+    await expect(byId(page, 'parents-search-loading')).toHaveCount(0)
+    await expect(byId(page, 'parents-result').filter({ hasText: linkedName })).toHaveCount(0)
+    await expect(byId(page, 'parents-row')).toHaveCount(2)
   })
 
   test('E2E-M02-25: role reactivity - parent shows children, Guru only the school, others none; back restores; student -> parent posts no grade / IC / package / school', async ({
@@ -405,7 +412,8 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
     await expect(byId(page, 'grade-cards')).toHaveCount(0)
     await expect(byId(page, 'user-package-block')).toHaveCount(0)
     await expect(byId(page, 'user-ic')).toHaveCount(0)
-    await expect(byId(page, 'parent-linker-edit')).toBeVisible()
+    // v2: the parent links are a tab of an existing parent, not part of the role switch.
+    await expect(byId(page, 'user-tabs')).toHaveCount(0)
     await pickRole(page, 'teacher')
     await expect(byId(page, 'admin-school')).toBeVisible()
     await expect(byId(page, 'grade-cards')).toHaveCount(0)
@@ -417,7 +425,7 @@ test.describe('M02 QA S3 edit gaps', { tag: [TAG.smoke, moduleTag(2)] }, () => {
       await expect(byId(page, 'admin-school')).toHaveCount(0)
     }
     await pickRole(page, 'student')
-    await expect(byId(page, 'grade-10')).toBeChecked()
+    await expect(page.getByRole('radio', { name: 'Ting. 4' })).toBeChecked()
     await expect(byId(page, 'user-ic')).not.toHaveValue('')
 
     await pickRole(page, 'parent')
