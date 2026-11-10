@@ -13,9 +13,11 @@ import { hashInput } from '../../kit/sql'
 import { Runner, type AnyEntityStep, type RunReport } from '../../kit/runner'
 import type { RunMode } from '../../kit/types'
 import { assertNotSyntheticInProduction } from '../index'
+import { openMigrationFiles } from '../activity/files'
 import { coreMapCounts, PreflightError, tableFingerprints } from '../activity/preflight'
 import { canonicalStep } from './canonical-steps'
 import { QuestionsContext, type QuestionsOptions } from './context'
+import { filesStep, QUESTION_IMAGE_ETL_CAP } from './files-step'
 import { curriculumMapHash } from './index'
 import { assertQuestionsPreflight } from './preflight'
 import { pkskStep, structuredStep, subjectiveStep } from './structured-steps'
@@ -25,8 +27,12 @@ import { CANONICAL_RULES_VERSION } from './canonical-plan'
 
 export const STRUCTURED_RUN_RULES = `${STRUCTURED_RULES_VERSION}+${CANONICAL_RULES_VERSION}+${PKSK_RULES_VERSION}`
 
+/**
+ * With `q.files` (`--files-dir`) the run ends with the picture pass in repair mode: the canonical-only questions and the subjective rows are
+ * created by these steps, after the pass of `migrate:questions`, and are held for their picture path until a pass copies the file.
+ */
 export function buildStructuredSteps(q: QuestionsContext): AnyEntityStep[] {
-  return [structuredStep(q), subjectiveStep(q), canonicalStep(q), pkskStep(q)]
+  return [structuredStep(q), subjectiveStep(q), canonicalStep(q), pkskStep(q), ...(q.files === undefined ? [] : [filesStep(q, q.files, { releaseOnly: true })])]
 }
 
 const NEEDED: Record<string, readonly string[]> = {
@@ -63,14 +69,19 @@ export interface StructuredRunOptions extends Omit<QuestionsOptions, 'pool'> {
   batchSize?: number
   gitSha?: string | null
   coreAsOf?: string
+  /** `--files-dir`: the V2 storage export (with SHA256SUMS); the run then ends with the picture pass (repair mode). */
+  filesDir?: string
 }
 
 export async function runStructured(options: StructuredRunOptions): Promise<{ report: RunReport; questions: QuestionsContext }> {
-  const { mode, batchSize, gitSha, coreAsOf, ...rest } = options
+  const { mode, batchSize, gitSha, coreAsOf, filesDir, ...rest } = options
   if (mode === 'apply') await assertApplyAllowed(options.pool, options.env)
   await assertNotSyntheticInProduction(options.pool, options.env)
   await assertStructuredPreflight({ pool: options.pool, env: options.env, source: options.source, asOf: options.asOf, coreAsOf })
   const questions = new QuestionsContext({ ...rest, pageSize: rest.pageSize ?? batchSize })
+  if (filesDir !== undefined) {
+    questions.files = await openMigrationFiles({ dir: filesDir, env: options.env, mode, source: options.source, capOverrides: { question_image: QUESTION_IMAGE_ETL_CAP } })
+  }
   const steps = buildStructuredSteps(questions)
   const inputHash = hashInput([
     ...(await tableFingerprints(options.pool, [
@@ -83,6 +94,7 @@ export async function runStructured(options: StructuredRunOptions): Promise<{ re
     `core-map=${await coreMapCounts(options.pool, options.source)}`,
     `curriculum-map=${await curriculumMapHash(options.pool, options.source)}`,
     `rules=${STRUCTURED_RUN_RULES}`,
+    `files=${questions.files?.manifestHash ?? 'none'}`,
   ])
   const runner = new Runner({ pool: options.pool, env: options.env })
   const report = await runner.run({ mode, steps, inputHash, gitSha, batchSize })

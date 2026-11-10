@@ -8,7 +8,11 @@
  * A group is held as a whole and released as a whole: every member carries the same entry and the same stimulus.
  *
  * A picture that cannot be used (cause `path`, `unlisted`, `missing`, `unsafe`, `size`, `checksum`, `type`) never drops a question: it stays held
- * with its path and is counted by cause (`QuestionsContext.fileFailures`, `files-missing-<run>.csv`). The pass is the resume path too: it reads
+ * with its path and is counted by cause (`QuestionsContext.fileFailures`, `files-missing-<run>.csv`). It is also a reject of the `question_files`
+ * entity (reason INVALID_VALUE, column `<v2 table>.<v2 column>`, offending = the cause word, legacy id = the lowest V2 id that carries the path), so
+ * `migrate:verify` can compute how many questions are legitimately held (the questions of the paths that failed).
+ * The pass runs twice in a full load: in `migrate:questions` (the rajah and plain pictures) and again at the end of `migrate:structured`
+ * (`releaseOnly`: the canonical-only questions and the subjective rows are created after the first pass and are held for the same paths). The pass is the resume path too: it reads
  * the archive paths and the held state, so a re-run after new files arrived repairs exactly the held rows, and a second run changes nothing.
  * Option pictures: V2 has none (`question_options.image_path` is NULL on every row of the full dump), so there is no option step.
  */
@@ -42,12 +46,19 @@ export function filesMissingCsv(list: readonly { path: string; cause: string; qu
   return ['v2_path,cause,v2_question_rows', ...list.map((f) => [clean(f.path), f.cause, String(f.questions)].join(','))].join('\n') + '\n'
 }
 
-const HELD =(pathParam: string): string =>
-  `jsonb_build_array(jsonb_build_object('code', 'legacy_image_unresolved', 'target', 'question', 'path', ${pathParam}::text))`
+export interface FilesStepOptions {
+  /**
+   * Only repair the held questions (and their stimuli) of each path: skip the planned stimuli of the rajah plan (`migrate:questions` already
+   * pointed them at the file) so the pass does not need the plan. Used at the end of `migrate:structured`.
+   */
+  releaseOnly?: boolean
+}
 
-export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntityStep {
+export function filesStep(q: QuestionsContext, files: MigrationFiles, options: FilesStepOptions = {}): AnyEntityStep {
   const entity = 'question_files'
   let list: PathUnit[] | null = null
+  /** The held questions by picture path, read once (one scan of the versions, not one scan per path). */
+  let heldByPath: Map<string, string[]> | null = null
   const load = async (): Promise<PathUnit[]> => {
     if (list === null) {
       const res = await q.pool.query<{ path: string; first_id: string; n: number }>(
@@ -77,7 +88,21 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
     },
     keyOf: (u: PathUnit) => u.key,
     async load(rows: PathUnit[], ctx: BatchContext): Promise<BatchResult> {
-      const { plan } = await q.plan()
+      const plan = options.releaseOnly === true ? null : (await q.plan()).plan
+      if (heldByPath === null) {
+        // One pass over the held versions: the old per-path `import_issues @>` lookup scanned all question versions once per path (about 2,100
+        // paths x 450,000 versions) and took over 20 minutes on UAT. A path's held questions never change before that path is processed
+        // (each path only lifts its own hold), so the map stays valid for the whole run.
+        const held = await ctx.db.query<{ question_id: string; path: string }>(
+          `SELECT v.question_id::text AS question_id, i->>'path' AS path
+             FROM question_versions v, jsonb_array_elements(v.import_issues) i
+            WHERE v.version_no = 1 AND jsonb_typeof(v.import_issues) = 'array' AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb
+              AND i->>'code' = 'legacy_image_unresolved' AND i->>'target' = 'question' AND i->>'path' IS NOT NULL`,
+        )
+        const map = new Map<string, string[]>()
+        for (const r of held.rows) map.set(r.path, [...(map.get(r.path) ?? []), r.question_id])
+        heldByPath = map
+      }
       let copied = 0
       let unchanged = 0
       for (const u of rows) {
@@ -85,7 +110,7 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
         if (!out.ok) {
           q.fileFailures.push({ path: u.path, cause: out.cause, questions: u.count })
           q.notes.count(`files.cause.${out.cause}`)
-          unchanged += 1
+          ctx.rejects.add({ entity, legacyId: u.firstId, reason: 'INVALID_VALUE', column: `${u.table}.${u.column}`, enumValue: out.cause })
           continue
         }
         q.notes.count(`files.${out.outcome}`)
@@ -95,7 +120,7 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
 
         // 1. the planned stimuli that show this path (carrier, owner, shared image)
         const planned: string[] = []
-        for (const s of plan.stimuli.values()) {
+        for (const s of plan?.stimuli.values() ?? []) {
           if (s.imagePath !== u.path) continue
           const id = await ctx.idMap.resolve('question_stimuli', s.key)
           if (id !== null) planned.push(id)
@@ -104,12 +129,8 @@ export function filesStep(q: QuestionsContext, files: MigrationFiles): AnyEntity
           await ctx.db.query(`UPDATE stimuli SET asset_file_id = $2::bigint, updated_at = now() WHERE id = ANY($1::bigint[]) AND asset_file_id IS NULL`, [planned, out.fileId])
         }
         // 2. the held questions of this path: their own stem stimulus or their group stimulus take the file, then the hold is lifted
-        const held = await ctx.db.query<{ question_id: string }>(
-          `SELECT v.question_id::text AS question_id FROM question_versions v
-            WHERE v.version_no = 1 AND v.import_issues @> ${HELD('$1')}`,
-          [u.path],
-        )
-        const ids = held.rows.map((r) => r.question_id)
+        const ids = [...new Set(heldByPath.get(u.path) ?? [])]
+        heldByPath.delete(u.path)
         if (ids.length === 0) continue
         await ctx.db.query(
           `UPDATE stimuli s SET asset_file_id = $2::bigint, updated_at = now()

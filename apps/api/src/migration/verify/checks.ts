@@ -10,43 +10,21 @@
  * the same `legacy_id`). The rows that were not loaded are the rejects, and they are counted by the entity table, so a
  * check never fails twice for the same reject.
  */
-import type pg from 'pg'
-
 import { ARCHIVE_SCHEMA, STAGING_SCHEMA } from '../ddl/spec'
 import { sanitizeDbError } from '../kit/errors'
 import { quoteIdent } from '../kit/sql'
-import type { LegacySource } from '../kit/types'
 import { ROLE_MAP } from '../transform/enums'
 import { buildGeo } from '../transform/reference'
 import { survivorSql } from './deleted'
+import { questionFileChecks, standaloneRejects } from './bank-checks'
+import { capped, entityOf, exists, reported, type CheckContext } from './check-kit'
 import { existingLegacyTables, loadForeignKeys, readMigratableList, type ForeignKey } from './fk-graph'
-import type { EntityCheck, StatCheck } from './types'
+import type { StatCheck } from './types'
+
+export type { CheckContext } from './check-kit'
 
 const S = quoteIdent(STAGING_SCHEMA)
 const A = quoteIdent(ARCHIVE_SCHEMA)
-const MAX_DETAIL_ITEMS = 20
-
-export interface CheckContext {
-  pool: pg.Pool
-  source: LegacySource
-  entities: readonly EntityCheck[]
-}
-
-/** True when `schema.table` exists (so a check can say "not available" instead of failing on a missing relation). */
-async function exists(pool: pg.Pool, schema: string | null, table: string): Promise<boolean> {
-  const name = schema === null ? quoteIdent(table) : `${quoteIdent(schema)}.${quoteIdent(table)}`
-  const res = await pool.query<{ ok: boolean }>(`SELECT to_regclass($1) IS NOT NULL AS ok`, [name])
-  return res.rows[0]?.ok === true
-}
-
-const reported = (name: string, kind: StatCheck['kind'], detail: string): StatCheck => ({
-  name,
-  kind,
-  expected: null,
-  actual: null,
-  status: 'reported',
-  detail,
-})
 
 /** Compares two count maps; returns the differing keys as `key: expected / actual` (capped). */
 function diffMaps(expected: ReadonlyMap<string, number>, actual: ReadonlyMap<string, number>): string[] {
@@ -62,8 +40,6 @@ function diffMaps(expected: ReadonlyMap<string, number>, actual: ReadonlyMap<str
 
 const sumOf = (m: ReadonlyMap<string, number>): number => [...m.values()].reduce((a, b) => a + b, 0)
 
-const capped = (items: readonly string[]): string =>
-  items.length <= MAX_DETAIL_ITEMS ? items.join('; ') : `${items.slice(0, MAX_DETAIL_ITEMS).join('; ')}; ... (${items.length} in all)`
 
 function countMap(rows: readonly { k: string | null; n: number }[]): Map<string, number> {
   const m = new Map<string, number>()
@@ -220,22 +196,64 @@ async function ledger({ pool, source, entities }: CheckContext): Promise<StatChe
 async function correctAnswers({ pool, source }: CheckContext): Promise<StatCheck[]> {
   const aliveSessions = await survivorSql(pool, 'practice_sessions', 'ps')
   const aliveAnswers = await survivorSql(pool, 'practice_answers', 'pa')
-  const sessions = await pool.query<{ s: string }>(
-    `SELECT coalesce(sum(ps.correct_count), 0)::text AS s FROM practice_sessions ps WHERE ps.legacy_source = $1${aliveSessions}`,
-    [source],
-  )
   const answers = await pool.query<{ n: string }>(
     `SELECT count(*)::text AS n FROM practice_answers pa WHERE pa.legacy_source = $1 AND pa.is_correct${aliveAnswers}`,
     [source],
   )
+  const actual = answers.rows[0]?.n ?? '0'
+  const sumName = 'SUM(practice_sessions.correct) versus correct answer rows'
+  if (!(await exists(pool, STAGING_SCHEMA, 'question_attempts'))) {
+    const sessions = await pool.query<{ s: string }>(
+      `SELECT coalesce(sum(ps.correct_count), 0)::text AS s FROM practice_sessions ps WHERE ps.legacy_source = $1${aliveSessions}`,
+      [source],
+    )
+    return [
+      {
+        name: sumName,
+        kind: 'sums',
+        expected: sessions.rows[0]?.s ?? '0',
+        actual,
+        status: 'reported',
+        detail: 'staging_cloud.question_attempts is not available: the session counters are shown against the answer rows, not compared',
+      },
+    ]
+  }
+  // A session whose V2 answer rows exist must add up: its stored counter is the number of its correct rows. A V2 session without any answer row
+  // (the SPM tracking sessions store the score, not the answers) has nothing to compare; its counter is listed apart, never added to the expectation.
+  const sessions = await pool.query<{ s: string; n: number; uncomparable_sum: string; uncomparable: number }>(
+    `SELECT coalesce(sum(ps.correct_count) FILTER (WHERE has.yes), 0)::text AS s, count(*) FILTER (WHERE has.yes)::int AS n,
+            coalesce(sum(ps.correct_count) FILTER (WHERE NOT has.yes), 0)::text AS uncomparable_sum, count(*) FILTER (WHERE NOT has.yes)::int AS uncomparable
+       FROM practice_sessions ps
+       CROSS JOIN LATERAL (SELECT EXISTS (SELECT 1 FROM ${S}."question_attempts" a WHERE a.practice_session_id::text = ps.legacy_id) AS yes) has
+      WHERE ps.legacy_source = $1${aliveSessions}`,
+    [source],
+  )
+  const r = sessions.rows[0] ?? { s: '0', n: 0, uncomparable_sum: '0', uncomparable: 0 }
+  // The loader reads every answer of a loaded session; the correct ones staged must equal the correct ones loaded (no silent loss).
+  const staged = await pool.query<{ n: string }>(
+    `SELECT count(*)::text AS n FROM ${S}."question_attempts" a
+      WHERE lower(btrim(a.is_correct)) IN ('1', 'true', 't', 'yes', 'y', 'ya')
+        AND EXISTS (SELECT 1 FROM practice_sessions ps WHERE ps.legacy_source = $1 AND ps.legacy_id = a.practice_session_id::text${aliveSessions})`,
+    [source],
+  )
+  const expectedRows = staged.rows[0]?.n ?? '0'
   return [
     {
-      name: 'SUM(practice_sessions.correct) versus correct answer rows',
+      name: sumName,
       kind: 'sums',
-      expected: sessions.rows[0]?.s ?? '0',
-      actual: answers.rows[0]?.n ?? '0',
-      status: 'reported',
-      detail: 'A session counts answers that may have been rejected (orphan question, unknown user); a difference is shown, not failed.',
+      expected: r.s,
+      actual,
+      // A difference is V2's own counter drift (the row is the truth the pupil sees), shown and not failed; the loss check below fails.
+      status: r.s === actual ? 'ok' : 'reported',
+      detail: `${r.n} loaded sessions have answer rows (counter sum ${r.s}); ${r.uncomparable} loaded sessions have none in V2 (counter sum ${r.uncomparable_sum}, not comparable)`,
+    },
+    {
+      name: 'correct answer rows versus staged correct attempts (loaded sessions)',
+      kind: 'sums',
+      expected: expectedRows,
+      actual,
+      status: expectedRows === actual ? 'ok' : 'mismatch',
+      detail: 'every staged attempt of a loaded session is loaded: the correct rows staged and loaded are equal',
     },
   ]
 }
@@ -417,19 +435,24 @@ async function derivedCounts({ pool, source }: CheckContext): Promise<StatCheck[
 async function acceptedDrift({ pool, source }: CheckContext): Promise<StatCheck[]> {
   const out: StatCheck[] = []
   if (await exists(pool, STAGING_SCHEMA, 'student_wallets')) {
-    const res = await pool.query<{ total: number; differing: number }>(
-      `SELECT count(*)::int AS total, count(*) FILTER (WHERE w.streak_days IS DISTINCT FROM s."current")::int AS differing
-       FROM ${S}."student_wallets" w JOIN streaks s ON s.legacy_source = $1 AND s.legacy_id = w.id::text`,
+    // V2 keeps streak_days as a counter that nothing resets between the dump and the load; v3 recomputes the streak from the sessions as of the load
+    // day (current = 0 when the last practice day is older than yesterday). A stored value above 0 against a recomputed 0 is that lapse: expected drift.
+    // Anything else (both above 0 and different, or a recomputed streak above a stored 0) has no explanation and is listed apart.
+    const res = await pool.query<{ total: number; differing: number; lapsed: number }>(
+      `SELECT count(*)::int AS total,
+              count(*) FILTER (WHERE w.streak_days IS NOT NULL AND w.streak_days <> s."current")::int AS differing,
+              count(*) FILTER (WHERE w.streak_days > 0 AND s."current" = 0)::int AS lapsed
+         FROM ${S}."student_wallets" w JOIN streaks s ON s.legacy_source = $1 AND s.legacy_id = w.id::text`,
       [source],
     )
-    const r = res.rows[0] ?? { total: 0, differing: 0 }
+    const r = res.rows[0] ?? { total: 0, differing: 0, lapsed: 0 }
     out.push({
       name: 'streak: stored streak_days versus recomputed current streak',
       kind: 'accepted-drift',
-      expected: 0,
+      expected: r.lapsed,
       actual: r.differing,
-      status: 'reported',
-      detail: `${r.differing} of ${r.total} migrated wallets; streaks are recomputed in v2 (T-05, risk "Derived data drift")`,
+      status: r.lapsed === r.differing ? 'ok' : 'reported',
+      detail: `${r.differing} of ${r.total} migrated wallets differ: ${r.lapsed} stored a streak above 0 that has lapsed by the load day (recomputed 0), ${r.differing - r.lapsed} unexplained; streaks are recomputed in v2 (T-05, risk "Derived data drift")`,
     })
   } else {
     out.push(reported('streak: stored streak_days versus recomputed current streak', 'accepted-drift', 'staging_cloud.student_wallets is not available; not compared'))
@@ -451,10 +474,6 @@ async function acceptedDrift({ pool, source }: CheckContext): Promise<StatCheck[
 
 // ---------------------------------------------------------------- (h) question bank, papers: the standalone loaders
 
-const entityOf = (entities: readonly EntityCheck[], name: string): EntityCheck | undefined => {
-  const e = entities.find((x) => x.entity === name)
-  return e === undefined || e.status === 'not-run' ? undefined : e
-}
 
 /**
  * "V2 total = loaded + absorbed + quarantined + the type another loader owns" (design 5.1, V-2): every archive question row is accounted
@@ -525,35 +544,6 @@ async function stimulusGroupChecks({ pool, source, entities }: CheckContext): Pr
   ]
 }
 
-/** Question pictures: the paths the step walked are the distinct V2 paths; a held question is reported (never a failure: the files step repairs it). */
-async function questionFileChecks({ pool, entities }: CheckContext): Promise<StatCheck[]> {
-  const f = entityOf(entities, 'question_files')
-  if (f === undefined) {
-    return [reported('question pictures: distinct V2 paths and held questions', 'counts', 'the files step has not run (migrate:questions without --files-dir, or no apply run); not compared')]
-  }
-  const out: StatCheck[] = []
-  if (await exists(pool, ARCHIVE_SCHEMA, 'questions')) {
-    const paths = await pool.query<{ n: number }>(`SELECT count(DISTINCT image_path)::int AS n FROM ${A}."questions" WHERE image_path IS NOT NULL AND btrim(image_path) <> ''`)
-    const n = paths.rows[0]?.n ?? 0
-    out.push({ name: 'question pictures: distinct V2 paths walked', kind: 'counts', expected: n, actual: f.sourceCount, status: n === f.sourceCount ? 'ok' : 'mismatch' })
-  }
-  const held = await pool.query<{ questions: number; inactive: number }>(
-    `SELECT count(*)::int AS questions, count(*) FILTER (WHERE NOT q.is_active)::int AS inactive
-       FROM question_versions v JOIN questions q ON q.id = v.question_id
-      WHERE v.version_no = 1 AND v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb`,
-  )
-  const h = held.rows[0] ?? { questions: 0, inactive: 0 }
-  out.push({
-    name: 'question pictures: questions held for a missing or unusable picture',
-    kind: 'counts',
-    expected: 0,
-    actual: h.questions,
-    status: 'reported',
-    detail: `${h.questions} questions wait for their picture (${h.inactive} inactive, never served until it is copied); the files step lists each cause (files-missing CSV)`,
-  })
-  return out
-}
-
 /** PKSK (OC-4): every loaded V2 question carries its domain and level tags, and none is live (served) without options. */
 async function pkskChecks({ pool, source, entities }: CheckContext): Promise<StatCheck[]> {
   const name = 'PKSK questions: tags and draft state'
@@ -582,35 +572,6 @@ async function pkskChecks({ pool, source, entities }: CheckContext): Promise<Sta
       actual: bad,
       status: bad === 0 ? 'ok' : 'mismatch',
       detail: `${r.loaded} loaded V2 PKSK questions: ${r.untagged} without a domain or level tag, ${r.served_empty} live with no options; ${r.drafts_to_complete} still have no options and wait for an admin in "Soalan PKSK" (never served)`,
-    },
-  ]
-}
-
-const STANDALONE_ENTITIES = [
-  'questions', 'question_stimuli', 'stimulus_groups', 'structured_questions', 'subjective_questions', 'exam_questions', 'pksk_questions',
-  'spm_sets', 'paper_blueprints', 'exam_papers', 'paper_documents', 'paper_document_pages',
-]
-
-/** Rejects of the standalone loaders by entity, reason and column (the reject CSVs hold the ids). Reported: a reject has a reason, never a silent loss. */
-async function standaloneRejects({ pool, source }: CheckContext): Promise<StatCheck[]> {
-  const res = await pool.query<{ entity: string; reason: string; column_name: string | null; n: number }>(
-    `SELECT r.entity, r.reason, r.column_name, count(*)::int AS n
-       FROM etl_rejects r
-      WHERE r.entity = ANY($2::text[])
-        AND r.run_id = (SELECT max(c.run_id) FROM etl_recon c JOIN etl_runs u ON u.id = c.run_id
-                         WHERE c.entity = r.entity AND u.mode = 'apply' AND u.status = 'succeeded' AND $1 = ANY(u.sources))
-      GROUP BY 1, 2, 3 ORDER BY 1, 2, 3`,
-    [source, STANDALONE_ENTITIES],
-  )
-  const total = res.rows.reduce((n, r) => n + r.n, 0)
-  return [
-    {
-      name: 'rejects of the question and paper loaders (latest apply run of each)',
-      kind: 'counts',
-      expected: null,
-      actual: total,
-      status: 'reported',
-      detail: res.rows.length === 0 ? 'no reject' : capped(res.rows.map((r) => `${r.entity} ${r.reason}${r.column_name ? `/${r.column_name}` : ''}: ${r.n}`)),
     },
   ]
 }

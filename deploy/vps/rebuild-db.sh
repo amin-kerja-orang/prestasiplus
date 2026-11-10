@@ -418,9 +418,10 @@ etl_pass() {
   etl "p$pass migrate:questions --dry-run" migrate:questions --dry-run --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file" ${fa[@]+"${fa[@]}"}
   etl "p$pass migrate:questions --apply" migrate:questions --apply --as-of="$asof" --core-as-of="$asof" --plan-file="$plan_file" ${fa[@]+"${fa[@]}"}
   # HOOK (T-B9-6/7): structured, subjective and canonical-only questions. Entry point exists in the tree; skip with --skip structured.
+  # --files-dir: these steps create questions held for their picture AFTER the pass of migrate:questions, so the run ends with the picture pass again (repair mode).
   if is_skipped structured; then pp_warn "HOOK structured skipped (--skip structured)"; else
-    etl "p$pass migrate:structured --dry-run" migrate:structured --dry-run --as-of="$asof" --core-as-of="$asof"
-    etl "p$pass migrate:structured --apply" migrate:structured --apply --as-of="$asof" --core-as-of="$asof"
+    etl "p$pass migrate:structured --dry-run" migrate:structured --dry-run --as-of="$asof" --core-as-of="$asof" ${fa[@]+"${fa[@]}"}
+    etl "p$pass migrate:structured --apply" migrate:structured --apply --as-of="$asof" --core-as-of="$asof" ${fa[@]+"${fa[@]}"}
   fi
   # HOOK (T-B10): SPM sets, blueprints, papers. --terbit publishes the V2-published papers through the real publish gate.
   if is_skipped papers; then pp_warn "HOOK papers skipped (--skip papers)"; else

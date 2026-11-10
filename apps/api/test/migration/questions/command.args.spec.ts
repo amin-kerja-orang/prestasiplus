@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { parseArgs } from '../../../src/migration/cli'
 import { ApplyGuardError } from '../../../src/migration/kit/apply-guard'
 import { parseQuestionsArgs } from '../../../src/migration/load/questions/command'
+import { parseStructuredArgs } from '../../../src/migration/load/questions/structured-command'
 
 const SLOT_OUT = '/app/apps/api/.migration-out'
 const parse = (argv: string[]) => {
@@ -41,6 +42,14 @@ describe('migrate:questions argv as slot.sh passes it', () => {
     expect(parse(['--as-of=2026-10-29', '--out-dir', SLOT_OUT]).out.filesDir).toBeUndefined()
     expect(() => parse(['--plan', '--out-dir', SLOT_OUT, '--files-dir', '/srv/v2-files'])).toThrow(/--files-dir belongs to/)
     expect(() => parse(['--out-dir', SLOT_OUT, '--files-dir'])).toThrow(/--files-dir needs a value/)
+  })
+
+  it('migrate:structured takes --files-dir too (it ends with the picture pass) and still refuses unknown flags', () => {
+    const parseS = (argv: string[]) => parseStructuredArgs(parseArgs(['migrate:structured', ...argv]).args, (d) => d)
+    expect(parseS(['--as-of=2026-10-29', '--out-dir', SLOT_OUT, '--files-dir', '/files']).filesDir).toBe('/files')
+    expect(parseS(['--as-of=2026-10-29', '--out-dir', SLOT_OUT]).filesDir).toBeUndefined()
+    expect(() => parseS(['--out-dir', SLOT_OUT, '--files-dir'])).toThrow(/--files-dir needs a value/)
+    expect(() => parseS(['--out-dir', SLOT_OUT, '--plan-file=x'])).toThrow(ApplyGuardError)
   })
 
   it('refuses an out-dir outside a .migration-out folder (the real check)', () => {

@@ -141,7 +141,7 @@ export const ENTITY_MATRIX: readonly MatrixEntry[] = [
   ...standalone([
     ['question_stimuli', 'stimuli', 'stimuli', 'idmap', 'stimuli of the rajah plan (carriers, owners, shared images, canonical stimuli); the stem stimulus of a plain question is not an entry of this step', { idmapWhere: `legacy_id NOT LIKE 'i:%'` }],
     ['stimulus_groups', null, 'stimulus_groups', 'shared', 'rajah groups (all members show the rajah, V2 order) and the stem links of image owners; checked by the group checks, not by a row count'],
-    ['question_files', null, 'files', 'shared', 'question pictures by distinct V2 path; a picture that cannot be used keeps its questions held (never dropped), see the file checks'],
+    ['question_files', null, 'files', 'shared', 'question pictures by distinct V2 path; a picture that cannot be used is a reject of this entity and keeps its questions held (never dropped), see the file checks'],
     ['structured_questions', 'structured_questions', 'questions', 'idmap', 'structured questions with sub-questions and rubric points (no legacy pair: the id map links them)', { archiveTable: 'structured_questions' }],
     ['subjective_questions', 'questions', 'questions', 'shared', 'subjective questions: rows of questions with their own legacy id (counted with the questions entity); the type migrate:questions leaves to this loader'],
     ['exam_questions', 'exam_questions', 'questions', 'idmap', 'canonical-only questions (no legacy_canonical_map row; no legacy pair: the id map links them)'],

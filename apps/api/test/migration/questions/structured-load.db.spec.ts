@@ -3,6 +3,11 @@
  * and papers (group integrity included), idempotency, and a read of every loaded question through V3's own strict part reader.
  * Synthetic archive rows only.
  */
+import { createHash } from 'node:crypto'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
+
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { runPapers } from '../../../src/migration/load/papers'
@@ -10,6 +15,7 @@ import { runQuestions } from '../../../src/migration/load/questions'
 import { runVerify } from '../../../src/migration/verify'
 import { runStructured } from '../../../src/migration/load/questions/structured-index'
 import { partsFromRows } from '../../../src/modules/questions/tree'
+import { makePng } from '../../files/fixtures'
 import { addArchive, AS_OF, bootQuestions, type QuestionsHarness } from './helpers'
 
 let h: QuestionsHarness
@@ -288,7 +294,13 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
     expect(checks['stimulus groups: groups with a stimulus and members']?.status).toBe('ok')
     expect(checks['PKSK questions: tags and draft state']).toMatchObject({ status: 'ok', actual: 0 })
     expect(checks['PKSK questions: tags and draft state']?.detail).toContain('3 still have no options')
+    // The quarantined 912 has an unknown subject: a reject reason with no computed expectation, so the total is reported and never passed.
     expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.status).toBe('reported')
+    expect(checks['rejects of the question and paper loaders (latest apply run of each)']?.detail).toContain('UNEXPLAINED')
+    // Every reason V2 data explains has its own computed expectation: the blueprint with no duration anywhere (subject 2, kertas 1) is the one reject.
+    expect(checks['rejects: paper_blueprints: rejected for no duration']).toMatchObject({ status: 'ok', expected: 1, actual: 1 })
+    expect(checks['rejects: questions: rejected for the answer key']).toMatchObject({ status: 'ok', expected: 0, actual: 0 })
+    expect(checks['rejects: questions: rejected for an empty option text']).toMatchObject({ status: 'ok', expected: 0, actual: 0 })
     expect(report.checks.filter((c) => c.status === 'mismatch' && NEW.some((n) => c.name.includes(n)))).toEqual([])
   })
 
@@ -303,5 +315,100 @@ describe('migrate:verify knows the question, structured and papers loaders', () 
     expect(changed?.status).toBe('mismatch')
     expect(changed?.note).toContain('archive changed since the run')
     await sql(`delete from archive_cloud.pksk_questions where id = 599`)
+  })
+})
+
+/**
+ * `migrate:structured --files-dir`: the canonical-only and subjective questions are created AFTER the picture pass of `migrate:questions`, held for
+ * their picture; the run therefore ends with the picture pass in repair mode. A path that cannot be copied is a reject of `question_files`, and
+ * `migrate:verify` computes the held questions it explains.
+ */
+describe('the picture pass at the end of migrate:structured', () => {
+  const verify = () => runVerify({ pool: h.pool, env: h.runEnv, source: 'cloud' })
+  const roots: string[] = []
+  afterAll(() => {
+    for (const r of roots) rmSync(r, { recursive: true, force: true })
+  })
+
+  function makeExport(paths: readonly string[]): { dir: string; storage: string } {
+    const root = mkdtempSync(join(tmpdir(), 'structured-files-'))
+    roots.push(root)
+    const dir = join(root, 'export')
+    const storage = join(root, 'storage')
+    mkdirSync(dir)
+    mkdirSync(storage)
+    const sums: string[] = []
+    for (const [n, p] of paths.entries()) {
+      const bytes = makePng({ width: 2 + n, height: 2 })
+      mkdirSync(dirname(join(dir, p)), { recursive: true })
+      writeFileSync(join(dir, p), bytes)
+      sums.push(`${createHash('sha256').update(bytes).digest('hex')}  ./${p}`)
+    }
+    writeFileSync(join(dir, 'SHA256SUMS'), `${sums.join('\n')}\n`)
+    return { dir, storage }
+  }
+
+  const heldCount = async () =>
+    Number((await sql(`select count(*)::int as n from question_versions v where v.version_no = 1 and v.import_issues @> '[{"code": "legacy_image_unresolved"}]'::jsonb`)).rows[0]?.n)
+
+  it('releases the canonical question held for its picture, rejects the path that is not in the export, and verify explains the held question', async () => {
+    // A plain MCQ whose picture is not in the export: loaded held by migrate:questions, still held after every pass.
+    await addArchive(h.pool, [{ id: 920, image: 'soalan/hilang.png' }])
+    for (const mode of ['dry-run', 'apply'] as const) {
+      const r = await runQuestions({ ...opts, pool: h.pool, env: h.runEnv, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode, batchSize: 2 })
+      expect(r.report.status).toBe('succeeded')
+    }
+    const canonical = (await sql(`select q.id::text as id from etl_id_map m join questions q on q.id = m.new_id::bigint where m.entity = 'structured_questions' and m.legacy_id = '1'`)).rows[0]?.id as string
+    expect((await sql(`select is_active from questions where id = $1::bigint`, [canonical])).rows[0]?.is_active).toBe(false)
+    const before = await heldCount()
+    expect(before).toBeGreaterThanOrEqual(2)
+
+    const { dir, storage } = makeExport(['rajah/litar.png'])
+    const env = { ...h.runEnv, FILE_STORAGE_DIR: storage }
+    const run = (mode: 'dry-run' | 'apply') => runStructured({ ...opts, pool: h.pool, env, source: 'cloud', asOf: AS_OF, coreAsOf: AS_OF, mode, batchSize: 2, filesDir: dir })
+    const dry = await run('dry-run')
+    expect(dry.report.status).toBe('succeeded')
+    expect(await heldCount()).toBe(before) // a dry-run verifies the files and writes nothing
+    const applied = await run('apply')
+    expect(applied.report.status).toBe('succeeded')
+
+    // The canonical question is live again with its picture; the hilang.png question stays held with its cause counted.
+    expect((await sql(`select is_active from questions where id = $1::bigint`, [canonical])).rows[0]?.is_active).toBe(true)
+    const stimulus = await sql(
+      `select s.asset_file_id from question_version_stimuli qvs join stimuli s on s.id = qvs.stimulus_id join question_versions v on v.id = qvs.question_version_id where v.question_id = $1::bigint`,
+      [canonical],
+    )
+    expect(stimulus.rows.every((x) => x.asset_file_id !== null)).toBe(true)
+    expect(applied.questions.notes.counters.get('files.cause.unlisted')).toBe(1)
+    const files = applied.report.recon.find((x) => x.entity === 'question_files')
+    expect(files).toMatchObject({ sourceCount: 2, eligibleCount: 2, loaded: 1, rejected: 1, status: 'ok' })
+    const rejected = await sql(`select reason, column_name, offending from etl_rejects where run_id = $1::bigint and entity = 'question_files'`, [applied.report.runId])
+    expect(rejected.rows).toEqual([{ reason: 'INVALID_VALUE', column_name: 'questions.image_path', offending: 'unlisted' }])
+    expect(await heldCount()).toBe(before - 1)
+
+    // A rerun with the same files changes nothing.
+    const again = await run('apply')
+    expect(again.report.status).toBe('succeeded')
+    expect(Object.values(again.report.counters).reduce((n, c) => n + c.inserted + c.updated, 0)).toBe(0)
+
+    // verify: 2 distinct paths walked (1 question picture + 1 media asset); the one held question waits for the rejected path.
+    const checks = Object.fromEntries((await verify()).checks.map((c) => [c.name, c]))
+    expect(checks['question pictures: distinct V2 paths walked']).toMatchObject({ status: 'ok', expected: 2, actual: 2 })
+    expect(checks['question pictures: questions held for a missing or unusable picture']).toMatchObject({ status: 'ok', expected: 1, actual: 1 })
+  })
+
+  it('fails verify for a held question whose picture was not rejected (the pass should have released it)', async () => {
+    const victim = (await sql(`select q.id::text as id from questions q where q.legacy_source = 'cloud' and q.legacy_id = '910'`)).rows[0]?.id as string
+    await sql(
+      `update question_versions set import_issues = '[{"code": "legacy_image_unresolved", "target": "question", "path": "lain/belum.png"}]'::jsonb where question_id = $1::bigint and version_no = 1`,
+      [victim],
+    )
+    try {
+      const held = (await verify()).checks.find((c) => c.name === 'question pictures: questions held for a missing or unusable picture')
+      expect(held).toMatchObject({ status: 'mismatch', expected: 1, actual: 2 })
+      expect(held?.detail).toContain('should have been released')
+    } finally {
+      await sql(`update question_versions set import_issues = null where question_id = $1::bigint and version_no = 1`, [victim])
+    }
   })
 })

@@ -1,7 +1,7 @@
 /**
  * The `migrate:structured` command (T-B9-6, T-B9-7). Registers itself with the kit CLI on import.
  *
- *   npx tsx src/migration/load/questions/structured-cli.ts -- [--dry-run | --apply] [--as-of=YYYY-MM-DD] [--core-as-of=YYYY-MM-DD] [--batch-size=N] [--out-dir=<.migration-out path>]
+ *   npx tsx src/migration/load/questions/structured-cli.ts -- [--dry-run | --apply] [--as-of=YYYY-MM-DD] [--core-as-of=YYYY-MM-DD] [--batch-size=N] [--out-dir=<.migration-out path>] [--files-dir=<V2 storage export>]
  *
  * Run AFTER `migrate:all` and `migrate:questions`. Environment: DATABASE_URL, for --apply PP_ALLOW_MIGRATE_APPLY=1. Counts only in the output.
  */
@@ -14,10 +14,11 @@ import { registerMigrateCommand, withSourceLock, type CliContext, type CommandAr
 import { ApplyGuardError } from '../../kit/apply-guard'
 import { prepareOutputDir, ProfileOutputError } from '../../profile'
 import { resolveGitSha } from '../git-sha'
+import { filesMissingCsv } from './files-step'
 import { runStructured } from './structured-index'
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/
-const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir'])
+const KNOWN_FLAGS: ReadonlySet<string> = new Set(['as-of', 'core-as-of', 'batch-size', 'out-dir', 'files-dir'])
 
 function flagValue(args: CommandArgs, name: string): string | undefined {
   const v = args.flags.get(name)
@@ -36,6 +37,8 @@ export interface StructuredArgs {
   coreAsOf?: string
   batchSize?: number
   outDir: string
+  /** `--files-dir`: the V2 storage export; the run then ends with the picture pass (releases the questions held for a picture). */
+  filesDir?: string
 }
 
 export function parseStructuredArgs(args: CommandArgs, prepare: (dir: string) => string = prepareOutputDir): StructuredArgs {
@@ -52,16 +55,17 @@ export function parseStructuredArgs(args: CommandArgs, prepare: (dir: string) =>
     if (e instanceof ProfileOutputError) throw new ApplyGuardError(`--out-dir: ${e.message}`)
     throw e
   }
-  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir }
+  const filesDir = flagValue(args, 'files-dir')
+  return { asOf: date('as-of', flagValue(args, 'as-of')) ?? mytDay(new SystemClock().now()), coreAsOf: date('core-as-of', flagValue(args, 'core-as-of')), batchSize, outDir, ...(filesDir === undefined ? {} : { filesDir }) }
 }
 
 export const migrateStructured: MigrateCommand = {
   name: 'migrate:structured',
   summary: 'loads the V2 structured, subjective and canonical-only questions from archive_cloud (after migrate:all and migrate:questions; dry-run by default)',
   async run(args: CommandArgs, ctx: CliContext): Promise<number> {
-    const { asOf, coreAsOf, batchSize, outDir } = parseStructuredArgs(args)
+    const { asOf, coreAsOf, batchSize, outDir, filesDir } = parseStructuredArgs(args)
     const { report, questions } = await withSourceLock(ctx.pool, 'cloud', () =>
-      runStructured({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), progress: ctx.out }),
+      runStructured({ pool: ctx.pool, env: ctx.env, source: 'cloud', asOf, coreAsOf, mode: args.mode, batchSize, gitSha: resolveGitSha(ctx.env), progress: ctx.out, filesDir }),
     )
     ctx.out(`migrate:structured ${report.mode}: run ${report.runId} ${report.status}`)
     ctx.out('entity | source | eligible | loaded | rejected | status')
@@ -79,6 +83,11 @@ export const migrateStructured: MigrateCommand = {
       { encoding: 'utf8', mode: 0o600, flag: 'wx' },
     )
     ctx.out(`report: ${file}`)
+    if (filesDir !== undefined) {
+      const missingOut = join(outDir, `files-missing-structured-${report.mode}-${report.runId}-${randomBytes(3).toString('hex')}.csv`)
+      writeFileSync(missingOut, filesMissingCsv(questions.fileFailures), { encoding: 'utf8', mode: 0o600, flag: 'wx' })
+      ctx.out(`pictures: ${questions.fileFailures.length} path(s) not usable: ${missingOut}`)
+    }
     return report.status === 'succeeded' ? 0 : 1
   },
 }
