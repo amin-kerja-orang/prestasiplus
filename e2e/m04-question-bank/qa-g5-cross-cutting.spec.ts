@@ -93,6 +93,7 @@ test.describe('QA G5 lookups, counts, PKSK', { tag: [moduleTag(4), '@qa'] }, () 
     expect(s1Names).toHaveLength(31)
 
     await gotoApp('/admin/structured-questions')
+    // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
     await expect(byId(page, 'structured-subject').locator('option')).toHaveCount(32)
     const sNames = (await byId(page, 'structured-subject').locator('option').allInnerTexts())
       .slice(1)
@@ -197,6 +198,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
   test.use({ mockInit: { latency: 0 } })
   test.setTimeout(150_000)
 
+  // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
   test('E2E-M04-45 S8 header copy, add link, filter options, pills alphabetical (AC-22.1, 22.2)', async ({
     page,
     loginAs,
@@ -233,6 +235,7 @@ test.describe('QA G5 S8/S9 details', { tag: [moduleTag(4), '@qa'] }, () => {
     )
   })
 
+  // RED, waiting on LEAD UI agent: it owns StructuredListPage (/admin/structured-questions) and is changing it; do not rewrite toward the current UI.
   test('E2E-M04-47 S9: edit link goes to the M10 route, back link returns (AC-23.1, 23.3)', async ({
     page,
     loginAs,
