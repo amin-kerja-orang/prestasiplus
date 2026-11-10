@@ -52,8 +52,14 @@ export const INTAKE_SCAN_UNAVAILABLE_CODE = 'UPLOAD_SCAN_UNAVAILABLE'
 export const INTAKE_SCAN_MESSAGES = {
   infected: 'Fail ini mengandungi perisian berbahaya (virus) dan telah ditolak. Muat naik tidak diterima.',
   tooLarge: (mb: number) => `Fail terlalu besar untuk diimbas (had ${String(mb)} MB). Kecilkan fail dan cuba lagi.`,
+  unscannable: 'Fail ini tidak dapat diimbas sepenuhnya (dilindungi kata laluan atau terlalu kompleks) dan telah ditolak.',
   unavailable: 'Pengimbasan keselamatan fail tidak tersedia buat masa ini. Sila cuba lagi sebentar nanti.',
 } as const
+
+/** clamd with AlertExceedsMax / AlertEncrypted* answers FOUND for archives it could not fully scan and for encrypted content: not malware, but not accepted. */
+export function isUnscannableSignature(signature: string): boolean {
+  return /^Heuristics.(Limits.Exceeded|Encrypted.)/i.test(signature)
+}
 
 function invalid(message: string): ApiError {
   return ApiError.of('VALIDATION_ERROR', { fields: { files: message } })
@@ -189,7 +195,7 @@ export class IntakeUploadService {
       const office = detectOffice(buffer)
       if (office) {
         // Cheap refusals (a duplicate) come before the scan, which is the slow step (backlog #78, Z-5).
-        if (await this.isDuplicate(batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
+        if (await this.isDuplicate(auth, batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
         const refused = await this.scan(auth, who, part)
         if (refused) return { error: refused }
         return {
@@ -204,7 +210,7 @@ export class IntakeUploadService {
     }
     const inspected = inspectUpload(buffer)
     if (!inspected || inspected.mime !== 'application/pdf') return { error: invalid(INTAKE_FILE_MESSAGES.type) }
-    if (await this.isDuplicate(batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
+    if (await this.isDuplicate(auth, batchId, seen, createHash('sha256').update(buffer).digest('hex'))) return { error: invalid(INTAKE_FILE_MESSAGES.duplicate) }
     // Scan before the PDF is opened by the inspection worker: a malicious file is never parsed.
     const refused = await this.scan(auth, who, part)
     if (refused) return { error: refused }
@@ -243,8 +249,8 @@ export class IntakeUploadService {
         this.scanned.add(part.buffer)
         return null
       }
-      await this.auditInfected(auth, who, part, outcome.signature)
-      return invalid(INTAKE_SCAN_MESSAGES.infected)
+      await this.auditInfected(auth, who, part, outcome.signature, isUnscannableSignature(outcome.signature))
+      return invalid(isUnscannableSignature(outcome.signature) ? INTAKE_SCAN_MESSAGES.unscannable : INTAKE_SCAN_MESSAGES.infected)
     } catch (err) {
       if (err instanceof ScannerUnavailableError && err.reason === 'size_limit') return invalid(INTAKE_SCAN_MESSAGES.tooLarge(Math.floor(this.scanner.maxBytes / (1024 * 1024))))
       if (!(err instanceof ScannerUnavailableError)) this.log.error(`virus scan failed unexpectedly: ${err instanceof Error ? err.message : String(err)}`)
@@ -263,16 +269,18 @@ export class IntakeUploadService {
   }
 
   /** Same content already in this request or in another live batch (the cheap check that runs before the scan). */
-  private async isDuplicate(batchId: bigint, seen: ReadonlySet<string>, sha256: string): Promise<boolean> {
+  private async isDuplicate(auth: AuthContext, batchId: bigint, seen: ReadonlySet<string>, sha256: string): Promise<boolean> {
     if (seen.has(sha256)) return true
     const dup = await this.prisma.client.intakeFile.findFirst({
-      where: { sha256, OR: [{ batchId }, { batch: { status: { notIn: ['failed', 'cancelled'] } } }] },
+      // A non-admin only matches this batch and their OWN live batches here, so the pre-scan check cannot be used to probe other people's uploads
+      // (the transactional admit() keeps the global rule and its message).
+      where: { sha256, OR: [{ batchId }, { batch: { status: { notIn: ['failed', 'cancelled'] }, ...visibleBatches(auth) } }] },
       select: { id: true },
     })
     return dup !== null
   }
 
-  private async auditInfected(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string): Promise<void> {
+  private async auditInfected(auth: AuthContext, who: CallerInfo, part: UploadedPart, signature: string, unscannable: boolean): Promise<void> {
     try {
       await this.audit.record({
         action: AUDIT_ACTIONS.INTAKE_FILE_INFECTED,
@@ -285,7 +293,7 @@ export class IntakeUploadService {
         requestId: who.requestId,
         ip: who.ip,
         isTest: auth.mode !== null,
-        details: { signature, sha256: createHash('sha256').update(part.buffer).digest('hex'), name: sanitizeOriginalName(decodeUploadName(part.originalname)), bytes: part.buffer.length },
+        details: { signature, kind: unscannable ? 'unscannable' : 'malware', sha256: createHash('sha256').update(part.buffer).digest('hex'), name: sanitizeOriginalName(decodeUploadName(part.originalname)), bytes: part.buffer.length },
       })
     } catch (e) {
       this.log.error(`infected-file audit event could not be written: ${e instanceof Error ? e.message : String(e)}`)

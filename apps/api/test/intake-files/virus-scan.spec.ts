@@ -159,6 +159,33 @@ describe('intake upload virus scan with a configured scanner', () => {
     await nothingStored(t)
   })
 
+  it.each([['limits-exceeded', 'Heuristics.Limits.Exceeded'], ['encrypted', 'Heuristics.Encrypted.Zip']] as const)('clamd %s (could not be fully scanned) is refused with the distinct "tidak dapat diimbas" message, audited as unscannable', async (mode, signature) => {
+    clamd.mode = mode
+    const b = await createBatch(admin)
+    expectFilesError(await uploadFiles(admin, b.id, [{ bytes: textPdf(1, 813) }]), INTAKE_SCAN_MESSAGES.unscannable)
+    expect(INTAKE_SCAN_MESSAGES.unscannable).not.toBe(INTAKE_SCAN_MESSAGES.infected)
+    await nothingStored(t)
+    const audit = await t.db.query<{ detail: { signature: string; kind: string } }>(`select detail from audit_events where action = 'intake.file_infected'`)
+    expect(audit.map((r) => r.detail)).toEqual([expect.objectContaining({ signature, kind: 'unscannable' })])
+  })
+
+  it('the pre-scan duplicate check does not reveal the uploads of other people: a teacher uploading a file an admin already has is scanned (the later rule still refuses it)', async () => {
+    const bytes = textPdf(1, 814)
+    const ba = await createBatch(admin)
+    await uploadOk(admin, ba.id, [{ bytes }])
+    const scansBefore = clamd.scans
+    const bt = await createBatch(teacher)
+    const res = await uploadFiles(teacher, bt.id, [{ bytes }])
+    expect(res.status).toBe(422)
+    expect(clamd.scans).toBe(scansBefore + 1) // reached the scanner: the pre-scan check did not match the admin's batch
+    // the same teacher's own repeat is still refused before the scan
+    const own = textPdf(1, 815)
+    await uploadOk(teacher, bt.id, [{ bytes: own }])
+    const scans = clamd.scans
+    expect((await uploadFiles(teacher, bt.id, [{ bytes: own }])).status).toBe(422)
+    expect(clamd.scans).toBe(scans)
+  })
+
   it('a duplicate is refused before the scan (no clamd call for the repeat)', async () => {
     const b = await createBatch(admin)
     const bytes = textPdf(1, 812)
