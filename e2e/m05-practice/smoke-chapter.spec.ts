@@ -15,6 +15,10 @@ const GURU = 'guru@demo.test'
 
 const tid = (page: Page, id: string) => page.getByTestId(id)
 
+/** The page title the Pembelajaran navbar prints (h1, or `shell-title` when the page owns its h1). */
+const shellTitle = (page: Page) =>
+  page.getByTestId('pembelajaran-header').locator('h1, [data-testid=shell-title]').first()
+
 /** Ids of the open chapter cards on S5 (D98: no chapter is locked). */
 async function openChapterIds(page: Page): Promise<string[]> {
   await expect(page.locator('[data-testid^=chapter-card-][data-state=open]').first()).toBeVisible()
@@ -39,9 +43,9 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await loginAs(who)
       await gotoApp('/practice/chapter')
       await expectTabTitle(page, 'Soalan by Chapter | PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText(
-        'Latihan tersusun ikut bab buku teks dan DSKP',
+      await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
+      await expect(tid(page, 'pembelajaran-subtitle')).toHaveText(
+        'Selamat datang kembali',
       )
       await expect(tid(page, 'chapter-index-page').getByRole('heading', { level: 1 })).toHaveText(
         'Soalan by Chapter',
@@ -53,8 +57,8 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
       await tid(page, 'chapter-subject-MATH').click()
       await expect(page).toHaveURL(/\/practice\/chapter\/MATH(\?level=[^&]+)?$/)
       await expectTabTitle(page, 'Chapter Matematik | PRESTASIPLUS')
-      await expect(tid(page, 'shell-user-title')).toHaveText('Soalan by Chapter')
-      await expect(tid(page, 'shell-user-subtitle')).toHaveText('Matematik')
+      await expect(shellTitle(page)).toHaveText('Soalan by Chapter')
+      await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Selamat datang kembali')
       await expect(tid(page, 'chapter-subject-name')).toHaveText('Matematik')
       await expect(tid(page, 'chapter-level-select').locator('option')).toHaveCount(4)
       await expect(tid(page, 'chapter-list').locator('[data-state=locked]')).toHaveCount(0)
@@ -103,8 +107,8 @@ test.describe('M05 S4 / S5 / Q2 / S6 / S7 smoke', { tag: [TAG.smoke, moduleTag(5
     await loginAs(PELAJAR)
     await gotoApp('/practice/revision')
     await expectTabTitle(page, 'Soalan Aku Salah | PRESTASIPLUS')
-    await expect(tid(page, 'shell-user-title')).toHaveText('Soalan Aku Salah')
-    await expect(tid(page, 'shell-user-subtitle')).toHaveCount(0)
+    await expect(shellTitle(page)).toHaveText('Soalan Aku Salah')
+    await expect(tid(page, 'pembelajaran-subtitle')).toHaveText('Ulang kaji soalan yang pernah dijawab salah')
     await expect(tid(page, 'revision-total')).toContainText('soalan perlu diulang kaji')
     await expect(tid(page, 'revision-tips')).toContainText('Tips Ulang Kaji')
     await expectNoHorizontalScroll(page)
