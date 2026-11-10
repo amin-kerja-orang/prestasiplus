@@ -374,17 +374,28 @@ describe('hub cards and lane filters (R1-21.1, R1-21.2)', () => {
     for (const c of res.body.data as ServabilityLatihTubiCell[]) expect(c.status).toBe('open')
   })
 
-  it('FR-ADM-Q02.4: the switch follows the flag store once it exists; a key with no row is ON', async () => {
-    await t.db.query(`create table feature_flags (key text primary key, enabled boolean not null)`)
+  it('FR-ADM-Q02.4: the switch follows the flag store; a key with no row is ON', async () => {
+    // The table is created by migration 0250; the test only moves the latih-tubi row and restores it.
+    type Row = { label_ms: string; audience: string; enabled: boolean; locked: boolean; sort_order: number }
+    const [before] = await t.db.query<Row>(
+      `select label_ms, audience, enabled, locked, sort_order from feature_flags where key = 'latih-tubi'`,
+    )
+    const put = (r: Row) =>
+      t.db.query(
+        `insert into feature_flags (key, label_ms, audience, enabled, locked, sort_order) values ('latih-tubi', $1, $2, $3, $4, $5)`,
+        [r.label_ms, r.audience, r.enabled, r.locked, r.sort_order],
+      )
     try {
       const read = async () => (await admin.get('/api/admin/servability/lanes/latih-tubi?pageSize=5')).body as { meta: { switchEnabled: boolean }; data: ServabilityLatihTubiCell[] }
+      await t.db.query(`delete from feature_flags where key = 'latih-tubi'`)
       expect((await read()).meta.switchEnabled).toBe(true)
-      await t.db.query(`insert into feature_flags (key, enabled) values ('latih-tubi', false)`)
+      await put({ label_ms: before?.label_ms ?? 'Latih Tubi', audience: before?.audience ?? 'pelajar', enabled: false, locked: false, sort_order: before?.sort_order ?? 0 })
       const closed = await read()
       expect(closed.meta.switchEnabled).toBe(false)
       for (const c of closed.data) expect(c.status).toBe('closed')
     } finally {
-      await t.db.query(`drop table feature_flags`)
+      await t.db.query(`delete from feature_flags where key = 'latih-tubi'`)
+      if (before) await put(before)
     }
   })
 
