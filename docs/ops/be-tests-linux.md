@@ -36,7 +36,7 @@ A full-suite run could not be completed: the first attempt was OOM-killed (4 wor
 - copies only files newer than the stamp `/work/.sync-stamp` (`find -newer` piped to `tar --null -T -`, same excludes as the old full copy);
 - deletes files that exist in `/work` but no longer in `/src` (sorted file lists compared with `comm`; `node_modules`, `.git` and the other excluded paths are never touched; it refuses to delete anything when `/src` lists no files at all, for example a missing mount);
 - replaces the stamp only after the sync succeeded. The stamp is dated at the start of the sync minus 60 seconds, so a file edited during the sync, or a small clock difference between the host and the container, makes that file be copied again next time. A few recently edited files are therefore always re-copied;
-- refuses to run unless `/work` is a real mountpoint (never `/`), so a missing volume cannot make the deletion pass touch the image;
+- refuses to run unless the target is a real mountpoint (never `/`); the check is the first line of `sync_tree` itself, so a missing volume cannot make the deletion pass touch the image (`PP_BETEST_ALLOW_UNMOUNTED=1` exists for the fixture test only);
 - keeps the old tolerance: `tar` exit 1 (file changed while read) is a warning, exit 2 fails the run;
 - prints `sync (full|incremental ...): N copied, M deleted, S s`.
 

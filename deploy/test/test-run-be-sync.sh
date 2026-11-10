@@ -7,7 +7,7 @@
 set -uo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 base="$(mktemp -d)"; trap 'rm -rf "$base"' EXIT
-export PP_BETEST_TMP="$base/tmp" PP_BETEST_SOURCE_ONLY=1
+export PP_BETEST_TMP="$base/tmp" PP_BETEST_SOURCE_ONLY=1 PP_BETEST_ALLOW_UNMOUNTED=1   # the fixture dirs are not mountpoints
 # shellcheck source=run-be-tests.sh
 . "$here/run-be-tests.sh"
 set +e   # the sourced script sets -e; the checks below expect failures
@@ -78,6 +78,10 @@ echo "-- assert_work_mount"
 assert_work_mount / >/dev/null 2>&1; check 'refuses /' '[ $? != 0 ]'
 assert_work_mount "$base/work" >/dev/null 2>&1; check 'refuses a plain folder that is not a mountpoint' '[ $? != 0 ]'
 assert_work_mount /proc >/dev/null 2>&1; check 'accepts a mountpoint' '[ $? = 0 ]'
+echo "-- sync_tree itself refuses an unmounted target (PP_BETEST_ALLOW_UNMOUNTED unset)"
+mkdir -p "$base/plain-work"
+PP_BETEST_ALLOW_UNMOUNTED= sync_tree "$S" "$base/plain-work" >"$base/out.log" 2>&1; rc=$?
+check 'refused and nothing was copied' '[ "$rc" != 0 ] && grep -q "not a mountpoint" "$base/out.log" && [ ! -e "$base/plain-work/a" ] && [ ! -e "$base/plain-work/.sync-stamp" ]'
 
 echo; echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

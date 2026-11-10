@@ -9,6 +9,8 @@ set -euo pipefail
 #     edited while the sync runs (or on a host with a slightly different clock) is copied again by the next run.
 # No rsync in the node image: find + tar + comm only.
 sync_tree() {
+  # First: the target must be a real mounted volume (a caller can no longer skip it). PP_BETEST_ALLOW_UNMOUNTED=1 is for the fixture test only.
+  [ "${PP_BETEST_ALLOW_UNMOUNTED:-}" = 1 ] || assert_work_mount "$2" || return 1
   local src="$1" dst="$2" t0=$SECONDS mode=incremental copied=0 deleted=0 stamp="$2/.sync-stamp" tmp="${PP_BETEST_TMP:-/tmp/be-sync}"
   mkdir -p "$tmp"
   # The excludes of the old full copy, as find prune tests (node_modules anywhere, dist* at the top, apps/api/dist, .migration-out anywhere).
@@ -54,7 +56,6 @@ assert_work_mount() {
 # Tests source the function only (PP_BETEST_SOURCE_ONLY=1); the real run continues below.
 if [ "${PP_BETEST_SOURCE_ONLY:-}" = 1 ]; then return 0 2>/dev/null || exit 0; fi
 
-assert_work_mount /work
 sync_tree /src /work
 cd /work
 # Specs that run `git check-ignore` or look for a .git ancestor need a repository (the real .git is not copied).
