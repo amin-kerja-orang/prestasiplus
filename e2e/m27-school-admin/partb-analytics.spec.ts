@@ -247,7 +247,7 @@ test.describe('S1 pills and tiles, populated school (E2E-M27-48…52)', MODULE, 
         expect(t.accuracy).toBeGreaterThanOrEqual(0)
         expect(t.accuracy).toBeLessThanOrEqual(100)
         const raw = (await page.getByTestId('su-tile-accuracy').getByTestId('su-tile-value').innerText()).trim()
-        expect(raw).toMatch(/^\d+%$/)
+        expect(raw).toMatch(/^\d+(\.\d)?%$/)
       }
     }
     // windows nest: today <= 7 days <= 30 days
@@ -338,7 +338,7 @@ test.describe('S1 pills and tiles, populated school (E2E-M27-48…52)', MODULE, 
         expect(a.sessions > b.sessions || (a.sessions === b.sessions && a.label <= b.label)).toBe(true)
       }
       expect(rows.reduce((s, r) => s + r.sessions, 0)).toBe(sessions)
-      for (const r of rows) expect(r.accuracy).toMatch(/^(\d+%|—)$/)
+      for (const r of rows) expect(r.accuracy).toMatch(/^(\d+(\.\d)?%|—)$/)
       await expect(page.getByTestId('su-empty')).toHaveCount(0)
     }
   })
@@ -859,8 +859,9 @@ test.describe('S3 Guru and Murid tabs (E2E-M27-67, 68)', MODULE, () => {
     // cells of the full list: accuracy at most 100 %, time "{h}j {m}m"
     await page.getByTestId('la-murid-pill-semua').click()
     for (const a of await textsOf(page, 'la-murid-ketepatan')) {
-      expect(a).toMatch(/^\d+%$/)
-      expect(parseFloat(a)).toBeLessThanOrEqual(100)
+      // a pupil without sessions prints the dash (C-17), else one decimal like V2 (zero fraction dropped)
+      expect(a).toMatch(/^(\d+(\.\d)?%|—)$/)
+      if (a !== '—') expect(parseFloat(a)).toBeLessThanOrEqual(100)
     }
     for (const m of await textsOf(page, 'la-murid-masa')) expect(m).toMatch(/^\d+j \d+m$/)
     // search by name, then a search with no match shows no rows

@@ -180,7 +180,7 @@ for (const key of Object.keys(SCREENS) as ScreenKey[]) {
       expect(await current.evaluate((e) => e.tagName)).not.toBe('A')
       expect(
         Number(await current.evaluate((e) => getComputedStyle(e).fontWeight)),
-      ).toBeGreaterThanOrEqual(700)
+      ).toBeGreaterThanOrEqual(600) // v2: the emphasis weight is font-semibold (600)
     })
 
     test(`E2E-M27-42 ${s.title}: P1 at 1280 the sidebar item is active and "Dashboard" is not`, async ({
@@ -437,7 +437,7 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
     const [part, answers, accuracy, sessions] = await texts(page, 'lb-card-value')
     expect(part).toMatch(/^\d{1,3}%$/)
     expect(answers).toMatch(/^\d{1,3}(,\d{3})*$/)
-    expect(accuracy).toMatch(/^(\d{1,3}\.\d%|—)$/)
+    expect(accuracy).toMatch(/^(\d{1,3}(\.\d)?%|—)$/)
     expect(sessions).toMatch(/^\d{1,3}(,\d{3})*$/)
     const [subA, subB] = await texts(page, 'lb-card-sub')
     const m = /^([\d,]+) aktif \/ ([\d,]+) daftar$/.exec(subA ?? '')
@@ -498,7 +498,7 @@ test.describe('S5 Laporan Bulanan', MODULE, () => {
     const cells = await rows.evaluateAll((trs) =>
       trs.map((tr) => [...tr.querySelectorAll('td')].map((c) => (c.textContent ?? '').trim())),
     )
-    for (const r of cells) expect(r[5]).toMatch(/^\d{1,3}\.\d%$/)
+    for (const r of cells) expect(r[5]).toMatch(/^\d{1,3}(\.\d)?%$/)
     if (cells.length > 1) {
       const sum = (i: number) => cells.reduce((s, r) => s + (num(r[i] as string) as number), 0)
       const foot = await page
