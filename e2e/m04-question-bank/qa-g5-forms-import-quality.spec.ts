@@ -98,40 +98,32 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     else expect(tpl!.y).toBeGreaterThan(form!.y + form!.height - 4)
   })
 
-  test('E2E-M04-31 3-row CSV: one row missing subject; without default 2 imported 1 failed; with default Matematik 3 (AC-13.5)', async ({
-    page,
-    gotoApp,
-  }) => {
-    const header =
-      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation'
-    const csv = [
-      header,
-      '"Soalan QA import satu apakah ini?",A1,B1,C1,D1,A,3,11,2,1,',
-      '"Soalan QA import dua apakah ini?",A2,B2,C2,D2,B,3,11,2,1,',
-      '"Soalan QA import tiga tanpa subjek",A3,B3,C3,D3,C,,11,2,1,',
+  // V2 admin/questions/import.blade.php:106-118: positional columns body, option_a..option_d, correct,
+  // difficulty (1-5, optional); subject and level come from the dialog defaults, never from the file.
+  // LEAD: an optional trailing "kertas" column must also be accepted.
+  const V2_HEADER = 'body,option_a,option_b,option_c,option_d,correct,difficulty'
+  const v2Csv = (withKertas: boolean) =>
+    [
+      withKertas ? `${V2_HEADER},kertas` : V2_HEADER,
+      `"Soalan QA import satu apakah ini?",A1,B1,C1,D1,A,2${withKertas ? ',1' : ''}`,
+      `"Soalan QA import dua apakah ini?",A2,B2,C2,D2,B,2${withKertas ? ',2' : ''}`,
+      `"Soalan QA import tiga apakah ini?",A3,B3,C3,D3,C,${withKertas ? ',' : ''}`,
     ].join(NL)
-    await byId(page, 'import-file').setInputFiles({
-      name: 'qa.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
-    })
-    await byId(page, 'import-submit').click()
-    await expect(byId(page, 'cmp-flash')).toContainText(
-      'Import selesai: 2 soalan diimport, 1 gagal.',
-    )
 
-    await gotoApp('/admin/questions/import')
-    await byId(page, 'import-default-subject').selectOption({ label: 'Matematik' })
-    await byId(page, 'import-file').setInputFiles({
-      name: 'qa.csv',
-      mimeType: 'text/csv',
-      buffer: Buffer.from(csv),
+  for (const withKertas of [false, true]) {
+    test(`E2E-M04-31 V2-layout CSV ${withKertas ? 'with' : 'without'} trailing kertas imports 3 with the default subject (AC-13.5)`, async ({
+      page,
+    }) => {
+      await byId(page, 'import-default-subject').selectOption({ label: 'Matematik' })
+      await byId(page, 'import-file').setInputFiles({
+        name: 'qa.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(v2Csv(withKertas)),
+      })
+      await byId(page, 'import-submit').click()
+      await expect(byId(page, 'cmp-flash')).toContainText('Import selesai: 3 soalan diimport, 0 gagal.')
     })
-    await byId(page, 'import-submit').click()
-    await expect(byId(page, 'cmp-flash')).toContainText(
-      'Import selesai: 3 soalan diimport, 0 gagal.',
-    )
-  })
+  }
 
   test('E2E-M04-32 Download Template: file name and header row (AC-13.6)', async ({ page }) => {
     const [dl] = await Promise.all([
@@ -143,9 +135,8 @@ test.describe('QA G5 S5 import', { tag: [moduleTag(4), '@qa'] }, () => {
     const chunks: Buffer[] = []
     for await (const c of stream) chunks.push(c as Buffer)
     const first = Buffer.concat(chunks).toString('utf8').split(/\r?\n/)[0] ?? ''
-    expect(first.replace(/^﻿/, '')).toBe(
-      'question_text,option_a,option_b,option_c,option_d,correct_answer,subject_id,education_level_id,difficulty_level,marks,explanation',
-    )
+    // V2 import.blade.php:106-118 (positional layout); an optional trailing kertas is accepted on import only.
+    expect(first.replace(/^﻿/, '')).toBe('body,option_a,option_b,option_c,option_d,correct,difficulty')
   })
 
   test('E2E-M04-33 history: Kembali goes to import; only Kembali action; empty-run page (AC-14.1, 14.2)', async ({
@@ -169,62 +160,45 @@ test.describe('QA G5 S6 quality', { tag: [moduleTag(4), '@qa'] }, () => {
     await gotoApp('/admin/questions/quality')
   })
 
-  test('E2E-M04-34 shell title/subtitle, KPI labels, bucket titles upper case, legacy backticks (AC-15.1, 15.2)', async ({
+  // V2 admin/questions/quality.blade.php:16-36 (top stat cards) and :38-60 (compliance buckets).
+  test('E2E-M04-34 shell title/subtitle, top cards and compliance buckets (AC-15.1, 15.2)', async ({
     page,
   }) => {
     await expect(byId(page, 'pentadbiran-header').getByRole('heading', { level: 1 })).toHaveText('Dashboard Kualiti Soalan')
     await expect(byId(page, 'pentadbiran-subtitle')).toHaveText(
       'Metrik kualiti berdasarkan status pematuhan & DSKP',
     )
-    await expect(byId(page, 'kpi-total')).toContainText('Jumlah Soalan')
-    await expect(byId(page, 'kpi-average')).toContainText('Purata Skor')
-    await expect(byId(page, 'kpi-excellent')).toContainText('Cemerlang (76-100)')
-    await expect(byId(page, 'kpi-action')).toContainText('Perlu Tindakan Aktif (≤ 50)')
-    await expect(byId(page, 'kpi-total-value')).toHaveText('465,278')
-    for (const [id, text] of [
-      ['bucket-baik', 'Skor 51-75'],
-      ['bucket-lemah', 'Skor ≤ 50'],
-      ['bucket-legacy', 'Legacy Generic'],
+    const main = page.locator('main')
+    await expect(main.getByText('Jumlah Soalan', { exact: true })).toBeVisible()
+    await expect(main.getByText('Disahkan (Verified/AI)', { exact: true })).toBeVisible()
+    await expect(main.getByText(/^Bertag DSKP \(/)).toBeVisible()
+    await expect(main.getByText('Perlu Semakan', { exact: true }).first()).toBeVisible()
+    for (const [name, note] of [
+      ['Verified', 'Disahkan penuh terhadap sumber.'],
+      ['AI Verified', 'Disahkan oleh semakan AI.'],
+      ['Pending Mapping', 'Menunggu pemetaan kurikulum.'],
+      ['Belum Diklasifikasi', 'Tiada status pematuhan lagi.'],
     ] as Array<[string, string]>) {
-      const title = byId(page, id).getByText(text, { exact: true })
-      await expect(title).toBeVisible()
-      expect(await title.evaluate((el) => getComputedStyle(el).textTransform)).toBe('uppercase')
+      await expect(main.getByText(name, { exact: true })).toBeVisible()
+      await expect(main.getByText(note, { exact: true })).toBeVisible()
     }
-    await expect(byId(page, 'bucket-legacy')).toContainText('`tracking_a_feed_20260308`')
-    await expect(byId(page, 'bucket-legacy')).toContainText('`spm_tracking_auto_seed_v1`')
-    await expect(byId(page, 'bucket-legacy')).toContainText('`source_type=ai_generated`')
   })
 
-  test('E2E-M04-34 distribution, subject rows sorted by Purata desc, levels, action list header (AC-15.3, 15.4, 15.5)', async ({
+  // V2 quality.blade.php:62-77 (Taburan Kualiti), :79-110 (Mengikut Subjek), :118-137 (Mengikut Tingkatan).
+  test('E2E-M04-34 Taburan Kualiti, per-subject table and per-level bars (AC-15.3, 15.4, 15.5)', async ({
     page,
   }) => {
-    for (const k of ['cemerlang', 'baik', 'lemah', 'kritikal']) void k
-    await expect(byId(page, 'quality-distribution')).toContainText('Cemerlang')
-    await expect(byId(page, 'quality-distribution')).toContainText('Baik')
-    await expect(byId(page, 'quality-distribution')).toContainText('Lemah')
-    await expect(byId(page, 'quality-distribution')).toContainText('Kritikal')
-    const rows = byId(page, 'subject-row')
-    expect(await rows.count()).toBeGreaterThan(20)
-    const avgs = await rows.evaluateAll((els) =>
-      els.map((el) => {
-        const m = (el as HTMLElement).innerText.match(/(\d+\.\d)/)
-        return m ? Number(m[1]) : NaN
-      }),
-    )
-    expect(avgs.some((n) => Number.isNaN(n))).toBe(false)
-    for (let i = 1; i < avgs.length; i++)
-      expect(avgs[i] ?? 0).toBeLessThanOrEqual((avgs[i - 1] ?? 0) + 0.0001)
-    await expect(byId(page, 'level-row').first()).toContainText('Darjah 1')
-    await expect(byId(page, 'level-row').last()).toContainText('Tingkatan 5')
-    await expect(byId(page, 'quality-actions')).toContainText(
-      'Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.',
-    )
-    for (const h of ['ID', 'Soalan', 'Subjek', 'Tingkatan', 'Sumber', 'Skor'])
-      await expect(
-        byId(page, 'quality-actions').getByText(h, { exact: true }).first(),
-      ).toBeVisible()
-    await expect(byId(page, 'quality-actions')).toContainText('#129114')
-    await expect(byId(page, 'quality-actions')).toContainText('#129216')
+    const main = page.locator('main')
+    await expect(main.getByText('Taburan Kualiti', { exact: true })).toBeVisible()
+    await expect(main.getByText('Disahkan', { exact: true }).first()).toBeVisible()
+    await expect(main.getByText('Perlu Semakan', { exact: true }).first()).toBeVisible()
+    await expect(main.getByText('Mengikut Subjek', { exact: true })).toBeVisible()
+    for (const h of ['Subjek', 'Soalan', 'Disahkan', '% Disahkan'])
+      await expect(main.locator('thead th').filter({ hasText: h }).first()).toBeVisible()
+    expect(await main.locator('tbody tr').count()).toBeGreaterThan(20)
+    await expect(main.getByText('Mengikut Tingkatan', { exact: true })).toBeVisible()
+    await expect(main.getByText(/^Darjah 1$/)).toBeVisible()
+    await expect(main.getByText(/^Tingkatan 5$/)).toBeVisible()
   })
 
   test('E2E-M04-35 audit button shows the busy state while running and no dialog (AC-16.1)', async ({
